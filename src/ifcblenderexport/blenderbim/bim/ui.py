@@ -1799,6 +1799,7 @@ class BIM_UL_representation_items(bpy.types.UIList):
 class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     bl_idname = 'blenderbim'
     svg2pdf_command: StringProperty(name="SVG to PDF Command")
+    svg2dxf_command: StringProperty(name="SVG to DXF Command")
 
     def draw(self, context):
         layout = self.layout
@@ -1810,6 +1811,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.operator('bim.open_upstream', text='Visit Community').page = 'community'
         row = layout.row()
         row.prop(self, 'svg2pdf_command')
+        row = layout.row()
+        row.prop(self, 'svg2dxf_command')
 
 
 class BIM_PT_ifcclash(Panel):

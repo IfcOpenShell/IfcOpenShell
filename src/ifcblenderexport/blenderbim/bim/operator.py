@@ -2280,18 +2280,38 @@ class CreateSheets(bpy.types.Operator):
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
         sheet_builder.build(name)
+
         svg2pdf_command = bpy.context.preferences.addons['blenderbim'].preferences.svg2pdf_command
-        if not svg2pdf_command:
+        if svg2pdf_command:
+            import subprocess
+            path = os.path.join(bpy.context.scene.BIMProperties.data_dir, 'build', name)
+            svg = os.path.join(path, name + '.svg')
+            pdf = os.path.join(path, name + '.pdf')
+            # With great power comes great responsibility. Example:
+            # [['inkscape', svg, '-o', pdf]]
+            commands = eval(svg2pdf_command)
+            for command in commands:
+                subprocess.run(command)
+
+        svg2dxf_command = bpy.context.preferences.addons['blenderbim'].preferences.svg2dxf_command
+        if svg2dxf_command:
+            import subprocess
+            path = os.path.join(bpy.context.scene.BIMProperties.data_dir, 'build', name)
+            svg = os.path.join(path, name + '.svg')
+            eps = os.path.join(path, name + '.eps')
+            dxf = os.path.join(path, name + '.dxf')
+            base = os.path.join(path, name)
+            # With great power comes great responsibility. Example:
+            # [['inkscape', svg, '-o', eps], ['pstoedit', '-dt', '-f', 'dxf:-polyaslines -mm', eps, dxf, '-psarg', '-dNOSAFER']]
+            commands = eval(svg2dxf_command)
+            for command in commands:
+                subprocess.run(command)
+
+
+        if svg2pdf_command:
+            webbrowser.open('file://' + os.path.join(pdf))
+        else:
             webbrowser.open('file://' + os.path.join(bpy.context.scene.BIMProperties.data_dir, 'build', name, name + '.svg'))
-            return {'FINISHED'}
-        import subprocess
-        path = os.path.join(bpy.context.scene.BIMProperties.data_dir, 'build', name)
-        svg = os.path.join(path, name + '.svg')
-        pdf = os.path.join(path, name + '.pdf')
-        # With great power comes great responsibility. Example:
-        # ['inkscape', svg, '-o', pdf]
-        subprocess.run(eval(svg2pdf_command))
-        webbrowser.open('file://' + os.path.join(pdf))
         return {'FINISHED'}
 
 
