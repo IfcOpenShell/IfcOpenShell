@@ -1706,6 +1706,10 @@ class IfcImporter():
                 global_id = element.Decomposes[0].RelatingObject.GlobalId
                 if global_id in self.spatial_structure_elements:
                     collection = self.spatial_structure_elements[global_id]['blender']
+                # This may occur if we are nesting an IfcSpace (which is special
+                # since it does not have a collection within an IfcSpace
+                if not collection:
+                    return self.place_object_in_spatial_tree(element.Decomposes[0].RelatingObject, obj)
             elif self.ifc_import_settings.should_import_aggregates:
                 collection = self.aggregate_collections[element.Decomposes[0].id()]
             else:
@@ -1718,7 +1722,7 @@ class IfcImporter():
                 and element.HasFillings:
             self.opening_collection.objects.link(obj)
         else:
-            self.ifc_import_settings.logger.warning('Warning: this object is outside the spatial hierarchy')
+            self.ifc_import_settings.logger.warning('Warning: this object is outside the spatial hierarchy {}'.format(element))
             bpy.context.scene.collection.objects.link(obj)
 
     def add_element_attributes(self, element, obj):
