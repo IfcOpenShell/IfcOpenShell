@@ -157,6 +157,8 @@ class SvgWriter():
                     'dominant-baseline': 'middle'
                 }))
 
+        self.draw_ifc_annotation()
+
         for obj_data in self.ifc_cutter.hidden_objs:
             self.draw_line_annotation(obj_data, ['hidden'])
 
@@ -243,6 +245,21 @@ class SvgWriter():
                 }))
 
         self.draw_text_annotations()
+
+    def draw_ifc_annotation(self):
+        x_offset = self.raw_width / 2
+        y_offset = self.raw_height / 2
+        for annotation in self.ifc_cutter.annotation_objs:
+            for edge in annotation['edges']:
+                v0_global = annotation['vertices'][edge[0]]
+                v1_global = annotation['vertices'][edge[1]]
+                v0 = self.project_point_onto_camera(v0_global)
+                v1 = self.project_point_onto_camera(v1_global)
+                start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
+                end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
+                vector = end - start
+                line = self.svg.add(self.svg.line(start=tuple(start * self.scale),
+                    end=tuple(end * self.scale), class_=' '.join(annotation['classes'])))
 
     def draw_line_annotation(self, obj_data, classes):
         # TODO: properly scope these offsets

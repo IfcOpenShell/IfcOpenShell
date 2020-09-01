@@ -2174,18 +2174,6 @@ class CutSection(bpy.types.Operator):
             elif obj.type == 'FONT':
                 ifc_cutter.text_objs.append(obj)
 
-        # TODO: this should be detected from the IFC, not from Blender, and
-        # should use a bbox calculation to determine whether it is shown
-        for obj in bpy.context.visible_objects:
-            for subcontext in  obj.BIMObjectProperties.representation_contexts:
-                if subcontext.context == 'Plan' \
-                        and subcontext.name == 'Annotation' \
-                        and subcontext.target_view == 'PLAN_VIEW' \
-                        and '/' in obj.data.name:
-                    data = bpy.data.meshes.get('Plan/Annotation/PLAN_VIEW/{}'.format(obj.data.name.split('/')[-1]))
-                    if data:
-                        ifc_cutter.solid_objs.append((obj, data))
-
         ifc_cutter.section_box = {
             'projection': tuple(projection),
             'x_axis': tuple(x_axis),
