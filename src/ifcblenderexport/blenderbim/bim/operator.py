@@ -7,6 +7,7 @@ import logging
 import webbrowser
 import ifcopenshell
 import ifcopenshell.util.selector
+import ifcopenshell.util.geolocation
 import tempfile
 from . import export_ifc
 from . import import_ifc
@@ -23,7 +24,7 @@ from . import helper
 from bpy_extras.io_utils import ImportHelper
 from itertools import cycle
 from mathutils import Vector, Matrix, Euler, geometry
-from math import radians, atan, tan, cos, sin, atan2
+from math import radians, atan, tan, cos, sin, atan2, pi
 from pathlib import Path
 from bpy.app.handlers import persistent
 
@@ -3844,4 +3845,26 @@ class SetViewportShadowFromSun(bpy.types.Operator):
             (-0.0, -1.0, 0, 0.0),
             (0.0, 0.0, 0.0, 1.0)))
         context.scene.display.light_direction = mat.inverted() @ (context.active_object.matrix_world.to_quaternion() @ Vector((0,0,-1)))
+        return {'FINISHED'}
+
+
+class SetNorthOffset(bpy.types.Operator):
+    bl_idname = 'bim.set_north_offset'
+    bl_label = 'Set North Offset'
+
+    def execute(self, context):
+        context.scene.sun_pos_properties.north_offset = radians(ifcopenshell.util.geolocation.xy2angle(
+            float(bpy.context.scene.MapConversion.x_axis_ordinate),
+            float(bpy.context.scene.MapConversion.x_axis_abscissa)))
+        return {'FINISHED'}
+
+
+class GetNorthOffset(bpy.types.Operator):
+    bl_idname = 'bim.get_north_offset'
+    bl_label = 'Get North Offset'
+
+    def execute(self, context):
+        x_angle = -context.scene.sun_pos_properties.north_offset
+        bpy.context.scene.MapConversion.x_axis_abscissa = str(cos(x_angle))
+        bpy.context.scene.MapConversion.x_axis_ordinate = str(sin(x_angle))
         return {'FINISHED'}

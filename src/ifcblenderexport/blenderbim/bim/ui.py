@@ -716,6 +716,11 @@ class BIM_PT_gis(Panel):
         row = layout.row(align=True)
         row.operator('bim.convert_local_to_global')
 
+        if hasattr(bpy.context.scene, 'sun_pos_properties'):
+            row = layout.row(align=True)
+            row.operator('bim.get_north_offset')
+            row.operator('bim.set_north_offset')
+
 
 class BIM_PT_drawings(Panel):
     bl_label = "SVG Drawings"
