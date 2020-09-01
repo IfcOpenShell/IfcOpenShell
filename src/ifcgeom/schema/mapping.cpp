@@ -974,6 +974,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcMaterial* material) {
 		if (styles->size() == 1) {
 			auto s = map(*styles->begin());
 			if (s) {
+				((taxonomy::style*) s)->name = material->Name();
 				return s;
 			}
 		}
