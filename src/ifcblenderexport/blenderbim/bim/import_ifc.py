@@ -288,11 +288,13 @@ class IfcImporter():
         self.time = time.time()
 
     def execute(self):
+        self.load_diff()
+        self.profile_code('Load diff')
+        self.purge_diff()
+        self.profile_code('Purge diffs')
         self.profile_code('Starting import process')
         self.load_existing_rooted_elements()
         self.profile_code('Load existing rooted elements')
-        self.load_diff()
-        self.profile_code('Load diff')
         self.cache_file()
         self.profile_code('Caching file')
         self.load_file()
@@ -304,8 +306,6 @@ class IfcImporter():
             self.profile_code('Set vendor worksarounds')
         self.calculate_unit_scale()
         self.profile_code('Calculate unit scale')
-        self.filter_ifc()
-        self.profile_code('Filtering ifc')
         self.patch_ifc()
         self.profile_code('Patching ifc')
         self.set_units()
@@ -324,8 +324,6 @@ class IfcImporter():
         self.profile_code('Create doc refs')
         self.create_spatial_hierarchy()
         self.profile_code('Create spatial hierarchy')
-        self.purge_diff()
-        self.profile_code('Purge diffs')
         self.create_type_products()
         self.profile_code('Create type products')
         if self.ifc_import_settings.should_import_aggregates:
@@ -495,13 +493,6 @@ class IfcImporter():
                     if inverse_element.is_a('IfcShapeRepresentation'):
                         products.extend(self.get_products_from_shape_representation(inverse_element))
         return products
-
-    def filter_ifc(self):
-        for element in self.file.by_type('IfcElement'):
-            if self.diff \
-                    and element.GlobalId not in self.diff['added'] \
-                    and element.GlobalId not in self.diff['changed'].keys():
-                self.file.remove(element)
 
     def patch_ifc(self):
         project = self.file.by_type('IfcProject')[0]
@@ -712,6 +703,7 @@ class IfcImporter():
     def create_type_product(self, element):
         self.ifc_import_settings.logger.info('Creating object {}'.format(element))
         if element.GlobalId in self.existing_elements:
+            self.type_products[element.GlobalId] = self.existing_elements[element.GlobalId]
             return
         representation_map = self.get_type_product_body_representation_map(element)
         mesh = None
@@ -1190,7 +1182,11 @@ class IfcImporter():
             bpy.data.materials.remove(material)
 
     def add_project_to_scene(self):
-        bpy.context.scene.collection.children.link(self.project['blender'])
+        try:
+            bpy.context.scene.collection.children.link(self.project['blender'])
+        except:
+            # Occurs when reloading a project
+            pass
         for collection in bpy.context.view_layer.layer_collection.children[self.project['blender'].name].children[self.aggregate_collection.name].children:
             collection.hide_viewport = True
         bpy.context.view_layer.layer_collection.children[self.project['blender'].name].children[self.opening_collection.name].hide_viewport = True
