@@ -219,7 +219,12 @@ namespace {
 				return a_lt_b;
 			}
 			// Vectors equal, compare matrix (in case of mapped items).
-			return compare(a.matrix, b.matrix);
+			int matrix_order = less_to_order(a.matrix, b.matrix);
+			if (matrix_order == 0) {
+				return compare(a.surface_style, b.surface_style);
+			} else {
+				return matrix_order == -1;
+			}
 		} else {
 			return a.children.size() < b.children.size();
 		}
