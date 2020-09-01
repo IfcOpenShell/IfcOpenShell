@@ -194,6 +194,8 @@ if bpy is not None:
         operator.BuildSchedule,
         operator.AddScheduleToSheet,
         operator.SetViewportShadowFromSun,
+        operator.SetNorthOffset,
+        operator.GetNorthOffset,
         prop.StrProperty,
         prop.Variable,
         prop.Role,
