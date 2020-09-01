@@ -193,6 +193,7 @@ if bpy is not None:
         operator.SelectScheduleFile,
         operator.BuildSchedule,
         operator.AddScheduleToSheet,
+        operator.SetViewportShadowFromSun,
         prop.StrProperty,
         prop.Variable,
         prop.Role,

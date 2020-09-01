@@ -1988,6 +1988,8 @@ class BIM_PT_misc_utilities(Panel):
         row.prop(props, 'override_colour', text='')
         row = layout.row(align=True)
         row.operator("bim.set_override_colour")
+        row = layout.row(align=True)
+        row.operator("bim.set_viewport_shadow_from_sun")
 
 
 def ifc_units(self, context):

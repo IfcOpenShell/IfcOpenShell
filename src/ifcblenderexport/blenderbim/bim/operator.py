@@ -3831,3 +3831,17 @@ class AddScheduleToSheet(bpy.types.Operator):
             props.schedules[props.active_schedule_index].name,
             props.sheets[props.active_sheet_index].name)
         return {'FINISHED'}
+
+
+class SetViewportShadowFromSun(bpy.types.Operator):
+    bl_idname = 'bim.set_viewport_shadow_from_sun'
+    bl_label = 'Set Viewport Shadow from Sun'
+
+    def execute(self, context):
+        # The vector used for the light direction is a bit funny
+        mat = Matrix(((-1.0, 0.0, 0.0, 0.0),
+            (0.0, 0, 1.0, 0.0),
+            (-0.0, -1.0, 0, 0.0),
+            (0.0, 0.0, 0.0, 1.0)))
+        context.scene.display.light_direction = mat.inverted() @ (context.active_object.matrix_world.to_quaternion() @ Vector((0,0,-1)))
+        return {'FINISHED'}
