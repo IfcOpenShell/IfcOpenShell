@@ -391,12 +391,14 @@ set DEPENDENCY_DIR=%DEPS_DIR%\voxel
 call :GitCloneAndCheckoutRevision https://github.com/opensourceBIM/voxelization_toolkit.git "%DEPENDENCY_DIR%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
+if "%USE_STATIC_RUNTIME%"=="FALSE" set STATIC_RUNTIME_OFF=-DUSE_STATIC_MSVC_RUNTIME=OFF
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\voxel" ^
                -DIFC_SUPPORT=Off                            ^
                -DOCC_INCLUDE_DIR="%OCC_INCLUDE_DIR%"        ^
                -DOCC_LIBRARY_DIR="%OCC_LIBRARY_DIR%"        ^
                -DBOOST_ROOT="%DEPS_DIR%\boost_%BOOST_VER%"  ^
-               -DBOOST_LIBRARYDIR="%DEPS_DIR%\boost_%BOOST_VER%\stage\vs%VS_VER%-%VS_PLATFORM%\lib"
+               -DBOOST_LIBRARYDIR="%DEPS_DIR%\boost_%BOOST_VER%\stage\vs%VS_VER%-%VS_PLATFORM%\lib" ^
+               %STATIC_RUNTIME_OFF%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\voxel.sln" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
