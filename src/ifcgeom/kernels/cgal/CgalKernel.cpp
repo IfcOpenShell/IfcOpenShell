@@ -403,6 +403,61 @@ namespace {
 	}
 }
 
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+#include <CGAL/box_intersection_d.h>
+#include <vector>
+#include <fstream>
+
+typedef CGAL::Box_intersection_d::Box_with_handle_d<double, 3, int*> Box;
+
+namespace {
+	void loop_to_segments(const cgal_wire_t& wire, std::vector<Kernel_::Segment_3>& segments) {
+		for (int i = 0; i < wire.size(); ++i) {
+			int j = (i + 1) % wire.size();
+			segments.emplace_back(wire[i], wire[j]);
+		}
+	}
+
+	struct intersection_collector {
+		const std::vector<Kernel_::Segment_3>& segments;
+		int num_self_intersections = 0;
+
+		void operator()(const Box& a, const Box& b) {
+			int aid = *a.handle();
+			int bid = *b.handle();
+
+			if (aid > bid) {
+				std::swap(aid, bid);
+			}
+
+			if (((aid + 1) == bid) || ((aid == 0) && (bid = (segments.size() - 1)))) {
+				// consecutive segments.
+				return;
+			}
+
+			auto s0 = segments[aid];
+			auto s1 = segments[bid];
+			
+			if (CGAL::do_intersect(s0, s1)) {
+				num_self_intersections++;
+			}
+		}
+	};
+
+	bool do_segments_intersect(const std::vector<Kernel_::Segment_3>& segments) {
+		std::vector<Box> boxes;
+		std::vector<int> handles(segments.size());
+		std::iota(handles.begin(), handles.end(), 0);
+		for (auto it = segments.begin(); it != segments.end(); ++it) {
+			boxes.push_back(Box(it->bbox(), &*(handles.begin() + std::distance(segments.begin(), it))));
+		}
+		intersection_collector x{ segments };
+		CGAL::box_self_intersection_d(boxes.begin(), boxes.end(), x);
+		return !!x.num_self_intersections;
+	}
+
+}
+
 bool CgalKernel::convert(const taxonomy::loop* loop, cgal_wire_t& result) {
 	// @todo only implement polygonal loops
 
@@ -456,6 +511,13 @@ bool CgalKernel::convert(const taxonomy::loop* loop, cgal_wire_t& result) {
 	if (original_count - count != 0) {
 		std::stringstream ss; ss << (original_count - count) << " edges removed for:";
 		Logger::Message(Logger::LOG_WARNING, ss.str(), loop->instance);
+	}
+
+	std::vector<Kernel_::Segment_3> segments;
+	loop_to_segments(polygon, segments);
+	if (do_segments_intersect(segments)) {
+		Logger::Message(Logger::LOG_WARNING, "Skipping self-intersecting loop", loop->instance);
+		return false;
 	}
 
 	/*
