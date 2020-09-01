@@ -2500,9 +2500,27 @@ class IfcExporter():
             return self.create_curves_from_curve(curve, is_2d=is_2d)
 
     def create_curves_from_mesh(self, mesh, is_2d=False):
-        return [self.file.createIfcIndexedPolyCurve(
-            self.create_cartesian_point_list_from_vertices(mesh.vertices, is_2d=is_2d),
-            [self.file.createIfcLineIndex(tuple(e.vertices)) for e in mesh.edges])]
+        curves = []
+        points = self.create_cartesian_point_list_from_vertices(mesh.vertices, is_2d=is_2d)
+        edge_loops = []
+        previous_edge = None
+        edge_loop = []
+        for edge in mesh.edges:
+            if ((Vector(points.CoordList[edge.vertices[0]]) - Vector(points.CoordList[edge.vertices[1]])).length < 0.001):
+                # Maybe we should warn the user to weld vertices in this scenario?
+                continue
+            elif previous_edge is None:
+                edge_loop = [self.file.createIfcLineIndex((edge.vertices[0]+1, edge.vertices[1]+1))]
+            elif edge.vertices[0] == previous_edge.vertices[1]:
+                edge_loop.append(self.file.createIfcLineIndex((edge.vertices[0]+1, edge.vertices[1]+1)))
+            else:
+                edge_loops.append(edge_loop)
+                edge_loop = [self.file.createIfcLineIndex((edge.vertices[0]+1, edge.vertices[1]+1))]
+            previous_edge = edge
+        edge_loops.append(edge_loop)
+        for edge_loop in edge_loops:
+            curves.append(self.file.createIfcIndexedPolyCurve(points, edge_loop))
+        return curves
 
     def create_curves_from_curve(self, curve, is_2d=False):
         results = []
