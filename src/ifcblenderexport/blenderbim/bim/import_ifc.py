@@ -288,11 +288,11 @@ class IfcImporter():
         self.time = time.time()
 
     def execute(self):
+        self.profile_code('Starting import process')
         self.load_diff()
         self.profile_code('Load diff')
         self.purge_diff()
         self.profile_code('Purge diffs')
-        self.profile_code('Starting import process')
         self.load_existing_rooted_elements()
         self.profile_code('Load existing rooted elements')
         self.cache_file()

@@ -72,6 +72,7 @@ except ImportError:
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.selector
+import ifcopenshell.util.element
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 this_file = os.path.join(cwd, 'cut_ifc.py')
@@ -203,6 +204,8 @@ class IfcCutter:
         start_time = time.time()
         print('# Get cut polygons')
         self.get_cut_polygons()
+        print('# Get annotation')
+        self.get_annotation()
         print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
         start_time = time.time()
         print('# Get cut polygon metadata')
@@ -679,6 +682,75 @@ class IfcCutter:
             self.pickle_cut_polygons()
         else:
             self.get_pickled_cut_polygons()
+
+    def get_annotation(self):
+        import mathutils
+        self.annotation_objs = []
+        settings_2d = ifcopenshell.geom.settings()
+        settings_2d.set(settings_2d.INCLUDE_CURVES, True)
+        settings_py = ifcopenshell.geom.settings()
+        settings_py.set(settings_py.USE_PYTHON_OPENCASCADE, True)
+        for ifc_file in self.ifc_files.values():
+            for element in ifc_file.by_type('IfcElement'):
+                annotation_representation = None
+                box_representation = None
+                for representation in element.Representation.Representations:
+                    if representation.ContextOfItems.ContextType == 'Plan' \
+                            and representation.ContextOfItems.ContextIdentifier == 'Annotation':
+                        annotation_representation = representation
+                    elif representation.ContextOfItems.ContextType == 'Model' \
+                            and representation.ContextOfItems.ContextIdentifier == 'Box':
+                        box_representation = representation
+                if not annotation_representation or not box_representation:
+                    continue
+
+                # This is bad code. See bug #85 to make it slightly less bad.
+                # Effectively if the bbox does not intersect with the camera
+                # plane, then we should "continue" and not process the 2D
+                # wireframe. This approach works but is not very smart.
+                for subelement in ifc_file.traverse(box_representation):
+                    if subelement.is_a('IfcBoundingBox'):
+                        block = ifc_file.createIfcBlock(
+                            ifc_file.createIfcAxis2Placement3D(subelement.Corner, None, None),
+                            subelement.XDim,
+                            subelement.YDim,
+                            subelement.ZDim
+                        )
+                        for inverse in ifc_file.get_inverse(subelement):
+                            ifcopenshell.util.element.replace_attribute(inverse, subelement, block)
+                element.Representation.Representations = [box_representation]
+                shape = ifcopenshell.geom.create_shape(settings_py, element)
+
+                section = BRepAlgoAPI.BRepAlgoAPI_Section(self.section_box['face'], shape.geometry).Shape()
+                section_edges = get_booleaned_edges(section)
+
+                if len(section_edges) <= 0:
+                    # The bounding box of the annotation object does not
+                    # intersect with the camera plane, so don't bother drawing
+                    # the annotation
+                    continue
+
+                # Monkey patch - see bug #771.
+                element.Representation.Representations = [annotation_representation]
+                shape = ifcopenshell.geom.create_shape(settings_2d, element)
+                if hasattr(shape, 'geometry'):
+                    geometry = shape.geometry
+                else:
+                    geometry = shape
+                e = geometry.edges
+                v = geometry.verts
+                m = shape.transformation.matrix.data
+                mat = mathutils.Matrix(([m[0], m[1], m[2], 0],
+                                        [m[3], m[4], m[5], 0],
+                                        [m[6], m[7], m[8], 0],
+                                        [m[9], m[10], m[11], 1]))
+                mat.transpose()
+                self.annotation_objs.append({
+                    'raw': element,
+                    'classes': self.get_classes(element, 'annotation'),
+                    'edges': [[e[i], e[i + 1]] for i in range(0, len(e), 2)],
+                    'vertices': [mat @ mathutils.Vector((v[i], v[i + 1], v[i + 2])) for i in range(0, len(v), 3)]
+                })
 
     def get_cut_polygon_metadata(self):
         if not self.should_extract:
