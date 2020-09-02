@@ -2152,7 +2152,16 @@ class CutSection(bpy.types.Operator):
         ifc_cutter.section_level_obj = None
         ifc_cutter.grid_objs = []
         ifc_cutter.text_objs = []
+        ifc_cutter.misc_objs = []
         for obj in camera.users_collection[0].objects:
+            if 'IfcGrid' in obj.name:
+                ifc_cutter.grid_objs.append(obj)
+            elif 'IfcGroup' in obj.name and obj.type == 'CAMERA':
+                ifc_cutter.camera_obj = obj
+
+            if 'IfcAnnotation/' not in obj.name:
+                continue
+
             if 'Leader' in obj.name:
                 ifc_cutter.leader_obj = (obj, obj.data)
             elif 'Stair' in obj.name:
@@ -2167,16 +2176,14 @@ class CutSection(bpy.types.Operator):
                 ifc_cutter.hidden_objs.append((obj, obj.data))
             elif 'Solid' in obj.name:
                 ifc_cutter.solid_objs.append((obj, obj.data))
-            elif 'IfcGrid' in obj.name:
-                ifc_cutter.grid_objs.append(obj)
             elif 'Plan Level' in obj.name:
                 ifc_cutter.plan_level_obj = obj
             elif 'Section Level' in obj.name:
                 ifc_cutter.section_level_obj = obj
-            elif obj.type == 'CAMERA':
-                ifc_cutter.camera_obj = obj
             elif obj.type == 'FONT':
                 ifc_cutter.text_objs.append(obj)
+            else:
+                ifc_cutter.misc_objs.append(obj)
 
         ifc_cutter.section_box = {
             'projection': tuple(projection),
