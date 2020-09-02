@@ -2134,7 +2134,8 @@ class CutSection(bpy.types.Operator):
         import ifccsv
         ifc_cutter.ifc_filenames = [i.name for i in bpy.context.scene.DocProperties.ifc_files]
         ifc_cutter.data_dir = bpy.context.scene.BIMProperties.data_dir
-        ifc_cutter.vector_style = bpy.context.scene.DocProperties.drawing_styles[camera.data.BIMCameraProperties.active_drawing_style_index].vector_style
+        drawing_style = bpy.context.scene.DocProperties.drawing_styles[camera.data.BIMCameraProperties.active_drawing_style_index]
+        ifc_cutter.vector_style = drawing_style.vector_style
         ifc_cutter.diagram_name = self.diagram_name
         ifc_cutter.background_image = bpy.context.scene.render.filepath
         if camera.data.BIMCameraProperties.cut_objects == 'CUSTOM':
@@ -2153,6 +2154,7 @@ class CutSection(bpy.types.Operator):
         ifc_cutter.grid_objs = []
         ifc_cutter.text_objs = []
         ifc_cutter.misc_objs = []
+        ifc_cutter.attributes = [a.name for a in drawing_style.attributes]
         for obj in camera.users_collection[0].objects:
             if 'IfcGrid' in obj.name:
                 ifc_cutter.grid_objs.append(obj)
@@ -3867,4 +3869,25 @@ class GetNorthOffset(bpy.types.Operator):
         x_angle = -context.scene.sun_pos_properties.north_offset
         bpy.context.scene.MapConversion.x_axis_abscissa = str(cos(x_angle))
         bpy.context.scene.MapConversion.x_axis_ordinate = str(sin(x_angle))
+        return {'FINISHED'}
+
+
+class AddDrawingStyleAttribute(bpy.types.Operator):
+    bl_idname = 'bim.add_drawing_style_attribute'
+    bl_label = 'Add Drawing Style Attribute'
+
+    def execute(self, context):
+        props = bpy.context.scene.camera.data.BIMCameraProperties
+        context.scene.DocProperties.drawing_styles[props.active_drawing_style_index].attributes.add()
+        return {'FINISHED'}
+
+
+class RemoveDrawingStyleAttribute(bpy.types.Operator):
+    bl_idname = 'bim.remove_drawing_style_attribute'
+    bl_label = 'Remove Drawing Style Attribute'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = bpy.context.scene.camera.data.BIMCameraProperties
+        context.scene.DocProperties.drawing_styles[props.active_drawing_style_index].attributes.remove(self.index)
         return {'FINISHED'}

@@ -521,6 +521,7 @@ class DrawingStyle(PropertyGroup):
     vector_style: EnumProperty(items=getVectorStyles, name='Vector Style')
     include_query: StringProperty(name='Include Query')
     exclude_query: StringProperty(name='Exclude Query')
+    attributes: CollectionProperty(name='Attributes', type=StrProperty)
 
 
 class DocProperties(PropertyGroup):

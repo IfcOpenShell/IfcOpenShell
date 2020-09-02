@@ -1,4 +1,5 @@
 import os
+import re
 import bpy
 import math
 import pystache
@@ -286,6 +287,44 @@ class SvgWriter():
                 for p in projected_points])
             d = 'M{}'.format(d[1:])
             path = self.svg.add(self.svg.path(d=d, class_=' '.join(classes)))
+
+    def get_attribute_classes(self, obj):
+        classes = []
+        for attribute in self.ifc_cutter.attributes:
+            result = self.get_obj_value(obj, attribute)
+            if result:
+                classes.append('{}-{}'.format(
+                    re.sub('[^0-9a-zA-Z]+', '', attribute),
+                    re.sub('[^0-9a-zA-Z]+', '', result)
+                ))
+        return classes
+
+    def get_obj_value(self, obj, key):
+        # This is a duplicate implementation of the IFC selector key in Blender
+        # In the future if all this becomes purely IFC based this can be deleted
+        if '.' in key \
+                and key.split('.')[0] == 'type':
+            try:
+                obj = obj.BIMObjectProperties.relating_type
+            except:
+                return
+            key = '.'.join(key.split('.')[1:])
+        result = obj.BIMObjectProperties.attributes.get(key)
+        if result:
+            return result.string_value
+        elif key == 'Name':
+            return obj.name.split('/')[1]
+        elif '.' in key:
+            pset_name, prop = key.split('.')
+            pset = obj.BIMObjectProperties.psets.get(pset_name)
+            if not pset:
+                pset = obj.BIMObjectProperties.qtos.get(pset_name)
+            if not pset:
+                return
+            result = pset.properties.get(prop)
+            if result:
+                return result.string_value
+
     def draw_line_annotation(self, obj_data, classes):
         # TODO: properly scope these offsets
         x_offset = self.raw_width / 2
@@ -306,16 +345,22 @@ class SvgWriter():
                 d = 'M{}'.format(d[1:])
                 path = self.svg.add(self.svg.path(d=d, class_=' '.join(classes)))
         elif isinstance(data, bpy.types.Mesh):
-            for edge in data.edges:
-                v0_global = matrix_world @ data.vertices[edge.vertices[0]].co.xyz
-                v1_global = matrix_world @ data.vertices[edge.vertices[1]].co.xyz
-                v0 = self.project_point_onto_camera(v0_global)
-                v1 = self.project_point_onto_camera(v1_global)
-                start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
-                end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
-                vector = end - start
-                line = self.svg.add(self.svg.line(start=tuple(start * self.scale),
-                    end=tuple(end * self.scale), class_=' '.join(classes)))
+            self.draw_edge_annotation(obj, classes)
+
+    def draw_edge_annotation(self, obj, classes):
+        x_offset = self.raw_width / 2
+        y_offset = self.raw_height / 2
+        matrix_world = obj.matrix_world
+        for edge in obj.data.edges:
+            v0_global = matrix_world @ obj.data.vertices[edge.vertices[0]].co.xyz
+            v1_global = matrix_world @ obj.data.vertices[edge.vertices[1]].co.xyz
+            v0 = self.project_point_onto_camera(v0_global)
+            v1 = self.project_point_onto_camera(v1_global)
+            start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
+            end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
+            vector = end - start
+            line = self.svg.add(self.svg.line(start=tuple(start * self.scale),
+                end=tuple(end * self.scale), class_=' '.join(classes)))
 
     def draw_text_annotations(self):
         x_offset = self.raw_width / 2

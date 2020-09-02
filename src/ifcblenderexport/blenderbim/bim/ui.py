@@ -918,6 +918,14 @@ class BIM_PT_camera(Panel):
                 row = layout.row(align=True)
                 row.prop(drawing_style, 'exclude_query')
 
+                row = layout.row()
+                row.operator('bim.add_drawing_style_attribute')
+
+                for index, attribute in enumerate(drawing_style.attributes):
+                    row = layout.row(align=True)
+                    row.prop(attribute, 'name', text='')
+                    row.operator('bim.remove_drawing_style_attribute', icon='X', text='').index = index
+
                 row = layout.row(align=True)
                 row.operator('bim.save_drawing_style')
                 row.operator('bim.activate_drawing_style')

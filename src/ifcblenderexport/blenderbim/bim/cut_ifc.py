@@ -1,4 +1,5 @@
 import os
+import re
 import math
 import time
 import numpy
@@ -807,8 +808,17 @@ class IfcCutter:
         classes = [position, element.is_a()]
         for association in element.HasAssociations:
             if association.is_a('IfcRelAssociatesMaterial'):
-                classes.append('material-{}'.format(self.get_material_name(association.RelatingMaterial)))
+                classes.append('material-{}'.format(
+                    re.sub('[^0-9a-zA-Z]+', '', self.get_material_name(association.RelatingMaterial))
+                ))
         classes.append('globalid-{}'.format(element.GlobalId))
+        for attribute in self.attributes:
+            result = self.selector.get_element_value(element, attribute)
+            if result:
+                classes.append('{}-{}'.format(
+                    re.sub('[^0-9a-zA-Z]+', '', attribute),
+                    re.sub('[^0-9a-zA-Z]+', '', result)
+                ))
         return classes
 
     def get_material_name(self, element):
