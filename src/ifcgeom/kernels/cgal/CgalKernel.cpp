@@ -419,9 +419,14 @@ namespace {
 	}
 
 	struct intersection_collector {
+
 		const std::vector<Kernel_::Segment_3>& segments;
 		int num_self_intersections = 0;
 
+		explicit intersection_collector(const std::vector<Kernel_::Segment_3>& s)
+			: segments(s)
+		{}
+		
 		void operator()(const Box& a, const Box& b) {
 			int aid = *a.handle();
 			int bid = *b.handle();
@@ -451,7 +456,7 @@ namespace {
 		for (auto it = segments.begin(); it != segments.end(); ++it) {
 			boxes.push_back(Box(it->bbox(), &*(handles.begin() + std::distance(segments.begin(), it))));
 		}
-		intersection_collector x{ segments };
+		intersection_collector x(segments);
 		CGAL::box_self_intersection_d(boxes.begin(), boxes.end(), x);
 		return !!x.num_self_intersections;
 	}
