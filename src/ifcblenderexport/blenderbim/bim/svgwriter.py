@@ -159,6 +159,9 @@ class SvgWriter():
 
         self.draw_ifc_annotation()
 
+        for obj in self.ifc_cutter.misc_objs:
+            self.draw_misc_annotation(obj, ['IfcAnnotation'])
+
         for obj_data in self.ifc_cutter.hidden_objs:
             self.draw_line_annotation(obj_data, ['hidden'])
 
@@ -264,6 +267,25 @@ class SvgWriter():
                 line = self.svg.add(self.svg.line(start=tuple(start * self.scale),
                     end=tuple(end * self.scale), class_=' '.join(annotation['classes'])))
 
+    def draw_misc_annotation(self, obj, classes):
+        # We have to decide whether this should come from Blender or from IFC.
+        # For the moment, for convenience of experimenting with ideas, it comes
+        # from Blender. In the future, it should probably come from IFC.
+        classes.extend(self.get_attribute_classes(obj))
+        if len(obj.data.polygons) == 0:
+            self.draw_edge_annotation(obj, classes)
+            return
+        x_offset = self.raw_width / 2
+        y_offset = self.raw_height / 2
+        matrix_world = obj.matrix_world
+        for polygon in obj.data.polygons:
+            points = [obj.data.vertices[v] for v in polygon.vertices]
+            projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
+            d = ' '.join(['L {} {}'.format(
+                (x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
+                for p in projected_points])
+            d = 'M{}'.format(d[1:])
+            path = self.svg.add(self.svg.path(d=d, class_=' '.join(classes)))
     def draw_line_annotation(self, obj_data, classes):
         # TODO: properly scope these offsets
         x_offset = self.raw_width / 2
