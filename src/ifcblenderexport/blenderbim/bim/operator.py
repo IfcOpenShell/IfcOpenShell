@@ -56,6 +56,10 @@ def set_active_camera_resolution(scene):
             or scene.render.resolution_y != scene.camera.data.BIMCameraProperties.raster_y:
         scene.render.resolution_x = scene.camera.data.BIMCameraProperties.raster_x
         scene.render.resolution_y = scene.camera.data.BIMCameraProperties.raster_y
+    active_drawing = scene.DocProperties.drawings[scene.DocProperties.active_drawing_index]
+    if active_drawing.camera != scene.camera:
+        scene.DocProperties.active_drawing_index = scene.DocProperties.drawings.find(scene.camera.name.split('/')[1])
+        bpy.ops.bim.activate_view()
 
 
 class ExportIFC(bpy.types.Operator):
@@ -2321,6 +2325,7 @@ class ActivateView(bpy.types.Operator):
             bpy.data.collections.get(collection.name).hide_render = True
         bpy.context.view_layer.layer_collection.children['Views'].children[camera.users_collection[0].name].hide_viewport = False
         bpy.data.collections.get(camera.users_collection[0].name).hide_render = False
+        bpy.ops.bim.activate_drawing_style()
         return {'FINISHED'}
 
 
