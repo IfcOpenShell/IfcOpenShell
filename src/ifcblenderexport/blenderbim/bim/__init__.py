@@ -196,6 +196,8 @@ if bpy is not None:
         operator.SetViewportShadowFromSun,
         operator.SetNorthOffset,
         operator.GetNorthOffset,
+        operator.AddDrawingStyleAttribute,
+        operator.RemoveDrawingStyleAttribute,
         prop.StrProperty,
         prop.Variable,
         prop.Role,
