@@ -169,21 +169,25 @@ class SvgWriter():
             self.draw_line_annotation(self.ifc_cutter.leader_obj, ['leader'])
 
         if self.ifc_cutter.plan_level_obj:
+            matrix_world = self.ifc_cutter.plan_level_obj.matrix_world
             for spline in self.ifc_cutter.plan_level_obj.data.splines:
                 classes = ['annotation', 'plan-level']
                 points = self.get_spline_points(spline)
-                d = ' '.join(['L {} {}'.format((x_offset + p.co.x) * self.scale, (y_offset - p.co.y) * self.scale) for p in points])
+                projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
+                d = ' '.join(['L {} {}'.format(
+                    (x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
+                    for p in projected_points])
                 d = 'M{}'.format(d[1:])
                 path = self.svg.add(self.svg.path(d=d, class_=' '.join(classes)))
                 path['marker-end'] = 'url(#plan-level-marker)'
                 text_position = Vector((
-                    (x_offset + points[0].co.x) * self.scale,
-                    ((y_offset - points[0].co.y) * self.scale) - 2.5
+                    (x_offset + projected_points[0].x) * self.scale,
+                    ((y_offset - projected_points[0].y) * self.scale) - 2.5
                 ))
                 # TODO: unhardcode m unit
-                rl = ((self.ifc_cutter.plan_level_obj.matrix_world @
+                rl = ((matrix_world @
                     points[0].co).xyz + self.ifc_cutter.plan_level_obj.location).z
-                if points[0].co.x > points[-1].co.x:
+                if projected_points[0].x > projected_points[-1].x:
                     text_anchor = 'end'
                 else:
                     text_anchor = 'start'
@@ -243,7 +247,6 @@ class SvgWriter():
                     'alignment-baseline': 'middle',
                     'dominant-baseline': 'middle'
                 }))
-
         self.draw_text_annotations()
 
     def draw_ifc_annotation(self):
