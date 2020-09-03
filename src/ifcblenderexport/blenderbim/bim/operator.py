@@ -50,16 +50,17 @@ def depsgraph_update_pre_handler(scene):
 
 def set_active_camera_resolution(scene):
     if not scene.camera \
-            or '/' not in scene.camera.name:
+            or '/' not in scene.camera.name \
+            or not scene.DocProperties.drawings:
         return
     if scene.render.resolution_x != scene.camera.data.BIMCameraProperties.raster_x \
             or scene.render.resolution_y != scene.camera.data.BIMCameraProperties.raster_y:
         scene.render.resolution_x = scene.camera.data.BIMCameraProperties.raster_x
         scene.render.resolution_y = scene.camera.data.BIMCameraProperties.raster_y
-    active_drawing = scene.DocProperties.drawings[scene.DocProperties.active_drawing_index]
-    if active_drawing.camera != scene.camera:
-        scene.DocProperties.active_drawing_index = scene.DocProperties.drawings.find(scene.camera.name.split('/')[1])
-        bpy.ops.bim.activate_view()
+    current_drawing = scene.DocProperties.drawings[scene.DocProperties.current_drawing_index]
+    if scene.camera != current_drawing.camera:
+        scene.DocProperties.current_drawing_index = scene.DocProperties.drawings.find(scene.camera.name.split('/')[1])
+        bpy.ops.bim.activate_view(drawing_index=scene.DocProperties.current_drawing_index)
 
 
 class ExportIFC(bpy.types.Operator):
@@ -2324,9 +2325,10 @@ class CreateSheets(bpy.types.Operator):
 class ActivateView(bpy.types.Operator):
     bl_idname = 'bim.activate_view'
     bl_label = 'Activate View'
+    drawing_index: bpy.props.IntProperty()
 
     def execute(self, context):
-        camera = bpy.context.scene.DocProperties.drawings[bpy.context.scene.DocProperties.active_drawing_index].camera
+        camera = bpy.context.scene.DocProperties.drawings[self.drawing_index].camera
         if not camera:
             return {'FINISHED'}
         bpy.context.scene.camera = camera
@@ -3669,7 +3671,7 @@ class ActivateDrawingStyle(bpy.types.Operator):
     bl_label = 'Activate Drawing Style'
 
     def execute(self, context):
-        self.drawing_style = bpy.context.scene.DocProperties.drawing_styles[bpy.context.active_object.data.BIMCameraProperties.active_drawing_style_index]
+        self.drawing_style = bpy.context.scene.DocProperties.drawing_styles[context.scene.camera.data.BIMCameraProperties.active_drawing_style_index]
         self.set_raster_style()
         self.set_query()
         return {'FINISHED'}
