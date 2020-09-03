@@ -740,7 +740,8 @@ class BIM_PT_drawings(Panel):
         if props.drawings:
             op = row.operator('bim.open_view', icon='URL', text='')
             op.view = props.drawings[props.active_drawing_index].name
-            row.operator('bim.activate_view', icon='SCENE', text='')
+            op = row.operator('bim.activate_view', icon='SCENE', text='')
+            op.drawing_index = props.active_drawing_index
             row.operator('bim.remove_drawing', icon='X', text='').index = props.active_drawing_index
 
             layout.template_list('BIM_UL_generic', '', props, 'drawings', props, 'active_drawing_index')

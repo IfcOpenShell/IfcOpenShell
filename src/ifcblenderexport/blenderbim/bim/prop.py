@@ -537,6 +537,7 @@ class DocProperties(PropertyGroup):
     should_extract: BoolProperty(name="Should Extract", default=True)
     drawings: CollectionProperty(name='Drawings', type=Drawing)
     active_drawing_index: IntProperty(name='Active Drawing Index')
+    current_drawing_index: IntProperty(name='Current Drawing Index')
     schedules: CollectionProperty(name='Schedules', type=Schedule)
     active_schedule_index: IntProperty(name='Active Schedule Index')
     titleblock: EnumProperty(items=getTitleblocks, name="Titleblock", update=refreshTitleblocks)
