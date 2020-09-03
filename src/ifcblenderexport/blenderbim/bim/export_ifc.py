@@ -1642,7 +1642,8 @@ class IfcExporter():
         for name, data in templates.items():
             if name not in pset['raw']:
                 continue
-            if data.TemplateType == 'P_SINGLEVALUE':
+            if data.TemplateType == 'P_SINGLEVALUE' \
+                    or data.TemplateType == 'P_ENUMERATEDVALUE':
                 if data.PrimaryMeasureType:
                     value_type = data.PrimaryMeasureType
                 else:
