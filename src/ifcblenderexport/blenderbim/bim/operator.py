@@ -2116,7 +2116,11 @@ class CutSection(bpy.types.Operator):
         if bpy.context.scene.DocProperties.should_render == 'DEFAULT':
             bpy.ops.render.render(write_still=True)
         elif bpy.context.scene.DocProperties.should_render == 'VIEWPORT':
+            for obj in camera.users_collection[0].objects:
+                obj.hide_set(True)
             bpy.ops.render.opengl(write_still=True)
+            for obj in camera.users_collection[0].objects:
+                obj.hide_set(False)
         location = camera.location
         render = bpy.context.scene.render
         if self.is_landscape():
