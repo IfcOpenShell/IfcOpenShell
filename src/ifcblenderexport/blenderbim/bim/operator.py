@@ -2571,6 +2571,46 @@ class BIM_OT_CopyAttributesToSelection(bpy.types.Operator):
                     except: pass
 
 
+class CopyPropertyToSelection(bpy.types.Operator):
+    bl_idname = 'bim.copy_property_to_selection'
+    bl_label = 'Copy Property To Selection'
+    pset_name: bpy.props.StringProperty()
+    prop_name: bpy.props.StringProperty()
+    prop_value: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.applicable_psets_cache = {}
+        self.empty = ifcopenshell.file()
+        for obj in bpy.context.selected_objects:
+            if '/' not in obj.name:
+                continue
+            pset = obj.BIMObjectProperties.psets.get(self.pset_name)
+            if not pset:
+                applicable_psets = self.get_applicable_psets(obj.name.split('/')[0])
+                if self.pset_name not in applicable_psets:
+                    continue
+                pset = obj.BIMObjectProperties.psets.add()
+                pset.name = self.pset_name
+                for template_prop_name in schema.ifc.psets[self.pset_name]['HasPropertyTemplates'].keys():
+                    prop = pset.properties.add()
+                    prop.name = template_prop_name
+            prop = pset.properties.get(self.prop_name)
+            if prop:
+                prop.string_value = self.prop_value
+        return {'FINISHED'}
+
+    # TODO: move into util module. See bug #971
+    def get_applicable_psets(self, element_class):
+        if element_class not in self.applicable_psets_cache:
+            element = self.empty.create_entity(element_class)
+            applicable_psets = []
+            for ifc_class, pset_names in schema.ifc.applicable_psets.items():
+                if element.is_a(ifc_class):
+                    applicable_psets.extend(pset_names)
+            self.applicable_psets_cache[element_class] = applicable_psets
+        return self.applicable_psets_cache[element_class]
+
+
 class BIM_OT_ChangeClassificationLevel(bpy.types.Operator):
     bl_idname = "bim.change_classification_level"
     bl_label = "Change Classification Level"

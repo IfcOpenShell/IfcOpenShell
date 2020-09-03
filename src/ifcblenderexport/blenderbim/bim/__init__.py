@@ -198,6 +198,7 @@ if bpy is not None:
         operator.GetNorthOffset,
         operator.AddDrawingStyleAttribute,
         operator.RemoveDrawingStyleAttribute,
+        operator.CopyPropertyToSelection,
         prop.StrProperty,
         prop.Variable,
         prop.Role,
