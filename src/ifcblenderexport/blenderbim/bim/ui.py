@@ -101,10 +101,10 @@ class BIM_PT_object_psets(Panel):
                 row = layout.row(align=True)
                 row.prop(prop, 'name', text='')
                 row.prop(prop, 'string_value', text='')
-                op = row.operator('bim.copy_attributes_to_selection', icon='COPYDOWN', text='')
-                op.prop_base = 'BIMObjectProperties.psets[\'{}\'].properties'.format(pset.name)
+                op = row.operator('bim.copy_property_to_selection', icon='COPYDOWN', text='')
+                op.pset_name = pset.name
                 op.prop_name = prop.name
-                op.collection_element = True
+                op.prop_value = prop.string_value
 
 class BIM_PT_object_qto(Panel):
     bl_label = 'IFC Object Quantity Sets'

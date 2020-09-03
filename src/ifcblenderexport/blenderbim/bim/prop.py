@@ -372,6 +372,7 @@ def refreshReferences(self, context):
     context.scene.BIMProperties.classification_references.root = ''
 
 
+# TODO: move into util module. See bug #971
 def getPsetNames(self, context):
     global psetnames_enum
     psetnames_enum.clear()
@@ -385,6 +386,7 @@ def getPsetNames(self, context):
     return psetnames_enum
 
 
+# TODO: move into util module. See bug #971
 def getQtoNames(self, context):
     global qtonames_enum
     qtonames_enum.clear()
