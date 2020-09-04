@@ -43,6 +43,9 @@ class SheetBuilder:
         sheet_path = os.path.join(self.data_dir, 'sheets', sheet_name + '.svg')
         view_path = os.path.join(self.data_dir, 'diagrams', view_name + '.svg')
 
+        if not os.path.isfile(view_path):
+            raise FileNotFoundError
+
         ET.register_namespace('', 'http://www.w3.org/2000/svg')
         ET.register_namespace('xlink', 'http://www.w3.org/1999/xlink')
 
