@@ -2271,9 +2271,12 @@ class AddDrawingToSheet(bpy.types.Operator):
         props = bpy.context.scene.DocProperties
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
-        sheet_builder.add_drawing(
-            props.drawings[props.active_drawing_index].name,
-            props.sheets[props.active_sheet_index].name)
+        try:
+            sheet_builder.add_drawing(
+                props.drawings[props.active_drawing_index].name,
+                props.sheets[props.active_sheet_index].name)
+        except:
+            self.report({'ERROR'}, 'Drawings need to be created before being added to a sheet')
         return {'FINISHED'}
 
 
