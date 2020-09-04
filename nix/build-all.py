@@ -511,15 +511,7 @@ if "json" in targets:
         urlretrieve(json_url, json_install_path)
         
 if "eigen" in targets:
-    eigen_url = "http://bitbucket.org/eigen/eigen/get/3.3.7.tar.gz"
-    eigen_build_path = "{DEPS_DIR}/build/Eigen-3.3.7.tar.gz".format(**locals())
-    eigen_install_path = "{DEPS_DIR}/install/Eigen-3.3.7/Eigen".format(**locals())
-    if not os.path.exists(eigen_build_path):
-        urlretrieve(eigen_url, eigen_build_path)
-    if not os.path.exists(eigen_install_path):
-        if not os.path.exists(os.path.dirname(eigen_install_path)):
-            os.makedirs(os.path.dirname(eigen_install_path))
-        run([tar, "-xf", eigen_build_path, "--strip-components", "1", "-C", os.path.dirname(eigen_install_path), "eigen-eigen-323c052e1731/Eigen"])
+    git_clone_or_pull_repository("https://gitlab.com/libeigen/eigen.git", "{DEPS_DIR}/install/eigen-3.3.7".format(**locals()), revision="3.3.7")
 
 if "pcre" in targets:
     build_dependency(
