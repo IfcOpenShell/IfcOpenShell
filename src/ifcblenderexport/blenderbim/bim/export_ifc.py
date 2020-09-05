@@ -463,6 +463,8 @@ class IfcParser():
             relationships.setdefault(item_key, []).append(product)
 
     def add_automatic_qtos(self, ifc_class, obj):
+        if not obj.data:
+            return
         qto_names = self.get_applicable_qtos(ifc_class)
         for name in qto_names:
             if name not in schema.ifc.qtos:
@@ -948,6 +950,7 @@ class IfcParser():
             }
             self.append_product_attributes(element, obj)
             self.get_product_psets_qtos(element, obj, is_pset=True)
+            self.get_product_psets_qtos(element, obj, is_qto=True)
             elements.append(element)
         return elements
 
