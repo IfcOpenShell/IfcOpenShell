@@ -1,22 +1,37 @@
 import bpy
 from bpy.types import Operator
-from bpy.props import FloatVectorProperty, FloatProperty
+from bpy.props import FloatVectorProperty, FloatProperty, BoolProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from mathutils import Vector
 
 def add_object(self, context):
-    verts = [
-        Vector((0, 0, 0)),
-        Vector((0, 0, self.height)),
-        Vector((self.length, 0, self.height)),
-        Vector((self.length, 0, 0)),
-    ]
-    edges = []
-    faces = [[0, 1, 2, 3]]
+    if self.use_plane:
+        verts = [
+            Vector((0, 0, 0)),
+            Vector((0, 0, self.height)),
+            Vector((self.length, 0, self.height)),
+            Vector((self.length, 0, 0)),
+        ]
+        edges = []
+        faces = [[0, 1, 2, 3]]
+    else:
+        verts = [
+            Vector((0, 0, 0)),
+            Vector((self.length, 0, 0)),
+        ]
+        edges = [[0, 1]]
+        faces = []
 
     mesh = bpy.data.meshes.new(name="Dumb Wall")
     mesh.from_pydata(verts, edges, faces)
     obj = object_data_add(context, mesh, operator=self)
+    if not self.use_plane:
+        modifier = obj.modifiers.new('Wall Height', 'SCREW')
+        modifier.angle = 0
+        modifier.screw_offset = self.height
+        modifier.use_smooth_shade = False
+        modifier.use_normal_calculate = True
+        modifier.use_normal_flip = True
     modifier = obj.modifiers.new('Wall Width', 'SOLIDIFY')
     modifier.use_even_offset = True
     modifier.thickness = self.width
@@ -34,6 +49,7 @@ class BIM_OT_add_object(Operator, AddObjectHelper):
     height: FloatProperty(name='Height', default=3)
     length: FloatProperty(name='Length', default=1)
     width: FloatProperty(name='Width', default=.2)
+    use_plane: BoolProperty(name='Use Plane', default=False)
 
     def execute(self, context):
         add_object(self, context)
