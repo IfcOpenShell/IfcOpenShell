@@ -186,52 +186,38 @@ class IfcCutter:
         }
 
     def cut(self):
-        start_time = time.time()
-        print('# Load files')
+        self.profile_code('Starting cut process')
         self.load_ifc_files()
-        print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
-        start_time = time.time()
-        print('# Extract template variables')
+        self.profile_code('Load IFC files')
         self.get_template_variables()
-        print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
-        start_time = time.time()
-        print('# Get product shapes')
+        self.profile_code('Get template variables')
         self.get_product_shapes()
-        print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
-        start_time = time.time()
-        print('# Create section box')
+        self.profile_code('Get product shapes')
         self.create_section_box()
-        print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
-        start_time = time.time()
-        print('# Get cut polygons')
+        self.profile_code('Create section box')
         self.get_cut_polygons()
-        print('# Get annotation')
+        self.profile_code('Get cut polygons')
         self.get_annotation()
-        print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
-        start_time = time.time()
-        print('# Get cut polygon metadata')
+        self.profile_code('Get annotation')
         self.get_cut_polygon_metadata()
-        print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
+        self.profile_code('Get cut polygon metadata')
 
+        # should_get_background is False in production as this is experimental
         if not self.should_get_background:
             return
 
-        start_time = time.time()
-        print('# Get background elements')
         self.get_background_elements()
-        print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
-        start_time = time.time()
-        print('# Sort background elements')
         self.sort_background_elements(reverse=True)
-        print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
-        start_time = time.time()
-        print('# Merge background_elements')
         self.merge_background_elements()
-        print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
-        start_time = time.time()
-        print('# Sort background elements')
         self.sort_background_elements()
-        print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
+
+    def profile_code(self, message):
+        if not self.ifc_import_settings.should_import_with_profiling:
+            return
+        if not self.time:
+            self.time = time.time()
+        print('{} :: {:.2f}'.format(message, time.time() - self.time))
+        self.time = time.time()
 
     def load_ifc_files(self):
         if not self.should_recut and not self.should_extract:
@@ -300,7 +286,7 @@ class IfcCutter:
 
             products.extend(self.selector.parse(ifc_file, self.cut_objects))
 
-            include_elements = []
+            selected_elements = []
             for i, product in enumerate(products):
                 if product.is_a('IfcOpeningElement') \
                         or product.is_a('IfcSite') \
@@ -310,20 +296,20 @@ class IfcCutter:
                 try:
                     if self.should_recut_selected \
                             and product.GlobalId in self.selected_global_ids:
-                        include_elements.append(product)
+                        selected_elements.append(product)
                     elif product.GlobalId in shape_map:
                         shape = shape_map[product.GlobalId]
-                        self.product_shapes.append((product, shape))
+                        self.add_product_shape(product, shape)
                     else:
-                        include_elements.append(product)
+                        selected_elements.append(product)
                 except:
                     print('Failed to create shape for {}'.format(product))
 
-            if include_elements:
+            if selected_elements:
                 total = 0
                 checkpoint = time.time()
                 iterator = ifcopenshell.geom.iterator(
-                    settings, ifc_file, multiprocessing.cpu_count(), include=include_elements)
+                    settings, ifc_file, multiprocessing.cpu_count(), include=selected_elements)
                 valid_file = iterator.initialize()
                 if valid_file:
                     while True:
@@ -333,12 +319,15 @@ class IfcCutter:
                             checkpoint = time.time()
                         shape = iterator.get()
                         shape_map[shape.data.guid] = shape.geometry
-                        self.product_shapes.append((ifc_file.by_guid(shape.data.guid), shape.geometry))
+                        self.add_product_shape(ifc_file.by_guid(shape.data.guid), shape.geometry)
                         if not iterator.next():
                             break
 
             with open(shape_pickle, 'wb') as shape_file:
                 pickle.dump(shape_map, shape_file, protocol=pickle.HIGHEST_PROTOCOL)
+
+    def add_product_shape(self, product, shape):
+        self.product_shapes.append((product, shape))
 
     def has_annotation(self, element):
         for representation in element.Representation.Representations:

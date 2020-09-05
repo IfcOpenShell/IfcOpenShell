@@ -44,7 +44,7 @@ def get_properties(properties):
     results = {}
     for prop in properties:
         if prop.is_a('IfcPropertySingleValue'):
-            results[prop.Name] = prop.NominalValue
+            results[prop.Name] = prop.NominalValue.wrappedValue
         elif prop.is_a('IfcComplexProperty'):
             data = prop.get_info()
             data['properties'] = get_properties(prop.HasProperties)
