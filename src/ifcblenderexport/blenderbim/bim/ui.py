@@ -2006,6 +2006,27 @@ class BIM_PT_misc_utilities(Panel):
         row.operator("bim.set_viewport_shadow_from_sun")
 
 
+class BIM_PT_debug(Panel):
+    bl_label = "IFC Debug"
+    bl_idname = "BIM_PT_debug"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+
+        scene = context.scene
+        bim_props = scene.BIMProperties
+        debug_props = scene.BIMDebugProperties
+
+        row = layout.row()
+        row.prop(debug_props, 'step_id', text='')
+        row = layout.row()
+        row.operator('bim.create_shape_from_step_id')
+
+
 def ifc_units(self, context):
     scene = context.scene
     props = context.scene.BIMProperties

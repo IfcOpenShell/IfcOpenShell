@@ -1351,6 +1351,10 @@ class BIMObjectProperties(PropertyGroup):
     representation_contexts: CollectionProperty(name="Representation Contexts", type=Subcontext)
 
 
+class BIMDebugProperties(PropertyGroup):
+    step_id: IntProperty(name="STEP ID")
+
+
 class BIMMaterialProperties(PropertyGroup):
     is_external: BoolProperty(name="Has External Definition")
     location: StringProperty(name="Location")
