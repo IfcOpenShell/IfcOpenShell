@@ -3940,3 +3940,23 @@ class RemoveDrawingStyleAttribute(bpy.types.Operator):
         props = bpy.context.scene.camera.data.BIMCameraProperties
         context.scene.DocProperties.drawing_styles[props.active_drawing_style_index].attributes.remove(self.index)
         return {'FINISHED'}
+
+
+class CreateShapeFromStepId(bpy.types.Operator):
+    bl_idname = 'bim.create_shape_from_step_id'
+    bl_label = 'Create Shape From STEP ID'
+
+    def execute(self, context):
+        logger = logging.getLogger('ImportIFC')
+        self.ifc_import_settings = import_ifc.IfcImportSettings.factory(bpy.context, ifc.IfcStore.path, logger)
+        self.file = ifc.IfcStore.get_file()
+        element = self.file.by_id(int(bpy.context.scene.BIMDebugProperties.step_id))
+        settings = ifcopenshell.geom.settings()
+        #settings.set(settings.INCLUDE_CURVES, True)
+        shape = ifcopenshell.geom.create_shape(settings, element)
+        ifc_importer = import_ifc.IfcImporter(self.ifc_import_settings)
+        ifc_importer.file = self.file
+        mesh = ifc_importer.create_mesh(element, shape)
+        obj = bpy.data.objects.new('Debug', mesh)
+        bpy.context.scene.collection.objects.link(obj)
+        return {'FINISHED'}
