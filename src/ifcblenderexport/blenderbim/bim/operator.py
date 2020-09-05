@@ -3699,7 +3699,10 @@ class ActivateDrawingStyle(bpy.types.Operator):
         self.include_global_ids = []
         self.exclude_global_ids = []
         for ifc_file in bpy.context.scene.DocProperties.ifc_files:
-            ifc = ifcopenshell.open(ifc_file.name)
+            try:
+                ifc = ifcopenshell.open(ifc_file.name)
+            except:
+                continue
             if self.drawing_style.include_query:
                 results = self.selector.parse(ifc, self.drawing_style.include_query)
                 self.include_global_ids.extend([e.GlobalId for e in results])
