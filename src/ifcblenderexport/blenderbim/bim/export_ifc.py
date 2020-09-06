@@ -86,8 +86,9 @@ class IfcParser():
         if not self.projects:
             self.setup_project()
             self.projects = self.get_projects()
-
         self.project = self.projects[0]
+        if not selected_objects:
+            selected_objects = self.get_all_objects_in_project(self.project['raw'])
         self.units = self.get_units()
         self.unit_scale = self.get_unit_scale()
         self.people = self.get_people()
@@ -860,6 +861,13 @@ class IfcParser():
                     'class': self.get_ifc_class(collection.name),
                     'attributes': self.get_object_attributes(obj)
                 })
+        return results
+
+    def get_all_objects_in_project(self, collection):
+        results = []
+        results.extend(list(collection.objects))
+        for child in collection.children:
+            results.extend(self.get_all_objects_in_project(child))
         return results
 
     def setup_project(self):
