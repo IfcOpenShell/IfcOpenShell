@@ -151,6 +151,7 @@ def do_cut(process_data):
 
 class IfcCutter:
     def __init__(self):
+        self.time = None
         self.selector = ifcopenshell.util.selector.Selector()
         self.product_shapes = []
         self.background_elements = []
@@ -212,8 +213,6 @@ class IfcCutter:
         self.sort_background_elements()
 
     def profile_code(self, message):
-        if not self.ifc_import_settings.should_import_with_profiling:
-            return
         if not self.time:
             self.time = time.time()
         print('{} :: {:.2f}'.format(message, time.time() - self.time))
