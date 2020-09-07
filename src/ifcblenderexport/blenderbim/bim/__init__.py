@@ -200,6 +200,7 @@ if bpy is not None:
         operator.RemoveDrawingStyleAttribute,
         operator.CopyPropertyToSelection,
         operator.CreateShapeFromStepId,
+        operator.SelectHighPolygonMeshes,
         prop.StrProperty,
         prop.Variable,
         prop.Role,

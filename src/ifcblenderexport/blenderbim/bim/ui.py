@@ -2026,6 +2026,12 @@ class BIM_PT_debug(Panel):
         row = layout.row()
         row.operator('bim.create_shape_from_step_id')
 
+        row = layout.row()
+        row.prop(debug_props, 'number_of_polygons', text='')
+        row = layout.row()
+        row.operator('bim.select_high_polygon_meshes')
+
+
 
 def ifc_units(self, context):
     scene = context.scene
