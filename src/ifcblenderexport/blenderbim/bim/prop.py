@@ -1353,6 +1353,7 @@ class BIMObjectProperties(PropertyGroup):
 
 class BIMDebugProperties(PropertyGroup):
     step_id: IntProperty(name="STEP ID")
+    number_of_polygons: IntProperty(name="Number of Polygons")
 
 
 class BIMMaterialProperties(PropertyGroup):

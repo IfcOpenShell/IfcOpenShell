@@ -3963,3 +3963,24 @@ class CreateShapeFromStepId(bpy.types.Operator):
         obj = bpy.data.objects.new('Debug', mesh)
         bpy.context.scene.collection.objects.link(obj)
         return {'FINISHED'}
+
+
+class SelectHighPolygonMeshes(bpy.types.Operator):
+    bl_idname = 'bim.select_high_polygon_meshes'
+    bl_label = 'Select High Polygon Meshes'
+
+    def execute(self, context):
+        results = {}
+        for obj in bpy.data.objects:
+            if not isinstance(obj.data, bpy.types.Mesh) \
+                    or len(obj.data.polygons) < int(bpy.context.scene.BIMDebugProperties.number_of_polygons):
+                continue
+            try:
+                obj.select_set(True)
+            except:
+                # If it is not in the view layer
+                pass
+            relating_type = obj.BIMObjectProperties.relating_type
+            if relating_type:
+                relating_type.select_set(True)
+        return {'FINISHED'}
