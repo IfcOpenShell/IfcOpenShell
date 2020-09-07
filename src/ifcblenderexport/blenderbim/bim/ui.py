@@ -411,7 +411,8 @@ class BIM_PT_representations(Panel):
         row.prop(bpy.context.scene.BIMProperties, 'available_contexts', text='')
         row.prop(bpy.context.scene.BIMProperties, 'available_subcontexts', text='')
         row.prop(bpy.context.scene.BIMProperties, 'available_target_views', text='')
-        row.operator('bim.switch_context', icon='ADD', text='')
+        op = row.operator('bim.switch_context', icon='ADD', text='')
+        op.has_target_context = False
 
         for index, subcontext in enumerate(props.representation_contexts):
             row = layout.row(align=True)
