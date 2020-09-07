@@ -367,9 +367,19 @@ class SvgWriter():
         y_offset = self.raw_height / 2
 
         for text_obj in self.ifc_cutter.text_objs:
-            loc, rot, scale = self.ifc_cutter.camera_obj.matrix_world.decompose()
-            pos = (text_obj.location - self.ifc_cutter.camera_obj.location) @ rot.to_matrix()
-            text_position = Vector(((x_offset + pos.x), (y_offset - pos.y)))
+            text_position = self.project_point_onto_camera(text_obj.location)
+            text_position = Vector(((x_offset + text_position.x), (y_offset - text_position.y)))
+
+            local_x_axis = text_obj.matrix_world.to_quaternion() @ Vector((1, 0, 0))
+            projected_x_axis = self.project_point_onto_camera(text_obj.location + local_x_axis)
+            angle = math.degrees((Vector((x_offset + projected_x_axis.x, y_offset -
+                projected_x_axis.y)) - text_position).angle_signed(Vector((1, 0))))
+
+            transform = 'rotate({}, {}, {})'.format(
+                angle,
+                (text_position * self.scale)[0],
+                (text_position * self.scale)[1],
+            )
 
             if text_obj.data.BIMTextProperties.symbol != 'None':
                 self.svg.add(self.svg.use(
@@ -404,7 +414,8 @@ class SvgWriter():
                         'font-family': 'OpenGost Type B TT',
                         'text-anchor': text_anchor,
                         'alignment-baseline': alignment_baseline,
-                        'dominant-baseline': alignment_baseline
+                        'dominant-baseline': alignment_baseline,
+                        'transform': transform
                     }
                 ))
 
