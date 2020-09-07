@@ -3464,7 +3464,7 @@ class GuessQuantity(bpy.types.Operator):
     def get_prefix_name(self, value):
         if '/' in value:
             return value.split('/')
-        return None, bpy.context.scene.BIMProperties.area_unit
+        return None, value
 
     def get_blender_prefix_name(self):
         if bpy.context.scene.unit_settings.system == 'IMPERIAL':
