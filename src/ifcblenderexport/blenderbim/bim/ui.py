@@ -736,12 +736,13 @@ class BIM_PT_drawings(Panel):
 
         row = layout.row(align=True)
         row.operator('bim.add_drawing')
+        row.operator('bim.refresh_drawing_list', icon='FILE_REFRESH', text='')
 
         if props.drawings:
-            op = row.operator('bim.open_view', icon='URL', text='')
-            op.view = props.drawings[props.active_drawing_index].name
-            row.operator('bim.remove_drawing', icon='X', text='').index = props.active_drawing_index
-
+            if props.active_drawing_index < len(props.drawings):
+                op = row.operator('bim.open_view', icon='URL', text='')
+                op.view = props.drawings[props.active_drawing_index].name
+                row.operator('bim.remove_drawing', icon='X', text='').index = props.active_drawing_index
             layout.template_list('BIM_UL_generic', '', props, 'drawings', props, 'active_drawing_index')
 
         row = layout.row()
@@ -1963,12 +1964,13 @@ class BIM_PT_annotation_utilities(Panel):
 
         row = layout.row(align=True)
         row.operator('bim.add_drawing')
+        row.operator('bim.refresh_drawing_list', icon='FILE_REFRESH', text='')
 
         if props.drawings:
-            op = row.operator('bim.open_view', icon='URL', text='')
-            op.view = props.drawings[props.active_drawing_index].name
-            row.operator('bim.remove_drawing', icon='X', text='').index = props.active_drawing_index
-
+            if props.active_drawing_index < len(props.drawings):
+                op = row.operator('bim.open_view', icon='URL', text='')
+                op.view = props.drawings[props.active_drawing_index].name
+                row.operator('bim.remove_drawing', icon='X', text='').index = props.active_drawing_index
             layout.template_list('BIM_UL_generic', '', props, 'drawings', props, 'active_drawing_index')
 
 
