@@ -24,3 +24,4 @@
 .material-sand { fill: url(#sand); }
 .material-concrete { fill: url(#concrete); stroke-width: 0.5; }
 .material-boundary { fill: none; stroke: red; stroke-width: 1; stroke-dasharray: 12,4,3,4,3,4; }
+.IfcSpace { fill: none; stroke: none; }

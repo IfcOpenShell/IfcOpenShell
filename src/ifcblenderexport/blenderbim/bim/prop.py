@@ -566,7 +566,7 @@ class BIMCameraProperties(PropertyGroup):
     raster_y: IntProperty(name='Raster Y', default=1000)
     is_nts: BoolProperty(name='Is NTS')
     cut_objects: EnumProperty(items=[
-        ('.IfcWall|.IfcSlab|.IfcCurtainWall|.IfcStair|.IfcStairFlight|.IfcColumn|.IfcBeam|.IfcMember|.IfcCovering',
+        ('.IfcWall|.IfcSlab|.IfcCurtainWall|.IfcStair|.IfcStairFlight|.IfcColumn|.IfcBeam|.IfcMember|.IfcCovering|.IfcSpace',
             'Overall Plan / Section', ''),
         ('.IfcElement', 'Detail Drawing', ''),
         ('CUSTOM', 'Custom', '')
