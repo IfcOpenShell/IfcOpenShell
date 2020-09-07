@@ -212,6 +212,10 @@ def refreshBoundaryConditionAttributes(self, context):
         new_attribute.name = attribute['name']
 
 
+def refreshActiveDrawingIndex(self, context):
+    bpy.ops.bim.activate_view(drawing_index=context.scene.DocProperties.active_drawing_index)
+
+
 def getIfcProducts(self, context):
     global products_enum
     if len(products_enum) < 1:
@@ -536,7 +540,7 @@ class DocProperties(PropertyGroup):
         ], name='Should Render', default='DEFAULT')
     should_extract: BoolProperty(name="Should Extract", default=True)
     drawings: CollectionProperty(name='Drawings', type=Drawing)
-    active_drawing_index: IntProperty(name='Active Drawing Index')
+    active_drawing_index: IntProperty(name='Active Drawing Index', update=refreshActiveDrawingIndex)
     current_drawing_index: IntProperty(name='Current Drawing Index')
     schedules: CollectionProperty(name='Schedules', type=Schedule)
     active_schedule_index: IntProperty(name='Active Schedule Index')
