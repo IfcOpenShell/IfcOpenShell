@@ -3984,3 +3984,22 @@ class SelectHighPolygonMeshes(bpy.types.Operator):
             if relating_type:
                 relating_type.select_set(True)
         return {'FINISHED'}
+
+
+class RefreshDrawingList(bpy.types.Operator):
+    bl_idname = 'bim.refresh_drawing_list'
+    bl_label = 'Refresh Drawing List'
+
+    def execute(self, context):
+        while len(bpy.context.scene.DocProperties.drawings) > 0:
+            bpy.context.scene.DocProperties.drawings.remove(0)
+        for obj in bpy.data.objects:
+            if not isinstance(obj.data, bpy.types.Camera):
+                continue
+            print(obj)
+            if 'IfcGroup/' in obj.name and obj.users_collection[0].name == obj.name:
+                print(obj)
+                new = bpy.context.scene.DocProperties.drawings.add()
+                new.name = obj.name.split('/')[1]
+                new.camera = obj
+        return {'FINISHED'}
