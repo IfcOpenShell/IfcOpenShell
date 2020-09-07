@@ -18,7 +18,7 @@ class SIUnitHelper:
         'yard': 0.914,
         'mile': 1609,
         'square inch': 0.0006452,
-        'square foot': 0.09290,
+        'square foot': 0.09290304,
         'square yard': 0.83612736,
         'acre': 4046.86,
         'square mile': 2588881,
