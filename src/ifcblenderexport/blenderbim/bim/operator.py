@@ -3996,9 +3996,7 @@ class RefreshDrawingList(bpy.types.Operator):
         for obj in bpy.data.objects:
             if not isinstance(obj.data, bpy.types.Camera):
                 continue
-            print(obj)
             if 'IfcGroup/' in obj.name and obj.users_collection[0].name == obj.name:
-                print(obj)
                 new = bpy.context.scene.DocProperties.drawings.add()
                 new.name = obj.name.split('/')[1]
                 new.camera = obj
