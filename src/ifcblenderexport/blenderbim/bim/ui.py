@@ -740,8 +740,6 @@ class BIM_PT_drawings(Panel):
         if props.drawings:
             op = row.operator('bim.open_view', icon='URL', text='')
             op.view = props.drawings[props.active_drawing_index].name
-            op = row.operator('bim.activate_view', icon='SCENE', text='')
-            op.drawing_index = props.active_drawing_index
             row.operator('bim.remove_drawing', icon='X', text='').index = props.active_drawing_index
 
             layout.template_list('BIM_UL_generic', '', props, 'drawings', props, 'active_drawing_index')
@@ -1961,6 +1959,17 @@ class BIM_PT_annotation_utilities(Panel):
         op.obj_name = 'Section Level'
         op.data_type = 'curve'
 
+        props = bpy.context.scene.DocProperties
+
+        row = layout.row(align=True)
+        row.operator('bim.add_drawing')
+
+        if props.drawings:
+            op = row.operator('bim.open_view', icon='URL', text='')
+            op.view = props.drawings[props.active_drawing_index].name
+            row.operator('bim.remove_drawing', icon='X', text='').index = props.active_drawing_index
+
+            layout.template_list('BIM_UL_generic', '', props, 'drawings', props, 'active_drawing_index')
 
 
 class BIM_PT_qto_utilities(Panel):
