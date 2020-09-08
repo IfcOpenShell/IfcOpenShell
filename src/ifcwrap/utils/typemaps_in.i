@@ -65,6 +65,96 @@ CREATE_VECTOR_TYPEMAP_IN(int, INTEGER, int)
 CREATE_VECTOR_TYPEMAP_IN(double, REAL, float)
 CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 
+// @todo use macros.
+
+%typemap(in) const std::vector<const IfcParse::declaration*>& {
+	if (PySequence_Check($input)) {
+		$1 = new std::vector<const IfcParse::declaration*>;
+		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
+			PyObject* element = PySequence_GetItem($input, i);
+			void *arg = 0;
+			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_IfcParse__declaration, 0);
+			auto decl = static_cast<const IfcParse::declaration*>(SWIG_IsOK(res) ? arg : 0);
+			if (decl) {
+				$1->push_back(decl);
+			} else {
+				SWIG_exception(SWIG_TypeError, "Expected a schema declaration");
+			}
+		}
+	} else {
+		SWIG_exception(SWIG_TypeError, "Expected an sequence type");
+	}
+}
+
+%typemap(in) const std::vector<const IfcParse::entity*>& {
+	if (PySequence_Check($input)) {
+		$1 = new std::vector<const IfcParse::entity*>;
+		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
+			PyObject* element = PySequence_GetItem($input, i);
+			void *arg = 0;
+			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_IfcParse__entity, 0);
+			auto decl = static_cast<const IfcParse::entity*>(SWIG_IsOK(res) ? arg : 0);
+			if (decl) {
+				$1->push_back(decl);
+			} else {
+				SWIG_exception(SWIG_TypeError, "Expected a schema entity");
+			}
+		}
+	} else {
+		SWIG_exception(SWIG_TypeError, "Expected an sequence type");
+	}
+}
+
+%typemap(in) const std::vector<const IfcParse::attribute*>& {
+	if (PySequence_Check($input)) {
+		$1 = new std::vector<const IfcParse::attribute*>;
+		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
+			PyObject* element = PySequence_GetItem($input, i);
+			void *arg = 0;
+			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_IfcParse__attribute, 0);
+			auto decl = static_cast<const IfcParse::attribute*>(SWIG_IsOK(res) ? arg : 0);
+			if (decl) {
+				$1->push_back(decl);
+			} else {
+				SWIG_exception(SWIG_TypeError, "Expected a schema attribute");
+			}
+		}
+	} else {
+		SWIG_exception(SWIG_TypeError, "Expected an sequence type");
+	}
+}
+
+%typemap(in) const std::vector<const IfcParse::inverse_attribute*>& {
+	if (PySequence_Check($input)) {
+		$1 = new std::vector<const IfcParse::inverse_attribute*>;
+		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
+			PyObject* element = PySequence_GetItem($input, i);
+			void *arg = 0;
+			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_IfcParse__inverse_attribute, 0);
+			auto decl = static_cast<const IfcParse::inverse_attribute*>(SWIG_IsOK(res) ? arg : 0);
+			if (decl) {
+				$1->push_back(decl);
+			} else {
+				SWIG_exception(SWIG_TypeError, "Expected a schema inverse attribute");
+			}
+		}
+	} else {
+		SWIG_exception(SWIG_TypeError, "Expected an sequence type");
+	}
+}
+
+%typemap(in) const std::vector<bool>& {
+	if (PySequence_Check($input)) {
+		$1 = new std::vector<bool>;
+		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
+			PyObject* element = PySequence_GetItem($input, i);
+			$1->push_back(PyObject_IsTrue(element));
+		}
+	} else {
+		SWIG_exception(SWIG_TypeError, "Expected an sequence type");
+	}
+}
+
 %typemap(in) IfcEntityList::ptr {
 	if (PySequence_Check($input)) {
 		$1 = IfcEntityList::ptr(new IfcEntityList());

@@ -1,4 +1,5 @@
 #include "IfcSchema.h"
+#include "../ifcparse/IfcBaseClass.h"
 
 #include <map>
 
@@ -61,6 +62,19 @@ IfcParse::schema_definition::~schema_definition() {
 		delete *it;
 	}
 }
+
+IfcUtil::IfcBaseClass* IfcParse::schema_definition::instantiate(IfcEntityInstanceData * data) const {
+	if (factory_) {
+		return (*factory_)(data);
+	} else {
+		return new IfcUtil::IfcLateBoundEntity(data->type(), data);
+	}
+}
+
+void IfcParse::register_schema(schema_definition* s) {
+	schemas.insert({ s->name(), s });
+}
+
 
 #include "../ifcparse/Ifc2x3.h"
 #include "../ifcparse/Ifc4.h"

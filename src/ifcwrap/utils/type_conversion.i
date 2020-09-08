@@ -115,6 +115,8 @@
 			return SWIGTYPE_p_IfcParse__select_type;
 		} else if (t->as_enumeration_type()) {
 			return SWIGTYPE_p_IfcParse__enumeration_type;
+		} else {
+			throw std::runtime_error("Unexpected declaration type");
 		}
 	}
 

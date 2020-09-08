@@ -74,6 +74,18 @@ namespace IfcUtil {
 		}
 	};
 
+	class IFC_PARSE_API IfcLateBoundEntity : public IfcBaseClass {
+	private:
+		const IfcParse::declaration* decl_;
+
+	public:
+		IfcLateBoundEntity(const IfcParse::declaration* decl, IfcEntityInstanceData* data) : IfcBaseClass(data), decl_(decl) {}
+
+		virtual const IfcParse::declaration& declaration() const {
+			return *decl_;
+		}
+	};
+
 	class IFC_PARSE_API IfcBaseEntity : public IfcBaseClass {
 	public:
 		IfcBaseEntity() : IfcBaseClass() {}
