@@ -83,7 +83,9 @@ def format_clause(exp):
 
 class TypeDeclaration(Node):
     name = property(lambda self: self.type_id[0])
-    type = property(lambda self: self.underlying_type.any().any())
+    utype = property(lambda self: self.underlying_type.any().any())
+    type = property(lambda self: self.utype[0] if isinstance(self.utype, list) else self.utype)
+    
     def init(self):   
         
         assert hasattr(self, "TYPE")

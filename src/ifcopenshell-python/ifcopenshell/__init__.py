@@ -73,6 +73,10 @@ def create_entity(type, *args, **kwargs):
     for idx, arg in attrs:
         e[idx] = arg
     return e
-
+    
+gcroot = []
+def register_schema(schema):
+    gcroot.append(schema)
+    ifcopenshell_wrapper.register_schema(schema.schema)
 
 from .main import *
