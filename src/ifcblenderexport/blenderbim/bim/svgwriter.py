@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 import svgwrite
 import ifcopenshell
 from . import annotation
+from . import helper
 from mathutils import Vector
 from mathutils import geometry
 
@@ -189,14 +190,18 @@ class SvgWriter():
                     (x_offset + projected_points[0].x) * self.scale,
                     ((y_offset - projected_points[0].y) * self.scale) - 2.5
                 ))
-                # TODO: unhardcode m unit
+                # TODO: allow metric to be configurable
                 rl = ((matrix_world @
                     points[0].co).xyz + self.ifc_cutter.plan_level_obj.location).z
+                if bpy.context.scene.unit_settings.system == 'IMPERIAL':
+                    rl = helper.format_distance(rl)
+                else:
+                    rl = '{:.3f}m'.format(rl)
                 if projected_points[0].x > projected_points[-1].x:
                     text_anchor = 'end'
                 else:
                     text_anchor = 'start'
-                self.svg.add(self.svg.text('RL +{:.3f}m'.format(rl), insert=tuple(text_position), **{
+                self.svg.add(self.svg.text('RL +{}'.format(rl), insert=tuple(text_position), **{
                     'font-size': annotation.Annotator.get_svg_text_size(2.5),
                     'font-family': 'OpenGost Type B TT',
                     'text-anchor': text_anchor,
@@ -221,9 +226,13 @@ class SvgWriter():
                     (x_offset + projected_points[0].x) * self.scale,
                     ((y_offset - projected_points[0].y) * self.scale) - 3.5
                 ))
-                # TODO: unhardcode m unit
+                # TODO: allow metric to be configurable
                 rl = (matrix_world @ points[0].co.xyz).z
-                self.svg.add(self.svg.text('RL +{:.3f}m'.format(rl), insert=tuple(text_position), **{
+                if bpy.context.scene.unit_settings.system == 'IMPERIAL':
+                    rl = helper.format_distance(rl)
+                else:
+                    rl = '{:.3f}m'.format(rl)
+                self.svg.add(self.svg.text('RL +{}'.format(rl), insert=tuple(text_position), **{
                     'font-size': annotation.Annotator.get_svg_text_size(2.5),
                     'font-family': 'OpenGost Type B TT',
                     'text-anchor': 'start',
@@ -485,10 +494,10 @@ class SvgWriter():
         start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
         end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
         mid = ((end - start) / 2) + start
-        # TODO: hardcoded meters to mm conversion, until I properly do units
         vector = end - start
         perpendicular = Vector((vector.y, -vector.x)).normalized()
-        dimension = (v1_global - v0_global).length * 1000
+        dimension = (v1_global - v0_global).length
+        dimension = helper.format_distance(dimension)
         sheet_dimension = ((end*self.scale) - (start*self.scale)).length
         if sheet_dimension < 5: # annotation can't fit
             # offset text to right of marker
@@ -503,7 +512,7 @@ class SvgWriter():
         if text_override is not None:
             text = text_override
         else:
-            text = str(round(dimension))
+            text = str(dimension)
         self.svg.add(self.svg.text(text, insert=tuple(text_position), **{
             'transform': 'rotate({} {} {})'.format(
                 rotation,
