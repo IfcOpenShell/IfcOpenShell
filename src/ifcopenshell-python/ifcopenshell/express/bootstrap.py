@@ -17,6 +17,7 @@
 #                                                                             #
 ###############################################################################
 
+import os
 import sys
 import string
 import operator
@@ -98,7 +99,7 @@ expression << (union | factor)
 grammar = OneOrMore(Group(rule))
 grammar.ignore(HASH + restOfLine)
 
-express = grammar.parseFile(sys.argv[1])
+express = grammar.parseFile(os.path.join(os.path.dirname(__file__), 'express.bnf'))
 
 def find_bytype(expr, ty, li = None):
     if li is None: li = []
@@ -191,7 +192,7 @@ from nodes import *
 
 def parse(fn):
     cache_file = fn + ".cache.dat"
-    if os.path.exists(cache_file):
+    if os.path.exists(cache_file) and os.path.getmtime(cache_file) >= os.path.getmtime(fn):
         with open(cache_file, "rb") as f:
             m = pickle.load(f)
     else:      
