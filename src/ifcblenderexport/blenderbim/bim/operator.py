@@ -2779,9 +2779,13 @@ class AddSectionPlane(bpy.types.Operator):
         section = bpy.data.objects.new('Section', None)
         section.empty_display_type = 'SINGLE_ARROW'
         section.empty_display_size = 5
-        section.rotation_euler = Euler((radians(180.0), 0.0, 0.0), 'XYZ')
-        section.location = bpy.context.scene.cursor.location
         section.show_in_front = True
+        if bpy.context.active_object.select_get() \
+                and isinstance(bpy.context.active_object.data, bpy.types.Camera):
+            section.matrix_world = bpy.context.active_object.matrix_world @ Euler((radians(180.0), 0.0, 0.0), 'XYZ').to_matrix().to_4x4()
+        else:
+            section.rotation_euler = Euler((radians(180.0), 0.0, 0.0), 'XYZ')
+            section.location = bpy.context.scene.cursor.location
         collection = bpy.data.collections.get('Sections')
         if not collection:
             collection = bpy.data.collections.new('Sections')
