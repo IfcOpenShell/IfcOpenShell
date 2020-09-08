@@ -3993,7 +3993,7 @@ class RefreshDrawingList(bpy.types.Operator):
     def execute(self, context):
         while len(bpy.context.scene.DocProperties.drawings) > 0:
             bpy.context.scene.DocProperties.drawings.remove(0)
-        for obj in bpy.data.objects:
+        for obj in bpy.context.scene.objects:
             if not isinstance(obj.data, bpy.types.Camera):
                 continue
             if 'IfcGroup/' in obj.name and obj.users_collection[0].name == obj.name:
