@@ -5,6 +5,7 @@ import math
 import pystache
 import xml.etree.ElementTree as ET
 import svgwrite
+import ifcopenshell
 from . import annotation
 from mathutils import Vector
 from mathutils import geometry
@@ -289,7 +290,18 @@ class SvgWriter():
             path = self.svg.add(self.svg.path(d=d, class_=' '.join(classes)))
 
     def get_attribute_classes(self, obj):
-        classes = []
+        classes = [obj.name.split('/')[0]]
+        for slot in obj.material_slots:
+            if slot.material:
+                classes.append('material-{}'.format(
+                    re.sub('[^0-9a-zA-Z]+', '', slot.material.name)
+                ))
+        result = obj.BIMObjectProperties.attributes.get('GlobalId')
+        if not result:
+            result = obj.BIMObjectProperties.attributes.add()
+            result.name = 'GlobalId'
+            result.string_value = ifcopenshell.guid.new()
+        classes.append('globalid-{}'.format(result.string_value))
         for attribute in self.ifc_cutter.attributes:
             result = self.get_obj_value(obj, attribute)
             if result:
@@ -409,6 +421,7 @@ class SvgWriter():
                 self.svg.add(self.svg.text(
                     text_line,
                     insert=tuple((text_position * self.scale) + Vector((0, 3.5*line_number))),
+                    class_=' '.join(self.get_attribute_classes(text_obj)),
                     **{
                         'font-size': annotation.Annotator.get_svg_text_size(text_obj.data.BIMTextProperties.font_size),
                         'font-family': 'OpenGost Type B TT',
