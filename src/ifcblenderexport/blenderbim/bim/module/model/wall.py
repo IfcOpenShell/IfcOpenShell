@@ -32,6 +32,8 @@ def add_object(self, context):
         modifier.use_smooth_shade = False
         modifier.use_normal_calculate = True
         modifier.use_normal_flip = True
+        modifier.steps = 1
+        modifier.render_steps = 1
     modifier = obj.modifiers.new('Wall Width', 'SOLIDIFY')
     modifier.use_even_offset = True
     modifier.thickness = self.width

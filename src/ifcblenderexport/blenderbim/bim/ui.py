@@ -864,8 +864,6 @@ class BIM_PT_camera(Panel):
         row = layout.row()
         row.prop(dprops, 'should_recut_selected')
         row = layout.row()
-        row.prop(dprops, 'should_render')
-        row = layout.row()
         row.prop(dprops, 'should_extract')
 
         row = layout.row()
@@ -911,6 +909,8 @@ class BIM_PT_camera(Panel):
                 row.prop(drawing_style, 'name')
                 row.operator('bim.remove_drawing_style', icon='X', text='').index = props.active_drawing_style_index
 
+                row = layout.row()
+                row.prop(drawing_style, 'render_type')
                 row = layout.row(align=True)
                 row.prop(drawing_style, 'vector_style')
                 row.operator('bim.edit_vector_style', text='', icon='GREASEPENCIL')

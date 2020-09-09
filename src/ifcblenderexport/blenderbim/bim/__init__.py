@@ -324,7 +324,7 @@ if bpy is not None:
 
     def on_register(scene):
         prop.setDefaultProperties(scene)
-        bpy.app.handlers.scene_update_post.remove(on_register)
+        bpy.app.handlers.depsgraph_update_post.remove(on_register)
 
     def register():
         for cls in classes:
