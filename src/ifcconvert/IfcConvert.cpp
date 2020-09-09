@@ -50,6 +50,8 @@
 #include <boost/make_shared.hpp>
 
 #include <fstream>
+#include <iostream>
+  
 #include <sstream>
 #include <set>
 #include <time.h>
@@ -1295,7 +1297,14 @@ namespace latebound_access {
 }
 
 void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool stderr_progress) {
+	Logger::Status("HLEEEEEEEE");
+	std::ofstream outfile("test78.txt");
+
+	outfile << "my text here!" << std::endl;
+
+	outfile.close();
 	{
+		
 		auto delete_reversed = [&f](const IfcEntityList::ptr& insts) {
 			if (!insts) {
 				return;
