@@ -57,7 +57,9 @@
                 <span class="step-time">{{time}}s</span>
                 {{^is_success}}
                 <p class="failure{{#is_unspecified}} unspecified{{/is_unspecified}}">
-                    {{error_message}}
+                    {{#error_message}}
+                    {{.}}<br />
+                    {{/error_message}}
                 </p>
                 {{/is_success}}
             </li>
