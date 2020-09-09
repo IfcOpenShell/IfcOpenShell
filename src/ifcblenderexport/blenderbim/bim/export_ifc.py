@@ -1097,7 +1097,7 @@ class IfcParser():
             'is_point_cloud': self.is_point_cloud(obj),
             'is_structural': self.is_structural(obj),
             'is_text': isinstance(mesh, bpy.types.TextCurve),
-            'is_wireframe': self.is_wireframe_mesh(mesh),
+            'is_wireframe': self.is_wireframe_mesh(mesh, obj),
             'is_native': mesh.BIMMeshProperties.is_native if hasattr(mesh, 'BIMMeshProperties') else False,
             'is_swept_solid': mesh.BIMMeshProperties.is_swept_solid if hasattr(mesh, 'BIMMeshProperties') else False,
             'is_generated': False,
@@ -1105,9 +1105,12 @@ class IfcParser():
             'attributes': {'Name': mesh.name}
         }
 
-    def is_wireframe_mesh(self, mesh):
+    def is_wireframe_mesh(self, mesh, obj):
         if isinstance(mesh, bpy.types.Mesh) and not mesh.polygons:
-            return True
+            modifiers = [m.type for m in obj.modifiers]
+            # SCREW and SKIN can create faces, so it is not a wireframe mesh
+            if 'SCREW' not in modifiers and 'SKIN' not in modifiers:
+                return True
         if isinstance(mesh, bpy.types.Curve) and not mesh.bevel_object and not mesh.bevel_depth:
             return True
         return False
