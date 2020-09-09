@@ -66,12 +66,15 @@ def setDefaultProperties(scene):
     if len(bpy.context.scene.DocProperties.drawing_styles) == 0:
         drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
         drawing_style.name = 'Blender Default'
+        drawing_style.render_type = 'DEFAULT'
         bpy.ops.bim.save_drawing_style(index='0')
         drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
         drawing_style.name = 'Shaded'
+        drawing_style.render_type = 'VIEWPORT'
         drawing_style.raster_style = json.dumps({
             'bpy.data.worlds[0].color': (1, 1, 1),
             'bpy.context.scene.render.engine': 'BLENDER_WORKBENCH',
+            'bpy.context.scene.render.film_transparent': False,
             'bpy.context.scene.display.shading.show_object_outline': True,
             'bpy.context.scene.display.shading.show_cavity': True,
             'bpy.context.scene.display.shading.cavity_type': 'BOTH',
@@ -81,13 +84,25 @@ def setDefaultProperties(scene):
             'bpy.context.scene.display.shading.light': 'STUDIO',
             'bpy.context.scene.display.shading.color_type': 'MATERIAL',
             'bpy.context.scene.display.shading.single_color': (1, 1, 1),
+            'bpy.context.scene.display.shading.show_shadows': True,
+            'bpy.context.scene.display.shading.shadow_intensity': 0.5,
+            'bpy.context.scene.display.light_direction': (.5, .5, .5),
             'bpy.context.scene.view_settings.use_curve_mapping': False,
+            'space.overlay.show_wireframes': True,
+            'space.overlay.wireframe_threshold': 0,
+            'space.overlay.show_floor': False,
+            'space.overlay.show_axis_x': False,
+            'space.overlay.show_axis_y': False,
+            'space.overlay.show_axis_z': False,
+            'space.overlay.show_object_origins': False,
         })
         drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
         drawing_style.name = 'Technical'
+        drawing_style.render_type = 'VIEWPORT'
         drawing_style.raster_style = json.dumps({
             'bpy.data.worlds[0].color': (1, 1, 1),
             'bpy.context.scene.render.engine': 'BLENDER_WORKBENCH',
+            'bpy.context.scene.render.film_transparent': False,
             'bpy.context.scene.display.shading.show_object_outline': True,
             'bpy.context.scene.display.shading.show_cavity': True,
             'bpy.context.scene.display.shading.cavity_type': 'BOTH',
@@ -97,10 +112,18 @@ def setDefaultProperties(scene):
             'bpy.context.scene.display.shading.light': 'FLAT',
             'bpy.context.scene.display.shading.color_type': 'SINGLE',
             'bpy.context.scene.display.shading.single_color': (1, 1, 1),
-            'bpy.context.scene.view_settings.use_curve_mapping': True,
+            'bpy.context.scene.display.shading.show_shadows': False,
+            'bpy.context.scene.display.shading.shadow_intensity': 0.5,
+            'bpy.context.scene.display.light_direction': (.5, .5, .5),
+            'bpy.context.scene.view_settings.use_curve_mapping': False,
+            'space.overlay.show_wireframes': True,
+            'space.overlay.wireframe_threshold': 0,
+            'space.overlay.show_floor': False,
+            'space.overlay.show_axis_x': False,
+            'space.overlay.show_axis_y': False,
+            'space.overlay.show_axis_z': False,
+            'space.overlay.show_object_origins': False,
         })
-        # TODO: This is used for technical styles, but probably should not be hardcoded
-        bpy.context.scene.view_settings.curve_mapping.curves[3].points.new(.4, 0) # Increase black contrast
 
 
 def getIfcPredefinedTypes(self, context):
@@ -524,6 +547,11 @@ class Sheet(PropertyGroup):
 class DrawingStyle(PropertyGroup):
     name: StringProperty(name='Name')
     raster_style: StringProperty(name='Raster Style')
+    render_type: EnumProperty(items=[
+        ('NONE', 'None', ''),
+        ('DEFAULT', 'Default', ''),
+        ('VIEWPORT', 'Viewport', ''),
+        ], name='Render Type', default='VIEWPORT')
     vector_style: EnumProperty(items=getVectorStyles, name='Vector Style')
     include_query: StringProperty(name='Include Query')
     exclude_query: StringProperty(name='Exclude Query')
@@ -533,11 +561,6 @@ class DrawingStyle(PropertyGroup):
 class DocProperties(PropertyGroup):
     should_recut: BoolProperty(name="Should Recut", default=True)
     should_recut_selected: BoolProperty(name="Should Recut Selected Only", default=False)
-    should_render: EnumProperty(items=[
-        ('NONE', 'None', ''),
-        ('DEFAULT', 'Default', ''),
-        ('VIEWPORT', 'Viewport', ''),
-        ], name='Should Render', default='DEFAULT')
     should_extract: BoolProperty(name="Should Extract", default=True)
     drawings: CollectionProperty(name='Drawings', type=Drawing)
     active_drawing_index: IntProperty(name='Active Drawing Index', update=refreshActiveDrawingIndex)

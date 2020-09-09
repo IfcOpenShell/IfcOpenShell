@@ -2108,15 +2108,16 @@ class CutSection(bpy.types.Operator):
         camera = bpy.context.scene.camera
         if not (camera.type == 'CAMERA' and camera.data.type == 'ORTHO'):
             return {'FINISHED'}
+        drawing_style = bpy.context.scene.DocProperties.drawing_styles[camera.data.BIMCameraProperties.active_drawing_style_index]
         self.diagram_name = camera.name.split('/')[1]
         bpy.context.scene.render.filepath = os.path.join(
             bpy.context.scene.BIMProperties.data_dir,
             'diagrams',
             '{}.png'.format(self.diagram_name)
         )
-        if bpy.context.scene.DocProperties.should_render == 'DEFAULT':
+        if drawing_style.render_type == 'DEFAULT':
             bpy.ops.render.render(write_still=True)
-        elif bpy.context.scene.DocProperties.should_render == 'VIEWPORT':
+        elif drawing_style.render_type == 'VIEWPORT':
             for obj in camera.users_collection[0].objects:
                 obj.hide_set(True)
             bpy.ops.render.opengl(write_still=True)
@@ -2139,7 +2140,6 @@ class CutSection(bpy.types.Operator):
         import ifccsv
         ifc_cutter.ifc_filenames = [i.name for i in bpy.context.scene.DocProperties.ifc_files]
         ifc_cutter.data_dir = bpy.context.scene.BIMProperties.data_dir
-        drawing_style = bpy.context.scene.DocProperties.drawing_styles[camera.data.BIMCameraProperties.active_drawing_style_index]
         ifc_cutter.vector_style = drawing_style.vector_style
         ifc_cutter.diagram_name = self.diagram_name
         ifc_cutter.background_image = bpy.context.scene.render.filepath
@@ -3651,9 +3651,11 @@ class SaveDrawingStyle(bpy.types.Operator):
     index: bpy.props.StringProperty()
 
     def execute(self, context):
+        space = self.get_view_3d()
         style = {
             'bpy.data.worlds[0].color': tuple(bpy.data.worlds[0].color),
             'bpy.context.scene.render.engine': bpy.context.scene.render.engine,
+            'bpy.context.scene.render.film_transparent': bpy.context.scene.render.film_transparent,
             'bpy.context.scene.display.shading.show_object_outline': bpy.context.scene.display.shading.show_object_outline,
             'bpy.context.scene.display.shading.show_cavity': bpy.context.scene.display.shading.show_cavity,
             'bpy.context.scene.display.shading.cavity_type': bpy.context.scene.display.shading.cavity_type,
@@ -3663,7 +3665,17 @@ class SaveDrawingStyle(bpy.types.Operator):
             'bpy.context.scene.display.shading.light': bpy.context.scene.display.shading.light,
             'bpy.context.scene.display.shading.color_type': bpy.context.scene.display.shading.color_type,
             'bpy.context.scene.display.shading.single_color': tuple(bpy.context.scene.display.shading.single_color),
+            'bpy.context.scene.display.shading.show_shadows': bpy.context.scene.display.shading.show_shadows,
+            'bpy.context.scene.display.shading.shadow_intensity': bpy.context.scene.display.shading.shadow_intensity,
+            'bpy.context.scene.display.light_direction': tuple(bpy.context.scene.display.light_direction),
             'bpy.context.scene.view_settings.use_curve_mapping': bpy.context.scene.view_settings.use_curve_mapping,
+            'space.overlay.show_wireframes': space.overlay.show_wireframes,
+            'space.overlay.wireframe_threshold': space.overlay.wireframe_threshold,
+            'space.overlay.show_floor': space.overlay.show_floor,
+            'space.overlay.show_axis_x': space.overlay.show_axis_x,
+            'space.overlay.show_axis_y': space.overlay.show_axis_y,
+            'space.overlay.show_axis_z': space.overlay.show_axis_z,
+            'space.overlay.show_object_origins': space.overlay.show_object_origins,
         }
         if self.index:
             index = int(self.index)
@@ -3671,6 +3683,15 @@ class SaveDrawingStyle(bpy.types.Operator):
             index = bpy.context.active_object.data.BIMCameraProperties.active_drawing_style_index
         bpy.context.scene.DocProperties.drawing_styles[index].raster_style = json.dumps(style)
         return {'FINISHED'}
+
+    def get_view_3d(self):
+        for area in bpy.context.screen.areas:
+            if area.type != 'VIEW_3D':
+                continue
+            for space in area.spaces:
+                if space.type != 'VIEW_3D':
+                    continue
+                return space
 
 
 class ActivateDrawingStyle(bpy.types.Operator):
@@ -3684,9 +3705,11 @@ class ActivateDrawingStyle(bpy.types.Operator):
         return {'FINISHED'}
 
     def set_raster_style(self):
+        space = self.get_view_3d()
         style = json.loads(self.drawing_style.raster_style)
         bpy.data.worlds[0].color = style['bpy.data.worlds[0].color']
         bpy.context.scene.render.engine = style['bpy.context.scene.render.engine']
+        bpy.context.scene.render.film_transparent = style['bpy.context.scene.render.film_transparent']
         bpy.context.scene.display.shading.show_object_outline = style['bpy.context.scene.display.shading.show_object_outline']
         bpy.context.scene.display.shading.show_cavity = style['bpy.context.scene.display.shading.show_cavity']
         bpy.context.scene.display.shading.cavity_type = style['bpy.context.scene.display.shading.cavity_type']
@@ -3696,7 +3719,18 @@ class ActivateDrawingStyle(bpy.types.Operator):
         bpy.context.scene.display.shading.light = style['bpy.context.scene.display.shading.light']
         bpy.context.scene.display.shading.color_type = style['bpy.context.scene.display.shading.color_type']
         bpy.context.scene.display.shading.single_color = style['bpy.context.scene.display.shading.single_color']
+        bpy.context.scene.display.shading.show_shadows = style['bpy.context.scene.display.shading.show_shadows']
+        bpy.context.scene.display.shading.shadow_intensity = style['bpy.context.scene.display.shading.shadow_intensity']
+        bpy.context.scene.display.light_direction = style['bpy.context.scene.display.light_direction']
+
         bpy.context.scene.view_settings.use_curve_mapping = style['bpy.context.scene.view_settings.use_curve_mapping']
+        space.overlay.show_wireframes = style['space.overlay.show_wireframes']
+        space.overlay.wireframe_threshold = style['space.overlay.wireframe_threshold']
+        space.overlay.show_floor = style['space.overlay.show_floor']
+        space.overlay.show_axis_x = style['space.overlay.show_axis_x']
+        space.overlay.show_axis_y = style['space.overlay.show_axis_y']
+        space.overlay.show_axis_z = style['space.overlay.show_axis_z']
+        space.overlay.show_object_origins = style['space.overlay.show_object_origins']
 
     def set_query(self):
         self.selector = ifcopenshell.util.selector.Selector()
@@ -3739,6 +3773,16 @@ class ActivateDrawingStyle(bpy.types.Operator):
             elif mode == 'EXCLUDE':
                 if global_id in self.exclude_global_ids:
                     obj.hide_viewport = True # Note: this breaks alt-H
+
+
+    def get_view_3d(self):
+        for area in bpy.context.screen.areas:
+            if area.type != 'VIEW_3D':
+                continue
+            for space in area.spaces:
+                if space.type != 'VIEW_3D':
+                    continue
+                return space
 
 
 class AddDrawing(bpy.types.Operator):
