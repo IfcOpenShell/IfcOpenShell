@@ -3,6 +3,7 @@ from utils import IfcFile, assert_number, assert_pset, assert_attribute
 import math
 import ifcopenshell.util
 import ifcopenshell.util.element
+import ifcopenshell.util.geolocation
 
 @step(u'There must be at least one {ifc_class} element')
 def step_impl(context, ifc_class):
@@ -161,8 +162,7 @@ def step_impl(context, number):
         return check_ifc2x3_geolocation('EPset_MapConversion', 'Height', number)
     abscissa = check_ifc4_geolocation('IfcMapConversion', 'XAxisAbscissa', should_assert=False)
     ordinate = check_ifc4_geolocation('IfcMapConversion', 'XAxisOrdinate', should_assert=False)
-    # TODO: migrate to geolocation util
-    actual_value = round(math.degrees(math.atan2(ordinate, abscissa)) - 90, 3)
+    actual_value = round(ifcopenshell.util.geolocation.xy2angle(abscissa, ordinate) * -1, 3)
     value = round(number, 3)
     assert actual_value == value, 'We expected a value of "{}" but instead got "{}"'.format(value, actual_value)
 
@@ -183,6 +183,7 @@ def step_impl(context, guid, number):
     site = IfcFile.by_guid(guid)
     if not site.is_a('IfcSite'):
         assert False, 'The element {} is not an IfcSite'.format(site)
+    number = ifcopenshell.util.geolocation.dd2dms(number)
     assert_attribute(site, 'RefLongitude', number)
 
 
@@ -192,6 +193,7 @@ def step_impl(context, guid, number):
     site = IfcFile.by_guid(guid)
     if not site.is_a('IfcSite'):
         assert False, 'The element {} is not an IfcSite'.format(site)
+    number = ifcopenshell.util.geolocation.dd2dms(number)
     assert_attribute(site, 'RefLatitude', number)
 
 
