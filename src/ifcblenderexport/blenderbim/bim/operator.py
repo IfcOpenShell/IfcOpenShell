@@ -3601,7 +3601,10 @@ class AddOpening(bpy.types.Operator):
     bl_label = 'Add Opening'
 
     def execute(self, context):
-        opening = context.active_object
+        if context.active_object.children and 'IfcOpeningElement/' in context.active_object.children[0].name:
+            opening = context.active_object.children[0]
+        else:
+            opening = context.active_object
         if context.selected_objects[0] != context.active_object:
             obj = context.selected_objects[0]
         else:
