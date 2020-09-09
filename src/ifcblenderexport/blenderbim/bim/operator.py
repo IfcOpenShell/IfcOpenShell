@@ -3679,6 +3679,8 @@ class SaveDrawingStyle(bpy.types.Operator):
             'space.overlay.show_axis_y': space.overlay.show_axis_y,
             'space.overlay.show_axis_z': space.overlay.show_axis_z,
             'space.overlay.show_object_origins': space.overlay.show_object_origins,
+            'space.overlay.show_extras': space.overlay.show_extras,
+            'space.overlay.show_relationship_lines': space.overlay.show_relationship_lines,
         }
         if self.index:
             index = int(self.index)
@@ -3734,6 +3736,9 @@ class ActivateDrawingStyle(bpy.types.Operator):
         space.overlay.show_axis_y = style['space.overlay.show_axis_y']
         space.overlay.show_axis_z = style['space.overlay.show_axis_z']
         space.overlay.show_object_origins = style['space.overlay.show_object_origins']
+        space.overlay.show_extras = style['space.overlay.show_extras']
+        space.overlay.show_relationship_lines = style['space.overlay.show_relationship_lines']
+        space.shading.type = 'RENDERED'
 
     def set_query(self):
         self.selector = ifcopenshell.util.selector.Selector()

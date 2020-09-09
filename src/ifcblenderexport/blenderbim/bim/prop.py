@@ -63,11 +63,42 @@ def setDefaultProperties(scene):
         subcontext = bpy.context.scene.BIMProperties.model_subcontexts.add()
         subcontext.name = 'Box'
         subcontext.target_view = 'MODEL_VIEW'
+    if bpy.context.scene.BIMProperties.has_plan_context \
+            and len(bpy.context.scene.BIMProperties.plan_subcontexts) == 0:
+        subcontext = bpy.context.scene.BIMProperties.plan_subcontexts.add()
+        subcontext.name = 'Annotation'
+        subcontext.target_view = 'PLAN_VIEW'
     if len(bpy.context.scene.DocProperties.drawing_styles) == 0:
         drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
-        drawing_style.name = 'Blender Default'
-        drawing_style.render_type = 'DEFAULT'
-        bpy.ops.bim.save_drawing_style(index='0')
+        drawing_style.name = 'Technical'
+        drawing_style.render_type = 'VIEWPORT'
+        drawing_style.raster_style = json.dumps({
+            'bpy.data.worlds[0].color': (1, 1, 1),
+            'bpy.context.scene.render.engine': 'BLENDER_WORKBENCH',
+            'bpy.context.scene.render.film_transparent': False,
+            'bpy.context.scene.display.shading.show_object_outline': True,
+            'bpy.context.scene.display.shading.show_cavity': False,
+            'bpy.context.scene.display.shading.cavity_type': 'BOTH',
+            'bpy.context.scene.display.shading.curvature_ridge_factor': 1,
+            'bpy.context.scene.display.shading.curvature_valley_factor': 1,
+            'bpy.context.scene.view_settings.view_transform': 'Standard',
+            'bpy.context.scene.display.shading.light': 'FLAT',
+            'bpy.context.scene.display.shading.color_type': 'SINGLE',
+            'bpy.context.scene.display.shading.single_color': (1, 1, 1),
+            'bpy.context.scene.display.shading.show_shadows': False,
+            'bpy.context.scene.display.shading.shadow_intensity': 0.5,
+            'bpy.context.scene.display.light_direction': (.5, .5, .5),
+            'bpy.context.scene.view_settings.use_curve_mapping': False,
+            'space.overlay.show_wireframes': True,
+            'space.overlay.wireframe_threshold': 0,
+            'space.overlay.show_floor': False,
+            'space.overlay.show_axis_x': False,
+            'space.overlay.show_axis_y': False,
+            'space.overlay.show_axis_z': False,
+            'space.overlay.show_object_origins': False,
+            'space.overlay.show_extras': False,
+            'space.overlay.show_relationship_lines': False,
+        })
         drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
         drawing_style.name = 'Shaded'
         drawing_style.render_type = 'VIEWPORT'
@@ -95,35 +126,13 @@ def setDefaultProperties(scene):
             'space.overlay.show_axis_y': False,
             'space.overlay.show_axis_z': False,
             'space.overlay.show_object_origins': False,
+            'space.overlay.show_extras': False,
+            'space.overlay.show_relationship_lines': False,
         })
         drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
-        drawing_style.name = 'Technical'
-        drawing_style.render_type = 'VIEWPORT'
-        drawing_style.raster_style = json.dumps({
-            'bpy.data.worlds[0].color': (1, 1, 1),
-            'bpy.context.scene.render.engine': 'BLENDER_WORKBENCH',
-            'bpy.context.scene.render.film_transparent': False,
-            'bpy.context.scene.display.shading.show_object_outline': True,
-            'bpy.context.scene.display.shading.show_cavity': True,
-            'bpy.context.scene.display.shading.cavity_type': 'BOTH',
-            'bpy.context.scene.display.shading.curvature_ridge_factor': 1,
-            'bpy.context.scene.display.shading.curvature_valley_factor': 1,
-            'bpy.context.scene.view_settings.view_transform': 'Standard',
-            'bpy.context.scene.display.shading.light': 'FLAT',
-            'bpy.context.scene.display.shading.color_type': 'SINGLE',
-            'bpy.context.scene.display.shading.single_color': (1, 1, 1),
-            'bpy.context.scene.display.shading.show_shadows': False,
-            'bpy.context.scene.display.shading.shadow_intensity': 0.5,
-            'bpy.context.scene.display.light_direction': (.5, .5, .5),
-            'bpy.context.scene.view_settings.use_curve_mapping': False,
-            'space.overlay.show_wireframes': True,
-            'space.overlay.wireframe_threshold': 0,
-            'space.overlay.show_floor': False,
-            'space.overlay.show_axis_x': False,
-            'space.overlay.show_axis_y': False,
-            'space.overlay.show_axis_z': False,
-            'space.overlay.show_object_origins': False,
-        })
+        drawing_style.name = 'Blender Default'
+        drawing_style.render_type = 'DEFAULT'
+        bpy.ops.bim.save_drawing_style(index='2')
 
 
 def getIfcPredefinedTypes(self, context):
@@ -1241,7 +1250,7 @@ class BIMProperties(PropertyGroup):
     classification: EnumProperty(items=getClassifications, name="Classification", update=refreshReferences)
     classifications: CollectionProperty(name="Classifications", type=Classification)
     has_model_context: BoolProperty(name="Has Model Context", default=True)
-    has_plan_context: BoolProperty(name="Has Plan Context", default=False)
+    has_plan_context: BoolProperty(name="Has Plan Context", default=True)
     model_subcontexts: CollectionProperty(name='Model Subcontexts', type=Subcontext)
     plan_subcontexts: CollectionProperty(name='Plan Subcontexts', type=Subcontext)
     available_contexts: EnumProperty(items=[('Model', 'Model', ''), ('Plan', 'Plan', '')], name="Available Contexts")
