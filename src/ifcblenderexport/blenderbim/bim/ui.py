@@ -63,6 +63,9 @@ class BIM_PT_object(Panel):
         row = layout.row()
         row.prop(props, 'attributes')
 
+        if 'IfcSite/' in context.active_object.name or 'IfcBuilding/' in context.active_object.name:
+            self.draw_addresses_ui()
+
         row = layout.row(align=True)
         row.prop(props, 'relating_type')
         row.operator('bim.select_similar_type', icon='RESTRICT_SELECT_OFF', text='')
@@ -71,6 +74,33 @@ class BIM_PT_object(Panel):
 
         row = layout.row()
         row.prop(props, 'material_type')
+
+    def draw_addresses_ui(self):
+        layout = self.layout
+        layout.label(text="Address:")
+        address = bpy.context.active_object.BIMObjectProperties.address
+        row = layout.row()
+        row.prop(address, 'purpose')
+        if address.purpose == 'USERDEFINED':
+            row = layout.row()
+            row.prop(address, 'user_defined_purpose')
+        row = layout.row()
+        row.prop(address, 'description')
+
+        row = layout.row()
+        row.prop(address, 'internal_location')
+        row = layout.row()
+        row.prop(address, 'address_lines')
+        row = layout.row()
+        row.prop(address, 'postal_box')
+        row = layout.row()
+        row.prop(address, 'town')
+        row = layout.row()
+        row.prop(address, 'region')
+        row = layout.row()
+        row.prop(address, 'postal_code')
+        row = layout.row()
+        row.prop(address, 'country')
 
 
 class BIM_PT_object_psets(Panel):
