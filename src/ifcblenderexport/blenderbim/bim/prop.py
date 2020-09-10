@@ -1027,7 +1027,7 @@ class PropertyTemplate(PropertyGroup):
 
 
 class Address(PropertyGroup):
-    name: StringProperty(name="Name") # Stores IfcPostalAddress or IfcTelecomAddress
+    name: StringProperty(name="Name", default='IfcPostalAddress') # Stores IfcPostalAddress or IfcTelecomAddress
     purpose: EnumProperty(items=[
         ('OFFICE', 'OFFICE', 'An office address.'),
         ('SITE', 'SITE', 'A site address.'),
@@ -1385,6 +1385,8 @@ class BIMObjectProperties(PropertyGroup):
     boundary_condition: PointerProperty(name='Boundary Condition', type=BoundaryCondition)
     structural_member_connection: PointerProperty(name='Structural Member Connection', type=bpy.types.Object)
     representation_contexts: CollectionProperty(name="Representation Contexts", type=Subcontext)
+    # Address applies to IfcSite's SiteAddress and IfcBuilding's BuildingAddress
+    address: PointerProperty(name='Address', type=Address)
 
 
 class BIMDebugProperties(PropertyGroup):

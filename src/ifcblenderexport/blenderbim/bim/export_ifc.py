@@ -349,10 +349,10 @@ class IfcParser():
             'ifc': None,
             'raw': obj,
             'class': self.get_ifc_class(obj.name),
+            'attributes': self.get_object_attributes(obj),
             'relating_structure': None,
             'relating_host': None,
             'relating_qtos_key': None,
-            'attributes': self.get_object_attributes(obj),
             'has_boundary_condition': obj.BIMObjectProperties.has_boundary_condition,
             'boundary_condition_class': None,
             'boundary_condition_attributes': {},
@@ -752,6 +752,11 @@ class IfcParser():
 
     def get_addresses(self, addresses):
         results = []
+        for address in addresses:
+            results.append(self.get_address(address))
+        return results
+
+    def get_address(self, address):
         address_data_map = {
             'purpose': 'Purpose',
             'description': 'Description',
@@ -775,28 +780,26 @@ class IfcParser():
             'electronic_mail_addresses': 'ElectronicMailAddresses',
             'messaging_ids': 'MessagingIDs',
         }
-        for address in addresses:
-            attributes = {}
-            if 'IfcPostalAddress' in address.name:
-                merged_data_map = {**address_data_map, **postal_data_map}
-                if address.address_lines:
-                    attributes['AddressLines'] = address.address_lines.split('/')
-            elif 'IfcTelecomAddress' in address.name:
-                merged_data_map = {**address_data_map, **telecom_data_map}
-                for key, value in telecom_list_data_map.items():
-                    if getattr(address, key):
-                        attributes[value] = getattr(address, key).split(',')
-            for key, value in merged_data_map.items():
+        attributes = {}
+        if 'IfcPostalAddress' in address.name:
+            merged_data_map = {**address_data_map, **postal_data_map}
+            if address.address_lines:
+                attributes['AddressLines'] = address.address_lines.split('/')
+        elif 'IfcTelecomAddress' in address.name:
+            merged_data_map = {**address_data_map, **telecom_data_map}
+            for key, value in telecom_list_data_map.items():
                 if getattr(address, key):
-                    attributes[value] = getattr(address, key)
-            results.append({
-                'ifc': None,
-                'raw': address,
-                'is_postal': 'IfcPostalAddress' in address.name,
-                'is_telecom': 'IfcTelecomAddress' in address.name,
-                'attributes': attributes
-            })
-        return results
+                    attributes[value] = getattr(address, key).split(',')
+        for key, value in merged_data_map.items():
+            if getattr(address, key):
+                attributes[value] = getattr(address, key)
+        return {
+            'ifc': None,
+            'raw': address,
+            'is_postal': 'IfcPostalAddress' in address.name,
+            'is_telecom': 'IfcTelecomAddress' in address.name,
+            'attributes': attributes
+        }
 
     def get_document_references(self):
         results = {}
@@ -954,7 +957,8 @@ class IfcParser():
                 'ifc': None,
                 'raw': obj,
                 'class': self.get_ifc_class(obj.name),
-                'attributes': self.get_object_attributes(obj)
+                'attributes': self.get_object_attributes(obj),
+                'address': self.get_address(obj.BIMObjectProperties.address)
             }
             self.append_product_attributes(element, obj)
             self.get_product_psets_qtos(element, obj, is_pset=True)
@@ -1539,11 +1543,14 @@ class IfcExporter():
     def create_addresses(self, addresses):
         results = []
         for address in addresses:
-            if self.schema == 'IFC2X3' and 'MessagingIDs' in address['attributes']:
-                del address['attributes']['MessagingIDs']
-            results.append(self.file.create_entity('IfcPostalAddress' if
-                address['is_postal'] else 'IfcTelecomAddress', **address['attributes']))
+            results.append(self.create_address(address))
         return results
+
+    def create_address(self, address):
+        if self.schema == 'IFC2X3' and 'MessagingIDs' in address['attributes']:
+            del address['attributes']['MessagingIDs']
+        return self.file.create_entity('IfcPostalAddress' if
+            address['is_postal'] else 'IfcTelecomAddress', **address['attributes'])
 
     def create_library_information(self):
         information = self.ifc_parser.library_information
@@ -1854,6 +1861,12 @@ class IfcExporter():
                 'ObjectPlacement': placement,
                 'Representation': self.get_product_shape(element)
             })
+
+            if element['class'] == 'IfcSite':
+                element['attributes'].update({'SiteAddress': self.create_address(element['address'])})
+            elif element['class'] == 'IfcBuilding':
+                element['attributes'].update({'BuildingAddress': self.create_address(element['address'])})
+
             element['ifc'] = self.file.create_entity(element['class'], **element['attributes'])
             related_objects.append(element['ifc'])
             self.create_spatial_structure_elements(node['children'], element['ifc'])
