@@ -58,7 +58,20 @@ class IfcTransitionSegment2D:
 
 
 def _calc_biquadratic_parabola_point(lpt, L, R, ccw):
-    pass
+    x = lpt
+    if x <= L / 2:
+        y = math.pow(x, 4) / (6 * R * math.pow(L, 2))
+    else:
+        y = ((-1 * math.pow(x, 4)) / (6 * R * math.pow(L, 2))) \
+            + ((2 * math.pow(x, 3)) / (3 * R * L)) \
+            - ((math.pow(x, 2)) / (2 * R)) \
+            + ((L * x) / (6 * R)) \
+            - ((math.pow(L, 2) / (48 * R))
+
+    if not ccw:
+        y = -y
+
+    return gp_Pnt2d(x, y)
 
 
 def _calc_bloss_curve_point(lpt, L, R, ccw):
@@ -66,19 +79,48 @@ def _calc_bloss_curve_point(lpt, L, R, ccw):
 
 
 def _calc_clothoid_curve_point(lpt, L, R, ccw):
-    pass
+    x = lpt * (1 - (math.pow(lpt, 4) / (40 * math.pow(R, 2) * math.pow(L, 2))) \
+        + (math.pow(lpt, 8) / 3456 * math.pow(R, 4) * math.pow(L, 4)))
+
+    y = ((math.pow(lpt, 3) / (6 * R * L)) \
+        * (1 - (math.pow(lpt, 4) / (56 * math.pow(R, 2) \
+        * math.pow(L, 2))) \
+        + (math.pow(lpt, 8) / 7040 * math.pow(R, 4) * math.pow(L, 4))))
+
+    if not ccw:
+        y = -y
+
+    return gp_Pnt2d(x, y)
 
 
 def _calc_cosine_curve_point(lpt, L, R, ccw):
-    pass
+    pi = math.pi
+    psi_x = (pi * lpt) / L
+    terms = list()
+    terms.append(math.pow(L, 2) / (8.0 * math.pow(pi, 2) * math.pow(R, 2)))
+    terms.append(L / pi)
+    terms.append(math.pow(psi_x, 3) / 3.0)
+    terms.append(psi_x / 2.0)
+    terms.append((math.sin(psi_x) * math.cos(psi_x) / 2.0)
+    terms.append((psi_x * math.cos(psi_x))
+
+    x = (lpt - terms[0] * terms[1] * ( terms[2] + terms[3] - terms[4] - (2.0 * terms[5])))
+
+    # TODO: code for y - coordinate
+    y = 0
+
+    if not ccw:
+        y = -y
+
+    return gp_Pnt2d(x, y)
 
 
 def _calc_cubic_parabola_point(lpt, L, R, ccw):
 
     x = lpt
-    y = (x ** 3) / (6 * R * L)
+    y = math.pow(x, 3) / (6 * R * L)
     if not ccw:
-        y = -1 * y
+        y = -y
 
     return gp_Pnt2d(x, y)
 
@@ -89,11 +131,23 @@ def _calc_sine_curve_point(lpt, L, R, ccw):
 
 def _calc_transition_curve_point(lpt, L, R, ccw, trans_type):
 
-    if trans_type == "CUBICPARABOLA":
-        x, y = _calc_cubic_parabola_point(lpt, L, R, ccw)
-        return gp_Pnt2d(x, y)
-    else:
+    if trans_type == "BIQUADRATICPARABOLA":
+        return _calc_cubic_parabola_point
+    elif trans_type == "BLOSSCURVE":
+        # return _calc_bloss_curve_point(lpt, L, R, ccw)
         raise ValueError(f"Transition Curve type '{trans_type}' not implemented yet.")
+    elif trans_type == "CLOTHOIDCURVE":
+        return _calc_clothoid_curve_point(lpt, L, R, ccw)
+    elif trans_type == "COSINECURVE":
+        # return _calc_cosine_curve_point(lpt, L, R, ccw)
+        raise ValueError(f"Transition Curve type '{trans_type}' not implemented yet.")
+    elif trans_type == "CUBICPARABOLA":
+        return _calc_cubic_parabola_point(lpt, L, R, ccw)
+    elif trans_type == "SINECURVE":
+        # return _calc_sine_curve_point(lpt, L, R, ccw)
+        raise ValueError(f"Transition Curve type '{trans_type}' not implemented yet.")
+    else:
+        raise ValueError(f"Invalid Transition Curve type '{trans_type}'.")
 
 
 def convert_IfcTransitionSegment2D(segment, stroking_interval=5.0):
@@ -109,7 +163,7 @@ def convert_IfcTransitionSegment2D(segment, stroking_interval=5.0):
 
     L = segment.SegmentLength
     R = segment.EndRadius
-    ccw = segment.IsstartRadiusCCW
+    ccw = segment.IsStartRadiusCCW
     trans_type = segment.TransitionCurveType.name
 
     num_intervals = math.ceil(L / stroking_interval)
