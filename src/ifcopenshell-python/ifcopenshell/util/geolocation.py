@@ -1,17 +1,21 @@
 import math
 
-def dms2dd(degrees, minutes, seconds, milliseconds=0):
-    dd = float(degrees) + float(minutes)/60.0 + float(seconds)/(3600.0) + float(milliseconds/3600000.0)
+def dms2dd(degrees, minutes, seconds, ms=0):
+    dd = float(degrees) + float(minutes)/60.0 + float(seconds)/(3600.0) + float(ms/3600000000.0)
     return dd
 
-def dd2dms(dd):
+def dd2dms(dd, use_ms=False):
     dd = float(dd)
     sign = 1 if dd >= 0 else -1
     dd = abs(dd)
-    minutes, seconds = divmod(dd*3600, 60)
+    if use_ms:
+        seconds, ms = divmod(dd*60*60*1000000, 1000000)
+    minutes, seconds = divmod(dd*60*60, 60)
     degrees, minutes = divmod(minutes, 60)
     if dd < 0:
         degrees = -degrees
+    if use_ms:
+        return (int(degrees) * sign, int(minutes) * sign, int(seconds) * sign, int(ms) * sign)
     return (int(degrees) * sign, int(minutes) * sign, int(seconds) * sign)
 
 def xyz2enh(x, y, z, eastings, northings, orthogonal_height, x_axis_abscissa, x_axis_ordinate, scale=None):

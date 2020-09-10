@@ -109,6 +109,8 @@ def step_impl(context, unit):
             assert_pset(site, 'EPset_ProjectedCRS', 'MapUnit', unit)
         return
     actual_value = check_ifc4_geolocation('IfcProjectedCRS', 'MapUnit', should_assert=False)
+    if not actual_value:
+        assert False, 'A unit was not provided in the projected CRS'
     if actual_value.is_a('IfcSIUnit'):
         prefix = actual_value.Prefix if actual_value.Prefix else ''
         actual_value = prefix + actual_value.Name
@@ -162,7 +164,7 @@ def step_impl(context, number):
         return check_ifc2x3_geolocation('EPset_MapConversion', 'Height', number)
     abscissa = check_ifc4_geolocation('IfcMapConversion', 'XAxisAbscissa', should_assert=False)
     ordinate = check_ifc4_geolocation('IfcMapConversion', 'XAxisOrdinate', should_assert=False)
-    actual_value = round(ifcopenshell.util.geolocation.xy2angle(abscissa, ordinate) * -1, 3)
+    actual_value = round(ifcopenshell.util.geolocation.xy2angle(abscissa, ordinate), 3)
     value = round(number, 3)
     assert actual_value == value, 'We expected a value of "{}" but instead got "{}"'.format(value, actual_value)
 
@@ -183,7 +185,8 @@ def step_impl(context, guid, number):
     site = IfcFile.by_guid(guid)
     if not site.is_a('IfcSite'):
         assert False, 'The element {} is not an IfcSite'.format(site)
-    number = ifcopenshell.util.geolocation.dd2dms(number)
+    ref = assert_attribute(site, 'RefLongitude')
+    number = ifcopenshell.util.geolocation.dd2dms(number, use_ms=(len(ref) == 4))
     assert_attribute(site, 'RefLongitude', number)
 
 
@@ -193,7 +196,8 @@ def step_impl(context, guid, number):
     site = IfcFile.by_guid(guid)
     if not site.is_a('IfcSite'):
         assert False, 'The element {} is not an IfcSite'.format(site)
-    number = ifcopenshell.util.geolocation.dd2dms(number)
+    ref = assert_attribute(site, 'RefLatitude')
+    number = ifcopenshell.util.geolocation.dd2dms(number, use_ms=(len(ref) == 4))
     assert_attribute(site, 'RefLatitude', number)
 
 
