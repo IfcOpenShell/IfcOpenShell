@@ -41,7 +41,7 @@ def assert_attribute(element, name, value=None):
     if not value:
         if getattr(element, name) is None:
             assert False, 'The element {} does not have a value for the attribute {}'.format(element, name)
-        return
+        return getattr(element, name)
     if value == 'NULL':
         value = None
     actual_value = getattr(element, name)
