@@ -96,7 +96,6 @@ def setDefaultProperties(scene):
             'space.overlay.show_axis_y': False,
             'space.overlay.show_axis_z': False,
             'space.overlay.show_object_origins': False,
-            'space.overlay.show_extras': False,
             'space.overlay.show_relationship_lines': False,
         })
         drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
@@ -126,7 +125,6 @@ def setDefaultProperties(scene):
             'space.overlay.show_axis_y': False,
             'space.overlay.show_axis_z': False,
             'space.overlay.show_object_origins': False,
-            'space.overlay.show_extras': False,
             'space.overlay.show_relationship_lines': False,
         })
         drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()

@@ -2108,6 +2108,7 @@ class CutSection(bpy.types.Operator):
         camera = bpy.context.scene.camera
         if not (camera.type == 'CAMERA' and camera.data.type == 'ORTHO'):
             return {'FINISHED'}
+        bpy.ops.bim.activate_view(drawing_index=bpy.context.scene.DocProperties.drawings.find(camera.name.split('/')[1]))
         drawing_style = bpy.context.scene.DocProperties.drawing_styles[camera.data.BIMCameraProperties.active_drawing_style_index]
         self.diagram_name = camera.name.split('/')[1]
         bpy.context.scene.render.filepath = os.path.join(
@@ -2115,14 +2116,7 @@ class CutSection(bpy.types.Operator):
             'diagrams',
             '{}.png'.format(self.diagram_name)
         )
-        if drawing_style.render_type == 'DEFAULT':
-            bpy.ops.render.render(write_still=True)
-        elif drawing_style.render_type == 'VIEWPORT':
-            for obj in camera.users_collection[0].objects:
-                obj.hide_set(True)
-            bpy.ops.render.opengl(write_still=True)
-            for obj in camera.users_collection[0].objects:
-                obj.hide_set(False)
+        self.create_raster(camera, drawing_style)
         location = camera.location
         render = bpy.context.scene.render
         if self.is_landscape():
@@ -2234,8 +2228,52 @@ class CutSection(bpy.types.Operator):
         bpy.ops.bim.open_view(view=self.diagram_name)
         return {'FINISHED'}
 
+    def create_raster(self, camera, drawing_style):
+        if drawing_style.render_type == 'NONE':
+            return
+
+        if drawing_style.render_type == 'DEFAULT':
+            return bpy.ops.render.render(write_still=True)
+
+        previous_visibility = {}
+        for obj in camera.users_collection[0].objects:
+            previous_visibility[obj.name] = obj.hide_get()
+            obj.hide_set(True)
+        for obj in bpy.context.visible_objects:
+            if not obj.data \
+                    or isinstance(obj.data, bpy.types.Camera) \
+                    or 'IfcGrid/' in obj.name \
+                    or 'IfcGridAxis/' in obj.name \
+                    or 'IfcOpeningElement/' in obj.name \
+                    or self.does_obj_have_target_view_representation(obj, camera):
+                previous_visibility[obj.name] = obj.hide_get()
+                obj.hide_set(True)
+
+        space = self.get_view_3d()
+        previous_shading = space.shading.type
+        space.shading.type = 'RENDERED'
+        bpy.ops.render.opengl(write_still=True)
+        space.shading.type = previous_shading
+
+        for name, value in previous_visibility.items():
+            bpy.data.objects[name].hide_set(value)
+
+
+    def does_obj_have_target_view_representation(self, obj, camera):
+        return camera.data.BIMCameraProperties.target_view in [c.target_view for c in obj.BIMObjectProperties.representation_contexts]
+
     def is_landscape(self):
         return bpy.context.scene.render.resolution_x > bpy.context.scene.render.resolution_y
+
+    def get_view_3d(self):
+        for area in bpy.context.screen.areas:
+            if area.type != 'VIEW_3D':
+                continue
+            for space in area.spaces:
+                if space.type != 'VIEW_3D':
+                    continue
+                return space
+
 
 
 class AddSheet(bpy.types.Operator):
@@ -3650,7 +3688,6 @@ class SaveDrawingStyle(bpy.types.Operator):
             'space.overlay.show_axis_y': space.overlay.show_axis_y,
             'space.overlay.show_axis_z': space.overlay.show_axis_z,
             'space.overlay.show_object_origins': space.overlay.show_object_origins,
-            'space.overlay.show_extras': space.overlay.show_extras,
             'space.overlay.show_relationship_lines': space.overlay.show_relationship_lines,
         }
         if self.index:
@@ -3707,7 +3744,6 @@ class ActivateDrawingStyle(bpy.types.Operator):
         space.overlay.show_axis_y = style['space.overlay.show_axis_y']
         space.overlay.show_axis_z = style['space.overlay.show_axis_z']
         space.overlay.show_object_origins = style['space.overlay.show_object_origins']
-        space.overlay.show_extras = style['space.overlay.show_extras']
         space.overlay.show_relationship_lines = style['space.overlay.show_relationship_lines']
         space.shading.type = 'RENDERED'
 
@@ -3790,6 +3826,7 @@ class AddDrawing(bpy.types.Operator):
         area = next(area for area in bpy.context.screen.areas if area.type == 'VIEW_3D')
         area.spaces[0].region_3d.view_perspective = 'CAMERA'
         new.camera = camera
+        bpy.ops.bim.activate_drawing_style()
         return {'FINISHED'}
 
 
