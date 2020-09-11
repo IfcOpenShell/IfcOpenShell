@@ -1825,6 +1825,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     bl_idname = 'blenderbim'
     svg2pdf_command: StringProperty(name="SVG to PDF Command")
     svg2dxf_command: StringProperty(name="SVG to DXF Command")
+    svg_command: StringProperty(name="SVG Command")
+    pdf_command: StringProperty(name="PDF Command")
 
     def draw(self, context):
         layout = self.layout
@@ -1838,6 +1840,10 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(self, 'svg2pdf_command')
         row = layout.row()
         row.prop(self, 'svg2dxf_command')
+        row = layout.row()
+        row.prop(self, 'svg_command')
+        row = layout.row()
+        row.prop(self, 'pdf_command')
 
 
 class BIM_PT_ifcclash(Panel):

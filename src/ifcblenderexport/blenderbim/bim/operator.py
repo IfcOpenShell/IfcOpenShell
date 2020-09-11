@@ -5,6 +5,7 @@ import time
 import json
 import logging
 import webbrowser
+import subprocess
 import ifcopenshell
 import ifcopenshell.util.selector
 import ifcopenshell.util.geolocation
@@ -61,6 +62,15 @@ def set_active_camera_resolution(scene):
     if scene.camera != current_drawing.camera:
         scene.DocProperties.current_drawing_index = scene.DocProperties.drawings.find(scene.camera.name.split('/')[1])
         bpy.ops.bim.activate_view(drawing_index=scene.DocProperties.current_drawing_index)
+
+
+def open_with_user_command(user_command, path):
+    if user_command:
+        commands = eval(user_command)
+        for command in commands:
+            subprocess.run(command)
+    else:
+        webbrowser.open('file://' + path)
 
 
 class ExportIFC(bpy.types.Operator):
@@ -2094,9 +2104,9 @@ class OpenView(bpy.types.Operator):
     view: bpy.props.StringProperty()
 
     def execute(self, context):
-        webbrowser.open('file://' + os.path.join(
-            bpy.context.scene.BIMProperties.data_dir, 'diagrams',
-            self.view + '.svg'))
+        open_with_user_command(
+            bpy.context.preferences.addons['blenderbim'].preferences.svg_command,
+            os.path.join(bpy.context.scene.BIMProperties.data_dir, 'diagrams', self.view + '.svg'))
         return {'FINISHED'}
 
 
@@ -2295,9 +2305,11 @@ class OpenSheet(bpy.types.Operator):
 
     def execute(self, context):
         props = bpy.context.scene.DocProperties
-        webbrowser.open('file://' + os.path.join(
-            bpy.context.scene.BIMProperties.data_dir, 'sheets',
-            props.sheets[props.active_sheet_index].name + '.svg'))
+        open_with_user_command(
+            bpy.context.preferences.addons['blenderbim'].preferences.svg_command,
+            os.path.join(
+                bpy.context.scene.BIMProperties.data_dir, 'sheets',
+                props.sheets[props.active_sheet_index].name + '.svg'))
         return {'FINISHED'}
 
 
@@ -2330,8 +2342,9 @@ class CreateSheets(bpy.types.Operator):
         sheet_builder.build(name)
 
         svg2pdf_command = bpy.context.preferences.addons['blenderbim'].preferences.svg2pdf_command
+        svg2dxf_command = bpy.context.preferences.addons['blenderbim'].preferences.svg2dxf_command
+
         if svg2pdf_command:
-            import subprocess
             path = os.path.join(bpy.context.scene.BIMProperties.data_dir, 'build', name)
             svg = os.path.join(path, name + '.svg')
             pdf = os.path.join(path, name + '.pdf')
@@ -2341,9 +2354,7 @@ class CreateSheets(bpy.types.Operator):
             for command in commands:
                 subprocess.run(command)
 
-        svg2dxf_command = bpy.context.preferences.addons['blenderbim'].preferences.svg2dxf_command
         if svg2dxf_command:
-            import subprocess
             path = os.path.join(bpy.context.scene.BIMProperties.data_dir, 'build', name)
             svg = os.path.join(path, name + '.svg')
             eps = os.path.join(path, name + '.eps')
@@ -2357,9 +2368,11 @@ class CreateSheets(bpy.types.Operator):
 
 
         if svg2pdf_command:
-            webbrowser.open('file://' + os.path.join(pdf))
+            open_with_user_command(bpy.context.preferences.addons['blenderbim'].preferences.pdf_command, pdf)
         else:
-            webbrowser.open('file://' + os.path.join(bpy.context.scene.BIMProperties.data_dir, 'build', name, name + '.svg'))
+            open_with_user_command(
+                bpy.context.preferences.addons['blenderbim'].preferences.svg_command,
+                os.path.join(bpy.context.scene.BIMProperties.data_dir, 'build', name, name + '.svg'))
         return {'FINISHED'}
 
 
@@ -3504,7 +3517,7 @@ class ExecuteBIMTester(bpy.types.Operator):
         os.chdir(bpy.context.scene.BIMProperties.features_dir)
         bimtester.run_tests({'feature': filename, 'advanced_arguments': None, 'console': False})
         bimtester.generate_report()
-        webbrowser.open(os.path.join(
+        webbrowser.open('file://' + os.path.join(
             bpy.context.scene.BIMProperties.features_dir,
             'report', bpy.context.scene.BIMProperties.features_file + '.feature.html'))
         os.chdir(cwd)
@@ -3934,7 +3947,9 @@ class BuildSchedule(bpy.types.Operator):
             bpy.context.scene.BIMProperties.data_dir, 'schedules',
             schedule.name + '.svg')
         schedule_creator.schedule(schedule.file, outfile)
-        webbrowser.open('file://' + outfile)
+        open_with_user_command(
+            bpy.context.preferences.addons['blenderbim'].preferences.svg_command,
+            outfile)
         return {'FINISHED'}
 
 
