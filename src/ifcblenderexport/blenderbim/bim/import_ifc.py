@@ -953,9 +953,6 @@ class IfcImporter():
         mesh['ios_material_ids'] = material_ids
         mesh['ios_items'] = representation_items
         mesh.BIMMeshProperties.is_native = True
-        for representation_item in representation_items:
-            new = mesh.BIMMeshProperties.representation_items.add()
-            new.name = representation_item['name']
         return mesh
 
     def get_representation_item_material_name(self, item):

@@ -243,6 +243,8 @@ endif
 	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/element_classes.py
 	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/geocoding.py
 	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/geolocation.py
+	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/geometric_detail.py
+	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/model_federation.py
 	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/project_setup.py
 	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/steps.py
 	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/utils.py

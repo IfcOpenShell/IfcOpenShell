@@ -2347,35 +2347,6 @@ class ActivateView(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class AssignContext(bpy.types.Operator):
-    bl_idname = 'bim.assign_context'
-    bl_label = 'Assign Context'
-
-    def execute(self, context):
-        if not self.is_mesh_context_sensitive(bpy.context.active_object.data.name):
-            bpy.context.active_object.data.name = '{}/{}/{}/{}'.format(
-                bpy.context.scene.BIMProperties.available_contexts,
-                bpy.context.scene.BIMProperties.available_subcontexts,
-                bpy.context.scene.BIMProperties.available_target_views,
-                bpy.context.active_object.data.name
-            )
-        else:
-            bpy.context.active_object.data.name = '{}/{}/{}/{}'.format(
-                bpy.context.scene.BIMProperties.available_contexts,
-                bpy.context.scene.BIMProperties.available_subcontexts,
-                bpy.context.scene.BIMProperties.available_target_views,
-                bpy.context.active_object.data.name.split('/')[3]
-            )
-        return {'FINISHED'}
-
-    def is_mesh_context_sensitive(self, name):
-        return '/' in name \
-            and ( \
-                name[0:6] == 'Model/' \
-                or name[0:5] == 'Plan/' \
-            )
-
-
 class SwitchContext(bpy.types.Operator):
     bl_idname = 'bim.switch_context'
     bl_label = 'Switch Context'
