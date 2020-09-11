@@ -1426,5 +1426,4 @@ class BIMMeshProperties(PropertyGroup):
     is_parametric: BoolProperty(name='Is Parametric', default=False)
     presentation_layer: StringProperty(name="Presentation Layer")
     geometry_type: StringProperty(name="Geometry Type")
-    representation_items: CollectionProperty(name="Representation Items", type=RepresentationItem)
     active_representation_item_index: IntProperty(name='Active Representation Item Index')

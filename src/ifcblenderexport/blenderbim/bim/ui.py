@@ -601,20 +601,10 @@ class BIM_PT_mesh(Panel):
         props = context.active_object.data.BIMMeshProperties
 
         row = layout.row(align=True)
-        row.prop(bpy.context.scene.BIMProperties, 'available_contexts', text='')
-        row.prop(bpy.context.scene.BIMProperties, 'available_subcontexts', text='')
-        row.prop(bpy.context.scene.BIMProperties, 'available_target_views', text='')
-
-        row = layout.row()
-        row.operator('bim.assign_context')
-
-        row = layout.row(align=True)
         row.operator('bim.push_representation')
 
         row = layout.row()
         row.prop(props, 'geometry_type')
-
-        layout.template_list('BIM_UL_representation_items', '', props, 'representation_items', props, 'active_representation_item_index')
 
         row = layout.row()
         row.prop(props, 'presentation_layer')
@@ -1829,15 +1819,6 @@ class BIM_UL_classifications(bpy.types.UIList):
                 layout.label(text='', icon='BLANK1')
             layout.prop(item, "name", text="", emboss=False)
             layout.label(text=itemdata['name'])
-
-
-class BIM_UL_representation_items(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        ob = data
-        if item:
-            layout.prop(item, 'name', text='', emboss=False)
-        else:
-            layout.label(text="", translate=False)
 
 
 class BIM_ADDON_preferences(bpy.types.AddonPreferences):
