@@ -107,7 +107,6 @@ class MaterialCreator():
             return
         if len(obj.material_slots) == 1:
             return
-        slots = [self.canonicalise_material_name(s.name) for s in obj.material_slots]
         material_to_slot = {}
         for i, material in enumerate(mesh['ios_materials']):
             if material == 'NULLMAT':
@@ -116,13 +115,16 @@ class MaterialCreator():
                 material = material.split('-')[2]
             if len(bytes(material, 'utf-8')) > 63: # Blender material names are up to 63 UTF-8 bytes
                 material = bytes(material, 'utf-8')[0:63].decode('utf-8')
-            try:
-                material_to_slot[i] = slots.index(material)
-            except:
-                # If the material name duplicates, a `.001` is added, this
-                # reduces the maxmium characters for the material name to 59.
+
+            slot_index = obj.material_slots.find(material)
+            if slot_index == -1:
+                # If we can't find the material, it is possible that the
+                # material name is duplicated, and so a '.001' is added.
+                # The maximum characters for the material name is 59 in this
+                # scenario.
                 material = material[0:59]
-                material_to_slot[i] = slots.index(material)
+                slot_index = [self.canonicalise_material_name(s.name) for s in obj.material_slots].index(material)
+            material_to_slot[i] = slot_index
 
         if len(mesh.polygons) == len(mesh['ios_material_ids']):
             material_index = [(material_to_slot[mat_id] if mat_id != -1
@@ -180,8 +182,8 @@ class MaterialCreator():
     def get_material_name(self, styled_item):
         if styled_item.Name:
             return styled_item.Name
-        styled_item = self.resolve_presentation_style_assignment(styled_item)
-        for style in styled_item.Styles:
+        styles = self.get_styled_item_styles(styled_item)
+        for style in styles:
             if not style.is_a('IfcSurfaceStyle'):
                 continue
             if style.Name:
@@ -190,8 +192,8 @@ class MaterialCreator():
         return str(styled_item.id())
 
     def parse_styled_item(self, styled_item, material):
-        styled_item = self.resolve_presentation_style_assignment(styled_item)
-        for style in styled_item.Styles:
+        styles = self.get_styled_item_styles(styled_item)
+        for style in styles:
             if not style.is_a('IfcSurfaceStyle'):
                 continue
             external_style = None
@@ -217,11 +219,14 @@ class MaterialCreator():
 
     # IfcPresentationStyleAssignment is deprecated as of IFC4
     # However it is still widely used thanks to Revit :(
-    def resolve_presentation_style_assignment(self, styled_item):
+    def get_styled_item_styles(self, styled_item):
+        styles = []
         for style in styled_item.Styles:
             if style.is_a('IfcPresentationStyleAssignment'):
-                return style
-        return styled_item
+                styles.extend(self.get_styled_item_styles(style))
+            else:
+                styles.append(style)
+        return styles
 
     def resolve_mapped_representation_items(self, representation):
         items = []
