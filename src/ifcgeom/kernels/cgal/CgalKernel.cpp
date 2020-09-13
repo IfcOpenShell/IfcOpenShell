@@ -577,26 +577,13 @@ bool CgalKernel::convert_impl(const taxonomy::extrusion* extrusion, ifcopenshell
 	return true;
 }
 
-bool CgalKernel::convert(const taxonomy::extrusion* extrusion, cgal_shape_t &shape) {
-	const double& height = extrusion->depth;
-	if (height < precision_) {
-		Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", extrusion->instance);
-		return false;
-	}
-
-	// Outer
-	cgal_face_t bottom_face;
-	if (!convert(&extrusion->basis, bottom_face)) {
-		return false;
-	}
-	//  std::cout << "Face vertices: " << face.outer.size() << std::endl;
-
-	auto fs = *extrusion->direction.components;
-	cgal_direction_t dir(fs(0), fs(1), fs(2));
-	//  std::cout << "Direction: " << dir << std::endl;
-
+bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, const taxonomy::direction3& direction, double height, cgal_shape_t& shape) {
+	
 	std::list<cgal_face_t> face_list;
 	face_list.push_back(bottom_face);
+
+	auto& fs = *direction.components;
+	cgal_direction_t dir(fs(0), fs(1), fs(2));
 
 	for (std::vector<Kernel_::Point_3>::const_iterator current_vertex = bottom_face.outer.begin();
 		current_vertex != bottom_face.outer.end();
@@ -664,7 +651,7 @@ bool CgalKernel::convert(const taxonomy::extrusion* extrusion, cgal_shape_t &sha
 		try {
 			nef_shape -= utils::create_nef_polyhedron(face_list);
 		} catch (...) {
-			Logger::Message(Logger::LOG_ERROR, "IfcExtrudedAreaSolid: cannot subtract opening for:", extrusion->instance);
+			Logger::Message(Logger::LOG_ERROR, "IfcExtrudedAreaSolid: cannot subtract opening for:");
 			return false;
 		}
 	}
@@ -679,10 +666,24 @@ bool CgalKernel::convert(const taxonomy::extrusion* extrusion, cgal_shape_t &sha
 		nef_shape.convert_to_polyhedron(shape);
 		return true;
 	} catch (...) {
-		Logger::Message(Logger::LOG_ERROR, "IfcExtrudedAreaSolid: cannot convert Nef to polyhedron for:", extrusion->instance);
+		Logger::Message(Logger::LOG_ERROR, "IfcExtrudedAreaSolid: cannot convert Nef to polyhedron for:");
+		return false;
+	}
+}
+
+bool CgalKernel::convert(const taxonomy::extrusion* extrusion, cgal_shape_t &shape) {
+	const double& height = extrusion->depth;
+	if (height < precision_) {
+		Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", extrusion->instance);
 		return false;
 	}
 
+	cgal_face_t bottom_face;
+	if (!convert(&extrusion->basis, bottom_face)) {
+		return false;
+	}
+
+	return process_extrusion(bottom_face, extrusion->direction, extrusion->depth, shape);
 }
 
 CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_cube(double d) {
@@ -879,12 +880,221 @@ namespace {
 	}
 }
 
+#include <CGAL/Nef_nary_union_3.h>
 
+#define add_condition(x) for(auto& op : ops) { if (!(x)) return false; }
+
+namespace {
+	CGAL::Polygon_2<Kernel_> loop_to_polygon_2(taxonomy::loop* loop) {
+		CGAL::Polygon_2<Kernel_> polygon;
+		auto edges = loop->children_as<taxonomy::edge>();
+		for (auto& e : edges) {
+			auto& p = boost::get<taxonomy::point3>(e->start);
+			CGAL::Point_2<Kernel_> pnt((*p.components)(0), (*p.components)(1));
+			polygon.push_back(pnt);
+		}
+		return polygon;
+	}
+
+	CGAL::Polygon_2<Kernel_> wire_to_polygon_2(cgal_wire_t& w) {
+		CGAL::Polygon_2<Kernel_> polygon;
+		for (auto& p : w) {
+			CGAL::Point_2<Kernel_> pnt(p.cartesian(0), p.cartesian(1));
+			polygon.push_back(pnt);
+		}
+		return polygon;
+	}
+}
+
+bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result* br, std::list<CGAL::Polygon_2<Kernel_>>& loops, double& z0, double& z1) {
+	// @todo can also be for other boolean operations, just depth/matrix operands are different
+	if (br->operation != taxonomy::boolean_result::SUBTRACTION) {
+		return false;
+	}
+
+	auto& ops = br->children;
+
+	std::vector<taxonomy::extrusion*> extrusions;
+	std::transform(ops.begin(), ops.end(), std::back_inserter(extrusions), [](taxonomy::item* op) {
+		taxonomy::extrusion* nptr = nullptr;
+		if (op->kind() != taxonomy::COLLECTION) return nptr;
+		auto cl = (taxonomy::collection*) op;
+		if ((cl)->children.size() != 1) return nptr;
+		if (cl->children[0]->kind() == taxonomy::COLLECTION) {
+			cl = (taxonomy::collection*) cl->children[0];
+			if ((cl)->children.size() != 1) return nptr;
+		}
+		if (cl->children[0]->kind() != taxonomy::EXTRUSION) return nptr;
+		auto ex = (taxonomy::extrusion*) cl->children[0];
+		return ex;
+	});
+
+	if (std::find(extrusions.begin(), extrusions.end(), nullptr) != extrusions.end()) {
+		return false;
+	}
+
+	// op[i].matrix[2,0:3] = <0 0 1>
+	Eigen::Vector3d Z(0., 0., 1.);
+	if (std::find_if(extrusions.begin(), extrusions.end(), [&Z](taxonomy::extrusion* ex) {
+		auto& m = *ex->matrix.components;
+		return std::abs(1. - std::abs(m.col(2).head<3>().dot(Z))) > 1.e-5;
+	}) != extrusions.end()) {
+		return false;
+	}
+
+	// | op[i].matrix[2,0:3] . op[i].direction | = 1
+	if (std::find_if(extrusions.begin(), extrusions.end(), [](taxonomy::extrusion* ex) {
+		auto& d = *ex->direction.components;
+		auto& m = *ex->matrix.components;
+		return std::abs(1. - std::abs(m.col(2).head<3>().dot(d))) > 1.e-5;
+	}) != extrusions.end()) {
+		return false;
+	}
+
+	// op[0].depth <= op[i..n].depth
+	const auto& op_0_depth = extrusions[0]->depth;
+	if (std::find_if(extrusions.begin() + 1, extrusions.end(), [&op_0_depth](taxonomy::extrusion* ex) {
+		return op_0_depth > ex->depth;
+	}) != extrusions.end()) {
+		return false;
+	}
+
+	const auto& op_0_matrix_2_3 = (*extrusions[0]->matrix.components)(2, 3);
+	if (std::find_if(extrusions.begin() + 1, extrusions.end(), [&op_0_matrix_2_3](taxonomy::extrusion* ex) {
+		return op_0_matrix_2_3 < (*ex->matrix.components)(2, 3);
+	}) != extrusions.end()) {
+		return false;
+	}
+
+	std::vector<cgal_wire_t> wires;
+	try {
+		std::transform(extrusions.begin(), extrusions.end(), std::back_inserter(wires), [this](taxonomy::extrusion* ex) {
+			if (ex->basis.children.size() == 1 && ex->basis.children[0]->kind() == taxonomy::LOOP) {
+				auto l = (taxonomy::loop*) ex->basis.children[0];
+				cgal_wire_t w;
+				cgal_placement_t trsf;
+				convert_placement(ex->matrix, trsf);
+				if (convert(l, w)) {
+					for (auto& p : w) {
+						p = p.transform(trsf);
+					}
+					return w;
+				}
+			}
+			throw std::runtime_error("failed to convert to polygon");
+		});
+	} catch (std::runtime_error&) {
+		return false;
+	}
+
+	for (auto it = wires.begin(); it != wires.end(); ++it) {
+		auto& w = *it;
+		auto op = (taxonomy::geom_item*) (*(ops.begin() + std::distance(wires.begin(), it)));
+		cgal_placement_t trsf;
+		convert_placement(op->matrix, trsf);
+		for (auto& p : w) {
+			p = trsf.transform(p);
+		}
+	}
+
+	loops.clear();
+	std::transform(wires.begin(), wires.end(), std::back_inserter(loops), wire_to_polygon_2);
+
+	z0 = op_0_matrix_2_3;
+	z1 = z0 + extrusions[0]->depth * (*extrusions[0]->direction.components)(2);
+
+	if (z1 < z0) {
+		std::swap(z0, z1);
+	}
+
+	return true;
+}
+
+#include <CGAL/Polygon_set_2.h>
+#include <CGAL/Boolean_set_operations_2.h>
+#include <CGAL/Arr_vertical_decomposition_2.h>
+#include <CGAL/Polygon_vertical_decomposition_2.h>
+#include <CGAL/Polygon_triangulation_decomposition_2.h>
 
 bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::geometry::ConversionResults& results) {
+	double z0, z1;
+	std::list<CGAL::Polygon_2<Kernel_>> loops;
+	if (process_as_2d_polygon(br, loops, z0, z1)) {
+		auto first_item_style = ((taxonomy::geom_item*)br->children[0])->surface_style;
+
+		std::list<CGAL::Polygon_with_holes_2<Kernel_>> pwhs;
+
+		auto it = loops.begin();
+		const auto& p = *it;
+
+		CGAL::Polygon_with_holes_2<Kernel_> pwh(p, ++it, loops.end());
+		CGAL::Gps_segment_traits_2<Kernel_> traits;
+		if (false && !CGAL::are_holes_and_boundary_pairwise_disjoint(pwh, traits)) {
+			// this is very slow.
+			// the check is also slow...
+			CGAL::Polygon_set_2<Kernel_> result;
+			auto it = loops.begin();
+			result.insert(*it++);
+			for (; it != loops.end(); ++it) {
+				result.difference(*it);
+			}
+			result.polygons_with_holes(std::back_inserter(pwhs));
+		} else {
+			pwhs.push_back(pwh);
+		}
+
+#if 0
+		CGAL::Polygon_vertical_decomposition_2<Kernel_> decompositor;
+#else
+		CGAL::Polygon_triangulation_decomposition_2<Kernel_> decompositor;
+#endif
+		
+		std::list<CGAL::Polygon_2<Kernel_>> decom_polies;
+		for (auto& pwh : pwhs) {
+			decompositor(pwh, std::back_inserter(decom_polies));
+		}
+
+		std::transform(decom_polies.begin(), decom_polies.end(), std::back_inserter(results), [this, &br, &z0, &z1, &first_item_style](const CGAL::Polygon_2<Kernel_>& p2) {
+			cgal_face_t f;
+			std::transform(
+				p2.vertices_begin(),
+				p2.vertices_end(),
+				std::back_inserter(f.outer),
+				[](const CGAL::Point_2<Kernel_>& p) {
+					return CGAL::Point_3<Kernel_>(p.cartesian(0), p.cartesian(1), 0);
+				}
+			);
+
+			cgal_shape_t shp;
+			taxonomy::direction3 d(0, 0, 1);
+			process_extrusion(f, d, z1 - z0, shp);
+
+			for (auto it = shp.vertices_begin(); it != shp.vertices_end(); ++it) {
+				auto p = it->point();
+				it->point() = cgal_point_t(p.cartesian(0), p.cartesian(1), p.cartesian(2) + z0);
+			}
+
+			return ConversionResult(
+				br->instance->data().id(),
+				br->matrix,
+				new CgalShape(shp),
+				br->surface_style.diffuse ? br->surface_style : first_item_style
+			);
+		});
+
+		Logger::Notice("Processed boolean operation as 2d arrangement");
+
+		return true;
+
+	}
+
+
 	bool first = true;
 
 	CGAL::Nef_polyhedron_3<Kernel_> a;
+
+	CGAL::Nef_nary_union_3<CGAL::Nef_polyhedron_3<Kernel_>> second_operand_collector;
+	size_t second_operand_collector_size = 0;
 
 	taxonomy::style first_item_style;
 
@@ -927,15 +1137,20 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 			}
 
 			CGAL::Nef_polyhedron_3<Kernel_> nef;
-			preprocess_boolean_operand(c->instance, entity_shape, nef,
+			if (!preprocess_boolean_operand(c->instance, entity_shape, nef,
 				// Dilate boolean subtraction operands
-				(!first && br->operation == taxonomy::boolean_result::SUBTRACTION));
+				(!first && br->operation == taxonomy::boolean_result::SUBTRACTION)))
+			{
+				continue;
+			}
 
 			if (first) {
 				a = nef;
 			} else {
 				if (br->operation == taxonomy::boolean_result::SUBTRACTION) {
-					a -= nef;
+					second_operand_collector.add_polyhedron(nef);
+					second_operand_collector_size++;
+					// a -= nef;
 				} else if (br->operation == taxonomy::boolean_result::INTERSECTION) {
 					a *= nef;
 				} else if (br->operation == taxonomy::boolean_result::UNION) {
@@ -945,6 +1160,10 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 		}
 
 		first = false;
+	}
+
+	if (br->operation == taxonomy::boolean_result::SUBTRACTION && second_operand_collector_size) {
+		a -= second_operand_collector.get_union();
 	}
 
 	cgal_shape_t a_poly, b_poly;

@@ -127,6 +127,9 @@ namespace kernels {
 		bool convert(const taxonomy::loop*, cgal_wire_t&);
 		// bool convert(const taxonomy::matrix4*, cgal_placement_t&);
 		bool convert(const taxonomy::shell*, cgal_shape_t&);
+
+		bool process_extrusion(const cgal_face_t& bottom_face, const taxonomy::direction3& direction, double height, cgal_shape_t& shape);
+		bool process_as_2d_polygon(const taxonomy::boolean_result* br, std::list<CGAL::Polygon_2<Kernel_>>& loops, double& z0, double& z1);
 		
 		// virtual bool convert_impl(const taxonomy::face*, ifcopenshell::geometry::ConversionResults&);
 		virtual bool convert_impl(const taxonomy::shell*, ifcopenshell::geometry::ConversionResults&);
