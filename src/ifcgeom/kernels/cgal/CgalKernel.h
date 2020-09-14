@@ -53,24 +53,24 @@ public:
   }
   
   void operator()(CGAL::Polyhedron_3<Kernel_>::HalfedgeDS &hds) {
-    std::list<Kernel_::Point_3> points;
-    std::list<std::list<std::size_t>> facet_vertices;
+    // std::list<Kernel_::Point_3> points;
+	std::map<Kernel_::Point_3, size_t> points;
+    std::vector<std::vector<std::size_t>> facet_vertices(face_list->size());
     CGAL::Polyhedron_incremental_builder_3<CGAL::Polyhedron_3<Kernel_>::HalfedgeDS> builder(hds, true);
     
+	size_t i = 0;
     for (auto &face: *face_list) {
-      facet_vertices.push_back(std::list<std::size_t>());
       for (auto &point: face.outer) {
-        facet_vertices.back().push_back(points.size());
-        points.push_back(point);
+		  auto p = points.insert({ point, points.size() });
+		  if (p.second) {
+			  builder.add_vertex(point);
+		  }
+		  facet_vertices[i].push_back(p.first->second);
       }
+	  i++;
     }
     
-    builder.begin_surface(points.size(), facet_vertices.size());
-    
-    for (auto &point: points) {
-//      std::cout << "Adding point " << point << std::endl;
-      builder.add_vertex(point);
-    }
+    builder.begin_surface(points.size(), facet_vertices.size(), 0, CGAL::Polyhedron_incremental_builder_3<CGAL::Polyhedron_3<Kernel_>::HalfedgeDS>::ABSOLUTE_INDEXING);
     
     for (auto &facet: facet_vertices) {
       builder.begin_facet();
@@ -92,7 +92,7 @@ namespace geometry {
 namespace utils {
 	IFC_GEOM_API CGAL::Polyhedron_3<Kernel_> create_cube(double d);
 	IFC_GEOM_API CGAL::Polyhedron_3<Kernel_> create_cube(const Kernel_::Point_3& lower, const Kernel_::Point_3& upper);
-	IFC_GEOM_API CGAL::Polyhedron_3<Kernel_> create_polyhedron(std::list<cgal_face_t> &face_list);
+	IFC_GEOM_API CGAL::Polyhedron_3<Kernel_> create_polyhedron(std::list<cgal_face_t> &face_list, bool stitch_borders=false);
 	IFC_GEOM_API CGAL::Polyhedron_3<Kernel_> create_polyhedron(const CGAL::Nef_polyhedron_3<Kernel_> &nef_polyhedron);
 	IFC_GEOM_API CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(std::list<cgal_face_t> &face_list);
 	IFC_GEOM_API CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(CGAL::Polyhedron_3<Kernel_> &polyhedron);

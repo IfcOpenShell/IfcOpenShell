@@ -40,7 +40,7 @@ void CgalKernel::remove_duplicate_points_from_loop(cgal_wire_t& polygon) {
 	}
 }
 
-CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(std::list<cgal_face_t> &face_list) {
+CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(std::list<cgal_face_t> &face_list, bool stitch_borders) {
 
 	// Naive creation
 	CGAL::Polyhedron_3<Kernel_> polyhedron;
@@ -49,7 +49,15 @@ CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(std
 
 	// Stitch edges
 	//  std::cout << "Before: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
-	CGAL::Polygon_mesh_processing::stitch_borders(polyhedron);
+	
+	if (stitch_borders) {
+		// we have a map of points now in the builder, it's maybe not necessary anymore to stitch_borders?
+		// size_t ne = polyhedron.size_of_border_edges();
+		CGAL::Polygon_mesh_processing::stitch_borders(polyhedron);
+		// size_t ne2 = polyhedron.size_of_border_edges();
+		// std::wcout << (ne - ne2) << " removed" << std::endl;
+	}
+	
 	polyhedron.normalize_border();
 	if (!polyhedron.is_valid(false, 1)) {
 		Logger::Message(Logger::LOG_ERROR, "create_polyhedron: Polyhedron not valid!");
@@ -1000,8 +1008,12 @@ bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result* br, std::
 	loops.clear();
 	std::transform(wires.begin(), wires.end(), std::back_inserter(loops), wire_to_polygon_2);
 
+	auto& op_0_matrix = *extrusions[0]->matrix.components;
+	Eigen::Vector4d op_0_dir;
+	op_0_dir << (*extrusions[0]->direction.components), 0;
+	op_0_dir = op_0_matrix * op_0_dir;
 	z0 = op_0_matrix_2_3;
-	z1 = z0 + extrusions[0]->depth * (*extrusions[0]->direction.components)(2);
+	z1 = z0 + extrusions[0]->depth * op_0_dir(2);
 
 	if (z1 < z0) {
 		std::swap(z0, z1);
