@@ -197,7 +197,7 @@ int main(int argc, char** argv) {
 	typedef char char_t;
 #endif
 
-	double deflection_tolerance;
+	double deflection_tolerance, angular_tolerance;
 	inclusion_filter include_filter;
 	inclusion_traverse_filter include_traverse_filter;
 	exclusion_filter exclude_filter;
@@ -326,6 +326,8 @@ int main(int argc, char** argv) {
 			"model in other modelling application in any case.")
 		("deflection-tolerance", po::value<double>(&deflection_tolerance)->default_value(1e-3),
 			"Sets the deflection tolerance of the mesher, 1e-3 by default if not specified.")
+		("angular-tolerance", po::value<double>(&angular_tolerance)->default_value(0.5),
+			"Sets the angular tolerance of the mesher in radians 0.5 by default if not specified.")
 		("generate-uvs",
 			"Generates UVs (texture coordinates) by using simple box projection. Requires normals. "
 			"Not guaranteed to work properly if used with --weld-vertices.")
@@ -708,7 +710,8 @@ int main(int argc, char** argv) {
 	settings.set(SerializerSettings::USE_ELEMENT_TYPES, use_element_types);
 	settings.set(SerializerSettings::USE_ELEMENT_HIERARCHY, use_element_hierarchy);
     settings.set_deflection_tolerance(deflection_tolerance);
-    settings.precision = precision;
+	settings.set_angular_tolerance(angular_tolerance);
+	settings.precision = precision;
 
 	boost::shared_ptr<GeometrySerializer> serializer; /**< @todo use std::unique_ptr when possible */
 	if (output_extension == OBJ) {
