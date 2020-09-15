@@ -1215,6 +1215,8 @@ class BIMProperties(PropertyGroup):
     import_should_merge_by_material: BoolProperty(name="Import and Merge by Material", default=False)
     import_should_merge_materials_by_colour: BoolProperty(name="Import and Merge Materials by Colour", default=False)
     import_should_clean_mesh: BoolProperty(name="Import and Clean Mesh", default=True)
+    import_deflection_tolerance: FloatProperty(name="Import Deflection Tolerance", default=0.001)
+    import_angular_tolerance: FloatProperty(name="Import Angular Tolerance", default=0.5)
     qa_reject_element_reason: StringProperty(name="Element Rejection Reason")
     person: EnumProperty(items=getPersons, name="Person")
     organisation: EnumProperty(items=getOrganisations, name="Organisation")

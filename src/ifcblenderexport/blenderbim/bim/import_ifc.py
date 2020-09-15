@@ -251,6 +251,9 @@ class IfcImporter():
         self.diff = None
         self.file = None
         self.settings = ifcopenshell.geom.settings()
+        self.settings.set_deflection_tolerance(self.ifc_import_settings.deflection_tolerance)
+        # Uncomment this when the latest IfcOpenBot build is ready
+        # self.settings.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
         if self.ifc_import_settings.should_import_curves:
             self.settings.set(self.settings.INCLUDE_CURVES, True)
         self.settings_native = ifcopenshell.geom.settings()
@@ -2066,4 +2069,6 @@ class IfcImportSettings:
         settings.should_merge_by_material = scene_bim.import_should_merge_by_material
         settings.should_merge_materials_by_colour = scene_bim.import_should_merge_materials_by_colour
         settings.should_clean_mesh = scene_bim.import_should_clean_mesh
+        settings.deflection_tolerance = scene_bim.import_deflection_tolerance
+        settings.angular_tolerance = scene_bim.import_angular_tolerance
         return settings
