@@ -109,6 +109,8 @@ class ExportIFC(bpy.types.Operator):
         if not bpy.context.scene.DocProperties.ifc_files:
             new = bpy.context.scene.DocProperties.ifc_files.add()
             new.name = output_file
+        if not bpy.context.scene.BIMProperties.ifc_file:
+            bpy.context.scene.BIMProperties.ifc_file = output_file
         return {'FINISHED'}
 
 class ImportIFC(bpy.types.Operator, ImportHelper):
