@@ -1700,6 +1700,10 @@ class BIM_PT_mvd(Panel):
         row = layout.row()
         row.prop(bim_properties, 'import_should_import_with_profiling')
         row = layout.row()
+        row.prop(bim_properties, 'import_deflection_tolerance')
+        row = layout.row()
+        row.prop(bim_properties, 'import_angular_tolerance')
+        row = layout.row()
         row.prop(bim_properties, 'export_json_compact')
 
         layout.label(text='Simplifications:')
