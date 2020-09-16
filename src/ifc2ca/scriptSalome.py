@@ -1,3 +1,5 @@
+from __future__ import division
+from __future__ import print_function
 import os
 import time
 import json
@@ -5,7 +7,9 @@ import salome
 import salome_notebook
 import salome_version
 import numpy as np
-from pprint import pprint
+import itertools
+
+flatten = itertools.chain.from_iterable
 
 class MODEL:
     def __init__(self, dataFilename, medFilename, meshSize):
@@ -72,10 +76,10 @@ class MODEL:
             shapeType = 'FACE'
         return self.geompy.MakePartition(objects, [], [], [], self.geompy.ShapeType[shapeType], 0, [], 1)
 
-    # def getLinkGeometry(self, ecc, orientation, finalPoint):
-    #     vector = np.array(orientation).transpose().dot(ecc['vector'])
-    #     initialPoint = (np.array(finalPoint) - vector).tolist()
-    #     return [initialPoint, finalPoint]
+    def getLinkGeometry(self, ecc, orientation, finalPoint):
+        vector = np.array(orientation).transpose().dot(ecc['vector'])
+        initialPoint = (np.array(finalPoint) - vector).tolist()
+        return [initialPoint, finalPoint]
 
     def length(self, geometry):
         return ((
@@ -141,7 +145,7 @@ class MODEL:
 
         ### Define entities ###
         start_time = time.time()
-        pprint('Defining Object Geometry')
+        print('Defining Object Geometry')
         init_time = start_time
 
         # Loop 1
@@ -149,16 +153,23 @@ class MODEL:
             el['elemObj'] = self.makeObject(el['geometry'], el['geometryType'])
 
             el['connObjs'] = [None for _ in el['connections']]
+            el['linkObjs'] = [None for _ in el['connections']]
+            el['linkPointObjs'] = [[None, None] for _ in el['connections']]
             for j,rel in enumerate(el['connections']):
                 conn = [c for c in connections if c['ifcName'] == rel['relatedConnection']][0]
+                if rel['eccentricity']:
+                    rel['index'] = len(conn['relatedElements']) + 1
                 conn['relatedElements'].append(rel)
                 if conn['geometryType'] == 'point':
                     if not rel['eccentricity']:
                         el['connObjs'][j] = self.makeObject(conn['geometry'], conn['geometryType'])
                     else:
-                        pass
-                        # geometry = self.getLinkGeometry(rel['eccentricity'], el['orientation'], conn['geometry'])
-                        # el['linkObjs'][j] = self.makeObject(geometry, 'line')
+                        geometry = self.getLinkGeometry(rel['eccentricity'], el['orientation'], conn['geometry'])
+                        el['connObjs'][j] = self.makeObject(geometry[0], conn['geometryType'])
+
+                        el['linkPointObjs'][j][0] = self.geompy.MakeVertex(geometry[0][0], geometry[0][1], geometry[0][2])
+                        el['linkPointObjs'][j][1] = self.geompy.MakeVertex(geometry[1][0], geometry[1][1], geometry[1][2])
+                        el['linkObjs'][j] = self.geompy.MakeLineTwoPnt(el['linkPointObjs'][j][0], el['linkPointObjs'][j][1])
                 elif conn['geometryType'] == 'line':
                     pass
                 elif conn['geometryType'] == 'surface':
@@ -169,18 +180,15 @@ class MODEL:
             el['elemObj'] = geompy.GetInPlace(el['partObj'], el['elemObj'])
             for j,rel in enumerate(el['connections']):
                 el['connObjs'][j] = geompy.GetInPlace(el['partObj'], el['connObjs'][j])
-                # if rel['eccentricity']:
-                #     el['linkObjs'][j] = geompy.GetInPlace(el['partObj'], el['linkObjs'][j])
 
         for conn in connections:
-            # if conn['appliedCondition']:
             conn['connObj'] = self.makeObject(conn['geometry'], conn['geometryType'])
 
         # Make assemble of Building Object
         bldObjs = []
         bldObjs.extend([el['partObj'] for el in elements])
+        bldObjs.extend(flatten([[link for link in el['linkObjs'] if link] for el in elements]))
         bldObjs.extend([conn['connObj'] for conn in connections])
-        # bldObjs.extend([conn['connObj'] for conn in connections if conn['appliedCondition']])
 
         bldComp = geompy.MakeCompound(bldObjs)
         # bldComp = geompy.MakePartition(bldObjs, [], [], [], self.geompy.ShapeType[buildingShapeType], 0, [], 1)
@@ -192,17 +200,19 @@ class MODEL:
             geompy.addToStudyInFather(el['partObj'], el['elemObj'], self.getGroupName(el['ifcName']))
             for j,rel in enumerate(el['connections']):
                 geompy.addToStudyInFather(el['partObj'], el['connObjs'][j], self.getGroupName(el['ifcName']) + '_0DC_' + self.getGroupName(rel['relatedConnection']))
-                # if rel['eccentricity']:
-                #     geompy.addToStudyInFather(el['partObj'], el['linkObjs'][j], self.getGroupName(el['ifcName']) + '_1DC_' + self.getGroupName(rel['relatedConnection']))
+                if rel['eccentricity']:
+                    pass
+                    # geompy.addToStudy(el['linkObjs'][j], self.getGroupName(el['ifcName']) + '_1DR_' + self.getGroupName(rel['relatedConnection']))
+                    # geompy.addToStudyInFather(el['linkObjs'][j], el['linkPointObjs'][j][0], self.getGroupName(rel['relatedConnection']) + '_0DC_' + self.getGroupName(el['ifcName']))
+                    # geompy.addToStudyInFather(el['linkObjs'][j], el['linkPointObjs'][j][0], self.getGroupName(rel['relatedConnection']) + '_0DC_%g' % rel['index'])
 
         for conn in connections:
-            # if conn['appliedCondition']:
             # geompy.addToStudy(conn['connObj'], self.getGroupName(conn['ifcName']))
             geompy.addToStudyInFather(conn['connObj'], conn['connObj'], self.getGroupName(conn['ifcName']))
 
         elapsed_time = time.time() - init_time
         init_time += elapsed_time
-        pprint('Building Geometry Defined in %g sec' % (elapsed_time))
+        print('Building Geometry Defined in %g sec' % (elapsed_time))
 
         if len([e for e in elements if e['geometryType'] == 'line']) > 0:
             buildingShapeType = 'EDGE'
@@ -231,18 +241,18 @@ class MODEL:
 
             for j,rel in enumerate(el['connections']):
                 geompy.addToStudyInFather(bldComp, el['connObjs'][j], self.getGroupName(el['ifcName']) + '_0DC_' + self.getGroupName(rel['relatedConnection']))
-                # if rel['eccentricity']:
-                #     el['linkObjs'][j].SetColor(SALOMEDS.Color(0, 0, 0))
-                #     geompy.addToStudyInFather(bldComp, el['linkObjs'][j], self.getGroupName(el['ifcName']) + '_1DC_' + self.getGroupName(rel['relatedConnection']))
+                if rel['eccentricity']:
+                    geompy.addToStudyInFather(bldComp, el['linkObjs'][j], self.getGroupName(el['ifcName']) + '_1DR_' + self.getGroupName(rel['relatedConnection']))
+                    geompy.addToStudyInFather(bldComp, el['linkPointObjs'][j][0], self.getGroupName(rel['relatedConnection']) + '_0DC_' + self.getGroupName(el['ifcName']))
+                    geompy.addToStudyInFather(bldComp, el['linkPointObjs'][j][1], self.getGroupName(rel['relatedConnection']) + '_0DC_%g' % rel['index'])
 
         for conn in connections:
-            # if conn['appliedCondition']:
             # conn['connObj'] = geompy.RestoreGivenSubShapes(bldComp, [conn['connObj']], GEOM.FSM_GetInPlace, False, False)[0]
             geompy.addToStudyInFather(bldComp, conn['connObj'], self.getGroupName(conn['ifcName']))
 
         elapsed_time = time.time() - init_time
         init_time += elapsed_time
-        pprint('Building Geometry Groups Defined in %g sec' % (elapsed_time))
+        print('Building Geometry Groups Defined in %g sec' % (elapsed_time))
 
         ###
         ### SMESH component
@@ -251,7 +261,7 @@ class MODEL:
         import SMESH
         from salome.smesh import smeshBuilder
 
-        pprint('Defining Mesh Components')
+        print('Defining Mesh Components')
 
         if NEW_SALOME:
             smesh = smeshBuilder.New()
@@ -287,7 +297,7 @@ class MODEL:
 
         elapsed_time = time.time() - init_time
         init_time += elapsed_time
-        pprint('Meshing Operations Completed in %g sec' % (elapsed_time))
+        print('Meshing Operations Completed in %g sec' % (elapsed_time))
 
         # Define and add groups for all curve and surface members
         if len([e for e in elements if e['geometryType'] == 'line']) > 0:
@@ -310,9 +320,18 @@ class MODEL:
             for j,rel in enumerate(el['connections']):
                 tempgroup = bldMesh.GroupOnGeom(el['connObjs'][j], self.getGroupName(el['ifcName']) + '_0DC_' + self.getGroupName(rel['relatedConnection']), SMESH.NODE)
                 smesh.SetName(tempgroup, self.getGroupName(el['ifcName']) + '_0DC_' + self.getGroupName(rel['relatedConnection']))
-                # if rel['eccentricity']:
-                #     tempgroup = bldMesh.GroupOnGeom(el['linkObjs'][j], self.getGroupName(el['ifcName']) + '_1DC_' + self.getGroupName(rel['relatedConnection']), SMESH.EDGE)
-                #     smesh.SetName(tempgroup, self.getGroupName(el['ifcName']) + '_1DC_' + self.getGroupName(rel['relatedConnection']))
+                rel['node'] = (bldMesh.GetIDSource(tempgroup.GetNodeIDs(), SMESH.NODE)).GetIDs()[0]
+                if rel['eccentricity']:
+                    tempgroup = bldMesh.GroupOnGeom(el['linkObjs'][j], self.getGroupName(el['ifcName']) + '_1DR_' + self.getGroupName(rel['relatedConnection']), SMESH.EDGE)
+                    smesh.SetName(tempgroup, self.getGroupName(el['ifcName']) + '_1DR_' + self.getGroupName(rel['relatedConnection']))
+
+                    tempgroup = bldMesh.GroupOnGeom(el['linkPointObjs'][j][0], self.getGroupName(rel['relatedConnection']) + '_0DC_' + self.getGroupName(el['ifcName']), SMESH.NODE)
+                    smesh.SetName(tempgroup, self.getGroupName(rel['relatedConnection']) + '_0DC_' + self.getGroupName(el['ifcName']))
+                    rel['eccNode'] = (bldMesh.GetIDSource(tempgroup.GetNodeIDs(), SMESH.NODE)).GetIDs()[0]
+
+                    tempgroup = bldMesh.GroupOnGeom(el['linkPointObjs'][j][1], self.getGroupName(rel['relatedConnection']) + '_0DC_' + self.getGroupName(rel['relatedConnection']), SMESH.NODE)
+                    smesh.SetName(tempgroup, self.getGroupName(rel['relatedConnection']) + '_0DC_%g' % rel['index'])
+
 
         for conn in connections:
             # if conn['appliedCondition']:
@@ -321,13 +340,25 @@ class MODEL:
             nodesId = bldMesh.GetIDSource(tempgroup.GetNodeIDs(), SMESH.NODE)
             tempgroup = bldMesh.Add0DElementsToAllNodes(nodesId, self.getGroupName(conn['ifcName']))
             smesh.SetName(tempgroup, self.getGroupName(conn['ifcName']))
+            conn['node'] = nodesId.GetIDs()[0]
+
+        # create 1D SEG2 spring elements
+        for el in elements:
+            for j,rel in enumerate(el['connections']):
+                grpName = bldMesh.CreateEmptyGroup(SMESH.EDGE, self.getGroupName(el['ifcName']) + '_1DS_' + self.getGroupName(rel['relatedConnection']))
+                smesh.SetName(grpName, self.getGroupName(el['ifcName']) + '_1DS_' + self.getGroupName(rel['relatedConnection']))
+                if not rel['eccentricity']:
+                    conn = [conn for conn in connections if conn['ifcName'] == rel['relatedConnection']][0]
+                    grpName.Add([bldMesh.AddEdge([conn['node'], rel['node']])])
+                else:
+                    grpName.Add([bldMesh.AddEdge([rel['eccNode'], rel['node']])])
 
         self.mesh = bldMesh
         self.meshNodes = bldMesh.GetNodesId()
 
         elapsed_time = time.time() - init_time
         init_time += elapsed_time
-        pprint('Mesh Groups Defined in %g sec' % (elapsed_time))
+        print('Mesh Groups Defined in %g sec' % (elapsed_time))
 
         try:
             if NEW_SALOME:
@@ -342,7 +373,7 @@ class MODEL:
             else:
                 bldMesh.ExportMED(self.medFilename, 0, SMESH.MED_V2_2, 1, None, 0)
         except:
-            pprint('ExportMED() failed. Invalid file name?')
+            print('ExportMED() failed. Invalid file name?')
 
         if salome.sg.hasDesktop():
             if NEW_SALOME:
@@ -350,12 +381,11 @@ class MODEL:
             else:
                 salome.sg.updateObjBrowser(1)
 
-
         elapsed_time = init_time - start_time
-        pprint('ALL Operations Completed in %g sec' % (elapsed_time))
+        print('ALL Operations Completed in %g sec' % (elapsed_time))
 
 if __name__ == '__main__':
-    fileNames = ['cantilever_01', 'portal_01']
+    fileNames = ['cantilever_01']
     files = fileNames
 
     meshSize = 0.1

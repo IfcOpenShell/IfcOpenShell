@@ -163,7 +163,7 @@ namespace IfcGeom {
 
 					// Triangulate the shape
 					try {
-						BRepMesh_IncrementalMesh(s, settings().deflection_tolerance());
+						BRepMesh_IncrementalMesh(s, settings().deflection_tolerance(), false, settings().angular_tolerance());
 					} catch(...) {
 						Logger::Message(Logger::LOG_ERROR, "Failed to triangulate shape");
 						continue;

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Unix:
 # $ pyinstaller --onefile --clean --icon=icon.ico --add-data "features:features" bimtester.py`
 # Windows:
@@ -5,7 +6,6 @@
 
 from behave.__main__ import main as behave_main
 import behave.formatter.pretty # Needed for pyinstaller to package it
-import xml.etree.ElementTree as ET
 import ifcopenshell
 import pystache
 import os
@@ -16,16 +16,14 @@ import csv
 import re
 import shutil
 import webbrowser
+import datetime
 from pathlib import Path
-
 
 try:
     # PyInstaller creates a temp folder and stores path in _MEIPASS
     base_path = sys._MEIPASS
-    is_dist = True
 except Exception:
-    base_path = os.path.abspath(".")
-    is_dist = False
+    base_path = os.path.dirname(os.path.realpath(__file__))
 
 
 def get_resource_path(relative_path):
@@ -34,83 +32,102 @@ def get_resource_path(relative_path):
 
 def run_tests(args):
     if not get_features(args):
-        print('No requirements could be found to check.')
+        print('No features could be found to check.')
         return False
     behave_args = [get_resource_path('features')]
-    if args.advanced_arguments:
-        behave_args.extend(args.advanced_arguments.split())
-    else:
-        behave_args.extend(['--junit', '--junit-directory', args.junit_directory])
+    if args['advanced_arguments']:
+        behave_args.extend(args['advanced_arguments'].split())
+    elif not args['console']:
+        behave_args.extend(['--format', 'json.pretty', '--outfile', 'report/report.json'])
     behave_main(behave_args)
     print('# All tests are finished.')
     return True
 
 
 def get_features(args):
-    has_features = False
-    if args.feature:
-        shutil.copyfile(args.feature, os.path.join(
+    current_path = os.path.abspath(".")
+    features_dir = get_resource_path('features')
+    for f in os.listdir(features_dir):
+        if f.endswith('.feature'):
+            os.remove(os.path.join(features_dir, f))
+    if args['feature']:
+        shutil.copyfile(args['feature'], os.path.join(
             get_resource_path('features'),
-            os.path.basename(args.feature)[0:-len('.requirement')] + '.feature'))
+            os.path.basename(args['feature'])))
         return True
-    if os.path.exists('features') and is_dist:
+    if os.path.exists('features'):
         shutil.copytree('features', get_resource_path('features'))
-        has_features = True
+        return True
+    has_features = False
     for f in os.listdir('.'):
-        if not f.endswith('.requirement'):
+        if not f.endswith('.feature'):
             continue
-        if args.feature and args.feature != f:
+        if args['feature'] and args['feature'] != f:
             continue
         has_features = True
         shutil.copyfile(f, os.path.join(
             get_resource_path('features'),
-            os.path.basename(f)[0:-len('.requirement')] + '.feature'))
+            os.path.basename(f)))
     return has_features
 
 
-def generate_report(args):
+def generate_report():
     print('# Generating HTML reports now.')
     if not os.path.exists('report'):
         os.mkdir('report')
-    if not os.path.exists(args.junit_directory):
-        os.mkdir(args.junit_directory)
-    for f in os.listdir(args.junit_directory):
-        if not f.endswith('.xml'):
-            continue
-        print(f'Processing {f} ...')
-        root = ET.parse('{}{}'.format(args.junit_directory, f)).getroot()
+    report_path = 'report/report.json'
+    if not os.path.exists(report_path):
+        return print('No report data was found.')
+    report = json.loads(open(report_path).read())
+    for feature in report:
+        file_name = os.path.basename(feature['location']).split(':')[0]
         data = {
-            'report_name': root.get('name'),
-            'testcases': []
+            'file_name': file_name,
+            'time': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'name': feature['name'],
+            'description': feature['description'],
+            'is_success': feature['status'] == 'passed',
+            'scenarios': []
             }
-        for testcase in root.findall('testcase'):
+        for scenario in feature['elements']:
             steps = []
-            system_out = testcase.findall('system-out')[0].text.splitlines()
-            for line in system_out:
-                if line.strip()[0:4] in ['Give', 'Then', 'When', 'And '] \
-                        or line.strip()[0:2] == '* ':
-                    is_success = True if ' ... passed in ' in line else False
-                    name, time = line.strip().split(' ... ')
-                    if name[0:2] == '* ':
-                        name = name[2:]
-                    steps.append({
-                        'name': name,
-                        'time': time,
-                        'is_success': is_success
-                    })
+            total_duration = 0
+            for step in scenario['steps']:
+                if 'result' in step:
+                    total_duration += step['result']['duration']
+                name = step['name']
+                if 'match' in step and 'arguments' in step['match']:
+                    for a in step['match']['arguments']:
+                        name = name.replace(a['value'], '<b>' + a['value'] + '</b>')
+                if 'result' not in step or step['result']['status'] == 'undefined':
+                    step['result'] = {}
+                    step['result']['status'] = 'undefined'
+                    step['result']['duration'] = 0
+                    step['result']['error_message'] = 'This requirement has not yet been specified.'
+                steps.append({
+                    'name': name,
+                    'time': round(step['result']['duration'], 2),
+                    'is_success': step['result']['status'] == 'passed',
+                    'is_unspecified': 'result' not in step or step['result']['status'] == 'undefined',
+                    'error_message': None if step['result']['status'] == 'passed' else step['result']['error_message']
+                })
             total_passes = len([s for s in steps if s['is_success'] == True])
             total_steps = len(steps)
             pass_rate = round((total_passes / total_steps) * 100)
-            data['testcases'].append({
-                'name': testcase.get('name'),
-                'is_success': testcase.get('status') == 'passed',
-                'time': testcase.get('time'),
+            data['scenarios'].append({
+                'name': scenario['name'],
+                'is_success': scenario['status'] == 'passed',
+                'time': round(total_duration, 2),
                 'steps': steps,
                 'total_passes': total_passes,
                 'total_steps': total_steps,
                 'pass_rate': pass_rate
                 })
-        with open('report/{}.html'.format(f[0:-4]), 'w') as out:
+        data['total_passes'] = sum([s['total_passes'] for s in data['scenarios']])
+        data['total_steps'] = sum([s['total_steps'] for s in data['scenarios']])
+        data['pass_rate'] = round((data['total_passes'] / data['total_steps']) * 100)
+
+        with open('report/{}.html'.format(file_name), 'w') as out:
             with open(get_resource_path('features/template.html')) as template:
                 out.write(pystache.render(template.read(), data))
 
@@ -125,7 +142,7 @@ class TestPurger:
             for filename in Path('features/').glob('*.feature'):
                 filenames.append(filename)
         for f in os.listdir('.'):
-            if f.endswith('.requirement'):
+            if f.endswith('.feature'):
                 filenames.append(f)
 
         for filename in filenames:
@@ -159,101 +176,42 @@ class TestPurger:
             return False
 
 
-parser = argparse.ArgumentParser(
-    description='Runs unit tests for BIM data')
-parser.add_argument(
-    '-p',
-    '--purge',
-    action='store_true',
-    help='Purge tests of deleted elements')
-parser.add_argument(
-    '-c',
-    '--cli',
-    action='store_true',
-    help='Run without a GUI, just as a CLI')
-parser.add_argument(
-    '-r',
-    '--report',
-    action='store_true',
-    help='Generate a HTML report')
-parser.add_argument(
-    '-j',
-    '--junit-directory',
-    type=str,
-    help='Specify your own JUnit directory',
-    default='junit/')
-parser.add_argument(
-    '-f',
-    '--feature',
-    type=str,
-    help='Specify a requirements feature file to test',
-    default='')
-parser.add_argument(
-    '-a',
-    '--advanced-arguments',
-    type=str,
-    help='Specify your own arguments to Python\'s Behave',
-    default='')
-args = parser.parse_args()
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Runs unit tests for BIM data')
+    parser.add_argument(
+        '-p',
+        '--purge',
+        action='store_true',
+        help='Purge tests of deleted elements')
+    parser.add_argument(
+        '-r',
+        '--report',
+        action='store_true',
+        help='Generate a HTML report')
+    parser.add_argument(
+        '-c',
+        '--console',
+        action='store_true',
+        help='Show results in the console')
+    parser.add_argument(
+        '-f',
+        '--feature',
+        type=str,
+        help='Specify a feature file to test',
+        default='')
+    parser.add_argument(
+        '-a',
+        '--advanced-arguments',
+        type=str,
+        help='Specify your own arguments to Python\'s Behave',
+        default='')
+    args = vars(parser.parse_args())
 
-if args.cli:
-    if args.purge:
+    if args['purge']:
         TestPurger().purge()
-    elif args.report:
-        generate_report(args)
+    elif args['report']:
+        generate_report()
     else:
         run_tests(args)
     print('# All tasks are complete :-)')
-    sys.exit()
-
-import tkinter
-import tkinter.filedialog
-import tkinter.messagebox
-
-class Application(tkinter.Frame):
-    def __init__(self, master=None):
-        super().__init__(master)
-        self.master = master
-        self.master.title('BIMTester')
-        self.pack()
-        self.create_widgets()
-        self.directory = None
-
-    def create_widgets(self):
-        self.top_frame = tkinter.Frame(self, padx=5, pady=5)
-        self.top_frame.pack(side='top')
-        self.bottom_frame = tkinter.Frame(self, padx=5, pady=5)
-        self.bottom_frame.pack(side='bottom')
-
-        self.description = tkinter.Label(self.top_frame)
-        self.description['text'] = 'BIMTester'
-        self.description.pack(side='top')
-
-        self.browse = tkinter.Button(self.bottom_frame)
-        self.browse['text'] = 'Load Directory'
-        self.browse['command'] = self.load_file
-        self.browse.pack(side='left')
-
-        self.execute = tkinter.Button(self.bottom_frame)
-        self.execute['text'] = 'Check Requirements'
-        self.execute['command'] = self.check_requirements
-        self.execute.pack(side='right')
-
-    def load_file(self):
-        self.directory = tkinter.filedialog.askdirectory(parent=root, title='Choose a directory')
-        if self.directory:
-            os.chdir(self.directory)
-
-    def check_requirements(self):
-        if not self.directory:
-            tkinter.messagebox.showerror(message='Please select a directory first.')
-            return
-        if run_tests(args):
-            generate_report(args)
-            webbrowser.open(os.path.join(self.directory, 'report/'))
-        else:
-            tkinter.messagebox.showerror(message='No requirements were found or they were not able to be checked.')
-
-root = tkinter.Tk()
-app = Application(master=root)
-app.mainloop()

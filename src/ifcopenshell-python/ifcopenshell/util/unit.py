@@ -17,12 +17,12 @@ si_conversions = {
     'yard': 0.914,
     'mile': 1609,
     'square inch': 0.0006452,
-    'square foot': 0.09290,
+    'square foot': 0.09290304,
     'square yard': 0.83612736,
     'acre': 4046.86,
     'square mile': 2588881,
     'cubic inch': 0.00001639,
-    'cubic foot': 0.02832,
+    'cubic foot': 0.02831684671168849,
     'cubic yard': 0.7636,
     'litre': 0.001,
     'fluid ounce UK': 0.0000284130625,
@@ -62,3 +62,37 @@ def get_unit_name(text):
     for name in unit_names:
         if name in text.upper().replace('METER', 'METRE'):
             return name
+
+def convert(value, from_prefix, from_unit, to_prefix, to_unit):
+    """Converts between length, area, and volume units
+
+    :param value: The numeric value you want to convert
+    :type value: float
+    :param from_prefix: A prefix from IfcSIPrefix. Can be None.
+    :type from_prefix: string
+    :param from_unit: IfcSIUnitName or IfcConversionBasedUnit.Name
+    :type from_unit: string
+    :param to_prefix: A prefix from IfcSIPrefix. Can be None.
+    :type to_prefix: string
+    :param to_unit: IfcSIUnitName or IfcConversionBasedUnit.Name
+    :type to_unit: string
+    """
+    if from_unit in si_conversions:
+        value *= si_conversions[from_unit]
+    elif from_prefix:
+        value *= get_prefix_multiplier(from_prefix)
+        if 'SQUARE' in from_unit:
+            value *= get_prefix_multiplier(from_prefix)
+        elif 'CUBIC' in from_unit:
+            value *= get_prefix_multiplier(from_prefix)
+            value *= get_prefix_multiplier(from_prefix)
+    if to_unit in si_conversions:
+        return value * (1 / si_conversions[to_unit])
+    elif to_prefix:
+        value *= (1 / get_prefix_multiplier(to_prefix))
+        if 'SQUARE' in from_unit:
+            value *= (1 / get_prefix_multiplier(to_prefix))
+        elif 'CUBIC' in from_unit:
+            value *= (1 / get_prefix_multiplier(to_prefix))
+            value *= (1 / get_prefix_multiplier(to_prefix))
+    return value

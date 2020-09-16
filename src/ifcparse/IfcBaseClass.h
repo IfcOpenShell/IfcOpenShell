@@ -24,8 +24,12 @@
 
 #include "../ifcparse/IfcEntityInstanceData.h"
 #include "../ifcparse/IfcSchema.h"
+#include "../ifcparse/utils.h"
+
+#include <boost/shared_ptr.hpp>
 
 class Argument;
+class IfcEntityList;
 
 namespace IfcUtil {
 
@@ -70,6 +74,18 @@ namespace IfcUtil {
 		}
 	};
 
+	class IFC_PARSE_API IfcLateBoundEntity : public IfcBaseClass {
+	private:
+		const IfcParse::declaration* decl_;
+
+	public:
+		IfcLateBoundEntity(const IfcParse::declaration* decl, IfcEntityInstanceData* data) : IfcBaseClass(data), decl_(decl) {}
+
+		virtual const IfcParse::declaration& declaration() const {
+			return *decl_;
+		}
+	};
+
 	class IFC_PARSE_API IfcBaseEntity : public IfcBaseClass {
 	public:
 		IfcBaseEntity() : IfcBaseClass() {}
@@ -78,6 +94,8 @@ namespace IfcUtil {
 		virtual const IfcParse::entity& declaration() const = 0;
 
 		Argument* get(const std::string& name) const;
+
+		boost::shared_ptr<IfcEntityList> get_inverse(const std::string& a) const;
 	};
 
 	// TODO: Investigate whether these should be template classes instead

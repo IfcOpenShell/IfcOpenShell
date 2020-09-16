@@ -1139,6 +1139,76 @@ bool IfcGeom::Kernel::convert_wire_to_face(const TopoDS_Wire& w, TopoDS_Face& fa
 	return true;
 }
 
+bool IfcGeom::Kernel::convert_wire_to_faces(const TopoDS_Wire& w, TopoDS_Compound& faces) {
+	bool is_2d = true;
+	TopExp_Explorer exp(w, TopAbs_EDGE);
+	for (; exp.More(); exp.Next()) {
+		double a, b;
+		Handle(Geom_Curve) crv = BRep_Tool::Curve(TopoDS::Edge(exp.Current()), a, b);
+		if (crv->DynamicType() != STANDARD_TYPE(Geom_Line)) {
+			is_2d = false;
+			break;
+		}
+		Handle(Geom_Line) line = Handle(Geom_Line)::DownCast(crv);
+		if (line->Lin().Direction().Z() > ALMOST_ZERO) {
+			is_2d = false;
+			break;
+		}
+	}
+
+	TopTools_ListOfShape results;
+	if (wire_intersections(w, results)) {
+		Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
+	} else {
+		results.Clear();
+		results.Append(w);
+	}
+
+	TopoDS_Compound C;
+	BRep_Builder B;
+	B.MakeCompound(faces);
+
+	std::list<std::pair<double, TopoDS_Face>> face_list;
+	double max_area = 0.;
+
+	TopTools_ListIteratorOfListOfShape it(results);
+	for (; it.More(); it.Next()) {
+		const TopoDS_Wire& wire = TopoDS::Wire(it.Value());
+		if (!is_2d) {
+			// For 2d wires (e.g. profiles) a higher tolerance for plane fitting is never required.
+			ShapeFix_ShapeTolerance FTol;
+			FTol.SetTolerance(wire, getValue(GV_PRECISION), TopAbs_WIRE);
+		}
+
+		BRepBuilderAPI_MakeFace mf(wire, false);
+		BRepBuilderAPI_FaceError er = mf.Error();
+
+		if (er != BRepBuilderAPI_FaceDone) {
+			Logger::Error("Failed to create face.");
+			continue;
+		}
+
+		TopoDS_Face face = mf.Face();
+		const double m = face_area(face);
+
+		face_list.push_back({ m, face });
+		if (m > max_area) {
+			max_area = m;
+		}
+	}
+
+	for (auto& p : face_list) {
+		if (p.first >= max_area / 10.) {
+			B.Add(faces, p.second);
+		} else {
+			Logger::Warning("Ignoring self-intersection loop with area " + boost::lexical_cast<std::string>(p.first));
+		}
+	}
+
+	return true;
+}
+
+
 void IfcGeom::Kernel::assert_closed_wire(TopoDS_Wire& wire) {
 	if (wire.Closed() == 0) {
 		TopoDS_Vertex v0, v1;
@@ -1640,11 +1710,12 @@ void IfcGeom::Kernel::sequence_of_point_to_wire(const TColgp_SequenceOfPnt& p, T
 }
 
 IfcSchema::IfcRelVoidsElement::list::ptr IfcGeom::Kernel::find_openings(IfcSchema::IfcProduct* product) {
-	
-	IfcSchema::IfcRelVoidsElement::list::ptr openings(new IfcSchema::IfcRelVoidsElement::list);
+	std::vector<IfcSchema::IfcRelVoidsElement*> rs;
+
 	if ( product->declaration().is(IfcSchema::IfcElement::Class()) && !product->declaration().is(IfcSchema::IfcOpeningElement::Class()) ) {
 		IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)product;
-		openings = element->HasOpenings();
+		auto rels = element->HasOpenings();
+		rs.insert(rs.end(), rels->begin(), rels->end());
 	}
 
 	// Is the IfcElement a decomposition of an IfcElement with any IfcOpeningElements?
@@ -1655,11 +1726,21 @@ IfcSchema::IfcRelVoidsElement::list::ptr IfcGeom::Kernel::find_openings(IfcSchem
 		IfcSchema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->RelatingObject();
 		if ( rel_obdef->declaration().is(IfcSchema::IfcElement::Class()) && !rel_obdef->declaration().is(IfcSchema::IfcOpeningElement::Class()) ) {
 			IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)rel_obdef;
-			openings->push(element->HasOpenings());
+			auto rels = element->HasOpenings();
+			rs.insert(rs.end(), rels->begin(), rels->end());
 		}
 
 		obdef = rel_obdef;
 	}
+
+	// Filter openings in Reference view, solely marked as Reference.
+	IfcSchema::IfcRelVoidsElement::list::ptr openings(new IfcSchema::IfcRelVoidsElement::list);
+	std::for_each(rs.begin(), rs.end(), [&openings](IfcSchema::IfcRelVoidsElement* rel) {
+		auto reps = rel->RelatedOpeningElement()->Representation()->Representations();
+		if (!(reps->size() == 1 && (*reps->begin())->RepresentationIdentifier() == "Reference")) {
+			openings->push(rel);
+		}
+	});
 
 	return openings;
 }
@@ -1759,7 +1840,7 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and
 	} else {
 		bool some_items_without_style = false;
 		for (IfcGeom::IfcRepresentationShapeItems::iterator it = shapes.begin(); it != shapes.end(); ++it) {
-			if (!it->hasStyle()) {
+			if (!it->hasStyle() && count(it->Shape(), TopAbs_FACE)) {
 				some_items_without_style = true;
 				break;
 			}

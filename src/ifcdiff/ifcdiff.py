@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # This can be packaged with `pyinstaller --onefile --clean --icon=icon.ico ifcdiff.py`
 
 import ifcopenshell
@@ -132,6 +132,14 @@ class IfcDiff():
             DeepDiff(old_element.Representation, new_element.Representation,
                 terminate_on_first=True,
                 skip_after_n=1000, # Arbitrary value to "skim" check
+                significant_digits=self.precision, ignore_string_type_changes=True, ignore_numeric_type_changes=True,
+                exclude_regex_paths=r'root.*id$')
+            DeepDiff(old_element.HasOpenings, new_element.HasOpenings,
+                terminate_on_first=True,
+                significant_digits=self.precision, ignore_string_type_changes=True, ignore_numeric_type_changes=True,
+                exclude_regex_paths=r'root.*id$')
+            DeepDiff(old_element.HasProjections, new_element.HasProjections,
+                terminate_on_first=True,
                 significant_digits=self.precision, ignore_string_type_changes=True, ignore_numeric_type_changes=True,
                 exclude_regex_paths=r'root.*id$')
         except:

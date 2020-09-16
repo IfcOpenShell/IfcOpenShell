@@ -12,74 +12,22 @@ from .helper import SIUnitHelper
 from . import schema
 import ifcopenshell
 import addon_utils
-from .ifc2json import IFC2JSON
 
 class ArrayModifier:
     count: int
     offset: Vector
 
 
-class QtoCalculator():
-    def get_units(self, o, vg_index):
-        return len([v for v in o.data.vertices if vg_index in [g.group for g in v.groups]])
-
-    def get_length(self, o, vg_index):
-        length = 0
-        edges = [e for e in o.data.edges if (
-                vg_index in [g.group for g in o.data.vertices[e.vertices[0]].groups] and
-                vg_index in [g.group for g in o.data.vertices[e.vertices[1]].groups]
-        )]
-        for e in edges:
-            length += self.get_edge_distance(o, e)
-        return length
-
-    def get_edge_distance(self, obj, edge):
-        return (obj.data.vertices[edge.vertices[1]].co - obj.data.vertices[edge.vertices[0]].co).length
-
-    def get_area(self, o, vg_index):
-        area = 0
-        vertices_in_vg = [v.index for v in o.data.vertices if vg_index in [g.group for g in v.groups]]
-        for polygon in o.data.polygons:
-            if self.is_polygon_in_vg(polygon, vertices_in_vg):
-                area += polygon.area
-        return area
-
-    def is_polygon_in_vg(self, polygon, vertices_in_vg):
-        for v in polygon.vertices:
-            if v not in vertices_in_vg:
-                return False
-        return True
-
-    def get_volume(self, o, vg_index):
-        volume = 0
-        ob_mat = o.matrix_world
-        me = o.data
-        me.calc_loop_triangles()
-        for tf in me.loop_triangles:
-            tfv = tf.vertices
-            if len(tf.vertices) == 3:
-                tf_tris = (me.vertices[tfv[0]], me.vertices[tfv[1]], me.vertices[tfv[2]]),
-            else:
-                tf_tris = (me.vertices[tfv[0]], me.vertices[tfv[1]], me.vertices[tfv[2]]), \
-                          (me.vertices[tfv[2]], me.vertices[tfv[3]], me.vertices[tfv[0]])
-
-            for tf_iter in tf_tris:
-                v1 = ob_mat @ tf_iter[0].co
-                v2 = ob_mat @ tf_iter[1].co
-                v3 = ob_mat @ tf_iter[2].co
-
-                volume += v1.dot(v2.cross(v3)) / 6.0
-        return volume
-
-
 class IfcParser():
-    def __init__(self, ifc_export_settings):
+    def __init__(self, ifc_export_settings, qto_calculator):
         self.data_dir = ifc_export_settings.data_dir
+        self.qto_calculator = qto_calculator
 
         self.ifc_export_settings = ifc_export_settings
 
         self.selected_products = []
         self.selected_types = []
+        self.selected_grid_axes = []
         self.selected_spatial_structure_elements = []
         self.selected_groups = []
         self.global_ids = []
@@ -94,7 +42,7 @@ class IfcParser():
         self.document_references = {}
         self.classifications = []
         self.classification_references = {}
-        self.objectives = {}
+        self.constraints = {}
         self.qtos = {}
         self.aggregates = {}
         self.materials = {}
@@ -115,8 +63,8 @@ class IfcParser():
         self.rel_associates_material_layer_set = {}
         self.rel_associates_material_constituent_set = {}
         self.rel_associates_material_profile_set = {}
-        self.rel_associates_constraint_objective_object = {}
-        self.rel_associates_constraint_objective_type = {}
+        self.rel_associates_constraint_object = {}
+        self.rel_associates_constraint_type = {}
         self.rel_aggregates = {}
         self.rel_voids_elements = {}
         self.rel_fills_elements = {}
@@ -125,6 +73,7 @@ class IfcParser():
         self.rel_assigns_to_group = {}
         self.presentation_layer_assignments = {}
         self.representations = {}
+        self.grid_axes = {}
         self.type_products = []
         self.door_attributes = {}
         self.window_attributes = {}
@@ -137,8 +86,9 @@ class IfcParser():
         if not self.projects:
             self.setup_project()
             self.projects = self.get_projects()
-
         self.project = self.projects[0]
+        if not selected_objects:
+            selected_objects = self.get_all_objects_in_project(self.project['raw'])
         self.units = self.get_units()
         self.unit_scale = self.get_unit_scale()
         self.people = self.get_people()
@@ -152,7 +102,7 @@ class IfcParser():
         self.classifications = self.get_classifications()
         self.classification_reference_maps = self.get_classification_reference_maps()
         self.classification_references = self.get_classification_references()
-        self.objectives = self.get_objectives()
+        self.constraints = self.get_constraints()
         self.load_representations()
         self.load_presentation_layer_assignments()
         self.materials = self.get_materials()
@@ -162,6 +112,7 @@ class IfcParser():
         self.libraries = self.get_libraries()
         self.door_attributes = self.get_door_attributes()
         self.window_attributes = self.get_window_attributes()
+        self.grid_axes = self.get_grid_axes()
         self.type_products = self.get_type_products()
         self.get_products()
         self.resolve_product_relationships()
@@ -398,10 +349,10 @@ class IfcParser():
             'ifc': None,
             'raw': obj,
             'class': self.get_ifc_class(obj.name),
+            'attributes': self.get_object_attributes(obj),
             'relating_structure': None,
             'relating_host': None,
             'relating_qtos_key': None,
-            'attributes': self.get_object_attributes(obj),
             'has_boundary_condition': obj.BIMObjectProperties.has_boundary_condition,
             'boundary_condition_class': None,
             'boundary_condition_attributes': {},
@@ -451,11 +402,6 @@ class IfcParser():
 
         if 'rel_aggregates_relating_object' in selected_product['metadata']:
             relating_object = selected_product['metadata']['rel_aggregates_relating_object']
-            inverted = relating_object.matrix_world.inverted()
-            product['location'] = inverted @ product['location']
-            product['up_axis'] = self.get_axis(inverted @ obj.matrix_world, 2)
-            product['forward_axis'] = self.get_axis(inverted @ obj.matrix_world, 0)
-            product['right_axis'] = self.get_axis(inverted @ obj.matrix_world, 1)
             self.aggregates.setdefault(relating_object.name, []).append(self.product_index)
 
         if obj.name in self.qtos:
@@ -472,13 +418,12 @@ class IfcParser():
             self.rel_associates_classification_object.setdefault(
                 classification.name, []).append(product)
 
-        for key in obj.keys():
-            if key[0:9] == 'Objective':
-                self.rel_associates_constraint_objective_object.setdefault(
-                    obj[key], []).append(product)
+        for constraint in obj.BIMObjectProperties.constraints:
+            self.rel_associates_constraint_object.setdefault(
+                constraint.name, []).append(product)
 
         for slot in obj.material_slots:
-            if slot.link == 'OBJECT':
+            if slot.material is None or slot.link == 'OBJECT':
                 continue
             if obj.BIMObjectProperties.material_type == 'IfcMaterialLayerSet':
                 self.rel_associates_material_layer_set.setdefault(self.product_index, []).append(
@@ -501,6 +446,9 @@ class IfcParser():
             relationships = self.rel_defines_by_pset
         if is_qto:
             psets_qtos = obj.BIMObjectProperties.qtos
+            if not psets_qtos and self.ifc_export_settings.should_guess_quantities:
+                self.add_automatic_qtos(product['class'], obj)
+                psets_qtos = obj.BIMObjectProperties.qtos
             results = self.qtos
             relationships = self.rel_defines_by_qto
         for item in psets_qtos:
@@ -514,6 +462,39 @@ class IfcParser():
                 'attributes': { 'Name': item.name }
             }
             relationships.setdefault(item_key, []).append(product)
+
+    def add_automatic_qtos(self, ifc_class, obj):
+        if not obj.data:
+            return
+        qto_names = self.get_applicable_qtos(ifc_class)
+        for name in qto_names:
+            if name not in schema.ifc.qtos:
+                continue
+            has_automatic_value = False
+            props = schema.ifc.qtos[name]['HasPropertyTemplates'].keys()
+            guessed_values = {}
+            for prop_name in props:
+                value = self.qto_calculator.guess_quantity(prop_name, props, obj)
+                if value:
+                    guessed_values[prop_name] = value
+                    has_automatic_value = True
+            if has_automatic_value:
+                qto = obj.BIMObjectProperties.qtos.add()
+                qto.name = name
+                for prop_name in props:
+                    prop = qto.properties.add()
+                    prop.name = prop_name
+                    if prop_name in guessed_values:
+                        prop.string_value = str(guessed_values[prop_name])
+
+    def get_applicable_qtos(self, ifc_class):
+        results = []
+        empty = ifcopenshell.file()
+        element = empty.create_entity(ifc_class)
+        for ifc_class, qto_names in schema.ifc.applicable_qtos.items():
+            if element.is_a(ifc_class):
+                results.extend(qto_names)
+        return results
 
     def get_product_relating_structure(self, product, obj):
         relating_structure = obj.BIMObjectProperties.relating_structure
@@ -537,6 +518,8 @@ class IfcParser():
             reference = self.get_group_reference(collection.name)
             self.rel_assigns_to_group.setdefault(reference, []).append(self.product_index)
         elif self.is_a_rel_aggregates(class_name):
+            # Aggregates are not handled here, since we don't know the order in
+            # which products are parsed.
             pass
         else:
             self.parse_product_collection(product, self.get_parent_collection(collection))
@@ -574,6 +557,10 @@ class IfcParser():
         for obj in selected_objects:
             if obj.BIMObjectProperties.relating_type:
                 added_objs.append(obj.BIMObjectProperties.relating_type)
+            if obj.instance_type == 'COLLECTION':
+                for obj2 in obj.instance_collection.objects:
+                    if obj2.BIMObjectProperties.relating_type:
+                        added_objs.append(obj2.BIMObjectProperties.relating_type)
         selected_objects.update(added_objs)
         selected_objects = set(selected_objects)
 
@@ -583,6 +570,8 @@ class IfcParser():
         for obj in objects_to_sort:
             if obj.name[0:3] != 'Ifc':
                 continue
+            elif self.is_a_grid_axis(self.get_ifc_class(obj.name)):
+                self.selected_grid_axes.append({'raw': obj, 'metadata': metadata})
             elif self.is_a_spatial_structure_element(self.get_ifc_class(obj.name)):
                 self.selected_spatial_structure_elements.append({'raw': obj, 'metadata': metadata})
             elif self.is_a_type(self.get_ifc_class(obj.name)):
@@ -670,27 +659,147 @@ class IfcParser():
                 }
         return results
 
-    def get_objectives(self):
+    def get_constraints(self):
         results = {}
-        class_path = self.data_dir + 'constraint/'
-        with open(class_path + 'objectives.csv', 'r') as f:
-            data = list(csv.reader(f))
-            keys = data.pop(0)
-            for row in data:
-                results[row[0]] = {
-                    'ifc': None,
-                    'raw': row,
-                    'attributes': dict(zip(keys, row))
-                }
+        data_map = {
+            'name': 'Name',
+            'description': 'Description',
+            'constraint_grade': 'ConstraintGrade',
+            'constraint_source': 'ConstraintSource',
+            'user_defined_grade': 'UserDefinedGrade',
+            'objective_qualifier': 'ObjectiveQualifier',
+            'user_defined_qualifier': 'UserDefinedQualifier',
+        }
+        for constraint in bpy.context.scene.BIMProperties.constraints:
+            attributes = {}
+            for key, value in data_map.items():
+                if getattr(constraint, key):
+                    attributes[value] = getattr(constraint, key)
+            results[constraint.name] = {
+                'ifc': None,
+                'raw': constraint,
+                'attributes': attributes
+            }
         return results
 
     def get_people(self):
-        with open(self.data_dir + 'owner/person.json') as file:
-            return [{'raw': p} for p in json.load(file)]
+        data_map = {
+            'name': 'Identification',
+            'family_name': 'FamilyName',
+            'given_name': 'GivenName',
+        }
+        list_data_map = {
+            'middle_names': 'MiddleNames',
+            'prefix_titles': 'PrefixTitles',
+            'suffix_titles': 'SuffixTitles',
+        }
+        results = []
+        for person in bpy.context.scene.BIMProperties.people:
+            attributes = {}
+            for key, value in data_map.items():
+                if getattr(person, key):
+                    attributes[value] = getattr(person, key)
+            for key, value in list_data_map.items():
+                if getattr(person, key):
+                    attributes[value] = getattr(person, key).split(',')
+            results.append({
+                'ifc': None,
+                'raw': person,
+                'attributes': attributes,
+                'roles': self.get_roles(person.roles),
+                'addresses': self.get_addresses(person.addresses)
+            })
+        return results
 
     def get_organisations(self):
-        with open(self.data_dir + 'owner/organisation.json') as file:
-            return [{'raw': o} for o in json.load(file)]
+        data_map = {
+            'name': 'Name',
+            'description': 'Description',
+        }
+        results = []
+        for organisation in bpy.context.scene.BIMProperties.organisations:
+            attributes = {}
+            for key, value in data_map.items():
+                if getattr(organisation, key):
+                    attributes[value] = getattr(organisation, key)
+            results.append({
+                'ifc': None,
+                'raw': organisation,
+                'attributes': attributes,
+                'roles': self.get_roles(organisation.roles),
+                'addresses': self.get_addresses(organisation.addresses)
+            })
+        return results
+
+    def get_roles(self, roles):
+        data_map = {
+            'name': 'Role',
+            'user_defined_role': 'UserDefinedRole',
+            'description': 'Description',
+        }
+        results = []
+        for role in roles:
+            attributes = {}
+            for key, value in data_map.items():
+                if getattr(role, key):
+                    attributes[value] = getattr(role, key)
+            results.append({
+                'ifc': None,
+                'raw': role,
+                'attributes': attributes
+            })
+        return results
+
+    def get_addresses(self, addresses):
+        results = []
+        for address in addresses:
+            results.append(self.get_address(address))
+        return results
+
+    def get_address(self, address):
+        address_data_map = {
+            'purpose': 'Purpose',
+            'description': 'Description',
+            'user_defined_purpose': 'UserDefinedPurpose',
+        }
+        postal_data_map = {
+            'internal_location': 'InternalLocation',
+            'postal_box': 'PostalBox',
+            'town': 'Town',
+            'region': 'Region',
+            'postal_code': 'PostalCode',
+            'country': 'Country',
+        }
+        telecom_data_map = {
+            'pager_number': 'PagerNumber',
+            'www_home_page_url': 'WWWHomePageURL',
+        }
+        telecom_list_data_map = {
+            'telephone_numbers': 'TelephoneNumbers',
+            'fascimile_numbers': 'FascimileNumbers',
+            'electronic_mail_addresses': 'ElectronicMailAddresses',
+            'messaging_ids': 'MessagingIDs',
+        }
+        attributes = {}
+        if 'IfcPostalAddress' in address.name:
+            merged_data_map = {**address_data_map, **postal_data_map}
+            if address.address_lines:
+                attributes['AddressLines'] = address.address_lines.split('/')
+        elif 'IfcTelecomAddress' in address.name:
+            merged_data_map = {**address_data_map, **telecom_data_map}
+            for key, value in telecom_list_data_map.items():
+                if getattr(address, key):
+                    attributes[value] = getattr(address, key).split(',')
+        for key, value in merged_data_map.items():
+            if getattr(address, key):
+                attributes[value] = getattr(address, key)
+        return {
+            'ifc': None,
+            'raw': address,
+            'is_postal': 'IfcPostalAddress' in address.name,
+            'is_telecom': 'IfcTelecomAddress' in address.name,
+            'attributes': attributes
+        }
 
     def get_document_references(self):
         results = {}
@@ -755,6 +864,13 @@ class IfcParser():
                     'class': self.get_ifc_class(collection.name),
                     'attributes': self.get_object_attributes(obj)
                 })
+        return results
+
+    def get_all_objects_in_project(self, collection):
+        results = []
+        results.extend(list(collection.objects))
+        for child in collection.children:
+            results.extend(self.get_all_objects_in_project(child))
         return results
 
     def setup_project(self):
@@ -841,10 +957,12 @@ class IfcParser():
                 'ifc': None,
                 'raw': obj,
                 'class': self.get_ifc_class(obj.name),
-                'attributes': self.get_object_attributes(obj)
+                'attributes': self.get_object_attributes(obj),
+                'address': self.get_address(obj.BIMObjectProperties.address)
             }
             self.append_product_attributes(element, obj)
             self.get_product_psets_qtos(element, obj, is_pset=True)
+            self.get_product_psets_qtos(element, obj, is_qto=True)
             elements.append(element)
         return elements
 
@@ -869,6 +987,14 @@ class IfcParser():
     def load_representations(self):
         if not self.ifc_export_settings.has_representations:
             return
+        self.generated_subcontexts = []
+        for context in self.ifc_export_settings.context_tree:
+            for subcontext in context['subcontexts']:
+                for target_view in subcontext['target_views']:
+                    if context['name'] == 'Model' \
+                            and subcontext['name'] == 'Box' \
+                            and target_view == 'MODEL_VIEW':
+                        self.generated_subcontexts = '/'.join([context['name'], subcontext['name'], target_view])
         for product in self.selected_products \
                 + self.selected_types \
                 + self.selected_spatial_structure_elements:
@@ -899,6 +1025,9 @@ class IfcParser():
     def append_default_representation(self, obj):
         self.representations['Model/Body/MODEL_VIEW/{}'.format(obj.data.name)] = self.get_representation(
             obj.data, obj, 'Model', 'Body', 'MODEL_VIEW')
+        if 'Model/Box/MODEL_VIEW' in self.generated_subcontexts:
+            self.representations['Model/Box/MODEL_VIEW/{}'.format(obj.data.name)] = self.get_representation(
+                obj.data, obj, 'Model', 'Box', 'MODEL_VIEW')
 
     def append_point_cloud_representation(self, obj):
         self.representations['Model/Body/MODEL_VIEW/{}'.format(obj.name)] = self.get_representation(
@@ -933,6 +1062,12 @@ class IfcParser():
         if mesh:
             self.representations[mesh_name] = self.get_representation(
                 mesh, obj, context, subcontext, target_view)
+            if 'Model/Box/MODEL_VIEW' in self.generated_subcontexts \
+                    and context == 'Model' \
+                    and subcontext == 'Body' \
+                    and target_view == 'MODEL_VIEW':
+                self.representations['Model/Box/MODEL_VIEW/{}'.format(mesh_name.split('/')[3])] = self.get_representation(
+                    obj.data, obj, 'Model', 'Box', 'MODEL_VIEW')
         elif context_prefix == 'Model/Body/MODEL_VIEW' \
                 and obj.data \
                 and not self.is_mesh_context_sensitive(obj.data.name):
@@ -966,13 +1101,23 @@ class IfcParser():
             'is_point_cloud': self.is_point_cloud(obj),
             'is_structural': self.is_structural(obj),
             'is_text': isinstance(mesh, bpy.types.TextCurve),
-            'is_wireframe': mesh.BIMMeshProperties.is_wireframe if hasattr(mesh, 'BIMMeshProperties') else False,
+            'is_wireframe': self.is_wireframe_mesh(mesh, obj),
             'is_native': mesh.BIMMeshProperties.is_native if hasattr(mesh, 'BIMMeshProperties') else False,
             'is_swept_solid': mesh.BIMMeshProperties.is_swept_solid if hasattr(mesh, 'BIMMeshProperties') else False,
             'is_generated': False,
             'presentation_layer': mesh.BIMMeshProperties.presentation_layer if hasattr(mesh, 'BIMMeshProperties') else None,
             'attributes': {'Name': mesh.name}
         }
+
+    def is_wireframe_mesh(self, mesh, obj):
+        if isinstance(mesh, bpy.types.Mesh) and not mesh.polygons:
+            modifiers = [m.type for m in obj.modifiers]
+            # SCREW and SKIN can create faces, so it is not a wireframe mesh
+            if 'SCREW' not in modifiers and 'SKIN' not in modifiers:
+                return True
+        if isinstance(mesh, bpy.types.Curve) and not mesh.bevel_object and not mesh.bevel_depth:
+            return True
+        return False
 
     def is_mesh_context_sensitive(self, name):
         return '/' in name \
@@ -1026,15 +1171,34 @@ class IfcParser():
             for slot in obj.material_slots:
                 if slot.material is None:
                     continue
-                if not self.ifc_export_settings.should_export_all_materials_as_styled_items \
-                        and (slot.material.name in results or slot.link == 'DATA'):
-                    continue
                 results.append({
                     'ifc': None,
                     'raw': slot.material,
                     'related_product_name': product['raw'].name,
                     'attributes': {'Name': slot.material.name},
                 })
+        return results
+
+    def get_grid_axes(self):
+        results = {}
+        for selected_axis in self.selected_grid_axes:
+            obj = selected_axis['raw']
+            grid_raw = bpy.data.objects.get(self.get_parent_collection(obj.users_collection[0]).name)
+            if grid_raw.name not in results:
+                results[grid_raw.name] = {'UAxes': [], 'VAxes': [], 'WAxes': []}
+            if 'UAxes' in obj.users_collection[0].name:
+                axis_type = 'UAxes'
+            elif 'VAxes' in obj.users_collection[0].name:
+                axis_type = 'VAxes'
+            else:
+                axis_type = 'WAxes'
+            results[grid_raw.name][axis_type].append ({
+                'ifc': None,
+                'raw': obj,
+                'grid_raw': grid_raw,
+                'class': 'IfcGridAxis',
+                'attributes': {a.name: a.string_value for a in obj.BIMObjectProperties.attributes}
+            })
         return results
 
     def get_type_products(self):
@@ -1113,6 +1277,9 @@ class IfcParser():
             return name.string_value
         return self.get_ifc_name(obj.name)
 
+    def is_a_grid_axis(self, class_name):
+        return class_name == 'IfcGridAxis'
+
     def is_a_spatial_structure_element(self, class_name):
         return class_name in [
             'IfcBuilding',
@@ -1136,15 +1303,15 @@ class IfcParser():
         return class_name in [g for g in schema.ifc.IfcGroup.keys()]
 
     def is_a_type(self, class_name):
-        return class_name[0:3] == 'Ifc' and class_name[-4:] == 'Type'
+        return (class_name[0:3] == 'Ifc' and class_name[-4:] == 'Type') \
+            or (class_name[0:3] == 'Ifc' and class_name[-5:] == 'Style')
 
 
 class IfcExporter():
-    def __init__(self, ifc_export_settings, ifc_parser, qto_calculator):
+    def __init__(self, ifc_export_settings, ifc_parser):
         self.template_file = '{}template.ifc'.format(ifc_export_settings.schema_dir)
         self.ifc_export_settings = ifc_export_settings
         self.ifc_parser = ifc_parser
-        self.qto_calculator = qto_calculator
 
     def export(self, selected_objects):
         self.schema = self.ifc_export_settings.schema
@@ -1163,7 +1330,7 @@ class IfcExporter():
         self.create_document_references()
         self.create_classifications()
         self.create_classification_references()
-        self.create_objectives()
+        self.create_constraints()
         self.create_psets()
         self.create_libraries()
         self.create_map_conversion()
@@ -1173,6 +1340,7 @@ class IfcExporter():
         self.create_spatial_structure_elements(self.ifc_parser.spatial_structure_elements_tree)
         self.create_groups()
         self.create_qtos()
+        self.create_grid_axes()
         self.create_products()
         self.create_styled_items()
         self.create_presentation_layer_assignments()
@@ -1194,8 +1362,7 @@ class IfcExporter():
         self.relate_to_documents(self.ifc_parser.rel_associates_document_type)
         self.relate_to_classifications(self.ifc_parser.rel_associates_classification_object)
         self.relate_to_classifications(self.ifc_parser.rel_associates_classification_type)
-        self.relate_to_objectives(self.ifc_parser.rel_associates_constraint_objective_object)
-        self.relate_to_objectives(self.ifc_parser.rel_associates_constraint_objective_type)
+        self.relate_to_constraints(self.ifc_parser.rel_associates_constraint_object)
         self.relate_structural_members_to_connections()
         self.relate_objects_to_groups()
         self.write_ifc_file()
@@ -1212,15 +1379,55 @@ class IfcExporter():
         self.file.wrapped_data.header.file_name.time_stamp = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).astimezone().replace(microsecond=0).isoformat()
         self.file.wrapped_data.header.file_name.preprocessor_version = 'IfcOpenShell {}'.format(ifcopenshell.version)
         self.file.wrapped_data.header.file_name.originating_system = '{} {}'.format(
-            self.owner_history.OwningApplication.ApplicationFullName,
-            self.owner_history.OwningApplication.Version,
-        )
-        if self.schema == 'IFC2X3':
-            self.file.wrapped_data.header.file_name.authorization = self.owner_history.OwningUser.ThePerson.Id
+            self.get_application_name(), self.get_application_version())
+        if self.owner_history:
+            if self.schema == 'IFC2X3':
+                self.file.wrapped_data.header.file_name.authorization = self.owner_history.OwningUser.ThePerson.Id
+            else:
+                self.file.wrapped_data.header.file_name.authorization = self.owner_history.OwningUser.ThePerson.Identification
         else:
-            self.file.wrapped_data.header.file_name.authorization = self.owner_history.OwningUser.ThePerson.Identification
+            self.file.wrapped_data.header.file_name.authorization = 'Nobody'
+
+    def get_application_name(self):
+        return 'BlenderBIM'
+
+    def get_application_version(self):
+        return '.'.join([str(x) for x in [addon.bl_info.get('version', (-1,-1,-1)) for addon in addon_utils.modules() if addon.bl_info['name'] == 'BlenderBIM'][0]])
+
+    def get_application_organisation(self):
+        self.application_organisation = self.file.create_entity('IfcOrganization', **{
+            "Name": "IfcOpenShell",
+            "Description": "IfcOpenShell is an open source (LGPL) software library that helps users and software developers to work with the IFC file format.",
+            "Roles": [self.file.create_entity('IfcActorRole', **{
+                "Role": "USERDEFINED",
+                "UserDefinedRole": "CONTRIBUTOR"
+            })],
+            "Addresses": [
+                self.file.create_entity('IfcTelecomAddress', **{
+                    "Purpose": "USERDEFINED",
+                    "UserDefinedPurpose": "WEBPAGE",
+                    "Description": "The main webpage of the software collection.",
+                    "WWWHomePageURL": "https://ifcopenshell.org"
+                }),
+                self.file.create_entity('IfcTelecomAddress', **{
+                    "Purpose": "USERDEFINED",
+                    "UserDefinedPurpose": "WEBPAGE",
+                    "Description": "The BlenderBIM Add-on webpage of the software collection.",
+                    "WWWHomePageURL": "https://blenderbim.org"
+                }),
+                self.file.create_entity('IfcTelecomAddress', **{
+                    "Purpose": "USERDEFINED",
+                    "UserDefinedPurpose": "REPOSITORY",
+                    "Description": "The source code repository of the software collection.",
+                    "WWWHomePageURL": "https://github.com/IfcOpenShell/IfcOpenShell.git"
+                })
+            ]
+        })
+        return self.application_organisation
 
     def create_owner_history(self):
+        person = None
+        organisation = None
         for person in self.ifc_parser.people:
             if self.schema == 'IFC2X3' and person['ifc'].Id == bpy.context.scene.BIMProperties.person:
                 break
@@ -1229,18 +1436,20 @@ class IfcExporter():
         for organisation in self.ifc_parser.organisations:
             if organisation['ifc'].Name == bpy.context.scene.BIMProperties.organisation:
                 break
+        if not person or not organisation:
+            self.owner_history = None
+            return
         person_and_organisation = self.file.create_entity('IfcPersonAndOrganization', **{
             'ThePerson': person['ifc'],
             'TheOrganization': organisation['ifc'],
             'Roles': None # TODO
         })
-        version = '.'.join([str(x) for x in [addon.bl_info.get('version', (-1,-1,-1)) for addon in addon_utils.modules() if addon.bl_info['name'] == 'BlenderBIM'][0]])
-        developer_organisation = [o for o in self.ifc_parser.organisations if o['ifc'].Name == 'IfcOpenShell'][0]['ifc']
+        developer_organisation = self.get_application_organisation()
         application = self.file.create_entity('IfcApplication', **{
             'ApplicationDeveloper': developer_organisation,
-            'Version': version,
-            'ApplicationFullName': 'BlenderBIM',
-            'ApplicationIdentifier': 'BlenderBIM'
+            'Version': self.get_application_version(),
+            'ApplicationFullName': self.get_application_name(),
+            'ApplicationIdentifier': self.get_application_name()
         })
         self.owner_history = self.file.create_entity('IfcOwnerHistory', **{
             'OwningUser': person_and_organisation,
@@ -1308,46 +1517,40 @@ class IfcExporter():
 
     def create_people(self):
         for person in self.ifc_parser.people:
-            data = person['raw'].copy()
-            if data['Roles']:
-                data['Roles'] = self.create_roles(data['Roles'])
-            if data['Addresses']:
-                data['Addresses'] = self.create_addresses(data['Addresses'])
-            if self.schema == 'IFC2X3' and 'Identification' in data:
-                data['Id'] = data['Identification']
-                del data['Identification']
-            person['ifc'] = self.file.create_entity('IfcPerson', **data)
+            if person['roles']:
+                person['attributes']['Roles'] = self.create_roles(person['roles'])
+            if person['addresses']:
+                person['attributes']['Addresses'] = self.create_addresses(person['addresses'])
+            if self.schema == 'IFC2X3' and 'Identification' in person['attributes']:
+                person['attributes']['Id'] = person['attributes']['Identification']
+                del person['attributes']['Identification']
+            person['ifc'] = self.file.create_entity('IfcPerson', **person['attributes'])
 
     def create_organisations(self):
         for organisation in self.ifc_parser.organisations:
-            data = organisation['raw'].copy()
-            if data['Roles']:
-                data['Roles'] = self.create_roles(data['Roles'])
-            if data['Addresses']:
-                data['Addresses'] = self.create_addresses(data['Addresses'])
-            organisation['ifc'] = self.file.create_entity('IfcOrganization', **data)
+            if organisation['roles']:
+                organisation['attributes']['Roles'] = self.create_roles(organisation['roles'])
+            if organisation['addresses']:
+                organisation['attributes']['Addresses'] = self.create_addresses(organisation['addresses'])
+            organisation['ifc'] = self.file.create_entity('IfcOrganization', **organisation['attributes'])
 
     def create_roles(self, roles):
         results = []
         for role in roles:
-            results.append(self.file.create_entity('IfcActorRole', **role))
+            results.append(self.file.create_entity('IfcActorRole', **role['attributes']))
         return results
 
     def create_addresses(self, addresses):
         results = []
         for address in addresses:
-            is_postal_address = False
-            for key in ['InternalLocation', 'AddressLines', 'PostalBox', 'Town',
-                        'Region', 'PostalCode', 'Country']:
-                if key in address:
-                    is_postal_address = True
-            if is_postal_address:
-                results.append(self.file.create_entity('IfcPostalAddress', **address))
-            else:
-                if self.schema == 'IFC2X3' and 'MessagingIDs' in address:
-                    del address['MessagingIDs']
-                results.append(self.file.create_entity('IfcTelecomAddress', **address))
+            results.append(self.create_address(address))
         return results
+
+    def create_address(self, address):
+        if self.schema == 'IFC2X3' and 'MessagingIDs' in address['attributes']:
+            del address['attributes']['MessagingIDs']
+        return self.file.create_entity('IfcPostalAddress' if
+            address['is_postal'] else 'IfcTelecomAddress', **address['attributes'])
 
     def create_library_information(self):
         information = self.ifc_parser.library_information
@@ -1391,10 +1594,10 @@ class IfcExporter():
         for reference in self.ifc_parser.classification_references.values():
             reference['ifc'] = self.file.add(reference['raw_element'])
 
-    def create_objectives(self):
-        for objective in self.ifc_parser.objectives.values():
-            objective['ifc'] = self.file.create_entity(
-                'IfcObjective', **objective['attributes'])
+    def create_constraints(self):
+        for constraint in self.ifc_parser.constraints.values():
+            constraint['ifc'] = self.file.create_entity(
+                'IfcObjective', **constraint['attributes'])
 
     def create_psets(self):
         for pset in self.ifc_parser.psets.values():
@@ -1460,7 +1663,8 @@ class IfcExporter():
         for name, data in templates.items():
             if name not in pset['raw']:
                 continue
-            if data.TemplateType == 'P_SINGLEVALUE':
+            if data.TemplateType == 'P_SINGLEVALUE' \
+                    or data.TemplateType == 'P_ENUMERATEDVALUE':
                 if data.PrimaryMeasureType:
                     value_type = data.PrimaryMeasureType
                 else:
@@ -1477,9 +1681,8 @@ class IfcExporter():
         invalid_pset_keys = [k for k in pset['raw'].keys() if k not in templates.keys()]
         if invalid_pset_keys:
             self.ifc_export_settings.logger.error(
-                'One or more properties were invalid in the pset {}/{}: {}'.format(
+                'One or more properties were invalid in the pset {}: {}'.format(
                     pset['attributes']['Name'],
-                    pset['attributes']['Description'],
                     invalid_pset_keys))
         return properties
 
@@ -1568,12 +1771,16 @@ class IfcExporter():
         )
 
     def create_target_crs(self):
-        self.ifc_parser.target_crs['attributes']['MapUnit'] = self.file.createIfcSIUnit(
-            None,
-            'LENGTHUNIT',
-            SIUnitHelper.get_prefix(self.ifc_parser.target_crs['attributes']['MapUnit']),
-            SIUnitHelper.get_unit_name(self.ifc_parser.target_crs['attributes']['MapUnit'])
-        )
+        for key, value in self.ifc_parser.target_crs['attributes'].items():
+            if not self.ifc_parser.target_crs['attributes'][key]:
+                self.ifc_parser.target_crs['attributes'][key] = None
+        if self.ifc_parser.target_crs['attributes']['MapUnit']:
+            self.ifc_parser.target_crs['attributes']['MapUnit'] = self.file.createIfcSIUnit(
+                None,
+                'LENGTHUNIT',
+                SIUnitHelper.get_prefix(self.ifc_parser.target_crs['attributes']['MapUnit']),
+                SIUnitHelper.get_unit_name(self.ifc_parser.target_crs['attributes']['MapUnit'])
+            )
         self.ifc_parser.target_crs['ifc'] = self.file.create_entity(
             'IfcProjectedCRS',
             **self.ifc_parser.target_crs['attributes']
@@ -1594,7 +1801,7 @@ class IfcExporter():
                 product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
             except RuntimeError as e:
                 self.ifc_export_settings.logger.error(
-                    'The product "{}/{}" could not be created: {}'.format(
+                    'The type product "{}/{}" could not be created: {}'.format(
                         product['class'],
                         product['attributes']['Name'],
                         e.args)
@@ -1631,6 +1838,8 @@ class IfcExporter():
             self.file.createIfcRelAggregates(
                 ifcopenshell.guid.new(), self.owner_history, relating_object['attributes']['Name'], None,
                 relating_object['ifc'], related_objects)
+            for obj in related_objects:
+                obj.ObjectPlacement.PlacementRelTo = relating_object['ifc'].ObjectPlacement
 
     def create_spatial_structure_elements(self, element_tree, relating_object=None):
         if relating_object == None:
@@ -1652,6 +1861,12 @@ class IfcExporter():
                 'ObjectPlacement': placement,
                 'Representation': self.get_product_shape(element)
             })
+
+            if element['class'] == 'IfcSite':
+                element['attributes'].update({'SiteAddress': self.create_address(element['address'])})
+            elif element['class'] == 'IfcBuilding':
+                element['attributes'].update({'BuildingAddress': self.create_address(element['address'])})
+
             element['ifc'] = self.file.create_entity(element['class'], **element['attributes'])
             related_objects.append(element['ifc'])
             self.create_spatial_structure_elements(node['children'], element['ifc'])
@@ -1712,14 +1927,15 @@ class IfcExporter():
             product = self.ifc_parser.products[
                 self.ifc_parser.get_product_index_from_raw_name(
                     styled_item['related_product_name'])]
-            valid_material_slots = [ms for ms in product['raw'].material_slots if ms.link == 'OBJECT']
             material_slots = {}
             if product['ifc'].Representation:
                 for representation in product['ifc'].Representation.Representations:
                     for mapped_item in representation.Items:
                         items = mapped_item[0].MappedRepresentation.Items
                         for i, item in enumerate(items):
-                            material_slots[valid_material_slots[i].name] = item
+                            if i >= len(product['raw'].material_slots):
+                                i = 0
+                            material_slots[product['raw'].material_slots[i].name] = item
             for styled_item_name, representation_item in material_slots.items():
                 if styled_item_name == styled_item['attributes']['Name']:
                     styled_item['ifc'] = self.create_styled_item(styled_item, representation_item)
@@ -1803,12 +2019,17 @@ class IfcExporter():
 
     def create_surface_style_rendering(self, styled_item):
         surface_colour = self.create_colour_rgb(styled_item['raw'].diffuse_color)
-        rendering_attributes = {'SurfaceColour': surface_colour, 'ReflectanceMethod': 'NOTDEFINED'}
+        rendering_attributes = {
+            'SurfaceColour': surface_colour,
+            'Transparency': (styled_item['raw'].diffuse_color[3] - 1) * -1,
+            'ReflectanceMethod': 'NOTDEFINED'
+        }
         rendering_attributes.update(self.get_rendering_attributes(styled_item['raw']))
         return self.file.create_entity('IfcSurfaceStyleRendering', **rendering_attributes)
 
     def get_rendering_attributes(self, material):
-        if not hasattr(material.node_tree, 'nodes') \
+        if not material.use_nodes \
+                or not hasattr(material.node_tree, 'nodes') \
                 or 'Principled BSDF' not in material.node_tree.nodes:
             return {}
         bsdf = material.node_tree.nodes['Principled BSDF']
@@ -1830,6 +2051,20 @@ class IfcExporter():
     def create_representations(self):
         for representation in self.ifc_parser.representations.values():
             representation['ifc'] = self.create_representation(representation)
+
+    def create_grid_axes(self):
+        for uvw in self.ifc_parser.grid_axes.values():
+            for axes in uvw.values():
+                for axis in axes:
+                    self.create_grid_axis(axis)
+
+    def create_grid_axis(self, axis):
+        points = [axis['grid_raw'].matrix_world.inverted() @ (axis['raw'].matrix_world @ v.co) for v in axis['raw'].data.vertices[0:2]]
+        self.cast_attributes('IfcGridAxis', axis['attributes'])
+        axis['attributes']['AxisCurve'] = self.file.createIfcPolyline([
+            self.create_cartesian_point(points[0][0], points[0][1], points[0][2]),
+            self.create_cartesian_point(points[1][0], points[1][1], points[1][2])])
+        axis['ifc'] = self.file.create_entity('IfcGridAxis', **axis['attributes'])
 
     def create_products(self):
         for product in self.ifc_parser.products:
@@ -1853,6 +2088,10 @@ class IfcExporter():
             placement_rel_to = self.ifc_parser.spatial_structure_elements[product['relating_structure']][
                 'ifc'].ObjectPlacement
         elif product['relating_host'] is not None:
+            # TODO: this could be unsafe if the host is not yet created, so we
+            # should consider migrating it such that the placement rel to is set
+            # as the relationship creation stage, like how IfcRelAggregates for
+            # object aggregates work.
             placement_rel_to = self.ifc_parser.products[product['relating_host']]['ifc'].ObjectPlacement
         else:
             placement_rel_to = None
@@ -1883,6 +2122,13 @@ class IfcExporter():
             self.cast_attributes(ifc_class, attributes)
             boundary_condition = self.file.create_entity(ifc_class, **attributes)
             product['attributes']['AppliedCondition'] = boundary_condition
+
+        if product['class'] == 'IfcGrid':
+            name = 'IfcGrid/' + product['attributes']['Name']
+            product['attributes']['UAxes'] = [a['ifc'] for a in self.ifc_parser.grid_axes[name]['UAxes']]
+            product['attributes']['VAxes'] = [a['ifc'] for a in self.ifc_parser.grid_axes[name]['VAxes']]
+            if self.ifc_parser.grid_axes[name]['WAxes']:
+                product['attributes']['WAxes'] = [a['ifc'] for a in self.ifc_parser.grid_axes[name]['WAxes']]
 
         try:
             product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
@@ -1964,30 +2210,10 @@ class IfcExporter():
                 'MappedRepresentation',
                 [mapped_item])
 
-    def calculate_quantities(self, qto_name, obj):
-        quantities = []
-        for index, vg in enumerate(obj.vertex_groups):
-            if qto_name not in vg.name:
-                continue
-            if 'length' in vg.name.lower():
-                quantity = float(self.qto_calculator.get_length(obj, index))
-                quantities.append(self.file.createIfcQuantityLength(
-                    vg.name.split('/')[1], None,
-                    self.ifc_parser.units['length']['ifc'], quantity))
-            elif 'area' in vg.name.lower():
-                quantity = float(self.qto_calculator.get_area(obj, index))
-                quantities.append(self.file.createIfcQuantityArea(
-                    vg.name.split('/')[1], None,
-                    self.ifc_parser.units['area']['ifc'], quantity))
-            elif 'volume' in vg.name.lower():
-                quantity = float(self.qto_calculator.get_volume(obj, index))
-                quantities.append(self.file.createIfcQuantityVolume(
-                    vg.name.split('/')[1], None,
-                    self.ifc_parser.units['volume']['ifc'], quantity))
-            if not quantity:
-                self.ifc_export_settings.logger.warning('The calculated quantity {} for {} is zero.'.format(
-                    vg.name, obj.name))
-        return quantities
+    def create_ifc_axis_2_placement_2d(self, point, forward):
+        return self.file.createIfcAxis2Placement2D(
+            self.create_cartesian_point(point.x, point.y),
+            self.file.createIfcDirection((forward.x, forward.y)))
 
     def create_ifc_axis_2_placement_3d(self, point, up, forward):
         return self.file.createIfcAxis2Placement3D(
@@ -2188,9 +2414,33 @@ class IfcExporter():
             [self.create_edge(representation['raw'])])
 
     def create_curve_representation(self, representation):
+        if representation['raw'].bevel_object:
+            swept_area_solids = self.create_extruded_area_solids(representation)
+        else:
+            swept_area_solids = self.create_swept_disk_solids(representation)
+        return self.file.createIfcShapeRepresentation(
+            self.ifc_rep_context[representation['context']][representation['subcontext']][
+                representation['target_view']]['ifc'],
+            representation['subcontext'], 'AdvancedSweptSolid',
+            swept_area_solids)
+
+    def create_swept_disk_solids(self, representation):
+        results = []
+        radius = self.convert_si_to_unit(representation['raw'].bevel_depth)
+        start_param = representation['raw'].bevel_factor_start
+        end_param = representation['raw'].bevel_factor_end
+        directrixes = self.create_curves(representation['raw'])
+        for directrix in directrixes:
+            results.append(self.file.createIfcSweptDiskSolid(
+                directrix, radius, None, start_param, end_param))
+        return results
+
+    def create_extruded_area_solids(self, representation):
         # TODO: support unclosed surfaces
         swept_area = self.file.createIfcArbitraryClosedProfileDef('AREA', None,
             self.create_curves(representation['raw'].bevel_object.data)[0])
+        if (representation['raw'].bevel_object.scale - Vector((1, 1, 1))).length > 0.01:
+            self.scale_ifc_representation(swept_area, representation['raw'].bevel_object.scale)
         swept_area_solids = []
         for spline in representation['raw'].splines:
             points = self.get_spline_points(spline)
@@ -2223,11 +2473,16 @@ class IfcExporter():
         # swept_area_solid = self.file.createIfcFixedReferenceSweptAreaSolid(
         #    swept_area, self.origin, #    self.create_curves(representation['raw'])[0],
         #    0., 1., self.file.createIfcDirection((0.0, -1.0, 0.0)))
-        return self.file.createIfcShapeRepresentation(
-            self.ifc_rep_context[representation['context']][representation['subcontext']][
-                representation['target_view']]['ifc'],
-            representation['subcontext'], 'AdvancedSweptSolid',
-            swept_area_solids)
+        return swept_area_solids
+
+    def scale_ifc_representation(self, rep, scale):
+        for element in self.file.traverse(rep):
+            if not element.is_a('IfcCartesianPoint'):
+                continue
+            element.Coordinates = tuple(Vector(element.Coordinates) @ Matrix((
+                (scale[0], 0, 0),
+                (0, scale[1], 0),
+                (0, 0, scale[2]))))
 
     def create_vertex_point(self, point):
         return self.file.createIfcVertexPoint(
@@ -2237,7 +2492,10 @@ class IfcExporter():
         return spline.bezier_points if spline.bezier_points else spline.points
 
     def create_edge(self, curve):
-        points = self.get_spline_points(curve.splines[0])
+        if hasattr(curve, 'splines'):
+            points = self.get_spline_points(curve.splines[0])
+        else:
+            points = curve.vertices
         if not points:
             return
         return self.file.createIfcEdge(
@@ -2270,21 +2528,27 @@ class IfcExporter():
             return self.create_curves_from_curve(curve, is_2d=is_2d)
 
     def create_curves_from_mesh(self, mesh, is_2d=False):
-        self.create_vertices(mesh.vertices, is_2d=is_2d)
-        edges = list(mesh.edges)
-        loop_vertices = []
-        loops = []
-        # Not a fast algorithm, but easy
-        while edges:
-            for i, edge in enumerate(edges):
-                if edge.vertices[0] in loop_vertices \
-                        and edge.vertices[1] in loop_vertices:
-                    del edges[i]
-            loop_vertex_indices = self.get_loop_from_edges(edges)
-            loop_vertices.extend(loop_vertex_indices)
-            loops.append(self.file.createIfcPolyline([
-                self.ifc_vertices[i] for i in loop_vertex_indices]))
-        return loops
+        curves = []
+        points = self.create_cartesian_point_list_from_vertices(mesh.vertices, is_2d=is_2d)
+        edge_loops = []
+        previous_edge = None
+        edge_loop = []
+        for edge in mesh.edges:
+            if ((Vector(points.CoordList[edge.vertices[0]]) - Vector(points.CoordList[edge.vertices[1]])).length < 0.001):
+                # Maybe we should warn the user to weld vertices in this scenario?
+                continue
+            elif previous_edge is None:
+                edge_loop = [self.file.createIfcLineIndex((edge.vertices[0]+1, edge.vertices[1]+1))]
+            elif edge.vertices[0] == previous_edge.vertices[1]:
+                edge_loop.append(self.file.createIfcLineIndex((edge.vertices[0]+1, edge.vertices[1]+1)))
+            else:
+                edge_loops.append(edge_loop)
+                edge_loop = [self.file.createIfcLineIndex((edge.vertices[0]+1, edge.vertices[1]+1))]
+            previous_edge = edge
+        edge_loops.append(edge_loop)
+        for edge_loop in edge_loops:
+            curves.append(self.file.createIfcIndexedPolyCurve(points, edge_loop))
+        return curves
 
     def create_curves_from_curve(self, curve, is_2d=False):
         results = []
@@ -2338,9 +2602,6 @@ class IfcExporter():
     def get_vertices_in_vertex_group(self, obj, vg_index):
         return [v.index for v in obj.data.vertices if vg_index in [g.group for g in v.groups]]
 
-    def get_edge_distance(self, obj, edge):
-        return (obj.data.vertices[edge.vertices[1]].co - obj.data.vertices[edge.vertices[0]].co).length
-
     def create_native_extruded_area_solid(self, obj, item):
         extrusion_edge = self.get_edges_in_v_indices(obj, item['subitems']['ExtrudedDirection'])[0]
 
@@ -2352,9 +2613,20 @@ class IfcExporter():
         elif 'IfcRectangleProfileDef' in item['subitems']:
             outer_curve_loop = self.get_loop_from_v_indices(obj, item['subitems']['IfcRectangleProfileDef'])
             curve_ucs = self.get_curve_profile_coordinate_system(obj, outer_curve_loop)
-            ydim = self.convert_si_to_unit(self.get_edge_distance(obj, obj.data.edges[outer_curve_loop[0]]))
-            xdim = self.convert_si_to_unit(self.get_edge_distance(obj, obj.data.edges[outer_curve_loop[2]]))
+            xdim = self.convert_si_to_unit(
+                (obj.data.vertices[outer_curve_loop[0]].co - obj.data.vertices[outer_curve_loop[1]].co).length)
+            ydim = self.convert_si_to_unit(
+                (obj.data.vertices[outer_curve_loop[1]].co - obj.data.vertices[outer_curve_loop[2]].co).length)
             curve = self.file.createIfcRectangleProfileDef('AREA', None, None, xdim, ydim)
+        elif 'IfcCircleProfileDef' in item['subitems']:
+            indices = item['subitems']['IfcCircleProfileDef']
+            outer_curve_loop = self.get_loop_from_v_indices(obj, indices)
+            curve_ucs = self.get_curve_profile_coordinate_system(obj, outer_curve_loop)
+            radius = self.convert_si_to_unit(abs((obj.data.vertices[indices[0]].co -
+                obj.data.vertices[indices[int(len(indices)/2)]].co).length) / 2)
+            center = Vector((0, 0))
+            position = self.create_ifc_axis_2_placement_2d(center, Vector((1, 0)))
+            curve = self.file.createIfcCircleProfileDef('AREA', None, position, radius)
 
         position = self.create_ifc_axis_2_placement_3d(
             curve_ucs['center'], curve_ucs['z_axis'], curve_ucs['x_axis'])
@@ -2511,14 +2783,32 @@ class IfcExporter():
         mesh = representation['raw']
         if not representation['is_parametric']:
             mesh = representation['raw_object'].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
-        self.create_vertices(mesh.vertices)
-        ifc_raw_items = [None] * len(representation['raw_object'].material_slots)
+        if self.schema == 'IFC2X3' or self.ifc_export_settings.should_force_faceted_brep:
+            return self.create_faceted_brep(representation, mesh)
+        return self.create_polygonal_face_set(representation, mesh)
+
+    def create_polygonal_face_set(self, representation, mesh):
+        n_slots = max(1, len(representation['raw_object'].material_slots))
+        ifc_raw_items = [None] * n_slots
         for i, value in enumerate(ifc_raw_items):
             ifc_raw_items[i] = []
-        if not ifc_raw_items:
-            ifc_raw_items = [[]]
         for polygon in mesh.polygons:
-            ifc_raw_items[polygon.material_index].append(self.file.createIfcFace([
+            ifc_raw_items[polygon.material_index % n_slots].append(self.file.createIfcIndexedPolygonalFace([v+1 for v in polygon.vertices]))
+        coordinates = self.file.createIfcCartesianPointList3D([self.convert_si_to_unit(v.co) for v in mesh.vertices])
+        items = [self.file.createIfcPolygonalFaceSet(coordinates, None, i) for i in ifc_raw_items if i]
+        return self.file.createIfcShapeRepresentation(
+            self.ifc_rep_context[representation['context']][representation['subcontext']][
+                representation['target_view']]['ifc'],
+            representation['subcontext'], 'Tessellation', items)
+
+    def create_faceted_brep(self, representation, mesh):
+        self.create_vertices(mesh.vertices)
+        n_slots = max(1, len(representation['raw_object'].material_slots))
+        ifc_raw_items = [None] * n_slots
+        for i, value in enumerate(ifc_raw_items):
+            ifc_raw_items[i] = []
+        for polygon in mesh.polygons:
+            ifc_raw_items[polygon.material_index % n_slots].append(self.file.createIfcFace([
                 self.file.createIfcFaceOuterBound(
                     self.file.createIfcPolyLoop([self.ifc_vertices[vertice] for vertice in polygon.vertices]),
                     True)]))
@@ -2528,6 +2818,11 @@ class IfcExporter():
             self.ifc_rep_context[representation['context']][representation['subcontext']][
                 representation['target_view']]['ifc'],
             representation['subcontext'], 'Brep', items)
+
+    def create_cartesian_point_list_from_vertices(self, vertices, is_2d=False):
+        if is_2d:
+            return self.file.createIfcCartesianPointList2D([self.convert_si_to_unit(v.co.xy) for v in vertices])
+        return self.file.createIfcCartesianPointList3D([self.convert_si_to_unit(v.co) for v in vertices])
 
     def create_vertices(self, vertices, is_2d=False):
         if is_2d:
@@ -2607,10 +2902,11 @@ class IfcExporter():
 
     def relate_objects_to_psets(self):
         for relating_property_key, related_objects in self.ifc_parser.rel_defines_by_pset.items():
-            self.file.createIfcRelDefinesByProperties(
-                ifcopenshell.guid.new(), self.owner_history, None, None,
-                [o['ifc'] for o in related_objects],
-                self.ifc_parser.psets[relating_property_key]['ifc'])
+            if self.ifc_parser.psets[relating_property_key]['ifc']:
+                self.file.createIfcRelDefinesByProperties(
+                    ifcopenshell.guid.new(), self.owner_history, None, None,
+                    [o['ifc'] for o in related_objects],
+                    self.ifc_parser.psets[relating_property_key]['ifc'])
 
     def relate_objects_to_materials(self):
         if not self.ifc_export_settings.has_representations:
@@ -2681,12 +2977,12 @@ class IfcExporter():
                 [o['ifc'] for o in related_objects],
                 self.ifc_parser.classification_references[relating_key]['ifc'])
 
-    def relate_to_objectives(self, relationships):
+    def relate_to_constraints(self, relationships):
         for relating_key, related_objects in relationships.items():
             self.file.createIfcRelAssociatesConstraint(
                 ifcopenshell.guid.new(), self.owner_history, None, None,
                 [o['ifc'] for o in related_objects], None,
-                self.ifc_parser.objectives[relating_key]['ifc'])
+                self.ifc_parser.constraints[relating_key]['ifc'])
 
     def relate_structural_members_to_connections(self):
         for relating_member, relating_connection in self.ifc_parser.rel_connects_structural_member.items():
@@ -2722,9 +3018,17 @@ class IfcExporter():
         elif extension == 'ifc':
             self.file.write(self.ifc_export_settings.output_file)
         elif extension == 'ifcjson':
-            ifc2json = IFC2JSON(self.file).convert()
-            with open(self.ifc_export_settings.output_file, 'w') as f:
-                f.write(json.dumps(ifc2json, indent = 4))
+            import ifcjson
+            if self.ifc_export_settings.json_version == '4':
+                jsonData = ifcjson.IFC2JSON4(self.file, self.ifc_export_settings.json_compact).spf2Json()
+                with open(self.ifc_export_settings.output_file, 'w') as outfile:
+                    json.dump(jsonData, outfile,
+                        indent=None if self.ifc_export_settings.json_compact else 4)
+            elif self.ifc_export_settings.json_version == '5a':
+                jsonData = ifcjson.IFC2JSON5a(self.file, self.ifc_export_settings.json_compact).spf2Json()
+                with open(self.ifc_export_settings.output_file, 'w') as outfile:
+                    json.dump(jsonData, outfile,
+                        indent=None if self.ifc_export_settings.json_compact else 4)
 
 
 class IfcExportSettings:
@@ -2737,12 +3041,11 @@ class IfcExportSettings:
         self.has_quantities = True
         self.contexts = ['Model', 'Plan']
         self.subcontexts = ['Annotation', 'Axis', 'Box', 'FootPrint', 'Reference', 'Body', 'Clearance', 'CoG', 'Profile', 'SurveyPoints']
-        self.generated_subcontexts = ['Box']
         self.schema = 'IFC4'
         self.target_views = ['GRAPH_VIEW', 'SKETCH_VIEW', 'MODEL_VIEW', 'PLAN_VIEW', 'REFLECTED_PLAN_VIEW',
                              'SECTION_VIEW', 'ELEVATION_VIEW', 'USERDEFINED', 'NOTDEFINED']
-        self.should_export_all_materials_as_styled_items = False
         self.should_use_presentation_style_assignment = False
+        self.should_guess_quantities = False
         self.context_tree = []
 
     @staticmethod
@@ -2754,9 +3057,12 @@ class IfcExportSettings:
         settings.data_dir = scene_bim.data_dir
         settings.schema_dir = scene_bim.schema_dir
         settings.has_representations = scene_bim.export_has_representations
+        settings.json_version = scene_bim.export_json_version
+        settings.json_compact = scene_bim.export_json_compact
         settings.schema = scene_bim.export_schema
-        settings.should_export_all_materials_as_styled_items = scene_bim.export_should_export_all_materials_as_styled_items
         settings.should_use_presentation_style_assignment = scene_bim.export_should_use_presentation_style_assignment
+        settings.should_guess_quantities = scene_bim.export_should_guess_quantities
+        settings.should_force_faceted_brep = scene_bim.export_should_force_faceted_brep
         settings.context_tree = []
         for ifc_context in ['model', 'plan']:
             if getattr(scene_bim, 'has_{}_context'.format(ifc_context)):

@@ -82,6 +82,7 @@
 	#include "../ifcparse/IfcBaseClass.h"
 	#include "../ifcparse/IfcFile.h"
 	#include "../ifcparse/IfcSchema.h"
+	#include "../ifcparse/utils.h"
 
 	#include <BRepTools_ShapeSet.hxx>
 %}

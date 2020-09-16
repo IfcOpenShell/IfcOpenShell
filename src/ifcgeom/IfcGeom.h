@@ -289,6 +289,7 @@ public:
 	void set_rotation(const std::array<double, 4>& rotation);
 
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
+	bool convert_wire_to_faces(const TopoDS_Wire& wire, TopoDS_Compound& face);
 	bool convert_curve_to_wire(const Handle(Geom_Curve)& curve, TopoDS_Wire& wire);
 	bool convert_shapes(const IfcUtil::IfcBaseClass* L, IfcRepresentationShapeItems& result);
 	IfcGeom::ShapeType shape_type(const IfcUtil::IfcBaseClass* L);
@@ -385,29 +386,52 @@ public:
 	const SurfaceStyle* get_style(const IfcSchema::IfcMaterial*);
 	
 	template <typename T> std::pair<IfcSchema::IfcSurfaceStyle*, T*> _get_surface_style(const IfcSchema::IfcStyledItem* si) {
+		std::vector<IfcSchema::IfcPresentationStyle*> prs_styles;
+
 #ifdef SCHEMA_HAS_IfcStyleAssignmentSelect
 		IfcEntityList::ptr style_assignments = si->Styles();
 		for (IfcEntityList::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
+			
+			// Using IfcPresentationStyleAssignment is deprecated, use the direct assignment of a subtype of IfcPresentationStyle instead.
+			auto style_k = (*kt)->as<IfcSchema::IfcPresentationStyle>();
+			if (style_k) {
+				prs_styles.push_back(style_k);
+				continue;
+			}
+
 			if (!(*kt)->declaration().is(IfcSchema::IfcPresentationStyleAssignment::Class())) {
 				continue;
 			}
+
 			IfcSchema::IfcPresentationStyleAssignment* style_assignment = (IfcSchema::IfcPresentationStyleAssignment*) *kt;
+
+			Logger::Warning("Deprecated usage of", style_assignment);
 #else
 		IfcSchema::IfcPresentationStyleAssignment::list::ptr style_assignments = si->Styles();
 		for (IfcSchema::IfcPresentationStyleAssignment::list::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
 			IfcSchema::IfcPresentationStyleAssignment* style_assignment = *kt;
 #endif
+
+			// Only in case of 2x3 or old style IfcPresentationStyleAssignment
+
 			IfcEntityList::ptr styles = style_assignment->Styles();
+
 			for (IfcEntityList::it lt = styles->begin(); lt != styles->end(); ++lt) {
-				IfcUtil::IfcBaseClass* style = *lt;
-				if (style->declaration().is(IfcSchema::IfcSurfaceStyle::Class())) {
-					IfcSchema::IfcSurfaceStyle* surface_style = (IfcSchema::IfcSurfaceStyle*) style;
-					if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
-						IfcEntityList::ptr styles_elements = surface_style->Styles();
-						for (IfcEntityList::it mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
-							if ((*mt)->declaration().is(T::Class())) {
-								return std::make_pair(surface_style, (T*) *mt);
-							}
+				auto style_l = (*lt)->as<IfcSchema::IfcPresentationStyle>();
+				if (style_l) {
+					prs_styles.push_back(style_l);
+				}
+			}
+		}
+		
+		for (auto& style : prs_styles) {
+			if (style->declaration().is(IfcSchema::IfcSurfaceStyle::Class())) {
+				IfcSchema::IfcSurfaceStyle* surface_style = (IfcSchema::IfcSurfaceStyle*) style;
+				if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
+					IfcEntityList::ptr styles_elements = surface_style->Styles();
+					for (IfcEntityList::it mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
+						if ((*mt)->declaration().is(T::Class())) {
+							return std::make_pair(surface_style, (T*) *mt);
 						}
 					}
 				}

@@ -1,107 +1,25 @@
+#!/usr/bin/env python3
 # This can be packaged with `pyinstaller --onefile --clean --icon=icon.ico bimtester.py`
 
-print('# IFC COBie')
-print('''
-IFC COBie is free software developed under the IfcOpenShell and BlenderBIM
-projects. IFC COBie will convert IFC files, ideally produced with the COBie MVD
-in mind, into a spreadsheet format for inspection. To learn more, visit:
-
- - http://ifcopenshell.org
- - https://blenderbim.org
-
-To run, a `input.ifc` file is required in the current folder.
-''')
-
-value = input('Would you like to run IFC COBie? [Y/n] ')
-if value == 'n':
-    quit()
-
-print('Loading libraries ...')
-
+import os
 import time
+import argparse
 import datetime
-import ifcopenshell
 import logging
-import csv
-from xlsxwriter import Workbook
-
+import ifcopenshell
+import ifcopenshell.util.selector
 
 class IfcCobieParser():
-    def __init__(self, logger):
+    def __init__(self, logger, selector):
+        self.selector = selector
         self.logger = logger
         self.file = None
-        self.contacts = {}
-        self.facilities = {}
-        self.floors = {}
-        self.spaces = {}
-        self.zones = {}
-        self.types = {}
-        self.components = {}
-        self.systems = {}
-        self.assemblies = {}
-        self.connections = {}
-        self.spares = {}
-        self.resources = {}
-        self.jobs = {}
-        self.impacts = {}
-        self.documents = {}
-        self.attributes = {}
-        self.coordinates = {}
-        self.issues = {}
-        self.type_assets = [
-            'IfcDoorStyle',
-            'IfcBuildingElementProxyType',
-            'IfcChimneyType',
-            'IfcCoveringType',
-            'IfcDoorType',
-            'IfcFootingType',
-            'IfcPileType',
-            'IfcRoofType',
-            'IfcShadingDeviceType',
-            'IfcWindowType',
-            'IfcDistributionControlElementType',
-            'IfcDistributionChamberElementType',
-            'IfcEnergyConversionDeviceType',
-            'IfcFlowControllerType',
-            'IfcFlowMovingDeviceType',
-            'IfcFlowStorageDeviceType',
-            'IfcFlowTerminalType',
-            'IfcFlowTreatmentDeviceType',
-            'IfcElementAssemblyType',
-            'IfcBuildingElementPartType',
-            'IfcDiscreteAccessoryType',
-            'IfcMechanicalFastenerType',
-            'IfcReinforcingElementType',
-            'IfcVibrationIsolatorType',
-            'IfcFurnishingElementType',
-            'IfcGeographicElementType',
-            'IfcTransportElementType',
-            'IfcSpatialZoneType',
-            'IfcWindowStyle',
-            ]
-        self.component_assets = [
-            'IfcBuildingElementProxy',
-            'IfcChimney',
-            'IfcCovering',
-            'IfcDoor',
-            'IfcShadingDevice',
-            'IfcWindow',
-            'IfcDistributionControlElement',
-            'IfcDistributionChamberElement',
-            'IfcEnergyConversionDevice',
-            'IfcFlowController',
-            'IfcFlowMovingDevice',
-            'IfcFlowStorageDevice',
-            'IfcFlowTerminal',
-            'IfcFlowTreatmentDevice',
-            'IfcDiscreteAccessory',
-            'IfcTendon',
-            'IfcTendonAnchor',
-            'IfcVibrationIsolator',
-            'IfcFurnishingElement',
-            'IfcGeographicElement',
-            'IfcTransportElement',
-            ]
+        self.sheets = ['contacts', 'facilities', 'floors', 'spaces', 'zones',
+            'types', 'components', 'systems', 'assemblies', 'connections',
+            'spares', 'resources', 'jobs', 'impacts', 'documents', 'attributes',
+            'coordinates', 'issues']
+        for sheet in self.sheets:
+            setattr(self, sheet, {})
         self.picklists = {
             'Category-Role': [],
             'Category-Facility': [],
@@ -119,8 +37,14 @@ class IfcCobieParser():
             }
         self.default_date = (datetime.datetime(1970, 1, 1) + datetime.timedelta(seconds = -2177452801)).isoformat()
 
-    def parse(self):
-        self.file = ifcopenshell.open('input.ifc')
+    def parse(self, filename, type_query='.COBieType', component_query='.COBie', custom_data={}):
+        self.custom_data = custom_data
+        for sheet in self.sheets:
+            if sheet not in self.custom_data:
+                self.custom_data[sheet] = {}
+        self.file = ifcopenshell.open(filename)
+        self.type_assets = self.selector.parse(self.file, type_query)
+        self.component_assets = self.selector.parse(self.file, component_query)
         self.get_contacts()
         self.get_facilities()
         self.get_floors()
@@ -167,6 +91,8 @@ class IfcCobieParser():
                 'PostalCode': self.get_attribute_from_address(postal_address, 'PostalCode'),
                 'Country': self.get_attribute_from_address(postal_address, 'Country')
                 }
+            for field, key in self.custom_data['contacts'].items():
+                self.contacts[email][field] = self.get_element_value(history, key)
 
     def get_facilities(self):
         buildings = self.file.by_type('IfcBuilding')
@@ -196,6 +122,8 @@ class IfcCobieParser():
                 'SiteDescription': self.get_object_attribute(self.get_parent_spatial_element(building, 'IfcSite'), 'Description', default='n/a'),
                 'Phase': self.get_object_attribute(self.get_parent_spatial_element(building, 'IfcProject'), 'Phase', default='n/a')
                 }
+            for field, key in self.custom_data['facilities'].items():
+                self.facilities[building_name][field] = self.get_element_value(building, key)
 
     def get_floors(self):
         storeys = self.file.by_type('IfcBuildingStorey')
@@ -212,6 +140,8 @@ class IfcCobieParser():
                 'Elevation': self.get_object_attribute(storey, 'Elevation', default='n/a'),
                 'Height': self.get_height_from_storey(storey)
                 }
+            for field, key in self.custom_data['floors'].items():
+                self.floors[storey_name][field] = self.get_element_value(storey, key)
 
     def get_spaces(self):
         spaces = self.file.by_type('IfcSpace')
@@ -231,6 +161,8 @@ class IfcCobieParser():
                 'GrossArea': self.get_gross_area_from_space(space),
                 'NetArea': self.get_net_area_from_space(space),
                 }
+            for field, key in self.custom_data['spaces'].items():
+                self.spaces[space_name][field] = self.get_element_value(space, key)
 
     def get_zones(self):
         zones = self.file.by_type('IfcZone')
@@ -246,17 +178,12 @@ class IfcCobieParser():
                 'ExtIdentifier': zone.GlobalId,
                 'Description': self.get_object_attribute(zone, 'Description', default='n/a'),
                 }
+            for field, key in self.custom_data['zones'].items():
+                self.zones[zone_name][field] = self.get_element_value(zone, key)
 
     def get_types(self):
         types = self.file.by_type('IfcTypeObject')
-        for type in types:
-            is_a_type_asset = False
-            for type_asset in self.type_assets:
-                if type.is_a(type_asset):
-                    is_a_type_asset = True
-            if not is_a_type_asset:
-                self.logger.warning('A type which is not an asset was found for {}'.format(type))
-                continue
+        for type in self.type_assets:
             # The responsibility matrix states to parse IfcMaterial and
             # IfcMaterialLayerSet too, but it doesn't make much sense, so I
             # don't parse it.
@@ -306,6 +233,8 @@ class IfcCobieParser():
                 'CodePerformance': self.get_pset_value_from_object(type, 'COBie_Specification', 'CodePerformance', 'n/a'),
                 'SustainabilityPerformance': self.get_pset_value_from_object(type, 'COBie_Specification', 'SustainabilityPerformance', 'n/a'),
                 }
+            for field, key in self.custom_data['types'].items():
+                self.types[type_name][field] = self.get_element_value(type, key)
 
     def get_components(self):
         components = self.file.by_type('IfcElement')
@@ -330,6 +259,8 @@ class IfcCobieParser():
                 'BarCode': self.get_pset_value_from_object(component, 'Pset_ManufacturerOccurence', 'BarCode', 'n/a'),
                 'AssetIdentifier': self.get_pset_value_from_object(component, 'COBie_Component', 'AssetIdentifier', 'n/a'),
                 }
+            for field, key in self.custom_data['components'].items():
+                self.components[component_name][field] = self.get_element_value(component, key)
 
     def get_systems(self):
         systems = self.file.by_type('IfcSystem')
@@ -345,6 +276,8 @@ class IfcCobieParser():
                 'ExtIdentifier': system.GlobalId,
                 'Description': self.get_object_attribute(system, 'Description', default='n/a'),
                 }
+            for field, key in self.custom_data['systems'].items():
+                self.systems[system_name][field] = self.get_element_value(system, key)
 
     def get_assemblies(self):
         assemblies = self.file.by_type('IfcRelAggregates')
@@ -357,13 +290,15 @@ class IfcCobieParser():
                 'CreatedOn': self.get_created_on_from_history(assembly.OwnerHistory),
                 'SheetName': 'Assembly',
                 'ParentName': self.get_object_name(assembly.RelatingObject),
-                'ChildNames': ','.join([o.Name for o in assembly.RelatedObjects]),
+                'ChildNames': ','.join([o.Name if o.Name else '' for o in assembly.RelatedObjects]),
                 'AssemblyType': 'n/a', # I don't understand this field
                 'ExtSystem': self.get_ext_system_from_history(assembly.OwnerHistory),
                 'ExtObject': self.get_ext_object(assembly),
                 'ExtIdentifier': assembly.GlobalId,
                 'Description': self.get_object_attribute(assembly, 'Description', default='n/a'),
                 }
+            for field, key in self.custom_data['assemblies'].items():
+                self.assemblies[assembly_name][field] = self.get_element_value(assembly, key)
 
     def get_connections(self):
         connections = self.file.by_type('IfcRelConnects')
@@ -385,6 +320,8 @@ class IfcCobieParser():
                 'ExtIdentifier': connection.GlobalId,
                 'Description': self.get_object_attribute(connection, 'Description', default='n/a'),
                 }
+            for field, key in self.custom_data['connections'].items():
+                self.connections[connection_name][field] = self.get_element_value(connection, key)
 
     def get_spares(self):
         spares = self.file.by_type('IfcConstructionProductResource')
@@ -403,6 +340,8 @@ class IfcCobieParser():
                 'SetNumber': self.get_contact_pset_value_from_object(spare, 'COBie_Spare', 'SetNumber'),
                 'PartNumber': self.get_contact_pset_value_from_object(spare, 'COBie_Spare', 'PartNumber'),
                 }
+            for field, key in self.custom_data['spares'].items():
+                self.spares[spare_name][field] = self.get_element_value(spare, key)
 
     def get_resources(self):
         resources = self.file.by_type('IfcConstructionProductResource')
@@ -417,6 +356,8 @@ class IfcCobieParser():
                 'ExtIdentifier': resource.GlobalId,
                 'Description': self.get_object_attribute(resource, 'Description', default='n/a'),
                 }
+            for field, key in self.custom_data['resources'].items():
+                self.resources[resource_name][field] = self.get_element_value(resource, key)
 
     def get_jobs(self):
         jobs = self.file.by_type('IfcTask')
@@ -443,6 +384,8 @@ class IfcCobieParser():
                 'Priors': self.get_priors_from_job(job),
                 'ResourceNames': self.get_resource_names_from_job(job),
                 }
+            for field, key in self.custom_data['jobs'].items():
+                self.jobs[job_name][field] = self.get_element_value(job, key)
 
     # Impacts is not explicitly defined as a mapping in the responsibliity
     # matrix. This is my best guess. This data should not be relied upon until
@@ -472,6 +415,8 @@ class IfcCobieParser():
                     'ExtIdentifier': impact.GlobalId,
                     'Description': self.get_object_attribute(impact, 'Description', default='n/a'),
                 }
+            for field, key in self.custom_data['impacts'].items():
+                self.impacts[impact_name][field] = self.get_element_value(impact, key)
 
     def get_documents(self):
         documents = self.file.by_type('IfcDocumentInformation')
@@ -493,6 +438,8 @@ class IfcCobieParser():
                 'Description': self.get_object_attribute(document, 'Description', default=document_name),
                 'Reference': document_name,
                 }
+            for field, key in self.custom_data['documents'].items():
+                self.documents[document_name][field] = self.get_element_value(document, key)
 
     # Attributes is not explicitly defined as a mapping in the responsibliity
     # matrix. This is my best guess. This data should not be relied upon until
@@ -618,12 +565,8 @@ class IfcCobieParser():
             return object.Name
         self.logger.error('The connected object relationship {} is not a component asset for {}'.format(key, connection))
 
-    def is_object_a_component_asset(self, object):
-        is_an_asset = False
-        for asset in self.component_assets:
-            if object.is_a(asset):
-                is_an_asset = True
-        return is_an_asset
+    def is_object_a_component_asset(self, obj):
+        return obj in self.component_assets
 
     def get_space_name_from_component(self, component):
         for relationship in component.ContainedInStructure:
@@ -978,7 +921,7 @@ class IfcCobieParser():
     def get_phone_from_person_or_organisation(self, person_or_org):
         for address in (person_or_org.Addresses or []):
             if address.is_a('IfcTelecomAddress'):
-                return address.TelephoneNumbers[0]
+               return address.TelephoneNumbers[0]
         self.logger.warning('A phone was not found for {}'.format(person_or_org))
 
     def get_email_from_person_or_organisation(self, person_or_org):
@@ -987,109 +930,18 @@ class IfcCobieParser():
                 return address.ElectronicMailAddresses[0]
         self.logger.warning('An email address was not found for {}'.format(person_or_org))
 
-class CobieCsvWriter():
-    def __init__(self, parser):
+    def get_element_value(self, element, key):
+        value = self.selector.get_element_value(element, key)
+        if hasattr(value, 'wrappedValue'):
+            return value.wrappedValue
+        return value
+
+class CobieWriter():
+    def __init__(self, parser, filename=None):
+        self.filename = filename
         self.parser = parser
-
-    def write(self):
-        self.write_file('Contact', self.parser.contacts, 'Email',
-            ['Email', 'CreatedBy', 'CreatedOn', 'Category', 'Company',
-            'Phone', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
-            'Department', 'OrganizationCode', 'GivenName', 'FamilyName',
-            'Street', 'PostalBox', 'Town', 'StateRegion', 'PostalCode',
-            'Country'])
-        self.write_file('Facility', self.parser.facilities, 'Name',
-            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ProjectName',
-            'SiteName', 'LinearUnits', 'AreaUnits', 'VolumeUnits', 'CostUnit',
-            'AreaMeasurement', 'ExternalSystem', 'ExternalProjectObject',
-            'ExternalProjectIdentifier', 'ExternalSiteObject',
-            'ExternalSiteIdentifier', 'ExternalFacilityObject',
-            'ExternalFacilityIdentifier', 'Description', 'ProjectDescription',
-            'SiteDescription', 'Phase'])
-        self.write_file('Floor', self.parser.floors, 'Name',
-            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ExtSystem',
-            'ExtObject', 'ExtIdentifier', 'Description', 'Elevation', 'Height'])
-        self.write_file('Space', self.parser.spaces, 'Name',
-            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'FloorName',
-            'Description', 'ExtSystem', 'ExtObject', 'ExtIdentifier', 'RoomTag',
-            'UsableHeight', 'GrossArea', 'NetArea'])
-        self.write_file('Zone', self.parser.zones, 'Name',
-            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'SpaceNames',
-            'ExtSystem', 'ExtObject', 'ExtIdentifier', 'Description',])
-        self.write_file('Type', self.parser.types, 'Name',
-            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'Description',
-            'AssetType', 'Manufacturer', 'ModelNumber',
-            'WarrantyGuarantorParts', 'WarrantyDurationParts',
-            'WarrantyGuarantorLabor', 'WarrantyDurationLabor',
-            'WarrantyDurationUnit', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
-            'ReplacementCost', 'ExpectedLife', 'DurationUnit', 'NominalLength',
-            'NominalWidth', 'NominalHeight', 'ModelReference', 'Shape', 'Size',
-            'Color', 'Finish', 'Grade', 'Material', 'Constituents', 'Features',
-            'AccessibilityPerformance', 'CodePerformance',
-            'SustainabilityPerformance',])
-        self.write_file('Component', self.parser.components, 'Name',
-            ['Name', 'CreatedBy', 'CreatedOn', 'TypeName', 'Space',
-            'Description', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
-            'SerialNumber', 'InstallationDate', 'WarrantyStartDate',
-            'TagNumber', 'BarCode', 'AssetIdentifier',])
-        self.write_file('System', self.parser.systems, 'Name',
-            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ComponentNames',
-            'ExtSystem', 'ExtObject', 'ExtIdentifier', 'Description',])
-        self.write_file('Assembly', self.parser.assemblies, 'Name',
-            ['Name', 'CreatedBy', 'CreatedOn', 'SheetName', 'ParentName',
-            'ChildNames', 'AssemblyType', 'ExtSystem', 'ExtObject',
-            'ExtIdentifier', 'Description',])
-        self.write_file('Connection', self.parser.connections, 'Name',
-            ['Name', 'CreatedBy', 'CreatedOn', 'ConnectionType', 'SheetName',
-            'RowName1', 'RowName2', 'RealizingElement', 'PortName1',
-            'PortName2', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
-            'Description',])
-        self.write_file('Spare', self.parser.spares, 'Name',
-            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'TypeName',
-            'Suppliers', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
-            'Description', 'SetNumber', 'PartNumber',])
-        self.write_file('Resource', self.parser.resources, 'Name',
-            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ExtSystem',
-            'ExtObject', 'ExtIdentifier', 'Description',])
-        self.write_file('Job', self.parser.jobs, 'Name',
-            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'Status', 'TypeName',
-            'Description', 'Duration', 'DurationUnit', 'Start', 'TaskStartUnit',
-            'Frequency', 'FrequencyUnit', 'ExtSystem', 'ExtObject',
-            'ExtIdentifier', 'TaskNumber', 'Priors', 'ResourceNames',])
-        self.write_file('Impact', self.parser.impacts, 'Name',
-            ['Name', 'CreatedBy', 'CreatedOn', 'ImpactType', 'ImpactStage',
-            'SheetName', 'RowName', 'Value', 'Unit', 'LeadInTime', 'Duration',
-            'LeadOutTime', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
-            'Description',])
-        self.write_file('Document', self.parser.documents, 'Name',
-            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ApprovalBy',
-            'Stage', 'SheetName', 'RowName', 'Directory', 'File', 'ExtSystem',
-            'ExtObject', 'ExtIdentifier', 'Description', 'Reference',])
-        self.write_file('Attribute', self.parser.attributes, 'Name',
-            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'SheetName',
-            'RowName', 'Value', 'Unit', 'ExtSystem', 'ExtObject',
-            'ExtIdentifier', 'Description', 'AllowedValues',])
-        self.write_file('Coordinate', self.parser.coordinates, 'Name',
-            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'SheetName',
-            'RowName', 'CoordinateXAxis', 'CoordinateYAxis', 'CoordinateZAxis',
-            'ExtSystem', 'ExtObject', 'ExtIdentifier', 'ClockwiseRotation',
-            'ElevationalRotation', 'YawRotation',])
-        self.write_file('Issue', self.parser.issues, 'Name',
-            ['Name', 'CreatedBy', 'CreatedOn', 'Type', 'Risk', 'Chance',
-            'Impact', 'SheetName1', 'RowName1', 'SheetName2', 'RowName2',
-            'Description', 'Owner', 'Mitigation', 'ExtSystem', 'ExtObject',
-            'ExtIdentifier',])
-
-    def write_file(self, csv_name, data, primary_key, fieldnames):
-        with open('{}.csv'.format(csv_name), 'w', newline='', encoding='utf-8') as file:
-            writer = csv.DictWriter(file, fieldnames=fieldnames)
-            writer.writeheader()
-            for name, row in data.items():
-                row[primary_key] = name
-                writer.writerow(row)
-
-class CobieXlsWriter(CobieCsvWriter):
-    def write(self):
+        self.sheets = []
+        self.sheet_data = {}
         self.colours = {
             'r': 'fdff8e', # Required
             'i': 'fdcd94', # Internal reference
@@ -1099,65 +951,287 @@ class CobieXlsWriter(CobieCsvWriter):
             'p': '9ccaff', # Project specific
             'n': '000000' # Not used
             }
+
+    def write(self):
+        self.sheets = ['Contact', 'Facility', 'Floor', 'Space', 'Zone', 'Type',
+            'Component', 'System', 'Assembly', 'Connection', 'Spare',
+            'Resource', 'Job', 'Impact', 'Document', 'Attribute', 'Coordinate',
+            'Issue']
+        self.write_data('Contact', self.parser.contacts, 'Email',
+            ['Email', 'CreatedBy', 'CreatedOn', 'Category', 'Company',
+            'Phone', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
+            'Department', 'OrganizationCode', 'GivenName', 'FamilyName',
+            'Street', 'PostalBox', 'Town', 'StateRegion', 'PostalCode',
+            'Country'], 'ririrreeeoooooooooo', self.parser.custom_data['contacts'])
+        self.write_data('Facility', self.parser.facilities, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ProjectName',
+            'SiteName', 'LinearUnits', 'AreaUnits', 'VolumeUnits', 'CostUnit',
+            'AreaMeasurement', 'ExternalSystem', 'ExternalProjectObject',
+            'ExternalProjectIdentifier', 'ExternalSiteObject',
+            'ExternalSiteIdentifier', 'ExternalFacilityObject',
+            'ExternalFacilityIdentifier', 'Description', 'ProjectDescription',
+            'SiteDescription', 'Phase'], 'ririrriiiireeeeeeeoooo',
+            self.parser.custom_data['facilities'])
+        self.write_data('Floor', self.parser.floors, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ExtSystem',
+            'ExtObject', 'ExtIdentifier', 'Description', 'Elevation', 'Height'],
+            'ririeeeooo', self.parser.custom_data['floors'])
+        self.write_data('Space', self.parser.spaces, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'FloorName',
+            'Description', 'ExtSystem', 'ExtObject', 'ExtIdentifier', 'RoomTag',
+            'UsableHeight', 'GrossArea', 'NetArea'], 'ririireeeoooo',
+            self.parser.custom_data['spaces'])
+        self.write_data('Zone', self.parser.zones, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'SpaceNames',
+            'ExtSystem', 'ExtObject', 'ExtIdentifier', 'Description',],
+            'ririieeeo', self.parser.custom_data['zones'])
+        self.write_data('Type', self.parser.types, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'Description',
+            'AssetType', 'Manufacturer', 'ModelNumber',
+            'WarrantyGuarantorParts', 'WarrantyDurationParts',
+            'WarrantyGuarantorLabor', 'WarrantyDurationLabor',
+            'WarrantyDurationUnit', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
+            'ReplacementCost', 'ExpectedLife', 'DurationUnit', 'NominalLength',
+            'NominalWidth', 'NominalHeight', 'ModelReference', 'Shape', 'Size',
+            'Color', 'Finish', 'Grade', 'Material', 'Constituents', 'Features',
+            'AccessibilityPerformance', 'CodePerformance',
+            'SustainabilityPerformance',],
+            'riririoooooooeeeooooooooooooooooooo',
+            self.parser.custom_data['types'])
+        self.write_data('Component', self.parser.components, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'TypeName', 'Space',
+            'Description', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
+            'SerialNumber', 'InstallationDate', 'WarrantyStartDate',
+            'TagNumber', 'BarCode', 'AssetIdentifier',], 'ririireeeoooooo',
+            self.parser.custom_data['components'])
+        self.write_data('System', self.parser.systems, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ComponentNames',
+            'ExtSystem', 'ExtObject', 'ExtIdentifier', 'Description',],
+            'ririieeeo', self.parser.custom_data['systems'])
+        self.write_data('Assembly', self.parser.assemblies, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'SheetName', 'ParentName',
+            'ChildNames', 'AssemblyType', 'ExtSystem', 'ExtObject',
+            'ExtIdentifier', 'Description',], 'rirrrrreeeo',
+            self.parser.custom_data['assemblies'])
+        self.write_data('Connection', self.parser.connections, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'ConnectionType', 'SheetName',
+            'RowName1', 'RowName2', 'RealizingElement', 'PortName1',
+            'PortName2', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
+            'Description',], 'ririiiiiiieeeo',
+            self.parser.custom_data['connections'])
+        self.write_data('Spare', self.parser.spares, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'TypeName',
+            'Suppliers', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
+            'Description', 'SetNumber', 'PartNumber',], 'ririiieeeooo',
+            self.parser.custom_data['spares'])
+        self.write_data('Resource', self.parser.resources, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ExtSystem',
+            'ExtObject', 'ExtIdentifier', 'Description',], 'ririeeeo',
+            self.parser.custom_data['resources'])
+        self.write_data('Job', self.parser.jobs, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'Status', 'TypeName',
+            'Description', 'Duration', 'DurationUnit', 'Start', 'TaskStartUnit',
+            'Frequency', 'FrequencyUnit', 'ExtSystem', 'ExtObject',
+            'ExtIdentifier', 'TaskNumber', 'Priors', 'ResourceNames',],
+            'ririiirriririeeeoii', self.parser.custom_data['jobs'])
+        self.write_data('Impact', self.parser.impacts, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'ImpactType', 'ImpactStage',
+            'SheetName', 'RowName', 'Value', 'Unit', 'LeadInTime', 'Duration',
+            'LeadOutTime', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
+            'Description',], 'ririiiirioooeeeo',
+            self.parser.custom_data['impacts'])
+        self.write_data('Document', self.parser.documents, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ApprovalBy',
+            'Stage', 'SheetName', 'RowName', 'Directory', 'File', 'ExtSystem',
+            'ExtObject', 'ExtIdentifier', 'Description', 'Reference',],
+            'ririiiiirreeeoo', self.parser.custom_data['documents'])
+        self.write_data('Attribute', self.parser.attributes, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'SheetName',
+            'RowName', 'Value', 'Unit', 'ExtSystem', 'ExtObject',
+            'ExtIdentifier', 'Description', 'AllowedValues',], 'ririiirreeeoo')
+        self.write_data('Coordinate', self.parser.coordinates, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'SheetName',
+            'RowName', 'CoordinateXAxis', 'CoordinateYAxis', 'CoordinateZAxis',
+            'ExtSystem', 'ExtObject', 'ExtIdentifier', 'ClockwiseRotation',
+            'ElevationalRotation', 'YawRotation',], 'ririiooooeeeooo')
+        self.write_data('Issue', self.parser.issues, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Type', 'Risk', 'Chance',
+            'Impact', 'SheetName1', 'RowName1', 'SheetName2', 'RowName2',
+            'Description', 'Owner', 'Mitigation', 'ExtSystem', 'ExtObject',
+            'ExtIdentifier',], 'ririooooooooooeee')
+
+    def write_data(self, sheet, data, primary_key, fieldnames, colours, custom_data={}):
+        self.sheet_data[sheet] = {
+            'headers': fieldnames + list(custom_data.keys()),
+            'colours': colours,
+            'rows': []
+        }
+        for name, row in data.items():
+            row[primary_key] = name
+            values = []
+            for fieldname in fieldnames:
+                values.append(row[fieldname])
+            for fieldname in custom_data.keys():
+                values.append(row[fieldname])
+            self.sheet_data[sheet]['rows'].append(values)
+
+
+class CobieCsvWriter(CobieWriter):
+    def write(self):
+        import csv
         super().write()
-        self.workbook = Workbook('output.xlsx')
+        for sheet, data in self.sheet_data.items():
+            with open(os.path.join(self.filename, '{}.csv'.format(sheet)), 'w', newline='', encoding='utf-8') as file:
+                writer = csv.writer(file)
+                writer.writerow(data['headers'])
+                for row in data['rows']:
+                    writer.writerow(row)
+
+
+class CobieXlsWriter(CobieWriter):
+    def write(self):
+        from xlsxwriter import Workbook
+        super().write()
+        self.workbook = Workbook(self.filename + '.xlsx')
 
         self.cell_formats = {}
         for key, value in self.colours.items():
             self.cell_formats[key] = self.workbook.add_format()
             self.cell_formats[key].set_bg_color(value)
 
-        self.write_worksheet('Contact', self.colours['r'], 'ririrreeeoooooooooo')
-        self.write_worksheet('Facility', self.colours['r'], 'ririrriiiireeeeeeeoooo')
-        self.write_worksheet('Floor', self.colours['r'], 'ririeeeooo')
-        self.write_worksheet('Space', self.colours['r'], 'ririireeeoooo')
-        self.write_worksheet('Zone', self.colours['r'], 'ririieeeo')
-        self.write_worksheet('Type', self.colours['r'], 'riririoooooooeeeooooooooooooooooooo')
-        self.write_worksheet('Component', self.colours['r'], 'ririireeeoooooo')
-        self.write_worksheet('System', self.colours['r'], 'ririieeeo')
-        self.write_worksheet('Assembly', self.colours['r'], 'rirrrrreeeo')
-        self.write_worksheet('Connection', self.colours['r'], 'ririiiiiiieeeo')
-        self.write_worksheet('Spare', self.colours['r'], 'ririiieeeooo')
-        self.write_worksheet('Resource', self.colours['r'], 'ririeeeo')
-        self.write_worksheet('Job', self.colours['r'], 'ririiirriririeeeoii')
-        self.write_worksheet('Impact', self.colours['r'], 'ririiiirioooeeeo')
-        self.write_worksheet('Document', self.colours['r'], 'ririiiiirreeeoo')
-        self.write_worksheet('Attribute', self.colours['r'], 'ririiirreeeoo')
-        self.write_worksheet('Coordinate', self.colours['r'], 'ririiooooeeeooo')
-        self.write_worksheet('Issue', self.colours['r'], 'ririooooooooooeee')
+        for sheet in self.sheets:
+            self.write_worksheet(sheet)
         self.workbook.close()
 
-    def write_worksheet(self, name, tab_colour, fill_map):
+    def write_worksheet(self, name):
         worksheet = self.workbook.add_worksheet(name)
+        r = 0
+        c = 0
+        for header in self.sheet_data[name]['headers']:
+            cell = worksheet.write(r, c, header, self.cell_formats['s'])
+            c += 1
+        c = 0
+        r += 1
+        for row in self.sheet_data[name]['rows']:
+            c = 0
+            for col in row:
+                if c >= len(self.sheet_data[name]['colours']):
+                    cell_format = 'p'
+                else:
+                    cell_format = self.sheet_data[name]['colours'][c]
+                cell = worksheet.write(r, c, col, self.cell_formats[cell_format])
+                c += 1
+            r += 1
 
-        with open('{}.csv'.format(name), 'r') as f:
-            reader = csv.reader(f)
-            for r, row in enumerate(reader):
-                for c, col in enumerate(row):
-                    if r == 0:
-                        cell = worksheet.write(r, c, col, self.cell_formats['s'])
-                    else:
-                        cell = worksheet.write(r, c, col, self.cell_formats[fill_map[c]])
 
-print('Processing IFC file ...')
-print('Note: view issues with your file in `process.log` ...')
+class CobieOdsWriter(CobieWriter):
+    def write(self):
+        from odf.opendocument import OpenDocumentSpreadsheet
+        from odf.style import Style, TableCellProperties
+        super().write()
+        self.doc = OpenDocumentSpreadsheet()
 
-start = time.time()
-logging.basicConfig(
-    filename='process.log',
-    filemode='a', level=logging.DEBUG)
-logger = logging.getLogger('IFCtoCOBie')
-logger.info('Starting conversion')
-parser = IfcCobieParser(logger)
-parser.parse()
+        self.cell_formats = {}
+        for key, value in self.colours.items():
+            style = Style(name=key, family='table-cell')
+            style.addElement(TableCellProperties(backgroundcolor='#' + value))
+            self.doc.automaticstyles.addElement(style)
+            self.cell_formats[key] = style
 
-print('Generating reports ...')
+        for sheet in self.sheets:
+            self.write_table(sheet)
+        self.doc.save(self.filename, True)
 
-#writer = CobieCsvWriter(parser)
-#writer.write()
-writer = CobieXlsWriter(parser)
-writer.write()
-logger.info('Finished conversion in {}s'.format(time.time() - start))
+    def write_table(self, name):
+        from odf.table import Table, TableRow, TableCell
+        from odf.text import P
 
-print('# All reports are complete :-)')
-input('Press <enter> to quit.')
+        table = Table(name=name)
+        tr = TableRow()
+        for header in self.sheet_data[name]['headers']:
+            tc = TableCell(valuetype='string', stylename='s')
+            tc.addElement(P(text=header))
+            tr.addElement(tc)
+        table.addElement(tr)
+        for row in self.sheet_data[name]['rows']:
+            tr = TableRow()
+            c = 0
+            for col in row:
+                if c >= len(self.sheet_data[name]['colours']):
+                    cell_format = 'p'
+                else:
+                    cell_format = self.sheet_data[name]['colours'][c]
+                tc = TableCell(valuetype='string', stylename=cell_format)
+                tc.addElement(P(text=col))
+                tr.addElement(tc)
+                c += 1
+            table.addElement(tr)
+        self.doc.spreadsheet.addElement(table)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Converts COBie IFC MVD into its spreadsheet equivalent')
+    parser.add_argument('input', type=str, help='Specify an IFC file to process')
+    parser.add_argument('output', type=str, help='The output directory for CSV or filename for other formats')
+    parser.add_argument(
+        '-l',
+        '--log',
+        type=str,
+        help='Specify where errors should be logged',
+        default='process.log')
+    parser.add_argument(
+        '-f',
+        '--format',
+        type=str,
+        help='Choose which format to export in (csv/ods/xlsx)',
+        default='csv')
+    parser.add_argument(
+        '-c',
+        '--components',
+        type=str,
+        help='A custom selector for components. Defaults to COBie',
+        default='.COBie')
+    parser.add_argument(
+        '-t',
+        '--types',
+        type=str,
+        help='A custom selector for types. Defaults to COBieType',
+        default='.COBieType')
+    parser.add_argument(
+        '-d',
+        '--data',
+        type=str,
+        help='JSON file containing custom data to be appended to the COBie spreadsheet template',
+        default='')
+    args = vars(parser.parse_args())
+
+    print('Processing IFC file ...')
+
+    start = time.time()
+    logging.basicConfig(
+        filename=args['log'],
+        filemode='a', level=logging.DEBUG)
+    logger = logging.getLogger('IFCtoCOBie')
+    logger.info('Starting conversion')
+    selector = ifcopenshell.util.selector.Selector()
+    parser = IfcCobieParser(logger, selector)
+    if args['data']:
+        with open(bpy.context.scene.BIMProperties.cobie_json_file, 'r') as f:
+            custom_data = json.load(f)
+    else:
+        custom_data = {}
+    parser.parse(args['input'], args['types'], args['components'], custom_data)
+
+    print('Generating reports ...')
+
+    if args['format'] == 'xlsx':
+        writer = CobieXlsWriter(parser, args['output'])
+    elif args['format'] == 'ods':
+        writer = CobieOdsWriter(parser, args['output'])
+    else:
+        writer = CobieCsvWriter(parser, args['output'])
+    writer.write()
+
+    logger.info('Finished conversion in {}s'.format(time.time() - start))
+    print('# All reports are complete :-)')

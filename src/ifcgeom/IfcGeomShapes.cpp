@@ -1098,16 +1098,39 @@ namespace {
 		TopExp::Vertices(wire, v0, v1);
 		TopTools_IndexedDataMapOfShapeListOfShape map;
 		TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, map);
-		if (map.Contains(v0) && map.FindFromKey(v0).Extent() == 1) {
+		if (v0.IsSame(v1) && map.Contains(v0) && map.FindFromKey(v0).Extent() == 2) {
+			// Closed wire, with more than 1 edges
+			auto es = map.FindFromKey(v0);
+			auto e1 = TopoDS::Edge(es.First());
+			auto e2 = TopoDS::Edge(es.Last());
+			
+			double u0, u1;
+
+			gp_Vec accum;
+			
+			Handle(Geom_Curve) crv = BRep_Tool::Curve(e1, u0, u1);
+			crv->D1(TopExp::FirstVertex(e1).IsSame(v0) ? u0 : u1, directrix_origin, directrix_tangent);
+
+			accum += directrix_tangent;
+
+			crv = BRep_Tool::Curve(e2, u0, u1);
+			crv->D1(TopExp::FirstVertex(e2).IsSame(v0) ? u0 : u1, directrix_origin, directrix_tangent);
+
+			accum += directrix_tangent;
+
+			directrix_tangent = accum;
+
+		} else if (map.Contains(v0) && map.FindFromKey(v0).Extent() == 1) {
 			edge = TopoDS::Edge(map.FindFromKey(v0).First());
+
+			double u0, u1;
+			Handle(Geom_Curve) crv = BRep_Tool::Curve(edge, u0, u1);
+			crv->D1(u0, directrix_origin, directrix_tangent);
 		} else {
 			Logger::Error("Unable to locate first edge");
 			return false;
 		}
-
-		double u0, u1;
-		Handle(Geom_Curve) crv = BRep_Tool::Curve(edge, u0, u1);
-		crv->D1(u0, directrix_origin, directrix_tangent);
+		
 		directrix = gp_Ax2(directrix_origin, directrix_tangent);
 
 		return true;
@@ -1168,13 +1191,25 @@ namespace {
 		result = BRepPrimAPI_MakeRevol(section, circ->Axis(), depth).Shape();
 	}
 
-	void process_sweep_as_pipe(const TopoDS_Wire& wire, const TopoDS_Wire& section, TopoDS_Shape& result) {
+	void process_sweep_as_pipe(const TopoDS_Wire& wire, const TopoDS_Wire& section, TopoDS_Shape& result, bool force_transformed=false) {
 		// This tolerance is fairly high due to the linear edge substitution for small (or large radii) conical curves.
 		const bool is_continuous = wire_is_c1_continuous(wire, 1.e-2);
+		static int i = 0;
+		std::string fn = "pipe-wire-" + boost::lexical_cast<std::string>(i++) + ".brep";
+		BRepTools::Write(wire, fn.c_str());
 		BRepOffsetAPI_MakePipeShell builder(wire);
 		builder.Add(section);
-		builder.SetTransitionMode(is_continuous ? BRepBuilderAPI_Transformed : BRepBuilderAPI_RightCorner);
-		builder.Build();
+		builder.SetTransitionMode(is_continuous || force_transformed ? BRepBuilderAPI_Transformed : BRepBuilderAPI_RightCorner);
+		try {
+			builder.Build();
+		} catch (Standard_Failure& e) {
+			// We fallback to BRepBuilderAPI_Transformed, but likely with visual artefacts.
+			if (!(is_continuous || force_transformed)) {
+				return process_sweep_as_pipe(wire, section, result, true);
+			} else {
+				throw e;
+			}
+		}
 		builder.MakeSolid();
 		result = builder.Shape();
 	}
@@ -1187,8 +1222,12 @@ namespace {
 		// @todo this creates the ancestor map twice
 		TopExp::Vertices(wire, v0, v1);
 
+		bool ignore_first_equality_because_closed = v0.IsSame(v1);
+
+		// @todo this probably still does not work on a closed wire consisting of one (circular) edge.
 		
-		while (!v0.IsSame(v1)) {
+		while (!v0.IsSame(v1) || ignore_first_equality_because_closed) {
+			ignore_first_equality_because_closed = false;
 			if (!map.Contains(v0)) {
 				throw std::runtime_error("Disconnected vertex");
 			}
@@ -1233,6 +1272,34 @@ namespace {
 		}
 	}
 
+	// #939: a closed loop causes failed triangulation in 7.3 and artefacts
+	// in 7.4 so we break up a closed wire into two equal parts.
+	void break_closed(const TopoDS_Wire& wire, std::vector<TopoDS_Wire>& wires) {
+		std::vector<TopoDS_Edge> sorted_edges;
+		sort_edges(wire, sorted_edges);
+
+		if (sorted_edges.size() == 1) {
+			wires.push_back(wire);
+			return;
+		}
+
+		BRep_Builder B;
+		double u, v;
+
+		wires.emplace_back();
+		B.MakeWire(wires.back());
+
+		for (int i = 0; i < sorted_edges.size(); ++i) {
+			if (i == sorted_edges.size() / 2) {
+				wires.emplace_back();
+				B.MakeWire(wires.back());
+			}
+
+			const auto& e = sorted_edges[i];
+			B.Add(wires.back(), e);
+		}
+	}
+
 	void segment_adjacent_non_linear(const TopoDS_Wire& wire, std::vector<TopoDS_Wire>& wires) {
 		std::vector<TopoDS_Edge> sorted_edges;
 		sort_edges(wire, sorted_edges);
@@ -1243,7 +1310,7 @@ namespace {
 		wires.emplace_back();
 		B.MakeWire(wires.back());
 
-		for (size_t i = 0; i < sorted_edges.size() - 1; ++i) {
+		for (int i = 0; i < (int) sorted_edges.size() - 1; ++i) {
 			const auto& e = sorted_edges[i];
 			Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
 			const bool is_linear = crv->DynamicType() == STANDARD_TYPE(Geom_Line);
@@ -1260,14 +1327,19 @@ namespace {
 			}
 		}
 
-		B.Add(wires.back(), sorted_edges.back());
+		if (!sorted_edges.empty()) {
+			B.Add(wires.back(), sorted_edges.back());
+		}
 	}
 
 	// @todo make this generic for other sweeps not just swept disk
 	void process_sweep(const TopoDS_Wire& wire, double radius, TopoDS_Shape& result) {
-		std::vector<TopoDS_Wire> wires;
-		segment_adjacent_non_linear(wire, wires);
-
+		std::vector<TopoDS_Wire> wires, wires_tmp;
+		segment_adjacent_non_linear(wire, wires_tmp);
+		for (auto& w : wires_tmp) {
+			break_closed(w, wires);
+		}
+		
 		TopoDS_Compound C;
 		BRep_Builder B;
 		if (wires.size() > 1) {
@@ -1341,6 +1413,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 	// its entirety.
 	
 	process_sweep(wire, l->Radius() * getValue(GV_LENGTH_UNIT), shape);
+
+	if (shape.IsNull()) {
+		return false;
+	}
 
 	double r2 = 0.;
 
@@ -1471,11 +1547,29 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS
 			return false;
 		}
 
+		if (tri[0] == tri[1] || tri[1] == tri[2] || tri[0] == tri[2]) {
+			auto tri_0 = boost::lexical_cast<std::string>(tri[0]);
+			auto tri_1 = boost::lexical_cast<std::string>(tri[1]);
+			auto tri_2 = boost::lexical_cast<std::string>(tri[2]);
+			Logger::Message(Logger::LOG_ERROR, "Degenerate triangle indices, skipping (" + tri_0 + "," + tri_1 + "," + tri_2 + ")", l);
+			continue;
+		}
+		
 		const gp_Pnt& a = points[tri[0] - 1]; // account for zero- vs
 		const gp_Pnt& b = points[tri[1] - 1]; // one-based indices in
 		const gp_Pnt& c = points[tri[2] - 1]; // c++ and express
 
-		TopoDS_Wire wire = BRepBuilderAPI_MakePolygon(a, b, c, true).Wire();
+		BRepBuilderAPI_MakePolygon mp(a, b, c, true);
+
+		if (!mp.IsDone()) {
+			auto tri_0 = boost::lexical_cast<std::string>(tri[0]);
+			auto tri_1 = boost::lexical_cast<std::string>(tri[1]);
+			auto tri_2 = boost::lexical_cast<std::string>(tri[2]);
+			Logger::Message(Logger::LOG_ERROR, "Degenerate triangle, skipping (" + tri_0 + "," + tri_1 + "," + tri_2 + ")", l);
+			continue;
+		}
+
+		TopoDS_Wire wire = mp.Wire();
 		TopoDS_Face face = BRepBuilderAPI_MakeFace(wire).Face();
 
 		TopoDS_Iterator face_it(face, false);
@@ -1541,6 +1635,39 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS
 	return true;
 }
 
+namespace {
+	bool make_indexed_polygon(IfcGeom::Kernel& k, const std::vector<gp_Pnt>& points, const std::vector<int>& indices, TopoDS_Wire& wire) {
+		TColgp_SequenceOfPnt polygon;
+		for (std::vector<int>::size_type j = 0; j != indices.size(); j++) {
+			const gp_Pnt& point = points[indices[j] - 1];
+			polygon.Append(point);
+		}
+		k.remove_duplicate_points_from_loop(polygon, true);
+
+		if (polygon.Size() < 3) {
+			return false;
+		}
+
+		BRepBuilderAPI_MakePolygon wire_builder;
+		for (int i = 1; i <= polygon.Length(); ++i) {
+			wire_builder.Add(polygon.Value(i));
+		}
+		wire_builder.Close();
+
+		wire = wire_builder.Wire();
+
+		TopoDS_Iterator it(wire);
+		for (; it.More(); it.Next()) {
+			BRepAdaptor_Curve ad(TopoDS::Edge(it.Value()));
+		}
+
+		ShapeFix_ShapeTolerance FTol;
+		FTol.SetTolerance(wire, k.getValue(IfcGeom::Kernel::GV_PRECISION), TopAbs_WIRE);
+
+		return true;
+	}
+}
+
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_Shape& shape) {
     IfcSchema::IfcCartesianPointList3D* point_list = pfs->Coordinates();
     const std::vector<std::vector<double> > coordinates = point_list->CoordList();
@@ -1557,33 +1684,15 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
 
     auto polygonal_faces = pfs->Faces();
 
-    std::vector<TopoDS_Face> faces;
-
-    TopoDS_Compound all_faces;
-    BRep_Builder compound_builder;
-    compound_builder.MakeCompound(all_faces);
-
-	ShapeFix_ShapeTolerance FTol;
+	TopTools_ListOfShape faces;
 
     for (unsigned i = 0; i < polygonal_faces->size(); i++) {
         IfcSchema::IfcIndexedPolygonalFace* la = (IfcSchema::IfcIndexedPolygonalFace*)*(polygonal_faces->begin() + i);
         TopoDS_Face face;
-        // Gives the indexed points defining the face
-        std::vector<int> test = la->CoordIndex();
-
-        // The points vector gathers all the indexed
-        // points, sorted in order (cf BuildingSmart https://urlz.fr/aXN6)
-        std::vector<gp_Pnt> face_points;
-        BRepBuilderAPI_MakePolygon wire_builder = BRepBuilderAPI_MakePolygon();
-        for (std::vector<int>::size_type j = 0; j != test.size(); j++) {
-            const gp_Pnt& point = points[test[j] - 1];
-            TopoDS_Vertex vertex = BRepBuilderAPI_MakeVertex(point);
-            wire_builder.Add(vertex);
-        }
-
-        wire_builder.Close();
-        TopoDS_Wire wire = wire_builder.Wire();
-		FTol.SetTolerance(wire, getValue(GV_PRECISION), TopAbs_WIRE);
+		TopoDS_Wire wire;
+		if (!make_indexed_polygon(*this, points, la->CoordIndex(), wire)) {
+			continue;
+		}
 
         if (la->declaration().is(IfcSchema::IfcIndexedPolygonalFaceWithVoids::Class())) {
             IfcSchema::IfcIndexedPolygonalFaceWithVoids* converted = (IfcSchema::IfcIndexedPolygonalFaceWithVoids*)la;
@@ -1592,22 +1701,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
             BRepBuilderAPI_MakeFace facemaker = BRepBuilderAPI_MakeFace(wire);
 			std::vector<TopoDS_Wire> vectorofwires{ wire };
             for (std::vector<std::vector<int> >::const_iterator it = innercoordinates.begin(); it != innercoordinates.end(); ++it) {
-                std::vector<int> mycoords = *it;
-                BRepBuilderAPI_MakePolygon inner_wire_builder = BRepBuilderAPI_MakePolygon();
-                for (std::vector<int>::size_type j = 0; j != mycoords.size(); j++) {
-                    gp_Pnt apoint = points[mycoords[j] - 1];
-                    TopoDS_Vertex vertex = BRepBuilderAPI_MakeVertex(apoint);
-                    inner_wire_builder.Add(vertex);
-                }
-
-				inner_wire_builder.Close();
-				
-				TopoDS_Wire mywire = inner_wire_builder.Wire();
-                FTol.SetTolerance(wire, getValue(GV_PRECISION), TopAbs_WIRE);
-
-				vectorofwires.push_back(mywire);
-
-                facemaker.Add(mywire);
+				TopoDS_Wire inner_wire;
+				if (make_indexed_polygon(*this, points, *it, inner_wire)) {
+					vectorofwires.push_back(inner_wire);
+					facemaker.Add(inner_wire);
+				}
             }
 
 			facemaker.Build();
@@ -1621,7 +1719,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
 					for (; it.More(); it.Next()) {
 						const TopoDS_Face& tri = TopoDS::Face(it.Value());
 						if (face_area(tri) > getValue(GV_MINIMAL_FACE_AREA)) {
-							faces.push_back(tri);
+							faces.Append(tri);
 						}
 					}
 					continue;
@@ -1640,7 +1738,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
 					for (; it.More(); it.Next()) {
 						const TopoDS_Face& tri = TopoDS::Face(it.Value());
 						if (face_area(tri) > getValue(GV_MINIMAL_FACE_AREA)) {
-							faces.push_back(tri);
+							faces.Append(tri);
 						}
 					}
 					continue;
@@ -1661,20 +1759,13 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
         }
 
         if (face_area(face) > getValue(GV_MINIMAL_FACE_AREA)) {
-            faces.push_back(face);
+            faces.Append(face);
         }
     }
 
-    if (faces.empty()) return false;
+    if (faces.Size() == 0) return false;
 
-    TopTools_ListOfShape faces_list;
-    for (std::vector<TopoDS_Face>::const_iterator it = faces.begin(); it != faces.end(); ++it) {
-        faces_list.Append(*it);
-    }
-
-    create_solid_from_faces(faces_list, shape);
-
-    return true;
+    return create_solid_from_faces(faces, shape);
 }
 
 #endif

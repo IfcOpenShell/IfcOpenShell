@@ -1,5 +1,7 @@
 import bpy
 from bpy.types import Panel
+from bpy.props import StringProperty
+
 
 class BIM_PT_object(Panel):
     bl_label = 'IFC Object'
@@ -13,32 +15,33 @@ class BIM_PT_object(Panel):
         return context.active_object is not None and hasattr(context.active_object, "BIMObjectProperties")
 
     def draw(self, context):
-
         if context.active_object is None:
             return
         layout = self.layout
         props = context.active_object.BIMObjectProperties
         bim_properties = context.scene.BIMProperties
 
-        if 'Ifc' not in context.active_object.name:
-            row = layout.row()
-            row.prop(bim_properties, "ifc_product")
-            row = layout.row()
-            row.prop(bim_properties, "ifc_class")
-            if bim_properties.ifc_predefined_type:
-                row = layout.row()
-                row.prop(bim_properties, "ifc_predefined_type")
-            if bim_properties.ifc_predefined_type == 'USERDEFINED':
-                row = layout.row()
-                row.prop(bim_properties, "ifc_userdefined_type")
-            row = layout.row()
-            op = row.operator("bim.assign_class")
-            op.object_name = context.active_object.name
-            return
-
-        layout.label(text="Software Identity:")
         row = layout.row()
-        row.operator('bim.generate_global_id')
+        row.prop(bim_properties, "ifc_product")
+        row = layout.row()
+        row.prop(bim_properties, "ifc_class")
+        if bim_properties.ifc_predefined_type:
+            row = layout.row()
+            row.prop(bim_properties, "ifc_predefined_type")
+        if bim_properties.ifc_predefined_type == 'USERDEFINED':
+            row = layout.row()
+            row.prop(bim_properties, "ifc_userdefined_type")
+        row = layout.row(align=True)
+        if 'Ifc' not in context.active_object.name:
+            op = row.operator("bim.assign_class")
+        else:
+            op = row.operator("bim.assign_class", text='Reassign IFC Class')
+        op.object_name = context.active_object.name
+        op = row.operator("bim.unassign_class", icon='X', text='')
+        op.object_name = context.active_object.name
+
+        if 'Ifc' not in context.active_object.name:
+            return
 
         layout.label(text="Attributes:")
         row = layout.row(align=True)
@@ -49,6 +52,8 @@ class BIM_PT_object(Panel):
             row = layout.row(align=True)
             row.prop(attribute, 'name', text='')
             row.prop(attribute, 'string_value', text='')
+            if attribute.name == 'GlobalId':
+                row.operator('bim.generate_global_id', icon='FILE_REFRESH', text='')
             op = row.operator('bim.copy_attributes_to_selection', icon='COPYDOWN', text='')
             op.prop_base = 'BIMObjectProperties.attributes'
             op.prop_name = attribute.name
@@ -58,14 +63,62 @@ class BIM_PT_object(Panel):
         row = layout.row()
         row.prop(props, 'attributes')
 
+        if 'IfcSite/' in context.active_object.name or 'IfcBuilding/' in context.active_object.name:
+            self.draw_addresses_ui()
+
         row = layout.row(align=True)
         row.prop(props, 'relating_type')
         row.operator('bim.select_similar_type', icon='RESTRICT_SELECT_OFF', text='')
         row = layout.row()
         row.prop(props, 'relating_structure')
 
-        layout.label(text="Property Sets:")
+        row = layout.row()
+        row.prop(props, 'material_type')
 
+    def draw_addresses_ui(self):
+        layout = self.layout
+        layout.label(text="Address:")
+        address = bpy.context.active_object.BIMObjectProperties.address
+        row = layout.row()
+        row.prop(address, 'purpose')
+        if address.purpose == 'USERDEFINED':
+            row = layout.row()
+            row.prop(address, 'user_defined_purpose')
+        row = layout.row()
+        row.prop(address, 'description')
+
+        row = layout.row()
+        row.prop(address, 'internal_location')
+        row = layout.row()
+        row.prop(address, 'address_lines')
+        row = layout.row()
+        row.prop(address, 'postal_box')
+        row = layout.row()
+        row.prop(address, 'town')
+        row = layout.row()
+        row.prop(address, 'region')
+        row = layout.row()
+        row.prop(address, 'postal_code')
+        row = layout.row()
+        row.prop(address, 'country')
+
+
+class BIM_PT_object_psets(Panel):
+    bl_label = 'IFC Object Property Sets'
+    bl_idname = 'BIM_PT_object_psets'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'object'
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None and hasattr(context.active_object, "BIMObjectProperties")
+
+    def draw(self, context):
+        if context.active_object is None:
+            return
+        layout = self.layout
+        props = context.active_object.BIMObjectProperties
         row = layout.row(align=True)
         row.prop(props, 'pset_name', text='')
         row.operator('bim.add_pset')
@@ -78,13 +131,27 @@ class BIM_PT_object(Panel):
                 row = layout.row(align=True)
                 row.prop(prop, 'name', text='')
                 row.prop(prop, 'string_value', text='')
-                op = row.operator('bim.copy_attributes_to_selection', icon='COPYDOWN', text='')
-                op.prop_base = 'BIMObjectProperties.psets[\'{}\'].properties'.format(pset.name)
+                op = row.operator('bim.copy_property_to_selection', icon='COPYDOWN', text='')
+                op.pset_name = pset.name
                 op.prop_name = prop.name
-                op.collection_element = True
+                op.prop_value = prop.string_value
 
-        layout.label(text="Quantities:")
+class BIM_PT_object_qto(Panel):
+    bl_label = 'IFC Object Quantity Sets'
+    bl_idname = 'BIM_PT_object_qto'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'object'
 
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None and hasattr(context.active_object, "BIMObjectProperties")
+
+    def draw(self, context):
+        if context.active_object is None:
+            return
+        layout = self.layout
+        props = context.active_object.BIMObjectProperties
         row = layout.row(align=True)
         row.prop(props, 'qto_name', text='')
         row.operator('bim.add_qto')
@@ -93,16 +160,45 @@ class BIM_PT_object(Panel):
             row = layout.row(align=True)
             row.prop(qto, 'name', text='')
             row.operator('bim.remove_qto', icon='X', text='').index = index
-            for prop in qto.properties:
+            for index2, prop in enumerate(qto.properties):
                 row = layout.row(align=True)
                 row.prop(prop, 'name', text='')
                 row.prop(prop, 'string_value', text='')
+                if 'length' in prop.name.lower() \
+                        or 'width' in prop.name.lower() \
+                        or 'height' in prop.name.lower() \
+                        or 'depth' in prop.name.lower() \
+                        or 'perimeter' in prop.name.lower():
+                    op = row.operator('bim.guess_quantity', icon='IPO_EASE_IN_OUT', text='')
+                    op.qto_index = index
+                    op.prop_index = index2
+                elif 'area' in prop.name.lower():
+                    op = row.operator('bim.guess_quantity', icon='MESH_CIRCLE', text='')
+                    op.qto_index = index
+                    op.prop_index = index2
+                elif 'volume' in prop.name.lower():
+                    op = row.operator('bim.guess_quantity', icon='SPHERE', text='')
+                    op.qto_index = index
+                    op.prop_index = index2
 
-        row = layout.row()
-        row.prop(props, 'material_type')
 
-        layout.label(text='Structural Boundary Condition:')
+class BIM_PT_object_structural(Panel):
+    bl_label = 'IFC Structural Relationships'
+    bl_idname = 'BIM_PT_object_structural'
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'object'
 
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None and hasattr(context.active_object, "BIMObjectProperties")
+
+    def draw(self, context):
+        if context.active_object is None:
+            return
+        layout = self.layout
+        props = context.active_object.BIMObjectProperties
         row = layout.row()
         row.prop(props, 'has_boundary_condition')
 
@@ -197,6 +293,50 @@ class BIM_PT_document_information(Panel):
             row.operator('bim.unassign_document_reference', text='Unassign Reference')
 
 
+class BIM_PT_constraints(Panel):
+    bl_label = 'IFC Constraints'
+    bl_idname = 'BIM_PT_constraints'
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'scene'
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        props = context.scene.BIMProperties
+
+        row = layout.row()
+        row.operator('bim.add_constraint')
+
+        if props.constraints:
+            layout.template_list('BIM_UL_constraints', '', props, 'constraints', props, 'active_constraint_index')
+
+            if props.active_constraint_index < len(props.constraints):
+                constraint = props.constraints[props.active_constraint_index]
+                row = layout.row(align=True)
+                row.prop(constraint, 'name')
+                row.operator('bim.remove_constraint', icon='X', text='').index = props.active_constraint_index
+                row = layout.row()
+                row.prop(constraint, 'description')
+                row = layout.row()
+                row.prop(constraint, 'constraint_grade')
+                if constraint.constraint_grade == 'USERDEFINED':
+                    row = layout.row()
+                    row.prop(constraint, 'user_defined_grade')
+                row = layout.row()
+                row.prop(constraint, 'constraint_source')
+                row = layout.row()
+                row.prop(constraint, 'objective_qualifier')
+                if constraint.objective_qualifier == 'USERDEFINED':
+                    row = layout.row()
+                    row.prop(constraint, 'user_defined_qualifier')
+
+            row = layout.row(align=True)
+            row.operator('bim.assign_constraint', text='Assign Constraint')
+            row.operator('bim.unassign_constraint', text='Unassign Constraint')
+
+
 class BIM_PT_documents(Panel):
     bl_label = 'IFC Documents'
     bl_idname = 'BIM_PT_documents'
@@ -238,6 +378,50 @@ class BIM_PT_documents(Panel):
                     layout.label(text="Reference is invalid")
 
 
+class BIM_PT_constraint_relations(Panel):
+    bl_label = 'IFC Constraints'
+    bl_idname = 'BIM_PT_constraint_relations'
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'object'
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        props = context.active_object.BIMObjectProperties
+
+        if not props.constraints:
+            layout.label(text="No constraints found")
+
+        if props.constraints:
+            layout.template_list('BIM_UL_constraints', '', props, 'constraints', props, 'active_constraint_index')
+
+            if props.active_constraint_index < len(props.constraints):
+                constraint = props.constraints[props.active_constraint_index]
+                row = layout.row(align=True)
+                row.prop(constraint, 'name')
+                if constraint.name in bpy.context.scene.BIMProperties.constraints:
+                    constraint = bpy.context.scene.BIMProperties.constraints[constraint.name]
+                    row.operator('bim.remove_object_constraint', icon='X', text='').index = props.active_constraint_index
+                    row = layout.row()
+                    row.prop(constraint, 'description')
+                    row = layout.row()
+                    row.prop(constraint, 'constraint_grade')
+                    if constraint.constraint_grade == 'USERDEFINED':
+                        row = layout.row()
+                        row.prop(constraint, 'user_defined_grade')
+                    row = layout.row()
+                    row.prop(constraint, 'constraint_source')
+                    row = layout.row()
+                    row.prop(constraint, 'objective_qualifier')
+                    if constraint.objective_qualifier == 'USERDEFINED':
+                        row = layout.row()
+                        row.prop(constraint, 'user_defined_qualifier')
+                else:
+                    layout.label(text="Constraint is invalid")
+
+
 class BIM_PT_representations(Panel):
     bl_label = 'IFC Representations'
     bl_idname = 'BIM_PT_representations'
@@ -257,7 +441,8 @@ class BIM_PT_representations(Panel):
         row.prop(bpy.context.scene.BIMProperties, 'available_contexts', text='')
         row.prop(bpy.context.scene.BIMProperties, 'available_subcontexts', text='')
         row.prop(bpy.context.scene.BIMProperties, 'available_target_views', text='')
-        row.operator('bim.switch_context', icon='ADD', text='')
+        op = row.operator('bim.switch_context', icon='ADD', text='')
+        op.has_target_context = False
 
         for index, subcontext in enumerate(props.representation_contexts):
             row = layout.row(align=True)
@@ -269,6 +454,7 @@ class BIM_PT_representations(Panel):
             op.context_name = subcontext.context
             op.subcontext_name = subcontext.name
             op.target_view_name = subcontext.target_view
+            row.operator('bim.remove_context', icon='X', text='').index = index
 
 
 class BIM_PT_classification_references(Panel):
@@ -359,6 +545,7 @@ class BIM_PT_classifications(Panel):
 
         row = layout.row(align=True)
         row.prop(props, "classification", text='')
+        row.operator("bim.purge_project_classifications", text='', icon='TRASH')
         row.operator("bim.add_classification", text='', icon='ADD')
 
         if context.scene.BIMProperties.classification_references.raw_data:
@@ -414,28 +601,16 @@ class BIM_PT_mesh(Panel):
         props = context.active_object.data.BIMMeshProperties
 
         row = layout.row(align=True)
-        row.prop(bpy.context.scene.BIMProperties, 'available_contexts', text='')
-        row.prop(bpy.context.scene.BIMProperties, 'available_subcontexts', text='')
-        row.prop(bpy.context.scene.BIMProperties, 'available_target_views', text='')
-
-        row = layout.row()
-        row.operator('bim.assign_context')
-
-        row = layout.row(align=True)
         row.operator('bim.push_representation')
 
         row = layout.row()
         row.prop(props, 'geometry_type')
-
-        layout.template_list('BIM_UL_representation_items', '', props, 'representation_items', props, 'active_representation_item_index')
 
         row = layout.row()
         row.prop(props, 'presentation_layer')
 
         row = layout.row()
         row.prop(props, 'is_parametric')
-        row = layout.row()
-        row.prop(props, 'is_wireframe')
         row = layout.row()
         row.prop(props, 'is_native')
         row = layout.row()
@@ -562,10 +737,15 @@ class BIM_PT_gis(Panel):
         row = layout.row(align=True)
         row.operator('bim.convert_local_to_global')
 
+        if hasattr(bpy.context.scene, 'sun_pos_properties'):
+            row = layout.row(align=True)
+            row.operator('bim.get_north_offset')
+            row.operator('bim.set_north_offset')
 
-class BIM_PT_documentation(Panel):
-    bl_label = "BIM Documentation"
-    bl_idname = "BIM_PT_documentation"
+
+class BIM_PT_drawings(Panel):
+    bl_label = "SVG Drawings"
+    bl_idname = "BIM_PT_drawings"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = 'output'
@@ -576,30 +756,15 @@ class BIM_PT_documentation(Panel):
         props = bpy.context.scene.DocProperties
 
         row = layout.row(align=True)
-        row.operator('bim.set_view_preset_1')
-        row.operator('bim.set_view_preset_2')
+        row.operator('bim.add_drawing')
+        row.operator('bim.refresh_drawing_list', icon='FILE_REFRESH', text='')
 
-        row = layout.row()
-        row.prop(props, 'view_name')
-        row.operator('bim.create_view', icon='ADD', text='')
-
-        row = layout.row()
-        row.prop(props, 'sheet_name')
-        row.operator('bim.create_sheet', icon='ADD', text='')
-
-        row = layout.row()
-        row.prop(props, 'available_views')
-        row.operator('bim.open_view', icon='URL', text='')
-        row.operator('bim.activate_view', icon='SCENE', text='')
-
-        row = layout.row()
-        row.prop(props, 'available_sheets')
-        row.operator('bim.open_sheet', icon='URL', text='')
-        row.operator('bim.open_compiled_sheet', icon='OUTPUT', text='')
-
-        row = layout.row(align=True)
-        row.operator('bim.add_view_to_sheet')
-        row.operator('bim.create_sheets')
+        if props.drawings:
+            if props.active_drawing_index < len(props.drawings):
+                op = row.operator('bim.open_view', icon='URL', text='')
+                op.view = props.drawings[props.active_drawing_index].name
+                row.operator('bim.remove_drawing', icon='X', text='').index = props.active_drawing_index
+            layout.template_list('BIM_UL_generic', '', props, 'drawings', props, 'active_drawing_index')
 
         row = layout.row()
         row.operator('bim.add_ifc_file')
@@ -610,40 +775,59 @@ class BIM_PT_documentation(Panel):
             row.operator('bim.select_doc_ifc_file', icon='FILE_FOLDER', text='')
             row.operator('bim.remove_ifc_file', icon='X', text='').index = index
 
-        layout.label(text="Annotation:")
-        row = layout.row(align=True)
-        op = row.operator('bim.add_annotation', text='Dim', icon='ARROW_LEFTRIGHT')
-        op.obj_name = 'Dimension'
-        op.data_type = 'curve'
-        op = row.operator('bim.add_annotation', text='Dim (Eq)', icon='ARROW_LEFTRIGHT')
-        op.obj_name = 'Equal'
-        op.data_type = 'curve'
+
+class BIM_PT_schedules(Panel):
+    bl_label = "ODS Schedules"
+    bl_idname = "BIM_PT_schedules"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'output'
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        props = bpy.context.scene.DocProperties
 
         row = layout.row(align=True)
-        op = row.operator('bim.add_annotation', text='Text', icon='SMALL_CAPS')
-        op.data_type = 'text'
-        op = row.operator('bim.add_annotation', text='Leader', icon='TRACKING_BACKWARDS')
-        op.obj_name = 'Leader'
-        op.data_type = 'curve'
+        row.operator('bim.add_schedule')
+
+        if props.schedules:
+            row.operator('bim.build_schedule', icon='LINENUMBERS_ON', text='')
+            row.operator('bim.remove_schedule', icon='X', text='').index = props.active_schedule_index
+
+            layout.template_list('BIM_UL_generic', '', props, 'schedules', props, 'active_schedule_index')
+
+            row = layout.row()
+            row.prop(props.schedules[props.active_schedule_index], 'file')
+            row.operator('bim.select_schedule_file', icon='FILE_FOLDER', text='')
+
+
+class BIM_PT_sheets(Panel):
+    bl_label = "SVG Sheets"
+    bl_idname = "BIM_PT_sheets"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'output'
+
+    def draw(self, context):
+        layout = self.layout
+        props = bpy.context.scene.DocProperties
 
         row = layout.row(align=True)
-        op = row.operator('bim.add_annotation', text='Stair Arrow', icon='SCREEN_BACK')
-        op.obj_name = 'Stair'
-        op.data_type = 'curve'
-        op = row.operator('bim.add_annotation', text='Hidden', icon='CON_TRACKTO')
-        op.obj_name = 'Hidden'
-        op.data_type = 'mesh'
+        row.prop(props, 'titleblock', text='')
+        row.operator('bim.add_sheet')
+
+        if props.sheets:
+            row.operator('bim.open_sheet', icon='URL', text='')
+            row.operator('bim.remove_sheet', icon='X', text='').index = props.active_sheet_index
+
+            layout.template_list('BIM_UL_generic', '', props, 'sheets', props, 'active_sheet_index')
 
         row = layout.row(align=True)
-        op = row.operator('bim.add_annotation', text='Level (Plan)', icon='SORTBYEXT')
-        op.obj_name = 'Plan Level'
-        op.data_type = 'curve'
-        op = row.operator('bim.add_annotation', text='Level (Section)', icon='TRIA_DOWN')
-        op.obj_name = 'Section Level'
-        op.data_type = 'curve'
-
+        row.operator('bim.add_drawing_to_sheet')
+        row.operator('bim.add_schedule_to_sheet')
         row = layout.row()
-        row.operator('bim.generate_digital_twin')
+        row.operator('bim.create_sheets')
 
 
 class BIM_PT_section_plane(Panel):
@@ -668,8 +852,9 @@ class BIM_PT_section_plane(Panel):
         row.operator('bim.add_section_plane')
         row.operator('bim.remove_section_plane')
 
+
 class BIM_PT_camera(Panel):
-    bl_label = "Diagrams and Documentation"
+    bl_label = "Drawing Generation"
     bl_idname = "BIM_PT_camera"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
@@ -683,14 +868,21 @@ class BIM_PT_camera(Panel):
 
     def draw(self, context):
         layout = self.layout
+
+        if '/' not in context.active_object.name:
+            layout.label(text="This is not a BIM camera.")
+            return
+
         layout.use_property_split = True
         dprops = bpy.context.scene.DocProperties
         props = context.active_object.data.BIMCameraProperties
 
+        layout.label(text="Generation Options:")
+
         row = layout.row()
         row.prop(dprops, 'should_recut')
         row = layout.row()
-        row.prop(dprops, 'should_render')
+        row.prop(dprops, 'should_recut_selected')
         row = layout.row()
         row.prop(dprops, 'should_extract')
 
@@ -698,11 +890,71 @@ class BIM_PT_camera(Panel):
         row.prop(props, 'is_nts')
 
         row = layout.row()
+        row.operator('bim.generate_references')
+        row = layout.row()
         row.operator('bim.resize_text')
 
+        row = layout.row()
+        row.prop(props, 'target_view')
+
+        row = layout.row()
+        row.prop(props, 'cut_objects')
+        if props.cut_objects == 'CUSTOM':
+            row = layout.row()
+            row.prop(props, 'cut_objects_custom')
+
+        row = layout.row()
+        row.prop(props, 'raster_x')
+        row = layout.row()
+        row.prop(props, 'raster_y')
+
+        row = layout.row()
+        row.prop(props, 'diagram_scale')
+        if props.diagram_scale == 'CUSTOM':
+            row = layout.row()
+            row.prop(props, 'custom_diagram_scale')
+
+        layout.label(text="Drawing Styles:")
+
         row = layout.row(align=True)
-        row.prop(props, 'diagram_scale', text='')
-        row.operator('bim.cut_section')
+        row.operator('bim.add_drawing_style')
+
+        if dprops.drawing_styles:
+            layout.template_list('BIM_UL_generic', '', dprops, 'drawing_styles', props, 'active_drawing_style_index')
+
+            if props.active_drawing_style_index < len(dprops.drawing_styles):
+                drawing_style = dprops.drawing_styles[props.active_drawing_style_index]
+
+                row = layout.row(align=True)
+                row.prop(drawing_style, 'name')
+                row.operator('bim.remove_drawing_style', icon='X', text='').index = props.active_drawing_style_index
+
+                row = layout.row()
+                row.prop(drawing_style, 'render_type')
+                row = layout.row(align=True)
+                row.prop(drawing_style, 'vector_style')
+                row.operator('bim.edit_vector_style', text='', icon='GREASEPENCIL')
+                row = layout.row(align=True)
+                row.prop(drawing_style, 'include_query')
+                row = layout.row(align=True)
+                row.prop(drawing_style, 'exclude_query')
+
+                row = layout.row()
+                row.operator('bim.add_drawing_style_attribute')
+
+                for index, attribute in enumerate(drawing_style.attributes):
+                    row = layout.row(align=True)
+                    row.prop(attribute, 'name', text='')
+                    row.operator('bim.remove_drawing_style_attribute', icon='X', text='').index = index
+
+                row = layout.row(align=True)
+                row.operator('bim.save_drawing_style')
+                row.operator('bim.activate_drawing_style')
+
+        row = layout.row(align=True)
+        row.operator('bim.cut_section', text='Create Drawing')
+        op = row.operator('bim.open_view', icon='URL', text='')
+        op.view = context.active_object.name.split('/')[1]
 
 
 class BIM_PT_text(Panel):
@@ -745,6 +997,7 @@ class BIM_PT_text(Panel):
 class BIM_PT_owner(Panel):
     bl_label = "IFC Owner History"
     bl_idname = "BIM_PT_owner"
+    bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "scene"
@@ -756,11 +1009,164 @@ class BIM_PT_owner(Panel):
         scene = context.scene
         props = scene.BIMProperties
 
-        row = layout.row()
-        row.prop(props, 'person')
+        if not props.person:
+            layout.label(text="No people found.")
+        else:
+            row = layout.row()
+            row.prop(props, 'person')
+
+        if not props.organisation:
+            layout.label(text="No organisations found.")
+        else:
+            row = layout.row()
+            row.prop(props, 'organisation')
+
+
+class BIM_PT_people(Panel):
+    bl_label = "IFC People"
+    bl_idname = "BIM_PT_people"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+
+        props = context.scene.BIMProperties
 
         row = layout.row()
-        row.prop(props, 'organisation')
+        row.operator('bim.add_person')
+
+        if props.people:
+            layout.template_list('BIM_UL_generic', '',
+                props, 'people', props, 'active_person_index')
+
+            if props.active_person_index < len(props.people):
+                person = props.people[props.active_person_index]
+                row = layout.row()
+                row.prop(person, 'name')
+                row.operator('bim.remove_person', icon='X', text='').index = props.active_person_index
+                row = layout.row()
+                row.prop(person, 'family_name')
+                row = layout.row()
+                row.prop(person, 'given_name')
+                row = layout.row()
+                row.prop(person, 'middle_names')
+                row = layout.row()
+                row.prop(person, 'prefix_titles')
+                row = layout.row()
+                row.prop(person, 'suffix_titles')
+                layout.label(text="Roles:")
+                draw_roles_ui(layout, person, 'person')
+                layout.label(text="Addresses:")
+                draw_addresses_ui(layout, person, 'person')
+
+
+class BIM_PT_organisations(Panel):
+    bl_label = "IFC Organisations"
+    bl_idname = "BIM_PT_organisations"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+
+        props = context.scene.BIMProperties
+
+        row = layout.row()
+        row.operator('bim.add_organisation')
+
+        if props.organisations:
+            layout.template_list('BIM_UL_generic', '',
+                props, 'organisations', props, 'active_organisation_index')
+
+            if props.active_organisation_index < len(props.organisations):
+                organisation = props.organisations[props.active_organisation_index]
+                row = layout.row()
+                row.prop(organisation, 'name')
+                row.operator('bim.remove_organisation', icon='X', text='').index = props.active_organisation_index
+                row = layout.row()
+                row.prop(organisation, 'description')
+                layout.label(text="Roles:")
+                draw_roles_ui(layout, organisation, 'organisation')
+                layout.label(text="Addresses:")
+                draw_addresses_ui(layout, organisation, 'organisation')
+
+
+def draw_roles_ui(layout, parent, parent_type):
+    row = layout.row()
+    row.operator(f'bim.add_{parent_type}_role')
+
+    if parent.roles:
+        layout.template_list('BIM_UL_generic', '',
+            parent, 'roles', parent, 'active_role_index')
+
+        if parent.active_role_index < len(parent.roles):
+            role = parent.roles[parent.active_role_index]
+            row = layout.row()
+            row.prop(role, 'name')
+            row.operator(f'bim.remove_{parent_type}_role', icon='X', text='').index = parent.active_role_index
+            if role.name == 'USERDEFINED':
+                row = layout.row()
+                row.prop(role, 'user_defined_role')
+            row = layout.row()
+            row.prop(role, 'description')
+
+
+def draw_addresses_ui(layout, parent, parent_type):
+    row = layout.row()
+    row.operator(f'bim.add_{parent_type}_address')
+
+    if parent.addresses:
+        layout.template_list('BIM_UL_generic', '',
+            parent, 'addresses', parent, 'active_address_index')
+
+        if parent.active_address_index < len(parent.addresses):
+            address = parent.addresses[parent.active_address_index]
+            row = layout.row()
+            row.prop(address, 'name')
+            row.operator(f'bim.remove_{parent_type}_address', icon='X', text='').index = parent.active_address_index
+            row = layout.row()
+            row.prop(address, 'purpose')
+            if address.purpose == 'USERDEFINED':
+                row = layout.row()
+                row.prop(address, 'user_defined_purpose')
+            row = layout.row()
+            row.prop(address, 'description')
+
+            if 'IfcPostalAddress' in address.name:
+                row = layout.row()
+                row.prop(address, 'internal_location')
+                row = layout.row()
+                row.prop(address, 'address_lines')
+                row = layout.row()
+                row.prop(address, 'postal_box')
+                row = layout.row()
+                row.prop(address, 'town')
+                row = layout.row()
+                row.prop(address, 'region')
+                row = layout.row()
+                row.prop(address, 'postal_code')
+                row = layout.row()
+                row.prop(address, 'country')
+            elif 'IfcTelecomAddress' in address.name:
+                row = layout.row()
+                row.prop(address, 'telephone_numbers')
+                row = layout.row()
+                row.prop(address, 'fascimile_numbers')
+                row = layout.row()
+                row.prop(address, 'pager_number')
+                row = layout.row()
+                row.prop(address, 'electronic_mail_addresses')
+                row = layout.row()
+                row.prop(address, 'www_home_page_url')
+                row = layout.row()
+                row.prop(address, 'messaging_ids')
 
 
 class BIM_PT_context(Panel):
@@ -845,8 +1251,10 @@ class BIM_PT_bim(Panel):
         if bim_properties.ifc_predefined_type == 'USERDEFINED':
             row = layout.row()
             row.prop(bim_properties, "ifc_userdefined_type")
-        row = layout.row()
+        row = layout.row(align=True)
         op = row.operator("bim.assign_class")
+        op.object_name = ''
+        op = row.operator("bim.unassign_class", icon='X', text='')
         op.object_name = ''
 
         row = layout.row(align=True)
@@ -1081,6 +1489,14 @@ class BIM_PT_qa(Panel):
 
             row = layout.row(align=True)
             row.prop(bim_properties, "scenario")
+        else:
+            return
+
+        row = layout.row()
+        row.operator("bim.execute_bim_tester")
+
+        row = layout.row()
+        row.operator("bim.bim_tester_purge")
 
         layout.label(text="Quality Auditing:")
 
@@ -1128,6 +1544,7 @@ class BIM_PT_library(Panel):
         layout.row().prop(scene.BIMLibrary, 'version_date')
         layout.row().prop(scene.BIMLibrary, 'description')
 
+
 class BIM_PT_diff(Panel):
     bl_label = "IFC Diff"
     bl_idname = "BIM_PT_diff"
@@ -1148,6 +1565,7 @@ class BIM_PT_diff(Panel):
         row = layout.row(align=True)
         row.prop(bim_properties, "diff_json_file")
         row.operator("bim.select_diff_json_file", icon="FILE_FOLDER", text="")
+        row.operator("bim.visualise_diff", icon="HIDE_OFF", text="")
 
         row = layout.row(align=True)
         row.prop(bim_properties, "diff_old_file")
@@ -1162,6 +1580,73 @@ class BIM_PT_diff(Panel):
 
         row = layout.row()
         row.operator('bim.execute_ifc_diff')
+
+
+class BIM_PT_cobie(Panel):
+    bl_label = "IFC COBie"
+    bl_idname = "BIM_PT_cobie"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+
+        scene = context.scene
+        props = scene.BIMProperties
+
+        row = layout.row(align=True)
+        row.prop(props, "cobie_ifc_file")
+        row.operator("bim.select_cobie_ifc_file", icon="FILE_FOLDER", text="")
+
+        row = layout.row()
+        row.prop(props, "cobie_types")
+        row = layout.row()
+        row.prop(props, "cobie_components")
+
+        row = layout.row(align=True)
+        row.prop(props, "cobie_json_file")
+        row.operator("bim.select_cobie_json_file", icon="FILE_FOLDER", text="")
+
+        row = layout.row()
+        op = row.operator('bim.execute_ifc_cobie', text='CSV')
+        op.file_format = 'csv'
+        op = row.operator('bim.execute_ifc_cobie', text='ODS')
+        op.file_format = 'ods'
+        op = row.operator('bim.execute_ifc_cobie', text='XLSX')
+        op.file_format = 'xlsx'
+
+
+class BIM_PT_patch(Panel):
+    bl_label = "IFC Patch"
+    bl_idname = "BIM_PT_patch"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+
+        scene = context.scene
+        props = scene.BIMProperties
+
+        row = layout.row()
+        row.prop(props, 'ifc_patch_recipes')
+        row = layout.row(align=True)
+        row.prop(props, 'ifc_patch_input')
+        row.operator("bim.select_ifc_patch_input", icon="FILE_FOLDER", text="")
+        row = layout.row(align=True)
+        row.prop(props, 'ifc_patch_output')
+        row.operator("bim.select_ifc_patch_output", icon="FILE_FOLDER", text="")
+        row = layout.row()
+        row.prop(props, 'ifc_patch_args')
+
+        row = layout.row()
+        op = row.operator('bim.execute_ifc_patch')
 
 
 class BIM_PT_mvd(Panel):
@@ -1179,6 +1664,8 @@ class BIM_PT_mvd(Panel):
 
         row = layout.row()
         row.prop(bim_properties, 'export_schema')
+        row = layout.row()
+        row.prop(bim_properties, 'export_json_version')
 
         row = layout.row()
         row.prop(bim_properties, 'ifc_import_filter')
@@ -1189,6 +1676,10 @@ class BIM_PT_mvd(Panel):
 
         row = layout.row()
         row.prop(bim_properties, 'export_has_representations')
+        row = layout.row()
+        row.prop(bim_properties, 'export_should_guess_quantities')
+        row = layout.row()
+        row.prop(bim_properties, 'export_should_force_faceted_brep')
         row = layout.row()
         row.prop(bim_properties, 'import_should_import_type_representations')
         row = layout.row()
@@ -1206,6 +1697,14 @@ class BIM_PT_mvd(Panel):
         row.prop(bim_properties, 'import_should_import_native')
         row = layout.row()
         row.prop(bim_properties, 'import_should_use_cpu_multiprocessing')
+        row = layout.row()
+        row.prop(bim_properties, 'import_should_import_with_profiling')
+        row = layout.row()
+        row.prop(bim_properties, 'import_deflection_tolerance')
+        row = layout.row()
+        row.prop(bim_properties, 'import_angular_tolerance')
+        row = layout.row()
+        row.prop(bim_properties, 'export_json_compact')
 
         layout.label(text='Simplifications:')
 
@@ -1245,8 +1744,6 @@ class BIM_PT_mvd(Panel):
         layout.label(text='Revit Workarounds:')
 
         row = layout.row()
-        row.prop(bim_properties, 'export_should_export_all_materials_as_styled_items')
-        row = layout.row()
         row.prop(bim_properties, 'export_should_use_presentation_style_assignment')
         row = layout.row()
         row.prop(bim_properties, 'import_should_ignore_site_coordinates')
@@ -1254,6 +1751,15 @@ class BIM_PT_mvd(Panel):
         row.prop(bim_properties, 'import_should_ignore_building_coordinates')
         row = layout.row()
         row.prop(bim_properties, 'import_should_treat_styled_item_as_material')
+
+
+class BIM_UL_generic(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        ob = data
+        if item:
+            layout.prop(item, 'name', text='', emboss=False)
+        else:
+            layout.label(text="", translate=False)
 
 
 class BIM_UL_topics(bpy.types.UIList):
@@ -1266,6 +1772,15 @@ class BIM_UL_topics(bpy.types.UIList):
 
 
 class BIM_UL_clash_sets(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        ob = data
+        if item:
+            layout.prop(item, 'name', text='', emboss=False)
+        else:
+            layout.label(text="", translate=False)
+
+
+class BIM_UL_constraints(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         ob = data
         if item:
@@ -1310,17 +1825,12 @@ class BIM_UL_classifications(bpy.types.UIList):
             layout.label(text=itemdata['name'])
 
 
-class BIM_UL_representation_items(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        ob = data
-        if item:
-            layout.prop(item, 'name', text='', emboss=False)
-        else:
-            layout.label(text="", translate=False)
-
-
 class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     bl_idname = 'blenderbim'
+    svg2pdf_command: StringProperty(name="SVG to PDF Command")
+    svg2dxf_command: StringProperty(name="SVG to DXF Command")
+    svg_command: StringProperty(name="SVG Command")
+    pdf_command: StringProperty(name="PDF Command")
 
     def draw(self, context):
         layout = self.layout
@@ -1330,6 +1840,14 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = layout.row()
         row.operator('bim.open_upstream', text='Visit Wiki').page = 'wiki'
         row.operator('bim.open_upstream', text='Visit Community').page = 'community'
+        row = layout.row()
+        row.prop(self, 'svg2pdf_command')
+        row = layout.row()
+        row.prop(self, 'svg2dxf_command')
+        row = layout.row()
+        row.prop(self, 'svg_command')
+        row = layout.row()
+        row.prop(self, 'pdf_command')
 
 
 class BIM_PT_ifcclash(Panel):
@@ -1407,3 +1925,154 @@ class BIM_PT_ifcclash(Panel):
 
             row = layout.row()
             row.operator('bim.select_ifc_clash_results')
+
+
+class BIM_PT_modeling_utilities(Panel):
+    bl_idname = "BIM_PT_modeling_utilities"
+    bl_label = "Architectural"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = "UI"
+    bl_category = 'BlenderBIM'
+
+    def draw(self, context):
+        layout = self.layout
+
+        row = layout.row(align=True)
+        row.operator("bim.add_opening")
+
+
+class BIM_PT_annotation_utilities(Panel):
+    bl_idname = "BIM_PT_annotation_utilities"
+    bl_label = "Annotation"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = "UI"
+    bl_category = 'BlenderBIM'
+
+    def draw(self, context):
+        layout = self.layout
+
+        row = layout.row(align=True)
+        op = row.operator('bim.add_annotation', text='Dim', icon='ARROW_LEFTRIGHT')
+        op.obj_name = 'Dimension'
+        op.data_type = 'curve'
+        op = row.operator('bim.add_annotation', text='Dim (Eq)', icon='ARROW_LEFTRIGHT')
+        op.obj_name = 'Equal'
+        op.data_type = 'curve'
+
+        row = layout.row(align=True)
+        op = row.operator('bim.add_annotation', text='Text', icon='SMALL_CAPS')
+        op.data_type = 'text'
+        op = row.operator('bim.add_annotation', text='Leader', icon='TRACKING_BACKWARDS')
+        op.obj_name = 'Leader'
+        op.data_type = 'curve'
+
+        row = layout.row(align=True)
+        op = row.operator('bim.add_annotation', text='Stair Arrow', icon='SCREEN_BACK')
+        op.obj_name = 'Stair'
+        op.data_type = 'curve'
+        op = row.operator('bim.add_annotation', text='Hidden', icon='CON_TRACKTO')
+        op.obj_name = 'Hidden'
+        op.data_type = 'mesh'
+
+        row = layout.row(align=True)
+        op = row.operator('bim.add_annotation', text='Level (Plan)', icon='SORTBYEXT')
+        op.obj_name = 'Plan Level'
+        op.data_type = 'curve'
+        op = row.operator('bim.add_annotation', text='Level (Section)', icon='TRIA_DOWN')
+        op.obj_name = 'Section Level'
+        op.data_type = 'curve'
+
+        props = bpy.context.scene.DocProperties
+
+        row = layout.row(align=True)
+        row.operator('bim.add_drawing')
+        row.operator('bim.refresh_drawing_list', icon='FILE_REFRESH', text='')
+
+        if props.drawings:
+            if props.active_drawing_index < len(props.drawings):
+                op = row.operator('bim.open_view', icon='URL', text='')
+                op.view = props.drawings[props.active_drawing_index].name
+                row.operator('bim.remove_drawing', icon='X', text='').index = props.active_drawing_index
+            layout.template_list('BIM_UL_generic', '', props, 'drawings', props, 'active_drawing_index')
+
+
+class BIM_PT_qto_utilities(Panel):
+    bl_idname = "BIM_PT_qto_utilities"
+    bl_label = "Quantity Take-off"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = "UI"
+    bl_category = 'BlenderBIM'
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.BIMProperties
+
+        row = layout.row()
+        layout.label(text="Results:")
+        row = layout.row()
+        row.prop(props, 'qto_result', text='')
+
+        row = layout.row(align=True)
+        row.operator("bim.calculate_edge_lengths")
+        row = layout.row(align=True)
+        row.operator("bim.calculate_face_areas")
+        row = layout.row(align=True)
+        row.operator("bim.calculate_object_volumes")
+
+
+class BIM_PT_misc_utilities(Panel):
+    bl_idname = "BIM_PT_misc_utilities"
+    bl_label = "Miscellaneous"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = "UI"
+    bl_category = 'BlenderBIM'
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.BIMProperties
+
+        row = layout.row()
+        row.prop(props, 'override_colour', text='')
+        row = layout.row(align=True)
+        row.operator("bim.set_override_colour")
+        row = layout.row(align=True)
+        row.operator("bim.set_viewport_shadow_from_sun")
+
+
+class BIM_PT_debug(Panel):
+    bl_label = "IFC Debug"
+    bl_idname = "BIM_PT_debug"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+
+        scene = context.scene
+        bim_props = scene.BIMProperties
+        debug_props = scene.BIMDebugProperties
+
+        row = layout.row()
+        row.prop(debug_props, 'step_id', text='')
+        row = layout.row()
+        row.operator('bim.create_shape_from_step_id')
+
+        row = layout.row()
+        row.prop(debug_props, 'number_of_polygons', text='')
+        row = layout.row()
+        row.operator('bim.select_high_polygon_meshes')
+
+
+
+def ifc_units(self, context):
+    scene = context.scene
+    props = context.scene.BIMProperties
+    layout = self.layout
+    layout.use_property_decorate = False
+    layout.use_property_split = True
+    row = layout.row()
+    row.prop(props, 'area_unit')
+    row = layout.row()
+    row.prop(props, 'volume_unit')

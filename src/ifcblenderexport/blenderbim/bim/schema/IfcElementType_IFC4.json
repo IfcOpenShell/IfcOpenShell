@@ -5866,6 +5866,149 @@
             }
         ]
     },
+    "IfcSpaceType": {
+        "is_abstract": false,
+        "parent": "IfcSpatialStructureElementType",
+        "attributes": [
+            {
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "ApplicableOccurrence",
+                "type": "IfcIdentifier",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Tag",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "ElementType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "PredefinedType",
+                "type": "IfcSpaceTypeEnum",
+                "is_enum": true,
+                "enum_values": [
+                    "SPACE",
+                    "PARKING",
+                    "GFA",
+                    "INTERNAL",
+                    "EXTERNAL",
+                    "USERDEFINED",
+                    "NOTDEFINED"
+                ]
+            },
+            {
+                "name": "LongName",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            }
+        ],
+        "complex_attributes": [
+            {
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            }
+        ]
+    },
+    "IfcSpatialZoneType": {
+        "is_abstract": false,
+        "parent": "IfcSpatialElementType",
+        "attributes": [
+            {
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "ApplicableOccurrence",
+                "type": "IfcIdentifier",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Tag",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "ElementType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "PredefinedType",
+                "type": "IfcSpatialZoneTypeEnum",
+                "is_enum": true,
+                "enum_values": [
+                    "CONSTRUCTION",
+                    "FIRESAFETY",
+                    "LIGHTING",
+                    "OCCUPANCY",
+                    "SECURITY",
+                    "THERMAL",
+                    "TRANSPORT",
+                    "VENTILATION",
+                    "USERDEFINED",
+                    "NOTDEFINED"
+                ]
+            },
+            {
+                "name": "LongName",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            }
+        ],
+        "complex_attributes": [
+            {
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            }
+        ]
+    },
     "IfcStackTerminalType": {
         "is_abstract": false,
         "parent": "IfcFlowTerminalType",

@@ -17,6 +17,7 @@
 #                                                                             #
 ###############################################################################
 
+import os
 import sys
 import string
 import operator
@@ -98,7 +99,7 @@ expression << (union | factor)
 grammar = OneOrMore(Group(rule))
 grammar.ignore(HASH + restOfLine)
 
-express = grammar.parseFile(sys.argv[1])
+express = grammar.parseFile(os.path.join(os.path.dirname(__file__), 'express.bnf'))
 
 def find_bytype(expr, ty, li = None):
     if li is None: li = []
@@ -113,35 +114,35 @@ def find_bytype(expr, ty, li = None):
     return set(li)
 
 actions = {
-    'type_decl'                 : "lambda t: TypeDeclaration(t)",
-    'entity_decl'               : "lambda t: EntityDeclaration(t)",
-    'underlying_type'           : "lambda t: UnderlyingType(t)",
-    'enumeration_type'          : "lambda t: EnumerationType(t)",
-    'aggregation_types'         : "lambda t: AggregationType(t)",
-    'general_aggregation_types' : "lambda t: AggregationType(t)",
-    'select_type'               : "lambda t: SelectType(t)",
-    'binary_type'               : "lambda t: BinaryType(t)",
-    'subtype_declaration'       : "lambda t: SubTypeExpression(t)",
-    'supertype_constraint'      : "lambda t: SuperTypeExpression(t)",
-    'derive_clause'             : "lambda t: AttributeList('derive', t)",
-    'derived_attr'              : "lambda t: DerivedAttribute(t)",
-    'inverse_clause'            : "lambda t: AttributeList('inverse', t)",
-    'inverse_attr'              : "lambda t: InverseAttribute(t)",
-    'bound_spec'                : "lambda t: BoundSpecification(t)",
-    'explicit_attr'             : "lambda t: ExplicitAttribute(t)",
-    'width_spec'                : "lambda t: WidthSpec(t)",
-    'string_type'               : "lambda t: StringType(t)",
+    'type_decl'                 : "TypeDeclaration",
+    'entity_decl'               : "EntityDeclaration",
+    'enumeration_type'          : "EnumerationType",
+    'aggregation_types'         : "AggregationType",
+    'general_aggregation_types' : "AggregationType",
+    'select_type'               : "SelectType",
+    'binary_type'               : "BinaryType",
+    'subtype_declaration'       : "SubTypeExpression",
+    'supertype_constraint'      : "SuperTypeExpression",
+    'derive_clause'             : "AttributeList",
+    'inverse_clause'            : "AttributeList",
+    'inverse_attr'              : "InverseAttribute",
+    'bound_spec'                : "BoundSpecification",
+    'explicit_attr'             : "ExplicitAttribute",
+    'width_spec'                : "WidthSpec",
+    'string_type'               : "StringType",
+    'named_types'               : "NamedType",
+    'simple_types'              : "SimpleType",
 }
 
 to_emit = set(id for id, expr in express)
 emitted = set()
 to_combine = set(["simple_id"])
-to_ignore = set(["where_clause", "supertype_constraint", "unique_clause"])
 statements = []
     
 terminals = reduce(lambda x,y: x | y, (find_bytype(e, Terminal) for id, e in express))
 keywords = list(filter(operator.attrgetter('is_keyword'), terminals))
 negated_keywords = map(lambda s: "~%s" % s, keywords)
+no_action = {"letter", "digit", "digits", "real_literal", "integer_literal"}
 
 while True:
     emitted_in_loop = set()
@@ -154,54 +155,64 @@ while True:
             stmt = "(%s)" % expr
             if id in to_combine:
                 stmt = " + ".join(itertools.chain(negated_keywords, ("originalTextFor(Combine%s)" % stmt,)))
-            if id in actions:
-                stmt = "%s.setParseAction(%s)" % (stmt, actions[id])
-            statements.append("%s = %s" % (id, stmt))
+            if id not in no_action and not isinstance(expr.contents, Keyword) and not id in to_combine:
+                node_type = "ListNode" if "ZeroOrMore" in stmt else "Node"
+                action = actions.get(id, "lambda s, loc, t: %s(s, loc, t, rule=\"%s\")" % (node_type, id))
+                stmt = "%s.setParseAction(%s)" % (stmt, action)
+            statements.append("%s = %s(\"%s\")" % (id, stmt, id))
     to_emit -= emitted_in_loop
     if not emitted_in_loop: break
 
 for id in to_emit:
-    action = ".setParseAction(%s)" % actions[id] if id in actions else ""
-    statements.append("%s = Forward()%s" % (id, action))
+    statements.append("%s = Forward()(\"%s\")" % (id, id))
 
 for id in to_emit:
     expr = [e for k, e in express if k == id][0]
     stmt = "(%s)" % expr
     if id in to_combine:
         stmt = "Suppress%s" % stmt
+    if id not in no_action and not isinstance(expr.contents, Keyword):
+        node_type = "ListNode" if "ZeroOrMore" in stmt else "Node"
+        action = ".setParseAction(%s)" % (actions[id] if id in actions else "lambda s, loc, t: %s(s, loc, t, rule=\"%s\")" % (node_type, id))
+        stmt = "(%s)%s" % (stmt, action)
     statements.append("%s << %s" % (id, stmt))
 
-print ("""import os
+print ("""
+# This file is generated by IfcOpenShell ifcexpressparser bootstrap.py
+
+import os
 import sys
 import pickle
 
-cache_file = sys.argv[1] + ".cache.dat"
-if os.path.exists(cache_file):
-    with open(cache_file, "rb") as f:
-        mapping = pickle.load(f)
-        schema = mapping.schema
-else:
-    from pyparsing import *
-    from nodes import *
-    
-    import schema
-    import mapping
-    
-    %s
+import schema
+import mapping
 
-    syntax.ignore("--" + restOfLine)
-    syntax.ignore(Regex(r"\((?:\*(?:[^*]*\*+)+?\))"))
-    ast = syntax.parseFile(sys.argv[1])
-    schema = schema.Schema(ast)
-    mapping = mapping.Mapping(schema)
+from pyparsing import *
+from nodes import *
 
-    with open(cache_file, "wb") as f:
-        pickle.dump(mapping, f, protocol=0)    
+def parse(fn):
+    cache_file = fn + ".cache.dat"
+    if os.path.exists(cache_file) and os.path.getmtime(cache_file) >= os.path.getmtime(fn):
+        with open(cache_file, "rb") as f:
+            m = pickle.load(f)
+    else:      
+        %s
 
-import importlib
-for output in sys.argv[2:]:
-    mdl = importlib.import_module(output)
-    mdl.Generator(mapping).emit()
+        syntax.ignore("--" + restOfLine)
+        syntax.ignore(Regex(r"\((?:\*(?:[^*]*\*+)+?\))"))
+        ast = syntax.parseFile(fn)
+        s = schema.Schema(ast)
+        m = mapping.Mapping(s)
 
-sys.stdout.write(schema.name)
-"""%('\n    '.join(statements)))
+        with open(cache_file, "wb") as f:
+            pickle.dump(m, f, protocol=0)
+    return m
+            
+if __name__ == "__main__":
+    m = parse(sys.argv[1])
+    import importlib
+    for output in sys.argv[2:]:
+        mdl = importlib.import_module(output)
+        mdl.Generator(m).emit()
+    sys.stdout.write(m.schema.name)
+"""%('\n        '.join(statements)))

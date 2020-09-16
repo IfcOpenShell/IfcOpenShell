@@ -42,7 +42,11 @@ struct storey_sorter {
 				b_elev = static_cast<double>(*b->get("Elevation"));
 			} catch (...) {};
 			if (a_elev && b_elev) {
-				return std::less<double>()(*a_elev, *b_elev);
+				if (std::equal_to<double>()(*a_elev, *b_elev)) {
+					return std::less<unsigned int>()(a->data().id(), b->data().id());
+				} else {
+					return std::less<double>()(*a_elev, *b_elev);
+				}
 			}
 
 			boost::optional<std::string> a_name, b_name;
@@ -51,7 +55,11 @@ struct storey_sorter {
 				b_name = static_cast<std::string>(*b->get("Name"));
 			} catch (...) {};
 			if (a_name && b_name) {
-				return std::less<std::string>()(*a_name, *b_name);
+				if (std::equal_to<std::string>()(*a_name, *b_name)) {
+					return std::less<unsigned int>()(a->data().id(), b->data().id());
+				} else {
+					return std::less<std::string>()(*a_name, *b_name);
+				}
 			}
 		}
 		return std::less<IfcUtil::IfcBaseEntity*>()(a, b);
@@ -64,8 +72,9 @@ public:
 protected:
 	std::ofstream svg_file;
 	double xmin, ymin, xmax, ymax, width, height;
-	boost::optional<double> section_height;
-	bool rescale, print_space_names_, print_space_areas_;
+	boost::optional<std::vector<std::pair<std::pair<double, double>, IfcUtil::IfcBaseEntity*>>> section_heights;
+	boost::optional<double> scale_;
+	bool rescale, print_space_names_, print_space_areas_, draw_door_arcs_, with_section_heights_from_storey_;
 	std::multimap<IfcUtil::IfcBaseEntity*, path_object, storey_sorter> paths;
 	std::vector< boost::shared_ptr<util::string_buffer::float_item> > xcoords;
 	std::vector< boost::shared_ptr<util::string_buffer::float_item> > ycoords;
@@ -80,7 +89,11 @@ public:
 		, ymin(+std::numeric_limits<double>::infinity())
 		, xmax(-std::numeric_limits<double>::infinity())
 		, ymax(-std::numeric_limits<double>::infinity())
+		, with_section_heights_from_storey_(false)
 		, rescale(false)
+		, print_space_names_(false)
+		, print_space_areas_(false)
+		, draw_door_arcs_(false)
 		, file(0)
 		, storey_(0)
 	{}
@@ -99,11 +112,18 @@ public:
     void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
 	void setFile(IfcParse::IfcFile* f);
     void setBoundingRectangle(double width, double height);
-	void setSectionHeight(double h, IfcUtil::IfcBaseEntity* storey = 0) { section_height = h; storey_ = storey; }
+	void setSectionHeight(double h, IfcUtil::IfcBaseEntity* storey = 0);
+	void setSectionHeightsFromStoreys(double offset=1.);
 	void setPrintSpaceNames(bool b) { print_space_names_ = b; }
 	void setPrintSpaceAreas(bool b) { print_space_areas_ = b; }
-    std::string nameElement(const IfcGeom::Element<real_t>* elem);
-    std::string nameElement(const IfcUtil::IfcBaseEntity* elem);
+	void setDrawDoorArcs(bool b) { draw_door_arcs_ = b; }
+	void setScale(double s) { scale_ = s; }
+    std::string nameElement(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element<real_t>* elem);
+	std::string nameElement(const IfcUtil::IfcBaseEntity* elem);
+	std::string idElement(const IfcUtil::IfcBaseEntity* elem);
+	std::string object_id(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element<real_t>* o) {
+		return idElement(storey) + "-" + GeometrySerializer::object_id(o);
+	}
 };
 
 #endif

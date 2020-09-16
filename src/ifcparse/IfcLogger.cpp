@@ -37,14 +37,14 @@ namespace {
 	
 	template <typename T>
 	struct severity_strings {
-		static const std::array<std::basic_string<T>, 3> value;
+		static const std::array<std::basic_string<T>, 4> value;
 	};
 
 	template <>
-	const std::array<std::basic_string<char>, 3> severity_strings<char>::value = { "Notice", "Warning", "Error" };
+	const std::array<std::basic_string<char>, 4> severity_strings<char>::value = { "Debug", "Notice", "Warning", "Error" };
 
 	template <>
-	const std::array<std::basic_string<wchar_t>, 3> severity_strings<wchar_t>::value = { L"Notice", L"Warning", L"Error" };
+	const std::array<std::basic_string<wchar_t>, 4> severity_strings<wchar_t>::value = { L"Debug", L"Notice", L"Warning", L"Error" };
 	
 	template <typename T>
 	void plain_text_message(T& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
@@ -93,6 +93,9 @@ namespace {
 }
 
 void Logger::SetProduct(boost::optional<IfcUtil::IfcBaseClass*> product) {
+	if (verbosity == LOG_DEBUG && product) {
+		Message(LOG_DEBUG, "Begin processing", *product);
+	}
 	current_product = product;
 }
 

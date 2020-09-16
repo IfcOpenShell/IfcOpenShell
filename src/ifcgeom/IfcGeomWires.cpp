@@ -384,6 +384,16 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 	for (IfcSchema::IfcCompositeCurveSegment::list::it it = segments->begin(); it != segments->end(); ++it) {
 
 		IfcSchema::IfcCurve* curve = (*it)->ParentCurve();
+
+		// The type of ParentCurve is IfcCurve, but the documentation says:
+		// ParentCurve: The *bounded curve* which defines the geometry of the segment. 
+		// At least let's exclude IfcLine as an infinite linear segment
+		// definitely does not make any sense.
+		if (curve->as<IfcSchema::IfcLine>()) {
+			Logger::Warning("IfcLine not allowed as ParentCurve of segment", *it);
+			continue;
+		}
+
 		TopoDS_Wire segment;
 
 		if (!convert_wire(curve, segment)) {
@@ -558,8 +568,25 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 				flts[1] -= M_PI / 2.;
 			}
 		}
-		// Fix from @sanderboer to compare using model tolerance:
-		if (isConic && ALMOST_THE_SAME(fmod(flts[1]-flts[0],M_PI*2.), 0., getValue(GV_PRECISION))) {
+
+		double radius = 1.0;
+		if (curve->DynamicType() == STANDARD_TYPE(Geom_Circle)) {
+			auto circle_curve = Handle_Geom_Circle::DownCast(curve);
+			radius = circle_curve->Radius();
+		} else if (curve->DynamicType() == STANDARD_TYPE(Geom_Ellipse)) {
+			auto circle_curve = Handle_Geom_Ellipse::DownCast(curve);
+			radius = (circle_curve->MajorRadius() + circle_curve->MinorRadius()) / 2.;
+		}
+
+		// Fix from @sanderboer to compare using model tolerance, see #744
+		// Made dependent on radius, see #928
+
+		// @todo another good critereon for determining whether to take full curve
+		// or trimmed segment would be whether there are other curve segments or this
+		// is the only one. But it does not really match the bottom-up construction
+		// mechanism of IfcOpenShell.
+
+		if (isConic && ALMOST_THE_SAME(fmod(flts[1]-flts[0],M_PI*2.), 0., 100 * getValue(GV_PRECISION) / (2 * M_PI * radius))) {
 			e = BRepBuilderAPI_MakeEdge(curve).Edge();
 		} else {
 			BRepBuilderAPI_MakeEdge me (curve,flts[0],flts[1]);
@@ -960,7 +987,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wi
 					}
 					const gp_Pnt& current = points[*jt - 1];
 					if (jt != indices.begin()) {
-						w.Add(BRepBuilderAPI_MakeEdge(previous, current));
+						BRepBuilderAPI_MakeEdge me(previous, current);
+						if (me.IsDone()) {
+							w.Add(me.Edge());
+						} else {
+							Logger::Warning("Ignoring segment on", l);
+						}						
 					}
 					previous = current;
 				}
@@ -980,7 +1012,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wi
 				const gp_Pnt& b = points[indices[1] - 1];
 				const gp_Pnt& c = points[indices[2] - 1];
 				Handle(Geom_Circle) circ = GC_MakeCircle(a, b, c).Value();
-				w.Add(BRepBuilderAPI_MakeEdge(circ, a, c));
+				BRepBuilderAPI_MakeEdge me(circ, a, c);
+				if (me.IsDone()) {
+					w.Add(me.Edge());
+				} else {
+					Logger::Warning("Ignoring segment on", l);
+				}
 			} else {
 				throw IfcParse::IfcException("Unexpected IfcIndexedPolyCurve segment of type " + segment->declaration().name());
 			}

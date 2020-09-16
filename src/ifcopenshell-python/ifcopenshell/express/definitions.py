@@ -39,7 +39,7 @@ class Definitions(codegen.Base):
                 statements.append("#define SCHEMA_%(name)s_HAS_%(attr)s" % locals())
                 if is_optional:
                     statements.append("#define SCHEMA_%(name)s_%(attr)s_IS_OPTIONAL" % locals())
-            inverse_attribute_names = list(map(operator.attrgetter('name'), type.inverse.elements)) if type.inverse else []
+            inverse_attribute_names = list(map(operator.attrgetter('name'), type.inverse))
             for attr in inverse_attribute_names:
                 statements.append("#define SCHEMA_%(name)s_HAS_%(attr)s" % locals())
             

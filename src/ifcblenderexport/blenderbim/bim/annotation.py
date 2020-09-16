@@ -52,12 +52,22 @@ class Annotator:
         # This is a magic number for OpenGost
         font_size = 1.6 / 1000
         font_size *= float(text_obj.data.BIMTextProperties.font_size)
-        font_size *= float(camera.data.BIMCameraProperties.diagram_scale.split(':')[1])
+
+        if camera.data.BIMCameraProperties.diagram_scale == 'CUSTOM':
+            human_scale, fraction = camera.data.BIMCameraProperties.custom_diagram_scale.split('|')
+        else:
+            human_scale, fraction = camera.data.BIMCameraProperties.diagram_scale.split('|')
+        numerator, denominator = fraction.split('/')
+        font_size /= float(numerator) / float(denominator)
+
         text_obj.data.size = font_size
 
     @staticmethod
-    def add_line_to_annotation(obj):
-        co1, co2 = Annotator.get_placeholder_coords()
+    def add_line_to_annotation(obj, co1=None, co2=None):
+        if co1 is None:
+            co1, co2 = Annotator.get_placeholder_coords()
+        co1 = obj.matrix_world.inverted() @ co1
+        co2 = obj.matrix_world.inverted() @ co2
         if isinstance(obj.data, bpy.types.Mesh):
             obj.data.vertices.add(2)
             obj.data.vertices[-2].co = co1

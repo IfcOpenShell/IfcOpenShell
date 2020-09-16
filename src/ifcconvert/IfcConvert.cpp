@@ -68,10 +68,12 @@
 
 #if defined(_MSC_VER) && defined(_UNICODE)
 typedef std::wstring path_t;
+typedef std::wofstream ofstream_t;
 static std::wostream& cout_ = std::wcout;
 static std::wostream& cerr_ = std::wcerr;
 #else
 typedef std::string path_t;
+typedef std::ofstream ofstream_t;
 static std::ostream& cout_ = std::cout;
 static std::ostream& cerr_ = std::cerr;
 #endif
@@ -174,6 +176,14 @@ std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>&, co
 
 bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, bool no_progress, bool mmap);
 
+// from https://stackoverflow.com/questions/31696328/boost-program-options-using-zero-parameter-options-multiple-times
+struct verbosity_counter {
+	int count;
+	verbosity_counter(int c = 0) {
+		count = c;
+	}
+};
+
 #if defined(_MSC_VER) && defined(_UNICODE)
 int wmain(int argc, wchar_t** argv) {
 	typedef po::wcommand_line_parser command_line_parser;
@@ -187,25 +197,28 @@ int main(int argc, char** argv) {
 	typedef char char_t;
 #endif
 
-	double deflection_tolerance;
+	double deflection_tolerance, angular_tolerance;
 	inclusion_filter include_filter;
 	inclusion_traverse_filter include_traverse_filter;
 	exclusion_filter exclude_filter;
 	exclusion_traverse_filter exclude_traverse_filter;
 	path_t filter_filename;
 	path_t default_material_filename;
+	path_t log_file;
 	std::string log_format;
 
     po::options_description generic_options("Command line options");
+	verbosity_counter vcounter;
 	generic_options.add_options()
 		("help,h", "display usage information")
 		("version", "display version information")
-		("verbose,v", "more verbose log messages")
+		("verbose,v", po::value(&vcounter)->zero_tokens(), "more verbose log messages")
 		("quiet,q", "less status and progress output")
 		("stderr-progress", "output progress to stderr stream")
 		("yes,y", "answer 'yes' automatically to possible confirmation queries (e.g. overwriting an existing output file)")
 		("no-progress", "suppress possible progress bar type of prints that use carriage return")
-		("log-format", po::value<std::string>(&log_format), "log format: plain or json");
+		("log-format", po::value<std::string>(&log_format), "log format: plain or json")
+		("log-file", new po::typed_value<path_t, char_t>(&log_file), "redirect log output to file");
 
     po::options_description fileio_options;
 	fileio_options.add_options()
@@ -256,6 +269,8 @@ int main(int argc, char** argv) {
 		("center-model",
             "Centers the elements by applying the center point of all placements as an offset."
             "Can take several minutes on large models.")
+		("center-model-geometry",
+            "Centers the elements by applying the center point of all mesh vertices as an offset.")
         ("model-offset", po::value<std::string>(&offset_str),
             "Applies an arbitrary offset of form 'x;y;z' to all placements.")
 		("model-rotation", po::value<std::string>(&rotation_str),
@@ -311,6 +326,8 @@ int main(int argc, char** argv) {
 			"model in other modelling application in any case.")
 		("deflection-tolerance", po::value<double>(&deflection_tolerance)->default_value(1e-3),
 			"Sets the deflection tolerance of the mesher, 1e-3 by default if not specified.")
+		("angular-tolerance", po::value<double>(&angular_tolerance)->default_value(0.5),
+			"Sets the angular tolerance of the mesher in radians 0.5 by default if not specified.")
 		("generate-uvs",
 			"Generates UVs (texture coordinates) by using simple box projection. Requires normals. "
 			"Not guaranteed to work properly if used with --weld-vertices.")
@@ -325,6 +342,8 @@ int main(int argc, char** argv) {
 #endif
     short precision;
 	double section_height;
+	std::string svg_scale;
+
     po::options_description serializer_options("Serialization options");
     serializer_options.add_options()
 #ifdef HAVE_ICU
@@ -335,14 +354,21 @@ int main(int argc, char** argv) {
         ("bounds", po::value<std::string>(&bounds),
             "Specifies the bounding rectangle, for example 512x512, to which the "
             "output will be scaled. Only used when converting to SVG.")
+		("scale", po::value<std::string>(&svg_scale),
+			"Interprets SVG bounds in mm, centers layout and draw elements to scale. "
+			"Only used when converting to SVG. Example 1:100.")
+		("door-arcs", "Draw door openings arcs for IfcDoor elements")
 		("section-height", po::value<double>(&section_height),
 		    "Specifies the cut section height for SVG 2D geometry.")
-        ("use-element-names",
-            "Use entity names instead of unique IDs for naming elements upon serialization. "
+		("section-height-from-storeys", "Derives section height from storey elevation. Use --section-height to override default offset of 1")
+		("use-element-names",
+            "Use entity instance IfcRoot.Name instead of unique IDs for naming elements upon serialization. "
             "Applicable for OBJ, DAE, and SVG output.")
         ("use-element-guids",
-            "Use entity GUIDs instead of unique IDs for naming elements upon serialization. "
+            "Use entity instance IfcRoot.GlobalId instead of unique IDs for naming elements upon serialization. "
             "Applicable for OBJ, DAE, and SVG output.")
+		("use-element-numeric-ids", "Use the numeric step identifier (entity instance name) for naming elements upon serialization. "
+			"Applicable for OBJ, DAE, and SVG output.")
         ("use-material-names",
             "Use material names instead of unique IDs for naming materials upon serialization. "
             "Applicable for OBJ and DAE output.")
@@ -398,7 +424,6 @@ int main(int argc, char** argv) {
     po::notify(vmap);
 
 	const bool mmap = vmap.count("mmap") != 0;
-	const bool verbose = vmap.count("verbose") != 0;
 	const bool no_progress = vmap.count("no-progress") != 0;
 	const bool quiet = vmap.count("quiet") != 0;
 	const bool stderr_progress = vmap.count("stderr-progress") != 0;
@@ -416,11 +441,13 @@ int main(int argc, char** argv) {
 	const bool layerset_first = vmap.count("layerset-first") != 0;
 	const bool use_element_names = vmap.count("use-element-names") != 0;
 	const bool use_element_guids = vmap.count("use-element-guids") != 0;
+	const bool use_element_stepids = vmap.count("use-element-numeric-ids") != 0;
 	const bool use_material_names = vmap.count("use-material-names") != 0;
 	const bool use_element_types = vmap.count("use-element-types") != 0;
 	const bool use_element_hierarchy = vmap.count("use-element-hierarchy") != 0;
 	const bool no_normals = vmap.count("no-normals") != 0;
 	const bool center_model = vmap.count("center-model") != 0;
+	const bool center_model_geometry = vmap.count("center-model-geometry") != 0;
 	const bool model_offset = vmap.count("model-offset") != 0;
 	const bool model_rotation = vmap.count("model-rotation") != 0;
 	const bool site_local_placement = vmap.count("site-local-placement") != 0;
@@ -440,7 +467,7 @@ int main(int argc, char** argv) {
         print_options(generic_options.add(geom_options).add(serializer_options));
         return EXIT_SUCCESS;
     } else if (!vmap.count("input-file")) {
-        std::cerr << "[Error] Input file not specified" << std::endl;
+        cerr_ << "[Error] Input file not specified" << std::endl;
         print_usage();
         return EXIT_FAILURE;
     }
@@ -452,7 +479,7 @@ int main(int argc, char** argv) {
 		} else if (log_format == "json") {
 			Logger::OutputFormat(Logger::FMT_JSON);
 		} else {
-			std::cerr << "[Error] --log-format should be either plain or json" << std::endl;
+			cerr_ << "[Error] --log-format should be either plain or json" << std::endl;
 			print_usage();
 			return EXIT_FAILURE;
 		}
@@ -463,7 +490,7 @@ int main(int argc, char** argv) {
         if (num_filters) {
             Logger::Notice(boost::lexical_cast<std::string>(num_filters) + " filters read from specifified file.");
         } else {
-            std::cerr << "[Error] No filters read from specifified file.\n";
+            cerr_ << "[Error] No filters read from specifified file.\n";
             return EXIT_FAILURE;
         }
     }
@@ -486,8 +513,8 @@ int main(int argc, char** argv) {
         try {
             IfcGeom::set_default_style_file(IfcUtil::path::to_utf8(default_material_filename));
         } catch (const std::exception& e) {
-            std::cerr << "[Error] Could not read default material file:" << std::endl;
-            std::cerr << e.what() << std::endl;
+            cerr_ << "[Error] Could not read default material file:" << std::endl;
+            cerr_ << e.what() << std::endl;
             return EXIT_FAILURE;
         }
     }
@@ -533,8 +560,21 @@ int main(int argc, char** argv) {
         }
     }
 
-	Logger::SetOutput(quiet ? nullptr : &cout_, &log_stream);
-	Logger::Verbosity(verbose ? Logger::LOG_NOTICE : Logger::LOG_ERROR);
+	ofstream_t log_fs;
+
+	if (vmap.count("log-file")) {
+		log_fs.open(log_file.c_str(), std::ios::app);
+		Logger::SetOutput(quiet ? nullptr : &cout_, &log_fs);
+	} else {
+		Logger::SetOutput(quiet ? nullptr : &cout_, vcounter.count > 1 ? &cout_ : &log_stream);
+	}
+
+	Logger::Verbosity(vcounter.count
+		? (vcounter.count > 1
+		? Logger::LOG_DEBUG 
+		: Logger::LOG_NOTICE)
+		: Logger::LOG_ERROR
+	);
 
     path_t output_temp_filename = output_filename + IfcUtil::path::from_utf8(TEMP_FILE_EXTENSION);
 
@@ -635,7 +675,7 @@ int main(int argc, char** argv) {
 			output_temp_filename.push_back(static_cast<path_t::value_type>(index_dist(rng)));
 		}
 		{
-			std::string v = ".tmp.";
+			std::string v = ".tmp";
 			output_temp_filename += path_t(v.begin(), v.end());
 		}
 	}
@@ -643,7 +683,7 @@ int main(int argc, char** argv) {
 	SerializerSettings settings;
 	/// @todo Make APPLY_DEFAULT_MATERIALS configurable? Quickly tested setting this to false and using obj exporter caused the program to crash and burn.
 	settings.set(IfcGeom::IteratorSettings::APPLY_DEFAULT_MATERIALS,      true);
-	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS,             use_world_coords || output_extension == SVG || output_extension == OBJ);
+	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS,             use_world_coords || output_extension == OBJ);
 	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES,                weld_vertices);
 	settings.set(IfcGeom::IteratorSettings::SEW_SHELLS,                   orient_shells);
 	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS,           convert_back_units);
@@ -665,11 +705,13 @@ int main(int argc, char** argv) {
 
     settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);
-    settings.set(SerializerSettings::USE_MATERIAL_NAMES, use_material_names);
+	settings.set(SerializerSettings::USE_ELEMENT_STEPIDS, use_element_stepids);
+	settings.set(SerializerSettings::USE_MATERIAL_NAMES, use_material_names);
 	settings.set(SerializerSettings::USE_ELEMENT_TYPES, use_element_types);
 	settings.set(SerializerSettings::USE_ELEMENT_HIERARCHY, use_element_hierarchy);
     settings.set_deflection_tolerance(deflection_tolerance);
-    settings.precision = precision;
+	settings.set_angular_tolerance(angular_tolerance);
+	settings.precision = precision;
 
 	boost::shared_ptr<GeometrySerializer> serializer; /**< @todo use std::unique_ptr when possible */
 	if (output_extension == OBJ) {
@@ -695,19 +737,6 @@ int main(int argc, char** argv) {
 	} else if (output_extension == SVG) {
 		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 		serializer = boost::make_shared<SvgSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
-		if (vmap.count("section-height") != 0) {
-			Logger::Notice("Overriding section height");
-			static_cast<SvgSerializer*>(serializer.get())->setSectionHeight(section_height);
-		}
-		if (vmap.count("print-space-names") != 0) {
-			static_cast<SvgSerializer*>(serializer.get())->setPrintSpaceNames(true);
-		}
-		if (vmap.count("print-space-areas") != 0) {
-			static_cast<SvgSerializer*>(serializer.get())->setPrintSpaceAreas(true);
-		}
-		if (bounding_width.is_initialized() && bounding_height.is_initialized()) {
-            static_cast<SvgSerializer*>(serializer.get())->setBoundingRectangle(bounding_width.get(), bounding_height.get());
-		}
 	} else {
         cerr_ << "[Error] Unknown output filename extension '" << output_extension << "'\n";
 		write_log(!quiet);
@@ -732,7 +761,7 @@ int main(int argc, char** argv) {
         if (generate_uvs) {
             Logger::Notice("Generate UVs setting ignored when writing non-tesselated output");
         }
-        if (center_model || model_offset) {
+        if (center_model || center_model_geometry || model_offset) {
             Logger::Notice("Centering/offsetting model setting ignored when writing non-tesselated output");
         }
 
@@ -764,7 +793,11 @@ int main(int argc, char** argv) {
 		Logger::Status("Creating geometry...");
 	}
 
-	Logger::SetOutput(quiet ? nullptr : &cout_, &log_stream);
+	if (vmap.count("log-file")) {
+		Logger::SetOutput(quiet ? nullptr : &cout_, &log_fs);
+	} else {
+		Logger::SetOutput(quiet ? nullptr : &cout_, vcounter.count > 1 ? &cout_ : &log_stream);
+	}
 
 	if (model_rotation) {
 		std::array<double, 4> &rotation = settings.rotation;
@@ -780,19 +813,36 @@ int main(int argc, char** argv) {
 		Logger::Notice(msg.str());
 	}
 	
-    if (is_tesselated && (center_model || model_offset)) {
+    if (is_tesselated && (center_model || center_model_geometry || model_offset)) {
 		std::array<double, 3> &offset = settings.offset;
-        if (center_model) {
+		if (center_model || center_model_geometry) {
 			if (site_local_placement || building_local_placement) {
-				Logger::Error("Cannot use --center-model together with --{site,building}-local-placement");
+				Logger::Error("Cannot use --center-model or --center-model-geometry together with --{site,building}-local-placement");
 				return EXIT_FAILURE;
 			}
 
 			IfcGeom::Iterator<real_t> tmp_context_iterator(settings, ifc_file, filter_funcs, num_threads);
+			
+			time_t start, end;
+			time(&start);
+			if (!quiet) Logger::Status("Computing bounds...");
 
-            if (!quiet) Logger::Status("Computing bounds...");
-            tmp_context_iterator.compute_bounds();
-            if (!quiet) Logger::Status("Done!");
+			if (center_model_geometry) {
+				if (!tmp_context_iterator.initialize()) {
+					/// @todo It would be nice to know and print separate error prints for a case where we found no entities
+					/// and for a case we found no entities that satisfy our filtering criteria.
+					Logger::Notice("No geometrical elements found or none succesfully converted");
+					serializer.reset();
+					IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
+					write_log(!quiet);
+					return EXIT_FAILURE;
+				}
+			}
+		
+            tmp_context_iterator.compute_bounds(center_model_geometry);
+
+			time(&end);
+            if (!quiet) Logger::Status("Done ! Bounds computed in " + format_duration(start, end));
 
             gp_XYZ center = (tmp_context_iterator.bounds_min() + tmp_context_iterator.bounds_max()) * 0.5;
             offset[0] = -center.X();
@@ -808,7 +858,7 @@ int main(int argc, char** argv) {
         }
 
         std::stringstream msg;
-        msg << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
+        msg << std::setprecision (17) << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
         Logger::Notice(msg.str());
     }
 
@@ -823,9 +873,44 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    serializer->setFile(context_iterator.file());
+	serializer->setFile(context_iterator.file());
 
-	if (convert_back_units) {
+	if (output_extension == SVG) {
+		if (vmap.count("section-height-from-storeys") != 0) {
+			if (vmap.count("section-height")) {
+				static_cast<SvgSerializer*>(serializer.get())->setSectionHeightsFromStoreys(section_height);
+			} else {
+				static_cast<SvgSerializer*>(serializer.get())->setSectionHeightsFromStoreys();
+			}
+		} else if (vmap.count("section-height") != 0) {
+			Logger::Notice("Overriding section height");
+			static_cast<SvgSerializer*>(serializer.get())->setSectionHeight(section_height);
+		}
+		if (vmap.count("print-space-names") != 0) {
+			static_cast<SvgSerializer*>(serializer.get())->setPrintSpaceNames(true);
+		}
+		if (vmap.count("print-space-areas") != 0) {
+			static_cast<SvgSerializer*>(serializer.get())->setPrintSpaceAreas(true);
+		}
+		if (bounding_width.is_initialized() && bounding_height.is_initialized()) {
+			static_cast<SvgSerializer*>(serializer.get())->setBoundingRectangle(bounding_width.get(), bounding_height.get());
+		}
+		if (vmap.count("door-arcs")) {
+			static_cast<SvgSerializer*>(serializer.get())->setDrawDoorArcs(true);
+		}
+		if (vmap.count("scale")) {
+			int s0, s1;
+			if (sscanf(svg_scale.c_str(), "%u:%u", &s0, &s1) == 2 && s0 > 0 && s1 > 0) {
+				static_cast<SvgSerializer*>(serializer.get())->setScale((double)s0 / s1);
+			} else {
+				cerr_ << "[Error] Invalid use of --scale" << std::endl;
+				print_options(serializer_options);
+				return EXIT_FAILURE;
+			}
+		}
+	}
+
+    if (convert_back_units) {
 		serializer->setUnitNameAndMagnitude(context_iterator.unit_name(), static_cast<float>(context_iterator.unit_magnitude()));
 	} else {
 		serializer->setUnitNameAndMagnitude("METER", 1.0f);
@@ -878,6 +963,9 @@ int main(int argc, char** argv) {
 				cout_ << std::flush;
 				if (stderr_progress)
 					cerr_ << std::flush;
+			} else if (vcounter.count == 2) {
+				const int progress = context_iterator.progress();
+				Logger::Message(Logger::LOG_DEBUG, "Progress " + boost::lexical_cast<std::string>(progress));
 			} else {
 				const int progress = context_iterator.progress() / 2;
 				if (old_progress != progress) Logger::ProgressBar(progress);
@@ -1082,6 +1170,11 @@ void parse_filter(geom_filter &filter, const std::vector<std::string>& values)
         throw po::validation_error(po::validation_error::invalid_option_value);
     }
     filter.values.insert(values.begin() + (filter.type == geom_filter::ENTITY_ARG ? 2 : 1), values.end());
+}
+
+void validate(boost::any& v, const std::vector<std::string>& values, verbosity_counter*, long) {
+	if (v.empty()) v = verbosity_counter{ 1 };
+	else ++boost::any_cast<verbosity_counter&>(v).count;
 }
 
 void validate(boost::any& v, const std::vector<std::string>& values, inclusion_filter*, int)
@@ -1378,11 +1471,11 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 				for (; old_progress < progress; ++old_progress) {
 					std::cout << ".";
 					if (stderr_progress)
-						std::cerr << ".";
+						cerr_ << ".";
 				}
 				std::cout << std::flush;
 				if (stderr_progress)
-					std::cerr << std::flush;
+					cerr_ << std::flush;
 			} else {
 				const int progress = context_iterator.progress() / 2;
 				if (old_progress != progress) Logger::ProgressBar(progress);
@@ -1395,11 +1488,11 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 		for (; old_progress < 100; ++old_progress) {
 			std::cout << ".";
 			if (stderr_progress)
-				std::cerr << ".";
+				cerr_ << ".";
 		}
 		std::cout << std::flush;
 		if (stderr_progress)
-			std::cerr << std::flush;
+			cerr_ << std::flush;
 	} else {
 		Logger::Status("\rDone writing quantities for " + boost::lexical_cast<std::string>(num_created) +
 			" objects                                ");

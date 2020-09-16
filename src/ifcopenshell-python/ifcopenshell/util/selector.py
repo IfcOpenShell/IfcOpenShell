@@ -1,8 +1,66 @@
+import ifcopenshell.util
+import ifcopenshell.util.element
 import lark
+
+cobie_type_assets = [
+    'IfcDoorStyle',
+    'IfcBuildingElementProxyType',
+    'IfcChimneyType',
+    'IfcCoveringType',
+    'IfcDoorType',
+    'IfcFootingType',
+    'IfcPileType',
+    'IfcRoofType',
+    'IfcShadingDeviceType',
+    'IfcWindowType',
+    'IfcDistributionControlElementType',
+    'IfcDistributionChamberElementType',
+    'IfcEnergyConversionDeviceType',
+    'IfcFlowControllerType',
+    'IfcFlowMovingDeviceType',
+    'IfcFlowStorageDeviceType',
+    'IfcFlowTerminalType',
+    'IfcFlowTreatmentDeviceType',
+    'IfcElementAssemblyType',
+    'IfcBuildingElementPartType',
+    'IfcDiscreteAccessoryType',
+    'IfcMechanicalFastenerType',
+    'IfcReinforcingElementType',
+    'IfcVibrationIsolatorType',
+    'IfcFurnishingElementType',
+    'IfcGeographicElementType',
+    'IfcTransportElementType',
+    'IfcSpatialZoneType',
+    'IfcWindowStyle',
+]
+cobie_component_assets = [
+    'IfcBuildingElementProxy',
+    'IfcChimney',
+    'IfcCovering',
+    'IfcDoor',
+    'IfcShadingDevice',
+    'IfcWindow',
+    'IfcDistributionControlElement',
+    'IfcDistributionChamberElement',
+    'IfcEnergyConversionDevice',
+    'IfcFlowController',
+    'IfcFlowMovingDevice',
+    'IfcFlowStorageDevice',
+    'IfcFlowTerminal',
+    'IfcFlowTreatmentDevice',
+    'IfcDiscreteAccessory',
+    'IfcTendon',
+    'IfcTendonAnchor',
+    'IfcVibrationIsolator',
+    'IfcFurnishingElement',
+    'IfcGeographicElement',
+    'IfcTransportElement',
+]
 
 class Selector():
     def parse(self, ifc_file, query):
         self.file = ifc_file
+
         l = lark.Lark('''start: query (lfunction query)*
                     query: selector | group
                     group: "(" query (lfunction query)* ")"
@@ -113,7 +171,22 @@ class Selector():
         return results
 
     def get_class_selector(self, class_selector):
-        elements = self.file.by_type(class_selector.children[0])
+        if class_selector.children[0] == 'COBie':
+            elements = []
+            for ifc_class in cobie_component_assets:
+                try:
+                    elements += self.file.by_type(ifc_class)
+                except:
+                    pass
+        elif class_selector.children[0] == 'COBieType':
+            elements = []
+            for ifc_class in cobie_type_assets:
+                try:
+                    elements += self.file.by_type(ifc_class)
+                except:
+                    pass
+        else:
+            elements = self.file.by_type(class_selector.children[0])
         if len(class_selector.children) > 1 \
                 and class_selector.children[1].data == 'filter':
             return self.filter_elements(elements, class_selector.children[1])
@@ -129,13 +202,32 @@ class Selector():
             comparison = filter_rule.children[1].children[0].data
             value = filter_rule.children[2].children[0][1:-1]
         for element in elements:
-            element_value = IfcAttributeExtractor.get_element_key(element, key)
+            element_value = self.get_element_value(element, key)
             if not element_value:
                 continue
             if not comparison \
                     or self.filter_element(element, element_value, comparison, value):
                 results.append(element)
         return results
+
+    def get_element_value(self, element, key):
+        if '.' in key \
+                and key.split('.')[0] == 'type':
+            try:
+                element = ifcopenshell.util.element.get_type(element)
+                if not element:
+                    return None
+            except:
+                return
+            key = '.'.join(key.split('.')[1:])
+        info = element.get_info()
+        if key in info:
+            return info[key]
+        elif '.' in key:
+            pset_name, prop = key.split('.')
+            psets = ifcopenshell.util.element.get_psets(element)
+            if pset_name in psets and prop in psets[pset_name]:
+                return psets[pset_name][prop]
 
     def filter_element(self, element, element_value, comparison, value):
         if comparison == 'equal':
