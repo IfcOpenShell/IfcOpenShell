@@ -75,6 +75,12 @@ namespace ifcopenshell { namespace geometry {
 			return new CgalShape(shape_);
 		}
 
+		virtual double bounding_box(void*& b) const;
+
+		virtual int num_vertices() const;
+
+		virtual void set_box(void* b);
+
 		virtual bool is_manifold() const {
 			throw std::runtime_error("Not implemented");
 		}

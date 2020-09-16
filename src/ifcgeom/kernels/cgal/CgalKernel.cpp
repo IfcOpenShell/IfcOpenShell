@@ -27,6 +27,12 @@
 #include <CGAL/minkowski_sum_3.h>
 #include <CGAL/exceptions.h>
 
+#include <CGAL/Polygon_set_2.h>
+#include <CGAL/Boolean_set_operations_2.h>
+#include <CGAL/Arr_vertical_decomposition_2.h>
+#include <CGAL/Polygon_vertical_decomposition_2.h>
+#include <CGAL/Polygon_triangulation_decomposition_2.h>
+
 using namespace ifcopenshell::geometry; 
 using namespace ifcopenshell::geometry::kernels;
 
@@ -46,6 +52,9 @@ CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(std
 	CGAL::Polyhedron_3<Kernel_> polyhedron;
 	PolyhedronBuilder builder(&face_list);
 	polyhedron.delegate(builder);
+	if (builder.from_soup) {
+		polyhedron = *builder.from_soup;
+	}
 
 	// Stitch edges
 	//  std::cout << "Before: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
@@ -128,8 +137,62 @@ CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhe
 	}
 }
 
+namespace {
+	template <typename T, typename Fn>
+	void visit(const taxonomy::collection* c, Fn& fn) {
+		static_assert(std::is_same<T, taxonomy::point3>::value, "@todo Only implemented for point3");
+		for (auto& i : c->children) {
+			if (dynamic_cast<const taxonomy::collection*>(i)) {
+				visit<T>(dynamic_cast<const taxonomy::collection*>(i), fn);
+			} else if (i->kind() == taxonomy::POINT3) {
+				fn((const taxonomy::point3*) i);
+			} else if (i->kind() == taxonomy::EDGE) {
+				// @todo maybe make edge a collection then as well?
+				auto l = (const taxonomy::edge *) i;
+				if (l->start.which() == 0) {
+					fn(&boost::get<taxonomy::point3>(l->start));
+				}
+				if (l->end.which() == 0) {
+					fn(&boost::get<taxonomy::point3>(l->end));
+				}
+			}
+		}
+	}
+}
+
 bool CgalKernel::convert(const taxonomy::shell* l, cgal_shape_t& shape) {
 	auto faces = l->children_as<taxonomy::face>();
+
+	if (faces.size() > 1000) {
+		static double inf = std::numeric_limits<double>::infinity();
+		std::pair<Eigen::Vector3d, Eigen::Vector3d> minmax(
+			Eigen::Vector3d(+inf, +inf, +inf),
+			Eigen::Vector3d(-inf, -inf, -inf)
+		);
+		size_t num_points = 0;
+		visit<taxonomy::point3>(l, [&minmax, &num_points](const taxonomy::point3* p) {
+			auto& c = *p->components;
+			++num_points;
+			for (int i = 0; i < 3; ++i) {
+				if (c(i) < minmax.first(i)) {
+					minmax.first(i) = c(i);
+				}
+				if (c(i) > minmax.second(i)) {
+					minmax.second(i) = c(i);
+				}
+			}
+		});
+		auto diag = minmax.second - minmax.first;
+		double volume = diag(0) * diag(1) * diag(2);
+		double density = num_points / volume;
+		if (density > 1e5) {
+			Logger::Notice("Substituted element with " + boost::lexical_cast<std::string>(density) + " vertices / m3 with a bounding box");
+			CGAL::Point_3<Kernel_> lower(minmax.first(0), minmax.first(1), minmax.first(2));
+			CGAL::Point_3<Kernel_> upper(minmax.second(0), minmax.second(1), minmax.second(2));
+			shape = utils::create_cube(lower, upper);
+		}
+		return true;
+	}
 
 	std::list<cgal_face_t> face_list;
 	for (auto& f : faces) {
@@ -154,7 +217,7 @@ bool CgalKernel::convert(const taxonomy::shell* l, cgal_shape_t& shape) {
 	}
 
 	shape = utils::create_polyhedron(face_list);
-	return true;
+	return shape.size_of_facets();
 }
 
 bool CgalKernel::convert(const taxonomy::face* face, cgal_face_t& result) {
@@ -468,8 +531,117 @@ namespace {
 		CGAL::box_self_intersection_d(boxes.begin(), boxes.end(), x);
 		return !!x.num_self_intersections;
 	}
-
 }
+
+namespace {
+	cgal_direction_t newell(const std::vector<cgal_point_t> & loop) {
+		Kernel_::FT a(0.0), b(0.0), c(0.0);
+		for (size_t i = 0; i < loop.size(); ++i) {
+			auto & curr = loop[i];
+			auto & next = loop[(i + 1) % loop.size()];
+			a += (curr.y() - next.y()) * (curr.z() + next.z());
+			b += (curr.z() - next.z()) * (curr.x() + next.x());
+			c += (curr.x() - next.x()) * (curr.y() + next.y());
+		}
+		return cgal_direction_t(a, b, c);
+	}
+}
+
+namespace {
+	CGAL::Polygon_2<Kernel_> loop_to_polygon_2(taxonomy::loop* loop) {
+		CGAL::Polygon_2<Kernel_> polygon;
+		auto edges = loop->children_as<taxonomy::edge>();
+		for (auto& e : edges) {
+			auto& p = boost::get<taxonomy::point3>(e->start);
+			CGAL::Point_2<Kernel_> pnt((*p.components)(0), (*p.components)(1));
+			polygon.push_back(pnt);
+		}
+		return polygon;
+	}
+
+	CGAL::Polygon_2<Kernel_> wire_to_polygon_2(const cgal_wire_t& w) {
+		CGAL::Polygon_2<Kernel_> polygon;
+		for (auto& p : w) {
+			CGAL::Point_2<Kernel_> pnt(p.cartesian(0), p.cartesian(1));
+			polygon.push_back(pnt);
+		}
+		return polygon;
+	}
+
+	cgal_face_t wire_to_face(const cgal_wire_t& w) {
+		cgal_face_t f;
+		f.outer = w;
+		return f;
+	}
+
+	class polygon_2_to_wire {
+	private: 
+		const CGAL::Aff_transformation_3<Kernel_>& t_;
+
+	public:
+		polygon_2_to_wire(const CGAL::Aff_transformation_3<Kernel_>& t)
+			: t_(t) {}
+
+		cgal_wire_t operator()(const CGAL::Polygon_2<Kernel_>& p) {
+			cgal_wire_t w;
+			for (auto it = p.vertices_begin(); it != p.vertices_end(); ++it) {
+				cgal_point_t P(it->cartesian(0), it->cartesian(1), 0);
+				P = t_.transform(P);
+				w.push_back(P);
+			}
+			return w;
+		}
+	};
+
+	void transform_in_place(cgal_wire_t& w, const CGAL::Aff_transformation_3<Kernel_>& t) {
+		for (auto& p : w) {
+			p = p.transform(t);
+		}
+	}
+}
+
+namespace {
+	void face_to_poly_with_holes(const cgal_face_t& face, CGAL::Polygon_with_holes_2<Kernel_>& pwh, CGAL::Aff_transformation_3<Kernel_>& place) {
+		static Kernel_::Vector_3 Z(0, 0, 1);
+		static Kernel_::Vector_3 X(1, 0, 0);
+
+		auto refz = newell(face.outer);
+		refz /= std::sqrt(CGAL::to_double(refz.squared_length()));
+		auto refx = CGAL::abs(refz.cartesian(0)) > CGAL::abs(refz.cartesian(2)) ? Z : X;
+		auto refy = CGAL::cross_product(refz, refx);
+		auto refl = face.outer.front();
+
+		place = CGAL::Aff_transformation_3<Kernel_>(
+			refx.cartesian(0), refy.cartesian(0), refz.cartesian(0), refl.cartesian(0),
+			refx.cartesian(1), refy.cartesian(1), refz.cartesian(1), refl.cartesian(1),
+			refx.cartesian(2), refy.cartesian(2), refz.cartesian(2), refl.cartesian(2)
+		);
+
+		/*
+		CGAL::NT_converter<Kernel_::FT, double> c;
+		std::array<std::array<double, 4>, 4> matrix;
+		for (int i = 0; i < 4; ++i) {
+			for (int j = 0; j < 4; ++j) {
+				matrix[i][j] = c(place.cartesian(i, j));
+			}
+		}
+		*/
+
+		auto ref = place.inverse();
+
+		auto face_copy = face;
+		transform_in_place(face_copy.outer, ref);
+		for (auto& w : face_copy.inner) {
+			transform_in_place(w, ref);
+		}
+
+		std::vector<CGAL::Polygon_2<Kernel_>> holes;
+		holes.reserve(face_copy.inner.size());
+		std::transform(face_copy.inner.begin(), face_copy.inner.end(), std::back_inserter(holes), wire_to_polygon_2);
+		pwh = CGAL::Polygon_with_holes_2<Kernel_>(wire_to_polygon_2(face_copy.outer), holes.begin(), holes.end());
+	}
+}
+
 
 bool CgalKernel::convert(const taxonomy::loop* loop, cgal_wire_t& result) {
 	// @todo only implement polygonal loops
@@ -528,10 +700,35 @@ bool CgalKernel::convert(const taxonomy::loop* loop, cgal_wire_t& result) {
 
 	std::vector<Kernel_::Segment_3> segments;
 	loop_to_segments(polygon, segments);
+
+	auto inf = std::numeric_limits<double>::infinity();
+	double min_len = +inf;
+	for (auto& s : segments) {
+		auto l = std::sqrt(CGAL::to_double(s.squared_length()));
+		if (l < min_len) {
+			min_len = l;
+		}
+	}
+
 	if (do_segments_intersect(segments)) {
 		Logger::Message(Logger::LOG_WARNING, "Skipping self-intersecting loop", loop->instance);
 		return false;
 	}
+
+	auto dir = newell(polygon);
+	Kernel_::FT min_dot(+inf), max_dot(-inf);
+	for (auto& p : polygon) {
+		auto dot = dir * (p - CGAL::ORIGIN);
+		if (dot < min_dot) {
+			min_dot = dot;
+		}
+		if (dot > max_dot) {
+			max_dot = dot;
+		}
+	}
+
+	auto delta_dot = max_dot - min_dot;
+	// @todo this can be used to assess face planarity.
 
 	/*
 	std::wcerr << "[" << std::endl;
@@ -586,43 +783,132 @@ bool CgalKernel::convert_impl(const taxonomy::extrusion* extrusion, ifcopenshell
 }
 
 bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, const taxonomy::direction3& direction, double height, cgal_shape_t& shape) {
+
+	bool has_inner_bounds = !bottom_face.inner.empty();
+
+	std::list<cgal_wire_t> faces_to_extrude;
+	std::set<std::pair<size_t, size_t>> internal_edges;
+
+	CGAL::Cartesian_converter<CGAL::Epeck, CGAL::Simple_cartesian<double>> C;
+
+	if (has_inner_bounds) {
+		CGAL::Polygon_with_holes_2<Kernel_> pwh;
+		CGAL::Aff_transformation_3<Kernel_> place;
+		face_to_poly_with_holes(bottom_face, pwh, place);
+		CGAL::Polygon_triangulation_decomposition_2<Kernel_> decompositor;
+		std::list<CGAL::Polygon_2<Kernel_>> decom_polies;
+		decompositor(pwh, std::back_inserter(decom_polies));
+		
+		int n_vertices = 0;
+		std::map<Kernel_::Point_2, size_t> point_map;
+		for (auto& p : decom_polies) {
+			for (auto it = p.vertices_begin(); it != p.vertices_end(); ++it) {
+				point_map.insert({ *it, point_map.size() });
+				++n_vertices;
+			}
+		}
+
+		std::map<std::pair<size_t, size_t>, std::pair<size_t, size_t>> external_edges;
+
+		size_t i = 0;
+		for (auto& p : decom_polies) {
+			// this is always 3 given the usage of Polygon_triangulation_decomposition_2
+			size_t n = std::distance(p.vertices_begin(), p.vertices_end());
+			for (size_t j = 0; j < n; ++j) {
+				auto k = (j + 1) % n;
+				auto& p0 = *(p.vertices_begin() + j);
+				auto& p1 = *(p.vertices_begin() + k);
+				auto i0 = point_map.find(p0)->second;
+				auto i1 = point_map.find(p1)->second;
+				if (i0 > i1) {
+					std::swap(i0, i1);
+				}
+				auto p = external_edges.insert({ { i0, i1 }, { i, j} });
+				if (!p.second) {
+
+					Kernel_::Point_3 ppp0(p0.cartesian(0), p0.cartesian(1), 0);
+					ppp0 = ppp0.transform(place);
+					
+					Kernel_::Point_3 ppp1(p1.cartesian(1), p1.cartesian(1), 0);
+					ppp1 = ppp1.transform(place);
+
+					auto pp0 = C(ppp0);
+					auto pp1 = C(ppp1);
+
+					std::ostringstream oss;
+					oss << pp0 << " - " << pp1;
+					auto ss = oss.str();
+					std::wcout << ss.c_str() << std::endl;
+
+					// not inserted, remove
+					external_edges.erase(p.first);
+
+					// @nb note the difference here in indices, {i0, i1} is point indices in
+					// point_map. i is index in faces_to_extrude, j is segment index in wire.
+					internal_edges.insert({ i, j });
+
+					// This is {i,j} at the time the edge use was inserted.
+					internal_edges.insert(p.first->second);
+				}
+			}
+			i++;
+		}
+
+
+		polygon_2_to_wire wire_builder(place);
+		std::transform(decom_polies.begin(), decom_polies.end(), std::back_inserter(faces_to_extrude), wire_builder);
+	} else {
+		faces_to_extrude.push_front(bottom_face.outer);
+	}
 	
 	std::list<cgal_face_t> face_list;
-	face_list.push_back(bottom_face);
+	
+	int wi = 0;
+	for (auto& w : faces_to_extrude) {
 
-	auto& fs = *direction.components;
-	cgal_direction_t dir(fs(0), fs(1), fs(2));
+		face_list.push_back(cgal_face_t{ w });
 
-	for (std::vector<Kernel_::Point_3>::const_iterator current_vertex = bottom_face.outer.begin();
-		current_vertex != bottom_face.outer.end();
-		++current_vertex) {
-		std::vector<Kernel_::Point_3>::const_iterator next_vertex = current_vertex;
-		++next_vertex;
-		if (next_vertex == bottom_face.outer.end()) {
-			next_vertex = bottom_face.outer.begin();
-		} cgal_face_t side_face;
-		side_face.outer.push_back(*next_vertex);
-		side_face.outer.push_back(*current_vertex);
-		side_face.outer.push_back(*current_vertex + height * dir);
-		side_face.outer.push_back(*next_vertex + height * dir);
-		face_list.push_back(side_face);
+		auto& fs = *direction.components;
+		cgal_direction_t dir(fs(0), fs(1), fs(2));
+
+		int si = 0;
+		for (std::vector<Kernel_::Point_3>::const_iterator current_vertex = w.begin();
+			current_vertex != w.end();
+			++current_vertex, ++si)
+		{
+			if (internal_edges.find({ wi, si }) != internal_edges.end()) {
+				continue;
+			}
+
+			auto next_vertex = current_vertex + 1;
+			if (next_vertex == w.end()) {
+				next_vertex = w.begin();
+			}
+			
+			cgal_face_t side_face;
+			side_face.outer.push_back(*next_vertex);
+			side_face.outer.push_back(*current_vertex);
+			side_face.outer.push_back(*current_vertex + height * dir);
+			side_face.outer.push_back(*next_vertex + height * dir);
+			face_list.push_back(side_face);
+		}
+
+		cgal_face_t top_face;
+		for (std::vector<Kernel_::Point_3>::const_reverse_iterator vertex = w.rbegin();
+			vertex != w.rend();
+			++vertex) {
+			top_face.outer.push_back(*vertex + height * dir);
+		} face_list.push_back(top_face);
+
+		wi++;
 	}
 
-	cgal_face_t top_face;
-	for (std::vector<Kernel_::Point_3>::const_reverse_iterator vertex = bottom_face.outer.rbegin();
-		vertex != bottom_face.outer.rend();
-		++vertex) {
-		top_face.outer.push_back(*vertex + height * dir);
-	} face_list.push_back(top_face);
-
-	if (bottom_face.inner.empty()) {
-		shape = utils::create_polyhedron(face_list);
-		// if (has_position) for (auto &vertex : vertices(shape)) vertex->point() = vertex->point().transform(trsf);
-		return true;
-	}
-
+	shape = utils::create_polyhedron(face_list);
+	// if (has_position) for (auto &vertex : vertices(shape)) vertex->point() = vertex->point().transform(trsf);
+	return true;
+	
+	/*
 	CGAL::Nef_polyhedron_3<Kernel_> nef_shape = utils::create_nef_polyhedron(face_list);
-
 	// Inner
 	// TODO: Would be faster to triangulate top/bottom face template rather than use Nef polyhedra for subtraction
 	for (auto &inner : bottom_face.inner) {
@@ -663,6 +949,7 @@ bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, const taxonom
 			return false;
 		}
 	}
+	*/
 
 	/*if (has_position) {
 		// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
@@ -670,6 +957,7 @@ bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, const taxonom
 		nef_shape.transform(trsf);
 	}*/
 
+	/*
 	try {
 		nef_shape.convert_to_polyhedron(shape);
 		return true;
@@ -677,6 +965,7 @@ bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, const taxonom
 		Logger::Message(Logger::LOG_ERROR, "IfcExtrudedAreaSolid: cannot convert Nef to polyhedron for:");
 		return false;
 	}
+	*/
 }
 
 bool CgalKernel::convert(const taxonomy::extrusion* extrusion, cgal_shape_t &shape) {
@@ -890,30 +1179,6 @@ namespace {
 
 #include <CGAL/Nef_nary_union_3.h>
 
-#define add_condition(x) for(auto& op : ops) { if (!(x)) return false; }
-
-namespace {
-	CGAL::Polygon_2<Kernel_> loop_to_polygon_2(taxonomy::loop* loop) {
-		CGAL::Polygon_2<Kernel_> polygon;
-		auto edges = loop->children_as<taxonomy::edge>();
-		for (auto& e : edges) {
-			auto& p = boost::get<taxonomy::point3>(e->start);
-			CGAL::Point_2<Kernel_> pnt((*p.components)(0), (*p.components)(1));
-			polygon.push_back(pnt);
-		}
-		return polygon;
-	}
-
-	CGAL::Polygon_2<Kernel_> wire_to_polygon_2(cgal_wire_t& w) {
-		CGAL::Polygon_2<Kernel_> polygon;
-		for (auto& p : w) {
-			CGAL::Point_2<Kernel_> pnt(p.cartesian(0), p.cartesian(1));
-			polygon.push_back(pnt);
-		}
-		return polygon;
-	}
-}
-
 bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result* br, std::list<CGAL::Polygon_2<Kernel_>>& loops, double& z0, double& z1) {
 	// @todo can also be for other boolean operations, just depth/matrix operands are different
 	if (br->operation != taxonomy::boolean_result::SUBTRACTION) {
@@ -1021,12 +1286,6 @@ bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result* br, std::
 
 	return true;
 }
-
-#include <CGAL/Polygon_set_2.h>
-#include <CGAL/Boolean_set_operations_2.h>
-#include <CGAL/Arr_vertical_decomposition_2.h>
-#include <CGAL/Polygon_vertical_decomposition_2.h>
-#include <CGAL/Polygon_triangulation_decomposition_2.h>
 
 bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::geometry::ConversionResults& results) {
 	double z0, z1;
@@ -1197,4 +1456,170 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 		br->surface_style.diffuse ? br->surface_style : first_item_style
 	));
 	return true;
+}
+
+PolyhedronBuilder::PolyhedronBuilder(std::list<cgal_face_t>* face_list) {
+	this->face_list = face_list;
+}
+
+#include <CGAL/Polygon_mesh_processing/orient_polygon_soup.h>
+// @todo shouldn't we just always use polygon_soup_to_polygon_mesh instead of the incremental builder?
+#include <CGAL/Polygon_mesh_processing/polygon_soup_to_polygon_mesh.h>
+
+void PolyhedronBuilder::operator()(CGAL::Polyhedron_3<Kernel_>::HalfedgeDS &hds) {
+	// std::list<Kernel_::Point_3> points;
+	std::map<Kernel_::Point_3, size_t> points;
+	std::vector<std::vector<std::size_t>> facet_vertices;
+	facet_vertices.reserve(face_list->size());
+	CGAL::Polyhedron_incremental_builder_3<CGAL::Polyhedron_3<Kernel_>::HalfedgeDS> builder(hds, true);
+	std::list<Kernel_::Point_3> unique_points;
+
+	for (auto &face : *face_list) {
+
+		if (face.inner.empty()) {
+
+			facet_vertices.emplace_back();
+
+			for (auto &point : face.outer) {
+				auto p = points.insert({ point, points.size() });
+				if (p.second) {
+					unique_points.push_back(point);
+				}
+				facet_vertices.back().push_back(p.first->second);
+			}
+
+		} else {
+
+			std::map<Kernel_::Point_2, size_t> points_2d;
+			CGAL::Polygon_with_holes_2<Kernel_> pwh;
+			CGAL::Aff_transformation_3<Kernel_> place;
+			face_to_poly_with_holes(face, pwh, place);
+
+			// we assume the pwh constructor leaves points in order
+			// wouldn't it be nice to have the equivalent of Python's zip()
+			{
+				auto it = pwh.outer_boundary().vertices_begin();
+				auto jt = face.outer.begin();
+				for (; it != pwh.outer_boundary().vertices_end(); ++it, ++jt) {
+					auto p = points.insert({ *jt, points.size() });
+					if (p.second) {
+						unique_points.push_back(*jt);
+					}
+					points_2d.insert({ *it, p.first->second });
+				}
+			}
+			auto it = pwh.holes_begin();
+			auto kt = face.inner.begin();
+			for (; it != pwh.holes_end(); ++it, ++kt) {
+				auto jt = it->vertices_begin();
+				auto lt = kt->begin();
+				for (; jt != it->vertices_end(); ++jt, ++lt) {
+					auto p = points.insert({ *lt, points.size() });
+					if (p.second) {
+						unique_points.push_back(*lt);
+					}
+					points_2d.insert({ *jt, p.first->second });
+				}
+			}
+
+			CGAL::Polygon_triangulation_decomposition_2<Kernel_> decompositor;
+			std::list<CGAL::Polygon_2<Kernel_>> decom_polies;
+			decompositor(pwh, std::back_inserter(decom_polies));
+
+			for (auto& p : decom_polies) {
+				facet_vertices.emplace_back();
+				for (auto it = p.vertices_begin(); it != p.vertices_end(); ++it) {
+					facet_vertices.back().push_back(points_2d.find(*it)->second);
+				}
+			}
+		}
+	}
+
+	bool valid_orientation = true;
+	std::set<std::pair<size_t, size_t>> added_edges;
+	for (size_t fi = 0; fi < facet_vertices.size(); ++fi) {
+		auto& f = facet_vertices[fi];
+		for (size_t i = 0; i < f.size(); ++i) {
+			auto p = std::pair<size_t, size_t>(f[i], f[(i + 1) % f.size()]);
+			if (added_edges.find(p) != added_edges.end()) {
+				valid_orientation = false;
+				break;
+			}
+			added_edges.insert(p);
+		}
+		if (!valid_orientation) {
+			break;
+		}
+	}
+
+	if (!valid_orientation) {
+		from_soup.emplace();
+
+		Logger::Warning("Reoriented polygonal surface");
+
+		// @todo ugh
+		std::vector<Kernel_::Point_3> unique_points_as_vector(unique_points.begin(), unique_points.end());
+
+		CGAL::Polygon_mesh_processing::orient_polygon_soup(unique_points_as_vector, facet_vertices);
+		CGAL::Polygon_mesh_processing::polygon_soup_to_polygon_mesh(unique_points_as_vector, facet_vertices, *from_soup);
+
+		return;
+	}
+/*
+	std::vector<size_t> facet_indices_to_delete;
+	std::set<std::pair<size_t, size_t>> added_edges;
+	for (size_t fi = 0; fi < facet_vertices.size(); ++fi) {
+		auto& f = facet_vertices[fi];
+		bool reoriented = false, valid = true;
+
+	check_edge_existence:
+		for (size_t i = 0; i < f.size(); ++i) {
+			auto p = std::pair<size_t, size_t>(f[i], f[(i + 1) % f.size()]);
+			if (added_edges.find(p) != added_edges.end()) {
+				if (reoriented) {
+					facet_indices_to_delete.push_back(fi);
+					Logger::Notice("Removed facet");
+					valid = false;
+					break;
+				} else {
+					std::reverse(f.begin(), f.end());
+					Logger::Notice("Reversed facet");
+					reoriented = true;
+					goto check_edge_existence;
+				}
+			}
+		}
+		if (valid) {
+			for (size_t i = 0; i < f.size(); ++i) {
+				auto p = std::pair<size_t, size_t>(f[i], f[(i + 1) % f.size()]);
+				added_edges.insert(p);
+			}
+		}
+	}
+
+	std::reverse(facet_indices_to_delete.begin(), facet_indices_to_delete.end());
+	for (auto& fi : facet_indices_to_delete) {
+		facet_vertices.erase(facet_vertices.begin() + fi);
+	}
+*/
+
+
+	builder.begin_surface(points.size(), facet_vertices.size()); // , 0, CGAL::Polyhedron_incremental_builder_3<CGAL::Polyhedron_3<Kernel_>::HalfedgeDS>::ABSOLUTE_INDEXING);
+
+	for (auto& point : unique_points) {
+		builder.add_vertex(point);
+	}
+
+	for (auto &facet : facet_vertices) {
+		builder.begin_facet();
+		//      std::cout << "Adding facet ";
+		for (auto &vertex : facet) {
+			//        std::cout << vertex << " ";
+			builder.add_vertex_to_facet(vertex);
+		}
+		//      std::cout << std::endl;
+		builder.end_facet();
+	}
+
+	builder.end_surface();
 }

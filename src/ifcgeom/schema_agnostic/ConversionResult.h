@@ -55,6 +55,10 @@ namespace ifcopenshell { namespace geometry {
 		virtual ConversionResultShape* clone() const = 0;
 		virtual int surface_genus() const = 0;
 		virtual bool is_manifold() const = 0;
+		// @todo this must be something with a virtual dtor so that we can delete it.
+		virtual double bounding_box(void*& b) const = 0;
+		virtual int num_vertices() const = 0;
+		virtual void set_box(void* b) = 0;
 		virtual ~ConversionResultShape() {}
 	};
 
@@ -82,6 +86,7 @@ namespace ifcopenshell { namespace geometry {
 			*placement.components = *trsf.components * *placement.components;
 		}
 		const ConversionResultShape* Shape() const { return shape; }
+		ConversionResultShape* Shape() { return shape; }
 		const ifcopenshell::geometry::taxonomy::matrix4& Placement() const { return placement; }
 		// @todo
 		bool hasStyle() const { return style.diffuse.is_initialized(); }

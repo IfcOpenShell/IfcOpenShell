@@ -9,6 +9,24 @@ ifcopenshell::geometry::Converter::Converter(const std::string& geometry_library
 	mapping_ = impl::mapping_implementations().construct(file, settings_);
 }
 
+namespace {
+	void substitute_with_box_based_on_density(ifcopenshell::geometry::ConversionResults& items, double& density) {
+		int nv = 0;
+		void* box = nullptr;
+		double volume = 0.;
+		for (auto& i : items) {
+			nv += i.Shape()->num_vertices();
+			volume = i.Shape()->bounding_box(box);
+		}
+		density = nv / volume;
+		if (density > 1e5) {
+			items[0].Shape()->set_box(box);
+			items.erase(items.begin() + 1, items.end());
+			Logger::Notice("Substituted element with " + boost::lexical_cast<std::string>(density) + " vertices / m3 with a bounding box");
+		}
+	}
+}
+
 ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create_brep_for_representation_and_product(taxonomy::item* product_node, const taxonomy::matrix4& place) {
 	auto product = (IfcUtil::IfcBaseEntity*) product_node->instance;
 	const std::string product_type = product->declaration().name();
@@ -45,6 +63,9 @@ ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create
 			std::clock_t geom_end = std::clock();
 
 			total_geom_time += (geom_end - geom_start) / (double)CLOCKS_PER_SEC;
+
+			double d;
+			substitute_with_box_based_on_density(shapes, d);
 
 			shape = brep_ptr(new ifcopenshell::geometry::Representation::BRep(s, representation_id_builder.str(), shapes));
 		} catch (...) {

@@ -25,6 +25,8 @@
 
 #include <map>
 
+#include <iostream>
+
 namespace ifcopenshell { namespace geometry {
 
 	namespace Representation {

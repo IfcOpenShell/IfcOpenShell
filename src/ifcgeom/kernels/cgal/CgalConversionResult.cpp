@@ -1,4 +1,5 @@
 #include "CgalConversionResult.h"
+#include "CgalKernel.h"
 
 #include "../../../ifcparse/IfcLogger.h"
 #include "../../../ifcgeom/schema_agnostic/IfcGeomRepresentation.h"
@@ -99,4 +100,26 @@ void ifcopenshell::geometry::CgalShape::Triangulate(const settings& settings, co
     ++num_faces;
   }
 
+}
+
+#include <CGAL/Polygon_mesh_processing/bbox.h>
+
+double ifcopenshell::geometry::CgalShape::bounding_box(void *& b) const {
+	if (b == nullptr) {
+		b = new CGAL::Bbox_3;
+	}
+	auto& bb = (*((CGAL::Bbox_3*)b));
+	bb += CGAL::Polygon_mesh_processing::bbox(shape_);
+	return (bb.xmax() - bb.xmin()) * (bb.ymax() - bb.ymin()) * (bb.zmax() - bb.zmin());
+}
+
+int ifcopenshell::geometry::CgalShape::num_vertices() const {
+	return shape_.size_of_vertices();
+}
+
+void ifcopenshell::geometry::CgalShape::set_box(void * b) {
+	auto& bb = (*((CGAL::Bbox_3*)b));
+	Kernel_::Point_3 lower(bb.xmin(), bb.ymin(), bb.zmin());
+	Kernel_::Point_3 upper(bb.xmax(), bb.ymax(), bb.zmax());
+	shape_ = ifcopenshell::geometry::utils::create_cube(lower, upper);
 }

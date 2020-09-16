@@ -47,6 +47,7 @@ set GENERATORS[9]="Visual Studio 14 2015"
 :: if CMake generator string is updated to reflect this.
 set GENERATORS[10]="Visual Studio 15 2017 Win64"
 set GENERATORS[11]="Visual Studio 15 2017"
+:: @todo VS 2019
 set LAST_GENERATOR_IDX=11
 
 set STEP=2

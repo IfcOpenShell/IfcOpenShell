@@ -59,6 +59,18 @@ namespace ifcopenshell {
 
 			virtual bool is_manifold() const;
 
+			virtual double bounding_box(void*& b) const {
+				throw std::runtime_error("Not implemented");
+			}
+
+			virtual int num_vertices() const {
+				throw std::runtime_error("Not implemented");
+			}
+
+			virtual void set_box(void* b) {
+				throw std::runtime_error("Not implemented");
+			}
+
 			virtual int surface_genus() const;
 		private:
 			TopoDS_Shape shape_;

@@ -46,45 +46,11 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 
 struct PolyhedronBuilder : public CGAL::Modifier_base<CGAL::Polyhedron_3<Kernel_>::HalfedgeDS> {
 private:
-  std::list<cgal_face_t> *face_list;
+	std::list<cgal_face_t> *face_list;
 public:
-  PolyhedronBuilder(std::list<cgal_face_t> *face_list) {
-    this->face_list = face_list;
-  }
-  
-  void operator()(CGAL::Polyhedron_3<Kernel_>::HalfedgeDS &hds) {
-    // std::list<Kernel_::Point_3> points;
-	std::map<Kernel_::Point_3, size_t> points;
-    std::vector<std::vector<std::size_t>> facet_vertices(face_list->size());
-    CGAL::Polyhedron_incremental_builder_3<CGAL::Polyhedron_3<Kernel_>::HalfedgeDS> builder(hds, true);
-    
-	size_t i = 0;
-    for (auto &face: *face_list) {
-      for (auto &point: face.outer) {
-		  auto p = points.insert({ point, points.size() });
-		  if (p.second) {
-			  builder.add_vertex(point);
-		  }
-		  facet_vertices[i].push_back(p.first->second);
-      }
-	  i++;
-    }
-    
-    builder.begin_surface(points.size(), facet_vertices.size(), 0, CGAL::Polyhedron_incremental_builder_3<CGAL::Polyhedron_3<Kernel_>::HalfedgeDS>::ABSOLUTE_INDEXING);
-    
-    for (auto &facet: facet_vertices) {
-      builder.begin_facet();
-//      std::cout << "Adding facet ";
-      for (auto &vertex: facet) {
-//        std::cout << vertex << " ";
-        builder.add_vertex_to_facet(vertex);
-      }
-//      std::cout << std::endl;
-      builder.end_facet();
-    }
-    
-    builder.end_surface();
-  }
+	boost::optional<cgal_shape_t> from_soup;
+	PolyhedronBuilder(std::list<cgal_face_t> *face_list);
+	void operator()(CGAL::Polyhedron_3<Kernel_>::HalfedgeDS &hds);
 };
 
 namespace ifcopenshell {
