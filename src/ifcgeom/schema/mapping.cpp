@@ -1781,9 +1781,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcBooleanResult* inst) {
 	IfcSchema::IfcBooleanOperand* operand1 = inst->FirstOperand();
 	IfcSchema::IfcBooleanOperand* operand2 = inst->SecondOperand();
 
-	IfcEntityList::ptr operands(new IfcEntityList);
-	operands->push(operand1);
-	operands->push(operand2);
+	std::vector<IfcUtil::IfcBaseClass*> operands = { operand2 };
 
 	auto op = boolean_op_type(inst->Operator());
 
@@ -1793,24 +1791,27 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcBooleanResult* inst) {
 		if (res1) {
 			if (boolean_op_type(res1->Operator()) == op) {
 				operand1 = res1->FirstOperand();
-				operands->push(res1->SecondOperand());
+				operands.push_back(res1->SecondOperand());
 			} else {
 				process_as_list = false;
 				break;
 			}
 		} else {
+			operands.push_back(operand1);
 			break;
 		}
 	}
 
-	if (!process_as_list) {
+	if (process_as_list) {
+		std::reverse(operands.begin(), operands.end());
+	} else {
 		operand1 = inst->FirstOperand();
-		operands.reset(new IfcEntityList);
-		operands->push(operand1);
-		operands->push(operand2);
+		operands.clear();
+		operands.push_back(operand1);
+		operands.push_back(operand2);
 	}
 
-	auto br = map_to_collection<taxonomy::boolean_result>(this, operands);
+	auto br = map_to_collection<taxonomy::boolean_result>(this, &operands);
 	if (br) {
 		br->operation = op;
 	}

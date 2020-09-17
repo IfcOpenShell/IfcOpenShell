@@ -1189,7 +1189,10 @@ bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result* br, std::
 
 	std::vector<taxonomy::extrusion*> extrusions;
 	std::transform(ops.begin(), ops.end(), std::back_inserter(extrusions), [](taxonomy::item* op) {
-		taxonomy::extrusion* nptr = nullptr;
+		static taxonomy::extrusion* nptr = nullptr;
+		if (op->kind() == taxonomy::EXTRUSION) {
+			return (taxonomy::extrusion*) op;
+		}
 		if (op->kind() != taxonomy::COLLECTION) return nptr;
 		auto cl = (taxonomy::collection*) op;
 		if ((cl)->children.size() != 1) return nptr;
@@ -1247,6 +1250,16 @@ bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result* br, std::
 				cgal_wire_t w;
 				cgal_placement_t trsf;
 				convert_placement(ex->matrix, trsf);
+
+				/*
+				std::array<std::array<double, 4>, 4> mat;
+				for (int i = 0; i < 4; ++i) {
+					for (int j = 0; j < 4; ++j) {
+						mat[i][j] = CGAL::to_double(trsf.cartesian(i, j));
+					}
+				}
+				*/
+
 				if (convert(l, w)) {
 					for (auto& p : w) {
 						p = p.transform(trsf);
@@ -1258,16 +1271,6 @@ bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result* br, std::
 		});
 	} catch (std::runtime_error&) {
 		return false;
-	}
-
-	for (auto it = wires.begin(); it != wires.end(); ++it) {
-		auto& w = *it;
-		auto op = (taxonomy::geom_item*) (*(ops.begin() + std::distance(wires.begin(), it)));
-		cgal_placement_t trsf;
-		convert_placement(op->matrix, trsf);
-		for (auto& p : w) {
-			p = trsf.transform(p);
-		}
 	}
 
 	loops.clear();
@@ -1287,9 +1290,121 @@ bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result* br, std::
 	return true;
 }
 
+#include <CGAL/Polygon_mesh_processing/measure.h>
+
+namespace {
+	bool orthogonal_edge_length(const cgal_shape_t& shape, const cgal_direction_t& face_normal, std::pair<Kernel_::FT, Kernel_::FT>& distances) {
+		static double inf = std::numeric_limits<double>::infinity();
+		
+		std::vector<double> lengths;
+
+		distances = { +inf, -inf };
+
+		for (auto& e : edges(shape)) {
+			const auto& p0 = e.halfedge()->vertex()->point();
+			const auto& p1 = e.halfedge()->next()->vertex()->point();
+			auto p01 = p1 - p0;
+			auto p01_length = std::sqrt(CGAL::to_double(p01.squared_length()));
+			p01 /= p01_length;
+			auto dot = std::abs(CGAL::to_double(p01 * face_normal));
+			if (dot > 1e-5) {
+				if (dot < 0.9999) {
+					return false;
+				} else {
+					lengths.push_back(p01_length);
+					auto v = (p0 - CGAL::ORIGIN) * face_normal;
+					if (v < distances.first) {
+						distances.first = v;
+					}
+					if (v > distances.second) {
+						distances.second = v;
+					}
+					v = (p1 - CGAL::ORIGIN) * face_normal;
+					if (v < distances.first) {
+						distances.first = v;
+					}
+					if (v > distances.second) {
+						distances.second = v;
+					}
+				}
+			}
+		}
+
+		std::sort(lengths.begin(), lengths.end());
+		auto edge_len_diff = lengths.back() - lengths.front();
+
+		std::wcout << "edge_len_diff " << edge_len_diff << std::endl;
+
+		if (edge_len_diff > 1e-5) {
+			return false;
+		}
+
+		return true;
+	}
+}
+
+bool CgalKernel::process_as_2d_polygon(const std::list<std::list<std::pair<const IfcUtil::IfcBaseClass*, cgal_shape_t>>>& operands, std::list<CGAL::Polygon_2<Kernel_>>& loops, double& z0, double& z1) {
+	if (operands.front().size() != 1) {
+		return false;
+	}
+	auto& first_op = operands.front().front().second;
+	
+	cgal_shape_t::Facet_handle largest_face;
+	Kernel_::FT largest_area = 0;
+
+	for (auto& f : faces(first_op)) {
+		auto area = CGAL::Polygon_mesh_processing::face_area(f, first_op);
+		if (area > largest_area) {
+			largest_area = area;
+			largest_face = f;
+		}
+	}
+
+	// @todo adapt newell() to work on facet circulator as well
+	std::vector<cgal_point_t> f_points;
+	CGAL::Polyhedron_3<Kernel_>::Halfedge_around_facet_const_circulator current_halfedge = largest_face->facet_begin();
+	do {
+		f_points.push_back(current_halfedge->vertex()->point());
+		++current_halfedge;
+	} while (current_halfedge != largest_face->facet_begin());
+
+	auto fnorm = newell(f_points);
+	fnorm /= std::sqrt(CGAL::to_double(fnorm.squared_length()));
+	
+	std::pair<Kernel_::FT, Kernel_::FT> operand_1_distance_along_normal;
+
+	if (!orthogonal_edge_length(first_op, fnorm, operand_1_distance_along_normal)) {
+		return false;
+	}
+
+	for (auto it = ++operands.begin(); it != operands.end(); ++it) {
+		for (auto jt = it->begin(); jt != it->end(); ++jt) {
+			auto& nth_op = jt->second;
+			std::pair<Kernel_::FT, Kernel_::FT> operand_n_distance_along_normal;
+			if (!orthogonal_edge_length(first_op, fnorm, operand_n_distance_along_normal)) {
+				return false;
+			}
+			
+			std::wcout << CGAL::to_double(operand_n_distance_along_normal.first) << std::endl;
+			std::wcout << CGAL::to_double(operand_n_distance_along_normal.second) << std::endl;
+			std::wcout << CGAL::to_double(operand_1_distance_along_normal.first) << std::endl;
+			std::wcout << CGAL::to_double(operand_1_distance_along_normal.second) << std::endl;
+
+			if (operand_n_distance_along_normal.first > operand_1_distance_along_normal.first ||
+				operand_n_distance_along_normal.second < operand_1_distance_along_normal.second)
+			{
+				return false;
+			}
+		}
+	}
+
+	std::wcout << "Process as 2D!!!" << std::endl;
+}
+
 bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::geometry::ConversionResults& results) {
 	double z0, z1;
 	std::list<CGAL::Polygon_2<Kernel_>> loops;
+
 	if (process_as_2d_polygon(br, loops, z0, z1)) {
 		auto first_item_style = ((taxonomy::geom_item*)br->children[0])->surface_style;
 
@@ -1369,6 +1484,8 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 
 	taxonomy::style first_item_style;
 
+	std::list<std::list<std::pair<const IfcUtil::IfcBaseClass*, cgal_shape_t>>> operands;
+
 	for (auto& c : br->children) {
 		// AbstractKernel::convert(c, results);
 		// continue;
@@ -1383,6 +1500,8 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 				first_item_style = ((taxonomy::geom_item*) ((taxonomy::collection*)c)->children[0])->surface_style;
 			}
 		}
+
+		operands.emplace_back();
 
 		for (auto it = cr.begin(); it != cr.end(); ++it) {
 			const cgal_shape_t& entity_shape_unlocated(((CgalShape*)it->Shape())->shape());
@@ -1405,10 +1524,29 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 						std::wcout << x << " " << y << " " << z << std::endl;
 					}
 				}
+
+				operands.back().push_back(std::make_pair(c->instance, entity_shape));
 			}
+		}
+
+		first = false;
+	}
+
+	/*
+	// Another check in case operands are not extrusion is not fully implemented yet.
+	if (process_as_2d_polygon(operands, loops, z0, z1)) {
+		return true;
+	}
+	*/
+
+	first = true;
+
+	for (auto& li : operands) {
+
+		for (auto& entity_shape : li) {
 
 			CGAL::Nef_polyhedron_3<Kernel_> nef;
-			if (!preprocess_boolean_operand(c->instance, entity_shape, nef,
+			if (!preprocess_boolean_operand(entity_shape.first, entity_shape.second, nef,
 				// Dilate boolean subtraction operands
 				(!first && br->operation == taxonomy::boolean_result::SUBTRACTION)))
 			{
@@ -1437,7 +1575,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 		a -= second_operand_collector.get_union();
 	}
 
-	cgal_shape_t a_poly, b_poly;
+	cgal_shape_t a_poly;
 
 	// CGAL::Nef_polyhedron_3<Kernel_> b;
 	// thin_solid(a, b);
