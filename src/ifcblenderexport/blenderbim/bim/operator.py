@@ -4082,3 +4082,53 @@ class RefreshDrawingList(bpy.types.Operator):
                 new.name = obj.name.split('/')[1]
                 new.camera = obj
         return {'FINISHED'}
+
+
+class GetRepresentationIfcParameters(bpy.types.Operator):
+    bl_idname = 'bim.get_representation_ifc_parameters'
+    bl_label = 'Get Representation IFC Parameters'
+
+    def execute(self, context):
+        props = bpy.context.active_object.data.BIMMeshProperties
+        dummy = ifcopenshell.file.from_string(props.ifc_definition)
+        for element in dummy:
+            if not element.is_a('IfcRepresentationItem'):
+                continue
+            for i in range(0, len(element)):
+                if element.attribute_type(i) == 'DOUBLE':
+                    new = props.ifc_parameters.add()
+                    new.name = '{}/{}'.format(element.is_a(), element.attribute_name(i))
+                    new.step_id = element.id()
+                    new.type = element.attribute_type(i)
+                    new.index = i
+                    if element[i]:
+                        new.value = element[i]
+        return {'FINISHED'}
+
+
+class UpdateIfcRepresentation(bpy.types.Operator):
+    bl_idname = 'bim.update_ifc_representation'
+    bl_label = 'Update IFC Representation'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = bpy.context.active_object.data.BIMMeshProperties
+        parameter = props.ifc_parameters[self.index]
+        dummy = ifcopenshell.file.from_string(props.ifc_definition)
+        element = dummy.by_id(parameter.step_id)[parameter.index] = parameter.value
+        props.ifc_definition = dummy.to_string()
+        self.recreate_ifc_representation()
+        return {'FINISHED'}
+
+    def recreate_ifc_representation(self):
+        props = bpy.context.active_object.data.BIMMeshProperties
+        dummy = ifcopenshell.file.from_string(props.ifc_definition)
+        logger = logging.getLogger('ImportIFC')
+        self.ifc_import_settings = import_ifc.IfcImportSettings.factory(bpy.context, ifc.IfcStore.path, logger)
+        element = dummy.by_id(props.ifc_definition_id)
+        settings = ifcopenshell.geom.settings()
+        shape = ifcopenshell.geom.create_shape(settings, element)
+        ifc_importer = import_ifc.IfcImporter(self.ifc_import_settings)
+        ifc_importer.file = dummy
+        mesh = ifc_importer.create_mesh(element, shape)
+        bpy.context.active_object.data.user_remap(mesh)

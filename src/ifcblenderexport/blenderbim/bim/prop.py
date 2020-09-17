@@ -1207,6 +1207,7 @@ class BIMProperties(PropertyGroup):
     import_should_treat_styled_item_as_material: BoolProperty(name="Import Treating Styled Item as Material", default=False)
     import_should_use_legacy: BoolProperty(name="Import with Legacy Importer", default=False)
     import_should_import_native: BoolProperty(name="Import Native Representations", default=False)
+    import_export_should_roundtrip_native: BoolProperty(name="Roundtrip Native Representations", default=False)
     import_should_use_cpu_multiprocessing: BoolProperty(name="Import with CPU Multiprocessing", default=True)
     import_should_import_with_profiling: BoolProperty(name="Import with Profiling", default=True)
     import_should_import_aggregates: BoolProperty(name="Import Aggregates", default=True)
@@ -1351,6 +1352,15 @@ class Attribute(PropertyGroup):
     int_value: IntProperty(name="Value")
     float_value: FloatProperty(name="Value")
 
+
+class IfcParameter(PropertyGroup):
+    name: StringProperty(name="Name")
+    step_id: IntProperty(name="STEP ID")
+    index: IntProperty(name="Index")
+    value: FloatProperty(name="Value") # For now, only floats
+    type: StringProperty(name="Type")
+
+
 class PsetQto(PropertyGroup):
     name: StringProperty(name="Name")
     properties: CollectionProperty(name="Properties", type=Attribute)
@@ -1426,4 +1436,7 @@ class BIMMeshProperties(PropertyGroup):
     is_parametric: BoolProperty(name='Is Parametric', default=False)
     presentation_layer: StringProperty(name="Presentation Layer")
     geometry_type: StringProperty(name="Geometry Type")
+    ifc_definition: StringProperty(name="IFC Definition")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+    ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     active_representation_item_index: IntProperty(name='Active Representation Item Index')

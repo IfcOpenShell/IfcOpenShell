@@ -876,6 +876,7 @@ class IfcImporter():
             cumulative_vertex_index += item['total_vertices']
 
     def create_native_mesh(self, element, shape):
+        # TODO This should be split off into its own module for run-time native mesh conversion
         data = self.native_elements[element.GlobalId]
         materials = []
         items = []
@@ -1826,6 +1827,11 @@ class IfcImporter():
                 results.append({ 'raw': representation, 'matrix': self.scale_matrix(matrix) })
         return results
 
+    def get_representation_of_context(self, representations, context):
+        for representation in representations:
+            if representation.RepresentationIdentifier == context:
+                return representation
+
     def scale_matrix(self, matrix):
         matrix[0][3] *= self.unit_scale
         matrix[1][3] *= self.unit_scale
@@ -1912,10 +1918,29 @@ class IfcImporter():
                     ios_materials.append(mat.name)
             mesh['ios_materials'] = ios_materials
             mesh['ios_material_ids'] = geometry.material_ids
-            mesh.BIMMeshProperties.geometry_type = str(self.get_geometry_type(element))
+            self.store_representation_source(mesh, element, shape)
             return mesh
         except:
             self.ifc_import_settings.logger.error('Could not create mesh for {}'.format(element))
+            import traceback
+            print(traceback.format_exc())
+
+    def store_representation_source(self, mesh, element, shape):
+        # TODO Refactor to specialist class
+        mesh.BIMMeshProperties.geometry_type = str(self.get_geometry_type(element))
+        if not self.ifc_import_settings.should_roundtrip_native:
+            return
+        dummy = ifcopenshell.file(schema=self.file.schema)
+        if element.is_a('IfcRepresentation'):
+            representation = element
+        else:
+            representation = self.get_representation_of_context(element.Representation.Representations, shape.context)
+        mesh.BIMMeshProperties.ifc_definition_id = int(dummy.add(representation).id())
+        for child in self.file.traverse(representation):
+            [dummy.add(inverse) for inverse in self.file.get_inverse(child)]
+            dummy.add(child)
+        mesh.BIMMeshProperties.ifc_definition = dummy.to_string()
+
 
     def create_curve(self, geometry):
         curve = bpy.data.curves.new(geometry.id, type='CURVE')
@@ -2062,6 +2087,7 @@ class IfcImportSettings:
         settings.should_use_cpu_multiprocessing = scene_bim.import_should_use_cpu_multiprocessing
         settings.should_import_with_profiling = scene_bim.import_should_import_with_profiling
         settings.should_import_native = scene_bim.import_should_import_native
+        settings.should_roundtrip_native = scene_bim.import_export_should_roundtrip_native
         settings.should_use_legacy = scene_bim.import_should_use_legacy
         settings.should_import_aggregates = scene_bim.import_should_import_aggregates
         settings.should_merge_aggregates = scene_bim.import_should_merge_aggregates
