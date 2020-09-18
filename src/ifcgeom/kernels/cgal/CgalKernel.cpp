@@ -794,6 +794,8 @@ bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, const taxonom
 	if (has_inner_bounds) {
 		CGAL::Polygon_with_holes_2<Kernel_> pwh;
 		CGAL::Aff_transformation_3<Kernel_> place;
+		// @todo check for segment intersections, analogous to other places.
+		// they are caught now below after triangulation.
 		face_to_poly_with_holes(bottom_face, pwh, place);
 		CGAL::Polygon_triangulation_decomposition_2<Kernel_> decompositor;
 		std::list<CGAL::Polygon_2<Kernel_>> decom_polies;
@@ -825,21 +827,6 @@ bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, const taxonom
 				}
 				auto p = external_edges.insert({ { i0, i1 }, { i, j} });
 				if (!p.second) {
-
-					Kernel_::Point_3 ppp0(p0.cartesian(0), p0.cartesian(1), 0);
-					ppp0 = ppp0.transform(place);
-					
-					Kernel_::Point_3 ppp1(p1.cartesian(1), p1.cartesian(1), 0);
-					ppp1 = ppp1.transform(place);
-
-					auto pp0 = C(ppp0);
-					auto pp1 = C(ppp1);
-
-					std::ostringstream oss;
-					oss << pp0 << " - " << pp1;
-					auto ss = oss.str();
-					std::wcout << ss.c_str() << std::endl;
-
 					// not inserted, remove
 					external_edges.erase(p.first);
 
@@ -853,7 +840,6 @@ bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, const taxonom
 			}
 			i++;
 		}
-
 
 		polygon_2_to_wire wire_builder(place);
 		std::transform(decom_polies.begin(), decom_polies.end(), std::back_inserter(faces_to_extrude), wire_builder);
@@ -1667,7 +1653,17 @@ void PolyhedronBuilder::operator()(CGAL::Polyhedron_3<Kernel_>::HalfedgeDS &hds)
 			for (auto& p : decom_polies) {
 				facet_vertices.emplace_back();
 				for (auto it = p.vertices_begin(); it != p.vertices_end(); ++it) {
-					facet_vertices.back().push_back(points_2d.find(*it)->second);
+					auto pit = points_2d.find(*it);
+					if (pit == points_2d.end()) {
+						// Likely there are intersections in the polygonal boundaries.
+						// For now let's just skip over the triangle. We can also use
+						// the Aff_transformation_3 stored in place to convert the 2d
+						// coords back to 3d.
+						Logger::Warning("Ignoring triangulated facet with novel point likely due to self-intersections");
+						facet_vertices.erase(facet_vertices.end() - 1);
+						break;
+					}
+					facet_vertices.back().push_back(pit->second);
 				}
 			}
 		}
