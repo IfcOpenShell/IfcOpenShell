@@ -98,7 +98,6 @@ namespace kernels {
 		bool process_as_2d_polygon(const taxonomy::boolean_result* br, std::list<CGAL::Polygon_2<Kernel_>>& loops, double& z0, double& z1);
 		bool process_as_2d_polygon(const std::list<std::list<std::pair<const IfcUtil::IfcBaseClass*, cgal_shape_t>>>& operands, std::list<CGAL::Polygon_2<Kernel_>>& loops, double& z0, double& z1);
 		
-		// virtual bool convert_impl(const taxonomy::face*, ifcopenshell::geometry::ConversionResults&);
 		virtual bool convert_impl(const taxonomy::shell*, ifcopenshell::geometry::ConversionResults&);
 		virtual bool convert_impl(const taxonomy::extrusion*, ifcopenshell::geometry::ConversionResults&);
 		virtual bool convert_impl(const taxonomy::boolean_result*, ifcopenshell::geometry::ConversionResults&);

@@ -1387,6 +1387,25 @@ bool CgalKernel::process_as_2d_polygon(const std::list<std::list<std::pair<const
 	std::wcout << "Process as 2D!!!" << std::endl;
 }
 
+namespace {
+	template <typename It, typename Fn>
+	void project_onto_plane(const taxonomy::plane& p, It i, It j, Fn fn) {
+		auto mi = p.matrix.components->inverse();
+		Eigen::Vector4d v;
+		std::for_each(i, j, [&mi, &v, &fn](const cgal_shape_t& shp) {
+			for (auto& vv : vertices(shp)) {
+				auto& p = vv->point();
+				v = Eigen::Vector4d(CGAL::to_double(p.cartesian(0)),
+					CGAL::to_double(p.cartesian(1)),
+					CGAL::to_double(p.cartesian(2)),
+					1.);
+				v = mi * v;
+				fn(v.head<3>());
+			}
+		});
+	}
+}
+
 bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::geometry::ConversionResults& results) {
 	double z0, z1;
 	std::list<CGAL::Polygon_2<Kernel_>> loops;
@@ -1464,30 +1483,99 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 	bool first = true;
 
 	CGAL::Nef_polyhedron_3<Kernel_> a;
-
 	CGAL::Nef_nary_union_3<CGAL::Nef_polyhedron_3<Kernel_>> second_operand_collector;
 	size_t second_operand_collector_size = 0;
 
 	taxonomy::style first_item_style;
 
-	std::list<std::list<std::pair<const IfcUtil::IfcBaseClass*, cgal_shape_t>>> operands;
+	std::list<std::pair<const IfcUtil::IfcBaseClass*, std::list<cgal_shape_t>>> operands;
 
 	for (auto& c : br->children) {
 		// AbstractKernel::convert(c, results);
 		// continue;
 
 		ifcopenshell::geometry::ConversionResults cr;
-		// @todo half-space detection
-		AbstractKernel::convert(c, cr);
 
+		operands.emplace_back();
+		operands.back().first = c->instance;
+
+		if (c->kind() == taxonomy::FACE && c->instance->declaration().is("IfcHalfSpaceSolid") && !first) {
+			auto face = (taxonomy::face*) c;
+
+			if (face->basis == nullptr || !face->basis->kind() == taxonomy::PLANE) {
+				return false;
+			}
+			
+			static double inf = std::numeric_limits<double>::infinity();
+			static double eps = 1.e-5;
+
+			double uvw_min[3] = { +inf, +inf, +inf };
+			double uvw_max[3] = { -inf, -inf, -inf };
+			auto& p = *((taxonomy::plane*)face->basis);
+			project_onto_plane(p,
+				operands.front().second.begin(),
+				operands.front().second.end(),
+				[&uvw_min, &uvw_max](const Eigen::Vector3d& p) {
+				for (int i = 0; i < 3; ++i) {
+					if (p(i) < uvw_min[i]) {
+						uvw_min[i] = p(i);
+					}
+					if (p(i) > uvw_max[i]) {
+						uvw_max[i] = p(i);
+					}
+				}
+			});
+			
+			Kernel_::Point_3 lower(uvw_min[0] - eps, uvw_min[1] - eps, 0.);
+			Kernel_::Point_3 upper(uvw_max[0] + eps, uvw_max[1] + eps, uvw_max[2] + eps);
+			cgal_shape_t box = utils::create_cube(lower, upper);
+			cgal_placement_t pl;
+			convert_placement(p.matrix, pl);
+			for (auto& v : vertices(box)) {
+				v->point() = v->point().transform(pl);
+			}
+			
+			if (!face->children.empty()) {
+				cgal_face_t f;
+				if (!convert(face, f)) {
+					return false;
+				}
+				static taxonomy::direction3 z(0, 0, 1);
+				cgal_shape_t poly;
+				process_extrusion(f, z, 200, poly);
+				for (auto& v : vertices(poly)) {
+					v->point() = Kernel_::Point_3(
+						v->point().cartesian(0),
+						v->point().cartesian(1),
+						v->point().cartesian(2) - 100
+					);
+				};
+				cgal_placement_t trsf;
+				convert_placement(face->matrix, trsf);
+				for (auto& v : vertices(poly)) {
+					v->point() = v->point().transform(trsf);
+				}
+				CGAL::Nef_polyhedron_3<Kernel_> poly_nef(poly);
+				CGAL::Nef_polyhedron_3<Kernel_> box_nef(box);
+				auto intersection = poly_nef * box_nef;
+				cgal_shape_t intersection_poly;
+				intersection.convert_to_polyhedron(intersection_poly);
+				operands.back().second.push_back(intersection_poly);
+			} else {
+				operands.back().second.push_back(box);
+			}
+
+			continue;
+		} 
+
+		AbstractKernel::convert(c, cr);
+		
 		if (first && br->operation == taxonomy::boolean_result::SUBTRACTION) {
 			first_item_style = ((taxonomy::geom_item*)c)->surface_style;
 			if (!first_item_style.diffuse && c->kind() == taxonomy::COLLECTION) {
 				first_item_style = ((taxonomy::geom_item*) ((taxonomy::collection*)c)->children[0])->surface_style;
 			}
 		}
-
-		operands.emplace_back();
 
 		for (auto it = cr.begin(); it != cr.end(); ++it) {
 			const cgal_shape_t& entity_shape_unlocated(((CgalShape*)it->Shape())->shape());
@@ -1511,7 +1599,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 					}
 				}
 
-				operands.back().push_back(std::make_pair(c->instance, entity_shape));
+				operands.back().second.push_back(entity_shape);
 			}
 		}
 
@@ -1529,10 +1617,11 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 
 	for (auto& li : operands) {
 
-		for (auto& entity_shape : li) {
+		auto entity_instance = li.first;
+		for (auto& entity_shape : li.second) {
 
 			CGAL::Nef_polyhedron_3<Kernel_> nef;
-			if (!preprocess_boolean_operand(entity_shape.first, entity_shape.second, nef,
+			if (!preprocess_boolean_operand(entity_instance, entity_shape, nef,
 				// Dilate boolean subtraction operands
 				(!first && br->operation == taxonomy::boolean_result::SUBTRACTION)))
 			{
