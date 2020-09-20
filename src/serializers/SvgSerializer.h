@@ -27,12 +27,28 @@
 
 #include "../ifcparse/utils.h"
 
+#include <HLRBRep_Algo.hxx>
+#include <HLRBRep_HLRToShape.hxx>
+
 #include <sstream>
 #include <string>
 #include <limits>
 
+typedef std::pair<IfcUtil::IfcBaseEntity*, std::string> drawing_key;
+
 struct storey_sorter {
-	bool operator()(IfcUtil::IfcBaseEntity* a, IfcUtil::IfcBaseEntity* b) const {
+	bool operator()(const drawing_key& ad, const drawing_key& bd) const {
+		if (ad.first == nullptr && bd.first != nullptr) {
+			return true;
+		} else if (bd.first == nullptr && ad.first != nullptr) {
+			return true;
+		} else if (ad.first == nullptr && bd.first == nullptr) {
+			return std::less<std::string>()(ad.second, bd.second);
+		}
+
+		auto a = ad.first;
+		auto b = bd.first;
+
 		const bool a_is_storey = a->declaration().is("IfcBuildingStorey");
 		const bool b_is_storey = b->declaration().is("IfcBuildingStorey");
 		if (a_is_storey && b_is_storey) {
@@ -66,21 +82,52 @@ struct storey_sorter {
 	}
 };
 
+struct horizontal_plan {
+	IfcUtil::IfcBaseEntity* storey;
+	double elevation, offset, next_elevation;
+};
+
+struct horizontal_plan_at_element {};
+
+struct vertical_section {
+	gp_Pln plane;
+	std::string name;
+	bool with_projection;
+};
+
+typedef boost::variant<horizontal_plan, horizontal_plan_at_element, vertical_section> section_data;
+
+struct geometry_data {
+	TopoDS_Shape compound_local;
+	gp_Trsf trsf;
+	IfcUtil::IfcBaseEntity* product;
+	IfcUtil::IfcBaseEntity* storey;
+	double storey_elevation;
+	std::string ifc_name, svg_name;
+};
+
 class SvgSerializer : public GeometrySerializer {
 public:
 	typedef std::pair<std::string, std::vector<util::string_buffer> > path_object;
+	typedef std::vector< boost::shared_ptr<util::string_buffer::float_item> > float_item_list;
 protected:
 	std::ofstream svg_file;
 	double xmin, ymin, xmax, ymax, width, height;
-	boost::optional<std::vector<std::pair<std::pair<double, double>, IfcUtil::IfcBaseEntity*>>> section_heights;
-	boost::optional<double> scale_;
-	bool rescale, print_space_names_, print_space_areas_, draw_door_arcs_, with_section_heights_from_storey_;
-	std::multimap<IfcUtil::IfcBaseEntity*, path_object, storey_sorter> paths;
-	std::vector< boost::shared_ptr<util::string_buffer::float_item> > xcoords;
-	std::vector< boost::shared_ptr<util::string_buffer::float_item> > ycoords;
-	std::vector< boost::shared_ptr<util::string_buffer::float_item> > radii;
+	boost::optional<std::vector<section_data>> section_data_;
+	boost::optional<std::vector<section_data>> deferred_section_data_;
+	boost::optional<double> scale_, calculated_scale_;
+	bool rescale, print_space_names_, print_space_areas_, draw_door_arcs_, with_section_heights_from_storey_, buffer_elements_;
+	std::multimap<drawing_key, path_object, storey_sorter> paths;
+
+	float_item_list xcoords, ycoords, radii;
+	size_t xcoords_begin, ycoords_begin, radii_begin;
+
+	boost::optional<std::string> section_ref_, elevation_ref_;
 	IfcParse::IfcFile* file;
 	IfcUtil::IfcBaseEntity* storey_;
+	std::list<geometry_data> element_buffer_;
+
+	Handle(HLRBRep_Algo) hlr;
 public:
 	SvgSerializer(const std::string& out_filename, const SerializerSettings& settings)
 		: GeometrySerializer(settings)
@@ -94,8 +141,12 @@ public:
 		, print_space_names_(false)
 		, print_space_areas_(false)
 		, draw_door_arcs_(false)
+		, buffer_elements_(false)
 		, file(0)
 		, storey_(0)
+		, xcoords_begin(0)
+		, ycoords_begin(0)
+		, radii_begin(0)
 	{}
     void addXCoordinate(const boost::shared_ptr<util::string_buffer::float_item>& fi) { xcoords.push_back(fi); }
     void addYCoordinate(const boost::shared_ptr<util::string_buffer::float_item>& fi) { ycoords.push_back(fi); }
@@ -106,8 +157,10 @@ public:
     void write(const IfcGeom::TriangulationElement<real_t>* /*o*/) {}
     void write(const IfcGeom::BRepElement<real_t>* o);
     void write(path_object& p, const TopoDS_Wire& wire);
+	void write(const geometry_data& data);
     path_object& start_path(IfcUtil::IfcBaseEntity* storey, const std::string& id);
-    bool isTesselated() const { return false; }
+	path_object& start_path(const std::string& drawing_name, const std::string& id);
+	bool isTesselated() const { return false; }
     void finalize();
     void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
 	void setFile(IfcParse::IfcFile* f);
@@ -117,12 +170,25 @@ public:
 	void setPrintSpaceNames(bool b) { print_space_names_ = b; }
 	void setPrintSpaceAreas(bool b) { print_space_areas_ = b; }
 	void setDrawDoorArcs(bool b) { draw_door_arcs_ = b; }
+	void resize();
+	void setSectionRef(const boost::optional<std::string>& s) { 
+		section_ref_ = s; 
+		buffer_elements_ = true;
+	}
+	void setElevationRef(const boost::optional<std::string>& s) {
+		elevation_ref_ = s; 
+		buffer_elements_ = true;
+	}
 	void setScale(double s) { scale_ = s; }
     std::string nameElement(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element<real_t>* elem);
 	std::string nameElement(const IfcUtil::IfcBaseEntity* elem);
 	std::string idElement(const IfcUtil::IfcBaseEntity* elem);
 	std::string object_id(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element<real_t>* o) {
-		return idElement(storey) + "-" + GeometrySerializer::object_id(o);
+		if (storey) {
+			return idElement(storey) + "-" + GeometrySerializer::object_id(o);
+		} else {
+			return GeometrySerializer::object_id(o);
+		}
 	}
 };
 
