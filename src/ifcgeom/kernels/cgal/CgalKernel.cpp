@@ -139,7 +139,7 @@ CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhe
 
 namespace {
 	template <typename T, typename Fn>
-	void visit(const taxonomy::collection* c, Fn& fn) {
+	void visit(const taxonomy::collection* c, const Fn& fn) {
 		static_assert(std::is_same<T, taxonomy::point3>::value, "@todo Only implemented for point3");
 		for (auto& i : c->children) {
 			if (dynamic_cast<const taxonomy::collection*>(i)) {
@@ -1286,7 +1286,7 @@ namespace {
 
 		distances = { +inf, -inf };
 
-		for (auto& e : edges(shape)) {
+		for (const auto& e : edges(shape)) {
 			const auto& p0 = e.halfedge()->vertex()->point();
 			const auto& p1 = e.halfedge()->next()->vertex()->point();
 			auto p01 = p1 - p0;
