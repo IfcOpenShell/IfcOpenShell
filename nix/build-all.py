@@ -720,7 +720,7 @@ cmake_args=[
     "-DBOOST_ROOT="                    "{DEPS_DIR}/install/boost-{BOOST_VERSION}".format(**locals()),
     "-DGLTF_SUPPORT="                  "ON",
     "-DJSON_INCLUDE_DIR="              "{DEPS_DIR}/install/json".format(**locals()),
-    "-DEIGEN_DIR="                     "{DEPS_DIR}/install/Eigen-3.3.7".format(**locals())
+    "-DEIGEN_DIR="                     "{DEPS_DIR}/install/eigen-3.3.7".format(**locals())
 ]
 
 if "occ" in targets:
@@ -802,7 +802,7 @@ if "IfcOpenShell-Python" in targets:
                 "-DPYTHON_EXECUTABLE="       +PYTHON_EXECUTABLE,
                 "-DPYTHON_INCLUDE_DIR="      +PYTHON_INCLUDE,
                 "-DUSE_CGAL=ON",
-                "-DEIGEN_DIR="               "{DEPS_DIR}/install/Eigen-3.3.7".format(**locals()),
+                "-DEIGEN_DIR="               "{DEPS_DIR}/install/eigen-3.3.7".format(**locals()),
                 "-DSWIG_EXECUTABLE="         "{DEPS_DIR}/install/swig/bin/swig".format(**locals()),
                 "-DCMAKE_INSTALL_PREFIX="    "{DEPS_DIR}/install/ifcopenshell/tmp".format(**locals()),
                 "-DLIBXML2_INCLUDE_DIR="     "{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/include/libxml2".format(**locals()),
