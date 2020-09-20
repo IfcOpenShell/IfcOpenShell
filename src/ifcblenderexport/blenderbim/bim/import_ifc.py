@@ -1556,6 +1556,7 @@ class IfcImporter():
                 parent.children.link(collection)
                 obj = self.create_product(element)
                 if obj:
+                    self.spatial_structure_elements[global_id]['blender_obj'] = obj
                     collection.objects.link(obj)
                     del self.added_data[element.GlobalId]
             if element.IsDecomposedBy:
@@ -1705,8 +1706,15 @@ class IfcImporter():
             if element.Decomposes[0].RelatingObject.is_a('IfcProject'):
                 collection = self.project['blender']
             elif element.Decomposes[0].RelatingObject.is_a('IfcSpatialStructureElement'):
-                global_id = element.Decomposes[0].RelatingObject.GlobalId
+                if element.is_a('IfcSpatialStructureElement') and not element.is_a('IfcSpace'):
+                    global_id = element.GlobalId
+                else:
+                    global_id = element.Decomposes[0].RelatingObject.GlobalId
                 if global_id in self.spatial_structure_elements:
+                    if element.is_a('IfcSpatialStructureElement') \
+                            and not element.is_a('IfcSpace') \
+                            and 'blender_obj' in self.spatial_structure_elements[global_id]:
+                        bpy.data.objects.remove(self.spatial_structure_elements[global_id]['blender_obj'])
                     collection = self.spatial_structure_elements[global_id]['blender']
                 # This may occur if we are nesting an IfcSpace (which is special
                 # since it does not have a collection within an IfcSpace
