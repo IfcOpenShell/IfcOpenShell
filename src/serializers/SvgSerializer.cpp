@@ -946,7 +946,7 @@ void SvgSerializer::finalize() {
 			if (it->first.first) {
 				svg_file << "    <g " << nameElement(it->first.first) << ">\n";
 			} else {
-				svg_file << "    <g id=\"" << it->first.second << "\" class=\"section\">\n";
+				svg_file << "    <g data-name=\"" << it->first.second << "\" class=\"section\">\n";
 			}
 		}
 		svg_file << "        <g " << it->second.first << ">\n";
