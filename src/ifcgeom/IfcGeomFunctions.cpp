@@ -2712,7 +2712,7 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 		
 		double layer_offset = 0;
 
-		const double total_thickness = std::accumulate(thicknesses.begin(), thicknesses.end(), 0);
+		const double total_thickness = std::accumulate(thicknesses.begin(), thicknesses.end(), 0.);
 		
 		std::vector<double>::const_iterator thickness = thicknesses.begin();
 		result_t::iterator result_vector = result.begin() + 1;
