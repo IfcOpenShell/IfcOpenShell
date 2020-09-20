@@ -343,6 +343,7 @@ int main(int argc, char** argv) {
     short precision;
 	double section_height;
 	std::string svg_scale;
+	std::string section_ref, elevation_ref;
 
     po::options_description serializer_options("Serialization options");
     serializer_options.add_options()
@@ -357,6 +358,10 @@ int main(int argc, char** argv) {
 		("scale", po::value<std::string>(&svg_scale),
 			"Interprets SVG bounds in mm, centers layout and draw elements to scale. "
 			"Only used when converting to SVG. Example 1:100.")
+		("section-ref", po::value<std::string>(&section_ref),
+			"Element at which vertical cross sections should be created")
+		("elevation-ref", po::value<std::string>(&elevation_ref),
+			"Element at which vertical elevations should be created")
 		("door-arcs", "Draw door openings arcs for IfcDoor elements")
 		("section-height", po::value<double>(&section_height),
 		    "Specifies the cut section height for SVG 2D geometry.")
@@ -907,6 +912,12 @@ int main(int argc, char** argv) {
 				print_options(serializer_options);
 				return EXIT_FAILURE;
 			}
+		}
+		if (vmap.count("section-ref")) {
+			static_cast<SvgSerializer*>(serializer.get())->setSectionRef(section_ref);
+		}
+		if (vmap.count("elevation-ref")) {
+			static_cast<SvgSerializer*>(serializer.get())->setElevationRef(elevation_ref);
 		}
 	}
 
