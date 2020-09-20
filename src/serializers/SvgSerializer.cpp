@@ -428,7 +428,7 @@ void SvgSerializer::write(const geometry_data& data) {
 
 	TopoDS_Wire annotation;
 
-	if (draw_door_arcs_ && data.product->declaration().is("IfcDoor")) {	
+	if (is_floor_plan_ && draw_door_arcs_ && data.product->declaration().is("IfcDoor")) {
 
 		boost::optional<std::string> operation_type;
 
@@ -886,6 +886,10 @@ void SvgSerializer::finalize() {
 	resize();
 
 	if (deferred_section_data_ && deferred_section_data_->size() && element_buffer_.size()) {
+
+		// Draw door arcs only on floor plans.
+		is_floor_plan_ = false;
+
 		for (auto& sd : *deferred_section_data_) {
 			bool use_hlr = false;
 			std::string drawing_name;
