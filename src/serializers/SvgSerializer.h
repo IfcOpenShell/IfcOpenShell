@@ -116,7 +116,11 @@ protected:
 	boost::optional<std::vector<section_data>> section_data_;
 	boost::optional<std::vector<section_data>> deferred_section_data_;
 	boost::optional<double> scale_, calculated_scale_;
-	bool rescale, print_space_names_, print_space_areas_, draw_door_arcs_, with_section_heights_from_storey_, buffer_elements_;
+
+	bool rescale, print_space_names_, print_space_areas_, draw_door_arcs_;
+	bool with_section_heights_from_storey_, buffer_elements_;
+	bool is_floor_plan_;
+
 	std::multimap<drawing_key, path_object, storey_sorter> paths;
 
 	float_item_list xcoords, ycoords, radii;
@@ -142,6 +146,7 @@ public:
 		, print_space_areas_(false)
 		, draw_door_arcs_(false)
 		, buffer_elements_(false)
+		, is_floor_plan_(true)
 		, file(0)
 		, storey_(0)
 		, xcoords_begin(0)
