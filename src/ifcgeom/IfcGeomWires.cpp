@@ -591,7 +591,13 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 		} else {
 			BRepBuilderAPI_MakeEdge me (curve,flts[0],flts[1]);
 			e = me.Edge();
-		}			
+			TopoDS_Vertex v0, v1;
+			TopExp::Vertices(e, v0, v1);
+			if (v0.IsSame(v1)) {
+				Logger::Warning("Skipping degenerate linear segment", l);
+				return false;
+			}
+		}
 	} else if ( trim_cartesian_failed && (has_pnts[0] && has_pnts[1]) ) {
 		e = BRepBuilderAPI_MakeEdge(pnts[0], pnts[1]).Edge();
 	}
