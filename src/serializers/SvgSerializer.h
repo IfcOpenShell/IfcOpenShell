@@ -39,7 +39,7 @@ typedef std::pair<IfcUtil::IfcBaseEntity*, std::string> drawing_key;
 struct storey_sorter {
 	bool operator()(const drawing_key& ad, const drawing_key& bd) const {
 		if (ad.first == nullptr && bd.first != nullptr) {
-			return true;
+			return false;
 		} else if (bd.first == nullptr && ad.first != nullptr) {
 			return true;
 		} else if (ad.first == nullptr && bd.first == nullptr) {
