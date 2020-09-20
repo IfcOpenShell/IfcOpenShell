@@ -672,7 +672,11 @@ void SvgSerializer::write(const geometry_data& data) {
 			emitted = true;
 
 			if (po == nullptr) {
-				po = &start_path(storey, data.svg_name);
+				if (storey) {
+					po = &start_path(storey, data.svg_name);
+				} else {
+					po = &start_path(drawing_name, data.svg_name);
+				}
 			}
 
 			// Create a horizontal cross section 1 meter above the bottom point of the shape		
