@@ -2849,6 +2849,13 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 
 namespace {
 
+	void subshapes(const TopoDS_Shape& in, std::list<TopoDS_Shape>& out) {
+		TopoDS_Iterator sit(in);
+		for (; sit.More(); sit.Next()) {
+			out.push_back(sit.Value());
+		}
+	}
+
 #if OCC_VERSION_HEX >= 0x70200
 	bool split(IfcGeom::Kernel&, const TopoDS_Shape& input, const TopTools_ListOfShape& operands, double eps, std::vector<TopoDS_Shape>& slices) {
 		if (operands.Extent() < 2) {
@@ -2880,18 +2887,19 @@ namespace {
 				}
 			}
 
-			// Count subshapes
-			size_t n = 0;
-			TopoDS_Iterator sit(split.Shape());
-			for (; sit.More(); sit.Next()) {
-				++n;
+			auto result_shape = split.Shape();
+			std::list<TopoDS_Shape> subs;
+			subshapes(result_shape, subs);
+			if (subs.size() == 1 && operands.Size() - 2 > subs.size() && (subs.front().ShapeType() == TopAbs_COMPSOLID || subs.front().ShapeType() == TopAbs_COMPOUND)) {
+				auto s = subs.front();
+				subs.clear();
+				subshapes(s, subs);
 			}
 
 			// Initialize storage
-			slices.resize(n);
+			slices.resize(subs.size());
 
-			sit.Initialize(split.Shape());
-			for (; sit.More(); sit.Next()) {
+			for (auto& s : subs) {
 
 				// Iterate over the faces of solid to find correspondence to original
 				// splitting surfaces. For the outmost slices, there will be a single
@@ -2900,7 +2908,7 @@ namespace {
 				// slices, two surface indices should be find that should be next to
 				// each other in the array of input surfaces.
 
-				TopExp_Explorer exp(sit.Value(), TopAbs_FACE);
+				TopExp_Explorer exp(s, TopAbs_FACE);
 				int min = std::numeric_limits<int>::max();
 				int max = std::numeric_limits<int>::min();
 				for (; exp.More(); exp.Next()) {
@@ -2928,7 +2936,7 @@ namespace {
 
 				if (idx < (int) slices.size()) {
 					if (slices[idx].IsNull()) {
-						slices[idx] = sit.Value();
+						slices[idx] = s;
 						continue;
 					}
 				}
