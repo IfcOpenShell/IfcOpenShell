@@ -65,6 +65,8 @@
 #include <BRepBndLib.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 
+#include <ShapeFix_Edge.hxx>
+
 #include "../ifcparse/IfcGlobalId.h"
 
 #include "SvgSerializer.h"
@@ -356,7 +358,12 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 	const bool is_elevation = (elevation_ref_ && object_type && *elevation_ref_ == *object_type);
 
 	if (is_section || is_elevation) {
-		auto e = edge_from_compound(compound_local);
+		BRepBuilderAPI_Transform make_transform_global(compound_local, trsf, true);
+		make_transform_global.Build();
+		// (When determinant < 0, copy is implied and the input is not mutated.)
+		auto compound_unmirrored = make_transform_global.Shape();
+
+		auto e = edge_from_compound(compound_unmirrored);
 		if (e) {
 			TopoDS_Edge global_edge = TopoDS::Edge(e->Moved(trsf));
 			double u0, u1;
@@ -366,7 +373,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 				gp_Vec V;
 				crv->D1((u0 + u1) / 2., P, V);
 				auto N = gp::DZ().Crossed(V);
-				gp_Pln pln(gp_Ax3(P, N, V));
+				gp_Pln pln(gp_Ax3(P, N, -V));
 				if (!deferred_section_data_) {
 					deferred_section_data_.emplace();
 				}
@@ -552,11 +559,13 @@ void SvgSerializer::write(const geometry_data& data) {
 			use_hlr = section.with_projection;
 		}
 
+		auto& compound_to_use = is_floor_plan_ ? compound : compound_unmirrored;
+
 		if (use_hlr && hlr) {
-			hlr->Add(compound_unmirrored);
+			hlr->Add(compound_to_use);
 		}
 
-		TopoDS_Iterator it(compound);
+		TopoDS_Iterator it(compound_to_use);
 
 		TopoDS_Face largest_closed_wire_face;
 		double largest_closed_wire_area = 0.;
@@ -693,6 +702,12 @@ void SvgSerializer::write(const geometry_data& data) {
 				gp_Trsf trsf;
 				trsf.SetTransformation(gp::XOY(), pln.Position());
 				result.Move(trsf);
+
+				gp_Trsf trsf_mirror;
+				trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
+				BRepBuilderAPI_Transform make_transform_mirror(result, trsf_mirror, true);
+				make_transform_mirror.Build();
+				result = make_transform_mirror.Shape();
 			}
 
 			Handle(TopTools_HSequenceOfShape) edges = new TopTools_HSequenceOfShape();
@@ -922,8 +937,26 @@ void SvgSerializer::finalize() {
 				hlr->Hide();
 
 				HLRBRep_HLRToShape hlr_shapes(hlr);
-				auto compound = hlr_shapes.VCompound();
-				TopExp_Explorer exp(compound, TopAbs_EDGE);
+				auto hlr_compound_unmirrored = hlr_shapes.VCompound();
+
+				// Compound 3D curves for mirroring to work
+				ShapeFix_Edge sfe;
+				TopExp_Explorer exp(hlr_compound_unmirrored, TopAbs_EDGE);
+				for (; exp.More(); exp.Next()) {
+					sfe.FixAddCurve3d(TopoDS::Edge(exp.Current()));
+				}
+
+				// Mirror to match SVG coord system.
+				// @todo this is very wasteful. We better do the Y-mirror in the SVG writing and
+				// not on the TopoDS_Shape input.
+
+				gp_Trsf trsf_mirror;
+				trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
+				BRepBuilderAPI_Transform make_transform_mirror(hlr_compound_unmirrored, trsf_mirror, true);
+				make_transform_mirror.Build();
+				auto hlr_compound = make_transform_mirror.Shape();
+
+				exp.Init(hlr_compound, TopAbs_EDGE);
 				BRep_Builder B;
 				auto& po = start_path(drawing_name, "class=\"projection\"");
 				for (; exp.More(); exp.Next()) {
