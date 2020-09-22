@@ -29,6 +29,7 @@
 
 #include <HLRBRep_Algo.hxx>
 #include <HLRBRep_HLRToShape.hxx>
+#include <gp_Pln.hxx>
 
 #include <sstream>
 #include <string>
