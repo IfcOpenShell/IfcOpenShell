@@ -373,7 +373,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 				gp_Vec V;
 				crv->D1((u0 + u1) / 2., P, V);
 				auto N = V.Crossed(gp::DZ());
-				gp_Pln pln(gp_Ax3(P, N, -V));
+				gp_Pln pln(gp_Ax3(P, N, V));
 				if (!deferred_section_data_) {
 					deferred_section_data_.emplace();
 				}
@@ -703,13 +703,11 @@ void SvgSerializer::write(const geometry_data& data) {
 				trsf.SetTransformation(gp::XOY(), pln.Position());
 				result.Move(trsf);
 
-				/*
 				gp_Trsf trsf_mirror;
 				trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
 				BRepBuilderAPI_Transform make_transform_mirror(result, trsf_mirror, true);
 				make_transform_mirror.Build();
 				result = make_transform_mirror.Shape();
-				*/
 			}
 
 			Handle(TopTools_HSequenceOfShape) edges = new TopTools_HSequenceOfShape();
@@ -941,8 +939,7 @@ void SvgSerializer::finalize() {
 				HLRBRep_HLRToShape hlr_shapes(hlr);
 				auto hlr_compound_unmirrored = hlr_shapes.VCompound();
 
-				/*
-				// Compute 3D curves for mirroring to work
+				// Compound 3D curves for mirroring to work
 				ShapeFix_Edge sfe;
 				TopExp_Explorer exp(hlr_compound_unmirrored, TopAbs_EDGE);
 				for (; exp.More(); exp.Next()) {
@@ -958,9 +955,8 @@ void SvgSerializer::finalize() {
 				BRepBuilderAPI_Transform make_transform_mirror(hlr_compound_unmirrored, trsf_mirror, true);
 				make_transform_mirror.Build();
 				auto hlr_compound = make_transform_mirror.Shape();
-				*/
 
-				TopExp_Explorer exp(hlr_compound_unmirrored, TopAbs_EDGE);
+				exp.Init(hlr_compound, TopAbs_EDGE);
 				BRep_Builder B;
 				auto& po = start_path(drawing_name, "class=\"projection\"");
 				for (; exp.More(); exp.Next()) {
