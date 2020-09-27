@@ -197,7 +197,7 @@ int main(int argc, char** argv) {
 	typedef char char_t;
 #endif
 
-	double deflection_tolerance, angular_tolerance;
+	double deflection_tolerance, angular_tolerance, force_space_transparency;
 	inclusion_filter include_filter;
 	inclusion_traverse_filter include_traverse_filter;
 	exclusion_filter exclude_filter;
@@ -326,6 +326,8 @@ int main(int argc, char** argv) {
 			"model in other modelling application in any case.")
 		("deflection-tolerance", po::value<double>(&deflection_tolerance)->default_value(1e-3),
 			"Sets the deflection tolerance of the mesher, 1e-3 by default if not specified.")
+		("force-space-transparency", po::value<double>(&force_space_transparency),
+			"Overrides transparency of spaces in geometry output.")
 		("angular-tolerance", po::value<double>(&angular_tolerance)->default_value(0.5),
 			"Sets the angular tolerance of the mesher in radians 0.5 by default if not specified.")
 		("generate-uvs",
@@ -717,6 +719,10 @@ int main(int argc, char** argv) {
     settings.set_deflection_tolerance(deflection_tolerance);
 	settings.set_angular_tolerance(angular_tolerance);
 	settings.precision = precision;
+
+	if (vmap.count("force-space-transparency")) {
+		settings.force_space_transparency(force_space_transparency);
+	}
 
 	boost::shared_ptr<GeometrySerializer> serializer; /**< @todo use std::unique_ptr when possible */
 	if (output_extension == OBJ) {
