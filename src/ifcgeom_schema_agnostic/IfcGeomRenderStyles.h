@@ -96,7 +96,10 @@ namespace IfcGeom {
 		boost::optional<double>& Specularity() { return specularity; }
 	};
 
-  IFC_GEOM_API const SurfaceStyle* get_default_style(const std::string& ifc_type);
+	IFC_GEOM_API const SurfaceStyle* get_default_style(const std::string& ifc_type);
+
+	IFC_GEOM_API SurfaceStyle& update_default_style(const std::string& ifc_type);
+
 	IFC_GEOM_API void set_default_style_file(const std::string& json_file);
 }
 
