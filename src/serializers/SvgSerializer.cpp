@@ -1045,9 +1045,13 @@ void SvgSerializer::writeHeader() {
 		"        }\n";
 	
 	if (scale_) {
+		// previously:
+		//       (pt)  (px)  (in)  (mm)
+		// approx 12 / 0.75 / 96 * 25.4
+
 		svg_file <<
-		"        text {\n"           //       (pt)  (px)  (in)  (mm)
-		"            font-size: 4;\n" // approx 12 / 0.75 / 96 * 25.4
+		"        text {\n"
+		"            font-size: 2;\n" //  (reduced to two).
 		"        }\n"
 		"        path {\n"
 		"            stroke-width: 0.3;\n"
