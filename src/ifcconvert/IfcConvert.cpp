@@ -344,7 +344,7 @@ int main(int argc, char** argv) {
 #endif
     short precision;
 	double section_height;
-	std::string svg_scale;
+	std::string svg_scale, svg_center;
 	std::string section_ref, elevation_ref;
 
     po::options_description serializer_options("Serialization options");
@@ -360,6 +360,9 @@ int main(int argc, char** argv) {
 		("scale", po::value<std::string>(&svg_scale),
 			"Interprets SVG bounds in mm, centers layout and draw elements to scale. "
 			"Only used when converting to SVG. Example 1:100.")
+		("center", po::value<std::string>(&svg_center),
+			"When using --scale, specifies the location in the range [0 1]x[0 1] around which"
+			"to center the drawings. Example 0.5x0.5 (default).")
 		("section-ref", po::value<std::string>(&section_ref),
 			"Element at which vertical cross sections should be created")
 		("elevation-ref", po::value<std::string>(&elevation_ref),
@@ -526,8 +529,8 @@ int main(int argc, char** argv) {
         }
     }
 
-	boost::optional<double> bounding_width;
-	boost::optional<double> bounding_height;
+	boost::optional<double> bounding_width, bounding_height, relative_center_x, relative_center_y;
+
 	if (vmap.count("bounds") == 1) {
 		int w, h;
 		if (sscanf(bounds.c_str(), "%ux%u", &w, &h) == 2 && w > 0 && h > 0) {
@@ -536,6 +539,18 @@ int main(int argc, char** argv) {
 		} else {
 			cerr_ << "[Error] Invalid use of --bounds" << std::endl;
             print_options(serializer_options);
+			return EXIT_FAILURE;
+		}
+	}
+
+	if (vmap.count("center") == 1) {
+		double cx, cy;
+		if (sscanf(svg_center.c_str(), "%lfx%lf", &cx, &cy) == 2 && cx >= 0. && cy >= 0. && cx <= 1. && cy <= 1.) {
+			relative_center_x = cx;
+			relative_center_y = cy;
+		} else {
+			cerr_ << "[Error] Invalid use of --bounds" << std::endl;
+			print_options(serializer_options);
 			return EXIT_FAILURE;
 		}
 	}
@@ -924,6 +939,9 @@ int main(int argc, char** argv) {
 		}
 		if (vmap.count("elevation-ref")) {
 			static_cast<SvgSerializer*>(serializer.get())->setElevationRef(elevation_ref);
+		}
+		if (relative_center_x && relative_center_y) {
+			static_cast<SvgSerializer*>(serializer.get())->setDrawingCenter(*relative_center_x, *relative_center_y);
 		}
 	}
 

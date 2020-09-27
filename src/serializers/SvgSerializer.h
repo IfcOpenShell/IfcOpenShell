@@ -116,7 +116,7 @@ protected:
 	double xmin, ymin, xmax, ymax, width, height;
 	boost::optional<std::vector<section_data>> section_data_;
 	boost::optional<std::vector<section_data>> deferred_section_data_;
-	boost::optional<double> scale_, calculated_scale_;
+	boost::optional<double> scale_, calculated_scale_, center_x_, center_y_;
 
 	bool rescale, print_space_names_, print_space_areas_, draw_door_arcs_;
 	bool with_section_heights_from_storey_, buffer_elements_;
@@ -186,6 +186,9 @@ public:
 		buffer_elements_ = true;
 	}
 	void setScale(double s) { scale_ = s; }
+	void setDrawingCenter(double x, double y) {
+		center_x_ = x; center_y_ = y;
+	}
     std::string nameElement(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element<real_t>* elem);
 	std::string nameElement(const IfcUtil::IfcBaseEntity* elem);
 	std::string idElement(const IfcUtil::IfcBaseEntity* elem);

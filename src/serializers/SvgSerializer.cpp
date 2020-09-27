@@ -863,8 +863,8 @@ void SvgSerializer::resize() {
 		double sc, cx, cy;
 		if (scale_) {
 			sc = (*scale_) * 1000;
-			cx = (xmax + xmin) / 2. * sc - width / 2.;
-			cy = (ymax + ymin) / 2. * sc - height / 2.;
+			cx = (xmax + xmin) / 2. * sc - width * center_x_.get_value_or(0.5);
+			cy = (ymax + ymin) / 2. * sc - height * center_y_.get_value_or(0.5);
 		} else {
 			if (calculated_scale_) {
 				sc = *calculated_scale_;
