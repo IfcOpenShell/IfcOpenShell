@@ -737,6 +737,7 @@ int main(int argc, char** argv) {
 
 	if (vmap.count("force-space-transparency")) {
 		settings.force_space_transparency(force_space_transparency);
+		IfcGeom::update_default_style("IfcSpace").Transparency().reset(force_space_transparency);
 	}
 
 	boost::shared_ptr<GeometrySerializer> serializer; /**< @todo use std::unique_ptr when possible */
