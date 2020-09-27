@@ -130,7 +130,7 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
                     double r = circle->Radius();
                     gp_Circ c = circle->Circ();
                     gp_Pnt center = c.Location();
-                    path.add("            <circle style=\"stroke:black; fill:none;\" r=\"");
+                    path.add("            <circle r=\"");
                     radii.push_back(path.add(r));
                     path.add("\" cx=\"");
                     xcoords.push_back(path.add(center.X()));
@@ -148,7 +148,7 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
                     gp_Pnt center = e.Location();
 
                     // Write the ellipse with major radius along X axis:
-                    path.add("            <ellipse style=\"stroke:black; fill:none;\" rx=\"");
+                    path.add("            <ellipse rx=\"");
                     radii.push_back(path.add(e.MajorRadius()));
                     path.add("\" ry=\"");
                     radii.push_back(path.add(e.MinorRadius()));
@@ -195,7 +195,7 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
 		}
 				
 		if (first) {
-            path.add("            <path style=\"stroke:black; fill:none;\" d=\"");
+            path.add("            <path d=\"");
 			path.add("M");
 			addXCoordinate(path.add(p1.X()));
 			path.add(",");
@@ -1029,6 +1029,16 @@ void SvgSerializer::writeHeader() {
 		"    </defs>\n"
 		"    <style type=\"text/css\" >\n"
 		"    <![CDATA[\n"
+		"        path {\n"
+		"            stroke: #222222;\n"
+		"            fill: #444444;\n"
+		"        }\n"
+		"        .IfcDoor path {\n"
+		"            fill: none;\n"
+		"        }\n"
+		"        .IfcSpace path {\n"
+		"            fill-opacity: .2;\n"
+		"        }\n"
 		"        .IfcAnnotation path {\n"
 		"            marker-end: url(#arrowend);\n"
 		"            marker-start: url(#arrowstart);\n"
@@ -1037,7 +1047,10 @@ void SvgSerializer::writeHeader() {
 	if (scale_) {
 		svg_file <<
 		"        text {\n"           //       (pt)  (px)  (in)  (mm)
-		"        	font-size: 4;\n" // approx 12 / 0.75 / 96 * 25.4
+		"            font-size: 4;\n" // approx 12 / 0.75 / 96 * 25.4
+		"        }\n"
+		"        path {\n"
+		"            stroke-width: 0.3;\n"
 		"        }\n";
 	}
 
