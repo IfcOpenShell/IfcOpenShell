@@ -1854,6 +1854,18 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and
 		representation_id_builder << "-material-" << single_material->data().id();
 	}
 
+	if (settings.force_space_transparency() >= 0. && product->declaration().is("IfcSpace")) {
+		for (auto& s : shapes) {
+			if (s.hasStyle()) {
+				for (auto& p : style_cache) {
+					if (&p.second == &s.Style()) {
+						p.second.Transparency() = settings.force_space_transparency();
+					}
+				}
+			}
+		}
+	}
+
 	int parent_id = -1;
 	try {
 		IfcUtil::IfcBaseEntity* parent_object = get_decomposing_entity(product);
