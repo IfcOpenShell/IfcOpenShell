@@ -1175,33 +1175,49 @@ bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result* br, std::
 		return false;
 	}
 
+	typedef std::pair<Eigen::Matrix4d*, taxonomy::extrusion*> extrusion_pair;
+	// @todo delete extrusion_pair.first
+
 	auto& ops = br->children;
 
-	std::vector<taxonomy::extrusion*> extrusions;
+	std::vector<extrusion_pair> extrusions;
 	std::transform(ops.begin(), ops.end(), std::back_inserter(extrusions), [](taxonomy::item* op) {
-		static taxonomy::extrusion* nptr = nullptr;
+		static std::pair<Eigen::Matrix4d*, taxonomy::extrusion*> nptr = { nullptr, nullptr };
+		Eigen::Matrix4d* m4 = nullptr;
 		if (op->kind() == taxonomy::EXTRUSION) {
-			return (taxonomy::extrusion*) op;
+			return std::make_pair(m4, (taxonomy::extrusion*) op);
 		}
 		if (op->kind() != taxonomy::COLLECTION) return nptr;
 		auto cl = (taxonomy::collection*) op;
 		if ((cl)->children.size() != 1) return nptr;
+		m4 = new Eigen::Matrix4d(*cl->matrix.components);
 		if (cl->children[0]->kind() == taxonomy::COLLECTION) {
 			cl = (taxonomy::collection*) cl->children[0];
-			if ((cl)->children.size() != 1) return nptr;
+			if ((cl)->children.size() != 1) {
+				delete m4;
+				return nptr;
+			}
+			(*m4) = (*m4) * *cl->matrix.components;
 		}
-		if (cl->children[0]->kind() != taxonomy::EXTRUSION) return nptr;
+		if (cl->children[0]->kind() != taxonomy::EXTRUSION) {
+			delete m4;
+			return nptr;
+		}
 		auto ex = (taxonomy::extrusion*) cl->children[0];
-		return ex;
+		return std::make_pair(m4, ex);
 	});
 
-	if (std::find(extrusions.begin(), extrusions.end(), nullptr) != extrusions.end()) {
+	if (std::find_if(extrusions.begin(), extrusions.end(), [](extrusion_pair& p) {
+		return p.second == nullptr;
+	}) != extrusions.end()) {
 		return false;
 	}
 
 	// op[i].matrix[2,0:3] = <0 0 1>
 	Eigen::Vector3d Z(0., 0., 1.);
-	if (std::find_if(extrusions.begin(), extrusions.end(), [&Z](taxonomy::extrusion* ex) {
+	if (std::find_if(extrusions.begin(), extrusions.end(), [&Z](extrusion_pair& p) {
+		// @todo factor in p.first;
+		auto ex = p.second;
 		auto& m = *ex->matrix.components;
 		return std::abs(1. - std::abs(m.col(2).head<3>().dot(Z))) > 1.e-5;
 	}) != extrusions.end()) {
@@ -1209,7 +1225,8 @@ bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result* br, std::
 	}
 
 	// | op[i].matrix[2,0:3] . op[i].direction | = 1
-	if (std::find_if(extrusions.begin(), extrusions.end(), [](taxonomy::extrusion* ex) {
+	if (std::find_if(extrusions.begin(), extrusions.end(), [](extrusion_pair& p) {
+		auto ex = p.second;
 		auto& d = *ex->direction.components;
 		auto& m = *ex->matrix.components;
 		return std::abs(1. - std::abs(m.col(2).head<3>().dot(d))) > 1.e-5;
@@ -1218,15 +1235,17 @@ bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result* br, std::
 	}
 
 	// op[0].depth <= op[i..n].depth
-	const auto& op_0_depth = extrusions[0]->depth;
-	if (std::find_if(extrusions.begin() + 1, extrusions.end(), [&op_0_depth](taxonomy::extrusion* ex) {
+	const auto& op_0_depth = extrusions[0].second->depth;
+	if (std::find_if(extrusions.begin() + 1, extrusions.end(), [&op_0_depth](extrusion_pair& p) {
+		auto ex = p.second;
 		return op_0_depth > ex->depth;
 	}) != extrusions.end()) {
 		return false;
 	}
 
-	const auto& op_0_matrix_2_3 = (*extrusions[0]->matrix.components)(2, 3);
-	if (std::find_if(extrusions.begin() + 1, extrusions.end(), [&op_0_matrix_2_3](taxonomy::extrusion* ex) {
+	const auto& op_0_matrix_2_3 = (*extrusions[0].second->matrix.components)(2, 3);
+	if (std::find_if(extrusions.begin() + 1, extrusions.end(), [&op_0_matrix_2_3](extrusion_pair& p) {
+		auto ex = p.second;
 		return op_0_matrix_2_3 < (*ex->matrix.components)(2, 3);
 	}) != extrusions.end()) {
 		return false;
@@ -1234,12 +1253,18 @@ bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result* br, std::
 
 	std::vector<cgal_wire_t> wires;
 	try {
-		std::transform(extrusions.begin(), extrusions.end(), std::back_inserter(wires), [this](taxonomy::extrusion* ex) {
+		std::transform(extrusions.begin(), extrusions.end(), std::back_inserter(wires), [this](extrusion_pair& p) {
+			auto ex = p.second;
 			if (ex->basis.children.size() == 1 && ex->basis.children[0]->kind() == taxonomy::LOOP) {
 				auto l = (taxonomy::loop*) ex->basis.children[0];
 				cgal_wire_t w;
 				cgal_placement_t trsf;
 				convert_placement(ex->matrix, trsf);
+
+				cgal_placement_t trsf2;
+				if (p.first) {
+					convert_placement(*p.first, trsf2);
+				}
 
 				/*
 				std::array<std::array<double, 4>, 4> mat;
@@ -1251,8 +1276,12 @@ bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result* br, std::
 				*/
 
 				if (convert(l, w)) {
-					for (auto& p : w) {
-						p = p.transform(trsf);
+					for (auto& pt : w) {
+						// @todo figure out order.
+						pt = pt.transform(trsf);
+						if (p.first) {
+							pt = pt.transform(trsf2);
+						}
 					}
 					return w;
 				}
@@ -1266,12 +1295,12 @@ bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result* br, std::
 	loops.clear();
 	std::transform(wires.begin(), wires.end(), std::back_inserter(loops), wire_to_polygon_2);
 
-	auto& op_0_matrix = *extrusions[0]->matrix.components;
+	auto& op_0_matrix = *extrusions[0].second->matrix.components;
 	Eigen::Vector4d op_0_dir;
-	op_0_dir << (*extrusions[0]->direction.components), 0;
+	op_0_dir << (*extrusions[0].second->direction.components), 0;
 	op_0_dir = op_0_matrix * op_0_dir;
 	z0 = op_0_matrix_2_3;
-	z1 = z0 + extrusions[0]->depth * op_0_dir(2);
+	z1 = z0 + extrusions[0].second->depth * op_0_dir(2);
 
 	if (z1 < z0) {
 		std::swap(z0, z1);
