@@ -1444,7 +1444,22 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 	std::list<CGAL::Polygon_2<Kernel_>> loops;
 
 	if (process_as_2d_polygon(br, loops, z0, z1)) {
-		auto first_item_style = ((taxonomy::geom_item*)br->children[0])->surface_style;
+		taxonomy::style first_item_style;
+		{
+			auto gi = dynamic_cast<const taxonomy::geom_item*>(br->children[0]);
+			while (gi) {
+				if (gi->surface_style.diffuse) {
+					first_item_style = gi->surface_style;
+					break;
+				}
+				auto ci = dynamic_cast<const taxonomy::collection*>(gi);
+				if (ci && ci->children.size() == 1) {
+					gi = dynamic_cast<const taxonomy::geom_item*>(ci->children[0]);
+				} else {
+					break;
+				}
+			}
+		}
 
 		std::list<CGAL::Polygon_with_holes_2<Kernel_>> pwhs;
 
