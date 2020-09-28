@@ -1601,10 +1601,9 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 						auto z = CGAL::to_double(vertex->point().z());
 						std::wcout << x << " " << y << " " << z << std::endl;
 					}
-				}
-
-				operands.back().second.push_back(entity_shape);
+				}				
 			}
+			operands.back().second.push_back(entity_shape);
 		}
 
 		first = false;
