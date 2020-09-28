@@ -1938,17 +1938,11 @@ class IfcImporter():
         mesh.BIMMeshProperties.geometry_type = str(self.get_geometry_type(element))
         if not self.ifc_import_settings.should_roundtrip_native:
             return
-        dummy = ifcopenshell.file(schema=self.file.schema)
         if element.is_a('IfcRepresentation'):
             representation = element
         else:
             representation = self.get_representation_of_context(element.Representation.Representations, shape.context)
-        mesh.BIMMeshProperties.ifc_definition_id = int(dummy.add(representation).id())
-        for child in self.file.traverse(representation):
-            [dummy.add(inverse) for inverse in self.file.get_inverse(child)]
-            dummy.add(child)
-        mesh.BIMMeshProperties.ifc_definition = dummy.to_string()
-
+        mesh.BIMMeshProperties.ifc_definition_id = int(representation.id())
 
     def create_curve(self, geometry):
         curve = bpy.data.curves.new(geometry.id, type='CURVE')
