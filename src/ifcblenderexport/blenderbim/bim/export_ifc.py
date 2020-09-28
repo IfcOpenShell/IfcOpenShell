@@ -8,8 +8,9 @@ import zipfile
 import tempfile
 from pathlib import Path
 from mathutils import Vector, Matrix
-from .helper import SIUnitHelper
+from .helper import SIUnitHelper, get_representation_elements
 from . import schema
+from . import ifc
 import ifcopenshell
 import addon_utils
 
@@ -1027,7 +1028,7 @@ class IfcParser():
             obj.data, obj, 'Model', 'Body', 'MODEL_VIEW')
         if 'Model/Box/MODEL_VIEW' in self.generated_subcontexts:
             if self.ifc_export_settings.should_roundtrip_native \
-                    and obj.data.BIMMeshProperties.ifc_definition:
+                    and obj.data.BIMMeshProperties.ifc_definition_id:
                 return
             self.representations['Model/Box/MODEL_VIEW/{}'.format(obj.data.name)] = self.get_representation(
                 obj.data, obj, 'Model', 'Box', 'MODEL_VIEW')
@@ -1068,7 +1069,7 @@ class IfcParser():
             if 'Model/Box/MODEL_VIEW' in self.generated_subcontexts \
                     and context_prefix == 'Model/Body/MODEL_VIEW':
                 if self.ifc_export_settings.should_roundtrip_native \
-                        and obj.data.BIMMeshProperties.ifc_definition:
+                        and obj.data.BIMMeshProperties.ifc_definition_id:
                     pass
                 else:
                     self.representations['Model/Box/MODEL_VIEW/{}'.format(mesh_name.split('/')[3])] = self.get_representation(
@@ -1101,6 +1102,7 @@ class IfcParser():
             'context': context,
             'subcontext': subcontext,
             'target_view': target_view,
+            'has_ifc_definition': False if not hasattr(mesh, 'BIMMeshProperties') else (mesh.BIMMeshProperties.ifc_definition or mesh.BIMMeshProperties.ifc_definition_id),
             'ifc_definition': mesh.BIMMeshProperties.ifc_definition if hasattr(mesh, 'BIMMeshProperties') else None,
             'ifc_definition_id': mesh.BIMMeshProperties.ifc_definition_id if hasattr(mesh, 'BIMMeshProperties') else None,
             'is_parametric': mesh.BIMMeshProperties.is_parametric if hasattr(mesh, 'BIMMeshProperties') else False,
@@ -1172,7 +1174,9 @@ class IfcParser():
         parsed_data_names = []
         for product in self.selected_products + self.type_products:
             obj = product['raw']
-            if obj.data is None or obj.data.name in parsed_data_names:
+            if obj.data is None \
+                    or obj.data.name in parsed_data_names \
+                    or obj.data.BIMMeshProperties.ifc_definition_id:
                 continue
             parsed_data_names.append(obj.data.name)
             for slot in obj.material_slots:
@@ -2180,7 +2184,7 @@ class IfcExporter():
         results = []
         for representation_name in product['representations']:
             representation = self.ifc_parser.representations[representation_name]
-            if self.ifc_export_settings.should_roundtrip_native and representation['ifc_definition']:
+            if self.ifc_export_settings.should_roundtrip_native and representation['has_ifc_definition']:
                 results.append(representation['ifc'])
             else:
                 results.append(self.get_product_mapped_geometry(product, representation))
@@ -2233,7 +2237,7 @@ class IfcExporter():
             self.file.createIfcDirection((forward.x, forward.y, forward.z)))
 
     def create_representation(self, representation):
-        if self.ifc_export_settings.should_roundtrip_native and representation['ifc_definition']:
+        if self.ifc_export_settings.should_roundtrip_native and representation['has_ifc_definition']:
             return self.create_representation_from_definition(representation)
         self.ifc_vertices = []
         self.ifc_edges = []
@@ -2245,28 +2249,32 @@ class IfcExporter():
             return self.create_variable_representation(representation)
 
     def create_representation_from_definition(self, representation):
-        # See bug #999 on why we don't garbage collect the temporary IFC file
-        representation['ifc_definition_file'] = ifcopenshell.file.from_string(representation['ifc_definition'])
-        entry = self.file.add(representation['ifc_definition_file'].by_id(representation['ifc_definition_id']))
-        substitutions = []
-        for element in representation['ifc_definition_file']:
-            added_element = self.file.add(element)
-            if added_element.is_a('IfcGeometricRepresentationContext'):
-                substitutions.append(added_element)
-        for element in substitutions:
-            if element.is_a() == 'IfcGeometricRepresentationContext':
-                new_element = [e for e in
-                        self.file.by_type('IfcGeometricRepresentationContext')
-                        if e.ContextType == element.ContextType][0]
-            elif element.is_a() == 'IfcGeometricRepresentationSubContext':
-                new_element = [e for e in
-                        self.file.by_type('IfcGeometricRepresentationContext')
-                        if e.ContextType == element.ContextType and
-                        e.ContextIdentifier == element.ContextIdentifier][0]
-            for inverse in self.file.get_inverse(element):
-                ifcopenshell.util.element.replace_attribute(inverse, element, new_element)
-            self.file.remove(element)
-        return entry
+        if representation['ifc_definition']:
+            print('Authoring an IFC definition directly is not yet implemented')
+            return
+        elif representation['ifc_definition_id']:
+            entry = self.file.add(ifc.IfcStore.get_file().by_id(representation['ifc_definition_id']))
+            substitutions = []
+            for element in get_representation_elements(
+                    ifc.IfcStore.get_file(), representation['ifc_definition_id']):
+                added_element = self.file.add(element)
+                if added_element.is_a('IfcGeometricRepresentationContext'):
+                    substitutions.append(added_element)
+            for element in substitutions:
+                if element.is_a() == 'IfcGeometricRepresentationContext':
+                    new_element = [e for e in
+                            self.file.by_type('IfcGeometricRepresentationContext')
+                            if e.ContextType == element.ContextType][0]
+                elif element.is_a() == 'IfcGeometricRepresentationSubContext':
+                    new_element = [e for e in
+                            self.file.by_type('IfcGeometricRepresentationContext')
+                            if e.ContextType == element.ContextType and
+                            e.ContextIdentifier == element.ContextIdentifier][0]
+                for inverse in self.file.get_inverse(element):
+                    ifcopenshell.util.element.replace_attribute(inverse, element, new_element)
+                # TODO: Work out how and when to purge this
+                #self.file.remove(element)
+            return entry
 
     def create_model_representation(self, representation):
         if representation['subcontext'] == 'Annotation':
