@@ -1502,7 +1502,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 		if (c->kind() == taxonomy::FACE && c->instance->declaration().is("IfcHalfSpaceSolid") && !first) {
 			auto face = (taxonomy::face*) c;
 
-			if (face->basis == nullptr || !face->basis->kind() == taxonomy::PLANE) {
+			if (face->basis == nullptr || face->basis->kind() != taxonomy::PLANE) {
 				return false;
 			}
 			
