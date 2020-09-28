@@ -1762,6 +1762,8 @@ void PolyhedronBuilder::operator()(CGAL::Polyhedron_3<Kernel_>::HalfedgeDS &hds)
 		}
 	}
 
+	/*
+	// We don't do this ourselves anymore, but defer this to is_polygon_soup_a_polygon_mesh()
 	bool valid_orientation = true;
 	std::set<std::pair<size_t, size_t>> added_edges;
 	for (size_t fi = 0; fi < facet_vertices.size(); ++fi) {
@@ -1778,20 +1780,25 @@ void PolyhedronBuilder::operator()(CGAL::Polyhedron_3<Kernel_>::HalfedgeDS &hds)
 			break;
 		}
 	}
+	*/
 
-	if (!valid_orientation) {
+	// if (!valid_orientation) {
 		from_soup.emplace();
 
-		Logger::Warning("Reoriented polygonal surface");
+		
 
 		// @todo ugh
 		std::vector<Kernel_::Point_3> unique_points_as_vector(unique_points.begin(), unique_points.end());
 
-		CGAL::Polygon_mesh_processing::orient_polygon_soup(unique_points_as_vector, facet_vertices);
+		if (!CGAL::Polygon_mesh_processing::is_polygon_soup_a_polygon_mesh(facet_vertices)) {
+			// @todo seems to return false now, almost always?
+			// Logger::Warning("Reoriented polygonal surface");
+			CGAL::Polygon_mesh_processing::orient_polygon_soup(unique_points_as_vector, facet_vertices);
+		}
 		CGAL::Polygon_mesh_processing::polygon_soup_to_polygon_mesh(unique_points_as_vector, facet_vertices, *from_soup);
 
 		return;
-	}
+	// }
 /*
 	std::vector<size_t> facet_indices_to_delete;
 	std::set<std::pair<size_t, size_t>> added_edges;
@@ -1830,6 +1837,9 @@ void PolyhedronBuilder::operator()(CGAL::Polyhedron_3<Kernel_>::HalfedgeDS &hds)
 	}
 */
 
+	/*
+	// We just always use polygon_soup_to_polygon_mesh() to now.
+	// @todo figure out the downsides of this approach.
 
 	builder.begin_surface(points.size(), facet_vertices.size()); // , 0, CGAL::Polyhedron_incremental_builder_3<CGAL::Polyhedron_3<Kernel_>::HalfedgeDS>::ABSOLUTE_INDEXING);
 
@@ -1849,4 +1859,5 @@ void PolyhedronBuilder::operator()(CGAL::Polyhedron_3<Kernel_>::HalfedgeDS &hds)
 	}
 
 	builder.end_surface();
+	*/
 }
