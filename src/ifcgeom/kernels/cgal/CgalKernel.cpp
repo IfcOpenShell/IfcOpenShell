@@ -164,7 +164,7 @@ bool CgalKernel::convert(const taxonomy::shell* l, cgal_shape_t& shape) {
 	auto faces = l->children_as<taxonomy::face>();
 
 	if (faces.size() > 1000) {
-		static double inf = std::numeric_limits<double>::infinity();
+		static double inf = 1.e9; //  std::numeric_limits<double>::infinity();
 		std::pair<Eigen::Vector3d, Eigen::Vector3d> minmax(
 			Eigen::Vector3d(+inf, +inf, +inf),
 			Eigen::Vector3d(-inf, -inf, -inf)
@@ -701,7 +701,7 @@ bool CgalKernel::convert(const taxonomy::loop* loop, cgal_wire_t& result) {
 	std::vector<Kernel_::Segment_3> segments;
 	loop_to_segments(polygon, segments);
 
-	auto inf = std::numeric_limits<double>::infinity();
+	auto inf = 1.e9; //  std::numeric_limits<double>::infinity();
 	double min_len = +inf;
 	for (auto& s : segments) {
 		auto l = std::sqrt(CGAL::to_double(s.squared_length()));
@@ -1280,7 +1280,7 @@ bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result* br, std::
 
 namespace {
 	bool orthogonal_edge_length(const cgal_shape_t& shape, const cgal_direction_t& face_normal, std::pair<Kernel_::FT, Kernel_::FT>& distances) {
-		static double inf = std::numeric_limits<double>::infinity();
+		static double inf = 1.e9; // std::numeric_limits<double>::infinity();
 		
 		std::vector<double> lengths;
 
@@ -1506,7 +1506,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 				return false;
 			}
 			
-			static double inf = std::numeric_limits<double>::infinity();
+			static double inf = 1.e9; //  std::numeric_limits<double>::infinity();
 			static double eps = 1.e-5;
 
 			double uvw_min[3] = { +inf, +inf, +inf };
