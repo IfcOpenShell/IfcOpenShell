@@ -1453,9 +1453,16 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 
 		CGAL::Polygon_with_holes_2<Kernel_> pwh(p, ++it, loops.end());
 		CGAL::Gps_segment_traits_2<Kernel_> traits;
-		if (false && !CGAL::are_holes_and_boundary_pairwise_disjoint(pwh, traits)) {
+		if (!CGAL::are_holes_and_boundary_pairwise_disjoint(pwh, traits)) {
 			// this is very slow.
 			// the check is also slow...
+
+			// It is enabled because in case of overlapping openings the
+			// even-odd fill rule will result in incorrect results.
+			// See for example the Duplex model roof.
+
+			Logger::Notice("Holes are not disjoint");
+
 			CGAL::Polygon_set_2<Kernel_> result;
 			auto it = loops.begin();
 			result.insert(*it++);
