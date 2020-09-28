@@ -1107,7 +1107,8 @@ bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_ref
 
 	try {
 		success = CGAL::Polygon_mesh_processing::triangulate_faces(shape);
-	} catch (...) {
+	} catch (CGAL::Failure_exception& e) {
+		Logger::Notice(e);
 		Logger::Message(Logger::LOG_ERROR, "Triangulation of geometry crashed:", log_reference);
 		return false;
 	}
@@ -1124,7 +1125,8 @@ bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_ref
 
 	try {
 		result = CGAL::Nef_polyhedron_3<Kernel_>(shape);
-	} catch (...) {
+	} catch (CGAL::Failure_exception& e) {
+		Logger::Notice(e);
 		Logger::Message(Logger::LOG_ERROR, "Could not convert geometry to Nef:", log_reference);
 		return false;
 	}
@@ -1133,7 +1135,8 @@ bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_ref
 		try {
 			// @todo don't dilate in 3 dimensions but only in the XY plane, orthogonal to wall axis.
 			result = CGAL::minkowski_sum_3(result, precision_cube_);
-		} catch (...) {
+		} catch (CGAL::Failure_exception& e) {
+			Logger::Notice(e);
 			Logger::Message(Logger::LOG_ERROR, "Could not dilate boolean operand", log_reference);
 			return false;
 		}
@@ -1142,7 +1145,8 @@ bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_ref
 	try {
 		cgal_shape_t convert_back;
 		result.convert_to_polyhedron(convert_back);
-	} catch (...) {
+	} catch (CGAL::Failure_exception& e) {
+		Logger::Notice(e);
 		Logger::Message(Logger::LOG_WARNING, "Final conversion will likely fail. Could not convert geometry from Nef:", log_reference);
 	}
 
