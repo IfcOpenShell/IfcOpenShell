@@ -49,7 +49,7 @@ namespace ifcopenshell { namespace geometry {
 			// internally in IfcOpenShell everything is measured in meters.
 			if (settings.get(settings::CONVERT_BACK_UNITS)) {
 				for (int i = 0; i <= 2; ++i) {
-					(*matrix_.components)(3, i) /= settings.unit_magnitude();
+					matrix_.components()(3, i) /= settings.unit_magnitude();
 				}
 			}
 		}

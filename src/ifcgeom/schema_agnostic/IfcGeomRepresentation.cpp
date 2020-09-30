@@ -39,8 +39,8 @@ ifcopenshell::geometry::Representation::Serialization::Serialization(const BRep&
 	delete shape;
 
 	for (ifcopenshell::geometry::ConversionResults::const_iterator it = brep.begin(); it != brep.end(); ++ it) {
-		if (it->hasStyle() && it->Style().diffuse) {
-			const auto& clr = *it->Style().diffuse.get().components;
+		if (it->hasStyle()) {
+			const auto& clr = it->Style().diffuse.ccomponents();
 			surface_styles_.push_back(clr(0));
 			surface_styles_.push_back(clr(1));
 			surface_styles_.push_back(clr(2));
@@ -49,8 +49,8 @@ ifcopenshell::geometry::Representation::Serialization::Serialization(const BRep&
 			surface_styles_.push_back(-1.);
 			surface_styles_.push_back(-1.);
 		}
-		if (it->hasStyle() && it->Style().transparency) {
-			surface_styles_.push_back(1. - *it->Style().transparency);
+		if (it->hasStyle() && it->Style().has_transparency()) {
+			surface_styles_.push_back(1. - it->Style().transparency);
 		} else {
 			surface_styles_.push_back(1.);
 		}
@@ -95,14 +95,16 @@ ifcopenshell::geometry::ConversionResultShape* ifcopenshell::geometry::Represent
 		
 		// @todo, check
 		gp_GTrsf trsf;
-		gp_Trsf tr;
-		const auto& m = *it->Placement().components;
-		tr.SetValues(
-			m(0, 0), m(0, 1), m(0, 2), m(0, 3),
-			m(1, 0), m(1, 1), m(1, 2), m(1, 3),
-			m(2, 0), m(2, 1), m(2, 2), m(2, 3)
-		);
-		trsf = tr;
+		if (it->Placement().components_) {
+			gp_Trsf tr;
+			const auto& m = it->Placement().ccomponents();
+			tr.SetValues(
+				m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+				m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+				m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+			);
+			trsf = tr;
+		}
 
 		if (!force_meters && settings().get(ifcopenshell::geometry::settings::CONVERT_BACK_UNITS)) {
 			gp_Trsf scale;
@@ -243,14 +245,17 @@ bool ifcopenshell::geometry::Representation::BRep::calculate_projected_surface_a
 	try {
 		// @todo check
 		gp_GTrsf trsf;
-		gp_Trsf tr;
-		const auto& m = *place.components;
-		tr.SetValues(
-			m(0, 0), m(0, 1), m(0, 2), m(0, 3),
-			m(1, 0), m(1, 1), m(1, 2), m(1, 3),
-			m(2, 0), m(2, 1), m(2, 2), m(2, 3)
-		);
-		trsf = tr;
+
+		if (place.components_) {
+			gp_Trsf tr;
+			const auto& m = place.ccomponents();
+			tr.SetValues(
+				m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+				m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+				m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+			);
+			trsf = tr;
+		}
 
 		gp_Mat mat = trsf.Trsf().HVectorialPart();
 		gp_Ax3 ax(trsf.TranslationPart(), mat.Column(3), mat.Column(1));

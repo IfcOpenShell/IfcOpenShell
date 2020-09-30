@@ -80,7 +80,7 @@ void GltfSerializer::writeHeader() {
 
 int GltfSerializer::writeMaterial(const ifcopenshell::geometry::taxonomy::style& style) {
 	// @todo is it safe to always dereference this optional?	
-	const std::string& name = *style.name;
+	const std::string& name = style.name;
 
 	auto it = materials_.find(name);
 	if (it != materials_.end()) {
@@ -92,18 +92,16 @@ int GltfSerializer::writeMaterial(const ifcopenshell::geometry::taxonomy::style&
 
 	std::array<double, 4> base;
 	base.fill(1.0);
-	if (style.diffuse) {
-		for (int i = 0; i < 3; ++i) {
-			base[i] = (*style.diffuse->components)[i];
-		}
+	for (int i = 0; i < 3; ++i) {
+		base[i] = style.diffuse.ccomponents()(i);
 	}
-	if (style.transparency) {
-		base[3] = 1. - *style.transparency;
+	if (style.has_transparency()) {
+		base[3] = 1. - style.transparency;
 	}
 
 	json_["materials"].push_back({ {"pbrMetallicRoughness", {{"baseColorFactor", base}, {"metallicFactor", 0}}} });
 	
-	if (style.transparency && *style.transparency > 1.e-9) {
+	if (style.has_transparency() && style.transparency > 1.e-9) {
 		json_["materials"].back()["alphaMode"] = "BLEND";
 	}
 
@@ -167,14 +165,14 @@ void GltfSerializer::write(const ifcopenshell::geometry::TriangulationElement* o
 
 	node_array_.push_back(json_["nodes"].size());
 
-	const double* m = o->transformation().data().components->data();
+	const auto& m = o->transformation().data().ccomponents();
 
 	// nb: note that this applies the Y-UP transform.
 	const std::array<double, 16> matrix_flat = {
-		m[ 0], m[ 2], -m[ 1], m[ 3],
-		m[ 4], m[ 6], -m[ 5], m[ 7],
-		m[ 8], m[10], -m[ 9], m[11],
-		m[12], m[14], -m[13], m[15]
+		m( 0), m( 2), -m( 1), m( 3),
+		m( 4), m( 6), -m( 5), m( 7),
+		m( 8), m(10), -m( 9), m(11),
+		m(12), m(14), -m(13), m(15)
 	};
 
 	static const std::array<double, 16> identity_matrix = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};

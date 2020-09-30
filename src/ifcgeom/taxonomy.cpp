@@ -9,11 +9,19 @@ namespace {
 
 	template <typename T>
 	bool compare(const eigen_base<T>& t, const eigen_base<T>& u) {
-		auto t_begin = t.components->data();
-		auto t_end = t.components->data() + t.components->size();
+		if (t.components_ == nullptr && u.components_ == nullptr) {
+			return false;
+		} else if (t.components_ == nullptr && u.components_ != nullptr) {
+			return true;
+		} else if (t.components_ != nullptr && u.components_ == nullptr) {
+			return false;
+		}
 
-		auto u_begin = u.components->data();
-		auto u_end = u.components->data() + u.components->size();
+		auto t_begin = t.components_->data();
+		auto t_end = t.components_->data() + t.components_->size();
+
+		auto u_begin = u.components_->data();
+		auto u_end = u.components_->data() + u.components_->size();
 
 		return std::lexicographical_compare(t_begin, t_end, u_begin, u_end);
 	}
@@ -108,11 +116,11 @@ namespace {
 
 	bool compare(const style& a, const style& b) {
 		const int order[5] = {
-			less_to_order_optional(a.name, b.name),
-			less_to_order_optional(a.diffuse, b.diffuse),
-			less_to_order_optional(a.specular, b.specular),
-			less_to_order_optional(a.specularity, b.specularity),
-			less_to_order_optional(a.transparency, b.transparency)
+			less_to_order(a.name, b.name),
+			less_to_order(a.diffuse, b.diffuse),
+			less_to_order(a.specular, b.specular),
+			less_to_order(a.specularity, b.specularity),
+			less_to_order(a.transparency, b.transparency)
 		};
 		auto it = std::find_if(std::begin(order), std::end(order), [](int x) { return x; });
 		if (it == std::end(order)) return false;
@@ -221,7 +229,16 @@ namespace {
 			// Vectors equal, compare matrix (in case of mapped items).
 			int matrix_order = less_to_order(a.matrix, b.matrix);
 			if (matrix_order == 0) {
-				return compare(a.surface_style, b.surface_style);
+
+				if (a.surface_style == nullptr && b.surface_style == nullptr) {
+					return false;
+				} else if (a.surface_style == nullptr && b.surface_style != nullptr) {
+					return true;
+				} else if (a.surface_style != nullptr && b.surface_style == nullptr) {
+					return false;
+				}
+
+				return compare(*a.surface_style, *b.surface_style);
 			} else {
 				return matrix_order == -1;
 			}

@@ -61,24 +61,21 @@ void WaveFrontOBJSerializer::writeHeader() {
 void WaveFrontOBJSerializer::writeMaterial(const ifcopenshell::geometry::taxonomy::style& style)
 {
 	// @todo original_name
-    std::string material_name = *(settings().get(SerializerSettings::USE_MATERIAL_NAMES)
-        ? style.name : style.name);
+    std::string material_name = style.name;
     IfcUtil::sanitate_material_name(material_name);
     mtl_stream << "newmtl " << material_name << "\n";
 
-	if (style.diffuse) {
-		auto diffuse = style.diffuse->components;
-		mtl_stream << "Kd " << diffuse[0] << " " << diffuse[1] << " " << diffuse[2] << "\n";
+	const auto& diffuse = style.diffuse.ccomponents();
+	mtl_stream << "Kd " << diffuse(0) << " " << diffuse(1) << " " << diffuse(2) << "\n";
+	if (style.specular.components_) {
+		const auto& specular = style.specular.ccomponents();
+		mtl_stream << "Ks " << specular(0) << " " << specular(1) << " " << specular(2) << "\n";
 	}
-	if (style.specular) {
-		auto specular = style.specular->components;
-		mtl_stream << "Ks " << specular[0] << " " << specular[1] << " " << specular[2] << "\n";
+	if (style.has_specularity()) {
+		mtl_stream << "Ns " << style.specularity << "\n";
 	}
-	if (style.specularity) {
-		mtl_stream << "Ns " << *style.specularity << "\n";
-	}
-	if (style.transparency) {
-		const double transparency = 1.0 - *style.transparency;
+	if (style.has_transparency()) {
+		const double transparency = 1.0 - style.transparency;
 		if (transparency < 1) {
 			mtl_stream << "d "  << transparency << "\n";
 		}
@@ -124,8 +121,7 @@ void WaveFrontOBJSerializer::write(const ifcopenshell::geometry::TriangulationEl
 		if (material_id != previous_material_id) {
 			const ifcopenshell::geometry::taxonomy::style& material = mesh.materials()[material_id];
 			// @todo original_name
-            std::string material_name = *(settings().get(SerializerSettings::USE_MATERIAL_NAMES)
-                ? material.name : material.name);
+            std::string material_name = material.name;
             IfcUtil::sanitate_material_name(material_name);
 			obj_stream << "usemtl " << material_name << "\n";
 			if (materials.find(material_name) == materials.end()) {
@@ -169,8 +165,7 @@ void WaveFrontOBJSerializer::write(const ifcopenshell::geometry::TriangulationEl
 		if (material_id != previous_material_id) {
 			const ifcopenshell::geometry::taxonomy::style& material = mesh.materials()[material_id];
 			// @todo original_name
-            std::string material_name = *(settings().get(SerializerSettings::USE_MATERIAL_NAMES)
-                ? material.name : material.name);
+            std::string material_name = material.name;
             IfcUtil::sanitate_material_name(material_name);
 			obj_stream << "usemtl " << material_name << "\n";
 			if (materials.find(material_name) == materials.end()) {

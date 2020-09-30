@@ -10,11 +10,13 @@
 namespace {
 	// We bypass the conversion to gp_GTrsf, because it does not work
 	void taxonomy_transform(const Eigen::Matrix4d* m, gp_XYZ& xyz) {
-		Eigen::Vector4d v(xyz.X(), xyz.Y(), xyz.Z(), 1.0);
-		auto v2 = (*m * v).eval();
-		xyz.ChangeData()[0] = v2(0);
-		xyz.ChangeData()[1] = v2(1);
-		xyz.ChangeData()[2] = v2(2);
+		if (m) {
+			Eigen::Vector4d v(xyz.X(), xyz.Y(), xyz.Z(), 1.0);
+			auto v2 = (*m * v).eval();
+			xyz.ChangeData()[0] = v2(0);
+			xyz.ChangeData()[1] = v2(1);
+			xyz.ChangeData()[2] = v2(2);
+		}
 	}
 }
 
@@ -23,14 +25,17 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(const settings& setti
 	// @todo remove duplication with OpenCascadeKernel::convert(const taxonomy::matrix4* matrix, gp_GTrsf& trsf);
 	// above can be static?
 
-	const auto& m = *place.components;
-
 	// A 3x3 matrix to rotate the vertex normals
-	gp_Mat rotation_matrix(
-		m(0, 0), m(0, 1), m(0, 2),
-		m(1, 0), m(1, 1), m(1, 2),
-		m(2, 0), m(2, 1), m(2, 2)
-	);
+	boost::optional<gp_Mat> rotation_matrix;
+	
+	if (place.components_) {
+		const auto& m = *place.components_;
+		rotation_matrix.emplace(
+			m(0, 0), m(0, 1), m(0, 2),
+			m(1, 0), m(1, 1), m(1, 2),
+			m(2, 0), m(2, 1), m(2, 2)
+		);
+	}
 
 	// Triangulate the shape
 	try {
@@ -70,7 +75,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(const settings& setti
 
 			for (int i = 1; i <= nodes.Length(); ++i) {
 				coords.push_back(nodes(i).Transformed(loc).XYZ());
-				taxonomy_transform(place.components, *coords.rbegin());
+				taxonomy_transform(place.components_, *coords.rbegin());
 				const gp_XYZ& last = *coords.rbegin();
 				dict[i] = t->addVertex(surface_style_id, last.X(), last.Y(), last.Z());
 
@@ -81,7 +86,11 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(const settings& setti
 					prop.Normal(uv.X(), uv.Y(), p, normal_direction);
 					gp_Vec normal(0., 0., 0.);
 					if (normal_direction.Magnitude() > 1.e-9) {
-						normal = gp_Dir(normal_direction.XYZ() * rotation_matrix);
+						if (rotation_matrix) {
+							normal = gp_Dir(normal_direction.XYZ() * *rotation_matrix);
+						} else {
+							normal = normal_direction;
+						}
 					}
 					t->addNormal(normal.X(), normal.Y(), normal.Z());
 				}

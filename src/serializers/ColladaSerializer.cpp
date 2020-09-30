@@ -197,20 +197,20 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
 	// If this is not the first parent, get the relative placement
 	if (parentNodes.size() > 0)
 	{
-		auto m4 = ifcopenshell::geometry::taxonomy::matrix4(*matrixStack.top().data().components * *transformation.data().components);
+		auto m4 = ifcopenshell::geometry::taxonomy::matrix4(matrixStack.top().data().ccomponents() * transformation.data().ccomponents());
 		relative_trsf = new ifcopenshell::geometry::Transformation(transformation.settings(), m4);
 		transformation_towrite = relative_trsf;
 	}
 
 	// @todo verify
 
-	const double* m = transformation_towrite->data().components->data();
+	const auto& m = transformation_towrite->data().ccomponents();
 
 	double matrix_array[4][4] = {
-		{ m[0], m[4], m[8], m[12] },
-		{ m[1], m[5], m[9], m[13] },
-		{ m[2], m[6], m[10], m[14] },
-		{ m[3], m[7], m[11], m[15] }
+		{ m(0), m(4), m(8), m(12) },
+		{ m(1), m(5), m(9), m(13) },
+		{ m(2), m(6), m(10), m(14) },
+		{ m(3), m(7), m(11), m(15) }
 	};
 	
 	/// @todo: TFK: Rather than applying this offset to all leafs (which might be undesirable) should this offset be applied to a node higher up in the hierarchy?
@@ -251,19 +251,19 @@ void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const ifcopensh
 	// If this is not the first parent, get the relative placement
 	if (parentNodes.size() > 0)
 	{
-		auto m4 = ifcopenshell::geometry::taxonomy::matrix4(*matrixStack.top().data().components * *parent_trsf.data().components);
+		auto m4 = ifcopenshell::geometry::taxonomy::matrix4(matrixStack.top().data().ccomponents() * parent_trsf.data().ccomponents());
 		relative_trsf = new ifcopenshell::geometry::Transformation(parent_trsf.settings(), m4);
 		transformation_towrite = relative_trsf;
 	}
 
 	// @todo verify
 
-	const double* parentMatrix = transformation_towrite->data().components->data();
+	const auto& parentMatrix = transformation_towrite->data().ccomponents();
 
 	double matrix_array[4][4] = {
-		{ (double)parentMatrix[0], (double)parentMatrix[3], (double)parentMatrix[6], (double)parentMatrix[9] },
-		{ (double)parentMatrix[1], (double)parentMatrix[4], (double)parentMatrix[7], (double)parentMatrix[10] },
-		{ (double)parentMatrix[2], (double)parentMatrix[5], (double)parentMatrix[8], (double)parentMatrix[11] },
+		{ (double)parentMatrix(0), (double)parentMatrix(3), (double)parentMatrix(6), (double)parentMatrix(9) },
+		{ (double)parentMatrix(1), (double)parentMatrix(4), (double)parentMatrix(7), (double)parentMatrix(10) },
+		{ (double)parentMatrix(2), (double)parentMatrix(5), (double)parentMatrix(8), (double)parentMatrix(11) },
 		{ 0, 0, 0, 1 }
 	};
 
@@ -280,7 +280,7 @@ void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const ifcopensh
 	current_node->addMatrix(matrix_array);
 
 	// Add the node to the parent stack
-	matrixStack.push(ifcopenshell::geometry::Transformation(parent_trsf.settings(), ifcopenshell::geometry::taxonomy::matrix4(parent_trsf.data().components->inverse())));
+	matrixStack.push(ifcopenshell::geometry::Transformation(parent_trsf.settings(), ifcopenshell::geometry::taxonomy::matrix4(parent_trsf.data().ccomponents().inverse())));
 	parentNodes.push(current_node);
 	serializer->parentStackId.push(parent.id());
 }
@@ -319,19 +319,17 @@ void ColladaSerializer::ColladaExporter::ColladaMaterials::ColladaEffects::write
     openEffect(material_uri + "-fx");
 	COLLADASW::EffectProfile effect(mSW);
 	effect.setShaderType(COLLADASW::EffectProfile::LAMBERT);
-	if (material.diffuse) {
-		const auto& diffuse = *material.diffuse.get().components;
-		effect.setDiffuse(COLLADASW::ColorOrTexture(COLLADASW::Color(diffuse[0],diffuse[1],diffuse[2])));
-	}
-	if (material.specular) {
-		const auto& specular = *material.specular.get().components;
+	const auto& diffuse = material.diffuse.ccomponents();
+	effect.setDiffuse(COLLADASW::ColorOrTexture(COLLADASW::Color(diffuse[0],diffuse[1],diffuse[2])));
+	if (material.specular.components_) {
+		const auto& specular = material.specular.ccomponents();
 		effect.setSpecular(COLLADASW::ColorOrTexture(COLLADASW::Color(specular[0],specular[1],specular[2])));
 	}
-	if (material.specularity) {
-		effect.setShininess(*material.specularity);
+	if (material.has_specularity()) {
+		effect.setShininess(material.specularity);
 	}
-	if (material.transparency) {
-		const double transparency = *material.transparency;
+	if (material.has_transparency()) {
+		const double transparency = material.transparency;
 		if (transparency > 0) {
 			// The default opacity mode for Collada is A_ONE, which apparently indicates a
 			// transparency value of 1 to be fully opaque. Hence transparency is inverted.
@@ -352,10 +350,10 @@ void ColladaSerializer::ColladaExporter::ColladaMaterials::add(const ifcopenshel
 
 		// @todo apparently material.name is unitialized in some cases now.
 
-		std::string material_name = material.name.get_value_or("missing-material");
+		std::string material_name = material.name;
 
 		if (material_name.empty()) {
-			material_name = "missing-material-" + *material.name;
+			material_name = "missing-material-" + material.name;
 		}
 
 		collada_id(material_name);

@@ -12,7 +12,7 @@
 					if (l->as<IfcSchema::IfcRepresentationItem>() && !l->as<IfcSchema::IfcStyledItem>()) { \
 						auto style = find_style(l->as<IfcSchema::IfcRepresentationItem>()); \
 						if (style) { \
-							((taxonomy::geom_item*)item)->surface_style = as<taxonomy::style>(map(style)); \
+							((taxonomy::geom_item*)item)->surface_style = (taxonomy::style*) map(style); \
 						} \
 					} \
 				} catch (const std::exception& e) { \

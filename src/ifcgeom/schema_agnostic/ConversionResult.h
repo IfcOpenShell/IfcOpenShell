@@ -67,31 +67,31 @@ namespace ifcopenshell { namespace geometry {
 		int id;
 		ifcopenshell::geometry::taxonomy::matrix4 placement;
 		ConversionResultShape* shape;
-		ifcopenshell::geometry::taxonomy::style style;
+		const ifcopenshell::geometry::taxonomy::style* style;
 	public:
-		ConversionResult(int id, const ifcopenshell::geometry::taxonomy::matrix4& placement, const ConversionResultShape* shape, const ifcopenshell::geometry::taxonomy::style& style)
+		ConversionResult(int id, const ifcopenshell::geometry::taxonomy::matrix4& placement, const ConversionResultShape* shape, const ifcopenshell::geometry::taxonomy::style* style)
 			: id(id), placement(placement), shape(shape->clone()), style(style) {}
 		ConversionResult(int id, const ifcopenshell::geometry::taxonomy::matrix4& placement, const ConversionResultShape* shape)
 			: id(id), placement(placement), shape(shape->clone()) {}
-		ConversionResult(int id, const ConversionResultShape* shape, const ifcopenshell::geometry::taxonomy::style& style)
+		ConversionResult(int id, const ConversionResultShape* shape, const ifcopenshell::geometry::taxonomy::style* style)
 			: id(id), shape(shape->clone()), style(style) {}
 		ConversionResult(int id, const ConversionResultShape* shape)
 			: id(id), shape(shape->clone()) {}
 		void append(const ifcopenshell::geometry::taxonomy::matrix4& trsf) {
 			// @todo verify order
-			*placement.components = *placement.components * *trsf.components;
+			placement.components() = placement.ccomponents() * trsf.ccomponents();
 		}
 		void prepend(const ifcopenshell::geometry::taxonomy::matrix4& trsf) {
 			// @todo verify order
-			*placement.components = *trsf.components * *placement.components;
+			placement.components() = trsf.ccomponents() * placement.ccomponents();
 		}
 		const ConversionResultShape* Shape() const { return shape; }
 		ConversionResultShape* Shape() { return shape; }
 		const ifcopenshell::geometry::taxonomy::matrix4& Placement() const { return placement; }
 		// @todo
-		bool hasStyle() const { return style.diffuse.is_initialized(); }
-		const ifcopenshell::geometry::taxonomy::style& Style() const { return style; }
-		void setStyle(const ifcopenshell::geometry::taxonomy::style& newStyle) { style = newStyle; }
+		bool hasStyle() const { return style != nullptr; }
+		const ifcopenshell::geometry::taxonomy::style& Style() const { return *style; }
+		void setStyle(const ifcopenshell::geometry::taxonomy::style* newStyle) { style = newStyle; }
 		int ItemId() const { return id; }
 	};
     

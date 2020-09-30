@@ -368,19 +368,25 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcProduct* inst) {
 	if (single_material) {
 		auto material_style = map(single_material);
 		if (material_style) {
-			c->surface_style = as<taxonomy::style>(material_style);
+			c->surface_style = (taxonomy::style*) material_style;
 		}
 	}
 
 	if (openings->size() && !settings_.get(settings::DISABLE_OPENING_SUBTRACTIONS) && use_body) {
-		auto ci = c->matrix.components->inverse();
+		
+		Eigen::Matrix4d ci;
+		if (c->matrix.components_) {
+			ci = c->matrix.components_->inverse();
+		} else {
+			ci.setIdentity();
+		}
 
 		IfcEntityList::ptr operands(new IfcEntityList);
 		operands->push(body);
 		operands->push(openings);
 		auto n = map_to_collection<taxonomy::boolean_result>(this, operands);
 		std::for_each(n->children.begin() + 1, n->children.end(), [&ci](taxonomy::item* i) {
-			*((taxonomy::geom_item*)i)->matrix.components = ci * *((taxonomy::geom_item*)i)->matrix.components;
+			((taxonomy::geom_item*)i)->matrix.components() = ci * ((taxonomy::geom_item*)i)->matrix.ccomponents();
 		});
 		n->operation = taxonomy::boolean_result::SUBTRACTION;
 		// @todo one indirection too many
@@ -403,7 +409,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcAxis2Placement3D* inst) {
 	Eigen::Vector3d o, axis(0, 0, 1), refDirection, X(1, 0, 0);
 	{
 		taxonomy::point3 v = as<taxonomy::point3>(map(inst->Location()));
-		o = *v.components;
+		o = *v.components_;
 	}
 	const bool hasAxis = inst->hasAxis();
 	const bool hasRef = inst->hasRefDirection();
@@ -414,12 +420,12 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcAxis2Placement3D* inst) {
 
 	if (hasAxis) {
 		taxonomy::direction3 v = as<taxonomy::direction3>(map(inst->Axis()));
-		axis = *v.components;
+		axis = *v.components_;
 	}
 
 	if (hasRef) {
 		taxonomy::direction3 v = as<taxonomy::direction3>(map(inst->RefDirection()));
-		refDirection = *v.components;
+		refDirection = *v.components_;
 	} else {
 		if (acos(axis.dot(X)) > 1.e-5) {
 			refDirection = { 1., 0., 0. };
@@ -437,12 +443,12 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcAxis2Placement2D* inst) {
 	Eigen::Vector3d P, axis(0, 0, 1), V(1, 0, 0);
 	{
 		taxonomy::point3 v = as<taxonomy::point3>(map(inst->Location()));
-		P = *v.components;
+		P = *v.components_;
 	}
 	const bool hasRef = inst->hasRefDirection();
 	if (hasRef) {
 		taxonomy::direction3 v = as<taxonomy::direction3>(map(inst->RefDirection()));
-		V = *v.components;
+		V = *v.components_;
 	}
 	return new taxonomy::matrix4(P, axis, V);
 }
@@ -453,15 +459,15 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianTransformationOpe
 	Eigen::Vector4d origin, axis1(1.0, 0.0, 0.0, 0.0), axis2(0.0, 1.0, 0.0, 0.0), axis3(0.0, 0.0, 1.0, 0.0);
 	
 	taxonomy::point3 O = as<taxonomy::point3>(map(inst->LocalOrigin()));
-	origin << *O.components, 1.0;
+	origin << *O.components_, 1.0;
 	
 	if (inst->hasAxis1()) {
 		taxonomy::direction3 ax1 = as<taxonomy::direction3>(map(inst->Axis1()));
-		axis1 << *ax1.components, 0.0;
+		axis1 << *ax1.components_, 0.0;
 	}	
 	if (inst->hasAxis2()) {
 		taxonomy::direction3 ax2 = as<taxonomy::direction3>(map(inst->Axis1()));
-		axis2 << *ax2.components, 0.0;
+		axis2 << *ax2.components_, 0.0;
 	}
 
 	double scale1, scale2;
@@ -475,13 +481,13 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianTransformationOpe
 		scale2 = nu->hasScale2() ? nu->Scale2() : scale1;
 	}
 
-	*m->components << 
+	m->components() << 
 		axis1 * scale1, 
 		axis2 * scale2, 
 		axis3, 
 		origin;
 
-	m->components->transposeInPlace();
+	m->components().transposeInPlace();
 
 	return m;
 }
@@ -495,19 +501,19 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianTransformationOpe
 	Eigen::Vector4d axis3(0., 0., 1., 0.);
 
 	taxonomy::point3 O = as<taxonomy::point3>(map(inst->LocalOrigin()));
-	origin << *O.components, 1.0;
+	origin << *O.components_, 1.0;
 
 	if (inst->hasAxis1()) {
 		taxonomy::direction3 ax1 = as<taxonomy::direction3>(map(inst->Axis1()));
-		axis1 << *ax1.components, 0.0;
+		axis1 << *ax1.components_, 0.0;
 	}
 	if (inst->hasAxis2()) {
 		taxonomy::direction3 ax2 = as<taxonomy::direction3>(map(inst->Axis2()));
-		axis2 << *ax2.components, 0.0;
+		axis2 << *ax2.components_, 0.0;
 	}
 	if (inst->hasAxis3()) {
 		taxonomy::direction3 ax3 = as<taxonomy::direction3>(map(inst->Axis3()));
-		axis3 << *ax3.components, 0.0;
+		axis3 << *ax3.components_, 0.0;
 	}
 
 	double scale1, scale2, scale3;
@@ -529,8 +535,8 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianTransformationOpe
 		axis3 * scale3,
 		origin;
 
-	*m->components = tmp.inverse();
-	m->components->transposeInPlace();
+	m->components() = tmp.inverse();
+	m->components().transposeInPlace();
 
 	// @todo tag identity?
 
@@ -545,7 +551,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcLocalPlacement* inst) {
 		if (relplacement->declaration().is(IfcSchema::IfcAxis2Placement3D::Class())) {
 			taxonomy::matrix4 trsf2 = as<taxonomy::matrix4>(map(relplacement));
 			// @todo check
-			*m4->components = *trsf2.components * *m4->components;
+			m4->components() = trsf2.ccomponents() * m4->ccomponents();
 		}
 		if (current->hasPlacementRelTo()) {
 			IfcSchema::IfcObjectPlacement* parent = current->PlacementRelTo();
@@ -594,14 +600,14 @@ IfcSchema::IfcProduct::list::ptr mapping::products_represented_by(const IfcSchem
 	if (maps->size() == 1) {
 		IfcSchema::IfcRepresentationMap* rmap = *maps->begin();
 		taxonomy::matrix4 origin = as<taxonomy::matrix4>(map(rmap->MappingOrigin()));
-		if (origin.components->isIdentity()) {
+		if (origin.is_identity()) {
 			IfcSchema::IfcMappedItem::list::ptr items = rmap->MapUsage();
 			for (IfcSchema::IfcMappedItem::list::it it = items->begin(); it != items->end(); ++it) {
 				IfcSchema::IfcMappedItem* item = *it;
 				if (item->StyledByItem()->size() != 0) continue;
 
 				taxonomy::matrix4 target = as<taxonomy::matrix4>(map(item->MappingTarget()));
-				if (target.components->isIdentity()) {
+				if (target.is_identity()) {
 					continue;
 				}
 
@@ -845,10 +851,10 @@ IfcSchema::IfcRepresentation* mapping::representation_mapped_to(const IfcSchema:
 			if (item->StyledByItem()->size() == 0) {
 				IfcSchema::IfcMappedItem* mapped_item = item->as<IfcSchema::IfcMappedItem>();
 				taxonomy::matrix4 target = as<taxonomy::matrix4>(map(mapped_item->MappingTarget()));
-				if (target.components->isIdentity()) {
+				if (target.is_identity()) {
 					IfcSchema::IfcRepresentationMap* rmap = mapped_item->MappingSource();
 					taxonomy::matrix4 origin = as<taxonomy::matrix4>(map(rmap->MappingOrigin()));
-					if (origin.components->isIdentity()) {
+					if (origin.is_identity()) {
 						representation_mapped_to = rmap->MappedRepresentation();
 					}
 				}
@@ -1008,14 +1014,14 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
 	
 	double rgb[3];
 	if (process_colour(shading->SurfaceColour(), rgb)) {
-		surface_style->diffuse.emplace();
-		(*(*surface_style->diffuse).components) << rgb[0], rgb[1], rgb[2];
+		surface_style->diffuse.components() << rgb[0], rgb[1], rgb[2];
 	}
 
 	if (auto rendering_style = shading->as<IfcSchema::IfcSurfaceStyleRendering>()) {
 		if (rendering_style->hasDiffuseColour() && process_colour(rendering_style->DiffuseColour(), rgb)) {
-			const taxonomy::colour& old_diffuse = surface_style->diffuse.get_value_or(white);
-			surface_style->diffuse.reset(taxonomy::colour(old_diffuse.r() * rgb[0], old_diffuse.g() * rgb[1], old_diffuse.b() * rgb[2]));
+			// @todo
+			// const taxonomy::colour& old_diffuse = surface_style->diffuse; // .get_value_or(white);
+			// surface_style->diffuse.reset(taxonomy::colour(old_diffuse.r() * rgb[0], old_diffuse.g() * rgb[1], old_diffuse.b() * rgb[2]));
 		}
 		if (rendering_style->hasDiffuseTransmissionColour()) {
 			// Not supported
@@ -1024,17 +1030,17 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
 			// Not supported
 		}
 		if (rendering_style->hasSpecularColour() && process_colour(rendering_style->SpecularColour(), rgb)) {
-			surface_style->specular.reset(taxonomy::colour(rgb[0], rgb[1], rgb[2]));
+			surface_style->specular.components() << rgb[0], rgb[1], rgb[2];
 		}
 		if (rendering_style->hasSpecularHighlight()) {
 			IfcSchema::IfcSpecularHighlightSelect* highlight = rendering_style->SpecularHighlight();
 			if (highlight->declaration().is(IfcSchema::IfcSpecularRoughness::Class())) {
 				double roughness = *((IfcSchema::IfcSpecularRoughness*)highlight);
 				if (roughness >= 1e-9) {
-					surface_style->specularity.reset(1.0 / roughness);
+					surface_style->specularity = 1.0 / roughness;
 				}
 			} else if (highlight->declaration().is(IfcSchema::IfcSpecularExponent::Class())) {
-				surface_style->specularity.reset(*((IfcSchema::IfcSpecularExponent*)highlight));
+				surface_style->specularity = *((IfcSchema::IfcSpecularExponent*)highlight);
 			}
 		}
 		if (rendering_style->hasTransmissionColour()) {
@@ -1042,7 +1048,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
 		}
 		if (rendering_style->hasTransparency()) {
 			const double d = rendering_style->Transparency();
-			surface_style->transparency.reset(d);
+			surface_style->transparency = d;
 		}
 	}
 	
@@ -1276,7 +1282,7 @@ namespace {
 #endif
 		if (has_position) {
 			taxonomy::matrix4 m = as<taxonomy::matrix4>(self->map(inst->Position()));
-			m4 = *m.components;
+			m4 = m.ccomponents();
 		}
 
 		// @todo precision
@@ -1310,10 +1316,10 @@ namespace {
 			const auto& p = pps[i];
 			if (p.radius && *p.radius > 0.) {
 				// Position is a IfcAxis2Placement2D, so should remain 2d points
-				auto p0 = boost::get<taxonomy::point3>(p.previous->start).components->head<2>();
-				auto p1a = boost::get<taxonomy::point3>(p.previous->end).components->head<2>();
-				auto p2 = boost::get<taxonomy::point3>(p.next->end).components->head<2>();
-				auto p1b = boost::get<taxonomy::point3>(p.next->start).components->head<2>();
+				auto p0 = boost::get<taxonomy::point3>(p.previous->start).components_->head<2>();
+				auto p1a = boost::get<taxonomy::point3>(p.previous->end).components_->head<2>();
+				auto p2 = boost::get<taxonomy::point3>(p.next->end).components_->head<2>();
+				auto p1b = boost::get<taxonomy::point3>(p.next->start).components_->head<2>();
 
 				auto ba_ = p0 - p1a;
 				auto bc_ = p2 - p1b;
@@ -1324,8 +1330,8 @@ namespace {
 				const double angle = std::acos(ba.dot(bc));
 				const double inset = *p.radius / std::tan(angle / 2.);
 
-				boost::get<taxonomy::point3>(p.previous->end).components->head<2>() += ba * inset;
-				boost::get<taxonomy::point3>(p.next->start).components->head<2>() += bc * inset;
+				boost::get<taxonomy::point3>(p.previous->end).components_->head<2>() += ba * inset;
+				boost::get<taxonomy::point3>(p.next->start).components_->head<2>() += bc * inset;
 
 				auto e = new taxonomy::edge;
 				e->start = p.previous->end;
@@ -1335,10 +1341,10 @@ namespace {
 				
 				double sign = ab.head<2>().dot(bc) > 0 ? 1. : -1.;
 
-				auto O = boost::get<taxonomy::point3>(p.previous->end).components->head<3>() + ab * *p.radius * sign;
+				auto O = boost::get<taxonomy::point3>(p.previous->end).ccomponents().head<3>() + ab * *p.radius * sign;
 
 				auto c = new taxonomy::circle;
-				*c->matrix.components = Eigen::Affine3d(Eigen::Translation3d(O)).matrix();
+				*c->matrix.components_ = Eigen::Affine3d(Eigen::Translation3d(O)).matrix();
 				c->radius = *p.radius;
 				e->basis = c;
 				c->orientation.reset(sign == -1.);
@@ -1446,7 +1452,9 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcCircleProfileDef* inst) {
 #endif
 		if (has_position) {
 			taxonomy::matrix4 m = as<taxonomy::matrix4>(map(inst->Position()));
-			c->matrix = *m.components;
+			if (m.components_) {
+				c->matrix = *m.components_;
+			}
 		}
 
 		auto e = new taxonomy::edge;
@@ -1547,7 +1555,7 @@ namespace {
 			for (int i = 1; i <= n; ++i) {
 				// wrap around to the first point in case of a closed loop
 				int j = (i % polygon.size()) + 1;
-				double dist = (*polygon.at(i - 1).components - *polygon.at(j - 1).components).squaredNorm();
+				double dist = (polygon.at(i - 1).components() - polygon.at(j - 1).components()).squaredNorm();
 				if (dist < tol) {
 					// do not remove the first or last point to
 					// maintain connectivity with other wires
@@ -1576,7 +1584,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcPolyline* inst) {
 	});
 
 	const double eps = precision_ * 10;
-	const bool closed_by_proximity = polygon.size() >= 3 && (*polygon.front().components - *polygon.back().components).norm() < eps;
+	const bool closed_by_proximity = polygon.size() >= 3 && (*polygon.front().components_ - *polygon.back().components_).norm() < eps;
 	
 	// @todo this removes the end point, since it's identical to the beginning. 
 	if (closed_by_proximity) {
@@ -1599,7 +1607,8 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcMappedItem* inst) {
 	IfcSchema::IfcRepresentationMap* rmap = inst->MappingSource();
 	IfcSchema::IfcAxis2Placement* placement = rmap->MappingOrigin();
 	taxonomy::matrix4 trsf2 = as<taxonomy::matrix4>(map(placement));
-	*gtrsf.components = *gtrsf.components * *trsf2.components;
+	// Cannot be nullptr here
+	*gtrsf.components_ = *gtrsf.components_ * *trsf2.components_;
 	
 	// @todo immutable for caching?
 	// @todo allow for multiple levels of matrix?
@@ -1610,7 +1619,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcMappedItem* inst) {
 
 	auto collection = new taxonomy::collection;
 	collection->children.push_back(shapes);
-	collection->matrix = *gtrsf.components;
+	collection->matrix = *gtrsf.components_;
 
 	if (shapes != nullptr) {
 		for (auto& c : ((taxonomy::collection*)shapes)->children) {
@@ -1698,7 +1707,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
 
 	trim_cartesian &= has_pnts[0] && has_pnts[1];
 	if (trim_cartesian) {
-		if ((*pnts[0].components - *pnts[1].components).norm() < (2 * precision_)) {
+		if ((*pnts[0].components_ - *pnts[1].components_).norm() < (2 * precision_)) {
 			Logger::Message(Logger::LOG_WARNING, "Skipping segment with length below tolerance level:", inst);
 			return nullptr;
 		}

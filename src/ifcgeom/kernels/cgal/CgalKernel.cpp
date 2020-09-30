@@ -171,7 +171,7 @@ bool CgalKernel::convert(const taxonomy::shell* l, cgal_shape_t& shape) {
 		);
 		size_t num_points = 0;
 		visit<taxonomy::point3>(l, [&minmax, &num_points](const taxonomy::point3* p) {
-			auto& c = *p->components;
+			auto& c = p->ccomponents();
 			++num_points;
 			for (int i = 0; i < 3; ++i) {
 				if (c(i) < minmax.first(i)) {
@@ -271,11 +271,11 @@ namespace {
 			if (true || e->basis == nullptr) {
 				if (builder.empty()) {
 					const auto& p = boost::get<taxonomy::point3>(e->start);
-					cgal_point_t pnt((*p.components)(0), (*p.components)(1), (*p.components)(2));
+					cgal_point_t pnt(p.ccomponents()(0), p.ccomponents()(1), p.ccomponents()(2));
 					builder.push_back(pnt);
 				}
 				const auto& p = boost::get<taxonomy::point3>(e->end);
-				cgal_point_t pnt((*p.components)(0), (*p.components)(1), (*p.components)(2));
+				cgal_point_t pnt(p.ccomponents()(0), p.ccomponents()(1), p.ccomponents()(2));
 				builder.push_back(pnt);
 			} else if (e->basis->kind() == taxonomy::CIRCLE) {
 				// @todo
@@ -305,32 +305,32 @@ namespace {
 
 	void evaluate_curve(const taxonomy::line& c, double u, taxonomy::point3& p) {
 		Eigen::Vector4d xy{ u, 0, 0, 1. };
-		*p.components = (*c.matrix.components * xy).head<3>();
+		p.components() = (c.matrix.ccomponents() * xy).head<3>();
 	}
 
 	void evaluate_curve(const taxonomy::circle& c, double u, taxonomy::point3& p) {
 		Eigen::Vector4d xy{ c.radius * std::cos(u), c.radius * std::sin(u), 0, 1. };
-		*p.components = (*c.matrix.components * xy).head<3>();
+		p.components() = (c.matrix.ccomponents() * xy).head<3>();
 	}
 
 	void evaluate_curve(const taxonomy::ellipse& c, double u, taxonomy::point3& p) {
 		Eigen::Vector4d xy{ c.radius * std::cos(u), c.radius2 * std::sin(u), 0, 1. };
-		*p.components = (*c.matrix.components * xy).head<3>();
+		p.components() = (c.matrix.ccomponents() * xy).head<3>();
 	}
 
 	// ----
 
 	void project_onto_curve(const taxonomy::line& c, const taxonomy::point3& p, double& u) {
-		u = (c.matrix.components->inverse() * p.components->homogeneous())(0);
+		u = (c.matrix.ccomponents().inverse() * p.ccomponents().homogeneous())(0);
 	}
 
 	void project_onto_curve(const taxonomy::circle& c, const taxonomy::point3& p, double& u) {
-		Eigen::Vector2d xy = (c.matrix.components->inverse() * p.components->homogeneous()).head<2>();
+		Eigen::Vector2d xy = (c.matrix.ccomponents().inverse() * p.ccomponents().homogeneous()).head<2>();
 		u = std::atan2(xy(1), xy(0));
 	}
 
 	void project_onto_curve(const taxonomy::ellipse& c, const taxonomy::point3& p, double& u) {
-		Eigen::Vector2d xy = (c.matrix.components->inverse() * p.components->homogeneous()).head<2>();
+		Eigen::Vector2d xy = (c.matrix.ccomponents().inverse() * p.ccomponents().homogeneous()).head<2>();
 		u = std::atan2(xy(1), xy(0));
 	}
 
@@ -468,7 +468,7 @@ namespace {
 		if (b.empty()) {
 			return;
 		}
-		double d = (*a.back().components - *b.front().components).norm();
+		double d = (a.back().ccomponents() - b.front().ccomponents()).norm();
 		size_t offset = d < 1.e-5 ? 1 : 0;
 		a.insert(a.end(), b.begin() + offset, b.end());
 	}
@@ -553,7 +553,7 @@ namespace {
 		auto edges = loop->children_as<taxonomy::edge>();
 		for (auto& e : edges) {
 			auto& p = boost::get<taxonomy::point3>(e->start);
-			CGAL::Point_2<Kernel_> pnt((*p.components)(0), (*p.components)(1));
+			CGAL::Point_2<Kernel_> pnt(p.ccomponents()(0), p.ccomponents()(1));
 			polygon.push_back(pnt);
 		}
 		return polygon;
@@ -667,7 +667,7 @@ bool CgalKernel::convert(const taxonomy::loop* loop, cgal_wire_t& result) {
 
 	if (points.size() >= 2) {
 		// the edges -> <p0, ... pn> conversion left us with a duplicate global begin,end point.
-		double d = (*points.back().components - *points.front().components).norm();
+		double d = (points.back().ccomponents() - points.front().ccomponents()).norm();
 		if (d < 1.e-5) {
 			points.erase(points.end() - 1);
 		} else {
@@ -678,7 +678,7 @@ bool CgalKernel::convert(const taxonomy::loop* loop, cgal_wire_t& result) {
 	// Parse and store the points in a sequence
 	cgal_wire_t polygon = std::vector<Kernel_::Point_3>();
 	for (auto& p : points) {
-		cgal_point_t pnt((*p.components)(0), (*p.components)(1), (*p.components)(2));
+		cgal_point_t pnt(p.ccomponents()(0), p.ccomponents()(1), p.ccomponents()(2));
 		polygon.push_back(pnt);
 	}
 
@@ -854,7 +854,7 @@ bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, const taxonom
 
 		face_list.push_back(cgal_face_t{ w });
 
-		auto& fs = *direction.components;
+		auto& fs = direction.ccomponents();
 		cgal_direction_t dir(fs(0), fs(1), fs(2));
 
 		int si = 0;
@@ -1155,7 +1155,7 @@ bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_ref
 
 namespace {
 	bool convert_placement(const ifcopenshell::geometry::taxonomy::matrix4& place, cgal_placement_t& trsf) {
-		const auto& m = *place.components;
+		const auto& m = place.ccomponents();
 
 		// @todo check
 		trsf = cgal_placement_t(
@@ -1190,14 +1190,14 @@ bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result* br, std::
 		if (op->kind() != taxonomy::COLLECTION) return nptr;
 		auto cl = (taxonomy::collection*) op;
 		if ((cl)->children.size() != 1) return nptr;
-		m4 = new Eigen::Matrix4d(*cl->matrix.components);
+		m4 = new Eigen::Matrix4d(cl->matrix.ccomponents());
 		if (cl->children[0]->kind() == taxonomy::COLLECTION) {
 			cl = (taxonomy::collection*) cl->children[0];
 			if ((cl)->children.size() != 1) {
 				delete m4;
 				return nptr;
 			}
-			(*m4) = (*m4) * *cl->matrix.components;
+			(*m4) = (*m4) * cl->matrix.ccomponents();
 		}
 		if (cl->children[0]->kind() != taxonomy::EXTRUSION) {
 			delete m4;
@@ -1218,7 +1218,7 @@ bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result* br, std::
 	if (std::find_if(extrusions.begin(), extrusions.end(), [&Z](extrusion_pair& p) {
 		// @todo factor in p.first;
 		auto ex = p.second;
-		auto& m = *ex->matrix.components;
+		auto& m = ex->matrix.ccomponents();
 		return std::abs(1. - std::abs(m.col(2).head<3>().dot(Z))) > 1.e-5;
 	}) != extrusions.end()) {
 		return false;
@@ -1227,8 +1227,8 @@ bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result* br, std::
 	// | op[i].matrix[2,0:3] . op[i].direction | = 1
 	if (std::find_if(extrusions.begin(), extrusions.end(), [](extrusion_pair& p) {
 		auto ex = p.second;
-		auto& d = *ex->direction.components;
-		auto& m = *ex->matrix.components;
+		auto& d = ex->direction.ccomponents();
+		auto& m = ex->matrix.ccomponents();
 		return std::abs(1. - std::abs(m.col(2).head<3>().dot(d))) > 1.e-5;
 	}) != extrusions.end()) {
 		return false;
@@ -1243,10 +1243,10 @@ bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result* br, std::
 		return false;
 	}
 
-	const auto& op_0_matrix_2_3 = (*extrusions[0].second->matrix.components)(2, 3);
+	const auto& op_0_matrix_2_3 = extrusions[0].second->matrix.ccomponents()(2, 3);
 	if (std::find_if(extrusions.begin() + 1, extrusions.end(), [&op_0_matrix_2_3](extrusion_pair& p) {
 		auto ex = p.second;
-		return op_0_matrix_2_3 < (*ex->matrix.components)(2, 3);
+		return op_0_matrix_2_3 < ex->matrix.components()(2, 3);
 	}) != extrusions.end()) {
 		return false;
 	}
@@ -1295,9 +1295,9 @@ bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result* br, std::
 	loops.clear();
 	std::transform(wires.begin(), wires.end(), std::back_inserter(loops), wire_to_polygon_2);
 
-	auto& op_0_matrix = *extrusions[0].second->matrix.components;
+	auto& op_0_matrix = extrusions[0].second->matrix.ccomponents();
 	Eigen::Vector4d op_0_dir;
-	op_0_dir << (*extrusions[0].second->direction.components), 0;
+	op_0_dir << extrusions[0].second->direction.ccomponents(), 0;
 	op_0_dir = op_0_matrix * op_0_dir;
 	z0 = op_0_matrix_2_3;
 	z1 = z0 + extrusions[0].second->depth * op_0_dir(2);
@@ -1423,7 +1423,7 @@ bool CgalKernel::process_as_2d_polygon(const std::list<std::list<std::pair<const
 namespace {
 	template <typename It, typename Fn>
 	void project_onto_plane(const taxonomy::plane& p, It i, It j, Fn fn) {
-		auto mi = p.matrix.components->inverse();
+		auto mi = p.matrix.ccomponents().inverse();
 		Eigen::Vector4d v;
 		std::for_each(i, j, [&mi, &v, &fn](const cgal_shape_t& shp) {
 			for (auto& vv : vertices(shp)) {
@@ -1444,11 +1444,11 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 	std::list<CGAL::Polygon_2<Kernel_>> loops;
 
 	if (process_as_2d_polygon(br, loops, z0, z1)) {
-		taxonomy::style first_item_style;
+		taxonomy::style* first_item_style = nullptr;
 		{
 			auto gi = dynamic_cast<const taxonomy::geom_item*>(br->children[0]);
 			while (gi) {
-				if (gi->surface_style.diffuse) {
+				if (gi->surface_style) {
 					first_item_style = gi->surface_style;
 					break;
 				}
@@ -1524,7 +1524,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 				br->instance->data().id(),
 				br->matrix,
 				new CgalShape(shp),
-				br->surface_style.diffuse ? br->surface_style : first_item_style
+				br->surface_style ? br->surface_style : first_item_style
 			);
 		});
 
@@ -1541,7 +1541,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 	CGAL::Nef_nary_union_3<CGAL::Nef_polyhedron_3<Kernel_>> second_operand_collector;
 	size_t second_operand_collector_size = 0;
 
-	taxonomy::style first_item_style;
+	taxonomy::style* first_item_style = nullptr;
 
 	std::list<std::pair<const IfcUtil::IfcBaseClass*, std::list<cgal_shape_t>>> operands;
 
@@ -1627,7 +1627,8 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 		
 		if (first && br->operation == taxonomy::boolean_result::SUBTRACTION) {
 			first_item_style = ((taxonomy::geom_item*)c)->surface_style;
-			if (!first_item_style.diffuse && c->kind() == taxonomy::COLLECTION) {
+			if (!first_item_style && c->kind() == taxonomy::COLLECTION) {
+				// @todo recursively right?
 				first_item_style = ((taxonomy::geom_item*) ((taxonomy::collection*)c)->children[0])->surface_style;
 			}
 		}
@@ -1635,23 +1636,11 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 		for (auto it = cr.begin(); it != cr.end(); ++it) {
 			const cgal_shape_t& entity_shape_unlocated(((CgalShape*)it->Shape())->shape());
 			cgal_shape_t entity_shape(entity_shape_unlocated);
-			if (!it->Placement().components->isIdentity()) {
+			if (!it->Placement().is_identity()) {
 				cgal_placement_t trsf;
 				convert_placement(it->Placement(), trsf);
 				for (auto &vertex : vertices(entity_shape)) {
-					if (false) {
-						auto x = CGAL::to_double(vertex->point().x());
-						auto y = CGAL::to_double(vertex->point().y());
-						auto z = CGAL::to_double(vertex->point().z());
-						std::wcout << x << " " << y << " " << z << std::endl;
-					}
 					vertex->point() = vertex->point().transform(trsf);
-					if (false) {
-						auto x = CGAL::to_double(vertex->point().x());
-						auto y = CGAL::to_double(vertex->point().y());
-						auto z = CGAL::to_double(vertex->point().z());
-						std::wcout << x << " " << y << " " << z << std::endl;
-					}
 				}				
 			}
 			operands.back().second.push_back(entity_shape);
@@ -1720,7 +1709,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 		br->instance->data().id(),
 		br->matrix,
 		new CgalShape(a_poly),
-		br->surface_style.diffuse ? br->surface_style : first_item_style
+		br->surface_style ? br->surface_style : first_item_style
 	));
 	return true;
 }

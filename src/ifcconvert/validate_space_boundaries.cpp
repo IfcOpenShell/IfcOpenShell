@@ -72,7 +72,7 @@ void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, boo
 				for (auto& e : wire->children) {
 					auto edge = (taxonomy::edge*) e;
 					auto p3 = boost::get<taxonomy::point3>(edge->start);
-					auto p4 = *((taxonomy::geom_item*)item)->matrix.components * p3.components->homogeneous();
+					auto p4 = ((taxonomy::geom_item*)item)->matrix.ccomponents() * p3.ccomponents().homogeneous();
 					Kernel_::Point_3 P(p4(0), p4(1), p4(2));
 					elem_to_space_boundary_coords[{g1, g2}].emplace_back(P);
 				}

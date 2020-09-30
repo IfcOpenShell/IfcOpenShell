@@ -8,8 +8,8 @@ void ifcopenshell::geometry::CgalShape::Triangulate(const settings& settings, co
 	// Copy is made because triangulate_faces() does not accept a const argument
   cgal_shape_t s = shape_;
 
-  if (!place.components->isIdentity()) {
-	  const auto& m = *place.components;
+  if (!place.is_identity()) {
+	  const auto& m = place.ccomponents();
 
 	  // @todo check
 	  const cgal_placement_t trsf(

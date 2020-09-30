@@ -28,6 +28,9 @@ enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE_CURVE, 
 
 struct item {
 	const IfcUtil::IfcBaseClass* instance;
+
+	boost::optional<bool> orientation;
+
     virtual item* clone() const = 0;
 	virtual kinds kind() const = 0;
 	virtual void print(std::ostream&, int indent=0) const = 0;
@@ -44,40 +47,76 @@ struct less_functor {
 	}
 };
 
+namespace {
+
+	template <typename T>
+	const T& eigen_defaults();
+
+	template <>
+	const Eigen::Vector3d& eigen_defaults<Eigen::Vector3d>() {
+		static Eigen::Vector3d identity = Eigen::Vector3d::Zero();
+		return identity;
+	}
+
+	template <>
+	const Eigen::Matrix4d& eigen_defaults<Eigen::Matrix4d>() {
+		static Eigen::Matrix4d identity = Eigen::Matrix4d::Identity();
+		return identity;
+	}
+
+}
+
 template <typename T>
 struct eigen_base {
-	T* components;
+	T* components_;
 
 	eigen_base() {
-		components = new T;
+		components_ = nullptr;
 	}
 
 	eigen_base(const eigen_base& other) {
-		this->components = new T(*other.components);
+		this->components_ = other.components_ ? new T(*other.components_) : nullptr;
 	}
 
 	eigen_base(const T& other) {
-		this->components = new T(other);
+		this->components_ = new T(other);
 	}
 
 	eigen_base& operator=(const eigen_base& other) {
 		if (this != &other) {
-			this->components = new T(*other.components);
+			this->components_ = other.components_ ? new T(*other.components_) : nullptr;
 		}
 		return *this;
 	}
 
 	void print_impl(std::ostream& o, const std::string& class_name, int indent = 0) const {
 		o << std::string(indent, ' ') << class_name;
-		int n = T::RowsAtCompileTime * T::ColsAtCompileTime;
-		for (size_t i = 0; i < n; ++i) {
-			o << " " << (*components)(i);
+		if (this->components_) {
+			int n = T::RowsAtCompileTime * T::ColsAtCompileTime;
+			for (size_t i = 0; i < n; ++i) {
+				o << " " << (*components_)(i);
+			}
 		}
 		o << std::endl;
 	}
 
 	~eigen_base() {
-		delete this->components;
+		delete this->components_;
+	}
+
+	const T& ccomponents() const {
+		if (this->components_) {
+			return *this->components_;
+		} else {
+			return eigen_defaults<T>();
+		}
+	}
+
+	T& components() {
+		if (!this->components_) {
+			this->components_ = new T;
+		}
+		return *this->components_;
 	}
 };
 
@@ -87,18 +126,22 @@ struct matrix4 : public item, public eigen_base<Eigen::Matrix4d> {
     };
     tag_t tag;
 
-	matrix4() : eigen_base(Eigen::Matrix4d::Identity()), tag(IDENTITY) {}
+	matrix4() : eigen_base(), tag(IDENTITY) {}
 	matrix4(const Eigen::Matrix4d& c) : eigen_base(c), tag(OTHER) {}
 	matrix4(const Eigen::Vector3d& o, const Eigen::Vector3d& z, const Eigen::Vector3d& x) : tag(AFFINE_WO_SCALE) {
 		auto X = x.normalized();
 		auto Y = z.cross(x).normalized();
 		auto Z = z.normalized();
-		components = new Eigen::Matrix4d;
-		(*components) <<
+		components_ = new Eigen::Matrix4d;
+		(*components_) <<
 			X(0), Y(0), Z(0), o(0),
 			X(1), Y(1), Z(1), o(1),
 			X(2), Y(2), Z(2), o(2),
 			0, 0, 0, 1.;
+	}
+
+	bool is_identity() const {
+		return !components_ || components_->isIdentity();
 	}
 
 	void print(std::ostream& o, int indent = 0) const {
@@ -117,33 +160,30 @@ struct colour : public item, public eigen_base<Eigen::Vector3d> {
 	virtual item* clone() const { return new colour(*this); }
 	virtual kinds kind() const { return COLOUR; }
 
-	colour() : eigen_base(Eigen::Vector3d::Zero()) {}
-	colour(double r, double g, double b) { (*components) << r, g, b; }
+	colour() : eigen_base() {}
+	colour(double r, double g, double b) { components() << r, g, b; }
 
-	const double& r() const { return (*components)[0]; }
-	const double& g() const { return (*components)[1]; }
-	const double& b() const { return (*components)[2]; }
+	const double& r() const { return ccomponents()[0]; }
+	const double& g() const { return ccomponents()[1]; }
+	const double& b() const { return ccomponents()[2]; }
 };
 
 struct style : public item {
-	// @todo this is not very efficient wrt alignment
-	boost::optional<std::string> name;
-	boost::optional<colour> diffuse;
-	boost::optional<colour> specular;
-	boost::optional<double> specularity, transparency;
+	std::string name;
+	colour diffuse;
+	colour specular;
+	double specularity, transparency;
 
 	void print(std::ostream& o, int indent = 0) const {
 		o << std::string(indent, ' ') << "style" << std::endl;
-		if (name) {
-			o << std::string(indent, ' ') << "     " << "name" << (*name) << std::endl;
+		o << std::string(indent, ' ') << "     " << "name" << (name) << std::endl;
+		if (diffuse.components_) {
+			o << std::string(indent, ' ') << "     " << "diffuse" << (name) << std::endl;
+			diffuse.print(o, indent + 5 + 7);
 		}
-		if (diffuse) {
-			o << std::string(indent, ' ') << "     " << "diffuse" << (*name) << std::endl;
-			diffuse->print(o, indent + 5 + 7);
-		}
-		if (diffuse) {
-			o << std::string(indent, ' ') << "     " << "specular" << (*name) << std::endl;
-			diffuse->print(o, indent + 5 + 8);
+		if (specular.components_) {
+			o << std::string(indent, ' ') << "     " << "specular" << (name) << std::endl;
+			specular.print(o, indent + 5 + 8);
 		}
 		// @todo
 	}
@@ -154,23 +194,31 @@ struct style : public item {
 	// @todo equality implementation based on values?
 	bool operator==(const style& other) const { return instance == other.instance; }
 
-	style() {}
-	style(const std::string& name) : name(name) {}
+	style() : specularity(std::numeric_limits<double>::quiet_NaN()), transparency(std::numeric_limits<double>::quiet_NaN()) {}
+	style(const std::string& name) : name(name), specularity(std::numeric_limits<double>::quiet_NaN()), transparency(std::numeric_limits<double>::quiet_NaN()) {}
+
+	bool has_specularity() const {
+		return !std::isnan(specularity);
+	}
+
+	bool has_transparency() const {
+		return !std::isnan(transparency);
+	}
 };
 
 struct geom_item : public item {
-    style surface_style;
+    style* surface_style;
     matrix4 matrix;
-	boost::optional<bool> orientation;
 
-	geom_item(const IfcUtil::IfcBaseClass* instance = nullptr) : item(instance) {}
-	geom_item(const IfcUtil::IfcBaseClass* instance, matrix4 m) : item(instance), matrix(m) {}
-	geom_item(matrix4 m) : matrix(m) {}
+	geom_item(const IfcUtil::IfcBaseClass* instance = nullptr) : item(instance), surface_style(nullptr) {}
+	geom_item(const IfcUtil::IfcBaseClass* instance, matrix4 m) : item(instance), surface_style(nullptr), matrix(m) {}
+	geom_item(matrix4 m) : surface_style(nullptr), matrix(m) {}
 };
 
+// @todo make 4d for easier multiplication
 template <size_t N>
-struct cartesian_base : public geom_item, public eigen_base<Eigen::Vector3d> {
-	cartesian_base() : eigen_base(Eigen::Vector3d::Zero()) {}
+struct cartesian_base : public item, public eigen_base<Eigen::Vector3d> {
+	cartesian_base() : eigen_base() {}
 	cartesian_base(double x, double y, double z = 0.) : eigen_base(Eigen::Vector3d(x, y, z)) {}
 };
 
@@ -182,7 +230,8 @@ struct point3 : public cartesian_base<3> {
 		print_impl(o, "point3", indent);
 	}
 
-	point3(double x = 0., double y = 0., double z = 0.) : cartesian_base(x, y, z) {}
+	point3() : cartesian_base() {}
+	point3(double x, double y, double z = 0.) : cartesian_base(x, y, z) {}
 };
 
 struct direction3 : public cartesian_base<3> {
@@ -193,7 +242,8 @@ struct direction3 : public cartesian_base<3> {
 		print_impl(o, "direction3", indent);
 	}
 
-	direction3(double x = 0., double y = 0., double z = 0.) : cartesian_base(x, y, z) {}
+	direction3() : cartesian_base() {}
+	direction3(double x, double y, double z = 0.) : cartesian_base(x, y, z) {}
 };
 
 struct curve : public geom_item {
@@ -243,7 +293,7 @@ struct bspline_curve : public curve {
 	}
 };
 
-struct trimmed_curve : public curve {
+struct trimmed_curve : public item {
 	// @todo The copy constructor of point3 within the variant fails on the avx instruction
 	// on the default gcc in Ubuntu 18.04 and a recent AMD Ryzen. Probably due to allignment.
 	boost::variant<point3, double> start, end;
@@ -316,7 +366,7 @@ struct collection : public geom_item {
 
 	void print(std::ostream& o, int indent = 0) const {
 		o << std::string(indent, ' ') << "collection" << std::endl;
-		if (!matrix.components->isIdentity()) {
+		if (!matrix.components_->isIdentity()) {
 			matrix.print(o, indent + 4);
 		}
 		for (auto& c : children) {

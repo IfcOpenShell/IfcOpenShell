@@ -134,7 +134,7 @@ bool OpenCascadeKernel::convert(const taxonomy::extrusion* extrusion, TopoDS_Sha
 	auto trsf = gtrsf.Trsf();
 	*/
 
-	const auto& fs = *extrusion->direction.components;
+	const auto& fs = extrusion->direction.ccomponents();
 	gp_Dir dir(fs(0), fs(1), fs(2));
 	
 	shape.Nullify();
@@ -514,7 +514,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face* face, TopoDS_Shape& result
 namespace {
 	template <typename T, typename U>
 	T convert_xyz(const U& u) {
-		const auto& vs = *u.components;
+		const auto& vs = u.ccomponents();
 		return T(vs(0), vs(1), vs(2));
 	}
 
@@ -536,17 +536,17 @@ namespace {
 		}
 
 		curve_creation_visitor_result_type operator()(const taxonomy::line& l) {
-			const auto& m = *l.matrix.components;
+			const auto& m = l.matrix.ccomponents();
 			return result = Handle(Geom_Curve)(new Geom_Line(convert_xyz2<gp_Pnt>(m.col(3)), convert_xyz2<gp_Dir>(m.col(0))));
 		}
 
 		curve_creation_visitor_result_type operator()(const taxonomy::circle& c) {
-			const auto& m = *c.matrix.components;
+			const auto& m = c.matrix.ccomponents();
 			return result = Handle(Geom_Curve)(new Geom_Circle(gp_Ax2(convert_xyz2<gp_Pnt>(m.col(3)), convert_xyz2<gp_Dir>(m.col(2)), convert_xyz2<gp_Dir>(m.col(0))), c.radius));
 		}
 
 		curve_creation_visitor_result_type operator()(const taxonomy::ellipse& e) {
-			const auto& m = *e.matrix.components;
+			const auto& m = e.matrix.ccomponents();
 			return result = Handle(Geom_Curve)(new Geom_Ellipse(gp_Ax2(convert_xyz2<gp_Pnt>(m.col(3)), convert_xyz2<gp_Dir>(m.col(2)), convert_xyz2<gp_Dir>(m.col(0))), e.radius, e.radius2));
 		}
 
@@ -926,7 +926,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::shell *shell, ifcopenshell:
 
 bool OpenCascadeKernel::convert(const taxonomy::matrix4* matrix, gp_GTrsf& trsf) {
 	// @todo check
-	const auto& m = *matrix->components;
+	const auto& m = matrix->ccomponents();
 	gp_Mat mat(
 		m(0, 0), m(0, 1), m(0, 2),
 		m(1, 0), m(1, 1), m(1, 2),
@@ -2134,7 +2134,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result* br, ifcopen
 	TopoDS_Shape a;
 	TopTools_ListOfShape b;
 
-	taxonomy::style first_item_style;
+	taxonomy::style* first_item_style = nullptr;
 
 	for (auto& c : br->children) {
 		// AbstractKernel::convert(c, results);
@@ -2147,7 +2147,8 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result* br, ifcopen
 			// @todo A will be null on union/intersection, intended?
 			flatten_shape_list(cr, a, false);
 			first_item_style = ((taxonomy::geom_item*)c)->surface_style;
-			if (!first_item_style.diffuse && c->kind() == taxonomy::COLLECTION) {
+			if (!first_item_style && c->kind() == taxonomy::COLLECTION) {
+				// @todo recursively right?
 				first_item_style = ((taxonomy::geom_item*) ((taxonomy::collection*)c)->children[0])->surface_style;
 			}
 		} else {
@@ -2188,7 +2189,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result* br, ifcopen
 		br->instance->data().id(),
 		br->matrix,
 		new OpenCascadeShape(r),
-		br->surface_style.diffuse ? br->surface_style : first_item_style
+		br->surface_style ? br->surface_style : first_item_style
 	));
 	return true;
 }
@@ -2268,7 +2269,7 @@ bool OpenCascadeKernel::flatten_shape_list(const ifcopenshell::geometry::Convers
 }
 
 TopoDS_Shape OpenCascadeKernel::apply_transformation(const TopoDS_Shape& s, const taxonomy::matrix4& t) {
-	if (t.components->isIdentity()) {
+	if (t.is_identity()) {
 		return s;
 	} else {
 		gp_GTrsf trsf;
@@ -2311,7 +2312,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::face* face, ifcopenshell::g
 	}
 
 	// @todo boundary
-	const auto& m = *((taxonomy::geom_item*)face->basis)->matrix.components;
+	const auto& m = ((taxonomy::geom_item*)face->basis)->matrix.ccomponents();
 	gp_Pln pln(convert_xyz2<gp_Pnt>(m.col(3)), convert_xyz2<gp_Dir>(m.col(2)));
 	const gp_Pnt pnt = pln.Location().Translated(face->orientation.get_value_or(false) ? -pln.Axis().Direction() : pln.Axis().Direction());
 	TopoDS_Shape shape = BRepPrimAPI_MakeHalfSpace(BRepBuilderAPI_MakeFace(pln), pnt).Solid();
