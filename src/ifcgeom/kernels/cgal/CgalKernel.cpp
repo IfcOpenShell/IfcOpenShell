@@ -759,6 +759,9 @@ bool CgalKernel::convert_impl(const taxonomy::shell *shell, ifcopenshell::geomet
 	if (!convert(shell, shape)) {
 		return false;
 	}
+	if (shape.size_of_facets() == 0) {
+		return false;
+	}
 	results.emplace_back(ConversionResult(
 		shell->instance->data().id(),
 		shell->matrix,
