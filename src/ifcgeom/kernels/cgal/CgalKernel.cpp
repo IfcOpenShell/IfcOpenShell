@@ -190,8 +190,8 @@ bool CgalKernel::convert(const taxonomy::shell* l, cgal_shape_t& shape) {
 			CGAL::Point_3<Kernel_> lower(minmax.first(0), minmax.first(1), minmax.first(2));
 			CGAL::Point_3<Kernel_> upper(minmax.second(0), minmax.second(1), minmax.second(2));
 			shape = utils::create_cube(lower, upper);
+			return true;
 		}
-		return true;
 	}
 
 	std::list<cgal_face_t> face_list;
