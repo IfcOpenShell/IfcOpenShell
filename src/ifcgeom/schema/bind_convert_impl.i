@@ -9,7 +9,10 @@
 			if (item != nullptr) { \
 				item->instance = l; \
 				try { \
-					if (l->as<IfcSchema::IfcRepresentationItem>() && !l->as<IfcSchema::IfcStyledItem>()) { \
+					if (l->as<IfcSchema::IfcRepresentationItem>() && !l->as<IfcSchema::IfcStyledItem>() && \
+						/* @todo */ \
+						(item->kind() == taxonomy::SHELL || item->kind() == taxonomy::COLLECTION || item->kind() == taxonomy::EXTRUSION) \
+					) { \
 						auto style = find_style(l->as<IfcSchema::IfcRepresentationItem>()); \
 						if (style) { \
 							((taxonomy::geom_item*)item)->surface_style = (taxonomy::style*) map(style); \
