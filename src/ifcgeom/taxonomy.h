@@ -37,6 +37,8 @@ struct item {
 	virtual void reverse() { throw taxonomy::topology_error(); }
 
 	item(const IfcUtil::IfcBaseClass* instance = nullptr) : instance(instance) {}
+
+	virtual ~item() {}
 };
 
 bool less(const item*, const item*);

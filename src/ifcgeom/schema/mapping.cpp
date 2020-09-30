@@ -1344,7 +1344,7 @@ namespace {
 				auto O = boost::get<taxonomy::point3>(p.previous->end).ccomponents().head<3>() + ab * *p.radius * sign;
 
 				auto c = new taxonomy::circle;
-				*c->matrix.components_ = Eigen::Affine3d(Eigen::Translation3d(O)).matrix();
+				c->matrix.components_ = new Eigen::Matrix4d(Eigen::Affine3d(Eigen::Translation3d(O)).matrix());
 				c->radius = *p.radius;
 				e->basis = c;
 				c->orientation.reset(sign == -1.);
