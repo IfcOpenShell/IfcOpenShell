@@ -142,10 +142,13 @@ bool file_exists(const std::string& filename) {
 
 static std::basic_stringstream<path_t::value_type> log_stream;
 void write_log(bool);
+
+/*
 void fix_quantities(IfcParse::IfcFile&, bool, bool, bool);
 void fix_spaceboundaries(IfcParse::IfcFile&, bool, bool, bool);
 void fix_storeycontainment(IfcParse::IfcFile&, bool, bool, bool);
 void fix_wallconnectivity(IfcParse::IfcFile&, bool, bool, bool);
+*/
 
 std::string format_duration(time_t start, time_t end);
 
@@ -583,6 +586,7 @@ int main(int argc, char** argv) {
 				time(&start);
 				std::ofstream fs(output_filename.c_str());
 				if (fs.is_open()) {
+					/*
 					if (vmap.count("calculate-quantities")) {
 						fix_quantities(*ifc_file, no_progress, quiet, stderr_progress);
 					}
@@ -595,6 +599,7 @@ int main(int argc, char** argv) {
 					if (vmap.count("fix-wall-connectivity")) {
 						fix_wallconnectivity(*ifc_file, no_progress, quiet, stderr_progress);
 					}
+					*/
 					fs << *ifc_file;
 					exit_code = EXIT_SUCCESS;
 				} else {

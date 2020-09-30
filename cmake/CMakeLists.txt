@@ -713,8 +713,8 @@ set_target_properties(serializers PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS $
 TARGET_LINK_LIBRARIES(serializers ${SERIALIZER_SCHEMA_LIBRARIES})
 
 # IfcConvert
-file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)
-file(GLOB IFCCONVERT_H_FILES ../src/ifcconvert/*.h)
+file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/IfcConvert.cpp)
+file(GLOB IFCCONVERT_H_FILES ../src/ifcconvert/skip-for-now.h)
 set(IFCCONVERT_FILES ${IFCCONVERT_CPP_FILES} ${IFCCONVERT_H_FILES})
 ADD_EXECUTABLE(IfcConvert ${IFCCONVERT_FILES})
 set_target_properties(IfcConvert PROPERTIES COMPILE_FLAGS "${CONVERT_PRECISION}")
