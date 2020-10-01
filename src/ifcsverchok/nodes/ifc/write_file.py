@@ -6,9 +6,9 @@ from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
 
 
-class SvWriteIfc(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
-    bl_idname = 'SvWriteIfc'
-    bl_label = 'Write IFC'
+class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
+    bl_idname = 'SvIfcWriteFile'
+    bl_label = 'IFC Write File'
     file: StringProperty(name='file', update=updateNode)
     path: StringProperty(name='path', update=updateNode)
 
@@ -24,7 +24,7 @@ class SvWriteIfc(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcC
         file.write(path)
 
 def register():
-    bpy.utils.register_class(SvWriteIfc)
+    bpy.utils.register_class(SvIfcWriteFile)
 
 def unregister():
-    bpy.utils.unregister_class(SvWriteIfc)
+    bpy.utils.unregister_class(SvIfcWriteFile)
