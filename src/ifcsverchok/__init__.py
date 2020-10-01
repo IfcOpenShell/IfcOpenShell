@@ -22,9 +22,10 @@ from sverchok.utils.logging import info, debug
 
 def nodes_index():
     return [("IFC", [
-        ("ifc.create_ifc", "SvCreateIfc"),
-        ("ifc.read_ifc", "SvReadIfc"),
-        ("ifc.write_ifc", "SvWriteIfc"),
+        ("ifc.create_file", "SvIfcCreateFile"),
+        ("ifc.read_file", "SvIfcReadFile"),
+        ("ifc.write_file", "SvIfcWriteFile"),
+        ("ifc.create_entity", "SvIfcCreateEntity"),
     ])]
 
 def make_node_list():

@@ -6,9 +6,9 @@ from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
 
 
-class SvReadIfc(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
-    bl_idname = 'SvReadIfc'
-    bl_label = 'Read IFC'
+class SvIfcReadFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
+    bl_idname = 'SvIfcReadFile'
+    bl_label = 'IFC Read File'
     path: StringProperty(name='path', update=updateNode)
 
     def sv_init(self, context):
@@ -25,7 +25,7 @@ class SvReadIfc(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCo
         self.outputs['file'].sv_set([[ifcsverchok.helper.ifc_files[guid]]])
 
 def register():
-    bpy.utils.register_class(SvReadIfc)
+    bpy.utils.register_class(SvIfcReadFile)
 
 def unregister():
-    bpy.utils.unregister_class(SvReadIfc)
+    bpy.utils.unregister_class(SvIfcReadFile)
