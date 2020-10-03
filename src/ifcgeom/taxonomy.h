@@ -102,7 +102,7 @@ struct eigen_base {
 		o << std::endl;
 	}
 
-	~eigen_base() {
+	virtual ~eigen_base() {
 		delete this->components_;
 	}
 
