@@ -403,7 +403,7 @@ namespace {
 			}
 			a = std::fmod(a, 2 * M_PI);
 			b = std::fmod(b, 2 * M_PI);
-			if (b < a) {
+			if (b <= a) {
 				b += 2 * M_PI;
 			}
 			int num_segments = (int)std::ceil(std::fabs(a - b) / (2 * M_PI) * FULL_CIRCLE_NUM_SEGMENTS);
