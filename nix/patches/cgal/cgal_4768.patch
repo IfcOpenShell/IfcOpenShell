@@ -1,0 +1,38 @@
+From a86712d1aae9a1a6d2004db3fc8fcdac6ef6b782 Mon Sep 17 00:00:00 2001
+From: Thomas Krijnen <t.krijnen@gmail.com>
+Date: Sun, 7 Jun 2020 15:25:18 +0200
+Subject: [PATCH] Don't segfault on empty Nef_nary_x
+
+---
+ Nef_3/include/CGAL/Nef_nary_intersection_3.h | 3 ++-
+ Nef_3/include/CGAL/Nef_nary_union_3.h        | 3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/Nef_3/include/CGAL/Nef_nary_intersection_3.h b/Nef_3/include/CGAL/Nef_nary_intersection_3.h
+index 70fc5791fae..5178705dc2f 100644
+--- a/Nef_3/include/CGAL/Nef_nary_intersection_3.h
++++ b/Nef_3/include/CGAL/Nef_nary_intersection_3.h
+@@ -52,7 +52,8 @@ class Nef_nary_intersection_3 {
+   }
+ 
+   Polyhedron get_intersection() {
+-
++    if (queue.empty())
++      return empty;
+     while(queue.size() > 1)
+       intersect();
+     inserted = 0;
+diff --git a/Nef_3/include/CGAL/Nef_nary_union_3.h b/Nef_3/include/CGAL/Nef_nary_union_3.h
+index ecbbae2db59..c8663bb911b 100644
+--- a/Nef_3/include/CGAL/Nef_nary_union_3.h
++++ b/Nef_3/include/CGAL/Nef_nary_union_3.h
+@@ -52,7 +52,8 @@ class Nef_nary_union_3 {
+   }
+ 
+   Polyhedron get_union() {
+-
++    if (queue.empty())
++      return empty;
+     while(queue.size() > 1)
+       unite();
+     inserted = 0;
