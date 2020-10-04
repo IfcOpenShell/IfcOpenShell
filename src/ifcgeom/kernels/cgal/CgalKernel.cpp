@@ -1584,8 +1584,17 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 				}
 			});
 			
-			Kernel_::Point_3 lower(uvw_min[0] - eps, uvw_min[1] - eps, 0.);
-			Kernel_::Point_3 upper(uvw_max[0] + eps, uvw_max[1] + eps, uvw_max[2] + eps);
+			double wmin, wmax;
+			if (p.orientation.get_value_or(true)) {
+				wmin = 0.;
+				wmax = uvw_max[2] + eps;
+			} else {
+				wmin = uvw_min[2] - eps;
+				wmax = 0.;
+			}
+
+			Kernel_::Point_3 lower(uvw_min[0] - eps, uvw_min[1] - eps, wmin);
+			Kernel_::Point_3 upper(uvw_max[0] + eps, uvw_max[1] + eps, wmax);
 			cgal_shape_t box = utils::create_cube(lower, upper);
 			cgal_placement_t pl;
 			convert_placement(p.matrix, pl);
