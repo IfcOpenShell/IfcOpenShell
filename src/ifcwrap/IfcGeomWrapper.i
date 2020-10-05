@@ -171,7 +171,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 					if isinstance(v, numbers.Integral):
 						yield x
 
-		return "%self(%self)" % (
+		return "%s(%s)" % (
 			type(self).__name__,
 			(", ".join(map(lambda x: "%s = %r" % (x, self.get(getattr(self, x))), d())))
 		)
