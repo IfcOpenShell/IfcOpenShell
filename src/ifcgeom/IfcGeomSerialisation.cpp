@@ -460,7 +460,7 @@ int convert_to_ifc(const TopoDS_Face& f, IfcSchema::IfcFace*& face, bool advance
 		face = new IfcSchema::IfcFace(bounds);
 		return 1;
 	} else {
-#ifdef USE_IFC4
+#ifdef SCHEMA_HAS_IfcAdvancedFace
 		IfcSchema::IfcSurface* surface;
 		if (!convert_to_ifc(surf, surface, advanced)) {
 			return 0;
@@ -499,7 +499,8 @@ int convert_to_ifc(const TopoDS_Shape& s, U*& item, bool advanced) {
 }
 
 IfcUtil::IfcBaseClass* IfcGeom::MAKE_TYPE_NAME(serialise_)(const TopoDS_Shape& shape, bool advanced) {
-#ifndef USE_IFC4
+
+#ifndef SCHEMA_HAS_IfcAdvancedBrep
 	advanced = false;
 #endif
 
@@ -528,7 +529,7 @@ IfcUtil::IfcBaseClass* IfcGeom::MAKE_TYPE_NAME(serialise_)(const TopoDS_Shape& s
 			}
 		}
 
-#ifdef USE_IFC4
+#ifdef SCHEMA_HAS_IfcAdvancedBrep
 		if (advanced) {
 			if (inner->size()) {
 				items->push(new IfcSchema::IfcAdvancedBrepWithVoids(outer, inner));
