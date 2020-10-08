@@ -355,7 +355,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceOfRevolution* l, TopoDS
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcRevolvedAreaSolid* l, TopoDS_Shape& shape) {
 	const double ang = l->Angle() * getValue(GV_PLANEANGLE_UNIT);
 
-	TopoDS_Face face;
+	TopoDS_Shape face;
 	if ( ! convert_face(l->SweptArea(),face) ) return false;
 
 	gp_Ax1 ax1;
@@ -368,6 +368,45 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRevolvedAreaSolid* l, TopoDS_S
 #endif
 	if (has_position) {
 		IfcGeom::Kernel::convert(l->Position(), trsf);
+	}
+
+
+	{
+		// https://github.com/IfcOpenShell/IfcOpenShell/issues/1030
+		// Check whether Axis does not intersect SweptArea
+
+		double min_dot = +std::numeric_limits<double>::infinity();
+		double max_dot = -std::numeric_limits<double>::infinity();
+
+		gp_Ax2 ax(ax1.Location(), gp::DZ(), ax1.Direction());
+
+		TopExp_Explorer exp(face, TopAbs_EDGE);
+		for (; exp.More(); exp.Next()) {
+			BRepAdaptor_Curve crv(TopoDS::Edge(exp.Current()));
+			GCPnts_QuasiUniformDeflection tessellater(crv, getValue(GV_PRECISION));
+
+			int n = tessellater.NbPoints();
+			for (int i = 1; i <= n; ++i) {
+				double d = ax.YDirection().XYZ().Dot(tessellater.Value(i).XYZ());
+				if (d < min_dot) {
+					min_dot = d;
+				}
+				if (d > max_dot) {
+					max_dot = d;
+				}
+			}
+		}
+
+		bool intersecting;
+		if (std::abs(min_dot) > std::abs(max_dot)) {
+			intersecting = max_dot > + getValue(GV_PRECISION);
+		} else {
+			intersecting = min_dot < - getValue(GV_PRECISION);
+		}
+
+		if (intersecting) {
+			Logger::Warning("Warning Axis and SweptArea intersecting", l);
+		}
 	}
 
 	if (ang >= M_PI * 2. - ALMOST_ZERO) {
