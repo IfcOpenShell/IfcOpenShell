@@ -1447,6 +1447,29 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 		return false;
 	}
 
+	if (count(wire, TopAbs_EDGE) == 1) {
+		TopoDS_Vertex v0, v1;
+		TopExp::Vertices(wire, v0, v1);
+		if (v0.IsSame(v1)) {
+			TopExp_Explorer exp(wire, TopAbs_EDGE);
+			auto& e = TopoDS::Edge(exp.Current());
+			double a, b;
+			auto crv = BRep_Tool::Curve(e, a, b);
+			if ((crv->DynamicType() == STANDARD_TYPE(Geom_Circle)) ||
+				(crv->DynamicType() == STANDARD_TYPE(Geom_Ellipse))) 
+			{
+				BRepBuilderAPI_MakeEdge me(crv, l->StartParam(), l->EndParam());
+				if (me.IsDone()) {
+					auto e2 = me.Edge();
+					BRep_Builder B;
+					wire.Nullify();
+					B.MakeWire(wire);
+					B.Add(wire, e2);
+				}
+			}
+		}
+	}
+
 	// NB: Note that StartParam and EndParam param are ignored and the assumption is
 	// made that the parametric range over which to be swept matches the IfcCurve in
 	// its entirety.
