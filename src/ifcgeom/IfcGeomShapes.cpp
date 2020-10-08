@@ -1227,7 +1227,7 @@ namespace {
 		// @todo we could be extruding the wire only when we know this is an intermediate edge.
 		const double depth = std::abs(u - v);
 		TopoDS_Face face = BRepBuilderAPI_MakeFace(section).Face();
-		result = BRepPrimAPI_MakeRevol(section, circ->Axis(), depth).Shape();
+		result = BRepPrimAPI_MakeRevol(face, circ->Axis(), depth).Shape();
 	}
 
 	void process_sweep_as_pipe(const TopoDS_Wire& wire, const TopoDS_Wire& section, TopoDS_Shape& result, bool force_transformed=false) {
