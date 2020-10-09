@@ -2363,9 +2363,9 @@ class IfcExporter():
                 obj.bound_box[0][1],
                 obj.bound_box[0][2]
             ),
-            obj.dimensions[0],
-            obj.dimensions[1],
-            obj.dimensions[2]
+            self.convert_si_to_unit(obj.dimensions[0]),
+            self.convert_si_to_unit(obj.dimensions[1]),
+            self.convert_si_to_unit(obj.dimensions[2])
         )
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']][
