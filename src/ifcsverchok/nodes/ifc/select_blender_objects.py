@@ -7,6 +7,20 @@ from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
 
 
+class SvIfcSelectBlenderObjectsRefresh(bpy.types.Operator):
+    bl_idname = "node.sv_ifc_select_blender_objects_refresh"
+    bl_label = "IFC Select Blender Objects Refresh"
+    bl_options = {'UNDO'}
+
+    idtree: StringProperty(default='')
+    idname: StringProperty(default='')
+
+    def execute(self, context):
+        node = bpy.data.node_groups[self.idtree].nodes[self.idname]
+        node.process()
+        return {'FINISHED'}
+
+
 class SvIfcSelectBlenderObjects(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = 'SvIfcSelectBlenderObjects'
     bl_label = 'IFC Select Blender Objects'
@@ -15,6 +29,9 @@ class SvIfcSelectBlenderObjects(bpy.types.Node, SverchCustomTreeNode, ifcsvercho
 
     def sv_init(self, context):
         self.inputs.new('SvStringsSocket', 'entities').prop_name = 'entities'
+
+    def draw_buttons(self, context, layout):
+        self.wrapper_tracked_ui_draw_op(layout, 'node.sv_ifc_select_blender_objects_refresh', icon='FILE_REFRESH', text='Refresh')
 
     def process(self):
         self.sv_input_names = ['entities']
@@ -31,7 +48,9 @@ class SvIfcSelectBlenderObjects(bpy.types.Node, SverchCustomTreeNode, ifcsvercho
 
 
 def register():
+    bpy.utils.register_class(SvIfcSelectBlenderObjectsRefresh)
     bpy.utils.register_class(SvIfcSelectBlenderObjects)
 
 def unregister():
     bpy.utils.unregister_class(SvIfcSelectBlenderObjects)
+    bpy.utils.unregister_class(SvIfcSelectBlenderObjectsRefresh)
