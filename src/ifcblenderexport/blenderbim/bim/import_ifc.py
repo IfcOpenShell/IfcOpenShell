@@ -152,6 +152,10 @@ class MaterialCreator():
             self.create_single(material)
         elif material.is_a('IfcMaterialLayerSet'):
             self.create_layer_set(material)
+        elif material.is_a('IfcMaterialConstituentSet'):
+            self.create_constituent_set(material)
+        elif material.is_a('IfcMaterialList'):
+            self.create_material_list(material)
 
     def create_single(self, material):
         if material.Name not in self.materials:
@@ -166,8 +170,26 @@ class MaterialCreator():
                     self.create_new_single(layer.Material)
                 self.assign_material_to_mesh(self.materials[layer.Material.Name])
 
+    def create_constituent_set(self, constituent_set):
+        for constituent in constituent_set.MaterialConstituents:
+            if constituent.Material:
+                if constituent.Material.Name not in self.materials:
+                    # TODO import rest of the layer set data
+                    self.create_new_single(constituent.Material)
+                self.assign_material_to_mesh(self.materials[constituent.Material.Name])
+
+    def create_material_list(self, material_list):
+        for material in material_list.Materials:
+            if material.Material:
+                if material.Material.Name not in self.materials:
+                    # TODO import rest of the layer set data
+                    self.create_new_single(material.Material)
+                self.assign_material_to_mesh(self.materials[material.Material.Name])
+
     def create_new_single(self, material):
-        self.materials[material.Name] = bpy.data.materials.new(material.Name)
+        self.materials[material.Name] = obj = bpy.data.materials.new(material.Name)
+        for pset in getattr(material, "HasProperties", ()):
+            self.add_pset(pset, obj)
         if not material.HasRepresentation \
                 or not material.HasRepresentation[0].Representations:
             return
@@ -177,7 +199,24 @@ class MaterialCreator():
             for item in representation.Items:
                 if not item.is_a('IfcStyledItem'):
                     continue
-                self.parse_styled_item(item, self.materials[material.Name])
+                self.parse_styled_item(item, obj)
+
+    def add_pset(self, pset, obj):
+        new_pset = obj.BIMMaterialProperties.psets.add()
+        new_pset.name = pset.Name
+        if new_pset.name in schema.ifc.psets:
+            for prop_name in schema.ifc.psets[new_pset.name]['HasPropertyTemplates'].keys():
+                prop = new_pset.properties.add()
+                prop.name = prop_name
+        for prop in pset.Properties:
+            if prop.is_a('IfcPropertySingleValue') and prop.NominalValue:
+                index = new_pset.properties.find(prop.Name)
+                if index >= 0:
+                    new_pset.properties[index].string_value = str(prop.NominalValue.wrappedValue)
+                else:
+                    new_prop = new_pset.properties.add()
+                    new_prop.name = prop.Name
+                    new_prop.string_value = str(prop.NominalValue.wrappedValue)
 
     def get_material_name(self, styled_item):
         if styled_item.Name:
