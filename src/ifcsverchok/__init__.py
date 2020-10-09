@@ -29,6 +29,7 @@ def nodes_index():
         ("ifc.by_id", "SvIfcById"),
         ("ifc.by_guid", "SvIfcByGuid"),
         ("ifc.by_type", "SvIfcByType"),
+        ("ifc.by_query", "SvIfcByQuery"),
     ])]
 
 def make_node_list():
