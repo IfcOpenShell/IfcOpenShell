@@ -13,6 +13,7 @@
 #include <TColStd_Array1OfReal.hxx>
 #include <TColStd_Array2OfReal.hxx>
 #include <TColStd_Array1OfInteger.hxx>
+#include <Geom_BezierCurve.hxx>
 
 #include "IfcGeom.h"
 
@@ -129,6 +130,52 @@ int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool
 		return 1;
 	}
 #ifdef SCHEMA_HAS_IfcRationalBSplineSurfaceWithKnots
+	else if (c->DynamicType() == STANDARD_TYPE(Geom_BezierCurve)) {
+		Handle_Geom_BezierCurve bezier = Handle_Geom_BezierCurve::DownCast(c);
+
+		std::vector<int> mults;
+		std::vector<double> knots;
+		std::vector<double> weights;
+
+		IfcSchema::IfcKnotType::Value knot_spec = IfcSchema::IfcKnotType::IfcKnotType_QUASI_UNIFORM_KNOTS;
+
+		IfcSchema::IfcCartesianPoint::list::ptr points(new IfcSchema::IfcCartesianPoint::list);
+		TColgp_Array1OfPnt poles(1, bezier->NbPoles());
+		bezier->Poles(poles);
+		for (int i = 1; i <= bezier->NbPoles(); ++i) {
+			IfcSchema::IfcCartesianPoint* p;
+			if (!convert_to_ifc(poles.Value(i), p, advanced)) {
+				return 0;
+			}
+			points->push(p);
+
+			if (i == 1 || i == bezier->NbPoles()) {
+				mults.push_back(bezier->Degree() + 1);
+			} else {
+				mults.push_back(bezier->Degree());
+			}
+
+			knots.push_back((double) i - 1);
+		}
+
+		TColStd_Array1OfReal bspline_weights(1, bezier->NbPoles());
+		bezier->Weights(bspline_weights);
+		opencascade_array_to_vector(bspline_weights, weights);
+
+		curve = new IfcSchema::IfcRationalBSplineCurveWithKnots(
+			bezier->Degree(),
+			points,
+			IfcSchema::IfcBSplineCurveForm::IfcBSplineCurveForm_UNSPECIFIED,
+			bezier->IsClosed() != 0,
+			false,
+			mults,
+			knots,
+			knot_spec,
+			weights
+		);
+
+		return 1;
+	}
 	else if (c->DynamicType() == STANDARD_TYPE(Geom_BSplineCurve)) {
 		Handle_Geom_BSplineCurve bspline = Handle_Geom_BSplineCurve::DownCast(c);
 
