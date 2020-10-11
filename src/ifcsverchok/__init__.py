@@ -32,6 +32,7 @@ def nodes_index():
         ("ifc.by_type", "SvIfcByType"),
         ("ifc.by_query", "SvIfcByQuery"),
         ("ifc.add", "SvIfcAdd"),
+        ("ifc.remove", "SvIfcRemove"),
         ("ifc.select_blender_objects", "SvIfcSelectBlenderObjects"),
     ])]
 
