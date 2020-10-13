@@ -27,6 +27,7 @@ def nodes_index():
         ("ifc.write_file", "SvIfcWriteFile"),
         ("ifc.create_entity", "SvIfcCreateEntity"),
         ("ifc.create_shape", "SvIfcCreateShape"),
+        ("ifc.read_entity", "SvIfcReadEntity"),
         ("ifc.by_id", "SvIfcById"),
         ("ifc.by_guid", "SvIfcByGuid"),
         ("ifc.by_type", "SvIfcByType"),
