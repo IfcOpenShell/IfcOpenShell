@@ -5,7 +5,7 @@ bl_info = {
     "blender": (2, 90, 0),
     "location": "Node Editor",
     "category": "Node",
-    "description": "An extension to Sverchok to generate IFC data",
+    "description": "An extension to Sverchok to work with IFC data",
     "warning": "",
 }
 
@@ -36,6 +36,7 @@ def nodes_index():
         ("ifc.remove", "SvIfcRemove"),
         ("ifc.generate_guid", "SvIfcGenerateGuid"),
         ("ifc.get_property", "SvIfcGetProperty"),
+        ("ifc.get_attribute", "SvIfcGetAttribute"),
         ("ifc.select_blender_objects", "SvIfcSelectBlenderObjects"),
     ])]
 
