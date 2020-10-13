@@ -45,11 +45,11 @@ Note that enabling this settings is computationally intensive as it involves 3D 
 
     Duplex_A_20110907_optimized.ifc d1.dae -yv --include attribute GlobalId 2O2Fr$t4X7Zf8NOew3FNr2
     
-![Image of d1.dae](settings-1.png)
+![Image of d1.dae](images/settings-1.png)
     
     Duplex_A_20110907_optimized.ifc d2.dae --enable-layerset-slicing -yv --include attribute GlobalId 2O2Fr$t4X7Zf8NOew3FNr2
     
-![Image of d2.dae](settings-2.png)
+![Image of d2.dae](images/settings-2.png)
 
 BUILDING_LOCAL_PLACEMENT
 ------------------------
@@ -74,11 +74,11 @@ As in most viewer applications, IfcOpeningElement geometry is subtracted from th
 
     Duplex_A_20110907_optimized.ifc d1.dae -yv --include attribute GlobalId 2O2Fr$t4X7Zf8NOew3FNr2
     
-![Image of d1.dae](settings-1.png)
+![Image of d1.dae](images/settings-1.png)
     
     Duplex_A_20110907_optimized.ifc d3.dae --disable-opening-subtraction -yv --include attribute GlobalId 2O2Fr$t4X7Zf8NOew3FNr2
     
-![Image of d3.dae](settings-3.png)
+![Image of d3.dae](images/settings-3.png)
 
 Note that disabling this settings will reduce processing time and improve robustness as it involves 3D Boolean operations.
 
@@ -113,7 +113,7 @@ When `INCLUDE_CURVES` is true and geometric elements include curves (such as the
 
     Duplex_A_20110907_optimized.ifc d4.dae --model --plan --edge-arrows -yv --include attribute GlobalId 2O2Fr$t4X7Zf8NOew3FNr2
     
-![Image of d4.dae](settings-4.png)
+![Image of d4.dae](images/settings-4.png)
 
 EXCLUDE_SOLIDS_AND_SURFACES
 ---------------------------
@@ -138,7 +138,7 @@ Applies a box projection on the generated geometry for the element to obtain UV 
 
     Duplex_A_20110907_optimized.ifc d5.dae --generate-uvs -yv --include attribute GlobalId 2O2Fr$t4X7Zf8NOew3FNr2
 
-![Image of d5.dae with a UV grid applied in Blender](settings-5.png)
+![Image of d5.dae with a UV grid applied in Blender](images/settings-5.png)
 
 INCLUDE_CURVES
 --------------
