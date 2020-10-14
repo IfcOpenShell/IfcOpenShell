@@ -160,20 +160,19 @@ class MODEL:
                 if rel['eccentricity']:
                     rel['index'] = len(conn['relatedElements']) + 1
                 conn['relatedElements'].append(rel)
-                if conn['geometryType'] == 'point':
-                    if not rel['eccentricity']:
-                        el['connObjs'][j] = self.makeObject(conn['geometry'], conn['geometryType'])
-                    else:
+
+                if not rel['eccentricity']:
+                    el['connObjs'][j] = self.makeObject(conn['geometry'], conn['geometryType'])
+                else:
+                    if conn['geometryType'] == 'point':
                         geometry = self.getLinkGeometry(rel['eccentricity'], el['orientation'], conn['geometry'])
                         el['connObjs'][j] = self.makeObject(geometry[0], conn['geometryType'])
 
                         el['linkPointObjs'][j][0] = self.geompy.MakeVertex(geometry[0][0], geometry[0][1], geometry[0][2])
                         el['linkPointObjs'][j][1] = self.geompy.MakeVertex(geometry[1][0], geometry[1][1], geometry[1][2])
                         el['linkObjs'][j] = self.geompy.MakeLineTwoPnt(el['linkPointObjs'][j][0], el['linkPointObjs'][j][1])
-                elif conn['geometryType'] == 'line':
-                    pass
-                elif conn['geometryType'] == 'surface':
-                    pass
+                    else:
+                        print('Eccentricity defined for a %s geometryType' %conn['geometryType'])
 
             el['partObj'] = self.makePartition([el['elemObj']] + el['connObjs'], el['geometryType'])
 
@@ -199,7 +198,15 @@ class MODEL:
             # geompy.addToStudy(el['partObj'], self.getGroupName(el['ifcName']))
             geompy.addToStudyInFather(el['partObj'], el['elemObj'], self.getGroupName(el['ifcName']))
             for j,rel in enumerate(el['connections']):
-                geompy.addToStudyInFather(el['partObj'], el['connObjs'][j], self.getGroupName(el['ifcName']) + '_0DC_' + self.getGroupName(rel['relatedConnection']))
+                conn = [c for c in connections if c['ifcName'] == rel['relatedConnection']][0]
+                rel['conn_string'] = None
+                if conn['geometryType'] == 'point':
+                    rel['conn_string'] = '_0DC_'
+                if conn['geometryType'] == 'line':
+                    rel['conn_string'] = '_1DC_'
+                if conn['geometryType'] == 'surface':
+                    rel['conn_string'] = '_2DC_'
+                geompy.addToStudyInFather(el['partObj'], el['connObjs'][j], self.getGroupName(el['ifcName']) + rel['conn_string'] + self.getGroupName(rel['relatedConnection']))
                 if rel['eccentricity']:
                     pass
                     # geompy.addToStudy(el['linkObjs'][j], self.getGroupName(el['ifcName']) + '_1DR_' + self.getGroupName(rel['relatedConnection']))
@@ -240,8 +247,8 @@ class MODEL:
             geompy.addToStudyInFather(bldComp, el['elemObj'], self.getGroupName(el['ifcName']))
 
             for j,rel in enumerate(el['connections']):
-                geompy.addToStudyInFather(bldComp, el['connObjs'][j], self.getGroupName(el['ifcName']) + '_0DC_' + self.getGroupName(rel['relatedConnection']))
-                if rel['eccentricity']:
+                geompy.addToStudyInFather(bldComp, el['connObjs'][j], self.getGroupName(el['ifcName']) + rel['conn_string'] + self.getGroupName(rel['relatedConnection']))
+                if rel['eccentricity']: # point geometry
                     geompy.addToStudyInFather(bldComp, el['linkObjs'][j], self.getGroupName(el['ifcName']) + '_1DR_' + self.getGroupName(rel['relatedConnection']))
                     geompy.addToStudyInFather(bldComp, el['linkPointObjs'][j][0], self.getGroupName(rel['relatedConnection']) + '_0DC_' + self.getGroupName(el['ifcName']))
                     geompy.addToStudyInFather(bldComp, el['linkPointObjs'][j][1], self.getGroupName(rel['relatedConnection']) + '_0DC_%g' % rel['index'])
@@ -318,8 +325,8 @@ class MODEL:
             smesh.SetName(tempgroup, self.getGroupName(el['ifcName']))
 
             for j,rel in enumerate(el['connections']):
-                tempgroup = bldMesh.GroupOnGeom(el['connObjs'][j], self.getGroupName(el['ifcName']) + '_0DC_' + self.getGroupName(rel['relatedConnection']), SMESH.NODE)
-                smesh.SetName(tempgroup, self.getGroupName(el['ifcName']) + '_0DC_' + self.getGroupName(rel['relatedConnection']))
+                tempgroup = bldMesh.GroupOnGeom(el['connObjs'][j], self.getGroupName(el['ifcName']) + rel['conn_string'] + self.getGroupName(rel['relatedConnection']), SMESH.NODE)
+                smesh.SetName(tempgroup, self.getGroupName(el['ifcName']) + rel['conn_string'] + self.getGroupName(rel['relatedConnection']))
                 rel['node'] = (bldMesh.GetIDSource(tempgroup.GetNodeIDs(), SMESH.NODE)).GetIDs()[0]
                 if rel['eccentricity']:
                     tempgroup = bldMesh.GroupOnGeom(el['linkObjs'][j], self.getGroupName(el['ifcName']) + '_1DR_' + self.getGroupName(rel['relatedConnection']), SMESH.EDGE)
@@ -334,24 +341,32 @@ class MODEL:
 
 
         for conn in connections:
-            # if conn['appliedCondition']:
             tempgroup = bldMesh.GroupOnGeom(conn['connObj'], self.getGroupName(conn['ifcName']), SMESH.NODE)
             smesh.SetName(tempgroup, self.getGroupName(conn['ifcName']))
             nodesId = bldMesh.GetIDSource(tempgroup.GetNodeIDs(), SMESH.NODE)
             tempgroup = bldMesh.Add0DElementsToAllNodes(nodesId, self.getGroupName(conn['ifcName']))
-            smesh.SetName(tempgroup, self.getGroupName(conn['ifcName']))
-            conn['node'] = nodesId.GetIDs()[0]
+            smesh.SetName(tempgroup, self.getGroupName(conn['ifcName'] + '_0D'))
+            if conn['geometryType'] == 'point':
+                conn['node'] = nodesId.GetIDs()[0]
+            if conn['geometryType'] == 'line':
+                tempgroup = bldMesh.GroupOnGeom(conn['connObj'], self.getGroupName(conn['ifcName']), SMESH.EDGE)
+                smesh.SetName(tempgroup, self.getGroupName(conn['ifcName']))
+            if conn['geometryType'] == 'surface':
+                tempgroup = bldMesh.GroupOnGeom(conn['connObj'], self.getGroupName(conn['ifcName']), SMESH.FACE)
+                smesh.SetName(tempgroup, self.getGroupName(conn['ifcName']))
 
         # create 1D SEG2 spring elements
         for el in elements:
             for j,rel in enumerate(el['connections']):
-                grpName = bldMesh.CreateEmptyGroup(SMESH.EDGE, self.getGroupName(el['ifcName']) + '_1DS_' + self.getGroupName(rel['relatedConnection']))
-                smesh.SetName(grpName, self.getGroupName(el['ifcName']) + '_1DS_' + self.getGroupName(rel['relatedConnection']))
-                if not rel['eccentricity']:
-                    conn = [conn for conn in connections if conn['ifcName'] == rel['relatedConnection']][0]
-                    grpName.Add([bldMesh.AddEdge([conn['node'], rel['node']])])
-                else:
-                    grpName.Add([bldMesh.AddEdge([rel['eccNode'], rel['node']])])
+                conn = [c for c in connections if c['ifcName'] == rel['relatedConnection']][0]
+                if conn['geometryType'] == 'point':
+                    grpName = bldMesh.CreateEmptyGroup(SMESH.EDGE, self.getGroupName(el['ifcName']) + '_1DS_' + self.getGroupName(rel['relatedConnection']))
+                    smesh.SetName(grpName, self.getGroupName(el['ifcName']) + '_1DS_' + self.getGroupName(rel['relatedConnection']))
+                    if not rel['eccentricity']:
+                        conn = [conn for conn in connections if conn['ifcName'] == rel['relatedConnection']][0]
+                        grpName.Add([bldMesh.AddEdge([conn['node'], rel['node']])])
+                    else:
+                        grpName.Add([bldMesh.AddEdge([rel['eccNode'], rel['node']])])
 
         self.mesh = bldMesh
         self.meshNodes = bldMesh.GetNodesId()
@@ -385,7 +400,7 @@ class MODEL:
         print('ALL Operations Completed in %g sec' % (elapsed_time))
 
 if __name__ == '__main__':
-    fileNames = ['cantilever_01']
+    fileNames = ['structure_01']
     files = fileNames
 
     meshSize = 0.1

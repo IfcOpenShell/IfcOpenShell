@@ -78,7 +78,6 @@ class CA2IFC:
                 ifcElements[i] = self.f.createIfcStructuralCurveMember(self.guid(), ownerHistory, el['name'], None, None, localPlacement, prodDefShape, el['predefinedType'], localZAxis)
 
             if el['geometryType'] == 'surface':
-                # element
                 ifcElements[i] = self.f.createIfcStructuralSurfaceMember(self.guid(), ownerHistory, el['name'], None, None, localPlacement, prodDefShape, el['predefinedType'], el['thickness'])
 
         # create structural point connections
@@ -86,18 +85,33 @@ class CA2IFC:
         for i,conn in enumerate(self.data['connections']):
             # geometry - product definition shape
             prodDefShape = self.create_geometry(conn)
-            # local axes
-            localAxes = self.create_orientation(conn['orientation'])
+
             # boundary conditions
             if conn['appliedCondition']:
-                bc = self.create_node_applied_conditions(conn['appliedCondition'])
-                appliedCondition = self.f.createIfcBoundaryNodeCondition(None, bc['dx'], bc['dy'], bc['dz'], bc['drx'], bc['dry'], bc['drz'])
+                bc = self.create_applied_conditions(conn['appliedCondition'], conn['geometryType'])
+                if conn['geometryType'] == 'point':
+                    appliedCondition = self.f.createIfcBoundaryNodeCondition(None, bc['dx'], bc['dy'], bc['dz'], bc['drx'], bc['dry'], bc['drz'])
+                if conn['geometryType'] == 'line':
+                    appliedCondition = self.f.createIfcBoundaryEdgeCondition(None, bc['dx'], bc['dy'], bc['dz'], bc['drx'], bc['dry'], bc['drz'])
+                if conn['geometryType'] == 'surface':
+                    appliedCondition = self.f.createIfcBoundaryFaceCondition(None, bc['dx'], bc['dy'], bc['dz'])
             else:
                 appliedCondition = None
 
-            # connection
             if conn['geometryType'] == 'point':
+                # local axes
+                localAxes = self.create_orientation(conn['orientation'])
+                # connection
                 ifcConnections[i] = self.f.createIfcStructuralPointConnection(self.guid(), ownerHistory, conn['name'], None, None, localPlacement, prodDefShape, appliedCondition, localAxes)
+
+            if conn['geometryType'] == 'line':
+                # z axis TODO: group by elements
+                localZAxis = self.f.createIfcDirection(tuple(conn['orientation'][2]))
+                # connection
+                ifcConnections[i] = self.f.createIfcStructuralCurveConnection(self.guid(), ownerHistory, conn['name'], None, None, localPlacement, prodDefShape, appliedCondition, localZAxis)
+
+            if conn['geometryType'] == 'surface':
+                ifcConnections[i] = self.f.createIfcStructuralSurfaceConnection(self.guid(), ownerHistory, conn['name'], None, None, localPlacement, prodDefShape, appliedCondition)
 
         # assign material-profile-sets
         for i,mpSet in enumerate(mpSets):
@@ -121,20 +135,34 @@ class CA2IFC:
         # create connections with elements
         for i,el in enumerate(self.data['elements']):
             for conn in el['connections']:
-                localAxes = self.create_orientation(conn['orientation'])
+                j = [c['ifcName'] for c in self.data['connections']].index(conn['relatedConnection'])
+                geometryType = self.data['connections'][j]['geometryType']
+
                 if conn['appliedCondition']:
-                    bc = self.create_node_applied_conditions(conn['appliedCondition'])
-                    appliedCondition = self.f.createIfcBoundaryNodeCondition(None, bc['dx'], bc['dy'], bc['dz'], bc['drx'], bc['dry'], bc['drz'])
+                    bc = self.create_applied_conditions(conn['appliedCondition'], geometryType)
+                    if geometryType == 'point':
+                        appliedCondition = self.f.createIfcBoundaryNodeCondition(None, bc['dx'], bc['dy'], bc['dz'], bc['drx'], bc['dry'], bc['drz'])
+                    if geometryType == 'line':
+                        appliedCondition = self.f.createIfcBoundaryEdgeCondition(None, bc['dx'], bc['dy'], bc['dz'], bc['drx'], bc['dry'], bc['drz'])
+                    if geometryType == 'surface':
+                        appliedCondition = self.f.createIfcBoundaryFaceCondition(None, bc['dx'], bc['dy'], bc['dz'])
                 else:
                     appliedCondition = None
-                j = [c['ifcName'] for c in self.data['connections']].index(conn['relatedConnection'])
-                if not conn['eccentricity']:
+
+                # local axes
+                localAxes = self.create_orientation(conn['orientation'])
+
+                if geometryType == 'point':
+                    if not conn['eccentricity']:
+                        self.f.createIfcRelConnectsStructuralMember(self.guid(), ownerHistory, None, None, ifcElements[i], ifcConnections[j], appliedCondition, None, None, localAxes)
+                    else:
+                        pointOnElement = self.f.createIfcCartesianPoint(tuple(conn['eccentricity']['pointOnElement']))
+                        vector = conn['eccentricity']['vector']
+                        connPointEcc = self.f.createIfcConnectionPointEccentricity(pointOnElement, None, vector[0], vector[1], vector[2])
+                        self.f.createIfcRelConnectsWithEccentricity(self.guid(), ownerHistory, None, None, ifcElements[i], ifcConnections[j], appliedCondition, None, None, localAxes, connPointEcc)
+
+                if geometryType in ['line', 'surface']:
                     self.f.createIfcRelConnectsStructuralMember(self.guid(), ownerHistory, None, None, ifcElements[i], ifcConnections[j], appliedCondition, None, None, localAxes)
-                else:
-                    pointOnElement = self.f.createIfcCartesianPoint(tuple(conn['eccentricity']['pointOnElement']))
-                    vector = conn['eccentricity']['vector']
-                    connPointEcc = self.f.createIfcConnectionPointEccentricity(pointOnElement, None, vector[0], vector[1], vector[2])
-                    self.f.createIfcRelConnectsWithEccentricity(self.guid(), ownerHistory, None, None, ifcElements[i], ifcConnections[j], appliedCondition, None, None, localAxes, connPointEcc)
 
         # assign elements and connections to group
         self.f.createIfcRelAssignsToGroup(self.guid(), ownerHistory, None, None, tuple(ifcElements + ifcConnections), None, model)
@@ -287,38 +315,34 @@ class CA2IFC:
 
             return faceProdDefShape
 
-    def create_node_applied_conditions(self, bc):
+    def create_applied_conditions(self, bc, geometryType):
         for dof in ['dx', 'dy', 'dz']:
             if isinstance(bc[dof], bool):
                 bc[dof] = self.f.createIfcBoolean(bc[dof])
             else:
-                bc[dof] = self.f.createIfcLinearStiffnessMeasure(bc[dof])
+                if geometryType == 'point':
+                    bc[dof] = self.f.createIfcLinearStiffnessMeasure(bc[dof])
+                if geometryType == 'line':
+                    bc[dof] = self.f.createIfcModulusOfLinearSubgradeReactionMeasure(bc[dof])
+                if geometryType == 'surface':
+                    bc[dof] = self.f.createIfcModulusOfSubgradeReactionMeasure(bc[dof])
 
         for dof in ['drx', 'dry', 'drz']:
             if isinstance(bc[dof], bool):
                 bc[dof] = self.f.createIfcBoolean(bc[dof])
             else:
-                bc[dof] = self.f.createIfcRotationalStiffnessMeasure(bc[dof])
+                if geometryType == 'point':
+                    bc[dof] = self.f.createIfcRotationalStiffnessMeasure(bc[dof])
+                if geometryType == 'line':
+                    bc[dof] = self.f.createIfcModulusOfRotationalSubgradeReactionMeasure(bc[dof])
 
         return bc
 
 
 
 if __name__ == '__main__':
-    inputFilename = 'grid_of_beams.json'
-    outputFilename = 'grid_of_beams.ifc'
+    inputFilename = 'structure_01.json'
+    outputFilename = 'structure_01.ifc'
 
     ca2ifc = CA2IFC(inputFilename, outputFilename)
     ca2ifc.convert()
-    #
-    # inputFilename = 'portal_01.json'
-    # outputFilename = 'portal_01.ifc'
-    #
-    # ca2ifc = CA2IFC(inputFilename, outputFilename)
-    # ca2ifc.convert()
-    #
-    # inputFilename = 'building_01.json' # json file to read
-    # outputFilename = 'building_01.ifc' # ifc file to write
-    #
-    # ca2ifc = CA2IFC(inputFilename, outputFilename)
-    # ca2ifc.convert()
