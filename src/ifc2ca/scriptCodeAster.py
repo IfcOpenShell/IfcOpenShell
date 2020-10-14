@@ -33,16 +33,25 @@ class COMMANDFILE:
         for el in elements:
             for rel in el['connections']:
                 conn = [c for c in connections if c['ifcName'] == rel['relatedConnection']][0]
+                rel['conn_string'] = None
                 if conn['geometryType'] == 'point':
-                    rel['groupName1'] = self.getGroupName(rel['relatingElement']) + '_0DC_' + self.getGroupName(rel['relatedConnection'])
-                    if rel['eccentricity']:
-                        rel['groupName2'] = self.getGroupName(rel['relatedConnection']) + '_0DC_' + self.getGroupName(rel['relatingElement'])
-                        rel['index'] = len(conn['relatedElements']) + 1
-                        rel['unifiedGroupName'] = self.getGroupName(rel['relatedConnection']) + '_0DC_%g' % rel['index']
-                    else:
-                        rel['groupName2'] = self.getGroupName(rel['relatedConnection'])
+                    rel['conn_string'] = '_0DC_'
                     rel['springGroupName'] = self.getGroupName(rel['relatingElement']) + '_1DS_' + self.getGroupName(rel['relatedConnection'])
-                    self.calculateConstraints(rel)
+                if conn['geometryType'] == 'line':
+                    rel['conn_string'] = '_1DC_'
+                    rel['springGroupName'] = None
+                if conn['geometryType'] == 'surface':
+                    rel['conn_string'] = '_2DC_'
+                    rel['springGroupName'] = None
+
+                rel['groupName1'] = self.getGroupName(rel['relatingElement']) + rel['conn_string'] + self.getGroupName(rel['relatedConnection'])
+                if rel['eccentricity']:
+                    rel['groupName2'] = self.getGroupName(rel['relatedConnection']) + '_0DC_' + self.getGroupName(rel['relatingElement'])
+                    rel['index'] = len(conn['relatedElements']) + 1
+                    rel['unifiedGroupName'] = self.getGroupName(rel['relatedConnection']) + '_0DC_%g' % rel['index']
+                else:
+                    rel['groupName2'] = self.getGroupName(rel['relatedConnection'])
+                self.calculateConstraints(rel)
                 conn['relatedElements'].append(rel)
         # End <--
 
@@ -51,8 +60,9 @@ class COMMANDFILE:
 
         edgeGroupNames = tuple([self.getGroupName(el['ifcName']) for el in elements if el['geometryType'] == 'line'])
         faceGroupNames = tuple([self.getGroupName(el['ifcName']) for el in elements if el['geometryType'] == 'surface'])
-        point0DGroupNames = tuple([self.getGroupName(el['ifcName']) for el in connections if el['geometryType'] == 'point'])
-        spring1DGroupNames = tuple(flatten([[rel['springGroupName'] for rel in el['connections']] for el in elements]))
+        point0DGroupNames = tuple([self.getGroupName(el['ifcName']) + '_0D' for el in connections if el['geometryType'] == 'point'])
+        spring1DGroupNames = tuple(flatten([[rel['springGroupName'] for rel in el['connections'] if rel['springGroupName']] for el in elements]))
+        point1DGroupNames = tuple([self.getGroupName(el['ifcName']) + '_0D' for el in connections if el['geometryType'] == 'line'])
 
         unifiedConnection = False
         rigidLinkGroupNames = []
@@ -152,6 +162,21 @@ model = AFFE_MODELE(
 
             context = {
                 'groupNames': tuple(flatten([point0DGroupNames, spring1DGroupNames]))
+            }
+
+            f.write(template.format(**context))
+
+        if point1DGroupNames:
+            template = \
+        '''
+        _F(
+            GROUP_MA = {groupNames},
+            PHENOMENE = 'MECANIQUE',
+            MODELISATION = 'DIS_TR'
+        ),'''
+
+            context = {
+                'groupNames': point1DGroupNames
             }
 
             f.write(template.format(**context))
@@ -365,7 +390,7 @@ element = AFFE_CARA_ELEM(
         ),'''
 
             context = {
-                'groupName': self.getGroupName(conn['ifcName']),
+                'groupName': self.getGroupName(conn['ifcName']) + '_0D',
                 'stiffnesses': conn['stiffnesses']
             }
 
@@ -389,6 +414,23 @@ element = AFFE_CARA_ELEM(
 
                 f.write(template.format(**context))
 
+        for conn in [conn for conn in connections if conn['geometryType'] == 'line']:
+
+            template = \
+        '''
+        _F(
+            GROUP_MA = '{groupName}',
+            CARA = 'K_TR_D_N',
+            VALE = {stiffnesses},
+            REPERE = 'LOCAL'
+        ),'''
+
+            context = {
+                'groupName': self.getGroupName(conn['ifcName']) + '_0D',
+                'stiffnesses': conn['stiffnesses']
+            }
+
+            f.write(template.format(**context))
 
         f.write(
 '''
@@ -428,7 +470,7 @@ element = AFFE_CARA_ELEM(
         ),'''
 
             context = {
-                'groupName': self.getGroupName(conn['ifcName']),
+                'groupName': self.getGroupName(conn['ifcName']) + '_0D',
                 'localAxesXY': tuple(conn['orientation'][0] + conn['orientation'][1])
             }
 
@@ -451,6 +493,23 @@ element = AFFE_CARA_ELEM(
 
                 f.write(template.format(**context))
 
+        for conn in [conn for conn in connections if conn['geometryType'] == 'line']:
+
+            template = \
+        '''
+        _F(
+            GROUP_MA = '{groupName}',
+            CARA = 'VECT_X_Y',
+            VALE = {localAxesXY}
+        ),'''
+
+            context = {
+                'groupName': self.getGroupName(conn['ifcName']) + '_0D',
+                'localAxesXY': tuple(conn['orientation'][0] + conn['orientation'][1])
+            }
+
+            f.write(template.format(**context))
+
         f.write(
 '''
     ),'''
@@ -472,7 +531,7 @@ liaisons = AFFE_CHAR_MECA(
     LIAISON_DDL = ('''
         )
 
-        for conn in connections:
+        for conn in [conn for conn in connections if conn['geometryType'] == 'point']:
             if conn['appliedCondition']:
                 for i in range(len(conn['liaisons']['coeffs'])):
                     template = \
@@ -507,6 +566,63 @@ liaisons = AFFE_CHAR_MECA(
                         'groupNames': rel['liaisons']['groupNames'],
                         'dofs': rel['liaisons']['dofs'][i],
                         'coeffs': rel['liaisons']['coeffs'][i]
+                    }
+
+                    f.write(template.format(**context))
+
+        f.write(
+        '''
+    ),'''
+        )
+
+        f.write(
+    '''
+    LIAISON_GROUP = ('''
+        )
+
+        for conn in [conn for conn in connections if conn['geometryType'] == 'line']:
+            if conn['appliedCondition']:
+                for i in range(len(conn['liaisons']['coeffs'])):
+                    template = \
+        '''
+        _F(
+            GROUP_NO_1 = {groupName_1},
+            GROUP_NO_2 = {groupName_1},
+            DDL_1 = {dofs},
+            DDL_2 = {dofs},
+            COEF_MULT_1 = {coeffs},
+            COEF_MULT_2 = (0.0, 0.0, 0.0),
+            COEF_IMPO = 0.0
+        ),'''
+
+                    context = {
+                        'groupName_1': tuple([conn['liaisons']['groupNames'][0]]),
+                        'dofs': conn['liaisons']['dofs'][i],
+                        'coeffs': conn['liaisons']['coeffs'][i]
+                    }
+
+                    f.write(template.format(**context))
+
+            for rel in conn['relatedElements']:
+                for i in range(len(rel['liaisons']['coeffs'])):
+                    template = \
+        '''
+        _F(
+            GROUP_NO_1 = {groupName_1},
+            GROUP_NO_2 = {groupName_2},
+            DDL_1 = {dofs},
+            DDL_2 = {dofs},
+            COEF_MULT_1 = {coeffs_1},
+            COEF_MULT_2 = {coeffs_2},
+            COEF_IMPO = 0.0
+        ),'''
+
+                    context = {
+                        'groupName_1': tuple([rel['liaisons']['groupNames'][0]]),
+                        'groupName_2': tuple([rel['liaisons']['groupNames'][3]]),
+                        'dofs': tuple(list(rel['liaisons']['dofs'][i])[:3]),
+                        'coeffs_1': tuple(list(rel['liaisons']['coeffs'][i])[:3]),
+                        'coeffs_2': tuple(list(rel['liaisons']['coeffs'][i])[3:]),
                     }
 
                     f.write(template.format(**context))
@@ -825,7 +941,7 @@ FIN()
         conn['stiffnesses'] = tuple(stiffnesses)
 
 if __name__ == '__main__':
-    fileNames = ['cantilever_01', 'portal_01', 'grid_of_beams']
+    fileNames = ['cantilever_01', 'portal_01', 'grid_of_beams', 'slab_01', 'structure_01']
     files = fileNames
 
     for fileName in files:
