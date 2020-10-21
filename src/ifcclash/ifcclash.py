@@ -180,11 +180,11 @@ class IfcClasher:
         elements = selector.parse(data['ifc'], data['selector'])
 
         if data['mode'] == 'e':
-            for element in data['ifc'].by_type('IfcElement'):
+            for element in data['ifc'].by_type('IfcElement') + data['ifc'].by_type('IfcSpatialStructureElement'):
                 if element in elements:
                     data['ifc'].remove(element)
         elif data['mode'] == 'i':
-            for element in data['ifc'].by_type('IfcElement'):
+            for element in data['ifc'].by_type('IfcElement') + data['ifc'].by_type('IfcSpatialStructureElement'):
                 if element not in elements:
                     data['ifc'].remove(element)
 
