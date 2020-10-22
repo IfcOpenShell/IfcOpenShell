@@ -37,8 +37,6 @@ class IfcClasher:
             for data in clash_set[ab]:
                 data['ifc'] = ifcopenshell.open(data['file'])
                 self.patch_ifc(data['ifc'])
-                self.settings.logger.info(f'Purging unnecessary elements {ab} ...')
-                self.purge_elements(data)
                 self.settings.logger.info(f'Creating collision data for {ab} ...')
                 if len(data['ifc'].by_type('IfcElement')) > 0:
                     self.add_collision_objects(data, clash_set[f'{ab}_cm'])
@@ -170,27 +168,18 @@ class IfcClasher:
             except:
                 pass
 
-    def purge_elements(self, data):
-        if 'selector' not in data:
-            for element in data['ifc'].by_type('IfcSpace'):
-                data['ifc'].remove(element)
-            return
-
-        selector = ifcopenshell.util.selector.Selector()
-        elements = selector.parse(data['ifc'], data['selector'])
-
-        if data['mode'] == 'e':
-            for element in data['ifc'].by_type('IfcElement') + data['ifc'].by_type('IfcSpatialStructureElement'):
-                if element in elements:
-                    data['ifc'].remove(element)
-        elif data['mode'] == 'i':
-            for element in data['ifc'].by_type('IfcElement') + data['ifc'].by_type('IfcSpatialStructureElement'):
-                if element not in elements:
-                    data['ifc'].remove(element)
-
     def add_collision_objects(self, data, cm):
         self.clash_data['meshes'] = {}
-        iterator = ifcopenshell.geom.iterator(self.geom_settings, data['ifc'], multiprocessing.cpu_count())
+        selector = ifcopenshell.util.selector.Selector()
+        if 'selector' not in data:
+            iterator = ifcopenshell.geom.iterator(self.geom_settings, data['ifc'], multiprocessing.cpu_count(),
+                    exclude=(data['ifc'].by_type('IfcSpatialStructureElement')))
+        elif data['mode'] == 'e':
+            iterator = ifcopenshell.geom.iterator(self.geom_settings, data['ifc'], multiprocessing.cpu_count(),
+                    exclude=selector.parse(data['ifc'], data['selector']))
+        elif data['mode'] == 'i':
+            iterator = ifcopenshell.geom.iterator(self.geom_settings, data['ifc'], multiprocessing.cpu_count(),
+                    include=selector.parse(data['ifc'], data['selector']))
         valid_file = iterator.initialize()
         if not valid_file:
             return False
