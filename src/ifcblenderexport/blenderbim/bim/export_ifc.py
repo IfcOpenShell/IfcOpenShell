@@ -695,6 +695,11 @@ class IfcParser():
             'suffix_titles': 'SuffixTitles',
         }
         results = []
+
+        if self.ifc_export_settings.schema == 'IFC2X3' \
+                and not bpy.context.scene.BIMProperties.people:
+            bpy.ops.bim.add_person()
+
         for person in bpy.context.scene.BIMProperties.people:
             attributes = {}
             for key, value in data_map.items():
@@ -718,6 +723,11 @@ class IfcParser():
             'description': 'Description',
         }
         results = []
+
+        if self.ifc_export_settings.schema == 'IFC2X3' \
+                and not bpy.context.scene.BIMProperties.organisations:
+            bpy.ops.bim.add_organisation()
+
         for organisation in bpy.context.scene.BIMProperties.organisations:
             attributes = {}
             for key, value in data_map.items():
