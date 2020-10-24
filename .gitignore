@@ -12,3 +12,4 @@ __pycache__
 .vscode
 # PyCharm files
 .idea
+/docs/output

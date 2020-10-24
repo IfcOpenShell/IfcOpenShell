@@ -24,9 +24,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)  # not necessary, but encouraged
 project (IfcOpenShell)
 
 
-#set(Boost_DEBUG 1)
-
-
 foreach(max_year RANGE 2014 2030)
 set(max_sdk "$ENV{ADSK_3DSMAX_SDK_${max_year}}")
 if (NOT "${max_sdk}" STREQUAL "")
@@ -406,6 +403,10 @@ if(ENABLE_BUILD_OPTIMIZATIONS)
 	endif()
 endif()
 
+
+
+
+
 IF(MSVC)
     # Enable solution folders (free VS versions prior to 2012 don't support solution folders)
     if (MSVC_VERSION GREATER 1600)
@@ -657,6 +658,13 @@ INSTALL(TARGETS IfcGeomServer
 )
 
 endif()
+
+
+# Documentation
+set(CMAKE_MODULE_PATH "../docs/cmake")
+ADD_SUBDIRECTORY(../docs docs)
+
+
 
 IF(BUILD_IFCPYTHON)
 	ADD_SUBDIRECTORY(../src/ifcwrap ifcwrap)
