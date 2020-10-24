@@ -62,14 +62,17 @@ class IfcSchema():
                     entity = prop.ApplicableEntity if prop.ApplicableEntity else 'IfcRoot'
                     self.applicable_psets.setdefault(entity, []).append(prop.Name)
 
-    def load_classification(self, filename):
-        if filename not in self.classifications:
-            classification_path = os.path.join(self.schema_dir, 'classifications', '{}.ifc'.format(filename))
-            if not os.path.isfile(classification_path):
-                classification_path = os.path.join(self.schema_dir, 'project_classifications', '{}.ifc'.format(filename))
-            self.classification_files[filename] = ifcopenshell.open(classification_path)
-            self.classifications[filename] = self.classification_files[filename].by_type('IfcClassification')[0]
-        classification = self.classifications[filename]
+    def load_classification(self, name, classification_index=None):
+        if name not in self.classifications:
+            if classification_index is not None:
+                self.classification_files[name] = ifcopenshell.file.from_string(
+                    bpy.context.scene.BIMProperties.classifications[classification_index].data)
+            else:
+                classification_path = os.path.join(self.schema_dir, 'classifications', '{}.ifc'.format(name))
+                self.classification_files[name] = ifcopenshell.open(classification_path)
+            self.classifications[name] = self.classification_files[name].by_type('IfcClassification')[0]
+        classification = self.classifications[name]
+        bpy.context.scene.BIMProperties.active_classification_name = self.classifications[name].Name
         return {
             'name': '',
             'description': '',

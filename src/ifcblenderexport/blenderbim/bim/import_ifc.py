@@ -1501,13 +1501,8 @@ class IfcImporter():
                 for entity in entities_to_add:
                     classification_file.add(entity)
 
-            classification_filename = '{}-{}'.format(
-                Path(os.path.basename(self.ifc_import_settings.input_file)).stem, element.Name)
-            classification_file.write(os.path.join(
-                bpy.context.scene.BIMProperties.schema_dir, 'project_classifications',
-                '{}.ifc'.format(classification_filename)))
-            classification.filename = classification_filename
-            self.classifications[classification.filename] = classification
+            classification.data = classification_file.to_string()
+            self.classifications[classification.name] = classification
 
         self.schema_dir = bpy.context.scene.BIMProperties.schema_dir
         from . import prop
@@ -1815,9 +1810,6 @@ class IfcImporter():
     def get_referenced_source_name(self, element):
         if not hasattr(element, 'ReferencedSource') or not element.ReferencedSource:
             if element.is_a('IfcClassification'):
-                for filename, classification in self.classifications.items():
-                    if classification.name == element.Name:
-                        return filename
                 return element.Name
             else:
                 return element.Identification
