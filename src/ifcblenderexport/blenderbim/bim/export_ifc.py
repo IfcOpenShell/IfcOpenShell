@@ -630,22 +630,23 @@ class IfcParser():
     def get_classifications(self):
         results = {}
         for classification in bpy.context.scene.BIMProperties.classifications:
-            schema.ifc.load_classification(classification.filename)
-            results[classification.filename] = {
+            if classification.name not in schema.ifc.classification_files:
+                schema.ifc.classification_files[classification.name] = ifcopenshell.file.from_string(classification.data)
+            results[classification.name] = {
                 'ifc': None,
                 'raw': classification,
-                'raw_element': schema.ifc.classification_files[classification.filename].by_type('IfcClassification')[0]
+                'raw_element': schema.ifc.classification_files[classification.name].by_type('IfcClassification')[0]
             }
         return results
 
     def get_classification_reference_maps(self):
         results = {}
-        for filename, classification in self.classifications.items():
-            ifc_file = schema.ifc.classification_files[filename]
+        for name, classification in self.classifications.items():
+            ifc_file = schema.ifc.classification_files[name]
             if ifc_file.schema == 'IFC2X3':
-                results[filename] = { e.ItemReference: e for e in ifc_file.by_type('IfcClassificationReference')}
+                results[name] = { e.ItemReference: e for e in ifc_file.by_type('IfcClassificationReference')}
             else:
-                results[filename] = { e.Identification: e for e in ifc_file.by_type('IfcClassificationReference')}
+                results[name] = { e.Identification: e for e in ifc_file.by_type('IfcClassificationReference')}
         return results
 
     def get_classification_references(self):

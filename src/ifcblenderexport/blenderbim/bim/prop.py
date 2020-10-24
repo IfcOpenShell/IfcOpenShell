@@ -395,8 +395,6 @@ def getClassifications(self, context):
         classification_enum.clear()
         files = os.listdir(os.path.join(self.schema_dir, 'classifications'))
         classification_enum.extend([(f.replace('.ifc', ''), f.replace('.ifc', ''), '') for f in files])
-        files = os.listdir(os.path.join(self.schema_dir, 'project_classifications'))
-        classification_enum.extend([(f.replace('.ifc', ''), f.replace('.ifc', ''), '') for f in files])
     return classification_enum
 
 
@@ -1112,7 +1110,7 @@ class Classification(PropertyGroup):
     description: StringProperty(name="Description")
     location: StringProperty(name="Location")
     reference_tokens: StringProperty(name="Reference Tokens")
-    filename: StringProperty(name="Filename")
+    data: StringProperty(name="Data")
 
 
 class ClassificationReference(PropertyGroup):
@@ -1249,6 +1247,7 @@ class BIMProperties(PropertyGroup):
     aggregate_class: EnumProperty(items=getIfcClasses, name="Aggregate Class")
     aggregate_name: StringProperty(name="Aggregate Name")
     classification: EnumProperty(items=getClassifications, name="Classification", update=refreshReferences)
+    active_classification_name: StringProperty(name="Active Classification Name")
     classifications: CollectionProperty(name="Classifications", type=Classification)
     has_model_context: BoolProperty(name="Has Model Context", default=True)
     has_plan_context: BoolProperty(name="Has Plan Context", default=True)

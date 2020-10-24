@@ -1922,11 +1922,18 @@ class ExplodeAggregate(bpy.types.Operator):
 class LoadClassification(bpy.types.Operator):
     bl_idname = 'bim.load_classification'
     bl_label = 'Load Classification'
+    is_file: bpy.props.BoolProperty()
+    classification_index: bpy.props.IntProperty()
 
     def execute(self, context):
         from . import prop
-        prop.ClassificationView.raw_data = schema.ifc.load_classification(
-            context.scene.BIMProperties.classification)
+        if self.is_file:
+            prop.ClassificationView.raw_data = schema.ifc.load_classification(
+                context.scene.BIMProperties.classification)
+        else:
+            prop.ClassificationView.raw_data = schema.ifc.load_classification(
+                context.scene.BIMProperties.classifications[self.classification_index].name,
+                self.classification_index)
         context.scene.BIMProperties.classification_references.root = ''
         return {'FINISHED'}
 
@@ -1949,7 +1956,7 @@ class AddClassification(bpy.types.Operator):
         for key, value in data_map.items():
             if hasattr(data, value) and getattr(data, value):
                 setattr(classification, key, str(getattr(data, value)))
-        classification.filename = context.scene.BIMProperties.classification
+        classification.data = schema.ifc.classification_files[context.scene.BIMProperties.classification].to_string()
         return {'FINISHED'}
 
 
@@ -1979,7 +1986,7 @@ class AssignClassification(bpy.types.Operator):
             for key in ['location', 'description']:
                 if data[key]:
                     setattr(classification, key, data[key])
-            classification.referenced_source = bpy.context.scene.BIMProperties.classification
+            classification.referenced_source = bpy.context.scene.BIMProperties.active_classification_name
         return {'FINISHED'}
 
 
@@ -3869,22 +3876,6 @@ class EditVectorStyle(bpy.types.Operator):
         camera = context.scene.camera
         vector_style = context.scene.DocProperties.drawing_styles[camera.data.BIMCameraProperties.active_drawing_style_index].vector_style
         bpy.data.texts.load(os.path.join(context.scene.BIMProperties.data_dir, 'styles', vector_style + '.css'))
-        return {'FINISHED'}
-
-
-class PurgeProjectClassifications(bpy.types.Operator):
-    bl_idname = 'bim.purge_project_classifications'
-    bl_label = 'Purge Project Classifications'
-
-    def execute(self, context):
-        self.schema_dir = bpy.context.scene.BIMProperties.schema_dir
-        path = os.path.join(self.schema_dir, 'project_classifications')
-        files = os.listdir(path)
-        for f in files:
-            os.remove(os.path.join(path, f))
-        from . import prop
-        prop.classification_enum.clear()
-        prop.getClassifications(self, context)
         return {'FINISHED'}
 
 

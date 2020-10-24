@@ -532,7 +532,7 @@ class BIM_PT_psets(Panel):
 
 
 class BIM_PT_classifications(Panel):
-    bl_label = 'IFC Classifications References'
+    bl_label = 'IFC Classifications'
     bl_idname = 'BIM_PT_classifications'
     bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
@@ -545,7 +545,6 @@ class BIM_PT_classifications(Panel):
 
         row = layout.row(align=True)
         row.prop(props, "classification", text='')
-        row.operator("bim.purge_project_classifications", text='', icon='TRASH')
         row.operator("bim.add_classification", text='', icon='ADD')
 
         if context.scene.BIMProperties.classification_references.raw_data:
@@ -555,7 +554,7 @@ class BIM_PT_classifications(Panel):
             row.operator("bim.unassign_classification")
         else:
             row = layout.row(align=True)
-            row.operator('bim.load_classification')
+            row.operator('bim.load_classification').is_file = True
 
         if not props.classifications:
             return
@@ -565,6 +564,7 @@ class BIM_PT_classifications(Panel):
         for index, classification in enumerate(props.classifications):
             row = layout.row(align=True)
             row.prop(classification, 'name')
+            row.operator('bim.load_classification', icon='IMPORT', text='').classification_index = index
             row.operator('bim.remove_classification', icon='X', text='').classification_index = index
             row = layout.row(align=True)
             row.prop(classification, 'source')
