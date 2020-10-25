@@ -31,7 +31,7 @@ exhale_args = {
     # TIP: if using the sphinx-bootstrap-theme, you need
     # "treeViewIsBootstrap": True,
     "exhaleExecutesDoxygen": True,
-    "exhaleDoxygenStdin":    "INPUT = ../src/testdoc ../src/ifcconvert"
+    "exhaleDoxygenStdin":    "INPUT = ../src/serializers ../src/ifcconvert"
 }
 
 # html_theme = 'sphinx_rtd_theme'
