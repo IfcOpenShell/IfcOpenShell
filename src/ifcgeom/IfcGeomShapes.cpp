@@ -696,6 +696,18 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		}
 		// NB: After issuing error the first operand is returned!
 		return true;
+	} else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_UNION && !valid_result) {
+		BRep_Builder B;
+		TopoDS_Compound C;
+		B.MakeCompound(C);
+		B.Add(C, s1);
+		TopTools_ListIteratorOfListOfShape it(second_operand_shapes);
+		for (; it.More(); it.Next()) {
+			B.Add(C, it.Value());
+		}
+		Logger::Message(Logger::LOG_ERROR, "Failed to process union, creating compound:", l);
+		shape = C;
+		return true;
 	} else {
 		return valid_result;
 	}
