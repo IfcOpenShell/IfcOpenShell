@@ -1,0 +1,328 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Scene Properties &#8212; IfcOpenShell 0.0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="BIMTester" href="../bimtester.html" />
+    <link rel="prev" title="Installation" href="installation.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../bimtester.html" title="BIMTester"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="Installation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IfcOpenShell 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../blenderbim.html" accesskey="U">BlenderBIM</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="scene-properties">
+<h1>Scene Properties<a class="headerlink" href="#scene-properties" title="Permalink to this headline">¶</a></h1>
+<p>The scene properties panels allow you to manage data that applies to your entire
+IFC project as a whole, or to multiple elements.</p>
+<div class="section" id="building-information-modeling-panel">
+<h2>Building Information Modeling Panel<a class="headerlink" href="#building-information-modeling-panel" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="system-setup">
+<h3>System Setup<a class="headerlink" href="#system-setup" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Quick Project Setup</strong> - this will create a basic spatial tree. It will
+create a tree of collections with the structure <code class="docutils literal notranslate"><span class="pre">IfcProject</span> <span class="pre">&gt;</span> <span class="pre">IfcSite</span> <span class="pre">&gt;</span>
+<span class="pre">IfcBuilding</span> <span class="pre">&gt;</span> <span class="pre">IfcStorey</span></code> This is merely for convenience instead of having to
+create it all by yourself, since all IFC exports require a valid spatial
+tree. You can see the tree of collections in the outliner when this is done.</p></li>
+<li><p><strong>Schema Directory</strong> - this folder stores the current IFC schema. You can
+download different schemas from the buildingSMART website. Unless you are an
+IFC guru, you probably shouldn’t touch this. BlenderBIM recognises different
+IFC data based on what is provided in this schema folder. It defaults to the
+<code class="docutils literal notranslate"><span class="pre">{{BLENDER_ADDONS_DIR}}/blenderbim/schema/</span></code> folder, which is prepackaged
+with the IFC4 schema. This is known as the <code class="docutils literal notranslate"><span class="pre">{SCHEMA_DIR}</span></code>.</p></li>
+<li><p><strong>Data Directory</strong> - the data directory holds the auxiliary data related to
+your IFC model. Examples include related property definitions, documents, and
+classification systems. Each project should have its own data directory. It
+defaults to the data directory in the
+<code class="docutils literal notranslate"><span class="pre">{{BLENDER_ADDONS_DIR}}/blenderbim/data/</span></code> folder, which comes with some
+example preset data. You are encouraged to copy this template and set your
+own. This is known as the <code class="docutils literal notranslate"><span class="pre">{DATA_DIR}</span></code>.</p></li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="software-identity">
+<h3>Software Identity<a class="headerlink" href="#software-identity" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>GlobalId</strong> - this field let’s you enter an IFC element’s <code class="docutils literal notranslate"><span class="pre">GlobalId</span></code>. It
+must be in the 22-character encoded form.</p></li>
+<li><p><strong>Select GlobalId</strong> - this will select an element that has the same
+<code class="docutils literal notranslate"><span class="pre">GlobalId</span></code> attribute as what you have specified, based on what is currently
+visible in the scene.</p></li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="ifc-categorisation">
+<h3>IFC Categorisation<a class="headerlink" href="#ifc-categorisation" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>IFC Class</strong> - this dropdown lets you pick from a list of all non-abstract
+children of <code class="docutils literal notranslate"><span class="pre">IfcElement</span></code> and <code class="docutils literal notranslate"><span class="pre">IfcSpatialStructureElement</span></code></p></li>
+<li><p><strong>IFC Predefined Type</strong> - this dropdown lets you pick from an enumeration of
+valid <code class="docutils literal notranslate"><span class="pre">PredefinedType</span></code> values for the currently selected <em>IFC Class</em>. It
+changes dynamically with the currently selected <em>IFC Class</em>.</p></li>
+<li><p><strong>IFC Userdefined Type</strong> - this field lets you enter a value for a user
+defined type. It is stored as the <code class="docutils literal notranslate"><span class="pre">ObjectType</span></code> attribute of an
+<code class="docutils literal notranslate"><span class="pre">IfcProduct</span></code>. It is only set when the <strong>IFC Predefined Type</strong> is set to
+<code class="docutils literal notranslate"><span class="pre">USERDEFINED</span></code>, otherwise it is ignored. It is recommended to make this
+value uppercase and alphabetic, to match the conventions for the
+<code class="docutils literal notranslate"><span class="pre">PredefinedType</span></code> enumeration.</p></li>
+<li><p><strong>Assign Class</strong> - this applies the active <em>IFC Class</em>, <em>IFC Predefined Type</em>
+and <em>IFC Userdefined Type</em> to any selected objects.</p></li>
+<li><p><strong>Select Class</strong> - this will select any objects that are currently visible
+that also have the same IFC class as the currently active <em>IFC Class</em>
+dropdown.</p></li>
+<li><p><strong>Select Type</strong> - same as <em>Select Class</em>, but it also filters by the
+currently active <em>IFC Predefined Type</em> dropdown, as well as the <em>IFC
+Userdefined Type</em> field.</p></li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="property-sets">
+<h3>Property Sets<a class="headerlink" href="#property-sets" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Pset Name</strong> - this lets you select from a list of available property set
+types. The list is derived from the folders in
+<code class="docutils literal notranslate"><span class="pre">{DATA_DIR}/pset</span></code>. Each folder name corresponds to a property set name. If
+you want to assign properties to an object based on an IFC standard pset,
+just create a new folder with the same name as the pset. You can also create
+your own custom property sets, so long as the folder name does not start with
+<code class="docutils literal notranslate"><span class="pre">Pset_</span></code>, as these are reserved for official IFC property sets.</p></li>
+<li><p><strong>Pset File</strong> - this lets you select from a list of available property set
+data. The available property sets depends on the currently selected <em>PSet
+Name</em> dropdown. Each property set is represented by a <code class="docutils literal notranslate"><span class="pre">.csv</span></code> file inside
+<code class="docutils literal notranslate"><span class="pre">{DATA_DIR}/pset/{PSET_NAME}/</span></code>. You can create your own <code class="docutils literal notranslate"><span class="pre">.csv</span></code> files
+with any software, where each line contains a property name and property
+value pair. Data types are automatically converted based on the property set
+templates defined in <code class="docutils literal notranslate"><span class="pre">{SCHEMA_DIR}</span></code>. If the pset is part of an official IFC
+standard, you can only use property names that are part of the IFC standard.
+If you want to add your own custom properties, you will need to create your
+own <em>PSet Name</em> folder first, and then you can put in your own <code class="docutils literal notranslate"><span class="pre">.csv</span></code> file
+which contains any property names and values that you want.</p></li>
+<li><p><strong>Assign Pset</strong> - this assigns the currently selected <em>Pset file</em> to any
+selected objects. The assigned data will then be visible in the <em>Object
+Properties</em>. This only assigns a link to the <code class="docutils literal notranslate"><span class="pre">.csv</span></code> containing the data, so
+you can change the data in the <code class="docutils literal notranslate"><span class="pre">.csv</span></code> file and that will automatically
+propagate to all assigned elements when an IFC is exported, without needing
+to reassign the data.</p></li>
+<li><p><strong>Unassign Pset</strong> - this removes the link to the property set <code class="docutils literal notranslate"><span class="pre">.csv</span></code>
+file for all currently selected objects.</p></li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="aggregates">
+<h3>Aggregates<a class="headerlink" href="#aggregates" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Aggregate Class</strong> - this lets you select what type of class you want an
+aggregate of parts to be.</p></li>
+<li><p><strong>Aggregate name</strong> - this lets you set the name of an aggregate that you can
+can create.</p></li>
+<li><p><strong>Create Aggregate</strong> - this will create a new aggregate from one or more
+currently selected objects. The selected objects will be moved out of the
+spatial tree into an <code class="docutils literal notranslate"><span class="pre">IfcRelAggregates/*</span></code> collection. Then, a collection
+instance will be created to represent the aggregation, and will be placed in
+the current location of the spatial tree, and the  The parts will then be
+hidden so only the whole composition (i.e. the aggregate object) will be
+shown.</p></li>
+<li><p><strong>Explode Aggregate</strong> - this does the opposite of <em>Create Aggregate</em>, and
+will remove the aggregation.</p></li>
+<li><p><strong>Edit Aggregate</strong> - this will hide the collection instance that represents
+the aggregate object, and show all of the individual parts. This allows you
+to select and modify the aggregate parts.</p></li>
+<li><p><strong>Save Aggregate</strong> - this does the opposite of <em>Edit Aggregate</em>.</p></li>
+</ul>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="ifc-classifications-panel">
+<h2>IFC Classifications Panel<a class="headerlink" href="#ifc-classifications-panel" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Classification</strong> - this lets you select which classification system you’d
+like to use. The list of possible classification systems is derived from the
+<code class="docutils literal notranslate"><span class="pre">{DATA_DIR}/class/classifications.csv</span></code> file. By default, BlenderBIM comes
+with Uniclass 2015 and Omniclass. If you need another classification system,
+you can add it to this <code class="docutils literal notranslate"><span class="pre">.csv</span></code> file.</p></li>
+<li><p><strong>Reference</strong> - this lets you select a single classification reference item,
+filtered depending on the currently active <em>Classification</em>. The list is
+derived from the <code class="docutils literal notranslate"><span class="pre">{DATA_DIR}/class/references.csv</span></code> file. Out of the box,
+BlenderBIM only lists a single Uniclass reference as an example. It is
+advised to make a list of all the references you require for a project and
+add it to this <code class="docutils literal notranslate"><span class="pre">.csv</span></code> file.</p></li>
+<li><p><strong>Assign Classification</strong> - this assigns the currently active <em>Reference</em> to
+all of the selected objects. You can see the results in the <em>Object
+Properties</em> pane.</p></li>
+<li><p><strong>Unassign Classification</strong> - this removes the currently active <em>Reference</em>
+in all of the selected objects.</p></li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="ifc-owner-history-panel">
+<h2>IFC Owner History Panel<a class="headerlink" href="#ifc-owner-history-panel" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Person</strong> - this lets you select who you are. The values are derived from
+the <code class="docutils literal notranslate"><span class="pre">{DATA_DIR}/owner/person.json</span></code> file, particularly the
+<code class="docutils literal notranslate"><span class="pre">Identification</span></code> attribute, which is mandatory and a requirement in COBie
+data. You are encouraged to edit this file to add your own details. This
+information will be stored in the IFC file as part of the owner history to
+keep track of any objects which you edit. You will also be recorded as the
+author of the IFC file.</p></li>
+<li><p><strong>Organisation</strong> - this lets you select which organisation you are part of.
+The values are derived from the <code class="docutils literal notranslate"><span class="pre">{DATA_DIR}/owner/organisation.json</span></code> file,
+in particular the <code class="docutils literal notranslate"><span class="pre">Name</span></code> attribute, which is mandatory and a requirement in
+COBie data. You are encouraged to edit this file to add your own organisation
+details.  This information will be stored in the IFC file as part of the
+owner history to keep track of any objects which you edit. The organisation
+will also be recorded as the author of the IFC file.</p></li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="ifc-geometric-representation-contexts-panel">
+<h2>IFC Geometric Representation Contexts Panel<a class="headerlink" href="#ifc-geometric-representation-contexts-panel" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Has Model Context</strong> - enabling this will allow you to export geometric data
+related to the model view of your BIM data. This is generally 3D
+representations. It may also contain wireframe representations such as an
+Axis model for structural members. This defaults to being enabled, as most
+people want to export model geometry.</p>
+<ul>
+<li><p><strong>Available Subcontexts</strong> - this lets you select a possible subcontext to
+be used underneath the Model context.</p></li>
+<li><p><strong>Available Target Views</strong> - subcontexts may have a particular target view,
+which you can set here.</p></li>
+<li><p><strong>Add Subcontext</strong> - This will add a new subcontext based on the currently
+selected <em>Available Subcontext</em> and <em>Available Target View</em>.</p>
+<ul>
+<li><p><strong>Subcontext Name</strong> - for each subcontext you have added, it will show
+you the subcontext name. By default, the <code class="docutils literal notranslate"><span class="pre">Body</span></code> subcontext is added,
+as most people want to export the body geometry of products in their BIM
+data.</p></li>
+<li><p><strong>Subcontext Target View</strong> - same as <em>Subcontext Name</em>, but shows the
+target view. By default, the <code class="docutils literal notranslate"><span class="pre">MODEL_VIEW</span></code> target view is added, as most
+people will be viewing the model geometry of your BIM data.</p></li>
+<li><p><strong>Remove Subcontext</strong> - this will remove the subcontext.</p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><strong>Has Plan Context</strong> - the same as <em>Has Model Context</em>, but it lets you add
+subcontexts and target views related to the <code class="docutils literal notranslate"><span class="pre">PLAN</span></code> context of your BIM
+data. This is usually plans, sections, RCPs, and other documentation views.</p></li>
+</ul>
+</div></blockquote>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Scene Properties</a><ul>
+<li><a class="reference internal" href="#building-information-modeling-panel">Building Information Modeling Panel</a><ul>
+<li><a class="reference internal" href="#system-setup">System Setup</a></li>
+<li><a class="reference internal" href="#software-identity">Software Identity</a></li>
+<li><a class="reference internal" href="#ifc-categorisation">IFC Categorisation</a></li>
+<li><a class="reference internal" href="#property-sets">Property Sets</a></li>
+<li><a class="reference internal" href="#aggregates">Aggregates</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ifc-classifications-panel">IFC Classifications Panel</a></li>
+<li><a class="reference internal" href="#ifc-owner-history-panel">IFC Owner History Panel</a></li>
+<li><a class="reference internal" href="#ifc-geometric-representation-contexts-panel">IFC Geometric Representation Contexts Panel</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="installation.html"
+                        title="previous chapter">Installation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../bimtester.html"
+                        title="next chapter">BIMTester</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/blenderbim/scene.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../bimtester.html" title="BIMTester"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="Installation"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IfcOpenShell 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../blenderbim.html" >BlenderBIM</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, IfcOpenShell Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.2.0.
+    </div>
+  </body>
+</html>

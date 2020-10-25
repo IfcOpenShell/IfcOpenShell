@@ -1,0 +1,1015 @@
+27;IfcActorSelect;"<EPM-HTML>
+
+<p>The actor select type allows a person, or an organization, or a person associated with an organization to be referenced.</p>
+
+<blockquote class=""note"">
+NOTE Corresponds to the following entity in ISO 10303-41: person_organization_select.
+</blockquote>
+
+<blockquote class=""history"">
+HISTORY New entity in IFC Release 1.5.1
+</blockquote>
+
+<p>SELECT</p> 
+<ul>
+<li><b>IfcOrganization</b> An organization.</li> 
+<li><b>IfcPerson</b> A person.</li> 
+<li><b>IfcPersonAndOrganization</b> A person related to an organization.</li>
+</ul>
+
+</EPM-HTML>"
+268;IfcBendingParameterSelect;"<EPM-HTML>
+
+<p><u>Definition from IAI</u>: A select type for selecting between simple measure types for reinforcement bending parameters.</p>
+
+<blockquote><font color=""#0000ff"" size=""-1"">HISTORY New type in IFC Release 2x4</font></blockquote>
+
+</EPM-HTML>"
+276;IfcTextFontSelect;"<EPM-HTML>
+
+<p><i>IfcTextFontSelect</i> allows for either a predefined text font, a text font model or an externally defined text font to be used to describe the font of a text literal. The definition of the text font model is based on W3C TR Cascading Style Sheet Version 1, whereas the definition of predefined text font is based on ISO 10303.
+</p>
+
+<blockquote class=""note"">
+NOTE&nbsp; <i>IfcTextFontSelect</i> is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&mdash;Product data representation and exchange, Part 46: Integrated generic resources: Visual presentation. Corresponding ISO 10303 name: font_select. Please refer to ISO/IS 10303-46:1994, p. 133 for the final definition of the formal standard.
+</blockquote>
+
+<blockquote class=""history"">
+HISTORY&nbsp; New type in IFC2x2.
+</blockquote>
+
+<blockquote class=""change-ifc2x3"">
+IFC2x3 CHANGE&nbsp; The select type has been renamed from IfcFontSelect.
+</blockquote>
+
+</EPM-HTML>"
+320;IfcColour;"<EPM-HTML>
+
+<p><u>Definition from ISO/CD 10303-46:1992</u>: The colour entity defines a basic appearance of elements which shall be visualized in a picture.</p>
+
+<blockquote class=""note"">
+NOTE&nbsp; Corresponding STEP name: colour. It has been made into a SELECT type in IFC to avoid multiple inheritance for pre defined colour. Please refer to ISO/IS 10303-46:1994, p. 138 for the final definition of the formal standard.
+</blockquote>
+
+<blockquote class=""history"">
+HISTORY&nbsp; New entity in IFC2x2.
+</blockquote>
+
+</EPM-HTML>"
+391;IfcObjectReferenceSelect;"<EPM-HTML> 
+
+<p><i>IfcObjectReferenceSelect</i> is a select type, that holds a list of resource level entities that can be used as properties within a property set.</p> 
+
+<blockquote class=""history"">
+HISTORY&nbsp; New select type in IFC Release 2.0.
+</blockquote>
+
+</EPM-HTML>"
+491;IfcSpaceBoundarySelect;"<EPM-HTML>
+<p><u>Definition from IAI</u>: The
+<i>IfcSpaceBoundarySelect</i> selects either an internal space
+for internal or external space boundaries, or an external spatial
+element for external space boundaries at the outer envelop of the
+building.</p>
+SELECT<br>
+<ul>
+<li><i>IfcSpace</i>,</li>
+<li><i>IfcExternalSpatialElement</i></li>
+</ul>
+<blockquote><small><font color=""#0000FF"">HISTORY  New select type
+in IFC2x4.</font></small></blockquote>
+
+</EPM-HTML>"
+635;IfcDistributionElementSelect;"<EPM-HTML>
+<p><u>Definition from IAI</u>: The
+<i>IfcDistributionElementSelect</i> provides the option to either
+select a distribution element occurrence,
+<i>IfcDistributionElement</i>, or a distribution element type,
+<i>IfcDistributionElementType</i>.</p>
+SELECT<br>
+<ul>
+<li><i>IfcDistributionElement</i>,</li>
+<li><i>IfcDistributionElementType</i></li>
+</ul>
+<blockquote><small><font color=""#0000FF"">HISTORY  New select type
+in IFC2x4.</font></small></blockquote>
+</EPM-HTML>"
+859;IfcProcessSelect;"<EPM-HTML>
+    <p>
+      <i>IfcProcessSelect</i> provides the option to either
+      select a process or activity occurrence, <i>IfcProcess</i>,
+      or a process or activity type, <i>IfcTypeProcess</i>.
+    </p>SELECT<br>
+    <ul>
+      <li>
+        <i>IfcProcess</i>,
+      </li>
+      <li>
+        <i>IfcTypeProcess</i>
+      </li>
+    </ul>
+
+<blockquote class=""history"">
+HISTORY  New select type in IFC2x4.
+</blockquote>
+
+</EPM-HTML>"
+889;IfcProductSelect;"<EPM-HTML>
+<p><i>IfcProductSelect</i> provides the option to either select a
+product occurrence, <i>IfcProduct</i>, or a product type,
+<i>IfcTypeProduct</i>.</p>
+SELECT<br>
+<ul>
+<li><i>IfcProduct</i>,</li>
+<li><i>IfcTypeProduct</i></li>
+</ul>
+<blockquote class=""history"">
+HISTORY  New select type in IFC2x4.
+</blockquote>
+
+</EPM-HTML>"
+900;IfcResourceSelect;"<EPM-HTML>
+<p><i>IfcResourceSelect</i> provides the option to either select a
+resource occurrence, <i>IfcResource</i>, or a resource type,
+<i>IfcTypeResource</i>.</p>
+SELECT<br>
+<ul>
+<li><i>IfcResource</i>,</li>
+<li><i>IfcTypeResource</i></li>
+</ul>
+
+<blockquote class=""history"">
+HISTORY  New select type in IFC2x4.
+</blockquote>
+
+</EPM-HTML>"
+962;IfcDefinitionSelect;"<EPM-HTML>
+
+<p><i>IfcDefinitionSelect</i> provides the option to either select an object or type object <i>IfcObjectDefinition</i>, or a property set template or property set, <i>IfcPropertyDefinition</i>.</p>
+SELECT<br>
+<ul>
+<li><i>IfcObjectDefinition</i>,</li>
+<li><i>IfcPropertyDefinition</i></li>
+</ul>
+
+<blockquote class=history"">
+HISTORY  New select type in IFC2x4.
+</blockquote>
+
+</EPM-HTML>"
+2005;IfcStructuralActivityAssignmentSelect;"<EPM-HTML>
+	 <P><U>Definition from IAI:</U> This type definition shall be used to
+		distinguish between a reference to an instance either of
+		<I>IfcStructuralItem</I> or <I>IfcBuildingElement</I>. The
+		<I>IfcStructuralActivityAssignmentSelect</I> type is referenced by the entity
+		<I>IfcRelConnectsStructuralActivity</I> which defines the connection between
+		activities (<I>IfcStructuralActivity</I>) and the loaded element. </P> 
+	 <BLOCKQUOTE> 
+		<P><FONT COLOR=""#0000FF"" SIZE=""-1""> HISTORY: New type in Release IFC2x
+		  Edition 2. </FONT></P> </BLOCKQUOTE>
+</EPM-HTML>"
+2255;IfcCoordinateReferenceSystemSelect;"<EPM-HTML>
+
+<p><i>IfcCoordinateReferenceSystemSelect</i> is a select between either the local engineering coordinate system, represented by the <i>IfcGeometricRepresentationContext</i>, or another coordinate reference system, represented by <i>IfcCoordinateReferenceSystem</i>, to be the source of a coordinate operation.</p>
+
+<blockquote class=""history"">
+HISTORY&nbsp; New select type in IFC2x4.
+</blockquote>
+
+</EPM-HTML>"
+2357;IfcWarpingStiffnessSelect;"<EPM-HTML>
+
+<p><u>Definition from IAI:</u> A measure of warping stiffness.  TRUE denotes infinite stiffness (rigidity).  FALSE denotes no stiffness (a release).  A numeric value denotes finite linear-elastic stiffness.</p>
+
+<blockquote><font color=""#0000ff"" size=""-1"">HISTORY: New type in IFC 2x4.</font></blockquote>
+
+</EPM-HTML>"
+2360;IfcTranslationalStiffnessSelect;"<EPM-HTML>
+
+<p><u>Definition from IAI:</u> A measure of linear stiffness.  TRUE denotes infinite stiffness (rigidity).  FALSE denotes no stiffness (a release).  A numeric value denotes finite linear-elastic stiffness.</p>
+
+<blockquote><font color=""#0000ff"" size=""-1"">HISTORY: New type in IFC 2x4.</font></blockquote>
+
+</EPM-HTML>"
+2363;IfcRotationalStiffnessSelect;"<EPM-HTML>
+
+<p><u>Definition from IAI:</u> A measure of rotational stiffness.  TRUE denotes infinite stiffness (rigidity).  FALSE denotes no stiffness (a release).  A numeric value denotes finite linear-elastic stiffness.</p>
+
+<blockquote><font color=""#0000ff"" size=""-1"">HISTORY: New type in IFC 2x4.</font></blockquote>
+
+</EPM-HTML>"
+2373;IfcModulusOfTranslationalSubgradeReactionSelect;"<EPM-HTML>
+
+<p><u>Definition from IAI:</u> A measure for modulus of translational subgrade reaction which expresses the translational bedding of a structural curve item per length.  TRUE denotes infinite stiffness (rigidity).  FALSE denotes no stiffness (a release).  A numeric value denotes finite linear-elastic stiffness.</p>
+
+<blockquote><font color=""#0000ff"" size=""-1"">HISTORY: New type in IFC 2x4.</font></blockquote>
+
+</EPM-HTML>"
+2376;IfcModulusOfRotationalSubgradeReactionSelect;"<EPM-HTML>
+
+<p><u>Definition from IAI:</u> A measure for modulus of rotational subgrade reaction which expresses the rotational bedding of a structural curve item per length.  TRUE denotes infinite stiffness (rigidity).  FALSE denotes no stiffness (a release).  A numeric value denotes finite linear-elastic stiffness.</p>
+
+<blockquote><font color=""#0000ff"" size=""-1"">HISTORY: New type in IFC 2x4.</font></blockquote>
+
+</EPM-HTML>"
+2383;IfcModulusOfSubgradeReactionSelect;"<EPM-HTML>
+
+<p><u>Definition from IAI:</u> Bedding measure which expresses the bedding of a structural face item per area.  TRUE denotes infinite stiffness (rigidity).  FALSE denotes no stiffness (a release).  A numeric value denotes finite linear-elastic stiffness.</p>
+
+<blockquote><font color=""#0000ff"" size=""-1"">HISTORY: New type in IFC 2x4.</font></blockquote>
+
+</EPM-HTML>"
+2473;IfcShell;"<EPM-HTML> 
+
+<p><u>Definition from ISO/CD 10303-42:1992</u> This type collects together, for reference when constructing more complex models, the subtypes which have the characteristics of a shell. A shell is a connected object of fixed dimensionality d = 0; 1; or 2, typically used to bound a region. The domain of a shell, if present, includes its bounds and 0 <FONT FACE=""Symbol"">&pound;</FONT> <FONT FACE=""Symbol"">X</FONT> <FONT FACE=""Symbol"">&lt;</FONT> <FONT FACE=""Symbol"">&yen;</FONT>. </p> 
+<ul> 
+<li>A shell of dimensionality 0 is represented by a graph consisting of a single vertex. The vertex shall not have any associated edges.</li> 
+<li>A shell of dimensionality 1 is represented by a connected graph of dimensionality 1.</li> 
+<li>A shell of dimensionality 2 is a topological entity constructed by joining faces along edges. Its domain, if present, is a connected, orientable 2-manifold with boundary, that is, a connected, oriented, finite, non-self-intersecting surface, which may be closed or open.</li> 
+</ul> 
+<p>Shells of dimensionality 0 and 1 are not part of the current IFC release.</p> 
+
+<blockquote class=""note"">
+NOTE&nbsp; Corresponding ISO 10303 type: shell. Please refer to ISO/IS 10303-42:1994, p. 127 for the final definition of the formal standard. Only the select items closed_shell (<I>IfcClosedShell</I>) and open_shell (<I>IfcOpenShell</I>) have been incorporated in the current IFC release.</blockquote> 
+
+<blockquote class=""history"">
+HISTORY&nbsp; New type in IFC2x.
+</blockquote>
+
+</EPM-HTML>"
+3739;IfcClassificationSelect;"<EPM-HTML> 
+<p><i>IfcClassificationSelect</i> enables selection of whether a classification reference is to be referenced from an external source, or whether a classification is referenced as such.</p>
+
+<blockquote class=""note"">
+NOTE&nbsp; Generally, it is expected that selection will be by <em>IfcClassificationReference</em> to identify an individual classification notation that classifies an element in the building information model. For example an element, such as <em>IfcTank</em>, might be further classified by assigning an <em>IfcClassificationReference</em> with <em>Identification</em> = ""L6814"" and a <em>ClassificationSource</em> identifying the appropriate version of Uniclass.  <em>IfcClassification</em> should only be selected in
+circumstances where there could be a need to indicate the classification system that will be used without associating a notation or reference to an individual object. This may occur for higher level objects such as <em>IfcProject</em>, <em>IfcSystem</em>, or similar. For example an <em>IfcStructuralAnalysisModel</em> might be classified to be applicable to a particular version of EuroCode.
+</blockquote>
+
+<blockquote class=""history"">
+HISTORY&nbsp; New select type in IFC2x
+</blockquote>
+<blockquote class=""change-ifc2x4"">
+IFC2x4 CHANGE&nbsp; Select renamed from IfcClassificationNotationSelect.
+</blockquote>
+
+<p><u>Select from:</u></p>
+<ul>
+<li><i>IfcClassification</i> (for referencing a classification system)</li>
+<li><i>IfcClassificationReference</i> (for referencing a classification item (or facet) inside a classification system)</li>
+</ul>
+
+</EPM-HTML>"
+3784;IfcClassificationReferenceSelect;"<EPM-HTML> 
+
+<p><i>IfcClassificationReferenceSelect</i> enables selection of whether a classification reference is a subset of another classification reference or is a top level entry of a classification source.</p> 
+
+<blockquote class=""history"">
+HISTORY: New Select Type in IFC2x
+</blockquote> 
+
+<p><u>Select From:</u></p> 
+<ul> 
+<li><i>IfcClassification</i> (for classification information) </LI> 
+<li><i>IfcClassificationReference</i> (for reference into a classification source) </li> 
+</ul> 
+
+</EPM-HTML>"
+3852;IfcResourceObjectSelect;"<EPM-HTML> 
+
+<p><i>IfcResourceObjectSelect</i> enables selection of resource level objects that are to be related to an resource level relationship object. The use of <i>IfcResourceObjectSelect</i> includes the ability to assign an external reference entity (library, classification, or documentation reference) to entities within the resource level.</p>
+
+<blockquote class=""history"">
+HISTORY&nbsp; New Select type in IFC2x4.
+</blockquote>
+
+</EPM-HTML>"
+3870;IfcLibrarySelect;"<EPM-HTML> 
+
+<p><i>IfcLibrarySelect</i> enables selection of whether library information is to be contained within an IFC model or is to be referenced from an external source.</p> 
+
+<blockquote class=""history"">
+HISTORY: New Select Type in IFC2x
+</blockquote> 
+
+<p><u>Select From:</u></p> 
+<ul> 
+<li><i>IfcLibraryInformation</i> (for library information) </LI> 
+<li><i>IfcLibraryReference</i> (for reference into a library of information by location) </li> 
+</ul> 
+
+<p>Generally, it is expected that selection will be <em>IfcLibraryReference</em> and only rarely <em>IfcLibraryInformation</em>. <em>IfcLibraryInformation</em> should only be selected in circumstances where there could be a need to indicate the libraries that will be used without making individual references. This may occur for higher level objects such as a project or building.</p>
+
+</EPM-HTML>"
+3873;IfcDocumentSelect;"<EPM-HTML> 
+
+<p><i>IfcDocumentSelect</i> enables selection of whether document information is to be contained within an IFC model or is to be referenced from an external source.</p> 
+
+<blockquote class=""history"">
+HISTORY: New Select Type in IFC 2x
+</blockquote> 
+
+<p><u>Select From:</u></p> 
+<ul> 
+<li><i>IfcDocumentInformation</i> (for ""metadata"" of an external document) </li> 
+<li><i>IfcDocumentReference</i> (for reference within a document) </li> 
+</ul> 
+
+</EPM-HTML>"
+3914;IfcMetricValueSelect;"<EPM-HTML> 
+
+<p><i>IfcMetricValueSelect</i> is a select type that enables selection of the data type for the value component of an <i>IfcMetric</i>.</p> 
+
+<blockquote class=""history"">
+HISTORY: New type in IFC Release 2.0
+</blockquote> 
+
+<p><u>Select</u></p> 
+	 <ul> 
+                <li><i>IfcCostValue</i></li>
+		<li><i>IfcDateTime</i></li> 
+		<li><i>IfcMeasureWithUnit</i></li> 
+		<li><i>IfcTable</i></li> 
+		<li><i>IfcText</i></li> 
+		<li><i>IfcTimeSeries</i></li> 
+	 </ul> 
+
+</EPM-HTML>"
+3969;IfcAppliedValueSelect;"<EPM-HTML> 
+
+<p><i>IfcAppliedValueSelect</i> defines the selection of whether a value (expressed as a ratio) or an amount should be used as the value for an <i>IfcAppliedValue</i>.</p> 
+
+	 <p><u>Select from:</u> </p> 
+	 <ul> 
+		<li><i>IfcMeasureWithUnit</i></li> 
+		<li><i>IfcMonetaryMeasure</i></li> 
+		<li><i>IfcRatioMeasure</i></li> 
+	 </ul> 
+
+<blockquote class=""history"">
+HISTORY: New SELECT type in IFC 2x2.
+</blockquote> 
+
+<p class=""head-use"">Use definitions</p> 
+<p>Selecting <i>IfcMeasureWithUnit</i> allows the specification of both the actual figure for the value together with the currency in which the value is represented.</p> 
+<p>Selecting <i>IfcMonetaryMeasure</i> allows the specification only of the value, the currency being as set by the global context</p> 
+<p>Selecting <i>IfcRatioMeasure</i> assumes that the amount is a percentage or other REAL number. Note that if the amount is normally specified as -20%, then this figure will need to be converted to a multiplier of 0.8 </p>
+
+</EPM-HTML>"
+4072;IfcTimeOrRatioSelect;"<EPM-HTML>
+
+<p><i>IfcTimeOrRatioSelect</i> allows a value to be selected as being either a ratio or a time measure.</p>
+<blockquote class=""history"">HISTORY New SELECT in IFC2x4</blockquote>
+
+</EPM-HTML>"
+4147;IfcPointOrVertexPoint;"<EPM-HTML>
+
+<p><i>IfcPointOrVertexPoint</i>&nbsp;provides the option to either select a geometric point (<i>IfcPoint</i> and subtypes) within a geometric model, or a vertex with associated point coordinates (<i>IfcVertexPoint</i>) within a topological model.</p>
+SELECT <br>
+<ul>
+  <li><i>IfcPoint</i>, </li>
+  <li><i>IfcVertexPoint</i></li>
+</ul>
+
+<blockquote class=""history"">
+HISTORY&nbsp; New select type in IFC2x Edition 3.</font><font color=""#ff0000"">
+</blockquote>
+
+</EPM-HTML>"
+4153;IfcCurveOrEdgeCurve;"<EPM-HTML>
+
+<p><i>IfcCurveOrEdgeCurve</i> provides the option to either select a geometric curve (<i>IfcCurve</i>
+and subtypes) within a geometric model, or a curve with associated geometry and coordinates (<i>Ifc</i><i>EdgeCurve</i>) within a topological model.</p>
+SELECT <br>
+<ul>
+  <li><i>IfcCurve</i></li>
+  <li><i>IfcEdgeCurve</i></li>
+</ul>
+
+<blockquote class=""history"">
+HISTORY&nbsp; New select type in IFC2x Edition 3.
+</blockquote>
+
+</EPM-HTML>"
+4159;IfcSurfaceOrFaceSurface;"<EPM-HTML>
+<p><i>IfcSurfaceOrFaceSurface</i> provides the option to either select a geometric surface (<i>IfcSurface</i>
+and subtypes) within a geometric model, or a face with associated surface geometry and coordinates (<i>IfcFaceSurface</i>) within a topological model.</p>
+SELECT <br>
+<ul>
+  <li><i>IfcSurface</i> </li>
+  <li><i>IfcFaceSurface</i></li>
+  <li><i>IfcFaceBasedSurfaceModel </i>(a connected face set, representing a faceted surface as an approximation of a non planar, non rectangular bounded surface)</li>
+</ul>
+
+<blockquote class=""history"">
+HISTORY&nbsp; New select type in IFC2x3.
+</blockquote>
+
+</EPM-HTML>"
+4166;IfcSolidOrShell;"<EPM-HTML>
+<p>The <i>IfcSolidOrShell</i> provides the option to either select a geometric volume (<i>IfcSolidModel</i> and subtypes) within a geometric model, or a shell (<i>IfcClosedShell</i>) within a topological model.</p>
+SELECT<br>
+<ul>
+<li><i>IfcSolidModel</i></li>
+<li><i>IfcClosedShell</i></li>
+</ul>
+<blockquote class=""history"">
+HISTORY  New select type in IFC2x4.
+</blockquote>
+
+</EPM-HTML>"
+4194;IfcGridPlacementDirectionSelect;"<EPM-HTML>
+
+<p><i>IfcGridPlacementDirectionSelect</i> enables the choice of defining a grid placement be either an explicit direction, or by referencing a second grid intersection to provide the direction.</p>
+
+<p>SELECT</p>
+<ul>
+<li><i>IfcDirection</i>,</li>
+<li><i>IfcVirtualGridIntersection</i></li>
+</ul>
+
+<blockquote class=""history"">
+HISTORY  New select type in IFC2x4.
+</blockquote>
+
+</EPM-HTML>"
+4306;IfcMaterialSelect;"<EPM-HTML> 
+<p><i>IfcMaterialSelect</i> provides selection of either a material
+definition or a material usage definition that can be assigned to
+an element, a resource or another entity within IFC.</p>
+<p>SELECT</p>
+<ul>
+<li><i>IfcMaterialDefinition</i>
+<ul>
+<li><i>IfcMaterial</i></li>
+<li><i>IfcMaterialLayer</i></li>
+<li><i>IfcMaterialLayerSet</i></li>
+<li><i>IfcMaterialProfile</i></li>
+<li><i>IfcMaterialProfileSet</i></li>
+<li><i>IfcMaterialConstituent</i></li>
+<li><i>IfcMaterialConstituentSet</i></li>
+</ul>
+</li>
+<li><i>IfcMaterialUsageDefinition</i>
+<ul>
+<li><i>IfcMaterialLayerSetUsage</i></li>
+<li><i>IfcMaterialProfileSetUsage</i></li>
+</ul>
+</li>
+<li><i>IfcMaterialList</i>
+</li>
+</ul>
+
+<blockquote class=""history"">
+HISTORY New select in IFC 1.0
+</blockquote>
+
+<blockquote class=""change-ifc2x4"">
+IFC2x4 CHANGE The select now includes two new abstract entities <i>IfcMaterialDefinition</i>
+and <i>IfcMaterialUsageDefinition</i> with upward compatibility.  The use of <i>IfcMaterialList</i> is deprecated from IFC2x4 onwards.
+</blockquote>
+
+</EPM-HTML>"
+4363;IfcUnit;"<EPM-HTML>
+
+<p><u>Definition from ISO/CD 10303-41:1992</u>: A unit is a physical quantity, with a value of one, which is used as a standard in terms of which other quantities are expressed.</p>
+
+<blockquote class=""note"">
+NOTE: Select item <I>IfcMonetaryUnit</I> is an addition to ISO 10303-41.
+</blockquote>
+
+<blockquote class=""note"">
+NOTE: Corresponding ISO 10303 name: unit, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
+</blockquote>
+
+<p>SELECT</p> 
+<ul>
+<li><i>IfcNamedUnit</i>: A unit which is identified by a name.</li>
+<li><i>IfcDerivedUnit</i>: A unit which is derived from an expression of units.</li> 
+<li><i>IfcMonetaryUnit</i>: A unit for defining currencies.</li> 
+</ul>
+
+<blockquote class=""history"">
+HISTORY: New type in IFC Release 1.5.1.
+</blockquote>
+
+</EPM-HTML>"
+4398;IfcValue;"<EPM-HTML>
+
+<p><i>IfcValue</i> is a select type for selecting between more specialised select types <i>IfcSimpleValue</i>,
+<i>IfcMeasureValue</i> and <i>IfcDerivedMeasureValue</i>.
+
+<p>SELECT</p> 
+	<ul>
+	<li><b>IfcSimpleValue</b> A select type for basic defined types of simple data type.</li> 
+	<li><b>IfcMeasureValue</b> A select type for basic measure types of ISO 10303-41.</li> 
+	<li><b>IfcDerivedMeasureValue</b> A select type for derived measure types.</li>
+	</ul>
+
+<blockquote class=""history"">
+HISTORY New type in IFC Release 2x.
+</blockquote>
+
+</EPM-HTML>"
+4402;IfcMeasureValue;"<EPM-HTML>
+
+<p><u>Definition from ISO/CD 10303-41:1992</u>: A measure value is a value as defined in ISO 31-0 (clause 2).</p>
+
+<blockquote class=""note"">
+NOTE <i>IfcMeasureValue</i> is a select data type for most basic measure types coming from ISO 10303-41.  Select item <i>IfcNonNegativeLengthMeasure</i> is in addition to ISO 10303-41.
+</blockquote>
+
+<blockquote class=""note"">
+NOTE Corresponding ISO 10303 name: measure_value, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
+</blockquote>
+
+<blockquote class=""history"">
+HISTORY New type in IFC Release 1.5.1.
+</blockquote>
+
+<blockquote class=""change-ifc2x4"">
+IFC 2x4 change: added <i>IfcNonNegativeLengthMeasure</i>
+</blockquote>
+
+</EPM-HTML>"
+4432;IfcSimpleValue;"<EPM-HTML>
+
+<p><i>IfcSimpleValue</i> is a select type for selecting between simple value types.</p>
+
+<p>SELECT</p> 
+	<ul>
+	<li><i>IfcInteger: Defined type of simple type INTEGER.</li> 
+	<li><i>IfcReal: Defined type of simple type REAL.</li> 
+	<li><i>IfcBoolean: Defined type of simple type BOOLEAN.</li> 
+	<li><i>IfcLogical: Defined type of simple type LOGICAL.</li> 
+	<li><i>IfcIdentifier: Defined type of simple type STRING for identification purposes.</li> 
+	<li><i>IfcLabel: Defined type of simple type STRING for naming purposes.</li> 
+	<li><i>IfcText: Defined type of simple type STRING for descriptive purposes.</li> 
+	<li><i>IfcDateTime: Defined type of simple type STRING to represent a date and time.</li> 
+	<li><i>IfcDate: Defined type of simple type STRING to represent a date.</li> 
+	<li><i>IfcTime: Defined type of simple type STRING to represent a time.</li> 
+	<li><i>IfcDuration: Defined type of simple type STRING to represent a duration.</li> 
+	</ul>
+
+<blockquote class=""history"">
+HISTORY New type in IFC Release 2x.
+</blockquote>
+
+<blockquote class=""change-ifc2x4"">
+IFC2x4 CHANGE Items <i>IfcDateTime</i>, <i>IfcDate</i>, <i>IfcTime</i>, <i>IfcDuration</i> added.
+</blockquote>
+
+</EPM-HTML>"
+4446;IfcDerivedMeasureValue;"<EPM-HTML>
+
+<p><i>IfcDerivedMeasureValue</i> is a select type for selecting between derived measure types.</p>
+
+<p>SELECT</p> 
+	<ul>
+	<li><i>IfcAbsorbedDoseMeasure</i></li> 
+	<li><i>IfcAccelerationMeasure</i></li> 
+	<li><i>IfcAngularVelocityMeasure</i></li> 
+	<li><i>IfcCompoundPlaneAngleMeasure</i></li> 
+	<li><i>IfcDoseEquivalentMeasure</i></li> 
+	<li><i>IfcDynamicViscosityMeasure</i></li> 
+	<li><i>IfcElectricCapacitanceMeasure</i></li> 
+	<li><i>IfcElectricChargeMeasure</i></li> 
+	<li><i>IfcElectricConductanceMeasure</i></li> 
+	<li><i>IfcElectricResistanceMeasure</i></li> 
+	<li><i>IfcElectricVoltageMeasure</i></li> 
+	<li><i>IfcEnergyMeasure</i></li> 
+	<li><i>IfcForceMeasure</i></li> 
+	<li><i>IfcFrequencyMeasure</i></li> 
+	<li><i>IfcHeatFluxDensityMeasure</i></li> 
+	<li><i>IfcIlluminanceMeasure</i></li> 
+	<li><i>IfcInductanceMeasure</i></li> 
+	<li><i>IfcIntegerCountRateMeasure</i></li> 
+	<li><i>IfcIsothermalMoisturecapacityMeasure</i></li> 
+	<li><i>IfcKinematicViscosityMeasure</i></li> 
+	<li><i>IfcLinearForceMeasure</i></li> 
+	<li><i>IfcLinearMomentMeasure</i></li>  
+	<li><i>IfcLinearStiffnessMeasure</i></li> 
+	<li><i>IfcLinearVelocityMeasure</i></li> 
+	<li><i>IfcLuminousFluxMeasure</i></li> 
+	<li><i>IfcMagneticFluxDensityMeasure</i></li> 
+	<li><i>IfcMagneticFluxMeasure</i></li> 
+	<li><i>IfcMassDensityMeasure</i></li> 
+	<li><i>IfcMassFlowRateMeasure</i></li> 
+	<li><i>IfcModulusOfElasticityMeasure</i></li> 
+	<li><i>IfcModulusOfSubgradeReactionMeasure</i></li> 
+	<li><i>IfcMoistureDiffusivityMeasure</i></li> 
+	<li><i>IfcMolecularWeightMeasure</i></li> 
+	<li><i>IfcMomentOfInertiaMeasure</i></li>  
+	<li><i>IfcMonetaryMeasure</i></li> 
+	<li><i>IfcPlanarForceMeasure</i></li> 
+	<li><i>IfcPowerMeasure</i></li> 
+	<li><i>IfcPressureMeasure</i></li> 
+	<li><i>IfcRadioActivityMeasure</i></li> 
+	<li><i>IfcRotationalFrequencyMeasure</i></li> 
+	<li><i>IfcRotationalStiffnessMeasure</i></li> 
+	<li><i>IfcShearModulusMeasure</i></li> 
+	<li><i>IfcSpecificHeatCapacityMeasure</i></li> 
+	<li><i>IfcThermalAdmittanceMeasure</i></li> 
+	<li><i>IfcThermalConductivityMeasure</i></li> 
+	<li><i>IfcThermalResistanceMeasure</i></li> 
+	<li><i>IfcThermalTransmittanceMeasure</i></li> 
+	<li><i>IfcTimeStamp</i></li> 
+	<li><i>IfcTorqueMeasure</i></li> 
+	<li><i>IfcVaporPermeabilityMeasure</i></li> 
+	<li><i>IfcVolumetricFlowRateMeasure</i></li> 
+ 	<li><i>IfcCurvatureMeasure</i></li> 
+ 	<li><i>IfcMassPerLengthMeasure</i></li> 
+ 	<li><i>IfcRotationalMassMeasure</i></li> 
+ 	<li><i>IfcSectionalAreaIntegralMeasure</i></li> 
+   	<li><i>IfcSectionModulusMeasure</i></li> 
+ 	<li><i>IfcTemperatureGradientMeasure</i></li> 
+ 	<li><i>IfcTemperatureRateOfChangeMeasure</i></li> 
+ 	<li><i>IfcWarpingConstantMeasure</i></li> 
+ 	<li><i>IfcWarpingMomentMeasure</i></li> 
+ 	<li><i>IfcThermalExpansionCoefficientMeasure</i></li> 
+        <li><i>IfcModulusOfLinearSubgradeReactionMeasure</i></li> 
+ 	<li><i>IfcModulusOfRotationalSubgradeReactionMeasure</i></li> 
+ 	<li><i>IfcLuminousIntensityDistributionMeasure</i></li> 
+ 	<li><i>IfcSoundPowerMeasure</i></li> 
+	<li><i>IfcSoundPressureMeasure</i></li> 
+	</ul>
+
+<blockquote class=""history"">
+HISTORY New type in IFC Release 2x.
+</blockquote>
+
+<blockquote class=""change-ifc2x4"">
+IFC2x4 change: added <i>IfcTemperatureRateOfChangeMeasure</i>.
+</blockquote>
+
+</EPM-HTML>"
+4744;IfcCharacterStyleSelect;"<EPM-HTML>
+
+<p>The character style select allows for a selection of character styles for text. Currently only text color and background color is selectable.</p>
+
+<blockquote class=""note"">
+NOTE&nbsp; Corresponding ISO 10303 name: character_style_select. Please refer to ISO/IS
+10303-46:1994, p. 89 for the final definition of the formal standard.
+</blockquote>
+
+<blockquote class=""history"">
+HISTORY&nbsp; New type in IFC2x2.
+</blockquote>
+
+<blockquote class=""change-ifc2x3"">
+IFC2x3 CHANGE&nbsp; The SELECT item <i>IfcTextStyleForDefinedFont</i> replaces the old <i>IfcColour</i>.
+</blockquote>
+
+</EPM-HTML>"
+4753;IfcTextStyleSelect;"<EPM-HTML>
+
+<p>The text style select allows for the selection of styles to be assigned to an annotated text. The text style determines the text model that affect the visual presentation of characters, spaces, words, and paragraphs. There are two choices:</p>
+<ul>
+  <li><i>IfcTextStyleWithBoxCharacteristics</i> for definitions from ISO/IS 10303-46:1994 for (old) vector based and monospace text.</li>
+  <li><i>IfcTextStyleTextModel</i> for definitions from <a target=""_blank"" href=""http://www.w3.org/TR/REC-CSS1"">Cascading
+Style Sheets, level 1</a>, W3C Recommendation 17 Dec 1996, revised 11 Jan 1999, CSS1, for all true type text. The use of the CSS1 definitions is the preferred way to represent text styles.</li>
+</ul>
+
+<blockquote class=""history"">
+HISTORY&nbsp; New type in IFC2x2.
+</blockquote>
+
+<blockquote class=""change-ifc2x3"">
+IFC2x3 CHANGE&nbsp; The items within the <i>IfcTextStyleSelect</i> have changed to <i>IfcTextStyleWithBoxCharacteristics</i> and <i>IfcTextStyleTextModel</i>.
+</blockquote>
+
+</EPM-HTML>"
+4762;IfcSizeSelect;"<EPM-HTML>
+
+<p><u>Definition from ISO/CD 10303-46:1992</u>: The size select is a selection of a specific positive length measure.</p>
+
+<p><u>Definition from ISO</u>: The size (or width) measure value is given in the global drawing length units.</p>
+
+<blockquote class=""note"">
+NOTE&nbsp; global units are defined at the single <i>IfcProject</i> instance, given by <i>UnitsInContext:IfcUnitAssignment</i>, the same units are used for the geometric representation items and for the style definitions.
+</blockquote>
+
+<blockquote class=""note"">
+NOTE&nbsp; Corresponding ISO 10303 name: size_select. Please refer to ISO/IS 10303-46:1994 for the final
+definition of the formal standard.
+</blockquote>
+
+<blockquote class=""history"">
+HISTORY&nbsp; New type in IFC2x2.
+</blockquote>
+
+<blockquote class=""change-ifc2x3"">
+IFC2x3 CHANGE&nbsp; The SELECT item <i>IfcMeasureWithUnit</i> has been removed from the <i>IfcSizeSelect</i>, the <i>IfcRatioMeasure</i> and <i>IfcDescriptiveMeasure</i> has been added.
+</blockquote>
+
+</EPM-HTML>"
+4788;IfcFillStyleSelect;"<EPM-HTML>
+
+<p><u>Definition from ISO/CD 10303-46:1992</u>: The fill style select is a selection between different fill area styles.</p>
+
+<blockquote class=""note"">
+NOTE Corresponding ISO 10303 name: fill_style_select. Please refer to ISO/IS 10303-46:1994 for
+the final definition of the formal standard.
+</blockquote>
+
+<blockquote class=""history"">
+HISTORY New type in IFC2x2.
+</blockquote>
+
+</EPM-HTML>"
+4802;IfcFillAreaStyleTileShapeSelect;"<EPM-HTML>
+
+<p>The fill area style tile shape select is used to make a selection for the style of the fill area style tile.</p>
+
+<blockquote class=""note""> 
+NOTE: The <I>IfcFillAreaStyleTileShapeSelect</I> is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#151;Product data representation and exchange, Part 46: Integrated generic resources: Visual presentation.
+</blockquote> 
+
+<blockquote class=""note"">
+NOTE Corresponding ISO 10303 name: fill_area_style_tile_shape_select. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
+</blockquote>
+
+<blockquote class=""history"">
+HISTORY New type in IFC2x2.
+</blockquote>
+
+</EPM-HTML>"
+4811;IfcStyleAssignmentSelect;"<EPM-HTML>
+
+<p>The style assignment select is a selection of two wasy of assigning presentation styles to an <i>IfcStyledItem</i>.</p>
+<ul>
+<li>by directly assigning presentation styles as subtypes of <i>IfcPresentationStyle</i></li>
+<li>by assigning presentation stypes via an intermediate collection entity <i>IfcPresentationStyleAssignment</i>
+<ul style=""list-style-type:dnone"">
+<li><small>NOTE Using <i>IfcPresentationStyleAssignment</i> is deprecated in IFC2x4 onwards</small></li>
+</ul>
+</li>
+</ul>
+
+<blockquote class=""note"">
+NOTE The select type has been introduced to provide an upward compatible improvement for assigning styles to a styled items.
+</blockquote>
+
+<blockquote class=""history"">
+HISTORY New select type in IFC2x4.
+</blockquote>
+
+</EPM-HTML>"
+4816;IfcPresentationStyleSelect;"<EPM-HTML>
+
+<p><u>Definition from ISO/CD 10303-46:1992</u>: The presentation style select is a selection of one of many kinds of styles, a different one for each kind of geometric representation item to be styled.</p>
+
+<blockquote class=""note"">
+NOTE Corresponding ISO 10303 name: presentation_style_Select. Please refer to ISO/IS
+10303-46:1994 for the final definition of the formal standard.
+</blockquote>
+
+<blockquote class=""history"">
+HISTORY New type in IFC2x2.
+</blockquote>
+
+<blockquote class=""change-ifc2x4"">
+IFC2x4 CHANGE The select type has been deprecated.
+</blockquote>
+
+</EPM-HTML>"
+4827;IfcSymbolStyleSelect;"<EPM-HTML>
+
+<p>The symbol style select allows for the selection of styles to be assigned to an annotated symbol.</p>
+
+<blockquote class=""note"">
+NOTE: The selection is restricted to colour within the current release of IFC
+</blockquote> 
+
+<blockquote class=""note""> 
+NOTE Corresponding ISO 10303 name: symbol_style_select. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
+</blockquote>
+
+<blockquote class=""history""> 
+HISTORY New entity in IFC2x2.
+</blockquote>
+
+</EPM-HTML>"
+4841;IfcSurfaceStyleElementSelect;"<EPM-HTML> 
+
+<p><u>Definition from ISO/CD 10303-46:1992</u>: The surface style element select is a selection of the different surface styles to use in the presentation of the side of a surface.</p> 
+
+<p>The select type only includes the <i>IfcSurfaceStyleRendering</i> (which is the equivalent to surface_style_rendering) from the select type surface_style_element_select. In addition it has the <i>IfcSurfaceStyleLighting</i>, which holds the exact physically based lighting properties for lighting based calculation algorithms (as the opposite to the rendering based calculation), the <i>IfcSurfaceStyleRefraction</i> (for more advanced refraction indices) and <i>IfcSurfaceStyleWithTextures</i> (to allow for image textures applied to surfaces). In addition an <i>IfcExternallyDefinedSurfaceStyle</i> can be selected that points into an external material library.</p> 
+
+<blockquote class=""note""> 
+NOTE The <i>IfcSurfaceLightingProperties</i> are needed for exact lighting calculation, because physically based lighting calculation algorithms need exact physically based parameters. The factors in <i>IfcSurfaceStyleRendering</i> lack the physical base, they are intended for rendering calculations, but a lighting calculation based software cannot use these values.
+</blockquote> 
+
+<blockquote class=""note""> 
+NOTE: Corresponding ISO 10303 type: surface_style_element_select. Please refer to ISO/IS 10303-46:1994, p. 85 for the final definition of the formal standard.
+</blockquote>
+ 
+<blockquote class=""history"">
+HISTORY: New Select type in IFC2x2.
+</blockquote>
+
+</EPM-HTML>"
+4859;IfcColourOrFactor;"<EPM-HTML>
+
+<p>The <I>IfcColourOrFactor</I> enables the selection of either a RGB colour value or a scalar factor value for the use as values of the reflectance components.</p>
+
+<blockquote class=""history"">
+HISTORY: New type in IFC2x2.
+</blockquote>
+
+</EPM-HTML>"
+4862;IfcSpecularHighlightSelect;"<EPM-HTML> 
+
+<p>The <i>IfcSpecularHighlightSelect</i> defines the selectable types of value for specular highlight sharpness.</p> 
+
+<blockquote class=""note""> 
+NOTE: The two select types relate to the different ways to specifiy the sharpness (or shininess) of the specular part of the reflectance equation. It relates to the attributes:</p> 
+		<ul> 
+		  <li>in ISO10303-46 the attribute specular_exponent is given</li> 
+		  <li>in VRML97 the attribute shininess is given</li> 
+		</ul> 
+For each surface side style only one of the two methods is needed for calculating the specular part of the equation.
+</blockquote> 
+
+<blockquote class=""history"">
+HISTORY: New type in IFC2x2.
+</blockquote>
+
+</EPM-HTML>"
+4919;IfcCurveFontOrScaledCurveFontSelect;"<EPM-HTML>
+
+<p><u>Definition from ISO/CD 10303-46:1992</u>: The curve font or scaled curve font select is a selection of either a curve font style select (being either a predefined curve font or an explicitly defined curve font) or a curve style font and scaling.</p> 
+
+<blockquote class=""note"">
+NOTE Corresponding ISO 10303 name: curve_font_or_scaled_curve_font_select. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
+</blockquote>
+
+<blockquote class=""history""> 
+HISTORY New entity in IFC2x2.
+</blockquote>
+
+</EPM-HTML>"
+4922;IfcCurveStyleFontSelect;"<EPM-HTML>
+
+<p><u>Definition from ISO/CD 10303-46:1992</u>: The curve style font select is a selection of a curve style font or a predefined curve style font.</p> 
+
+<blockquote class=""note""> 
+NOTE Corresponding ISO 10303 name: curve_style_font_select. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
+</blockquote>
+
+<blockquote class=""history"">
+HISTORY New entity in IFC2x2.
+</blockquote>
+
+</EPM-HTML>"
+4936;IfcHatchLineDistanceSelect;"<EPM-HTML>
+
+<p>The <i>IfcHatchLineDistanceSelect</i> is a selection between different ways to determine the distance and potentially start point of hatch lines, either by an offset distance length measure or by a vector.</p>
+
+<blockquote class=""history"">
+HISTORY&nbsp; New type in IFC2x3.
+</blockquote>
+
+</EPM-HTML>"
+4952;IfcDefinedSymbolSelect;"<EPM-HTML>
+
+<p>The defined symbol select is a selection between a predefined symbol and an externally defined symbol.</p> 
+	 
+<blockquote class=""note""> 
+NOTE Corresponding ISO 10303 name: defined_symbol_select. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
+</blockquote>
+
+<blockquote class=""history"">
+HISTORY New type in IFC2x2.
+</blockquote>
+
+</EPM-HTML>"
+5024;IfcLightDistributionDataSourceSelect;"<EPM-HTML>
+
+<p>A goniometric light gets its intensity distribution function (how much light goes in any one direction) from one of two sources: (i) an industry-standard file, (ii) from distribution data passed directly via the <i>IfcLightIntensityDistribution</i>.</p> 
+
+<p>The light distribution provides the luminous intensity distribution according to some standardized light distribution curves.</p> 
+
+<p><u>Select:</u></p> 
+	 <table> 
+		<tr> 
+		  <td><i>Type</i></td> 
+		  <td><i>Definition</i></td> 
+		</tr> 
+		<tr> 
+		  <td valign=""top""><i>IfcExternalReference</i></td> 
+		  <td valign=""top"">Light distribution is represented by a standard photometric data file such as Eulumdat, IES, CIBSE TM14. </td> 
+		</tr> 
+		<tr> 
+		  <td valign=""top""><i>IfcLightIntensityDistribution</i></td> 
+		  <td valign=""top"">For representing a light distribution directly the
+			 following values needs to be given in a table like structure with column and
+			 row headings. These headings should contain the angles (C/&#947; or B/&#946; )
+			 and the table body contains the intensity values, (normally normalized to
+			 cd/Klm). The angles can be non- equidistant and the angle steps can be almost
+			 any value in the valid range, so a list of all available angles in both
+			 directions covers all cases. </td> 
+		</tr> 
+	 </table> 
+
+<blockquote class=""history"">
+HISTORY New type in IFC2x2.
+</blockquote>
+
+</EPM-HTML>"
+5052;IfcLayeredItem;"<EPM-HTML>
+
+<p><u>Definition from ISO/CD 10303-46:1992</u>: The layered things type selects those things, which can be grouped in layers.</p> 
+
+<p>It is the collection of all those items, that are assigned to a single layer. These items are representation items or complete representations (<i>IfcRepresentationItem, IfcRepresentation</i>). If an <i>IfcRepresentation</i> is referenced, all <i>IfcRepresentationItem</i> within its set of <i>Items</i> are assigned to the same layer.</p> 
+
+<blockquote class=""note"">
+NOTE: Corresponding ISO 10303 name: layered_item. It was called layered_things in the ISO/CD version and had been renamed to layered_item in the ISO/IS final version. Please refer to ISO/IS 10303-46:1994, p. 13 for the final definition of the formal standard.
+</blockquote>
+
+<blockquote class=""history"">
+HISTORY: New type in IFC2x2.
+</blockquote> 
+
+</EPM-HTML>"
+5382;IfcCsgSelect;"<EPM-HTML> 
+
+<p><u>Definition from ISO/CD 10303-42:1992</u>: This type identifies the types of entity which may be selected as the root of a CSG tree including a single CSG primitive as a special case.</p>
+<p><u>Definition from IAI</u>: The <i>IfcBooleanResult</i>, and subtypes of <i>IfcCsgPrimitive3D</i> are defined as potential root tree expression (at <i>IfcCsgSolid</i>). A subtype of <i>IfcCsgPrimitive3D</i> marks the special case of a CSG solid solely expressed by a single primitive.</p>
+
+<blockquote class=""note"">
+NOTE Corresponding ISO 10303-42 type: csg_select, please refer to ISO/IS 10303-42:1994, p.168 for the final definition of the formal standard.
+</blockquote>
+<blockquote class=""history"">
+HISTORY New Type in IFC Release 1.5.1.
+</blockquote>
+
+</EPM-HTML>"
+5438;IfcGeometricSetSelect;"<EPM-HTML>
+
+<p><u>Definition from ISO/CD 10303-42:1992</U>: This select type identifies the types of entities which can occur in a geometric set.</p> 
+
+<blockquote class=""note"">
+NOTE: Corresponding ISO 10303 type: geometric_set_select. Please refer to ISO/IS 10303-42:1994, p. 169 for the final definition of the formal standard.
+</blockquote> 
+
+<blockquote class=""history"">
+HISTORY: New type in IFC Release 2x.
+</blockquote> 
+
+</EPM-HTML>"
+5456;IfcBooleanOperand;"<EPM-HTML> 
+	 <P><U>Definition from ISO/CD 10303-42:1992</U>: This select type identifies
+		all those types of entities which may participate in a Boolean operation to
+		form a CSG solid. </P> 
+	 <P><U>Definition from IAI</U>: CSG primitives are out of scope for the
+		current IFC Release. Only faceted B-reps, swept area solids and half space
+		solids are available as Boolean operands. Boolean results themselves can be used
+		as operands thus enabling nested Boolean operations.</P> 
+	 <BLOCKQUOTE> 
+		<P><FONT COLOR=""#0000FF"" SIZE=""-1"">NOTE Corresponding STEP type:
+		  boolean_operand, please refer to ISO/IS 10303-42:1994, p.167 for the final
+		  definition of the formal standard. In IFC Release 1.5.1 &amp; 2.0 only Boolean
+		  results (<I>IfcBooleanResult</I>), half space solids
+		  (<I>IfcHalfSpaceSolid</I>), faceted B-Rep, extruded solids and revolved solids
+		  (<I>IfcSolidModel</I>) are defined for being valid Boolean operands.
+		  </FONT></P> 
+		<P><FONT COLOR=""#0000FF"" SIZE=""-1"">HISTORY: New Type in IFC Release 1.5.1
+		  </FONT></P></BLOCKQUOTE>
+</EPM-HTML>"
+5465;IfcAxis2Placement;"<EPM-HTML> 
+
+<p><u>Definition from ISO/CD 10303-42:1992</U>: This select type collects together both versions of the placement as used in two dimensional or in three dimensional Cartesian space. This enables entities requiring this information to reference them without specifying the space dimensionality. </p> 
+
+<blockquote class=""note"">
+NOTE: Corresponding STEP type: axis2_placement, please refer to ISO/IS 10303-42:1994, p. 19 for the final definition of the formal standard.
+</blockquote> 
+
+<blockquote class=""history"">
+HISTORY: New type in IFC Release 1.5
+</blockquote>
+
+</EPM-HTML>"
+5744;IfcTrimmingSelect;"<EPM-HTML> 
+
+<p><u>Definition from ISO/CD 10303-42:1992</u>: This select type identifies the two possible ways of trimming a parametric curve; by a Cartesian point on the curve, or by a REAL number defining a parameter value within the parametric range of the curve.</p> 
+
+<blockquote class=""note"">
+NOTE Corresponding ISO 10303 type: trimming_select, please refer to ISO/IS 10303-42:1994, p. 20 for the final definition of the formal standard.
+</blockquote>
+
+<blockquote class=""history"">
+HISTORY New Type in IFC Release 1.0
+</blockquote>
+
+</EPM-HTML>"
+5810;IfcVectorOrDirection;"<EPM-HTML> 
+	 <P><U>Definition from ISO/CD 10303-42:1992</U>: This type is used to
+		identify the types of entity which can participate in vector computations. </P>
+	 
+	 <BLOCKQUOTE><FONT COLOR=""#0000FF"" SIZE=""-1"">NOTE Corresponding STEP type:
+		vector_or_direction, please refer to ISO/IS 10303-42:1994, p. 20 for the final
+		definition of the formal standard.</FONT> </BLOCKQUOTE> 
+	 <BLOCKQUOTE><FONT COLOR=""#0000FF"" SIZE=""-1"">HISTORY New Type in IFC Release
+		1.5</FONT></BLOCKQUOTE> 
+</EPM-HTML>"
+5833;IfcCurveOnSurface;
