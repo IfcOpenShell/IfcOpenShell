@@ -26,7 +26,7 @@ endif
 	cp -r blenderbim/* dist/blenderbim/
 
 	# Provides IfcOpenShell Python functionality
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-37-v0.6.0-c15fdc7-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-37-v0.6.0-ca6adff-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcblender*
 	cp -r dist/working/io_import_scene_ifc/ifcopenshell dist/blenderbim/libs/site/packages/
 	# See bug #812
@@ -243,6 +243,8 @@ endif
 	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/element_classes.py
 	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/geocoding.py
 	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/geolocation.py
+	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/geometric_detail.py
+	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/model_federation.py
 	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/project_setup.py
 	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/steps.py
 	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/utils.py

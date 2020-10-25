@@ -25,7 +25,11 @@ import random
 import operator
 import warnings
 
-from collections import namedtuple, Iterable
+from collections import namedtuple
+try:  # python 3.3+
+    from collections.abc import Iterable
+except ModuleNotFoundError: # python 2
+    from collections import Iterable
 
 try:
     from OCC.Core import V3d, TopoDS, gp, AIS, Quantity, BRepTools, Graphic3d

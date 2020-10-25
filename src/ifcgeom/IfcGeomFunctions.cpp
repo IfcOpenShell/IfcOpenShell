@@ -1854,6 +1854,18 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and
 		representation_id_builder << "-material-" << single_material->data().id();
 	}
 
+	if (settings.force_space_transparency() >= 0. && product->declaration().is("IfcSpace")) {
+		for (auto& s : shapes) {
+			if (s.hasStyle()) {
+				for (auto& p : style_cache) {
+					if (&p.second == &s.Style()) {
+						p.second.Transparency() = settings.force_space_transparency();
+					}
+				}
+			}
+		}
+	}
+
 	int parent_id = -1;
 	try {
 		IfcUtil::IfcBaseEntity* parent_object = get_decomposing_entity(product);
@@ -2712,7 +2724,7 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 		
 		double layer_offset = 0;
 
-		const double total_thickness = std::accumulate(thicknesses.begin(), thicknesses.end(), 0);
+		const double total_thickness = std::accumulate(thicknesses.begin(), thicknesses.end(), 0.);
 		
 		std::vector<double>::const_iterator thickness = thicknesses.begin();
 		result_t::iterator result_vector = result.begin() + 1;
@@ -2849,6 +2861,13 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 
 namespace {
 
+	void subshapes(const TopoDS_Shape& in, std::list<TopoDS_Shape>& out) {
+		TopoDS_Iterator sit(in);
+		for (; sit.More(); sit.Next()) {
+			out.push_back(sit.Value());
+		}
+	}
+
 #if OCC_VERSION_HEX >= 0x70200
 	bool split(IfcGeom::Kernel&, const TopoDS_Shape& input, const TopTools_ListOfShape& operands, double eps, std::vector<TopoDS_Shape>& slices) {
 		if (operands.Extent() < 2) {
@@ -2880,18 +2899,19 @@ namespace {
 				}
 			}
 
-			// Count subshapes
-			size_t n = 0;
-			TopoDS_Iterator sit(split.Shape());
-			for (; sit.More(); sit.Next()) {
-				++n;
+			auto result_shape = split.Shape();
+			std::list<TopoDS_Shape> subs;
+			subshapes(result_shape, subs);
+			if (subs.size() == 1 && operands.Size() - 2 > subs.size() && (subs.front().ShapeType() == TopAbs_COMPSOLID || subs.front().ShapeType() == TopAbs_COMPOUND)) {
+				auto s = subs.front();
+				subs.clear();
+				subshapes(s, subs);
 			}
 
 			// Initialize storage
-			slices.resize(n);
+			slices.resize(subs.size());
 
-			sit.Initialize(split.Shape());
-			for (; sit.More(); sit.Next()) {
+			for (auto& s : subs) {
 
 				// Iterate over the faces of solid to find correspondence to original
 				// splitting surfaces. For the outmost slices, there will be a single
@@ -2900,7 +2920,7 @@ namespace {
 				// slices, two surface indices should be find that should be next to
 				// each other in the array of input surfaces.
 
-				TopExp_Explorer exp(sit.Value(), TopAbs_FACE);
+				TopExp_Explorer exp(s, TopAbs_FACE);
 				int min = std::numeric_limits<int>::max();
 				int max = std::numeric_limits<int>::min();
 				for (; exp.More(); exp.Next()) {
@@ -2928,7 +2948,7 @@ namespace {
 
 				if (idx < (int) slices.size()) {
 					if (slices[idx].IsNull()) {
-						slices[idx] = sit.Value();
+						slices[idx] = s;
 						continue;
 					}
 				}

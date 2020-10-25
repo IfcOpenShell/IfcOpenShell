@@ -5,6 +5,7 @@ import time
 import json
 import logging
 import webbrowser
+import subprocess
 import ifcopenshell
 import ifcopenshell.util.selector
 import ifcopenshell.util.geolocation
@@ -50,12 +51,26 @@ def depsgraph_update_pre_handler(scene):
 
 def set_active_camera_resolution(scene):
     if not scene.camera \
-            or '/' not in scene.camera.name:
+            or '/' not in scene.camera.name \
+            or not scene.DocProperties.drawings:
         return
     if scene.render.resolution_x != scene.camera.data.BIMCameraProperties.raster_x \
             or scene.render.resolution_y != scene.camera.data.BIMCameraProperties.raster_y:
         scene.render.resolution_x = scene.camera.data.BIMCameraProperties.raster_x
         scene.render.resolution_y = scene.camera.data.BIMCameraProperties.raster_y
+    current_drawing = scene.DocProperties.drawings[scene.DocProperties.current_drawing_index]
+    if scene.camera != current_drawing.camera:
+        scene.DocProperties.current_drawing_index = scene.DocProperties.drawings.find(scene.camera.name.split('/')[1])
+        bpy.ops.bim.activate_view(drawing_index=scene.DocProperties.current_drawing_index)
+
+
+def open_with_user_command(user_command, path):
+    if user_command:
+        commands = eval(user_command)
+        for command in commands:
+            subprocess.run(command)
+    else:
+        webbrowser.open('file://' + path)
 
 
 class ExportIFC(bpy.types.Operator):
@@ -94,6 +109,8 @@ class ExportIFC(bpy.types.Operator):
         if not bpy.context.scene.DocProperties.ifc_files:
             new = bpy.context.scene.DocProperties.ifc_files.add()
             new.name = output_file
+        if not bpy.context.scene.BIMProperties.ifc_file:
+            bpy.context.scene.BIMProperties.ifc_file = output_file
         return {'FINISHED'}
 
 class ImportIFC(bpy.types.Operator, ImportHelper):
@@ -1905,11 +1922,18 @@ class ExplodeAggregate(bpy.types.Operator):
 class LoadClassification(bpy.types.Operator):
     bl_idname = 'bim.load_classification'
     bl_label = 'Load Classification'
+    is_file: bpy.props.BoolProperty()
+    classification_index: bpy.props.IntProperty()
 
     def execute(self, context):
         from . import prop
-        prop.ClassificationView.raw_data = schema.ifc.load_classification(
-            context.scene.BIMProperties.classification)
+        if self.is_file:
+            prop.ClassificationView.raw_data = schema.ifc.load_classification(
+                context.scene.BIMProperties.classification)
+        else:
+            prop.ClassificationView.raw_data = schema.ifc.load_classification(
+                context.scene.BIMProperties.classifications[self.classification_index].name,
+                self.classification_index)
         context.scene.BIMProperties.classification_references.root = ''
         return {'FINISHED'}
 
@@ -1932,7 +1956,7 @@ class AddClassification(bpy.types.Operator):
         for key, value in data_map.items():
             if hasattr(data, value) and getattr(data, value):
                 setattr(classification, key, str(getattr(data, value)))
-        classification.filename = context.scene.BIMProperties.classification
+        classification.data = schema.ifc.classification_files[context.scene.BIMProperties.classification].to_string()
         return {'FINISHED'}
 
 
@@ -1962,7 +1986,7 @@ class AssignClassification(bpy.types.Operator):
             for key in ['location', 'description']:
                 if data[key]:
                     setattr(classification, key, data[key])
-            classification.referenced_source = bpy.context.scene.BIMProperties.classification
+            classification.referenced_source = bpy.context.scene.BIMProperties.active_classification_name
         return {'FINISHED'}
 
 
@@ -2089,9 +2113,9 @@ class OpenView(bpy.types.Operator):
     view: bpy.props.StringProperty()
 
     def execute(self, context):
-        webbrowser.open('file://' + os.path.join(
-            bpy.context.scene.BIMProperties.data_dir, 'diagrams',
-            self.view + '.svg'))
+        open_with_user_command(
+            bpy.context.preferences.addons['blenderbim'].preferences.svg_command,
+            os.path.join(bpy.context.scene.BIMProperties.data_dir, 'diagrams', self.view + '.svg'))
         return {'FINISHED'}
 
 
@@ -2103,16 +2127,15 @@ class CutSection(bpy.types.Operator):
         camera = bpy.context.scene.camera
         if not (camera.type == 'CAMERA' and camera.data.type == 'ORTHO'):
             return {'FINISHED'}
+        bpy.ops.bim.activate_view(drawing_index=bpy.context.scene.DocProperties.drawings.find(camera.name.split('/')[1]))
+        drawing_style = bpy.context.scene.DocProperties.drawing_styles[camera.data.BIMCameraProperties.active_drawing_style_index]
         self.diagram_name = camera.name.split('/')[1]
         bpy.context.scene.render.filepath = os.path.join(
             bpy.context.scene.BIMProperties.data_dir,
             'diagrams',
             '{}.png'.format(self.diagram_name)
         )
-        if bpy.context.scene.DocProperties.should_render == 'DEFAULT':
-            bpy.ops.render.render(write_still=True)
-        elif bpy.context.scene.DocProperties.should_render == 'VIEWPORT':
-            bpy.ops.render.opengl(write_still=True)
+        self.create_raster(camera, drawing_style)
         location = camera.location
         render = bpy.context.scene.render
         if self.is_landscape():
@@ -2130,7 +2153,7 @@ class CutSection(bpy.types.Operator):
         import ifccsv
         ifc_cutter.ifc_filenames = [i.name for i in bpy.context.scene.DocProperties.ifc_files]
         ifc_cutter.data_dir = bpy.context.scene.BIMProperties.data_dir
-        ifc_cutter.vector_style = bpy.context.scene.DocProperties.drawing_styles[camera.data.BIMCameraProperties.active_drawing_style_index].vector_style
+        ifc_cutter.vector_style = drawing_style.vector_style
         ifc_cutter.diagram_name = self.diagram_name
         ifc_cutter.background_image = bpy.context.scene.render.filepath
         if camera.data.BIMCameraProperties.cut_objects == 'CUSTOM':
@@ -2148,7 +2171,17 @@ class CutSection(bpy.types.Operator):
         ifc_cutter.section_level_obj = None
         ifc_cutter.grid_objs = []
         ifc_cutter.text_objs = []
+        ifc_cutter.misc_objs = []
+        ifc_cutter.attributes = [a.name for a in drawing_style.attributes]
         for obj in camera.users_collection[0].objects:
+            if 'IfcGrid' in obj.name:
+                ifc_cutter.grid_objs.append(obj)
+            elif 'IfcGroup' in obj.name and obj.type == 'CAMERA':
+                ifc_cutter.camera_obj = obj
+
+            if 'IfcAnnotation/' not in obj.name:
+                continue
+
             if 'Leader' in obj.name:
                 ifc_cutter.leader_obj = (obj, obj.data)
             elif 'Stair' in obj.name:
@@ -2163,16 +2196,14 @@ class CutSection(bpy.types.Operator):
                 ifc_cutter.hidden_objs.append((obj, obj.data))
             elif 'Solid' in obj.name:
                 ifc_cutter.solid_objs.append((obj, obj.data))
-            elif 'IfcGrid' in obj.name:
-                ifc_cutter.grid_objs.append(obj)
             elif 'Plan Level' in obj.name:
                 ifc_cutter.plan_level_obj = obj
             elif 'Section Level' in obj.name:
                 ifc_cutter.section_level_obj = obj
-            elif obj.type == 'CAMERA':
-                ifc_cutter.camera_obj = obj
             elif obj.type == 'FONT':
                 ifc_cutter.text_objs.append(obj)
+            else:
+                ifc_cutter.misc_objs.append(obj)
 
         ifc_cutter.section_box = {
             'projection': tuple(projection),
@@ -2216,8 +2247,52 @@ class CutSection(bpy.types.Operator):
         bpy.ops.bim.open_view(view=self.diagram_name)
         return {'FINISHED'}
 
+    def create_raster(self, camera, drawing_style):
+        if drawing_style.render_type == 'NONE':
+            return
+
+        if drawing_style.render_type == 'DEFAULT':
+            return bpy.ops.render.render(write_still=True)
+
+        previous_visibility = {}
+        for obj in camera.users_collection[0].objects:
+            previous_visibility[obj.name] = obj.hide_get()
+            obj.hide_set(True)
+        for obj in bpy.context.visible_objects:
+            if not obj.data \
+                    or isinstance(obj.data, bpy.types.Camera) \
+                    or 'IfcGrid/' in obj.name \
+                    or 'IfcGridAxis/' in obj.name \
+                    or 'IfcOpeningElement/' in obj.name \
+                    or self.does_obj_have_target_view_representation(obj, camera):
+                previous_visibility[obj.name] = obj.hide_get()
+                obj.hide_set(True)
+
+        space = self.get_view_3d()
+        previous_shading = space.shading.type
+        space.shading.type = 'RENDERED'
+        bpy.ops.render.opengl(write_still=True)
+        space.shading.type = previous_shading
+
+        for name, value in previous_visibility.items():
+            bpy.data.objects[name].hide_set(value)
+
+
+    def does_obj_have_target_view_representation(self, obj, camera):
+        return camera.data.BIMCameraProperties.target_view in [c.target_view for c in obj.BIMObjectProperties.representation_contexts]
+
     def is_landscape(self):
         return bpy.context.scene.render.resolution_x > bpy.context.scene.render.resolution_y
+
+    def get_view_3d(self):
+        for area in bpy.context.screen.areas:
+            if area.type != 'VIEW_3D':
+                continue
+            for space in area.spaces:
+                if space.type != 'VIEW_3D':
+                    continue
+                return space
+
 
 
 class AddSheet(bpy.types.Operator):
@@ -2239,9 +2314,11 @@ class OpenSheet(bpy.types.Operator):
 
     def execute(self, context):
         props = bpy.context.scene.DocProperties
-        webbrowser.open('file://' + os.path.join(
-            bpy.context.scene.BIMProperties.data_dir, 'sheets',
-            props.sheets[props.active_sheet_index].name + '.svg'))
+        open_with_user_command(
+            bpy.context.preferences.addons['blenderbim'].preferences.svg_command,
+            os.path.join(
+                bpy.context.scene.BIMProperties.data_dir, 'sheets',
+                props.sheets[props.active_sheet_index].name + '.svg'))
         return {'FINISHED'}
 
 
@@ -2253,9 +2330,12 @@ class AddDrawingToSheet(bpy.types.Operator):
         props = bpy.context.scene.DocProperties
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
-        sheet_builder.add_drawing(
-            props.drawings[props.active_drawing_index].name,
-            props.sheets[props.active_sheet_index].name)
+        try:
+            sheet_builder.add_drawing(
+                props.drawings[props.active_drawing_index].name,
+                props.sheets[props.active_sheet_index].name)
+        except:
+            self.report({'ERROR'}, 'Drawings need to be created before being added to a sheet')
         return {'FINISHED'}
 
 
@@ -2271,8 +2351,9 @@ class CreateSheets(bpy.types.Operator):
         sheet_builder.build(name)
 
         svg2pdf_command = bpy.context.preferences.addons['blenderbim'].preferences.svg2pdf_command
+        svg2dxf_command = bpy.context.preferences.addons['blenderbim'].preferences.svg2dxf_command
+
         if svg2pdf_command:
-            import subprocess
             path = os.path.join(bpy.context.scene.BIMProperties.data_dir, 'build', name)
             svg = os.path.join(path, name + '.svg')
             pdf = os.path.join(path, name + '.pdf')
@@ -2282,9 +2363,7 @@ class CreateSheets(bpy.types.Operator):
             for command in commands:
                 subprocess.run(command)
 
-        svg2dxf_command = bpy.context.preferences.addons['blenderbim'].preferences.svg2dxf_command
         if svg2dxf_command:
-            import subprocess
             path = os.path.join(bpy.context.scene.BIMProperties.data_dir, 'build', name)
             svg = os.path.join(path, name + '.svg')
             eps = os.path.join(path, name + '.eps')
@@ -2298,18 +2377,21 @@ class CreateSheets(bpy.types.Operator):
 
 
         if svg2pdf_command:
-            webbrowser.open('file://' + os.path.join(pdf))
+            open_with_user_command(bpy.context.preferences.addons['blenderbim'].preferences.pdf_command, pdf)
         else:
-            webbrowser.open('file://' + os.path.join(bpy.context.scene.BIMProperties.data_dir, 'build', name, name + '.svg'))
+            open_with_user_command(
+                bpy.context.preferences.addons['blenderbim'].preferences.svg_command,
+                os.path.join(bpy.context.scene.BIMProperties.data_dir, 'build', name, name + '.svg'))
         return {'FINISHED'}
 
 
 class ActivateView(bpy.types.Operator):
     bl_idname = 'bim.activate_view'
     bl_label = 'Activate View'
+    drawing_index: bpy.props.IntProperty()
 
     def execute(self, context):
-        camera = bpy.context.scene.DocProperties.drawings[bpy.context.scene.DocProperties.active_drawing_index].camera
+        camera = bpy.context.scene.DocProperties.drawings[self.drawing_index].camera
         if not camera:
             return {'FINISHED'}
         bpy.context.scene.camera = camera
@@ -2321,36 +2403,8 @@ class ActivateView(bpy.types.Operator):
             bpy.data.collections.get(collection.name).hide_render = True
         bpy.context.view_layer.layer_collection.children['Views'].children[camera.users_collection[0].name].hide_viewport = False
         bpy.data.collections.get(camera.users_collection[0].name).hide_render = False
+        bpy.ops.bim.activate_drawing_style()
         return {'FINISHED'}
-
-
-class AssignContext(bpy.types.Operator):
-    bl_idname = 'bim.assign_context'
-    bl_label = 'Assign Context'
-
-    def execute(self, context):
-        if not self.is_mesh_context_sensitive(bpy.context.active_object.data.name):
-            bpy.context.active_object.data.name = '{}/{}/{}/{}'.format(
-                bpy.context.scene.BIMProperties.available_contexts,
-                bpy.context.scene.BIMProperties.available_subcontexts,
-                bpy.context.scene.BIMProperties.available_target_views,
-                bpy.context.active_object.data.name
-            )
-        else:
-            bpy.context.active_object.data.name = '{}/{}/{}/{}'.format(
-                bpy.context.scene.BIMProperties.available_contexts,
-                bpy.context.scene.BIMProperties.available_subcontexts,
-                bpy.context.scene.BIMProperties.available_target_views,
-                bpy.context.active_object.data.name.split('/')[3]
-            )
-        return {'FINISHED'}
-
-    def is_mesh_context_sensitive(self, name):
-        return '/' in name \
-            and ( \
-                name[0:6] == 'Model/' \
-                or name[0:5] == 'Plan/' \
-            )
 
 
 class SwitchContext(bpy.types.Operator):
@@ -2488,7 +2542,7 @@ class OpenUpstream(bpy.types.Operator):
         elif self.page == 'docs':
             webbrowser.open('https://blenderbim.org/docs/')
         elif self.page == 'wiki':
-            webbrowser.open('https://wiki.osarch.org/')
+            webbrowser.open('https://wiki.osarch.org/index.php?title=Category:BlenderBIM_Add-on')
         elif self.page == 'community':
             webbrowser.open('https://community.osarch.org/')
         return {'FINISHED'}
@@ -2555,6 +2609,46 @@ class BIM_OT_CopyAttributesToSelection(bpy.types.Operator):
                     try:
                         setattr(new_prop_base, p, getattr(prop, p))
                     except: pass
+
+
+class CopyPropertyToSelection(bpy.types.Operator):
+    bl_idname = 'bim.copy_property_to_selection'
+    bl_label = 'Copy Property To Selection'
+    pset_name: bpy.props.StringProperty()
+    prop_name: bpy.props.StringProperty()
+    prop_value: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.applicable_psets_cache = {}
+        self.empty = ifcopenshell.file()
+        for obj in bpy.context.selected_objects:
+            if '/' not in obj.name:
+                continue
+            pset = obj.BIMObjectProperties.psets.get(self.pset_name)
+            if not pset:
+                applicable_psets = self.get_applicable_psets(obj.name.split('/')[0])
+                if self.pset_name not in applicable_psets:
+                    continue
+                pset = obj.BIMObjectProperties.psets.add()
+                pset.name = self.pset_name
+                for template_prop_name in schema.ifc.psets[self.pset_name]['HasPropertyTemplates'].keys():
+                    prop = pset.properties.add()
+                    prop.name = template_prop_name
+            prop = pset.properties.get(self.prop_name)
+            if prop:
+                prop.string_value = self.prop_value
+        return {'FINISHED'}
+
+    # TODO: move into util module. See bug #971
+    def get_applicable_psets(self, element_class):
+        if element_class not in self.applicable_psets_cache:
+            element = self.empty.create_entity(element_class)
+            applicable_psets = []
+            for ifc_class, pset_names in schema.ifc.applicable_psets.items():
+                if element.is_a(ifc_class):
+                    applicable_psets.extend(pset_names)
+            self.applicable_psets_cache[element_class] = applicable_psets
+        return self.applicable_psets_cache[element_class]
 
 
 class BIM_OT_ChangeClassificationLevel(bpy.types.Operator):
@@ -2716,9 +2810,13 @@ class AddSectionPlane(bpy.types.Operator):
         section = bpy.data.objects.new('Section', None)
         section.empty_display_type = 'SINGLE_ARROW'
         section.empty_display_size = 5
-        section.rotation_euler = Euler((radians(180.0), 0.0, 0.0), 'XYZ')
-        section.location = bpy.context.scene.cursor.location
         section.show_in_front = True
+        if bpy.context.active_object.select_get() \
+                and isinstance(bpy.context.active_object.data, bpy.types.Camera):
+            section.matrix_world = bpy.context.active_object.matrix_world @ Euler((radians(180.0), 0.0, 0.0), 'XYZ').to_matrix().to_4x4()
+        else:
+            section.rotation_euler = Euler((radians(180.0), 0.0, 0.0), 'XYZ')
+            section.location = bpy.context.scene.cursor.location
         collection = bpy.data.collections.get('Sections')
         if not collection:
             collection = bpy.data.collections.new('Sections')
@@ -3401,7 +3499,7 @@ class GuessQuantity(bpy.types.Operator):
     def get_prefix_name(self, value):
         if '/' in value:
             return value.split('/')
-        return None, bpy.context.scene.BIMProperties.area_unit
+        return None, value
 
     def get_blender_prefix_name(self):
         if bpy.context.scene.unit_settings.system == 'IMPERIAL':
@@ -3428,7 +3526,7 @@ class ExecuteBIMTester(bpy.types.Operator):
         os.chdir(bpy.context.scene.BIMProperties.features_dir)
         bimtester.run_tests({'feature': filename, 'advanced_arguments': None, 'console': False})
         bimtester.generate_report()
-        webbrowser.open(os.path.join(
+        webbrowser.open('file://' + os.path.join(
             bpy.context.scene.BIMProperties.features_dir,
             'report', bpy.context.scene.BIMProperties.features_file + '.feature.html'))
         os.chdir(cwd)
@@ -3534,7 +3632,10 @@ class AddOpening(bpy.types.Operator):
     bl_label = 'Add Opening'
 
     def execute(self, context):
-        opening = context.active_object
+        if context.active_object.children and 'IfcOpeningElement/' in context.active_object.children[0].name:
+            opening = context.active_object.children[0]
+        else:
+            opening = context.active_object
         if context.selected_objects[0] != context.active_object:
             obj = context.selected_objects[0]
         else:
@@ -3584,9 +3685,11 @@ class SaveDrawingStyle(bpy.types.Operator):
     index: bpy.props.StringProperty()
 
     def execute(self, context):
+        space = self.get_view_3d()
         style = {
             'bpy.data.worlds[0].color': tuple(bpy.data.worlds[0].color),
             'bpy.context.scene.render.engine': bpy.context.scene.render.engine,
+            'bpy.context.scene.render.film_transparent': bpy.context.scene.render.film_transparent,
             'bpy.context.scene.display.shading.show_object_outline': bpy.context.scene.display.shading.show_object_outline,
             'bpy.context.scene.display.shading.show_cavity': bpy.context.scene.display.shading.show_cavity,
             'bpy.context.scene.display.shading.cavity_type': bpy.context.scene.display.shading.cavity_type,
@@ -3596,7 +3699,18 @@ class SaveDrawingStyle(bpy.types.Operator):
             'bpy.context.scene.display.shading.light': bpy.context.scene.display.shading.light,
             'bpy.context.scene.display.shading.color_type': bpy.context.scene.display.shading.color_type,
             'bpy.context.scene.display.shading.single_color': tuple(bpy.context.scene.display.shading.single_color),
+            'bpy.context.scene.display.shading.show_shadows': bpy.context.scene.display.shading.show_shadows,
+            'bpy.context.scene.display.shading.shadow_intensity': bpy.context.scene.display.shading.shadow_intensity,
+            'bpy.context.scene.display.light_direction': tuple(bpy.context.scene.display.light_direction),
             'bpy.context.scene.view_settings.use_curve_mapping': bpy.context.scene.view_settings.use_curve_mapping,
+            'space.overlay.show_wireframes': space.overlay.show_wireframes,
+            'space.overlay.wireframe_threshold': space.overlay.wireframe_threshold,
+            'space.overlay.show_floor': space.overlay.show_floor,
+            'space.overlay.show_axis_x': space.overlay.show_axis_x,
+            'space.overlay.show_axis_y': space.overlay.show_axis_y,
+            'space.overlay.show_axis_z': space.overlay.show_axis_z,
+            'space.overlay.show_object_origins': space.overlay.show_object_origins,
+            'space.overlay.show_relationship_lines': space.overlay.show_relationship_lines,
         }
         if self.index:
             index = int(self.index)
@@ -3605,21 +3719,32 @@ class SaveDrawingStyle(bpy.types.Operator):
         bpy.context.scene.DocProperties.drawing_styles[index].raster_style = json.dumps(style)
         return {'FINISHED'}
 
+    def get_view_3d(self):
+        for area in bpy.context.screen.areas:
+            if area.type != 'VIEW_3D':
+                continue
+            for space in area.spaces:
+                if space.type != 'VIEW_3D':
+                    continue
+                return space
+
 
 class ActivateDrawingStyle(bpy.types.Operator):
     bl_idname = 'bim.activate_drawing_style'
     bl_label = 'Activate Drawing Style'
 
     def execute(self, context):
-        self.drawing_style = bpy.context.scene.DocProperties.drawing_styles[bpy.context.active_object.data.BIMCameraProperties.active_drawing_style_index]
+        self.drawing_style = bpy.context.scene.DocProperties.drawing_styles[context.scene.camera.data.BIMCameraProperties.active_drawing_style_index]
         self.set_raster_style()
         self.set_query()
         return {'FINISHED'}
 
     def set_raster_style(self):
+        space = self.get_view_3d()
         style = json.loads(self.drawing_style.raster_style)
         bpy.data.worlds[0].color = style['bpy.data.worlds[0].color']
         bpy.context.scene.render.engine = style['bpy.context.scene.render.engine']
+        bpy.context.scene.render.film_transparent = style['bpy.context.scene.render.film_transparent']
         bpy.context.scene.display.shading.show_object_outline = style['bpy.context.scene.display.shading.show_object_outline']
         bpy.context.scene.display.shading.show_cavity = style['bpy.context.scene.display.shading.show_cavity']
         bpy.context.scene.display.shading.cavity_type = style['bpy.context.scene.display.shading.cavity_type']
@@ -3629,14 +3754,30 @@ class ActivateDrawingStyle(bpy.types.Operator):
         bpy.context.scene.display.shading.light = style['bpy.context.scene.display.shading.light']
         bpy.context.scene.display.shading.color_type = style['bpy.context.scene.display.shading.color_type']
         bpy.context.scene.display.shading.single_color = style['bpy.context.scene.display.shading.single_color']
+        bpy.context.scene.display.shading.show_shadows = style['bpy.context.scene.display.shading.show_shadows']
+        bpy.context.scene.display.shading.shadow_intensity = style['bpy.context.scene.display.shading.shadow_intensity']
+        bpy.context.scene.display.light_direction = style['bpy.context.scene.display.light_direction']
+
         bpy.context.scene.view_settings.use_curve_mapping = style['bpy.context.scene.view_settings.use_curve_mapping']
+        space.overlay.show_wireframes = style['space.overlay.show_wireframes']
+        space.overlay.wireframe_threshold = style['space.overlay.wireframe_threshold']
+        space.overlay.show_floor = style['space.overlay.show_floor']
+        space.overlay.show_axis_x = style['space.overlay.show_axis_x']
+        space.overlay.show_axis_y = style['space.overlay.show_axis_y']
+        space.overlay.show_axis_z = style['space.overlay.show_axis_z']
+        space.overlay.show_object_origins = style['space.overlay.show_object_origins']
+        space.overlay.show_relationship_lines = style['space.overlay.show_relationship_lines']
+        space.shading.type = 'RENDERED'
 
     def set_query(self):
         self.selector = ifcopenshell.util.selector.Selector()
         self.include_global_ids = []
         self.exclude_global_ids = []
         for ifc_file in bpy.context.scene.DocProperties.ifc_files:
-            ifc = ifcopenshell.open(ifc_file.name)
+            try:
+                ifc = ifcopenshell.open(ifc_file.name)
+            except:
+                continue
             if self.drawing_style.include_query:
                 results = self.selector.parse(ifc, self.drawing_style.include_query)
                 self.include_global_ids.extend([e.GlobalId for e in results])
@@ -3671,6 +3812,16 @@ class ActivateDrawingStyle(bpy.types.Operator):
                     obj.hide_viewport = True # Note: this breaks alt-H
 
 
+    def get_view_3d(self):
+        for area in bpy.context.screen.areas:
+            if area.type != 'VIEW_3D':
+                continue
+            for space in area.spaces:
+                if space.type != 'VIEW_3D':
+                    continue
+                return space
+
+
 class AddDrawing(bpy.types.Operator):
     bl_idname = 'bim.add_drawing'
     bl_label = 'Add Drawing'
@@ -3697,6 +3848,7 @@ class AddDrawing(bpy.types.Operator):
         area = next(area for area in bpy.context.screen.areas if area.type == 'VIEW_3D')
         area.spaces[0].region_3d.view_perspective = 'CAMERA'
         new.camera = camera
+        bpy.ops.bim.activate_drawing_style()
         return {'FINISHED'}
 
 
@@ -3724,22 +3876,6 @@ class EditVectorStyle(bpy.types.Operator):
         camera = context.scene.camera
         vector_style = context.scene.DocProperties.drawing_styles[camera.data.BIMCameraProperties.active_drawing_style_index].vector_style
         bpy.data.texts.load(os.path.join(context.scene.BIMProperties.data_dir, 'styles', vector_style + '.css'))
-        return {'FINISHED'}
-
-
-class PurgeProjectClassifications(bpy.types.Operator):
-    bl_idname = 'bim.purge_project_classifications'
-    bl_label = 'Purge Project Classifications'
-
-    def execute(self, context):
-        self.schema_dir = bpy.context.scene.BIMProperties.schema_dir
-        path = os.path.join(self.schema_dir, 'project_classifications')
-        files = os.listdir(path)
-        for f in files:
-            os.remove(os.path.join(path, f))
-        from . import prop
-        prop.classification_enum.clear()
-        prop.getClassifications(self, context)
         return {'FINISHED'}
 
 
@@ -3804,7 +3940,9 @@ class BuildSchedule(bpy.types.Operator):
             bpy.context.scene.BIMProperties.data_dir, 'schedules',
             schedule.name + '.svg')
         schedule_creator.schedule(schedule.file, outfile)
-        webbrowser.open('file://' + outfile)
+        open_with_user_command(
+            bpy.context.preferences.addons['blenderbim'].preferences.svg_command,
+            outfile)
         return {'FINISHED'}
 
 
@@ -3856,3 +3994,132 @@ class GetNorthOffset(bpy.types.Operator):
         bpy.context.scene.MapConversion.x_axis_abscissa = str(cos(x_angle))
         bpy.context.scene.MapConversion.x_axis_ordinate = str(sin(x_angle))
         return {'FINISHED'}
+
+
+class AddDrawingStyleAttribute(bpy.types.Operator):
+    bl_idname = 'bim.add_drawing_style_attribute'
+    bl_label = 'Add Drawing Style Attribute'
+
+    def execute(self, context):
+        props = bpy.context.scene.camera.data.BIMCameraProperties
+        context.scene.DocProperties.drawing_styles[props.active_drawing_style_index].attributes.add()
+        return {'FINISHED'}
+
+
+class RemoveDrawingStyleAttribute(bpy.types.Operator):
+    bl_idname = 'bim.remove_drawing_style_attribute'
+    bl_label = 'Remove Drawing Style Attribute'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = bpy.context.scene.camera.data.BIMCameraProperties
+        context.scene.DocProperties.drawing_styles[props.active_drawing_style_index].attributes.remove(self.index)
+        return {'FINISHED'}
+
+
+class CreateShapeFromStepId(bpy.types.Operator):
+    bl_idname = 'bim.create_shape_from_step_id'
+    bl_label = 'Create Shape From STEP ID'
+
+    def execute(self, context):
+        logger = logging.getLogger('ImportIFC')
+        self.ifc_import_settings = import_ifc.IfcImportSettings.factory(bpy.context, ifc.IfcStore.path, logger)
+        self.file = ifc.IfcStore.get_file()
+        element = self.file.by_id(int(bpy.context.scene.BIMDebugProperties.step_id))
+        settings = ifcopenshell.geom.settings()
+        #settings.set(settings.INCLUDE_CURVES, True)
+        shape = ifcopenshell.geom.create_shape(settings, element)
+        ifc_importer = import_ifc.IfcImporter(self.ifc_import_settings)
+        ifc_importer.file = self.file
+        mesh = ifc_importer.create_mesh(element, shape)
+        obj = bpy.data.objects.new('Debug', mesh)
+        bpy.context.scene.collection.objects.link(obj)
+        return {'FINISHED'}
+
+
+class SelectHighPolygonMeshes(bpy.types.Operator):
+    bl_idname = 'bim.select_high_polygon_meshes'
+    bl_label = 'Select High Polygon Meshes'
+
+    def execute(self, context):
+        results = {}
+        for obj in bpy.data.objects:
+            if not isinstance(obj.data, bpy.types.Mesh) \
+                    or len(obj.data.polygons) < int(bpy.context.scene.BIMDebugProperties.number_of_polygons):
+                continue
+            try:
+                obj.select_set(True)
+            except:
+                # If it is not in the view layer
+                pass
+            relating_type = obj.BIMObjectProperties.relating_type
+            if relating_type:
+                relating_type.select_set(True)
+        return {'FINISHED'}
+
+
+class RefreshDrawingList(bpy.types.Operator):
+    bl_idname = 'bim.refresh_drawing_list'
+    bl_label = 'Refresh Drawing List'
+
+    def execute(self, context):
+        while len(bpy.context.scene.DocProperties.drawings) > 0:
+            bpy.context.scene.DocProperties.drawings.remove(0)
+        for obj in bpy.context.scene.objects:
+            if not isinstance(obj.data, bpy.types.Camera):
+                continue
+            if 'IfcGroup/' in obj.name and obj.users_collection[0].name == obj.name:
+                new = bpy.context.scene.DocProperties.drawings.add()
+                new.name = obj.name.split('/')[1]
+                new.camera = obj
+        return {'FINISHED'}
+
+
+class GetRepresentationIfcParameters(bpy.types.Operator):
+    bl_idname = 'bim.get_representation_ifc_parameters'
+    bl_label = 'Get Representation IFC Parameters'
+
+    def execute(self, context):
+        props = bpy.context.active_object.data.BIMMeshProperties
+        dummy = ifcopenshell.file.from_string(props.ifc_definition)
+        for element in dummy:
+            if not element.is_a('IfcRepresentationItem'):
+                continue
+            for i in range(0, len(element)):
+                if element.attribute_type(i) == 'DOUBLE':
+                    new = props.ifc_parameters.add()
+                    new.name = '{}/{}'.format(element.is_a(), element.attribute_name(i))
+                    new.step_id = element.id()
+                    new.type = element.attribute_type(i)
+                    new.index = i
+                    if element[i]:
+                        new.value = element[i]
+        return {'FINISHED'}
+
+
+class UpdateIfcRepresentation(bpy.types.Operator):
+    bl_idname = 'bim.update_ifc_representation'
+    bl_label = 'Update IFC Representation'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = bpy.context.active_object.data.BIMMeshProperties
+        parameter = props.ifc_parameters[self.index]
+        dummy = ifcopenshell.file.from_string(props.ifc_definition)
+        element = dummy.by_id(parameter.step_id)[parameter.index] = parameter.value
+        props.ifc_definition = dummy.to_string()
+        self.recreate_ifc_representation()
+        return {'FINISHED'}
+
+    def recreate_ifc_representation(self):
+        props = bpy.context.active_object.data.BIMMeshProperties
+        dummy = ifcopenshell.file.from_string(props.ifc_definition)
+        logger = logging.getLogger('ImportIFC')
+        self.ifc_import_settings = import_ifc.IfcImportSettings.factory(bpy.context, ifc.IfcStore.path, logger)
+        element = dummy.by_id(props.ifc_definition_id)
+        settings = ifcopenshell.geom.settings()
+        shape = ifcopenshell.geom.create_shape(settings, element)
+        ifc_importer = import_ifc.IfcImporter(self.ifc_import_settings)
+        ifc_importer.file = dummy
+        mesh = ifc_importer.create_mesh(element, shape)
+        bpy.context.active_object.data.user_remap(mesh)

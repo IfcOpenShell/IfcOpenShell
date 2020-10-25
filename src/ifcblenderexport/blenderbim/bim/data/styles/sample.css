@@ -7,3 +7,4 @@
 .stair { marker-start: url(#stair-marker-start); marker-end: url(#stair-marker-end); }
 .break { fill: white; }
 .breakline { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; marker-mid: url(#breakline-marker); }
+.IfcSpace { fill: none; stroke: none; }

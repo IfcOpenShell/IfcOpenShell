@@ -101,11 +101,14 @@ namespace IfcGeom
         IteratorSettings()
             : settings_(WELD_VERTICES) // OR options that default to true here
             , deflection_tolerance_(1.e-3)
+			, angular_tolerance_(0.5)
         {
         }
 
         /// Note that this is independent of the IFC length unit, one millimeter by default.
         double deflection_tolerance() const { return deflection_tolerance_; }
+		double angular_tolerance() const { return angular_tolerance_; }
+		double force_space_transparency() const { return force_space_transparency_; }
 
         void set_deflection_tolerance(double value)
         {
@@ -117,6 +120,14 @@ namespace IfcGeom
                 deflection_tolerance_ = 1e-3;
             }
         }
+
+		void set_angular_tolerance(double value) {
+			angular_tolerance_ = value;
+		}
+
+		void force_space_transparency(double value) {
+			force_space_transparency_ = value;
+		}		
 
         /// Get boolean value for a single settings or for a combination of settings.
         bool get(SettingField setting) const
@@ -143,7 +154,7 @@ namespace IfcGeom
 
     protected:
         SettingField settings_;
-        double deflection_tolerance_;
+        double deflection_tolerance_, angular_tolerance_, force_space_transparency_;
     };
 
     class IFC_GEOM_API ElementSettings : public IteratorSettings

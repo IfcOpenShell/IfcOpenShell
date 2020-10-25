@@ -98,7 +98,7 @@ class IFC2CA:
             for c in connections:
                 if c['eccentricity']:
                     if np.linalg.norm(np.array(c['eccentricity']['pointOnElement'])) > length + self.tol:
-                        print((np.linalg.norm(np.array(c['eccentricity']['pointOnElement'])), '>', length))
+                        print(np.linalg.norm(np.array(c['eccentricity']['pointOnElement'])), '>', length)
                         self.warnings.append('Eccentricity in %s corrected' % (item.is_a() + '|' + str(item.id())))
                         c['eccentricity']['pointOnElement'][0] = length
             # End <--
@@ -181,7 +181,32 @@ class IFC2CA:
                 'geometryType': 'point',
                 'geometry': geometry,
                 'orientation': orientation,
-                'appliedCondition': self.get_connection_input(item),
+                'appliedCondition': self.get_connection_input(item, 'point'),
+                'relatedElements': [con.is_a() + '|' + str(con.id()) for con in item.ConnectsStructuralMembers]
+            }
+
+        elif item.is_a('IfcStructuralCurveConnection'):
+            representation = self.get_representation(item, 'Edge')
+            if not representation:
+                self.warnings.append('No representation defined for %s. Connection excluded' % (item.is_a() + '|' + str(item.id())))
+                return
+
+            geometry = self.get_geometry(representation)
+            orientation = self.get_1D_orientation(geometry, item.Axis)
+            if not orientation:
+                orientation = np.eye(3).tolist()
+            if transformation:
+                geometry = self.transform_vectors(geometry, transformation)
+                orientation = self.transform_vectors(orientation, transformation, include_translation=False)
+
+            return {
+                'ifcName': item.is_a() + '|' + str(item.id()),
+                'name': item.Name,
+                'id': item.GlobalId,
+                'geometryType': 'line',
+                'geometry': geometry,
+                'orientation': orientation,
+                'appliedCondition': self.get_connection_input(item, 'line'),
                 'relatedElements': [con.is_a() + '|' + str(con.id()) for con in item.ConnectsStructuralMembers]
             }
 
@@ -412,7 +437,7 @@ class IFC2CA:
             'relatingElement': rel.RelatingStructuralMember.is_a() + '|' + str(rel.RelatingStructuralMember.id()),
             'relatedConnection': rel.RelatedStructuralConnection.is_a() + '|' + str(rel.RelatedStructuralConnection.id()),
             'orientation': self.get_0D_orientation(rel.ConditionCoordinateSystem),
-            'appliedCondition': self.get_connection_input(rel),
+            'appliedCondition': self.get_connection_input(rel, self.get_geometry_type_from_connection(rel.RelatedStructuralConnection)),
             'eccentricity': None if not rel.is_a('IfcRelConnectsWithEccentricity') else {
                     'vector': [
                         0.0 if not rel.ConnectionConstraint.EccentricityInX else rel.ConnectionConstraint.EccentricityInX,
@@ -423,16 +448,43 @@ class IFC2CA:
                 }
         } for rel in itemList]
 
-    def get_connection_input(self, connection):
+    def get_geometry_type_from_connection(self, connection):
+        if connection.is_a('IfcStructuralPointConnection'):
+            return 'point'
+        if connection.is_a('IfcStructuralCurveConnection'):
+            return 'line'
+        if connection.is_a('IfcStructuralSurfaceConnection'):
+            return 'surface'
+
+    def get_connection_input(self, connection, geometryType):
         if connection.AppliedCondition:
-            return {
-                'dx': connection.AppliedCondition.TranslationalStiffnessX.wrappedValue,
-                'dy': connection.AppliedCondition.TranslationalStiffnessY.wrappedValue,
-                'dz': connection.AppliedCondition.TranslationalStiffnessZ.wrappedValue,
-                'drx': connection.AppliedCondition.RotationalStiffnessX.wrappedValue,
-                'dry': connection.AppliedCondition.RotationalStiffnessY.wrappedValue,
-                'drz': connection.AppliedCondition.RotationalStiffnessZ.wrappedValue
-            }
+            if geometryType == 'point':
+                return {
+                    'dx': connection.AppliedCondition.TranslationalStiffnessX.wrappedValue,
+                    'dy': connection.AppliedCondition.TranslationalStiffnessY.wrappedValue,
+                    'dz': connection.AppliedCondition.TranslationalStiffnessZ.wrappedValue,
+                    'drx': connection.AppliedCondition.RotationalStiffnessX.wrappedValue,
+                    'dry': connection.AppliedCondition.RotationalStiffnessY.wrappedValue,
+                    'drz': connection.AppliedCondition.RotationalStiffnessZ.wrappedValue
+                }
+
+            if geometryType == 'line':
+                return {
+                    'dx': connection.AppliedCondition.TranslationalStiffnessByLengthX.wrappedValue,
+                    'dy': connection.AppliedCondition.TranslationalStiffnessByLengthY.wrappedValue,
+                    'dz': connection.AppliedCondition.TranslationalStiffnessByLengthZ.wrappedValue,
+                    'drx': connection.AppliedCondition.RotationalStiffnessByLengthX.wrappedValue,
+                    'dry': connection.AppliedCondition.RotationalStiffnessByLengthY.wrappedValue,
+                    'drz': connection.AppliedCondition.RotationalStiffnessByLengthZ.wrappedValue
+                }
+
+            if geometryType == 'surface':
+                return {
+                    'dx': connection.AppliedCondition.TranslationalStiffnessByAreaX.wrappedValue,
+                    'dy': connection.AppliedCondition.TranslationalStiffnessByAreaY.wrappedValue,
+                    'dz': connection.AppliedCondition.TranslationalStiffnessByAreaZ.wrappedValue
+                }
+
         return connection.AppliedCondition
 
     def get_i_section_properties(self, profile, profileShape):
@@ -455,7 +507,7 @@ class IFC2CA:
             }
 
 if __name__ == '__main__':
-    fileNames = ['cantilever_01', 'portal_01', 'grid_of_beams']
+    fileNames = ['cantilever_01', 'portal_01', 'grid_of_beams', 'slab_01', 'structure_01']
     files = fileNames
 
     for fileName in files:

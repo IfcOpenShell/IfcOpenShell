@@ -8,8 +8,9 @@ import zipfile
 import tempfile
 from pathlib import Path
 from mathutils import Vector, Matrix
-from .helper import SIUnitHelper
+from .helper import SIUnitHelper, get_representation_elements
 from . import schema
+from . import ifc
 import ifcopenshell
 import addon_utils
 
@@ -86,8 +87,9 @@ class IfcParser():
         if not self.projects:
             self.setup_project()
             self.projects = self.get_projects()
-
         self.project = self.projects[0]
+        if not selected_objects:
+            selected_objects = self.get_all_objects_in_project(self.project['raw'])
         self.units = self.get_units()
         self.unit_scale = self.get_unit_scale()
         self.people = self.get_people()
@@ -124,25 +126,31 @@ class IfcParser():
             self.spatial_structure_elements_tree.extend(self.get_spatial_structure_elements_tree(project))
 
     def get_units(self):
-        return {
+        units = {
             'length': {
                 'ifc': None,
-                'is_metric': bpy.context.scene.unit_settings.system == 'METRIC',
+                'is_metric': bpy.context.scene.unit_settings.system != 'IMPERIAL',
                 'raw': bpy.context.scene.unit_settings.length_unit
             },
             'area': {
                 'ifc': None,
-                'is_metric': bpy.context.scene.unit_settings.system == 'METRIC',
+                'is_metric': bpy.context.scene.unit_settings.system != 'IMPERIAL',
                 'raw': bpy.context.scene.unit_settings.length_unit
             },
             'volume': {
                 'ifc': None,
-                'is_metric': bpy.context.scene.unit_settings.system == 'METRIC',
+                'is_metric': bpy.context.scene.unit_settings.system != 'IMPERIAL',
                 'raw': bpy.context.scene.unit_settings.length_unit
             }}
+        for data in units.values():
+            if data['raw'] == 'ADAPTIVE':
+                if data['is_metric']:
+                    data['raw'] = 'METERS'
+                else:
+                    data['raw'] = 'FEET'
+        return units
 
     def get_unit_scale(self):
-        unit_settings = bpy.context.scene.unit_settings
         conversions = {
             'KILOMETERS': 1e3,
             'CENTIMETERS': 1e-2,
@@ -150,12 +158,13 @@ class IfcParser():
             'MICROMETERS': 1e-6,
             'FEET': 0.3048,
             'INCHES': 0.0254}
-        if unit_settings.system in {'METRIC', 'IMPERIAL'}:
-            scale = unit_settings.scale_length
-            if unit_settings.length_unit in conversions.keys():
-                scale *= conversions[unit_settings.length_unit]
-            return scale
-        return 1
+        if bpy.context.scene.unit_settings.system in {'METRIC', 'IMPERIAL'}:
+            scale = bpy.context.scene.unit_settings.scale_length
+        else:
+            scale = 1
+        if self.units['length']['raw'] in conversions.keys():
+            scale *= conversions[self.units['length']['raw']]
+        return scale
 
     def get_object_attributes(self, obj):
         attributes = {'Name': self.get_ifc_name(obj.name)}
@@ -348,10 +357,10 @@ class IfcParser():
             'ifc': None,
             'raw': obj,
             'class': self.get_ifc_class(obj.name),
+            'attributes': self.get_object_attributes(obj),
             'relating_structure': None,
             'relating_host': None,
             'relating_qtos_key': None,
-            'attributes': self.get_object_attributes(obj),
             'has_boundary_condition': obj.BIMObjectProperties.has_boundary_condition,
             'boundary_condition_class': None,
             'boundary_condition_attributes': {},
@@ -463,6 +472,8 @@ class IfcParser():
             relationships.setdefault(item_key, []).append(product)
 
     def add_automatic_qtos(self, ifc_class, obj):
+        if not obj.data:
+            return
         qto_names = self.get_applicable_qtos(ifc_class)
         for name in qto_names:
             if name not in schema.ifc.qtos:
@@ -486,7 +497,7 @@ class IfcParser():
 
     def get_applicable_qtos(self, ifc_class):
         results = []
-        empty = ifcopenshell.file()
+        empty = ifcopenshell.file(schema=self.ifc_export_settings.schema)
         element = empty.create_entity(ifc_class)
         for ifc_class, qto_names in schema.ifc.applicable_qtos.items():
             if element.is_a(ifc_class):
@@ -626,27 +637,30 @@ class IfcParser():
     def get_classifications(self):
         results = {}
         for classification in bpy.context.scene.BIMProperties.classifications:
-            schema.ifc.load_classification(classification.filename)
-            results[classification.filename] = {
+            if classification.name not in schema.ifc.classification_files:
+                schema.ifc.classification_files[classification.name] = ifcopenshell.file.from_string(classification.data)
+            results[classification.name] = {
                 'ifc': None,
                 'raw': classification,
-                'raw_element': schema.ifc.classification_files[classification.filename].by_type('IfcClassification')[0]
+                'raw_element': schema.ifc.classification_files[classification.name].by_type('IfcClassification')[0]
             }
         return results
 
     def get_classification_reference_maps(self):
         results = {}
-        for filename, classification in self.classifications.items():
-            ifc_file = schema.ifc.classification_files[filename]
+        for name, classification in self.classifications.items():
+            ifc_file = schema.ifc.classification_files[name]
             if ifc_file.schema == 'IFC2X3':
-                results[filename] = { e.ItemReference: e for e in ifc_file.by_type('IfcClassificationReference')}
+                results[name] = { e.ItemReference: e for e in ifc_file.by_type('IfcClassificationReference')}
             else:
-                results[filename] = { e.Identification: e for e in ifc_file.by_type('IfcClassificationReference')}
+                results[name] = { e.Identification: e for e in ifc_file.by_type('IfcClassificationReference')}
         return results
 
     def get_classification_references(self):
         results = {}
-        for product in self.selected_products:
+        for product in self.selected_products \
+                + self.selected_types \
+                + self.selected_spatial_structure_elements:
             for reference in product['raw'].BIMObjectProperties.classifications:
                 results[reference.name] = {
                     'ifc': None,
@@ -691,6 +705,11 @@ class IfcParser():
             'suffix_titles': 'SuffixTitles',
         }
         results = []
+
+        if self.ifc_export_settings.schema == 'IFC2X3' \
+                and not bpy.context.scene.BIMProperties.people:
+            bpy.ops.bim.add_person()
+
         for person in bpy.context.scene.BIMProperties.people:
             attributes = {}
             for key, value in data_map.items():
@@ -714,6 +733,11 @@ class IfcParser():
             'description': 'Description',
         }
         results = []
+
+        if self.ifc_export_settings.schema == 'IFC2X3' \
+                and not bpy.context.scene.BIMProperties.organisations:
+            bpy.ops.bim.add_organisation()
+
         for organisation in bpy.context.scene.BIMProperties.organisations:
             attributes = {}
             for key, value in data_map.items():
@@ -749,6 +773,11 @@ class IfcParser():
 
     def get_addresses(self, addresses):
         results = []
+        for address in addresses:
+            results.append(self.get_address(address))
+        return results
+
+    def get_address(self, address):
         address_data_map = {
             'purpose': 'Purpose',
             'description': 'Description',
@@ -772,28 +801,26 @@ class IfcParser():
             'electronic_mail_addresses': 'ElectronicMailAddresses',
             'messaging_ids': 'MessagingIDs',
         }
-        for address in addresses:
-            attributes = {}
-            if 'IfcPostalAddress' in address.name:
-                merged_data_map = {**address_data_map, **postal_data_map}
-                if address.address_lines:
-                    attributes['AddressLines'] = address.address_lines.split('/')
-            elif 'IfcTelecomAddress' in address.name:
-                merged_data_map = {**address_data_map, **telecom_data_map}
-                for key, value in telecom_list_data_map.items():
-                    if getattr(address, key):
-                        attributes[value] = getattr(address, key).split(',')
-            for key, value in merged_data_map.items():
+        attributes = {}
+        if 'IfcPostalAddress' in address.name:
+            merged_data_map = {**address_data_map, **postal_data_map}
+            if address.address_lines:
+                attributes['AddressLines'] = address.address_lines.split('/')
+        elif 'IfcTelecomAddress' in address.name:
+            merged_data_map = {**address_data_map, **telecom_data_map}
+            for key, value in telecom_list_data_map.items():
                 if getattr(address, key):
-                    attributes[value] = getattr(address, key)
-            results.append({
-                'ifc': None,
-                'raw': address,
-                'is_postal': 'IfcPostalAddress' in address.name,
-                'is_telecom': 'IfcTelecomAddress' in address.name,
-                'attributes': attributes
-            })
-        return results
+                    attributes[value] = getattr(address, key).split(',')
+        for key, value in merged_data_map.items():
+            if getattr(address, key):
+                attributes[value] = getattr(address, key)
+        return {
+            'ifc': None,
+            'raw': address,
+            'is_postal': 'IfcPostalAddress' in address.name,
+            'is_telecom': 'IfcTelecomAddress' in address.name,
+            'attributes': attributes
+        }
 
     def get_document_references(self):
         results = {}
@@ -858,6 +885,13 @@ class IfcParser():
                     'class': self.get_ifc_class(collection.name),
                     'attributes': self.get_object_attributes(obj)
                 })
+        return results
+
+    def get_all_objects_in_project(self, collection):
+        results = []
+        results.extend(list(collection.objects))
+        for child in collection.children:
+            results.extend(self.get_all_objects_in_project(child))
         return results
 
     def setup_project(self):
@@ -944,10 +978,12 @@ class IfcParser():
                 'ifc': None,
                 'raw': obj,
                 'class': self.get_ifc_class(obj.name),
-                'attributes': self.get_object_attributes(obj)
+                'attributes': self.get_object_attributes(obj),
+                'address': self.get_address(obj.BIMObjectProperties.address)
             }
             self.append_product_attributes(element, obj)
             self.get_product_psets_qtos(element, obj, is_pset=True)
+            self.get_product_psets_qtos(element, obj, is_qto=True)
             elements.append(element)
         return elements
 
@@ -1011,6 +1047,9 @@ class IfcParser():
         self.representations['Model/Body/MODEL_VIEW/{}'.format(obj.data.name)] = self.get_representation(
             obj.data, obj, 'Model', 'Body', 'MODEL_VIEW')
         if 'Model/Box/MODEL_VIEW' in self.generated_subcontexts:
+            if self.ifc_export_settings.should_roundtrip_native \
+                    and obj.data.BIMMeshProperties.ifc_definition_id:
+                return
             self.representations['Model/Box/MODEL_VIEW/{}'.format(obj.data.name)] = self.get_representation(
                 obj.data, obj, 'Model', 'Box', 'MODEL_VIEW')
 
@@ -1048,11 +1087,13 @@ class IfcParser():
             self.representations[mesh_name] = self.get_representation(
                 mesh, obj, context, subcontext, target_view)
             if 'Model/Box/MODEL_VIEW' in self.generated_subcontexts \
-                    and context == 'Model' \
-                    and subcontext == 'Body' \
-                    and target_view == 'MODEL_VIEW':
-                self.representations['Model/Box/MODEL_VIEW/{}'.format(mesh_name.split('/')[3])] = self.get_representation(
-                    obj.data, obj, 'Model', 'Box', 'MODEL_VIEW')
+                    and context_prefix == 'Model/Body/MODEL_VIEW':
+                if self.ifc_export_settings.should_roundtrip_native \
+                        and obj.data.BIMMeshProperties.ifc_definition_id:
+                    pass
+                else:
+                    self.representations['Model/Box/MODEL_VIEW/{}'.format(mesh_name.split('/')[3])] = self.get_representation(
+                        obj.data, obj, 'Model', 'Box', 'MODEL_VIEW')
         elif context_prefix == 'Model/Body/MODEL_VIEW' \
                 and obj.data \
                 and not self.is_mesh_context_sensitive(obj.data.name):
@@ -1081,12 +1122,15 @@ class IfcParser():
             'context': context,
             'subcontext': subcontext,
             'target_view': target_view,
+            'has_ifc_definition': False if not hasattr(mesh, 'BIMMeshProperties') else (mesh.BIMMeshProperties.ifc_definition or mesh.BIMMeshProperties.ifc_definition_id),
+            'ifc_definition': mesh.BIMMeshProperties.ifc_definition if hasattr(mesh, 'BIMMeshProperties') else None,
+            'ifc_definition_id': mesh.BIMMeshProperties.ifc_definition_id if hasattr(mesh, 'BIMMeshProperties') else None,
             'is_parametric': mesh.BIMMeshProperties.is_parametric if hasattr(mesh, 'BIMMeshProperties') else False,
             'is_curve': isinstance(mesh, bpy.types.Curve),
             'is_point_cloud': self.is_point_cloud(obj),
             'is_structural': self.is_structural(obj),
             'is_text': isinstance(mesh, bpy.types.TextCurve),
-            'is_wireframe': self.is_wireframe_mesh(mesh),
+            'is_wireframe': self.is_wireframe_mesh(mesh, obj),
             'is_native': mesh.BIMMeshProperties.is_native if hasattr(mesh, 'BIMMeshProperties') else False,
             'is_swept_solid': mesh.BIMMeshProperties.is_swept_solid if hasattr(mesh, 'BIMMeshProperties') else False,
             'is_generated': False,
@@ -1094,9 +1138,12 @@ class IfcParser():
             'attributes': {'Name': mesh.name}
         }
 
-    def is_wireframe_mesh(self, mesh):
+    def is_wireframe_mesh(self, mesh, obj):
         if isinstance(mesh, bpy.types.Mesh) and not mesh.polygons:
-            return True
+            modifiers = [m.type for m in obj.modifiers]
+            # SCREW and SKIN can create faces, so it is not a wireframe mesh
+            if 'SCREW' not in modifiers and 'SKIN' not in modifiers:
+                return True
         if isinstance(mesh, bpy.types.Curve) and not mesh.bevel_object and not mesh.bevel_depth:
             return True
         return False
@@ -1147,7 +1194,9 @@ class IfcParser():
         parsed_data_names = []
         for product in self.selected_products + self.type_products:
             obj = product['raw']
-            if obj.data is None or obj.data.name in parsed_data_names:
+            if obj.data is None \
+                    or obj.data.name in parsed_data_names \
+                    or obj.data.BIMMeshProperties.ifc_definition_id:
                 continue
             parsed_data_names.append(obj.data.name)
             for slot in obj.material_slots:
@@ -1525,11 +1574,14 @@ class IfcExporter():
     def create_addresses(self, addresses):
         results = []
         for address in addresses:
-            if self.schema == 'IFC2X3' and 'MessagingIDs' in address['attributes']:
-                del address['attributes']['MessagingIDs']
-            results.append(self.file.create_entity('IfcPostalAddress' if
-                address['is_postal'] else 'IfcTelecomAddress', **address['attributes']))
+            results.append(self.create_address(address))
         return results
+
+    def create_address(self, address):
+        if self.schema == 'IFC2X3' and 'MessagingIDs' in address['attributes']:
+            del address['attributes']['MessagingIDs']
+        return self.file.create_entity('IfcPostalAddress' if
+            address['is_postal'] else 'IfcTelecomAddress', **address['attributes'])
 
     def create_library_information(self):
         information = self.ifc_parser.library_information
@@ -1642,7 +1694,8 @@ class IfcExporter():
         for name, data in templates.items():
             if name not in pset['raw']:
                 continue
-            if data.TemplateType == 'P_SINGLEVALUE':
+            if data.TemplateType == 'P_SINGLEVALUE' \
+                    or data.TemplateType == 'P_ENUMERATEDVALUE':
                 if data.PrimaryMeasureType:
                     value_type = data.PrimaryMeasureType
                 else:
@@ -1839,6 +1892,12 @@ class IfcExporter():
                 'ObjectPlacement': placement,
                 'Representation': self.get_product_shape(element)
             })
+
+            if element['class'] == 'IfcSite':
+                element['attributes'].update({'SiteAddress': self.create_address(element['address'])})
+            elif element['class'] == 'IfcBuilding':
+                element['attributes'].update({'BuildingAddress': self.create_address(element['address'])})
+
             element['ifc'] = self.file.create_entity(element['class'], **element['attributes'])
             related_objects.append(element['ifc'])
             self.create_spatial_structure_elements(node['children'], element['ifc'])
@@ -2144,11 +2203,15 @@ class IfcExporter():
     def get_product_shape_representations(self, product):
         results = []
         for representation_name in product['representations']:
-            results.append(self.get_product_mapped_geometry(product, representation_name))
+            representation = self.ifc_parser.representations[representation_name]
+            if self.ifc_export_settings.should_roundtrip_native and representation['has_ifc_definition']:
+                results.append(representation['ifc'])
+            else:
+                results.append(self.get_product_mapped_geometry(product, representation))
         return results
 
-    def get_product_mapped_geometry(self, product, representation_name):
-        mapping_source = self.ifc_parser.representations[representation_name]['ifc']
+    def get_product_mapped_geometry(self, product, representation):
+        mapping_source = representation['ifc']
         shape_representation = mapping_source.MappedRepresentation
         if product['has_scale']:
             if not product['has_mirror']:
@@ -2194,6 +2257,8 @@ class IfcExporter():
             self.file.createIfcDirection((forward.x, forward.y, forward.z)))
 
     def create_representation(self, representation):
+        if self.ifc_export_settings.should_roundtrip_native and representation['has_ifc_definition']:
+            return self.create_representation_from_definition(representation)
         self.ifc_vertices = []
         self.ifc_edges = []
         if representation['context'] == 'Model':
@@ -2202,6 +2267,34 @@ class IfcExporter():
             return self.create_plan_representation(representation)
         elif representation['context'] == 'NotDefined':
             return self.create_variable_representation(representation)
+
+    def create_representation_from_definition(self, representation):
+        if representation['ifc_definition']:
+            print('Authoring an IFC definition directly is not yet implemented')
+            return
+        elif representation['ifc_definition_id']:
+            entry = self.file.add(ifc.IfcStore.get_file().by_id(representation['ifc_definition_id']))
+            substitutions = []
+            for element in get_representation_elements(
+                    ifc.IfcStore.get_file(), representation['ifc_definition_id']):
+                added_element = self.file.add(element)
+                if added_element.is_a('IfcGeometricRepresentationContext'):
+                    substitutions.append(added_element)
+            for element in substitutions:
+                if element.is_a() == 'IfcGeometricRepresentationContext':
+                    new_element = [e for e in
+                            self.file.by_type('IfcGeometricRepresentationContext')
+                            if e.ContextType == element.ContextType][0]
+                elif element.is_a() == 'IfcGeometricRepresentationSubContext':
+                    new_element = [e for e in
+                            self.file.by_type('IfcGeometricRepresentationContext')
+                            if e.ContextType == element.ContextType and
+                            e.ContextIdentifier == element.ContextIdentifier][0]
+                for inverse in self.file.get_inverse(element):
+                    ifcopenshell.util.element.replace_attribute(inverse, element, new_element)
+                # TODO: Work out how and when to purge this
+                #self.file.remove(element)
+            return entry
 
     def create_model_representation(self, representation):
         if representation['subcontext'] == 'Annotation':
@@ -2290,9 +2383,9 @@ class IfcExporter():
                 obj.bound_box[0][1],
                 obj.bound_box[0][2]
             ),
-            obj.dimensions[0],
-            obj.dimensions[1],
-            obj.dimensions[2]
+            self.convert_si_to_unit(obj.dimensions[0]),
+            self.convert_si_to_unit(obj.dimensions[1]),
+            self.convert_si_to_unit(obj.dimensions[2])
         )
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']][
@@ -3035,6 +3128,7 @@ class IfcExportSettings:
         settings.should_use_presentation_style_assignment = scene_bim.export_should_use_presentation_style_assignment
         settings.should_guess_quantities = scene_bim.export_should_guess_quantities
         settings.should_force_faceted_brep = scene_bim.export_should_force_faceted_brep
+        settings.should_roundtrip_native = scene_bim.import_export_should_roundtrip_native
         settings.context_tree = []
         for ifc_context in ['model', 'plan']:
             if getattr(scene_bim, 'has_{}_context'.format(ifc_context)):
