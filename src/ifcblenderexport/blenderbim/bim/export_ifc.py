@@ -126,25 +126,31 @@ class IfcParser():
             self.spatial_structure_elements_tree.extend(self.get_spatial_structure_elements_tree(project))
 
     def get_units(self):
-        return {
+        units = {
             'length': {
                 'ifc': None,
-                'is_metric': bpy.context.scene.unit_settings.system == 'METRIC',
+                'is_metric': bpy.context.scene.unit_settings.system != 'IMPERIAL',
                 'raw': bpy.context.scene.unit_settings.length_unit
             },
             'area': {
                 'ifc': None,
-                'is_metric': bpy.context.scene.unit_settings.system == 'METRIC',
+                'is_metric': bpy.context.scene.unit_settings.system != 'IMPERIAL',
                 'raw': bpy.context.scene.unit_settings.length_unit
             },
             'volume': {
                 'ifc': None,
-                'is_metric': bpy.context.scene.unit_settings.system == 'METRIC',
+                'is_metric': bpy.context.scene.unit_settings.system != 'IMPERIAL',
                 'raw': bpy.context.scene.unit_settings.length_unit
             }}
+        for data in units.values():
+            if data['raw'] == 'ADAPTIVE':
+                if data['is_metric']:
+                    data['raw'] = 'METERS'
+                else:
+                    data['raw'] = 'FEET'
+        return units
 
     def get_unit_scale(self):
-        unit_settings = bpy.context.scene.unit_settings
         conversions = {
             'KILOMETERS': 1e3,
             'CENTIMETERS': 1e-2,
@@ -152,12 +158,13 @@ class IfcParser():
             'MICROMETERS': 1e-6,
             'FEET': 0.3048,
             'INCHES': 0.0254}
-        if unit_settings.system in {'METRIC', 'IMPERIAL'}:
-            scale = unit_settings.scale_length
-            if unit_settings.length_unit in conversions.keys():
-                scale *= conversions[unit_settings.length_unit]
-            return scale
-        return 1
+        if bpy.context.scene.unit_settings.system in {'METRIC', 'IMPERIAL'}:
+            scale = bpy.context.scene.unit_settings.scale_length
+        else:
+            scale = 1
+        if self.units['length']['raw'] in conversions.keys():
+            scale *= conversions[self.units['length']['raw']]
+        return scale
 
     def get_object_attributes(self, obj):
         attributes = {'Name': self.get_ifc_name(obj.name)}
