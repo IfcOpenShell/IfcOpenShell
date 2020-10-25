@@ -651,7 +651,9 @@ class IfcParser():
 
     def get_classification_references(self):
         results = {}
-        for product in self.selected_products:
+        for product in self.selected_products \
+                + self.selected_types \
+                + self.selected_spatial_structure_elements:
             for reference in product['raw'].BIMObjectProperties.classifications:
                 results[reference.name] = {
                     'ifc': None,
