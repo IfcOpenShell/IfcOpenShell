@@ -1,11 +1,12 @@
 bl_info = {
     "name": "IFC for Sverchok",
     "author": "Dion Moult",
-    "version": (0, 0, 0, 1),
+    "version": (0, 0, 999999),
     "blender": (2, 90, 0),
     "location": "Node Editor",
     "category": "Node",
     "description": "An extension to Sverchok to work with IFC data",
+    "tracker_url": "https://github.com/IfcOpenShell/IfcOpenShell/issues",
     "warning": "",
 }
 
