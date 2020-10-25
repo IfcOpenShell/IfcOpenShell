@@ -13,3 +13,5 @@ __pycache__
 # PyCharm files
 .idea
 /docs/output
+/docs/rst_files
+/docs/doxygen

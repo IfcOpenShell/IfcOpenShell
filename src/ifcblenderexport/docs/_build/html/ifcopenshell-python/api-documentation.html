@@ -1,0 +1,177 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>API Documentation &#8212; IfcOpenShell 0.0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="IfcConvert" href="../ifcconvert.html" />
+    <link rel="prev" title="Quickstart" href="quickstart.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../ifcconvert.html" title="IfcConvert"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="quickstart.html" title="Quickstart"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IfcOpenShell 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../ifcopenshell-python.html" accesskey="U">IfcOpenShell-Python</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-ifcopenshell.entity_instance">
+<span id="api-documentation"></span><h1>API Documentation<a class="headerlink" href="#module-ifcopenshell.entity_instance" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="ifcopenshell.entity_instance.entity_instance">
+<em class="property">class </em><code class="sig-prename descclassname">ifcopenshell.entity_instance.</code><code class="sig-name descname">entity_instance</code><span class="sig-paren">(</span><em class="sig-param">e</em><span class="sig-paren">)</span><a class="headerlink" href="#ifcopenshell.entity_instance.entity_instance" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the base python class for all IFC objects.</p>
+<p>An instantiated entity_instance will have methods of Python and the IFC class itself.</p>
+<p>example:</p>
+<p>ifc_file = ifcopenshell.open(file_path)
+products = ifc_file.by_type(“IfcProduct”)</p>
+<p>print(products[0].__class__)
+&gt;&gt;&gt; &lt;class ‘ifcopenshell.entity_instance.entity_instance’&gt;</p>
+<p>print(products[0].Representation)
+&gt;&gt;&gt; #423=IfcProductDefinitionShape($,$,(#409,#421))</p>
+<dl class="method">
+<dt id="ifcopenshell.entity_instance.entity_instance.get_info">
+<code class="sig-name descname">get_info</code><span class="sig-paren">(</span><em class="sig-param">include_identifier=True</em>, <em class="sig-param">recursive=False</em>, <em class="sig-param">return_type=&lt;class 'dict'&gt;</em>, <em class="sig-param">ignore=()</em><span class="sig-paren">)</span><a class="headerlink" href="#ifcopenshell.entity_instance.entity_instance.get_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a dictionary of the entity_instance’s properties (Python and IFC) and their values.</p>
+<p>example:</p>
+<p>ifc_file = ifcopenshell.open(file_path)
+products = ifc_file.by_type(“IfcProduct”)
+obj_info = products[0].get_info()
+print(obj_info.keys())</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dict_keys</span><span class="p">([</span><span class="s1">&#39;Description&#39;</span><span class="p">,</span> <span class="s1">&#39;Name&#39;</span><span class="p">,</span> <span class="s1">&#39;BuildingAddress&#39;</span><span class="p">,</span> <span class="s1">&#39;LongName&#39;</span><span class="p">,</span> <span class="s1">&#39;GlobalId&#39;</span><span class="p">,</span> <span class="s1">&#39;ObjectPlacement&#39;</span><span class="p">,</span> <span class="s1">&#39;OwnerHistory&#39;</span><span class="p">,</span> <span class="s1">&#39;ObjectType&#39;</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="o">...</span><span class="s1">&#39;ElevationOfTerrain&#39;</span><span class="p">,</span> <span class="s1">&#39;CompositionType&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;Representation&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">,</span> <span class="s1">&#39;ElevationOfRefHeight&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-ifcopenshell.file"></span><dl class="class">
+<dt id="ifcopenshell.file.file">
+<em class="property">class </em><code class="sig-prename descclassname">ifcopenshell.file.</code><code class="sig-name descname">file</code><span class="sig-paren">(</span><em class="sig-param">f=None</em>, <em class="sig-param">schema=None</em><span class="sig-paren">)</span><a class="headerlink" href="#ifcopenshell.file.file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for containing IFC files.</p>
+<p>Class has instance methods for filtering by element Id, Type, etc.</p>
+<p>Instantiated objects can be subscripted by Id or Guid</p>
+<p>example:</p>
+<p>ifc_file = ifcopenshell.open(file_path)
+products = ifc_file.by_type(“IfcProduct”)</p>
+<p>print(products[0].id(), products[0].GlobalId)
+&gt;&gt;&gt; 122 2XQ$n5SLP5MBLyL442paFx</p>
+<p># Subscripting
+print(products[0] == ifc_file[122] == ifc_file[‘2XQ$n5SLP5MBLyL442paFx’])
+&gt;&gt;&gt; True</p>
+<dl class="method">
+<dt id="ifcopenshell.file.file.by_guid">
+<code class="sig-name descname">by_guid</code><span class="sig-paren">(</span><em class="sig-param">guid</em><span class="sig-paren">)</span><a class="headerlink" href="#ifcopenshell.file.file.by_guid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return IFC objects filtered by IFC GUID.</p>
+<p>Returned objects are unwrapped IFC objects.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ifcopenshell.file.file.by_id">
+<code class="sig-name descname">by_id</code><span class="sig-paren">(</span><em class="sig-param">id</em><span class="sig-paren">)</span><a class="headerlink" href="#ifcopenshell.file.file.by_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return IFC objects filtered by IFC ID.</p>
+<p>Returned objects are unwrapped IFC objects.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ifcopenshell.file.file.by_type">
+<code class="sig-name descname">by_type</code><span class="sig-paren">(</span><em class="sig-param">type</em><span class="sig-paren">)</span><a class="headerlink" href="#ifcopenshell.file.file.by_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return IFC objects filtered by IFC Type and wrapped with the entity_instance class.</p>
+<p>See ifcopenshell.entity_instance for class methods and properties</p>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-ifcopenshell.guid"></span><span class="target" id="module-ifcopenshell.template"></span><span class="target" id="module-ifcopenshell.validate"></span><dl class="exception">
+<dt id="ifcopenshell.validate.ValidationError">
+<em class="property">exception </em><code class="sig-prename descclassname">ifcopenshell.validate.</code><code class="sig-name descname">ValidationError</code><a class="headerlink" href="#ifcopenshell.validate.ValidationError" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="quickstart.html"
+                        title="previous chapter">Quickstart</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../ifcconvert.html"
+                        title="next chapter">IfcConvert</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/ifcopenshell-python/api-documentation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../ifcconvert.html" title="IfcConvert"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="quickstart.html" title="Quickstart"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IfcOpenShell 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../ifcopenshell-python.html" >IfcOpenShell-Python</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, IfcOpenShell Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.2.0.
+    </div>
+  </body>
+</html>
