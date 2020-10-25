@@ -11,9 +11,6 @@ copyright = u'2020, IfcOpenShell'
 author = u'Johan Luttun'
 
 # Setup the breathe extension
-# breathe_projects = {
-#     "My Project": "./doxygen/xml"
-# }
 breathe_projects = {
     "My Project": "./output/doxygen/xml"
 }
@@ -35,7 +32,6 @@ exhale_args = {
 }
 
 # html_theme = 'sphinx_rtd_theme'
-# html_theme = 'classic'
 
 # Tell sphinx what the primary language being documented is.
 primary_domain = 'cpp'
@@ -43,16 +39,5 @@ primary_domain = 'cpp'
 # Tell sphinx what the pygments highlight language should be.
 highlight_language = 'cpp'
 
-# html_sidebars = {
-#    '**': ['globaltoc.html', 'sourcelink.html', 'searchbox.html'],
-#    'using/windows': ['windowssidebar.html', 'searchbox.html'],
-# }
 
 
-
-
-# html_sidebars = {'**': ['logo-text.html', 'globaltoc.html', 'searchbox.html']}
-
-# html_theme_options = {
-#     'navigation_depth': 4,
-# }
