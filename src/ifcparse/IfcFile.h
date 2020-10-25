@@ -195,6 +195,15 @@ public:
 	IfcUtil::IfcBaseClass* addEntity(IfcUtil::IfcBaseClass* entity);
 	void addEntities(IfcEntityList::ptr es);
 
+	/// Removes entity instance from file and unsets references.
+	///
+	/// Attention when running removeEntity inside a loop over a list of entities to be removed. 
+	/// This invalidates the iterator. A workaround is to reverse the loop:
+	/// boost::shared_ptr<IfcEntityList> entities = ...;
+	/// for (auto it = entities->end() - 1; it >= entities->begin(); --it) {
+	///    IfcUtil::IfcBaseClass *const inst = *it;
+	///    model->removeEntity(inst);
+	/// }
 	void removeEntity(IfcUtil::IfcBaseClass* entity);
 
 	const IfcSpfHeader& header() const { return _header; }

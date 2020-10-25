@@ -1763,6 +1763,14 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 	const unsigned id = entity->data().id();
 	IfcUtil::IfcBaseClass* file_entity = instance_by_id(id);
+	
+	// Attention when running removeEntity inside a loop over a list of entities to be removed. 
+	// This invalidates the iterator. A workaround is to reverse the loop:
+	// boost::shared_ptr<IfcEntityList> entities = ...;
+	// for (auto it = entities->end() - 1; it >= entities->begin(); --it) {
+        //    IfcUtil::IfcBaseClass *const inst = *it;
+        //    model->removeEntity(inst);
+        // }
 
 	// TODO: Create a set of weak relations. Inverse relations that do not dictate an 
 	// instance to be retained. For example: when deleting an IfcRepresentation, the 

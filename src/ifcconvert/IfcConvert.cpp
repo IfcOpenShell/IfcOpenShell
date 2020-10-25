@@ -199,7 +199,7 @@ int main(int argc, char** argv) {
 	typedef char char_t;
 #endif
 
-	double deflection_tolerance;
+	double deflection_tolerance, angular_tolerance, force_space_transparency;
 	inclusion_filter include_filter;
 	inclusion_traverse_filter include_traverse_filter;
 	exclusion_filter exclude_filter;
@@ -328,6 +328,10 @@ int main(int argc, char** argv) {
 			"model in other modelling application in any case.")
 		("deflection-tolerance", po::value<double>(&deflection_tolerance)->default_value(1e-3),
 			"Sets the deflection tolerance of the mesher, 1e-3 by default if not specified.")
+		("force-space-transparency", po::value<double>(&force_space_transparency),
+			"Overrides transparency of spaces in geometry output.")
+		("angular-tolerance", po::value<double>(&angular_tolerance)->default_value(0.5),
+			"Sets the angular tolerance of the mesher in radians 0.5 by default if not specified.")
 		("generate-uvs",
 			"Generates UVs (texture coordinates) by using simple box projection. Requires normals. "
 			"Not guaranteed to work properly if used with --weld-vertices.")
@@ -342,7 +346,8 @@ int main(int argc, char** argv) {
 #endif
     short precision;
 	double section_height;
-	std::string svg_scale;
+	std::string svg_scale, svg_center;
+	std::string section_ref, elevation_ref;
 
     po::options_description serializer_options("Serialization options");
     serializer_options.add_options()
@@ -357,6 +362,13 @@ int main(int argc, char** argv) {
 		("scale", po::value<std::string>(&svg_scale),
 			"Interprets SVG bounds in mm, centers layout and draw elements to scale. "
 			"Only used when converting to SVG. Example 1:100.")
+		("center", po::value<std::string>(&svg_center),
+			"When using --scale, specifies the location in the range [0 1]x[0 1] around which"
+			"to center the drawings. Example 0.5x0.5 (default).")
+		("section-ref", po::value<std::string>(&section_ref),
+			"Element at which vertical cross sections should be created")
+		("elevation-ref", po::value<std::string>(&elevation_ref),
+			"Element at which vertical elevations should be created")
 		("door-arcs", "Draw door openings arcs for IfcDoor elements")
 		("section-height", po::value<double>(&section_height),
 		    "Specifies the cut section height for SVG 2D geometry.")
@@ -519,8 +531,8 @@ int main(int argc, char** argv) {
         }
     }
 
-	boost::optional<double> bounding_width;
-	boost::optional<double> bounding_height;
+	boost::optional<double> bounding_width, bounding_height, relative_center_x, relative_center_y;
+
 	if (vmap.count("bounds") == 1) {
 		int w, h;
 		if (sscanf(bounds.c_str(), "%ux%u", &w, &h) == 2 && w > 0 && h > 0) {
@@ -529,6 +541,18 @@ int main(int argc, char** argv) {
 		} else {
 			cerr_ << "[Error] Invalid use of --bounds" << std::endl;
             print_options(serializer_options);
+			return EXIT_FAILURE;
+		}
+	}
+
+	if (vmap.count("center") == 1) {
+		double cx, cy;
+		if (sscanf(svg_center.c_str(), "%lfx%lf", &cx, &cy) == 2 && cx >= 0. && cy >= 0. && cx <= 1. && cy <= 1.) {
+			relative_center_x = cx;
+			relative_center_y = cy;
+		} else {
+			cerr_ << "[Error] Invalid use of --bounds" << std::endl;
+			print_options(serializer_options);
 			return EXIT_FAILURE;
 		}
 	}
@@ -710,7 +734,13 @@ int main(int argc, char** argv) {
 	settings.set(SerializerSettings::USE_ELEMENT_TYPES, use_element_types);
 	settings.set(SerializerSettings::USE_ELEMENT_HIERARCHY, use_element_hierarchy);
     settings.set_deflection_tolerance(deflection_tolerance);
-    settings.precision = precision;
+	settings.set_angular_tolerance(angular_tolerance);
+	settings.precision = precision;
+
+	if (vmap.count("force-space-transparency")) {
+		settings.force_space_transparency(force_space_transparency);
+		IfcGeom::update_default_style("IfcSpace").Transparency().reset(force_space_transparency);
+	}
 
 	boost::shared_ptr<GeometrySerializer> serializer; /**< @todo use std::unique_ptr when possible */
 	if (output_extension == OBJ) {
@@ -906,6 +936,15 @@ int main(int argc, char** argv) {
 				print_options(serializer_options);
 				return EXIT_FAILURE;
 			}
+		}
+		if (vmap.count("section-ref")) {
+			static_cast<SvgSerializer*>(serializer.get())->setSectionRef(section_ref);
+		}
+		if (vmap.count("elevation-ref")) {
+			static_cast<SvgSerializer*>(serializer.get())->setElevationRef(elevation_ref);
+		}
+		if (relative_center_x && relative_center_y) {
+			static_cast<SvgSerializer*>(serializer.get())->setDrawingCenter(*relative_center_x, *relative_center_y);
 		}
 	}
 

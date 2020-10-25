@@ -63,15 +63,48 @@ def setDefaultProperties(scene):
         subcontext = bpy.context.scene.BIMProperties.model_subcontexts.add()
         subcontext.name = 'Box'
         subcontext.target_view = 'MODEL_VIEW'
+    if bpy.context.scene.BIMProperties.has_plan_context \
+            and len(bpy.context.scene.BIMProperties.plan_subcontexts) == 0:
+        subcontext = bpy.context.scene.BIMProperties.plan_subcontexts.add()
+        subcontext.name = 'Annotation'
+        subcontext.target_view = 'PLAN_VIEW'
     if len(bpy.context.scene.DocProperties.drawing_styles) == 0:
         drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
-        drawing_style.name = 'Blender Default'
-        bpy.ops.bim.save_drawing_style(index='0')
-        drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
-        drawing_style.name = 'Shaded'
+        drawing_style.name = 'Technical'
+        drawing_style.render_type = 'VIEWPORT'
         drawing_style.raster_style = json.dumps({
             'bpy.data.worlds[0].color': (1, 1, 1),
             'bpy.context.scene.render.engine': 'BLENDER_WORKBENCH',
+            'bpy.context.scene.render.film_transparent': False,
+            'bpy.context.scene.display.shading.show_object_outline': True,
+            'bpy.context.scene.display.shading.show_cavity': False,
+            'bpy.context.scene.display.shading.cavity_type': 'BOTH',
+            'bpy.context.scene.display.shading.curvature_ridge_factor': 1,
+            'bpy.context.scene.display.shading.curvature_valley_factor': 1,
+            'bpy.context.scene.view_settings.view_transform': 'Standard',
+            'bpy.context.scene.display.shading.light': 'FLAT',
+            'bpy.context.scene.display.shading.color_type': 'SINGLE',
+            'bpy.context.scene.display.shading.single_color': (1, 1, 1),
+            'bpy.context.scene.display.shading.show_shadows': False,
+            'bpy.context.scene.display.shading.shadow_intensity': 0.5,
+            'bpy.context.scene.display.light_direction': (.5, .5, .5),
+            'bpy.context.scene.view_settings.use_curve_mapping': False,
+            'space.overlay.show_wireframes': True,
+            'space.overlay.wireframe_threshold': 0,
+            'space.overlay.show_floor': False,
+            'space.overlay.show_axis_x': False,
+            'space.overlay.show_axis_y': False,
+            'space.overlay.show_axis_z': False,
+            'space.overlay.show_object_origins': False,
+            'space.overlay.show_relationship_lines': False,
+        })
+        drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
+        drawing_style.name = 'Shaded'
+        drawing_style.render_type = 'VIEWPORT'
+        drawing_style.raster_style = json.dumps({
+            'bpy.data.worlds[0].color': (1, 1, 1),
+            'bpy.context.scene.render.engine': 'BLENDER_WORKBENCH',
+            'bpy.context.scene.render.film_transparent': False,
             'bpy.context.scene.display.shading.show_object_outline': True,
             'bpy.context.scene.display.shading.show_cavity': True,
             'bpy.context.scene.display.shading.cavity_type': 'BOTH',
@@ -81,26 +114,23 @@ def setDefaultProperties(scene):
             'bpy.context.scene.display.shading.light': 'STUDIO',
             'bpy.context.scene.display.shading.color_type': 'MATERIAL',
             'bpy.context.scene.display.shading.single_color': (1, 1, 1),
+            'bpy.context.scene.display.shading.show_shadows': True,
+            'bpy.context.scene.display.shading.shadow_intensity': 0.5,
+            'bpy.context.scene.display.light_direction': (.5, .5, .5),
             'bpy.context.scene.view_settings.use_curve_mapping': False,
+            'space.overlay.show_wireframes': True,
+            'space.overlay.wireframe_threshold': 0,
+            'space.overlay.show_floor': False,
+            'space.overlay.show_axis_x': False,
+            'space.overlay.show_axis_y': False,
+            'space.overlay.show_axis_z': False,
+            'space.overlay.show_object_origins': False,
+            'space.overlay.show_relationship_lines': False,
         })
         drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
-        drawing_style.name = 'Technical'
-        drawing_style.raster_style = json.dumps({
-            'bpy.data.worlds[0].color': (1, 1, 1),
-            'bpy.context.scene.render.engine': 'BLENDER_WORKBENCH',
-            'bpy.context.scene.display.shading.show_object_outline': True,
-            'bpy.context.scene.display.shading.show_cavity': True,
-            'bpy.context.scene.display.shading.cavity_type': 'BOTH',
-            'bpy.context.scene.display.shading.curvature_ridge_factor': 1,
-            'bpy.context.scene.display.shading.curvature_valley_factor': 1,
-            'bpy.context.scene.view_settings.view_transform': 'Standard',
-            'bpy.context.scene.display.shading.light': 'FLAT',
-            'bpy.context.scene.display.shading.color_type': 'SINGLE',
-            'bpy.context.scene.display.shading.single_color': (1, 1, 1),
-            'bpy.context.scene.view_settings.use_curve_mapping': True,
-        })
-        # TODO: This is used for technical styles, but probably should not be hardcoded
-        bpy.context.scene.view_settings.curve_mapping.curves[3].points.new(.4, 0) # Increase black contrast
+        drawing_style.name = 'Blender Default'
+        drawing_style.render_type = 'DEFAULT'
+        bpy.ops.bim.save_drawing_style(index='2')
 
 
 def getIfcPredefinedTypes(self, context):
@@ -210,6 +240,10 @@ def refreshBoundaryConditionAttributes(self, context):
     for attribute in schema.ifc.elements[context.active_object.BIMObjectProperties.boundary_condition.name]['complex_attributes']:
         new_attribute = context.active_object.BIMObjectProperties.boundary_condition.attributes.add()
         new_attribute.name = attribute['name']
+
+
+def refreshActiveDrawingIndex(self, context):
+    bpy.ops.bim.activate_view(drawing_index=context.scene.DocProperties.active_drawing_index)
 
 
 def getIfcProducts(self, context):
@@ -361,8 +395,6 @@ def getClassifications(self, context):
         classification_enum.clear()
         files = os.listdir(os.path.join(self.schema_dir, 'classifications'))
         classification_enum.extend([(f.replace('.ifc', ''), f.replace('.ifc', ''), '') for f in files])
-        files = os.listdir(os.path.join(self.schema_dir, 'project_classifications'))
-        classification_enum.extend([(f.replace('.ifc', ''), f.replace('.ifc', ''), '') for f in files])
     return classification_enum
 
 
@@ -372,6 +404,7 @@ def refreshReferences(self, context):
     context.scene.BIMProperties.classification_references.root = ''
 
 
+# TODO: move into util module. See bug #971
 def getPsetNames(self, context):
     global psetnames_enum
     psetnames_enum.clear()
@@ -385,6 +418,7 @@ def getPsetNames(self, context):
     return psetnames_enum
 
 
+# TODO: move into util module. See bug #971
 def getQtoNames(self, context):
     global qtonames_enum
     qtonames_enum.clear()
@@ -518,22 +552,24 @@ class Sheet(PropertyGroup):
 class DrawingStyle(PropertyGroup):
     name: StringProperty(name='Name')
     raster_style: StringProperty(name='Raster Style')
+    render_type: EnumProperty(items=[
+        ('NONE', 'None', ''),
+        ('DEFAULT', 'Default', ''),
+        ('VIEWPORT', 'Viewport', ''),
+        ], name='Render Type', default='VIEWPORT')
     vector_style: EnumProperty(items=getVectorStyles, name='Vector Style')
     include_query: StringProperty(name='Include Query')
     exclude_query: StringProperty(name='Exclude Query')
+    attributes: CollectionProperty(name='Attributes', type=StrProperty)
 
 
 class DocProperties(PropertyGroup):
     should_recut: BoolProperty(name="Should Recut", default=True)
     should_recut_selected: BoolProperty(name="Should Recut Selected Only", default=False)
-    should_render: EnumProperty(items=[
-        ('NONE', 'None', ''),
-        ('DEFAULT', 'Default', ''),
-        ('VIEWPORT', 'Viewport', ''),
-        ], name='Should Render', default='DEFAULT')
     should_extract: BoolProperty(name="Should Extract", default=True)
     drawings: CollectionProperty(name='Drawings', type=Drawing)
-    active_drawing_index: IntProperty(name='Active Drawing Index')
+    active_drawing_index: IntProperty(name='Active Drawing Index', update=refreshActiveDrawingIndex)
+    current_drawing_index: IntProperty(name='Current Drawing Index')
     schedules: CollectionProperty(name='Schedules', type=Schedule)
     active_schedule_index: IntProperty(name='Active Schedule Index')
     titleblock: EnumProperty(items=getTitleblocks, name="Titleblock", update=refreshTitleblocks)
@@ -558,7 +594,7 @@ class BIMCameraProperties(PropertyGroup):
     raster_y: IntProperty(name='Raster Y', default=1000)
     is_nts: BoolProperty(name='Is NTS')
     cut_objects: EnumProperty(items=[
-        ('.IfcWall|.IfcSlab|.IfcCurtainWall|.IfcStair|.IfcStairFlight|.IfcColumn|.IfcBeam|.IfcMember|.IfcCovering',
+        ('.IfcWall|.IfcSlab|.IfcCurtainWall|.IfcStair|.IfcStairFlight|.IfcColumn|.IfcBeam|.IfcMember|.IfcCovering|.IfcSpace',
             'Overall Plan / Section', ''),
         ('.IfcElement', 'Detail Drawing', ''),
         ('CUSTOM', 'Custom', '')
@@ -987,7 +1023,7 @@ class PropertyTemplate(PropertyGroup):
 
 
 class Address(PropertyGroup):
-    name: StringProperty(name="Name") # Stores IfcPostalAddress or IfcTelecomAddress
+    name: StringProperty(name="Name", default='IfcPostalAddress') # Stores IfcPostalAddress or IfcTelecomAddress
     purpose: EnumProperty(items=[
         ('OFFICE', 'OFFICE', 'An office address.'),
         ('SITE', 'SITE', 'A site address.'),
@@ -1074,7 +1110,7 @@ class Classification(PropertyGroup):
     description: StringProperty(name="Description")
     location: StringProperty(name="Location")
     reference_tokens: StringProperty(name="Reference Tokens")
-    filename: StringProperty(name="Filename")
+    data: StringProperty(name="Data")
 
 
 class ClassificationReference(PropertyGroup):
@@ -1169,6 +1205,7 @@ class BIMProperties(PropertyGroup):
     import_should_treat_styled_item_as_material: BoolProperty(name="Import Treating Styled Item as Material", default=False)
     import_should_use_legacy: BoolProperty(name="Import with Legacy Importer", default=False)
     import_should_import_native: BoolProperty(name="Import Native Representations", default=False)
+    import_export_should_roundtrip_native: BoolProperty(name="Roundtrip Native Representations", default=False)
     import_should_use_cpu_multiprocessing: BoolProperty(name="Import with CPU Multiprocessing", default=True)
     import_should_import_with_profiling: BoolProperty(name="Import with Profiling", default=True)
     import_should_import_aggregates: BoolProperty(name="Import Aggregates", default=True)
@@ -1177,6 +1214,8 @@ class BIMProperties(PropertyGroup):
     import_should_merge_by_material: BoolProperty(name="Import and Merge by Material", default=False)
     import_should_merge_materials_by_colour: BoolProperty(name="Import and Merge Materials by Colour", default=False)
     import_should_clean_mesh: BoolProperty(name="Import and Clean Mesh", default=True)
+    import_deflection_tolerance: FloatProperty(name="Import Deflection Tolerance", default=0.001)
+    import_angular_tolerance: FloatProperty(name="Import Angular Tolerance", default=0.5)
     qa_reject_element_reason: StringProperty(name="Element Rejection Reason")
     person: EnumProperty(items=getPersons, name="Person")
     organisation: EnumProperty(items=getOrganisations, name="Organisation")
@@ -1208,9 +1247,10 @@ class BIMProperties(PropertyGroup):
     aggregate_class: EnumProperty(items=getIfcClasses, name="Aggregate Class")
     aggregate_name: StringProperty(name="Aggregate Name")
     classification: EnumProperty(items=getClassifications, name="Classification", update=refreshReferences)
+    active_classification_name: StringProperty(name="Active Classification Name")
     classifications: CollectionProperty(name="Classifications", type=Classification)
     has_model_context: BoolProperty(name="Has Model Context", default=True)
-    has_plan_context: BoolProperty(name="Has Plan Context", default=False)
+    has_plan_context: BoolProperty(name="Has Plan Context", default=True)
     model_subcontexts: CollectionProperty(name='Model Subcontexts', type=Subcontext)
     plan_subcontexts: CollectionProperty(name='Plan Subcontexts', type=Subcontext)
     available_contexts: EnumProperty(items=[('Model', 'Model', ''), ('Plan', 'Plan', '')], name="Available Contexts")
@@ -1311,6 +1351,15 @@ class Attribute(PropertyGroup):
     int_value: IntProperty(name="Value")
     float_value: FloatProperty(name="Value")
 
+
+class IfcParameter(PropertyGroup):
+    name: StringProperty(name="Name")
+    step_id: IntProperty(name="STEP ID")
+    index: IntProperty(name="Index")
+    value: FloatProperty(name="Value") # For now, only floats
+    type: StringProperty(name="Type")
+
+
 class PsetQto(PropertyGroup):
     name: StringProperty(name="Name")
     properties: CollectionProperty(name="Properties", type=Attribute)
@@ -1345,6 +1394,13 @@ class BIMObjectProperties(PropertyGroup):
     boundary_condition: PointerProperty(name='Boundary Condition', type=BoundaryCondition)
     structural_member_connection: PointerProperty(name='Structural Member Connection', type=bpy.types.Object)
     representation_contexts: CollectionProperty(name="Representation Contexts", type=Subcontext)
+    # Address applies to IfcSite's SiteAddress and IfcBuilding's BuildingAddress
+    address: PointerProperty(name='Address', type=Address)
+
+
+class BIMDebugProperties(PropertyGroup):
+    step_id: IntProperty(name="STEP ID")
+    number_of_polygons: IntProperty(name="Number of Polygons")
 
 
 class BIMMaterialProperties(PropertyGroup):
@@ -1379,5 +1435,7 @@ class BIMMeshProperties(PropertyGroup):
     is_parametric: BoolProperty(name='Is Parametric', default=False)
     presentation_layer: StringProperty(name="Presentation Layer")
     geometry_type: StringProperty(name="Geometry Type")
-    representation_items: CollectionProperty(name="Representation Items", type=RepresentationItem)
+    ifc_definition: StringProperty(name="IFC Definition")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+    ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     active_representation_item_index: IntProperty(name='Active Representation Item Index')

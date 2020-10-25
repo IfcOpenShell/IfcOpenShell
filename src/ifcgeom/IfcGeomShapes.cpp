@@ -355,7 +355,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceOfRevolution* l, TopoDS
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcRevolvedAreaSolid* l, TopoDS_Shape& shape) {
 	const double ang = l->Angle() * getValue(GV_PLANEANGLE_UNIT);
 
-	TopoDS_Face face;
+	TopoDS_Shape face;
 	if ( ! convert_face(l->SweptArea(),face) ) return false;
 
 	gp_Ax1 ax1;
@@ -368,6 +368,45 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRevolvedAreaSolid* l, TopoDS_S
 #endif
 	if (has_position) {
 		IfcGeom::Kernel::convert(l->Position(), trsf);
+	}
+
+
+	{
+		// https://github.com/IfcOpenShell/IfcOpenShell/issues/1030
+		// Check whether Axis does not intersect SweptArea
+
+		double min_dot = +std::numeric_limits<double>::infinity();
+		double max_dot = -std::numeric_limits<double>::infinity();
+
+		gp_Ax2 ax(ax1.Location(), gp::DZ(), ax1.Direction());
+
+		TopExp_Explorer exp(face, TopAbs_EDGE);
+		for (; exp.More(); exp.Next()) {
+			BRepAdaptor_Curve crv(TopoDS::Edge(exp.Current()));
+			GCPnts_QuasiUniformDeflection tessellater(crv, getValue(GV_PRECISION));
+
+			int n = tessellater.NbPoints();
+			for (int i = 1; i <= n; ++i) {
+				double d = ax.YDirection().XYZ().Dot(tessellater.Value(i).XYZ());
+				if (d < min_dot) {
+					min_dot = d;
+				}
+				if (d > max_dot) {
+					max_dot = d;
+				}
+			}
+		}
+
+		bool intersecting;
+		if (std::abs(min_dot) > std::abs(max_dot)) {
+			intersecting = max_dot > + getValue(GV_PRECISION);
+		} else {
+			intersecting = min_dot < - getValue(GV_PRECISION);
+		}
+
+		if (intersecting) {
+			Logger::Warning("Warning Axis and SweptArea intersecting", l);
+		}
 	}
 
 	if (ang >= M_PI * 2. - ALMOST_ZERO) {
@@ -1188,7 +1227,7 @@ namespace {
 		// @todo we could be extruding the wire only when we know this is an intermediate edge.
 		const double depth = std::abs(u - v);
 		TopoDS_Face face = BRepBuilderAPI_MakeFace(section).Face();
-		result = BRepPrimAPI_MakeRevol(section, circ->Axis(), depth).Shape();
+		result = BRepPrimAPI_MakeRevol(face, circ->Axis(), depth).Shape();
 	}
 
 	void process_sweep_as_pipe(const TopoDS_Wire& wire, const TopoDS_Wire& section, TopoDS_Shape& result, bool force_transformed=false) {
@@ -1406,6 +1445,29 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 
 	if (!convert_wire(l->Directrix(), wire)) {
 		return false;
+	}
+
+	if (count(wire, TopAbs_EDGE) == 1) {
+		TopoDS_Vertex v0, v1;
+		TopExp::Vertices(wire, v0, v1);
+		if (v0.IsSame(v1)) {
+			TopExp_Explorer exp(wire, TopAbs_EDGE);
+			auto& e = TopoDS::Edge(exp.Current());
+			double a, b;
+			auto crv = BRep_Tool::Curve(e, a, b);
+			if ((crv->DynamicType() == STANDARD_TYPE(Geom_Circle)) ||
+				(crv->DynamicType() == STANDARD_TYPE(Geom_Ellipse))) 
+			{
+				BRepBuilderAPI_MakeEdge me(crv, l->StartParam(), l->EndParam());
+				if (me.IsDone()) {
+					auto e2 = me.Edge();
+					BRep_Builder B;
+					wire.Nullify();
+					B.MakeWire(wire);
+					B.Add(wire, e2);
+				}
+			}
+		}
 	}
 
 	// NB: Note that StartParam and EndParam param are ignored and the assumption is

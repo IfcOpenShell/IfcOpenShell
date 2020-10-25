@@ -21,6 +21,8 @@
 		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_simple_type()), SWIGTYPE_p_IfcParse__simple_type, 0);
 	} else if ($1->as_aggregation_type()) {
 		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_aggregation_type()), SWIGTYPE_p_IfcParse__aggregation_type, 0);
+	} else {
+		throw std::runtime_error("unexpected parameter type");
 	}
 }
 

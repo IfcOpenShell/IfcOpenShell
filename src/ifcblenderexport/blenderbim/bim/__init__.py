@@ -133,7 +133,6 @@ if bpy is not None:
         operator.SelectClashSource,
         operator.ExecuteIfcClash,
         operator.SelectIfcClashResults,
-        operator.AssignContext,
         operator.SwitchContext,
         operator.RemoveContext,
         operator.OpenUpstream,
@@ -186,7 +185,6 @@ if bpy is not None:
         operator.SaveDrawingStyle,
         operator.ActivateDrawingStyle,
         operator.EditVectorStyle,
-        operator.PurgeProjectClassifications,
         operator.RemoveSheet,
         operator.AddSchedule,
         operator.RemoveSchedule,
@@ -196,6 +194,14 @@ if bpy is not None:
         operator.SetViewportShadowFromSun,
         operator.SetNorthOffset,
         operator.GetNorthOffset,
+        operator.AddDrawingStyleAttribute,
+        operator.RemoveDrawingStyleAttribute,
+        operator.CopyPropertyToSelection,
+        operator.CreateShapeFromStepId,
+        operator.SelectHighPolygonMeshes,
+        operator.RefreshDrawingList,
+        operator.GetRepresentationIfcParameters,
+        operator.UpdateIfcRepresentation,
         prop.StrProperty,
         prop.Variable,
         prop.Role,
@@ -224,12 +230,14 @@ if bpy is not None:
         prop.BcfTopicRelatedTopic,
         prop.Subcontext,
         prop.BIMProperties,
+        prop.BIMDebugProperties,
         prop.BCFProperties,
         prop.DocProperties,
         prop.BIMLibrary,
         prop.MapConversion,
         prop.TargetCRS,
         prop.Attribute,
+        prop.IfcParameter,
         prop.BoundaryCondition,
         prop.PsetQto,
         prop.GlobalId,
@@ -264,6 +272,7 @@ if bpy is not None:
         ui.BIM_PT_cobie,
         ui.BIM_PT_patch,
         ui.BIM_PT_mvd,
+        ui.BIM_PT_debug,
         ui.BIM_PT_material,
         ui.BIM_PT_mesh,
         ui.BIM_PT_object,
@@ -287,7 +296,6 @@ if bpy is not None:
         ui.BIM_UL_document_references,
         ui.BIM_UL_topics,
         ui.BIM_UL_classifications,
-        ui.BIM_UL_representation_items,
         ui.BIM_ADDON_preferences,
         covetool_prop.CoveToolProject,
         covetool_prop.CoveToolSimpleAnalysis,
@@ -316,7 +324,7 @@ if bpy is not None:
 
     def on_register(scene):
         prop.setDefaultProperties(scene)
-        bpy.app.handlers.scene_update_post.remove(on_register)
+        bpy.app.handlers.depsgraph_update_post.remove(on_register)
 
     def register():
         for cls in classes:
@@ -326,6 +334,7 @@ if bpy is not None:
         bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
         bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
         bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
+        bpy.types.Scene.BIMDebugProperties = bpy.props.PointerProperty(type=prop.BIMDebugProperties)
         bpy.types.Scene.BCFProperties = bpy.props.PointerProperty(type=prop.BCFProperties)
         bpy.types.Scene.DocProperties = bpy.props.PointerProperty(type=prop.DocProperties)
         bpy.types.Scene.BIMLibrary = bpy.props.PointerProperty(type=prop.BIMLibrary)
@@ -355,6 +364,7 @@ if bpy is not None:
         bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
         bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
         del(bpy.types.Scene.BIMProperties)
+        del(bpy.types.Scene.BIMDebugProperties)
         del(bpy.types.Scene.BCFProperties)
         del(bpy.types.Scene.DocProperties)
         del(bpy.types.Scene.MapConversion)

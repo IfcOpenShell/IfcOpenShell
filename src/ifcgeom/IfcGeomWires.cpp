@@ -581,17 +581,34 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 		// Fix from @sanderboer to compare using model tolerance, see #744
 		// Made dependent on radius, see #928
 
-		// @todo another good critereon for determining whether to take full curve
+		// A good critereon for determining whether to take full curve
 		// or trimmed segment would be whether there are other curve segments or this
-		// is the only one. But it does not really match the bottom-up construction
-		// mechanism of IfcOpenShell.
+		// is the only one.
+		boost::optional<size_t> num_segments;
+		auto segment = l->data().getInverse(&IfcSchema::IfcCompositeCurveSegment::Class(), -1);
+		if (segment->size() == 1) {
+			auto comp = (*segment->begin())->data().getInverse(&IfcSchema::IfcCompositeCurve::Class(), -1);
+			if (comp->size() == 1) {
+				num_segments = (*comp->begin())->as<IfcSchema::IfcCompositeCurve>()->Segments()->size();
+			}
+		}
 
 		if (isConic && ALMOST_THE_SAME(fmod(flts[1]-flts[0],M_PI*2.), 0., 100 * getValue(GV_PRECISION) / (2 * M_PI * radius))) {
 			e = BRepBuilderAPI_MakeEdge(curve).Edge();
 		} else {
 			BRepBuilderAPI_MakeEdge me (curve,flts[0],flts[1]);
 			e = me.Edge();
-		}			
+		}
+
+		if (num_segments && *num_segments > 1) {
+			TopoDS_Vertex v0, v1;
+			TopExp::Vertices(e, v0, v1);
+			if (v0.IsSame(v1)) {
+				Logger::Warning("Skipping degenerate segment", l);
+				return false;
+			}
+		}
+
 	} else if ( trim_cartesian_failed && (has_pnts[0] && has_pnts[1]) ) {
 		e = BRepBuilderAPI_MakeEdge(pnts[0], pnts[1]).Edge();
 	}

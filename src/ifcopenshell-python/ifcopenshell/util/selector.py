@@ -215,6 +215,8 @@ class Selector():
                 and key.split('.')[0] == 'type':
             try:
                 element = ifcopenshell.util.element.get_type(element)
+                if not element:
+                    return None
             except:
                 return
             key = '.'.join(key.split('.')[1:])

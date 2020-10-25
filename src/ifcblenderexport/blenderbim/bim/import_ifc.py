@@ -107,7 +107,6 @@ class MaterialCreator():
             return
         if len(obj.material_slots) == 1:
             return
-        slots = [self.canonicalise_material_name(s.name) for s in obj.material_slots]
         material_to_slot = {}
         for i, material in enumerate(mesh['ios_materials']):
             if material == 'NULLMAT':
@@ -116,13 +115,16 @@ class MaterialCreator():
                 material = material.split('-')[2]
             if len(bytes(material, 'utf-8')) > 63: # Blender material names are up to 63 UTF-8 bytes
                 material = bytes(material, 'utf-8')[0:63].decode('utf-8')
-            try:
-                material_to_slot[i] = slots.index(material)
-            except:
-                # If the material name duplicates, a `.001` is added, this
-                # reduces the maxmium characters for the material name to 59.
+
+            slot_index = obj.material_slots.find(material)
+            if slot_index == -1:
+                # If we can't find the material, it is possible that the
+                # material name is duplicated, and so a '.001' is added.
+                # The maximum characters for the material name is 59 in this
+                # scenario.
                 material = material[0:59]
-                material_to_slot[i] = slots.index(material)
+                slot_index = [self.canonicalise_material_name(s.name) for s in obj.material_slots].index(material)
+            material_to_slot[i] = slot_index
 
         if len(mesh.polygons) == len(mesh['ios_material_ids']):
             material_index = [(material_to_slot[mat_id] if mat_id != -1
@@ -150,6 +152,10 @@ class MaterialCreator():
             self.create_single(material)
         elif material.is_a('IfcMaterialLayerSet'):
             self.create_layer_set(material)
+        elif material.is_a('IfcMaterialConstituentSet'):
+            self.create_constituent_set(material)
+        elif material.is_a('IfcMaterialList'):
+            self.create_material_list(material)
 
     def create_single(self, material):
         if material.Name not in self.materials:
@@ -164,8 +170,26 @@ class MaterialCreator():
                     self.create_new_single(layer.Material)
                 self.assign_material_to_mesh(self.materials[layer.Material.Name])
 
+    def create_constituent_set(self, constituent_set):
+        for constituent in constituent_set.MaterialConstituents:
+            if constituent.Material:
+                if constituent.Material.Name not in self.materials:
+                    # TODO import rest of the layer set data
+                    self.create_new_single(constituent.Material)
+                self.assign_material_to_mesh(self.materials[constituent.Material.Name])
+
+    def create_material_list(self, material_list):
+        for material in material_list.Materials:
+            if material.Material:
+                if material.Material.Name not in self.materials:
+                    # TODO import rest of the layer set data
+                    self.create_new_single(material.Material)
+                self.assign_material_to_mesh(self.materials[material.Material.Name])
+
     def create_new_single(self, material):
-        self.materials[material.Name] = bpy.data.materials.new(material.Name)
+        self.materials[material.Name] = obj = bpy.data.materials.new(material.Name)
+        for pset in getattr(material, "HasProperties", ()):
+            self.add_pset(pset, obj)
         if not material.HasRepresentation \
                 or not material.HasRepresentation[0].Representations:
             return
@@ -175,13 +199,30 @@ class MaterialCreator():
             for item in representation.Items:
                 if not item.is_a('IfcStyledItem'):
                     continue
-                self.parse_styled_item(item, self.materials[material.Name])
+                self.parse_styled_item(item, obj)
+
+    def add_pset(self, pset, obj):
+        new_pset = obj.BIMMaterialProperties.psets.add()
+        new_pset.name = pset.Name
+        if new_pset.name in schema.ifc.psets:
+            for prop_name in schema.ifc.psets[new_pset.name]['HasPropertyTemplates'].keys():
+                prop = new_pset.properties.add()
+                prop.name = prop_name
+        for prop in pset.Properties:
+            if prop.is_a('IfcPropertySingleValue') and prop.NominalValue:
+                index = new_pset.properties.find(prop.Name)
+                if index >= 0:
+                    new_pset.properties[index].string_value = str(prop.NominalValue.wrappedValue)
+                else:
+                    new_prop = new_pset.properties.add()
+                    new_prop.name = prop.Name
+                    new_prop.string_value = str(prop.NominalValue.wrappedValue)
 
     def get_material_name(self, styled_item):
         if styled_item.Name:
             return styled_item.Name
-        styled_item = self.resolve_presentation_style_assignment(styled_item)
-        for style in styled_item.Styles:
+        styles = self.get_styled_item_styles(styled_item)
+        for style in styles:
             if not style.is_a('IfcSurfaceStyle'):
                 continue
             if style.Name:
@@ -190,8 +231,8 @@ class MaterialCreator():
         return str(styled_item.id())
 
     def parse_styled_item(self, styled_item, material):
-        styled_item = self.resolve_presentation_style_assignment(styled_item)
-        for style in styled_item.Styles:
+        styles = self.get_styled_item_styles(styled_item)
+        for style in styles:
             if not style.is_a('IfcSurfaceStyle'):
                 continue
             external_style = None
@@ -217,11 +258,14 @@ class MaterialCreator():
 
     # IfcPresentationStyleAssignment is deprecated as of IFC4
     # However it is still widely used thanks to Revit :(
-    def resolve_presentation_style_assignment(self, styled_item):
+    def get_styled_item_styles(self, styled_item):
+        styles = []
         for style in styled_item.Styles:
             if style.is_a('IfcPresentationStyleAssignment'):
-                return style
-        return styled_item
+                styles.extend(self.get_styled_item_styles(style))
+            else:
+                styles.append(style)
+        return styles
 
     def resolve_mapped_representation_items(self, representation):
         items = []
@@ -246,6 +290,9 @@ class IfcImporter():
         self.diff = None
         self.file = None
         self.settings = ifcopenshell.geom.settings()
+        self.settings.set_deflection_tolerance(self.ifc_import_settings.deflection_tolerance)
+        # Uncomment this when the latest IfcOpenBot build is ready
+        # self.settings.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
         if self.ifc_import_settings.should_import_curves:
             self.settings.set(self.settings.INCLUDE_CURVES, True)
         self.settings_native = ifcopenshell.geom.settings()
@@ -868,6 +915,7 @@ class IfcImporter():
             cumulative_vertex_index += item['total_vertices']
 
     def create_native_mesh(self, element, shape):
+        # TODO This should be split off into its own module for run-time native mesh conversion
         data = self.native_elements[element.GlobalId]
         materials = []
         items = []
@@ -953,9 +1001,6 @@ class IfcImporter():
         mesh['ios_material_ids'] = material_ids
         mesh['ios_items'] = representation_items
         mesh.BIMMeshProperties.is_native = True
-        for representation_item in representation_items:
-            new = mesh.BIMMeshProperties.representation_items.add()
-            new.name = representation_item['name']
         return mesh
 
     def get_representation_item_material_name(self, item):
@@ -1456,13 +1501,8 @@ class IfcImporter():
                 for entity in entities_to_add:
                     classification_file.add(entity)
 
-            classification_filename = '{}-{}'.format(
-                Path(os.path.basename(self.ifc_import_settings.input_file)).stem, element.Name)
-            classification_file.write(os.path.join(
-                bpy.context.scene.BIMProperties.schema_dir, 'project_classifications',
-                '{}.ifc'.format(classification_filename)))
-            classification.filename = classification_filename
-            self.classifications[classification.filename] = classification
+            classification.data = classification_file.to_string()
+            self.classifications[classification.name] = classification
 
         self.schema_dir = bpy.context.scene.BIMProperties.schema_dir
         from . import prop
@@ -1550,6 +1590,7 @@ class IfcImporter():
                 parent.children.link(collection)
                 obj = self.create_product(element)
                 if obj:
+                    self.spatial_structure_elements[global_id]['blender_obj'] = obj
                     collection.objects.link(obj)
                     del self.added_data[element.GlobalId]
             if element.IsDecomposedBy:
@@ -1699,8 +1740,15 @@ class IfcImporter():
             if element.Decomposes[0].RelatingObject.is_a('IfcProject'):
                 collection = self.project['blender']
             elif element.Decomposes[0].RelatingObject.is_a('IfcSpatialStructureElement'):
-                global_id = element.Decomposes[0].RelatingObject.GlobalId
+                if element.is_a('IfcSpatialStructureElement') and not element.is_a('IfcSpace'):
+                    global_id = element.GlobalId
+                else:
+                    global_id = element.Decomposes[0].RelatingObject.GlobalId
                 if global_id in self.spatial_structure_elements:
+                    if element.is_a('IfcSpatialStructureElement') \
+                            and not element.is_a('IfcSpace') \
+                            and 'blender_obj' in self.spatial_structure_elements[global_id]:
+                        bpy.data.objects.remove(self.spatial_structure_elements[global_id]['blender_obj'])
                     collection = self.spatial_structure_elements[global_id]['blender']
                 # This may occur if we are nesting an IfcSpace (which is special
                 # since it does not have a collection within an IfcSpace
@@ -1762,9 +1810,6 @@ class IfcImporter():
     def get_referenced_source_name(self, element):
         if not hasattr(element, 'ReferencedSource') or not element.ReferencedSource:
             if element.is_a('IfcClassification'):
-                for filename, classification in self.classifications.items():
-                    if classification.name == element.Name:
-                        return filename
                 return element.Name
             else:
                 return element.Identification
@@ -1820,6 +1865,11 @@ class IfcImporter():
             elif representation.RepresentationIdentifier == 'Body':
                 results.append({ 'raw': representation, 'matrix': self.scale_matrix(matrix) })
         return results
+
+    def get_representation_of_context(self, representations, context):
+        for representation in representations:
+            if representation.RepresentationIdentifier == context:
+                return representation
 
     def scale_matrix(self, matrix):
         matrix[0][3] *= self.unit_scale
@@ -1907,10 +1957,23 @@ class IfcImporter():
                     ios_materials.append(mat.name)
             mesh['ios_materials'] = ios_materials
             mesh['ios_material_ids'] = geometry.material_ids
-            mesh.BIMMeshProperties.geometry_type = str(self.get_geometry_type(element))
+            self.store_representation_source(mesh, element, shape)
             return mesh
         except:
             self.ifc_import_settings.logger.error('Could not create mesh for {}'.format(element))
+            import traceback
+            print(traceback.format_exc())
+
+    def store_representation_source(self, mesh, element, shape):
+        # TODO Refactor to specialist class
+        mesh.BIMMeshProperties.geometry_type = str(self.get_geometry_type(element))
+        if not self.ifc_import_settings.should_roundtrip_native:
+            return
+        if element.is_a('IfcRepresentation'):
+            representation = element
+        else:
+            representation = self.get_representation_of_context(element.Representation.Representations, shape.context)
+        mesh.BIMMeshProperties.ifc_definition_id = int(representation.id())
 
     def create_curve(self, geometry):
         curve = bpy.data.curves.new(geometry.id, type='CURVE')
@@ -2057,6 +2120,7 @@ class IfcImportSettings:
         settings.should_use_cpu_multiprocessing = scene_bim.import_should_use_cpu_multiprocessing
         settings.should_import_with_profiling = scene_bim.import_should_import_with_profiling
         settings.should_import_native = scene_bim.import_should_import_native
+        settings.should_roundtrip_native = scene_bim.import_export_should_roundtrip_native
         settings.should_use_legacy = scene_bim.import_should_use_legacy
         settings.should_import_aggregates = scene_bim.import_should_import_aggregates
         settings.should_merge_aggregates = scene_bim.import_should_merge_aggregates
@@ -2064,4 +2128,6 @@ class IfcImportSettings:
         settings.should_merge_by_material = scene_bim.import_should_merge_by_material
         settings.should_merge_materials_by_colour = scene_bim.import_should_merge_materials_by_colour
         settings.should_clean_mesh = scene_bim.import_should_clean_mesh
+        settings.deflection_tolerance = scene_bim.import_deflection_tolerance
+        settings.angular_tolerance = scene_bim.import_angular_tolerance
         return settings

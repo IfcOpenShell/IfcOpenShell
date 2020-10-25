@@ -1,10 +1,14 @@
 ## A change log of the ifc2ca files
 
+##### 14/10/20
+- Add curve connections betweeen elements and as supports according to the defined orientation - stiffness is not yet considered
+
 ##### 17/08/20
 - Add rigid links for point connection to elements
 
 ##### 14/07/20
-- Add internal springs for point connection to elements and external springs for point connections according to the defined orientation
+- Add internal springs for point connection to elements according to the defined orientation
+- Add external springs for point connections according to the defined orientation
 
 ##### 27/05/20
 - Add orientation for point, curve and surface geometries
