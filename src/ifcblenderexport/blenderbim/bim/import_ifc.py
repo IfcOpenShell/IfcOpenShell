@@ -17,6 +17,7 @@ import multiprocessing
 import zipfile
 import tempfile
 from pathlib import Path
+from itertools import cycle
 from . import helper
 from . import schema
 from . import ifc
@@ -1933,7 +1934,13 @@ class IfcImporter():
                 num_vertex_indices = len(geometry.faces)
 
                 mesh.vertices.add(num_vertices)
-                mesh.vertices.foreach_set('co', geometry.verts)
+                if self.ifc_import_settings.should_offset_model:
+                    # Potentially, there is a smarter way to do this. See #1047
+                    v_index = cycle((0, 1, 2))
+                    verts = [v+self.ifc_import_settings.model_offset_coordinates[next(v_index)] for v in geometry.verts]
+                    mesh.vertices.foreach_set('co', verts)
+                else:
+                    mesh.vertices.foreach_set('co', geometry.verts)
                 mesh.loops.add(num_vertex_indices)
                 mesh.loops.foreach_set('vertex_index', geometry.faces)
                 mesh.polygons.add(num_loops)
@@ -2128,6 +2135,8 @@ class IfcImportSettings:
         settings.should_merge_by_material = scene_bim.import_should_merge_by_material
         settings.should_merge_materials_by_colour = scene_bim.import_should_merge_materials_by_colour
         settings.should_clean_mesh = scene_bim.import_should_clean_mesh
+        settings.should_offset_model = scene_bim.import_should_offset_model
+        settings.model_offset_coordinates = [float(o) for o in scene_bim.import_model_offset_coordinates.split(',')] if scene_bim.import_model_offset_coordinates else (0, 0, 0)
         settings.deflection_tolerance = scene_bim.import_deflection_tolerance
         settings.angular_tolerance = scene_bim.import_angular_tolerance
         return settings

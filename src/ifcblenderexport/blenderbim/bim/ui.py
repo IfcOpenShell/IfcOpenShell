@@ -1754,6 +1754,13 @@ class BIM_PT_mvd(Panel):
         row = layout.row()
         row.prop(bim_properties, 'import_should_ignore_site_coordinates')
 
+        layout.label(text='ProStructures Workarounds:')
+
+        row = layout.row()
+        row.prop(bim_properties, 'import_should_offset_model')
+        row = layout.row()
+        row.prop(bim_properties, 'import_model_offset_coordinates')
+
         layout.label(text='12D Workarounds:')
 
         row = layout.row()
