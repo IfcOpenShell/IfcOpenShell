@@ -1782,16 +1782,14 @@ class IfcImporter():
 
     def add_element_attributes(self, element, obj):
         attributes = element.get_info()
-        if element.is_a() in schema.ifc.elements:
-            applicable_attributes = [a['name'] for a in schema.ifc.elements[element.is_a()]['attributes']]
-            for key, value in attributes.items():
-                if key not in applicable_attributes \
-                        or value is None:
-                    continue
-                attribute = obj.BIMObjectProperties.attributes.add()
-                attribute.name = key
-                attribute.data_type = 'string'
-                attribute.string_value = str(self.cast_edge_case_attribute(element.is_a(), key, value))
+        for key, value in attributes.items():
+            if value is None or isinstance(value, ifcopenshell.entity_instance) \
+                    or key == 'id' or key == 'type':
+                continue
+            attribute = obj.BIMObjectProperties.attributes.add()
+            attribute.name = key
+            attribute.data_type = 'string'
+            attribute.string_value = str(self.cast_edge_case_attribute(element.is_a(), key, value))
 
     def cast_edge_case_attribute(self, ifc_class, key, value):
         if key == 'RefLatitude' or key == 'RefLongitude':
