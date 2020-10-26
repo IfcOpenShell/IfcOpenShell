@@ -6,6 +6,10 @@ class Patcher:
         self.args = args
 
     def patch(self):
+        placement_coord_ids = set()
+        for placement in self.file.by_type('IfcObjectPlacement'):
+            [placement_coord_ids.add(e.id()) for e in self.file.traverse(placement) if e.is_a('IfcCartesianPoint')]
+
         # Arbitrary threshold based on experience
         self.threshold = 1000000
         if self.args and len(self.args) == 1:
@@ -43,6 +47,8 @@ class Patcher:
             point_list.CoordList = coord_list
         for point in self.file.by_type('IfcCartesianPoint'):
             if len(point.Coordinates) == 2 or not self.is_point_far_away(point):
+                continue
+            if point.id() in placement_coord_ids:
                 continue
             if not offset_point:
                 offset_point = (-point.Coordinates[0], -point.Coordinates[1], -point.Coordinates[2])
