@@ -437,6 +437,8 @@ class IfcImporter():
                 self.ifc_import_settings.should_ignore_site_coordinates = True
             if self.is_ifc_class_far_away('IfcBuilding'):
                 self.ifc_import_settings.should_ignore_building_coordinates = True
+        elif 'prostructures' in applications[0].ApplicationFullName.lower():
+            self.ifc_import_settings.should_allow_non_element_aggregates = True
         elif applications[0].ApplicationFullName.lower() == '12d model':
             self.ifc_import_settings.should_reset_absolute_coordinates = True
         elif 'Civil 3D' in applications[0].ApplicationFullName:
@@ -1599,8 +1601,16 @@ class IfcImporter():
                     self.add_related_objects(collection, rel_aggregate.RelatedObjects)
 
     def create_aggregates(self):
-        rel_aggregates = [a for a in self.file.by_type('IfcRelAggregates')
-                if a.RelatingObject.is_a('IfcElement')]
+        if self.ifc_import_settings.should_allow_non_element_aggregates:
+            if self.file.schema == 'IFC2X3':
+                rel_aggregates = [a for a in self.file.by_type('IfcRelAggregates')
+                        if not a.RelatingObject.is_a('IfcSpatialStructureElement')]
+            else:
+                rel_aggregates = [a for a in self.file.by_type('IfcRelAggregates')
+                        if not a.RelatingObject.is_a('IfcSpatialElement')]
+        else:
+            rel_aggregates = [a for a in self.file.by_type('IfcRelAggregates')
+                    if a.RelatingObject.is_a('IfcElement')]
         for collection in self.project['blender'].children:
             if collection.name == 'Aggregates':
                 self.aggregate_collection = collection
@@ -2135,6 +2145,7 @@ class IfcImportSettings:
         settings.should_merge_by_material = scene_bim.import_should_merge_by_material
         settings.should_merge_materials_by_colour = scene_bim.import_should_merge_materials_by_colour
         settings.should_clean_mesh = scene_bim.import_should_clean_mesh
+        settings.should_allow_non_element_aggregates = scene_bim.import_should_allow_non_element_aggregates
         settings.should_offset_model = scene_bim.import_should_offset_model
         settings.model_offset_coordinates = [float(o) for o in scene_bim.import_model_offset_coordinates.split(',')] if scene_bim.import_model_offset_coordinates else (0, 0, 0)
         settings.deflection_tolerance = scene_bim.import_deflection_tolerance
