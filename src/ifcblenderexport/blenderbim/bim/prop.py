@@ -1216,6 +1216,8 @@ class BIMProperties(PropertyGroup):
     import_should_clean_mesh: BoolProperty(name="Import and Clean Mesh", default=True)
     import_deflection_tolerance: FloatProperty(name="Import Deflection Tolerance", default=0.001)
     import_angular_tolerance: FloatProperty(name="Import Angular Tolerance", default=0.5)
+    import_should_offset_model: BoolProperty(name="Import and Offset Model", default=False)
+    import_model_offset_coordinates: StringProperty(name="Model Offset Coordinates", default='0,0,0')
     qa_reject_element_reason: StringProperty(name="Element Rejection Reason")
     person: EnumProperty(items=getPersons, name="Person")
     organisation: EnumProperty(items=getOrganisations, name="Organisation")
