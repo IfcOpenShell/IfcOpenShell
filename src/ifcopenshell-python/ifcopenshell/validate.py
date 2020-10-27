@@ -104,6 +104,13 @@ def validate(f, logger):
             logger.set_instance(inst)
             
         entity = schema.declaration_by_name(inst.is_a())
+        
+        if entity.is_abstract():
+            e = "Entity %s is abstract" % entity.name()
+            if hasattr(logger, 'set_instance'):
+                logger.error(e)
+            else:
+                logger.error('In {}\n{}'.format(inst, e))
 
         for attr, val, is_derived in zip(entity.all_attributes(), inst, entity.derived()):
         
