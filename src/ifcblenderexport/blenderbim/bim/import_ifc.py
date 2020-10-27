@@ -18,6 +18,7 @@ import zipfile
 import tempfile
 from pathlib import Path
 from itertools import cycle
+from datetime import datetime
 from . import helper
 from . import schema
 from . import ifc
@@ -1554,10 +1555,34 @@ class IfcImporter():
                 'confidentiality': 'Confidentiality',
                 'status': 'Status'
             }
+            if self.file.schema == 'IFC2X3':
+                data_map['name'] = 'DocumentId'
             for key, value in data_map.items():
                 if hasattr(element, value) and getattr(element, value):
-                    setattr(info, key, getattr(element, value))
+                    element_value = getattr(element, value)
+                    if self.file.schema == 'IFC2X3' \
+                            and isinstance(element_value, ifcopenshell.entity_instance):
+                        if element_value.is_a('IfcDateAndTime'):
+                            element_value = self.convert_ifc_date_and_time_to_string(element_value)
+                        elif element_value.is_a('IfcDocumentElectronicFormat'):
+                            element_value = self.convert_ifc_document_electronic_format(element_value)
+                    setattr(info, key, element_value)
 
+    # TODO Maybe a candidate for ifcopenshell.util?
+    def convert_ifc_date_and_time_to_string(self, element):
+        return datetime(
+            element.DateComponent.YearComponent,
+            element.DateComponent.MonthComponent,
+            element.DateComponent.DayComponent,
+            element.TimeComponent.HourComponent,
+            element.TimeComponent.MinuteComponent if element.TimeComponent.MinuteComponent else 0,
+            int(element.TimeComponent.SecondComponent) if element.TimeComponent.SecondComponent else 0,
+                ).isoformat()
+
+    def convert_ifc_document_electronic_format(self, element):
+        if not element.MimeContentType or not element.MimeSubtype:
+            return ''
+        return '{}/{}'.format(element.MimeContentType, element.MimeSubtype)
 
     def create_document_references(self):
         for element in self.file.by_type('IfcDocumentReference'):
@@ -1571,8 +1596,12 @@ class IfcImporter():
             for key, value in data_map.items():
                 if hasattr(element, value) and getattr(element, value):
                     setattr(reference, key, getattr(element, value))
-            if element.ReferencedDocument:
-                reference.referenced_document = element.ReferencedDocument.Identification
+            if self.file.schema == 'IFC2X3':
+                if element.ReferenceToDocument:
+                    reference.referenced_document = element.ReferenceToDocument[0].DocumentId
+            else:
+                if element.ReferencedDocument:
+                    reference.referenced_document = element.ReferencedDocument.Identification
 
     def create_spatial_hierarchy(self):
         if self.project['ifc'].IsDecomposedBy:
