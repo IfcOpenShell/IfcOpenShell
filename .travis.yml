@@ -14,8 +14,9 @@ install:
     sudo apt-get install -y \
     libocct-data-exchange-dev libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev \
     libboost-system-dev libboost-program-options-dev libboost-regex-dev libboost-thread-dev libboost-date-time-dev libboost-iostreams-dev libboost-filesystem-dev \
-    build-essential cmake python2.7 libpython2.7-dev swig zlib1g liblzma5 opencollada-dev wget apt-transport-https
-  - sudo mkdir -p /usr/include/json/nlohmann/
+    build-essential cmake python2.7 libpython2.7-dev swig zlib1g liblzma5 opencollada-dev wget apt-transport-https python3 python3-pip 
+  - sudo mkdir -p /usr/include/json/nlohmann/ 
+  - python3 -m pip install exhale
   - sudo wget https://github.com/nlohmann/json/releases/download/v3.6.1/json.hpp -O /usr/include/json/nlohmann/json.hpp
   # - sudo sh -c 'curl https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -'
   # - sudo sh -c 'curl https://storage.googleapis.com/download.dartlang.org/linux/debian/dart_stable.list > /etc/apt/sources.list.d/dart_stable.list'
@@ -39,6 +40,7 @@ script:
     -DLIBXML2_LIBRARIES="/usr/lib/x86_64-linux-gnu/libxml2.so;/lib/x86_64-linux-gnu/libz.so.1;/lib/x86_64-linux-gnu/liblzma.so.5;/usr/lib/x86_64-linux-gnu/libicuuc.so.60;/usr/lib/x86_64-linux-gnu/libicudata.so.60" \
     -DGLTF_SUPPORT=On \
     -DJSON_INCLUDE_DIR=/usr/include/json \
+    -DBUILD_DOCUMENTATION=On \
     ..
   - sudo make -j2 install
     
