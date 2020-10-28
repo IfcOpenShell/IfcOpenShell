@@ -4,6 +4,13 @@ os: linux
 dist: bionic
 sudo: required
 
+env :
+  global:
+    - secure: "f/ac03GyWfCWBv3M7cdeQbjFmti2zaRAfF0d3bIvq+d7zQRhhhH7BBYuxxg9eEHvmRPG5WsYhTwOMKiVqleW0efqfLzJY1lvjnk4zrKM1BN+kcAsM4xBNra/i44USi4TsbaAKCUSD7c0kbxCbtG/2Sg6BDV+t+2Hlnwjjw7sWePZU+hgExQU3nErwij7waDM7/wH6WCogvquUrPKI8BMl8kE/iKPd+OcP3OWdqMQ9zcUWAsKrPHpl1KHfymobgRzrP3gqGNqvxbxU9Uet1jx88RZdUerq3PvomsCb4ldnRHfkqMbMDuUtd4v0+WBaPWuK0LxpxB41b3IWVl0C4n61i9Z3zt9dyd505u+H0hyVjLuEcdvNYyKgLDpaJbNJ5hK7NFsEpe+OX5ANk+nP5AWwIpt5NtrfFa3yhOc2JKOP/tKhRuorQj/CPN/rdk25CwNzYDwDtIMSDsVYyy2PhWMaCa58Cb8ah1S8IYPxmU55E70AgAiFlGtC+sHJQbpGQjBLQ6gcAGT+jXEXkrNB/FNgfZTAvkHJe5VVPCP8Nat3gMY1Kc6jCV++hsdxP9ioA5lwqyRpBwASYehV9xvXKbjiJ1xYfyR5o+4GJeUBtv4/4Nw5UQqRrYI/w6XwOMhUbxfq8SCAZ4WxnetnYENtg4dB+FbNhxTqa2Vv1XjrHs1S0E="
+    - secure: "CyTgR9RLSRq2Ktz153c06XvV8u4NXUvSba4IHkD15dEuY+cUn/f62Ly7/fCI7k5WeNe4AXgngMt2yYJVwhhln67mwJQiiKH9gLhq3yRIKU7uX27dJsyD9hsxJRlH459eDP9GZ3SIlDTlbfGHhbSFkb3mZ2IjdlQVecjIBpUEE5krf0zN91OERzRyC51GGIh+nPrUazv5HS2uA6Dp1hnVbYHvFReBKQGZjiKJU8/4KTlpKzF3VE+i8h2Qu8dXW+jkf7nghP+gpaw0DO0ivPruhELdr28V7ulgKcCwOuGfrldGbaPT65brDAsblVXHFJaR42M+fQJJ5ln4HMZT1q8tevv0TxdoW5bwKpeEL4Y+yUykp6Wi8Ou5kYM+E1ruKfluh0NQRNQe7kL6SDhKh7ml0kzZxIWi1+LgtcuVGfl3mtY/hEZffzeK8qvCJxiBq/05SWaTkbIbUEpSV0CKBLYICIfcTu8Xu5vMMp08DgYShEkS3D8fFnPHTQBTdItZ19f5Vof35cdNA2W5suSq79XLnjm4o6EYB54LfWJq/fICLg9/nAx+qs0v2iXT4uyu8KrlooN7cVRZiscKUOQGMXe82CA6yPpP5acNDdvu2WR6HpSETnXYJVf4tgTt09zZjTXs7IgL0fRyqpyBxRavr0fgvl7mqIaRgGakP+LB7GEUDq4="
+
+
+
 before_install:
   - "sudo add-apt-repository -y ppa:freecad-community/ppa"
   - sudo apt-get update -qq
@@ -14,7 +21,7 @@ install:
     sudo apt-get install -y \
     libocct-data-exchange-dev libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev \
     libboost-system-dev libboost-program-options-dev libboost-regex-dev libboost-thread-dev libboost-date-time-dev libboost-iostreams-dev libboost-filesystem-dev \
-    build-essential cmake python2.7 libpython2.7-dev swig zlib1g liblzma5 opencollada-dev wget apt-transport-https python3 python3-pip 
+    build-essential cmake python2.7 libpython2.7-dev swig zlib1g liblzma5 opencollada-dev wget apt-transport-https python3 python3-pip python3-setuptools
   - sudo mkdir -p /usr/include/json/nlohmann/ 
   - python3 -m pip install exhale
   - sudo wget https://github.com/nlohmann/json/releases/download/v3.6.1/json.hpp -O /usr/include/json/nlohmann/json.hpp
