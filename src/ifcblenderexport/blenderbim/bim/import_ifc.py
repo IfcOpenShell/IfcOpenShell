@@ -575,7 +575,7 @@ class IfcImporter():
                     continue
                 if not offset_point:
                     offset_point = (point[0], point[1], point[2])
-                    self.ifc_import_settings.logger.info(f'Resetting absolute coordinates by {point}')
+                    self.ifc_import_settings.logger.info('Resetting absolute coordinates by %s', point)
                 point = (
                     point[0] - offset_point[0],
                     point[1] - offset_point[1],
@@ -588,7 +588,7 @@ class IfcImporter():
                 continue
             if not offset_point:
                 offset_point = (point.Coordinates[0], point.Coordinates[1], point.Coordinates[2])
-                self.ifc_import_settings.logger.info(f'Resetting absolute coordinates by {point}')
+                self.ifc_import_settings.logger.info('Resetting absolute coordinates by %s', point)
             point.Coordinates = (
                 point.Coordinates[0] - offset_point[0],
                 point.Coordinates[1] - offset_point[1],
@@ -752,7 +752,7 @@ class IfcImporter():
             self.create_type_product(type_product)
 
     def create_type_product(self, element):
-        self.ifc_import_settings.logger.info('Creating object {}'.format(element))
+        self.ifc_import_settings.logger.info('Creating object %s', element)
         if element.GlobalId in self.existing_elements:
             self.type_products[element.GlobalId] = self.existing_elements[element.GlobalId]
             return
@@ -767,7 +767,7 @@ class IfcImporter():
                     mesh = self.create_mesh(element, shape)
                     self.meshes[mesh_name] = mesh
             except:
-                self.ifc_import_settings.logger.error('Failed to generate shape for {}'.format(element))
+                self.ifc_import_settings.logger.error('Failed to generate shape for %s', element)
         obj = bpy.data.objects.new(self.get_name(element), mesh)
         if mesh:
             self.material_creator.create(element, obj, mesh)
@@ -862,7 +862,7 @@ class IfcImporter():
         if element.GlobalId in self.existing_elements:
             return self.existing_elements[element.GlobalId]
 
-        self.ifc_import_settings.logger.info('Creating object {}'.format(element))
+        self.ifc_import_settings.logger.info('Creating object %s', element)
 
         is_fresh_mesh = False
         if shape:
@@ -1381,7 +1381,7 @@ class IfcImporter():
         copythread.join()
 
     def load_file(self):
-        self.ifc_import_settings.logger.info('loading file {}'.format(self.ifc_import_settings.input_file))
+        self.ifc_import_settings.logger.info('loading file %s', self.ifc_import_settings.input_file)
         extension = self.ifc_import_settings.input_file.split('.')[-1]
         if extension.lower() == 'ifczip':
             with tempfile.TemporaryDirectory() as unzipped_path:
@@ -1694,7 +1694,7 @@ class IfcImporter():
                 and element.GlobalId not in self.diff['changed'].keys():
             return
 
-        self.ifc_import_settings.logger.info('Creating object {}'.format(element))
+        self.ifc_import_settings.logger.info('Creating object %s', element)
         self.time = time.time()
         if element.is_a('IfcOpeningElement'):
             return
@@ -1707,7 +1707,7 @@ class IfcImporter():
             if mesh is None \
                     or representation_id is None:
                 shape = ifcopenshell.geom.create_shape(self.settings, element)
-                self.ifc_import_settings.logger.info('Shape was generated in {:.2f}'.format(time.time() - self.time))
+                self.ifc_import_settings.logger.info('Shape was generated in %.2f', time.time() - self.time)
                 self.time = time.time()
 
                 mesh = self.create_mesh(element, shape)
@@ -1716,7 +1716,7 @@ class IfcImporter():
             else:
                 self.ifc_import_settings.logger.info('Mesh reused.')
         except:
-            self.ifc_import_settings.logger.error('Failed to generate shape for {}'.format(element))
+            self.ifc_import_settings.logger.error('Failed to generate shape for %s', element)
             return
 
         obj = bpy.data.objects.new(self.get_name(element), mesh)
@@ -1801,12 +1801,12 @@ class IfcImporter():
             if collection:
                 collection.objects.link(obj)
             else:
-                self.ifc_import_settings.logger.error('An element could not be placed in the spatial tree {}'.format(element))
+                self.ifc_import_settings.logger.error('An element could not be placed in the spatial tree %s', element)
         elif hasattr(element, 'HasFillings') \
                 and element.HasFillings:
             self.opening_collection.objects.link(obj)
         else:
-            self.ifc_import_settings.logger.warning('Warning: this object is outside the spatial hierarchy {}'.format(element))
+            self.ifc_import_settings.logger.warning('Warning: this object is outside the spatial hierarchy %s', element)
             bpy.context.scene.collection.objects.link(obj)
 
     def add_element_attributes(self, element, obj):
@@ -2004,7 +2004,7 @@ class IfcImporter():
             self.store_representation_source(mesh, element, shape)
             return mesh
         except:
-            self.ifc_import_settings.logger.error('Could not create mesh for {}'.format(element))
+            self.ifc_import_settings.logger.error('Could not create mesh for %s', element)
             import traceback
             print(traceback.format_exc())
 

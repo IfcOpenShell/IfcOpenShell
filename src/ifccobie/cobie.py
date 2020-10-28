@@ -240,7 +240,7 @@ class IfcCobieParser():
         components = self.file.by_type('IfcElement')
         for component in components:
             if not self.is_object_a_component_asset(component):
-                self.logger.warning('A component which is not an asset was found for {}'.format(component))
+                self.logger.warning('A component which is not an asset was found for %s', component)
                 continue
             component_name = self.get_object_name(component)
             self.components[component_name] = {
@@ -555,7 +555,7 @@ class IfcCobieParser():
         object = getattr(connection, key)
         if self.is_object_a_component_asset(object):
             return object.Name
-        self.logger.error('The connected object relationship {} is not a component asset for {}'.format(key, connection))
+        self.logger.error('The connected object relationship %s is not a component asset for %s', key, connection)
 
     def get_port_name_from_connection(self, connection, key):
         if not connection.is_a('IfcRelConnectsPorts'):
@@ -563,7 +563,7 @@ class IfcCobieParser():
         object = getattr(connection, key)
         if object and self.is_object_a_component_asset(object):
             return object.Name
-        self.logger.error('The connected object relationship {} is not a component asset for {}'.format(key, connection))
+        self.logger.error('The connected object relationship %s is not a component asset for %s', key, connection)
 
     def is_object_a_component_asset(self, obj):
         return obj in self.component_assets
@@ -573,7 +573,7 @@ class IfcCobieParser():
             if relationship.RelatingStructure.is_a('IfcSpace') \
                 and relationship.RelatingStructure.Name:
                 return relationship.RelatingStructure.Name
-        self.logger.error('A related space name could not be determined for {}'.format(component))
+        self.logger.error('A related space name could not be determined for %s', component)
 
     def get_type_name_from_object(self, object):
         if self.file.schema == 'IFC2X3':
@@ -585,7 +585,7 @@ class IfcCobieParser():
             for relationship in object.IsTypedBy:
                 if relationship.RelatingType.Name:
                     return relationship.RelatingType.Name
-        self.logger.error('A related type name could not be determined for {}'.format(object))
+        self.logger.error('A related type name could not be determined for %s', object)
 
     def get_expected_life_from_type(self, type):
         if self.file.schema == 'IFC2X3':
@@ -595,9 +595,9 @@ class IfcCobieParser():
     def get_contact_pset_value_from_object(self, object, pset_name, property_name):
         result = self.get_pset_value_from_object(object, pset_name, property_name)
         if not result:
-            self.logger.error('No property {} in {} was found for {}'.format(property_name, pset_name, object))
+            self.logger.error('No property %s in %s was found for %s', property_name, pset_name, object)
         if result not in self.contacts:
-            self.logger.error('A coresponding {} contact in {} was not found for {}'.format(property_name, pset_name, object))
+            self.logger.error('A coresponding %s contact in %s was not found for %s', property_name, pset_name, object)
         return result
 
     def get_pset_value_from_object(self, object, pset_name, property_name, default=None, picklist=None):
@@ -619,7 +619,7 @@ class IfcCobieParser():
                     names.append(related_object.Name)
         if names:
             return ','.join(names)
-        self.logger.error('No related {} were found for {}'.format(type, object))
+        self.logger.error('No related %s were found for %s', type, object)
 
     def get_net_area_from_space(self, space):
         qto = self.get_qto_from_object(space, 'Qto_SpaceBaseQuantities')
@@ -645,20 +645,20 @@ class IfcCobieParser():
                 and relationship.RelatingPropertyDefinition.is_a('IfcQuantitySet') \
                 and relationship.RelatingPropertyDefinition.Name == name:
                 return relationship.RelatingPropertyDefinition
-        self.logger.warning('The qto {} was not found for {}'.format(name, object))
+        self.logger.warning('The qto %s was not found for %s', name, object)
 
     def get_property_from_qto(self, qto, name, attribute):
         for property in qto.Quantities:
             if property.Name == name:
                 return getattr(property, attribute)
-        self.logger.warning('The quantity value {} was not found for {}'.format(name, qto))
+        self.logger.warning('The quantity value %s was not found for %s', name, qto)
         return 'n/a'
 
     def get_property_from_pset(self, pset, name, default=None):
         for prop in pset.HasProperties:
             if prop.Name == name:
                 return prop.NominalValue.wrappedValue
-        self.logger.warning('The property {} was not found for {}'.format(name, pset))
+        self.logger.warning('The property %s was not found for %s', name, pset)
         return default
 
     def get_property_value(self, prop, name=None):
@@ -684,7 +684,7 @@ class IfcCobieParser():
                     and relationship.RelatingPropertyDefinition.is_a('IfcPropertySet') \
                     and relationship.RelatingPropertyDefinition.Name == name:
                     return relationship.RelatingPropertyDefinition
-        self.logger.warning('The pset {} was not found for {}'.format(name, object))
+        self.logger.warning('The pset %s was not found for %s', name, object)
 
     def get_height_from_storey(self, storey):
         for relationship in storey.IsDefinedBy:
@@ -694,25 +694,25 @@ class IfcCobieParser():
                 if quantity.is_a('IfcQuantityLength') \
                     and quantity.LengthValue:
                     return quantity.LengthValue
-        self.logger.warning('A height length value was not found for {}'.format(storey))
+        self.logger.warning('A height length value was not found for %s', storey)
         return 'n/a'
 
     def get_created_on_from_history(self, history):
         if history.CreationDate:
             return datetime.datetime.fromtimestamp(history.CreationDate).isoformat()
-        self.logger.warning('A created on date was not found for {}'.format(history))
+        self.logger.warning('A created on date was not found for %s', history)
         return self.default_date
 
-    def get_object_attribute(self, object, attribute, is_primary_key = False, picklist = None, default=None):
+    def get_object_attribute(self, object, attribute, is_primary_key=False, picklist=None, default=None):
         result = getattr(object, attribute)
         if result:
             if picklist:
                 self.picklists[picklist].append(result)
             return result
         if is_primary_key:
-            self.logger.error('The primary key attribute {} was not found for {}'.format(attribute, object))
+            self.logger.error('The primary key attribute %s was not found for %s', attribute, object)
         else:
-            self.logger.warning('The attribute {} was not found for {}'.format(attribute, object))
+            self.logger.warning('The attribute %s was not found for %s', attribute, object)
         return default
 
     def get_ext_project_object(self):
@@ -732,7 +732,7 @@ class IfcCobieParser():
 
     def get_object_name(self, object):
         if not object.Name:
-            self.logger.error('A primary key name was not found for {}'.format(object))
+            self.logger.error('A primary key name was not found for %s', object)
             return 'Object{}'.format(object.id())
         return object.Name
 
@@ -741,7 +741,7 @@ class IfcCobieParser():
             if relationship.RelatingPropertyDefinition.is_a('IfcElementQuantity') \
                 and relationship.RelatingPropertyDefinition.MethodOfMeasurement:
                 return relationship.RelatingPropertyDefinition.MethodOfMeasurement
-        self.logger.warning('A method of measurement was not defined for {}'.format(building))
+        self.logger.warning('A method of measurement was not defined for %s', building)
 
     def get_unit_type_from_units(self, units, type):
         for unit in units:
@@ -749,13 +749,13 @@ class IfcCobieParser():
                 if unit.is_a('IfcSIUnit') and unit.Prefix:
                     return '{}{}'.format(unit.Prefix, unit.Name)
                 return unit.Name
-        self.logger.error('A unit {} was not defined in this project for {}'.format(type, units))
+        self.logger.error('A unit %s was not defined in this project for %s', type, units)
 
     def get_monetary_unit_from_units(self, units):
         for unit in units:
             if unit.is_a('IfcMonetaryUnit'):
                 return unit.Currency
-        self.logger.error('A monetary unit could not be found for {}'.format(units))
+        self.logger.error('A monetary unit could not be found for %s', units)
 
     def get_project_globalid_from_building(self, building):
         return self.get_parent_spatial_element(building, 'IfcProject').GlobalId
@@ -767,14 +767,14 @@ class IfcCobieParser():
         project = self.get_parent_spatial_element(building, 'IfcProject')
         if project.Name:
             return project.Name
-        self.logger.error('The project name is empty for {}'.format(project))
+        self.logger.error('The project name is empty for %s', project)
         return 'n/a'
 
     def get_site_name_from_building(self, building):
         site = self.get_parent_spatial_element(building, 'IfcSite')
         if site.Name:
             return site.Name
-        self.logger.error('The site name is empty for {}'.format(site))
+        self.logger.error('The site name is empty for %s', site)
         return 'n/a'
 
     def get_units_from_building(self, building):
@@ -802,7 +802,7 @@ class IfcCobieParser():
             class_name = association.RelatingClassification.Name
             break
         if not class_identification or class_name:
-            self.logger.error('The classification has invalid identification and name for {}'.format(object))
+            self.logger.error('The classification has invalid identification and name for %s', object)
         result = '{}:{}'.format(class_identification, class_name)
         self.picklists[picklist].append(result)
         return result
@@ -812,7 +812,7 @@ class IfcCobieParser():
     def get_name_from_person(self, person, attribute):
         name = getattr(person, attribute)
         if not name or not name.isalpha():
-            self.logger.warning('The person\'s {} seems to be badly formatted ("{}") for {}'.format(attribute, name, person))
+            self.logger.warning('The person\'s %s seems to be badly formatted ("%s") for %s', attribute, name, person)
         return name if name else 'n/a'
 
     def get_lines_from_address(self, address):
@@ -824,7 +824,7 @@ class IfcCobieParser():
     def get_attribute_from_address(self, address, attribute):
         result = getattr(address, attribute)
         if not result:
-            self.logger.warning('The address {} seems to not exist for {}'.format(attribute, address))
+            self.logger.warning('The address %s seems to not exist for %s', attribute, address)
             return 'n/a'
         return result
 
@@ -846,7 +846,7 @@ class IfcCobieParser():
         if given_name == 'unknown' \
             and family_name == 'unknown' \
             and organisation_name == 'unknown':
-            self.logger.error('No primary key could be determined from {}'.format(history))
+            self.logger.error('No primary key could be determined from %s', history)
 
         return '{}{}@{}'.format(given_name, family_name, organisation_name)
 
@@ -871,7 +871,7 @@ class IfcCobieParser():
             roles.append(self.get_role(role))
         result = ','.join(set(roles))
         if not result:
-            self.logger.error('No roles could be found for {}'.format(history))
+            self.logger.error('No roles could be found for %s', history)
             return
         self.picklists['Category-Role'].append(result)
         return result
@@ -911,7 +911,7 @@ class IfcCobieParser():
         for address in (organisation.Addresses or []):
             if address.is_a('IfcPostalAddress'):
                 return address.InternalLocation
-        self.logger.warning('An internal location was not found for {}'.format(organisation))
+        self.logger.warning('An internal location was not found for %s', organisation)
 
     def get_role(self, role):
         if role.Role == 'USERDEFINED':
@@ -922,13 +922,13 @@ class IfcCobieParser():
         for address in (person_or_org.Addresses or []):
             if address.is_a('IfcTelecomAddress'):
                return address.TelephoneNumbers[0]
-        self.logger.warning('A phone was not found for {}'.format(person_or_org))
+        self.logger.warning('A phone was not found for {}', person_or_org)
 
     def get_email_from_person_or_organisation(self, person_or_org):
         for address in (person_or_org.Addresses or []):
             if address.is_a('IfcTelecomAddress'):
                 return address.ElectronicMailAddresses[0]
-        self.logger.warning('An email address was not found for {}'.format(person_or_org))
+        self.logger.warning('An email address was not found for {}', person_or_org)
 
     def get_element_value(self, element, key):
         value = self.selector.get_element_value(element, key)
@@ -1233,5 +1233,5 @@ if __name__ == '__main__':
         writer = CobieCsvWriter(parser, args['output'])
     writer.write()
 
-    logger.info('Finished conversion in {}s'.format(time.time() - start))
+    logger.info('Finished conversion in %ss', time.time() - start)
     print('# All reports are complete :-)')
