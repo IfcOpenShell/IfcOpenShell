@@ -110,12 +110,12 @@ def validate(f, logger):
             if hasattr(logger, 'set_instance'):
                 logger.error(e)
             else:
-                logger.error('In {}\n{}'.format(inst, e))
+                logger.error('In %s\n%s', inst, e)
 
         for attr, val, is_derived in zip(entity.all_attributes(), inst, entity.derived()):
         
             if val is None and not (is_derived or attr.optional()):
-               logger.error("Attribute %s.%s not optional" % (entity, attr))
+               logger.error("Attribute %s.%s not optional", entity, attr)
 
             if val is not None:
                 attr_type = attr.type_of_attribute()
@@ -125,7 +125,7 @@ def validate(f, logger):
                     if hasattr(logger, 'set_instance'):
                         logger.error(str(e))
                     else:
-                        logger.error('In {}\n{}'.format(inst, e))
+                        logger.error('In %s\n%s', inst, e)
                 
         for attr in entity.all_inverse_attributes():
             val = getattr(inst, attr.name())
@@ -135,7 +135,7 @@ def validate(f, logger):
                 if hasattr(logger, 'set_instance'):
                     logger.error(str(e))
                 else:
-                    logger.error('In {}\n{}'.format(inst, e))
+                    logger.error('In %s\n%s', inst, e)
 
             
 if __name__ == "__main__":
