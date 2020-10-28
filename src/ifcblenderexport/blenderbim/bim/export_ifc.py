@@ -344,7 +344,7 @@ class IfcParser():
             'up_axis': self.get_axis(obj.matrix_world, 2),
             'forward_axis': self.get_axis(obj.matrix_world, 0),
             'right_axis': self.get_axis(obj.matrix_world, 1),
-            'has_scale': obj.scale != Vector((1, 1, 1)),
+            'has_scale': (obj.scale - Vector((1, 1, 1))).length > 0.01,
             'has_mirror': False,
             'array_offset': Vector((0, 0, 0)),
             'scale': obj.scale,
@@ -1195,8 +1195,10 @@ class IfcParser():
         for product in self.selected_products + self.type_products:
             obj = product['raw']
             if obj.data is None \
-                    or obj.data.name in parsed_data_names \
-                    or obj.data.BIMMeshProperties.ifc_definition_id:
+                    or obj.data.name in parsed_data_names:
+                continue
+            if hasattr(obj.data, 'BIMMeshProperties') \
+                    and obj.data.BIMMeshProperties.ifc_definition_id:
                 continue
             parsed_data_names.append(obj.data.name)
             for slot in obj.material_slots:
@@ -1883,8 +1885,12 @@ class IfcExporter():
         for node in element_tree:
             element = self.ifc_parser.spatial_structure_elements[node['reference']]
 
-            placement = self.file.createIfcLocalPlacement(
-                placement_rel_to, self.get_relative_placement(element, placement_rel_to))
+            if element['has_scale']:
+                # Omission of the relative placement here is not as per implementer agreements
+                placement = self.file.createIfcLocalPlacement(None, self.origin)
+            else:
+                placement = self.file.createIfcLocalPlacement(
+                    placement_rel_to, self.get_relative_placement(element, placement_rel_to))
 
             self.cast_attributes(element['class'], element['attributes'])
             element['attributes'].update({
