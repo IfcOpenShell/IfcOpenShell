@@ -2399,8 +2399,14 @@ class ActivateView(bpy.types.Operator):
         area.spaces[0].region_3d.view_perspective = 'CAMERA'
         views_collection = bpy.data.collections.get('Views')
         for collection in views_collection.children:
-            bpy.context.view_layer.layer_collection.children['Views'].children[collection.name].hide_viewport = True
-            bpy.data.collections.get(collection.name).hide_render = True
+            # We assume the project collection is at the top level
+            for project_collection in bpy.context.view_layer.layer_collection.children:
+                # We assume a convention that the 'Views' collection is directly
+                # in the project collection
+                if 'Views' in project_collection.children \
+                        and collection.name in project_collection.children['Views'].children:
+                    project_collection.children['Views'].children[collection.name].hide_viewport = True
+                    bpy.data.collections.get(collection.name).hide_render = True
         bpy.context.view_layer.layer_collection.children['Views'].children[camera.users_collection[0].name].hide_viewport = False
         bpy.data.collections.get(camera.users_collection[0].name).hide_render = False
         bpy.ops.bim.activate_drawing_style()
