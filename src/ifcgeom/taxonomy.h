@@ -375,6 +375,12 @@ struct collection : public geom_item {
 			c->print(o, indent + 4);
 		}
 	}
+
+	virtual ~collection() {
+		for (auto& c : children) {
+			delete c;
+		}
+	}
 };
 
 struct shell : public collection {
