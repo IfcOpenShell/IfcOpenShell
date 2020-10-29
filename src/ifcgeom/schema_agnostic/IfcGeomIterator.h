@@ -675,6 +675,10 @@ namespace ifcopenshell { namespace geometry {
 			for (auto& p : all_processed_elements_) {
 				delete p;
 			}
+
+			for (auto& t : tasks_) {
+				delete t.item;
+			}
 		}
 	};
 }}
