@@ -11,7 +11,7 @@ find_package_handle_standard_args(Sphinx
                                   SPHINX_EXECUTABLE)
 
 find_package(Doxygen REQUIRED)
-find_package(Sphinx REQUIRED)
+#find_package(Sphinx REQUIRED)
 
 set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR})
 set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR}/docs/sphinx)
