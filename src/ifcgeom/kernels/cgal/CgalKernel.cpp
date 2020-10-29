@@ -1663,6 +1663,20 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 	}
 
 	/*
+	for (auto& li : operands) {
+		for (auto& s : li.second) {
+			results.emplace_back(ConversionResult(
+				br->instance->data().id(),
+				br->matrix,
+				new CgalShape(s),
+				br->surface_style ? br->surface_style : first_item_style
+			));
+		}
+	}
+	return true;
+	*/
+
+	/*
 	// Another check in case operands are not extrusion is not fully implemented yet.
 	if (process_as_2d_polygon(operands, loops, z0, z1)) {
 		return true;
