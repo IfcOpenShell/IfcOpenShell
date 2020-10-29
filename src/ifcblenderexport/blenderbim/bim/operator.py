@@ -2162,9 +2162,9 @@ class CutSection(bpy.types.Operator):
             ifc_cutter.cut_objects = camera.data.BIMCameraProperties.cut_objects
         ifc_cutter.leader_obj = None
         ifc_cutter.stair_obj = None
-        ifc_cutter.dimension_obj = None
+        ifc_cutter.dimension_objs = []
         ifc_cutter.break_obj = None
-        ifc_cutter.equal_obj = None
+        ifc_cutter.equal_objs = []
         ifc_cutter.hidden_objs = []
         ifc_cutter.solid_objs = []
         ifc_cutter.plan_level_obj = None
@@ -2187,9 +2187,9 @@ class CutSection(bpy.types.Operator):
             elif 'Stair' in obj.name:
                 ifc_cutter.stair_obj = obj
             elif 'Equal' in obj.name:
-                ifc_cutter.equal_obj = obj
+                ifc_cutter.equal_objs.append(obj)
             elif 'Dimension' in obj.name:
-                ifc_cutter.dimension_obj = obj
+                ifc_cutter.dimension_objs.append(obj)
             elif 'Break' in obj.name:
                 ifc_cutter.break_obj = obj
             elif 'Hidden' in obj.name:
