@@ -163,7 +163,7 @@ namespace {
 bool CgalKernel::convert(const taxonomy::shell* l, cgal_shape_t& shape) {
 	auto faces = l->children_as<taxonomy::face>();
 
-	if (faces.size() > 1000) {
+	if (faces.size() > 100) {
 		static double inf = 1.e9; //  std::numeric_limits<double>::infinity();
 		std::pair<Eigen::Vector3d, Eigen::Vector3d> minmax(
 			Eigen::Vector3d(+inf, +inf, +inf),
@@ -185,7 +185,8 @@ bool CgalKernel::convert(const taxonomy::shell* l, cgal_shape_t& shape) {
 		auto diag = minmax.second - minmax.first;
 		double volume = diag(0) * diag(1) * diag(2);
 		double density = num_points / volume;
-		if (density > 1e5) {
+		Logger::Notice("Density " + boost::lexical_cast<std::string>(density), l->instance);
+		if (density > 5000) {
 			Logger::Notice("Substituted element with " + boost::lexical_cast<std::string>(density) + " vertices / m3 with a bounding box");
 			CGAL::Point_3<Kernel_> lower(minmax.first(0), minmax.first(1), minmax.first(2));
 			CGAL::Point_3<Kernel_> upper(minmax.second(0), minmax.second(1), minmax.second(2));
