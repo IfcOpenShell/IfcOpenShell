@@ -2270,9 +2270,12 @@ class CutSection(bpy.types.Operator):
 
         space = self.get_view_3d()
         previous_shading = space.shading.type
+        previous_format = bpy.context.scene.render.image_settings.file_format
         space.shading.type = 'RENDERED'
+        bpy.context.scene.render.image_settings.file_format = 'PNG'
         bpy.ops.render.opengl(write_still=True)
         space.shading.type = previous_shading
+        bpy.context.scene.render.image_settings.file_format = previous_format
 
         for name, value in previous_visibility.items():
             bpy.data.objects[name].hide_set(value)
