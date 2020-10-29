@@ -3734,9 +3734,10 @@ class ActivateDrawingStyle(bpy.types.Operator):
     bl_label = 'Activate Drawing Style'
 
     def execute(self, context):
-        self.drawing_style = bpy.context.scene.DocProperties.drawing_styles[context.scene.camera.data.BIMCameraProperties.active_drawing_style_index]
-        self.set_raster_style()
-        self.set_query()
+        if context.scene.camera.data.BIMCameraProperties.active_drawing_style_index >= len(bpy.context.scene.DocProperties.drawing_styles):
+            self.drawing_style = bpy.context.scene.DocProperties.drawing_styles[context.scene.camera.data.BIMCameraProperties.active_drawing_style_index]
+            self.set_raster_style()
+            self.set_query()
         return {'FINISHED'}
 
     def set_raster_style(self):
