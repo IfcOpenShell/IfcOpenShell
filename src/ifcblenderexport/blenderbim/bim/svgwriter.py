@@ -115,10 +115,10 @@ class SvgWriter():
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
 
-        if self.ifc_cutter.equal_obj:
-            self.draw_dimension_annotations(self.ifc_cutter.equal_obj, text_override='EQ')
-        if self.ifc_cutter.dimension_obj:
-            self.draw_dimension_annotations(self.ifc_cutter.dimension_obj)
+        for obj in self.ifc_cutter.equal_objs:
+            self.draw_dimension_annotations(obj, text_override='EQ')
+        for obj in self.ifc_cutter.dimension_objs:
+            self.draw_dimension_annotations(obj)
         self.draw_measureit_arch_dimension_annotations()
 
         if self.ifc_cutter.break_obj:
