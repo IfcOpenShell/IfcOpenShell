@@ -660,7 +660,7 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, Argument**& attrib
 		filler = vector_or_array<Argument*>(vector);
 	}
 
-	size_t return_value = num_attributes;
+	size_t return_value = 0;
 
 	while( next.startPos || next.lexer ) {
 		if ( TokenFunc::isOperator(next,',') ) {
@@ -668,10 +668,12 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, Argument**& attrib
 		} else if ( TokenFunc::isOperator(next,')') ) {
 			break;
 		} else if ( TokenFunc::isOperator(next,'(') ) {
+			return_value++;
 			ArgumentList* alist = new ArgumentList();
 			alist->size() = load(entity_instance_name, alist->arguments(), 0);
 			filler.push_back(alist);
 		} else {
+			return_value++;
 			if ( TokenFunc::isIdentifier(next) ) {
 				if (!parsing_complete_) {
 					register_inverse(entity_instance_name, next);
@@ -1019,10 +1021,13 @@ void IfcEntityInstanceData::load() const {
 	// type_ is 0 for header entities which have their size predetermined in code
 	Argument** tmp_data = nullptr;
 	if (type_ != 0) {
-		tmp_data = new Argument*[getArgumentCount()];
+		tmp_data = new Argument*[getArgumentCount()]{};
 	}
 	file->seek_to(*this);
-	file->load(id(), tmp_data, getArgumentCount());
+	size_t n = file->load(id(), tmp_data, getArgumentCount());
+	if (n != getArgumentCount()) {
+		Logger::Error("Wrong number of attributes on instance with id #" + boost::lexical_cast<std::string>(id_));
+	}
 	file->try_read_semicolon();
 	// @todo does this need to be atomic somehow?
 	attributes_ = tmp_data;
