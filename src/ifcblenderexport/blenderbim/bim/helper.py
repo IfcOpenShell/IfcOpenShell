@@ -128,14 +128,6 @@ def format_distance(value, isArea=False, hide_units=True):
     scaleFactor = bpy.context.scene.unit_settings.scale_length
     unit_system = bpy.context.scene.unit_settings.system
     unit_length = bpy.context.scene.unit_settings.length_unit
-    imperial_precision = 32
-    # (('1', "1\"", "1 Inch"),
-    # ('2', "1/2\"", "1/2 Inch"),
-    # ('4', "1/4\"", "1/4 Inch"),
-    # ('8', "1/8\"", "1/8th Inch"),
-    # ('16', "1/16\"", "1/16th Inch"),
-    # ('32', "1/32\"", "1/32th Inch"),
-    # ('64', "1/64\"", "1/64th Inch")),
 
     toInches = 39.3700787401574887
     inPerFoot = 11.999
@@ -148,7 +140,15 @@ def format_distance(value, isArea=False, hide_units=True):
 
     # Imperial Formating
     if unit_system == "IMPERIAL":
-        base = int(imperial_precision)
+        precision = bpy.context.scene.BIMProperties.imperial_precision
+        if precision == 'NONE':
+            precision = 256
+        elif precision == '1':
+            precision = 1
+        elif '/' in precision:
+            precision = int(precision.split('/')[1])
+
+        base = int(precision)
         decInches = value * toInches
 
         # Seperate ft and inches
@@ -207,6 +207,9 @@ def format_distance(value, isArea=False, hide_units=True):
 
     # METRIC FORMATING
     elif unit_system == "METRIC":
+        precision = bpy.context.scene.BIMProperties.metric_precision
+        if precision != 0:
+            value = precision * round(float(value)/precision)
 
         # Meters
         if unit_length == 'METERS':

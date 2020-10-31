@@ -1288,6 +1288,19 @@ class BIMProperties(PropertyGroup):
     qto_result: StringProperty(default='', name='Qto Result')
     area_unit: StringProperty(default='', name='IFC Area Unit')
     volume_unit: StringProperty(default='', name='IFC Volume Unit')
+    metric_precision: FloatProperty(default=0, name='Drawing Metric Precision')
+    imperial_precision: EnumProperty(items=[
+        ('NONE', 'No rounding', ''),
+        ('1', 'Nearest 1"', ''),
+        ('1/2', 'Nearest 1/2"', ''),
+        ('1/4', 'Nearest 1/4"', ''),
+        ('1/8', 'Nearest 1/8"', ''),
+        ('1/16', 'Nearest 1/16"', ''),
+        ('1/32', 'Nearest 1/32"', ''),
+        ('1/64', 'Nearest 1/64"', ''),
+        ('1/128', 'Nearest 1/128"', ''),
+        ('1/256', 'Nearest 1/256"', ''),
+        ], name='Drawing Imperial Precision')
     override_colour: FloatVectorProperty(name='Override Colour', subtype='COLOR', default=(1, 0, 0, 1), min=0.0, max=1.0, size=4)
 
 
