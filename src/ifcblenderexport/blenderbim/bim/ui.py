@@ -2108,3 +2108,8 @@ def ifc_units(self, context):
     row.prop(props, 'area_unit')
     row = layout.row()
     row.prop(props, 'volume_unit')
+    row = layout.row()
+    if bpy.context.scene.unit_settings.system == 'IMPERIAL':
+        row.prop(props, 'imperial_precision')
+    else:
+        row.prop(props, 'metric_precision')
