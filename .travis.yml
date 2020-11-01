@@ -55,25 +55,36 @@ script:
     ..
   - sudo make -j2 install
     
-  - cd ../../test
-  - /usr/bin/python2.7 tests.py
+  # - cd ../../test
+  # - /usr/bin/python2.7 tests.py
 
-  - cd input
+  # - cd input
   
-  - /usr/local/bin/IfcConvert -yv acad2010_walls.ifc acad2010_walls.glb
-  # - gltf_validator acad2010_walls.glb
+  # - /usr/local/bin/IfcConvert -yv acad2010_walls.ifc acad2010_walls.glb
+  # # - gltf_validator acad2010_walls.glb
   
-  - /usr/bin/python2.7 -c "from __future__ import print_function; from io import open; import ifcopenshell; f = ifcopenshell.open('encoding.ifc'); assert list(map(ord, f[1][0])) == [39, 97, 39, 32, 49, 109, 179, 32, 8804, 32, 53, 109, 179, 32, 8805, 32, 49, 48, 109, 179]"
+  # - /usr/bin/python2.7 -c "from __future__ import print_function; from io import open; import ifcopenshell; f = ifcopenshell.open('encoding.ifc'); assert list(map(ord, f[1][0])) == [39, 97, 39, 32, 49, 109, 179, 32, 8804, 32, 53, 109, 179, 32, 8805, 32, 49, 48, 109, 179]"
   
-  - |
-    (for i in *.ifc; do \
-    echo $i | tee -a log; \
-    timeout 1m /usr/local/bin/IfcConvert -yv "$i" "$i.dae" --validate >> log 2>&1; \
-    echo $i $? >> statuses; \
-    done) || true
-  - echo Failed
-  - grep -v 0$ statuses
-  - grep -v 0$ statuses | wc -l
-  - echo Succeeded
-  - grep 0$ statuses
-  - grep 0$ statuses | wc -l
+  # - |
+    # (for i in *.ifc; do \
+    # echo $i | tee -a log; \
+    # timeout 1m /usr/local/bin/IfcConvert -yv "$i" "$i.dae" --validate >> log 2>&1; \
+    # echo $i $? >> statuses; \
+    # done) || true
+  # - echo Failed
+  # - grep -v 0$ statuses
+  # - grep -v 0$ statuses | wc -l
+  # - echo Succeeded
+  # - grep 0$ statuses
+  # - grep 0$ statuses | wc -l
+after_success:
+  - cd docs
+  - MESSAGE=$(git log --oneline -1)
+  - git clone https://johltn:$GITHUB_PASSWORD@github.com/IfcOpenShell/docs
+  - cd docs
+  - mv ../output/* .
+  - git config user.email "${GITHUB_EMAIL}"
+  - git config user.name "${USER_NAME}"
+  - git add .
+  - git commit -m "${MESSAGE}"
+  - git push

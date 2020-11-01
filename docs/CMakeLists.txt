@@ -18,7 +18,7 @@ set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR}/docs/sphinx)
 
 MESSAGE(STATUS "SPHINX BUILD ${CMAKE_CURRENT_BINARY_DIR}")
 
-file(MAKE_DIRECTORY ./output/doxygen)
+# file(MAKE_DIRECTORY ./output/doxygen)
 
 if (DOXYGEN_FOUND)
 
