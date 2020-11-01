@@ -17,19 +17,23 @@
 #                                                                             #
 ###############################################################################
 
+
 class Base(object):
     """
     A base class for all code generation classes. Currently only working around
     some python 2/3 incompatibilities in terms of unicode file handling.
     """
+
     def emit(self):
         import platform
+
         if tuple(map(int, platform.python_version_tuple())) < (2, 8):
             from io import open as unicode_open
+
             unicode_type = unicode
         else:
             unicode_open = open
             unicode_type = lambda x, *args, **kwargs: x
-        f = unicode_open(self.file_name, 'w', encoding='utf-8')
-        f.write(unicode_type(repr(self), encoding='utf-8', errors='ignore'))
+        f = unicode_open(self.file_name, "w", encoding="utf-8")
+        f.write(unicode_type(repr(self), encoding="utf-8", errors="ignore"))
         f.close()

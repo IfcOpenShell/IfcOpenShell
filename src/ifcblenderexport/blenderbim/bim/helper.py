@@ -5,7 +5,7 @@ import bpy
 def get_representation_elements(ifc_file, step_id):
     results = []
     for child in ifc_file.traverse(ifc_file.by_id(step_id)):
-        if hasattr(child, 'StyledByItem') and child.StyledByItem:
+        if hasattr(child, "StyledByItem") and child.StyledByItem:
             for styled_by_item in child.StyledByItem:
                 for style in styled_by_item.Styles:
                     for style_child in ifc_file.traverse(style):
@@ -16,49 +16,92 @@ def get_representation_elements(ifc_file, step_id):
 
 # TODO: Deprecate this in favour of ifcopenshell.util.unit
 
+
 class SIUnitHelper:
-    prefixes = {"EXA": 1e18, "PETA": 1e15, "TERA": 1e12, "GIGA": 1e9, "MEGA":
-        1e6, "KILO": 1e3, "HECTO": 1e2, "DECA": 1e1, "DECI": 1e-1, "CENTI":
-        1e-2, "MILLI": 1e-3, "MICRO": 1e-6, "NANO": 1e-9, "PICO": 1e-12,
-        "FEMTO": 1e-15, "ATTO": 1e-18}
-    unit_names = ["AMPERE", "BECQUEREL", "CANDELA", "COULOMB",
-        "CUBIC_METRE", "DEGREE CELSIUS", "FARAD", "GRAM", "GRAY", "HENRY",
-        "HERTZ", "JOULE", "KELVIN", "LUMEN", "LUX", "MOLE", "NEWTON", "OHM",
-        "PASCAL", "RADIAN", "SECOND", "SIEMENS", "SIEVERT", "SQUARE METRE",
-        "METRE", "STERADIAN", "TESLA", "VOLT", "WATT", "WEBER"]
+    prefixes = {
+        "EXA": 1e18,
+        "PETA": 1e15,
+        "TERA": 1e12,
+        "GIGA": 1e9,
+        "MEGA": 1e6,
+        "KILO": 1e3,
+        "HECTO": 1e2,
+        "DECA": 1e1,
+        "DECI": 1e-1,
+        "CENTI": 1e-2,
+        "MILLI": 1e-3,
+        "MICRO": 1e-6,
+        "NANO": 1e-9,
+        "PICO": 1e-12,
+        "FEMTO": 1e-15,
+        "ATTO": 1e-18,
+    }
+    unit_names = [
+        "AMPERE",
+        "BECQUEREL",
+        "CANDELA",
+        "COULOMB",
+        "CUBIC_METRE",
+        "DEGREE CELSIUS",
+        "FARAD",
+        "GRAM",
+        "GRAY",
+        "HENRY",
+        "HERTZ",
+        "JOULE",
+        "KELVIN",
+        "LUMEN",
+        "LUX",
+        "MOLE",
+        "NEWTON",
+        "OHM",
+        "PASCAL",
+        "RADIAN",
+        "SECOND",
+        "SIEMENS",
+        "SIEVERT",
+        "SQUARE METRE",
+        "METRE",
+        "STERADIAN",
+        "TESLA",
+        "VOLT",
+        "WATT",
+        "WEBER",
+    ]
     si_conversions = {
-        'inch': 0.0254,
-        'foot': 0.3048,
-        'yard': 0.914,
-        'mile': 1609,
-        'square inch': 0.0006452,
-        'square foot': 0.09290304,
-        'square yard': 0.83612736,
-        'acre': 4046.86,
-        'square mile': 2588881,
-        'cubic inch': 0.00001639,
-        'cubic foot': 0.02831684671168849,
-        'cubic yard': 0.7636,
-        'litre': 0.001,
-        'fluid ounce UK': 0.0000284130625,
-        'fluid ounce US': 0.00002957353,
-        'pint UK': 0.000568,
-        'pint US': 0.000473,
-        'gallon UK': 0.004546,
-        'gallon US': 0.003785,
-        'degree': math.pi/180,
-        'ounce': 0.02835,
-        'pound': 0.454,
-        'ton UK': 1016.0469088,
-        'ton US': 907.18474,
-        'lbf': 4.4482216153,
-        'kip': 4448.2216153,
-        'psi': 6894.7572932,
-        'ksi': 6894757.2932,
-        'minute': 60,
-        'hour': 3600,
-        'day': 86400,
-        'btu': 1055.056}
+        "inch": 0.0254,
+        "foot": 0.3048,
+        "yard": 0.914,
+        "mile": 1609,
+        "square inch": 0.0006452,
+        "square foot": 0.09290304,
+        "square yard": 0.83612736,
+        "acre": 4046.86,
+        "square mile": 2588881,
+        "cubic inch": 0.00001639,
+        "cubic foot": 0.02831684671168849,
+        "cubic yard": 0.7636,
+        "litre": 0.001,
+        "fluid ounce UK": 0.0000284130625,
+        "fluid ounce US": 0.00002957353,
+        "pint UK": 0.000568,
+        "pint US": 0.000473,
+        "gallon UK": 0.004546,
+        "gallon US": 0.003785,
+        "degree": math.pi / 180,
+        "ounce": 0.02835,
+        "pound": 0.454,
+        "ton UK": 1016.0469088,
+        "ton US": 907.18474,
+        "lbf": 4.4482216153,
+        "kip": 4448.2216153,
+        "psi": 6894.7572932,
+        "ksi": 6894757.2932,
+        "minute": 60,
+        "hour": 3600,
+        "day": 86400,
+        "btu": 1055.056,
+    }
 
     @staticmethod
     def get_prefix(text):
@@ -78,7 +121,7 @@ class SIUnitHelper:
     @staticmethod
     def get_unit_name(text):
         for name in SIUnitHelper.unit_names:
-            if name in text.upper().replace('METER', 'METRE'):
+            if name in text.upper().replace("METER", "METRE"):
                 return name
 
     @staticmethod
@@ -100,20 +143,20 @@ class SIUnitHelper:
             value *= SIUnitHelper.si_conversions[from_unit]
         elif from_prefix:
             value *= SIUnitHelper.get_prefix_multiplier(from_prefix)
-            if 'SQUARE' in from_unit:
+            if "SQUARE" in from_unit:
                 value *= SIUnitHelper.get_prefix_multiplier(from_prefix)
-            elif 'CUBIC' in from_unit:
+            elif "CUBIC" in from_unit:
                 value *= SIUnitHelper.get_prefix_multiplier(from_prefix)
                 value *= SIUnitHelper.get_prefix_multiplier(from_prefix)
         if to_unit in SIUnitHelper.si_conversions:
             return value * (1 / SIUnitHelper.si_conversions[to_unit])
         elif to_prefix:
-            value *= (1 / SIUnitHelper.get_prefix_multiplier(to_prefix))
-            if 'SQUARE' in from_unit:
-                value *= (1 / SIUnitHelper.get_prefix_multiplier(to_prefix))
-            elif 'CUBIC' in from_unit:
-                value *= (1 / SIUnitHelper.get_prefix_multiplier(to_prefix))
-                value *= (1 / SIUnitHelper.get_prefix_multiplier(to_prefix))
+            value *= 1 / SIUnitHelper.get_prefix_multiplier(to_prefix)
+            if "SQUARE" in from_unit:
+                value *= 1 / SIUnitHelper.get_prefix_multiplier(to_prefix)
+            elif "CUBIC" in from_unit:
+                value *= 1 / SIUnitHelper.get_prefix_multiplier(to_prefix)
+                value *= 1 / SIUnitHelper.get_prefix_multiplier(to_prefix)
         return value
 
 
@@ -141,39 +184,38 @@ def format_distance(value, isArea=False, hide_units=True):
     # Imperial Formating
     if unit_system == "IMPERIAL":
         precision = bpy.context.scene.BIMProperties.imperial_precision
-        if precision == 'NONE':
+        if precision == "NONE":
             precision = 256
-        elif precision == '1':
+        elif precision == "1":
             precision = 1
-        elif '/' in precision:
-            precision = int(precision.split('/')[1])
+        elif "/" in precision:
+            precision = int(precision.split("/")[1])
 
         base = int(precision)
         decInches = value * toInches
 
         # Seperate ft and inches
         # Unless Inches are the specified Length Unit
-        if unit_length != 'INCHES':
-            feet = math.floor(decInches/inPerFoot)
-            decInches -= feet*inPerFoot
+        if unit_length != "INCHES":
+            feet = math.floor(decInches / inPerFoot)
+            decInches -= feet * inPerFoot
         else:
             feet = 0
 
-
-        #Seperate Fractional Inches
+        # Seperate Fractional Inches
         inches = math.floor(decInches)
         if inches != 0:
-            frac = round(base*(decInches-inches))
+            frac = round(base * (decInches - inches))
         else:
-            frac = round(base*(decInches))
+            frac = round(base * (decInches))
 
-        #Set proper numerator and denominator
+        # Set proper numerator and denominator
         if frac != base:
             numcycles = int(math.log2(base))
             for i in range(numcycles):
-                if frac%2 == 0:
-                    frac = int(frac/2)
-                    base = int(base/2)
+                if frac % 2 == 0:
+                    frac = int(frac / 2)
+                    base = int(base / 2)
                 else:
                     break
         else:
@@ -185,48 +227,52 @@ def format_distance(value, isArea=False, hide_units=True):
             feet += 1
             inches = 0
 
-        if inches !=0:
+        if inches != 0:
             inchesString = str(inches)
-            if frac != 0: inchesString += "-"
-            else: inchesString += "\""
-        else: inchesString = ""
+            if frac != 0:
+                inchesString += "-"
+            else:
+                inchesString += '"'
+        else:
+            inchesString = ""
 
         if feet != 0:
             feetString = str(feet) + "' "
-        else: feetString = ""
+        else:
+            feetString = ""
 
         if frac != 0:
-            fracString = str(frac) + "/" + str(base) +"\""
-        else: fracString = ""
+            fracString = str(frac) + "/" + str(base) + '"'
+        else:
+            fracString = ""
 
         if not isArea:
             tx_dist = feetString + inchesString + fracString
         else:
-            tx_dist = str('%1.3f' % (value*toInches/inPerFoot)) + " sq. ft."
-
+            tx_dist = str("%1.3f" % (value * toInches / inPerFoot)) + " sq. ft."
 
     # METRIC FORMATING
     elif unit_system == "METRIC":
         precision = bpy.context.scene.BIMProperties.metric_precision
         if precision != 0:
-            value = precision * round(float(value)/precision)
+            value = precision * round(float(value) / precision)
 
         # Meters
-        if unit_length == 'METERS':
-            fmt = '%1.3f'
+        if unit_length == "METERS":
+            fmt = "%1.3f"
             if hide_units is False:
                 fmt += " m"
             tx_dist = fmt % value
         # Centimeters
-        elif unit_length == 'CENTIMETERS':
-            fmt = '%1.1f'
+        elif unit_length == "CENTIMETERS":
+            fmt = "%1.1f"
             if hide_units is False:
                 fmt += " cm"
             d_cm = value * (100)
             tx_dist = fmt % d_cm
-        #Millimeters
-        elif unit_length == 'MILLIMETERS':
-            fmt = '%1.0f'
+        # Millimeters
+        elif unit_length == "MILLIMETERS":
+            fmt = "%1.0f"
             if hide_units is False:
                 fmt += " mm"
             d_mm = value * (1000)
@@ -235,19 +281,19 @@ def format_distance(value, isArea=False, hide_units=True):
         # Otherwise Use Adaptive Units
         else:
             if round(value, 2) >= 1.0:
-                fmt = '%1.3f'
+                fmt = "%1.3f"
                 if hide_units is False:
                     fmt += " m"
                 tx_dist = fmt % value
             else:
                 if round(value, 2) >= 0.01:
-                    fmt = '%1.1f'
+                    fmt = "%1.1f"
                     if hide_units is False:
                         fmt += " cm"
                     d_cm = value * (100)
                     tx_dist = fmt % d_cm
                 else:
-                    fmt = '%1.0f'
+                    fmt = "%1.0f"
                     if hide_units is False:
                         fmt += " mm"
                     d_mm = value * (1000)
@@ -256,6 +302,5 @@ def format_distance(value, isArea=False, hide_units=True):
             tx_dist += s_code
     else:
         tx_dist = fmt % value
-
 
     return tx_dist

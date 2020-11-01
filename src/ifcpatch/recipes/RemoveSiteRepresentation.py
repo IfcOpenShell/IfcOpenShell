@@ -6,8 +6,8 @@ class Patcher:
         self.args = args
 
     def patch(self):
-        project = self.file.by_type('IfcProject')[0]
-        sites = self.find_decomposed_ifc_class(project, 'IfcSite')
+        project = self.file.by_type("IfcProject")[0]
+        sites = self.find_decomposed_ifc_class(project, "IfcSite")
         for site in sites:
             site.Representation = None
 

@@ -6,11 +6,11 @@ class Patcher:
         self.args = args
 
     def patch(self):
-        project = self.file.by_type('IfcProject')[0]
-        storeys = self.find_decomposed_ifc_class(project, 'IfcBuildingStorey')
+        project = self.file.by_type("IfcProject")[0]
+        storeys = self.find_decomposed_ifc_class(project, "IfcBuildingStorey")
         for storey in storeys:
             co = storey.ObjectPlacement.RelativePlacement.Location.Coordinates
-            storey.ObjectPlacement.RelativePlacement.Location.Coordinates = (co[0], co[1], co[2]+float(self.args[0]))
+            storey.ObjectPlacement.RelativePlacement.Location.Coordinates = (co[0], co[1], co[2] + float(self.args[0]))
             co = storey.ObjectPlacement.RelativePlacement.Location.Coordinates
             # NOTE  If the geometric data is provided (ObjectPlacement is
             # specified), the Elevation value shall either not be included, or

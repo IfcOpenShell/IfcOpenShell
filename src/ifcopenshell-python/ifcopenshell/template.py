@@ -62,24 +62,33 @@ END-ISO-10303-21;
 """
 
 DEFAULTS = {
-    "application": lambda d: 'IfcOpenShell-%s' % main.version,
+    "application": lambda d: "IfcOpenShell-%s" % main.version,
     "application_version": lambda d: main.version,
     "project_globalid": lambda d: compress(uuid.uuid4().hex),
     "schema_identifier": lambda d: main.schema_identifier,
     "timestamp": lambda d: int(time.time()),
-    "timestring": lambda d: time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(d.get('timestamp') or time.time()))
+    "timestring": lambda d: time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(d.get("timestamp") or time.time())),
 }
 
 
-def create(filename=None, timestring=None, organization=None, creator=None,
-           schema_identifier=None, application_version=None, timestamp=None,
-           application=None, project_globalid=None, project_name=None):
+def create(
+    filename=None,
+    timestring=None,
+    organization=None,
+    creator=None,
+    schema_identifier=None,
+    application_version=None,
+    timestamp=None,
+    application=None,
+    project_globalid=None,
+    project_name=None,
+):
     d = dict(locals())
 
     def _():
         for var, value in d.items():
             if value is None:
-                yield var, DEFAULTS.get(var, lambda *args: '')(d)
+                yield var, DEFAULTS.get(var, lambda *args: "")(d)
 
     d.update(dict(_()))
 

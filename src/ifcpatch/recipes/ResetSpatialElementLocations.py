@@ -6,7 +6,7 @@ class Patcher:
         self.args = args
 
     def patch(self):
-        project = self.file.by_type('IfcProject')[0]
+        project = self.file.by_type("IfcProject")[0]
         spatial_elements = self.find_decomposed_ifc_class(project, self.args[0])
         for spatial_element in spatial_elements:
             self.patch_placement_to_origin(spatial_element)
@@ -24,8 +24,8 @@ class Patcher:
         return results
 
     def patch_placement_to_origin(self, element):
-        element.ObjectPlacement.RelativePlacement.Location.Coordinates = (0., 0., 0.)
+        element.ObjectPlacement.RelativePlacement.Location.Coordinates = (0.0, 0.0, 0.0)
         if element.ObjectPlacement.RelativePlacement.Axis:
-            element.ObjectPlacement.RelativePlacement.Axis.DirectionRatios = (0., 0., 1.)
+            element.ObjectPlacement.RelativePlacement.Axis.DirectionRatios = (0.0, 0.0, 1.0)
         if element.ObjectPlacement.RelativePlacement.RefDirection:
-            element.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1., 0., 0.)
+            element.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1.0, 0.0, 0.0)
