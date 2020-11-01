@@ -23,57 +23,80 @@ import sys
 import nodes
 import templates
 
+
 class Mapping:
 
     express_to_cpp_typemapping = {
-        'boolean' : 'bool',
-        'logical' : 'bool',
-        'integer' : 'int',
-        'real'    : 'double',
-        'number'  : 'double',
-        'string'  : 'std::string',
-        'binary'  : 'boost::dynamic_bitset<>'
+        "boolean": "bool",
+        "logical": "bool",
+        "integer": "int",
+        "real": "double",
+        "number": "double",
+        "string": "std::string",
+        "binary": "boost::dynamic_bitset<>",
     }
-    
-    supported_argument_types = set([
-        'INT', 'BOOL', 'DOUBLE', 'STRING', 'BINARY', 'ENUMERATION', 'ENTITY_INSTANCE',
-        'AGGREGATE_OF_INT', 'AGGREGATE_OF_DOUBLE', 'AGGREGATE_OF_STRING', 'AGGREGATE_OF_BINARY', 'AGGREGATE_OF_ENTITY_INSTANCE',
-        'AGGREGATE_OF_AGGREGATE_OF_INT', 'AGGREGATE_OF_AGGREGATE_OF_DOUBLE', 'AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE',
-    ])
+
+    supported_argument_types = set(
+        [
+            "INT",
+            "BOOL",
+            "DOUBLE",
+            "STRING",
+            "BINARY",
+            "ENUMERATION",
+            "ENTITY_INSTANCE",
+            "AGGREGATE_OF_INT",
+            "AGGREGATE_OF_DOUBLE",
+            "AGGREGATE_OF_STRING",
+            "AGGREGATE_OF_BINARY",
+            "AGGREGATE_OF_ENTITY_INSTANCE",
+            "AGGREGATE_OF_AGGREGATE_OF_INT",
+            "AGGREGATE_OF_AGGREGATE_OF_DOUBLE",
+            "AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE",
+        ]
+    )
 
     def __init__(self, schema):
         self.schema = schema
-        
+
     def flatten_type_string(self, type):
         return self.flatten_type_string(self.schema.types[type].type) if self.schema.is_simpletype(type) else type
-        
+
     def flatten_type(self, type):
         res = self.flatten_type(self.schema.types[type].type) if self.schema.is_simpletype(type) else type
         return res
-        
+
     def simple_type_parent(self, type):
         parent = self.schema.types[type].type
-        if isinstance(parent, (nodes.AggregationType, nodes.StringType)) or (isinstance(parent, nodes.SimpleType) and isinstance(parent.type, nodes.StringType)): 
+        if isinstance(parent, (nodes.AggregationType, nodes.StringType)) or (
+            isinstance(parent, nodes.SimpleType) and isinstance(parent.type, nodes.StringType)
+        ):
             return None
         if str(parent) in self.express_to_cpp_typemapping:
             return None
         return str(parent)
 
     def make_type_string(self, type):
-        if isinstance(type, nodes.StringType) or (isinstance(type, nodes.SimpleType) and isinstance(type.type, nodes.StringType)):
+        if isinstance(type, nodes.StringType) or (
+            isinstance(type, nodes.SimpleType) and isinstance(type.type, nodes.StringType)
+        ):
             type = "string"
         if isinstance(type, (str, nodes.BinaryType, nodes.SimpleType, nodes.NamedType)):
             return self.express_to_cpp_typemapping.get(str(type), "::%s::%s" % (self.schema.name.capitalize(), type))
         else:
             if type.bounds is None:
-                import pdb; pdb.set_trace()
+                import pdb
+
+                pdb.set_trace()
             is_list = self.schema.is_entity(type.type)
             is_nested_list = isinstance(type.type, nodes.AggregationType)
-            tmpl = templates.list_list_type if is_nested_list else templates.list_type if is_list else templates.array_type
+            tmpl = (
+                templates.list_list_type if is_nested_list else templates.list_type if is_list else templates.array_type
+            )
             return tmpl % {
-                'instance_type' : self.make_type_string(self.flatten_type_string(type.type)),
-                'lower'         : type.bounds.lower,
-                'upper'         : type.bounds.upper,
+                "instance_type": self.make_type_string(self.flatten_type_string(type.type)),
+                "lower": type.bounds.lower,
+                "upper": type.bounds.upper,
             }
 
     def is_array(self, type):
@@ -83,12 +106,15 @@ class Mapping:
             return self.is_array(self.schema.types[type].type)
         else:
             return False
-            
+
     def make_argument_entity(self, attr):
-        type = attr.type if hasattr(attr, 'type') else attr
-        while isinstance(type, nodes.AggregationType): type = type.type
-        if str(type) in self.express_to_cpp_typemapping: return "Type::UNDEFINED"
-        else: return "Type::%s" % type        
+        type = attr.type if hasattr(attr, "type") else attr
+        while isinstance(type, nodes.AggregationType):
+            type = type.type
+        if str(type) in self.express_to_cpp_typemapping:
+            return "Type::UNDEFINED"
+        else:
+            return "Type::%s" % type
 
     def make_argument_type(self, attr):
         def _make_argument_type(type):
@@ -104,18 +130,20 @@ class Mapping:
                 return "ENUMERATION"
             elif isinstance(type, nodes.AggregationType):
                 ty = _make_argument_type(type.type)
-                if ty == "UNKNOWN": return "UNKNOWN"
+                if ty == "UNKNOWN":
+                    return "UNKNOWN"
                 return "AGGREGATE_OF_" + ty
             elif str(type) in self.express_to_cpp_typemapping:
-                return self.express_to_cpp_typemapping.get(str(type), type).split('::')[-1].upper()
+                return self.express_to_cpp_typemapping.get(str(type), type).split("::")[-1].upper()
             elif self.schema.is_type(type):
                 return _make_argument_type(self.schema.types[type].type)
             else:
                 raise ValueError("Unable to map type %r for attribute %r" % (type, attr))
-        ty = _make_argument_type(attr.type if hasattr(attr, 'type') else attr)
+
+        ty = _make_argument_type(attr.type if hasattr(attr, "type") else attr)
         if ty not in self.supported_argument_types:
             print("Attribute %r mapped as 'unknown'" % (attr), file=sys.stderr)
-            ty = 'UNKNOWN'
+            ty = "UNKNOWN"
         return "IfcUtil::Argument_%s" % ty
 
     def get_type_dep(self, type):
@@ -124,18 +152,20 @@ class Mapping:
         else:
             return self.get_type_dep(type.type)
 
-    def get_parameter_type(self, attr, allow_optional, allow_entities, allow_pointer = True):
+    def get_parameter_type(self, attr, allow_optional, allow_entities, allow_pointer=True):
         attr_type = self.flatten_type(attr.type)
-        
-        if (isinstance(attr_type, nodes.SimpleType) and isinstance(attr_type.type, nodes.StringType)) or isinstance(attr_type, nodes.StringType):
+
+        if (isinstance(attr_type, nodes.SimpleType) and isinstance(attr_type.type, nodes.StringType)) or isinstance(
+            attr_type, nodes.StringType
+        ):
             type_str = self.express_to_cpp_typemapping["string"]
         else:
             type_str = self.express_to_cpp_typemapping.get(str(attr_type), attr_type)
-        
+
         is_ptr = False
-        
+
         if self.schema.is_enumeration(attr_type):
-            type_str = '::%s::%s::Value' % (self.schema.name.capitalize(), attr_type)
+            type_str = "::%s::%s::Value" % (self.schema.name.capitalize(), attr_type)
         elif isinstance(type_str, nodes.AggregationType):
             is_nested_list = isinstance(attr_type.type, nodes.AggregationType)
             ty = self.get_parameter_type(attr_type.type if is_nested_list else attr_type, False, allow_entities, False)
@@ -144,18 +174,12 @@ class Mapping:
             elif self.schema.is_simpletype(ty) or str(ty) in self.express_to_cpp_typemapping.values():
                 tmpl = templates.nested_array_type if is_nested_list else templates.array_type
                 bounds = (attr_type.bounds.lower, attr_type.bounds.upper) if attr_type.bounds else (-1, -1)
-                type_str = tmpl % {
-                    'instance_type' : ty,
-                    'lower'         : bounds[0],
-                    'upper'         : bounds[1]
-                }
+                type_str = tmpl % {"instance_type": ty, "lower": bounds[0], "upper": bounds[1]}
             else:
                 tmpl = templates.list_list_type if is_nested_list else templates.list_type
-                type_str = tmpl % {
-                    'instance_type': ty
-                }
-        elif (self.schema.is_entity(type_str) or self.schema.is_select(type_str)):
-            type_str = '::%s::%s' % (self.schema.name.capitalize(), attr_type)
+                type_str = tmpl % {"instance_type": ty}
+        elif self.schema.is_entity(type_str) or self.schema.is_select(type_str):
+            type_str = "::%s::%s" % (self.schema.name.capitalize(), attr_type)
             if allow_pointer:
                 type_str += "*"
             is_ptr = True
@@ -163,7 +187,7 @@ class Mapping:
             type_str = "IfcUtil::IfcBaseClass*"
             is_ptr = True
         if allow_optional and attr.optional and not is_ptr:
-            type_str = "boost::optional< %s >"%type_str
+            type_str = "boost::optional< %s >" % type_str
         return type_str
 
     def argument_count(self, t):
@@ -181,39 +205,49 @@ class Mapping:
 
     def list_instance_type(self, attr):
         attr_type = attr.type if isinstance(attr, nodes.ExplicitAttribute) else attr
-        if isinstance(attr_type, str): return None
+        if isinstance(attr_type, str):
+            return None
+
         def f(v):
             v = self.flatten_type(v)
-            if isinstance(v, (nodes.AggregationType, nodes.StringType)) or (isinstance(v, nodes.SimpleType) and isinstance(v.type, nodes.StringType)):
+            if isinstance(v, (nodes.AggregationType, nodes.StringType)) or (
+                isinstance(v, nodes.SimpleType) and isinstance(v.type, nodes.StringType)
+            ):
                 return "string"
             if self.schema.is_select(v):
-                return 'IfcUtil::IfcBaseClass'
+                return "IfcUtil::IfcBaseClass"
             elif str(v) in self.schema.types or str(v) in self.schema.entities:
                 return "::%s::%s" % (self.schema.name.capitalize(), v)
-            else: return str(v)
+            else:
+                return str(v)
+
         if self.is_array(attr_type):
             if not isinstance(attr_type, str) and self.is_array(attr_type.type):
                 if isinstance(attr_type.type, str):
                     return f(attr_type.type)
-                else: return f(attr_type.type.type)
+                else:
+                    return f(attr_type.type.type)
             else:
                 if isinstance(attr_type, str):
                     return f(attr_type)
-                else: return f(attr_type.type)
+                else:
+                    return f(attr_type.type)
         return None
 
     def is_templated_list(self, attr):
         attr_type = attr.type if isinstance(attr, nodes.ExplicitAttribute) else attr
-        if isinstance(attr, str): return False
+        if isinstance(attr, str):
+            return False
         ty = self.list_instance_type(attr)
-        if ty is None: return False
+        if ty is None:
+            return False
         arr = self.is_array(attr_type)
         simple = self.schema.is_simpletype(ty)
         express = self.flatten_type_string(ty) in self.express_to_cpp_typemapping
-        select = ty == 'IfcUtil::IfcBaseClass'
+        select = ty == "IfcUtil::IfcBaseClass"
         return arr and not simple and not express and not select
 
-    def get_assignable_arguments(self, t, include_derived = False):
+    def get_assignable_arguments(self, t, include_derived=False):
         count = self.argument_count(t)
         num_inherited = count - len(t.attributes)
         derived = set(self.derived_in_supertype(t))
@@ -224,22 +258,27 @@ class Mapping:
             supported = self.make_argument_type(attr) != "IfcUtil::Argument_UNKNOWN"
             return not_derived and supported
 
-        return [{
-            'index'              : i+1,
-            'name'               : attr.name,
-            'full_type'          : self.get_parameter_type(attr, allow_optional=True, allow_entities=True),
-            'specialized_type'   : self.get_parameter_type(attr, allow_optional=True, allow_entities=False),
-            'non_optional_type'  : self.get_parameter_type(attr, allow_optional=False, allow_entities=False),
-            'list_instance_type' : self.list_instance_type(attr),
-            'is_optional'        : attr.optional,
-            'is_inherited'       : i < num_inherited,
-            'is_enum'            : attr.type in self.schema.enumerations,
-            'is_array'           : self.is_array(attr.type),
-            'is_nested'          : self.is_array(attr.type) and not isinstance(attr.type, str) and self.is_array(attr.type.type),
-            'is_derived'         : attr.name in derived,
-            'is_templated_list'  : self.is_templated_list(attr),
-            'argument_type_enum' : self.make_argument_type(attr),
-            'argument_entity'    : self.make_argument_entity(attr),
-            'argument_type'      : attr.type
-        } for i, attr in attrs if include(attr)]
-
+        return [
+            {
+                "index": i + 1,
+                "name": attr.name,
+                "full_type": self.get_parameter_type(attr, allow_optional=True, allow_entities=True),
+                "specialized_type": self.get_parameter_type(attr, allow_optional=True, allow_entities=False),
+                "non_optional_type": self.get_parameter_type(attr, allow_optional=False, allow_entities=False),
+                "list_instance_type": self.list_instance_type(attr),
+                "is_optional": attr.optional,
+                "is_inherited": i < num_inherited,
+                "is_enum": attr.type in self.schema.enumerations,
+                "is_array": self.is_array(attr.type),
+                "is_nested": self.is_array(attr.type)
+                and not isinstance(attr.type, str)
+                and self.is_array(attr.type.type),
+                "is_derived": attr.name in derived,
+                "is_templated_list": self.is_templated_list(attr),
+                "argument_type_enum": self.make_argument_type(attr),
+                "argument_entity": self.make_argument_entity(attr),
+                "argument_type": attr.type,
+            }
+            for i, attr in attrs
+            if include(attr)
+        ]
