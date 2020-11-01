@@ -19,7 +19,6 @@ import site
 cwd = os.path.dirname(os.path.realpath(__file__))
 site.addsitedir(os.path.join(cwd, "libs", "site", "packages"))
 
-
 # main import
 from .bim import *
 

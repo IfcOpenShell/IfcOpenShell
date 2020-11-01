@@ -53,6 +53,7 @@ sheets_enum = []
 vector_styles_enum = []
 bcfviewpoints_enum = []
 
+
 @persistent
 def setDefaultProperties(scene):
     if bpy.context.scene.BIMProperties.has_model_context \
@@ -164,7 +165,7 @@ def getDiagramScales(self, context):
     global diagram_scales_enum
     if len(diagram_scales_enum) < 1 \
             or (bpy.context.scene.unit_settings.system == 'IMPERIAL' and len(diagram_scales_enum) == 13) \
-            or (bpy.context.scene.unit_settings.system == 'METRIC' and len(diagram_scales_enum) == 31) :
+            or (bpy.context.scene.unit_settings.system == 'METRIC' and len(diagram_scales_enum) == 31):
         if bpy.context.scene.unit_settings.system == 'IMPERIAL':
             diagram_scales_enum = [
                 ('CUSTOM', 'Custom', ''),
@@ -230,16 +231,27 @@ def updateDrawingName(self, context):
 
 def getBoundaryConditionClasses(self, context):
     return [(c, c, '') for c in
-        ['IfcBoundaryEdgeCondition', 'IfcBoundaryFaceCondition',
-            'IfcBoundaryNodeCondition', 'IfcBoundaryNodeConditionWarping']]
+            ['IfcBoundaryEdgeCondition', 'IfcBoundaryFaceCondition',
+             'IfcBoundaryNodeCondition', 'IfcBoundaryNodeConditionWarping']]
 
 
 def refreshBoundaryConditionAttributes(self, context):
     while len(context.active_object.BIMObjectProperties.boundary_condition.attributes) > 0:
         context.active_object.BIMObjectProperties.boundary_condition.attributes.remove(0)
-    for attribute in schema.ifc.elements[context.active_object.BIMObjectProperties.boundary_condition.name]['complex_attributes']:
+    for attribute in schema.ifc.elements[context.active_object.BIMObjectProperties.boundary_condition.name][
+        'complex_attributes']:
         new_attribute = context.active_object.BIMObjectProperties.boundary_condition.attributes.add()
         new_attribute.name = attribute['name']
+
+
+def getPresentationLayerClasses(self, context):
+    pass
+    # TODO: Base this on the logic in getBoundaryConditionClasses
+
+
+def refreshPresentationLayerAttributes(self, context):
+    pass
+    # TODO: Base this on the logic in refreshBoundaryConditionAttributes
 
 
 def refreshActiveDrawingIndex(self, context):
@@ -330,7 +342,8 @@ def getTitleblocks(self, context):
     global titleblocks_enum
     if len(titleblocks_enum) < 1:
         titleblocks_enum.clear()
-        for filename in Path(os.path.join(context.scene.BIMProperties.data_dir, 'templates', 'titleblocks')).glob('*.svg'):
+        for filename in Path(os.path.join(context.scene.BIMProperties.data_dir, 'templates', 'titleblocks')).glob(
+                '*.svg'):
             f = str(filename.stem)
             titleblocks_enum.append((f, f, ''))
     return titleblocks_enum
@@ -438,8 +451,8 @@ def getApplicableAttributes(self, context):
     if '/' in context.active_object.name \
             and context.active_object.name.split('/')[0] in schema.ifc.elements:
         attributes_enum.extend([(a['name'], a['name'], '') for a in
-            schema.ifc.elements[context.active_object.name.split('/')[0]]['attributes']
-            if self.attributes.find(a['name']) == -1])
+                                schema.ifc.elements[context.active_object.name.split('/')[0]]['attributes']
+                                if self.attributes.find(a['name']) == -1])
     return attributes_enum
 
 
@@ -452,8 +465,8 @@ def getApplicableMaterialAttributes(self, context):
         if material_type[-3:] == 'Set':
             material_type = material_type[0:-3]
         materialattributes_enum.extend([(a['name'], a['name'], '') for a in
-            schema.ifc.IfcMaterialDefinition[material_type]['attributes']
-            if self.attributes.find(a['name']) == -1])
+                                        schema.ifc.IfcMaterialDefinition[material_type]['attributes']
+                                        if self.attributes.find(a['name']) == -1])
     return materialattributes_enum
 
 
@@ -556,7 +569,7 @@ class DrawingStyle(PropertyGroup):
         ('NONE', 'None', ''),
         ('DEFAULT', 'Default', ''),
         ('VIEWPORT', 'Viewport', ''),
-        ], name='Render Type', default='VIEWPORT')
+    ], name='Render Type', default='VIEWPORT')
     vector_style: EnumProperty(items=getVectorStyles, name='Vector Style')
     include_query: StringProperty(name='Include Query')
     exclude_query: StringProperty(name='Exclude Query')
@@ -587,18 +600,19 @@ class BIMCameraProperties(PropertyGroup):
         ('SECTION_VIEW', 'SECTION_VIEW', ''),
         ('REFLECTED_PLAN_VIEW', 'REFLECTED_PLAN_VIEW', ''),
         ('MODEL_VIEW', 'MODEL_VIEW', ''),
-        ], name='Target View', default='PLAN_VIEW')
+    ], name='Target View', default='PLAN_VIEW')
     diagram_scale: EnumProperty(items=getDiagramScales, name='Drawing Scale')
     custom_diagram_scale: StringProperty(name='Custom Scale')
     raster_x: IntProperty(name='Raster X', default=1000)
     raster_y: IntProperty(name='Raster Y', default=1000)
     is_nts: BoolProperty(name='Is NTS')
     cut_objects: EnumProperty(items=[
-        ('.IfcWall|.IfcSlab|.IfcCurtainWall|.IfcStair|.IfcStairFlight|.IfcColumn|.IfcBeam|.IfcMember|.IfcCovering|.IfcSpace',
+        (
+            '.IfcWall|.IfcSlab|.IfcCurtainWall|.IfcStair|.IfcStairFlight|.IfcColumn|.IfcBeam|.IfcMember|.IfcCovering|.IfcSpace',
             'Overall Plan / Section', ''),
         ('.IfcElement', 'Detail Drawing', ''),
         ('CUSTOM', 'Custom', '')
-        ], name='Cut Objects')
+    ], name='Cut Objects')
     cut_objects_custom: StringProperty(name='Custom Cut')
     active_drawing_style_index: IntProperty(name='Active Drawing Style Index')
 
@@ -610,12 +624,12 @@ class BIMTextProperties(PropertyGroup):
         ('3.5', '3.5 - Large', ''),
         ('5.0', '5.0 - Header', ''),
         ('7.0', '7.0 - Title', ''),
-        ], update=refreshFontSize, name='Font Size')
+    ], update=refreshFontSize, name='Font Size')
     symbol: EnumProperty(items=[
         ('None', 'None', ''),
         ('rectangle-tag', 'Rectangle Tag', ''),
         ('door-tag', 'Door Tag', ''),
-        ], update=refreshFontSize, name='Symbol')
+    ], update=refreshFontSize, name='Symbol')
     related_element: PointerProperty(name='Related Element', type=bpy.types.Object)
     variables: CollectionProperty(name='Variables', type=Variable)
 
@@ -640,17 +654,18 @@ class DocumentInformation(PropertyGroup):
         ('NOTDEFINED', 'NOTDEFINED', 'Not defined.'),
         ('PUBLIC', 'PUBLIC', 'Document is publicly available.'),
         ('RESTRICTED', 'RESTRICTED', 'Document availability is restricted.'),
-        ('CONFIDENTIAL', 'CONFIDENTIAL', 'Document is confidential and its contents should not be revealed without permission.'),
+        ('CONFIDENTIAL', 'CONFIDENTIAL',
+         'Document is confidential and its contents should not be revealed without permission.'),
         ('PERSONAL', 'PERSONAL', 'Document is personal to the author.'),
         ('USERDEFINED', 'USERDEFINED', 'Describe confidentiality elsewhere.')
-        ], name='Confidentiality')
+    ], name='Confidentiality')
     status: EnumProperty(items=[
         ('NOTDEFINED', 'NOTDEFINED', 'Not defined'),
         ('DRAFT', 'DRAFT', 'Document is a draft.'),
         ('FINALDRAFT', 'FINALDRAFT', 'Document is a final draft.'),
         ('FINAL', 'FINAL', 'Document is final.'),
         ('REVISION', 'REVISION', 'Document has undergone revision.'),
-        ], name='Status')
+    ], name='Status')
 
 
 class DocumentReference(PropertyGroup):
@@ -667,7 +682,7 @@ class ClashSource(PropertyGroup):
     mode: EnumProperty(items=[
         ('i', 'Include', 'Only the selected objects are included for clashing'),
         ('e', 'Exclude', 'All objects except the selected objects are included for clashing')
-        ], name='Mode')
+    ], name='Mode')
 
 
 class ClashSet(PropertyGroup):
@@ -683,27 +698,40 @@ class Constraint(PropertyGroup):
     constraint_grade: EnumProperty(items=[
         ('HARD', 'HARD', 'Qualifies a constraint such that it must be followed rigidly within or at the values set.'),
         ('SOFT', 'SOFT', 'Qualifies a constraint such that it should be followed within or at the values set.'),
-        ('ADVISORY', 'ADVISORY', 'Qualifies a constraint such that it is advised that it is followed within or at the values set.'),
-        ('USERDEFINED', 'USERDEFINED', 'A user-defined grade indicated by a separate attribute at the referencing entity.'),
+        ('ADVISORY', 'ADVISORY',
+         'Qualifies a constraint such that it is advised that it is followed within or at the values set.'),
+        ('USERDEFINED', 'USERDEFINED',
+         'A user-defined grade indicated by a separate attribute at the referencing entity.'),
         ('NOTDEFINED', 'NOTDEFINED', 'Grade has not been specified.'),
-        ], name='Grade')
+    ], name='Grade')
     constraint_source: StringProperty(name='Source')
     user_defined_grade: StringProperty(name='Custom Grade')
     objective_qualifier: EnumProperty(items=[
-        ('CODECOMPLIANCE', 'CODECOMPLIANCE', 'A constraint whose objective is to ensure satisfaction of a code compliance provision.'),
-        ('CODEWAIVER', 'CODEWAIVER', 'A constraint whose objective is to identify an agreement that code compliance requirements (the waiver) will not be enforced.'),
-        ('DESIGNINTENT', 'DESIGNINTENT', 'A constraint whose objective is to ensure satisfaction of a design intent provision.'),
-        ('EXTERNAL', 'EXTERNAL', 'A constraint whose objective is to synchronize data with an external source such as a file'),
-        ('HEALTHANDSAFETY', 'HEALTHANDSAFETY', 'A constraint whose objective is to ensure satisfaction of a health and safety provision.'),
-        ('MERGECONFLICT', 'MERGECONFLICT', 'A constraint whose objective is to resolve a conflict such as merging data from multiple sources.'),
-        ('MODELVIEW', 'MODELVIEW', 'A constraint whose objective is to ensure data conforms to a model view definition.'),
-        ('PARAMETER', 'PARAMETER', 'A constraint whose objective is to calculate a value based on other referenced values.'),
-        ('REQUIREMENT', 'REQUIREMENT', 'A constraint whose objective is to ensure satisfaction of a project requirement provision.'),
-        ('SPECIFICATION', 'SPECIFICATION', 'A constraint whose objective is to ensure satisfaction of a specification provision.'),
-        ('TRIGGERCONDITION', 'TRIGGERCONDITION', 'A constraint whose objective is to indicate a limiting value beyond which the condition of an object requires a particular form of attention.'),
+        ('CODECOMPLIANCE', 'CODECOMPLIANCE',
+         'A constraint whose objective is to ensure satisfaction of a code compliance provision.'),
+        ('CODEWAIVER', 'CODEWAIVER',
+         'A constraint whose objective is to identify an agreement that code compliance requirements (the waiver) will not be enforced.'),
+        ('DESIGNINTENT', 'DESIGNINTENT',
+         'A constraint whose objective is to ensure satisfaction of a design intent provision.'),
+        ('EXTERNAL', 'EXTERNAL',
+         'A constraint whose objective is to synchronize data with an external source such as a file'),
+        ('HEALTHANDSAFETY', 'HEALTHANDSAFETY',
+         'A constraint whose objective is to ensure satisfaction of a health and safety provision.'),
+        ('MERGECONFLICT', 'MERGECONFLICT',
+         'A constraint whose objective is to resolve a conflict such as merging data from multiple sources.'),
+        ('MODELVIEW', 'MODELVIEW',
+         'A constraint whose objective is to ensure data conforms to a model view definition.'),
+        ('PARAMETER', 'PARAMETER',
+         'A constraint whose objective is to calculate a value based on other referenced values.'),
+        ('REQUIREMENT', 'REQUIREMENT',
+         'A constraint whose objective is to ensure satisfaction of a project requirement provision.'),
+        ('SPECIFICATION', 'SPECIFICATION',
+         'A constraint whose objective is to ensure satisfaction of a specification provision.'),
+        ('TRIGGERCONDITION', 'TRIGGERCONDITION',
+         'A constraint whose objective is to indicate a limiting value beyond which the condition of an object requires a particular form of attention.'),
         ('USERDEFINED', 'USERDEFINED', ''),
         ('NOTDEFINED', 'NOTDEFINED', '')
-        ], name='Qualifier')
+    ], name='Qualifier')
     user_defined_qualifier: StringProperty(name='Custom Qualifier')
 
 
@@ -742,6 +770,7 @@ class BcfTopicRelatedTopic(PropertyGroup):
 
 def refreshBcfTopic(self, context):
     RefreshBcfTopic.refresh(context)
+
 
 class RefreshBcfTopic():
     props: None
@@ -860,7 +889,7 @@ class RefreshBcfTopic():
         bcfviewpoints_enum.clear()
         bcf.BcfStore.viewpoints = bcfplugin.getViewpoints(cls.topic, realViewpoint=False)
         for i, viewpoint in enumerate(bcf.BcfStore.viewpoints):
-            bcfviewpoints_enum.append((str(i), 'View {}'.format(i+1), ''))
+            bcfviewpoints_enum.append((str(i), 'View {}'.format(i + 1), ''))
 
     @classmethod
     def load_comments(cls):
@@ -890,15 +919,23 @@ class PropertySetTemplate(PropertyGroup):
     name: StringProperty(name="Name")
     description: StringProperty(name="Description")
     template_type: EnumProperty(items=[
-        ('PSET_TYPEDRIVENONLY', 'Pset - IfcTypeObject', 'The property sets defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcTypeObject.'),
-        ('PSET_TYPEDRIVENOVERRIDE', 'Pset - IfcTypeObject - Override', 'The property sets defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcTypeObject.'),
-        ('PSET_OCCURRENCEDRIVEN', 'Pset - IfcObject', 'The property sets defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcObject.'),
-        ('PSET_PERFORMANCEDRIVEN', 'Pset - IfcPerformanceHistory', 'The property sets defined by this IfcPropertySetTemplate can only be assigned to IfcPerformanceHistory.'),
-        ('QTO_TYPEDRIVENONLY', 'Qto - IfcTypeObject', 'The element quantity defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcTypeObject.'),
-        ('QTO_TYPEDRIVENOVERRIDE', 'Qto - IfcTypeObject - Override', 'The element quantity defined by this IfcPropertySetTemplate can be assigned to subtypes of IfcTypeObject and can be overridden by an element quantity with same name at subtypes of IfcObject.'),
-        ('QTO_OCCURRENCEDRIVEN', 'Qto - IfcObject', 'The element quantity defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcObject.'),
-        ('NOTDEFINED', 'Not defined', 'No restriction provided, the property sets defined by this IfcPropertySetTemplate can be assigned to any entity, if not otherwise restricted by the ApplicableEntity attribute.')
-        ], name="Template Type")
+        ('PSET_TYPEDRIVENONLY', 'Pset - IfcTypeObject',
+         'The property sets defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcTypeObject.'),
+        ('PSET_TYPEDRIVENOVERRIDE', 'Pset - IfcTypeObject - Override',
+         'The property sets defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcTypeObject.'),
+        ('PSET_OCCURRENCEDRIVEN', 'Pset - IfcObject',
+         'The property sets defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcObject.'),
+        ('PSET_PERFORMANCEDRIVEN', 'Pset - IfcPerformanceHistory',
+         'The property sets defined by this IfcPropertySetTemplate can only be assigned to IfcPerformanceHistory.'),
+        ('QTO_TYPEDRIVENONLY', 'Qto - IfcTypeObject',
+         'The element quantity defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcTypeObject.'),
+        ('QTO_TYPEDRIVENOVERRIDE', 'Qto - IfcTypeObject - Override',
+         'The element quantity defined by this IfcPropertySetTemplate can be assigned to subtypes of IfcTypeObject and can be overridden by an element quantity with same name at subtypes of IfcObject.'),
+        ('QTO_OCCURRENCEDRIVEN', 'Qto - IfcObject',
+         'The element quantity defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcObject.'),
+        ('NOTDEFINED', 'Not defined',
+         'No restriction provided, the property sets defined by this IfcPropertySetTemplate can be assigned to any entity, if not otherwise restricted by the ApplicableEntity attribute.')
+    ], name="Template Type")
     applicable_entity: StringProperty(name="Applicable Entity")
 
 
@@ -1018,12 +1055,12 @@ class PropertyTemplate(PropertyGroup):
             'IfcVolumetricFlowRateMeasure',
             'IfcWarpingConstantMeasure',
             'IfcWarpingMomentMeasure',
-            ]
-        ], name='Primary Measure Type')
+        ]
+    ], name='Primary Measure Type')
 
 
 class Address(PropertyGroup):
-    name: StringProperty(name="Name", default='IfcPostalAddress') # Stores IfcPostalAddress or IfcTelecomAddress
+    name: StringProperty(name="Name", default='IfcPostalAddress')  # Stores IfcPostalAddress or IfcTelecomAddress
     purpose: EnumProperty(items=[
         ('OFFICE', 'OFFICE', 'An office address.'),
         ('SITE', 'SITE', 'A site address.'),
@@ -1144,7 +1181,7 @@ class ClassificationView(PropertyGroup):
             self.children.clear()
         elif rt == '':
             if self.crumbs:
-                self.crumbs.remove(len(self.crumbs)-1)
+                self.crumbs.remove(len(self.crumbs) - 1)
             self.children.clear()
             for child in self.root['children'].keys():
                 self.children.add().name = child
@@ -1161,11 +1198,11 @@ class ClassificationView(PropertyGroup):
             op = layout.operator('bim.change_classification_level', text="@Toplevel")
         else:
             op = layout.operator('bim.change_classification_level', text=self.root['name'])
-        op.path_sid = "%r"%self.id_data
+        op.path_sid = "%r" % self.id_data
         op.path_lst = self.path_from_id()
         op.path_itm = ''
         layout.template_list('BIM_UL_classifications',
-            self.path_from_id(), self, 'children', self, 'active_index')
+                             self.path_from_id(), self, 'children', self, 'active_index')
 
 
 # Monkey-patched, just to keep registration in one block
@@ -1176,7 +1213,7 @@ ClassificationView.__annotations__['children'] = \
 
 
 class BIMProperties(PropertyGroup):
-    schema_dir: StringProperty(default=os.path.join(cwd ,'schema') + os.path.sep, name="Schema Directory")
+    schema_dir: StringProperty(default=os.path.join(cwd, 'schema') + os.path.sep, name="Schema Directory")
     data_dir: StringProperty(default=os.path.join(cwd, 'data') + os.path.sep, name="Data Directory")
     ifc_file: StringProperty(name="IFC File")
     ifc_cache: StringProperty(name="IFC Cache")
@@ -1184,7 +1221,7 @@ class BIMProperties(PropertyGroup):
     ifc_product: EnumProperty(items=getIfcProducts, name="Products", update=refreshClasses)
     ifc_class: EnumProperty(items=getIfcClasses, name="Class", update=refreshPredefinedTypes)
     ifc_predefined_type: EnumProperty(
-        items = getIfcPredefinedTypes,
+        items=getIfcPredefinedTypes,
         name="Predefined Type", default=None)
     ifc_userdefined_type: StringProperty(name="Userdefined Type")
     export_schema: EnumProperty(items=[('IFC4', 'IFC4', ''), ('IFC2X3', 'IFC2X3', '')], name='IFC Schema')
@@ -1192,7 +1229,8 @@ class BIMProperties(PropertyGroup):
     export_json_compact: BoolProperty(name="Export Compact IFCJSON", default=False)
     export_has_representations: BoolProperty(name="Export Representations", default=True)
     export_should_guess_quantities: BoolProperty(name="Export with Guessed Quantities", default=False)
-    export_should_use_presentation_style_assignment: BoolProperty(name="Export with Presentation Style Assignment", default=False)
+    export_should_use_presentation_style_assignment: BoolProperty(name="Export with Presentation Style Assignment",
+                                                                  default=False)
     export_should_force_faceted_brep: BoolProperty(name="Export with Faceted Breps", default=False)
     import_should_ignore_site_coordinates: BoolProperty(name="Import Ignoring Site Coordinates", default=False)
     import_should_ignore_building_coordinates: BoolProperty(name="Import Ignoring Building Coordinates", default=False)
@@ -1202,7 +1240,8 @@ class BIMProperties(PropertyGroup):
     import_should_import_opening_elements: BoolProperty(name="Import Opening Elements", default=False)
     import_should_import_spaces: BoolProperty(name="Import Spaces", default=False)
     import_should_auto_set_workarounds: BoolProperty(name="Automatically Set Vendor Workarounds", default=True)
-    import_should_treat_styled_item_as_material: BoolProperty(name="Import Treating Styled Item as Material", default=False)
+    import_should_treat_styled_item_as_material: BoolProperty(name="Import Treating Styled Item as Material",
+                                                              default=False)
     import_should_use_legacy: BoolProperty(name="Import with Legacy Importer", default=False)
     import_should_import_native: BoolProperty(name="Import Native Representations", default=False)
     import_export_should_roundtrip_native: BoolProperty(name="Roundtrip Native Representations", default=False)
@@ -1260,17 +1299,19 @@ class BIMProperties(PropertyGroup):
     available_subcontexts: EnumProperty(items=getSubcontexts, name="Available Subcontexts")
     available_target_views: EnumProperty(items=getTargetViews, name="Available Target Views")
     classification_references: PointerProperty(type=ClassificationView)
-    pset_template_files: EnumProperty(items=getPsetTemplateFiles, name="Pset Template Files", update=refreshPropertySetTemplates)
+    pset_template_files: EnumProperty(items=getPsetTemplateFiles, name="Pset Template Files",
+                                      update=refreshPropertySetTemplates)
     property_set_templates: EnumProperty(items=getPropertySetTemplates, name="Pset Template Files")
     active_property_set_template: PointerProperty(type=PropertySetTemplate)
     property_templates: CollectionProperty(name='Property Templates', type=PropertyTemplate)
     should_section_selected_objects: BoolProperty(name="Section Selected Objects", default=False)
-    section_plane_colour: FloatVectorProperty(name='Temporary Section Cutaway Colour', subtype='COLOR', default=(1, 0, 0), min=0.0, max=1.0)
+    section_plane_colour: FloatVectorProperty(name='Temporary Section Cutaway Colour', subtype='COLOR',
+                                              default=(1, 0, 0), min=0.0, max=1.0)
     ifc_import_filter: EnumProperty(items=[
         ('NONE', 'None', ''),
         ('WHITELIST', 'Whitelist', ''),
         ('BLACKLIST', 'Blacklist', ''),
-        ], name='Import Filter')
+    ], name='Import Filter')
     ifc_selector: StringProperty(default='', name='IFC Selector')
     csv_attributes: CollectionProperty(name='CSV Attributes', type=StrProperty)
     document_information: CollectionProperty(name='Document Information', type=DocumentInformation)
@@ -1291,19 +1332,19 @@ class BIMProperties(PropertyGroup):
         ('square feet', 'square feet', ''),
         ('square inches', 'square inches', ''),
         ('square kilometers', 'square kilometers', ''),
-        ('square meters', 'square meters', ''),
+        ('SQUARE_METRE', 'square meters', ''),
         ('square miles', 'square miles', ''),
         ('square millimeters', 'square millimeters', ''),
         ('square yards', 'square yards', ''),
-        ], name='IFC Area Unit')
+    ], name='IFC Area Unit')
     volume_unit: EnumProperty(items=[
         ('cubic centimeters', 'cubic centimeters', ''),
         ('cubic feet', 'cubic feet', ''),
         ('cubic inches', 'cubic inches', ''),
-        ('cubic meters', 'cubic meters', ''),
+        ('CUBIC_METRE', 'cubic meters', ''),
         ('cubic millimeters', 'cubic millimeters', ''),
         ('cubic yards', 'cubic yards', ''),
-        ], name='IFC Volume Unit')
+    ], name='IFC Volume Unit')
     metric_precision: FloatProperty(default=0, name='Drawing Metric Precision')
     imperial_precision: EnumProperty(items=[
         ('NONE', 'No rounding', ''),
@@ -1316,8 +1357,9 @@ class BIMProperties(PropertyGroup):
         ('1/64', 'Nearest 1/64"', ''),
         ('1/128', 'Nearest 1/128"', ''),
         ('1/256', 'Nearest 1/256"', ''),
-        ], name='Drawing Imperial Precision')
-    override_colour: FloatVectorProperty(name='Override Colour', subtype='COLOR', default=(1, 0, 0, 1), min=0.0, max=1.0, size=4)
+    ], name='Drawing Imperial Precision')
+    override_colour: FloatVectorProperty(name='Override Colour', subtype='COLOR', default=(1, 0, 0, 1), min=0.0,
+                                         max=1.0, size=4)
 
 
 class BCFProperties(PropertyGroup):
@@ -1357,6 +1399,7 @@ class MapConversion(PropertyGroup):
     x_axis_ordinate: StringProperty(name="X Axis Ordinate")
     scale: StringProperty(name="Scale")
 
+
 class TargetCRS(PropertyGroup):
     name: StringProperty(name="Name")
     description: StringProperty(name="Description")
@@ -1365,6 +1408,7 @@ class TargetCRS(PropertyGroup):
     map_projection: StringProperty(name="Map Projection")
     map_zone: StringProperty(name="Map Zone")
     map_unit: StringProperty(name="Map Unit")
+
 
 class BIMLibrary(PropertyGroup):
     name: StringProperty(name="Name")
@@ -1388,7 +1432,7 @@ class IfcParameter(PropertyGroup):
     name: StringProperty(name="Name")
     step_id: IntProperty(name="STEP ID")
     index: IntProperty(name="Index")
-    value: FloatProperty(name="Value") # For now, only floats
+    value: FloatProperty(name="Value")  # For now, only floats
     type: StringProperty(name="Type")
 
 
@@ -1402,7 +1446,14 @@ class GlobalId(PropertyGroup):
 
 
 class BoundaryCondition(PropertyGroup):
-    name: EnumProperty(items=getBoundaryConditionClasses, name='Boundary Type', update=refreshBoundaryConditionAttributes)
+    name: EnumProperty(items=getBoundaryConditionClasses, name='Boundary Type',
+                       update=refreshBoundaryConditionAttributes)
+    attributes: CollectionProperty(name="Attributes", type=Attribute)
+
+
+class PresentationLayer(PropertyGroup):
+    name: EnumProperty(items=getPresentationLayerClasses, name='Presentation Layer',
+                       update=refreshPresentationLayerAttributes)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
 
 
