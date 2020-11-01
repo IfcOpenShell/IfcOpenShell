@@ -5,12 +5,13 @@ import json
 from pathlib import Path
 import ifcopenshell
 
-class Describer():
+
+class Describer:
     def describe(self):
         # BuildingSMART does not provide a computer interpretable set of
         # descriptions. They provide HTML docs, which contained malformed /
         # invalid HTML. Therefore, this dodgy hack was written.
-        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name('IFC4')
+        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name("IFC4")
 
         self.html_sources = {}
         self.get_html_sources()
@@ -27,18 +28,18 @@ class Describer():
                     continue
                 if isinstance(attribute, str):
                     continue
-                if 'Enum' in attribute.name() and 'Enumeration' not in attribute.name():
+                if "Enum" in attribute.name() and "Enumeration" not in attribute.name():
                     self.get_enum_descriptions(attribute)
-            
-        with open('entity_descriptions.json', 'w') as f:
+
+        with open("entity_descriptions.json", "w") as f:
             f.write(json.dumps(self.entity_descriptions, indent=4))
-        with open('enum_descriptions.json', 'w') as f:
+        with open("enum_descriptions.json", "w") as f:
             f.write(json.dumps(self.enum_descriptions, indent=4))
 
     def get_html_sources(self):
-        html_dir = '/home/dion/Projects/IfcOpenShell/src/ifcblenderexport/descriptions/IFC4_3/RC1/HTML'
-        for filename in Path(html_dir).rglob('*.htm'):
-            if 'lexical' not in str(filename):
+        html_dir = "/home/dion/Projects/IfcOpenShell/src/ifcblenderexport/descriptions/IFC4_3/RC1/HTML"
+        for filename in Path(html_dir).rglob("*.htm"):
+            if "lexical" not in str(filename):
                 continue
             name = os.path.basename(filename)[0:-4]
             self.html_sources[name] = filename
@@ -48,8 +49,10 @@ class Describer():
             return
         with open(self.html_sources[name.lower()]) as f:
             for line in f:
-                if 'Entity definition' in line:
-                    self.entity_descriptions[name] = html.unescape(re.sub('<.*?>', '', line.strip().replace('Entity definition', '')))
+                if "Entity definition" in line:
+                    self.entity_descriptions[name] = html.unescape(
+                        re.sub("<.*?>", "", line.strip().replace("Entity definition", ""))
+                    )
 
     def get_enum_descriptions(self, enum):
         if enum.name().lower() not in self.html_sources:
@@ -59,8 +62,10 @@ class Describer():
         for item in enum.enumeration_items():
             with open(self.html_sources[enum.name().lower()]) as f:
                 for line in f:
-                    if '<td>'+item+'</td>' in line:
-                        self.enum_descriptions.setdefault(enum.name(), {})[item] = html.unescape(re.sub('<.*?>', '', line.strip().replace(item, '')))
+                    if "<td>" + item + "</td>" in line:
+                        self.enum_descriptions.setdefault(enum.name(), {})[item] = html.unescape(
+                            re.sub("<.*?>", "", line.strip().replace(item, ""))
+                        )
 
 
 describer = Describer()
