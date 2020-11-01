@@ -1,4 +1,6 @@
 from behave.model import Scenario
+
+
 def before_all(context):
     userdata = context.config.userdata
     continue_after_failed = True
