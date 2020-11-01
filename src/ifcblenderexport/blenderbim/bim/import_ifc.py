@@ -1451,17 +1451,20 @@ class IfcImporter:
                             bpy.context.scene.unit_settings.length_unit = f"{unit.Prefix}METERS"
                 else:
                     bpy.context.scene.unit_settings.system = "IMPERIAL"
-                    if unit.Name == "inch":
+                    name = unit.Name.lower()
+                    if name == "inch":
                         bpy.context.scene.unit_settings.length_unit = "INCHES"
-                    elif unit.Name == "foot":
+                    elif name == "foot":
                         bpy.context.scene.unit_settings.length_unit = "FEET"
             elif unit.is_a("IfcNamedUnit") and unit.UnitType == "AREAUNIT":
+                name = unit.Name if unit.is_a("IfcSIUnit") else unit.Name.lower()
                 bpy.context.scene.BIMProperties.area_unit = "{}{}".format(
-                    unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", unit.Name
+                    unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", name
                 )
             elif unit.is_a("IfcNamedUnit") and unit.UnitType == "VOLUMEUNIT":
+                name = unit.Name if unit.is_a("IfcSIUnit") else unit.Name.lower()
                 bpy.context.scene.BIMProperties.volume_unit = "{}{}".format(
-                    unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", unit.Name
+                    unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", name
                 )
 
     def create_geometric_representation_contexts(self):
