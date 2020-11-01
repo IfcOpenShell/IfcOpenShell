@@ -24,24 +24,20 @@ from __future__ import print_function
 import os
 import sys
 
-if hasattr(os, 'uname'):
+if hasattr(os, "uname"):
     platform_system = os.uname()[0].lower()
 else:
-    platform_system = 'windows'
+    platform_system = "windows"
 
 if sys.maxsize == (1 << 31) - 1:
-    platform_architecture = '32bit'
+    platform_architecture = "32bit"
 else:
-    platform_architecture = '64bit'
+    platform_architecture = "64bit"
 
-python_version_tuple = tuple(sys.version.split(' ')[0].split('.'))
+python_version_tuple = tuple(sys.version.split(" ")[0].split("."))
 
-python_distribution = os.path.join(platform_system,
-                                   platform_architecture,
-                                   'python%s.%s' % python_version_tuple[:2])
-sys.path.append(os.path.abspath(os.path.join(
-    os.path.dirname(__file__),
-    'lib', python_distribution)))
+python_distribution = os.path.join(platform_system, platform_architecture, "python%s.%s" % python_version_tuple[:2])
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "lib", python_distribution)))
 
 try:
     from . import ifcopenshell_wrapper
@@ -51,7 +47,7 @@ except Exception as e:
         import traceback
 
         traceback.print_exc()
-        print('-' * 64)
+        print("-" * 64)
     raise ImportError("IfcOpenShell not built for '%s'" % python_distribution)
 
 from . import guid
@@ -66,17 +62,21 @@ def open(fn):
     else:
         raise IOError("Unable to open file for reading")
 
+
 def create_entity(type, *args, **kwargs):
     e = entity_instance(type)
-    attrs = list(enumerate(args)) + \
-        [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
+    attrs = list(enumerate(args)) + [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
     for idx, arg in attrs:
         e[idx] = arg
     return e
-    
+
+
 gcroot = []
+
+
 def register_schema(schema):
     gcroot.append(schema)
     ifcopenshell_wrapper.register_schema(schema.schema)
+
 
 from .main import *
