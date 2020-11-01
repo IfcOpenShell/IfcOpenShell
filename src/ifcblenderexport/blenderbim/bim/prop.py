@@ -1468,7 +1468,7 @@ class BIMProperties(PropertyGroup):
     area_unit: EnumProperty(
         items=[
             ("square centimeters", "square centimeters", ""),
-            ("square feet", "square feet", ""),
+            ("square foot", "square foot", ""),
             ("square inches", "square inches", ""),
             ("square kilometers", "square kilometers", ""),
             ("square meters", "square meters", ""),
@@ -1481,7 +1481,7 @@ class BIMProperties(PropertyGroup):
     volume_unit: EnumProperty(
         items=[
             ("cubic centimeters", "cubic centimeters", ""),
-            ("cubic feet", "cubic feet", ""),
+            ("cubic foot", "cubic foot", ""),
             ("cubic inches", "cubic inches", ""),
             ("cubic meters", "cubic meters", ""),
             ("cubic millimeters", "cubic millimeters", ""),
