@@ -21,7 +21,7 @@ install:
     sudo apt-get install -y \
     libocct-data-exchange-dev libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev \
     libboost-system-dev libboost-program-options-dev libboost-regex-dev libboost-thread-dev libboost-date-time-dev libboost-iostreams-dev libboost-filesystem-dev \
-    build-essential cmake python2.7 libpython2.7-dev swig zlib1g liblzma5 opencollada-dev wget apt-transport-https python3 python3-pip python3-setuptools doxygen python3-sphinx 
+    build-essential cmake python2.7 libpython2.7-dev swig zlib1g liblzma5 opencollada-dev wget apt-transport-https python3 python3-pip python3-setuptools doxygen python-sphinx 
   - sudo mkdir -p /usr/include/json/nlohmann/ 
   - python3 -m pip install exhale
   - sudo wget https://github.com/nlohmann/json/releases/download/v3.6.1/json.hpp -O /usr/include/json/nlohmann/json.hpp
