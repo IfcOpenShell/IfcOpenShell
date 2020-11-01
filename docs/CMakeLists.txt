@@ -28,12 +28,12 @@ add_custom_target(Sphinx ALL
 				  ${SPHINX_SOURCE} ${CMAKE_CURRENT_SOURCE_DIR}/output
 				  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/output
                   COMMENT "Generating documentation with Sphinx")
-				  
-# add_custom_target(ifcopenshell_python_docs ALL
-                  # COMMAND make html
-                  # WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../src/ifcblenderexport/docs
-				  # OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/../src/ifcblenderexport/docs
-                  # COMMENT "Generating documentation with Sphinx")
+					  
+add_custom_target(ifcopenshell_python_docs ALL
+                  COMMAND make html
+                  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../src/ifcblenderexport/docs
+				  OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/../src/ifcblenderexport/docs
+                  COMMENT "Generating documentation with Sphinx")
 	
 else (DOXYGEN_FOUND)
   message("Doxygen need to be installed to generate the doxygen documentation")
