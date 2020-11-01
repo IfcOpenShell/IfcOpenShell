@@ -1,7 +1,8 @@
 # Check if we are running in Blender before loading, to allow for multiprocessing
 import sys
 import os
-bpy = sys.modules.get('bpy')
+
+bpy = sys.modules.get("bpy")
 
 if bpy is not None:
     import bpy
@@ -312,15 +313,13 @@ if bpy is not None:
         model_window.BIM_OT_add_object,
         model_slab.BIM_OT_add_object,
         model_opening.BIM_OT_add_object,
-        )
+    )
 
     def menu_func_export(self, context):
-        self.layout.operator(operator.ExportIFC.bl_idname,
-             text="Industry Foundation Classes (.ifc/.ifczip/.ifcjson)")
+        self.layout.operator(operator.ExportIFC.bl_idname, text="Industry Foundation Classes (.ifc/.ifczip/.ifcjson)")
 
     def menu_func_import(self, context):
-        self.layout.operator(operator.ImportIFC.bl_idname,
-             text="Industry Foundation Classes (.ifc/.ifczip/.ifcxml)")
+        self.layout.operator(operator.ImportIFC.bl_idname, text="Industry Foundation Classes (.ifc/.ifczip/.ifcxml)")
 
     def on_register(scene):
         prop.setDefaultProperties(scene)
@@ -363,18 +362,18 @@ if bpy is not None:
         bpy.app.handlers.load_post.remove(prop.setDefaultProperties)
         bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
         bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
-        del(bpy.types.Scene.BIMProperties)
-        del(bpy.types.Scene.BIMDebugProperties)
-        del(bpy.types.Scene.BCFProperties)
-        del(bpy.types.Scene.DocProperties)
-        del(bpy.types.Scene.MapConversion)
-        del(bpy.types.Scene.TargetCRS)
-        del(bpy.types.Object.BIMObjectProperties)
-        del(bpy.types.Collection.BIMObjectProperties)
-        del(bpy.types.Material.BIMMaterialProperties)
-        del(bpy.types.Mesh.BIMMeshProperties)
-        del(bpy.types.Camera.BIMCameraProperties)
-        del(bpy.types.TextCurve.BIMTextProperties)
+        del bpy.types.Scene.BIMProperties
+        del bpy.types.Scene.BIMDebugProperties
+        del bpy.types.Scene.BCFProperties
+        del bpy.types.Scene.DocProperties
+        del bpy.types.Scene.MapConversion
+        del bpy.types.Scene.TargetCRS
+        del bpy.types.Object.BIMObjectProperties
+        del bpy.types.Collection.BIMObjectProperties
+        del bpy.types.Material.BIMMaterialProperties
+        del bpy.types.Mesh.BIMMeshProperties
+        del bpy.types.Camera.BIMCameraProperties
+        del bpy.types.TextCurve.BIMTextProperties
         bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
         bpy.types.VIEW3D_MT_mesh_add.remove(model_grid.add_object_button)
         bpy.types.VIEW3D_MT_mesh_add.remove(model_wall.add_object_button)
