@@ -1287,22 +1287,22 @@ class BIMProperties(PropertyGroup):
     ifc_patch_args: StringProperty(default='', name='Arguments')
     qto_result: StringProperty(default='', name='Qto Result')
     area_unit: EnumProperty(items=[
-        ('square centimeters', 'square centimeters', ''),
-        ('square feet', 'square feet', ''),
-        ('square inches', 'square inches', ''),
-        ('square kilometers', 'square kilometers', ''),
-        ('square meters', 'square meters', ''),
-        ('square miles', 'square miles', ''),
-        ('square millimeters', 'square millimeters', ''),
-        ('square yards', 'square yards', ''),
+        ('SQUARE CENTIMETERS', 'SQUARE CENTIMETERS', ''),
+        ('SQUARE FOOT', 'SQUARE FOOT', ''),
+        ('SQUARE INCHES', 'SQUARE INCHES', ''),
+        ('SQUARE KILOMETERS', 'SQUARE KILOMETERS', ''),
+        ('SQUARE METERS', 'SQUARE METERS', ''),
+        ('SQUARE MILES', 'SQUARE MILES', ''),
+        ('SQUARE MILLIMETERS', 'SQUARE MILLIMETERS', ''),
+        ('SQUARE YARDS', 'SQUARE YARDS', ''),
         ], name='IFC Area Unit')
     volume_unit: EnumProperty(items=[
-        ('cubic centimeters', 'cubic centimeters', ''),
-        ('cubic feet', 'cubic feet', ''),
-        ('cubic inches', 'cubic inches', ''),
-        ('cubic meters', 'cubic meters', ''),
-        ('cubic millimeters', 'cubic millimeters', ''),
-        ('cubic yards', 'cubic yards', ''),
+        ('CUBIC CENTIMETERS', 'CUBIC CENTIMETERS', ''),
+        ('CUBIC FOOT', 'CUBIC FOOT', ''),
+        ('CUBIC INCHES', 'CUBIC INCHES', ''),
+        ('CUBIC METERS', 'CUBIC METERS', ''),
+        ('CUBIC MILLIMETERS', 'CUBIC MILLIMETERS', ''),
+        ('CUBIC YARDS', 'CUBIC YARDS', ''),
         ], name='IFC Volume Unit')
     metric_precision: FloatProperty(default=0, name='Drawing Metric Precision')
     imperial_precision: EnumProperty(items=[
