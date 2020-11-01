@@ -45,10 +45,11 @@ if has_occ:
         from OCC import TopoDS
 
     def wrap_shape_creation(settings, shape):
-        if getattr(settings, 'use_python_opencascade', False):
+        if getattr(settings, "use_python_opencascade", False):
             return utils.create_shape_from_serialization(shape)
         else:
             return shape
+
 
 # Subclass the settings module to provide an additional
 # setting to enable pythonOCC when available
@@ -73,60 +74,57 @@ _iterator = ifcopenshell_wrapper.iterator_double_precision
 
 # Make sure people are able to use python's platform agnostic paths
 class iterator(_iterator):
-    def __init__(self, settings, file_or_filename, num_threads = 1, include = None, exclude = None):
+    def __init__(self, settings, file_or_filename, num_threads=1, include=None, exclude=None):
         self.settings = settings
         if isinstance(file_or_filename, file):
             file_or_filename = file_or_filename.wrapped_data
         else:
             file_or_filename = os.path.abspath(file_or_filename)
-        
+
         if include is not None and exclude is not None:
             raise ValueError("include and exclude cannot be specified simultaneously")
-        
+
         if include is not None or exclude is not None:
             # Couldn't get the typemaps properly applied using %extend so we
             # replicate the SWIG-generated __init__ call on the output of a
             # free function.
             # @todo verify this works with SWIG 4
-            
+
             include_or_exclude = include if exclude is None else exclude
             include_or_exclude_type = set(x.__class__.__name__ for x in include_or_exclude)
             print(include_or_exclude_type)
-            
+
             if include_or_exclude_type == {"entity_instance"}:
                 if not all(inst.is_a("IfcProduct") for inst in include_or_exclude):
                     raise ValueError("include and exclude need to be an aggregate of IfcProduct")
-                    
-                initializer = ifcopenshell_wrapper.\
-                    construct_iterator_double_precision_with_include_exclude_globalid
-                    
-                decode_unicode = lambda x: x.encode('ascii') if x.__class__.__name__ == "unicode" else x
-                include_or_exclude = list(map(decode_unicode, map(operator.attrgetter('GlobalId'), include_or_exclude)))
+
+                initializer = ifcopenshell_wrapper.construct_iterator_double_precision_with_include_exclude_globalid
+
+                decode_unicode = lambda x: x.encode("ascii") if x.__class__.__name__ == "unicode" else x
+                include_or_exclude = list(map(decode_unicode, map(operator.attrgetter("GlobalId"), include_or_exclude)))
             else:
-                initializer = ifcopenshell_wrapper.\
-                    construct_iterator_double_precision_with_include_exclude
-        
+                initializer = ifcopenshell_wrapper.construct_iterator_double_precision_with_include_exclude
+
             self.this = initializer(
-                    self.settings, 
-                    file_or_filename, 
-                    include_or_exclude, 
-                    include is not None, 
-                    num_threads)
+                self.settings, file_or_filename, include_or_exclude, include is not None, num_threads
+            )
         else:
             _iterator.__init__(self, settings, file_or_filename, num_threads)
 
     if has_occ:
+
         def get(self):
             return wrap_shape_creation(self.settings, _iterator.get(self))
-            
+
     def __iter__(self):
         if self.initialize():
             while True:
                 yield self.get()
-                if not self.next(): break
+                if not self.next():
+                    break
+
 
 class tree(ifcopenshell_wrapper.tree):
-
     def __init__(self, file=None, settings=None):
         args = [self]
         if file is not None:
@@ -166,7 +164,7 @@ class tree(ifcopenshell_wrapper.tree):
         if "extend" in kwargs or "completely_within" in kwargs:
             args.append(kwargs.get("completely_within", False))
         if "extend" in kwargs:
-            args.append(kwargs.get("extend", -1.e-5))
+            args.append(kwargs.get("extend", -1.0e-5))
         return [entity_instance(e) for e in ifcopenshell_wrapper.tree.select_box(*args)]
 
 
@@ -193,14 +191,11 @@ def create_shape(settings, inst, repr=None):
     """
     return wrap_shape_creation(
         settings,
-        ifcopenshell_wrapper.create_shape(
-            settings,
-            inst.wrapped_data,
-            repr.wrapped_data if repr is not None else None
-        ))
+        ifcopenshell_wrapper.create_shape(settings, inst.wrapped_data, repr.wrapped_data if repr is not None else None),
+    )
 
 
-def iterate(settings, file_or_filename, num_threads = 1, include = None, exclude = None):
+def iterate(settings, file_or_filename, num_threads=1, include=None, exclude=None):
     it = iterator(settings, file_or_filename, num_threads, include, exclude)
     if it.initialize():
         while True:
@@ -214,13 +209,17 @@ def make_shape_function(fn):
         return None if e is None else entity_instance(e)
 
     if has_occ:
+
         def _(schema, string_or_shape, *args):
             if isinstance(string_or_shape, TopoDS.TopoDS_Shape):
                 string_or_shape = utils.serialize_shape(string_or_shape)
             return entity_instance_or_none(fn(schema, string_or_shape, *args))
+
     else:
+
         def _(schema, string, *args):
             return entity_instance_or_none(fn(schema, string, *args))
+
     return _
 
 
