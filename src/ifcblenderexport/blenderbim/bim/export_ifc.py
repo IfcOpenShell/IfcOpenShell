@@ -1347,8 +1347,9 @@ class IfcExporter():
         self.ifc_parser = ifc_parser
 
     def export(self, selected_objects):
-        self.schema = self.ifc_export_settings.schema
-        self.file = ifcopenshell.file(schema=self.schema)
+        self.schema_version = self.ifc_export_settings.schema
+        self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.schema_version)
+        self.file = ifcopenshell.file(schema=self.schema_version)
         self.ifc_parser.parse(selected_objects)
         self.create_units()
         self.create_people()
@@ -1414,7 +1415,7 @@ class IfcExporter():
         self.file.wrapped_data.header.file_name.originating_system = '{} {}'.format(
             self.get_application_name(), self.get_application_version())
         if self.owner_history:
-            if self.schema == 'IFC2X3':
+            if self.schema_version == 'IFC2X3':
                 self.file.wrapped_data.header.file_name.authorization = self.owner_history.OwningUser.ThePerson.Id
             else:
                 self.file.wrapped_data.header.file_name.authorization = self.owner_history.OwningUser.ThePerson.Identification
@@ -1462,7 +1463,7 @@ class IfcExporter():
         person = None
         organisation = None
         for person in self.ifc_parser.people:
-            if self.schema == 'IFC2X3' and person['ifc'].Id == bpy.context.scene.BIMProperties.person:
+            if self.schema_version == 'IFC2X3' and person['ifc'].Id == bpy.context.scene.BIMProperties.person:
                 break
             elif person['ifc'].Identification == bpy.context.scene.BIMProperties.person:
                 break
@@ -1554,7 +1555,7 @@ class IfcExporter():
                 person['attributes']['Roles'] = self.create_roles(person['roles'])
             if person['addresses']:
                 person['attributes']['Addresses'] = self.create_addresses(person['addresses'])
-            if self.schema == 'IFC2X3' and 'Identification' in person['attributes']:
+            if self.schema_version == 'IFC2X3' and 'Identification' in person['attributes']:
                 person['attributes']['Id'] = person['attributes']['Identification']
                 del person['attributes']['Identification']
             person['ifc'] = self.file.create_entity('IfcPerson', **person['attributes'])
@@ -1580,7 +1581,7 @@ class IfcExporter():
         return results
 
     def create_address(self, address):
-        if self.schema == 'IFC2X3' and 'MessagingIDs' in address['attributes']:
+        if self.schema_version == 'IFC2X3' and 'MessagingIDs' in address['attributes']:
             del address['attributes']['MessagingIDs']
         return self.file.create_entity('IfcPostalAddress' if
             address['is_postal'] else 'IfcTelecomAddress', **address['attributes'])
@@ -1985,7 +1986,7 @@ class IfcExporter():
                 **self.get_material_external_definition(item['raw'])))
         # Name is filled out because Revit treats this incorrectly as the material name
         surface_style = self.file.createIfcSurfaceStyle(item['attributes']['Name'], 'BOTH', styles)
-        if self.schema == 'IFC2X3' or self.ifc_export_settings.should_use_presentation_style_assignment:
+        if self.schema_version == 'IFC2X3' or self.ifc_export_settings.should_use_presentation_style_assignment:
             surface_style = self.file.createIfcPresentationStyleAssignment([surface_style])
         return self.file.createIfcStyledItem(representation_item, [surface_style], item['attributes']['Name'])
 
@@ -1999,7 +2000,7 @@ class IfcExporter():
             styled_item = self.create_styled_item(material)
             styled_representation = self.file.createIfcStyledRepresentation(
                 self.ifc_rep_context['Model']['Body']['MODEL_VIEW']['ifc'], None, None, [styled_item])
-            if self.schema == 'IFC2X3':
+            if self.schema_version == 'IFC2X3':
                 material['ifc'] = self.file.createIfcMaterial(material['raw'].name)
             else:
                 material['ifc'] = self.file.createIfcMaterial(material['raw'].name, None, None)
@@ -2121,6 +2122,12 @@ class IfcExporter():
             qto['ifc'] = self.file.create_entity('IfcElementQuantity', **qto['attributes'])
 
     def create_product(self, product):
+        if self.schema.declaration_by_name(product['class']).is_abstract():
+            self.ifc_export_settings.logger.error(
+                'The product "{}/{}" class is abstract and could not be created'.format(
+                    product['class'], product['attributes']['Name']))
+            return
+
         if product['relating_structure'] is not None:
             placement_rel_to = self.ifc_parser.spatial_structure_elements[product['relating_structure']][
                 'ifc'].ObjectPlacement
@@ -2854,7 +2861,7 @@ class IfcExporter():
         mesh = representation['raw']
         if not representation['is_parametric']:
             mesh = representation['raw_object'].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
-        if self.schema == 'IFC2X3' or self.ifc_export_settings.should_force_faceted_brep:
+        if self.schema_version == 'IFC2X3' or self.ifc_export_settings.should_force_faceted_brep:
             return self.create_faceted_brep(representation, mesh)
         return self.create_polygonal_face_set(representation, mesh)
 
@@ -3112,7 +3119,7 @@ class IfcExportSettings:
         self.has_quantities = True
         self.contexts = ['Model', 'Plan']
         self.subcontexts = ['Annotation', 'Axis', 'Box', 'FootPrint', 'Reference', 'Body', 'Clearance', 'CoG', 'Profile', 'SurveyPoints']
-        self.schema = 'IFC4'
+        self.schema_version = 'IFC4'
         self.target_views = ['GRAPH_VIEW', 'SKETCH_VIEW', 'MODEL_VIEW', 'PLAN_VIEW', 'REFLECTED_PLAN_VIEW',
                              'SECTION_VIEW', 'ELEVATION_VIEW', 'USERDEFINED', 'NOTDEFINED']
         self.should_use_presentation_style_assignment = False
