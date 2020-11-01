@@ -1286,8 +1286,24 @@ class BIMProperties(PropertyGroup):
     ifc_patch_output: StringProperty(default='', name='IFC Patch Output IFC')
     ifc_patch_args: StringProperty(default='', name='Arguments')
     qto_result: StringProperty(default='', name='Qto Result')
-    area_unit: StringProperty(default='', name='IFC Area Unit')
-    volume_unit: StringProperty(default='', name='IFC Volume Unit')
+    area_unit: EnumProperty(items=[
+        ('square centimeters', 'square centimeters', ''),
+        ('square feet', 'square feet', ''),
+        ('square inches', 'square inches', ''),
+        ('square kilometers', 'square kilometers', ''),
+        ('square meters', 'square meters', ''),
+        ('square miles', 'square miles', ''),
+        ('square millimeters', 'square millimeters', ''),
+        ('square yards', 'square yards', ''),
+        ], name='IFC Area Unit')
+    volume_unit: EnumProperty(items=[
+        ('cubic centimeters', 'cubic centimeters', ''),
+        ('cubic feet', 'cubic feet', ''),
+        ('cubic inches', 'cubic inches', ''),
+        ('cubic meters', 'cubic meters', ''),
+        ('cubic millimeters', 'cubic millimeters', ''),
+        ('cubic yards', 'cubic yards', ''),
+        ], name='IFC Volume Unit')
     metric_precision: FloatProperty(default=0, name='Drawing Metric Precision')
     imperial_precision: EnumProperty(items=[
         ('NONE', 'No rounding', ''),
