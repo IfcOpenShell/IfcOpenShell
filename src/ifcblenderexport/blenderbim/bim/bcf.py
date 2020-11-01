@@ -1,4 +1,4 @@
-class BcfStore():
+class BcfStore:
     topics = []
     viewpoints = []
     comments = []
