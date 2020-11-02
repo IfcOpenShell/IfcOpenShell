@@ -3,6 +3,7 @@ import ifcopenshell.geom
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.selector
 import ifcopenshell.util.element
+import ifcopenshell.util.pset
 import bpy
 import bmesh
 import os
@@ -206,8 +207,8 @@ class MaterialCreator:
     def add_pset(self, pset, obj):
         new_pset = obj.BIMMaterialProperties.psets.add()
         new_pset.name = pset.Name
-        if new_pset.name in schema.ifc.psets:
-            for prop_name in schema.ifc.psets[new_pset.name]["HasPropertyTemplates"].keys():
+        if new_pset.name in ifcopenshell.util.pset.psets:
+            for prop_name in ifcopenshell.util.pset.psets[new_pset.name]["HasPropertyTemplates"].keys():
                 prop = new_pset.properties.add()
                 prop.name = prop_name
         for prop in pset.Properties:
@@ -1338,8 +1339,8 @@ class IfcImporter:
     def add_pset(self, pset, obj):
         new_pset = obj.BIMObjectProperties.psets.add()
         new_pset.name = pset.Name
-        if new_pset.name in schema.ifc.psets:
-            for prop_name in schema.ifc.psets[new_pset.name]["HasPropertyTemplates"].keys():
+        if new_pset.name in ifcopenshell.util.pset.psets:
+            for prop_name in ifcopenshell.util.pset.psets[new_pset.name]["HasPropertyTemplates"].keys():
                 prop = new_pset.properties.add()
                 prop.name = prop_name
         # Invalid IFC, but some vendors like Solidworks do this so we accomodate it
@@ -1358,8 +1359,8 @@ class IfcImporter:
     def add_qto(self, qto, obj):
         new_qto = obj.BIMObjectProperties.qtos.add()
         new_qto.name = str(qto.Name)
-        if new_qto.name in schema.ifc.qtos:
-            for prop_name in schema.ifc.qtos[new_qto.name]["HasPropertyTemplates"].keys():
+        if new_qto.name in ifcopenshell.util.pset.qtos:
+            for prop_name in ifcopenshell.util.pset.qtos[new_qto.name]["HasPropertyTemplates"].keys():
                 prop = new_qto.properties.add()
                 prop.name = prop_name
         for prop in qto.Quantities:

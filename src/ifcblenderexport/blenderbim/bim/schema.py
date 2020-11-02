@@ -1,6 +1,7 @@
 import os
 import json
 import ifcopenshell
+import ifcopenshell.util.pset
 import bpy
 from pathlib import Path
 
@@ -30,14 +31,10 @@ class IfcSchema:
         self.property_files = []
         property_paths = Path(os.path.join(self.data_dir, "pset")).glob("*.ifc")
         for path in property_paths:
-            self.property_files.append(ifcopenshell.open(path))
-        self.property_files.append(ifcopenshell.open(os.path.join(self.schema_dir, "Pset_IFC4_ADD2.ifc")))
+            ifcopenshell.util.pset.load_property_set_template(path)
+        ifcopenshell.util.pset.load_property_set_template(os.path.join(self.schema_dir, "Pset_IFC4_ADD2.ifc"))
 
         self.classification_files = {}
-        self.psets = {}
-        self.qtos = {}
-        self.applicable_psets = {}
-        self.applicable_qtos = {}
         self.classifications = {}
         self.load()
 
@@ -49,17 +46,6 @@ class IfcSchema:
 
         with open(os.path.join(self.schema_dir, "ifc_types_IFC4.json")) as f:
             self.type_map = json.load(f)
-
-        for property_file in self.property_files:
-            for prop in property_file.by_type("IfcPropertySetTemplate"):
-                if prop.Name[0:4] == "Qto_":
-                    self.qtos[prop.Name] = {"HasPropertyTemplates": {p.Name: p for p in prop.HasPropertyTemplates}}
-                    entity = prop.ApplicableEntity if prop.ApplicableEntity else "IfcRoot"
-                    self.applicable_qtos.setdefault(entity, []).append(prop.Name)
-                else:
-                    self.psets[prop.Name] = {"HasPropertyTemplates": {p.Name: p for p in prop.HasPropertyTemplates}}
-                    entity = prop.ApplicableEntity if prop.ApplicableEntity else "IfcRoot"
-                    self.applicable_psets.setdefault(entity, []).append(prop.Name)
 
     def load_classification(self, name, classification_index=None):
         if name not in self.classifications:
