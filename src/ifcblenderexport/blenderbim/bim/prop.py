@@ -580,11 +580,7 @@ class DrawingStyle(PropertyGroup):
     name: StringProperty(name="Name")
     raster_style: StringProperty(name="Raster Style")
     render_type: EnumProperty(
-        items=[
-            ("NONE", "None", ""),
-            ("DEFAULT", "Default", ""),
-            ("VIEWPORT", "Viewport", ""),
-        ],
+        items=[("NONE", "None", ""), ("DEFAULT", "Default", ""), ("VIEWPORT", "Viewport", ""),],
         name="Render Type",
         default="VIEWPORT",
     )
@@ -657,11 +653,7 @@ class BIMTextProperties(PropertyGroup):
         name="Font Size",
     )
     symbol: EnumProperty(
-        items=[
-            ("None", "None", ""),
-            ("rectangle-tag", "Rectangle Tag", ""),
-            ("door-tag", "Door Tag", ""),
-        ],
+        items=[("None", "None", ""), ("rectangle-tag", "Rectangle Tag", ""), ("door-tag", "Door Tag", ""),],
         update=refreshFontSize,
         name="Symbol",
     )
@@ -1443,11 +1435,7 @@ class BIMProperties(PropertyGroup):
         name="Temporary Section Cutaway Colour", subtype="COLOR", default=(1, 0, 0), min=0.0, max=1.0
     )
     ifc_import_filter: EnumProperty(
-        items=[
-            ("NONE", "None", ""),
-            ("WHITELIST", "Whitelist", ""),
-            ("BLACKLIST", "Blacklist", ""),
-        ],
+        items=[("NONE", "None", ""), ("WHITELIST", "Whitelist", ""), ("BLACKLIST", "Blacklist", ""),],
         name="Import Filter",
     )
     ifc_selector: StringProperty(default="", name="IFC Selector")
@@ -1466,26 +1454,29 @@ class BIMProperties(PropertyGroup):
     ifc_patch_args: StringProperty(default="", name="Arguments")
     qto_result: StringProperty(default="", name="Qto Result")
     area_unit: EnumProperty(
+        default="SQUARE_METRE",
         items=[
-            ("square centimeters", "square centimeters", ""),
-            ("square foot", "square foot", ""),
-            ("square inches", "square inches", ""),
-            ("square kilometers", "square kilometers", ""),
-            ("square meters", "square meters", ""),
-            ("square miles", "square miles", ""),
-            ("square millimeters", "square millimeters", ""),
-            ("square yards", "square yards", ""),
+            ("MILLI/SQUARE_METRE", "Square Millimetre", ""),
+            ("CENTI/SQUARE_METRE", "Square Centimetre", ""),
+            ("SQUARE_METRE", "Square Metre", ""),
+            ("KILO/SQUARE_METRE", "Square Kilometre", ""),
+            ("square inch", "Square Inch", ""),
+            ("square foot", "Square Foot", ""),
+            ("square yard", "Square Yard", ""),
+            ("square mile", "Square Mile", ""),
         ],
         name="IFC Area Unit",
     )
     volume_unit: EnumProperty(
+        default="CUBIC_METRE",
         items=[
-            ("cubic centimeters", "cubic centimeters", ""),
-            ("cubic foot", "cubic foot", ""),
-            ("cubic inches", "cubic inches", ""),
-            ("cubic meters", "cubic meters", ""),
-            ("cubic millimeters", "cubic millimeters", ""),
-            ("cubic yards", "cubic yards", ""),
+            ("MILLI/CUBIC_METRE", "Cubic Millimetre", ""),
+            ("CENTI/CUBIC_METRE", "Cubic Centimetre", ""),
+            ("CUBIC_METRE", "Cubic Metre", ""),
+            ("KILO/CUBIC_METRE", "Cubic Kilometre", ""),
+            ("cubic inch", "Cubic Inch", ""),
+            ("cubic foot", "Cubic Foot", ""),
+            ("cubic yard", "Cubic Yard", ""),
         ],
         name="IFC Volume Unit",
     )
