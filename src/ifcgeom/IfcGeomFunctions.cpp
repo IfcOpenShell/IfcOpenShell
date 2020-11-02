@@ -2904,7 +2904,7 @@ namespace {
 			auto result_shape = split.Shape();
 			std::list<TopoDS_Shape> subs;
 			subshapes(result_shape, subs);
-			if (subs.size() == 1 && operands.Size() - 2 > subs.size() && (subs.front().ShapeType() == TopAbs_COMPSOLID || subs.front().ShapeType() == TopAbs_COMPOUND)) {
+			if (subs.size() == 1 && operands.Size() - 2 > (int)subs.size() && (subs.front().ShapeType() == TopAbs_COMPSOLID || subs.front().ShapeType() == TopAbs_COMPOUND)) {
 				auto s = subs.front();
 				subs.clear();
 				subshapes(s, subs);
