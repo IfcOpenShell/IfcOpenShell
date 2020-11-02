@@ -224,6 +224,11 @@ private:
 	double modelling_precision;
 	double dimensionality;
 	double layerset_first;
+
+	// For stopping PlacementRelTo recursion in convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf)
+	const IfcParse::declaration* placement_rel_to;
+
+	faceset_helper* faceset_helper_;
 	gp_Vec offset = gp_Vec{0.0, 0.0, 0.0};
 	gp_Quaternion rotation = gp_Quaternion{};
 	gp_Trsf offset_and_rotation = gp_Trsf();
@@ -235,11 +240,6 @@ private:
 	std::map<int, SurfaceStyle> style_cache;
 
 	const SurfaceStyle* internalize_surface_style(const std::pair<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*>& shading_style);
-
-	 // For stopping PlacementRelTo recursion in convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf)
-	const IfcParse::declaration* placement_rel_to;
-
-	faceset_helper* faceset_helper_;
 
 public:
 	MAKE_TYPE_NAME(Kernel)()
