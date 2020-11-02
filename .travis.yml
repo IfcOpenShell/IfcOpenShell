@@ -80,11 +80,11 @@ script:
 after_success:
   - cd docs
   - MESSAGE=$(git log --oneline -1)
-  - git clone https://johltn:$GITHUB_PASSWORD@github.com/IfcOpenShell/docs
+  - git clone https://IfcOpenBot:$GITHUB_PASSWORD@github.com/IfcOpenShell/docs
   - cd docs
   - mv ../output/* .
   - git config user.email "${GITHUB_EMAIL}"
-  - git config user.name "${USER_NAME}"
+  - git config user.name "IfcOpenBot"
   - git add .
   - git commit -m "${MESSAGE}"
   - git push

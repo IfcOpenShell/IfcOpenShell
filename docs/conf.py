@@ -12,7 +12,7 @@ author = u'Johan Luttun'
 
 # Setup the breathe extension
 breathe_projects = {
-    "My Project": "./doxygen/xml"
+    "My Project": "./output/doxygen/xml"
 }
 breathe_default_project = "My Project"
 
