@@ -284,7 +284,6 @@ namespace IfcGeom {
 							BRepAdaptor_Curve crv(TopoDS::Edge(texp.Current()));
 							GCPnts_QuasiUniformDeflection tessellater(crv, settings().deflection_tolerance());
 							int n = tessellater.NbPoints();
-							int start = (int)_verts.size() / 3;
 							int previous = -1;
 							
 							for (int i = 1; i <= n; ++i) {
