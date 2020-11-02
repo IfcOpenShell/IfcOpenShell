@@ -2,6 +2,7 @@ import json
 import os
 import csv
 import ifcopenshell
+import ifcopenshell.util.pset
 from pathlib import Path
 from . import export_ifc
 from . import schema
@@ -429,29 +430,25 @@ def refreshReferences(self, context):
     context.scene.BIMProperties.classification_references.root = ""
 
 
-# TODO: move into util module. See bug #971
 def getPsetNames(self, context):
     global psetnames_enum
     psetnames_enum.clear()
     if "/" in context.active_object.name and context.active_object.name.split("/")[0] in schema.ifc.elements:
-        empty = ifcopenshell.file()
-        element = empty.create_entity(context.active_object.name.split("/")[0])
-        for ifc_class, pset_names in schema.ifc.applicable_psets.items():
-            if element.is_a(ifc_class):
-                psetnames_enum.extend([(p, p, "") for p in pset_names])
+        pset_names = ifcopenshell.util.pset.get_applicable_psetqtos(
+            bpy.context.scene.BIMProperties.export_schema, context.active_object.name.split("/")[0], is_pset=True
+        )
+        psetnames_enum.extend([(p, p, "") for p in pset_names])
     return psetnames_enum
 
 
-# TODO: move into util module. See bug #971
 def getQtoNames(self, context):
     global qtonames_enum
     qtonames_enum.clear()
     if "/" in context.active_object.name and context.active_object.name.split("/")[0] in schema.ifc.elements:
-        empty = ifcopenshell.file()
-        element = empty.create_entity(context.active_object.name.split("/")[0])
-        for ifc_class, qto_names in schema.ifc.applicable_qtos.items():
-            if element.is_a(ifc_class):
-                qtonames_enum.extend([(q, q, "") for q in qto_names])
+        qto_names = ifcopenshell.util.pset.get_applicable_psetqtos(
+            bpy.context.scene.BIMProperties.export_schema, context.active_object.name.split("/")[0], is_qto=True
+        )
+        qtonames_enum.extend([(q, q, "") for q in qto_names])
     return qtonames_enum
 
 

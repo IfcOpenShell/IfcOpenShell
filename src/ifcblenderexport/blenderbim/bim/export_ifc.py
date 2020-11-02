@@ -6,12 +6,13 @@ import datetime
 import os
 import zipfile
 import tempfile
+import ifcopenshell
+import ifcopenshell.util.pset
 from pathlib import Path
 from mathutils import Vector, Matrix
 from .helper import SIUnitHelper, get_representation_elements
 from . import schema
 from . import ifc
-import ifcopenshell
 import addon_utils
 
 
@@ -466,10 +467,10 @@ class IfcParser:
             return
         qto_names = self.get_applicable_qtos(ifc_class)
         for name in qto_names:
-            if name not in schema.ifc.qtos:
+            if name not in ifcopenshell.util.pset.qtos:
                 continue
             has_automatic_value = False
-            props = schema.ifc.qtos[name]["HasPropertyTemplates"].keys()
+            props = ifcopenshell.util.pset.qtos[name]["HasPropertyTemplates"].keys()
             guessed_values = {}
             for prop_name in props:
                 value = self.qto_calculator.guess_quantity(prop_name, props, obj)
@@ -1666,12 +1667,12 @@ class IfcExporter:
                 )
 
     def create_qto_properties(self, qto):
-        if qto["attributes"]["Name"] in schema.ifc.qtos:
+        if qto["attributes"]["Name"] in ifcopenshell.util.pset.qtos:
             return self.create_templated_qto_properties(qto)
         return self.create_custom_qto_properties(qto)
 
     def create_pset_properties(self, pset):
-        if pset["attributes"]["Name"] in schema.ifc.psets:
+        if pset["attributes"]["Name"] in ifcopenshell.util.pset.psets:
             return self.create_templated_pset_properties(pset)
         return self.create_custom_pset_properties(pset)
 
@@ -1704,7 +1705,7 @@ class IfcExporter:
 
     def create_templated_pset_properties(self, pset):
         properties = []
-        templates = schema.ifc.psets[pset["attributes"]["Name"]]["HasPropertyTemplates"]
+        templates = ifcopenshell.util.pset.psets[pset["attributes"]["Name"]]["HasPropertyTemplates"]
         for name, data in templates.items():
             if name not in pset["raw"]:
                 continue
@@ -1731,7 +1732,7 @@ class IfcExporter:
 
     def create_templated_qto_properties(self, qto):
         properties = []
-        templates = schema.ifc.qtos[qto["attributes"]["Name"]]["HasPropertyTemplates"]
+        templates = ifcopenshell.util.pset.qtos[qto["attributes"]["Name"]]["HasPropertyTemplates"]
         for name, data in templates.items():
             if name not in qto["raw"]:
                 continue
@@ -3157,10 +3158,7 @@ class IfcExporter:
             )
 
     def relate_spaces_to_boundary_elements(self):
-        for (
-            relating_space_index,
-            relationships,
-        ) in self.ifc_parser.rel_space_boundaries.items():
+        for (relating_space_index, relationships,) in self.ifc_parser.rel_space_boundaries.items():
             for relationship in relationships:
                 relationship["attributes"]["GlobalId"] = ifcopenshell.guid.new()
                 relationship["attributes"]["RelatedBuildingElement"] = self.ifc_parser.products[
