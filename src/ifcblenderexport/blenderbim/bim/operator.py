@@ -1224,15 +1224,11 @@ class AddAttribute(bpy.types.Operator):
         if not bpy.context.active_object.BIMObjectProperties.applicable_attributes:
             return {"FINISHED"}
         name = bpy.context.active_object.BIMObjectProperties.applicable_attributes
-        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(
-            bpy.context.scene.BIMProperties.export_schema)
+        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(bpy.context.scene.BIMProperties.export_schema)
         for obj in bpy.context.selected_objects:
-            if (
-                '/' not in obj.name
-                or obj.BIMObjectProperties.attributes.find(name) != -1
-            ):
+            if "/" not in obj.name or obj.BIMObjectProperties.attributes.find(name) != -1:
                 continue
-            entity = schema.declaration_by_name(obj.name.split('/')[0])
+            entity = schema.declaration_by_name(obj.name.split("/")[0])
             if name not in [a.name() for a in entity.all_attributes()]:
                 continue
             attribute = obj.BIMObjectProperties.attributes.add()
@@ -1259,7 +1255,13 @@ class RemoveAttribute(bpy.types.Operator):
     attribute_index: bpy.props.IntProperty()
 
     def execute(self, context):
-        bpy.context.active_object.BIMObjectProperties.attributes.remove(self.attribute_index)
+        name = bpy.context.active_object.BIMObjectProperties.attributes[self.attribute_index].name
+        for obj in bpy.context.selected_objects:
+            if "/" not in obj.name:
+                continue
+            index = obj.BIMObjectProperties.attributes.find(name)
+            if index != -1:
+                obj.BIMObjectProperties.attributes.remove(index)
         return {"FINISHED"}
 
 
