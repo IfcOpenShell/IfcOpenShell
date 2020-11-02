@@ -1221,9 +1221,22 @@ class AddAttribute(bpy.types.Operator):
     bl_label = "Add Attribute"
 
     def execute(self, context):
-        if bpy.context.active_object.BIMObjectProperties.applicable_attributes:
-            attribute = bpy.context.active_object.BIMObjectProperties.attributes.add()
-            attribute.name = bpy.context.active_object.BIMObjectProperties.applicable_attributes
+        if not bpy.context.active_object.BIMObjectProperties.applicable_attributes:
+            return {"FINISHED"}
+        name = bpy.context.active_object.BIMObjectProperties.applicable_attributes
+        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(
+            bpy.context.scene.BIMProperties.export_schema)
+        for obj in bpy.context.selected_objects:
+            if (
+                '/' not in obj.name
+                or obj.BIMObjectProperties.attributes.find(name) != -1
+            ):
+                continue
+            entity = schema.declaration_by_name(obj.name.split('/')[0])
+            if name not in [a.name() for a in entity.all_attributes()]:
+                continue
+            attribute = obj.BIMObjectProperties.attributes.add()
+            attribute.name = name
             if attribute.name == "GlobalId":
                 attribute.string_value = ifcopenshell.guid.new()
         return {"FINISHED"}
