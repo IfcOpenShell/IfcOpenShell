@@ -240,6 +240,7 @@ if bpy is not None:
         prop.Attribute,
         prop.IfcParameter,
         prop.BoundaryCondition,
+        prop.PresentationLayer,
         prop.PsetQto,
         prop.GlobalId,
         prop.RepresentationItem,

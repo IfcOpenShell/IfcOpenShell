@@ -647,7 +647,10 @@ class BIM_PT_mesh(Panel):
             row.operator("bim.update_ifc_representation", icon="FILE_REFRESH", text="").index = index
 
         row = layout.row()
-        row.prop(props, "presentation_layer")
+        row.prop(props.presentation_layer, "name")
+        row.prop(props.presentation_layer, "description")
+        row.prop(props.presentation_layer, "identifier")
+        row.prop(props.presentation_layer, "layer_on")
 
         row = layout.row()
         row.prop(props, "is_parametric")
