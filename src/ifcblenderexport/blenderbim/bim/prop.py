@@ -1589,6 +1589,7 @@ class BoundaryCondition(PropertyGroup):
 
 
 class BIMObjectProperties(PropertyGroup):
+    is_reassigning_class: BoolProperty(name="Is Reassigning Class")
     global_ids: CollectionProperty(name="GlobalIds", type=GlobalId)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     relating_type: PointerProperty(name="Type Product", type=bpy.types.Object)

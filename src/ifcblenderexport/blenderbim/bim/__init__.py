@@ -21,6 +21,7 @@ if bpy is not None:
     from .module.model import opening as model_opening
 
     classes = (
+        operator.ReassignClass,
         operator.AssignClass,
         operator.UnassignClass,
         operator.SelectClass,
