@@ -118,18 +118,18 @@ protected:
 	boost::optional<std::vector<section_data>> deferred_section_data_;
 	boost::optional<double> scale_, calculated_scale_, center_x_, center_y_;
 
-	bool rescale, print_space_names_, print_space_areas_, draw_door_arcs_;
-	bool with_section_heights_from_storey_, buffer_elements_;
-	bool is_floor_plan_;
+	bool with_section_heights_from_storey_, rescale, print_space_names_, print_space_areas_;
+	bool draw_door_arcs_, buffer_elements_, is_floor_plan_;
 
+	IfcParse::IfcFile* file;
+	IfcUtil::IfcBaseEntity* storey_;
 	std::multimap<drawing_key, path_object, storey_sorter> paths;
 
 	float_item_list xcoords, ycoords, radii;
 	size_t xcoords_begin, ycoords_begin, radii_begin;
 
 	boost::optional<std::string> section_ref_, elevation_ref_;
-	IfcParse::IfcFile* file;
-	IfcUtil::IfcBaseEntity* storey_;
+	
 	std::list<geometry_data> element_buffer_;
 
 	Handle(HLRBRep_Algo) hlr;
