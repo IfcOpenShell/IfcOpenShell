@@ -1891,10 +1891,10 @@ class BIM_UL_classifications(bpy.types.UIList):
 
 class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     bl_idname = "blenderbim"
-    svg2pdf_command: StringProperty(name="SVG to PDF Command")
-    svg2dxf_command: StringProperty(name="SVG to DXF Command")
-    svg_command: StringProperty(name="SVG Command")
-    pdf_command: StringProperty(name="PDF Command")
+    svg2pdf_command: StringProperty(name="SVG to PDF Command", description="E.g. [['inkscape', svg, '-o', pdf]]")
+    svg2dxf_command: StringProperty(name="SVG to DXF Command", description="E.g. [['inkscape', svg, '-o', eps], ['pstoedit', '-dt', '-f', 'dxf:-polyaslines -mm', eps, dxf, '-psarg', '-dNOSAFER']]")
+    svg_command: StringProperty(name="SVG Command", description="E.g. [['firefox-bin', path]]")
+    pdf_command: StringProperty(name="PDF Command", description="E.g. [['firefox-bin', path]]")
 
     def draw(self, context):
         layout = self.layout
