@@ -836,15 +836,29 @@ class AddQto(bpy.types.Operator):
     bl_label = "Add Qto"
 
     def execute(self, context):
+        self.applicable_qtos_cache = {}
         name = bpy.context.active_object.BIMObjectProperties.qto_name
         if name not in ifcopenshell.util.pset.qtos:
             return {"FINISHED"}
-        qto = bpy.context.active_object.BIMObjectProperties.qtos.add()
-        qto.name = name
-        for prop_name in ifcopenshell.util.pset.qtos[name]["HasPropertyTemplates"].keys():
-            prop = qto.properties.add()
-            prop.name = prop_name
+        for obj in bpy.context.selected_objects:
+            if "/" not in obj.name or obj.BIMObjectProperties.qtos.find(name) != -1:
+                continue
+            applicable_qtos = self.get_applicable_qtos(obj.name.split("/")[0])
+            if name not in applicable_qtos:
+                continue
+            qto = obj.BIMObjectProperties.qtos.add()
+            qto.name = name
+            for prop_name in ifcopenshell.util.pset.qtos[name]["HasPropertyTemplates"].keys():
+                prop = qto.properties.add()
+                prop.name = prop_name
         return {"FINISHED"}
+
+    def get_applicable_qtos(self, ifc_class):
+        if ifc_class not in self.applicable_qtos_cache:
+            self.applicable_qtos_cache[ifc_class] = ifcopenshell.util.pset.get_applicable_psetqtos(
+                bpy.context.scene.BIMProperties.export_schema, ifc_class, is_qto=True
+            )
+        return self.applicable_qtos_cache[ifc_class]
 
 
 class AddPset(bpy.types.Operator):
@@ -899,7 +913,13 @@ class RemoveQto(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        bpy.context.active_object.BIMObjectProperties.qtos.remove(self.index)
+        name = bpy.context.active_object.BIMObjectProperties.qtos[self.index].name
+        for obj in bpy.context.selected_objects:
+            if "/" not in obj.name:
+                continue
+            index = obj.BIMObjectProperties.qtos.find(name)
+            if index != -1:
+                obj.BIMObjectProperties.qtos.remove(index)
         return {"FINISHED"}
 
 
