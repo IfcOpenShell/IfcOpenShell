@@ -775,7 +775,7 @@ namespace {
 		BRepBuilderAPI_MakeEdge me(crv, v1, v2);
 		if (!me.IsDone()) {
 			const double eps2 = eps * eps;
-			if (me.Error() == BRepLib_PointProjectionFailed) {
+			if (me.Error() == BRepBuilderAPI_PointProjectionFailed) {
 				GeomAdaptor_Curve GAC(crv);
 				const gp_Pnt* ps[2] = { &p1, &p2 };
 				for (int i = 0; i < 2; ++i) {
