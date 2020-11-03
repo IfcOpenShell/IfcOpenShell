@@ -38,10 +38,12 @@ endif
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f geolocation.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f selector.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f unit.py
+	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f pset.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/element.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/geolocation.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/selector.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/unit.py
+	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/pset.py
 
 	# Provides Python OCC functionality for cutting IFC geometry for construction documentation
 	mkdir dist/working
