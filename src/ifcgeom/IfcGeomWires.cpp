@@ -100,13 +100,7 @@
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
 namespace {
-	// Returns the other vertex of an edge
-	TopoDS_Vertex other(const TopoDS_Edge& e, const TopoDS_Vertex& v) {
-		TopoDS_Vertex a, b;
-		TopExp::Vertices(e, a, b);
-		return v.IsSame(b) ? a : b;
-	}
-
+	// Returns the first edge of a wire
 	TopoDS_Edge first_edge(const TopoDS_Wire& w) {
 		TopoDS_Vertex v1, v2;
 		TopExp::Vertices(w, v1, v2);
