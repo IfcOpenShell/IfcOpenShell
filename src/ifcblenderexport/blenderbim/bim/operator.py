@@ -852,15 +852,29 @@ class AddPset(bpy.types.Operator):
     bl_label = "Add Pset"
 
     def execute(self, context):
-        pset_name = bpy.context.active_object.BIMObjectProperties.pset_name
-        if pset_name not in ifcopenshell.util.pset.psets:
+        self.applicable_psets_cache = {}
+        name = bpy.context.active_object.BIMObjectProperties.pset_name
+        if name not in ifcopenshell.util.pset.psets:
             return {"FINISHED"}
-        pset = bpy.context.active_object.BIMObjectProperties.psets.add()
-        pset.name = pset_name
-        for prop_name in ifcopenshell.util.pset.psets[pset_name]["HasPropertyTemplates"].keys():
-            prop = pset.properties.add()
-            prop.name = prop_name
+        for obj in bpy.context.selected_objects:
+            if "/" not in obj.name or obj.BIMObjectProperties.psets.find(name) != -1:
+                continue
+            applicable_psets = self.get_applicable_psets(obj.name.split("/")[0])
+            if name not in applicable_psets:
+                continue
+            pset = obj.BIMObjectProperties.psets.add()
+            pset.name = name
+            for prop_name in ifcopenshell.util.pset.psets[name]["HasPropertyTemplates"].keys():
+                prop = pset.properties.add()
+                prop.name = prop_name
         return {"FINISHED"}
+
+    def get_applicable_psets(self, ifc_class):
+        if ifc_class not in self.applicable_psets_cache:
+            self.applicable_psets_cache[ifc_class] = ifcopenshell.util.pset.get_applicable_psetqtos(
+                bpy.context.scene.BIMProperties.export_schema, ifc_class, is_pset=True
+            )
+        return self.applicable_psets_cache[ifc_class]
 
 
 class RemovePset(bpy.types.Operator):
@@ -869,7 +883,13 @@ class RemovePset(bpy.types.Operator):
     pset_index: bpy.props.IntProperty()
 
     def execute(self, context):
-        bpy.context.active_object.BIMObjectProperties.psets.remove(self.pset_index)
+        name = bpy.context.active_object.BIMObjectProperties.psets[self.pset_index].name
+        for obj in bpy.context.selected_objects:
+            if "/" not in obj.name:
+                continue
+            index = obj.BIMObjectProperties.psets.find(name)
+            if index != -1:
+                obj.BIMObjectProperties.psets.remove(index)
         return {"FINISHED"}
 
 
@@ -2748,12 +2768,12 @@ class CopyPropertyToSelection(bpy.types.Operator):
                 prop.string_value = self.prop_value
         return {"FINISHED"}
 
-    def get_applicable_psets(self, element_class):
-        if element_class not in self.applicable_psets_cache:
-            self.applicable_psets_cache[element_class] = ifcopenshell.util.pset.get_applicable_psetqtos(
-                bpy.context.scene.BIMProperties.export_schema, element_class, is_pset=True
+    def get_applicable_psets(self, ifc_class):
+        if ifc_class not in self.applicable_psets_cache:
+            self.applicable_psets_cache[ifc_class] = ifcopenshell.util.pset.get_applicable_psetqtos(
+                bpy.context.scene.BIMProperties.export_schema, ifc_class, is_pset=True
             )
-        return self.applicable_psets_cache[element_class]
+        return self.applicable_psets_cache[ifc_class]
 
 
 class BIM_OT_ChangeClassificationLevel(bpy.types.Operator):
