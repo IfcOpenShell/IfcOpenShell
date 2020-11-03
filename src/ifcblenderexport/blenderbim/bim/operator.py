@@ -214,6 +214,20 @@ class SelectPset(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ReassignClass(bpy.types.Operator):
+    bl_idname = "bim.reassign_class"
+    bl_label = "Reassign IFC Class"
+
+    def execute(self, context):
+        obj = bpy.context.active_object
+        bpy.context.active_object.BIMObjectProperties.is_reassigning_class = True
+        bpy.context.scene.BIMProperties.ifc_class = obj.name.split("/")[0]
+        predefined_type = obj.BIMObjectProperties.attributes.get("PredefinedType")
+        if predefined_type:
+            bpy.context.scene.BIMProperties.ifc_predefined_type = predefined_type.string_value
+        return {"FINISHED"}
+
+
 class AssignClass(bpy.types.Operator):
     bl_idname = "bim.assign_class"
     bl_label = "Assign IFC Class"
@@ -222,6 +236,7 @@ class AssignClass(bpy.types.Operator):
     def execute(self, context):
         if self.object_name:
             objects = [bpy.data.objects.get(self.object_name)]
+            objects[0].BIMObjectProperties.is_reassigning_class = False
         else:
             objects = bpy.context.selected_objects
         for obj in objects:
