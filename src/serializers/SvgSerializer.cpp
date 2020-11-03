@@ -461,7 +461,7 @@ void SvgSerializer::write(const geometry_data& data) {
 			Logger::Error(e);
 		}
 
-		if (operation_type && (*operation_type == "SINGLE_SWING_LEFT") || (*operation_type == "SINGLE_SWING_RIGHT")) {
+		if (operation_type && ((*operation_type == "SINGLE_SWING_LEFT") || (*operation_type == "SINGLE_SWING_RIGHT"))) {
 			const bool is_left = *operation_type == "SINGLE_SWING_LEFT";
 
 			Bnd_Box bb;
