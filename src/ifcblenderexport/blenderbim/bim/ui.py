@@ -651,12 +651,6 @@ class BIM_PT_mesh(Panel):
             row.operator("bim.update_ifc_representation", icon="FILE_REFRESH", text="").index = index
 
         row = layout.row()
-        row.prop(props.presentation_layer, "name")
-        row.prop(props.presentation_layer, "description")
-        row.prop(props.presentation_layer, "identifier")
-        row.prop(props.presentation_layer, "layer_on")
-
-        row = layout.row()
         row.prop(props, "is_parametric")
         row = layout.row()
         row.prop(props, "is_native")
@@ -681,6 +675,37 @@ class BIM_PT_mesh(Panel):
             row.operator("bim.select_swept_solid_extrusion", icon="RESTRICT_SELECT_OFF", text="").index = index
         row = layout.row()
         row.prop(props, "swept_solids")
+
+
+class BIM_PT_presentation(Panel):
+    bl_label = "IFC Presentation Layers"
+    bl_idname = "BIM_PT_presentation"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "data"
+
+    @classmethod
+    def poll(cls, context):
+        return (
+            context.active_object is not None
+            and context.active_object.type == "MESH"
+            and hasattr(context.active_object.data, "BIMMeshProperties")
+        )
+
+    def draw(self, context):
+        if not context.active_object.data:
+            return
+        layout = self.layout
+        props = context.active_object.data.BIMMeshProperties
+
+        row = layout.row(align=True)
+        row.prop(props.presentation_layer, "name")
+        row = layout.row()
+        row.prop(props.presentation_layer, "description")
+        row = layout.row()
+        row.prop(props.presentation_layer, "identifier")
+        row = layout.row()
+        row.prop(props.presentation_layer, "layer_on")
 
 
 class BIM_PT_material(Panel):
