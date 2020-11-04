@@ -278,6 +278,7 @@ if bpy is not None:
         ui.BIM_PT_debug,
         ui.BIM_PT_material,
         ui.BIM_PT_mesh,
+        ui.BIM_PT_presentation,
         ui.BIM_PT_object,
         ui.BIM_PT_object_psets,
         ui.BIM_PT_object_qto,
