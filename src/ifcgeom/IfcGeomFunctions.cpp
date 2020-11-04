@@ -3769,23 +3769,6 @@ namespace {
 
 		operator int() { return i; }
 	};
-
-	inline std::string format_pnt(const gp_Pnt& p) {
-		std::stringstream ss;
-		ss << std::fixed << std::setprecision(4) << p.X() << " " << p.Y() << " " << p.Z();
-		return ss.str();
-	}
-
-	inline std::string format_edge(const TopoDS_Edge& e) {
-		std::stringstream ss;
-		TopoDS_Vertex v1, v2;
-		TopExp::Vertices(e, v1, v2);
-		gp_Pnt p1 = BRep_Tool::Pnt(v1);
-		gp_Pnt p2 = BRep_Tool::Pnt(v2);
-		ss << "edge " << format_pnt(p1) << " -> " << format_pnt(p2);
-		return ss.str();
-	}
-
 }
 
 bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListOfShape& wires) {
