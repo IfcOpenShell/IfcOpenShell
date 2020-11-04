@@ -344,6 +344,11 @@ struct edge : public trimmed_curve {
 struct collection : public geom_item {
 	std::vector<item*> children;
 
+	collection() {}
+	collection(const collection& other) {
+		std::transform(other.children.begin(), other.children.end(), std::back_inserter(children), std::mem_fun(&item::clone));
+	}
+
 	template <typename T>
 	std::vector<T*> children_as() const {
 		std::vector<T*> ts;

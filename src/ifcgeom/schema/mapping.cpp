@@ -75,12 +75,10 @@ namespace {
 			if (loop) {
 				loop->external = true;
 
-				face_ = taxonomy::face();
+				face_.emplace();
 				face_->instance = loop->instance;
 				face_->matrix = loop->matrix;
-				// @todo make sure loop is not freed
-				// this is accounted for below with as::upgraded_
-				face_->children = { loop };
+				face_->children = { loop->clone() };
 			}
 		}
 
@@ -107,22 +105,20 @@ namespace {
 	class as {
 	private:
 		taxonomy::item* item_;
-		mutable bool upgraded_;
 
 	public:
-		as(taxonomy::item* item) : item_(item), upgraded_(false) {}
+		as(taxonomy::item* item) : item_(item) {}
 		operator T() const {
 			if (!item_) {
 				throw taxonomy::topology_error("item was nullptr");
 			}
 			T* t = dynamic_cast<T*>(item_);
 			if (t) {
-				return *t;
+				return T(*t);
 			} else {
 				{
 					loop_to_face_upgrade<T> upgrade(item_);
 					if (upgrade) {
-						upgraded_ = true;
 						return upgrade;
 					}
 				}
@@ -130,10 +126,7 @@ namespace {
 			}
 		}
 		~as() {
-			if (!upgraded_) {
-				// @todo revisit this
-				delete item_;
-			}
+			delete item_;
 		}
 	};
 
@@ -204,7 +197,7 @@ namespace {
 		auto filtered = new taxonomy::collection;
 		for (auto& child : collection->children) {
 			if (apply_predicate_to_collection(child, fn)) {
-				filtered->children.push_back(child);
+				filtered->children.push_back(child->clone());
 			}
 		}
 		if (filtered->children.empty()) {
@@ -212,6 +205,18 @@ namespace {
 			return nullptr;
 		}
 		return filtered;
+	}
+
+	// @nb traverses nested collections
+	template <typename Fn>
+	taxonomy::collection* filter_in_place(taxonomy::collection* collection, Fn fn) {
+		for (auto it = --collection->children.end(); it >= collection->children.begin(); --it) {
+			if (!apply_predicate_to_collection(*it, fn)) {
+				delete *it;
+				collection->children.erase(it);
+			}
+		}
+		return collection;
 	}
 }
 
@@ -232,14 +237,10 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcRepresentation* inst) {
 	}
 	*/
 
-	auto filtered = filter(items, [&use_body](taxonomy::item* i) {
+	return filter_in_place(items, [&use_body](taxonomy::item* i) {
 		// @todo just filter loops for now.
 		return (i->kind() != taxonomy::LOOP) == use_body;
 	});
-
-	delete items;
-
-	return filtered;
 }
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcFaceBasedSurfaceModel* inst) {
@@ -277,11 +278,14 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcFace* inst) {
 				r->reverse();
 			}
 			if (bound->declaration().is(IfcSchema::IfcFaceOuterBound::Class())) {
+				((taxonomy::loop*)r)->external = true;
+				/*
 				// Make a copy in case we need immutability later for e.g. caching
 				auto s = r->clone();
 				((taxonomy::loop*)s)->external = true;
 				delete r;
 				r = s;
+				*/
 			}
 			face->children.push_back(r);
 		}		
