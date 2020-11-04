@@ -9,6 +9,7 @@ import subprocess
 import ifcopenshell
 import ifcopenshell.util.selector
 import ifcopenshell.util.geolocation
+import ifcopenshell.util.pset
 import tempfile
 from . import export_ifc
 from . import import_ifc
@@ -213,6 +214,20 @@ class SelectPset(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ReassignClass(bpy.types.Operator):
+    bl_idname = "bim.reassign_class"
+    bl_label = "Reassign IFC Class"
+
+    def execute(self, context):
+        obj = bpy.context.active_object
+        bpy.context.active_object.BIMObjectProperties.is_reassigning_class = True
+        bpy.context.scene.BIMProperties.ifc_class = obj.name.split("/")[0]
+        predefined_type = obj.BIMObjectProperties.attributes.get("PredefinedType")
+        if predefined_type:
+            bpy.context.scene.BIMProperties.ifc_predefined_type = predefined_type.string_value
+        return {"FINISHED"}
+
+
 class AssignClass(bpy.types.Operator):
     bl_idname = "bim.assign_class"
     bl_label = "Assign IFC Class"
@@ -221,6 +236,7 @@ class AssignClass(bpy.types.Operator):
     def execute(self, context):
         if self.object_name:
             objects = [bpy.data.objects.get(self.object_name)]
+            objects[0].BIMObjectProperties.is_reassigning_class = False
         else:
             objects = bpy.context.selected_objects
         for obj in objects:
@@ -835,15 +851,29 @@ class AddQto(bpy.types.Operator):
     bl_label = "Add Qto"
 
     def execute(self, context):
+        self.applicable_qtos_cache = {}
         name = bpy.context.active_object.BIMObjectProperties.qto_name
-        if name not in schema.ifc.qtos:
+        if name not in ifcopenshell.util.pset.qtos:
             return {"FINISHED"}
-        qto = bpy.context.active_object.BIMObjectProperties.qtos.add()
-        qto.name = name
-        for prop_name in schema.ifc.qtos[name]["HasPropertyTemplates"].keys():
-            prop = qto.properties.add()
-            prop.name = prop_name
+        for obj in bpy.context.selected_objects:
+            if "/" not in obj.name or obj.BIMObjectProperties.qtos.find(name) != -1:
+                continue
+            applicable_qtos = self.get_applicable_qtos(obj.name.split("/")[0])
+            if name not in applicable_qtos:
+                continue
+            qto = obj.BIMObjectProperties.qtos.add()
+            qto.name = name
+            for prop_name in ifcopenshell.util.pset.qtos[name]["HasPropertyTemplates"].keys():
+                prop = qto.properties.add()
+                prop.name = prop_name
         return {"FINISHED"}
+
+    def get_applicable_qtos(self, ifc_class):
+        if ifc_class not in self.applicable_qtos_cache:
+            self.applicable_qtos_cache[ifc_class] = ifcopenshell.util.pset.get_applicable_psetqtos(
+                bpy.context.scene.BIMProperties.export_schema, ifc_class, is_qto=True
+            )
+        return self.applicable_qtos_cache[ifc_class]
 
 
 class AddPset(bpy.types.Operator):
@@ -851,15 +881,29 @@ class AddPset(bpy.types.Operator):
     bl_label = "Add Pset"
 
     def execute(self, context):
-        pset_name = bpy.context.active_object.BIMObjectProperties.pset_name
-        if pset_name not in schema.ifc.psets:
+        self.applicable_psets_cache = {}
+        name = bpy.context.active_object.BIMObjectProperties.pset_name
+        if name not in ifcopenshell.util.pset.psets:
             return {"FINISHED"}
-        pset = bpy.context.active_object.BIMObjectProperties.psets.add()
-        pset.name = pset_name
-        for prop_name in schema.ifc.psets[pset_name]["HasPropertyTemplates"].keys():
-            prop = pset.properties.add()
-            prop.name = prop_name
+        for obj in bpy.context.selected_objects:
+            if "/" not in obj.name or obj.BIMObjectProperties.psets.find(name) != -1:
+                continue
+            applicable_psets = self.get_applicable_psets(obj.name.split("/")[0])
+            if name not in applicable_psets:
+                continue
+            pset = obj.BIMObjectProperties.psets.add()
+            pset.name = name
+            for prop_name in ifcopenshell.util.pset.psets[name]["HasPropertyTemplates"].keys():
+                prop = pset.properties.add()
+                prop.name = prop_name
         return {"FINISHED"}
+
+    def get_applicable_psets(self, ifc_class):
+        if ifc_class not in self.applicable_psets_cache:
+            self.applicable_psets_cache[ifc_class] = ifcopenshell.util.pset.get_applicable_psetqtos(
+                bpy.context.scene.BIMProperties.export_schema, ifc_class, is_pset=True
+            )
+        return self.applicable_psets_cache[ifc_class]
 
 
 class RemovePset(bpy.types.Operator):
@@ -868,7 +912,13 @@ class RemovePset(bpy.types.Operator):
     pset_index: bpy.props.IntProperty()
 
     def execute(self, context):
-        bpy.context.active_object.BIMObjectProperties.psets.remove(self.pset_index)
+        name = bpy.context.active_object.BIMObjectProperties.psets[self.pset_index].name
+        for obj in bpy.context.selected_objects:
+            if "/" not in obj.name:
+                continue
+            index = obj.BIMObjectProperties.psets.find(name)
+            if index != -1:
+                obj.BIMObjectProperties.psets.remove(index)
         return {"FINISHED"}
 
 
@@ -878,7 +928,13 @@ class RemoveQto(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        bpy.context.active_object.BIMObjectProperties.qtos.remove(self.index)
+        name = bpy.context.active_object.BIMObjectProperties.qtos[self.index].name
+        for obj in bpy.context.selected_objects:
+            if "/" not in obj.name:
+                continue
+            index = obj.BIMObjectProperties.qtos.find(name)
+            if index != -1:
+                obj.BIMObjectProperties.qtos.remove(index)
         return {"FINISHED"}
 
 
@@ -1221,9 +1277,18 @@ class AddAttribute(bpy.types.Operator):
     bl_label = "Add Attribute"
 
     def execute(self, context):
-        if bpy.context.active_object.BIMObjectProperties.applicable_attributes:
-            attribute = bpy.context.active_object.BIMObjectProperties.attributes.add()
-            attribute.name = bpy.context.active_object.BIMObjectProperties.applicable_attributes
+        if not bpy.context.active_object.BIMObjectProperties.applicable_attributes:
+            return {"FINISHED"}
+        name = bpy.context.active_object.BIMObjectProperties.applicable_attributes
+        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(bpy.context.scene.BIMProperties.export_schema)
+        for obj in bpy.context.selected_objects:
+            if "/" not in obj.name or obj.BIMObjectProperties.attributes.find(name) != -1:
+                continue
+            entity = schema.declaration_by_name(obj.name.split("/")[0])
+            if name not in [a.name() for a in entity.all_attributes()]:
+                continue
+            attribute = obj.BIMObjectProperties.attributes.add()
+            attribute.name = name
             if attribute.name == "GlobalId":
                 attribute.string_value = ifcopenshell.guid.new()
         return {"FINISHED"}
@@ -1246,7 +1311,13 @@ class RemoveAttribute(bpy.types.Operator):
     attribute_index: bpy.props.IntProperty()
 
     def execute(self, context):
-        bpy.context.active_object.BIMObjectProperties.attributes.remove(self.attribute_index)
+        name = bpy.context.active_object.BIMObjectProperties.attributes[self.attribute_index].name
+        for obj in bpy.context.selected_objects:
+            if "/" not in obj.name:
+                continue
+            index = obj.BIMObjectProperties.attributes.find(name)
+            if index != -1:
+                obj.BIMObjectProperties.attributes.remove(index)
         return {"FINISHED"}
 
 
@@ -2714,7 +2785,6 @@ class CopyPropertyToSelection(bpy.types.Operator):
 
     def execute(self, context):
         self.applicable_psets_cache = {}
-        self.empty = ifcopenshell.file()
         for obj in bpy.context.selected_objects:
             if "/" not in obj.name:
                 continue
@@ -2725,7 +2795,7 @@ class CopyPropertyToSelection(bpy.types.Operator):
                     continue
                 pset = obj.BIMObjectProperties.psets.add()
                 pset.name = self.pset_name
-                for template_prop_name in schema.ifc.psets[self.pset_name]["HasPropertyTemplates"].keys():
+                for template_prop_name in ifcopenshell.util.pset.psets[self.pset_name]["HasPropertyTemplates"].keys():
                     prop = pset.properties.add()
                     prop.name = template_prop_name
             prop = pset.properties.get(self.prop_name)
@@ -2733,16 +2803,12 @@ class CopyPropertyToSelection(bpy.types.Operator):
                 prop.string_value = self.prop_value
         return {"FINISHED"}
 
-    # TODO: move into util module. See bug #971
-    def get_applicable_psets(self, element_class):
-        if element_class not in self.applicable_psets_cache:
-            element = self.empty.create_entity(element_class)
-            applicable_psets = []
-            for ifc_class, pset_names in schema.ifc.applicable_psets.items():
-                if element.is_a(ifc_class):
-                    applicable_psets.extend(pset_names)
-            self.applicable_psets_cache[element_class] = applicable_psets
-        return self.applicable_psets_cache[element_class]
+    def get_applicable_psets(self, ifc_class):
+        if ifc_class not in self.applicable_psets_cache:
+            self.applicable_psets_cache[ifc_class] = ifcopenshell.util.pset.get_applicable_psetqtos(
+                bpy.context.scene.BIMProperties.export_schema, ifc_class, is_pset=True
+            )
+        return self.applicable_psets_cache[ifc_class]
 
 
 class BIM_OT_ChangeClassificationLevel(bpy.types.Operator):
@@ -3589,11 +3655,11 @@ class GuessQuantity(bpy.types.Operator):
         prop.string_value = str(round(quantity, 3))
 
     def add_qto(self, obj, name):
-        if name not in schema.ifc.qtos:
+        if name not in ifcopenshell.util.pset.qtos:
             return
         qto = obj.BIMObjectProperties.qtos.add()
         qto.name = name
-        for prop_name in schema.ifc.qtos[name]["HasPropertyTemplates"].keys():
+        for prop_name in ifcopenshell.util.pset.qtos[name]["HasPropertyTemplates"].keys():
             prop = qto.properties.add()
             prop.name = prop_name
         return qto

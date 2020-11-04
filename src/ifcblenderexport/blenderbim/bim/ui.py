@@ -21,24 +21,28 @@ class BIM_PT_object(Panel):
         props = context.active_object.BIMObjectProperties
         bim_properties = context.scene.BIMProperties
 
-        row = layout.row()
-        row.prop(bim_properties, "ifc_product")
-        row = layout.row()
-        row.prop(bim_properties, "ifc_class")
-        if bim_properties.ifc_predefined_type:
+        if props.is_reassigning_class or "/" not in context.active_object.name:
             row = layout.row()
-            row.prop(bim_properties, "ifc_predefined_type")
-        if bim_properties.ifc_predefined_type == "USERDEFINED":
+            row.prop(bim_properties, "ifc_product")
             row = layout.row()
-            row.prop(bim_properties, "ifc_userdefined_type")
-        row = layout.row(align=True)
-        if "Ifc" not in context.active_object.name:
-            op = row.operator("bim.assign_class")
+            row.prop(bim_properties, "ifc_class")
+            if bim_properties.ifc_predefined_type:
+                row = layout.row()
+                row.prop(bim_properties, "ifc_predefined_type")
+            if bim_properties.ifc_predefined_type == "USERDEFINED":
+                row = layout.row()
+                row.prop(bim_properties, "ifc_userdefined_type")
+            row = layout.row(align=True)
+            if "Ifc" not in context.active_object.name:
+                op = row.operator("bim.assign_class")
+            else:
+                op = row.operator("bim.assign_class")
+            op.object_name = context.active_object.name
+            op = row.operator("bim.unassign_class", icon="X", text="")
+            op.object_name = context.active_object.name
         else:
-            op = row.operator("bim.assign_class", text="Reassign IFC Class")
-        op.object_name = context.active_object.name
-        op = row.operator("bim.unassign_class", icon="X", text="")
-        op.object_name = context.active_object.name
+            row = layout.row()
+            row.operator("bim.reassign_class", text="Reassign IFC Class")
 
         if "Ifc" not in context.active_object.name:
             return
@@ -1894,10 +1898,13 @@ class BIM_UL_classifications(bpy.types.UIList):
 
 class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     bl_idname = "blenderbim"
-    svg2pdf_command: StringProperty(name="SVG to PDF Command")
-    svg2dxf_command: StringProperty(name="SVG to DXF Command")
-    svg_command: StringProperty(name="SVG Command")
-    pdf_command: StringProperty(name="PDF Command")
+    svg2pdf_command: StringProperty(name="SVG to PDF Command", description="E.g. [['inkscape', svg, '-o', pdf]]")
+    svg2dxf_command: StringProperty(
+        name="SVG to DXF Command",
+        description="E.g. [['inkscape', svg, '-o', eps], ['pstoedit', '-dt', '-f', 'dxf:-polyaslines -mm', eps, dxf, '-psarg', '-dNOSAFER']]",
+    )
+    svg_command: StringProperty(name="SVG Command", description="E.g. [['firefox-bin', path]]")
+    pdf_command: StringProperty(name="PDF Command", description="E.g. [['firefox-bin', path]]")
 
     def draw(self, context):
         layout = self.layout
