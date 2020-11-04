@@ -547,6 +547,34 @@ class Subcontext(PropertyGroup):
     target_view: StringProperty(name="Target View")
 
 
+class MaterialLayer(PropertyGroup):
+    name: StringProperty(name="Name")
+    material: PointerProperty(name="Material", type=bpy.types.Material)
+    layer_thickness: FloatProperty(name="Layer Thickness")
+    is_ventilated: EnumProperty(
+        items=[
+            ("TRUE", "True", "Is an air gap and provides air exchange from the layer to outside air"),
+            ("FALSE", "False", "Is a solid material layer"),
+            ("UNKNOWN", "Unknown", "Is an air gap but does not provide air exchange or not known"),
+        ],
+        name="Is Ventilated",
+        default="FALSE",
+    )
+    description: StringProperty(name="Description")
+    category: EnumProperty(
+        items=[
+            ("LoadBearing", "Load Bearing", ""),
+            ("Insulation", "Insulation", ""),
+            ("Finish", "Finish", ""),
+            ("Custom", "Custom", ""),
+        ],
+        name="Category",
+        default="LoadBearing",
+    )
+    custom_category: StringProperty(name="Custom Category")
+    priority: IntProperty(name="Priority")
+
+
 class Drawing(PropertyGroup):
     name: StringProperty(name="Name", update=updateDrawingName)
     camera: PointerProperty(name="Camera", type=bpy.types.Object)
@@ -1603,6 +1631,9 @@ class BIMObjectProperties(PropertyGroup):
     active_constraint_index: IntProperty(name="Active Constraint Index")
     classifications: CollectionProperty(name="Classifications", type=ClassificationReference)
     material_type: EnumProperty(items=getMaterialTypes, name="Material Type")
+    material: PointerProperty(name="Material", type=bpy.types.Material)
+    material_layers: CollectionProperty(name="Material Layers", type=MaterialLayer)
+    active_material_layer_index: IntProperty(name="Active Material Layer Index")
     pset_name: EnumProperty(items=getPsetNames, name="Pset Name")
     qto_name: EnumProperty(items=getQtoNames, name="Qto Name")
     has_boundary_condition: BoolProperty(name="Has Boundary Condition")
