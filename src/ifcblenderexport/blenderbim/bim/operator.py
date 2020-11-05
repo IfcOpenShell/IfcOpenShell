@@ -4226,10 +4226,8 @@ class AddToPresentationLayer(bpy.types.Operator):
     guid: bpy.props.StringProperty()
 
     def execute(self, context):
-        presentation_layers = bpy.context.scene.BIMProperties.presentation_layers
-        new = presentation_layers[self.index]
-        new.assigned_items.items.append(self.guid)
-
+        bpy.context.active_object.BIMObjectProperties.presentation_layer = \
+        bpy.context.scene.BIMProperties.presentation_layers[self.index]
         return {"FINISHED"}
 
 
@@ -4240,11 +4238,9 @@ class AddPresentationLayer(bpy.types.Operator):
     _name = 'New Presentation Layer'
     descript = 'A Description'
     identifier = 'Something'
-    assigned_items = bpy.props.EnumProperty(items=[])
     layer_on = True
     layer_frozen = False
     layer_blocked = False
-    layer_styles = bpy.props.EnumProperty(items=[])
 
     def execute(self, context):
         new = bpy.context.scene.BIMProperties.presentation_layers.add()
@@ -4254,8 +4250,6 @@ class AddPresentationLayer(bpy.types.Operator):
         new.layer_on = self.layer_on
         new.layer_frozen = self.layer_frozen
         new.layer_blocked = self.layer_blocked
-        # new.assigned_items = self.assigned_items
-        # new.layer_styles = self.layer_styles
 
         return {"FINISHED"}
 
