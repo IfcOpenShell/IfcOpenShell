@@ -779,7 +779,6 @@ class ClashSet(PropertyGroup):
 class PresentationLayer(PropertyGroup):
     name: StringProperty(name="Name")
     description: StringProperty(name="Description")
-    assigned_items: EnumProperty(items=[], name="AssignedItems")
     identifier: StringProperty(name="Identifier")
     layer_on: BoolProperty(name="LayerOn", default=True)
     layer_frozen: BoolProperty(name="LayerFrozen")

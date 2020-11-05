@@ -917,8 +917,8 @@ class BIM_PT_presentation_layers(Panel):
                 ).index = props.active_presentation_layer_index
                 row = layout.row()
                 row.prop(pres_layer, "description")
-                row = layout.row()
-                row.prop(pres_layer, "assigned_items")
+                # row = layout.row()
+                # row.prop(pres_layer, "assigned_items")
                 row = layout.row()
                 row.prop(pres_layer, "identifier")
                 row = layout.row()
