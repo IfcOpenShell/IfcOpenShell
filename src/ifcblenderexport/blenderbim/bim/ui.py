@@ -1845,6 +1845,11 @@ class BIM_PT_mvd(Panel):
         row = layout.row()
         row.prop(bim_properties, "export_should_force_faceted_brep")
 
+        layout.label(text="Navisworks Workarounds:")
+
+        row = layout.row()
+        row.prop(bim_properties, "export_should_force_triangulation")
+
         layout.label(text="Tekla Workarounds:")
 
         row = layout.row()
