@@ -575,6 +575,23 @@ class MaterialLayer(PropertyGroup):
     priority: IntProperty(name="Priority")
 
 
+class MaterialConstituent(PropertyGroup):
+    name: StringProperty(name="Name")
+    description: StringProperty(name="Description")
+    material: PointerProperty(name="Material", type=bpy.types.Material)
+    fraction: FloatProperty(name="Fraction")
+    category: StringProperty(name="Category")
+
+
+class MaterialSet(PropertyGroup):
+    name: StringProperty(name="Name")
+    description: StringProperty(name="Description")
+    active_material_layer_index: IntProperty(name="Active Material Layer Index")
+    material_layers: CollectionProperty(name="Material Layers", type=MaterialLayer)
+    active_material_constituent_index: IntProperty(name="Active Material Constituent Index")
+    material_constituents: CollectionProperty(name="Material Constituents", type=MaterialConstituent)
+
+
 class Drawing(PropertyGroup):
     name: StringProperty(name="Name", update=updateDrawingName)
     camera: PointerProperty(name="Camera", type=bpy.types.Object)
@@ -1636,8 +1653,7 @@ class BIMObjectProperties(PropertyGroup):
     classifications: CollectionProperty(name="Classifications", type=ClassificationReference)
     material_type: EnumProperty(items=getMaterialTypes, name="Material Type")
     material: PointerProperty(name="Material", type=bpy.types.Material)
-    material_layers: CollectionProperty(name="Material Layers", type=MaterialLayer)
-    active_material_layer_index: IntProperty(name="Active Material Layer Index")
+    material_set: PointerProperty(name="Material Set", type=MaterialSet)
     pset_name: EnumProperty(items=getPsetNames, name="Pset Name")
     qto_name: EnumProperty(items=getQtoNames, name="Qto Name")
     has_boundary_condition: BoolProperty(name="Has Boundary Condition")
