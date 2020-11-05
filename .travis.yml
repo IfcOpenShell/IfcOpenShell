@@ -78,6 +78,7 @@ script:
   # - grep 0$ statuses
   # - grep 0$ statuses | wc -l
 after_success:
+  - pwd
   - cd docs
   - ls -al
   - MESSAGE=$(git log --oneline -1)
