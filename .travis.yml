@@ -79,7 +79,8 @@ script:
   # - grep 0$ statuses | wc -l
 after_success:
   - pwd
-  - cd docs
+  - cd ../../docs
+  - pwd
   - ls -al
   - MESSAGE=$(git log --oneline -1)
   - git clone https://IfcOpenBot:$GITHUB_PASSWORD@github.com/IfcOpenShell/docs
