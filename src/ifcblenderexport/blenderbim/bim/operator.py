@@ -4220,10 +4220,10 @@ class SetNorthOffset(bpy.types.Operator):
     bl_label = "Set North Offset"
 
     def execute(self, context):
-        context.scene.sun_pos_properties.north_offset = radians(
+        context.scene.sun_pos_properties.north_offset = - radians(
             ifcopenshell.util.geolocation.xy2angle(
-                float(bpy.context.scene.MapConversion.x_axis_ordinate),
                 float(bpy.context.scene.MapConversion.x_axis_abscissa),
+                float(bpy.context.scene.MapConversion.x_axis_ordinate),
             )
         )
         return {"FINISHED"}
