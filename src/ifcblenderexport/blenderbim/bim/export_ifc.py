@@ -1,5 +1,6 @@
 import bpy
 import csv
+import bmesh
 import json
 import time
 import datetime
@@ -2951,6 +2952,14 @@ class IfcExporter:
         mesh = representation["raw"]
         if not representation["is_parametric"]:
             mesh = representation["raw_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+        if self.ifc_export_settings.should_force_triangulation:
+            mesh = representation["raw_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+            bm = bmesh.new()
+            bm.from_mesh(mesh)
+            bmesh.ops.triangulate(bm, faces=bm.faces)
+            bm.to_mesh(mesh)
+            bm.free()
+            del bm
         if self.schema_version == "IFC2X3" or self.ifc_export_settings.should_force_faceted_brep:
             return self.create_faceted_brep(representation, mesh)
         return self.create_polygonal_face_set(representation, mesh)
@@ -3342,6 +3351,7 @@ class IfcExportSettings:
         settings.should_use_presentation_style_assignment = scene_bim.export_should_use_presentation_style_assignment
         settings.should_guess_quantities = scene_bim.export_should_guess_quantities
         settings.should_force_faceted_brep = scene_bim.export_should_force_faceted_brep
+        settings.should_force_triangulation = scene_bim.export_should_force_triangulation
         settings.should_roundtrip_native = scene_bim.import_export_should_roundtrip_native
         settings.context_tree = []
         for ifc_context in ["model", "plan"]:
