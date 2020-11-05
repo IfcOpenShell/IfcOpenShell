@@ -78,12 +78,12 @@ script:
   # - grep 0$ statuses
   # - grep 0$ statuses | wc -l
 after_success:
-  - pwd
+  - pwds
   - cd ../../docs
   - pwd
   - ls -al
   - MESSAGE=$(git log --oneline -1)
-  - git clone https://IfcOpenBot:$GITHUB_PASSWORD@github.com/IfcOpenShell/docs
+  - git clone https://johltn:$GITHUB_PASSWORD@github.com/IfcOpenShell/docs
   - cd docs
   - sudo mv ../output/* .
   - git config user.email "${GITHUB_EMAIL}"
