@@ -1840,6 +1840,11 @@ class BIM_PT_mvd(Panel):
         row = layout.row()
         row.prop(bim_properties, "import_should_auto_set_workarounds")
 
+        layout.label(text="RIB iTWO Workarounds:")
+
+        row = layout.row()
+        row.prop(bim_properties, "export_should_force_faceted_brep")
+
         layout.label(text="Tekla Workarounds:")
 
         row = layout.row()
