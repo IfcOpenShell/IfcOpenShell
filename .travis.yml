@@ -85,7 +85,7 @@ after_success:
   - MESSAGE=$(git log --oneline -1)
   - git clone https://IfcOpenBot:$GITHUB_PASSWORD@github.com/IfcOpenShell/docs
   - cd docs
-  - mv ../output/* .
+  - sudo mv ../output/* .
   - git config user.email "${GITHUB_EMAIL}"
   - git config user.name "IfcOpenBot"
   - git add .
