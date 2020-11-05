@@ -169,6 +169,7 @@ if bpy is not None:
         operator.PropagateTextData,
         operator.PushRepresentation,
         operator.ConvertLocalToGlobal,
+        operator.ConvertGlobalToLocal,
         operator.GuessQuantity,
         operator.ExecuteBIMTester,
         operator.BIMTesterPurge,

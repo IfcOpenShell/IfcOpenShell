@@ -839,6 +839,13 @@ class BIM_PT_gis(Panel):
         row = layout.row(align=True)
         row.operator("bim.convert_local_to_global")
 
+        layout.row().prop(scene.BIMProperties, "eastings")
+        layout.row().prop(scene.BIMProperties, "northings")
+        layout.row().prop(scene.BIMProperties, "orthogonal_height")
+
+        row = layout.row(align=True)
+        row.operator("bim.convert_global_to_local")
+
         if hasattr(bpy.context.scene, "sun_pos_properties"):
             row = layout.row(align=True)
             row.operator("bim.get_north_offset")
