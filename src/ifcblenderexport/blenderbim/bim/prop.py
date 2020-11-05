@@ -1527,8 +1527,8 @@ class BIMProperties(PropertyGroup):
     override_colour: FloatVectorProperty(
         name="Override Colour", subtype="COLOR", default=(1, 0, 0, 1), min=0.0, max=1.0, size=4
     )
+    presentation_layers: CollectionProperty(name="Presentation Layers", type=PresentationLayer)
 
-    # presentation_layer: CollectionProperty(name="Presentation Layers", type=PresentationLayer)
 
 
 class BCFProperties(PropertyGroup):
