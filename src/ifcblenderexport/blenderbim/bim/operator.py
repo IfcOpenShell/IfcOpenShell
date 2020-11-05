@@ -4096,6 +4096,44 @@ class RemoveSchedule(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AddMaterialLayer(bpy.types.Operator):
+    bl_idname = "bim.add_material_layer"
+    bl_label = "Add Material Layer"
+
+    def execute(self, context):
+        new = bpy.context.active_object.BIMObjectProperties.material_layers.add()
+        new.material = bpy.data.materials[0]
+        new.name = "Material Layer"
+        return {"FINISHED"}
+
+
+class RemoveMaterialLayer(bpy.types.Operator):
+    bl_idname = "bim.remove_material_layer"
+    bl_label = "Remove Material Layer"
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.active_object.BIMObjectProperties.material_layers.remove(self.index)
+        return {"FINISHED"}
+
+
+class MoveMaterialLayer(bpy.types.Operator):
+    bl_idname = "bim.move_material_layer"
+    bl_label = "Move Material Layer"
+    direction: bpy.props.StringProperty()
+
+    def execute(self, context):
+        props = bpy.context.active_object.BIMObjectProperties
+        index = props.active_material_layer_index
+        if self.direction == "UP" and index - 1 >= 0:
+            props.material_layers.move(index, index - 1)
+            props.active_material_layer_index = index - 1
+        elif self.direction == "DOWN" and index + 1 < len(props.material_layers):
+            props.material_layers.move(index, index + 1)
+            props.active_material_layer_index = index + 1
+        return {"FINISHED"}
+
+
 class SelectScheduleFile(bpy.types.Operator):
     bl_idname = "bim.select_schedule_file"
     bl_label = "Select Documentation IFC File"

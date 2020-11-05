@@ -76,9 +76,6 @@ class BIM_PT_object(Panel):
         row = layout.row()
         row.prop(props, "relating_structure")
 
-        row = layout.row()
-        row.prop(props, "material_type")
-
     def draw_addresses_ui(self):
         layout = self.layout
         layout.label(text="Address:")
@@ -105,6 +102,58 @@ class BIM_PT_object(Panel):
         row.prop(address, "postal_code")
         row = layout.row()
         row.prop(address, "country")
+
+
+class BIM_PT_object_material(Panel):
+    bl_label = "IFC Object Material"
+    bl_idname = "BIM_PT_object_material"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None and hasattr(context.active_object, "BIMObjectProperties")
+
+    def draw(self, context):
+        if context.active_object is None:
+            return
+        layout = self.layout
+        props = context.active_object.BIMObjectProperties
+        row = layout.row()
+        row.prop(props, "material_type")
+
+        if props.material_type == "IfcMaterial":
+            row = layout.row()
+            row.prop(props, "material")
+        elif props.material_type == "IfcMaterialLayerSet":
+            row = layout.row()
+            row.template_list(
+                "MATERIAL_UL_matslots", "", props, "material_layers", props, "active_material_layer_index"
+            )
+            col = row.column(align=True)
+            col.operator("bim.add_material_layer", icon="ADD", text="")
+            col.operator("bim.remove_material_layer", icon="REMOVE", text="").index = props.active_material_layer_index
+            col.operator("bim.move_material_layer", icon="TRIA_UP", text="").direction = "UP"
+            col.operator("bim.move_material_layer", icon="TRIA_DOWN", text="").direction = "DOWN"
+
+            if props.active_material_layer_index < len(props.material_layers):
+                material = props.material_layers[props.active_material_layer_index]
+                row = layout.row()
+                row.prop(material, "material")
+                row = layout.row()
+                row.prop(material, "name")
+                row = layout.row()
+                row.prop(material, "description")
+                row = layout.row()
+                row.prop(material, "category")
+                if material.category == "Custom":
+                    row = layout.row()
+                    row.prop(material, "custom_category")
+                row = layout.row()
+                row.prop(material, "layer_thickness")
+                row = layout.row()
+                row.prop(material, "priority")
 
 
 class BIM_PT_object_psets(Panel):
