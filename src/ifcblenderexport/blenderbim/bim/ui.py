@@ -219,11 +219,11 @@ class BIM_PT_object_qto(Panel):
                 row.prop(prop, "name", text="")
                 row.prop(prop, "string_value", text="")
                 if (
-                    "length" in prop.name.lower()
-                    or "width" in prop.name.lower()
-                    or "height" in prop.name.lower()
-                    or "depth" in prop.name.lower()
-                    or "perimeter" in prop.name.lower()
+                        "length" in prop.name.lower()
+                        or "width" in prop.name.lower()
+                        or "height" in prop.name.lower()
+                        or "depth" in prop.name.lower()
+                        or "perimeter" in prop.name.lower()
                 ):
                     op = row.operator("bim.guess_quantity", icon="IPO_EASE_IN_OUT", text="")
                     op.qto_index = index
@@ -670,9 +670,9 @@ class BIM_PT_mesh(Panel):
     @classmethod
     def poll(cls, context):
         return (
-            context.active_object is not None
-            and context.active_object.type == "MESH"
-            and hasattr(context.active_object.data, "BIMMeshProperties")
+                context.active_object is not None
+                and context.active_object.type == "MESH"
+                and hasattr(context.active_object.data, "BIMMeshProperties")
         )
 
     def draw(self, context):
@@ -726,7 +726,7 @@ class BIM_PT_mesh(Panel):
         row.prop(props, "swept_solids")
 
 
-class BIM_PT_presentation(Panel):
+class BIM_PT_presentation_layer_data(Panel):
     bl_label = "IFC Presentation Layers"
     bl_idname = "BIM_PT_presentation"
     bl_space_type = "PROPERTIES"
@@ -736,25 +736,39 @@ class BIM_PT_presentation(Panel):
     @classmethod
     def poll(cls, context):
         return (
-            context.active_object is not None
-            and context.active_object.type == "MESH"
-            and hasattr(context.active_object.data, "BIMMeshProperties")
+                context.active_object is not None
+                and context.active_object.type == "MESH"
+                and hasattr(context.active_object.data, "BIMMeshProperties")
         )
 
     def draw(self, context):
         if not context.active_object.data:
             return
         layout = self.layout
-        props = context.active_object.data.BIMMeshProperties
+        curr_props = context.active_object.data.BIMMeshProperties.presentation_layer
 
-        row = layout.row(align=True)
-        row.prop(props.presentation_layer, "name")
-        row = layout.row()
-        row.prop(props.presentation_layer, "description")
-        row = layout.row()
-        row.prop(props.presentation_layer, "identifier")
-        row = layout.row()
-        row.prop(props.presentation_layer, "layer_on")
+        # if len(curr_props.values()) > 0:
+
+        layout.row(align=True).prop(curr_props, "name")
+        layout.row().prop(curr_props, "description")
+        layout.row().prop(curr_props, "identifier")
+        layout.row().prop(curr_props, "layer_on")
+        layout.row().prop(curr_props, "layer_frozen")
+        layout.row().prop(curr_props, "layer_blocked")
+        layout.row().prop(curr_props, "layer_styles")
+
+        props = context.scene.BIMProperties
+        cur_elem = bpy.context.active_object.BIMObjectProperties
+        if props.presentation_layers:
+            layout.template_list("BIM_UL_presentation_layers", "", props, "presentation_layers", props,
+                                 "active_presentation_layer_index")
+            pres_layer = props.presentation_layers[props.active_presentation_layer_index]
+            if pres_layer.name in bpy.context.scene.BIMProperties.presentation_layers:
+                op = layout.row().operator("bim.add_to_presentation_layer")
+                op.index = props.active_presentation_layer_index
+                op.guid = cur_elem.attributes['GlobalId'].string_value
+            else:
+                layout.label(text="Presentation Layer is invalid")
 
 
 class BIM_PT_material(Panel):
@@ -871,6 +885,52 @@ class BIM_PT_gis(Panel):
             row = layout.row(align=True)
             row.operator("bim.get_north_offset")
             row.operator("bim.set_north_offset")
+
+
+class BIM_PT_presentation_layers(Panel):
+    bl_label = "IFC Presentation Layers"
+    bl_idname = "BIM_PT_presentation_layer"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        props = context.scene.BIMProperties
+
+        layout.row().prop(props, "presentation_layers")
+        layout.row().operator("bim.add_presentation_layer")
+
+        if props.presentation_layers:
+            layout.template_list("BIM_UL_presentation_layers", "", props, "presentation_layers", props,
+                                 "active_presentation_layer_index")
+            pres_layer = props.presentation_layers[props.active_presentation_layer_index]
+
+            row = layout.row(align=True)
+            row.prop(pres_layer, "name")
+            if pres_layer.name in bpy.context.scene.BIMProperties.presentation_layers:
+                pres_layer = bpy.context.scene.BIMProperties.presentation_layers[pres_layer.name]
+                row.operator(
+                    "bim.remove_presentation_layer", icon="X", text=""
+                ).index = props.active_presentation_layer_index
+                row = layout.row()
+                row.prop(pres_layer, "description")
+                row = layout.row()
+                row.prop(pres_layer, "assigned_items")
+                row = layout.row()
+                row.prop(pres_layer, "identifier")
+                row = layout.row()
+                row.prop(pres_layer, "layer_on")
+                row = layout.row()
+                row.prop(pres_layer, "layer_frozen")
+                row = layout.row()
+                row.prop(pres_layer, "layer_blocked")
+                row = layout.row()
+                row.prop(pres_layer, "layer_styles")
+            else:
+                layout.label(text="Presentation Layer is invalid")
 
 
 class BIM_PT_drawings(Panel):
@@ -1576,7 +1636,7 @@ class BIM_PT_bcf(Panel):
         layout.label(text="Document References:")
         for index, doc in enumerate(props.topic_document_references):
             row = layout.row(align=True)
-            row.prop(doc, "name", text=f"File {index+1} URI")
+            row.prop(doc, "name", text=f"File {index + 1} URI")
             if doc.is_external:
                 row.operator("bim.open_bcf_document_reference", icon="URL", text="").data = "{}/{}".format(
                     props.topic_guid, index
@@ -1586,7 +1646,7 @@ class BIM_PT_bcf(Panel):
                     props.topic_guid, index
                 )
             row = layout.row(align=True)
-            row.prop(doc, "description", text=f"File {index+1} Description:")
+            row.prop(doc, "description", text=f"File {index + 1} Description:")
 
         layout.label(text="Related Topics:")
         for topic in props.topic_related_topics:
@@ -1925,6 +1985,15 @@ class BIM_UL_clash_sets(bpy.types.UIList):
 
 
 class BIM_UL_constraints(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        ob = data
+        if item:
+            layout.prop(item, "name", text="", emboss=False)
+        else:
+            layout.label(text="", translate=False)
+
+
+class BIM_UL_presentation_layers(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         ob = data
         if item:

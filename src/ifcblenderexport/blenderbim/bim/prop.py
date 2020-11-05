@@ -1555,6 +1555,7 @@ class BIMProperties(PropertyGroup):
     override_colour: FloatVectorProperty(
         name="Override Colour", subtype="COLOR", default=(1, 0, 0, 1), min=0.0, max=1.0, size=4
     )
+    active_presentation_layer_index: IntProperty(name="Active Presentation Layer Index")
     presentation_layers: CollectionProperty(name="Presentation Layers", type=PresentationLayer)
 
 
@@ -1671,6 +1672,7 @@ class BIMObjectProperties(PropertyGroup):
     qto_name: EnumProperty(items=getQtoNames, name="Qto Name")
     has_boundary_condition: BoolProperty(name="Has Boundary Condition")
     boundary_condition: PointerProperty(name="Boundary Condition", type=BoundaryCondition)
+    active_presentation_layer_index: IntProperty(name="Active Presentation Layer Index")
     presentation_layer: PointerProperty(name="Presentation Layer", type=PresentationLayer)
     structural_member_connection: PointerProperty(name="Structural Member Connection", type=bpy.types.Object)
     representation_contexts: CollectionProperty(name="Representation Contexts", type=Subcontext)
