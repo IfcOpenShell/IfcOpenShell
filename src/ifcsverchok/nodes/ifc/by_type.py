@@ -10,7 +10,7 @@ from blenderbim.bim import schema
 class SvIfcByType(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcByType"
     bl_label = "IFC By Type"
-    ifc_element_types = [(t, t, t, t, idx) for (idx, t) in enumerate(schema.IfcSchema().IfcElementType.keys())]
+    ifc_element_types = [(t, t, t) for t in schema.IfcSchema().IfcElementType.keys()]
     file: StringProperty(name="file", update=updateNode)
     type: EnumProperty(name="type", items=ifc_element_types)
 
