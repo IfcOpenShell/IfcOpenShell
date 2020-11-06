@@ -22,10 +22,6 @@ install:
   # - sudo apt-get update -qq && sudo apt-get install -y dart
   # - export PATH=$PATH:/usr/lib/dart/bin:$HOME/.pub-cache/bin
   # - git clone https://github.com/KhronosGroup/glTF-Validator && pushd glTF-Validator && pub get && pub global activate --source path ./ && popd
-  - pip install flake8
-
-before_script:
-  - flake8 . --max-line-length=120 --statistics
 
 script:
   - pwd
