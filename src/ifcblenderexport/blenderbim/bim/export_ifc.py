@@ -1,5 +1,6 @@
 import bpy
 import csv
+import bmesh
 import json
 import time
 import datetime
@@ -426,19 +427,14 @@ class IfcParser:
         for constraint in obj.BIMObjectProperties.constraints:
             self.rel_associates_constraint_object.setdefault(constraint.name, []).append(product)
 
-        for slot in obj.material_slots:
-            if slot.material is None or slot.link == "OBJECT":
-                continue
-            if obj.BIMObjectProperties.material_type == "IfcMaterialLayerSet":
-                self.rel_associates_material_layer_set.setdefault(self.product_index, []).append(slot.material.name)
-            elif obj.BIMObjectProperties.material_type == "IfcMaterialConstituentSet":
-                self.rel_associates_material_constituent_set.setdefault(self.product_index, []).append(
-                    slot.material.name
-                )
-            elif obj.BIMObjectProperties.material_type == "IfcMaterialProfileSet":
-                self.rel_associates_material_profile_set.setdefault(self.product_index, []).append(slot.material.name)
-            else:
-                self.rel_associates_material.setdefault(slot.material.name, []).append(product)
+        if obj.BIMObjectProperties.material_type == "IfcMaterial" and obj.BIMObjectProperties.material:
+            self.rel_associates_material.setdefault(obj.BIMObjectProperties.material.name, []).append(product)
+        elif obj.BIMObjectProperties.material_type == "IfcMaterialConstituentSet":
+            self.rel_associates_material_constituent_set[self.product_index] = obj.BIMObjectProperties.material_set
+        elif obj.BIMObjectProperties.material_type == "IfcMaterialLayerSet":
+            self.rel_associates_material_layer_set[self.product_index] = obj.BIMObjectProperties.material_set
+        elif obj.BIMObjectProperties.material_type == "IfcMaterialProfileSet":
+            pass # TODO
 
         return product
 
@@ -1157,7 +1153,7 @@ class IfcParser:
                     continue
                 results[slot.material.name] = {
                     "ifc": None,
-                    "part_ifc": None,
+                    "part_ifc": None,  # TODO: check if we deprecate this
                     "raw": slot.material,
                     "material_type": obj.BIMObjectProperties.material_type,
                     "attributes": self.get_material_attributes(slot.material),
@@ -2951,6 +2947,14 @@ class IfcExporter:
         mesh = representation["raw"]
         if not representation["is_parametric"]:
             mesh = representation["raw_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+        if self.ifc_export_settings.should_force_triangulation:
+            mesh = representation["raw_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+            bm = bmesh.new()
+            bm.from_mesh(mesh)
+            bmesh.ops.triangulate(bm, faces=bm.faces)
+            bm.to_mesh(mesh)
+            bm.free()
+            del bm
         if self.schema_version == "IFC2X3" or self.ifc_export_settings.should_force_faceted_brep:
             return self.create_faceted_brep(representation, mesh)
         return self.create_polygonal_face_set(representation, mesh)
@@ -3137,17 +3141,27 @@ class IfcExporter:
     def relate_objects_to_material_sets(self, set_type):
         if not self.ifc_export_settings.has_representations:
             return
-        for product_index, related_materials in getattr(
-            self.ifc_parser, f"rel_associates_material_{set_type}_set"
-        ).items():
-            material_set = self.file.create_entity(
-                f"IfcMaterial{set_type.capitalize()}Set",
-                **{
-                    f"Material{set_type.capitalize()}s": [
-                        self.ifc_parser.materials[m]["part_ifc"] for m in related_materials
-                    ]
-                },
-            )
+        for product_index, material_set in getattr(self.ifc_parser, f"rel_associates_material_{set_type}_set").items():
+            if set_type == "constituent":
+                materials = self.create_material_constituents(material_set.material_constituents)
+            elif set_type == "layer":
+                materials = self.create_material_layers(material_set.material_layers)
+            elif set_type == "profile":
+                materials = []  # TODO
+            if not materials:
+                continue
+
+            attributes = {
+                f"Material{set_type.capitalize()}s": materials,
+                "Description": material_set.description or None,
+            }
+
+            if set_type == "layer":
+                attributes["LayerSetName"] = material_set.name or None
+            else:
+                attributes["Name"] = material_set.name or None
+
+            material_set = self.file.create_entity(f"IfcMaterial{set_type.capitalize()}Set", **attributes)
             self.file.createIfcRelAssociatesMaterial(
                 ifcopenshell.guid.new(),
                 self.owner_history,
@@ -3156,6 +3170,50 @@ class IfcExporter:
                 [self.ifc_parser.products[product_index]["ifc"]],
                 material_set,
             )
+
+    def create_material_layers(self, layers):
+        results = []
+        for layer in layers:
+            if layer.category == "None":
+                category = None
+            elif layer.category == "Custom":
+                category = layer.custom_category or None
+            else:
+                category = layer.category
+            is_ventilated = layer.is_ventilated == "TRUE" if layer.is_ventilated != "UNKNOWN" else None
+            results.append(
+                self.file.create_entity(
+                    "IfcMaterialLayer",
+                    **{
+                        "Material": self.ifc_parser.materials[layer.material.name]["ifc"] or None,
+                        "LayerThickness": layer.layer_thickness,
+                        "IsVentilated": is_ventilated,
+                        "Name": layer.name or None,
+                        "Description": layer.description or None,
+                        "Category": category,
+                        "Priority": layer.priority,
+                    },
+                )
+            )
+        return results
+
+    def create_material_constituents(self, constituents):
+        results = []
+        # TODO: the correlation for IfcShapeAspect is not yet implemented
+        for constituent in constituents:
+            results.append(
+                self.file.create_entity(
+                    "IfcMaterialConstituent",
+                    **{
+                        "Name": constituent.name or None,
+                        "Description": constituent.description or None,
+                        "Material": self.ifc_parser.materials[constituent.material.name]["ifc"],
+                        "Fraction": constituent.fraction or None,
+                        "Category": constituent.category or None,
+                    },
+                )
+            )
+        return results
 
     def relate_spaces_to_boundary_elements(self):
         for (relating_space_index, relationships,) in self.ifc_parser.rel_space_boundaries.items():
@@ -3342,6 +3400,7 @@ class IfcExportSettings:
         settings.should_use_presentation_style_assignment = scene_bim.export_should_use_presentation_style_assignment
         settings.should_guess_quantities = scene_bim.export_should_guess_quantities
         settings.should_force_faceted_brep = scene_bim.export_should_force_faceted_brep
+        settings.should_force_triangulation = scene_bim.export_should_force_triangulation
         settings.should_roundtrip_native = scene_bim.import_export_should_roundtrip_native
         settings.context_tree = []
         for ifc_context in ["model", "plan"]:

@@ -3598,25 +3598,48 @@ class ConvertLocalToGlobal(bpy.types.Operator):
     bl_label = "Convert Local To Global"
 
     def execute(self, context):
-        x, y, z = bpy.context.scene.cursor.location
-
         if bpy.context.scene.MapConversion.scale:
             scale = float(bpy.context.scene.MapConversion.scale)
         else:
             scale = 1.0
-
-        rotation = atan2(
-            float(bpy.context.scene.MapConversion.x_axis_ordinate),
+        results = ifcopenshell.util.geolocation.xyz2enh(
+            bpy.context.scene.cursor.location[0],
+            bpy.context.scene.cursor.location[1],
+            bpy.context.scene.cursor.location[2],
+            float(bpy.context.scene.MapConversion.eastings),
+            float(bpy.context.scene.MapConversion.northings),
+            float(bpy.context.scene.MapConversion.orthogonal_height),
             float(bpy.context.scene.MapConversion.x_axis_abscissa),
+            float(bpy.context.scene.MapConversion.x_axis_ordinate),
+            scale,
         )
-        a = scale * cos(rotation)
-        b = scale * sin(rotation)
+        print("Coordinates:", results)
+        bpy.context.scene.cursor.location = results
+        return {"FINISHED"}
 
-        eastings = (a * x) - (b * y) + float(bpy.context.scene.MapConversion.eastings)
-        northings = (b * x) + (a * y) + float(bpy.context.scene.MapConversion.northings)
-        height = z + float(bpy.context.scene.MapConversion.orthogonal_height)
 
-        bpy.context.scene.cursor.location = (eastings, northings, height)
+class ConvertGlobalToLocal(bpy.types.Operator):
+    bl_idname = "bim.convert_global_to_local"
+    bl_label = "Convert Global To Local"
+
+    def execute(self, context):
+        if bpy.context.scene.MapConversion.scale:
+            scale = float(bpy.context.scene.MapConversion.scale)
+        else:
+            scale = 1.0
+        results = ifcopenshell.util.geolocation.enh2xyz(
+            float(bpy.context.scene.BIMProperties.eastings),
+            float(bpy.context.scene.BIMProperties.northings),
+            float(bpy.context.scene.BIMProperties.orthogonal_height),
+            float(bpy.context.scene.MapConversion.eastings),
+            float(bpy.context.scene.MapConversion.northings),
+            float(bpy.context.scene.MapConversion.orthogonal_height),
+            float(bpy.context.scene.MapConversion.x_axis_abscissa),
+            float(bpy.context.scene.MapConversion.x_axis_ordinate),
+            scale,
+        )
+        print("Coordinates:", results)
+        bpy.context.scene.cursor.location = results
         return {"FINISHED"}
 
 
@@ -4103,7 +4126,7 @@ class AddMaterialLayer(bpy.types.Operator):
     bl_label = "Add Material Layer"
 
     def execute(self, context):
-        new = bpy.context.active_object.BIMObjectProperties.material_layers.add()
+        new = bpy.context.active_object.BIMObjectProperties.material_set.material_layers.add()
         new.material = bpy.data.materials[0]
         new.name = "Material Layer"
         return {"FINISHED"}
@@ -4115,7 +4138,7 @@ class RemoveMaterialLayer(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        bpy.context.active_object.BIMObjectProperties.material_layers.remove(self.index)
+        bpy.context.active_object.BIMObjectProperties.material_set.material_layers.remove(self.index)
         return {"FINISHED"}
 
 
@@ -4125,7 +4148,7 @@ class MoveMaterialLayer(bpy.types.Operator):
     direction: bpy.props.StringProperty()
 
     def execute(self, context):
-        props = bpy.context.active_object.BIMObjectProperties
+        props = bpy.context.active_object.BIMObjectProperties.material_set
         index = props.active_material_layer_index
         if self.direction == "UP" and index - 1 >= 0:
             props.material_layers.move(index, index - 1)
@@ -4133,6 +4156,44 @@ class MoveMaterialLayer(bpy.types.Operator):
         elif self.direction == "DOWN" and index + 1 < len(props.material_layers):
             props.material_layers.move(index, index + 1)
             props.active_material_layer_index = index + 1
+        return {"FINISHED"}
+
+
+class AddMaterialConstituent(bpy.types.Operator):
+    bl_idname = "bim.add_material_constituent"
+    bl_label = "Add Material Constituent"
+
+    def execute(self, context):
+        new = bpy.context.active_object.BIMObjectProperties.material_set.material_constituents.add()
+        new.material = bpy.data.materials[0]
+        new.name = "Material Constituent"
+        return {"FINISHED"}
+
+
+class RemoveMaterialConstituent(bpy.types.Operator):
+    bl_idname = "bim.remove_material_constituent"
+    bl_label = "Remove Material Constituent"
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.active_object.BIMObjectProperties.material_set.material_constituents.remove(self.index)
+        return {"FINISHED"}
+
+
+class MoveMaterialConstituent(bpy.types.Operator):
+    bl_idname = "bim.move_material_constituent"
+    bl_label = "Move Material Constituent"
+    direction: bpy.props.StringProperty()
+
+    def execute(self, context):
+        props = bpy.context.active_object.BIMObjectProperties.material_set
+        index = props.active_material_constituent_index
+        if self.direction == "UP" and index - 1 >= 0:
+            props.material_constituents.move(index, index - 1)
+            props.active_material_constituent_index = index - 1
+        elif self.direction == "DOWN" and index + 1 < len(props.material_constituents):
+            props.material_constituents.move(index, index + 1)
+            props.active_material_constituent_index = index + 1
         return {"FINISHED"}
 
 
@@ -4199,10 +4260,10 @@ class SetNorthOffset(bpy.types.Operator):
     bl_label = "Set North Offset"
 
     def execute(self, context):
-        context.scene.sun_pos_properties.north_offset = radians(
+        context.scene.sun_pos_properties.north_offset = -radians(
             ifcopenshell.util.geolocation.xy2angle(
-                float(bpy.context.scene.MapConversion.x_axis_ordinate),
                 float(bpy.context.scene.MapConversion.x_axis_abscissa),
+                float(bpy.context.scene.MapConversion.x_axis_ordinate),
             )
         )
         return {"FINISHED"}

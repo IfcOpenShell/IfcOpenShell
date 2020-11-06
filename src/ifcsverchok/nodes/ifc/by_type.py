@@ -1,16 +1,18 @@
 import bpy
 import ifcopenshell
 import ifcsverchok.helper
-from bpy.props import StringProperty
+from bpy.props import StringProperty, EnumProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
+from blenderbim.bim import schema
 
 
 class SvIfcByType(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcByType"
     bl_label = "IFC By Type"
+    ifc_element_types = [(t, t, t) for t in schema.IfcSchema().IfcElementType.keys()]
     file: StringProperty(name="file", update=updateNode)
-    type: StringProperty(name="type", update=updateNode)
+    type: EnumProperty(name="type", items=ifc_element_types)
 
     def sv_init(self, context):
         self.inputs.new("SvStringsSocket", "file").prop_name = "file"

@@ -583,6 +583,7 @@ class MaterialLayer(PropertyGroup):
     description: StringProperty(name="Description")
     category: EnumProperty(
         items=[
+            ("None", "None", ""),
             ("LoadBearing", "Load Bearing", ""),
             ("Insulation", "Insulation", ""),
             ("Finish", "Finish", ""),
@@ -593,6 +594,23 @@ class MaterialLayer(PropertyGroup):
     )
     custom_category: StringProperty(name="Custom Category")
     priority: IntProperty(name="Priority")
+
+
+class MaterialConstituent(PropertyGroup):
+    name: StringProperty(name="Name")
+    description: StringProperty(name="Description")
+    material: PointerProperty(name="Material", type=bpy.types.Material)
+    fraction: FloatProperty(name="Fraction")
+    category: StringProperty(name="Category")
+
+
+class MaterialSet(PropertyGroup):
+    name: StringProperty(name="Name")
+    description: StringProperty(name="Description")
+    active_material_layer_index: IntProperty(name="Active Material Layer Index")
+    material_layers: CollectionProperty(name="Material Layers", type=MaterialLayer)
+    active_material_constituent_index: IntProperty(name="Active Material Constituent Index")
+    material_constituents: CollectionProperty(name="Material Constituents", type=MaterialConstituent)
 
 
 class Drawing(PropertyGroup):
@@ -1411,6 +1429,7 @@ class BIMProperties(PropertyGroup):
         name="Export with Presentation Style Assignment", default=False
     )
     export_should_force_faceted_brep: BoolProperty(name="Export with Faceted Breps", default=False)
+    export_should_force_triangulation: BoolProperty(name="Export with Triangulation", default=False)
     import_should_ignore_site_coordinates: BoolProperty(name="Import Ignoring Site Coordinates", default=False)
     import_should_ignore_building_coordinates: BoolProperty(name="Import Ignoring Building Coordinates", default=False)
     import_should_reset_absolute_coordinates: BoolProperty(name="Import Resetting Absolute Coordinates", default=False)
@@ -1503,6 +1522,9 @@ class BIMProperties(PropertyGroup):
     active_clash_set_index: IntProperty(name="Active Clash Set Index")
     constraints: CollectionProperty(name="Constraints", type=Constraint)
     active_constraint_index: IntProperty(name="Active Constraint Index")
+    eastings: StringProperty(name="Eastings")
+    northings: StringProperty(name="Northings")
+    orthogonal_height: StringProperty(name="Orthogonal Height")
     ifc_patch_recipes: EnumProperty(items=getIfcPatchRecipes, name="Recipes")
     ifc_patch_input: StringProperty(default="", name="IFC Patch Input IFC")
     ifc_patch_output: StringProperty(default="", name="IFC Patch Output IFC")
@@ -1665,8 +1687,7 @@ class BIMObjectProperties(PropertyGroup):
     classifications: CollectionProperty(name="Classifications", type=ClassificationReference)
     material_type: EnumProperty(items=getMaterialTypes, name="Material Type")
     material: PointerProperty(name="Material", type=bpy.types.Material)
-    material_layers: CollectionProperty(name="Material Layers", type=MaterialLayer)
-    active_material_layer_index: IntProperty(name="Active Material Layer Index")
+    material_set: PointerProperty(name="Material Set", type=MaterialSet)
     pset_name: EnumProperty(items=getPsetNames, name="Pset Name")
     qto_name: EnumProperty(items=getQtoNames, name="Qto Name")
     has_boundary_condition: BoolProperty(name="Has Boundary Condition")
