@@ -126,19 +126,28 @@ class BIM_PT_object_material(Panel):
         if props.material_type == "IfcMaterial":
             row = layout.row()
             row.prop(props, "material")
-        elif props.material_type == "IfcMaterialLayerSet":
+        else:
+            set_props = props.material_set
             row = layout.row()
+            row.prop(set_props, "name", text="Name")
+            row = layout.row()
+            row.prop(set_props, "description", text="Description")
+            row = layout.row()
+
+        if props.material_type == "IfcMaterialLayerSet":
             row.template_list(
-                "MATERIAL_UL_matslots", "", props, "material_layers", props, "active_material_layer_index"
+                "MATERIAL_UL_matslots", "", set_props, "material_layers", set_props, "active_material_layer_index"
             )
             col = row.column(align=True)
             col.operator("bim.add_material_layer", icon="ADD", text="")
-            col.operator("bim.remove_material_layer", icon="REMOVE", text="").index = props.active_material_layer_index
+            col.operator(
+                "bim.remove_material_layer", icon="REMOVE", text=""
+            ).index = set_props.active_material_layer_index
             col.operator("bim.move_material_layer", icon="TRIA_UP", text="").direction = "UP"
             col.operator("bim.move_material_layer", icon="TRIA_DOWN", text="").direction = "DOWN"
 
-            if props.active_material_layer_index < len(props.material_layers):
-                material = props.material_layers[props.active_material_layer_index]
+            if set_props.active_material_layer_index < len(set_props.material_layers):
+                material = set_props.material_layers[set_props.active_material_layer_index]
                 row = layout.row()
                 row.prop(material, "material")
                 row = layout.row()
@@ -153,7 +162,38 @@ class BIM_PT_object_material(Panel):
                 row = layout.row()
                 row.prop(material, "layer_thickness")
                 row = layout.row()
+                row.prop(material, "is_ventilated")
+                row = layout.row()
                 row.prop(material, "priority")
+        elif props.material_type == "IfcMaterialConstituentSet":
+            row.template_list(
+                "MATERIAL_UL_matslots",
+                "",
+                set_props,
+                "material_constituents",
+                set_props,
+                "active_material_constituent_index",
+            )
+            col = row.column(align=True)
+            col.operator("bim.add_material_constituent", icon="ADD", text="")
+            col.operator(
+                "bim.remove_material_constituent", icon="REMOVE", text=""
+            ).index = set_props.active_material_constituent_index
+            col.operator("bim.move_material_constituent", icon="TRIA_UP", text="").direction = "UP"
+            col.operator("bim.move_material_constituent", icon="TRIA_DOWN", text="").direction = "DOWN"
+
+            if set_props.active_material_constituent_index < len(set_props.material_constituents):
+                material = set_props.material_constituents[set_props.active_material_constituent_index]
+                row = layout.row()
+                row.prop(material, "material")
+                row = layout.row()
+                row.prop(material, "name")
+                row = layout.row()
+                row.prop(material, "description")
+                row = layout.row()
+                row.prop(material, "fraction")
+                row = layout.row()
+                row.prop(material, "category")
 
 
 class BIM_PT_object_psets(Panel):
@@ -880,6 +920,13 @@ class BIM_PT_gis(Panel):
 
         row = layout.row(align=True)
         row.operator("bim.convert_local_to_global")
+
+        layout.row().prop(scene.BIMProperties, "eastings")
+        layout.row().prop(scene.BIMProperties, "northings")
+        layout.row().prop(scene.BIMProperties, "orthogonal_height")
+
+        row = layout.row(align=True)
+        row.operator("bim.convert_global_to_local")
 
         if hasattr(bpy.context.scene, "sun_pos_properties"):
             row = layout.row(align=True)
@@ -1920,6 +1967,16 @@ class BIM_PT_mvd(Panel):
 
         row = layout.row()
         row.prop(bim_properties, "import_should_auto_set_workarounds")
+
+        layout.label(text="RIB iTWO Workarounds:")
+
+        row = layout.row()
+        row.prop(bim_properties, "export_should_force_faceted_brep")
+
+        layout.label(text="Navisworks Workarounds:")
+
+        row = layout.row()
+        row.prop(bim_properties, "export_should_force_triangulation")
 
         layout.label(text="Tekla Workarounds:")
 

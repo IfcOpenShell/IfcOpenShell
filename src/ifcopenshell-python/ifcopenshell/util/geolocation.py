@@ -33,6 +33,18 @@ def xyz2enh(x, y, z, eastings, northings, orthogonal_height, x_axis_abscissa, x_
     return (eastings, northings, height)
 
 
+def enh2xyz(e, n, h, eastings, northings, orthogonal_height, x_axis_abscissa, x_axis_ordinate, scale=None):
+    if scale is None:
+        scale = 1.0
+    rotation = math.atan2(x_axis_ordinate, x_axis_abscissa)
+    a = scale * math.cos(rotation)
+    b = scale * math.sin(rotation)
+    x = ((b * n) - (b * northings) - (a * eastings) + (a * e)) / ((a * a) + (b * b))
+    y = ((a * n) - (a * northings) + (b * eastings) - (b * e)) / ((a * a) + (b * b))
+    z = h - orthogonal_height
+    return (x, y, z)
+
+
 # Used for converting the X and Y vectors of the X Axis in IFC geolocation
 def xy2angle(x, y):
     return math.degrees(math.atan2(y, x))

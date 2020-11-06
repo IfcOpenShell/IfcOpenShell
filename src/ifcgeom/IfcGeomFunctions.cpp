@@ -1736,9 +1736,11 @@ IfcSchema::IfcRelVoidsElement::list::ptr IfcGeom::Kernel::find_openings(IfcSchem
 	// Filter openings in Reference view, solely marked as Reference.
 	IfcSchema::IfcRelVoidsElement::list::ptr openings(new IfcSchema::IfcRelVoidsElement::list);
 	std::for_each(rs.begin(), rs.end(), [&openings](IfcSchema::IfcRelVoidsElement* rel) {
-		auto reps = rel->RelatedOpeningElement()->Representation()->Representations();
-		if (!(reps->size() == 1 && (*reps->begin())->RepresentationIdentifier() == "Reference")) {
-			openings->push(rel);
+		if (rel->RelatedOpeningElement()->hasObjectPlacement() && rel->RelatedOpeningElement()->hasRepresentation()) {
+			auto reps = rel->RelatedOpeningElement()->Representation()->Representations();
+			if (!(reps->size() == 1 && (*reps->begin())->RepresentationIdentifier() == "Reference")) {
+				openings->push(rel);
+			}
 		}
 	});
 
