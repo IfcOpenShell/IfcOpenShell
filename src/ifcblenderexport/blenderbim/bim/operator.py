@@ -4284,11 +4284,13 @@ class AddToPresentationLayer(bpy.types.Operator):
     bl_idname = "bim.add_to_presentation_layer"
     bl_label = "Add To Presentation Layer"
     index: bpy.props.IntProperty()
-    guid: bpy.props.StringProperty()
 
     def execute(self, context):
-        bpy.context.active_object.BIMObjectProperties.presentation_layer = \
-        bpy.context.scene.BIMProperties.presentation_layers[self.index]
+        name = bpy.context.scene.BIMProperties.presentation_layers[self.index].name
+        bpy.context.active_object.BIMObjectProperties.presentation_layer.name = name
+
+        print(f'Adding "{self.index} - {name}" to "{bpy.context.scene.BIMProperties.name}"')
+
         return {"FINISHED"}
 
 

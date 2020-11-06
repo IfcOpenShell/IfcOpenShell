@@ -785,28 +785,27 @@ class BIM_PT_presentation_layer_data(Panel):
         if not context.active_object.data:
             return
         layout = self.layout
-        curr_props = context.active_object.data.BIMMeshProperties.presentation_layer
+        elem_props = context.active_object.data.BIMMeshProperties.presentation_layer
+        scene_props = context.scene.BIMProperties
 
-        # if len(curr_props.values()) > 0:
+        if elem_props.name != '':
+            layout.row(align=True).prop(elem_props, "name")
+            layout.row().prop(elem_props, "description")
+            layout.row().prop(elem_props, "identifier")
+            layout.row().prop(elem_props, "layer_on")
+            layout.row().prop(elem_props, "layer_frozen")
+            layout.row().prop(elem_props, "layer_blocked")
+            layout.row().prop(elem_props, "layer_styles")
+        else:
+            layout.label(text='Not included in any presentation layer')
 
-        layout.row(align=True).prop(curr_props, "name")
-        layout.row().prop(curr_props, "description")
-        layout.row().prop(curr_props, "identifier")
-        layout.row().prop(curr_props, "layer_on")
-        layout.row().prop(curr_props, "layer_frozen")
-        layout.row().prop(curr_props, "layer_blocked")
-        layout.row().prop(curr_props, "layer_styles")
-
-        props = context.scene.BIMProperties
-        cur_elem = bpy.context.active_object.BIMObjectProperties
-        if props.presentation_layers:
-            layout.template_list("BIM_UL_presentation_layers", "", props, "presentation_layers", props,
+        if scene_props.presentation_layers:
+            layout.template_list("BIM_UL_presentation_layers", "", scene_props, "presentation_layers", scene_props,
                                  "active_presentation_layer_index")
-            pres_layer = props.presentation_layers[props.active_presentation_layer_index]
+            pres_layer = scene_props.presentation_layers[scene_props.active_presentation_layer_index]
             if pres_layer.name in bpy.context.scene.BIMProperties.presentation_layers:
                 op = layout.row().operator("bim.add_to_presentation_layer")
-                op.index = props.active_presentation_layer_index
-                op.guid = cur_elem.attributes['GlobalId'].string_value
+                op.index = scene_props.active_presentation_layer_index
             else:
                 layout.label(text="Presentation Layer is invalid")
 
