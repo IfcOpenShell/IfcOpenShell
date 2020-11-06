@@ -563,6 +563,7 @@ class MaterialLayer(PropertyGroup):
     description: StringProperty(name="Description")
     category: EnumProperty(
         items=[
+            ("None", "None", ""),
             ("LoadBearing", "Load Bearing", ""),
             ("Insulation", "Insulation", ""),
             ("Finish", "Finish", ""),

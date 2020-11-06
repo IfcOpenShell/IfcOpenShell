@@ -162,6 +162,8 @@ class BIM_PT_object_material(Panel):
                 row = layout.row()
                 row.prop(material, "layer_thickness")
                 row = layout.row()
+                row.prop(material, "is_ventilated")
+                row = layout.row()
                 row.prop(material, "priority")
         elif props.material_type == "IfcMaterialConstituentSet":
             row.template_list(
