@@ -1856,6 +1856,9 @@ class SelectIfcClashResults(bpy.types.Operator):
         for clash_set in clash_sets:
             if clash_set["name"] != clash_set_name:
                 continue
+            if not "clashes" in clash_set.keys():
+                self.report({"WARNING"}, "No clashes found for the selected Clash Set.")
+                return {"CANCELLED"}
             for clash in clash_set["clashes"].values():
                 global_ids.extend([clash["a_global_id"], clash["b_global_id"]])
         for obj in bpy.context.visible_objects:
