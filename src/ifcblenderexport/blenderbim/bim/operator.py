@@ -1873,7 +1873,36 @@ class SelectIfcClashResults(bpy.types.Operator):
                 obj.select_set(True)
         return {"FINISHED"}
 
+class SmartClashGroup(bpy.types.Operator):
+    bl_idname = "bim.smart_clash_group"
+    bl_label = "Smart Clash Group"
+    filename_ext = ".json"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
+    def invoke(self, context, event):
+        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
+        WindowManager = context.window_manager
+        WindowManager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, context):
+        self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
+        with open(self.filepath) as f:
+            clash_sets = json.load(f)
+        
+        for obj in bpy.context.visible_objects:
+            global_id = obj.BIMObjectProperties.attributes.get("GlobalId")
+            if global_id:
+                for smart_groups in clash_sets.values():
+                    for smart_group_list in smart_groups:
+                        for smart_group, clashes in smart_group_list.items():
+                            for id in clashes:
+                                if global_id.string_value in id:
+                                    print("object match: ", global_id)
+                                    obj.select_set(True)
+
+        return {"FINISHED"}
+        
 class SelectBcfFile(bpy.types.Operator):
     bl_idname = "bim.select_bcf_file"
     bl_label = "Select BCF File"
