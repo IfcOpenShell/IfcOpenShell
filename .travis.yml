@@ -80,6 +80,7 @@ script:
 after_success:
   - pwds
   - cd ../../docs
+  - mv ../src/ifcblenderexport/docs/_build/* ./output
   - pwd
   - ls -al
   - MESSAGE=$(git log --oneline -1)

@@ -1,7 +1,6 @@
 .. toctree::
    :maxdepth: 3
 
-   about
    rst_files/library_root
 
 
