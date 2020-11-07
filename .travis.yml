@@ -1,7 +1,7 @@
 language: cpp
 compiler: gcc
 os: linux
-dist: bionic
+dist: focal
 sudo: required
 
 env :
