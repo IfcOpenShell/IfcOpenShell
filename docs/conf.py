@@ -1,3 +1,4 @@
+import textwrap
 # The `extensions` list should already be in here from `sphinx-quickstart`
 extensions = [
     # there may be others here already, e.g. 'sphinx.ext.mathjax'
@@ -28,8 +29,11 @@ exhale_args = {
     # TIP: if using the sphinx-bootstrap-theme, you need
     # "treeViewIsBootstrap": True,
     "exhaleExecutesDoxygen": True,
-    "exhaleDoxygenStdin":    "INPUT = ../src/serializers/"
+    "exhaleUseDoxyfile": True
+
 }
+
+
 
 # html_theme = 'sphinx_rtd_theme'
 
