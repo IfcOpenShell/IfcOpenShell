@@ -29,6 +29,7 @@ exhale_args = {
     # TIP: if using the sphinx-bootstrap-theme, you need
     # "treeViewIsBootstrap": True,
     "exhaleExecutesDoxygen": True,
+    # "exhaleDoxygenStdin":    "INPUT = ../src/serializers/ ../src/ifcgeom",
     "exhaleUseDoxyfile": True
 
 }
@@ -37,11 +38,11 @@ exhale_args = {
 
 # html_theme = 'sphinx_rtd_theme'
 
-# Tell sphinx what the primary language being documented is.
-primary_domain = 'cpp'
+# # Tell sphinx what the primary language being documented is.
+# primary_domain = 'cpp'
 
-# Tell sphinx what the pygments highlight language should be.
-highlight_language = 'cpp'
+# # Tell sphinx what the pygments highlight language should be.
+# highlight_language = 'cpp'
 
 
 
