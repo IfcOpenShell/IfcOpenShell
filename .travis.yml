@@ -86,6 +86,7 @@ after_success:
   - MESSAGE=$(git log --oneline -1)
   - git clone https://johltn:$GITHUB_PASSWORD@github.com/IfcOpenShell/docs
   - cd docs
+  - sudo rm -r *
   - sudo touch .nojekyll
   - sudo mv ../output/* .
   - git config user.email "${GITHUB_EMAIL}"
