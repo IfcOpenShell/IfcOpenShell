@@ -1718,7 +1718,7 @@ namespace {
 		}
 		k.remove_duplicate_points_from_loop(polygon, true);
 
-		if (polygon.Size() < 3) {
+		if (polygon.Length() < 3) {
 			return false;
 		}
 
@@ -1837,7 +1837,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
         }
     }
 
-    if (faces.Size() == 0) return false;
+    if (faces.IsEmpty() == 0) return false;
 
     return create_solid_from_faces(faces, shape);
 }
