@@ -2228,18 +2228,45 @@ class BIM_PT_debug(Panel):
         layout = self.layout
 
         scene = context.scene
-        bim_props = scene.BIMProperties
-        debug_props = scene.BIMDebugProperties
+        props = scene.BIMDebugProperties
 
         row = layout.row()
-        row.prop(debug_props, "step_id", text="")
+        row.prop(props, "step_id", text="")
         row = layout.row()
         row.operator("bim.create_shape_from_step_id")
 
         row = layout.row()
-        row.prop(debug_props, "number_of_polygons", text="")
+        row.prop(props, "number_of_polygons", text="")
         row = layout.row()
         row.operator("bim.select_high_polygon_meshes")
+
+        layout.label(text="Inspector:")
+
+        row = layout.row()
+        row.prop(props, "active_step_id", text="")
+        row = layout.row(align=True)
+        row.operator("bim.inspect_from_step_id").step_id = bpy.context.scene.BIMDebugProperties.active_step_id
+        row.operator("bim.inspect_from_object")
+
+        if props.attributes:
+            layout.label(text="Direct attributes:")
+
+        for index, attribute in enumerate(props.attributes):
+            row = layout.row(align=True)
+            row.prop(attribute, "name", text="")
+            row.prop(attribute, "string_value", text="")
+            if attribute.int_value:
+                row.operator("bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text="").step_id = attribute.int_value
+
+        if props.inverse_attributes:
+            layout.label(text="Inverse attributes:")
+
+        for index, attribute in enumerate(props.inverse_attributes):
+            row = layout.row(align=True)
+            row.prop(attribute, "name", text="")
+            row.prop(attribute, "string_value", text="")
+            if attribute.int_value:
+                row.operator("bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text="").step_id = attribute.int_value
 
 
 def ifc_units(self, context):

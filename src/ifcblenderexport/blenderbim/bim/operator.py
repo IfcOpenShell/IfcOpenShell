@@ -4341,6 +4341,49 @@ class SelectHighPolygonMeshes(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class InspectFromStepId(bpy.types.Operator):
+    bl_idname = "bim.inspect_from_step_id"
+    bl_label = "Inspect From STEP ID"
+    step_id: bpy.props.IntProperty()
+    guid: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.file = ifc.IfcStore.get_file()
+        if self.step_id:
+            bpy.context.scene.BIMDebugProperties.active_step_id = self.step_id
+            element = self.file.by_id(self.step_id)
+        else:
+            pass
+        while len(bpy.context.scene.BIMDebugProperties.attributes) > 0:
+            bpy.context.scene.BIMDebugProperties.attributes.remove(0)
+        while len(bpy.context.scene.BIMDebugProperties.inverse_attributes) > 0:
+            bpy.context.scene.BIMDebugProperties.inverse_attributes.remove(0)
+        for key, value in element.get_info().items():
+            new = bpy.context.scene.BIMDebugProperties.attributes.add()
+            new.name = key
+            new.string_value = str(value)
+            if isinstance(value, ifcopenshell.entity_instance):
+                new.int_value = int(value.id())
+
+        for key in dir(element):
+            if not key[0].isalpha() or key[0] != key[0].upper() or key in element.get_info() or not getattr(element, key):
+                continue
+            new = bpy.context.scene.BIMDebugProperties.inverse_attributes.add()
+            new.name = key
+            new.string_value = str(getattr(element, key))
+            if isinstance(value, ifcopenshell.entity_instance):
+                new.int_value = int(value.id())
+        return {"FINISHED"}
+
+
+class InspectFromObject(bpy.types.Operator):
+    bl_idname = "bim.inspect_from_object"
+    bl_label = "Inspect From Object"
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+
 class RefreshDrawingList(bpy.types.Operator):
     bl_idname = "bim.refresh_drawing_list"
     bl_label = "Refresh Drawing List"
