@@ -36,6 +36,7 @@ script:
   - pwd
   - cd src/ifcblenderexport/docs
   - make html
+  - ls al
   - cd ../../..
   - cd cmake
   - mkdir build
