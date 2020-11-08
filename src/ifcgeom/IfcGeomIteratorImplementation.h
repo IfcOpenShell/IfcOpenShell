@@ -171,11 +171,11 @@ namespace {
 		}
 	}
 }
-#define IteratorImplementation MAKE_TYPE_NAME(IteratorImplementation_)
+
 namespace IfcGeom {
-	
+	#define IteratorImpl MAKE_TYPE_NAME(IteratorImplementation_)
 	template <typename P, typename PP>
-	class IteratorImplementation : public IteratorImplementation<P, PP> {
+	class IteratorImpl : public IteratorImplementation<P, PP> {
 	private:
 
 		std::atomic<int> progress_;
@@ -185,8 +185,8 @@ namespace IfcGeom {
 		typename std::vector<IfcGeom::Element<P, PP>*>::const_iterator task_result_iterator_;
 		typename std::vector<IfcGeom::BRepElement<P, PP>*>::const_iterator native_task_result_iterator_;
 
-		IteratorImplementation(const IteratorImplementation&); // N/I
-		IteratorImplementation& operator=(const IteratorImplementation&); // N/I
+		IteratorImpl(const IteratorImpl&); // N/I
+		IteratorImpl& operator=(const IteratorImpl&); // N/I
 
 		MAKE_TYPE_NAME(Kernel) kernel;
 
@@ -1017,7 +1017,7 @@ namespace IfcGeom {
 		}
 		
 	public:
-		IteratorImplementation(const IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, int num_threads)
+		IteratorImpl(const IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, int num_threads)
 			: settings(settings)
 			, ifc_file(file)
 			, filters_(filters)
@@ -1027,7 +1027,7 @@ namespace IfcGeom {
 			_initialize();
 		}
 
-		~IteratorImplementation() {
+		~IteratorImpl() {
 			if (owns_ifc_file) {
 				delete ifc_file;
 			}
