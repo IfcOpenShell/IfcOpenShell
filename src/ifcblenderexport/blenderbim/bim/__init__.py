@@ -206,6 +206,7 @@ if bpy is not None:
         operator.AddPresentationLayer,
         operator.AddToPresentationLayer,
         operator.RemovePresentationLayer,
+        operator.UpdatePresentationLayer,
         operator.AddDrawingStyleAttribute,
         operator.RemoveDrawingStyleAttribute,
         operator.CopyPropertyToSelection,

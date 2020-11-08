@@ -788,7 +788,7 @@ class BIM_PT_presentation_layer_data(Panel):
         elem_props = context.active_object.data.BIMMeshProperties.presentation_layer
         scene_props = context.scene.BIMProperties
 
-        if elem_props.name != '':
+        if elem_props.name != "":
             layout.row(align=True).prop(elem_props, "name")
             layout.row().prop(elem_props, "description")
             layout.row().prop(elem_props, "identifier")
@@ -797,11 +797,17 @@ class BIM_PT_presentation_layer_data(Panel):
             layout.row().prop(elem_props, "layer_blocked")
             layout.row().prop(elem_props, "layer_styles")
         else:
-            layout.label(text='Not included in any presentation layer')
+            layout.label(text="Not included in any presentation layer")
 
         if scene_props.presentation_layers:
-            layout.template_list("BIM_UL_presentation_layers", "", scene_props, "presentation_layers", scene_props,
-                                 "active_presentation_layer_index")
+            layout.template_list(
+                "BIM_UL_presentation_layers",
+                "",
+                scene_props,
+                "presentation_layers",
+                scene_props,
+                "active_presentation_layer_index",
+            )
             pres_layer = scene_props.presentation_layers[scene_props.active_presentation_layer_index]
             if pres_layer.name in bpy.context.scene.BIMProperties.presentation_layers:
                 op = layout.row().operator("bim.add_to_presentation_layer")
@@ -950,8 +956,9 @@ class BIM_PT_presentation_layers(Panel):
         layout.row().operator("bim.add_presentation_layer")
 
         if props.presentation_layers:
-            layout.template_list("BIM_UL_presentation_layers", "", props, "presentation_layers", props,
-                                 "active_presentation_layer_index")
+            layout.template_list(
+                "BIM_UL_presentation_layers", "", props, "presentation_layers", props, "active_presentation_layer_index"
+            )
             pres_layer = props.presentation_layers[props.active_presentation_layer_index]
 
             row = layout.row(align=True)
@@ -963,8 +970,6 @@ class BIM_PT_presentation_layers(Panel):
                 ).index = props.active_presentation_layer_index
                 row = layout.row()
                 row.prop(pres_layer, "description")
-                # row = layout.row()
-                # row.prop(pres_layer, "assigned_items")
                 row = layout.row()
                 row.prop(pres_layer, "identifier")
                 row = layout.row()
@@ -975,6 +980,11 @@ class BIM_PT_presentation_layers(Panel):
                 row.prop(pres_layer, "layer_blocked")
                 row = layout.row()
                 row.prop(pres_layer, "layer_styles")
+
+                op = layout.row().operator("bim.update_presentation_layer")
+                op.index = props.active_presentation_layer_index
+                op.pl_name = pres_layer.name
+                op.pl_description = pres_layer.description
             else:
                 layout.label(text="Presentation Layer is invalid")
 

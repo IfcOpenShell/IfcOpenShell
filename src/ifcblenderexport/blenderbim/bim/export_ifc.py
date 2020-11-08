@@ -404,7 +404,7 @@ class IfcParser:
             )
 
         if obj.instance_type == "COLLECTION" and self.is_a_rel_aggregates(
-                self.get_ifc_class(obj.instance_collection.name)
+            self.get_ifc_class(obj.instance_collection.name)
         ):
             self.rel_aggregates[self.product_index] = obj.name
 
@@ -434,7 +434,7 @@ class IfcParser:
         elif obj.BIMObjectProperties.material_type == "IfcMaterialLayerSet":
             self.rel_associates_material_layer_set[self.product_index] = obj.BIMObjectProperties.material_set
         elif obj.BIMObjectProperties.material_type == "IfcMaterialProfileSet":
-            pass  # TODO
+            pass # TODO
 
         return product
 
@@ -981,12 +981,10 @@ class IfcParser:
         for representation in self.representations.values():
             if representation["presentation_layer"]:
                 pl = representation["presentation_layer"]
-                print('Presentation load: ', pl.name)
-                defaults = [[], pl.description, pl.identifier, pl.layer_on, pl.layer_frozen, pl.layer_blocked,
-                            pl.layer_styles]
-                self.presentation_layer_assignments.setdefault(pl.name, defaults)[0].append(
-                    representation
-                )
+                if pl.name == '':
+                    continue
+                print("Presentation load: ", pl.name)
+                self.presentation_layer_assignments.setdefault(pl.name, []).append(representation)
 
     def load_representations(self):
         if not self.ifc_export_settings.has_representations:
@@ -1003,9 +1001,9 @@ class IfcParser:
 
     def prevent_data_name_duplicates(self, product):
         if (
-                product["raw"].data
-                and bpy.data.meshes.get(product["raw"].data.name)
-                and bpy.data.curves.get(product["raw"].data.name)
+            product["raw"].data
+            and bpy.data.meshes.get(product["raw"].data.name)
+            and bpy.data.curves.get(product["raw"].data.name)
         ):
             product["raw"].data.name += "~"
 
@@ -1078,8 +1076,7 @@ class IfcParser:
                         "Model/Box/MODEL_VIEW/{}".format(mesh_name.split("/")[3])
                     ] = self.get_representation(obj.data, obj, "Model", "Box", "MODEL_VIEW")
         elif (
-                context_prefix == "Model/Body/MODEL_VIEW" and obj.data and not self.is_mesh_context_sensitive(
-            obj.data.name)
+            context_prefix == "Model/Body/MODEL_VIEW" and obj.data and not self.is_mesh_context_sensitive(obj.data.name)
         ):
             self.append_default_representation(obj)
         elif context_prefix == "Model/Body/MODEL_VIEW" and self.is_point_cloud(obj):
@@ -1119,9 +1116,7 @@ class IfcParser:
             "is_native": mesh.BIMMeshProperties.is_native if hasattr(mesh, "BIMMeshProperties") else False,
             "is_swept_solid": mesh.BIMMeshProperties.is_swept_solid if hasattr(mesh, "BIMMeshProperties") else False,
             "is_generated": False,
-            "presentation_layer": mesh.BIMMeshProperties.presentation_layer
-            if hasattr(mesh, "BIMMeshProperties")
-            else None,
+            "presentation_layer": obj.BIMObjectProperties.presentation_layer if hasattr(obj, "BIMObjectProperties") else None,
             "attributes": {"Name": mesh.name},
         }
 
@@ -1250,15 +1245,15 @@ class IfcParser:
             return children
         for reference, element in enumerate(self.spatial_structure_elements):
             if (  # A convention is established that spatial elements may be
-                    # an object placed in a collection of the same name
-                    element["raw"].name == element["raw"].users_collection[0].name
-                    and element["raw"].users_collection[0].name
-                    in [c.name for c in bpy.data.collections[parent["raw"].name].children]
+                # an object placed in a collection of the same name
+                element["raw"].name == element["raw"].users_collection[0].name
+                and element["raw"].users_collection[0].name
+                in [c.name for c in bpy.data.collections[parent["raw"].name].children]
             ) or (  # We allow finer grain spatial elements such as IfcSpace to
-                    # break the convention to prevent collection overload in Blender
-                    element["raw"].name != element["raw"].users_collection[0].name
-                    and element["raw"].users_collection[0].name
-                    in [o.name for o in bpy.data.collections[parent["raw"].name].objects]
+                # break the convention to prevent collection overload in Blender
+                element["raw"].name != element["raw"].users_collection[0].name
+                and element["raw"].users_collection[0].name
+                in [o.name for o in bpy.data.collections[parent["raw"].name].objects]
             ):
                 children.append({"reference": reference, "children": self.get_spatial_structure_elements_tree(element)})
         return children
@@ -1316,7 +1311,7 @@ class IfcParser:
 
     def is_a_type(self, class_name):
         return (class_name[0:3] == "Ifc" and class_name[-4:] == "Type") or (
-                class_name[0:3] == "Ifc" and class_name[-5:] == "Style"
+            class_name[0:3] == "Ifc" and class_name[-5:] == "Style"
         )
 
 
@@ -1393,10 +1388,10 @@ class IfcExporter:
         self.file.wrapped_data.header.file_name.name = os.path.basename(self.ifc_export_settings.output_file)
         self.file.wrapped_data.header.file_name.time_stamp = (
             datetime.datetime.utcnow()
-                .replace(tzinfo=datetime.timezone.utc)
-                .astimezone()
-                .replace(microsecond=0)
-                .isoformat()
+            .replace(tzinfo=datetime.timezone.utc)
+            .astimezone()
+            .replace(microsecond=0)
+            .isoformat()
         )
         self.file.wrapped_data.header.file_name.preprocessor_version = "IfcOpenShell {}".format(ifcopenshell.version)
         self.file.wrapped_data.header.file_name.originating_system = "{} {}".format(
@@ -1420,10 +1415,10 @@ class IfcExporter:
             [
                 str(x)
                 for x in [
-                addon.bl_info.get("version", (-1, -1, -1))
-                for addon in addon_utils.modules()
-                if addon.bl_info["name"] == "BlenderBIM"
-            ][0]
+                    addon.bl_info.get("version", (-1, -1, -1))
+                    for addon in addon_utils.modules()
+                    if addon.bl_info["name"] == "BlenderBIM"
+                ][0]
             ]
         )
 
@@ -1618,8 +1613,8 @@ class IfcExporter:
     def create_document_references(self):
         for reference in self.ifc_parser.document_references.values():
             if (
-                    reference["referenced_document"]
-                    and reference["referenced_document"] in self.ifc_parser.document_information
+                reference["referenced_document"]
+                and reference["referenced_document"] in self.ifc_parser.document_information
             ):
                 reference["attributes"]["ReferencedDocument"] = self.ifc_parser.document_information[
                     reference["referenced_document"]
@@ -2028,12 +2023,26 @@ class IfcExporter:
         return self.file.createIfcStyledItem(representation_item, [surface_style], item["attributes"]["Name"])
 
     def create_presentation_layer_assignments(self):
-        for name, props in self.ifc_parser.presentation_layer_assignments.items():
-            assigned_items, description, identifier, layer_on, layer_frozen, layer_blocked, layer_styles = props
-            print('Presentation Export: ', name, assigned_items)
-            self.file.createIfcPresentationLayerAssignment(
-                name, description, [i["ifc"].MappedRepresentation for i in assigned_items], identifier
-            )
+        scene_props = bpy.context.scene.BIMProperties
+        for name, assigned_items in self.ifc_parser.presentation_layer_assignments.items():
+            if name == '':
+                continue
+            pl = scene_props.presentation_layers[name]
+            print("Presentation Export: ", name, pl.identifier, pl.layer_on)
+
+            with_style = False
+            if pl.layer_on is False:
+                with_style = True
+
+            if with_style is False:
+                self.file.createIfcPresentationLayerAssignment(
+                    name, pl.description, [i["ifc"].MappedRepresentation for i in assigned_items], pl.identifier
+                )
+            else:
+                self.file.createIfcPresentationLayerWithStyle(
+                    name, pl.description, [i["ifc"].MappedRepresentation for i in assigned_items], pl.identifier,
+                    pl.layer_on, pl.layer_frozen, pl.layer_blocked, pl.layer_styles
+                )
 
     def create_materials(self):
         for material in self.ifc_parser.materials.values():
@@ -2108,9 +2117,9 @@ class IfcExporter:
 
     def get_rendering_attributes(self, material):
         if (
-                not material.use_nodes
-                or not hasattr(material.node_tree, "nodes")
-                or "Principled BSDF" not in material.node_tree.nodes
+            not material.use_nodes
+            or not hasattr(material.node_tree, "nodes")
+            or "Principled BSDF" not in material.node_tree.nodes
         ):
             return {}
         bsdf = material.node_tree.nodes["Principled BSDF"]
@@ -3223,7 +3232,10 @@ class IfcExporter:
         return results
 
     def relate_spaces_to_boundary_elements(self):
-        for (relating_space_index, relationships,) in self.ifc_parser.rel_space_boundaries.items():
+        for (
+            relating_space_index,
+            relationships,
+        ) in self.ifc_parser.rel_space_boundaries.items():
             for relationship in relationships:
                 relationship["attributes"]["GlobalId"] = ifcopenshell.guid.new()
                 relationship["attributes"]["RelatedBuildingElement"] = self.ifc_parser.products[
@@ -3337,8 +3349,7 @@ class IfcExporter:
                 tmp_file = os.path.join(unzipped_path, tmp_name)
                 self.file.write(tmp_file)
                 with zipfile.ZipFile(
-                        self.ifc_export_settings.output_file, mode="w", compression=zipfile.ZIP_DEFLATED,
-                        compresslevel=9
+                    self.ifc_export_settings.output_file, mode="w", compression=zipfile.ZIP_DEFLATED, compresslevel=9
                 ) as zf:
                     zf.write(tmp_file)
         elif extension == "ifc":

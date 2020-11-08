@@ -799,8 +799,8 @@ class PresentationLayer(PropertyGroup):
     description: StringProperty(name="Description")
     identifier: StringProperty(name="Identifier")
     layer_on: BoolProperty(name="LayerOn", default=True)
-    layer_frozen: BoolProperty(name="LayerFrozen")
-    layer_blocked: BoolProperty(name="LayerBlocked")
+    layer_frozen: BoolProperty(name="LayerFrozen", default=False)
+    layer_blocked: BoolProperty(name="LayerBlocked", default=False)
     layer_styles: EnumProperty(items=[], name="LayerStyles")
 
 

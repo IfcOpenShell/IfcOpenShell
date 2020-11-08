@@ -4288,8 +4288,9 @@ class AddToPresentationLayer(bpy.types.Operator):
     def execute(self, context):
         name = bpy.context.scene.BIMProperties.presentation_layers[self.index].name
         bpy.context.active_object.BIMObjectProperties.presentation_layer.name = name
-
-        print(f'Adding "{self.index} - {name}" to "{bpy.context.scene.BIMProperties.name}"')
+        bpy.context.active_object.BIMObjectProperties.presentation_layer.name = name
+        elem_name = bpy.context.active_object.BIMObjectProperties.attributes["Name"].string_value
+        print(f'Adding "({self.index} - {name})" to "{elem_name}"')
 
         return {"FINISHED"}
 
@@ -4298,21 +4299,16 @@ class AddPresentationLayer(bpy.types.Operator):
     bl_idname = "bim.add_presentation_layer"
     bl_label = "Add Presentation Layer"
 
-    _name = 'New Presentation Layer'
-    descript = 'A Description'
-    identifier = 'Something'
-    layer_on = True
-    layer_frozen = False
-    layer_blocked = False
-
     def execute(self, context):
         new = bpy.context.scene.BIMProperties.presentation_layers.add()
-        new.name = self._name
-        new.description = self.descript
-        new.identifier = self.identifier
-        new.layer_on = self.layer_on
-        new.layer_frozen = self.layer_frozen
-        new.layer_blocked = self.layer_blocked
+
+        # Default values of a new presentation layer
+        new.name = "New Presentation Layer"
+        new.description = "A Description"
+        new.identifier = "Something"
+        new.layer_on = True
+        new.layer_frozen = False
+        new.layer_blocked = False
 
         return {"FINISHED"}
 
@@ -4322,8 +4318,32 @@ class RemovePresentationLayer(bpy.types.Operator):
     bl_label = "Remove Presentation Layer"
     index: bpy.props.IntProperty()
 
+
     def execute(self, context):
         bpy.context.scene.BIMProperties.presentation_layers.remove(self.index)
+        return {"FINISHED"}
+
+
+class UpdatePresentationLayer(bpy.types.Operator):
+    bl_idname = "bim.update_presentation_layer"
+    bl_label = "Update Presentation Layer"
+    index: bpy.props.IntProperty()
+    pl_name = bpy.props.StringProperty()
+    pl_description = bpy.props.StringProperty()
+    pl_identifier = bpy.props.StringProperty()
+    pl_layer_on = bpy.props.BoolProperty()
+    pl_layer_frozen = bpy.props.BoolProperty()
+    pl_layer_blocked = bpy.props.BoolProperty()
+
+    def execute(self, context):
+        pl = bpy.context.scene.BIMProperties.presentation_layers[self.index]
+        pl.name = self.pl_name
+        pl.description = self.pl_description
+        pl.identifier = self.pl_identifier
+        pl.layer_on = self.pl_layer_on
+        pl.layer_frozen = self.pl_layer_frozen
+        pl.layer_blocked = self.pl_layer_blocked
+
         return {"FINISHED"}
 
 
