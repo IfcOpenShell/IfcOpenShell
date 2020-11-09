@@ -162,7 +162,7 @@ class MaterialCreator:
         elif material.is_a("IfcMaterialLayerSet"):
             self.create_layer_set(material)
         elif material.is_a("IfcMaterialProfileSet"):
-            pass  # TODO
+            self.create_profile_set(material)
 
     def create_usage_definition(self, material):
         if material.is_a("IfcMaterialLayerSetUsage"):
@@ -216,6 +216,28 @@ class MaterialCreator:
             new.material = self.materials[constituent.Material.Name]
             new.fraction = constituent.Fraction or 0.0
             new.category = constituent.Category or ""
+
+    def create_profile_set(self, profile_set):
+        props = self.obj.BIMObjectProperties
+        props.material_type = "IfcMaterialProfileSet"
+        props.material_set.name = profile_set.Name or ""
+        props.material_set.description = profile_set.Description or ""
+        for profile in profile_set.MaterialProfiles:
+            new = props.material_set.material_profiles.add()
+            new.name = profile.Name or ""
+            new.description = profile.Description or ""
+            if profile.Material.Name not in self.materials:
+                # TODO import rest of the layer set data
+                self.create_new_single(profile.Material)
+            self.assign_material_to_mesh(self.materials[profile.Material.Name])
+            new.material = self.materials[profile.Material.Name]
+            new.profile = profile.Profile.is_a()
+            for i, attribute in enumerate(profile.Profile):
+                newa = new.profile_attributes.add()
+                newa.name = profile.Profile.attribute_name(i)
+                newa.string_value = str(attribute)
+            new.priority = profile.Priority or 0
+            new.category = profile.Category or ""
 
     def create_material_list(self, material_list):
         for material in material_list.Materials:
