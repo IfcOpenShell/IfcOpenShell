@@ -205,6 +205,7 @@ if bpy is not None:
         operator.GetNorthOffset,
         operator.AddPresentationLayer,
         operator.AddToPresentationLayer,
+        operator.RemoveFromPresentationLayer,
         operator.RemovePresentationLayer,
         operator.UpdatePresentationLayer,
         operator.AddDrawingStyleAttribute,

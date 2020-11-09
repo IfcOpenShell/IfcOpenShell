@@ -4286,11 +4286,30 @@ class AddToPresentationLayer(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        name = bpy.context.scene.BIMProperties.presentation_layers[self.index].name
-        bpy.context.active_object.BIMObjectProperties.presentation_layer.name = name
-        bpy.context.active_object.BIMObjectProperties.presentation_layer.name = name
-        elem_name = bpy.context.active_object.BIMObjectProperties.attributes["Name"].string_value
-        print(f'Adding "({self.index} - {name})" to "{elem_name}"')
+        presentation_layer = bpy.context.scene.BIMProperties.presentation_layers[self.index]
+
+        vl = bpy.context.scene.view_layers[presentation_layer.name]
+
+        for el in bpy.context.selected_objects:
+            el.BIMObjectProperties.presentation_layer.name = presentation_layer.name
+            elem_name = el.BIMObjectProperties.attributes["Name"].string_value
+
+            # TODO: I want to add the selected elements to a view layer. But how do you append objects to a view_layer?
+            # vl.objects.append(el)
+
+            print(f'Adding "{elem_name}" to View/Presentation Layer "({self.index} - {presentation_layer.name})"')
+
+        return {"FINISHED"}
+
+
+class RemoveFromPresentationLayer(bpy.types.Operator):
+    bl_idname = "bim.remove_from_presentation_layer"
+    bl_label = "Remove Selected From Presentation Layer"
+
+    def execute(self, context):
+        for el in bpy.context.selected_objects:
+            if el.BIMObjectProperties.presentation_layer.name != '':
+                el.BIMObjectProperties.presentation_layer.name = ''
 
         return {"FINISHED"}
 
@@ -4318,9 +4337,12 @@ class RemovePresentationLayer(bpy.types.Operator):
     bl_label = "Remove Presentation Layer"
     index: bpy.props.IntProperty()
 
-
     def execute(self, context):
+        pl = bpy.context.scene.BIMProperties.presentation_layers[self.index]
+        if pl.name not in bpy.context.scene.view_layers.keys():
+            bpy.context.scene.view_layers.remove(pl.name)
         bpy.context.scene.BIMProperties.presentation_layers.remove(self.index)
+
         return {"FINISHED"}
 
 
@@ -4343,6 +4365,11 @@ class UpdatePresentationLayer(bpy.types.Operator):
         pl.layer_on = self.pl_layer_on
         pl.layer_frozen = self.pl_layer_frozen
         pl.layer_blocked = self.pl_layer_blocked
+
+        if pl.name not in bpy.context.scene.view_layers.keys():
+            new = bpy.context.scene.view_layers.new(pl.name)
+            # if pl.layer_on is False:
+            #     bpy.context.scene.view_layers
 
         return {"FINISHED"}
 
