@@ -194,6 +194,41 @@ class BIM_PT_object_material(Panel):
                 row.prop(material, "fraction")
                 row = layout.row()
                 row.prop(material, "category")
+        elif props.material_type == "IfcMaterialProfileSet":
+            row.template_list(
+                "MATERIAL_UL_matslots",
+                "",
+                set_props,
+                "material_profiles",
+                set_props,
+                "active_material_profile_index",
+            )
+            col = row.column(align=True)
+            col.operator("bim.add_material_profile", icon="ADD", text="")
+            col.operator(
+                "bim.remove_material_profile", icon="REMOVE", text=""
+            ).index = set_props.active_material_profile_index
+            col.operator("bim.move_material_profile", icon="TRIA_UP", text="").direction = "UP"
+            col.operator("bim.move_material_profile", icon="TRIA_DOWN", text="").direction = "DOWN"
+
+            if set_props.active_material_profile_index < len(set_props.material_profiles):
+                material = set_props.material_profiles[set_props.active_material_profile_index]
+                row = layout.row()
+                row.prop(material, "material")
+                row = layout.row()
+                row.prop(material, "name")
+                row = layout.row()
+                row.prop(material, "description")
+                row = layout.row()
+                row.prop(material, "priority")
+                row = layout.row()
+                row.prop(material, "category")
+                row = layout.row()
+                row.prop(material, "profile")
+                for index, attribute in enumerate(material.profile_attributes):
+                    row = layout.row(align=True)
+                    row.prop(attribute, "name", text="")
+                    row.prop(attribute, "string_value", text="")
 
 
 class BIM_PT_object_psets(Panel):
@@ -833,16 +868,6 @@ class BIM_PT_material(Panel):
 
         row = layout.row()
         row.prop(props, "psets", text="")
-
-        if context.active_object.BIMObjectProperties.material_type == "IfcMaterialProfileSet":
-            layout.label(text="Profile Definition:")
-            row = layout.row()
-            row.prop(props, "profile_def")
-
-            for index, attribute in enumerate(props.profile_attributes):
-                row = layout.row(align=True)
-                row.prop(attribute, "name", text="")
-                row.prop(attribute, "string_value", text="")
 
 
 class BIM_PT_gis(Panel):

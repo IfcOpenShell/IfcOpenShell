@@ -484,10 +484,12 @@ def getApplicableMaterialAttributes(self, context):
 
 
 def refreshProfileAttributes(self, context):
-    while len(context.active_object.active_material.BIMMaterialProperties.profile_attributes) > 0:
-        context.active_object.active_material.BIMMaterialProperties.profile_attributes.remove(0)
-    for attribute in schema.ifc.IfcParameterizedProfileDef[self.profile_def]["attributes"]:
-        profile_attribute = context.active_object.active_material.BIMMaterialProperties.profile_attributes.add()
+    props = context.active_object.BIMObjectProperties
+    profile = props.material_set.material_profiles[props.material_set.active_material_profile_index]
+    while len(profile.profile_attributes) > 0:
+        profile.profile_attributes.remove(0)
+    for attribute in schema.ifc.IfcParameterizedProfileDef[profile.profile]["attributes"]:
+        profile_attribute = profile.profile_attributes.add()
         profile_attribute.name = attribute["name"]
 
 
@@ -541,6 +543,15 @@ class Variable(PropertyGroup):
     prop_key: StringProperty(name="Property Key")
 
 
+class Attribute(PropertyGroup):
+    name: StringProperty(name="Name")
+    data_type: StringProperty(name="Data Type")
+    string_value: StringProperty(name="Value")
+    bool_value: BoolProperty(name="Value")
+    int_value: IntProperty(name="Value")
+    float_value: FloatProperty(name="Value")
+
+
 class Subcontext(PropertyGroup):
     name: StringProperty(name="Name")
     context: StringProperty(name="Context")
@@ -584,6 +595,16 @@ class MaterialConstituent(PropertyGroup):
     category: StringProperty(name="Category")
 
 
+class MaterialProfile(PropertyGroup):
+    name: StringProperty(name="Name")
+    description: StringProperty(name="Description")
+    material: PointerProperty(name="Material", type=bpy.types.Material)
+    profile: EnumProperty(items=getProfileDef, name="Parameterized Profile Def", update=refreshProfileAttributes)
+    profile_attributes: CollectionProperty(name="Profile Attributes", type=Attribute)
+    priority: IntProperty(name="Priority")
+    category: StringProperty(name="Category")
+
+
 class MaterialSet(PropertyGroup):
     name: StringProperty(name="Name")
     description: StringProperty(name="Description")
@@ -591,6 +612,8 @@ class MaterialSet(PropertyGroup):
     material_layers: CollectionProperty(name="Material Layers", type=MaterialLayer)
     active_material_constituent_index: IntProperty(name="Active Material Constituent Index")
     material_constituents: CollectionProperty(name="Material Constituents", type=MaterialConstituent)
+    active_material_profile_index: IntProperty(name="Active Material Profile Index")
+    material_profiles: CollectionProperty(name="Material Profiles", type=MaterialProfile)
 
 
 class Drawing(PropertyGroup):
@@ -1605,15 +1628,6 @@ class BIMLibrary(PropertyGroup):
     description: StringProperty(name="Description")
 
 
-class Attribute(PropertyGroup):
-    name: StringProperty(name="Name")
-    data_type: StringProperty(name="Data Type")
-    string_value: StringProperty(name="Value")
-    bool_value: BoolProperty(name="Value")
-    int_value: IntProperty(name="Value")
-    float_value: FloatProperty(name="Value")
-
-
 class IfcParameter(PropertyGroup):
     name: StringProperty(name="Name")
     step_id: IntProperty(name="STEP ID")
@@ -1683,8 +1697,6 @@ class BIMMaterialProperties(PropertyGroup):
     psets: CollectionProperty(name="Psets", type=PsetQto)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     applicable_attributes: EnumProperty(items=getApplicableMaterialAttributes, name="Attribute Names")
-    profile_def: EnumProperty(items=getProfileDef, name="Parameterized Profile Def", update=refreshProfileAttributes)
-    profile_attributes: CollectionProperty(name="Profile Attributes", type=Attribute)
 
 
 class SweptSolid(PropertyGroup):
