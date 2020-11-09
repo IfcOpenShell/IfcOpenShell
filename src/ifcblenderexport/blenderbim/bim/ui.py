@@ -2242,7 +2242,9 @@ class BIM_PT_debug(Panel):
 
         layout.label(text="Inspector:")
 
-        row = layout.row()
+        row = layout.row(align=True)
+        if len(props.step_id_breadcrumb) >= 2:
+            row.operator("bim.rewind_inspector", icon="FRAME_PREV", text="")
         row.prop(props, "active_step_id", text="")
         row = layout.row(align=True)
         row.operator("bim.inspect_from_step_id").step_id = bpy.context.scene.BIMDebugProperties.active_step_id
