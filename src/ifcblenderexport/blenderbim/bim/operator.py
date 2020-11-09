@@ -55,8 +55,8 @@ def set_active_camera_resolution(scene):
     if not scene.camera or "/" not in scene.camera.name or not scene.DocProperties.drawings:
         return
     if (
-            scene.render.resolution_x != scene.camera.data.BIMCameraProperties.raster_x
-            or scene.render.resolution_y != scene.camera.data.BIMCameraProperties.raster_y
+        scene.render.resolution_x != scene.camera.data.BIMCameraProperties.raster_x
+        or scene.render.resolution_y != scene.camera.data.BIMCameraProperties.raster_y
     ):
         scene.render.resolution_x = scene.camera.data.BIMCameraProperties.raster_x
         scene.render.resolution_y = scene.camera.data.BIMCameraProperties.raster_y
@@ -145,9 +145,8 @@ class SelectGlobalId(bpy.types.Operator):
         for obj in bpy.context.visible_objects:
             index = obj.BIMObjectProperties.attributes.find("GlobalId")
             if (
-                    index != -1
-                    and obj.BIMObjectProperties.attributes[
-                index].string_value == bpy.context.scene.BIMProperties.global_id
+                index != -1
+                and obj.BIMObjectProperties.attributes[index].string_value == bpy.context.scene.BIMProperties.global_id
             ):
                 obj.select_set(True)
                 break
@@ -168,9 +167,9 @@ class SelectAttribute(bpy.types.Operator):
                 continue
             value = object.BIMObjectProperties.attributes[index].string_value
             if (
-                    bpy.context.scene.BIMProperties.search_regex
-                    and bpy.context.scene.BIMProperties.search_ignorecase
-                    and re.search(search_value, value, flags=re.IGNORECASE)
+                bpy.context.scene.BIMProperties.search_regex
+                and bpy.context.scene.BIMProperties.search_ignorecase
+                and re.search(search_value, value, flags=re.IGNORECASE)
             ):
                 object.select_set(True)
             elif bpy.context.scene.BIMProperties.search_regex and re.search(search_value, value):
@@ -201,9 +200,9 @@ class SelectPset(bpy.types.Operator):
                 continue
             value = object.BIMObjectProperties.psets[pset_index].properties[prop_index].string_value
             if (
-                    bpy.context.scene.BIMProperties.search_regex
-                    and bpy.context.scene.BIMProperties.search_ignorecase
-                    and re.search(search_value, value, flags=re.IGNORECASE)
+                bpy.context.scene.BIMProperties.search_regex
+                and bpy.context.scene.BIMProperties.search_ignorecase
+                and re.search(search_value, value, flags=re.IGNORECASE)
             ):
                 object.select_set(True)
             elif bpy.context.scene.BIMProperties.search_regex and re.search(search_value, value):
@@ -302,9 +301,9 @@ class SelectClass(bpy.types.Operator):
     def execute(self, context):
         for object in bpy.context.visible_objects:
             if (
-                    "/" in object.name
-                    and object.name[0:3] == "Ifc"
-                    and object.name.split("/")[0] == bpy.context.scene.BIMProperties.ifc_class
+                "/" in object.name
+                and object.name[0:3] == "Ifc"
+                and object.name.split("/")[0] == bpy.context.scene.BIMProperties.ifc_class
             ):
                 object.select_set(True)
         return {"FINISHED"}
@@ -317,19 +316,19 @@ class SelectType(bpy.types.Operator):
     def execute(self, context):
         for object in bpy.context.visible_objects:
             if (
-                    "/" in object.name
-                    and object.name[0:3] == "Ifc"
-                    and object.name.split("/")[0] == bpy.context.scene.BIMProperties.ifc_class
-                    and "PredefinedType" in object.BIMObjectProperties.attributes
-                    and object.BIMObjectProperties.attributes["PredefinedType"].string_value
-                    == bpy.context.scene.BIMProperties.ifc_predefined_type
+                "/" in object.name
+                and object.name[0:3] == "Ifc"
+                and object.name.split("/")[0] == bpy.context.scene.BIMProperties.ifc_class
+                and "PredefinedType" in object.BIMObjectProperties.attributes
+                and object.BIMObjectProperties.attributes["PredefinedType"].string_value
+                == bpy.context.scene.BIMProperties.ifc_predefined_type
             ):
                 if bpy.context.scene.BIMProperties.ifc_predefined_type != "USERDEFINED":
                     object.select_set(True)
                 elif (
-                        "ObjectType" in object.BIMObjectProperties.attributes
-                        and object.BIMObjectProperties.attributes["ObjectType"].string_value
-                        == bpy.context.scene.BIMProperties.ifc_userdefined_type
+                    "ObjectType" in object.BIMObjectProperties.attributes
+                    and object.BIMObjectProperties.attributes["ObjectType"].string_value
+                    == bpy.context.scene.BIMProperties.ifc_userdefined_type
                 ):
                     object.select_set(True)
         return {"FINISHED"}
@@ -424,8 +423,8 @@ class QAHelper:
                 is_in_scenario = False
                 for source_line in source:
                     if (
-                            "Scenario: " in source_line
-                            and bpy.context.scene.BIMProperties.scenario == source_line.strip()[len("Scenario: "):]
+                        "Scenario: " in source_line
+                        and bpy.context.scene.BIMProperties.scenario == source_line.strip()[len("Scenario: ") :]
                     ):
                         is_in_scenario = True
                     elif is_in_scenario:
@@ -716,7 +715,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
     def hex_to_rgb(self, value):
         value = value.lstrip("#")
         lv = len(value)
-        t = tuple(int(value[i: i + lv // 3], 16) for i in range(0, lv, lv // 3))
+        t = tuple(int(value[i : i + lv // 3], 16) for i in range(0, lv, lv // 3))
         return [t[0] / 255.0, t[1] / 255.0, t[2] / 255.0, 1]
 
 
@@ -2395,12 +2394,12 @@ class CutSection(bpy.types.Operator):
             obj.hide_set(True)
         for obj in bpy.context.visible_objects:
             if (
-                    not obj.data
-                    or isinstance(obj.data, bpy.types.Camera)
-                    or "IfcGrid/" in obj.name
-                    or "IfcGridAxis/" in obj.name
-                    or "IfcOpeningElement/" in obj.name
-                    or self.does_obj_have_target_view_representation(obj, camera)
+                not obj.data
+                or isinstance(obj.data, bpy.types.Camera)
+                or "IfcGrid/" in obj.name
+                or "IfcGridAxis/" in obj.name
+                or "IfcOpeningElement/" in obj.name
+                or self.does_obj_have_target_view_representation(obj, camera)
             ):
                 previous_visibility[obj.name] = obj.hide_get()
                 obj.hide_set(True)
@@ -2545,8 +2544,8 @@ class ActivateView(bpy.types.Operator):
                 # We assume a convention that the 'Views' collection is directly
                 # in the project collection
                 if (
-                        "Views" in project_collection.children
-                        and collection.name in project_collection.children["Views"].children
+                    "Views" in project_collection.children
+                    and collection.name in project_collection.children["Views"].children
                 ):
                     project_collection.children["Views"].children[collection.name].hide_viewport = True
                     bpy.data.collections.get(collection.name).hide_render = True
@@ -2605,9 +2604,9 @@ class SwitchContext(bpy.types.Operator):
                 has_context = False
                 for context in self.obj.BIMObjectProperties.representation_contexts:
                     if (
-                            context.context == self.context
-                            and context.name == self.subcontext
-                            and context.target_view == self.target_view
+                        context.context == self.context
+                        and context.name == self.subcontext
+                        and context.target_view == self.target_view
                     ):
                         has_context = True
                         break
@@ -2634,16 +2633,16 @@ class SwitchContext(bpy.types.Operator):
 
         for rep in element.Representation.Representations:
             if (
-                    rep.ContextOfItems.is_a("IfcGeometricRepresentationSubContext")
-                    and rep.ContextOfItems.ContextType == self.context
-                    and rep.ContextOfItems.ContextIdentifier == self.subcontext
-                    and rep.ContextOfItems.TargetView == self.target_view
+                rep.ContextOfItems.is_a("IfcGeometricRepresentationSubContext")
+                and rep.ContextOfItems.ContextType == self.context
+                and rep.ContextOfItems.ContextIdentifier == self.subcontext
+                and rep.ContextOfItems.TargetView == self.target_view
             ):
                 break
             elif (
-                    rep.ContextOfItems.is_a("IfcGeometricRepresentationContext")
-                    and rep.ContextOfItems.ContextType == self.context
-                    and rep.ContextOfItems.ContextIdentifier == self.subcontext
+                rep.ContextOfItems.is_a("IfcGeometricRepresentationContext")
+                and rep.ContextOfItems.ContextType == self.context
+                and rep.ContextOfItems.ContextIdentifier == self.subcontext
             ):
                 break
 
@@ -2978,8 +2977,7 @@ class AddSectionPlane(bpy.types.Operator):
         section.show_in_front = True
         if bpy.context.active_object.select_get() and isinstance(bpy.context.active_object.data, bpy.types.Camera):
             section.matrix_world = (
-                    bpy.context.active_object.matrix_world @ Euler((radians(180.0), 0.0, 0.0),
-                                                                   "XYZ").to_matrix().to_4x4()
+                bpy.context.active_object.matrix_world @ Euler((radians(180.0), 0.0, 0.0), "XYZ").to_matrix().to_4x4()
             )
         else:
             section.rotation_euler = Euler((radians(180.0), 0.0, 0.0), "XYZ")
@@ -3396,12 +3394,12 @@ class GenerateReferences(bpy.types.Operator):
         if self.camera.data.BIMCameraProperties.raster_x > self.camera.data.BIMCameraProperties.raster_y:
             width = self.camera.data.ortho_scale
             height = (
-                    width / self.camera.data.BIMCameraProperties.raster_x * self.camera.data.BIMCameraProperties.raster_y
+                width / self.camera.data.BIMCameraProperties.raster_x * self.camera.data.BIMCameraProperties.raster_y
             )
         else:
             height = self.camera.data.ortho_scale
             width = (
-                    height / self.camera.data.BIMCameraProperties.raster_y * self.camera.data.BIMCameraProperties.raster_x
+                height / self.camera.data.BIMCameraProperties.raster_y * self.camera.data.BIMCameraProperties.raster_x
             )
         level_obj = annotation.Annotator.get_annotation_obj("Section Level", "curve")
 
@@ -3587,9 +3585,9 @@ class PushRepresentation(bpy.types.Operator):
 
     def is_current_context(self, element):
         return (
-                element.ContextType == self.context
-                and element.ContextIdentifier == self.subcontext
-                and element.TargetView == self.target_view
+            element.ContextType == self.context
+            and element.ContextIdentifier == self.subcontext
+            and element.TargetView == self.target_view
         )
 
 
@@ -3703,7 +3701,7 @@ class GuessQuantity(bpy.types.Operator):
         elif bpy.context.scene.unit_settings.system == "METRIC":
             if bpy.context.scene.unit_settings.length_unit == "METERS":
                 return None, "METRE"
-            return bpy.context.scene.unit_settings.length_unit[0: -len("METERS")], "METRE"
+            return bpy.context.scene.unit_settings.length_unit[0 : -len("METERS")], "METRE"
 
 
 class ExecuteBIMTester(bpy.types.Operator):
@@ -3934,7 +3932,7 @@ class ActivateDrawingStyle(bpy.types.Operator):
 
     def execute(self, context):
         if context.scene.camera.data.BIMCameraProperties.active_drawing_style_index < len(
-                bpy.context.scene.DocProperties.drawing_styles
+            bpy.context.scene.DocProperties.drawing_styles
         ):
             self.drawing_style = bpy.context.scene.DocProperties.drawing_styles[
                 context.scene.camera.data.BIMCameraProperties.active_drawing_style_index
@@ -4288,7 +4286,7 @@ class SetViewportShadowFromSun(bpy.types.Operator):
         # The vector used for the light direction is a bit funny
         mat = Matrix(((-1.0, 0.0, 0.0, 0.0), (0.0, 0, 1.0, 0.0), (-0.0, -1.0, 0, 0.0), (0.0, 0.0, 0.0, 1.0)))
         context.scene.display.light_direction = mat.inverted() @ (
-                context.active_object.matrix_world.to_quaternion() @ Vector((0, 0, -1))
+            context.active_object.matrix_world.to_quaternion() @ Vector((0, 0, -1))
         )
         return {"FINISHED"}
 
@@ -4346,8 +4344,8 @@ class RemoveFromPresentationLayer(bpy.types.Operator):
 
     def execute(self, context):
         for el in bpy.context.selected_objects:
-            if el.BIMObjectProperties.presentation_layer.name != '':
-                el.BIMObjectProperties.presentation_layer.name = ''
+            if el.BIMObjectProperties.presentation_layer.name != "":
+                el.BIMObjectProperties.presentation_layer.name = ""
 
         return {"FINISHED"}
 
@@ -4461,7 +4459,7 @@ class SelectHighPolygonMeshes(bpy.types.Operator):
         results = {}
         for obj in bpy.data.objects:
             if not isinstance(obj.data, bpy.types.Mesh) or len(obj.data.polygons) < int(
-                    bpy.context.scene.BIMDebugProperties.number_of_polygons
+                bpy.context.scene.BIMDebugProperties.number_of_polygons
             ):
                 continue
             try:
