@@ -162,13 +162,13 @@ class MaterialCreator:
         elif material.is_a("IfcMaterialLayerSet"):
             self.create_layer_set(material)
         elif material.is_a("IfcMaterialProfileSet"):
-            pass # TODO
+            pass  # TODO
 
     def create_usage_definition(self, material):
         if material.is_a("IfcMaterialLayerSetUsage"):
             self.create_layer_set_usage(material)
         elif material.is_a("IfcMaterialProfileSetUsage"):
-            pass # TODO
+            pass  # TODO
 
     def create_single(self, material):
         if material.Name not in self.materials:
@@ -214,7 +214,7 @@ class MaterialCreator:
                 self.create_new_single(constituent.Material)
             self.assign_material_to_mesh(self.materials[constituent.Material.Name])
             new.material = self.materials[constituent.Material.Name]
-            new.fraction = constituent.Fraction or 0.
+            new.fraction = constituent.Fraction or 0.0
             new.category = constituent.Category or ""
 
     def create_material_list(self, material_list):
@@ -1888,7 +1888,12 @@ class IfcImporter:
     def add_element_attributes(self, element, obj):
         attributes = element.get_info()
         for key, value in attributes.items():
-            if value is None or isinstance(value, ifcopenshell.entity_instance) or key == "id" or key == "type":
+            if (
+                value is None
+                or isinstance(value, (tuple, ifcopenshell.entity_instance))
+                or key == "id"
+                or key == "type"
+            ):
                 continue
             attribute = obj.BIMObjectProperties.attributes.add()
             attribute.name = key
