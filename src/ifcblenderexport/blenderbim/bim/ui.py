@@ -259,11 +259,11 @@ class BIM_PT_object_qto(Panel):
                 row.prop(prop, "name", text="")
                 row.prop(prop, "string_value", text="")
                 if (
-                        "length" in prop.name.lower()
-                        or "width" in prop.name.lower()
-                        or "height" in prop.name.lower()
-                        or "depth" in prop.name.lower()
-                        or "perimeter" in prop.name.lower()
+                    "length" in prop.name.lower()
+                    or "width" in prop.name.lower()
+                    or "height" in prop.name.lower()
+                    or "depth" in prop.name.lower()
+                    or "perimeter" in prop.name.lower()
                 ):
                     op = row.operator("bim.guess_quantity", icon="IPO_EASE_IN_OUT", text="")
                     op.qto_index = index
@@ -710,9 +710,9 @@ class BIM_PT_mesh(Panel):
     @classmethod
     def poll(cls, context):
         return (
-                context.active_object is not None
-                and context.active_object.type == "MESH"
-                and hasattr(context.active_object.data, "BIMMeshProperties")
+            context.active_object is not None
+            and context.active_object.type == "MESH"
+            and hasattr(context.active_object.data, "BIMMeshProperties")
         )
 
     def draw(self, context):
@@ -776,26 +776,21 @@ class BIM_PT_presentation_layer_data(Panel):
     @classmethod
     def poll(cls, context):
         return (
-                context.active_object is not None
-                and context.active_object.type == "MESH"
-                and hasattr(context.active_object.data, "BIMMeshProperties")
+            context.active_object is not None
+            and context.active_object.type == "MESH"
+            and hasattr(context.active_object.data, "BIMMeshProperties")
         )
 
     def draw(self, context):
         if not context.active_object.data:
             return
         layout = self.layout
-        elem_props = context.active_object.data.BIMMeshProperties.presentation_layer
+        elem_props = context.active_object.BIMObjectProperties.presentation_layer
         scene_props = context.scene.BIMProperties
 
         if elem_props.name != "":
-            layout.row(align=True).prop(elem_props, "name")
-            layout.row().prop(elem_props, "description")
-            layout.row().prop(elem_props, "identifier")
-            layout.row().prop(elem_props, "layer_on")
-            layout.row().prop(elem_props, "layer_frozen")
-            layout.row().prop(elem_props, "layer_blocked")
-            layout.row().prop(elem_props, "layer_styles")
+            layout.label(text=f'Object is part of Presentation layer "{elem_props.name}"')
+            layout.row().operator("bim.remove_from_presentation_layer")
         else:
             layout.label(text="Not included in any presentation layer")
 
@@ -985,6 +980,11 @@ class BIM_PT_presentation_layers(Panel):
                 op.index = props.active_presentation_layer_index
                 op.pl_name = pres_layer.name
                 op.pl_description = pres_layer.description
+                op.pl_identifier = pres_layer.identifier
+                op.pl_layer_on = pres_layer.layer_on
+                op.pl_layer_frozen = pres_layer.layer_frozen
+                op.pl_layer_blocked = pres_layer.layer_blocked
+
             else:
                 layout.label(text="Presentation Layer is invalid")
 
