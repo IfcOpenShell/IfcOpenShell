@@ -100,13 +100,7 @@
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
 namespace {
-	// Returns the other vertex of an edge
-	TopoDS_Vertex other(const TopoDS_Edge& e, const TopoDS_Vertex& v) {
-		TopoDS_Vertex a, b;
-		TopExp::Vertices(e, a, b);
-		return v.IsSame(b) ? a : b;
-	}
-
+	// Returns the first edge of a wire
 	TopoDS_Edge first_edge(const TopoDS_Wire& w) {
 		TopoDS_Vertex v1, v2;
 		TopExp::Vertices(w, v1, v2);
@@ -775,7 +769,7 @@ namespace {
 		BRepBuilderAPI_MakeEdge me(crv, v1, v2);
 		if (!me.IsDone()) {
 			const double eps2 = eps * eps;
-			if (me.Error() == BRepLib_PointProjectionFailed) {
+			if (me.Error() == BRepBuilderAPI_PointProjectionFailed) {
 				GeomAdaptor_Curve GAC(crv);
 				const gp_Pnt* ps[2] = { &p1, &p2 };
 				for (int i = 0; i < 2; ++i) {
