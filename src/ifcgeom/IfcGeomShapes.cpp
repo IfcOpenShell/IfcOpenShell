@@ -1302,26 +1302,6 @@ namespace {
 		}
 	}
 
-	void segment_tiny_edges(const TopoDS_Wire& wire, std::vector<TopoDS_Wire>& wires, double eps) {
-		std::vector<TopoDS_Edge> sorted_edges;
-		sort_edges(wire, sorted_edges);
-
-		bool segment_next = true;
-
-		BRep_Builder B;
-		
-		for (const auto& e : sorted_edges) {
-			GProp_GProps prop;
-			BRepGProp::LinearProperties(e, prop);
-			const double l = prop.Mass();
-			if (l < eps || segment_next) {
-				wires.emplace_back();
-				B.MakeWire(wires.back());
-				segment_next = l < eps;
-			}
-			B.Add(wires.back(), e);
-		}
-	}
 
 	// #939: a closed loop causes failed triangulation in 7.3 and artefacts
 	// in 7.4 so we break up a closed wire into two equal parts.
@@ -1335,12 +1315,11 @@ namespace {
 		}
 
 		BRep_Builder B;
-		double u, v;
 
 		wires.emplace_back();
 		B.MakeWire(wires.back());
 
-		for (int i = 0; i < sorted_edges.size(); ++i) {
+		for (uint i = 0; i < sorted_edges.size(); ++i) {
 			if (i == sorted_edges.size() / 2) {
 				wires.emplace_back();
 				B.MakeWire(wires.back());
@@ -1718,7 +1697,7 @@ namespace {
 		}
 		k.remove_duplicate_points_from_loop(polygon, true);
 
-		if (polygon.Size() < 3) {
+		if (polygon.Length() < 3) {
 			return false;
 		}
 
@@ -1837,7 +1816,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
         }
     }
 
-    if (faces.Size() == 0) return false;
+    if (faces.IsEmpty() == 0) return false;
 
     return create_solid_from_faces(faces, shape);
 }

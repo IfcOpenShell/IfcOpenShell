@@ -434,7 +434,7 @@ class IfcParser:
         elif obj.BIMObjectProperties.material_type == "IfcMaterialLayerSet":
             self.rel_associates_material_layer_set[self.product_index] = obj.BIMObjectProperties.material_set
         elif obj.BIMObjectProperties.material_type == "IfcMaterialProfileSet":
-            pass # TODO
+            self.rel_associates_material_profile_set[self.product_index] = obj.BIMObjectProperties.material_set
 
         return product
 
@@ -2063,13 +2063,11 @@ class IfcExporter:
             material_type = material["material_type"][0:-3]
             self.cast_attributes(material_type, material["attributes"])
             material["attributes"]["Material"] = material["ifc"]
-            if material_type == "IfcMaterialProfile":
-                material["attributes"]["Profile"] = self.create_material_profile(material)
             material["part_ifc"] = self.file.create_entity(material_type, **material["attributes"])
 
-    def create_material_profile(self, material):
-        ifc_class = material["raw"].BIMMaterialProperties.profile_def
-        attributes = {a.name: a.string_value for a in material["raw"].BIMMaterialProperties.profile_attributes}
+    def create_material_profile_def(self, profile):
+        ifc_class = profile.profile
+        attributes = {a.name: a.string_value for a in profile.profile_attributes}
         self.cast_attributes(ifc_class, attributes)
         return self.file.create_entity(ifc_class, **attributes)
 
@@ -3163,7 +3161,7 @@ class IfcExporter:
             elif set_type == "layer":
                 materials = self.create_material_layers(material_set.material_layers)
             elif set_type == "profile":
-                materials = []  # TODO
+                materials = self.create_material_profiles(material_set.material_profiles)
             if not materials:
                 continue
 
@@ -3227,6 +3225,24 @@ class IfcExporter:
                         "Fraction": constituent.fraction or None,
                         "Category": constituent.category or None,
                     },
+                )
+            )
+        return results
+
+    def create_material_profiles(self, profiles):
+        results = []
+        for profile in profiles:
+            results.append(
+                self.file.create_entity(
+                    "IfcMaterialProfile",
+                    **{
+                        "Name": profile.name or None,
+                        "Description": profile.description or None,
+                        "Material": self.ifc_parser.materials[profile.material.name]["ifc"],
+                        "Profile": self.create_material_profile_def(profile),
+                        "Priority": profile.priority,
+                        "Category": profile.category or None,
+                    }
                 )
             )
         return results
