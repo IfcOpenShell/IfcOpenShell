@@ -210,6 +210,7 @@ if bpy is not None:
         operator.SelectHighPolygonMeshes,
         operator.InspectFromStepId,
         operator.InspectFromObject,
+        operator.RewindInspector,
         operator.RefreshDrawingList,
         operator.GetRepresentationIfcParameters,
         operator.UpdateIfcRepresentation,

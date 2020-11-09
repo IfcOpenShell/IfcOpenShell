@@ -4345,35 +4345,42 @@ class InspectFromStepId(bpy.types.Operator):
     bl_idname = "bim.inspect_from_step_id"
     bl_label = "Inspect From STEP ID"
     step_id: bpy.props.IntProperty()
-    guid: bpy.props.StringProperty()
 
     def execute(self, context):
         self.file = ifc.IfcStore.get_file()
-        if self.step_id:
-            bpy.context.scene.BIMDebugProperties.active_step_id = self.step_id
-            element = self.file.by_id(self.step_id)
-        else:
-            pass
+        bpy.context.scene.BIMDebugProperties.active_step_id = self.step_id
+        crumb = bpy.context.scene.BIMDebugProperties.step_id_breadcrumb.add()
+        crumb.name = str(self.step_id)
+        element = self.file.by_id(self.step_id)
         while len(bpy.context.scene.BIMDebugProperties.attributes) > 0:
             bpy.context.scene.BIMDebugProperties.attributes.remove(0)
         while len(bpy.context.scene.BIMDebugProperties.inverse_attributes) > 0:
             bpy.context.scene.BIMDebugProperties.inverse_attributes.remove(0)
         for key, value in element.get_info().items():
-            new = bpy.context.scene.BIMDebugProperties.attributes.add()
-            new.name = key
-            new.string_value = str(value)
-            if isinstance(value, ifcopenshell.entity_instance):
-                new.int_value = int(value.id())
-
+            self.add_attribute(bpy.context.scene.BIMDebugProperties.attributes, key, value)
         for key in dir(element):
-            if not key[0].isalpha() or key[0] != key[0].upper() or key in element.get_info() or not getattr(element, key):
+            if (
+                not key[0].isalpha()
+                or key[0] != key[0].upper()
+                or key in element.get_info()
+                or not getattr(element, key)
+            ):
                 continue
-            new = bpy.context.scene.BIMDebugProperties.inverse_attributes.add()
-            new.name = key
-            new.string_value = str(getattr(element, key))
-            if isinstance(value, ifcopenshell.entity_instance):
-                new.int_value = int(value.id())
+            self.add_attribute(bpy.context.scene.BIMDebugProperties.inverse_attributes, key, getattr(element, key))
         return {"FINISHED"}
+
+    def add_attribute(self, prop, key, value):
+        if isinstance(value, tuple) and len(value) < 10:
+            for i, item in enumerate(value):
+                self.add_attribute(prop, key + f"[{i}]", item)
+            return
+        elif isinstance(value, tuple) and len(value) >= 10:
+            key = key + "({})".format(len(value))
+        new = prop.add()
+        new.name = key
+        new.string_value = str(value)
+        if isinstance(value, ifcopenshell.entity_instance):
+            new.int_value = int(value.id())
 
 
 class InspectFromObject(bpy.types.Operator):
@@ -4381,6 +4388,30 @@ class InspectFromObject(bpy.types.Operator):
     bl_label = "Inspect From Object"
 
     def execute(self, context):
+        global_id = bpy.context.active_object.BIMObjectProperties.attributes.get("GlobalId")
+        if not global_id:
+            return {"FINISHED"}
+        global_id = global_id.string_value
+        self.file = ifc.IfcStore.get_file()
+        element = self.file.by_guid(global_id)
+        if element:
+            bpy.ops.bim.inspect_from_step_id(step_id=element.id())
+        return {"FINISHED"}
+
+
+class RewindInspector(bpy.types.Operator):
+    bl_idname = "bim.rewind_inspector"
+    bl_label = "Rewind Inspector"
+
+    def execute(self, context):
+        props = bpy.context.scene.BIMDebugProperties
+        total_breadcrumbs = len(props.step_id_breadcrumb)
+        if total_breadcrumbs < 2:
+            return {"FINISHED"}
+        previous_step_id = int(props.step_id_breadcrumb[total_breadcrumbs - 2].name)
+        props.step_id_breadcrumb.remove(total_breadcrumbs - 1)
+        props.step_id_breadcrumb.remove(total_breadcrumbs - 2)
+        bpy.ops.bim.inspect_from_step_id(step_id=previous_step_id)
         return {"FINISHED"}
 
 
