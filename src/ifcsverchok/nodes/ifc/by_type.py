@@ -29,10 +29,10 @@ class SvIfcByType(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
         super().process()
 
     def process_ifc(self, file, ifc_product, ifc_class, custom_ifc_class):
-        if not custom_ifc_class:
-            self.outputs["entity"].sv_set([file.by_type(ifc_class)])
-        else:
+        if custom_ifc_class:
             self.outputs["entity"].sv_set([file.by_type(custom_ifc_class)])
+        else:
+            self.outputs["entity"].sv_set([file.by_type(ifc_class)])
 
 
 def register():
