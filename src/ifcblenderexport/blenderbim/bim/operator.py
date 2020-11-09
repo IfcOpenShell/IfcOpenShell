@@ -4195,6 +4195,44 @@ class MoveMaterialConstituent(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AddMaterialProfile(bpy.types.Operator):
+    bl_idname = "bim.add_material_profile"
+    bl_label = "Add Material Profile"
+
+    def execute(self, context):
+        new = bpy.context.active_object.BIMObjectProperties.material_set.material_profiles.add()
+        new.material = bpy.data.materials[0]
+        new.name = "Material Profile"
+        return {"FINISHED"}
+
+
+class RemoveMaterialProfile(bpy.types.Operator):
+    bl_idname = "bim.remove_material_profile"
+    bl_label = "Remove Material Profile"
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.active_object.BIMObjectProperties.material_set.material_profiles.remove(self.index)
+        return {"FINISHED"}
+
+
+class MoveMaterialProfile(bpy.types.Operator):
+    bl_idname = "bim.move_material_profile"
+    bl_label = "Move Material Profile"
+    direction: bpy.props.StringProperty()
+
+    def execute(self, context):
+        props = bpy.context.active_object.BIMObjectProperties.material_set
+        index = props.active_material_profile_index
+        if self.direction == "UP" and index - 1 >= 0:
+            props.material_profiles.move(index, index - 1)
+            props.active_material_profile_index = index - 1
+        elif self.direction == "DOWN" and index + 1 < len(props.material_profiles):
+            props.material_profiles.move(index, index + 1)
+            props.active_material_profile_index = index + 1
+        return {"FINISHED"}
+
+
 class SelectScheduleFile(bpy.types.Operator):
     bl_idname = "bim.select_schedule_file"
     bl_label = "Select Documentation IFC File"
