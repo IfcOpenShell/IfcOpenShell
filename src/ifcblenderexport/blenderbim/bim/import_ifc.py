@@ -144,8 +144,11 @@ class MaterialCreator:
                 material_select = association.RelatingMaterial
                 if material_select.is_a("IfcMaterialDefinition"):
                     self.create_definition(material_select)
-                elif material_select.is_a("IfcMaterialLayerSetUsage"):
-                    self.create_layer_set_usage(material_select)
+                elif material_select.is_a("IfcMaterialUsageDefinition"):
+                    self.create_usage_definition(material_select)
+                elif material_select.is_a("IfcMaterialList"):
+                    # Note that lists are deprecated
+                    self.create_material_list(material_select)
 
     def create_layer_set_usage(self, usage):
         # TODO import rest of the layer set usage data
@@ -154,33 +157,65 @@ class MaterialCreator:
     def create_definition(self, material):
         if material.is_a("IfcMaterial"):
             self.create_single(material)
-        elif material.is_a("IfcMaterialLayerSet"):
-            self.create_layer_set(material)
         elif material.is_a("IfcMaterialConstituentSet"):
             self.create_constituent_set(material)
-        elif material.is_a("IfcMaterialList"):
-            self.create_material_list(material)
+        elif material.is_a("IfcMaterialLayerSet"):
+            self.create_layer_set(material)
+        elif material.is_a("IfcMaterialProfileSet"):
+            pass # TODO
+
+    def create_usage_definition(self, material):
+        if material.is_a("IfcMaterialLayerSetUsage"):
+            self.create_layer_set_usage(material)
+        elif material.is_a("IfcMaterialProfileSetUsage"):
+            pass # TODO
 
     def create_single(self, material):
         if material.Name not in self.materials:
             self.create_new_single(material)
+        self.obj.BIMObjectProperties.material_type = "IfcMaterial"
+        self.obj.BIMObjectProperties.material = self.materials[material.Name]
         return self.assign_material_to_mesh(self.materials[material.Name])
 
     def create_layer_set(self, layer_set):
+        props = self.obj.BIMObjectProperties
+        props.material_type = "IfcMaterialLayerSet"
+        props.material_set.name = layer_set.LayerSetName or ""
+        props.material_set.description = layer_set.Description or ""
         for layer in layer_set.MaterialLayers:
+            new = props.material_set.material_layers.add()
             if layer.Material:
                 if layer.Material.Name not in self.materials:
                     # TODO import rest of the layer set data
                     self.create_new_single(layer.Material)
                 self.assign_material_to_mesh(self.materials[layer.Material.Name])
+                new.material = self.materials[layer.Material.Name]
+            new.layer_thickness = layer.LayerThickness
+            new.is_ventilated = "TRUE" if layer.IsVentilated else "FALSE"
+            new.name = layer.Name or ""
+            new.description = layer.Description or ""
+            try:
+                new.category = layer.Category if layer.Category else "None"
+            except:
+                new.custom_category = layer.Category or ""
+            new.priority = layer.Priority or 0
 
     def create_constituent_set(self, constituent_set):
+        props = self.obj.BIMObjectProperties
+        props.material_type = "IfcMaterialConstituentSet"
+        props.material_set.name = constituent_set.Name or ""
+        props.material_set.description = constituent_set.Description or ""
         for constituent in constituent_set.MaterialConstituents:
-            if constituent.Material:
-                if constituent.Material.Name not in self.materials:
-                    # TODO import rest of the layer set data
-                    self.create_new_single(constituent.Material)
-                self.assign_material_to_mesh(self.materials[constituent.Material.Name])
+            new = props.material_set.material_constituents.add()
+            new.name = constituent.Name or ""
+            new.description = constituent.Description or ""
+            if constituent.Material.Name not in self.materials:
+                # TODO import rest of the layer set data
+                self.create_new_single(constituent.Material)
+            self.assign_material_to_mesh(self.materials[constituent.Material.Name])
+            new.material = self.materials[constituent.Material.Name]
+            new.fraction = constituent.Fraction or 0.
+            new.category = constituent.Category or ""
 
     def create_material_list(self, material_list):
         for material in material_list.Materials:
