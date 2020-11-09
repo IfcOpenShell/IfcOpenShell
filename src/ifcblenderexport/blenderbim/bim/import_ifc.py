@@ -479,6 +479,7 @@ class IfcImporter:
             self.profile_code("Merging by colour")
         self.add_project_to_scene()
         self.profile_code("Add project to scene")
+        self.get_presentation_layers()
         if self.ifc_import_settings.should_clean_mesh and len(self.file.by_type("IfcElement")) < 10000:
             self.clean_mesh()
             self.profile_code("Mesh cleaning")
@@ -1308,6 +1309,23 @@ class IfcImporter:
         bpy.context.view_layer.layer_collection.children[self.project["blender"].name].children[
             self.type_collection.name
         ].hide_viewport = True
+
+    def get_presentation_layers(self):
+        for f in self.file.by_type("IfcPresentationLayerAssignment"):
+            new = bpy.context.scene.BIMProperties.presentation_layers.add()
+            new.name = f.Name
+            new.description = f.Description
+            new.identifier = f.Identifier
+            if f.is_a() == "IfcPresentationLayerWithStyle":
+                new.layer_on = f.LayerOn if f.LayerOn is not None else True
+                new.layer_frozen = f.LayerFrozen if f.LayerFrozen is not None else False
+                new.layer_blocked = f.LayerBlocked if f.LayerBlocked is not None else False
+            for item in f.AssignedItems:
+                guid = item.OfProductRepresentation[0].ShapeOfProduct[0].GlobalId
+                for obj in bpy.context.selectable_objects:
+                    global_id = obj.BIMObjectProperties.attributes.get("GlobalId")
+                    if global_id and global_id.string_value == guid:
+                        obj.BIMObjectProperties.presentation_layer.name = new.name
 
     def clean_mesh(self):
         obj = None
