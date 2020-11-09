@@ -14,7 +14,6 @@ class SvIfcByType(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
     file: StringProperty(name="file", update=updateNode)
     ifc_product: EnumProperty(items=getIfcProducts, name="Products", update=refreshClasses)
     ifc_class: EnumProperty(items=getIfcClasses, name="Class", update=refreshPredefinedTypes)
-    ifc_element_types = [(t, t, t) for t in schema.IfcSchema().IfcElementType.keys()]
     custom_ifc_class: StringProperty(name="Custom Ifc Class", update=updateNode)
 
     def sv_init(self, context):
