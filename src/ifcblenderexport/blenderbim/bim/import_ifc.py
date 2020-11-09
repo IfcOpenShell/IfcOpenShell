@@ -1312,20 +1312,38 @@ class IfcImporter:
 
     def get_presentation_layers(self):
         for f in self.file.by_type("IfcPresentationLayerAssignment"):
-            new = bpy.context.scene.BIMProperties.presentation_layers.add()
-            new.name = f.Name
-            new.description = f.Description
-            new.identifier = f.Identifier
+            pl = bpy.context.scene.BIMProperties.presentation_layers.add()
+            pl.name = f.Name
+            pl.description = f.Description
+            pl.identifier = f.Identifier
             if f.is_a() == "IfcPresentationLayerWithStyle":
-                new.layer_on = f.LayerOn if f.LayerOn is not None else True
-                new.layer_frozen = f.LayerFrozen if f.LayerFrozen is not None else False
-                new.layer_blocked = f.LayerBlocked if f.LayerBlocked is not None else False
+                pl.layer_on = f.LayerOn if f.LayerOn is not None else True
+                pl.layer_frozen = f.LayerFrozen if f.LayerFrozen is not None else False
+                pl.layer_blocked = f.LayerBlocked if f.LayerBlocked is not None else False
+
+            if pl.name not in bpy.context.scene.view_layers.keys():
+                vl = bpy.context.scene.view_layers.new(pl.name)
+            else:
+                vl = bpy.context.scene.view_layers[pl.name]
+
+            if pl.name not in bpy.data.collections.keys():
+                coll = bpy.data.collections.new(pl.name)
+            else:
+                coll = bpy.data.collections[pl.name]
+
+            if pl.layer_on is False:
+                # vl.objects.data.layer_collection.collection.hide_viewport = True
+                # bpy.context.window.view_layer.layer_collection.children[pl.name].exclude = True
+                coll.hide_viewport = True
+
             for item in f.AssignedItems:
                 guid = item.OfProductRepresentation[0].ShapeOfProduct[0].GlobalId
                 for obj in bpy.context.selectable_objects:
                     global_id = obj.BIMObjectProperties.attributes.get("GlobalId")
                     if global_id and global_id.string_value == guid:
-                        obj.BIMObjectProperties.presentation_layer.name = new.name
+                        obj.BIMObjectProperties.presentation_layer.name = pl.name
+                        # vl.objects.data.layer_collection.collection.objects.link(obj)
+                        coll.objects.link(obj)
 
     def clean_mesh(self):
         obj = None
