@@ -58,8 +58,8 @@ bcfviewpoints_enum = []
 @persistent
 def setDefaultProperties(scene):
     if (
-            bpy.context.scene.BIMProperties.has_model_context
-            and len(bpy.context.scene.BIMProperties.model_subcontexts) == 0
+        bpy.context.scene.BIMProperties.has_model_context
+        and len(bpy.context.scene.BIMProperties.model_subcontexts) == 0
     ):
         subcontext = bpy.context.scene.BIMProperties.model_subcontexts.add()
         subcontext.name = "Body"
@@ -170,9 +170,9 @@ def refreshPredefinedTypes(self, context):
 def getDiagramScales(self, context):
     global diagram_scales_enum
     if (
-            len(diagram_scales_enum) < 1
-            or (bpy.context.scene.unit_settings.system == "IMPERIAL" and len(diagram_scales_enum) == 13)
-            or (bpy.context.scene.unit_settings.system == "METRIC" and len(diagram_scales_enum) == 31)
+        len(diagram_scales_enum) < 1
+        or (bpy.context.scene.unit_settings.system == "IMPERIAL" and len(diagram_scales_enum) == 13)
+        or (bpy.context.scene.unit_settings.system == "METRIC" and len(diagram_scales_enum) == 31)
     ):
         if bpy.context.scene.unit_settings.system == "IMPERIAL":
             diagram_scales_enum = [
@@ -290,15 +290,15 @@ def getIfcProducts(self, context):
             [
                 (e, e, "")
                 for e in [
-                "IfcElement",
-                "IfcElementType",
-                "IfcSpatialElement",
-                "IfcGroup",
-                "IfcStructural",
-                "IfcPositioningElement",
-                "IfcContext",
-                "IfcAnnotation",
-            ]
+                    "IfcElement",
+                    "IfcElementType",
+                    "IfcSpatialElement",
+                    "IfcGroup",
+                    "IfcStructural",
+                    "IfcPositioningElement",
+                    "IfcContext",
+                    "IfcAnnotation",
+                ]
             ]
         )
     return products_enum
@@ -374,7 +374,7 @@ def getTitleblocks(self, context):
     if len(titleblocks_enum) < 1:
         titleblocks_enum.clear()
         for filename in Path(os.path.join(context.scene.BIMProperties.data_dir, "templates", "titleblocks")).glob(
-                "*.svg"
+            "*.svg"
         ):
             f = str(filename.stem)
             titleblocks_enum.append((f, f, ""))
@@ -398,7 +398,7 @@ def getScenarios(self, context):
             lines = feature_file.readlines()
             for line in lines:
                 if "Scenario:" in line:
-                    s = line.strip()[len("Scenario: "):]
+                    s = line.strip()[len("Scenario: ") :]
                     scenarios_enum.append((s, s, ""))
     return scenarios_enum
 
@@ -666,7 +666,7 @@ class DrawingStyle(PropertyGroup):
     name: StringProperty(name="Name")
     raster_style: StringProperty(name="Raster Style")
     render_type: EnumProperty(
-        items=[("NONE", "None", ""), ("DEFAULT", "Default", ""), ("VIEWPORT", "Viewport", ""), ],
+        items=[("NONE", "None", ""), ("DEFAULT", "Default", ""), ("VIEWPORT", "Viewport", ""),],
         name="Render Type",
         default="VIEWPORT",
     )
@@ -739,7 +739,7 @@ class BIMTextProperties(PropertyGroup):
         name="Font Size",
     )
     symbol: EnumProperty(
-        items=[("None", "None", ""), ("rectangle-tag", "Rectangle Tag", ""), ("door-tag", "Door Tag", ""), ],
+        items=[("None", "None", ""), ("rectangle-tag", "Rectangle Tag", ""), ("door-tag", "Door Tag", ""),],
         update=refreshFontSize,
         name="Symbol",
     )
@@ -1532,7 +1532,7 @@ class BIMProperties(PropertyGroup):
         name="Temporary Section Cutaway Colour", subtype="COLOR", default=(1, 0, 0), min=0.0, max=1.0
     )
     ifc_import_filter: EnumProperty(
-        items=[("NONE", "None", ""), ("WHITELIST", "Whitelist", ""), ("BLACKLIST", "Blacklist", ""), ],
+        items=[("NONE", "None", ""), ("WHITELIST", "Whitelist", ""), ("BLACKLIST", "Blacklist", ""),],
         name="Import Filter",
     )
     ifc_selector: StringProperty(default="", name="IFC Selector")
@@ -1601,7 +1601,6 @@ class BIMProperties(PropertyGroup):
     )
     active_presentation_layer_index: IntProperty(name="Active Presentation Layer Index")
     presentation_layers: CollectionProperty(name="Presentation Layers", type=PresentationLayer)
-
 
 
 class BCFProperties(PropertyGroup):

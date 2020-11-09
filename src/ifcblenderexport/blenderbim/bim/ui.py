@@ -1717,7 +1717,7 @@ class BIM_PT_bcf(Panel):
         layout.label(text="Document References:")
         for index, doc in enumerate(props.topic_document_references):
             row = layout.row(align=True)
-            row.prop(doc, "name", text=f"File {index + 1} URI")
+            row.prop(doc, "name", text=f"File {index+1} URI")
             if doc.is_external:
                 row.operator("bim.open_bcf_document_reference", icon="URL", text="").data = "{}/{}".format(
                     props.topic_guid, index
@@ -1727,7 +1727,7 @@ class BIM_PT_bcf(Panel):
                     props.topic_guid, index
                 )
             row = layout.row(align=True)
-            row.prop(doc, "description", text=f"File {index + 1} Description:")
+            row.prop(doc, "description", text=f"File {index+1} Description:")
 
         layout.label(text="Related Topics:")
         for topic in props.topic_related_topics:
