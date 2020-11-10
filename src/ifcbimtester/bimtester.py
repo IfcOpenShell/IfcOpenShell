@@ -107,6 +107,13 @@ def generate_report(adir="."):
         for scenario in feature["elements"]:
             steps = []
             total_duration = 0
+            if len(scenario["steps"]) == 0:
+                print(
+                    "Scenario '{}' in feature '{}' has no steps. "
+                    "Thus skipped in report."
+                    .format(scenario["name"], feature["name"])
+                )
+                continue
             for step in scenario["steps"]:
                 if "result" in step:
                     total_duration += step["result"]["duration"]
