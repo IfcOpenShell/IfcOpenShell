@@ -51,11 +51,16 @@ class MaterialCreator:
             hasattr(element, "RepresentationMaps") and not element.RepresentationMaps
         ):
             return
-        if self.ifc_import_settings.should_treat_styled_item_as_material and self.mesh.name in self.parsed_meshes:
+        if (
+            self.ifc_import_settings.should_treat_styled_item_as_material
+            and self.mesh
+            and self.mesh.name in self.parsed_meshes
+        ):
             return
         self.parse_material(element)
-        self.parsed_meshes.append(self.mesh.name)
-        if self.parse_representations(element):
+        if self.mesh:
+            self.parsed_meshes.append(self.mesh.name)
+        if self.mesh and self.parse_representations(element):
             self.assign_material_slots_to_faces(obj, self.mesh)
             self.parsed_meshes.append(self.mesh.name)
 
@@ -241,7 +246,7 @@ class MaterialCreator:
 
     def create_material_list(self, material_list):
         props = self.obj.BIMObjectProperties
-        props.material_type = "IfcMaterialConstituentSet" # Constituent sets are the recommended upgrade path
+        props.material_type = "IfcMaterialConstituentSet"  # Constituent sets are the recommended upgrade path
         for material in material_list.Materials:
             new = props.material_set.material_constituents.add()
             if material.Name not in self.materials:
@@ -340,6 +345,8 @@ class MaterialCreator:
         return items
 
     def assign_material_to_mesh(self, material, is_styled_item=False):
+        if not self.mesh:
+            return
         self.mesh.materials.append(material)
         self.current_object_materials.append(material.name)
         if is_styled_item:
@@ -833,8 +840,7 @@ class IfcImporter:
             except:
                 self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
         obj = bpy.data.objects.new(self.get_name(element), mesh)
-        if mesh:
-            self.material_creator.create(element, obj, mesh)
+        self.material_creator.create(element, obj, mesh)
         self.add_element_attributes(element, obj)
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
