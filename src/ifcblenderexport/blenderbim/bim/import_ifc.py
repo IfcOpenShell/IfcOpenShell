@@ -240,12 +240,15 @@ class MaterialCreator:
             new.category = profile.Category or ""
 
     def create_material_list(self, material_list):
+        props = self.obj.BIMObjectProperties
+        props.material_type = "IfcMaterialConstituentSet" # Constituent sets are the recommended upgrade path
         for material in material_list.Materials:
-            if material.Material:
-                if material.Material.Name not in self.materials:
-                    # TODO import rest of the layer set data
-                    self.create_new_single(material.Material)
-                self.assign_material_to_mesh(self.materials[material.Material.Name])
+            new = props.material_set.material_constituents.add()
+            if material.Name not in self.materials:
+                # TODO import rest of the layer set data
+                self.create_new_single(material)
+            self.assign_material_to_mesh(self.materials[material.Name])
+            new.material = self.materials[material.Name]
 
     def create_new_single(self, material):
         self.materials[material.Name] = obj = bpy.data.materials.new(material.Name)
