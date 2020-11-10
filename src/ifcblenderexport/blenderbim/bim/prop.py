@@ -1426,6 +1426,7 @@ class BIMProperties(PropertyGroup):
     import_should_ignore_site_coordinates: BoolProperty(name="Import Ignoring Site Coordinates", default=False)
     import_should_ignore_building_coordinates: BoolProperty(name="Import Ignoring Building Coordinates", default=False)
     import_should_reset_absolute_coordinates: BoolProperty(name="Import Resetting Absolute Coordinates", default=False)
+    import_should_guess_georeferencing: BoolProperty(name="Import Guessing Georeferencing", default=False)
     import_should_import_type_representations: BoolProperty(name="Import Type Representations", default=False)
     import_should_import_curves: BoolProperty(name="Import Curves", default=False)
     import_should_import_opening_elements: BoolProperty(name="Import Opening Elements", default=False)

@@ -1944,6 +1944,8 @@ class BIM_PT_mvd(Panel):
         row = layout.row()
         row.prop(bim_properties, "export_should_use_presentation_style_assignment")
         row = layout.row()
+        row.prop(bim_properties, "import_should_guess_georeferencing")
+        row = layout.row()
         row.prop(bim_properties, "import_should_ignore_site_coordinates")
         row = layout.row()
         row.prop(bim_properties, "import_should_ignore_building_coordinates")
