@@ -507,8 +507,10 @@ class IfcImporter:
             self.ifc_import_settings.should_treat_styled_item_as_material = True
             if self.is_ifc_class_far_away("IfcSite"):
                 self.ifc_import_settings.should_ignore_site_coordinates = True
+                self.ifc_import_settings.should_guess_georeferencing = True
             if self.is_ifc_class_far_away("IfcBuilding"):
                 self.ifc_import_settings.should_ignore_building_coordinates = True
+                self.ifc_import_settings.should_guess_georeferencing = True
         elif "prostructures" in applications[0].ApplicationFullName.lower():
             self.ifc_import_settings.should_allow_non_element_aggregates = True
         elif applications[0].ApplicationFullName.lower() == "12d model":
@@ -622,14 +624,30 @@ class IfcImporter:
         project = self.file.by_type("IfcProject")[0]
         if self.ifc_import_settings.should_ignore_site_coordinates:
             sites = self.find_decomposed_ifc_class(project, "IfcSite")
+            if self.ifc_import_settings.should_guess_georeferencing and sites:
+                self.guess_georeferencing(sites[0])
             for site in sites:
                 self.patch_placement_to_origin(site)
         if self.ifc_import_settings.should_ignore_building_coordinates:
             buildings = self.find_decomposed_ifc_class(project, "IfcBuilding")
+            if self.ifc_import_settings.should_guess_georeferencing and buildings:
+                self.guess_georeferencing(buildings[0])
             for building in buildings:
                 self.patch_placement_to_origin(building)
         if self.ifc_import_settings.should_reset_absolute_coordinates:
             self.reset_absolute_coordinates()
+
+    def guess_georeferencing(self, element):
+        if not element.ObjectPlacement.is_a("IfcLocalPlacement"):
+            return
+        placement = element.ObjectPlacement.RelativePlacement
+        bpy.context.scene.MapConversion.eastings = str(placement.Location.Coordinates[0])
+        bpy.context.scene.MapConversion.northings = str(placement.Location.Coordinates[1])
+        bpy.context.scene.MapConversion.orthogonal_height = str(placement.Location.Coordinates[2])
+        if placement.RefDirection:
+            bpy.context.scene.MapConversion.x_axis_abscissa = str(placement.RefDirection.DirectionRatios[0])
+            bpy.context.scene.MapConversion.x_axis_ordinate = str(placement.RefDirection.DirectionRatios[1] * -1)
+        bpy.context.scene.MapConversion.scale = "1"
 
     def reset_absolute_coordinates(self):
         # 12D can have some funky coordinates out of any sensible range. This
@@ -2278,6 +2296,7 @@ class IfcImportSettings:
         settings.should_ignore_site_coordinates = scene_bim.import_should_ignore_site_coordinates
         settings.should_ignore_building_coordinates = scene_bim.import_should_ignore_building_coordinates
         settings.should_reset_absolute_coordinates = scene_bim.import_should_reset_absolute_coordinates
+        settings.should_guess_georeferencing = scene_bim.import_should_guess_georeferencing
         settings.should_import_type_representations = scene_bim.import_should_import_type_representations
         settings.should_import_curves = scene_bim.import_should_import_curves
         settings.should_import_opening_elements = scene_bim.import_should_import_opening_elements
