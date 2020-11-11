@@ -10,7 +10,8 @@ import json
 import sys
 import argparse
 import logging
-
+from sklearn.cluster import OPTICS
+from collections import defaultdict
 
 class Mesh:
     faces: []
@@ -266,6 +267,63 @@ class IfcClasher:
             element.ObjectPlacement.RelativePlacement.Axis.DirectionRatios = (0.0, 0.0, 1.0)
         if element.ObjectPlacement.RelativePlacement.RefDirection:
             element.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1.0, 0.0, 0.0)
+
+    def smart_group_clashes(self, clash_sets):
+        count_of_input_clashes = 0
+        count_of_clash_sets = 0
+        count_of_smart_groups = 0
+        count_of_final_clash_sets = 0
+
+        count_of_clash_sets = len(clash_sets)
+                    
+        for clash_set in clash_sets:
+            if not "clashes" in clash_set.keys():
+                print(f"Skipping clash set [{clash_set['name']}] since it contains no clash results.")
+                continue
+            clashes = clash_set["clashes"]
+            count_of_input_clashes += len(clashes)
+
+            positions = []
+            for clash in clashes.values():
+                positions.append(clash["position"])
+
+            data = np.array(positions)
+
+            # INPUTS
+            # set the desired maximum distance between the grouped points
+            max_distance_between_grouped_points = 3
+            model = OPTICS(min_samples=2, max_eps=max_distance_between_grouped_points)
+            model.fit_predict(data)
+            pred = model.fit_predict(data)
+
+            # Insert the smart groups into the clashes
+            if len(pred) == len(clashes.values()):
+                i = 0
+                for clash in clashes.values():
+                    clash["smart_group"] = int(pred[i])
+                    i += 1
+
+        # Create JSON with smart_groups that contain GlobalIDs
+        output_clash_sets = defaultdict(list)
+        for clash_set in clash_sets:
+            if not "clashes" in clash_set.keys():
+                continue
+            smart_groups = defaultdict(list)
+            for clash_id, content in clash_set['clashes'].items():
+                if "smart_group" in content:
+                    object_id_list = list()
+                    # Clash has been grouped, let's extract it.
+                    object_id_list.append(content['a_global_id'])
+                    object_id_list.append(content['b_global_id'])
+                    smart_groups[content['smart_group']].append(object_id_list)
+            count_of_smart_groups += len(smart_groups)   
+            output_clash_sets[clash_set["name"]].append(smart_groups)
+
+        count_of_final_clash_sets = len(output_clash_sets)
+        print(f"Took {count_of_input_clashes} clashes in {count_of_clash_sets} clash sets and turned", 
+            f"them into {count_of_smart_groups} smart groups in {count_of_final_clash_sets} clash sets")
+
+        return output_clash_sets
 
 
 class IfcClashSettings:
