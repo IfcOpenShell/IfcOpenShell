@@ -943,8 +943,17 @@ class AddMaterialPset(bpy.types.Operator):
     bl_label = "Add Material Pset"
 
     def execute(self, context):
-        pset = bpy.context.active_object.active_material.BIMMaterialProperties.psets.add()
-        pset.name = bpy.context.active_object.active_material.BIMMaterialProperties.available_material_psets
+        material = bpy.context.active_object.active_material
+        name = material.BIMMaterialProperties.pset_name
+        if name not in ifcopenshell.util.pset.psets:
+            return {"FINISHED"}
+        if material.BIMMaterialProperties.psets.find(name) != -1:
+            return {"FINISHED"}
+        pset = material.BIMMaterialProperties.psets.add()
+        pset.name = name
+        for prop_name in ifcopenshell.util.pset.psets[name]["HasPropertyTemplates"].keys():
+            prop = pset.properties.add()
+            prop.name = prop_name
         return {"FINISHED"}
 
 

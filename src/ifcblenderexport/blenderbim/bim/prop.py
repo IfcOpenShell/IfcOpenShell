@@ -35,7 +35,7 @@ ifcpatchrecipes_enum = []
 featuresfiles_enum = []
 titleblocks_enum = []
 scenarios_enum = []
-psetnames_enum = []
+materialpsetnames_enum = []
 psetfiles_enum = []
 psettemplatefiles_enum = []
 propertysettemplates_enum = []
@@ -312,15 +312,6 @@ def getOrganisations(self, context):
     return organisations_enum
 
 
-def getAvailableMaterialPsets(self, context):
-    global availablematerialpsets_enum
-    if len(availablematerialpsets_enum) < 1:
-        availablematerialpsets_enum.clear()
-        files = os.listdir(os.path.join(context.scene.BIMProperties.data_dir, "material"))
-        availablematerialpsets_enum.extend([(f, f, "") for f in files])
-    return availablematerialpsets_enum
-
-
 def getIfcPatchRecipes(self, context):
     global ifcpatchrecipes_enum
     if len(ifcpatchrecipes_enum) < 1:
@@ -439,6 +430,16 @@ def getPsetNames(self, context):
         )
         psetnames_enum.extend([(p, p, "") for p in pset_names])
     return psetnames_enum
+
+
+def getMaterialPsetNames(self, context):
+    global materialpsetnames_enum
+    materialpsetnames_enum.clear()
+    pset_names = ifcopenshell.util.pset.get_applicable_psetqtos(
+        bpy.context.scene.BIMProperties.export_schema, "IfcMaterial", is_pset=True
+    )
+    materialpsetnames_enum.extend([(p, p, "") for p in pset_names])
+    return materialpsetnames_enum
 
 
 def getQtoNames(self, context):
@@ -1693,7 +1694,7 @@ class BIMMaterialProperties(PropertyGroup):
     location: StringProperty(name="Location")
     identification: StringProperty(name="Identification")
     name: StringProperty(name="Name")
-    available_material_psets: EnumProperty(items=getAvailableMaterialPsets, name="Material Pset")
+    pset_name: EnumProperty(items=getMaterialPsetNames, name="Pset Name")
     psets: CollectionProperty(name="Psets", type=PsetQto)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     applicable_attributes: EnumProperty(items=getApplicableMaterialAttributes, name="Attribute Names")

@@ -849,25 +849,17 @@ class BIM_PT_material(Panel):
 
         layout.label(text="Property Sets:")
         row = layout.row(align=True)
-        row.prop(props, "available_material_psets", text="")
+        row.prop(props, "pset_name", text="")
         row.operator("bim.add_material_pset")
 
         for index, pset in enumerate(props.psets):
             row = layout.row(align=True)
             row.prop(pset, "name", text="")
             row.operator("bim.remove_material_pset", icon="X", text="").pset_index = index
-            op = row.operator("bim.copy_property_to_selection", icon="COPYDOWN", text="")
             for prop in pset.properties:
                 row = layout.row(align=True)
                 row.prop(prop, "name", text="")
                 row.prop(prop, "string_value", text="")
-                op = row.operator("bim.copy_property_to_selection", icon="COPYDOWN", text="")
-                op.pset_name = pset.name
-                op.prop_name = prop.name
-                op.prop_value = prop.string_value
-
-        row = layout.row()
-        row.prop(props, "psets", text="")
 
 
 class BIM_PT_gis(Panel):

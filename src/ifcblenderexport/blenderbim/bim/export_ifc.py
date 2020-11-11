@@ -43,6 +43,7 @@ class IfcParser:
         self.people = []
         self.organisations = []
         self.psets = {}
+        self.material_psets = {}
         self.document_references = {}
         self.classifications = []
         self.classification_references = {}
@@ -100,7 +101,6 @@ class IfcParser:
         selected_objects = self.add_spatial_elements_if_unselected(selected_objects)
         self.add_type_elements_if_unselected(selected_objects)
         self.categorise_selected_objects(selected_objects)
-        self.material_psets = self.get_material_psets()
         self.document_information = self.get_document_information()
         self.document_references = self.get_document_references()
         self.classifications = self.get_classifications()
@@ -458,6 +458,16 @@ class IfcParser:
             results[item_key] = {"ifc": None, "raw": raw, "attributes": {"Name": item.name}}
             relationships.setdefault(item_key, []).append(product)
 
+    def get_material_psets(self, material, obj):
+        psets = obj.BIMMaterialProperties.psets
+        results = self.material_psets
+        for item in psets:
+            item_key = "{}/{}".format(item.name, obj.name)
+            raw = {p.name: p.string_value for p in item.properties if p.string_value}
+            if not raw:
+                continue
+            results[item_key] = {"ifc": None, "raw": raw, "material": material, "attributes": {"Name": item.name}}
+
     def add_automatic_qtos(self, ifc_class, obj):
         if not obj.data:
             return
@@ -582,21 +592,6 @@ class IfcParser:
                 pass
             elif not self.is_a_library(self.get_ifc_class(obj.users_collection[0].name)):
                 self.selected_products.append({"raw": obj, "metadata": metadata})
-
-    def get_material_psets(self):
-        psets = {}
-        for filename in Path(self.data_dir + "material/").glob("**/*.csv"):
-            with open(filename, "r") as f:
-                description = filename.parts[-2]
-                name = filename.stem
-                if description not in psets:
-                    psets[description] = {}
-                psets[description][name] = {
-                    "ifc": None,
-                    "raw": {x[0]: x[1] for x in list(csv.reader(f))},
-                    "attributes": {"Name": name, "Description": description},
-                }
-        return psets
 
     def get_door_attributes(self):
         return self.get_predefined_attributes("door")
@@ -1151,11 +1146,13 @@ class IfcParser:
                     continue
                 if slot.material.name in results or slot.link == "OBJECT":
                     continue
-                results[slot.material.name] = {
+                material = {
                     "ifc": None,
                     "raw": slot.material,
                     "attributes": self.get_material_attributes(slot.material),
                 }
+                results[slot.material.name] = material
+                self.get_material_psets(material, slot.material)
         return results
 
     def get_material_attributes(self, material):
@@ -1648,17 +1645,13 @@ class IfcExporter:
             pset["ifc"] = self.file.create_entity("IfcPropertySet", **pset["attributes"])
 
     def create_material_psets(self, material):
-        for pset_dir in material["raw"].BIMMaterialProperties.psets:
-            for name, properties in self.ifc_parser.material_psets[pset_dir.name].items():
-                self.file.create_entity(
-                    "IfcMaterialProperties",
-                    **{
-                        "Name": name,
-                        "Description": pset_dir.name,
-                        "Properties": self.create_pset_properties(properties),
-                        "Material": material["ifc"],
-                    },
-                )
+        for pset in self.ifc_parser.material_psets.values():
+            properties = self.create_pset_properties(pset)
+            if not properties:
+                continue
+            pset["attributes"].update({"Properties": properties, "Material": pset["material"]["ifc"]})
+            print(pset["attributes"])
+            pset["ifc"] = self.file.create_entity("IfcMaterialProperties", **pset["attributes"])
 
     def create_qto_properties(self, qto):
         if qto["attributes"]["Name"] in ifcopenshell.util.pset.qtos:
