@@ -803,6 +803,10 @@ class PresentationLayer(PropertyGroup):
     layer_frozen: BoolProperty(name="LayerFrozen", default=False)
     layer_blocked: BoolProperty(name="LayerBlocked", default=False)
 
+class SmartClashGroup(PropertyGroup):
+    number: IntProperty(name="Number")
+    global_ids: CollectionProperty(name="GlobalIDs", type=StrProperty)
+
 
 class Constraint(PropertyGroup):
     name: StringProperty(name="Name")
@@ -1519,6 +1523,8 @@ class BIMProperties(PropertyGroup):
     blender_clash_set_b: CollectionProperty(name="Blender Clash Set B", type=StrProperty)
     clash_sets: CollectionProperty(name="Clash Sets", type=ClashSet)
     active_clash_set_index: IntProperty(name="Active Clash Set Index")
+    smart_clash_groups: CollectionProperty(name="Smart Clash Groups", type=SmartClashGroup)
+    active_smart_group_index: IntProperty(name="Active Smart Group Index")
     constraints: CollectionProperty(name="Constraints", type=Constraint)
     active_constraint_index: IntProperty(name="Active Constraint Index")
     eastings: StringProperty(name="Eastings")
