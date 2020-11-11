@@ -1952,6 +1952,14 @@ class BIM_UL_clash_sets(bpy.types.UIList):
         else:
             layout.label(text="", translate=False)
 
+class BIM_UL_smart_groups(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        ob = data
+        if item:
+            layout.label(text=str(item.number), translate=False, icon='NONE', icon_value=0)
+            #layout.prop(item, "number", text="", emboss=False, icon_value=icon)
+        else:
+            layout.label(text="", translate=False)
 
 class BIM_UL_constraints(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
@@ -2209,6 +2217,12 @@ class BIM_PT_clash_manager(Panel):
 
         row = layout.row(align=True)
         row.operator("bim.smart_clash_group")
+        
+        layout.template_list('BIM_UL_smart_groups', '', props, 'smart_clash_groups', props, 'active_smart_group_index')
+
+        # TODO: add operator to isolate smart groups one by one in the viewport
+        row = layout.row(align=True)
+        row.operator("bim.isolate_smart_group")
 
 class BIM_PT_misc_utilities(Panel):
     bl_idname = "BIM_PT_misc_utilities"

@@ -774,6 +774,11 @@ class ClashSet(PropertyGroup):
     b: CollectionProperty(name="Group B", type=ClashSource)
 
 
+class SmartClashGroup(PropertyGroup):
+    number: IntProperty(name="Number")
+    global_ids: CollectionProperty(name="GlobalIDs", type=StrProperty)
+
+
 class Constraint(PropertyGroup):
     name: StringProperty(name="Name")
     description: StringProperty(name="Description")
@@ -1490,6 +1495,8 @@ class BIMProperties(PropertyGroup):
     active_document_reference_index: IntProperty(name="Active Document Reference Index")
     clash_sets: CollectionProperty(name="Clash Sets", type=ClashSet)
     active_clash_set_index: IntProperty(name="Active Clash Set Index")
+    smart_clash_groups: CollectionProperty(name="Smart Clash Groups", type=SmartClashGroup)
+    active_smart_group_index: IntProperty(name="Active Smart Group Index")
     constraints: CollectionProperty(name="Constraints", type=Constraint)
     active_constraint_index: IntProperty(name="Active Constraint Index")
     eastings: StringProperty(name="Eastings")

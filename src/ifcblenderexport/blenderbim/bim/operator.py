@@ -11,6 +11,7 @@ import ifcopenshell.util.selector
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.pset
 import tempfile
+import numpy as np
 from . import export_ifc
 from . import import_ifc
 from . import qto
@@ -29,6 +30,8 @@ from mathutils import Vector, Matrix, Euler, geometry
 from math import radians, atan, tan, cos, sin, atan2, pi
 from pathlib import Path
 from bpy.app.handlers import persistent
+from sklearn.cluster import OPTICS
+from collections import defaultdict
 
 colour_list = [
     (0.651, 0.81, 0.892, 1),
@@ -1880,20 +1883,74 @@ class SmartClashGroup(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
     def execute(self, context):
+        import ifcclash
+
+        settings = ifcclash.IfcClashSettings()
         self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
+        settings.output = self.filepath
+        settings.logger = logging.getLogger("Clash")
+        settings.logger.setLevel(logging.DEBUG)
+        ifc_clasher = ifcclash.IfcClasher(settings)
+
         with open(self.filepath) as f:
             clash_sets = json.load(f)
         
+        # execute the smart grouping here (but put the heavy lifting code somewhere else in a class)
+        save_path = r"C:\Users\vince\Desktop\SmartGrouping Demo\smart-groups.json"
+        smart_grouped_clashes = ifc_clasher.smart_group_clashes(clash_sets)
+
+        # save smart_groups to json
+        with open(save_path, 'w') as f:
+            f.write(json.dumps(smart_grouped_clashes))
+
+        # TODO: load into BIM Properties for easy access
+        clash_set_name = bpy.context.scene.BIMProperties.clash_sets[
+            bpy.context.scene.BIMProperties.active_clash_set_index
+        ].name
+        
+        # Reset the list of smart_clash_groups for the UI
+        bpy.context.scene.BIMProperties.smart_clash_groups.clear()
+
+        for clash_set, smart_groups in smart_grouped_clashes.items():
+            # Only select the clashes that correspond to the actively selected IFC Clash Set
+            if clash_set != clash_set_name:
+                continue
+            else:
+                for smart_group, global_id_pairs in smart_groups[0].items():
+                    #print(smart_group)
+                    #print(type(smart_group))
+                    
+                    print("Global Ids: ", global_id_pairs)
+                    print(type(global_id_pairs))
+                    new_group = bpy.context.scene.BIMProperties.smart_clash_groups.add()
+                    new_group.number = smart_group
+
+                    for pair in global_id_pairs:
+                        print("id: ", pair)
+                        for id in pair:
+                            new_global_id = new_group.global_ids.add()
+                            new_global_id.name = id
+
+        return {"FINISHED"}
+
+class IsolateSmartGroup(bpy.types.Operator):
+    bl_idname = "bim.isolate_smart_group"
+    bl_label = "Isolate Smart Group"
+
+    def execute(self, context):
+        # Select smart group in view
+        selected_smart_group = bpy.context.scene.BIMProperties.smart_clash_groups[bpy.context.scene.BIMProperties.active_smart_group_index]
+        #print(selected_smart_group.number)
+
         for obj in bpy.context.visible_objects:
             global_id = obj.BIMObjectProperties.attributes.get("GlobalId")
             if global_id:
-                for smart_groups in clash_sets.values():
-                    for smart_group_list in smart_groups:
-                        for smart_group, clashes in smart_group_list.items():
-                            for id in clashes:
-                                if global_id.string_value in id:
-                                    print("object match: ", global_id)
-                                    obj.select_set(True)
+                for id in selected_smart_group.global_ids:
+                    #print("Id: ", id)
+                    #print("Global id: ", global_id.string_value)
+                    if global_id.string_value in id.name:
+                        #print("object match: ", global_id)
+                        obj.select_set(True)
 
         return {"FINISHED"}
         
