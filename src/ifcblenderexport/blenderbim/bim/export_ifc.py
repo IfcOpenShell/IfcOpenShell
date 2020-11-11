@@ -1153,9 +1153,7 @@ class IfcParser:
                     continue
                 results[slot.material.name] = {
                     "ifc": None,
-                    "part_ifc": None,  # TODO: check if we deprecate this
                     "raw": slot.material,
-                    "material_type": obj.BIMObjectProperties.material_type,
                     "attributes": self.get_material_attributes(slot.material),
                 }
         return results
@@ -2035,19 +2033,13 @@ class IfcExporter:
                 self.ifc_rep_context["Model"]["Body"]["MODEL_VIEW"]["ifc"], None, None, [styled_item]
             )
             if self.schema_version == "IFC2X3":
-                material["ifc"] = self.file.createIfcMaterial(material["raw"].name)
+                material["ifc"] = self.file.createIfcMaterial(material["attributes"]["Name"])
             else:
-                material["ifc"] = self.file.createIfcMaterial(material["raw"].name, None, None)
+                material["ifc"] = self.file.create_entity("IfcMaterial", **material["attributes"])
             self.create_material_psets(material)
             self.file.createIfcMaterialDefinitionRepresentation(
-                material["raw"].name, None, [styled_representation], material["ifc"]
+                material["attributes"]["Name"], None, [styled_representation], material["ifc"]
             )
-            if material["material_type"] == "IfcMaterial":
-                continue
-            material_type = material["material_type"][0:-3]
-            self.cast_attributes(material_type, material["attributes"])
-            material["attributes"]["Material"] = material["ifc"]
-            material["part_ifc"] = self.file.create_entity(material_type, **material["attributes"])
 
     def create_material_profile_def(self, profile):
         ifc_class = profile.profile

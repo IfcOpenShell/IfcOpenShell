@@ -469,15 +469,14 @@ def getApplicableAttributes(self, context):
 def getApplicableMaterialAttributes(self, context):
     global materialattributes_enum
     materialattributes_enum.clear()
-    if "/" in context.active_object.name and context.active_object.name.split("/")[0] in schema.ifc.elements:
-        material_type = context.active_object.BIMObjectProperties.material_type
-        if material_type[-3:] == "Set":
-            material_type = material_type[0:-3]
+    if "/" in context.active_object.name:
+        ifc_schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(bpy.context.scene.BIMProperties.export_schema)
+        entity = ifc_schema.declaration_by_name("IfcMaterial")
         materialattributes_enum.extend(
             [
-                (a["name"], a["name"], "")
-                for a in schema.ifc.IfcMaterialDefinition[material_type]["attributes"]
-                if self.attributes.find(a["name"]) == -1
+                (a.name(), a.name(), "")
+                for a in entity.all_attributes()
+                if self.attributes.find(a.name()) == -1
             ]
         )
     return materialattributes_enum
