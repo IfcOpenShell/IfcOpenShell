@@ -157,8 +157,10 @@ class IfcCsv:
                 if not headers:
                     headers = row
                     continue
-                element = ifc_file.by_guid(row[0])
-                if not element:
+                try:
+                    element = ifc_file.by_guid(row[0])
+                except:
+                    print("The element with GUID {} was not found".format(row[0]))
                     continue
                 for i, value in enumerate(row):
                     if i == 0:
