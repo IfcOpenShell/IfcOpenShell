@@ -1,6 +1,5 @@
 # Check if we are running in Blender before loading, to allow for multiprocessing
 import sys
-import os
 
 bpy = sys.modules.get("bpy")
 

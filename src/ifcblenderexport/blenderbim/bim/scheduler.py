@@ -1,5 +1,4 @@
 import svgwrite
-import xml.etree.ElementTree as ET
 
 from odf.opendocument import load
 from odf.table import Table, TableRow, TableColumn, TableCell
