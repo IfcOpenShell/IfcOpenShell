@@ -983,7 +983,6 @@ class IfcParser:
                 pl = representation["presentation_layer"]
                 if pl.name == '':
                     continue
-                print("Presentation load: ", pl.name)
                 self.presentation_layer_assignments.setdefault(pl.name, []).append(representation)
 
     def load_representations(self):
@@ -3248,10 +3247,7 @@ class IfcExporter:
         return results
 
     def relate_spaces_to_boundary_elements(self):
-        for (
-            relating_space_index,
-            relationships,
-        ) in self.ifc_parser.rel_space_boundaries.items():
+        for (relating_space_index, relationships,) in self.ifc_parser.rel_space_boundaries.items():
             for relationship in relationships:
                 relationship["attributes"]["GlobalId"] = ifcopenshell.guid.new()
                 relationship["attributes"]["RelatedBuildingElement"] = self.ifc_parser.products[

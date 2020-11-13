@@ -1321,29 +1321,13 @@ class IfcImporter:
                 pl.layer_frozen = f.LayerFrozen if f.LayerFrozen is not None else False
                 pl.layer_blocked = f.LayerBlocked if f.LayerBlocked is not None else False
 
-            if pl.name not in bpy.context.scene.view_layers.keys():
-                vl = bpy.context.scene.view_layers.new(pl.name)
-            else:
-                vl = bpy.context.scene.view_layers[pl.name]
-
-            if pl.name not in bpy.data.collections.keys():
-                coll = bpy.data.collections.new(pl.name)
-            else:
-                coll = bpy.data.collections[pl.name]
-
-            if pl.layer_on is False:
-                # vl.objects.data.layer_collection.collection.hide_viewport = True
-                # bpy.context.window.view_layer.layer_collection.children[pl.name].exclude = True
-                coll.hide_viewport = True
-
             for item in f.AssignedItems:
                 guid = item.OfProductRepresentation[0].ShapeOfProduct[0].GlobalId
                 for obj in bpy.context.selectable_objects:
                     global_id = obj.BIMObjectProperties.attributes.get("GlobalId")
                     if global_id and global_id.string_value == guid:
                         obj.BIMObjectProperties.presentation_layer.name = pl.name
-                        # vl.objects.data.layer_collection.collection.objects.link(obj)
-                        coll.objects.link(obj)
+                        obj.hide_set(not pl.layer_on)
 
     def clean_mesh(self):
         obj = None

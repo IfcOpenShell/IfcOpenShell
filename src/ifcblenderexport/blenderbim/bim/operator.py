@@ -4324,15 +4324,12 @@ class AddToPresentationLayer(bpy.types.Operator):
     def execute(self, context):
         presentation_layer = bpy.context.scene.BIMProperties.presentation_layers[self.index]
 
-        vl = bpy.context.scene.view_layers[presentation_layer.name]
+        # vl = bpy.context.scene.view_layers[presentation_layer.name]
 
-        for el in bpy.context.selected_objects:
-            el.BIMObjectProperties.presentation_layer.name = presentation_layer.name
-            elem_name = el.BIMObjectProperties.attributes["Name"].string_value
-
-            # TODO: I want to add the selected elements to a view layer. But how do you append objects to a view_layer?
-            # vl.objects.append(el)
-
+        for obj in bpy.context.selected_objects:
+            obj.BIMObjectProperties.presentation_layer.name = presentation_layer.name
+            elem_name = obj.BIMObjectProperties.attributes["Name"].string_value
+            obj.hide_set(not presentation_layer.layer_on)
             print(f'Adding "{elem_name}" to View/Presentation Layer "({self.index} - {presentation_layer.name})"')
 
         return {"FINISHED"}
@@ -4374,9 +4371,6 @@ class RemovePresentationLayer(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        pl = bpy.context.scene.BIMProperties.presentation_layers[self.index]
-        if pl.name not in bpy.context.scene.view_layers.keys():
-            bpy.context.scene.view_layers.remove(pl.name)
         bpy.context.scene.BIMProperties.presentation_layers.remove(self.index)
 
         return {"FINISHED"}
@@ -4384,29 +4378,15 @@ class RemovePresentationLayer(bpy.types.Operator):
 
 class UpdatePresentationLayer(bpy.types.Operator):
     bl_idname = "bim.update_presentation_layer"
-    bl_label = "Update Presentation Layer"
+    bl_label = "Hide/Show selected Presentation Layer"
     index: bpy.props.IntProperty()
-    pl_name = bpy.props.StringProperty()
-    pl_description = bpy.props.StringProperty()
-    pl_identifier = bpy.props.StringProperty()
-    pl_layer_on = bpy.props.BoolProperty()
-    pl_layer_frozen = bpy.props.BoolProperty()
-    pl_layer_blocked = bpy.props.BoolProperty()
 
     def execute(self, context):
         pl = bpy.context.scene.BIMProperties.presentation_layers[self.index]
-        pl.name = self.pl_name
-        pl.description = self.pl_description
-        pl.identifier = self.pl_identifier
-        pl.layer_on = self.pl_layer_on
-        pl.layer_frozen = self.pl_layer_frozen
-        pl.layer_blocked = self.pl_layer_blocked
-
-        if pl.name not in bpy.context.scene.view_layers.keys():
-            new = bpy.context.scene.view_layers.new(pl.name)
-            # if pl.layer_on is False:
-            #     bpy.context.scene.view_layers
-
+        for obj in bpy.context.scene.objects:
+            if obj.BIMObjectProperties.presentation_layer.name == pl.name:
+                set_status = obj.hide_get()
+                obj.hide_set(not obj.hide_get())
         return {"FINISHED"}
 
 

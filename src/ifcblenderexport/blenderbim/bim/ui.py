@@ -1003,12 +1003,7 @@ class BIM_PT_presentation_layers(Panel):
 
                 op = layout.row().operator("bim.update_presentation_layer")
                 op.index = props.active_presentation_layer_index
-                op.pl_name = pres_layer.name
-                op.pl_description = pres_layer.description
-                op.pl_identifier = pres_layer.identifier
-                op.pl_layer_on = pres_layer.layer_on
-                op.pl_layer_frozen = pres_layer.layer_frozen
-                op.pl_layer_blocked = pres_layer.layer_blocked
+
 
             else:
                 layout.label(text="Presentation Layer is invalid")
