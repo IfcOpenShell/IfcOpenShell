@@ -1,6 +1,6 @@
 import bpy
 from bpy.types import Operator
-from bpy.props import FloatVectorProperty, FloatProperty, BoolProperty
+from bpy.props import FloatProperty, BoolProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from mathutils import Vector
 

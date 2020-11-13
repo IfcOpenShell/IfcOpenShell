@@ -21,7 +21,6 @@ from pathlib import Path
 from itertools import cycle
 from datetime import datetime
 from . import helper
-from . import schema
 from . import ifc
 
 

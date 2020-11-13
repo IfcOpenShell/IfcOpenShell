@@ -1,6 +1,5 @@
 import json
 import os
-import csv
 import ifcopenshell
 import ifcopenshell.util.pset
 from pathlib import Path
@@ -474,11 +473,7 @@ def getApplicableMaterialAttributes(self, context):
         ifc_schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(bpy.context.scene.BIMProperties.export_schema)
         entity = ifc_schema.declaration_by_name("IfcMaterial")
         materialattributes_enum.extend(
-            [
-                (a.name(), a.name(), "")
-                for a in entity.all_attributes()
-                if self.attributes.find(a.name()) == -1
-            ]
+            [(a.name(), a.name(), "") for a in entity.all_attributes() if self.attributes.find(a.name()) == -1]
         )
     return materialattributes_enum
 
@@ -932,7 +927,6 @@ class RefreshBcfTopic:
 
     @classmethod
     def refresh(cls, context):
-        import bcfplugin
 
         global bcfviewpoints_enum
 

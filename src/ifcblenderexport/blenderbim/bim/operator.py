@@ -26,7 +26,7 @@ from . import helper
 from bpy_extras.io_utils import ImportHelper
 from itertools import cycle
 from mathutils import Vector, Matrix, Euler, geometry
-from math import radians, atan, tan, cos, sin, atan2, pi
+from math import radians, atan, tan, cos, sin
 from pathlib import Path
 from bpy.app.handlers import persistent
 
@@ -2290,7 +2290,6 @@ class CutSection(bpy.types.Operator):
         y_axis = camera.matrix_world.to_quaternion() @ Vector((0, -1, 0))
         top_left_corner = location - (width / 2 * x_axis) - (height / 2 * y_axis)
         ifc_cutter = cut_ifc.IfcCutter()
-        import ifccsv
 
         ifc_cutter.ifc_filenames = [i.name for i in bpy.context.scene.DocProperties.ifc_files]
         ifc_cutter.data_dir = bpy.context.scene.BIMProperties.data_dir
