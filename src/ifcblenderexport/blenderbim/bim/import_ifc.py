@@ -1893,7 +1893,7 @@ class IfcImporter:
                     obj.BIMObjectProperties.relating_structure = self.added_data[container.GlobalId]
                 return self.place_object_in_spatial_tree(container, obj)
             elif element.is_a("IfcGrid"):
-                grid_collection = bpy.data.collections.get(self.get_name(element))
+                grid_collection = bpy.data.collections.get(obj.name)
                 self.spatial_structure_elements[container.GlobalId]["blender"].children.link(grid_collection)
                 grid_collection.objects.link(obj)
             else:
