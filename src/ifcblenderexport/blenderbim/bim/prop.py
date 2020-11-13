@@ -259,26 +259,6 @@ def refreshBoundaryConditionAttributes(self, context):
         new_attribute.name = attribute["name"]
 
 
-def getPresentationLayerClasses(self, context):
-    return [
-        (c, c, "")
-        for c in [
-            "IfcPresentationLayerAssignment",
-            "IfcPresentationLayerWithStyle",
-        ]
-    ]
-
-
-def refreshPresentationLayerAttributes(self, context):
-    while len(context.active_object.BIMObjectProperties.presentation_layer.attributes) > 0:
-        context.active_object.BIMObjectProperties.presentation_layer.attributes.remove(0)
-    for attribute in schema.ifc.elements[context.active_object.BIMObjectProperties.presentation_layer.name][
-        "complex_attributes"
-    ]:
-        new_attribute = context.active_object.BIMObjectProperties.presentation_layer.attributes.add()
-        new_attribute.name = attribute["name"]
-
-
 def refreshActiveDrawingIndex(self, context):
     bpy.ops.bim.activate_view(drawing_index=context.scene.DocProperties.active_drawing_index)
 
@@ -1705,7 +1685,6 @@ class BIMObjectProperties(PropertyGroup):
     qto_name: EnumProperty(items=getQtoNames, name="Qto Name")
     has_boundary_condition: BoolProperty(name="Has Boundary Condition")
     boundary_condition: PointerProperty(name="Boundary Condition", type=BoundaryCondition)
-    active_presentation_layer_index: IntProperty(name="Active Presentation Layer Index")
     presentation_layer: PointerProperty(name="Presentation Layer", type=PresentationLayer)
     structural_member_connection: PointerProperty(name="Structural Member Connection", type=bpy.types.Object)
     representation_contexts: CollectionProperty(name="Representation Contexts", type=Subcontext)
