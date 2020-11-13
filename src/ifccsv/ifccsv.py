@@ -37,7 +37,8 @@ class IfcAttributeExtractor:
         try:
             new_element = ifc_file.create_entity(new_class)
         except:
-            return
+            print(f"Class of {element} could not be changed to {new_class}")
+            return element
         new_attributes = [new_element.attribute_name(i) for i, attribute in enumerate(new_element)]
         for i, attribute in enumerate(element):
             try:
