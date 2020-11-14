@@ -196,12 +196,7 @@ class BIM_PT_object_material(Panel):
                 row.prop(material, "category")
         elif props.material_type == "IfcMaterialProfileSet":
             row.template_list(
-                "MATERIAL_UL_matslots",
-                "",
-                set_props,
-                "material_profiles",
-                set_props,
-                "active_material_profile_index",
+                "MATERIAL_UL_matslots", "", set_props, "material_profiles", set_props, "active_material_profile_index",
             )
             col = row.column(align=True)
             col.operator("bim.add_material_profile", icon="ADD", text="")
@@ -821,29 +816,22 @@ class BIM_PT_presentation_layer_data(Panel):
             return
         layout = self.layout
         elem_props = context.active_object.BIMObjectProperties.presentation_layer
-        scene_props = context.scene.BIMProperties
+        props = context.scene.BIMProperties
 
         if elem_props.name != "":
             layout.label(text=f'Object is part of Presentation layer "{elem_props.name}"')
-            layout.row().operator("bim.remove_from_presentation_layer")
+            layout.row().operator("bim.unassign_presentation_layer")
         else:
-            layout.label(text="Not included in any presentation layer")
+            if not props.presentation_layers:
+                layout.label(text=f"No presentation layers are available")
+                return
 
-        if scene_props.presentation_layers:
             layout.template_list(
-                "BIM_UL_presentation_layers",
-                "",
-                scene_props,
-                "presentation_layers",
-                scene_props,
-                "active_presentation_layer_index",
+                "BIM_UL_generic", "", props, "presentation_layers", props, "active_presentation_layer_index",
             )
-            pres_layer = scene_props.presentation_layers[scene_props.active_presentation_layer_index]
-            if pres_layer.name in bpy.context.scene.BIMProperties.presentation_layers:
-                op = layout.row().operator("bim.add_to_presentation_layer")
-                op.index = scene_props.active_presentation_layer_index
-            else:
-                layout.label(text="Presentation Layer is invalid")
+            if props.active_presentation_layer_index < len(props.presentation_layers):
+                op = layout.row().operator("bim.assign_presentation_layer")
+                op.index = props.active_presentation_layer_index
 
 
 class BIM_PT_material(Panel):
@@ -964,41 +952,36 @@ class BIM_PT_presentation_layers(Panel):
         layout.use_property_split = True
         props = context.scene.BIMProperties
 
-        layout.row().prop(props, "presentation_layers")
         layout.row().operator("bim.add_presentation_layer")
 
-        if props.presentation_layers:
-            layout.template_list(
-                "BIM_UL_presentation_layers", "", props, "presentation_layers", props, "active_presentation_layer_index"
-            )
-            pres_layer = props.presentation_layers[props.active_presentation_layer_index]
+        if not props.presentation_layers:
+            return
+
+        layout.template_list(
+            "BIM_UL_generic", "", props, "presentation_layers", props, "active_presentation_layer_index"
+        )
+
+        if props.active_presentation_layer_index < len(props.presentation_layers):
+            layer = props.presentation_layers[props.active_presentation_layer_index]
 
             row = layout.row(align=True)
-            row.prop(pres_layer, "name")
-            if pres_layer.name in bpy.context.scene.BIMProperties.presentation_layers:
-                pres_layer = bpy.context.scene.BIMProperties.presentation_layers[pres_layer.name]
-                row.operator(
-                    "bim.remove_presentation_layer", icon="X", text=""
-                ).index = props.active_presentation_layer_index
-                row = layout.row()
-                row.prop(pres_layer, "description")
-                row = layout.row()
-                row.prop(pres_layer, "identifier")
-                row = layout.row()
-                row.prop(pres_layer, "layer_on")
-                row = layout.row()
-                row.prop(pres_layer, "layer_frozen")
-                row = layout.row()
-                row.prop(pres_layer, "layer_blocked")
-                row = layout.row()
-                row.prop(pres_layer, "layer_styles")
+            row.prop(layer, "name")
+            row.operator(
+                "bim.remove_presentation_layer", icon="X", text=""
+            ).index = props.active_presentation_layer_index
+            row = layout.row()
+            row.prop(layer, "description")
+            row = layout.row()
+            row.prop(layer, "identifier")
+            row = layout.row()
+            row.prop(layer, "layer_on")
+            row = layout.row()
+            row.prop(layer, "layer_frozen")
+            row = layout.row()
+            row.prop(layer, "layer_blocked")
 
-                op = layout.row().operator("bim.update_presentation_layer")
-                op.index = props.active_presentation_layer_index
-
-
-            else:
-                layout.label(text="Presentation Layer is invalid")
+            op = layout.row().operator("bim.update_presentation_layer")
+            op.index = props.active_presentation_layer_index
 
 
 class BIM_PT_drawings(Panel):
@@ -2073,15 +2056,6 @@ class BIM_UL_constraints(bpy.types.UIList):
             layout.label(text="", translate=False)
 
 
-class BIM_UL_presentation_layers(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        ob = data
-        if item:
-            layout.prop(item, "name", text="", emboss=False)
-        else:
-            layout.label(text="", translate=False)
-
-
 class BIM_UL_document_information(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         ob = data
@@ -2378,7 +2352,9 @@ class BIM_PT_debug(Panel):
             row.prop(attribute, "name", text="")
             row.prop(attribute, "string_value", text="")
             if attribute.int_value:
-                row.operator("bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text="").step_id = attribute.int_value
+                row.operator(
+                    "bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text=""
+                ).step_id = attribute.int_value
 
         if props.inverse_attributes:
             layout.label(text="Inverse attributes:")
@@ -2388,7 +2364,9 @@ class BIM_PT_debug(Panel):
             row.prop(attribute, "name", text="")
             row.prop(attribute, "string_value", text="")
             if attribute.int_value:
-                row.operator("bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text="").step_id = attribute.int_value
+                row.operator(
+                    "bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text=""
+                ).step_id = attribute.int_value
 
 
 def ifc_units(self, context):

@@ -2149,8 +2149,6 @@ class UnassignClassification(bpy.types.Operator):
             index = obj.BIMObjectProperties.classifications.find(key)
             if index != -1:
                 obj.BIMObjectProperties.classifications.remove(index)
-
-            obj.BIMObjectProperties.classification = ""
         return {"FINISHED"}
 
 
@@ -4324,34 +4322,28 @@ class GetNorthOffset(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AddToPresentationLayer(bpy.types.Operator):
-    bl_idname = "bim.add_to_presentation_layer"
-    bl_label = "Add To Presentation Layer"
+class AssignPresentationLayer(bpy.types.Operator):
+    bl_idname = "bim.assign_presentation_layer"
+    bl_label = "Assign Presentation Layer"
     index: bpy.props.IntProperty()
 
     def execute(self, context):
         presentation_layer = bpy.context.scene.BIMProperties.presentation_layers[self.index]
-
-        # vl = bpy.context.scene.view_layers[presentation_layer.name]
-
         for obj in bpy.context.selected_objects:
+            # TODO: assign using a different strategy than name association
             obj.BIMObjectProperties.presentation_layer.name = presentation_layer.name
-            elem_name = obj.BIMObjectProperties.attributes["Name"].string_value
             obj.hide_set(not presentation_layer.layer_on)
-            print(f'Adding "{elem_name}" to View/Presentation Layer "({self.index} - {presentation_layer.name})"')
-
         return {"FINISHED"}
 
 
-class RemoveFromPresentationLayer(bpy.types.Operator):
-    bl_idname = "bim.remove_from_presentation_layer"
-    bl_label = "Remove Selected From Presentation Layer"
+class UnassignPresentationLayer(bpy.types.Operator):
+    bl_idname = "bim.unassign_presentation_layer"
+    bl_label = "Unassign Presentation Layer"
 
     def execute(self, context):
         for el in bpy.context.selected_objects:
             if el.BIMObjectProperties.presentation_layer.name != "":
                 el.BIMObjectProperties.presentation_layer.name = ""
-
         return {"FINISHED"}
 
 
@@ -4361,15 +4353,10 @@ class AddPresentationLayer(bpy.types.Operator):
 
     def execute(self, context):
         new = bpy.context.scene.BIMProperties.presentation_layers.add()
-
-        # Default values of a new presentation layer
         new.name = "New Presentation Layer"
-        new.description = "A Description"
-        new.identifier = "Something"
         new.layer_on = True
         new.layer_frozen = False
         new.layer_blocked = False
-
         return {"FINISHED"}
 
 
@@ -4380,7 +4367,6 @@ class RemovePresentationLayer(bpy.types.Operator):
 
     def execute(self, context):
         bpy.context.scene.BIMProperties.presentation_layers.remove(self.index)
-
         return {"FINISHED"}
 
 

@@ -450,9 +450,7 @@ class SvgWriter:
             )
 
             transform = "rotate({}, {}, {})".format(
-                angle,
-                (text_position * self.scale)[0],
-                (text_position * self.scale)[1],
+                angle, (text_position * self.scale)[0], (text_position * self.scale)[1],
             )
 
             if text_obj.data.BIMTextProperties.symbol != "None":
