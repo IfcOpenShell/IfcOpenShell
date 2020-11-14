@@ -4324,6 +4324,80 @@ class GetNorthOffset(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AddToPresentationLayer(bpy.types.Operator):
+    bl_idname = "bim.add_to_presentation_layer"
+    bl_label = "Add To Presentation Layer"
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        presentation_layer = bpy.context.scene.BIMProperties.presentation_layers[self.index]
+
+        # vl = bpy.context.scene.view_layers[presentation_layer.name]
+
+        for obj in bpy.context.selected_objects:
+            obj.BIMObjectProperties.presentation_layer.name = presentation_layer.name
+            elem_name = obj.BIMObjectProperties.attributes["Name"].string_value
+            obj.hide_set(not presentation_layer.layer_on)
+            print(f'Adding "{elem_name}" to View/Presentation Layer "({self.index} - {presentation_layer.name})"')
+
+        return {"FINISHED"}
+
+
+class RemoveFromPresentationLayer(bpy.types.Operator):
+    bl_idname = "bim.remove_from_presentation_layer"
+    bl_label = "Remove Selected From Presentation Layer"
+
+    def execute(self, context):
+        for el in bpy.context.selected_objects:
+            if el.BIMObjectProperties.presentation_layer.name != "":
+                el.BIMObjectProperties.presentation_layer.name = ""
+
+        return {"FINISHED"}
+
+
+class AddPresentationLayer(bpy.types.Operator):
+    bl_idname = "bim.add_presentation_layer"
+    bl_label = "Add Presentation Layer"
+
+    def execute(self, context):
+        new = bpy.context.scene.BIMProperties.presentation_layers.add()
+
+        # Default values of a new presentation layer
+        new.name = "New Presentation Layer"
+        new.description = "A Description"
+        new.identifier = "Something"
+        new.layer_on = True
+        new.layer_frozen = False
+        new.layer_blocked = False
+
+        return {"FINISHED"}
+
+
+class RemovePresentationLayer(bpy.types.Operator):
+    bl_idname = "bim.remove_presentation_layer"
+    bl_label = "Remove Presentation Layer"
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.presentation_layers.remove(self.index)
+
+        return {"FINISHED"}
+
+
+class UpdatePresentationLayer(bpy.types.Operator):
+    bl_idname = "bim.update_presentation_layer"
+    bl_label = "Hide/Show selected Presentation Layer"
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        pl = bpy.context.scene.BIMProperties.presentation_layers[self.index]
+        for obj in bpy.context.scene.objects:
+            if obj.BIMObjectProperties.presentation_layer.name == pl.name:
+                set_status = obj.hide_get()
+                obj.hide_set(not obj.hide_get())
+        return {"FINISHED"}
+
+
 class AddDrawingStyleAttribute(bpy.types.Operator):
     bl_idname = "bim.add_drawing_style_attribute"
     bl_label = "Add Drawing Style Attribute"

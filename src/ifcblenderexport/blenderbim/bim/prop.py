@@ -792,6 +792,16 @@ class ClashSet(PropertyGroup):
     b: CollectionProperty(name="Group B", type=ClashSource)
 
 
+class PresentationLayer(PropertyGroup):
+    name: StringProperty(name="Name")
+    description: StringProperty(name="Description")
+    identifier: StringProperty(name="Identifier")
+    layer_on: BoolProperty(name="LayerOn", default=True)
+    layer_frozen: BoolProperty(name="LayerFrozen", default=False)
+    layer_blocked: BoolProperty(name="LayerBlocked", default=False)
+    layer_styles: EnumProperty(items=[], name="LayerStyles")
+
+
 class Constraint(PropertyGroup):
     name: StringProperty(name="Name")
     description: StringProperty(name="Description")
@@ -1564,6 +1574,8 @@ class BIMProperties(PropertyGroup):
     override_colour: FloatVectorProperty(
         name="Override Colour", subtype="COLOR", default=(1, 0, 0, 1), min=0.0, max=1.0, size=4
     )
+    active_presentation_layer_index: IntProperty(name="Active Presentation Layer Index")
+    presentation_layers: CollectionProperty(name="Presentation Layers", type=PresentationLayer)
 
 
 class BCFProperties(PropertyGroup):
@@ -1668,6 +1680,7 @@ class BIMObjectProperties(PropertyGroup):
     qto_name: EnumProperty(items=getQtoNames, name="Qto Name")
     has_boundary_condition: BoolProperty(name="Has Boundary Condition")
     boundary_condition: PointerProperty(name="Boundary Condition", type=BoundaryCondition)
+    presentation_layer: PointerProperty(name="Presentation Layer", type=PresentationLayer)
     structural_member_connection: PointerProperty(name="Structural Member Connection", type=bpy.types.Object)
     representation_contexts: CollectionProperty(name="Representation Contexts", type=Subcontext)
     # Address applies to IfcSite's SiteAddress and IfcBuilding's BuildingAddress
@@ -1711,7 +1724,7 @@ class BIMMeshProperties(PropertyGroup):
     is_swept_solid: BoolProperty(name="Is Swept Solid")
     swept_solids: CollectionProperty(name="Swept Solids", type=SweptSolid)
     is_parametric: BoolProperty(name="Is Parametric", default=False)
-    presentation_layer: StringProperty(name="Presentation Layer")
+    presentation_layer: PointerProperty(name="Presentation Layer", type=PresentationLayer)
     geometry_type: StringProperty(name="Geometry Type")
     ifc_definition: StringProperty(name="IFC Definition")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
