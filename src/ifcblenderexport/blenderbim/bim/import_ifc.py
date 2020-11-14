@@ -179,7 +179,6 @@ class MaterialCreator:
             self.create_new_single(material)
         self.obj.BIMObjectProperties.material_type = "IfcMaterial"
         self.obj.BIMObjectProperties.material = self.materials[material.Name]
-        return self.assign_material_to_mesh(self.materials[material.Name])
 
     def create_layer_set(self, layer_set):
         props = self.obj.BIMObjectProperties
@@ -190,9 +189,7 @@ class MaterialCreator:
             new = props.material_set.material_layers.add()
             if layer.Material:
                 if layer.Material.Name not in self.materials:
-                    # TODO import rest of the layer set data
                     self.create_new_single(layer.Material)
-                self.assign_material_to_mesh(self.materials[layer.Material.Name])
                 new.material = self.materials[layer.Material.Name]
             new.layer_thickness = layer.LayerThickness
             new.is_ventilated = "TRUE" if layer.IsVentilated else "FALSE"
@@ -214,9 +211,7 @@ class MaterialCreator:
             new.name = constituent.Name or ""
             new.description = constituent.Description or ""
             if constituent.Material.Name not in self.materials:
-                # TODO import rest of the layer set data
                 self.create_new_single(constituent.Material)
-            self.assign_material_to_mesh(self.materials[constituent.Material.Name])
             new.material = self.materials[constituent.Material.Name]
             new.fraction = constituent.Fraction or 0.0
             new.category = constituent.Category or ""
@@ -231,9 +226,7 @@ class MaterialCreator:
             new.name = profile.Name or ""
             new.description = profile.Description or ""
             if profile.Material.Name not in self.materials:
-                # TODO import rest of the layer set data
                 self.create_new_single(profile.Material)
-            self.assign_material_to_mesh(self.materials[profile.Material.Name])
             new.material = self.materials[profile.Material.Name]
             new.profile = profile.Profile.is_a()
             for i, attribute in enumerate(profile.Profile):
@@ -249,9 +242,7 @@ class MaterialCreator:
         for material in material_list.Materials:
             new = props.material_set.material_constituents.add()
             if material.Name not in self.materials:
-                # TODO import rest of the layer set data
                 self.create_new_single(material)
-            self.assign_material_to_mesh(self.materials[material.Name])
             new.material = self.materials[material.Name]
 
     def create_new_single(self, material):
