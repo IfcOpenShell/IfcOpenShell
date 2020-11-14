@@ -975,9 +975,10 @@ class IfcParser:
     def load_presentation_layer_assignments(self):
         for representation in self.representations.values():
             if representation["presentation_layer"]:
-                self.presentation_layer_assignments.setdefault(representation["presentation_layer"], []).append(
-                    representation
-                )
+                pl = representation["presentation_layer"]
+                if pl.name == '':
+                    continue
+                self.presentation_layer_assignments.setdefault(pl.name, []).append(representation)
 
     def load_representations(self):
         if not self.ifc_export_settings.has_representations:
@@ -1109,9 +1110,7 @@ class IfcParser:
             "is_native": mesh.BIMMeshProperties.is_native if hasattr(mesh, "BIMMeshProperties") else False,
             "is_swept_solid": mesh.BIMMeshProperties.is_swept_solid if hasattr(mesh, "BIMMeshProperties") else False,
             "is_generated": False,
-            "presentation_layer": mesh.BIMMeshProperties.presentation_layer
-            if hasattr(mesh, "BIMMeshProperties")
-            else None,
+            "presentation_layer": obj.BIMObjectProperties.presentation_layer if hasattr(obj, "BIMObjectProperties") else None,
             "attributes": {"Name": mesh.name},
         }
 
@@ -2033,10 +2032,26 @@ class IfcExporter:
         return self.file.createIfcStyledItem(representation_item, [surface_style], item["attributes"]["Name"])
 
     def create_presentation_layer_assignments(self):
+        scene_props = bpy.context.scene.BIMProperties
         for name, assigned_items in self.ifc_parser.presentation_layer_assignments.items():
-            self.file.createIfcPresentationLayerAssignment(
-                name, None, [i["ifc"].MappedRepresentation for i in assigned_items], None
-            )
+            if name == '':
+                continue
+            pl = scene_props.presentation_layers[name]
+            print("Presentation Export: ", name, pl.identifier, pl.layer_on)
+
+            with_style = False
+            if pl.layer_on is False:
+                with_style = True
+
+            if with_style is False:
+                self.file.createIfcPresentationLayerAssignment(
+                    name, pl.description, [i["ifc"].MappedRepresentation for i in assigned_items], pl.identifier
+                )
+            else:
+                self.file.createIfcPresentationLayerWithStyle(
+                    name, pl.description, [i["ifc"].MappedRepresentation for i in assigned_items], pl.identifier,
+                    pl.layer_on, pl.layer_frozen, pl.layer_blocked, pl.layer_styles
+                )
 
     def create_materials(self):
         for material in self.ifc_parser.materials.values():
