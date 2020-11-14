@@ -799,7 +799,6 @@ class PresentationLayer(PropertyGroup):
     layer_on: BoolProperty(name="LayerOn", default=True)
     layer_frozen: BoolProperty(name="LayerFrozen", default=False)
     layer_blocked: BoolProperty(name="LayerBlocked", default=False)
-    layer_styles: EnumProperty(items=[], name="LayerStyles")
 
 
 class Constraint(PropertyGroup):
@@ -1680,6 +1679,7 @@ class BIMObjectProperties(PropertyGroup):
     qto_name: EnumProperty(items=getQtoNames, name="Qto Name")
     has_boundary_condition: BoolProperty(name="Has Boundary Condition")
     boundary_condition: PointerProperty(name="Boundary Condition", type=BoundaryCondition)
+    # TODO: presentation layers should belong to a mesh, not an object
     presentation_layer: PointerProperty(name="Presentation Layer", type=PresentationLayer)
     structural_member_connection: PointerProperty(name="Structural Member Connection", type=bpy.types.Object)
     representation_contexts: CollectionProperty(name="Representation Contexts", type=Subcontext)
@@ -1724,7 +1724,6 @@ class BIMMeshProperties(PropertyGroup):
     is_swept_solid: BoolProperty(name="Is Swept Solid")
     swept_solids: CollectionProperty(name="Swept Solids", type=SweptSolid)
     is_parametric: BoolProperty(name="Is Parametric", default=False)
-    presentation_layer: PointerProperty(name="Presentation Layer", type=PresentationLayer)
     geometry_type: StringProperty(name="Geometry Type")
     ifc_definition: StringProperty(name="IFC Definition")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
