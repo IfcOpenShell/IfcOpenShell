@@ -109,7 +109,7 @@ class IfcParser:
         self.constraints = self.get_constraints()
         self.load_representations()
         self.load_presentation_layer_assignments()
-        self.materials = self.get_materials()
+        self.get_materials()
         self.styled_items = self.get_styled_items()
         self.spatial_structure_elements = self.get_spatial_structure_elements()
         self.groups = self.get_groups()
@@ -1134,26 +1134,37 @@ class IfcParser:
         return name
 
     def get_materials(self):
-        results = {}
         if not self.ifc_export_settings.has_representations:
-            return results
-        for product in self.selected_products + self.type_products:
+            return
+        for product in self.selected_products + self.selected_types:
             obj = product["raw"]
-            if obj.data is None:
-                continue
+            if obj.BIMObjectProperties.material_type == "IfcMaterial" and obj.BIMObjectProperties.material:
+                self.get_material(obj.BIMObjectProperties.material)
+            elif obj.BIMObjectProperties.material_type == "IfcMaterialConstituentSet":
+                for constituent in obj.BIMObjectProperties.material_set.material_constituents:
+                    self.get_material(constituent.material)
+            elif obj.BIMObjectProperties.material_type == "IfcMaterialLayerSet":
+                for layer in obj.BIMObjectProperties.material_set.material_layers:
+                    self.get_material(layer.material)
+            elif obj.BIMObjectProperties.material_type == "IfcMaterialProfileSet":
+                for profile in obj.BIMObjectProperties.material_set.material_profiles:
+                    self.get_material(profile.material)
             for slot in obj.material_slots:
-                if slot.material is None:
+                if slot.material is None or slot.link == "OBJECT":
                     continue
-                if slot.material.name in results or slot.link == "OBJECT":
-                    continue
-                material = {
-                    "ifc": None,
-                    "raw": slot.material,
-                    "attributes": self.get_material_attributes(slot.material),
-                }
-                results[slot.material.name] = material
-                self.get_material_psets(material, slot.material)
-        return results
+                self.get_material(slot.material)
+
+    def get_material(self, material):
+        if material.name in self.materials:
+            return
+        data = {
+            "ifc": None,
+            "raw": material,
+            "attributes": self.get_material_attributes(material),
+        }
+        print(material.name)
+        self.materials[material.name] = data
+        self.get_material_psets(data, material)
 
     def get_material_attributes(self, material):
         attributes = {"Name": material.name}
