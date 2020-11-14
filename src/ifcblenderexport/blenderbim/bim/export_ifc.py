@@ -1176,7 +1176,7 @@ class IfcParser:
         if not self.ifc_export_settings.has_representations:
             return results
         parsed_data_names = []
-        for product in self.selected_products + self.type_products:
+        for product in self.selected_products + self.selected_types:
             obj = product["raw"]
             if obj.data is None or obj.data.name in parsed_data_names:
                 continue
@@ -1998,7 +1998,15 @@ class IfcExporter:
             ]
             material_slots = {}
             if product["ifc"].Representation:
+                # This is a simplification, which works since we are currently in a controlled environment where the
+                # BlenderBIM Add-on controls how data is structured during export. When we implement full IFC
+                # round-tripping, this simplification can no longer apply.
                 for representation in product["ifc"].Representation.Representations:
+                    # At the moment, until we implement full support for round-tripping contexts, we assume that styled
+                    # items only apply to the body context. This is therefore an incomplete implementation and may break
+                    # in edge cases.
+                    if representation.RepresentationIdentifier != "Body":
+                        continue
                     for mapped_item in representation.Items:
                         items = mapped_item[0].MappedRepresentation.Items
                         for i, item in enumerate(items):
