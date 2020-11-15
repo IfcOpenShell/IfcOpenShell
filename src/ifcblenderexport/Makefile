@@ -285,7 +285,7 @@ endif
 	mkdir dist/working
 	cd dist/working && wget https://github.com/IFCJSON-Team/IFC2JSON_python/archive/master.zip
 	cd dist/working && unzip master.zip
-	cp -r dist/working/IFC2JSON_python-master/ifcjson dist/blenderbim/libs/site/packages/
+	cp -r dist/working/IFC2JSON_python-master/file_converters/ifcjson dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Provides IFCPatch functionality
