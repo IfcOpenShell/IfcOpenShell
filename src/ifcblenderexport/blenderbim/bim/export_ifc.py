@@ -974,11 +974,11 @@ class IfcParser:
 
     def load_presentation_layer_assignments(self):
         for representation in self.representations.values():
-            if representation["presentation_layer"]:
-                layer = representation["presentation_layer"]
-                if layer.name == "":
-                    continue
-                self.presentation_layer_assignments.setdefault(layer.name, []).append(representation)
+            if representation["presentation_layer"] is False:
+                continue
+            self.presentation_layer_assignments.setdefault(representation["presentation_layer"], []).append(
+                representation
+            )
 
     def load_representations(self):
         if not self.ifc_export_settings.has_representations:
@@ -1110,9 +1110,9 @@ class IfcParser:
             "is_native": mesh.BIMMeshProperties.is_native if hasattr(mesh, "BIMMeshProperties") else False,
             "is_swept_solid": mesh.BIMMeshProperties.is_swept_solid if hasattr(mesh, "BIMMeshProperties") else False,
             "is_generated": False,
-            "presentation_layer": obj.BIMObjectProperties.presentation_layer
-            if hasattr(obj, "BIMObjectProperties")
-            else None,
+            "presentation_layer": mesh.BIMMeshProperties.presentation_layer_index
+            if hasattr(mesh, "BIMMeshProperties") and mesh.BIMMeshProperties.presentation_layer_index != -1
+            else False,
             "attributes": {"Name": mesh.name},
         }
 
@@ -1163,7 +1163,6 @@ class IfcParser:
             "raw": material,
             "attributes": self.get_material_attributes(material),
         }
-        print(material.name)
         self.materials[material.name] = data
         self.get_material_psets(data, material)
 
@@ -1662,7 +1661,6 @@ class IfcExporter:
             if not properties:
                 continue
             pset["attributes"].update({"Properties": properties, "Material": pset["material"]["ifc"]})
-            print(pset["attributes"])
             pset["ifc"] = self.file.create_entity("IfcMaterialProperties", **pset["attributes"])
 
     def create_qto_properties(self, qto):
@@ -2034,28 +2032,22 @@ class IfcExporter:
         return self.file.createIfcStyledItem(representation_item, [surface_style], item["attributes"]["Name"])
 
     def create_presentation_layer_assignments(self):
-        scene_props = bpy.context.scene.BIMProperties
-        for name, assigned_items in self.ifc_parser.presentation_layer_assignments.items():
-            if name == "":
-                continue
-            layer = scene_props.presentation_layers[name]
-
-            with_style = False
-            if layer.layer_on is False:
-                with_style = True
-
-            if with_style is False:
+        for layer_index, representations in self.ifc_parser.presentation_layer_assignments.items():
+            layer = bpy.context.scene.BIMProperties.presentation_layers[int(layer_index)]
+            assigned_items = []
+            for representation in representations:
+                for usage in representation["ifc"].MapUsage:
+                    for inverse in self.file.get_inverse(usage):
+                        assigned_items.append(inverse)
+            if layer.layer_on:
                 self.file.createIfcPresentationLayerAssignment(
-                    name,
-                    layer.description or None,
-                    [i["ifc"].MappedRepresentation for i in assigned_items],
-                    layer.identifier or None,
+                    layer.name, layer.description or None, assigned_items, layer.identifier or None,
                 )
             else:
                 self.file.createIfcPresentationLayerWithStyle(
-                    name,
+                    layer.name,
                     layer.description or None,
-                    [i["ifc"].MappedRepresentation for i in assigned_items],
+                    assigned_items,
                     layer.identifier or None,
                     layer.layer_on,
                     layer.layer_frozen,

@@ -479,8 +479,8 @@ class IfcImporter:
             self.profile_code("Merging by colour")
         self.add_project_to_scene()
         self.profile_code("Add project to scene")
-        self.get_presentation_layers()
-        self.profile_code("Get presentation layers")
+        self.create_presentation_layers()
+        self.profile_code("Create presentation layers")
         if self.ifc_import_settings.should_clean_mesh and len(self.file.by_type("IfcElement")) < 10000:
             self.clean_mesh()
             self.profile_code("Mesh cleaning")
@@ -1328,9 +1328,10 @@ class IfcImporter:
             self.type_collection.name
         ].hide_viewport = True
 
-    def get_presentation_layers(self):
+    def create_presentation_layers(self):
         for assignment in self.file.by_type("IfcPresentationLayerAssignment"):
             layer = bpy.context.scene.BIMProperties.presentation_layers.add()
+            layer_index = len(bpy.context.scene.BIMProperties.presentation_layers) - 1
             layer.name = assignment.Name
             layer.description = assignment.Description or ""
             layer.identifier = assignment.Identifier or ""
@@ -1340,19 +1341,18 @@ class IfcImporter:
                 layer.layer_blocked = assignment.LayerBlocked if assignment.LayerBlocked is not None else False
 
             for item in assignment.AssignedItems:
-                # TODO: This is a simplified and incorrect implementation of assigning presentation layers to objects
-                # themselves, and will need to be rewritten in the future. See bug #1109. This code also does not
-                # consider mapped representations.
+                # TODO: This is a simplified implementation of assigning presentation layers that ignores assigned
+                # representation items, does not consider mapped representations, and assumes a Body context. See #1109.
                 guids = []
-                if not hasattr(item, "OfProductRepresentation"):
-                    continue  # TODO: At the moment we ignore representation items
+                if not hasattr(item, "OfProductRepresentation") or item.RepresentationIdentifier != "Body":
+                    continue
                 for product_representation in item.OfProductRepresentation:
                     for product in product_representation.ShapeOfProduct:
                         guids.append(product.GlobalId)
                 for obj in bpy.context.selectable_objects:
                     global_id = obj.BIMObjectProperties.attributes.get("GlobalId")
                     if global_id and global_id.string_value in guids:
-                        obj.BIMObjectProperties.presentation_layer.name = layer.name
+                        obj.data.BIMMeshProperties.presentation_layer_index = layer_index
                         obj.hide_set(not layer.layer_on)
 
     def clean_mesh(self):
