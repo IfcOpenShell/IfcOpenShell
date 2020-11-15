@@ -4378,9 +4378,10 @@ class UpdatePresentationLayer(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        pl = bpy.context.scene.BIMProperties.presentation_layers[self.index]
         for obj in bpy.context.scene.objects:
-            if obj.BIMObjectProperties.presentation_layer.name == pl.name:
+            if not obj.data or not hasattr(obj.data, "BIMMeshProperties"):
+                continue
+            if obj.data.BIMMeshProperties.presentation_layer_index == self.index:
                 set_status = obj.hide_get()
                 obj.hide_set(not obj.hide_get())
         return {"FINISHED"}
