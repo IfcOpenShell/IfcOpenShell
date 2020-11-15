@@ -4328,11 +4328,12 @@ class AssignPresentationLayer(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        presentation_layer = bpy.context.scene.BIMProperties.presentation_layers[self.index]
+        layer = bpy.context.scene.BIMProperties.presentation_layers[self.index]
         for obj in bpy.context.selected_objects:
-            # TODO: assign using a different strategy than name association
-            obj.BIMObjectProperties.presentation_layer.name = presentation_layer.name
-            obj.hide_set(not presentation_layer.layer_on)
+            if not obj.data or not hasattr(obj.data, "BIMMeshProperties"):
+                continue
+            obj.data.BIMMeshProperties.presentation_layer_index = self.index
+            obj.hide_set(not layer.layer_on)
         return {"FINISHED"}
 
 
@@ -4341,9 +4342,10 @@ class UnassignPresentationLayer(bpy.types.Operator):
     bl_label = "Unassign Presentation Layer"
 
     def execute(self, context):
-        for el in bpy.context.selected_objects:
-            if el.BIMObjectProperties.presentation_layer.name != "":
-                el.BIMObjectProperties.presentation_layer.name = ""
+        for obj in bpy.context.selected_objects:
+            if not obj.data or not hasattr(obj.data, "BIMMeshProperties"):
+                continue
+            obj.data.BIMMeshProperties.presentation_layer_index = -1
         return {"FINISHED"}
 
 

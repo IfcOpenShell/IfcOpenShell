@@ -1679,8 +1679,6 @@ class BIMObjectProperties(PropertyGroup):
     qto_name: EnumProperty(items=getQtoNames, name="Qto Name")
     has_boundary_condition: BoolProperty(name="Has Boundary Condition")
     boundary_condition: PointerProperty(name="Boundary Condition", type=BoundaryCondition)
-    # TODO: presentation layers should belong to a mesh, not an object
-    presentation_layer: PointerProperty(name="Presentation Layer", type=PresentationLayer)
     structural_member_connection: PointerProperty(name="Structural Member Connection", type=bpy.types.Object)
     representation_contexts: CollectionProperty(name="Representation Contexts", type=Subcontext)
     # Address applies to IfcSite's SiteAddress and IfcBuilding's BuildingAddress
@@ -1729,3 +1727,4 @@ class BIMMeshProperties(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     active_representation_item_index: IntProperty(name="Active Representation Item Index")
+    presentation_layer_index: IntProperty(name="Presentation Layer Index", default=-1)

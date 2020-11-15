@@ -815,23 +815,25 @@ class BIM_PT_presentation_layer_data(Panel):
         if not context.active_object.data:
             return
         layout = self.layout
-        elem_props = context.active_object.BIMObjectProperties.presentation_layer
-        props = context.scene.BIMProperties
+        props = context.active_object.data.BIMMeshProperties
+        scene_props = context.scene.BIMProperties
 
-        if elem_props.name != "":
-            layout.label(text=f'Object is part of Presentation layer "{elem_props.name}"')
+        if props.presentation_layer_index != -1:
+            layer = scene_props.presentation_layers[props.presentation_layer_index]
+            layout.label(text=f"Assigned to: {layer.name}")
             layout.row().operator("bim.unassign_presentation_layer")
-        else:
-            if not props.presentation_layers:
-                layout.label(text=f"No presentation layers are available")
-                return
+            return
 
-            layout.template_list(
-                "BIM_UL_generic", "", props, "presentation_layers", props, "active_presentation_layer_index",
-            )
-            if props.active_presentation_layer_index < len(props.presentation_layers):
-                op = layout.row().operator("bim.assign_presentation_layer")
-                op.index = props.active_presentation_layer_index
+        if not scene_props.presentation_layers:
+            layout.label(text=f"No presentation layers are available")
+            return
+
+        layout.template_list(
+            "BIM_UL_generic", "", scene_props, "presentation_layers", scene_props, "active_presentation_layer_index",
+        )
+        if scene_props.active_presentation_layer_index < len(scene_props.presentation_layers):
+            op = layout.row().operator("bim.assign_presentation_layer")
+            op.index = scene_props.active_presentation_layer_index
 
 
 class BIM_PT_material(Panel):
