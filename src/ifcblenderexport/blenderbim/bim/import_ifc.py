@@ -228,11 +228,14 @@ class MaterialCreator:
             if profile.Material.Name not in self.materials:
                 self.create_new_single(profile.Material)
             new.material = self.materials[profile.Material.Name]
-            new.profile = profile.Profile.is_a()
-            for i, attribute in enumerate(profile.Profile):
-                newa = new.profile_attributes.add()
-                newa.name = profile.Profile.attribute_name(i)
-                newa.string_value = str(attribute)
+            try:
+                new.profile = profile.Profile.is_a()
+                for i, attribute in enumerate(profile.Profile):
+                    newa = new.profile_attributes.add()
+                    newa.name = profile.Profile.attribute_name(i)
+                    newa.string_value = str(attribute)
+            except:
+                pass # TODO: currently, only parametric profile sets are supported
             new.priority = profile.Priority or 0
             new.category = profile.Category or ""
 
@@ -1352,6 +1355,8 @@ class IfcImporter:
                 for obj in bpy.context.selectable_objects:
                     global_id = obj.BIMObjectProperties.attributes.get("GlobalId")
                     if global_id and global_id.string_value in guids:
+                        if not obj.data or not hasattr(obj.data, "BIMMeshProperties"):
+                            continue
                         obj.data.BIMMeshProperties.presentation_layer_index = layer_index
                         obj.hide_set(not layer.layer_on)
 

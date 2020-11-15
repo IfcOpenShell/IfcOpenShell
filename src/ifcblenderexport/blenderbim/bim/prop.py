@@ -479,6 +479,8 @@ def getApplicableMaterialAttributes(self, context):
 
 
 def refreshProfileAttributes(self, context):
+    if not context.active_object:
+        return
     props = context.active_object.BIMObjectProperties
     profile = props.material_set.material_profiles[props.material_set.active_material_profile_index]
     while len(profile.profile_attributes) > 0:
