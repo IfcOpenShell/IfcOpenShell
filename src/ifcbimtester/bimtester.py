@@ -67,13 +67,25 @@ def get_features(args):
     return has_features
 
 
-def generate_report():
+def generate_report(adir="."):
     print("# Generating HTML reports now.")
-    if not os.path.exists("report"):
-        os.mkdir("report")
-    report_path = "report/report.json"
+
+    # get html template
+    html_template_file = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "features/template.html"
+    )
+
+    # get report file
+    report_dir = os.path.join(adir, "report")
+    if not os.path.exists(report_dir):
+        return print("No report directory was found.")
+    report_path = os.path.join(report_dir, "report.json")
+    # print(report_path)
     if not os.path.exists(report_path):
         return print("No report data was found.")
+
+    # read json report and create html report for each feature
     report = json.loads(open(report_path).read())
     for feature in report:
         file_name = os.path.basename(feature["location"]).split(":")[0]
@@ -85,9 +97,23 @@ def generate_report():
             "is_success": feature["status"] == "passed",
             "scenarios": [],
         }
+        if "elements" not in feature:
+            if "status" in feature and feature["status"] == "skipped":
+                print("Feature was skipped. No html report will be created.")
+            else:
+                print("For a unknown reason no html report well be created.")
+            # happens if the feature file does not consist of any valid Scenario
+            continue
         for scenario in feature["elements"]:
             steps = []
             total_duration = 0
+            if len(scenario["steps"]) == 0:
+                print(
+                    "Scenario '{}' in feature '{}' has no steps. "
+                    "Thus skipped in report."
+                    .format(scenario["name"], feature["name"])
+                )
+                continue
             for step in scenario["steps"]:
                 if "result" in step:
                     total_duration += step["result"]["duration"]
@@ -117,6 +143,7 @@ def generate_report():
             data["scenarios"].append(
                 {
                     "name": scenario["name"],
+                    # on behave < 1.2.6 there is no 'status' thus report fails
                     "is_success": scenario["status"] == "passed",
                     "time": round(total_duration, 2),
                     "steps": steps,
@@ -129,8 +156,10 @@ def generate_report():
         data["total_steps"] = sum([s["total_steps"] for s in data["scenarios"]])
         data["pass_rate"] = round((data["total_passes"] / data["total_steps"]) * 100)
 
-        with open("report/{}.html".format(file_name), "w") as out:
-            with open(get_resource_path("features/template.html")) as template:
+        # create the html file
+        html_report_file = os.path.join(report_dir, "{}.html".format(file_name))
+        with open(html_report_file, "w") as out:
+            with open(html_template_file) as template:
                 out.write(pystache.render(template.read(), data))
 
 

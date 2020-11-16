@@ -37,7 +37,8 @@ class IfcAttributeExtractor:
         try:
             new_element = ifc_file.create_entity(new_class)
         except:
-            return
+            print(f"Class of {element} could not be changed to {new_class}")
+            return element
         new_attributes = [new_element.attribute_name(i) for i, attribute in enumerate(new_element)]
         for i, attribute in enumerate(element):
             try:
@@ -156,8 +157,10 @@ class IfcCsv:
                 if not headers:
                     headers = row
                     continue
-                element = ifc_file.by_guid(row[0])
-                if not element:
+                try:
+                    element = ifc_file.by_guid(row[0])
+                except:
+                    print("The element with GUID {} was not found".format(row[0]))
                     continue
                 for i, value in enumerate(row):
                     if i == 0:

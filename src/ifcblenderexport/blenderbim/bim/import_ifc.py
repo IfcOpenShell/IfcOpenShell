@@ -21,7 +21,6 @@ from pathlib import Path
 from itertools import cycle
 from datetime import datetime
 from . import helper
-from . import schema
 from . import ifc
 
 
@@ -51,11 +50,16 @@ class MaterialCreator:
             hasattr(element, "RepresentationMaps") and not element.RepresentationMaps
         ):
             return
-        if self.ifc_import_settings.should_treat_styled_item_as_material and self.mesh.name in self.parsed_meshes:
+        if (
+            self.ifc_import_settings.should_treat_styled_item_as_material
+            and self.mesh
+            and self.mesh.name in self.parsed_meshes
+        ):
             return
         self.parse_material(element)
-        self.parsed_meshes.append(self.mesh.name)
-        if self.parse_representations(element):
+        if self.mesh:
+            self.parsed_meshes.append(self.mesh.name)
+        if self.mesh and self.parse_representations(element):
             self.assign_material_slots_to_faces(obj, self.mesh)
             self.parsed_meshes.append(self.mesh.name)
 
@@ -144,8 +148,11 @@ class MaterialCreator:
                 material_select = association.RelatingMaterial
                 if material_select.is_a("IfcMaterialDefinition"):
                     self.create_definition(material_select)
-                elif material_select.is_a("IfcMaterialLayerSetUsage"):
-                    self.create_layer_set_usage(material_select)
+                elif material_select.is_a("IfcMaterialUsageDefinition"):
+                    self.create_usage_definition(material_select)
+                elif material_select.is_a("IfcMaterialList"):
+                    # Note that lists are deprecated
+                    self.create_material_list(material_select)
 
     def create_layer_set_usage(self, usage):
         # TODO import rest of the layer set usage data
@@ -154,41 +161,92 @@ class MaterialCreator:
     def create_definition(self, material):
         if material.is_a("IfcMaterial"):
             self.create_single(material)
-        elif material.is_a("IfcMaterialLayerSet"):
-            self.create_layer_set(material)
         elif material.is_a("IfcMaterialConstituentSet"):
             self.create_constituent_set(material)
-        elif material.is_a("IfcMaterialList"):
-            self.create_material_list(material)
+        elif material.is_a("IfcMaterialLayerSet"):
+            self.create_layer_set(material)
+        elif material.is_a("IfcMaterialProfileSet"):
+            self.create_profile_set(material)
+
+    def create_usage_definition(self, material):
+        if material.is_a("IfcMaterialLayerSetUsage"):
+            self.create_layer_set_usage(material)
+        elif material.is_a("IfcMaterialProfileSetUsage"):
+            pass  # TODO
 
     def create_single(self, material):
         if material.Name not in self.materials:
             self.create_new_single(material)
-        return self.assign_material_to_mesh(self.materials[material.Name])
+        self.obj.BIMObjectProperties.material_type = "IfcMaterial"
+        self.obj.BIMObjectProperties.material = self.materials[material.Name]
 
     def create_layer_set(self, layer_set):
+        props = self.obj.BIMObjectProperties
+        props.material_type = "IfcMaterialLayerSet"
+        props.material_set.name = layer_set.LayerSetName or ""
+        props.material_set.description = layer_set.Description or ""
         for layer in layer_set.MaterialLayers:
+            new = props.material_set.material_layers.add()
             if layer.Material:
                 if layer.Material.Name not in self.materials:
-                    # TODO import rest of the layer set data
                     self.create_new_single(layer.Material)
-                self.assign_material_to_mesh(self.materials[layer.Material.Name])
+                new.material = self.materials[layer.Material.Name]
+            new.layer_thickness = layer.LayerThickness
+            new.is_ventilated = "TRUE" if layer.IsVentilated else "FALSE"
+            new.name = layer.Name or ""
+            new.description = layer.Description or ""
+            try:
+                new.category = layer.Category if layer.Category else "None"
+            except:
+                new.custom_category = layer.Category or ""
+            new.priority = layer.Priority or 0
 
     def create_constituent_set(self, constituent_set):
+        props = self.obj.BIMObjectProperties
+        props.material_type = "IfcMaterialConstituentSet"
+        props.material_set.name = constituent_set.Name or ""
+        props.material_set.description = constituent_set.Description or ""
         for constituent in constituent_set.MaterialConstituents:
-            if constituent.Material:
-                if constituent.Material.Name not in self.materials:
-                    # TODO import rest of the layer set data
-                    self.create_new_single(constituent.Material)
-                self.assign_material_to_mesh(self.materials[constituent.Material.Name])
+            new = props.material_set.material_constituents.add()
+            new.name = constituent.Name or ""
+            new.description = constituent.Description or ""
+            if constituent.Material.Name not in self.materials:
+                self.create_new_single(constituent.Material)
+            new.material = self.materials[constituent.Material.Name]
+            new.fraction = constituent.Fraction or 0.0
+            new.category = constituent.Category or ""
+
+    def create_profile_set(self, profile_set):
+        props = self.obj.BIMObjectProperties
+        props.material_type = "IfcMaterialProfileSet"
+        props.material_set.name = profile_set.Name or ""
+        props.material_set.description = profile_set.Description or ""
+        for profile in profile_set.MaterialProfiles:
+            new = props.material_set.material_profiles.add()
+            new.name = profile.Name or ""
+            new.description = profile.Description or ""
+            if profile.Material.Name not in self.materials:
+                self.create_new_single(profile.Material)
+            new.material = self.materials[profile.Material.Name]
+            try:
+                new.profile = profile.Profile.is_a()
+                for i, attribute in enumerate(profile.Profile):
+                    newa = new.profile_attributes.add()
+                    newa.name = profile.Profile.attribute_name(i)
+                    newa.string_value = str(attribute)
+            except:
+                pass # TODO: currently, only parametric profile sets are supported
+            new.priority = profile.Priority or 0
+            new.category = profile.Category or ""
 
     def create_material_list(self, material_list):
+        props = self.obj.BIMObjectProperties
+        props.material_type = "IfcMaterialConstituentSet"  # Constituent sets are the recommended upgrade path
         for material in material_list.Materials:
-            if material.Material:
-                if material.Material.Name not in self.materials:
-                    # TODO import rest of the layer set data
-                    self.create_new_single(material.Material)
-                self.assign_material_to_mesh(self.materials[material.Material.Name])
+            new = props.material_set.material_constituents.add()
+            if material.Name not in self.materials:
+                self.create_new_single(material)
+            new.material = self.materials[material.Name]
 
     def create_new_single(self, material):
         self.materials[material.Name] = obj = bpy.data.materials.new(material.Name)
@@ -280,6 +338,8 @@ class MaterialCreator:
         return items
 
     def assign_material_to_mesh(self, material, is_styled_item=False):
+        if not self.mesh:
+            return
         self.mesh.materials.append(material)
         self.current_object_materials.append(material.name)
         if is_styled_item:
@@ -422,6 +482,8 @@ class IfcImporter:
             self.profile_code("Merging by colour")
         self.add_project_to_scene()
         self.profile_code("Add project to scene")
+        self.create_presentation_layers()
+        self.profile_code("Create presentation layers")
         if self.ifc_import_settings.should_clean_mesh and len(self.file.by_type("IfcElement")) < 10000:
             self.clean_mesh()
             self.profile_code("Mesh cleaning")
@@ -440,8 +502,10 @@ class IfcImporter:
             self.ifc_import_settings.should_treat_styled_item_as_material = True
             if self.is_ifc_class_far_away("IfcSite"):
                 self.ifc_import_settings.should_ignore_site_coordinates = True
+                self.ifc_import_settings.should_guess_georeferencing = True
             if self.is_ifc_class_far_away("IfcBuilding"):
                 self.ifc_import_settings.should_ignore_building_coordinates = True
+                self.ifc_import_settings.should_guess_georeferencing = True
         elif "prostructures" in applications[0].ApplicationFullName.lower():
             self.ifc_import_settings.should_allow_non_element_aggregates = True
         elif applications[0].ApplicationFullName.lower() == "12d model":
@@ -555,14 +619,30 @@ class IfcImporter:
         project = self.file.by_type("IfcProject")[0]
         if self.ifc_import_settings.should_ignore_site_coordinates:
             sites = self.find_decomposed_ifc_class(project, "IfcSite")
+            if self.ifc_import_settings.should_guess_georeferencing and sites:
+                self.guess_georeferencing(sites[0])
             for site in sites:
                 self.patch_placement_to_origin(site)
         if self.ifc_import_settings.should_ignore_building_coordinates:
             buildings = self.find_decomposed_ifc_class(project, "IfcBuilding")
+            if self.ifc_import_settings.should_guess_georeferencing and buildings:
+                self.guess_georeferencing(buildings[0])
             for building in buildings:
                 self.patch_placement_to_origin(building)
         if self.ifc_import_settings.should_reset_absolute_coordinates:
             self.reset_absolute_coordinates()
+
+    def guess_georeferencing(self, element):
+        if not element.ObjectPlacement.is_a("IfcLocalPlacement"):
+            return
+        placement = element.ObjectPlacement.RelativePlacement
+        bpy.context.scene.MapConversion.eastings = str(placement.Location.Coordinates[0])
+        bpy.context.scene.MapConversion.northings = str(placement.Location.Coordinates[1])
+        bpy.context.scene.MapConversion.orthogonal_height = str(placement.Location.Coordinates[2])
+        if placement.RefDirection:
+            bpy.context.scene.MapConversion.x_axis_abscissa = str(placement.RefDirection.DirectionRatios[0])
+            bpy.context.scene.MapConversion.x_axis_ordinate = str(placement.RefDirection.DirectionRatios[1] * -1)
+        bpy.context.scene.MapConversion.scale = "1"
 
     def reset_absolute_coordinates(self):
         # 12D can have some funky coordinates out of any sensible range. This
@@ -773,8 +853,7 @@ class IfcImporter:
             except:
                 self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
         obj = bpy.data.objects.new(self.get_name(element), mesh)
-        if mesh:
-            self.material_creator.create(element, obj, mesh)
+        self.material_creator.create(element, obj, mesh)
         self.add_element_attributes(element, obj)
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
@@ -1251,6 +1330,35 @@ class IfcImporter:
         bpy.context.view_layer.layer_collection.children[self.project["blender"].name].children[
             self.type_collection.name
         ].hide_viewport = True
+
+    def create_presentation_layers(self):
+        for assignment in self.file.by_type("IfcPresentationLayerAssignment"):
+            layer = bpy.context.scene.BIMProperties.presentation_layers.add()
+            layer_index = len(bpy.context.scene.BIMProperties.presentation_layers) - 1
+            layer.name = assignment.Name
+            layer.description = assignment.Description or ""
+            layer.identifier = assignment.Identifier or ""
+            if assignment.is_a() == "IfcPresentationLayerWithStyle":
+                layer.layer_on = assignment.LayerOn if assignment.LayerOn is not None else True
+                layer.layer_frozen = assignment.LayerFrozen if assignment.LayerFrozen is not None else False
+                layer.layer_blocked = assignment.LayerBlocked if assignment.LayerBlocked is not None else False
+
+            for item in assignment.AssignedItems:
+                # TODO: This is a simplified implementation of assigning presentation layers that ignores assigned
+                # representation items, does not consider mapped representations, and assumes a Body context. See #1109.
+                guids = []
+                if not hasattr(item, "OfProductRepresentation") or item.RepresentationIdentifier != "Body":
+                    continue
+                for product_representation in item.OfProductRepresentation:
+                    for product in product_representation.ShapeOfProduct:
+                        guids.append(product.GlobalId)
+                for obj in bpy.context.selectable_objects:
+                    global_id = obj.BIMObjectProperties.attributes.get("GlobalId")
+                    if global_id and global_id.string_value in guids:
+                        if not obj.data or not hasattr(obj.data, "BIMMeshProperties"):
+                            continue
+                        obj.data.BIMMeshProperties.presentation_layer_index = layer_index
+                        obj.hide_set(not layer.layer_on)
 
     def clean_mesh(self):
         obj = None
@@ -1810,7 +1918,7 @@ class IfcImporter:
                     obj.BIMObjectProperties.relating_structure = self.added_data[container.GlobalId]
                 return self.place_object_in_spatial_tree(container, obj)
             elif element.is_a("IfcGrid"):
-                grid_collection = bpy.data.collections.get(self.get_name(element))
+                grid_collection = bpy.data.collections.get(obj.name)
                 self.spatial_structure_elements[container.GlobalId]["blender"].children.link(grid_collection)
                 grid_collection.objects.link(obj)
             else:
@@ -1853,7 +1961,12 @@ class IfcImporter:
     def add_element_attributes(self, element, obj):
         attributes = element.get_info()
         for key, value in attributes.items():
-            if value is None or isinstance(value, ifcopenshell.entity_instance) or key == "id" or key == "type":
+            if (
+                value is None
+                or isinstance(value, (tuple, ifcopenshell.entity_instance))
+                or key == "id"
+                or key == "type"
+            ):
                 continue
             attribute = obj.BIMObjectProperties.attributes.add()
             attribute.name = key
@@ -2207,6 +2320,7 @@ class IfcImportSettings:
         settings.should_ignore_site_coordinates = scene_bim.import_should_ignore_site_coordinates
         settings.should_ignore_building_coordinates = scene_bim.import_should_ignore_building_coordinates
         settings.should_reset_absolute_coordinates = scene_bim.import_should_reset_absolute_coordinates
+        settings.should_guess_georeferencing = scene_bim.import_should_guess_georeferencing
         settings.should_import_type_representations = scene_bim.import_should_import_type_representations
         settings.should_import_curves = scene_bim.import_should_import_curves
         settings.should_import_opening_elements = scene_bim.import_should_import_opening_elements

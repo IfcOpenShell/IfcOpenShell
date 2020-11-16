@@ -194,6 +194,36 @@ class BIM_PT_object_material(Panel):
                 row.prop(material, "fraction")
                 row = layout.row()
                 row.prop(material, "category")
+        elif props.material_type == "IfcMaterialProfileSet":
+            row.template_list(
+                "MATERIAL_UL_matslots", "", set_props, "material_profiles", set_props, "active_material_profile_index",
+            )
+            col = row.column(align=True)
+            col.operator("bim.add_material_profile", icon="ADD", text="")
+            col.operator(
+                "bim.remove_material_profile", icon="REMOVE", text=""
+            ).index = set_props.active_material_profile_index
+            col.operator("bim.move_material_profile", icon="TRIA_UP", text="").direction = "UP"
+            col.operator("bim.move_material_profile", icon="TRIA_DOWN", text="").direction = "DOWN"
+
+            if set_props.active_material_profile_index < len(set_props.material_profiles):
+                material = set_props.material_profiles[set_props.active_material_profile_index]
+                row = layout.row()
+                row.prop(material, "material")
+                row = layout.row()
+                row.prop(material, "name")
+                row = layout.row()
+                row.prop(material, "description")
+                row = layout.row()
+                row.prop(material, "priority")
+                row = layout.row()
+                row.prop(material, "category")
+                row = layout.row()
+                row.prop(material, "profile")
+                for index, attribute in enumerate(material.profile_attributes):
+                    row = layout.row(align=True)
+                    row.prop(attribute, "name", text="")
+                    row.prop(attribute, "string_value", text="")
 
 
 class BIM_PT_object_psets(Panel):
@@ -740,9 +770,6 @@ class BIM_PT_mesh(Panel):
             row.operator("bim.update_ifc_representation", icon="FILE_REFRESH", text="").index = index
 
         row = layout.row()
-        row.prop(props, "presentation_layer")
-
-        row = layout.row()
         row.prop(props, "is_parametric")
         row = layout.row()
         row.prop(props, "is_native")
@@ -767,6 +794,46 @@ class BIM_PT_mesh(Panel):
             row.operator("bim.select_swept_solid_extrusion", icon="RESTRICT_SELECT_OFF", text="").index = index
         row = layout.row()
         row.prop(props, "swept_solids")
+
+
+class BIM_PT_presentation_layer_data(Panel):
+    bl_label = "IFC Presentation Layers"
+    bl_idname = "BIM_PT_presentation"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "data"
+
+    @classmethod
+    def poll(cls, context):
+        return (
+            context.active_object is not None
+            and context.active_object.type == "MESH"
+            and hasattr(context.active_object.data, "BIMMeshProperties")
+        )
+
+    def draw(self, context):
+        if not context.active_object.data:
+            return
+        layout = self.layout
+        props = context.active_object.data.BIMMeshProperties
+        scene_props = context.scene.BIMProperties
+
+        if props.presentation_layer_index != -1:
+            layer = scene_props.presentation_layers[props.presentation_layer_index]
+            layout.label(text=f"Assigned to: {layer.name}")
+            layout.row().operator("bim.unassign_presentation_layer")
+            return
+
+        if not scene_props.presentation_layers:
+            layout.label(text=f"No presentation layers are available")
+            return
+
+        layout.template_list(
+            "BIM_UL_generic", "", scene_props, "presentation_layers", scene_props, "active_presentation_layer_index",
+        )
+        if scene_props.active_presentation_layer_index < len(scene_props.presentation_layers):
+            op = layout.row().operator("bim.assign_presentation_layer")
+            op.index = scene_props.active_presentation_layer_index
 
 
 class BIM_PT_material(Panel):
@@ -814,35 +881,17 @@ class BIM_PT_material(Panel):
 
         layout.label(text="Property Sets:")
         row = layout.row(align=True)
-        row.prop(props, "available_material_psets", text="")
+        row.prop(props, "pset_name", text="")
         row.operator("bim.add_material_pset")
 
         for index, pset in enumerate(props.psets):
             row = layout.row(align=True)
             row.prop(pset, "name", text="")
             row.operator("bim.remove_material_pset", icon="X", text="").pset_index = index
-            op = row.operator("bim.copy_property_to_selection", icon="COPYDOWN", text="")
             for prop in pset.properties:
                 row = layout.row(align=True)
                 row.prop(prop, "name", text="")
                 row.prop(prop, "string_value", text="")
-                op = row.operator("bim.copy_property_to_selection", icon="COPYDOWN", text="")
-                op.pset_name = pset.name
-                op.prop_name = prop.name
-                op.prop_value = prop.string_value
-
-        row = layout.row()
-        row.prop(props, "psets", text="")
-
-        if context.active_object.BIMObjectProperties.material_type == "IfcMaterialProfileSet":
-            layout.label(text="Profile Definition:")
-            row = layout.row()
-            row.prop(props, "profile_def")
-
-            for index, attribute in enumerate(props.profile_attributes):
-                row = layout.row(align=True)
-                row.prop(attribute, "name", text="")
-                row.prop(attribute, "string_value", text="")
 
 
 class BIM_PT_gis(Panel):
@@ -890,6 +939,51 @@ class BIM_PT_gis(Panel):
             row = layout.row(align=True)
             row.operator("bim.get_north_offset")
             row.operator("bim.set_north_offset")
+
+
+class BIM_PT_presentation_layers(Panel):
+    bl_label = "IFC Presentation Layers"
+    bl_idname = "BIM_PT_presentation_layer"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        props = context.scene.BIMProperties
+
+        layout.row().operator("bim.add_presentation_layer")
+
+        if not props.presentation_layers:
+            return
+
+        layout.template_list(
+            "BIM_UL_generic", "", props, "presentation_layers", props, "active_presentation_layer_index"
+        )
+
+        if props.active_presentation_layer_index < len(props.presentation_layers):
+            layer = props.presentation_layers[props.active_presentation_layer_index]
+
+            row = layout.row(align=True)
+            row.prop(layer, "name")
+            row.operator(
+                "bim.remove_presentation_layer", icon="X", text=""
+            ).index = props.active_presentation_layer_index
+            row = layout.row()
+            row.prop(layer, "description")
+            row = layout.row()
+            row.prop(layer, "identifier")
+            row = layout.row()
+            row.prop(layer, "layer_on")
+            row = layout.row()
+            row.prop(layer, "layer_frozen")
+            row = layout.row()
+            row.prop(layer, "layer_blocked")
+
+            op = layout.row().operator("bim.update_presentation_layer")
+            op.index = props.active_presentation_layer_index
 
 
 class BIM_PT_drawings(Panel):
@@ -1919,6 +2013,8 @@ class BIM_PT_mvd(Panel):
         row = layout.row()
         row.prop(bim_properties, "export_should_use_presentation_style_assignment")
         row = layout.row()
+        row.prop(bim_properties, "import_should_guess_georeferencing")
+        row = layout.row()
         row.prop(bim_properties, "import_should_ignore_site_coordinates")
         row = layout.row()
         row.prop(bim_properties, "import_should_ignore_building_coordinates")
@@ -2255,18 +2351,51 @@ class BIM_PT_debug(Panel):
         layout = self.layout
 
         scene = context.scene
-        bim_props = scene.BIMProperties
-        debug_props = scene.BIMDebugProperties
+        props = scene.BIMDebugProperties
 
         row = layout.row()
-        row.prop(debug_props, "step_id", text="")
+        row.prop(props, "step_id", text="")
         row = layout.row()
         row.operator("bim.create_shape_from_step_id")
 
         row = layout.row()
-        row.prop(debug_props, "number_of_polygons", text="")
+        row.prop(props, "number_of_polygons", text="")
         row = layout.row()
         row.operator("bim.select_high_polygon_meshes")
+
+        layout.label(text="Inspector:")
+
+        row = layout.row(align=True)
+        if len(props.step_id_breadcrumb) >= 2:
+            row.operator("bim.rewind_inspector", icon="FRAME_PREV", text="")
+        row.prop(props, "active_step_id", text="")
+        row = layout.row(align=True)
+        row.operator("bim.inspect_from_step_id").step_id = bpy.context.scene.BIMDebugProperties.active_step_id
+        row.operator("bim.inspect_from_object")
+
+        if props.attributes:
+            layout.label(text="Direct attributes:")
+
+        for index, attribute in enumerate(props.attributes):
+            row = layout.row(align=True)
+            row.prop(attribute, "name", text="")
+            row.prop(attribute, "string_value", text="")
+            if attribute.int_value:
+                row.operator(
+                    "bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text=""
+                ).step_id = attribute.int_value
+
+        if props.inverse_attributes:
+            layout.label(text="Inverse attributes:")
+
+        for index, attribute in enumerate(props.inverse_attributes):
+            row = layout.row(align=True)
+            row.prop(attribute, "name", text="")
+            row.prop(attribute, "string_value", text="")
+            if attribute.int_value:
+                row.operator(
+                    "bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text=""
+                ).step_id = attribute.int_value
 
 
 def ifc_units(self, context):

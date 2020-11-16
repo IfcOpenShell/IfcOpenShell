@@ -43,6 +43,7 @@ class IfcParser:
         self.people = []
         self.organisations = []
         self.psets = {}
+        self.material_psets = {}
         self.document_references = {}
         self.classifications = []
         self.classification_references = {}
@@ -100,7 +101,6 @@ class IfcParser:
         selected_objects = self.add_spatial_elements_if_unselected(selected_objects)
         self.add_type_elements_if_unselected(selected_objects)
         self.categorise_selected_objects(selected_objects)
-        self.material_psets = self.get_material_psets()
         self.document_information = self.get_document_information()
         self.document_references = self.get_document_references()
         self.classifications = self.get_classifications()
@@ -109,7 +109,7 @@ class IfcParser:
         self.constraints = self.get_constraints()
         self.load_representations()
         self.load_presentation_layer_assignments()
-        self.materials = self.get_materials()
+        self.get_materials()
         self.styled_items = self.get_styled_items()
         self.spatial_structure_elements = self.get_spatial_structure_elements()
         self.groups = self.get_groups()
@@ -434,7 +434,7 @@ class IfcParser:
         elif obj.BIMObjectProperties.material_type == "IfcMaterialLayerSet":
             self.rel_associates_material_layer_set[self.product_index] = obj.BIMObjectProperties.material_set
         elif obj.BIMObjectProperties.material_type == "IfcMaterialProfileSet":
-            pass # TODO
+            self.rel_associates_material_profile_set[self.product_index] = obj.BIMObjectProperties.material_set
 
         return product
 
@@ -457,6 +457,16 @@ class IfcParser:
                 continue
             results[item_key] = {"ifc": None, "raw": raw, "attributes": {"Name": item.name}}
             relationships.setdefault(item_key, []).append(product)
+
+    def get_material_psets(self, material, obj):
+        psets = obj.BIMMaterialProperties.psets
+        results = self.material_psets
+        for item in psets:
+            item_key = "{}/{}".format(item.name, obj.name)
+            raw = {p.name: p.string_value for p in item.properties if p.string_value}
+            if not raw:
+                continue
+            results[item_key] = {"ifc": None, "raw": raw, "material": material, "attributes": {"Name": item.name}}
 
     def add_automatic_qtos(self, ifc_class, obj):
         if not obj.data:
@@ -582,21 +592,6 @@ class IfcParser:
                 pass
             elif not self.is_a_library(self.get_ifc_class(obj.users_collection[0].name)):
                 self.selected_products.append({"raw": obj, "metadata": metadata})
-
-    def get_material_psets(self):
-        psets = {}
-        for filename in Path(self.data_dir + "material/").glob("**/*.csv"):
-            with open(filename, "r") as f:
-                description = filename.parts[-2]
-                name = filename.stem
-                if description not in psets:
-                    psets[description] = {}
-                psets[description][name] = {
-                    "ifc": None,
-                    "raw": {x[0]: x[1] for x in list(csv.reader(f))},
-                    "attributes": {"Name": name, "Description": description},
-                }
-        return psets
 
     def get_door_attributes(self):
         return self.get_predefined_attributes("door")
@@ -979,10 +974,11 @@ class IfcParser:
 
     def load_presentation_layer_assignments(self):
         for representation in self.representations.values():
-            if representation["presentation_layer"]:
-                self.presentation_layer_assignments.setdefault(representation["presentation_layer"], []).append(
-                    representation
-                )
+            if representation["presentation_layer"] is False:
+                continue
+            self.presentation_layer_assignments.setdefault(representation["presentation_layer"], []).append(
+                representation
+            )
 
     def load_representations(self):
         if not self.ifc_export_settings.has_representations:
@@ -1114,9 +1110,9 @@ class IfcParser:
             "is_native": mesh.BIMMeshProperties.is_native if hasattr(mesh, "BIMMeshProperties") else False,
             "is_swept_solid": mesh.BIMMeshProperties.is_swept_solid if hasattr(mesh, "BIMMeshProperties") else False,
             "is_generated": False,
-            "presentation_layer": mesh.BIMMeshProperties.presentation_layer
-            if hasattr(mesh, "BIMMeshProperties")
-            else None,
+            "presentation_layer": mesh.BIMMeshProperties.presentation_layer_index
+            if hasattr(mesh, "BIMMeshProperties") and mesh.BIMMeshProperties.presentation_layer_index != -1
+            else False,
             "attributes": {"Name": mesh.name},
         }
 
@@ -1139,26 +1135,36 @@ class IfcParser:
         return name
 
     def get_materials(self):
-        results = {}
         if not self.ifc_export_settings.has_representations:
-            return results
-        for product in self.selected_products + self.type_products:
+            return
+        for product in self.selected_products + self.selected_types:
             obj = product["raw"]
-            if obj.data is None:
-                continue
+            if obj.BIMObjectProperties.material_type == "IfcMaterial" and obj.BIMObjectProperties.material:
+                self.get_material(obj.BIMObjectProperties.material)
+            elif obj.BIMObjectProperties.material_type == "IfcMaterialConstituentSet":
+                for constituent in obj.BIMObjectProperties.material_set.material_constituents:
+                    self.get_material(constituent.material)
+            elif obj.BIMObjectProperties.material_type == "IfcMaterialLayerSet":
+                for layer in obj.BIMObjectProperties.material_set.material_layers:
+                    self.get_material(layer.material)
+            elif obj.BIMObjectProperties.material_type == "IfcMaterialProfileSet":
+                for profile in obj.BIMObjectProperties.material_set.material_profiles:
+                    self.get_material(profile.material)
             for slot in obj.material_slots:
-                if slot.material is None:
+                if slot.material is None or slot.link == "OBJECT":
                     continue
-                if slot.material.name in results or slot.link == "OBJECT":
-                    continue
-                results[slot.material.name] = {
-                    "ifc": None,
-                    "part_ifc": None,  # TODO: check if we deprecate this
-                    "raw": slot.material,
-                    "material_type": obj.BIMObjectProperties.material_type,
-                    "attributes": self.get_material_attributes(slot.material),
-                }
-        return results
+                self.get_material(slot.material)
+
+    def get_material(self, material):
+        if material.name in self.materials:
+            return
+        data = {
+            "ifc": None,
+            "raw": material,
+            "attributes": self.get_material_attributes(material),
+        }
+        self.materials[material.name] = data
+        self.get_material_psets(data, material)
 
     def get_material_attributes(self, material):
         attributes = {"Name": material.name}
@@ -1170,7 +1176,7 @@ class IfcParser:
         if not self.ifc_export_settings.has_representations:
             return results
         parsed_data_names = []
-        for product in self.selected_products + self.type_products:
+        for product in self.selected_products + self.selected_types:
             obj = product["raw"]
             if obj.data is None or obj.data.name in parsed_data_names:
                 continue
@@ -1650,17 +1656,12 @@ class IfcExporter:
             pset["ifc"] = self.file.create_entity("IfcPropertySet", **pset["attributes"])
 
     def create_material_psets(self, material):
-        for pset_dir in material["raw"].BIMMaterialProperties.psets:
-            for name, properties in self.ifc_parser.material_psets[pset_dir.name].items():
-                self.file.create_entity(
-                    "IfcMaterialProperties",
-                    **{
-                        "Name": name,
-                        "Description": pset_dir.name,
-                        "Properties": self.create_pset_properties(properties),
-                        "Material": material["ifc"],
-                    },
-                )
+        for pset in self.ifc_parser.material_psets.values():
+            properties = self.create_pset_properties(pset)
+            if not properties:
+                continue
+            pset["attributes"].update({"Properties": properties, "Material": pset["material"]["ifc"]})
+            pset["ifc"] = self.file.create_entity("IfcMaterialProperties", **pset["attributes"])
 
     def create_qto_properties(self, qto):
         if qto["attributes"]["Name"] in ifcopenshell.util.pset.qtos:
@@ -1996,7 +1997,15 @@ class IfcExporter:
             ]
             material_slots = {}
             if product["ifc"].Representation:
+                # This is a simplification, which works since we are currently in a controlled environment where the
+                # BlenderBIM Add-on controls how data is structured during export. When we implement full IFC
+                # round-tripping, this simplification can no longer apply.
                 for representation in product["ifc"].Representation.Representations:
+                    # At the moment, until we implement full support for round-tripping contexts, we assume that styled
+                    # items only apply to the body context. This is therefore an incomplete implementation and may break
+                    # in edge cases.
+                    if representation.RepresentationIdentifier != "Body":
+                        continue
                     for mapped_item in representation.Items:
                         items = mapped_item[0].MappedRepresentation.Items
                         for i, item in enumerate(items):
@@ -2023,10 +2032,28 @@ class IfcExporter:
         return self.file.createIfcStyledItem(representation_item, [surface_style], item["attributes"]["Name"])
 
     def create_presentation_layer_assignments(self):
-        for name, assigned_items in self.ifc_parser.presentation_layer_assignments.items():
-            self.file.createIfcPresentationLayerAssignment(
-                name, None, [i["ifc"].MappedRepresentation for i in assigned_items], None
-            )
+        for layer_index, representations in self.ifc_parser.presentation_layer_assignments.items():
+            layer = bpy.context.scene.BIMProperties.presentation_layers[int(layer_index)]
+            assigned_items = []
+            for representation in representations:
+                for usage in representation["ifc"].MapUsage:
+                    for inverse in self.file.get_inverse(usage):
+                        assigned_items.append(inverse)
+            if layer.layer_on:
+                self.file.createIfcPresentationLayerAssignment(
+                    layer.name, layer.description or None, assigned_items, layer.identifier or None,
+                )
+            else:
+                self.file.createIfcPresentationLayerWithStyle(
+                    layer.name,
+                    layer.description or None,
+                    assigned_items,
+                    layer.identifier or None,
+                    layer.layer_on,
+                    layer.layer_frozen,
+                    layer.layer_blocked,
+                    None,
+                )
 
     def create_materials(self):
         for material in self.ifc_parser.materials.values():
@@ -2035,25 +2062,17 @@ class IfcExporter:
                 self.ifc_rep_context["Model"]["Body"]["MODEL_VIEW"]["ifc"], None, None, [styled_item]
             )
             if self.schema_version == "IFC2X3":
-                material["ifc"] = self.file.createIfcMaterial(material["raw"].name)
+                material["ifc"] = self.file.createIfcMaterial(material["attributes"]["Name"])
             else:
-                material["ifc"] = self.file.createIfcMaterial(material["raw"].name, None, None)
+                material["ifc"] = self.file.create_entity("IfcMaterial", **material["attributes"])
             self.create_material_psets(material)
             self.file.createIfcMaterialDefinitionRepresentation(
-                material["raw"].name, None, [styled_representation], material["ifc"]
+                material["attributes"]["Name"], None, [styled_representation], material["ifc"]
             )
-            if material["material_type"] == "IfcMaterial":
-                continue
-            material_type = material["material_type"][0:-3]
-            self.cast_attributes(material_type, material["attributes"])
-            material["attributes"]["Material"] = material["ifc"]
-            if material_type == "IfcMaterialProfile":
-                material["attributes"]["Profile"] = self.create_material_profile(material)
-            material["part_ifc"] = self.file.create_entity(material_type, **material["attributes"])
 
-    def create_material_profile(self, material):
-        ifc_class = material["raw"].BIMMaterialProperties.profile_def
-        attributes = {a.name: a.string_value for a in material["raw"].BIMMaterialProperties.profile_attributes}
+    def create_material_profile_def(self, profile):
+        ifc_class = profile.profile
+        attributes = {a.name: a.string_value for a in profile.profile_attributes}
         self.cast_attributes(ifc_class, attributes)
         return self.file.create_entity(ifc_class, **attributes)
 
@@ -3147,7 +3166,7 @@ class IfcExporter:
             elif set_type == "layer":
                 materials = self.create_material_layers(material_set.material_layers)
             elif set_type == "profile":
-                materials = []  # TODO
+                materials = self.create_material_profiles(material_set.material_profiles)
             if not materials:
                 continue
 
@@ -3210,6 +3229,24 @@ class IfcExporter:
                         "Material": self.ifc_parser.materials[constituent.material.name]["ifc"],
                         "Fraction": constituent.fraction or None,
                         "Category": constituent.category or None,
+                    },
+                )
+            )
+        return results
+
+    def create_material_profiles(self, profiles):
+        results = []
+        for profile in profiles:
+            results.append(
+                self.file.create_entity(
+                    "IfcMaterialProfile",
+                    **{
+                        "Name": profile.name or None,
+                        "Description": profile.description or None,
+                        "Material": self.ifc_parser.materials[profile.material.name]["ifc"],
+                        "Profile": self.create_material_profile_def(profile),
+                        "Priority": profile.priority,
+                        "Category": profile.category or None,
                     },
                 )
             )

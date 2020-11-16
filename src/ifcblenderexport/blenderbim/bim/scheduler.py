@@ -1,5 +1,4 @@
 import svgwrite
-import xml.etree.ElementTree as ET
 
 from odf.opendocument import load
 from odf.table import Table, TableRow, TableColumn, TableCell
@@ -9,11 +8,7 @@ from odf.style import Style
 
 class Scheduler:
     def schedule(self, infile, outfile):
-        self.svg = svgwrite.Drawing(
-            outfile,
-            debug=False,
-            id="root",
-        )
+        self.svg = svgwrite.Drawing(outfile, debug=False, id="root",)
         self.padding = 1
         self.margin = 1
         doc = load(infile)

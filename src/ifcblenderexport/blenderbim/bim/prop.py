@@ -1,6 +1,5 @@
 import json
 import os
-import csv
 import ifcopenshell
 import ifcopenshell.util.pset
 from pathlib import Path
@@ -35,7 +34,7 @@ ifcpatchrecipes_enum = []
 featuresfiles_enum = []
 titleblocks_enum = []
 scenarios_enum = []
-psetnames_enum = []
+materialpsetnames_enum = []
 psetfiles_enum = []
 psettemplatefiles_enum = []
 propertysettemplates_enum = []
@@ -312,15 +311,6 @@ def getOrganisations(self, context):
     return organisations_enum
 
 
-def getAvailableMaterialPsets(self, context):
-    global availablematerialpsets_enum
-    if len(availablematerialpsets_enum) < 1:
-        availablematerialpsets_enum.clear()
-        files = os.listdir(os.path.join(context.scene.BIMProperties.data_dir, "material"))
-        availablematerialpsets_enum.extend([(f, f, "") for f in files])
-    return availablematerialpsets_enum
-
-
 def getIfcPatchRecipes(self, context):
     global ifcpatchrecipes_enum
     if len(ifcpatchrecipes_enum) < 1:
@@ -441,6 +431,16 @@ def getPsetNames(self, context):
     return psetnames_enum
 
 
+def getMaterialPsetNames(self, context):
+    global materialpsetnames_enum
+    materialpsetnames_enum.clear()
+    pset_names = ifcopenshell.util.pset.get_applicable_psetqtos(
+        bpy.context.scene.BIMProperties.export_schema, "IfcMaterial", is_pset=True
+    )
+    materialpsetnames_enum.extend([(p, p, "") for p in pset_names])
+    return materialpsetnames_enum
+
+
 def getQtoNames(self, context):
     global qtonames_enum
     qtonames_enum.clear()
@@ -469,25 +469,24 @@ def getApplicableAttributes(self, context):
 def getApplicableMaterialAttributes(self, context):
     global materialattributes_enum
     materialattributes_enum.clear()
-    if "/" in context.active_object.name and context.active_object.name.split("/")[0] in schema.ifc.elements:
-        material_type = context.active_object.BIMObjectProperties.material_type
-        if material_type[-3:] == "Set":
-            material_type = material_type[0:-3]
+    if "/" in context.active_object.name:
+        ifc_schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(bpy.context.scene.BIMProperties.export_schema)
+        entity = ifc_schema.declaration_by_name("IfcMaterial")
         materialattributes_enum.extend(
-            [
-                (a["name"], a["name"], "")
-                for a in schema.ifc.IfcMaterialDefinition[material_type]["attributes"]
-                if self.attributes.find(a["name"]) == -1
-            ]
+            [(a.name(), a.name(), "") for a in entity.all_attributes() if self.attributes.find(a.name()) == -1]
         )
     return materialattributes_enum
 
 
 def refreshProfileAttributes(self, context):
-    while len(context.active_object.active_material.BIMMaterialProperties.profile_attributes) > 0:
-        context.active_object.active_material.BIMMaterialProperties.profile_attributes.remove(0)
-    for attribute in schema.ifc.IfcParameterizedProfileDef[self.profile_def]["attributes"]:
-        profile_attribute = context.active_object.active_material.BIMMaterialProperties.profile_attributes.add()
+    if not context.active_object:
+        return
+    props = context.active_object.BIMObjectProperties
+    profile = props.material_set.material_profiles[props.material_set.active_material_profile_index]
+    while len(profile.profile_attributes) > 0:
+        profile.profile_attributes.remove(0)
+    for attribute in schema.ifc.IfcParameterizedProfileDef[profile.profile]["attributes"]:
+        profile_attribute = profile.profile_attributes.add()
         profile_attribute.name = attribute["name"]
 
 
@@ -541,6 +540,15 @@ class Variable(PropertyGroup):
     prop_key: StringProperty(name="Property Key")
 
 
+class Attribute(PropertyGroup):
+    name: StringProperty(name="Name")
+    data_type: StringProperty(name="Data Type")
+    string_value: StringProperty(name="Value")
+    bool_value: BoolProperty(name="Value")
+    int_value: IntProperty(name="Value")
+    float_value: FloatProperty(name="Value")
+
+
 class Subcontext(PropertyGroup):
     name: StringProperty(name="Name")
     context: StringProperty(name="Context")
@@ -584,6 +592,16 @@ class MaterialConstituent(PropertyGroup):
     category: StringProperty(name="Category")
 
 
+class MaterialProfile(PropertyGroup):
+    name: StringProperty(name="Name")
+    description: StringProperty(name="Description")
+    material: PointerProperty(name="Material", type=bpy.types.Material)
+    profile: EnumProperty(items=getProfileDef, name="Parameterized Profile Def", update=refreshProfileAttributes)
+    profile_attributes: CollectionProperty(name="Profile Attributes", type=Attribute)
+    priority: IntProperty(name="Priority")
+    category: StringProperty(name="Category")
+
+
 class MaterialSet(PropertyGroup):
     name: StringProperty(name="Name")
     description: StringProperty(name="Description")
@@ -591,6 +609,8 @@ class MaterialSet(PropertyGroup):
     material_layers: CollectionProperty(name="Material Layers", type=MaterialLayer)
     active_material_constituent_index: IntProperty(name="Active Material Constituent Index")
     material_constituents: CollectionProperty(name="Material Constituents", type=MaterialConstituent)
+    active_material_profile_index: IntProperty(name="Active Material Profile Index")
+    material_profiles: CollectionProperty(name="Material Profiles", type=MaterialProfile)
 
 
 class Drawing(PropertyGroup):
@@ -779,6 +799,15 @@ class SmartClashGroup(PropertyGroup):
     global_ids: CollectionProperty(name="GlobalIDs", type=StrProperty)
 
 
+class PresentationLayer(PropertyGroup):
+    name: StringProperty(name="Name")
+    description: StringProperty(name="Description")
+    identifier: StringProperty(name="Identifier")
+    layer_on: BoolProperty(name="LayerOn", default=True)
+    layer_frozen: BoolProperty(name="LayerFrozen", default=False)
+    layer_blocked: BoolProperty(name="LayerBlocked", default=False)
+
+
 class Constraint(PropertyGroup):
     name: StringProperty(name="Name")
     description: StringProperty(name="Description")
@@ -914,7 +943,6 @@ class RefreshBcfTopic:
 
     @classmethod
     def refresh(cls, context):
-        import bcfplugin
 
         global bcfviewpoints_enum
 
@@ -1408,6 +1436,7 @@ class BIMProperties(PropertyGroup):
     import_should_ignore_site_coordinates: BoolProperty(name="Import Ignoring Site Coordinates", default=False)
     import_should_ignore_building_coordinates: BoolProperty(name="Import Ignoring Building Coordinates", default=False)
     import_should_reset_absolute_coordinates: BoolProperty(name="Import Resetting Absolute Coordinates", default=False)
+    import_should_guess_georeferencing: BoolProperty(name="Import Guessing Georeferencing", default=False)
     import_should_import_type_representations: BoolProperty(name="Import Type Representations", default=False)
     import_should_import_curves: BoolProperty(name="Import Curves", default=False)
     import_should_import_opening_elements: BoolProperty(name="Import Opening Elements", default=False)
@@ -1553,6 +1582,8 @@ class BIMProperties(PropertyGroup):
     override_colour: FloatVectorProperty(
         name="Override Colour", subtype="COLOR", default=(1, 0, 0, 1), min=0.0, max=1.0, size=4
     )
+    active_presentation_layer_index: IntProperty(name="Active Presentation Layer Index")
+    presentation_layers: CollectionProperty(name="Presentation Layers", type=PresentationLayer)
 
 
 class BCFProperties(PropertyGroup):
@@ -1612,15 +1643,6 @@ class BIMLibrary(PropertyGroup):
     description: StringProperty(name="Description")
 
 
-class Attribute(PropertyGroup):
-    name: StringProperty(name="Name")
-    data_type: StringProperty(name="Data Type")
-    string_value: StringProperty(name="Value")
-    bool_value: BoolProperty(name="Value")
-    int_value: IntProperty(name="Value")
-    float_value: FloatProperty(name="Value")
-
-
 class IfcParameter(PropertyGroup):
     name: StringProperty(name="Name")
     step_id: IntProperty(name="STEP ID")
@@ -1675,6 +1697,10 @@ class BIMObjectProperties(PropertyGroup):
 class BIMDebugProperties(PropertyGroup):
     step_id: IntProperty(name="STEP ID")
     number_of_polygons: IntProperty(name="Number of Polygons")
+    active_step_id: IntProperty(name="STEP ID")
+    step_id_breadcrumb: CollectionProperty(name="STEP ID Breadcrumb", type=StrProperty)
+    attributes: CollectionProperty(name="Attributes", type=Attribute)
+    inverse_attributes: CollectionProperty(name="Inverse Attributes", type=Attribute)
 
 
 class BIMMaterialProperties(PropertyGroup):
@@ -1682,12 +1708,10 @@ class BIMMaterialProperties(PropertyGroup):
     location: StringProperty(name="Location")
     identification: StringProperty(name="Identification")
     name: StringProperty(name="Name")
-    available_material_psets: EnumProperty(items=getAvailableMaterialPsets, name="Material Pset")
+    pset_name: EnumProperty(items=getMaterialPsetNames, name="Pset Name")
     psets: CollectionProperty(name="Psets", type=PsetQto)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     applicable_attributes: EnumProperty(items=getApplicableMaterialAttributes, name="Attribute Names")
-    profile_def: EnumProperty(items=getProfileDef, name="Parameterized Profile Def", update=refreshProfileAttributes)
-    profile_attributes: CollectionProperty(name="Profile Attributes", type=Attribute)
 
 
 class SweptSolid(PropertyGroup):
@@ -1707,9 +1731,9 @@ class BIMMeshProperties(PropertyGroup):
     is_swept_solid: BoolProperty(name="Is Swept Solid")
     swept_solids: CollectionProperty(name="Swept Solids", type=SweptSolid)
     is_parametric: BoolProperty(name="Is Parametric", default=False)
-    presentation_layer: StringProperty(name="Presentation Layer")
     geometry_type: StringProperty(name="Geometry Type")
     ifc_definition: StringProperty(name="IFC Definition")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     active_representation_item_index: IntProperty(name="Active Representation Item Index")
+    presentation_layer_index: IntProperty(name="Presentation Layer Index", default=-1)

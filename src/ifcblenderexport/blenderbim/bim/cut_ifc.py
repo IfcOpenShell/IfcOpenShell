@@ -4,7 +4,6 @@ import math
 import time
 import numpy
 import pickle
-import sys
 import multiprocessing
 
 try:
