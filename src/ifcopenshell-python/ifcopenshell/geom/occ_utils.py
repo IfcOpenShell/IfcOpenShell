@@ -47,7 +47,6 @@ handle, main_loop, add_menu, add_function_to_menu = None, None, None, None
 
 DEFAULT_STYLES = {
     "DEFAULT": (0.7, 0.7, 0.7),
-    "IfcWall": (0.8, 0.8, 0.8),
     "IfcSite": (0.75, 0.8, 0.65),
     "IfcSlab": (0.4, 0.4, 0.4),
     "IfcWallStandardCase": (0.9, 0.9, 0.9),
