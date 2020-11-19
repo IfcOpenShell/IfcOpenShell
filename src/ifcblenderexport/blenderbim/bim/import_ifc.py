@@ -38,12 +38,12 @@ class MaterialCreator:
     def __init__(self, ifc_import_settings):
         self.mesh = None
         self.materials = {}
-        self.current_object_materials = []
+        self.current_object_styles = []
         self.parsed_meshes = []
         self.ifc_import_settings = ifc_import_settings
 
     def create(self, element, obj, mesh):
-        self.current_object_materials = []
+        self.current_object_styles = []
         self.obj = obj
         self.mesh = mesh
         if (hasattr(element, "Representation") and not element.Representation) or (
@@ -90,25 +90,23 @@ class MaterialCreator:
 
         material_name = self.get_material_name(styled_item)
 
-        if material_name in self.current_object_materials:
+        if material_name in self.current_object_styles:
             return True
 
-        if material_name not in self.materials.keys():
-            material = bpy.data.materials.get(material_name)
-            if material:
-                self.materials[material_name] = material
-            else:
-                self.materials[material_name] = bpy.data.materials.new(material_name)
-                self.parse_styled_item(styled_item, self.materials[material_name])
+        material = bpy.data.materials.get(material_name)
+        if not material:
+            self.materials[material_name] = bpy.data.materials.new(material_name)
+
+        self.parse_styled_item(styled_item, self.materials[material_name])
 
         if self.ifc_import_settings.should_treat_styled_item_as_material:
             # Revit workaround: since Revit/DDS-CAD exports all material
             # assignments as individual object styled items. Treating them as
             # reusable materials makes things much more efficient in Blender.
-            self.assign_material_to_mesh(self.materials[material_name])
+            self.assign_style_to_mesh(self.materials[material_name])
         else:
             # Proper behaviour
-            self.assign_material_to_mesh(self.materials[material_name], is_styled_item=True)
+            self.assign_style_to_mesh(self.materials[material_name], is_styled_item=True)
         return True
 
     def assign_material_slots_to_faces(self, obj, mesh):
@@ -337,11 +335,11 @@ class MaterialCreator:
                 items.append(item)
         return items
 
-    def assign_material_to_mesh(self, material, is_styled_item=False):
+    def assign_style_to_mesh(self, material, is_styled_item=False):
         if not self.mesh:
             return
         self.mesh.materials.append(material)
-        self.current_object_materials.append(material.name)
+        self.current_object_styles.append(material.name)
         if is_styled_item:
             index = len(self.obj.material_slots) - 1
             self.obj.material_slots[index].link = "OBJECT"
