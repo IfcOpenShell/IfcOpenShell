@@ -100,6 +100,7 @@ namespace {
 template <typename Schema>
 class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
 public:
+	IfcHierarchyHelper(const IfcParse::schema_definition* schema) :IfcFile(schema) {}
 	template <class T> 
 	T* addTriplet(double x, double y, double z) {
 		std::vector<double> a; a.push_back(x); a.push_back(y); a.push_back(z);
