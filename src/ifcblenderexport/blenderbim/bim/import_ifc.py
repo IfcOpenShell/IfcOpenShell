@@ -151,6 +151,15 @@ class MaterialCreator:
                 elif material_select.is_a("IfcMaterialList"):
                     # Note that lists are deprecated
                     self.create_material_list(material_select)
+                # To support IFC2X3 equivalent of IfcMaterialDefinition
+                elif material_select.is_a("IfcMaterial") or material_select.is_a("IfcMaterialLayerSet"):
+                    self.create_definition(material_select)
+                # To support IFC2X3 equivalent of IfcMaterialUsageDefinition
+                elif material_select.is_a("IfcMaterialLayerSetUsage"):
+                    self.create_usage_definition(material_select)
+                # IFC2X3 supports assigning a material layer directly. This is silly.
+                elif material_select.is_a("IfcMaterialLayer"):
+                    pass
 
     def create_layer_set_usage(self, usage):
         # TODO import rest of the layer set usage data
@@ -182,7 +191,8 @@ class MaterialCreator:
         props = self.obj.BIMObjectProperties
         props.material_type = "IfcMaterialLayerSet"
         props.material_set.name = layer_set.LayerSetName or ""
-        props.material_set.description = layer_set.Description or ""
+        if hasattr(layer_set, "Description"):  # IFC2X3 support
+            props.material_set.description = layer_set.Description or ""
         for layer in layer_set.MaterialLayers:
             new = props.material_set.material_layers.add()
             if layer.Material:
@@ -191,6 +201,8 @@ class MaterialCreator:
                 new.material = self.materials[layer.Material.Name]
             new.layer_thickness = layer.LayerThickness
             new.is_ventilated = "TRUE" if layer.IsVentilated else "FALSE"
+            if not hasattr(layer, "Name"):
+                continue  # IFC2X3 support
             new.name = layer.Name or ""
             new.description = layer.Description or ""
             try:
@@ -233,7 +245,7 @@ class MaterialCreator:
                     newa.name = profile.Profile.attribute_name(i)
                     newa.string_value = str(attribute)
             except:
-                pass # TODO: currently, only parametric profile sets are supported
+                pass  # TODO: currently, only parametric profile sets are supported
             new.priority = profile.Priority or 0
             new.category = profile.Category or ""
 
@@ -248,6 +260,7 @@ class MaterialCreator:
 
     def create_new_single(self, material):
         self.materials[material.Name] = obj = bpy.data.materials.new(material.Name)
+        # TODO: support IfcMaterial attributes
         for pset in getattr(material, "HasProperties", ()):
             self.add_pset(pset, obj)
         if not material.HasRepresentation or not material.HasRepresentation[0].Representations:
