@@ -2018,8 +2018,6 @@ class BIM_PT_mvd(Panel):
         row.prop(bim_properties, "import_should_ignore_site_coordinates")
         row = layout.row()
         row.prop(bim_properties, "import_should_ignore_building_coordinates")
-        row = layout.row()
-        row.prop(bim_properties, "import_should_treat_styled_item_as_material")
 
 
 class BIM_UL_generic(bpy.types.UIList):
