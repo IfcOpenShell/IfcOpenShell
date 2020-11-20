@@ -578,7 +578,7 @@ class MaterialLayer(PropertyGroup):
             ("Custom", "Custom", ""),
         ],
         name="Category",
-        default="LoadBearing",
+        default="None",
     )
     custom_category: StringProperty(name="Custom Category")
     priority: IntProperty(name="Priority")
