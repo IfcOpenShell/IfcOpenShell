@@ -578,7 +578,7 @@ class MaterialLayer(PropertyGroup):
             ("Custom", "Custom", ""),
         ],
         name="Category",
-        default="LoadBearing",
+        default="None",
     )
     custom_category: StringProperty(name="Custom Category")
     priority: IntProperty(name="Priority")
@@ -1442,9 +1442,6 @@ class BIMProperties(PropertyGroup):
     import_should_import_opening_elements: BoolProperty(name="Import Opening Elements", default=False)
     import_should_import_spaces: BoolProperty(name="Import Spaces", default=False)
     import_should_auto_set_workarounds: BoolProperty(name="Automatically Set Vendor Workarounds", default=True)
-    import_should_treat_styled_item_as_material: BoolProperty(
-        name="Import Treating Styled Item as Material", default=False
-    )
     import_should_use_legacy: BoolProperty(name="Import with Legacy Importer", default=False)
     import_should_import_native: BoolProperty(name="Import Native Representations", default=False)
     import_export_should_roundtrip_native: BoolProperty(name="Roundtrip Native Representations", default=False)
