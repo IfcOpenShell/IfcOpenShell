@@ -50,18 +50,13 @@ class MaterialCreator:
             hasattr(element, "RepresentationMaps") and not element.RepresentationMaps
         ):
             return
-        if (
-            self.ifc_import_settings.should_treat_styled_item_as_material
-            and self.mesh
-            and self.mesh.name in self.parsed_meshes
-        ):
+        if self.mesh and self.mesh.name in self.parsed_meshes:
             return
         self.parse_material(element)
         if self.mesh:
             self.parsed_meshes.append(self.mesh.name)
         if self.mesh and self.parse_representations(element):
             self.assign_material_slots_to_faces(obj, self.mesh)
-            self.parsed_meshes.append(self.mesh.name)
 
     def parse_representations(self, element):
         has_parsed = False
@@ -98,15 +93,7 @@ class MaterialCreator:
             self.materials[material_name] = bpy.data.materials.new(material_name)
 
         self.parse_styled_item(styled_item, self.materials[material_name])
-
-        if self.ifc_import_settings.should_treat_styled_item_as_material:
-            # Revit workaround: since Revit/DDS-CAD exports all material
-            # assignments as individual object styled items. Treating them as
-            # reusable materials makes things much more efficient in Blender.
-            self.assign_style_to_mesh(self.materials[material_name])
-        else:
-            # Proper behaviour
-            self.assign_style_to_mesh(self.materials[material_name], is_styled_item=True)
+        self.assign_style_to_mesh(self.materials[material_name])
         return True
 
     def assign_material_slots_to_faces(self, obj, mesh):
@@ -348,15 +335,11 @@ class MaterialCreator:
                 items.append(item)
         return items
 
-    def assign_style_to_mesh(self, material, is_styled_item=False):
+    def assign_style_to_mesh(self, material):
         if not self.mesh:
             return
         self.mesh.materials.append(material)
         self.current_object_styles.append(material.name)
-        if is_styled_item:
-            index = len(self.obj.material_slots) - 1
-            self.obj.material_slots[index].link = "OBJECT"
-            self.obj.material_slots[index].material = material
 
 
 class IfcImporter:
@@ -504,13 +487,11 @@ class IfcImporter:
             "DDS-CAD" in self.file.wrapped_data.header.file_name.originating_system
             or "DDS" in self.file.wrapped_data.header.file_name.preprocessor_version
         ):
-            self.ifc_import_settings.should_treat_styled_item_as_material = True
             self.ifc_import_settings.should_reset_absolute_coordinates = True
         applications = self.file.by_type("IfcApplication")
         if not applications:
             return
         if applications[0].ApplicationIdentifier == "Revit":
-            self.ifc_import_settings.should_treat_styled_item_as_material = True
             if self.is_ifc_class_far_away("IfcSite"):
                 self.ifc_import_settings.should_ignore_site_coordinates = True
                 self.ifc_import_settings.should_guess_georeferencing = True
@@ -2307,7 +2288,6 @@ class IfcImportSettings:
         self.should_import_curves = False
         self.should_import_opening_elements = False
         self.should_import_spaces = False
-        self.should_treat_styled_item_as_material = False
         self.should_use_cpu_multiprocessing = False
         self.should_import_with_profiling = False
         self.should_import_native = False
@@ -2337,7 +2317,6 @@ class IfcImportSettings:
         settings.should_import_opening_elements = scene_bim.import_should_import_opening_elements
         settings.should_import_spaces = scene_bim.import_should_import_spaces
         settings.should_auto_set_workarounds = scene_bim.import_should_auto_set_workarounds
-        settings.should_treat_styled_item_as_material = scene_bim.import_should_treat_styled_item_as_material
         settings.should_use_cpu_multiprocessing = scene_bim.import_should_use_cpu_multiprocessing
         settings.should_import_with_profiling = scene_bim.import_should_import_with_profiling
         settings.should_import_native = scene_bim.import_should_import_native
