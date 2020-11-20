@@ -1816,7 +1816,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
         }
     }
 
-    if (faces.IsEmpty() == 0) return false;
+    if (faces.IsEmpty()) return false;
 
     return create_solid_from_faces(faces, shape);
 }
