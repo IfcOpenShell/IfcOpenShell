@@ -51,12 +51,13 @@ class MaterialCreator:
             hasattr(element, "RepresentationMaps") and not element.RepresentationMaps
         ):
             return
-        if self.mesh and self.mesh.name in self.parsed_meshes:
-            return
         self.parse_material(element)
-        if self.mesh:
-            self.parsed_meshes.append(self.mesh.name)
-        if self.mesh and self.parse_representations(element):
+        if not self.mesh:
+            return
+        if self.mesh.name in self.parsed_meshes:
+            return
+        self.parsed_meshes.append(self.mesh.name)
+        if self.parse_representations(element):
             self.assign_material_slots_to_faces(obj, self.mesh)
 
     def parse_representations(self, element):
@@ -927,7 +928,6 @@ class IfcImporter:
 
         self.ifc_import_settings.logger.info("Creating object %s", element)
 
-        is_fresh_mesh = False
         if shape:
             # TODO: make names more meaningful
             mesh_name = f"mesh-{shape.geometry.id}"
@@ -938,7 +938,6 @@ class IfcImporter:
                 if mesh is None:
                     mesh = self.create_mesh(element, shape)
                 self.meshes[mesh_name] = mesh
-                is_fresh_mesh = True
         else:
             mesh = None
 
@@ -951,8 +950,7 @@ class IfcImporter:
             )
             mat.transpose()
             obj.matrix_world = mat
-            if is_fresh_mesh:
-                self.material_creator.create(element, obj, mesh)
+            self.material_creator.create(element, obj, mesh)
         elif hasattr(element, "ObjectPlacement"):
             obj.matrix_world = self.get_element_matrix(element)
 
