@@ -11,7 +11,6 @@ import ifcopenshell.util.selector
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.pset
 import tempfile
-import numpy as np
 from . import export_ifc
 from . import import_ifc
 from . import qto
@@ -30,8 +29,6 @@ from mathutils import Vector, Matrix, Euler, geometry
 from math import radians, atan, tan, cos, sin
 from pathlib import Path
 from bpy.app.handlers import persistent
-from sklearn.cluster import OPTICS
-from collections import defaultdict
 
 colour_list = [
     (0.651, 0.81, 0.892, 1),
@@ -1912,7 +1909,6 @@ class SmartClashGroup(bpy.types.Operator):
         with open(save_path, 'w') as f:
             f.write(json.dumps(smart_grouped_clashes))
 
-        # TODO: load into BIM Properties for easy access
         clash_set_name = bpy.context.scene.BIMProperties.clash_sets[
             bpy.context.scene.BIMProperties.active_clash_set_index
         ].name
@@ -1926,16 +1922,10 @@ class SmartClashGroup(bpy.types.Operator):
                 continue
             else:
                 for smart_group, global_id_pairs in smart_groups[0].items():
-                    #print(smart_group)
-                    #print(type(smart_group))
-                    
-                    print("Global Ids: ", global_id_pairs)
-                    print(type(global_id_pairs))
                     new_group = bpy.context.scene.BIMProperties.smart_clash_groups.add()
                     new_group.number = smart_group
 
                     for pair in global_id_pairs:
-                        print("id: ", pair)
                         for id in pair:
                             new_global_id = new_group.global_ids.add()
                             new_global_id.name = id
