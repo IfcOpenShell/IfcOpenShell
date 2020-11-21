@@ -1903,21 +1903,13 @@ class SelectIfcClashResults(bpy.types.Operator):
 
 class SmartClashGroup(bpy.types.Operator):
     bl_idname = "bim.smart_clash_group"
-    bl_label = "Smart Clash Group"
-    # filename_ext = ".json"
+    bl_label = "Smart Group Clashes"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    #def invoke(self, context, event):
-        #self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
-        #WindowManager = context.window_manager
-        #WindowManager.fileselect_add(self)
-        #return {"RUNNING_MODAL"}
 
     def execute(self, context):
         import ifcclash
 
         settings = ifcclash.IfcClashSettings()
-        # self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
         self.filepath = bpy.path.ensure_ext(bpy.context.scene.BIMProperties.clash_results_path, ".json")
         settings.output = self.filepath
         settings.logger = logging.getLogger("Clash")
@@ -1957,6 +1949,40 @@ class SmartClashGroup(bpy.types.Operator):
                             new_global_id.name = id
 
         return {"FINISHED"}
+
+
+class LoadSmartGroupsForActiveClashSet(bpy.types.Operator):
+    bl_idname = "bim.load_smart_groups_for_active_clash_set"
+    bl_label = "Load Smart Groups for Active Clash Set"
+    
+    def execute(self, context):
+        smart_groups_path = bpy.path.ensure_ext(bpy.context.scene.BIMProperties.smart_grouped_clashes_path, ".json")
+
+        clash_set_name = bpy.context.scene.BIMProperties.clash_sets[
+            bpy.context.scene.BIMProperties.active_clash_set_index
+        ].name
+
+        with open(smart_groups_path) as f:
+            smart_grouped_clashes = json.load(f)
+
+            # Reset the list of smart_clash_groups for the UI
+        bpy.context.scene.BIMProperties.smart_clash_groups.clear()
+                
+        for clash_set, smart_groups in smart_grouped_clashes.items():
+            # Only select the clashes that correspond to the actively selected IFC Clash Set
+            if clash_set != clash_set_name:
+                continue
+            else:
+                for smart_group, global_id_pairs in smart_groups[0].items():
+                    new_group = bpy.context.scene.BIMProperties.smart_clash_groups.add()
+                    new_group.number = int(smart_group)
+                    for pair in global_id_pairs:
+                        for id in pair:
+                            new_global_id = new_group.global_ids.add()
+                            new_global_id.name = id
+
+        return {"FINISHED"}
+
 
 class SelectSmartGroup(bpy.types.Operator):
     bl_idname = "bim.select_smart_group"
