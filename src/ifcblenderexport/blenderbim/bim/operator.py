@@ -1801,6 +1801,31 @@ class SelectClashSource(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
+class SelectClashResults(bpy.types.Operator):
+    bl_idname = "bim.select_clash_results"
+    bl_label = "Select Clash Results"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.clash_results_path = self.filepath
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+class SelectSmartGroupedClashesPath(bpy.types.Operator):
+    bl_idname = "bim.select_smart_grouped_clashes_path"
+    bl_label = "Select Smart-Grouped Clashes Path"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.smart_grouped_clashes_path = self.filepath
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
 
 class ExecuteIfcClash(bpy.types.Operator):
     bl_idname = "bim.execute_ifc_clash"
@@ -1879,20 +1904,21 @@ class SelectIfcClashResults(bpy.types.Operator):
 class SmartClashGroup(bpy.types.Operator):
     bl_idname = "bim.smart_clash_group"
     bl_label = "Smart Clash Group"
-    filename_ext = ".json"
+    # filename_ext = ".json"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
-    def invoke(self, context, event):
-        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+    #def invoke(self, context, event):
+        #self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
+        #WindowManager = context.window_manager
+        #WindowManager.fileselect_add(self)
+        #return {"RUNNING_MODAL"}
 
     def execute(self, context):
         import ifcclash
 
         settings = ifcclash.IfcClashSettings()
-        self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
+        # self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
+        self.filepath = bpy.path.ensure_ext(bpy.context.scene.BIMProperties.clash_results_path, ".json")
         settings.output = self.filepath
         settings.logger = logging.getLogger("Clash")
         settings.logger.setLevel(logging.DEBUG)
@@ -1901,8 +1927,8 @@ class SmartClashGroup(bpy.types.Operator):
         with open(self.filepath) as f:
             clash_sets = json.load(f)
         
-        # execute the smart grouping here (but put the heavy lifting code somewhere else in a class)
-        save_path = r"C:\Users\vince\Desktop\SmartGrouping Demo\smart-groups.json"
+        # execute the smart grouping
+        save_path = bpy.path.ensure_ext(bpy.context.scene.BIMProperties.smart_grouped_clashes_path, ".json")
         smart_grouped_clashes = ifc_clasher.smart_group_clashes(clash_sets)
 
         # save smart_groups to json
