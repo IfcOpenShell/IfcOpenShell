@@ -143,6 +143,8 @@ if bpy is not None:
         operator.SelectClashSource,
         operator.ExecuteIfcClash,
         operator.SelectIfcClashResults,
+        operator.SelectClashResults,
+        operator.SelectSmartGroupedClashesPath,
         operator.SmartClashGroup,
         operator.IsolateSmartGroup,
         operator.SwitchContext,

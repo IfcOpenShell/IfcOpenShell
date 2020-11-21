@@ -1520,6 +1520,8 @@ class BIMProperties(PropertyGroup):
     document_references: CollectionProperty(name="Document References", type=DocumentReference)
     active_document_reference_index: IntProperty(name="Active Document Reference Index")
     clash_sets: CollectionProperty(name="Clash Sets", type=ClashSet)
+    clash_results_path: StringProperty(name="Clash Results Path")
+    smart_grouped_clashes_path: StringProperty(name="Smart Grouped Clashes Path")
     active_clash_set_index: IntProperty(name="Active Clash Set Index")
     smart_clash_groups: CollectionProperty(name="Smart Clash Groups", type=SmartClashGroup)
     active_smart_group_index: IntProperty(name="Active Smart Group Index")

@@ -2309,6 +2309,20 @@ class BIM_PT_clash_manager(Panel):
         layout = self.layout
         props = context.scene.BIMProperties
 
+        row = layout.row()
+        layout.label(text="Select clash results to group:")
+
+        row = layout.row(align=True)
+        row.prop(props, "clash_results_path", text="")
+        op = row.operator("bim.select_clash_results", icon="FILE_FOLDER", text="")
+
+        row = layout.row()
+        layout.label(text="Select output path for smart-grouped clashes:")
+        
+        row = layout.row(align=True)
+        row.prop(props, "smart_grouped_clashes_path", text="")
+        op = row.operator("bim.select_smart_grouped_clashes_path", icon="FILE_FOLDER", text="")
+
         row = layout.row(align=True)
         row.operator("bim.smart_clash_group")
         
