@@ -2051,7 +2051,6 @@ class BIM_UL_smart_groups(bpy.types.UIList):
         ob = data
         if item:
             layout.label(text=str(item.number), translate=False, icon='NONE', icon_value=0)
-            #layout.prop(item, "number", text="", emboss=False, icon_value=icon)
         else:
             layout.label(text="", translate=False)
 
@@ -2325,6 +2324,9 @@ class BIM_PT_clash_manager(Panel):
 
         row = layout.row(align=True)
         row.operator("bim.smart_clash_group")
+
+        row = layout.row(align=True)
+        row.operator("bim.load_smart_groups_for_active_clash_set")
         
         layout.template_list('BIM_UL_smart_groups', '', props, 'smart_clash_groups', props, 'active_smart_group_index')
 
