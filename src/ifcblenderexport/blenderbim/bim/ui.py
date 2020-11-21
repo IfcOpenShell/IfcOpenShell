@@ -2328,9 +2328,8 @@ class BIM_PT_clash_manager(Panel):
         
         layout.template_list('BIM_UL_smart_groups', '', props, 'smart_clash_groups', props, 'active_smart_group_index')
 
-        # TODO: add operator to isolate smart groups one by one in the viewport
         row = layout.row(align=True)
-        row.operator("bim.isolate_smart_group")
+        row.operator("bim.select_smart_group")
 
 class BIM_PT_misc_utilities(Panel):
     bl_idname = "BIM_PT_misc_utilities"
