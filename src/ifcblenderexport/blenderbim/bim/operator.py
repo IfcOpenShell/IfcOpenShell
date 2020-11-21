@@ -1958,9 +1958,9 @@ class SmartClashGroup(bpy.types.Operator):
 
         return {"FINISHED"}
 
-class IsolateSmartGroup(bpy.types.Operator):
-    bl_idname = "bim.isolate_smart_group"
-    bl_label = "Isolate Smart Group"
+class SelectSmartGroup(bpy.types.Operator):
+    bl_idname = "bim.select_smart_group"
+    bl_label = "Select Smart Group"
 
     def execute(self, context):
         # Select smart group in view
