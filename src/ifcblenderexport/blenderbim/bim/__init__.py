@@ -147,6 +147,7 @@ if bpy is not None:
         operator.SelectSmartGroupedClashesPath,
         operator.SmartClashGroup,
         operator.SelectSmartGroup,
+        operator.LoadSmartGroupsForActiveClashSet,
         operator.SwitchContext,
         operator.RemoveContext,
         operator.OpenUpstream,
