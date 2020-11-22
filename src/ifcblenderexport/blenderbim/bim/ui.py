@@ -58,10 +58,9 @@ class BIM_PT_object(Panel):
             row.prop(attribute, "string_value", text="")
             if attribute.name == "GlobalId":
                 row.operator("bim.generate_global_id", icon="FILE_REFRESH", text="")
-            op = row.operator("bim.copy_attributes_to_selection", icon="COPYDOWN", text="")
-            op.prop_base = "BIMObjectProperties.attributes"
-            op.prop_name = attribute.name
-            op.collection_element = True
+            op = row.operator("bim.copy_attribute_to_selection", icon="COPYDOWN", text="")
+            op.attribute_name = attribute.name
+            op.attribute_value = attribute.string_value
             row.operator("bim.remove_attribute", icon="X", text="").attribute_index = index
 
         row = layout.row()
