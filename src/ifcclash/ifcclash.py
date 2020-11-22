@@ -268,7 +268,7 @@ class IfcClasher:
         if element.ObjectPlacement.RelativePlacement.RefDirection:
             element.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1.0, 0.0, 0.0)
 
-    def smart_group_clashes(self, clash_sets):
+    def smart_group_clashes(self, clash_sets, max_clustering_distance):
         count_of_input_clashes = 0
         count_of_clash_sets = 0
         count_of_smart_groups = 0
@@ -291,7 +291,11 @@ class IfcClasher:
 
             # INPUTS
             # set the desired maximum distance between the grouped points
-            max_distance_between_grouped_points = 3
+            if max_clustering_distance > 0:
+                max_distance_between_grouped_points = max_clustering_distance
+            else:
+                max_distance_between_grouped_points = 3
+
             model = OPTICS(min_samples=2, max_eps=max_distance_between_grouped_points)
             model.fit_predict(data)
             pred = model.fit_predict(data)

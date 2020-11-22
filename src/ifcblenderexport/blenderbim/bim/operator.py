@@ -1921,7 +1921,7 @@ class SmartClashGroup(bpy.types.Operator):
         
         # execute the smart grouping
         save_path = bpy.path.ensure_ext(bpy.context.scene.BIMProperties.smart_grouped_clashes_path, ".json")
-        smart_grouped_clashes = ifc_clasher.smart_group_clashes(clash_sets)
+        smart_grouped_clashes = ifc_clasher.smart_group_clashes(clash_sets, bpy.context.scene.BIMProperties.smart_clash_grouping_max_distance)
 
         # save smart_groups to json
         with open(save_path, 'w') as f:
@@ -1965,7 +1965,7 @@ class LoadSmartGroupsForActiveClashSet(bpy.types.Operator):
         with open(smart_groups_path) as f:
             smart_grouped_clashes = json.load(f)
 
-            # Reset the list of smart_clash_groups for the UI
+        # Reset the list of smart_clash_groups for the UI
         bpy.context.scene.BIMProperties.smart_clash_groups.clear()
                 
         for clash_set, smart_groups in smart_grouped_clashes.items():

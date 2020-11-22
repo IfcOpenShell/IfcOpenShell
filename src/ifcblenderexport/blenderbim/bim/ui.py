@@ -2390,6 +2390,9 @@ class BIM_PT_clash_manager(Panel):
         op = row.operator("bim.select_smart_grouped_clashes_path", icon="FILE_FOLDER", text="")
 
         row = layout.row(align=True)
+        row.prop(props, "smart_clash_grouping_max_distance")
+
+        row = layout.row(align=True)
         row.operator("bim.smart_clash_group")
 
         row = layout.row(align=True)
