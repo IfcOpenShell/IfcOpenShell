@@ -281,6 +281,8 @@ class IfcClasher:
                 print(f"Skipping clash set [{clash_set['name']}] since it contains no clash results.")
                 continue
             clashes = clash_set["clashes"]
+            if len(clashes) == 0:
+                continue
             count_of_input_clashes += len(clashes)
 
             positions = []
