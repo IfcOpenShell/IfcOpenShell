@@ -1527,6 +1527,7 @@ class BIMProperties(PropertyGroup):
     active_clash_set_index: IntProperty(name="Active Clash Set Index")
     smart_clash_groups: CollectionProperty(name="Smart Clash Groups", type=SmartClashGroup)
     active_smart_group_index: IntProperty(name="Active Smart Group Index")
+    smart_clash_grouping_max_distance: IntProperty(name="Smart Clash Grouping Max Distance", default=3, soft_min=1, soft_max=10)
     constraints: CollectionProperty(name="Constraints", type=Constraint)
     active_constraint_index: IntProperty(name="Active Constraint Index")
     eastings: StringProperty(name="Eastings")
