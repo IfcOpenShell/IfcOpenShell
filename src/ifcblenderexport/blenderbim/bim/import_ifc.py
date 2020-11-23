@@ -83,19 +83,19 @@ class MaterialCreator:
     def parse_representation_item(self, item):
         if not item.StyledByItem:
             return
+
         styled_item = item.StyledByItem[0]
+        style_name = self.get_style_name(styled_item)
 
-        material_name = self.get_material_name(styled_item)
-
-        if material_name in self.current_object_styles:
+        if style_name in self.current_object_styles:
             return True
 
-        material = bpy.data.materials.get(material_name)
-        if not material:
-            self.materials[material_name] = bpy.data.materials.new(material_name)
+        style = bpy.data.materials.get(style_name)
+        if not style:
+            style = bpy.data.materials.new(style_name)
 
-        self.parse_styled_item(styled_item, self.materials[material_name])
-        self.assign_style_to_mesh(self.materials[material_name])
+        self.parse_styled_item(styled_item, style)
+        self.assign_style_to_mesh(style)
         return True
 
     def assign_material_slots_to_faces(self, obj, mesh):
@@ -262,7 +262,7 @@ class MaterialCreator:
                     continue
                 self.parse_styled_item(item, obj)
 
-    def get_material_name(self, styled_item):
+    def get_style_name(self, styled_item):
         if styled_item.Name:
             return styled_item.Name
         styles = self.get_styled_item_styles(styled_item)
@@ -1085,7 +1085,7 @@ class IfcImporter:
         if not item.StyledByItem:
             return
         styled_item = item.StyledByItem[0]
-        return self.material_creator.get_material_name(styled_item)
+        return self.material_creator.get_style_name(styled_item)
 
     def transform_curve(self, curve, matrix):
         for spline in curve.splines:
