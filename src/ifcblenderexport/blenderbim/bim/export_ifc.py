@@ -2036,9 +2036,7 @@ class IfcExporter:
             layer = bpy.context.scene.BIMProperties.presentation_layers[int(layer_index)]
             assigned_items = []
             for representation in representations:
-                for usage in representation["ifc"].MapUsage:
-                    for inverse in self.file.get_inverse(usage):
-                        assigned_items.append(inverse)
+                assigned_items.append(representation["ifc"])
             if layer.layer_on:
                 self.file.createIfcPresentationLayerAssignment(
                     layer.name, layer.description or None, assigned_items, layer.identifier or None,
@@ -2145,7 +2143,7 @@ class IfcExporter:
 
     def create_representations(self):
         for representation in self.ifc_parser.representations.values():
-            representation["ifc"] = self.create_representation(representation)
+            self.create_representation(representation)
 
     def create_grid_axes(self):
         for uvw in self.ifc_parser.grid_axes.values():
@@ -2284,13 +2282,14 @@ class IfcExporter:
         for representation_name in product["representations"]:
             representation = self.ifc_parser.representations[representation_name]
             if self.ifc_export_settings.should_roundtrip_native and representation["has_ifc_definition"]:
-                results.append(representation["ifc"])
+                pass
             else:
-                results.append(self.get_product_mapped_geometry(product, representation))
+                self.get_product_mapped_geometry(product, representation)
+            results.append(representation["ifc"])
         return results
 
     def get_product_mapped_geometry(self, product, representation):
-        mapping_source = representation["ifc"]
+        mapping_source = representation["ifc_map"]
         shape_representation = mapping_source.MappedRepresentation
         if product["has_scale"]:
             if not product["has_mirror"]:
@@ -2313,7 +2312,7 @@ class IfcExporter:
                 self.create_direction(Vector((0, 0, 1))),
             )
         mapped_item = self.file.createIfcMappedItem(mapping_source, mapping_target)
-        return self.file.createIfcShapeRepresentation(
+        representation["ifc"] = self.file.createIfcShapeRepresentation(
             shape_representation.ContextOfItems,
             shape_representation.RepresentationIdentifier,
             "MappedRepresentation",
@@ -2334,15 +2333,15 @@ class IfcExporter:
 
     def create_representation(self, representation):
         if self.ifc_export_settings.should_roundtrip_native and representation["has_ifc_definition"]:
-            return self.create_representation_from_definition(representation)
+            representation["ifc"] = self.create_representation_from_definition(representation)
         self.ifc_vertices = []
         self.ifc_edges = []
         if representation["context"] == "Model":
-            return self.create_model_representation(representation)
+            representation["ifc_map"] = self.create_model_representation(representation)
         elif representation["context"] == "Plan":
-            return self.create_plan_representation(representation)
+            representation["ifc_map"] = self.create_plan_representation(representation)
         elif representation["context"] == "NotDefined":
-            return self.create_variable_representation(representation)
+            representation["ifc_map"] = self.create_variable_representation(representation)
 
     def create_representation_from_definition(self, representation):
         if representation["ifc_definition"]:
@@ -2356,18 +2355,13 @@ class IfcExporter:
                 if added_element.is_a("IfcGeometricRepresentationContext"):
                     substitutions.append(added_element)
             for element in substitutions:
-                if element.is_a() == "IfcGeometricRepresentationContext":
-                    new_element = [
-                        e
-                        for e in self.file.by_type("IfcGeometricRepresentationContext")
-                        if e.ContextType == element.ContextType
-                    ][0]
-                elif element.is_a() == "IfcGeometricRepresentationSubContext":
-                    new_element = [
-                        e
-                        for e in self.file.by_type("IfcGeometricRepresentationContext")
-                        if e.ContextType == element.ContextType and e.ContextIdentifier == element.ContextIdentifier
-                    ][0]
+                if (
+                    element.is_a() == "IfcGeometricRepresentationContext"
+                    or element.is_a() == "IfcGeometricRepresentationSubContext"
+                ):
+                    new_element = self.ifc_rep_context[representation["context"]][representation["subcontext"]][
+                        representation["target_view"]
+                    ]["ifc"]
                 for inverse in self.file.get_inverse(element):
                     ifcopenshell.util.element.replace_attribute(inverse, element, new_element)
                 # TODO: Work out how and when to purge this
