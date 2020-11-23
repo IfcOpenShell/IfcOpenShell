@@ -1245,9 +1245,6 @@ namespace {
 	void process_sweep_as_pipe(const TopoDS_Wire& wire, const TopoDS_Wire& section, TopoDS_Shape& result, bool force_transformed=false) {
 		// This tolerance is fairly high due to the linear edge substitution for small (or large radii) conical curves.
 		const bool is_continuous = wire_is_c1_continuous(wire, 1.e-2);
-		static int i = 0;
-		std::string fn = "pipe-wire-" + boost::lexical_cast<std::string>(i++) + ".brep";
-		BRepTools::Write(wire, fn.c_str());
 		BRepOffsetAPI_MakePipeShell builder(wire);
 		builder.Add(section);
 		builder.SetTransitionMode(is_continuous || force_transformed ? BRepBuilderAPI_Transformed : BRepBuilderAPI_RightCorner);
