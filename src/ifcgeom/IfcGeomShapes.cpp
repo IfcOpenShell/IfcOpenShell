@@ -1316,7 +1316,7 @@ namespace {
 		wires.emplace_back();
 		B.MakeWire(wires.back());
 
-		for (uint i = 0; i < sorted_edges.size(); ++i) {
+		for (size_t i = 0; i < sorted_edges.size(); ++i) {
 			if (i == sorted_edges.size() / 2) {
 				wires.emplace_back();
 				B.MakeWire(wires.back());
