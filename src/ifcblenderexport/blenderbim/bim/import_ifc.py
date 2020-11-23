@@ -96,6 +96,8 @@ class MaterialCreator:
 
         self.parse_styled_item(styled_item, style)
         self.assign_style_to_mesh(style)
+        item_id = self.mesh.BIMMeshProperties.ifc_item_ids.add()
+        item_id.name = str(item.id())
         return True
 
     def assign_material_slots_to_faces(self, obj, mesh):

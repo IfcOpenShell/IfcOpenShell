@@ -1,18 +1,6 @@
 import math
 import bpy
 
-# TODO: figure out where this should go
-def get_representation_elements(ifc_file, step_id):
-    results = []
-    for child in ifc_file.traverse(ifc_file.by_id(step_id)):
-        if hasattr(child, "StyledByItem") and child.StyledByItem:
-            for styled_by_item in child.StyledByItem:
-                for style in styled_by_item.Styles:
-                    for style_child in ifc_file.traverse(style):
-                        results.append(style_child)
-        results.append(child)
-    return results
-
 
 # TODO: Deprecate this in favour of ifcopenshell.util.unit
 
