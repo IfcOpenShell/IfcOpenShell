@@ -2714,74 +2714,6 @@ class OpenUpstream(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BIM_OT_CopyAttributesToSelection(bpy.types.Operator):
-    """Copies attributes from the active object towards selected objects"""
-
-    bl_idname = "bim.copy_attributes_to_selection"
-    bl_label = "Copy Attributes To Selection"
-
-    prop_base = bpy.props.StringProperty()  # data for properties to assign to
-    prop_name = bpy.props.StringProperty(description="Property name which to change")
-    sub_props = bpy.props.StringProperty()  # properties which to copy (commasep). (empty = all)
-    collection_element = bpy.props.BoolProperty(description="If this is a collection element, copy the complete thing")
-
-    @classmethod
-    def poll(cls, context):
-        return context.active_object is not None
-
-    def execute(self, context):
-        active_object = bpy.context.active_object
-        selected_objects = [
-            obj
-            for obj in bpy.context.visible_objects
-            if obj.type == active_object.type and obj in bpy.context.selected_objects and obj != active_object
-        ]
-        if self.prop_base:
-            prop_base = eval("active_object." + self.prop_base)
-        else:
-            prop_base = active_object
-        if not self.collection_element:
-            self.copy_simple(prop_base, selected_objects)
-            return {"FINISHED"}
-        self.copy_collection(prop_base, selected_objects)
-        return {"FINISHED"}
-
-    def copy_simple(self, prop_base, selected_objects):
-        prop = getattr(prop_base, self.prop_name)
-        for obj in selected_objects:
-            if self.prop_base:
-                new_prop_base = eval("obj." + self.prop_base)
-            else:
-                new_prop_base = obj
-            setattr(new_prop_base, self.prop_name, prop)
-
-    def copy_collection(self, prop_base, selected_objects):
-        prop = prop_base[self.prop_name]
-        for obj in selected_objects:
-            if self.prop_base:
-                new_prop_base = eval("obj." + self.prop_base)
-            else:
-                new_prop_base = obj
-
-            if self.prop_name in new_prop_base:
-                new_prop_base = new_prop_base[self.prop_name]
-            else:
-                new_prop_base = new_prop_base.add()
-
-            if self.sub_props:
-                for p in self.sub_props.replace(" ", "").split(","):
-                    try:
-                        setattr(new_prop_base, p, getattr(prop, p))
-                    except:
-                        pass
-            else:
-                for p in dir(prop):
-                    try:
-                        setattr(new_prop_base, p, getattr(prop, p))
-                    except:
-                        pass
-
-
 class CopyPropertyToSelection(bpy.types.Operator):
     bl_idname = "bim.copy_property_to_selection"
     bl_label = "Copy Property To Selection"
@@ -2815,6 +2747,36 @@ class CopyPropertyToSelection(bpy.types.Operator):
                 bpy.context.scene.BIMProperties.export_schema, ifc_class, is_pset=True
             )
         return self.applicable_psets_cache[ifc_class]
+
+
+class CopyAttributeToSelection(bpy.types.Operator):
+    bl_idname = "bim.copy_attribute_to_selection"
+    bl_label = "Copy Attribute To Selection"
+    attribute_name: bpy.props.StringProperty()
+    attribute_value: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(bpy.context.scene.BIMProperties.export_schema)
+        self.applicable_attributes_cache = {}
+        for obj in bpy.context.selected_objects:
+            if "/" not in obj.name:
+                continue
+            attribute = obj.BIMObjectProperties.attributes.get(self.attribute_name)
+            if not attribute:
+                applicable_attributes = self.get_applicable_attributes(obj.name.split("/")[0])
+                if self.attribute_name not in applicable_attributes:
+                    continue
+                attribute = obj.BIMObjectProperties.attributes.add()
+                attribute.name = self.attribute_name
+            attribute.string_value = self.attribute_value
+        return {"FINISHED"}
+
+    def get_applicable_attributes(self, ifc_class):
+        if ifc_class not in self.applicable_attributes_cache:
+            self.applicable_attributes_cache[ifc_class] = [
+                a.name() for a in self.schema.declaration_by_name(ifc_class).all_attributes()
+            ]
+        return self.applicable_attributes_cache[ifc_class]
 
 
 class BIM_OT_ChangeClassificationLevel(bpy.types.Operator):
@@ -3345,8 +3307,8 @@ class SelectDocIfcFile(bpy.types.Operator):
 class AddAnnotation(bpy.types.Operator):
     bl_idname = "bim.add_annotation"
     bl_label = "Add Annotation"
-    obj_name = bpy.props.StringProperty()
-    data_type = bpy.props.StringProperty()
+    obj_name: bpy.props.StringProperty()
+    data_type: bpy.props.StringProperty()
 
     def execute(self, context):
         if not bpy.context.scene.camera:
