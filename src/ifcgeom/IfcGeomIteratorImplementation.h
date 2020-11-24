@@ -1003,6 +1003,11 @@ namespace IfcGeom {
 				? +1.0
 				: -1.0
 			);
+			kernel.setValue(IfcGeom::Kernel::GV_DISABLE_BOOLEAN_RESULT,
+				settings.get(IteratorSettings::DISABLE_BOOLEAN_RESULT)
+				? +1.0
+				: -1.0
+			);
 
 			if (settings.get(IteratorSettings::BUILDING_LOCAL_PLACEMENT)) {
 				if (settings.get(IteratorSettings::SITE_LOCAL_PLACEMENT)) {
