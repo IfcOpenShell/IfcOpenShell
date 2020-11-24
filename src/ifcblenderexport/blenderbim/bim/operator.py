@@ -4509,8 +4509,8 @@ class GetRepresentationIfcParameters(bpy.types.Operator):
 
     def execute(self, context):
         props = bpy.context.active_object.data.BIMMeshProperties
-        dummy = ifcopenshell.file.from_string(props.ifc_definition)
-        for element in dummy:
+        elements = ifc.IfcStore.get_file().traverse(ifc.IfcStore.get_file().by_id(props.ifc_definition_id))
+        for element in elements:
             if not element.is_a("IfcRepresentationItem"):
                 continue
             for i in range(0, len(element)):
@@ -4533,21 +4533,21 @@ class UpdateIfcRepresentation(bpy.types.Operator):
     def execute(self, context):
         props = bpy.context.active_object.data.BIMMeshProperties
         parameter = props.ifc_parameters[self.index]
-        dummy = ifcopenshell.file.from_string(props.ifc_definition)
-        element = dummy.by_id(parameter.step_id)[parameter.index] = parameter.value
-        props.ifc_definition = dummy.to_string()
+        element = ifc.IfcStore.get_file().by_id(parameter.step_id)[parameter.index] = parameter.value
         self.recreate_ifc_representation()
         return {"FINISHED"}
 
     def recreate_ifc_representation(self):
         props = bpy.context.active_object.data.BIMMeshProperties
-        dummy = ifcopenshell.file.from_string(props.ifc_definition)
         logger = logging.getLogger("ImportIFC")
         self.ifc_import_settings = import_ifc.IfcImportSettings.factory(bpy.context, ifc.IfcStore.path, logger)
-        element = dummy.by_id(props.ifc_definition_id)
+        element = ifc.IfcStore.get_file().by_id(props.ifc_definition_id)
         settings = ifcopenshell.geom.settings()
         shape = ifcopenshell.geom.create_shape(settings, element)
         ifc_importer = import_ifc.IfcImporter(self.ifc_import_settings)
-        ifc_importer.file = dummy
+        ifc_importer.file = ifc.IfcStore.get_file()
         mesh = ifc_importer.create_mesh(element, shape)
         bpy.context.active_object.data.user_remap(mesh)
+        ifc_importer.material_creator.mesh = mesh
+        if ifc_importer.material_creator.parse_representation(element):
+            ifc_importer.material_creator.assign_material_slots_to_faces(bpy.context.active_object)
