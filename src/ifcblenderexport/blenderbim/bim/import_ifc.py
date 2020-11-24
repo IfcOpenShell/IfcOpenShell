@@ -58,7 +58,7 @@ class MaterialCreator:
             return
         self.parsed_meshes.append(self.mesh.name)
         if self.parse_representations(element):
-            self.assign_material_slots_to_faces(obj, self.mesh)
+            self.assign_material_slots_to_faces(obj)
 
     def parse_representations(self, element):
         has_parsed = False
@@ -91,22 +91,23 @@ class MaterialCreator:
             return True
 
         style = bpy.data.materials.get(style_name)
+
         if not style:
             style = bpy.data.materials.new(style_name)
+            self.parse_styled_item(styled_item, style)
 
-        self.parse_styled_item(styled_item, style)
         self.assign_style_to_mesh(style)
         item_id = self.mesh.BIMMeshProperties.ifc_item_ids.add()
         item_id.name = str(item.id())
         return True
 
-    def assign_material_slots_to_faces(self, obj, mesh):
-        if "ios_materials" not in mesh or not mesh["ios_materials"]:
+    def assign_material_slots_to_faces(self, obj):
+        if "ios_materials" not in self.mesh or not self.mesh["ios_materials"]:
             return
         if len(obj.material_slots) == 1:
             return
         material_to_slot = {}
-        for i, material in enumerate(mesh["ios_materials"]):
+        for i, material in enumerate(self.mesh["ios_materials"]):
             if material == "NULLMAT":
                 continue
             elif "surface-style-" in material:
@@ -124,9 +125,9 @@ class MaterialCreator:
                 slot_index = [self.canonicalise_material_name(s.name) for s in obj.material_slots].index(material)
             material_to_slot[i] = slot_index
 
-        if len(mesh.polygons) == len(mesh["ios_material_ids"]):
-            material_index = [(material_to_slot[mat_id] if mat_id != -1 else 0) for mat_id in mesh["ios_material_ids"]]
-            mesh.polygons.foreach_set("material_index", material_index)
+        if len(self.mesh.polygons) == len(self.mesh["ios_material_ids"]):
+            material_index = [(material_to_slot[mat_id] if mat_id != -1 else 0) for mat_id in self.mesh["ios_material_ids"]]
+            self.mesh.polygons.foreach_set("material_index", material_index)
 
     def canonicalise_material_name(self, name):
         return re.sub(r"\.[0-9]{3}$", "", name)

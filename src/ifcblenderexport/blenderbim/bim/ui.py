@@ -755,16 +755,12 @@ class BIM_PT_mesh(Panel):
 
         row = layout.row()
         row.prop(props, "geometry_type")
-        row = layout.row()
-        row.prop(props, "ifc_definition")
         layout.label(text="IFC Parameters:")
         row = layout.row()
         row.operator("bim.get_representation_ifc_parameters")
         for index, ifc_parameter in enumerate(props.ifc_parameters):
             row = layout.row(align=True)
             row.prop(ifc_parameter, "name", text="")
-            row.prop(ifc_parameter, "step_id")
-            row.prop(ifc_parameter, "index")
             row.prop(ifc_parameter, "value", text="")
             row.operator("bim.update_ifc_representation", icon="FILE_REFRESH", text="").index = index
 
