@@ -1412,6 +1412,9 @@ void IfcGeom::Kernel::setValue(GeomValue var, double value) {
 	case GV_LAYERSET_FIRST:
 		layerset_first = value;
 		break;
+	case GV_DISABLE_BOOLEAN_RESULT:
+		disable_boolean_result = value;
+		break;
 	default:
 		throw std::runtime_error("Invalid setting");
 	}
@@ -1439,6 +1442,8 @@ double IfcGeom::Kernel::getValue(GeomValue var) const {
 		return max_faces_to_orient;
 	case GV_LAYERSET_FIRST:
 		return layerset_first;
+	case GV_DISABLE_BOOLEAN_RESULT:
+		return disable_boolean_result;
 	}
 	throw std::runtime_error("Invalid setting");
 }

@@ -604,6 +604,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		return false;
 	}
 
+	if (getValue(GV_DISABLE_BOOLEAN_RESULT) > 0.0) {
+		shape = s1;
+		return true;
+	}
+
 	const double first_operand_volume = shape_volume(s1);
 	if (first_operand_volume <= ALMOST_ZERO) {
 		Logger::Message(Logger::LOG_WARNING, "Empty solid for:", l->FirstOperand());

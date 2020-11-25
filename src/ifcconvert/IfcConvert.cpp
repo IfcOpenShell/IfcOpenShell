@@ -289,6 +289,9 @@ int main(int argc, char** argv) {
 		("disable-opening-subtractions",
 			"Specifies whether to disable the boolean subtraction of "
 			"IfcOpeningElement Representations from their RelatingElements.")
+		("disable-boolean-results",
+			"Specifies whether to disable the boolean operation within representations "
+			"such as clippings by means of IfcBooleanResult and subtypes")
 		("enable-layerset-slicing",
 			"Specifies whether to enable the slicing of products according "
 			"to their associated IfcMaterialLayerSet.")
@@ -445,6 +448,7 @@ int main(int argc, char** argv) {
 	const bool merge_boolean_operands = vmap.count("merge-boolean-operands") != 0;
 #endif
 	const bool disable_opening_subtractions = vmap.count("disable-opening-subtractions") != 0;
+	const bool disable_boolean_results = vmap.count("disable-boolean-results") != 0;
 	const bool include_plan = vmap.count("plan") != 0;
 	const bool include_model = vmap.count("model") != 0 || (!include_plan);
 	const bool enable_layerset_slicing = vmap.count("enable-layerset-slicing") != 0;
@@ -713,6 +717,7 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::FASTER_BOOLEANS,              merge_boolean_operands);
 #endif
 	settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, disable_opening_subtractions);
+	settings.set(IfcGeom::IteratorSettings::DISABLE_BOOLEAN_RESULT, disable_boolean_results);
 	settings.set(IfcGeom::IteratorSettings::INCLUDE_CURVES,               include_plan);
 	settings.set(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES,  !include_model);
 	settings.set(IfcGeom::IteratorSettings::APPLY_LAYERSETS,              enable_layerset_slicing);
