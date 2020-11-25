@@ -1,26 +1,15 @@
 #!/usr/bin/env python3
 
-# Bernd: IMHO, this should go one lever up,
-# or all other code should go one level down
-# https://stackoverflow.com/questions/16981921/relative-imports-in-python-3
-
-
-# ATM bimtester code is copied here for for the sake of convenience
-# TODO bimtester should be installed in conjunction with ifcopenshell
-# to /urs/local by make install
-
-
 # Unix:
 # $ pyinstaller --onefile --clean --icon=icon.ico --add-data "features:features" bimtester.py`
 # Windows:
 # $ pyinstaller --onefile --clean --icon=icon.ico --add-data "features;features" bimtester.py`
 
-
 import argparse
 
-import clean
-import reports
-import run
+from bimtester import clean
+from bimtester import reports
+from bimtester import run
 
 
 if __name__ == "__main__":
