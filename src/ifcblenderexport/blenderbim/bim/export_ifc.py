@@ -1635,7 +1635,12 @@ class IfcExporter:
                 migrator = ifcopenshell.util.schema.Migrator()
                 classification["ifc"] = migrator.migrate(classification["raw_element"], self.file)
             self.file.createIfcRelAssociatesClassification(
-                ifcopenshell.guid.new(), self.owner_history, None, None, [self.ifc_parser.project["ifc"]], classification["ifc"]
+                ifcopenshell.guid.new(),
+                self.owner_history,
+                None,
+                None,
+                [self.ifc_parser.project["ifc"]],
+                classification["ifc"],
             )
 
     def create_classification_references(self):
@@ -3181,6 +3186,8 @@ class IfcExporter:
     def relate_objects_to_material_sets(self, set_type):
         if not self.ifc_export_settings.has_representations:
             return
+        if self.file.schema == "IFC2X3":
+            return self.relate_objects_to_material_sets_ifc2x3(set_type)
         for product_index, material_set in getattr(self.ifc_parser, f"rel_associates_material_{set_type}_set").items():
             if set_type == "constituent":
                 materials = self.create_material_constituents(material_set.material_constituents)
@@ -3211,6 +3218,35 @@ class IfcExporter:
                 material_set,
             )
 
+    def relate_objects_to_material_sets_ifc2x3(self, set_type):
+        # IFC2X3 has a very different way of handling materials, so we have a dedicated function
+        for product_index, material_set in getattr(self.ifc_parser, f"rel_associates_material_{set_type}_set").items():
+            if set_type == "constituent":
+                # IFC2X3 only supports lists, so we gracefully downgrade
+                material_select = self.file.create_entity(
+                    "IfcMaterialList", **{"Materials": self.create_material_list(material_set.material_constituents)}
+                )
+            elif set_type == "layer":
+                material_select = self.file.create_entity(
+                    "IfcMaterialLayerSet",
+                    **{
+                        "MaterialLayers": self.create_material_layers(material_set.material_layers),
+                        "LayerSetName": material_set.name or None,
+                    },
+                )
+            elif set_type == "profile":
+                material_select = None  # Not supported in IFC2X3
+            if not material_select:
+                continue
+            self.file.createIfcRelAssociatesMaterial(
+                ifcopenshell.guid.new(),
+                self.owner_history,
+                None,
+                None,
+                [self.ifc_parser.products[product_index]["ifc"]],
+                material_select,
+            )
+
     def create_material_layers(self, layers):
         results = []
         for layer in layers:
@@ -3221,20 +3257,24 @@ class IfcExporter:
             else:
                 category = layer.category
             is_ventilated = layer.is_ventilated == "TRUE" if layer.is_ventilated != "UNKNOWN" else None
-            results.append(
-                self.file.create_entity(
-                    "IfcMaterialLayer",
-                    **{
-                        "Material": self.ifc_parser.materials[layer.material.name]["ifc"] or None,
-                        "LayerThickness": layer.layer_thickness,
-                        "IsVentilated": is_ventilated,
-                        "Name": layer.name or None,
-                        "Description": layer.description or None,
-                        "Category": category,
-                        "Priority": layer.priority,
-                    },
-                )
-            )
+
+            attributes = {
+                "Material": self.ifc_parser.materials[layer.material.name]["ifc"] or None,
+                "LayerThickness": layer.layer_thickness,
+                "IsVentilated": is_ventilated,
+                "Name": layer.name or None,
+                "Description": layer.description or None,
+                "Category": category,
+                "Priority": layer.priority,
+            }
+
+            if self.file.schema == "IFC2X3":
+                del attributes["Name"]
+                del attributes["Description"]
+                del attributes["Category"]
+                del attributes["Priority"]
+
+            results.append(self.file.create_entity("IfcMaterialLayer", **attributes))
         return results
 
     def create_material_constituents(self, constituents):
@@ -3254,6 +3294,9 @@ class IfcExporter:
                 )
             )
         return results
+
+    def create_material_list(self, materials):
+        return [self.ifc_parser.materials[m.material.name]["ifc"] for m in materials]
 
     def create_material_profiles(self, profiles):
         results = []
