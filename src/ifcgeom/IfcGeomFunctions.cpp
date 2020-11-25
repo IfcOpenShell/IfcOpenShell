@@ -2741,7 +2741,7 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 		for (surfaces_t::const_iterator jt = surfaces.begin() + 1; jt != surfaces.end() - 1; ++jt, ++result_vector) {
 			layer_offset += *thickness++;
 
-			bool found_intersection = false;
+			bool found_intersection = false, parallel = false;
 			boost::optional<gp_Pnt> point_outside_param_range;
 				
 			const Handle_Geom_Surface& surface = *jt;
@@ -2753,9 +2753,20 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 			GeomAPI_IntCS intersections(other_axis_curve, surface);
 			if (intersections.IsDone() && intersections.NbPoints() == 1) {
 				const gp_Pnt& p = intersections.Point(1);
+
 				double u, v, w;
 				intersections.Parameters(1, u, v, w);
-				if (w < axis_u1 || w > axis_u2) {
+
+				gp_Pnt Pc, Ps;
+				gp_Vec Vc, Vs1, Vs2;
+				other_axis_curve->D1(w, Pc, Vc);
+				surface->D1(u, v, Ps, Vs1, Vs2);
+				Vs1.Cross(Vs2);
+
+				if (Vs1.IsParallel(Vc, 1.e-5)) {
+					Logger::Warning("Connected walls are parallel");
+					parallel = true;
+				} else if (w < axis_u1 || w > axis_u2) {
 					point_outside_param_range = p;
 				} else {
 					// Found an intersection. Layer end point is covered by connecting wall
@@ -2764,7 +2775,7 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 				}
 			}
 
-			if (!found_intersection && point_outside_param_range) {
+			if (!parallel && !found_intersection && point_outside_param_range) {
 
 				/*
 				Is there a bug in Open Cascade related to the intersection
@@ -3061,7 +3072,13 @@ bool IfcGeom::Kernel::apply_folded_layerset(const IfcRepresentationShapeItems& i
 			}
 		
 			builder.Perform();
-			shells.Append(TopoDS::Shell(builder.SewedShape()));
+			TopoDS_Shape s = builder.SewedShape();
+			if (s.ShapeType() == TopAbs_SHELL) {
+				shells.Append(TopoDS::Shell(s));
+			} else {
+				Logger::Error("Expected shell type in layerset processing");
+				return false;
+			}
 		}
 	}
 
