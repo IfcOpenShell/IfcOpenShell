@@ -1629,14 +1629,22 @@ class IfcExporter:
 
     def create_classifications(self):
         for classification in self.ifc_parser.classifications.values():
-            classification["ifc"] = self.file.add(classification["raw_element"])
+            if self.file.schema == "IFC4":
+                classification["ifc"] = self.file.add(classification["raw_element"])
+            else:
+                migrator = ifcopenshell.util.schema.Migrator()
+                classification["ifc"] = migrator.migrate(classification["raw_element"], self.file)
             self.file.createIfcRelAssociatesClassification(
-                ifcopenshell.guid.new(), None, None, None, [self.ifc_parser.project["ifc"]], classification["ifc"]
+                ifcopenshell.guid.new(), self.owner_history, None, None, [self.ifc_parser.project["ifc"]], classification["ifc"]
             )
 
     def create_classification_references(self):
         for reference in self.ifc_parser.classification_references.values():
-            reference["ifc"] = self.file.add(reference["raw_element"])
+            if self.file.schema == "IFC4":
+                reference["ifc"] = self.file.add(reference["raw_element"])
+            else:
+                migrator = ifcopenshell.util.schema.Migrator()
+                reference["ifc"] = migrator.migrate(reference["raw_element"], self.file)
 
     def create_constraints(self):
         for constraint in self.ifc_parser.constraints.values():
