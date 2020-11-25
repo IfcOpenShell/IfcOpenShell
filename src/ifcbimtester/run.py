@@ -240,7 +240,10 @@ def run_intmp_tests(args={}):
             "json.pretty",
             # next two lines are one arg
             "--outfile",
-            os.path.join(report_path, "report.json")
+            os.path.join(report_path, "report.json"),
+            # next two lines are one arg
+            "--define",
+            "ifcbasename={}".format(os.path.splitext(ifc_filename)[0])
         ])
     print(behave_args)
 
