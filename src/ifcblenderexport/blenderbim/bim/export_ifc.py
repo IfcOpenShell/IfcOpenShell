@@ -9,6 +9,7 @@ import zipfile
 import tempfile
 import ifcopenshell
 import ifcopenshell.util.pset
+import ifcopenshell.util.schema
 from pathlib import Path
 from mathutils import Vector, Matrix
 from .helper import SIUnitHelper
@@ -2356,7 +2357,11 @@ class IfcExporter:
             print("Authoring an IFC definition directly is not yet implemented")
             return
         elif representation["ifc_definition_id"]:
-            entry = self.file.add(ifc.IfcStore.get_file().by_id(representation["ifc_definition_id"]))
+            if self.file.schema == ifc.IfcStore.get_file().schema:
+                entry = self.file.add(ifc.IfcStore.get_file().by_id(representation["ifc_definition_id"]))
+            else:
+                migrator = ifcopenshell.util.schema.Migrator()
+                entry = migrator.migrate(ifc.IfcStore.get_file().by_id(representation["ifc_definition_id"]), self.file)
 
             substitutions = {"contexts": []}
 
@@ -2365,7 +2370,10 @@ class IfcExporter:
             )
 
             for element in representation_elements:
-                added_element = self.file.add(element)
+                if self.file.schema == ifc.IfcStore.get_file().schema:
+                    added_element = self.file.add(element)
+                else:
+                    added_element = migrator.migrate(element, self.file)
                 if added_element.is_a("IfcGeometricRepresentationContext"):
                     substitutions["contexts"].append(added_element)
 
