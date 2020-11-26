@@ -1323,6 +1323,7 @@ class IfcExporter:
         self.template_file = "{}template.ifc".format(ifc_export_settings.schema_dir)
         self.ifc_export_settings = ifc_export_settings
         self.ifc_parser = ifc_parser
+        self.roundtrip_id_map = {}
 
     def export(self, selected_objects):
         self.schema_version = self.ifc_export_settings.schema
@@ -2002,27 +2003,41 @@ class IfcExporter:
 
     def create_styled_items(self):
         for styled_item in self.ifc_parser.styled_items:
-            product = self.ifc_parser.products[
-                self.ifc_parser.get_product_index_from_raw_name(styled_item["related_product_name"])
-            ]
-            material_slots = {}
-            if product["ifc"].Representation:
-                # This is a simplification, which works since we are currently in a controlled environment where the
-                # BlenderBIM Add-on controls how data is structured during export. When we implement full IFC
-                # round-tripping, this simplification can no longer apply.
-                for representation in product["ifc"].Representation.Representations:
-                    # At the moment, until we implement full support for round-tripping contexts, we assume that styled
-                    # items only apply to the body context. This is therefore an incomplete implementation and may break
-                    # in edge cases.
-                    if representation.RepresentationIdentifier != "Body":
-                        continue
-                    for i, item in enumerate(self.get_geometric_representation_items(representation)):
-                        if i >= len(product["raw"].material_slots):
-                            i = 0
-                        material_slots[product["raw"].material_slots[i].name] = item
-            for styled_item_name, representation_item in material_slots.items():
-                if styled_item_name == styled_item["attributes"]["Name"]:
-                    styled_item["ifc"] = self.create_styled_item(styled_item, representation_item)
+            self.process_styled_item(styled_item)
+
+    def process_styled_item(self, styled_item):
+        product = self.ifc_parser.products[
+            self.ifc_parser.get_product_index_from_raw_name(styled_item["related_product_name"])
+        ]
+
+        if not product["ifc"].Representation:
+            return
+
+        material_slots = []
+        # This is a simplification, which works since we are currently in a controlled environment where the
+        # BlenderBIM Add-on controls how data is structured during export. When we implement full IFC
+        # round-tripping, this simplification can no longer apply.
+        for representation in product["ifc"].Representation.Representations:
+            # At the moment, until we implement full support for round-tripping contexts, we assume that styled
+            # items only apply to the body context. This is therefore an incomplete implementation and may break
+            # in edge cases.
+            if representation.RepresentationIdentifier != "Body":
+                continue
+            if product["raw"].data.BIMMeshProperties.ifc_definition_id:
+                # For native roundtripping, each slot could be a one to many relationship to items
+                for item in self.get_geometric_representation_items(representation):
+                    original_id = self.roundtrip_id_map[item.id()]
+                    i = product["raw"].data.BIMMeshProperties.ifc_item_ids.get(str(original_id)).slot_index
+                    material_slots.append((product["raw"].material_slots[i].name, item))
+            else:
+                # For Blender, each slot represents a geometric representation item
+                for i, item in enumerate(self.get_geometric_representation_items(representation)):
+                    if i >= len(product["raw"].material_slots):
+                        i = 0
+                    material_slots.append((product["raw"].material_slots[i].name, item))
+        for styled_item_name, representation_item in material_slots:
+            if styled_item_name == styled_item["attributes"]["Name"]:
+                styled_item["ifc"] = self.create_styled_item(styled_item, representation_item)
 
     def get_geometric_representation_items(self, representation):
         results = []
@@ -2389,6 +2404,8 @@ class IfcExporter:
                     added_element = migrator.migrate(element, self.file)
                 if added_element.is_a("IfcGeometricRepresentationContext"):
                     substitutions["contexts"].append(added_element)
+                elif added_element.is_a("IfcGeometricRepresentationItem"):
+                    self.roundtrip_id_map[added_element.id()] = element.id()
 
             for element in substitutions["contexts"]:
                 new_element = self.ifc_rep_context[representation["context"]][representation["subcontext"]][

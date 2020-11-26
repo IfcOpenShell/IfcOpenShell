@@ -269,6 +269,7 @@ if bpy is not None:
         prop.BIMObjectProperties,
         prop.BIMMaterialProperties,
         prop.SweptSolid,
+        prop.ItemSlotMap,
         prop.BIMMeshProperties,
         prop.BIMCameraProperties,
         prop.BIMTextProperties,

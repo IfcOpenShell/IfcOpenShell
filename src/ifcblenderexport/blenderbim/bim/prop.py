@@ -1716,6 +1716,11 @@ class RepresentationItem(PropertyGroup):
     vgroup: StringProperty(name="Vertex Group")
 
 
+class ItemSlotMap(PropertyGroup):
+    name: StringProperty(name="Item Element ID")
+    slot_index: IntProperty(name="Material Slot Index")
+
+
 class BIMMeshProperties(PropertyGroup):
     is_native: BoolProperty(name="Is Native", default=False)
     is_swept_solid: BoolProperty(name="Is Swept Solid")
@@ -1727,4 +1732,4 @@ class BIMMeshProperties(PropertyGroup):
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     active_representation_item_index: IntProperty(name="Active Representation Item Index")
     presentation_layer_index: IntProperty(name="Presentation Layer Index", default=-1)
-    ifc_item_ids: CollectionProperty(name="IFC Definition ID", type=StrProperty)
+    ifc_item_ids: CollectionProperty(name="IFC Definition ID", type=ItemSlotMap)
