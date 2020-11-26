@@ -1,5 +1,8 @@
 from behave import step
-from utils import IfcFile, assert_attribute, assert_type
+
+from utils import assert_attribute
+from utils import assert_type
+from utils import IfcFile
 
 
 @step("The element {guid} is an {ifc_class} only")

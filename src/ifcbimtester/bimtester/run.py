@@ -107,6 +107,25 @@ run.run_all(myfeatures_path, myfeatures_path)
 # like German Umlaute behave gives an error
 
 
+# TODO: change run_intmp_tests() and run_all()
+# arguments feature_path and ifc_file
+#
+# both is given:
+# replace the ifc in feature files
+#
+# feature_path only is given:
+# use the ifc provided in the feature files
+#
+# ifc_file only is given:
+# assume feature files are in the directory of the ifc
+#
+# none of both is given:
+# use current directory and the ifc from feature files
+
+
+# TODO: add arg for run_intmp_tests() to bimtester.py
+
+
 def run_intmp_tests(args={}):
 
     from behave import __version__ as behave_version
