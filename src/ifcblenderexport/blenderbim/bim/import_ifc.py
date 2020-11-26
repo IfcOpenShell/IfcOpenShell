@@ -38,13 +38,11 @@ class MaterialCreator:
     def __init__(self, ifc_import_settings, ifc_importer):
         self.mesh = None
         self.materials = {}
-        self.current_object_styles = []
         self.parsed_meshes = []
         self.ifc_import_settings = ifc_import_settings
         self.ifc_importer = ifc_importer
 
     def create(self, element, obj, mesh):
-        self.current_object_styles = []
         self.obj = obj
         self.mesh = mesh
         if (hasattr(element, "Representation") and not element.Representation) or (
@@ -84,10 +82,14 @@ class MaterialCreator:
         if not item.StyledByItem:
             return
 
+        item_id = self.mesh.BIMMeshProperties.ifc_item_ids.add()
+        item_id.name = str(item.id())
+
         styled_item = item.StyledByItem[0]
         style_name = self.get_style_name(styled_item)
 
-        if style_name in self.current_object_styles:
+        if self.mesh.materials.get(style_name):
+            item_id.slot_index = self.mesh.materials.find(style_name)
             return True
 
         style = bpy.data.materials.get(style_name)
@@ -97,8 +99,7 @@ class MaterialCreator:
             self.parse_styled_item(styled_item, style)
 
         self.assign_style_to_mesh(style)
-        item_id = self.mesh.BIMMeshProperties.ifc_item_ids.add()
-        item_id.name = str(item.id())
+        item_id.slot_index = len(self.mesh.materials) - 1
         return True
 
     def assign_material_slots_to_faces(self, obj):
@@ -327,7 +328,6 @@ class MaterialCreator:
         if not self.mesh:
             return
         self.mesh.materials.append(material)
-        self.current_object_styles.append(material.name)
 
 
 class IfcImporter:
