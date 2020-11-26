@@ -1,6 +1,6 @@
 from behave import step
+
 from utils import IfcFile
-from utils import IfcFile, assert_attribute
 
 
 @step("All elements must be under {number} polygons")
@@ -22,7 +22,10 @@ def step_impl(context, number):
         if total_polygons > number:
             errors.append((total_polygons, element))
     if errors:
-        message = "The following {} elements are over 500 polygons:\n".format(len(errors))
+        message = (
+            "The following {} elements are over 500 polygons:\n"
+            .format(len(errors))
+        )
         for error in errors:
             message += "Polygons: {} - {}\n".format(error[0], error[1])
         assert False, message
