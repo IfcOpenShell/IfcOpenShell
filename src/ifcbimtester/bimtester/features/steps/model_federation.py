@@ -1,8 +1,10 @@
-import numpy as np
 import ifcopenshell.util.geolocation
+import numpy as np
 from behave import step
+
+from utils import assert_number
+from utils import assert_type
 from utils import IfcFile
-from utils import IfcFile, assert_number, assert_type
 
 
 def a2p(o, z, x):
