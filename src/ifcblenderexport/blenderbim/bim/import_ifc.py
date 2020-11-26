@@ -1428,10 +1428,17 @@ class IfcImporter:
             for prop_name in ifcopenshell.util.pset.psets[new_pset.name]["HasPropertyTemplates"].keys():
                 prop = new_pset.properties.add()
                 prop.name = prop_name
+        try:
+            if hasattr(pset, "HasProperties"):
+                props = pset.HasProperties
+            elif hasattr(pset, "Properties"):
+                props = pset.Properties
+        except:
+            return # I've seen ArchiCAD produce invalid IFCs with empty data
         # Invalid IFC, but some vendors like Solidworks do this so we accomodate it
-        if not pset.HasProperties:
+        if not props:
             return
-        for prop in pset.HasProperties:
+        for prop in props:
             if prop.is_a("IfcPropertySingleValue") and prop.NominalValue:
                 index = new_pset.properties.find(prop.Name)
                 if index >= 0:
