@@ -1,9 +1,13 @@
-from behave import step
-from utils import IfcFile, assert_number, assert_pset, assert_attribute
 import math
 import ifcopenshell.util
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
+from behave import step
+
+from utils import assert_attribute
+from utils import assert_number
+from utils import assert_pset
+from utils import IfcFile
 
 
 @step(u"There must be at least one {ifc_class} element")
