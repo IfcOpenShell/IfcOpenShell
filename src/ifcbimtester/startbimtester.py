@@ -7,7 +7,7 @@ from bimtester import reports
 from bimtester import run
 
 
-def show_widget():
+def show_widget(features="", ifcfile=""):
 
     import sys
     from PySide2 import QtWidgets
@@ -18,7 +18,7 @@ def show_widget():
     app = QtWidgets.QApplication(sys.argv)
 
     # Create and show the form
-    form = GuiWidgetBimTester()
+    form = GuiWidgetBimTester(features, ifcfile)
     form.show()
 
     # Run the main Qt loop
@@ -66,16 +66,41 @@ if __name__ == "__main__":
         "-g",
         "--gui",
         action="store_true",
-        help="Start with gui",
+        help=(
+            "Start the gui. The option t (run in temp directory) "
+            "is triggered automaticly."
+        )
     )
+    parser.add_argument(
+        "featuresdir",
+        type=str,
+        nargs="?",
+        help=(
+            "Specify a features directory. This should contain "
+            " a directory named features which contains all the "
+            "feature files."
+        ),
+        default=""
+    )
+    parser.add_argument(
+        "ifcfile",
+        type=str,
+        nargs="?",
+        help=(
+            "Specify a ifc file."
+        ),
+        default=""
+    )
+
     args = vars(parser.parse_args())
+    print(args)
 
     if args["purge"]:
         clean.TestPurger().purge()
     elif args["report"]:
         reports.generate_report()
     elif args["gui"]:
-        show_widget()
+        show_widget(args["featuresdir"], args["ifcfile"])
     else:
         run.run_tests(args)
     print("# All tasks are complete :-)")
