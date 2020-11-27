@@ -346,6 +346,9 @@ class IfcImporter:
         if self.ifc_import_settings.should_import_native:
             self.settings.set(self.settings.DISABLE_OPENING_SUBTRACTIONS, True)
             self.ifc_import_settings.should_import_opening_elements = True
+        if self.ifc_import_settings.should_roundtrip_native:
+            self.settings.set(self.settings.DISABLE_OPENING_SUBTRACTIONS, True)
+            self.ifc_import_settings.should_import_opening_elements = True
         self.settings_2d = ifcopenshell.geom.settings()
         self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
         self.existing_elements = {}
