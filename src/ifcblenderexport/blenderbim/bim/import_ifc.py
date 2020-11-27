@@ -1944,7 +1944,7 @@ class IfcImporter:
                 collection.objects.link(obj)
             else:
                 self.ifc_import_settings.logger.error("An element could not be placed in the spatial tree %s", element)
-        elif hasattr(element, "HasFillings") and element.HasFillings:
+        elif element.is_a("IfcOpeningElement"):
             self.opening_collection.objects.link(obj)
         else:
             self.ifc_import_settings.logger.warning("Warning: this object is outside the spatial hierarchy %s", element)
