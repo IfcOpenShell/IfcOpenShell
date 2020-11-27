@@ -2943,7 +2943,11 @@ class AddSectionPlane(bpy.types.Operator):
         section.empty_display_type = "SINGLE_ARROW"
         section.empty_display_size = 5
         section.show_in_front = True
-        if bpy.context.active_object.select_get() and isinstance(bpy.context.active_object.data, bpy.types.Camera):
+        if (
+            bpy.context.active_object
+            and bpy.context.active_object.select_get()
+            and isinstance(bpy.context.active_object.data, bpy.types.Camera)
+        ):
             section.matrix_world = (
                 bpy.context.active_object.matrix_world @ Euler((radians(180.0), 0.0, 0.0), "XYZ").to_matrix().to_4x4()
             )
@@ -4553,9 +4557,10 @@ class UpdateIfcRepresentation(bpy.types.Operator):
             ifc_importer.material_creator.assign_material_slots_to_faces(bpy.context.active_object)
 
 
-class BlenderClasher():
+class BlenderClasher:
     def process_clash_set(self):
         import collision
+
         a_cm = collision.CollisionManager()
         b_cm = collision.CollisionManager()
         self.add_to_cm(a_cm, bpy.context.scene.BIMProperties.blender_clash_set_a)
@@ -4575,6 +4580,7 @@ class BlenderClasher():
     def add_to_cm(self, cm, object_names):
         import numpy as np
         import ifcclash
+
         for object_name in object_names:
             name = object_name.name
             obj = bpy.data.objects[name]
@@ -4587,6 +4593,7 @@ class BlenderClasher():
 
     def triangulate_mesh(self, obj):
         import bmesh
+
         mesh = obj.evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
         bm = bmesh.new()
         bm.from_mesh(mesh)
