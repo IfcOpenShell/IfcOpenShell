@@ -970,6 +970,9 @@ class IfcImporter:
         self.add_product_definitions(element, obj)
         self.add_product_representation_contexts(element, obj)
         self.added_data[element.GlobalId] = obj
+
+        if element.is_a("IfcOpeningElement"):
+            obj.display_type = "WIRE"
         return obj
 
     def add_element_representation_items(self, element, obj):
