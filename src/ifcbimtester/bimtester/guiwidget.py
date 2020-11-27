@@ -1,5 +1,6 @@
 # TODO: improve layout, start with feature file path and beside button !!!!!
 # TODO: if browse widgets will be canceled, last QLineEdit should be restored
+# TODO: keep path or file if in browse widget canceled
 
 import os
 
@@ -12,19 +13,25 @@ from .run import run_all
 
 class GuiWidgetBimTester(QtWidgets.QWidget):
 
-    # get some initial values
-    this_path = os.path.join(os.path.dirname(__file__))
-    desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
-
-    initial_ifcfile = "/home/hugo/Documents/zeug_sort/z_some_ifc/example_model.ifc"
-    if not os.path.isfile(initial_ifcfile):
-        initial_ifcfile = desktop_path
-    initial_featurespath = os.path.join(this_path, "..", "..", "features_bimtester", "fea_min")
-    if not os.path.isdir(initial_featurespath):
-        initial_featurespath = desktop_path
-
-    def __init__(self):
+    def __init__(
+        self,
+        features="",
+        ifcfile=""
+    ):
         super(GuiWidgetBimTester, self).__init__()
+
+        # get some initial values
+        user_path = os.path.expanduser("~")
+        print(features)
+        self.initial_featurespath = features
+        if not os.path.isdir(self.initial_featurespath):
+            self.initial_featurespath = user_path
+        print(ifcfile)
+        self.initial_ifcfile = ifcfile
+        if not os.path.isfile(self.initial_ifcfile):
+            self.initial_ifcfile = user_path
+
+        # init ui
         self._setup_ui()
 
     def __del__(self,):
@@ -180,8 +187,6 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
 
         # get input values
-        splitifcpath = os.path.split(self.get_ifcfile())
-        the_ifcfile_path, the_ifcfile_name = splitifcpath[0], splitifcpath[1]
         if self.featuredirfromifc_cb.isChecked() is True:
             the_features_path = the_ifcfile_path
             print(
@@ -190,15 +195,14 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
             )
         else:
             the_features_path = self.get_featurefilesdir()
+        the_ifcfile = self.get_ifcfile()
         print(the_features_path)
-        print(the_ifcfile_path)
-        print(the_ifcfile_name)
+        print(the_ifcfile)
 
         # run bimtester
         status = run_all(
             the_features_path,
-            the_ifcfile_path,
-            the_ifcfile_name
+            the_ifcfile,
         )
         print(status)
 
