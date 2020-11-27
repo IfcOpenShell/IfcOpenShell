@@ -1514,6 +1514,8 @@ class BIMProperties(PropertyGroup):
     active_document_information_index: IntProperty(name="Active Document Information Index")
     document_references: CollectionProperty(name="Document References", type=DocumentReference)
     active_document_reference_index: IntProperty(name="Active Document Reference Index")
+    blender_clash_set_a: CollectionProperty(name="Blender Clash Set A", type=StrProperty)
+    blender_clash_set_b: CollectionProperty(name="Blender Clash Set B", type=StrProperty)
     clash_sets: CollectionProperty(name="Clash Sets", type=ClashSet)
     active_clash_set_index: IntProperty(name="Active Clash Set Index")
     constraints: CollectionProperty(name="Constraints", type=Constraint)

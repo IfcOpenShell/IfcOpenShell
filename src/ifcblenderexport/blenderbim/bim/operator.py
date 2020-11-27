@@ -4551,3 +4551,83 @@ class UpdateIfcRepresentation(bpy.types.Operator):
         ifc_importer.material_creator.mesh = mesh
         if ifc_importer.material_creator.parse_representation(element):
             ifc_importer.material_creator.assign_material_slots_to_faces(bpy.context.active_object)
+
+
+class BlenderClasher():
+    def process_clash_set(self):
+        import collision
+        a_cm = collision.CollisionManager()
+        b_cm = collision.CollisionManager()
+        self.add_to_cm(a_cm, bpy.context.scene.BIMProperties.blender_clash_set_a)
+        self.add_to_cm(b_cm, bpy.context.scene.BIMProperties.blender_clash_set_b)
+        results = a_cm.in_collision_other(b_cm, return_data=True)
+        if not results[0]:
+            print("No clashes")
+            return
+        for contact in results[1]:
+            if contact.raw.penetration_depth < 0.01:
+                continue
+            print("-----")
+            print(contact.names)
+            print(contact.raw.normal)
+            print(contact.raw.pos)
+
+    def add_to_cm(self, cm, object_names):
+        import numpy as np
+        import ifcclash
+        for object_name in object_names:
+            name = object_name.name
+            obj = bpy.data.objects[name]
+            triangulated_mesh = self.triangulate_mesh(obj)
+            mat = np.array(obj.matrix_world)
+            mesh = ifcclash.Mesh()
+            mesh.vertices = np.array([tuple(v.co) for v in triangulated_mesh.vertices])
+            mesh.faces = np.array([tuple(p.vertices) for p in triangulated_mesh.polygons])
+            cm.add_object(name, mesh, mat)
+
+    def triangulate_mesh(self, obj):
+        import bmesh
+        mesh = obj.evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        bmesh.ops.triangulate(bm, faces=bm.faces)
+        bm.to_mesh(mesh)
+        bm.free()
+        del bm
+        return mesh
+
+
+class SetBlenderClashSetA(bpy.types.Operator):
+    bl_idname = "bim.set_blender_clash_set_a"
+    bl_label = "Set Blender Clash Set A"
+
+    def execute(self, context):
+        while len(bpy.context.scene.BIMProperties.blender_clash_set_a) > 0:
+            bpy.context.scene.BIMProperties.blender_clash_set_a.remove(0)
+        for obj in bpy.context.selected_objects:
+            new = bpy.context.scene.BIMProperties.blender_clash_set_a.add()
+            new.name = obj.name
+        return {"FINISHED"}
+
+
+class SetBlenderClashSetB(bpy.types.Operator):
+    bl_idname = "bim.set_blender_clash_set_b"
+    bl_label = "Set Blender Clash Set B"
+
+    def execute(self, context):
+        while len(bpy.context.scene.BIMProperties.blender_clash_set_b) > 0:
+            bpy.context.scene.BIMProperties.blender_clash_set_b.remove(0)
+        for obj in bpy.context.selected_objects:
+            new = bpy.context.scene.BIMProperties.blender_clash_set_b.add()
+            new.name = obj.name
+        return {"FINISHED"}
+
+
+class ExecuteBlenderClash(bpy.types.Operator):
+    bl_idname = "bim.execute_blender_clash"
+    bl_label = "Execute Blender Clash"
+
+    def execute(self, context):
+        blender_clasher = BlenderClasher()
+        blender_clasher.process_clash_set()
+        return {"FINISHED"}
