@@ -775,6 +775,10 @@ class IfcImporter:
         grids = self.file.by_type("IfcGrid")
         for grid in grids:
             shape = None
+            if not grid.UAxes or not grid.VAxes:
+                # Revit can create invalid grids
+                self.ifc_import_settings.logger.error("An invalid grid was found %s", grid)
+                continue
             if grid.Representation:
                 shape = ifcopenshell.geom.create_shape(self.settings_2d, grid)
             grid_obj = self.create_product(grid, shape)
@@ -787,10 +791,8 @@ class IfcImporter:
             collection.children.link(u_axes)
             v_axes = bpy.data.collections.new("VAxes")
             collection.children.link(v_axes)
-            if grid.UAxes: # Revit is known to create invalid grids
-                self.create_grid_axes(grid.UAxes, u_axes, element_matrix)
-            if grid.VAxes: # Revit is known to create invalid grids
-                self.create_grid_axes(grid.VAxes, v_axes, element_matrix)
+            self.create_grid_axes(grid.UAxes, u_axes, element_matrix)
+            self.create_grid_axes(grid.VAxes, v_axes, element_matrix)
             if grid.WAxes:
                 w_axes = bpy.data.collections.new("WAxes")
                 collection.children.link(w_axes)
@@ -1905,11 +1907,9 @@ class IfcImporter:
                 return self.place_object_in_spatial_tree(container, obj)
             elif element.is_a("IfcGrid"):
                 grid_collection = bpy.data.collections.get(obj.name)
-                if grid_collection:
+                if grid_collection: # Just in case we ran into invalid grids from Revit
                     self.spatial_structure_elements[container.GlobalId]["blender"].children.link(grid_collection)
                     grid_collection.objects.link(obj)
-                else: # Revit can create invalid grid objects
-                    self.spatial_structure_elements[container.GlobalId]["blender"].objects.link(obj)
             else:
                 self.spatial_structure_elements[container.GlobalId]["blender"].objects.link(obj)
         elif hasattr(element, "Decomposes") and element.Decomposes:
