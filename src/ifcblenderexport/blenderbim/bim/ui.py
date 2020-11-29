@@ -245,14 +245,26 @@ class BIM_PT_object_psets(Panel):
         row.prop(props, "pset_name", text="")
         row.operator("bim.add_pset")
 
+        self.draw_psets_ui(props)
+
+        if props.relating_type and props.relating_type.BIMObjectProperties.psets:
+            layout.label(text="Inherited Psets:")
+            self.draw_psets_ui(props.relating_type.BIMObjectProperties, enabled=False)
+
+    def draw_psets_ui(self, props, enabled=True):
         for index, pset in enumerate(props.psets):
-            row = layout.row(align=True)
+            row = self.layout.row(align=True)
+            row.enabled = enabled
             row.prop(pset, "name", text="")
-            row.operator("bim.remove_pset", icon="X", text="").pset_index = index
+            if enabled:
+                row.operator("bim.remove_pset", icon="X", text="").pset_index = index
             for prop in pset.properties:
-                row = layout.row(align=True)
+                row = self.layout.row(align=True)
+                row.enabled = enabled
                 row.prop(prop, "name", text="")
                 row.prop(prop, "string_value", text="")
+                if not enabled:
+                    continue
                 op = row.operator("bim.copy_property_to_selection", icon="COPYDOWN", text="")
                 op.pset_name = pset.name
                 op.prop_name = prop.name
