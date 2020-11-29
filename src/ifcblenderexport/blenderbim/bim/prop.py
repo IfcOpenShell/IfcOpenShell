@@ -1646,6 +1646,8 @@ class IfcParameter(PropertyGroup):
 class PsetQto(PropertyGroup):
     name: StringProperty(name="Name")
     properties: CollectionProperty(name="Properties", type=Attribute)
+    is_expanded: BoolProperty(name="Is Expanded")
+    is_editable: BoolProperty(name="Is Editable")
 
 
 class GlobalId(PropertyGroup):
