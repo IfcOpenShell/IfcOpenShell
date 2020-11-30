@@ -68,9 +68,9 @@ class IfcParser:
         self.rel_associates_classification_object = {}
         self.rel_associates_classification_type = {}
         self.rel_associates_material = {}
-        self.rel_associates_material_layer_set = {}
-        self.rel_associates_material_constituent_set = {}
-        self.rel_associates_material_profile_set = {}
+        self.rel_associates_material_layer_set = []
+        self.rel_associates_material_constituent_set = []
+        self.rel_associates_material_profile_set = []
         self.rel_associates_constraint_object = {}
         self.rel_associates_constraint_type = {}
         self.rel_aggregates = {}
@@ -433,11 +433,11 @@ class IfcParser:
         if obj.BIMObjectProperties.material_type == "IfcMaterial" and obj.BIMObjectProperties.material:
             self.rel_associates_material.setdefault(obj.BIMObjectProperties.material.name, []).append(product)
         elif obj.BIMObjectProperties.material_type == "IfcMaterialConstituentSet":
-            self.rel_associates_material_constituent_set[self.product_index] = obj.BIMObjectProperties.material_set
+            self.rel_associates_material_constituent_set.append((obj.BIMObjectProperties.material_set, product))
         elif obj.BIMObjectProperties.material_type == "IfcMaterialLayerSet":
-            self.rel_associates_material_layer_set[self.product_index] = obj.BIMObjectProperties.material_set
+            self.rel_associates_material_layer_set.append((obj.BIMObjectProperties.material_set, product))
         elif obj.BIMObjectProperties.material_type == "IfcMaterialProfileSet":
-            self.rel_associates_material_profile_set[self.product_index] = obj.BIMObjectProperties.material_set
+            self.rel_associates_material_profile_set.append((obj.BIMObjectProperties.material_set, product))
 
         return product
 
@@ -3205,7 +3205,7 @@ class IfcExporter:
             return
         if self.file.schema == "IFC2X3":
             return self.relate_objects_to_material_sets_ifc2x3(set_type)
-        for product_index, material_set in getattr(self.ifc_parser, f"rel_associates_material_{set_type}_set").items():
+        for material_set, product in getattr(self.ifc_parser, f"rel_associates_material_{set_type}_set"):
             if set_type == "constituent":
                 materials = self.create_material_constituents(material_set.material_constituents)
             elif set_type == "layer":
@@ -3231,13 +3231,13 @@ class IfcExporter:
                 self.owner_history,
                 None,
                 None,
-                [self.ifc_parser.products[product_index]["ifc"]],
+                [product["ifc"]],
                 material_set,
             )
 
     def relate_objects_to_material_sets_ifc2x3(self, set_type):
         # IFC2X3 has a very different way of handling materials, so we have a dedicated function
-        for product_index, material_set in getattr(self.ifc_parser, f"rel_associates_material_{set_type}_set").items():
+        for material_set, product in getattr(self.ifc_parser, f"rel_associates_material_{set_type}_set"):
             if set_type == "constituent":
                 # IFC2X3 only supports lists, so we gracefully downgrade
                 material_select = self.file.create_entity(
@@ -3260,7 +3260,7 @@ class IfcExporter:
                 self.owner_history,
                 None,
                 None,
-                [self.ifc_parser.products[product_index]["ifc"]],
+                [product["ifc"]],
                 material_select,
             )
 
