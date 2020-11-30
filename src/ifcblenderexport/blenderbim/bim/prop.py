@@ -553,6 +553,7 @@ class Subcontext(PropertyGroup):
     name: StringProperty(name="Name")
     context: StringProperty(name="Context")
     target_view: StringProperty(name="Target View")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
 class MaterialLayer(PropertyGroup):
@@ -1732,7 +1733,6 @@ class BIMMeshProperties(PropertyGroup):
     is_parametric: BoolProperty(name="Is Parametric", default=False)
     geometry_type: StringProperty(name="Geometry Type")
     ifc_definition: StringProperty(name="IFC Definition")
-    ifc_definition_id: IntProperty(name="IFC Definition ID")
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     active_representation_item_index: IntProperty(name="Active Representation Item Index")
     presentation_layer_index: IntProperty(name="Presentation Layer Index", default=-1)

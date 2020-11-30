@@ -2579,10 +2579,16 @@ class SwitchContext(bpy.types.Operator):
         if "/" not in self.obj.data.name:
             self.obj.data.name = ifcopenshell.guid.compress(str(uuid.uuid4()).replace("-", ""))
             self.obj.data.name = "Model/Body/MODEL_VIEW/" + self.obj.data.name
-            representation_context = self.obj.BIMObjectProperties.representation_contexts.add()
-            representation_context.context = "Model"
-            representation_context.name = "Body"
-            representation_context.target_view = "MODEL_VIEW"
+            has_default_context = False
+            for subcontext in self.obj.BIMObjectProperties.representation_contexts:
+                if subcontext.context == "Model" and subcontext.name == "Body" and subcontext.target_view == "MODEL_VIEW":
+                    has_default_context = True
+                    break
+            if not has_default_context:
+                representation_context = self.obj.BIMObjectProperties.representation_contexts.add()
+                representation_context.context = "Model"
+                representation_context.name = "Body"
+                representation_context.target_view = "MODEL_VIEW"
 
         self.context = bpy.context.scene.BIMProperties.available_contexts
         self.subcontext = bpy.context.scene.BIMProperties.available_subcontexts
@@ -4512,8 +4518,12 @@ class GetRepresentationIfcParameters(bpy.types.Operator):
     bl_label = "Get Representation IFC Parameters"
 
     def execute(self, context):
-        props = bpy.context.active_object.data.BIMMeshProperties
-        elements = ifc.IfcStore.get_file().traverse(ifc.IfcStore.get_file().by_id(props.ifc_definition_id))
+        obj = bpy.context.active_object
+        props = obj.data.BIMMeshProperties
+        element_id = self.get_ifc_definition_id(obj)
+        if not element_id:
+            return {"FINISHED"}
+        elements = ifc.IfcStore.get_file().traverse(ifc.IfcStore.get_file().by_id(element_id))
         for element in elements:
             if not element.is_a("IfcRepresentationItem"):
                 continue
@@ -4527,6 +4537,15 @@ class GetRepresentationIfcParameters(bpy.types.Operator):
                     if element[i]:
                         new.value = element[i]
         return {"FINISHED"}
+
+    def get_ifc_definition_id(self, obj):
+        if "/" not in obj.data.name:
+            context, subcontext, target_view = ("Model", "Body", "MODEL_VIEW")
+        else:
+            context, subcontext, target_view = obj.data.name.split("/")[0:3]
+        for c in obj.BIMObjectProperties.representation_contexts:
+            if c.context == context and c.name == subcontext and c.target_view == target_view:
+                return c.ifc_definition_id or None
 
 
 class UpdateIfcRepresentation(bpy.types.Operator):
@@ -4545,7 +4564,7 @@ class UpdateIfcRepresentation(bpy.types.Operator):
         props = bpy.context.active_object.data.BIMMeshProperties
         logger = logging.getLogger("ImportIFC")
         self.ifc_import_settings = import_ifc.IfcImportSettings.factory(bpy.context, ifc.IfcStore.path, logger)
-        element = ifc.IfcStore.get_file().by_id(props.ifc_definition_id)
+        element = ifc.IfcStore.get_file().by_id(self.get_ifc_definition_id(bpy.context.active_object))
         settings = ifcopenshell.geom.settings()
         shape = ifcopenshell.geom.create_shape(settings, element)
         ifc_importer = import_ifc.IfcImporter(self.ifc_import_settings)
@@ -4555,6 +4574,15 @@ class UpdateIfcRepresentation(bpy.types.Operator):
         ifc_importer.material_creator.mesh = mesh
         if ifc_importer.material_creator.parse_representation(element):
             ifc_importer.material_creator.assign_material_slots_to_faces(bpy.context.active_object)
+
+    def get_ifc_definition_id(self, obj):
+        if "/" not in obj.data.name:
+            context, subcontext, target_view = ("Model", "Body", "MODEL_VIEW")
+        else:
+            context, subcontext, target_view = obj.data.name.split("/")[0:3]
+        for c in obj.BIMObjectProperties.representation_contexts:
+            if c.context == context and c.name == subcontext and c.target_view == target_view:
+                return c.ifc_definition_id or None
 
 
 class BlenderClasher:
