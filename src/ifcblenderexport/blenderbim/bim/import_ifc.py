@@ -45,11 +45,11 @@ class MaterialCreator:
     def create(self, element, obj, mesh):
         self.obj = obj
         self.mesh = mesh
+        self.parse_material(element)
         if (hasattr(element, "Representation") and not element.Representation) or (
             hasattr(element, "RepresentationMaps") and not element.RepresentationMaps
         ):
             return
-        self.parse_material(element)
         if not self.mesh:
             return
         if self.mesh.name in self.parsed_meshes:
