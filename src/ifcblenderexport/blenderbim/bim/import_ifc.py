@@ -1366,10 +1366,12 @@ class IfcImporter:
 
     def add_product_representation_contexts(self, element, obj):
         subcontexts = []
+        ifc_definition_ids = []
         if element.is_a("IfcProduct"):
             if not element.Representation:
                 return
             for r in element.Representation.Representations:
+                ifc_definition_ids.append(r.id())
                 if r.ContextOfItems.is_a("IfcGeometricRepresentationSubContext"):
                     subcontexts.append(
                         "{}/{}/{}".format(
@@ -1388,6 +1390,7 @@ class IfcImporter:
             if not element.RepresentationMaps:
                 return
             for r in element.RepresentationMaps:
+                ifc_definition_ids.append(r.id())
                 if r.MappedRepresentation.ContextOfItems.is_a("IfcGeometricRepresentationSubContext"):
                     subcontexts.append(
                         "{}/{}/{}".format(
@@ -1404,14 +1407,14 @@ class IfcImporter:
                             "",
                         )
                     )
-        subcontexts = set(subcontexts)
-        for subcontext in subcontexts:
+        for i, subcontext in enumerate(subcontexts):
             representation_context = obj.BIMObjectProperties.representation_contexts.add()
             (
                 representation_context.context,
                 representation_context.name,
                 representation_context.target_view,
             ) = subcontext.split("/")
+            representation_context.ifc_definition_id = ifc_definition_ids[i]
 
     def add_product_definitions(self, element, obj):
         if not hasattr(element, "IsDefinedBy") or not element.IsDefinedBy:
@@ -2059,11 +2062,6 @@ class IfcImporter:
                 results.append({"raw": representation, "matrix": self.scale_matrix(matrix)})
         return results
 
-    def get_representation_of_context(self, representations, context):
-        for representation in representations:
-            if representation.RepresentationIdentifier == context:
-                return representation
-
     def scale_matrix(self, matrix):
         matrix[0][3] *= self.unit_scale
         matrix[1][3] *= self.unit_scale
@@ -2164,24 +2162,12 @@ class IfcImporter:
                     ios_materials.append(mat.name)
             mesh["ios_materials"] = ios_materials
             mesh["ios_material_ids"] = geometry.material_ids
-            self.store_representation_source(mesh, element, shape)
+            mesh.BIMMeshProperties.geometry_type = str(self.get_geometry_type(element))
             return mesh
         except:
             self.ifc_import_settings.logger.error("Could not create mesh for %s", element)
             import traceback
-
             print(traceback.format_exc())
-
-    def store_representation_source(self, mesh, element, shape):
-        # TODO Refactor to specialist class
-        mesh.BIMMeshProperties.geometry_type = str(self.get_geometry_type(element))
-        if not self.ifc_import_settings.should_roundtrip_native:
-            return
-        if element.is_a("IfcRepresentation"):
-            representation = element
-        else:
-            representation = self.get_representation_of_context(element.Representation.Representations, shape.context)
-        mesh.BIMMeshProperties.ifc_definition_id = int(representation.id())
 
     def create_curve(self, geometry):
         curve = bpy.data.curves.new(geometry.id, type="CURVE")
