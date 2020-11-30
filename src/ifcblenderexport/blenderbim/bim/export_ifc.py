@@ -1023,8 +1023,6 @@ class IfcParser:
             obj.data, obj, "Model", "Body", "MODEL_VIEW"
         )
         if "Model/Box/MODEL_VIEW" in self.generated_subcontexts:
-            if self.ifc_export_settings.should_roundtrip_native and obj.data.BIMMeshProperties.ifc_definition_id:
-                return
             self.representations["Model/Box/MODEL_VIEW/{}".format(obj.data.name)] = self.get_representation(
                 obj.data, obj, "Model", "Box", "MODEL_VIEW"
             )
@@ -1057,21 +1055,44 @@ class IfcParser:
         for context in self.ifc_export_settings.context_tree:
             for subcontext in context["subcontexts"]:
                 for target_view in subcontext["target_views"]:
-                    self.append_representation_in_context(obj, context["name"], subcontext["name"], target_view, name)
+                    rep_context = self.get_obj_representation_context(obj, context["name"], subcontext["name"], target_view)
+                    if rep_context:
+                        self.append_representation_in_context(obj, rep_context, name)
 
-    def append_representation_in_context(self, obj, context, subcontext, target_view, name):
+    def get_obj_representation_context(self, obj, context, subcontext, target_view):
+        for c in obj.BIMObjectProperties.representation_contexts:
+            if c.context == context and c.name == subcontext and c.target_view == target_view:
+                return c
+        if obj.BIMObjectProperties.representation_contexts:
+            return
+        if context == "Model" and subcontext == "Body" and target_view == "MODEL_VIEW":
+            representation_context = obj.BIMObjectProperties.representation_contexts.add()
+            representation_context.context = "Model"
+            representation_context.name = "Body"
+            representation_context.target_view = "MODEL_VIEW"
+            return representation_context
+
+    def append_representation_in_context(self, obj, rep_context, name):
+        context = rep_context.context
+        subcontext = rep_context.name
+        target_view = rep_context.target_view
+
+        if self.ifc_export_settings.should_roundtrip_native and rep_context.ifc_definition_id:
+            self.representations[
+                "{}/{}/{}/{}".format(context, subcontext, target_view, name)
+            ] = self.get_representation(obj.data, obj, context, subcontext, target_view)
+            return
+
         context_prefix = "/".join([context, subcontext, target_view])
         mesh_name = "/".join([context_prefix, name])
         mesh = self.search_for_mesh_or_curve_data(mesh_name)
+        # TODO: if the search result is empty, we should check for ifc_definition_id
         if mesh:
             self.representations[mesh_name] = self.get_representation(mesh, obj, context, subcontext, target_view)
             if "Model/Box/MODEL_VIEW" in self.generated_subcontexts and context_prefix == "Model/Body/MODEL_VIEW":
-                if self.ifc_export_settings.should_roundtrip_native and obj.data.BIMMeshProperties.ifc_definition_id:
-                    pass
-                else:
-                    self.representations[
-                        "Model/Box/MODEL_VIEW/{}".format(mesh_name.split("/")[3])
-                    ] = self.get_representation(obj.data, obj, "Model", "Box", "MODEL_VIEW")
+                self.representations[
+                    "Model/Box/MODEL_VIEW/{}".format(mesh_name.split("/")[3])
+                ] = self.get_representation(obj.data, obj, "Model", "Box", "MODEL_VIEW")
         elif (
             context_prefix == "Model/Body/MODEL_VIEW" and obj.data and not self.is_mesh_context_sensitive(obj.data.name)
         ):
@@ -1090,6 +1111,7 @@ class IfcParser:
         return data
 
     def get_representation(self, mesh, obj, context, subcontext, target_view):
+        rep_context = self.get_obj_representation_context(obj, context, subcontext, target_view)
         return {
             "ifc": None,
             "raw": mesh,
@@ -1097,11 +1119,9 @@ class IfcParser:
             "context": context,
             "subcontext": subcontext,
             "target_view": target_view,
-            "has_ifc_definition": False
-            if not hasattr(mesh, "BIMMeshProperties")
-            else (mesh.BIMMeshProperties.ifc_definition or mesh.BIMMeshProperties.ifc_definition_id),
+            "has_ifc_definition": rep_context and rep_context.ifc_definition_id,
             "ifc_definition": mesh.BIMMeshProperties.ifc_definition if hasattr(mesh, "BIMMeshProperties") else None,
-            "ifc_definition_id": mesh.BIMMeshProperties.ifc_definition_id
+            "ifc_definition_id": rep_context.ifc_definition_id if rep_context else 0
             if hasattr(mesh, "BIMMeshProperties")
             else None,
             "is_parametric": mesh.BIMMeshProperties.is_parametric if hasattr(mesh, "BIMMeshProperties") else False,
@@ -1116,7 +1136,7 @@ class IfcParser:
             "presentation_layer": mesh.BIMMeshProperties.presentation_layer_index
             if hasattr(mesh, "BIMMeshProperties") and mesh.BIMMeshProperties.presentation_layer_index != -1
             else False,
-            "attributes": {"Name": mesh.name},
+            "attributes": {"Name": mesh.name if mesh else ""},
         }
 
     def is_wireframe_mesh(self, mesh, obj):
@@ -1323,7 +1343,8 @@ class IfcExporter:
         self.template_file = "{}template.ifc".format(ifc_export_settings.schema_dir)
         self.ifc_export_settings = ifc_export_settings
         self.ifc_parser = ifc_parser
-        self.roundtrip_id_map = {}
+        self.migrator = ifcopenshell.util.schema.Migrator()
+        self.roundtrip_id_new_to_old = {}
 
     def export(self, selected_objects):
         self.schema_version = self.ifc_export_settings.schema
@@ -1633,6 +1654,7 @@ class IfcExporter:
             if self.file.schema == "IFC4":
                 classification["ifc"] = self.file.add(classification["raw_element"])
             else:
+                # TODO: Check if we can use self.migrator instead
                 migrator = ifcopenshell.util.schema.Migrator()
                 classification["ifc"] = migrator.migrate(classification["raw_element"], self.file)
             self.file.createIfcRelAssociatesClassification(
@@ -1649,6 +1671,7 @@ class IfcExporter:
             if self.file.schema == "IFC4":
                 reference["ifc"] = self.file.add(reference["raw_element"])
             else:
+                # TODO: Check if we can use self.migrator instead
                 migrator = ifcopenshell.util.schema.Migrator()
                 reference["ifc"] = migrator.migrate(reference["raw_element"], self.file)
 
@@ -2023,10 +2046,11 @@ class IfcExporter:
             # in edge cases.
             if representation.RepresentationIdentifier != "Body":
                 continue
-            if product["raw"].data.BIMMeshProperties.ifc_definition_id:
+            rep_context = self.ifc_parser.get_obj_representation_context(product["raw"], "Model", "Body", "MODEL_VIEW")
+            if rep_context and rep_context.ifc_definition_id:
                 # For native roundtripping, each slot could be a one to many relationship to items
                 for item in self.get_geometric_representation_items(representation):
-                    original_id = self.roundtrip_id_map[item.id()]
+                    original_id = self.roundtrip_id_new_to_old[item.id()]
                     i = product["raw"].data.BIMMeshProperties.ifc_item_ids.get(str(original_id)).slot_index
                     material_slots.append((product["raw"].material_slots[i].name, item))
             else:
@@ -2384,38 +2408,40 @@ class IfcExporter:
         if representation["ifc_definition"]:
             print("Authoring an IFC definition directly is not yet implemented")
             return
-        elif representation["ifc_definition_id"]:
+        if representation["ifc_definition_id"]:
+            return self.create_representation_from_definition_id(representation)
+
+    def create_representation_from_definition_id(self, representation):
+        if self.file.schema == ifc.IfcStore.get_file().schema:
+            entry = self.file.add(ifc.IfcStore.get_file().by_id(representation["ifc_definition_id"]))
+        else:
+            entry = self.migrator.migrate(ifc.IfcStore.get_file().by_id(representation["ifc_definition_id"]), self.file)
+
+        substitutions = {"contexts": []}
+
+        representation_elements = ifc.IfcStore.get_file().traverse(
+            ifc.IfcStore.get_file().by_id(representation["ifc_definition_id"])
+        )
+
+        for element in representation_elements:
             if self.file.schema == ifc.IfcStore.get_file().schema:
-                entry = self.file.add(ifc.IfcStore.get_file().by_id(representation["ifc_definition_id"]))
+                added_element = self.file.add(element)
             else:
-                migrator = ifcopenshell.util.schema.Migrator()
-                entry = migrator.migrate(ifc.IfcStore.get_file().by_id(representation["ifc_definition_id"]), self.file)
+                added_element = self.migrator.migrate(element, self.file)
+            if added_element.is_a("IfcGeometricRepresentationContext"):
+                substitutions["contexts"].append(added_element)
+            elif added_element.is_a("IfcGeometricRepresentationItem"):
+                self.roundtrip_id_new_to_old[added_element.id()] = element.id()
 
-            substitutions = {"contexts": []}
-
-            representation_elements = ifc.IfcStore.get_file().traverse(
-                ifc.IfcStore.get_file().by_id(representation["ifc_definition_id"])
-            )
-
-            for element in representation_elements:
-                if self.file.schema == ifc.IfcStore.get_file().schema:
-                    added_element = self.file.add(element)
-                else:
-                    added_element = migrator.migrate(element, self.file)
-                if added_element.is_a("IfcGeometricRepresentationContext"):
-                    substitutions["contexts"].append(added_element)
-                elif added_element.is_a("IfcGeometricRepresentationItem"):
-                    self.roundtrip_id_map[added_element.id()] = element.id()
-
-            for element in substitutions["contexts"]:
-                new_element = self.ifc_rep_context[representation["context"]][representation["subcontext"]][
-                    representation["target_view"]
-                ]["ifc"]
-                for inverse in self.file.get_inverse(element):
-                    ifcopenshell.util.element.replace_attribute(inverse, element, new_element)
-                # TODO: Work out how and when to purge this
-                # self.file.remove(element)
-            return entry
+        for element in substitutions["contexts"]:
+            new_element = self.ifc_rep_context[representation["context"]][representation["subcontext"]][
+                representation["target_view"]
+            ]["ifc"]
+            for inverse in self.file.get_inverse(element):
+                ifcopenshell.util.element.replace_attribute(inverse, element, new_element)
+            # TODO: Work out how and when to purge this
+            # self.file.remove(element)
+        return entry
 
     def create_model_representation(self, representation):
         if representation["subcontext"] == "Annotation":
