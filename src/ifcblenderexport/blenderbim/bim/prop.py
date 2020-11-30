@@ -494,7 +494,7 @@ def getMaterialTypes(self, context):
     global materialtypes_enum
     materialtypes_enum.clear()
     materialtypes_enum = [
-        (m, m, "") for m in ["IfcMaterial", "IfcMaterialConstituentSet", "IfcMaterialLayerSet", "IfcMaterialProfileSet"]
+        (m, m, "") for m in ["None", "IfcMaterial", "IfcMaterialConstituentSet", "IfcMaterialLayerSet", "IfcMaterialProfileSet"]
     ]
     return materialtypes_enum
 
@@ -1646,7 +1646,7 @@ class IfcParameter(PropertyGroup):
 class PsetQto(PropertyGroup):
     name: StringProperty(name="Name")
     properties: CollectionProperty(name="Properties", type=Attribute)
-    is_expanded: BoolProperty(name="Is Expanded")
+    is_expanded: BoolProperty(name="Is Expanded", default=True)
     is_editable: BoolProperty(name="Is Editable")
 
 

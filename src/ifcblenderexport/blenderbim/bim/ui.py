@@ -122,7 +122,18 @@ class BIM_PT_object_material(Panel):
         row = layout.row()
         row.prop(props, "material_type")
 
-        if props.material_type == "IfcMaterial":
+        if props.material_type == "None" and props.relating_type:
+            props = props.relating_type.BIMObjectProperties
+            if props.material_type == "None":
+                pass
+            elif props.material_type == "IfcMaterial" and props.material:
+                layout.label(text="Inherited Material:")
+            elif props.material_set:
+                layout.label(text="Inherited Material Set:")
+
+        if props.material_type == "None":
+            pass
+        elif props.material_type == "IfcMaterial":
             row = layout.row()
             row.prop(props, "material")
         else:
