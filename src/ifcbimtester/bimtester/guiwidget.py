@@ -20,16 +20,20 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
     ):
         super(GuiWidgetBimTester, self).__init__()
 
-        # get some initial values
+        # get features dir
         user_path = os.path.expanduser("~")
-        print(features)
+        # print(features)
         self.initial_featurespath = features
         if not os.path.isdir(self.initial_featurespath):
             self.initial_featurespath = user_path
-        print(ifcfile)
+        print(self.initial_featurespath)
+
+        # get ifc file
+        # print(ifcfile)
         self.initial_ifcfile = ifcfile
         if not os.path.isfile(self.initial_ifcfile):
             self.initial_ifcfile = user_path
+        print(self.initial_ifcfile)
 
         # init ui
         self._setup_ui()
@@ -58,7 +62,10 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
         theicon = QtSvg.QSvgWidget(iconpath)
         # none works ...
         #theicon.setGeometry(20,20,200,200)
-        #theicon.setSizePolicy(QtGui.QSizePolicy.Policy.Maximum, QtGui.QSizePolicy.Policy.Maximum)
+        #theicon.setSizePolicy(
+        #    QtGui.QSizePolicy.Policy.Maximum,
+        #    QtGui.QSizePolicy.Policy.Maximum
+        #)
         #theicon.sizeHint()
         """
         # as pixmap
@@ -79,8 +86,7 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
         # use a layout with a frame and a title, see solver framework tp
         # beside button
         ffifc_str = (
-            "Feature files beside IFC file. "
-            "Feature files in directory features."
+            "Feature files in a directory 'features' beside the IFC file."
         )
         featuredirfromifc_label = QtWidgets.QLabel(ffifc_str, self)
         self.featuredirfromifc_cb = QtWidgets.QCheckBox(self)
@@ -91,7 +97,7 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
         # path browser and line edit
         _ffdir_str = (
             "Feature files directory. "
-            "Feature files in directory features."
+            "'features' directory has to be in there."
         )
         _featurefilesdir_label = QtWidgets.QLabel(_ffdir_str, self)
         self.featurefilesdir_text = QtWidgets.QLineEdit()
@@ -118,14 +124,18 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
         # Layout:
         layout = QtWidgets.QGridLayout()
         layout.addWidget(theicon, 1, 0, alignment=QtCore.Qt.AlignRight)
-        layout.addWidget(_ifcfile_label, 2, 0)
-        layout.addWidget(self.ifcfile_text, 3, 0)
-        layout.addWidget(_ifcfile_browse_btn, 3, 1)
-        layout.addWidget(_featurefilesdir_label, 4, 0)
-        layout.addWidget(self.featurefilesdir_text, 5, 0)
-        layout.addWidget(self.feafilesdir_browse_btn, 5, 1)
-        layout.addWidget(featuredirfromifc_label, 6, 0)
-        layout.addWidget(self.featuredirfromifc_cb, 6, 1)
+
+        layout.addWidget(featuredirfromifc_label, 2, 0)
+        layout.addWidget(self.featuredirfromifc_cb, 2, 1)
+
+        layout.addWidget(_featurefilesdir_label, 3, 0)
+        layout.addWidget(self.featurefilesdir_text, 4, 0)
+        layout.addWidget(self.feafilesdir_browse_btn, 4, 1)
+
+        layout.addWidget(_ifcfile_label, 5, 0)
+        layout.addWidget(self.ifcfile_text, 6, 0)
+        layout.addWidget(_ifcfile_browse_btn, 6, 1)
+
         layout.addLayout(_buttons, 7, 0)
         # row stretches by 10 compared to the others, std is 0
         # first parameter is the row number
@@ -186,17 +196,21 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
         print("Run BIMTester")
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
 
-        # get input values
+        # get features dir
         if self.featuredirfromifc_cb.isChecked() is True:
-            the_features_path = the_ifcfile_path
+            the_features_path = os.path.dirname(os.path.realpath(
+                self.get_ifcfile()
+            ))
             print(
                 "Make sure the feature files are beside "
                 "the ifc file in a directory named 'features'."
             )
         else:
             the_features_path = self.get_featurefilesdir()
-        the_ifcfile = self.get_ifcfile()
         print(the_features_path)
+
+        # get ifc file
+        the_ifcfile = self.get_ifcfile()
         print(the_ifcfile)
 
         # run bimtester
