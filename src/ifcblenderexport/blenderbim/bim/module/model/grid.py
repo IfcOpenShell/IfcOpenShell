@@ -14,7 +14,18 @@ def add_object(self, context):
     default_collection.objects.unlink(obj)
 
     collection = bpy.data.collections.new("IfcGrid/" + name)
-    bpy.context.view_layer.active_layer_collection.collection.children.link(collection)
+    has_site_collection = False
+    for child in bpy.context.view_layer.layer_collection.children:
+        if "IfcProject/" not in child.name:
+            continue
+        for grandchild in child.children:
+            if "IfcSite/" not in grandchild.name:
+                continue
+            has_site_collection = True
+            grandchild.collection.children.link(collection)
+            break
+    if not has_site_collection:
+        bpy.context.view_layer.active_layer_collection.collection.children.link(collection)
     collection.objects.link(obj)
 
     axes_collection = bpy.data.collections.new("UAxes")
