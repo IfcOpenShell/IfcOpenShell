@@ -10,6 +10,7 @@ import ifcopenshell
 import ifcopenshell.util.selector
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.pset
+import ifcopenshell.util.schema
 import tempfile
 from . import export_ifc
 from . import import_ifc
@@ -220,7 +221,22 @@ class ReassignClass(bpy.types.Operator):
 
     def execute(self, context):
         obj = bpy.context.active_object
+        ifc_class = obj.name.split("/")[0]
+        ifc_schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(bpy.context.scene.BIMProperties.export_schema)
         bpy.context.active_object.BIMObjectProperties.is_reassigning_class = True
+        ifc_products = [
+            "IfcElement",
+            "IfcElementType",
+            "IfcSpatialElement",
+            "IfcGroup",
+            "IfcStructural",
+            "IfcPositioningElement",
+            "IfcContext",
+            "IfcAnnotation",
+        ]
+        for ifc_product in ifc_products:
+            if ifcopenshell.util.schema.is_a(ifc_schema.declaration_by_name(ifc_class), ifc_product):
+                bpy.context.scene.BIMProperties.ifc_product = ifc_product
         bpy.context.scene.BIMProperties.ifc_class = obj.name.split("/")[0]
         predefined_type = obj.BIMObjectProperties.attributes.get("PredefinedType")
         if predefined_type:
@@ -1801,6 +1817,7 @@ class SelectClashSource(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
+
 class SelectClashResults(bpy.types.Operator):
     bl_idname = "bim.select_clash_results"
     bl_label = "Select Clash Results"
@@ -1814,6 +1831,7 @@ class SelectClashResults(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
+
 class SelectSmartGroupedClashesPath(bpy.types.Operator):
     bl_idname = "bim.select_smart_grouped_clashes_path"
     bl_label = "Select Smart-Grouped Clashes Path"
@@ -1826,6 +1844,7 @@ class SelectSmartGroupedClashesPath(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
+
 
 class ExecuteIfcClash(bpy.types.Operator):
     bl_idname = "bim.execute_ifc_clash"
@@ -1901,6 +1920,7 @@ class SelectIfcClashResults(bpy.types.Operator):
                 obj.select_set(True)
         return {"FINISHED"}
 
+
 class SmartClashGroup(bpy.types.Operator):
     bl_idname = "bim.smart_clash_group"
     bl_label = "Smart Group Clashes"
@@ -1918,19 +1938,21 @@ class SmartClashGroup(bpy.types.Operator):
 
         with open(self.filepath) as f:
             clash_sets = json.load(f)
-        
+
         # execute the smart grouping
         save_path = bpy.path.ensure_ext(bpy.context.scene.BIMProperties.smart_grouped_clashes_path, ".json")
-        smart_grouped_clashes = ifc_clasher.smart_group_clashes(clash_sets, bpy.context.scene.BIMProperties.smart_clash_grouping_max_distance)
+        smart_grouped_clashes = ifc_clasher.smart_group_clashes(
+            clash_sets, bpy.context.scene.BIMProperties.smart_clash_grouping_max_distance
+        )
 
         # save smart_groups to json
-        with open(save_path, 'w') as f:
+        with open(save_path, "w") as f:
             f.write(json.dumps(smart_grouped_clashes))
 
         clash_set_name = bpy.context.scene.BIMProperties.clash_sets[
             bpy.context.scene.BIMProperties.active_clash_set_index
         ].name
-        
+
         # Reset the list of smart_clash_groups for the UI
         bpy.context.scene.BIMProperties.smart_clash_groups.clear()
 
@@ -1954,7 +1976,7 @@ class SmartClashGroup(bpy.types.Operator):
 class LoadSmartGroupsForActiveClashSet(bpy.types.Operator):
     bl_idname = "bim.load_smart_groups_for_active_clash_set"
     bl_label = "Load Smart Groups for Active Clash Set"
-    
+
     def execute(self, context):
         smart_groups_path = bpy.path.ensure_ext(bpy.context.scene.BIMProperties.smart_grouped_clashes_path, ".json")
 
@@ -1967,7 +1989,7 @@ class LoadSmartGroupsForActiveClashSet(bpy.types.Operator):
 
         # Reset the list of smart_clash_groups for the UI
         bpy.context.scene.BIMProperties.smart_clash_groups.clear()
-                
+
         for clash_set, smart_groups in smart_grouped_clashes.items():
             # Only select the clashes that correspond to the actively selected IFC Clash Set
             if clash_set != clash_set_name:
@@ -1990,21 +2012,24 @@ class SelectSmartGroup(bpy.types.Operator):
 
     def execute(self, context):
         # Select smart group in view
-        selected_smart_group = bpy.context.scene.BIMProperties.smart_clash_groups[bpy.context.scene.BIMProperties.active_smart_group_index]
-        #print(selected_smart_group.number)
+        selected_smart_group = bpy.context.scene.BIMProperties.smart_clash_groups[
+            bpy.context.scene.BIMProperties.active_smart_group_index
+        ]
+        # print(selected_smart_group.number)
 
         for obj in bpy.context.visible_objects:
             global_id = obj.BIMObjectProperties.attributes.get("GlobalId")
             if global_id:
                 for id in selected_smart_group.global_ids:
-                    #print("Id: ", id)
-                    #print("Global id: ", global_id.string_value)
+                    # print("Id: ", id)
+                    # print("Global id: ", global_id.string_value)
                     if global_id.string_value in id.name:
-                        #print("object match: ", global_id)
+                        # print("object match: ", global_id)
                         obj.select_set(True)
 
         return {"FINISHED"}
-        
+
+
 class SelectBcfFile(bpy.types.Operator):
     bl_idname = "bim.select_bcf_file"
     bl_label = "Select BCF File"
@@ -2555,7 +2580,8 @@ class CutSection(bpy.types.Operator):
 
     def does_obj_have_target_view_representation(self, obj, camera):
         return camera.data.BIMCameraProperties.target_view in [
-            c.target_view for c in obj.BIMObjectProperties.representation_contexts
+            c.target_view
+            for c in obj.BIMObjectProperties.representation_contexts
             if c.context == "Plan" and c.name == "Annotation"
         ]
 
@@ -2713,7 +2739,11 @@ class SwitchContext(bpy.types.Operator):
             self.obj.data.name = "Model/Body/MODEL_VIEW/" + self.obj.data.name
             has_default_context = False
             for subcontext in self.obj.BIMObjectProperties.representation_contexts:
-                if subcontext.context == "Model" and subcontext.name == "Body" and subcontext.target_view == "MODEL_VIEW":
+                if (
+                    subcontext.context == "Model"
+                    and subcontext.name == "Body"
+                    and subcontext.target_view == "MODEL_VIEW"
+                ):
                     has_default_context = True
                     break
             if not has_default_context:

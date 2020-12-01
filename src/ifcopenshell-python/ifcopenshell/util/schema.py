@@ -8,6 +8,16 @@ import ifcopenshell
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
+
+def is_a(entity, ifc_class):
+    ifc_class = ifc_class.lower()
+    if entity.name_lc() == ifc_class:
+        return True
+    if entity.supertype():
+        return is_a(entity.supertype(), ifc_class)
+    return False
+
+
 class Migrator:
     def __init__(self):
         self.migrated_ids = {}
@@ -70,13 +80,13 @@ class Migrator:
             return new_file.by_id(self.migrated_ids[element.id()])
         except:
             pass
-        #print("Migrating", element)
+        # print("Migrating", element)
         schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(new_file.schema)
         new_element = self.migrate_class(element, new_file)
-        #print("Migrated class from {} to {}".format(element, new_element))
+        # print("Migrated class from {} to {}".format(element, new_element))
         new_element_schema = schema.declaration_by_name(new_element.is_a())
         if not hasattr(new_element_schema, "all_attributes"):
-            return element # The element has no attributes, so migration is done
+            return element  # The element has no attributes, so migration is done
         new_element = self.migrate_attributes(element, new_file, new_element, new_element_schema)
         self.migrated_ids[element.id()] = new_element.id()
         return new_element
@@ -102,39 +112,47 @@ class Migrator:
         return new_element
 
     def migrate_attribute(self, attribute, element, new_file, new_element, new_element_schema):
-        #print("Migrating attribute", element, new_element, attribute.name())
+        # print("Migrating attribute", element, new_element, attribute.name())
         if hasattr(element, attribute.name()):
             value = getattr(element, attribute.name())
-            #print("Attribute names matched", value)
+            # print("Attribute names matched", value)
         elif new_file.schema == "IFC2X3":
             # IFC4 to IFC2X3: We know the IFC2X3 attribute name, but not its IFC4 equivalent
-            #print("Searching for an equivalent", new_element, attribute.name())
+            # print("Searching for an equivalent", new_element, attribute.name())
             try:
                 equivalent_map = self.attribute_4_to_2x3[new_element.is_a()]
                 equivalent = list(equivalent_map.keys())[list(equivalent_map.values()).index(attribute.name())]
                 if hasattr(element, equivalent):
-                    #print("Equivalent found", equivalent)
+                    # print("Equivalent found", equivalent)
                     value = getattr(element, equivalent)
                 else:
                     return
             except:
-                print("Unable to find equivalent attribute of {} to migrate from {} to {}".format(attribute.name(), element, new_element))
-                return # We tried our best
+                print(
+                    "Unable to find equivalent attribute of {} to migrate from {} to {}".format(
+                        attribute.name(), element, new_element
+                    )
+                )
+                return  # We tried our best
         elif new_file.schema == "IFC4":
             # IFC2X3 to IFC4: We know the IFC4 attribute name, but not its IFC2X3 equivalent
-            #print("Searching for an equivalent", element, new_element, attribute.name())
+            # print("Searching for an equivalent", element, new_element, attribute.name())
             try:
                 equivalent = self.attribute_4_to_2x3[new_element.is_a()][attribute.name()]
-                #print("Searching for equivalent", equivalent)
+                # print("Searching for equivalent", equivalent)
                 if hasattr(element, equivalent):
                     value = getattr(element, equivalent)
                 else:
                     return
             except:
-                print("Unable to find equivalent attribute of {} to migrate from {} to {}".format(attribute.name(), element, new_element))
-                return # We tried our best
+                print(
+                    "Unable to find equivalent attribute of {} to migrate from {} to {}".format(
+                        attribute.name(), element, new_element
+                    )
+                )
+                return  # We tried our best
 
-        #print("Continuing migration of {} to migrate from {} to {}".format(attribute.name(), element, new_element))
+        # print("Continuing migration of {} to migrate from {} to {}".format(attribute.name(), element, new_element))
         if value is None and not attribute.optional():
             value = self.generate_default_value(attribute, new_file)
             if value is None:
@@ -155,24 +173,33 @@ class Migrator:
         elif self.default_entities[attribute.name()]:
             return self.default_entities[attribute.name()]
         elif attribute.name() == "OwnerHistory":
-            self.default_entities[attribute.name()] = new_file.create_entity("IfcOwnerHistory", **{
-                "OwningUser": new_file.create_entity("IfcPersonAndOrganization", **{
-                    "ThePerson": new_file.create_entity("IfcPerson"),
-                    "TheOrganization": new_file.create_entity("IfcOrganization", **{
-                        "Name": "IfcOpenShell Migrator"
-                    })
-                }),
-                "OwningApplication": new_file.create_entity("IfcApplication", **{
-                        "ApplicationDeveloper": new_file.create_entity("IfcOrganization", **{
-                            "Name": "IfcOpenShell Migrator"
-                        }),
-                        "Version": "Works for me",
-                        "ApplicationFullName": "IfcOpenShell Migrator",
-                        "ApplicationIdentifier": "IfcOpenShell Migrator",
-                    }),
-                "ChangeAction": "NOCHANGE",
-                "CreationDate": int(time.time())
-            })
+            self.default_entities[attribute.name()] = new_file.create_entity(
+                "IfcOwnerHistory",
+                **{
+                    "OwningUser": new_file.create_entity(
+                        "IfcPersonAndOrganization",
+                        **{
+                            "ThePerson": new_file.create_entity("IfcPerson"),
+                            "TheOrganization": new_file.create_entity(
+                                "IfcOrganization", **{"Name": "IfcOpenShell Migrator"}
+                            ),
+                        }
+                    ),
+                    "OwningApplication": new_file.create_entity(
+                        "IfcApplication",
+                        **{
+                            "ApplicationDeveloper": new_file.create_entity(
+                                "IfcOrganization", **{"Name": "IfcOpenShell Migrator"}
+                            ),
+                            "Version": "Works for me",
+                            "ApplicationFullName": "IfcOpenShell Migrator",
+                            "ApplicationIdentifier": "IfcOpenShell Migrator",
+                        }
+                    ),
+                    "ChangeAction": "NOCHANGE",
+                    "CreationDate": int(time.time()),
+                }
+            )
         return self.default_entities[attribute.name()]
 
 
