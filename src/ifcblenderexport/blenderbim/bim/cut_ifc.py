@@ -786,9 +786,10 @@ class IfcCutter:
         return classes
 
     def get_material_name(self, element):
-        # TODO: only simple materials are handled currently, not sets or usages
         if hasattr(element, "Name") and element.Name:
             return element.Name
+        elif hasattr(element, "LayerSetName") and element.LayerSetName:
+            return element.LayerSetName
         return "mat-" + str(element.id())
 
     def get_pickled_cut_polygons(self):
