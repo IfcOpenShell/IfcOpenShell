@@ -14,6 +14,7 @@
 #include <TColStd_Array2OfReal.hxx>
 #include <TColStd_Array1OfInteger.hxx>
 #include <Geom_BezierCurve.hxx>
+#include <Geom_TrimmedCurve.hxx>
 
 #include "IfcGeom.h"
 
@@ -93,7 +94,11 @@ namespace {
 
 template <>
 int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool advanced) {
-	if (c->DynamicType() == STANDARD_TYPE(Geom_Line)) {
+	if (c->DynamicType() == STANDARD_TYPE(Geom_TrimmedCurve)) {
+		Handle_Geom_TrimmedCurve trim = Handle_Geom_TrimmedCurve::DownCast(c);
+		const Handle_Geom_Curve basis = trim->BasisCurve();
+		return convert_to_ifc(basis, curve, advanced);
+	} else if (c->DynamicType() == STANDARD_TYPE(Geom_Line)) {
 		IfcSchema::IfcDirection* d;
 		IfcSchema::IfcCartesianPoint* p;
 
