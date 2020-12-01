@@ -297,6 +297,7 @@ endif
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/MergeProject.py
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/OffsetObjectPlacements.py
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/OffsetStoreyElevations.py
+	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/Optimise.py
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/RecycleNonRootedElements.py
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/RemoveSiteRepresentation.py
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/ResetAbsoluteCoordinates.py
