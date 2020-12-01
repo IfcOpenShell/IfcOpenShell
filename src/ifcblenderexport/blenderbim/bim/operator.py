@@ -2556,6 +2556,7 @@ class CutSection(bpy.types.Operator):
     def does_obj_have_target_view_representation(self, obj, camera):
         return camera.data.BIMCameraProperties.target_view in [
             c.target_view for c in obj.BIMObjectProperties.representation_contexts
+            if c.context == "Plan" and c.name == "Annotation"
         ]
 
     def is_landscape(self):
