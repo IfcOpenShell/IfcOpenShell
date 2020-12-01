@@ -219,6 +219,14 @@ class Selector:
             except:
                 return
             key = ".".join(key.split(".")[1:])
+        elif "." in key and key.split(".")[0] == "material":
+            try:
+                element = ifcopenshell.util.element.get_material(element)
+                if not element:
+                    return None
+            except:
+                return
+            key = ".".join(key.split(".")[1:])
         info = element.get_info()
         if key in info:
             return info[key]

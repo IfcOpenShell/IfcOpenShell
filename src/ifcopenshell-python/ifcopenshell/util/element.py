@@ -63,6 +63,18 @@ def get_type(element):
                 return relationship.RelatingType
 
 
+def get_material(element):
+    if hasattr(element, "HasAssociations") and element.HasAssociations:
+        for relationship in element.HasAssociations:
+            if relationship.is_a("IfcRelAssociatesMaterial"):
+                return relationship.RelatingMaterial
+    relating_type = get_type(element)
+    if hasattr(relating_type, "HasAssociations") and relating_type.HasAssociations:
+        for relationship in relating_type.HasAssociations:
+            if relationship.is_a("IfcRelAssociatesMaterial"):
+                return relationship.RelatingMaterial
+
+
 def replace_attribute(element, old, new):
     for i, attribute in enumerate(element):
         if attribute == old:
