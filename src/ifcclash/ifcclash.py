@@ -10,8 +10,6 @@ import json
 import sys
 import argparse
 import logging
-from sklearn.cluster import OPTICS
-from collections import defaultdict
 
 class Mesh:
     faces: []
@@ -269,6 +267,9 @@ class IfcClasher:
             element.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1.0, 0.0, 0.0)
 
     def smart_group_clashes(self, clash_sets, max_clustering_distance):
+        from sklearn.cluster import OPTICS
+        from collections import defaultdict
+        
         count_of_input_clashes = 0
         count_of_clash_sets = 0
         count_of_smart_groups = 0
