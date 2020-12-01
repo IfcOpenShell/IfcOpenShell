@@ -2047,7 +2047,7 @@ class IfcExporter:
             if representation.RepresentationIdentifier != "Body":
                 continue
             rep_context = self.ifc_parser.get_obj_representation_context(product["raw"], "Model", "Body", "MODEL_VIEW")
-            if rep_context and rep_context.ifc_definition_id:
+            if self.ifc_export_settings.should_roundtrip_native and rep_context and rep_context.ifc_definition_id:
                 # For native roundtripping, each slot could be a one to many relationship to items
                 for item in self.get_geometric_representation_items(representation):
                     original_id = self.roundtrip_id_new_to_old[item.id()]
