@@ -174,7 +174,7 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--ifc", type=str, required=True, help="The IFC file")
     parser.add_argument("-c", "--csv", type=str, default="data.csv", help="The CSV file to import from or export to")
     parser.add_argument("-q", "--query", type=str, default="", help='Specify a IFC query selector, such as ".IfcWall"')
-    parser.add_argument("-a", "--arguments", nargs="+", help="Specify attributes that are part of the extract")
+    parser.add_argument("-a", "--arguments", nargs="+", help="Specify attributes that are part of the extract, using the IfcQuery syntax such as 'type', 'Name' or 'Pset_Foo.Bar'")
     parser.add_argument("--export", action="store_true", help="Export from IFC to CSV")
     parser.add_argument("--import", action="store_true", help="Import from CSV to IFC")
     args = parser.parse_args()
