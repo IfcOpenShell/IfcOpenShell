@@ -1,6 +1,9 @@
 import json
 from behave import step
-from utils import IfcFile, assert_attribute, assert_type
+
+from utils import assert_attribute
+from utils import assert_type
+from utils import IfcFile
 
 
 def get_classification(name):

@@ -604,6 +604,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		return false;
 	}
 
+	if (getValue(GV_DISABLE_BOOLEAN_RESULT) > 0.0) {
+		shape = s1;
+		return true;
+	}
+
 	const double first_operand_volume = shape_volume(s1);
 	if (first_operand_volume <= ALMOST_ZERO) {
 		Logger::Message(Logger::LOG_WARNING, "Empty solid for:", l->FirstOperand());
@@ -1245,9 +1250,6 @@ namespace {
 	void process_sweep_as_pipe(const TopoDS_Wire& wire, const TopoDS_Wire& section, TopoDS_Shape& result, bool force_transformed=false) {
 		// This tolerance is fairly high due to the linear edge substitution for small (or large radii) conical curves.
 		const bool is_continuous = wire_is_c1_continuous(wire, 1.e-2);
-		static int i = 0;
-		std::string fn = "pipe-wire-" + boost::lexical_cast<std::string>(i++) + ".brep";
-		BRepTools::Write(wire, fn.c_str());
 		BRepOffsetAPI_MakePipeShell builder(wire);
 		builder.Add(section);
 		builder.SetTransitionMode(is_continuous || force_transformed ? BRepBuilderAPI_Transformed : BRepBuilderAPI_RightCorner);
@@ -1319,7 +1321,7 @@ namespace {
 		wires.emplace_back();
 		B.MakeWire(wires.back());
 
-		for (uint i = 0; i < sorted_edges.size(); ++i) {
+		for (size_t i = 0; i < sorted_edges.size(); ++i) {
 			if (i == sorted_edges.size() / 2) {
 				wires.emplace_back();
 				B.MakeWire(wires.back());

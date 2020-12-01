@@ -9,9 +9,10 @@ import zipfile
 import tempfile
 import ifcopenshell
 import ifcopenshell.util.pset
+import ifcopenshell.util.schema
 from pathlib import Path
 from mathutils import Vector, Matrix
-from .helper import SIUnitHelper, get_representation_elements
+from .helper import SIUnitHelper
 from . import schema
 from . import ifc
 import addon_utils
@@ -51,6 +52,8 @@ class IfcParser:
         self.qtos = {}
         self.aggregates = {}
         self.materials = {}
+        self.styled_items = []
+        self.surface_styles = {}
         self.spatial_structure_elements = []
         self.spatial_structure_elements_tree = []
         self.groups = []
@@ -65,9 +68,9 @@ class IfcParser:
         self.rel_associates_classification_object = {}
         self.rel_associates_classification_type = {}
         self.rel_associates_material = {}
-        self.rel_associates_material_layer_set = {}
-        self.rel_associates_material_constituent_set = {}
-        self.rel_associates_material_profile_set = {}
+        self.rel_associates_material_layer_set = []
+        self.rel_associates_material_constituent_set = []
+        self.rel_associates_material_profile_set = []
         self.rel_associates_constraint_object = {}
         self.rel_associates_constraint_type = {}
         self.rel_aggregates = {}
@@ -109,8 +112,8 @@ class IfcParser:
         self.constraints = self.get_constraints()
         self.load_representations()
         self.load_presentation_layer_assignments()
-        self.get_materials()
-        self.styled_items = self.get_styled_items()
+        self.get_materials_and_surface_styles()
+        self.get_styled_items_and_surface_styles()
         self.spatial_structure_elements = self.get_spatial_structure_elements()
         self.groups = self.get_groups()
         self.libraries = self.get_libraries()
@@ -430,11 +433,11 @@ class IfcParser:
         if obj.BIMObjectProperties.material_type == "IfcMaterial" and obj.BIMObjectProperties.material:
             self.rel_associates_material.setdefault(obj.BIMObjectProperties.material.name, []).append(product)
         elif obj.BIMObjectProperties.material_type == "IfcMaterialConstituentSet":
-            self.rel_associates_material_constituent_set[self.product_index] = obj.BIMObjectProperties.material_set
+            self.rel_associates_material_constituent_set.append((obj.BIMObjectProperties.material_set, product))
         elif obj.BIMObjectProperties.material_type == "IfcMaterialLayerSet":
-            self.rel_associates_material_layer_set[self.product_index] = obj.BIMObjectProperties.material_set
+            self.rel_associates_material_layer_set.append((obj.BIMObjectProperties.material_set, product))
         elif obj.BIMObjectProperties.material_type == "IfcMaterialProfileSet":
-            self.rel_associates_material_profile_set[self.product_index] = obj.BIMObjectProperties.material_set
+            self.rel_associates_material_profile_set.append((obj.BIMObjectProperties.material_set, product))
 
         return product
 
@@ -1020,8 +1023,6 @@ class IfcParser:
             obj.data, obj, "Model", "Body", "MODEL_VIEW"
         )
         if "Model/Box/MODEL_VIEW" in self.generated_subcontexts:
-            if self.ifc_export_settings.should_roundtrip_native and obj.data.BIMMeshProperties.ifc_definition_id:
-                return
             self.representations["Model/Box/MODEL_VIEW/{}".format(obj.data.name)] = self.get_representation(
                 obj.data, obj, "Model", "Box", "MODEL_VIEW"
             )
@@ -1054,21 +1055,44 @@ class IfcParser:
         for context in self.ifc_export_settings.context_tree:
             for subcontext in context["subcontexts"]:
                 for target_view in subcontext["target_views"]:
-                    self.append_representation_in_context(obj, context["name"], subcontext["name"], target_view, name)
+                    rep_context = self.get_obj_representation_context(obj, context["name"], subcontext["name"], target_view)
+                    if rep_context:
+                        self.append_representation_in_context(obj, rep_context, name)
 
-    def append_representation_in_context(self, obj, context, subcontext, target_view, name):
+    def get_obj_representation_context(self, obj, context, subcontext, target_view):
+        for c in obj.BIMObjectProperties.representation_contexts:
+            if c.context == context and c.name == subcontext and c.target_view == target_view:
+                return c
+        if obj.BIMObjectProperties.representation_contexts:
+            return
+        if context == "Model" and subcontext == "Body" and target_view == "MODEL_VIEW":
+            representation_context = obj.BIMObjectProperties.representation_contexts.add()
+            representation_context.context = "Model"
+            representation_context.name = "Body"
+            representation_context.target_view = "MODEL_VIEW"
+            return representation_context
+
+    def append_representation_in_context(self, obj, rep_context, name):
+        context = rep_context.context
+        subcontext = rep_context.name
+        target_view = rep_context.target_view
+
+        if self.ifc_export_settings.should_roundtrip_native and rep_context.ifc_definition_id:
+            self.representations[
+                "{}/{}/{}/{}".format(context, subcontext, target_view, name)
+            ] = self.get_representation(obj.data, obj, context, subcontext, target_view)
+            return
+
         context_prefix = "/".join([context, subcontext, target_view])
         mesh_name = "/".join([context_prefix, name])
         mesh = self.search_for_mesh_or_curve_data(mesh_name)
+        # TODO: if the search result is empty, we should check for ifc_definition_id
         if mesh:
             self.representations[mesh_name] = self.get_representation(mesh, obj, context, subcontext, target_view)
             if "Model/Box/MODEL_VIEW" in self.generated_subcontexts and context_prefix == "Model/Body/MODEL_VIEW":
-                if self.ifc_export_settings.should_roundtrip_native and obj.data.BIMMeshProperties.ifc_definition_id:
-                    pass
-                else:
-                    self.representations[
-                        "Model/Box/MODEL_VIEW/{}".format(mesh_name.split("/")[3])
-                    ] = self.get_representation(obj.data, obj, "Model", "Box", "MODEL_VIEW")
+                self.representations[
+                    "Model/Box/MODEL_VIEW/{}".format(mesh_name.split("/")[3])
+                ] = self.get_representation(obj.data, obj, "Model", "Box", "MODEL_VIEW")
         elif (
             context_prefix == "Model/Body/MODEL_VIEW" and obj.data and not self.is_mesh_context_sensitive(obj.data.name)
         ):
@@ -1087,6 +1111,7 @@ class IfcParser:
         return data
 
     def get_representation(self, mesh, obj, context, subcontext, target_view):
+        rep_context = self.get_obj_representation_context(obj, context, subcontext, target_view)
         return {
             "ifc": None,
             "raw": mesh,
@@ -1094,11 +1119,9 @@ class IfcParser:
             "context": context,
             "subcontext": subcontext,
             "target_view": target_view,
-            "has_ifc_definition": False
-            if not hasattr(mesh, "BIMMeshProperties")
-            else (mesh.BIMMeshProperties.ifc_definition or mesh.BIMMeshProperties.ifc_definition_id),
+            "has_ifc_definition": rep_context and rep_context.ifc_definition_id,
             "ifc_definition": mesh.BIMMeshProperties.ifc_definition if hasattr(mesh, "BIMMeshProperties") else None,
-            "ifc_definition_id": mesh.BIMMeshProperties.ifc_definition_id
+            "ifc_definition_id": rep_context.ifc_definition_id if rep_context else 0
             if hasattr(mesh, "BIMMeshProperties")
             else None,
             "is_parametric": mesh.BIMMeshProperties.is_parametric if hasattr(mesh, "BIMMeshProperties") else False,
@@ -1113,7 +1136,7 @@ class IfcParser:
             "presentation_layer": mesh.BIMMeshProperties.presentation_layer_index
             if hasattr(mesh, "BIMMeshProperties") and mesh.BIMMeshProperties.presentation_layer_index != -1
             else False,
-            "attributes": {"Name": mesh.name},
+            "attributes": {"Name": mesh.name if mesh else ""},
         }
 
     def is_wireframe_mesh(self, mesh, obj):
@@ -1134,7 +1157,7 @@ class IfcParser:
             return name.split("/")[3]
         return name
 
-    def get_materials(self):
+    def get_materials_and_surface_styles(self):
         if not self.ifc_export_settings.has_representations:
             return
         for product in self.selected_products + self.selected_types:
@@ -1150,10 +1173,6 @@ class IfcParser:
             elif obj.BIMObjectProperties.material_type == "IfcMaterialProfileSet":
                 for profile in obj.BIMObjectProperties.material_set.material_profiles:
                     self.get_material(profile.material)
-            for slot in obj.material_slots:
-                if slot.material is None or slot.link == "OBJECT":
-                    continue
-                self.get_material(slot.material)
 
     def get_material(self, material):
         if material.name in self.materials:
@@ -1163,6 +1182,7 @@ class IfcParser:
             "raw": material,
             "attributes": self.get_material_attributes(material),
         }
+        self.surface_styles[material.name] = {"ifc": None, "raw": material}
         self.materials[material.name] = data
         self.get_material_psets(data, material)
 
@@ -1171,22 +1191,20 @@ class IfcParser:
         attributes.update({a.name: a.string_value for a in material.BIMMaterialProperties.attributes})
         return attributes
 
-    def get_styled_items(self):
-        results = []
+    def get_styled_items_and_surface_styles(self):
         if not self.ifc_export_settings.has_representations:
-            return results
+            return
         parsed_data_names = []
         for product in self.selected_products + self.selected_types:
             obj = product["raw"]
             if obj.data is None or obj.data.name in parsed_data_names:
                 continue
-            if hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.ifc_definition_id:
-                continue
             parsed_data_names.append(obj.data.name)
             for slot in obj.material_slots:
                 if slot.material is None:
                     continue
-                results.append(
+                self.surface_styles[slot.material.name] = {"ifc": None, "raw": slot.material}
+                self.styled_items.append(
                     {
                         "ifc": None,
                         "raw": slot.material,
@@ -1194,7 +1212,6 @@ class IfcParser:
                         "attributes": {"Name": slot.material.name},
                     }
                 )
-        return results
 
     def get_grid_axes(self):
         results = {}
@@ -1326,6 +1343,8 @@ class IfcExporter:
         self.template_file = "{}template.ifc".format(ifc_export_settings.schema_dir)
         self.ifc_export_settings = ifc_export_settings
         self.ifc_parser = ifc_parser
+        self.migrator = ifcopenshell.util.schema.Migrator()
+        self.roundtrip_id_new_to_old = {}
 
     def export(self, selected_objects):
         self.schema_version = self.ifc_export_settings.schema
@@ -1632,14 +1651,29 @@ class IfcExporter:
 
     def create_classifications(self):
         for classification in self.ifc_parser.classifications.values():
-            classification["ifc"] = self.file.add(classification["raw_element"])
+            if self.file.schema == "IFC4":
+                classification["ifc"] = self.file.add(classification["raw_element"])
+            else:
+                # TODO: Check if we can use self.migrator instead
+                migrator = ifcopenshell.util.schema.Migrator()
+                classification["ifc"] = migrator.migrate(classification["raw_element"], self.file)
             self.file.createIfcRelAssociatesClassification(
-                ifcopenshell.guid.new(), None, None, None, [self.ifc_parser.project["ifc"]], classification["ifc"]
+                ifcopenshell.guid.new(),
+                self.owner_history,
+                None,
+                None,
+                [self.ifc_parser.project["ifc"]],
+                classification["ifc"],
             )
 
     def create_classification_references(self):
         for reference in self.ifc_parser.classification_references.values():
-            reference["ifc"] = self.file.add(reference["raw_element"])
+            if self.file.schema == "IFC4":
+                reference["ifc"] = self.file.add(reference["raw_element"])
+            else:
+                # TODO: Check if we can use self.migrator instead
+                migrator = ifcopenshell.util.schema.Migrator()
+                reference["ifc"] = migrator.migrate(reference["raw_element"], self.file)
 
     def create_constraints(self):
         for constraint in self.ifc_parser.constraints.values():
@@ -1992,53 +2026,77 @@ class IfcExporter:
 
     def create_styled_items(self):
         for styled_item in self.ifc_parser.styled_items:
-            product = self.ifc_parser.products[
-                self.ifc_parser.get_product_index_from_raw_name(styled_item["related_product_name"])
-            ]
-            material_slots = {}
-            if product["ifc"].Representation:
-                # This is a simplification, which works since we are currently in a controlled environment where the
-                # BlenderBIM Add-on controls how data is structured during export. When we implement full IFC
-                # round-tripping, this simplification can no longer apply.
-                for representation in product["ifc"].Representation.Representations:
-                    # At the moment, until we implement full support for round-tripping contexts, we assume that styled
-                    # items only apply to the body context. This is therefore an incomplete implementation and may break
-                    # in edge cases.
-                    if representation.RepresentationIdentifier != "Body":
-                        continue
-                    for mapped_item in representation.Items:
-                        items = mapped_item[0].MappedRepresentation.Items
-                        for i, item in enumerate(items):
-                            if i >= len(product["raw"].material_slots):
-                                i = 0
-                            material_slots[product["raw"].material_slots[i].name] = item
-            for styled_item_name, representation_item in material_slots.items():
-                if styled_item_name == styled_item["attributes"]["Name"]:
-                    styled_item["ifc"] = self.create_styled_item(styled_item, representation_item)
+            self.process_styled_item(styled_item)
 
-    def create_styled_item(self, item, representation_item=None):
-        styles = []
-        styles.append(self.create_surface_style_rendering(item))
-        if item["raw"].BIMMaterialProperties.is_external:
-            styles.append(
-                self.file.create_entity(
-                    "IfcExternallyDefinedSurfaceStyle", **self.get_material_external_definition(item["raw"])
+    def process_styled_item(self, styled_item):
+        product = self.ifc_parser.products[
+            self.ifc_parser.get_product_index_from_raw_name(styled_item["related_product_name"])
+        ]
+
+        if not product["ifc"].Representation:
+            return
+
+        material_slots = []
+        # This is a simplification, which works since we are currently in a controlled environment where the
+        # BlenderBIM Add-on controls how data is structured during export. When we implement full IFC
+        # round-tripping, this simplification can no longer apply.
+        for representation in product["ifc"].Representation.Representations:
+            # At the moment, until we implement full support for round-tripping contexts, we assume that styled
+            # items only apply to the body context. This is therefore an incomplete implementation and may break
+            # in edge cases.
+            if representation.RepresentationIdentifier != "Body":
+                continue
+            rep_context = self.ifc_parser.get_obj_representation_context(product["raw"], "Model", "Body", "MODEL_VIEW")
+            if rep_context and rep_context.ifc_definition_id:
+                # For native roundtripping, each slot could be a one to many relationship to items
+                for item in self.get_geometric_representation_items(representation):
+                    original_id = self.roundtrip_id_new_to_old[item.id()]
+                    i = product["raw"].data.BIMMeshProperties.ifc_item_ids.get(str(original_id)).slot_index
+                    material_slots.append((product["raw"].material_slots[i].name, item))
+            else:
+                # For Blender, each slot represents a geometric representation item
+                for i, item in enumerate(self.get_geometric_representation_items(representation)):
+                    if i >= len(product["raw"].material_slots):
+                        i = 0
+                    material_slots.append((product["raw"].material_slots[i].name, item))
+        for styled_item_name, representation_item in material_slots:
+            if styled_item_name == styled_item["attributes"]["Name"]:
+                styled_item["ifc"] = self.create_styled_item(styled_item, representation_item)
+
+    def get_geometric_representation_items(self, representation):
+        results = []
+        for item in representation.Items:
+            if item.is_a("IfcGeometricRepresentationItem"):
+                results.append(item)
+            elif item.is_a("IfcMappedItem"):
+                results.extend(self.get_geometric_representation_items(item.MappingSource.MappedRepresentation))
+        return results
+
+    def create_styled_item(self, styled_item, representation_item=None):
+        surface_style = self.ifc_parser.surface_styles[styled_item["attributes"]["Name"]]
+        if not surface_style["ifc"]:
+            styles = []
+            styles.append(self.create_surface_style_rendering(styled_item))
+            if styled_item["raw"].BIMMaterialProperties.is_external:
+                styles.append(
+                    self.file.create_entity(
+                        "IfcExternallyDefinedSurfaceStyle", **self.get_material_external_definition(styled_item["raw"])
+                    )
                 )
-            )
-        # Name is filled out because Revit treats this incorrectly as the material name
-        surface_style = self.file.createIfcSurfaceStyle(item["attributes"]["Name"], "BOTH", styles)
-        if self.schema_version == "IFC2X3" or self.ifc_export_settings.should_use_presentation_style_assignment:
-            surface_style = self.file.createIfcPresentationStyleAssignment([surface_style])
-        return self.file.createIfcStyledItem(representation_item, [surface_style], item["attributes"]["Name"])
+            # Name is filled out because Revit treats this incorrectly as the material name
+            surface_style["ifc"] = self.file.createIfcSurfaceStyle(styled_item["attributes"]["Name"], "BOTH", styles)
+            if self.schema_version == "IFC2X3" or self.ifc_export_settings.should_use_presentation_style_assignment:
+                surface_style["ifc"] = self.file.createIfcPresentationStyleAssignment([surface_style["ifc"]])
+        return self.file.createIfcStyledItem(
+            representation_item, [surface_style["ifc"]], styled_item["attributes"]["Name"]
+        )
 
     def create_presentation_layer_assignments(self):
         for layer_index, representations in self.ifc_parser.presentation_layer_assignments.items():
             layer = bpy.context.scene.BIMProperties.presentation_layers[int(layer_index)]
             assigned_items = []
             for representation in representations:
-                for usage in representation["ifc"].MapUsage:
-                    for inverse in self.file.get_inverse(usage):
-                        assigned_items.append(inverse)
+                assigned_items.append(representation["ifc"])
             if layer.layer_on:
                 self.file.createIfcPresentationLayerAssignment(
                     layer.name, layer.description or None, assigned_items, layer.identifier or None,
@@ -2145,7 +2203,7 @@ class IfcExporter:
 
     def create_representations(self):
         for representation in self.ifc_parser.representations.values():
-            representation["ifc"] = self.create_representation(representation)
+            self.create_representation(representation)
 
     def create_grid_axes(self):
         for uvw in self.ifc_parser.grid_axes.values():
@@ -2284,13 +2342,14 @@ class IfcExporter:
         for representation_name in product["representations"]:
             representation = self.ifc_parser.representations[representation_name]
             if self.ifc_export_settings.should_roundtrip_native and representation["has_ifc_definition"]:
-                results.append(representation["ifc"])
+                pass
             else:
-                results.append(self.get_product_mapped_geometry(product, representation))
+                self.get_product_mapped_geometry(product, representation)
+            results.append(representation["ifc"])
         return results
 
     def get_product_mapped_geometry(self, product, representation):
-        mapping_source = representation["ifc"]
+        mapping_source = representation["ifc_map"]
         shape_representation = mapping_source.MappedRepresentation
         if product["has_scale"]:
             if not product["has_mirror"]:
@@ -2313,7 +2372,7 @@ class IfcExporter:
                 self.create_direction(Vector((0, 0, 1))),
             )
         mapped_item = self.file.createIfcMappedItem(mapping_source, mapping_target)
-        return self.file.createIfcShapeRepresentation(
+        representation["ifc"] = self.file.createIfcShapeRepresentation(
             shape_representation.ContextOfItems,
             shape_representation.RepresentationIdentifier,
             "MappedRepresentation",
@@ -2334,45 +2393,55 @@ class IfcExporter:
 
     def create_representation(self, representation):
         if self.ifc_export_settings.should_roundtrip_native and representation["has_ifc_definition"]:
-            return self.create_representation_from_definition(representation)
+            representation["ifc"] = self.create_representation_from_definition(representation)
+            return
         self.ifc_vertices = []
         self.ifc_edges = []
         if representation["context"] == "Model":
-            return self.create_model_representation(representation)
+            representation["ifc_map"] = self.create_model_representation(representation)
         elif representation["context"] == "Plan":
-            return self.create_plan_representation(representation)
+            representation["ifc_map"] = self.create_plan_representation(representation)
         elif representation["context"] == "NotDefined":
-            return self.create_variable_representation(representation)
+            representation["ifc_map"] = self.create_variable_representation(representation)
 
     def create_representation_from_definition(self, representation):
         if representation["ifc_definition"]:
             print("Authoring an IFC definition directly is not yet implemented")
             return
-        elif representation["ifc_definition_id"]:
+        if representation["ifc_definition_id"]:
+            return self.create_representation_from_definition_id(representation)
+
+    def create_representation_from_definition_id(self, representation):
+        if self.file.schema == ifc.IfcStore.get_file().schema:
             entry = self.file.add(ifc.IfcStore.get_file().by_id(representation["ifc_definition_id"]))
-            substitutions = []
-            for element in get_representation_elements(ifc.IfcStore.get_file(), representation["ifc_definition_id"]):
+        else:
+            entry = self.migrator.migrate(ifc.IfcStore.get_file().by_id(representation["ifc_definition_id"]), self.file)
+
+        substitutions = {"contexts": []}
+
+        representation_elements = ifc.IfcStore.get_file().traverse(
+            ifc.IfcStore.get_file().by_id(representation["ifc_definition_id"])
+        )
+
+        for element in representation_elements:
+            if self.file.schema == ifc.IfcStore.get_file().schema:
                 added_element = self.file.add(element)
-                if added_element.is_a("IfcGeometricRepresentationContext"):
-                    substitutions.append(added_element)
-            for element in substitutions:
-                if element.is_a() == "IfcGeometricRepresentationContext":
-                    new_element = [
-                        e
-                        for e in self.file.by_type("IfcGeometricRepresentationContext")
-                        if e.ContextType == element.ContextType
-                    ][0]
-                elif element.is_a() == "IfcGeometricRepresentationSubContext":
-                    new_element = [
-                        e
-                        for e in self.file.by_type("IfcGeometricRepresentationContext")
-                        if e.ContextType == element.ContextType and e.ContextIdentifier == element.ContextIdentifier
-                    ][0]
-                for inverse in self.file.get_inverse(element):
-                    ifcopenshell.util.element.replace_attribute(inverse, element, new_element)
-                # TODO: Work out how and when to purge this
-                # self.file.remove(element)
-            return entry
+            else:
+                added_element = self.migrator.migrate(element, self.file)
+            if added_element.is_a("IfcGeometricRepresentationContext"):
+                substitutions["contexts"].append(added_element)
+            elif added_element.is_a("IfcGeometricRepresentationItem"):
+                self.roundtrip_id_new_to_old[added_element.id()] = element.id()
+
+        for element in substitutions["contexts"]:
+            new_element = self.ifc_rep_context[representation["context"]][representation["subcontext"]][
+                representation["target_view"]
+            ]["ifc"]
+            for inverse in self.file.get_inverse(element):
+                ifcopenshell.util.element.replace_attribute(inverse, element, new_element)
+            # TODO: Work out how and when to purge this
+            # self.file.remove(element)
+        return entry
 
     def create_model_representation(self, representation):
         if representation["subcontext"] == "Annotation":
@@ -3160,7 +3229,9 @@ class IfcExporter:
     def relate_objects_to_material_sets(self, set_type):
         if not self.ifc_export_settings.has_representations:
             return
-        for product_index, material_set in getattr(self.ifc_parser, f"rel_associates_material_{set_type}_set").items():
+        if self.file.schema == "IFC2X3":
+            return self.relate_objects_to_material_sets_ifc2x3(set_type)
+        for material_set, product in getattr(self.ifc_parser, f"rel_associates_material_{set_type}_set"):
             if set_type == "constituent":
                 materials = self.create_material_constituents(material_set.material_constituents)
             elif set_type == "layer":
@@ -3186,8 +3257,37 @@ class IfcExporter:
                 self.owner_history,
                 None,
                 None,
-                [self.ifc_parser.products[product_index]["ifc"]],
+                [product["ifc"]],
                 material_set,
+            )
+
+    def relate_objects_to_material_sets_ifc2x3(self, set_type):
+        # IFC2X3 has a very different way of handling materials, so we have a dedicated function
+        for material_set, product in getattr(self.ifc_parser, f"rel_associates_material_{set_type}_set"):
+            if set_type == "constituent":
+                # IFC2X3 only supports lists, so we gracefully downgrade
+                material_select = self.file.create_entity(
+                    "IfcMaterialList", **{"Materials": self.create_material_list(material_set.material_constituents)}
+                )
+            elif set_type == "layer":
+                material_select = self.file.create_entity(
+                    "IfcMaterialLayerSet",
+                    **{
+                        "MaterialLayers": self.create_material_layers(material_set.material_layers),
+                        "LayerSetName": material_set.name or None,
+                    },
+                )
+            elif set_type == "profile":
+                material_select = None  # Not supported in IFC2X3
+            if not material_select:
+                continue
+            self.file.createIfcRelAssociatesMaterial(
+                ifcopenshell.guid.new(),
+                self.owner_history,
+                None,
+                None,
+                [product["ifc"]],
+                material_select,
             )
 
     def create_material_layers(self, layers):
@@ -3200,20 +3300,24 @@ class IfcExporter:
             else:
                 category = layer.category
             is_ventilated = layer.is_ventilated == "TRUE" if layer.is_ventilated != "UNKNOWN" else None
-            results.append(
-                self.file.create_entity(
-                    "IfcMaterialLayer",
-                    **{
-                        "Material": self.ifc_parser.materials[layer.material.name]["ifc"] or None,
-                        "LayerThickness": layer.layer_thickness,
-                        "IsVentilated": is_ventilated,
-                        "Name": layer.name or None,
-                        "Description": layer.description or None,
-                        "Category": category,
-                        "Priority": layer.priority,
-                    },
-                )
-            )
+
+            attributes = {
+                "Material": self.ifc_parser.materials[layer.material.name]["ifc"] or None,
+                "LayerThickness": layer.layer_thickness,
+                "IsVentilated": is_ventilated,
+                "Name": layer.name or None,
+                "Description": layer.description or None,
+                "Category": category,
+                "Priority": layer.priority,
+            }
+
+            if self.file.schema == "IFC2X3":
+                del attributes["Name"]
+                del attributes["Description"]
+                del attributes["Category"]
+                del attributes["Priority"]
+
+            results.append(self.file.create_entity("IfcMaterialLayer", **attributes))
         return results
 
     def create_material_constituents(self, constituents):
@@ -3233,6 +3337,9 @@ class IfcExporter:
                 )
             )
         return results
+
+    def create_material_list(self, materials):
+        return [self.ifc_parser.materials[m.material.name]["ifc"] for m in materials]
 
     def create_material_profiles(self, profiles):
         results = []

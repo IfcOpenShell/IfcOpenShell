@@ -366,7 +366,7 @@ protected:
 			std::vector<float> diffuse_color_array_condensed;
 			
 			int new_index = 0;
-			for (uint orig = 0; orig < diffuse_color_array.size(); ++orig) {
+			for (size_t orig = 0; orig < diffuse_color_array.size(); ++orig) {
 				auto& m = diffuse_color_array[orig];
 				if (m) {
 					for (int i = 0; i < 4; ++i) {

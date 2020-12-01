@@ -494,7 +494,7 @@ def getMaterialTypes(self, context):
     global materialtypes_enum
     materialtypes_enum.clear()
     materialtypes_enum = [
-        (m, m, "") for m in ["IfcMaterial", "IfcMaterialConstituentSet", "IfcMaterialLayerSet", "IfcMaterialProfileSet"]
+        (m, m, "") for m in ["None", "IfcMaterial", "IfcMaterialConstituentSet", "IfcMaterialLayerSet", "IfcMaterialProfileSet"]
     ]
     return materialtypes_enum
 
@@ -553,6 +553,7 @@ class Subcontext(PropertyGroup):
     name: StringProperty(name="Name")
     context: StringProperty(name="Context")
     target_view: StringProperty(name="Target View")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
 class MaterialLayer(PropertyGroup):
@@ -1519,6 +1520,8 @@ class BIMProperties(PropertyGroup):
     active_document_information_index: IntProperty(name="Active Document Information Index")
     document_references: CollectionProperty(name="Document References", type=DocumentReference)
     active_document_reference_index: IntProperty(name="Active Document Reference Index")
+    blender_clash_set_a: CollectionProperty(name="Blender Clash Set A", type=StrProperty)
+    blender_clash_set_b: CollectionProperty(name="Blender Clash Set B", type=StrProperty)
     clash_sets: CollectionProperty(name="Clash Sets", type=ClashSet)
     clash_results_path: StringProperty(name="Clash Results Path")
     smart_grouped_clashes_path: StringProperty(name="Smart Grouped Clashes Path")
@@ -1654,6 +1657,8 @@ class IfcParameter(PropertyGroup):
 class PsetQto(PropertyGroup):
     name: StringProperty(name="Name")
     properties: CollectionProperty(name="Properties", type=Attribute)
+    is_expanded: BoolProperty(name="Is Expanded", default=True)
+    is_editable: BoolProperty(name="Is Editable")
 
 
 class GlobalId(PropertyGroup):
@@ -1726,6 +1731,11 @@ class RepresentationItem(PropertyGroup):
     vgroup: StringProperty(name="Vertex Group")
 
 
+class ItemSlotMap(PropertyGroup):
+    name: StringProperty(name="Item Element ID")
+    slot_index: IntProperty(name="Material Slot Index")
+
+
 class BIMMeshProperties(PropertyGroup):
     is_native: BoolProperty(name="Is Native", default=False)
     is_swept_solid: BoolProperty(name="Is Swept Solid")
@@ -1733,7 +1743,7 @@ class BIMMeshProperties(PropertyGroup):
     is_parametric: BoolProperty(name="Is Parametric", default=False)
     geometry_type: StringProperty(name="Geometry Type")
     ifc_definition: StringProperty(name="IFC Definition")
-    ifc_definition_id: IntProperty(name="IFC Definition ID")
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     active_representation_item_index: IntProperty(name="Active Representation Item Index")
     presentation_layer_index: IntProperty(name="Presentation Layer Index", default=-1)
+    ifc_item_ids: CollectionProperty(name="IFC Definition ID", type=ItemSlotMap)

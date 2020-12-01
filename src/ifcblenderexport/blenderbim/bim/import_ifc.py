@@ -38,27 +38,25 @@ class MaterialCreator:
     def __init__(self, ifc_import_settings, ifc_importer):
         self.mesh = None
         self.materials = {}
-        self.current_object_styles = []
         self.parsed_meshes = []
         self.ifc_import_settings = ifc_import_settings
         self.ifc_importer = ifc_importer
 
     def create(self, element, obj, mesh):
-        self.current_object_styles = []
         self.obj = obj
         self.mesh = mesh
+        self.parse_material(element)
         if (hasattr(element, "Representation") and not element.Representation) or (
             hasattr(element, "RepresentationMaps") and not element.RepresentationMaps
         ):
             return
-        self.parse_material(element)
         if not self.mesh:
             return
         if self.mesh.name in self.parsed_meshes:
             return
         self.parsed_meshes.append(self.mesh.name)
         if self.parse_representations(element):
-            self.assign_material_slots_to_faces(obj, self.mesh)
+            self.assign_material_slots_to_faces(obj)
 
     def parse_representations(self, element):
         has_parsed = False
@@ -83,28 +81,34 @@ class MaterialCreator:
     def parse_representation_item(self, item):
         if not item.StyledByItem:
             return
+
+        item_id = self.mesh.BIMMeshProperties.ifc_item_ids.add()
+        item_id.name = str(item.id())
+
         styled_item = item.StyledByItem[0]
+        style_name = self.get_style_name(styled_item)
 
-        material_name = self.get_material_name(styled_item)
-
-        if material_name in self.current_object_styles:
+        if self.mesh.materials.get(style_name):
+            item_id.slot_index = self.mesh.materials.find(style_name)
             return True
 
-        material = bpy.data.materials.get(material_name)
-        if not material:
-            self.materials[material_name] = bpy.data.materials.new(material_name)
+        style = bpy.data.materials.get(style_name)
 
-        self.parse_styled_item(styled_item, self.materials[material_name])
-        self.assign_style_to_mesh(self.materials[material_name])
+        if not style:
+            style = bpy.data.materials.new(style_name)
+            self.parse_styled_item(styled_item, style)
+
+        self.assign_style_to_mesh(style)
+        item_id.slot_index = len(self.mesh.materials) - 1
         return True
 
-    def assign_material_slots_to_faces(self, obj, mesh):
-        if "ios_materials" not in mesh or not mesh["ios_materials"]:
+    def assign_material_slots_to_faces(self, obj):
+        if "ios_materials" not in self.mesh or not self.mesh["ios_materials"]:
             return
         if len(obj.material_slots) == 1:
             return
         material_to_slot = {}
-        for i, material in enumerate(mesh["ios_materials"]):
+        for i, material in enumerate(self.mesh["ios_materials"]):
             if material == "NULLMAT":
                 continue
             elif "surface-style-" in material:
@@ -122,9 +126,9 @@ class MaterialCreator:
                 slot_index = [self.canonicalise_material_name(s.name) for s in obj.material_slots].index(material)
             material_to_slot[i] = slot_index
 
-        if len(mesh.polygons) == len(mesh["ios_material_ids"]):
-            material_index = [(material_to_slot[mat_id] if mat_id != -1 else 0) for mat_id in mesh["ios_material_ids"]]
-            mesh.polygons.foreach_set("material_index", material_index)
+        if len(self.mesh.polygons) == len(self.mesh["ios_material_ids"]):
+            material_index = [(material_to_slot[mat_id] if mat_id != -1 else 0) for mat_id in self.mesh["ios_material_ids"]]
+            self.mesh.polygons.foreach_set("material_index", material_index)
 
     def canonicalise_material_name(self, name):
         return re.sub(r"\.[0-9]{3}$", "", name)
@@ -262,7 +266,7 @@ class MaterialCreator:
                     continue
                 self.parse_styled_item(item, obj)
 
-    def get_material_name(self, styled_item):
+    def get_style_name(self, styled_item):
         if styled_item.Name:
             return styled_item.Name
         styles = self.get_styled_item_styles(styled_item)
@@ -324,7 +328,6 @@ class MaterialCreator:
         if not self.mesh:
             return
         self.mesh.materials.append(material)
-        self.current_object_styles.append(material.name)
 
 
 class IfcImporter:
@@ -341,6 +344,9 @@ class IfcImporter:
         self.settings_native = ifcopenshell.geom.settings()
         self.settings_native.set(self.settings_native.INCLUDE_CURVES, True)
         if self.ifc_import_settings.should_import_native:
+            self.settings.set(self.settings.DISABLE_OPENING_SUBTRACTIONS, True)
+            self.ifc_import_settings.should_import_opening_elements = True
+        if self.ifc_import_settings.should_roundtrip_native:
             self.settings.set(self.settings.DISABLE_OPENING_SUBTRACTIONS, True)
             self.ifc_import_settings.should_import_opening_elements = True
         self.settings_2d = ifcopenshell.geom.settings()
@@ -772,6 +778,10 @@ class IfcImporter:
         grids = self.file.by_type("IfcGrid")
         for grid in grids:
             shape = None
+            if not grid.UAxes or not grid.VAxes:
+                # Revit can create invalid grids
+                self.ifc_import_settings.logger.error("An invalid grid was found %s", grid)
+                continue
             if grid.Representation:
                 shape = ifcopenshell.geom.create_shape(self.settings_2d, grid)
             grid_obj = self.create_product(grid, shape)
@@ -963,6 +973,9 @@ class IfcImporter:
         self.add_product_definitions(element, obj)
         self.add_product_representation_contexts(element, obj)
         self.added_data[element.GlobalId] = obj
+
+        if element.is_a("IfcOpeningElement"):
+            obj.display_type = "WIRE"
         return obj
 
     def add_element_representation_items(self, element, obj):
@@ -1085,7 +1098,7 @@ class IfcImporter:
         if not item.StyledByItem:
             return
         styled_item = item.StyledByItem[0]
-        return self.material_creator.get_material_name(styled_item)
+        return self.material_creator.get_style_name(styled_item)
 
     def transform_curve(self, curve, matrix):
         for spline in curve.splines:
@@ -1353,10 +1366,12 @@ class IfcImporter:
 
     def add_product_representation_contexts(self, element, obj):
         subcontexts = []
+        ifc_definition_ids = []
         if element.is_a("IfcProduct"):
             if not element.Representation:
                 return
             for r in element.Representation.Representations:
+                ifc_definition_ids.append(r.id())
                 if r.ContextOfItems.is_a("IfcGeometricRepresentationSubContext"):
                     subcontexts.append(
                         "{}/{}/{}".format(
@@ -1375,6 +1390,7 @@ class IfcImporter:
             if not element.RepresentationMaps:
                 return
             for r in element.RepresentationMaps:
+                ifc_definition_ids.append(r.id())
                 if r.MappedRepresentation.ContextOfItems.is_a("IfcGeometricRepresentationSubContext"):
                     subcontexts.append(
                         "{}/{}/{}".format(
@@ -1391,14 +1407,14 @@ class IfcImporter:
                             "",
                         )
                     )
-        subcontexts = set(subcontexts)
-        for subcontext in subcontexts:
+        for i, subcontext in enumerate(subcontexts):
             representation_context = obj.BIMObjectProperties.representation_contexts.add()
             (
                 representation_context.context,
                 representation_context.name,
                 representation_context.target_view,
             ) = subcontext.split("/")
+            representation_context.ifc_definition_id = ifc_definition_ids[i]
 
     def add_product_definitions(self, element, obj):
         if not hasattr(element, "IsDefinedBy") or not element.IsDefinedBy:
@@ -1425,10 +1441,17 @@ class IfcImporter:
             for prop_name in ifcopenshell.util.pset.psets[new_pset.name]["HasPropertyTemplates"].keys():
                 prop = new_pset.properties.add()
                 prop.name = prop_name
+        try:
+            if hasattr(pset, "HasProperties"):
+                props = pset.HasProperties
+            elif hasattr(pset, "Properties"):
+                props = pset.Properties
+        except:
+            return # I've seen ArchiCAD produce invalid IFCs with empty data
         # Invalid IFC, but some vendors like Solidworks do this so we accomodate it
-        if not pset.HasProperties:
+        if not props:
             return
-        for prop in pset.HasProperties:
+        for prop in props:
             if prop.is_a("IfcPropertySingleValue") and prop.NominalValue:
                 index = new_pset.properties.find(prop.Name)
                 if index >= 0:
@@ -1893,8 +1916,9 @@ class IfcImporter:
                 return self.place_object_in_spatial_tree(container, obj)
             elif element.is_a("IfcGrid"):
                 grid_collection = bpy.data.collections.get(obj.name)
-                self.spatial_structure_elements[container.GlobalId]["blender"].children.link(grid_collection)
-                grid_collection.objects.link(obj)
+                if grid_collection: # Just in case we ran into invalid grids from Revit
+                    self.spatial_structure_elements[container.GlobalId]["blender"].children.link(grid_collection)
+                    grid_collection.objects.link(obj)
             else:
                 self.spatial_structure_elements[container.GlobalId]["blender"].objects.link(obj)
         elif hasattr(element, "Decomposes") and element.Decomposes:
@@ -1926,7 +1950,7 @@ class IfcImporter:
                 collection.objects.link(obj)
             else:
                 self.ifc_import_settings.logger.error("An element could not be placed in the spatial tree %s", element)
-        elif hasattr(element, "HasFillings") and element.HasFillings:
+        elif element.is_a("IfcOpeningElement"):
             self.opening_collection.objects.link(obj)
         else:
             self.ifc_import_settings.logger.warning("Warning: this object is outside the spatial hierarchy %s", element)
@@ -2038,11 +2062,6 @@ class IfcImporter:
                 results.append({"raw": representation, "matrix": self.scale_matrix(matrix)})
         return results
 
-    def get_representation_of_context(self, representations, context):
-        for representation in representations:
-            if representation.RepresentationIdentifier == context:
-                return representation
-
     def scale_matrix(self, matrix):
         matrix[0][3] *= self.unit_scale
         matrix[1][3] *= self.unit_scale
@@ -2143,24 +2162,12 @@ class IfcImporter:
                     ios_materials.append(mat.name)
             mesh["ios_materials"] = ios_materials
             mesh["ios_material_ids"] = geometry.material_ids
-            self.store_representation_source(mesh, element, shape)
+            mesh.BIMMeshProperties.geometry_type = str(self.get_geometry_type(element))
             return mesh
         except:
             self.ifc_import_settings.logger.error("Could not create mesh for %s", element)
             import traceback
-
             print(traceback.format_exc())
-
-    def store_representation_source(self, mesh, element, shape):
-        # TODO Refactor to specialist class
-        mesh.BIMMeshProperties.geometry_type = str(self.get_geometry_type(element))
-        if not self.ifc_import_settings.should_roundtrip_native:
-            return
-        if element.is_a("IfcRepresentation"):
-            representation = element
-        else:
-            representation = self.get_representation_of_context(element.Representation.Representations, shape.context)
-        mesh.BIMMeshProperties.ifc_definition_id = int(representation.id())
 
     def create_curve(self, geometry):
         curve = bpy.data.curves.new(geometry.id, type="CURVE")

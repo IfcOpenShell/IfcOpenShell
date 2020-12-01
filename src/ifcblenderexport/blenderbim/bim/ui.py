@@ -122,7 +122,18 @@ class BIM_PT_object_material(Panel):
         row = layout.row()
         row.prop(props, "material_type")
 
-        if props.material_type == "IfcMaterial":
+        if props.material_type == "None" and props.relating_type:
+            props = props.relating_type.BIMObjectProperties
+            if props.material_type == "None":
+                pass
+            elif props.material_type == "IfcMaterial" and props.material:
+                layout.label(text="Inherited Material:")
+            elif props.material_set:
+                layout.label(text="Inherited Material Set:")
+
+        if props.material_type == "None":
+            pass
+        elif props.material_type == "IfcMaterial":
             row = layout.row()
             row.prop(props, "material")
         else:
@@ -195,7 +206,12 @@ class BIM_PT_object_material(Panel):
                 row.prop(material, "category")
         elif props.material_type == "IfcMaterialProfileSet":
             row.template_list(
-                "MATERIAL_UL_matslots", "", set_props, "material_profiles", set_props, "active_material_profile_index",
+                "MATERIAL_UL_matslots",
+                "",
+                set_props,
+                "material_profiles",
+                set_props,
+                "active_material_profile_index",
             )
             col = row.column(align=True)
             col.operator("bim.add_material_profile", icon="ADD", text="")
@@ -245,18 +261,51 @@ class BIM_PT_object_psets(Panel):
         row.prop(props, "pset_name", text="")
         row.operator("bim.add_pset")
 
+        self.draw_psets_ui(props)
+
+        if props.relating_type and props.relating_type.BIMObjectProperties.psets:
+            layout.label(text="Inherited Psets:")
+            self.draw_psets_ui(props.relating_type.BIMObjectProperties, enabled=False)
+
+    def draw_psets_ui(self, props, enabled=True):
         for index, pset in enumerate(props.psets):
-            row = layout.row(align=True)
-            row.prop(pset, "name", text="")
-            row.operator("bim.remove_pset", icon="X", text="").pset_index = index
-            for prop in pset.properties:
-                row = layout.row(align=True)
-                row.prop(prop, "name", text="")
-                row.prop(prop, "string_value", text="")
-                op = row.operator("bim.copy_property_to_selection", icon="COPYDOWN", text="")
-                op.pset_name = pset.name
-                op.prop_name = prop.name
-                op.prop_value = prop.string_value
+            box = self.layout.box()
+            row = box.row(align=True)
+            row.prop(
+                pset,
+                "is_expanded",
+                icon="TRIA_DOWN" if pset.is_expanded else "TRIA_RIGHT",
+                icon_only=True,
+                emboss=False,
+            )
+            row2 = row.row(align=True)
+            row2.enabled = enabled
+            row2.prop(pset, "name", text="", icon="COPY_ID", emboss=pset.is_editable)
+
+            if enabled:
+                row.prop(pset, "is_editable", icon="CHECKMARK" if pset.is_editable else "GREASEPENCIL", icon_only=True)
+                row.operator("bim.remove_pset", icon="X", text="").pset_index = index
+            if not pset.is_expanded:
+                continue
+            if pset.is_editable:
+                for prop in pset.properties:
+                    row = box.row(align=True)
+                    row.enabled = enabled
+                    row.prop(prop, "name", text="")
+                    row.prop(prop, "string_value", text="")
+                    if not enabled:
+                        continue
+                    op = row.operator("bim.copy_property_to_selection", icon="COPYDOWN", text="")
+                    op.pset_name = pset.name
+                    op.prop_name = prop.name
+                    op.prop_value = prop.string_value
+            else:
+                col = box.column(align=True)
+                for prop in pset.properties:
+                    if not prop.string_value:
+                        continue
+                    col.enabled = enabled
+                    col.prop(prop, "string_value", text=prop.name)
 
 
 class BIM_PT_object_qto(Panel):
@@ -280,11 +329,18 @@ class BIM_PT_object_qto(Panel):
         row.operator("bim.add_qto")
 
         for index, qto in enumerate(props.qtos):
-            row = layout.row(align=True)
-            row.prop(qto, "name", text="")
+            box = self.layout.box()
+            row = box.row(align=True)
+
+            row.prop(
+                qto, "is_expanded", icon="TRIA_DOWN" if qto.is_expanded else "TRIA_RIGHT", icon_only=True, emboss=False
+            )
+            row.prop(qto, "name", text="", icon="COPY_ID")
             row.operator("bim.remove_qto", icon="X", text="").index = index
+            if not qto.is_expanded:
+                continue
             for index2, prop in enumerate(qto.properties):
-                row = layout.row(align=True)
+                row = box.row(align=True)
                 row.prop(prop, "name", text="")
                 row.prop(prop, "string_value", text="")
                 if (
@@ -755,16 +811,12 @@ class BIM_PT_mesh(Panel):
 
         row = layout.row()
         row.prop(props, "geometry_type")
-        row = layout.row()
-        row.prop(props, "ifc_definition")
         layout.label(text="IFC Parameters:")
         row = layout.row()
         row.operator("bim.get_representation_ifc_parameters")
         for index, ifc_parameter in enumerate(props.ifc_parameters):
             row = layout.row(align=True)
             row.prop(ifc_parameter, "name", text="")
-            row.prop(ifc_parameter, "step_id")
-            row.prop(ifc_parameter, "index")
             row.prop(ifc_parameter, "value", text="")
             row.operator("bim.update_ifc_representation", icon="FILE_REFRESH", text="").index = index
 
@@ -828,7 +880,12 @@ class BIM_PT_presentation_layer_data(Panel):
             return
 
         layout.template_list(
-            "BIM_UL_generic", "", scene_props, "presentation_layers", scene_props, "active_presentation_layer_index",
+            "BIM_UL_generic",
+            "",
+            scene_props,
+            "presentation_layers",
+            scene_props,
+            "active_presentation_layer_index",
         )
         if scene_props.active_presentation_layer_index < len(scene_props.presentation_layers):
             op = layout.row().operator("bim.assign_presentation_layer")
@@ -2140,6 +2197,17 @@ class BIM_PT_ifcclash(Panel):
 
         scene = context.scene
         props = scene.BIMProperties
+
+        layout.label(text="Blender Clash:")
+
+        row = layout.row(align=True)
+        row.operator("bim.set_blender_clash_set_a")
+        row.operator("bim.set_blender_clash_set_b")
+
+        row = layout.row(align=True)
+        row.operator("bim.execute_blender_clash")
+
+        layout.label(text="IFC Clash:")
 
         row = layout.row(align=True)
         row.operator("bim.add_clash_set")
