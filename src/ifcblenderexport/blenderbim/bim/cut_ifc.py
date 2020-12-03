@@ -652,6 +652,8 @@ class IfcCutter:
             for element in ifc_file.by_type("IfcElement"):
                 annotation_representation = None
                 box_representation = None
+                if not element.Representation:
+                    continue # This can occur for aggregates
                 for representation in element.Representation.Representations:
                     if (
                         representation.ContextOfItems.ContextType == "Plan"
