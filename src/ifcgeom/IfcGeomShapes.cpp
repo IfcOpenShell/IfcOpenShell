@@ -355,7 +355,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceOfRevolution* l, TopoDS
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcRevolvedAreaSolid* l, TopoDS_Shape& shape) {
 	const double ang = l->Angle() * getValue(GV_PLANEANGLE_UNIT);
 
-	TopoDS_Face face;
+	TopoDS_Shape face;
 	if ( ! convert_face(l->SweptArea(),face) ) return false;
 
 	gp_Ax1 ax1;
@@ -368,6 +368,45 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRevolvedAreaSolid* l, TopoDS_S
 #endif
 	if (has_position) {
 		IfcGeom::Kernel::convert(l->Position(), trsf);
+	}
+
+
+	{
+		// https://github.com/IfcOpenShell/IfcOpenShell/issues/1030
+		// Check whether Axis does not intersect SweptArea
+
+		double min_dot = +std::numeric_limits<double>::infinity();
+		double max_dot = -std::numeric_limits<double>::infinity();
+
+		gp_Ax2 ax(ax1.Location(), gp::DZ(), ax1.Direction());
+
+		TopExp_Explorer exp(face, TopAbs_EDGE);
+		for (; exp.More(); exp.Next()) {
+			BRepAdaptor_Curve crv(TopoDS::Edge(exp.Current()));
+			GCPnts_QuasiUniformDeflection tessellater(crv, getValue(GV_PRECISION));
+
+			int n = tessellater.NbPoints();
+			for (int i = 1; i <= n; ++i) {
+				double d = ax.YDirection().XYZ().Dot(tessellater.Value(i).XYZ());
+				if (d < min_dot) {
+					min_dot = d;
+				}
+				if (d > max_dot) {
+					max_dot = d;
+				}
+			}
+		}
+
+		bool intersecting;
+		if (std::abs(min_dot) > std::abs(max_dot)) {
+			intersecting = max_dot > + getValue(GV_PRECISION);
+		} else {
+			intersecting = min_dot < - getValue(GV_PRECISION);
+		}
+
+		if (intersecting) {
+			Logger::Warning("Warning Axis and SweptArea intersecting", l);
+		}
 	}
 
 	if (ang >= M_PI * 2. - ALMOST_ZERO) {
@@ -565,6 +604,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		return false;
 	}
 
+	if (getValue(GV_DISABLE_BOOLEAN_RESULT) > 0.0) {
+		shape = s1;
+		return true;
+	}
+
 	const double first_operand_volume = shape_volume(s1);
 	if (first_operand_volume <= ALMOST_ZERO) {
 		Logger::Message(Logger::LOG_WARNING, "Empty solid for:", l->FirstOperand());
@@ -656,6 +700,18 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 			shape = s1;
 		}
 		// NB: After issuing error the first operand is returned!
+		return true;
+	} else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_UNION && !valid_result) {
+		BRep_Builder B;
+		TopoDS_Compound C;
+		B.MakeCompound(C);
+		B.Add(C, s1);
+		TopTools_ListIteratorOfListOfShape it(second_operand_shapes);
+		for (; it.More(); it.Next()) {
+			B.Add(C, it.Value());
+		}
+		Logger::Message(Logger::LOG_ERROR, "Failed to process union, creating compound:", l);
+		shape = C;
 		return true;
 	} else {
 		return valid_result;
@@ -1188,15 +1244,12 @@ namespace {
 		// @todo we could be extruding the wire only when we know this is an intermediate edge.
 		const double depth = std::abs(u - v);
 		TopoDS_Face face = BRepBuilderAPI_MakeFace(section).Face();
-		result = BRepPrimAPI_MakeRevol(section, circ->Axis(), depth).Shape();
+		result = BRepPrimAPI_MakeRevol(face, circ->Axis(), depth).Shape();
 	}
 
 	void process_sweep_as_pipe(const TopoDS_Wire& wire, const TopoDS_Wire& section, TopoDS_Shape& result, bool force_transformed=false) {
 		// This tolerance is fairly high due to the linear edge substitution for small (or large radii) conical curves.
 		const bool is_continuous = wire_is_c1_continuous(wire, 1.e-2);
-		static int i = 0;
-		std::string fn = "pipe-wire-" + boost::lexical_cast<std::string>(i++) + ".brep";
-		BRepTools::Write(wire, fn.c_str());
 		BRepOffsetAPI_MakePipeShell builder(wire);
 		builder.Add(section);
 		builder.SetTransitionMode(is_continuous || force_transformed ? BRepBuilderAPI_Transformed : BRepBuilderAPI_RightCorner);
@@ -1251,26 +1304,6 @@ namespace {
 		}
 	}
 
-	void segment_tiny_edges(const TopoDS_Wire& wire, std::vector<TopoDS_Wire>& wires, double eps) {
-		std::vector<TopoDS_Edge> sorted_edges;
-		sort_edges(wire, sorted_edges);
-
-		bool segment_next = true;
-
-		BRep_Builder B;
-		
-		for (const auto& e : sorted_edges) {
-			GProp_GProps prop;
-			BRepGProp::LinearProperties(e, prop);
-			const double l = prop.Mass();
-			if (l < eps || segment_next) {
-				wires.emplace_back();
-				B.MakeWire(wires.back());
-				segment_next = l < eps;
-			}
-			B.Add(wires.back(), e);
-		}
-	}
 
 	// #939: a closed loop causes failed triangulation in 7.3 and artefacts
 	// in 7.4 so we break up a closed wire into two equal parts.
@@ -1284,12 +1317,11 @@ namespace {
 		}
 
 		BRep_Builder B;
-		double u, v;
 
 		wires.emplace_back();
 		B.MakeWire(wires.back());
 
-		for (int i = 0; i < sorted_edges.size(); ++i) {
+		for (size_t i = 0; i < sorted_edges.size(); ++i) {
 			if (i == sorted_edges.size() / 2) {
 				wires.emplace_back();
 				B.MakeWire(wires.back());
@@ -1406,6 +1438,29 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 
 	if (!convert_wire(l->Directrix(), wire)) {
 		return false;
+	}
+
+	if (count(wire, TopAbs_EDGE) == 1) {
+		TopoDS_Vertex v0, v1;
+		TopExp::Vertices(wire, v0, v1);
+		if (v0.IsSame(v1)) {
+			TopExp_Explorer exp(wire, TopAbs_EDGE);
+			auto& e = TopoDS::Edge(exp.Current());
+			double a, b;
+			auto crv = BRep_Tool::Curve(e, a, b);
+			if ((crv->DynamicType() == STANDARD_TYPE(Geom_Circle)) ||
+				(crv->DynamicType() == STANDARD_TYPE(Geom_Ellipse))) 
+			{
+				BRepBuilderAPI_MakeEdge me(crv, l->StartParam(), l->EndParam());
+				if (me.IsDone()) {
+					auto e2 = me.Edge();
+					BRep_Builder B;
+					wire.Nullify();
+					B.MakeWire(wire);
+					B.Add(wire, e2);
+				}
+			}
+		}
 	}
 
 	// NB: Note that StartParam and EndParam param are ignored and the assumption is
@@ -1644,7 +1699,7 @@ namespace {
 		}
 		k.remove_duplicate_points_from_loop(polygon, true);
 
-		if (polygon.Size() < 3) {
+		if (polygon.Length() < 3) {
 			return false;
 		}
 
@@ -1763,7 +1818,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
         }
     }
 
-    if (faces.Size() == 0) return false;
+    if (faces.IsEmpty()) return false;
 
     return create_solid_from_faces(faces, shape);
 }

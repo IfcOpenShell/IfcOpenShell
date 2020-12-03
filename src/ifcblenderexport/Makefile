@@ -26,7 +26,7 @@ endif
 	cp -r blenderbim/* dist/blenderbim/
 
 	# Provides IfcOpenShell Python functionality
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-37-v0.6.0-ca6adff-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-37-v0.6.0-b08346c-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcblender*
 	cp -r dist/working/io_import_scene_ifc/ifcopenshell dist/blenderbim/libs/site/packages/
 	# See bug #812
@@ -38,10 +38,14 @@ endif
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f geolocation.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f selector.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f unit.py
+	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f pset.py
+	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f schema.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/element.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/geolocation.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/selector.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/unit.py
+	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/pset.py
+	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/schema.py
 
 	# Provides Python OCC functionality for cutting IFC geometry for construction documentation
 	mkdir dist/working
@@ -283,16 +287,18 @@ endif
 	mkdir dist/working
 	cd dist/working && wget https://github.com/IFCJSON-Team/IFC2JSON_python/archive/master.zip
 	cd dist/working && unzip master.zip
-	cp -r dist/working/IFC2JSON_python-master/ifcjson dist/blenderbim/libs/site/packages/
+	cp -r dist/working/IFC2JSON_python-master/file_converters/ifcjson dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Provides IFCPatch functionality
 	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/ifcpatch.py
 	cd dist/blenderbim/libs/site/packages/ && mkdir recipes
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/__init__.py
+	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/ExtractElements.py
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/MergeProject.py
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/OffsetObjectPlacements.py
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/OffsetStoreyElevations.py
+	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/Optimise.py
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/RecycleNonRootedElements.py
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/RemoveSiteRepresentation.py
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/ResetAbsoluteCoordinates.py

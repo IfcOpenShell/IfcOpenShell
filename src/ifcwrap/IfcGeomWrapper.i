@@ -154,9 +154,28 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 
 %extend IfcGeom::IteratorSettings {
 	%pythoncode %{
-		attrs = ("convert_back_units", "deflection_tolerance", "disable_opening_subtractions", "disable_triangulation", "faster_booleans", "sew_shells", "use_brep_data", "use_world_coords", "weld_vertices")
-		def __repr__(self):
-			return "%s(%s)"%(self.__class__.__name__, ",".join(tuple("%s=%r"%(a, getattr(self, a)()) for a in self.attrs)))
+
+	old_init = __init__
+
+	def __init__(self, **kwargs):
+    	self.old_init()
+    	for k, v in kwargs.items():
+    		self.set(getattr(self, k), v)
+
+	def __repr__(self):
+		def d():
+			import numbers
+			for x in dir(self):
+				if x.isupper() and x not in {"NUM_SETTINGS", "USE_PYTHON_OPENCASCADE"}:
+					v = getattr(self, x)
+					if isinstance(v, numbers.Integral):
+						yield x
+
+		return "%s(%s)" % (
+			type(self).__name__,
+			(", ".join(map(lambda x: "%s = %r" % (x, self.get(getattr(self, x))), d())))
+		)
+
 	%}
 }
 

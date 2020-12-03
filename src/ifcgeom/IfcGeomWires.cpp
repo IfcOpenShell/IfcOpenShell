@@ -100,13 +100,7 @@
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
 namespace {
-	// Returns the other vertex of an edge
-	TopoDS_Vertex other(const TopoDS_Edge& e, const TopoDS_Vertex& v) {
-		TopoDS_Vertex a, b;
-		TopExp::Vertices(e, a, b);
-		return v.IsSame(b) ? a : b;
-	}
-
+	// Returns the first edge of a wire
 	TopoDS_Edge first_edge(const TopoDS_Wire& w) {
 		TopoDS_Vertex v1, v2;
 		TopExp::Vertices(w, v1, v2);
@@ -581,17 +575,34 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 		// Fix from @sanderboer to compare using model tolerance, see #744
 		// Made dependent on radius, see #928
 
-		// @todo another good critereon for determining whether to take full curve
+		// A good critereon for determining whether to take full curve
 		// or trimmed segment would be whether there are other curve segments or this
-		// is the only one. But it does not really match the bottom-up construction
-		// mechanism of IfcOpenShell.
+		// is the only one.
+		boost::optional<size_t> num_segments;
+		auto segment = l->data().getInverse(&IfcSchema::IfcCompositeCurveSegment::Class(), -1);
+		if (segment->size() == 1) {
+			auto comp = (*segment->begin())->data().getInverse(&IfcSchema::IfcCompositeCurve::Class(), -1);
+			if (comp->size() == 1) {
+				num_segments = (*comp->begin())->as<IfcSchema::IfcCompositeCurve>()->Segments()->size();
+			}
+		}
 
 		if (isConic && ALMOST_THE_SAME(fmod(flts[1]-flts[0],M_PI*2.), 0., 100 * getValue(GV_PRECISION) / (2 * M_PI * radius))) {
 			e = BRepBuilderAPI_MakeEdge(curve).Edge();
 		} else {
 			BRepBuilderAPI_MakeEdge me (curve,flts[0],flts[1]);
 			e = me.Edge();
-		}			
+		}
+
+		if (num_segments && *num_segments > 1) {
+			TopoDS_Vertex v0, v1;
+			TopExp::Vertices(e, v0, v1);
+			if (v0.IsSame(v1)) {
+				Logger::Warning("Skipping degenerate segment", l);
+				return false;
+			}
+		}
+
 	} else if ( trim_cartesian_failed && (has_pnts[0] && has_pnts[1]) ) {
 		e = BRepBuilderAPI_MakeEdge(pnts[0], pnts[1]).Edge();
 	}
@@ -758,7 +769,7 @@ namespace {
 		BRepBuilderAPI_MakeEdge me(crv, v1, v2);
 		if (!me.IsDone()) {
 			const double eps2 = eps * eps;
-			if (me.Error() == BRepLib_PointProjectionFailed) {
+			if (me.Error() == BRepBuilderAPI_PointProjectionFailed) {
 				GeomAdaptor_Curve GAC(crv);
 				const gp_Pnt* ps[2] = { &p1, &p2 };
 				for (int i = 0; i < 2; ++i) {

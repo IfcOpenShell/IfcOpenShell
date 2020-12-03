@@ -92,8 +92,10 @@ namespace IfcGeom
 			LAYERSET_FIRST = 1 << 18,
 			/// Adds arrow heads to edge segments to signify edge direction
 			EDGE_ARROWS = 1 << 19,
+			/// Disables the evaluation of IfcBooleanResult and simply returns FirstOperand
+			DISABLE_BOOLEAN_RESULT = 1 << 20,
 			/// Number of different setting flags.
-			NUM_SETTINGS = 19
+			NUM_SETTINGS = 20
         };
         /// Used to store logical OR combination of setting flags.
         typedef unsigned SettingField;
@@ -108,6 +110,7 @@ namespace IfcGeom
         /// Note that this is independent of the IFC length unit, one millimeter by default.
         double deflection_tolerance() const { return deflection_tolerance_; }
 		double angular_tolerance() const { return angular_tolerance_; }
+		double force_space_transparency() const { return force_space_transparency_; }
 
         void set_deflection_tolerance(double value)
         {
@@ -123,6 +126,10 @@ namespace IfcGeom
 		void set_angular_tolerance(double value) {
 			angular_tolerance_ = value;
 		}
+
+		void force_space_transparency(double value) {
+			force_space_transparency_ = value;
+		}		
 
         /// Get boolean value for a single settings or for a combination of settings.
         bool get(SettingField setting) const
@@ -149,7 +156,7 @@ namespace IfcGeom
 
     protected:
         SettingField settings_;
-        double deflection_tolerance_, angular_tolerance_;
+        double deflection_tolerance_, angular_tolerance_, force_space_transparency_;
     };
 
     class IFC_GEOM_API ElementSettings : public IteratorSettings

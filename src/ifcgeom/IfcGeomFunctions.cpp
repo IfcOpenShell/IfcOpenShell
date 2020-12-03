@@ -1412,6 +1412,9 @@ void IfcGeom::Kernel::setValue(GeomValue var, double value) {
 	case GV_LAYERSET_FIRST:
 		layerset_first = value;
 		break;
+	case GV_DISABLE_BOOLEAN_RESULT:
+		disable_boolean_result = value;
+		break;
 	default:
 		throw std::runtime_error("Invalid setting");
 	}
@@ -1439,6 +1442,8 @@ double IfcGeom::Kernel::getValue(GeomValue var) const {
 		return max_faces_to_orient;
 	case GV_LAYERSET_FIRST:
 		return layerset_first;
+	case GV_DISABLE_BOOLEAN_RESULT:
+		return disable_boolean_result;
 	}
 	throw std::runtime_error("Invalid setting");
 }
@@ -1736,9 +1741,11 @@ IfcSchema::IfcRelVoidsElement::list::ptr IfcGeom::Kernel::find_openings(IfcSchem
 	// Filter openings in Reference view, solely marked as Reference.
 	IfcSchema::IfcRelVoidsElement::list::ptr openings(new IfcSchema::IfcRelVoidsElement::list);
 	std::for_each(rs.begin(), rs.end(), [&openings](IfcSchema::IfcRelVoidsElement* rel) {
-		auto reps = rel->RelatedOpeningElement()->Representation()->Representations();
-		if (!(reps->size() == 1 && (*reps->begin())->RepresentationIdentifier() == "Reference")) {
-			openings->push(rel);
+		if (rel->RelatedOpeningElement()->hasObjectPlacement() && rel->RelatedOpeningElement()->hasRepresentation()) {
+			auto reps = rel->RelatedOpeningElement()->Representation()->Representations();
+			if (!(reps->size() == 1 && (*reps->begin())->RepresentationIdentifier() == "Reference")) {
+				openings->push(rel);
+			}
 		}
 	});
 
@@ -1852,6 +1859,18 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and
 
 	if (material_style_applied) {
 		representation_id_builder << "-material-" << single_material->data().id();
+	}
+
+	if (settings.force_space_transparency() >= 0. && product->declaration().is("IfcSpace")) {
+		for (auto& s : shapes) {
+			if (s.hasStyle()) {
+				for (auto& p : style_cache) {
+					if (&p.second == &s.Style()) {
+						p.second.Transparency() = settings.force_space_transparency();
+					}
+				}
+			}
+		}
 	}
 
 	int parent_id = -1;
@@ -2712,7 +2731,7 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 		
 		double layer_offset = 0;
 
-		const double total_thickness = std::accumulate(thicknesses.begin(), thicknesses.end(), 0);
+		const double total_thickness = std::accumulate(thicknesses.begin(), thicknesses.end(), 0.);
 		
 		std::vector<double>::const_iterator thickness = thicknesses.begin();
 		result_t::iterator result_vector = result.begin() + 1;
@@ -2722,7 +2741,7 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 		for (surfaces_t::const_iterator jt = surfaces.begin() + 1; jt != surfaces.end() - 1; ++jt, ++result_vector) {
 			layer_offset += *thickness++;
 
-			bool found_intersection = false;
+			bool found_intersection = false, parallel = false;
 			boost::optional<gp_Pnt> point_outside_param_range;
 				
 			const Handle_Geom_Surface& surface = *jt;
@@ -2734,9 +2753,20 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 			GeomAPI_IntCS intersections(other_axis_curve, surface);
 			if (intersections.IsDone() && intersections.NbPoints() == 1) {
 				const gp_Pnt& p = intersections.Point(1);
+
 				double u, v, w;
 				intersections.Parameters(1, u, v, w);
-				if (w < axis_u1 || w > axis_u2) {
+
+				gp_Pnt Pc, Ps;
+				gp_Vec Vc, Vs1, Vs2;
+				other_axis_curve->D1(w, Pc, Vc);
+				surface->D1(u, v, Ps, Vs1, Vs2);
+				Vs1.Cross(Vs2);
+
+				if (Vs1.IsParallel(Vc, 1.e-5)) {
+					Logger::Warning("Connected walls are parallel");
+					parallel = true;
+				} else if (w < axis_u1 || w > axis_u2) {
 					point_outside_param_range = p;
 				} else {
 					// Found an intersection. Layer end point is covered by connecting wall
@@ -2745,7 +2775,7 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 				}
 			}
 
-			if (!found_intersection && point_outside_param_range) {
+			if (!parallel && !found_intersection && point_outside_param_range) {
 
 				/*
 				Is there a bug in Open Cascade related to the intersection
@@ -2849,6 +2879,13 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 
 namespace {
 
+	void subshapes(const TopoDS_Shape& in, std::list<TopoDS_Shape>& out) {
+		TopoDS_Iterator sit(in);
+		for (; sit.More(); sit.Next()) {
+			out.push_back(sit.Value());
+		}
+	}
+
 #if OCC_VERSION_HEX >= 0x70200
 	bool split(IfcGeom::Kernel&, const TopoDS_Shape& input, const TopTools_ListOfShape& operands, double eps, std::vector<TopoDS_Shape>& slices) {
 		if (operands.Extent() < 2) {
@@ -2880,18 +2917,19 @@ namespace {
 				}
 			}
 
-			// Count subshapes
-			size_t n = 0;
-			TopoDS_Iterator sit(split.Shape());
-			for (; sit.More(); sit.Next()) {
-				++n;
+			auto result_shape = split.Shape();
+			std::list<TopoDS_Shape> subs;
+			subshapes(result_shape, subs);
+			if (subs.size() == 1 && operands.Size() - 2 > (int)subs.size() && (subs.front().ShapeType() == TopAbs_COMPSOLID || subs.front().ShapeType() == TopAbs_COMPOUND)) {
+				auto s = subs.front();
+				subs.clear();
+				subshapes(s, subs);
 			}
 
 			// Initialize storage
-			slices.resize(n);
+			slices.resize(subs.size());
 
-			sit.Initialize(split.Shape());
-			for (; sit.More(); sit.Next()) {
+			for (auto& s : subs) {
 
 				// Iterate over the faces of solid to find correspondence to original
 				// splitting surfaces. For the outmost slices, there will be a single
@@ -2900,7 +2938,7 @@ namespace {
 				// slices, two surface indices should be find that should be next to
 				// each other in the array of input surfaces.
 
-				TopExp_Explorer exp(sit.Value(), TopAbs_FACE);
+				TopExp_Explorer exp(s, TopAbs_FACE);
 				int min = std::numeric_limits<int>::max();
 				int max = std::numeric_limits<int>::min();
 				for (; exp.More(); exp.Next()) {
@@ -2928,7 +2966,7 @@ namespace {
 
 				if (idx < (int) slices.size()) {
 					if (slices[idx].IsNull()) {
-						slices[idx] = sit.Value();
+						slices[idx] = s;
 						continue;
 					}
 				}
@@ -3034,7 +3072,13 @@ bool IfcGeom::Kernel::apply_folded_layerset(const IfcRepresentationShapeItems& i
 			}
 		
 			builder.Perform();
-			shells.Append(TopoDS::Shell(builder.SewedShape()));
+			TopoDS_Shape s = builder.SewedShape();
+			if (s.ShapeType() == TopAbs_SHELL) {
+				shells.Append(TopoDS::Shell(s));
+			} else {
+				Logger::Error("Expected shell type in layerset processing");
+				return false;
+			}
 		}
 	}
 
@@ -3747,23 +3791,6 @@ namespace {
 
 		operator int() { return i; }
 	};
-
-	inline std::string format_pnt(const gp_Pnt& p) {
-		std::stringstream ss;
-		ss << std::fixed << std::setprecision(4) << p.X() << " " << p.Y() << " " << p.Z();
-		return ss.str();
-	}
-
-	inline std::string format_edge(const TopoDS_Edge& e) {
-		std::stringstream ss;
-		TopoDS_Vertex v1, v2;
-		TopExp::Vertices(e, v1, v2);
-		gp_Pnt p1 = BRep_Tool::Pnt(v1);
-		gp_Pnt p2 = BRep_Tool::Pnt(v2);
-		ss << "edge " << format_pnt(p1) << " -> " << format_pnt(p2);
-		return ss.str();
-	}
-
 }
 
 bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListOfShape& wires) {

@@ -224,6 +224,13 @@ private:
 	double modelling_precision;
 	double dimensionality;
 	double layerset_first;
+
+	// For stopping PlacementRelTo recursion in convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf)
+	const IfcParse::declaration* placement_rel_to;
+
+	faceset_helper* faceset_helper_;
+	double disable_boolean_result;
+
 	gp_Vec offset = gp_Vec{0.0, 0.0, 0.0};
 	gp_Quaternion rotation = gp_Quaternion{};
 	gp_Trsf offset_and_rotation = gp_Trsf();
@@ -236,11 +243,6 @@ private:
 
 	const SurfaceStyle* internalize_surface_style(const std::pair<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*>& shading_style);
 
-	 // For stopping PlacementRelTo recursion in convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf)
-	const IfcParse::declaration* placement_rel_to;
-
-	faceset_helper* faceset_helper_;
-
 public:
 	MAKE_TYPE_NAME(Kernel)()
 		: IfcGeom::Kernel(0)
@@ -252,6 +254,8 @@ public:
 		, dimensionality(1.)
 		, placement_rel_to(nullptr)
 		, faceset_helper_(nullptr)
+		, layerset_first(-1.)
+		, disable_boolean_result(-1.)
 	{}
 
 	MAKE_TYPE_NAME(Kernel)(const MAKE_TYPE_NAME(Kernel)& other)
@@ -265,6 +269,9 @@ public:
 		, placement_rel_to(other.placement_rel_to)
 		// @nb faceset_helper_ always initialized to 0
 		, faceset_helper_(nullptr)
+		, layerset_first(other.layerset_first)
+		, disable_boolean_result(other.disable_boolean_result)
+
 		, offset(other.offset)
 		, rotation(other.rotation)
 		, offset_and_rotation(other.offset_and_rotation)
@@ -279,6 +286,9 @@ public:
 		modelling_precision = other.modelling_precision;
 		dimensionality = other.dimensionality;
 		placement_rel_to = other.placement_rel_to;
+		layerset_first = other.layerset_first;
+		disable_boolean_result = other.disable_boolean_result;
+
 		offset = other.offset;
 		rotation = other.rotation;
 		offset_and_rotation = other.offset_and_rotation;
