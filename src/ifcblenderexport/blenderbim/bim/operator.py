@@ -2419,6 +2419,9 @@ class CutSection(bpy.types.Operator):
         camera = bpy.context.scene.camera
         if not (camera.type == "CAMERA" and camera.data.type == "ORTHO"):
             return {"FINISHED"}
+        if not bpy.context.scene.DocProperties.ifc_files and bpy.context.scene.BIMProperties.ifc_file:
+            new = bpy.context.scene.DocProperties.ifc_files.add()
+            new.name = bpy.context.scene.BIMProperties.ifc_file
         bpy.ops.bim.activate_view(
             drawing_index=bpy.context.scene.DocProperties.drawings.find(camera.name.split("/")[1])
         )
