@@ -771,13 +771,13 @@ class IfcCutter:
 
     def get_classes(self, element, position):
         classes = [position, element.is_a()]
-        for association in element.HasAssociations:
-            if association.is_a("IfcRelAssociatesMaterial"):
-                classes.append(
-                    "material-{}".format(
-                        re.sub("[^0-9a-zA-Z]+", "", self.get_material_name(association.RelatingMaterial))
-                    )
+        material = ifcopenshell.util.element.get_material(element)
+        if material:
+            classes.append(
+                "material-{}".format(
+                    re.sub("[^0-9a-zA-Z]+", "", self.get_material_name(material))
                 )
+            )
         classes.append("globalid-{}".format(element.GlobalId))
         for attribute in self.attributes:
             result = self.selector.get_element_value(element, attribute)
