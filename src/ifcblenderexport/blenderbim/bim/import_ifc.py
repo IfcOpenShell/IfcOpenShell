@@ -122,7 +122,7 @@ class MaterialCreator:
                 # material name is duplicated, and so a '.001' is added.
                 # The maximum characters for the material name is 59 in this
                 # scenario.
-                material = material[0:59]
+                material = bytes(material, "utf-8")[0:59].decode("utf-8")
                 slot_index = [self.canonicalise_material_name(s.name) for s in obj.material_slots].index(material)
             material_to_slot[i] = slot_index
 
