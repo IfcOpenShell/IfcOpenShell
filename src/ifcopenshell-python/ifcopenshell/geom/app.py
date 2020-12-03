@@ -158,9 +158,12 @@ if selection:
     #get the IfcProduct that is stored in the global variable 'selection'
     obj = selection
     for relDefinesByProperties in obj.IsDefinedBy:
+        if not relDefinesByProperties.is_a("IfcRelDefinesByProperties"):
+            continue
          print("[{0}]".format(relDefinesByProperties.RelatingPropertyDefinition.Name))
-         for prop in relDefinesByProperties.RelatingPropertyDefinition.HasProperties:
-             print ("{:<20} :{}".format(prop.Name,prop.NominalValue.wrappedValue))
+         if relDefinesByProperties.RelatingPropertyDefinition.is_a("IfcPropertySet"):
+             for prop in relDefinesByProperties.RelatingPropertyDefinition.HasProperties:
+                 print ("{:<20} :{}".format(prop.Name,prop.NominalValue.wrappedValue))
          print ("\\n")
 """.lstrip()
                 ),
