@@ -201,12 +201,3 @@ class Migrator:
                 }
             )
         return self.default_entities[attribute.name()]
-
-
-# f = ifcopenshell.open("/home/dion/migrate.ifc")
-# g = ifcopenshell.file(schema="IFC4")
-# migrator = Migrator()
-# for e in f:
-#     print(e)
-#     print(migrator.migrate(e, g))
-# g.write("/home/dion/migrate2.ifc")
