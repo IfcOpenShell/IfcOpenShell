@@ -4778,11 +4778,10 @@ class BlenderClasher:
             name = object_name.name
             obj = bpy.data.objects[name]
             triangulated_mesh = self.triangulate_mesh(obj)
-            mat = np.array(obj.matrix_world)
             mesh = ifcclash.Mesh()
-            mesh.vertices = np.array([tuple(v.co) for v in triangulated_mesh.vertices])
+            mesh.vertices = np.array([tuple(obj.matrix_world @ v.co) for v in triangulated_mesh.vertices])
             mesh.faces = np.array([tuple(p.vertices) for p in triangulated_mesh.polygons])
-            cm.add_object(name, mesh, mat)
+            cm.add_object(name, mesh)
 
     def triangulate_mesh(self, obj):
         import bmesh
