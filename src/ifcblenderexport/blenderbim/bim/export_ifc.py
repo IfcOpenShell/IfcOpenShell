@@ -1885,11 +1885,7 @@ class IfcExporter:
             try:
                 product["ifc"] = self.file.create_entity(product["class"], **product["attributes"])
             except RuntimeError as e:
-                self.ifc_export_settings.logger.error(
-                    'The type product "{}/{}" could not be created: {}'.format(
-                        product["class"], product["attributes"]["Name"], e.args
-                    )
-                )
+                product["ifc"] = self.create_ifc_entity(product)
 
     def add_predefined_attributes_to_type_product(self, product, attributes):
         self.create_predefined_attributes(attributes)
@@ -2073,7 +2069,7 @@ class IfcExporter:
         return results
 
     def create_styled_item(self, styled_item, representation_item=None):
-        surface_style = self.ifc_parser.surface_styles[styled_item["attributes"]["Name"]]
+        surface_style = self.ifc_parser.surface_styles[styled_item["raw"].name]
         if not surface_style["ifc"]:
             styles = []
             styles.append(self.create_surface_style_rendering(styled_item))
@@ -2302,11 +2298,20 @@ class IfcExporter:
         try:
             product["ifc"] = self.file.create_entity(product["class"], **product["attributes"])
         except RuntimeError as e:
-            self.ifc_export_settings.logger.error(
-                'The product "{}/{}" could not be created: {}'.format(
-                    product["class"], product["attributes"]["Name"], e.args
+            product["ifc"] = self.create_ifc_entity(product)
+
+    def create_ifc_entity(self, data):
+        result = self.file.create_entity(data["class"])
+        for key, value in data["attributes"].items():
+            try:
+                setattr(result, key, value)
+            except RuntimeError as e:
+                self.ifc_export_settings.logger.error(
+                    'The entity "{}/{}" attribute {} with value {} could not be created: {}'.format(
+                        data["class"], data["attributes"]["Name"], key, value, e.args
+                    )
                 )
-            )
+        return result
 
     def get_product_attribute_type(self, product_class, attribute_name):
         element_schema = schema.ifc.elements[product_class]
