@@ -3853,14 +3853,16 @@ class ExecuteBIMTester(bpy.types.Operator):
 
     def execute(self, context):
         import bimtester
+        import bimtester.run
+        import bimtester.reports
 
         filename = os.path.join(
             bpy.context.scene.BIMProperties.features_dir, bpy.context.scene.BIMProperties.features_file + ".feature"
         )
         cwd = os.getcwd()
         os.chdir(bpy.context.scene.BIMProperties.features_dir)
-        bimtester.run_tests({"feature": filename, "advanced_arguments": None, "console": False})
-        bimtester.generate_report()
+        bimtester.run.run_tests({"feature": filename, "advanced_arguments": None, "console": False})
+        bimtester.reports.generate_report()
         webbrowser.open(
             "file://"
             + os.path.join(
@@ -3879,13 +3881,14 @@ class BIMTesterPurge(bpy.types.Operator):
 
     def execute(self, context):
         import bimtester
+        import bimtester.clean
 
         filename = os.path.join(
             bpy.context.scene.BIMProperties.features_dir, bpy.context.scene.BIMProperties.features_file + ".feature"
         )
         cwd = os.getcwd()
         os.chdir(bpy.context.scene.BIMProperties.features_dir)
-        bimtester.TestPurger().purge()
+        bimtester.clean.TestPurger().purge()
         os.chdir(cwd)
         return {"FINISHED"}
 
