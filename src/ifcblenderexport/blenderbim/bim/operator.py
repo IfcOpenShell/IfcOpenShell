@@ -4712,6 +4712,22 @@ class GetRepresentationIfcParameters(bpy.types.Operator):
                 return c.ifc_definition_id or None
 
 
+class BakeParametricGeometry(bpy.types.Operator):
+    bl_idname = "bim.bake_parametric_geometry"
+    bl_label = "Bake Parametric Geometry"
+
+    def execute(self, context):
+        obj = bpy.context.active_object
+        if "/" not in obj.data.name:
+            context, subcontext, target_view = ("Model", "Body", "MODEL_VIEW")
+        else:
+            context, subcontext, target_view = obj.data.name.split("/")[0:3]
+        for c in obj.BIMObjectProperties.representation_contexts:
+            if c.context == context and c.name == subcontext and c.target_view == target_view:
+                c.ifc_definition_id = 0
+        return {"FINISHED"}
+
+
 class UpdateIfcRepresentation(bpy.types.Operator):
     bl_idname = "bim.update_ifc_representation"
     bl_label = "Update IFC Representation"
