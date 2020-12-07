@@ -225,6 +225,7 @@ if bpy is not None:
         operator.RewindInspector,
         operator.RefreshDrawingList,
         operator.GetRepresentationIfcParameters,
+        operator.BakeParametricGeometry,
         operator.UpdateIfcRepresentation,
         operator.SetBlenderClashSetA,
         operator.SetBlenderClashSetB,
