@@ -34,12 +34,16 @@ endif
 	cd dist/working && mv occ_utils.py ../blenderbim/libs/site/packages/ifcopenshell/geom/occ_utils.py
 	rm -rf dist/working
 	# IfcOpenBot sometimes lags behind, so we hotfix the Python utilities
+	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f attribute_4_to_2x3.json
+	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f class_4_to_2x3.json
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f element.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f geolocation.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f selector.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f unit.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f pset.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f schema.py
+	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/attribute_4_to_2x3.json
+	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/class_4_to_2x3.json
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/element.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/geolocation.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/selector.py
