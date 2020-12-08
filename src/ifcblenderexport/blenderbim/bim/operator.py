@@ -4139,9 +4139,6 @@ class ActivateDrawingStyle(bpy.types.Operator):
                 self.exclude_global_ids.extend([e.GlobalId for e in results])
         if self.drawing_style.include_query:
             self.parse_filter_query("INCLUDE")
-        else:
-            for obj in bpy.context.scene.objects:
-                obj.hide_viewport = False
         if self.drawing_style.exclude_query:
             self.parse_filter_query("EXCLUDE")
 
