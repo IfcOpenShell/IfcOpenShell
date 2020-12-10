@@ -2347,6 +2347,9 @@ class BIM_PT_annotation_utilities(Panel):
                 row.operator("bim.remove_drawing", icon="X", text="").index = props.active_drawing_index
             layout.template_list("BIM_UL_generic", "", props, "drawings", props, "active_drawing_index")
 
+        row = layout.row()
+        row.prop(props, 'dim_decorations')
+
 
 class BIM_PT_qto_utilities(Panel):
     bl_idname = "BIM_PT_qto_utilities"
@@ -2391,7 +2394,7 @@ class BIM_PT_clash_manager(Panel):
 
         row = layout.row()
         layout.label(text="Select output path for smart-grouped clashes:")
-        
+
         row = layout.row(align=True)
         row.prop(props, "smart_grouped_clashes_path", text="")
         op = row.operator("bim.select_smart_grouped_clashes_path", icon="FILE_FOLDER", text="")
@@ -2404,7 +2407,7 @@ class BIM_PT_clash_manager(Panel):
 
         row = layout.row(align=True)
         row.operator("bim.load_smart_groups_for_active_clash_set")
-        
+
         layout.template_list('BIM_UL_smart_groups', '', props, 'smart_clash_groups', props, 'active_smart_group_index')
 
         row = layout.row(align=True)
