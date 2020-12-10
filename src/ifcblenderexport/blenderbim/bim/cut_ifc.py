@@ -152,7 +152,6 @@ class IfcCutter:
         self.ifc_filenames = []
         self.ifc_files = {}
         self.resolved_pixels = set()
-        self.should_get_background = False
         self.text_pickle_file = "text.pickle"
         self.metadata_pickle_file = "metadata.pickle"
         self.cut_pickle_file = "cut.pickle"
@@ -191,15 +190,6 @@ class IfcCutter:
         self.profile_code("Get annotation")
         self.get_cut_polygon_metadata()
         self.profile_code("Get cut polygon metadata")
-
-        # should_get_background is False in production as this is experimental
-        if not self.should_get_background:
-            return
-
-        self.get_background_elements()
-        self.sort_background_elements(reverse=True)
-        self.merge_background_elements()
-        self.sort_background_elements()
 
     def profile_code(self, message):
         if not self.time:
@@ -329,76 +319,6 @@ class IfcCutter:
                 return True
         return False
 
-    def sort_background_elements(self, reverse=None):
-        if reverse:
-            new_list = sorted(self.background_elements, key=lambda k: -k["z"])
-        else:
-            new_list = sorted(self.background_elements, key=lambda k: k["z"])
-        self.background_elements = new_list
-
-    def process_grid(self, face, resolution):
-        try:
-            bbox = self.get_bbox(face)
-            xmin, ymin, zmin, xmax, ymax, zmax = bbox.Get()
-        except:
-            return
-        current_x = 0
-        current_y = 0
-        is_visible = False
-        while current_x < self.section_box["x"]:
-            current_y = 0
-            while current_y > -self.section_box["y"]:
-                if current_x < xmin or current_x > xmax or current_y < ymin or current_y > ymax:
-                    current_y -= resolution
-                    continue
-                if (current_x, current_y) in self.resolved_pixels:
-                    current_y -= resolution
-                    continue
-                point = numpy.array((current_x, current_y, 0))
-                hit = self.raycast(face, point)
-                if hit:
-                    is_visible = True
-                    self.resolved_pixels.add((current_x, current_y))
-                current_y -= resolution
-            current_x += resolution
-        return is_visible
-
-    def merge_background_elements(self):
-        background_elements = []
-
-        resolution = 0.1  # 10cm
-
-        # DO CUT
-        total_product_shapes = len(self.cut_polygons)
-        n = 0
-        for element in self.cut_polygons:
-            # print('{}/{} background elements processed ...'.format(n, total_product_shapes), end='\r', flush=True)
-            print("{}/{} cut polygons processed ...".format(n, total_product_shapes))
-            print("{} resolved pixels".format(len(self.resolved_pixels)))
-            n += 1
-            self.process_grid(element["geometry_face"], resolution)
-
-        # DO BACKGROUND
-        total_product_shapes = len(self.background_elements)
-        n = 0
-        for element in self.background_elements:
-            # print('{}/{} background elements processed ...'.format(n, total_product_shapes), end='\r', flush=True)
-            print("{}/{} background elements processed ...".format(n, total_product_shapes))
-            print("{} resolved pixels".format(len(self.resolved_pixels)))
-            n += 1
-            if element["type"] != "polygon":
-                background_elements.append(element)
-                continue
-            is_visible = self.process_grid(element["geometry_face"], resolution)
-            if is_visible:
-                background_elements.append(element)
-
-        print(
-            "##### BEFORE it had {} and after it had {}".format(len(self.background_elements), len(background_elements))
-        )
-        self.background_elements = background_elements
-        return
-
     def create_section_box(self):
         top_left_corner = gp.gp_Pnt(
             self.section_box["top_left_corner"][0],
@@ -429,86 +349,6 @@ class IfcCutter:
         self.transformation = gp.gp_Trsf()
         self.transformation.SetDisplacement(source, destination)
 
-    def get_background_elements(self):
-        total_product_shapes = len(self.product_shapes)
-        n = 0
-        intersections = []
-        compound = TopoDS.TopoDS_Compound()
-        builder = BRep.BRep_Builder()
-        builder.MakeCompound(compound)
-        for product, shape in self.product_shapes:
-            builder.Add(compound, shape)
-
-            print("{}/{} background elements processed ...".format(n, total_product_shapes), end="\r", flush=True)
-            # print('Processing product {} '.format(product.Name))
-            n += 1
-
-            intersection = BRepAlgoAPI.BRepAlgoAPI_Common(self.section_box["shape"], shape).Shape()
-            intersection_edges = self.get_booleaned_edges(intersection)
-            if len(intersection_edges) <= 0:
-                continue
-            intersections.append(intersection)
-
-            transformed_intersection = BRepBuilderAPI.BRepBuilderAPI_Transform(intersection, self.transformation)
-            intersection = transformed_intersection.Shape()
-
-            edge_face_map = TopTools.TopTools_IndexedDataMapOfShapeListOfShape()
-            TopExp.topexp.MapShapesAndAncestors(intersection, TopAbs.TopAbs_EDGE, TopAbs.TopAbs_FACE, edge_face_map)
-
-            exp = TopExp.TopExp_Explorer(intersection, TopAbs.TopAbs_FACE)
-            while exp.More():
-                face = topods.Face(exp.Current())
-                normal = self.get_normal(face)
-                # Cull back-faces
-                if normal.Z() <= 0:
-                    exp.Next()
-                    continue
-                zpos, zmax = self.calculate_face_zpos(face)
-                self.build_new_face(face, zpos, product)
-                self.get_split_edges(edge_face_map, face, zmax, product)
-                exp.Next()
-
-    def get_raycast_hits(self, shape):
-        resolution = 0.1  # 5cm
-        hits = []
-        current_x = 0
-        current_y = 0
-        while current_x < self.section_box["x"] / 2:
-            current_y = 0
-            while current_y < self.section_box["y"] / 4:
-                point = numpy.array(self.section_box["top_left_corner"])
-                point = numpy.add(point, current_x * numpy.array(self.section_box["x_axis"]))
-                point = numpy.add(point, current_y * numpy.array(self.section_box["y_axis"]))
-                hit = self.raycast(shape, point)
-                if hit:
-                    hits.append(hit)
-                current_y += resolution
-            current_x += resolution
-            print("row down")
-        return hits
-
-    def raycast(self, shape, point):
-        raycast = IntCurvesFace.IntCurvesFace_ShapeIntersector()
-        raycast.Load(shape, 0.01)
-        line = gp.gp_Lin(gp.gp_Pnt(float(point[0]), float(point[1]), float(point[2])), gp.gp_Dir(0, 0, -1))
-        raycast.Perform(line, 0, self.section_box["z"])
-        return raycast.NbPnt() != 0
-
-    def raycast_at_projection_dir(self, shape, point):
-        raycast = IntCurvesFace.IntCurvesFace_ShapeIntersector()
-        raycast.Load(shape, 0.01)
-        line = gp.gp_Lin(
-            gp.gp_Pnt(float(point[0]), float(point[1]), float(point[2])),
-            gp.gp_Dir(
-                self.section_box["projection"][0], self.section_box["projection"][1], self.section_box["projection"][2]
-            ),
-        )
-        raycast.Perform(line, 0, self.section_box["z"])
-        if raycast.NbPnt() != 0:
-            # The smaller WParameter is the closer z-index
-            # Should be the first
-            return {"face": raycast.Face(1), "z": raycast.WParameter(1)}
-
     def get_bbox(self, shape):
         bbox = Bnd.Bnd_Box()
         BRepBndLib.brepbndlib_Add(shape, bbox)
@@ -519,111 +359,6 @@ class IfcCutter:
         xmin, ymin, zmin, xmax, ymax, zmax = bbox.Get()
         zpos = zmin + ((zmax - zmin) / 2)
         return zpos, zmax
-
-    def get_split_edges(self, edge_face_map, face, zmax, product):
-        exp2 = TopExp.TopExp_Explorer(face, TopAbs.TopAbs_EDGE)
-        while exp2.More():
-            edge = topods.Edge(exp2.Current())
-            adjface = TopoDS.TopoDS_Face()
-            getadj = TopOpeBRepBuild.TopOpeBRepBuild_Tools.GetAdjacentFace(face, edge, edge_face_map, adjface)
-            if getadj:
-                try:
-                    edge_angle = math.degrees(self.get_angle_between_faces(face, adjface))
-                except:
-                    # TODO: Figure out when a math domain error might occur,
-                    # because it does, sometimes.
-                    edge_angle = 0
-                if edge_angle > 30 and edge_angle < 160:
-                    newedge = self.build_new_edge(edge, zmax + 0.01)
-                    if newedge:
-                        self.background_elements.append(
-                            {"raw": product, "geometry": newedge, "type": "line", "z": zmax + 0.01}
-                        )
-            exp2.Next()
-
-    def get_angle_between_faces(self, f1, f2):
-        return self.convert_dot_product_to_angle(
-            self.get_dot_product_of_normals(self.get_normal(f1), self.get_normal(f2))
-        )
-
-    def get_normal(self, face):
-        surface = Geom.Handle_Geom_Surface(BRep.BRep_Tool.Surface(face))
-        props = GeomLProp.GeomLProp_SLProps(surface, 0, 0, 1, 0.001)
-        return props.Normal()
-
-    def get_dot_product_of_normals(self, n1, n2):
-        return n1.X() * n2.X() + n1.Y() * n2.Y() + n1.Z() * n2.Z()
-
-    def convert_dot_product_to_angle(self, dp):
-        return math.acos(dp)
-
-    def is_same_point(self, p1, p2):
-        return p1.X() == p2.X() and p1.Y() == p2.Y() and p1.Z() == p2.Z()
-
-    def build_new_edge(self, edge, zpos):
-        exp = TopExp.TopExp_Explorer(edge, TopAbs.TopAbs_VERTEX)
-        new_vertices = []
-        while exp.More():
-            current_vertex = topods.Vertex(exp.Current())
-            current_point = BRep.BRep_Tool.Pnt(current_vertex)
-            current_point.SetZ(zpos)
-            new_vertices.append(BRepBuilderAPI.BRepBuilderAPI_MakeVertex(current_point).Vertex())
-            exp.Next()
-        try:
-            return BRepBuilderAPI.BRepBuilderAPI_MakeEdge(new_vertices[0], new_vertices[1]).Edge()
-        except:
-            return None
-
-    def build_new_face(self, face, zpos, product):
-        exp = TopExp.TopExp_Explorer(face, TopAbs.TopAbs_WIRE)
-        while exp.More():
-            wireexp = BRepTools.BRepTools_WireExplorer(topods.Wire(exp.Current()))
-            new_wire_builder = BRepBuilderAPI.BRepBuilderAPI_MakeWire()
-            first_vertex = None
-            previous_vertex = None
-            while wireexp.More():
-                current_vertex = wireexp.CurrentVertex()
-                current_point = BRep.BRep_Tool.Pnt(current_vertex)
-                # Dodgy technique to squash in Z axis
-                current_point.SetZ(zpos)
-                current_vertex = BRepBuilderAPI.BRepBuilderAPI_MakeVertex(current_point).Vertex()
-                if not first_vertex:
-                    first_vertex = current_vertex
-                if not previous_vertex:
-                    previous_vertex = current_vertex
-                else:
-                    try:
-                        new_wire_builder.Add(
-                            topods.Edge(BRepBuilderAPI.BRepBuilderAPI_MakeEdge(previous_vertex, current_vertex).Edge())
-                        )
-                        previous_vertex = current_vertex
-                    except:
-                        pass
-                wireexp.Next()
-
-                # make last edge
-                if not wireexp.More():
-                    try:
-                        new_wire_builder.Add(
-                            topods.Edge(BRepBuilderAPI.BRepBuilderAPI_MakeEdge(current_vertex, first_vertex).Edge())
-                        )
-                    except:
-                        pass
-            try:
-                new_wire = new_wire_builder.Wire()
-                new_face = BRepBuilderAPI.BRepBuilderAPI_MakeFace(new_wire).Face()
-                self.background_elements.append(
-                    {"raw": product, "geometry": new_wire, "geometry_face": new_face, "type": "polygon", "z": zpos}
-                )
-            except:
-                # print('Could not build face')
-                pass
-            exp.Next()
-
-    def get_area(self, shape):
-        gprops = GProp.GProp_GProps()
-        BRepGProp.brepgprop.SurfaceProperties(shape, gprops)
-        return gprops.Mass()
 
     def get_booleaned_edges(self, shape):
         edges = []
@@ -652,6 +387,8 @@ class IfcCutter:
             for element in ifc_file.by_type("IfcElement"):
                 annotation_representation = None
                 box_representation = None
+                if not element.Representation:
+                    continue # This can occur for aggregates
                 for representation in element.Representation.Representations:
                     if (
                         representation.ContextOfItems.ContextType == "Plan"
@@ -769,13 +506,13 @@ class IfcCutter:
 
     def get_classes(self, element, position):
         classes = [position, element.is_a()]
-        for association in element.HasAssociations:
-            if association.is_a("IfcRelAssociatesMaterial"):
-                classes.append(
-                    "material-{}".format(
-                        re.sub("[^0-9a-zA-Z]+", "", self.get_material_name(association.RelatingMaterial))
-                    )
+        material = ifcopenshell.util.element.get_material(element)
+        if material:
+            classes.append(
+                "material-{}".format(
+                    re.sub("[^0-9a-zA-Z]+", "", self.get_material_name(material))
                 )
+            )
         classes.append("globalid-{}".format(element.GlobalId))
         for attribute in self.attributes:
             result = self.selector.get_element_value(element, attribute)
@@ -796,55 +533,3 @@ class IfcCutter:
         if os.path.isfile(self.cut_pickle_file):
             with open(self.cut_pickle_file, "rb") as pickle_file:
                 self.cut_polygons = pickle.load(pickle_file)
-
-
-class IfcCutterDebug(IfcCutter):
-    def cut(self):
-        self.occ_display = ifcopenshell.geom.utils.initialize_display()
-        super().cut()
-
-    def create_section_box(self):
-        super().create_section_box()
-        self.display_everything_with_section_plane()
-
-    def get_cut_polygons(self):
-        super().get_cut_polygons()
-        self.display_cut_polygons()
-
-    def get_background_elements(self):
-        super().get_background_elements()
-        self.display_background_elements()
-
-    def display_everything_with_section_plane(self):
-        section_face_display = ifcopenshell.geom.utils.display_shape(self.section_box["face"])
-        ifcopenshell.geom.utils.set_shape_transparency(section_face_display, 0.8)
-        section_box_display = ifcopenshell.geom.utils.display_shape(self.section_box["shape"])
-        ifcopenshell.geom.utils.set_shape_transparency(section_box_display, 0.5)
-
-        transformed_box = BRepBuilderAPI.BRepBuilderAPI_Transform(self.section_box["shape"], self.transformation)
-        box_display = ifcopenshell.geom.utils.display_shape(transformed_box.Shape())
-        ifcopenshell.geom.utils.set_shape_transparency(box_display, 0.2)
-
-        for shape in self.product_shapes:
-            ifcopenshell.geom.utils.display_shape(shape[1])
-        input("Debug: showing everything with section plane.")
-
-    def display_cut_polygons(self):
-        self.occ_display.EraseAll()
-        for polygon in self.cut_polygons:
-            ifcopenshell.geom.utils.display_shape(polygon["geometry"], clr="BLACK")
-            face = BRepBuilderAPI.BRepBuilderAPI_MakeFace(polygon["geometry"]).Face()
-            face_display = ifcopenshell.geom.utils.display_shape(face)
-            ifcopenshell.geom.utils.set_shape_transparency(face_display, 0.5)
-        input("Debug: showing cut polygons.")
-
-    def display_background_elements(self):
-        self.occ_display.EraseAll()
-        for element in self.background_elements:
-            if element["type"] == "line":
-                ifcopenshell.geom.utils.display_shape(element["geometry"], clr="PURPLE")
-            elif element["type"] == "polyline":
-                ifcopenshell.geom.utils.display_shape(element["geometry_face"], clr="RED")
-            elif element["type"] == "polygon":
-                ifcopenshell.geom.utils.display_shape(element["geometry_face"])
-        input("Debug: showing background elements.")

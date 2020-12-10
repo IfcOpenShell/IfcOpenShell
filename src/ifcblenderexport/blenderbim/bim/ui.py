@@ -814,6 +814,8 @@ class BIM_PT_mesh(Panel):
         layout.label(text="IFC Parameters:")
         row = layout.row()
         row.operator("bim.get_representation_ifc_parameters")
+        row = layout.row()
+        row.operator("bim.bake_parametric_geometry")
         for index, ifc_parameter in enumerate(props.ifc_parameters):
             row = layout.row(align=True)
             row.prop(ifc_parameter, "name", text="")
@@ -1071,7 +1073,7 @@ class BIM_PT_drawings(Panel):
         for index, ifc_file in enumerate(props.ifc_files):
             row = layout.row(align=True)
             row.prop(ifc_file, "name", text="IFC #{}".format(index + 1))
-            row.operator("bim.select_doc_ifc_file", icon="FILE_FOLDER", text="")
+            row.operator("bim.select_doc_ifc_file", icon="FILE_FOLDER", text="").index = index
             row.operator("bim.remove_ifc_file", icon="X", text="").index = index
 
 
@@ -2035,6 +2037,11 @@ class BIM_PT_mvd(Panel):
         row = layout.row()
         row.prop(bim_properties, "export_should_force_faceted_brep")
 
+        layout.label(text="DESITE BIM Workarounds:")
+
+        row = layout.row()
+        row.prop(bim_properties, "export_should_force_faceted_brep")
+
         layout.label(text="Navisworks Workarounds:")
 
         row = layout.row()
@@ -2295,6 +2302,11 @@ class BIM_PT_annotation_utilities(Panel):
 
     def draw(self, context):
         layout = self.layout
+
+        row = layout.row(align=True)
+        row.operator("bim.clean_wireframes")
+        row = layout.row(align=True)
+        row.operator("bim.link_ifc")
 
         row = layout.row(align=True)
         op = row.operator("bim.add_annotation", text="Dim", icon="ARROW_LEFTRIGHT")

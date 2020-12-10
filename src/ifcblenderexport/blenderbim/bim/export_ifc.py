@@ -112,8 +112,8 @@ class IfcParser:
         self.constraints = self.get_constraints()
         self.load_representations()
         self.load_presentation_layer_assignments()
+        # TODO: migrate this into the product / type / spatial element loop
         self.get_materials_and_surface_styles()
-        self.get_styled_items_and_surface_styles()
         self.spatial_structure_elements = self.get_spatial_structure_elements()
         self.groups = self.get_groups()
         self.libraries = self.get_libraries()
@@ -420,6 +420,7 @@ class IfcParser:
 
         self.get_product_psets_qtos(product, obj, is_pset=True)
         self.get_product_psets_qtos(product, obj, is_qto=True)
+        self.get_styled_items_and_surface_styles(product, obj)
 
         for reference in obj.BIMObjectProperties.document_references:
             self.rel_associates_document_object.setdefault(reference.name, []).append(product)
@@ -958,6 +959,7 @@ class IfcParser:
             self.append_product_attributes(element, obj)
             self.get_product_psets_qtos(element, obj, is_pset=True)
             self.get_product_psets_qtos(element, obj, is_qto=True)
+            self.get_styled_items_and_surface_styles(element, obj)
             elements.append(element)
         return elements
 
@@ -1160,7 +1162,7 @@ class IfcParser:
     def get_materials_and_surface_styles(self):
         if not self.ifc_export_settings.has_representations:
             return
-        for product in self.selected_products + self.selected_types:
+        for product in self.selected_products + self.selected_types + self.selected_spatial_structure_elements:
             obj = product["raw"]
             if obj.BIMObjectProperties.material_type == "IfcMaterial" and obj.BIMObjectProperties.material:
                 self.get_material(obj.BIMObjectProperties.material)
@@ -1191,27 +1193,23 @@ class IfcParser:
         attributes.update({a.name: a.string_value for a in material.BIMMaterialProperties.attributes})
         return attributes
 
-    def get_styled_items_and_surface_styles(self):
+    def get_styled_items_and_surface_styles(self, element, obj):
         if not self.ifc_export_settings.has_representations:
             return
-        parsed_data_names = []
-        for product in self.selected_products + self.selected_types:
-            obj = product["raw"]
-            if obj.data is None or obj.data.name in parsed_data_names:
+        if obj.data is None:
+            return
+        for slot in obj.material_slots:
+            if slot.material is None:
                 continue
-            parsed_data_names.append(obj.data.name)
-            for slot in obj.material_slots:
-                if slot.material is None:
-                    continue
-                self.surface_styles[slot.material.name] = {"ifc": None, "raw": slot.material}
-                self.styled_items.append(
-                    {
-                        "ifc": None,
-                        "raw": slot.material,
-                        "related_product_name": product["raw"].name,
-                        "attributes": {"Name": slot.material.name},
-                    }
-                )
+            self.surface_styles[slot.material.name] = {"ifc": None, "raw": slot.material}
+            self.styled_items.append(
+                {
+                    "ifc": None,
+                    "raw": slot.material,
+                    "related_element": element,
+                    "attributes": {"Name": slot.material.name},
+                }
+            )
 
     def get_grid_axes(self):
         results = {}
@@ -1885,11 +1883,7 @@ class IfcExporter:
             try:
                 product["ifc"] = self.file.create_entity(product["class"], **product["attributes"])
             except RuntimeError as e:
-                self.ifc_export_settings.logger.error(
-                    'The type product "{}/{}" could not be created: {}'.format(
-                        product["class"], product["attributes"]["Name"], e.args
-                    )
-                )
+                product["ifc"] = self.create_ifc_entity(product)
 
     def add_predefined_attributes_to_type_product(self, product, attributes):
         self.create_predefined_attributes(attributes)
@@ -2029,9 +2023,7 @@ class IfcExporter:
             self.process_styled_item(styled_item)
 
     def process_styled_item(self, styled_item):
-        product = self.ifc_parser.products[
-            self.ifc_parser.get_product_index_from_raw_name(styled_item["related_product_name"])
-        ]
+        product = styled_item["related_element"]
 
         if not product["ifc"].Representation:
             return
@@ -2041,9 +2033,7 @@ class IfcExporter:
         # BlenderBIM Add-on controls how data is structured during export. When we implement full IFC
         # round-tripping, this simplification can no longer apply.
         for representation in product["ifc"].Representation.Representations:
-            # At the moment, until we implement full support for round-tripping contexts, we assume that styled
-            # items only apply to the body context. This is therefore an incomplete implementation and may break
-            # in edge cases.
+            # At the moment, we assume that styled items only apply to the body context.
             if representation.RepresentationIdentifier != "Body":
                 continue
             rep_context = self.ifc_parser.get_obj_representation_context(product["raw"], "Model", "Body", "MODEL_VIEW")
@@ -2073,7 +2063,7 @@ class IfcExporter:
         return results
 
     def create_styled_item(self, styled_item, representation_item=None):
-        surface_style = self.ifc_parser.surface_styles[styled_item["attributes"]["Name"]]
+        surface_style = self.ifc_parser.surface_styles[styled_item["raw"].name]
         if not surface_style["ifc"]:
             styles = []
             styles.append(self.create_surface_style_rendering(styled_item))
@@ -2302,11 +2292,20 @@ class IfcExporter:
         try:
             product["ifc"] = self.file.create_entity(product["class"], **product["attributes"])
         except RuntimeError as e:
-            self.ifc_export_settings.logger.error(
-                'The product "{}/{}" could not be created: {}'.format(
-                    product["class"], product["attributes"]["Name"], e.args
+            product["ifc"] = self.create_ifc_entity(product)
+
+    def create_ifc_entity(self, data):
+        result = self.file.create_entity(data["class"])
+        for key, value in data["attributes"].items():
+            try:
+                setattr(result, key, value)
+            except RuntimeError as e:
+                self.ifc_export_settings.logger.error(
+                    'The entity "{}/{}" attribute {} with value {} could not be created: {}'.format(
+                        data["class"], data["attributes"]["Name"], key, value, e.args
+                    )
                 )
-            )
+        return result
 
     def get_product_attribute_type(self, product_class, attribute_name):
         element_schema = schema.ifc.elements[product_class]

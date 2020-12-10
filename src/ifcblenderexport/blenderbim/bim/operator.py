@@ -2419,6 +2419,9 @@ class CutSection(bpy.types.Operator):
         camera = bpy.context.scene.camera
         if not (camera.type == "CAMERA" and camera.data.type == "ORTHO"):
             return {"FINISHED"}
+        if not bpy.context.scene.DocProperties.ifc_files and bpy.context.scene.BIMProperties.ifc_file:
+            new = bpy.context.scene.DocProperties.ifc_files.add()
+            new.name = bpy.context.scene.BIMProperties.ifc_file
         bpy.ops.bim.activate_view(
             drawing_index=bpy.context.scene.DocProperties.drawings.find(camera.name.split("/")[1])
         )
@@ -2556,7 +2559,7 @@ class CutSection(bpy.types.Operator):
             obj.hide_set(True)
         for obj in bpy.context.visible_objects:
             if (
-                not obj.data
+                (not obj.data and not obj.instance_collection)
                 or isinstance(obj.data, bpy.types.Camera)
                 or "IfcGrid/" in obj.name
                 or "IfcGridAxis/" in obj.name
@@ -3850,14 +3853,16 @@ class ExecuteBIMTester(bpy.types.Operator):
 
     def execute(self, context):
         import bimtester
+        import bimtester.run
+        import bimtester.reports
 
         filename = os.path.join(
             bpy.context.scene.BIMProperties.features_dir, bpy.context.scene.BIMProperties.features_file + ".feature"
         )
         cwd = os.getcwd()
         os.chdir(bpy.context.scene.BIMProperties.features_dir)
-        bimtester.run_tests({"feature": filename, "advanced_arguments": None, "console": False})
-        bimtester.generate_report()
+        bimtester.run.run_tests({"feature": filename, "advanced_arguments": None, "console": False})
+        bimtester.reports.generate_report()
         webbrowser.open(
             "file://"
             + os.path.join(
@@ -3876,13 +3881,14 @@ class BIMTesterPurge(bpy.types.Operator):
 
     def execute(self, context):
         import bimtester
+        import bimtester.clean
 
         filename = os.path.join(
             bpy.context.scene.BIMProperties.features_dir, bpy.context.scene.BIMProperties.features_file + ".feature"
         )
         cwd = os.getcwd()
         os.chdir(bpy.context.scene.BIMProperties.features_dir)
-        bimtester.TestPurger().purge()
+        bimtester.clean.TestPurger().purge()
         os.chdir(cwd)
         return {"FINISHED"}
 
@@ -4115,7 +4121,6 @@ class ActivateDrawingStyle(bpy.types.Operator):
         space.overlay.show_axis_z = style["space.overlay.show_axis_z"]
         space.overlay.show_object_origins = style["space.overlay.show_object_origins"]
         space.overlay.show_relationship_lines = style["space.overlay.show_relationship_lines"]
-        space.shading.type = "RENDERED"
 
     def set_query(self):
         self.selector = ifcopenshell.util.selector.Selector()
@@ -4134,9 +4139,6 @@ class ActivateDrawingStyle(bpy.types.Operator):
                 self.exclude_global_ids.extend([e.GlobalId for e in results])
         if self.drawing_style.include_query:
             self.parse_filter_query("INCLUDE")
-        else:
-            for obj in bpy.context.scene.objects:
-                obj.hide_viewport = False
         if self.drawing_style.exclude_query:
             self.parse_filter_query("EXCLUDE")
 
@@ -4710,6 +4712,22 @@ class GetRepresentationIfcParameters(bpy.types.Operator):
                 return c.ifc_definition_id or None
 
 
+class BakeParametricGeometry(bpy.types.Operator):
+    bl_idname = "bim.bake_parametric_geometry"
+    bl_label = "Bake Parametric Geometry"
+
+    def execute(self, context):
+        obj = bpy.context.active_object
+        if "/" not in obj.data.name:
+            context, subcontext, target_view = ("Model", "Body", "MODEL_VIEW")
+        else:
+            context, subcontext, target_view = obj.data.name.split("/")[0:3]
+        for c in obj.BIMObjectProperties.representation_contexts:
+            if c.context == context and c.name == subcontext and c.target_view == target_view:
+                c.ifc_definition_id = 0
+        return {"FINISHED"}
+
+
 class UpdateIfcRepresentation(bpy.types.Operator):
     bl_idname = "bim.update_ifc_representation"
     bl_label = "Update IFC Representation"
@@ -4775,11 +4793,10 @@ class BlenderClasher:
             name = object_name.name
             obj = bpy.data.objects[name]
             triangulated_mesh = self.triangulate_mesh(obj)
-            mat = np.array(obj.matrix_world)
             mesh = ifcclash.Mesh()
-            mesh.vertices = np.array([tuple(v.co) for v in triangulated_mesh.vertices])
+            mesh.vertices = np.array([tuple(obj.matrix_world @ v.co) for v in triangulated_mesh.vertices])
             mesh.faces = np.array([tuple(p.vertices) for p in triangulated_mesh.polygons])
-            cm.add_object(name, mesh, mat)
+            cm.add_object(name, mesh)
 
     def triangulate_mesh(self, obj):
         import bmesh
@@ -4828,3 +4845,47 @@ class ExecuteBlenderClash(bpy.types.Operator):
         blender_clasher = BlenderClasher()
         blender_clasher.process_clash_set()
         return {"FINISHED"}
+
+
+class CleanWireframes(bpy.types.Operator):
+    bl_idname = "bim.clean_wireframes"
+    bl_label = "Clean Wireframes"
+
+    def execute(self, context):
+        objects = bpy.data.objects
+        if bpy.context.selected_objects:
+            objects = bpy.context.selected_objects
+        for obj in objects:
+            if not isinstance(obj.data, bpy.types.Mesh):
+                continue
+            # TODO: probably breaks i18n
+            if not obj.modifiers.get("EdgeSplit"):
+                obj.modifiers.new("EdgeSplit", "EDGE_SPLIT")
+        return {"FINISHED"}
+
+
+class LinkIfc(bpy.types.Operator):
+    bl_idname = "bim.link_ifc"
+    bl_label = "Link IFC"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        #bpy.context.active_object.active_material.BIMMaterialProperties.location = self.filepath
+        #coll_name = "MyCollection"
+
+        with bpy.data.libraries.load(self.filepath, link=True) as (data_from, data_to):
+            data_to.scenes = data_from.scenes
+
+        for scene in bpy.data.scenes:
+            if not scene.library or scene.library.filepath != self.filepath:
+                continue
+            for child in scene.collection.children:
+                if "IfcProject" not in child.name:
+                    continue
+                bpy.data.scenes[0].collection.children.link(child)
+
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}

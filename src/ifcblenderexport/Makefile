@@ -34,12 +34,16 @@ endif
 	cd dist/working && mv occ_utils.py ../blenderbim/libs/site/packages/ifcopenshell/geom/occ_utils.py
 	rm -rf dist/working
 	# IfcOpenBot sometimes lags behind, so we hotfix the Python utilities
+	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f attribute_4_to_2x3.json
+	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f class_4_to_2x3.json
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f element.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f geolocation.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f selector.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f unit.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f pset.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f schema.py
+	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/attribute_4_to_2x3.json
+	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/class_4_to_2x3.json
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/element.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/geolocation.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/selector.py
@@ -238,20 +242,26 @@ endif
 	rm -rf dist/working
 
 	# Provides BIMTester functionality
-	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester.py
-	mkdir dist/blenderbim/libs/site/packages/features/
-	mkdir dist/blenderbim/libs/site/packages/features/steps/
-	cd dist/blenderbim/libs/site/packages/features/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/environment.py
-	cd dist/blenderbim/libs/site/packages/features/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/template.html
-	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/classification.py
-	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/element_classes.py
-	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/geocoding.py
-	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/geolocation.py
-	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/geometric_detail.py
-	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/model_federation.py
-	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/project_setup.py
-	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/steps.py
-	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/utils.py
+	mkdir dist/blenderbim/libs/site/packages/bimtester/
+	cd dist/blenderbim/libs/site/packages/bimtester && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/__init__.py
+	cd dist/blenderbim/libs/site/packages/bimtester && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/clean.py
+	cd dist/blenderbim/libs/site/packages/bimtester && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/guiwidget.py
+	cd dist/blenderbim/libs/site/packages/bimtester && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/reports.py
+	cd dist/blenderbim/libs/site/packages/bimtester && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/run.py
+	mkdir dist/blenderbim/libs/site/packages/bimtester/features/
+	mkdir dist/blenderbim/libs/site/packages/bimtester/features/steps/
+	cd dist/blenderbim/libs/site/packages/bimtester/features/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/environment.py
+	cd dist/blenderbim/libs/site/packages/bimtester/features/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/template.html
+	cd dist/blenderbim/libs/site/packages/bimtester/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/steps/classification.py
+	cd dist/blenderbim/libs/site/packages/bimtester/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/steps/element_classes.py
+	cd dist/blenderbim/libs/site/packages/bimtester/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/steps/geocoding.py
+	cd dist/blenderbim/libs/site/packages/bimtester/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/steps/geolocation.py
+	cd dist/blenderbim/libs/site/packages/bimtester/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/steps/geometric_detail.py
+	cd dist/blenderbim/libs/site/packages/bimtester/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/steps/ifcdata.py
+	cd dist/blenderbim/libs/site/packages/bimtester/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/steps/model_federation.py
+	cd dist/blenderbim/libs/site/packages/bimtester/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/steps/project_setup.py
+	cd dist/blenderbim/libs/site/packages/bimtester/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/steps/steps.py
+	cd dist/blenderbim/libs/site/packages/bimtester/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/steps/utils.py
 
 	# Required by IFCCOBie for XLSX support
 	mkdir dist/working
@@ -296,6 +306,7 @@ endif
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/__init__.py
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/ExtractElements.py
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/MergeProject.py
+	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/Migrate.py
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/OffsetObjectPlacements.py
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/OffsetStoreyElevations.py
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/Optimise.py
