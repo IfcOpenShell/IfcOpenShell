@@ -94,6 +94,6 @@ def generate_report(adir="."):
         data["pass_rate"] = round((data["total_passes"] / data["total_steps"]) * 100)
 
         html_report_file = os.path.join(report_dir, "{}.html".format(file_name))
-        with open(html_report_file, "w") as out:
+        with open(html_report_file, "w", encoding="utf-8") as out:
             with open(html_template_file) as template:
                 out.write(pystache.render(template.read(), data))
