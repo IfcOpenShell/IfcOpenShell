@@ -47,12 +47,15 @@ class DimensionDecorator(ViewDecorator):
     """
     GEOM_GLSL = """
     layout(lines) in;
-    layout(line_strip, max_vertices=8) out;
+    layout(line_strip, max_vertices=10) out;
 
     uniform float angle;
     uniform float length;
+    uniform float aspect;
 
     void main() {
+        /** generates arrows from lines */
+
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
         float c = cos(angle), s = sin(angle);
         mat4 rot_a = mat4( c, -s, 0, 0,
@@ -64,32 +67,46 @@ class DimensionDecorator(ViewDecorator):
                            0,  0, 1, 0,
                            0,  0, 0, 1);
 
-        vec4 dir = normalize(p1 - p0);
+        // converting to and from square-space coordinates to calculate arrows
+        mat4 clip2square = mat4(aspect, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+        mat4 square2clip = mat4(1/aspect, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+        vec4 dir = normalize((p1 - p0) * clip2square) * length;
+        vec4 head = dir * square2clip;
+        vec4 arr_a = dir * rot_a * square2clip;
+        vec4 arr_b = dir * rot_b * square2clip;
 
-        vec4 arr_a = rot_a * dir * length;
-        vec4 arr_b = rot_b * dir * length;
-
-        gl_Position = p0;
+        gl_Position = p0 + head;
         EmitVertex();
-        gl_Position = p1;
+        gl_Position = p1 - head;
         EmitVertex();
         EndPrimitive();
 
-        gl_Position = p0 + arr_a;
-        EmitVertex();
         gl_Position = p0;
+        EmitVertex();
+        gl_Position = p0 + arr_a;
         EmitVertex();
         gl_Position = p0 + arr_b;
         EmitVertex();
+        gl_Position = p0;
+        EmitVertex();
         EndPrimitive();
 
-        gl_Position = p1 - arr_a;
-        EmitVertex();
         gl_Position = p1;
         EmitVertex();
         gl_Position = p1 - arr_b;
         EmitVertex();
+        gl_Position = p1 - arr_a;
+        EmitVertex();
+        gl_Position = p1;
+        EmitVertex();
         EndPrimitive();
+/*
+        gl_Position = vec4(0, 0, 0, 1) * square2clip;
+        EmitVertex();
+        gl_Position = vec4(0.25, 0.25, 0, 1) * square2clip;
+        EmitVertex();
+        EndPrimitive();
+*/
     }
     """
     FRAG_GLSL = """
@@ -189,10 +206,13 @@ class DimensionDecorator(ViewDecorator):
                              segments, []))
         batch = batch_for_shader(self.shader, 'LINES', {'pos': points})
         self.shader.bind()
+
         matrix = self.context.region_data.perspective_matrix
+        aspect = self.context.region.width / self.context.region.height
         self.shader.uniform_float("viewMatrix", matrix)
         # TODO: get everything from styles
+        self.shader.uniform_float('aspect', aspect)
         self.shader.uniform_float('color', (1.0, 1.0, 1.0))
         self.shader.uniform_float('angle', math.pi / 12)
-        self.shader.uniform_float('length', 0.05)
+        self.shader.uniform_float('length', 32 / self.context.region.height)
         batch.draw(self.shader)
