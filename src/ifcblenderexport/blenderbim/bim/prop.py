@@ -8,6 +8,7 @@ from . import schema
 from . import bcf
 from . import ifc
 from . import annotation
+from . import decoration
 import bpy
 from bpy.types import PropertyGroup
 from bpy.app.handlers import persistent
@@ -357,6 +358,14 @@ def refreshTitleblocks(self, context):
     getTitleblocks(self, context)
 
 
+def toggleDimDecorations(self, context):
+    toggle = self.dim_decorations
+    if toggle:
+        decoration.DimensionDecorator.install(self, context)
+    else:
+        decoration.DimensionDecorator.uninstall()
+
+
 def getScenarios(self, context):
     global scenarios_enum
     if len(scenarios_enum) < 1:
@@ -668,6 +677,7 @@ class DocProperties(PropertyGroup):
     active_sheet_index: IntProperty(name="Active Sheet Index")
     ifc_files: CollectionProperty(name="IFCs", type=StrProperty)
     drawing_styles: CollectionProperty(name="Drawing Styles", type=DrawingStyle)
+    dim_decorations: BoolProperty(name="Decorate dimentions", update=toggleDimDecorations)
 
 
 class BIMCameraProperties(PropertyGroup):
