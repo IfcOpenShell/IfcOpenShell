@@ -2559,7 +2559,7 @@ class CutSection(bpy.types.Operator):
             obj.hide_set(True)
         for obj in bpy.context.visible_objects:
             if (
-                not obj.data
+                (not obj.data and not obj.instance_collection)
                 or isinstance(obj.data, bpy.types.Camera)
                 or "IfcGrid/" in obj.name
                 or "IfcGridAxis/" in obj.name
