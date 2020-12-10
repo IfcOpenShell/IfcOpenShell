@@ -1073,7 +1073,7 @@ class BIM_PT_drawings(Panel):
         for index, ifc_file in enumerate(props.ifc_files):
             row = layout.row(align=True)
             row.prop(ifc_file, "name", text="IFC #{}".format(index + 1))
-            row.operator("bim.select_doc_ifc_file", icon="FILE_FOLDER", text="")
+            row.operator("bim.select_doc_ifc_file", icon="FILE_FOLDER", text="").index = index
             row.operator("bim.remove_ifc_file", icon="X", text="").index = index
 
 
