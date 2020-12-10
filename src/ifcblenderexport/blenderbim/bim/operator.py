@@ -4862,3 +4862,30 @@ class CleanWireframes(bpy.types.Operator):
             if not obj.modifiers.get("EdgeSplit"):
                 obj.modifiers.new("EdgeSplit", "EDGE_SPLIT")
         return {"FINISHED"}
+
+
+class LinkIfc(bpy.types.Operator):
+    bl_idname = "bim.link_ifc"
+    bl_label = "Link IFC"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        #bpy.context.active_object.active_material.BIMMaterialProperties.location = self.filepath
+        #coll_name = "MyCollection"
+
+        with bpy.data.libraries.load(self.filepath, link=True) as (data_from, data_to):
+            data_to.scenes = data_from.scenes
+
+        for scene in bpy.data.scenes:
+            if not scene.library or scene.library.filepath != self.filepath:
+                continue
+            for child in scene.collection.children:
+                if "IfcProject" not in child.name:
+                    continue
+                bpy.data.scenes[0].collection.children.link(child)
+
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
