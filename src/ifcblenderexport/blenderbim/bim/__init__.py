@@ -231,6 +231,7 @@ if bpy is not None:
         operator.SetBlenderClashSetB,
         operator.ExecuteBlenderClash,
         operator.CleanWireframes,
+        operator.LinkIfc,
         prop.StrProperty,
         prop.Attribute,
         prop.MaterialLayer,
