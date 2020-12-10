@@ -433,6 +433,21 @@ int convert_to_ifc(const TopoDS_Edge& e, IfcSchema::IfcEdge*& edge, bool advance
 	}
 }
 
+namespace {
+	bool is_polygonal(const Handle_Geom_Curve& crv) {
+		if (crv->DynamicType() == STANDARD_TYPE(Geom_Line)) {
+			return true;
+		} else if (crv->DynamicType() == STANDARD_TYPE(Geom_TrimmedCurve)) {
+			return is_polygonal(Handle_Geom_TrimmedCurve::DownCast(crv)->BasisCurve());
+		} else if (crv->DynamicType() == STANDARD_TYPE(Geom_BSplineCurve)) {
+			auto bspl = Handle_Geom_BSplineCurve::DownCast(crv);
+			return bspl->NbPoles() == 2 && bspl->Degree() == 1;
+		} else {
+			return false;
+		}
+	}
+}
+
 template <>
 int convert_to_ifc(const TopoDS_Wire& wire, IfcSchema::IfcLoop*& loop, bool advanced) {
 	bool polygonal = true;
@@ -442,7 +457,7 @@ int convert_to_ifc(const TopoDS_Wire& wire, IfcSchema::IfcLoop*& loop, bool adva
 		if (crv.IsNull()) {
 			continue;
 		}
-		if (crv->DynamicType() != STANDARD_TYPE(Geom_Line)) {
+		if (!is_polygonal(crv)) {
 			polygonal = false;
 			break;
 		}
