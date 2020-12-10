@@ -4845,3 +4845,20 @@ class ExecuteBlenderClash(bpy.types.Operator):
         blender_clasher = BlenderClasher()
         blender_clasher.process_clash_set()
         return {"FINISHED"}
+
+
+class CleanWireframes(bpy.types.Operator):
+    bl_idname = "bim.clean_wireframes"
+    bl_label = "Clean Wireframes"
+
+    def execute(self, context):
+        objects = bpy.data.objects
+        if bpy.context.selected_objects:
+            objects = bpy.context.selected_objects
+        for obj in objects:
+            if not isinstance(obj.data, bpy.types.Mesh):
+                continue
+            # TODO: probably breaks i18n
+            if not obj.modifiers.get("EdgeSplit"):
+                obj.modifiers.new("EdgeSplit", "EDGE_SPLIT")
+        return {"FINISHED"}
