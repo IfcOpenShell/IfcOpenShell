@@ -2304,6 +2304,9 @@ class BIM_PT_annotation_utilities(Panel):
         layout = self.layout
 
         row = layout.row(align=True)
+        row.operator("bim.clean_wireframes")
+
+        row = layout.row(align=True)
         op = row.operator("bim.add_annotation", text="Dim", icon="ARROW_LEFTRIGHT")
         op.obj_name = "Dimension"
         op.data_type = "curve"
