@@ -1,4 +1,5 @@
 import ifcopenshell
+import ifcopenshell.express
 import ifcopenshell.util
 import ifcopenshell.util.element
 
@@ -10,6 +11,13 @@ class IfcFile(object):
     @classmethod
     def load(cls, path=None):
         cls.file = ifcopenshell.open(path)
+        if not cls.file:
+            assert False
+    
+    @classmethod
+    def load_schema(cls, path=None):
+        schema = ifcopenshell.express.parse(path)
+        ifcopenshell.register_schema(schema)
 
     @classmethod
     def get(cls):
@@ -23,6 +31,17 @@ class IfcFile(object):
             return cls.get().by_guid(guid)
         except:
             assert False, "An element with the ID {} could not be found.".format(guid)
+    
+    @classmethod
+    def by_type(cls, ifc_type):
+        return cls.get().by_type(ifc_type.strip())
+
+    @classmethod
+    def by_types(cls, ifc_types):
+        elements = []
+        for ifc_type in ifc_types.split(","):
+            elements += cls.by_type(ifc_type.strip())
+        return elements
 
 
 def assert_number(number):
