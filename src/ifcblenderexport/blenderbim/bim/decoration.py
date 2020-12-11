@@ -135,12 +135,12 @@ class DimensionDecorator(ViewDecorator):
             return
         drawing = self.props.drawings[self.props.active_drawing_index]
         collection = bpy.data.collections.get("IfcGroup/" + drawing.name)
-        # get curve object
-        if 'IfcAnnotation/Dimension' not in collection.all_objects:
-            return
-        curve = collection.all_objects['IfcAnnotation/Dimension']
 
-        segments = list(self.iter_segments(curve))
+        curves = [o for o in collection.objects if "IfcAnnotation/Dimension" in o.name]
+        segments = []
+        for curve in curves:
+            segments.extend(list(self.iter_segments(curve)))
+
         self.draw_arrows(segments)
         for segm in segments:
             self.draw_label(segm)
@@ -150,7 +150,8 @@ class DimensionDecorator(ViewDecorator):
         (v0, v1, length)
         """
         for spline in curve.data.splines:
-            points = [curve.matrix_world @ p.co for p in spline.points]
+            spline_points = spline.bezier_points if spline.bezier_points else spline.points
+            points = [curve.matrix_world @ p.co for p in spline_points]
             for i in range(len(points)-1):
                 p0 = points[i]
                 p1 = points[i+1]
