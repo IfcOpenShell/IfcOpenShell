@@ -2,6 +2,13 @@ from behave import step
 
 from utils import IfcFile
 
+@step('The IFC schema "{schema}" must be provided')
+def step_impl(context, schema):
+    try:
+        IfcFile.load_schema(schema)
+    except:
+        assert False
+
 
 @step('The IFC file "{file}" must be provided')
 def step_impl(context, file):

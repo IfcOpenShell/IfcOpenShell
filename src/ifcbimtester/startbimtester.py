@@ -43,6 +43,12 @@ if __name__ == "__main__":
         help="Generate a HTML report"
     )
     parser.add_argument(
+        "-rr",
+        "--report_after_run",
+        action="store_true",
+        help="Generate a HTML report after running the tests"
+    )
+    parser.add_argument(
         "-c",
         "--console",
         action="store_true",
@@ -103,4 +109,6 @@ if __name__ == "__main__":
         show_widget(args["featuresdir"], args["ifcfile"])
     else:
         run.run_tests(args)
+        if args["report_after_run"]:
+            reports.generate_report()
     print("# All tasks are complete :-)")
