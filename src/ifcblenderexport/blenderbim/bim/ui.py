@@ -2353,7 +2353,7 @@ class BIM_PT_annotation_utilities(Panel):
             layout.template_list("BIM_UL_generic", "", props, "drawings", props, "active_drawing_index")
 
         row = layout.row()
-        row.prop(props, 'dim_decorations')
+        row.prop(props, "should_draw_decorations")
 
 
 class BIM_PT_qto_utilities(Panel):

@@ -358,8 +358,8 @@ def refreshTitleblocks(self, context):
     getTitleblocks(self, context)
 
 
-def toggleDimDecorations(self, context):
-    toggle = self.dim_decorations
+def toggleDecorations(self, context):
+    toggle = self.should_draw_decorations
     if toggle:
         decoration.DimensionDecorator.install(self, context)
     else:
@@ -677,7 +677,7 @@ class DocProperties(PropertyGroup):
     active_sheet_index: IntProperty(name="Active Sheet Index")
     ifc_files: CollectionProperty(name="IFCs", type=StrProperty)
     drawing_styles: CollectionProperty(name="Drawing Styles", type=DrawingStyle)
-    dim_decorations: BoolProperty(name="Decorate dimentions", update=toggleDimDecorations)
+    should_draw_decorations: BoolProperty(name="Should Draw Decorations", update=toggleDecorations)
 
 
 class BIMCameraProperties(PropertyGroup):
