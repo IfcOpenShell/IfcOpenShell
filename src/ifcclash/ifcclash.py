@@ -334,6 +334,17 @@ class IfcClasher:
             count_of_smart_groups += len(smart_groups)   
             output_clash_sets[clash_set["name"]].append(smart_groups)
 
+        # Rename the clash groups to something more sensible
+        for clash_set, smart_groups in output_clash_sets.items():
+            clash_set_name = clash_set
+            # Only select the clashes that correspond to the actively selected IFC Clash Set
+            i = 1
+            new_smart_group_name = ""
+            for smart_group, global_id_pairs in list(smart_groups[0].items()):
+                new_smart_group_name = f"{clash_set_name} - {i}"
+                smart_groups[0][new_smart_group_name] = smart_groups[0].pop(smart_group)
+                i += 1
+
         count_of_final_clash_sets = len(output_clash_sets)
         print(f"Took {count_of_input_clashes} clashes in {count_of_clash_sets} clash sets and turned", 
             f"them into {count_of_smart_groups} smart groups in {count_of_final_clash_sets} clash sets")

@@ -1963,7 +1963,7 @@ class SmartClashGroup(bpy.types.Operator):
             else:
                 for smart_group, global_id_pairs in smart_groups[0].items():
                     new_group = bpy.context.scene.BIMProperties.smart_clash_groups.add()
-                    new_group.number = smart_group
+                    new_group.number = f"{smart_group}"
 
                     for pair in global_id_pairs:
                         for id in pair:
@@ -1997,7 +1997,7 @@ class LoadSmartGroupsForActiveClashSet(bpy.types.Operator):
             else:
                 for smart_group, global_id_pairs in smart_groups[0].items():
                     new_group = bpy.context.scene.BIMProperties.smart_clash_groups.add()
-                    new_group.number = int(smart_group)
+                    new_group.number = f"{smart_group}"
                     for pair in global_id_pairs:
                         for id in pair:
                             new_global_id = new_group.global_ids.add()
