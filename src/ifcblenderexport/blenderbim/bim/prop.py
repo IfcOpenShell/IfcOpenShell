@@ -814,7 +814,7 @@ class PresentationLayer(PropertyGroup):
     layer_blocked: BoolProperty(name="LayerBlocked", default=False)
 
 class SmartClashGroup(PropertyGroup):
-    number: IntProperty(name="Number")
+    number: StringProperty(name="Number")
     global_ids: CollectionProperty(name="GlobalIDs", type=StrProperty)
 
 
