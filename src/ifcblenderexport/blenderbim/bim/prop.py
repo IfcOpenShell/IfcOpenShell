@@ -947,6 +947,11 @@ def refreshBcfTopic(self, context):
     RefreshBcfTopic.refresh(context)
 
 
+def setBcfProjectName(self, context):
+    import bcfplugin
+    bcfplugin.setProjectName(self.name)
+
+
 class RefreshBcfTopic:
     props: None
     topic: None
@@ -1599,6 +1604,7 @@ class BIMProperties(PropertyGroup):
 
 
 class BCFProperties(PropertyGroup):
+    name: StringProperty(default="", name="Project Name", update=setBcfProjectName)
     topics: CollectionProperty(name="BCF Topics", type=BcfTopic)
     active_topic_index: IntProperty(name="Active BCF Topic Index", update=refreshBcfTopic)
     viewpoints: EnumProperty(items=getBcfViewpoints, name="BCF Viewpoints")

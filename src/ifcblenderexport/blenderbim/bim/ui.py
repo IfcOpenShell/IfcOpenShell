@@ -1660,11 +1660,19 @@ class BIM_PT_bcf(Panel):
         scene = context.scene
         props = bpy.context.scene.BCFProperties
 
-        row = layout.row()
-        row.operator("bim.get_bcf_topics")
+        row = layout.row(align=True)
+        row.operator("bim.load_bcf_project")
+
+        if not props.topics:
+            return
+
+        row.operator("bim.save_bcf_project")
 
         row = layout.row()
-        row.operator("bim.save_bcf_project")
+        row.prop(props, "name")
+
+        if not props.topics:
+            return
 
         props = bpy.context.scene.BCFProperties
         layout.template_list("BIM_UL_topics", "", props, "topics", props, "active_topic_index")

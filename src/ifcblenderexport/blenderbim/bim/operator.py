@@ -507,15 +507,16 @@ class RejectElement(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class GetBcfTopics(bpy.types.Operator):
-    bl_idname = "bim.get_bcf_topics"
-    bl_label = "Get BCF Topics"
+class LoadBcfProject(bpy.types.Operator):
+    bl_idname = "bim.load_bcf_project"
+    bl_label = "Load BCF Project"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
         import bcfplugin
 
         bcfplugin.openProject(self.filepath)
+        bpy.context.scene.BCFProperties.name = bcfplugin.getProjectName()
         bcf.BcfStore.topics = bcfplugin.getTopics()
         while len(bpy.context.scene.BCFProperties.topics) > 0:
             bpy.context.scene.BCFProperties.topics.remove(0)
