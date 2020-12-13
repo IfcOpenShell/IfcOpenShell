@@ -910,8 +910,43 @@ class Constraint(PropertyGroup):
     user_defined_qualifier: StringProperty(name="Custom Qualifier")
 
 
+def updateBcfProjectName(self, context):
+    import bcfplugin
+    bcfplugin.setProjectName(self.name)
+
+
+def updateBcfTopicAttribute(context, name, value):
+    import bcfplugin
+    props = bpy.context.scene.BCFProperties
+    topic = bcf.BcfStore.topics[props.active_topic_index][1]
+    if getattr(topic, name) != value:
+        setattr(topic, name, value)
+        bcfplugin.modifyElement(topic, props.author)
+
+
+def updateBcfTopicName(self, context):
+    if bpy.context.scene.BCFProperties.name:
+        updateBcfTopicAttribute(context, "title", self.name)
+
+
+def updateBcfTopicType(self, context):
+    updateBcfTopicAttribute(context, "type", self.topic_type)
+
+
+def updateBcfTopicStatus(self, context):
+    updateBcfTopicAttribute(context, "status", self.topic_status)
+
+
+def updateBcfTopicPriority(self, context):
+    updateBcfTopicAttribute(context, "priority", self.topic_priority)
+
+
+def updateBcfTopicStage(self, context):
+    updateBcfTopicAttribute(context, "stage", self.topic_stage)
+
+
 class BcfTopic(PropertyGroup):
-    name: StringProperty(name="Name")
+    name: StringProperty(name="Name", update=updateBcfTopicName)
 
 
 class BcfTopicLabel(PropertyGroup):
@@ -945,11 +980,6 @@ class BcfTopicRelatedTopic(PropertyGroup):
 
 def refreshBcfTopic(self, context):
     RefreshBcfTopic.refresh(context)
-
-
-def setBcfProjectName(self, context):
-    import bcfplugin
-    bcfplugin.setProjectName(self.name)
 
 
 class RefreshBcfTopic:
@@ -1604,15 +1634,16 @@ class BIMProperties(PropertyGroup):
 
 
 class BCFProperties(PropertyGroup):
-    name: StringProperty(default="", name="Project Name", update=setBcfProjectName)
+    name: StringProperty(default="", name="Project Name", update=updateBcfProjectName)
+    author: StringProperty(default="john@doe.com", name="Author Email")
     topics: CollectionProperty(name="BCF Topics", type=BcfTopic)
     active_topic_index: IntProperty(name="Active BCF Topic Index", update=refreshBcfTopic)
     viewpoints: EnumProperty(items=getBcfViewpoints, name="BCF Viewpoints")
     topic_guid: StringProperty(default="", name="Topic GUID")
-    topic_type: StringProperty(default="", name="Topic Type")
-    topic_status: StringProperty(default="", name="Topic Status")
-    topic_priority: StringProperty(default="", name="Topic Priority")
-    topic_stage: StringProperty(default="", name="Topic Stage")
+    topic_type: StringProperty(default="", name="Topic Type", update=updateBcfTopicType)
+    topic_status: StringProperty(default="", name="Topic Status", update=updateBcfTopicStatus)
+    topic_priority: StringProperty(default="", name="Topic Priority", update=updateBcfTopicPriority)
+    topic_stage: StringProperty(default="", name="Topic Stage", update=updateBcfTopicStage)
     topic_creation_date: StringProperty(default="", name="Topic Date")
     topic_creation_author: StringProperty(default="", name="Topic Author")
     topic_modified_date: StringProperty(default="", name="Topic Modified Date")
