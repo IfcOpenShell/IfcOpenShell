@@ -516,13 +516,14 @@ class LoadBcfProject(bpy.types.Operator):
         import bcfplugin
 
         bcfplugin.openProject(self.filepath)
-        bpy.context.scene.BCFProperties.name = bcfplugin.getProjectName()
         bcf.BcfStore.topics = bcfplugin.getTopics()
         while len(bpy.context.scene.BCFProperties.topics) > 0:
             bpy.context.scene.BCFProperties.topics.remove(0)
         for topic in bcf.BcfStore.topics:
             new = bpy.context.scene.BCFProperties.topics.add()
             new.name = topic[0]
+        # Note: set this last, as we use it to check whether or not the project has been loaded
+        bpy.context.scene.BCFProperties.name = bcfplugin.getProjectName()
         return {"FINISHED"}
 
     def invoke(self, context, event):

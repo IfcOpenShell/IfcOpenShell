@@ -1671,6 +1671,9 @@ class BIM_PT_bcf(Panel):
         row = layout.row()
         row.prop(props, "name")
 
+        row = layout.row()
+        row.prop(props, "author")
+
         if not props.topics:
             return
 
@@ -1684,26 +1687,21 @@ class BIM_PT_bcf(Panel):
         row.prop(props, "viewpoints")
         row.operator("bim.activate_bcf_viewpoint", icon="SCENE", text="")
 
-        row = layout.row()
-        row.prop(props, "topic_type", text="Type")
-        row = layout.row()
-        row.prop(props, "topic_status", text="Status")
-        row = layout.row()
-        row.prop(props, "topic_priority", text="Priority")
-        row = layout.row()
-        row.prop(props, "topic_stage", text="Stage")
-        row = layout.row()
-        row.prop(props, "topic_creation_date", text="Date")
-        row = layout.row()
-        row.prop(props, "topic_creation_author", text="Author")
-        row = layout.row()
-        row.prop(props, "topic_modified_date", text="Modified On")
-        row = layout.row()
-        row.prop(props, "topic_modified_author", text="Modified By")
-        row = layout.row()
-        row.prop(props, "topic_assigned_to", text="Assigned To")
-        row = layout.row()
-        row.prop(props, "topic_due_date", text="Due Date")
+        col = layout.column(align=True)
+        col.prop(props, "topic_type", text="Type")
+        col.prop(props, "topic_status", text="Status")
+        col.prop(props, "topic_priority", text="Priority")
+        col.prop(props, "topic_stage", text="Stage")
+        col.prop(props, "topic_assigned_to", text="Assigned To")
+        col.prop(props, "topic_due_date", text="Due Date")
+
+        col = layout.column(align=True)
+        col.enabled = False
+        col.prop(props, "topic_creation_date", text="Date")
+        col.prop(props, "topic_creation_author", text="Author")
+        col.prop(props, "topic_modified_date", text="Modified On")
+        col.prop(props, "topic_modified_author", text="Modified By")
+
 
         layout.label(text="Header Files:")
         for index, f in enumerate(props.topic_files):
