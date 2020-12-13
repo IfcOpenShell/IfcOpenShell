@@ -1057,8 +1057,8 @@ class RefreshBcfTopic:
             cls.props.topic_related_topics.remove(0)
         for t in cls.topic.relatedTopics:
             new = cls.props.topic_related_topics.add()
-            new.name = bcfplugin.getTopicFromUUID(t.value).title
-            new.guid = str(t.value)
+            new.name = bcfplugin.getTopicFromUUID(t.guid).title
+            new.guid = str(t.guid)
 
     @classmethod
     def load_viewpoints(cls):
@@ -1599,7 +1599,6 @@ class BIMProperties(PropertyGroup):
 
 
 class BCFProperties(PropertyGroup):
-    bcf_file: StringProperty(default="", name="BCF File")
     topics: CollectionProperty(name="BCF Topics", type=BcfTopic)
     active_topic_index: IntProperty(name="Active BCF Topic Index", update=refreshBcfTopic)
     viewpoints: EnumProperty(items=getBcfViewpoints, name="BCF Viewpoints")

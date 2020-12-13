@@ -510,11 +510,12 @@ class RejectElement(bpy.types.Operator):
 class GetBcfTopics(bpy.types.Operator):
     bl_idname = "bim.get_bcf_topics"
     bl_label = "Get BCF Topics"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
         import bcfplugin
 
-        bcfplugin.openProject(bpy.context.scene.BCFProperties.bcf_file)
+        bcfplugin.openProject(self.filepath)
         bcf.BcfStore.topics = bcfplugin.getTopics()
         while len(bpy.context.scene.BCFProperties.topics) > 0:
             bpy.context.scene.BCFProperties.topics.remove(0)
@@ -522,6 +523,25 @@ class GetBcfTopics(bpy.types.Operator):
             new = bpy.context.scene.BCFProperties.topics.add()
             new.name = topic[0]
         return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+
+class SaveBcfProject(bpy.types.Operator):
+    bl_idname = "bim.save_bcf_project"
+    bl_label = "Save BCF Project"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        import bcfplugin
+        bcfplugin.saveProject(self.filepath)
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
 
 
 class ViewBcfTopic(bpy.types.Operator):
@@ -2028,20 +2048,6 @@ class SelectSmartGroup(bpy.types.Operator):
                         obj.select_set(True)
 
         return {"FINISHED"}
-
-
-class SelectBcfFile(bpy.types.Operator):
-    bl_idname = "bim.select_bcf_file"
-    bl_label = "Select BCF File"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        bpy.context.scene.BCFProperties.bcf_file = self.filepath
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
 
 class SelectFeaturesDir(bpy.types.Operator):
