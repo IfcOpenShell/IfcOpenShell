@@ -1640,6 +1640,7 @@ class BIMProperties(PropertyGroup):
 
 class BCFProperties(PropertyGroup):
     is_editable: BoolProperty(name="Is Editable", default=False)
+    is_loaded: BoolProperty(name="Is Loaded", default=False)
     name: StringProperty(default="", name="Project Name", update=updateBcfProjectName)
     author: StringProperty(default="john@doe.com", name="Author Email")
     topics: CollectionProperty(name="BCF Topics", type=BcfTopic)
