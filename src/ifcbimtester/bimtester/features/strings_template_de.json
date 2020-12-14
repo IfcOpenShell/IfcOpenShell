@@ -1,0 +1,9 @@
+{
+    "tr_lang": "de",
+    "tr_success": "Bestanden",
+    "tr_failure": "Durchgefallen",
+    "tr_tests_passed": "Erfolgreiche Tests",
+    "tr_duration": "Dauer",
+    "tr_auditing": "OpenBIM auditing ist eine Funktionalität von",
+    "tr_and": "und"
+}
