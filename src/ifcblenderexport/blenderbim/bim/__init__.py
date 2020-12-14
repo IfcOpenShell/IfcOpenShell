@@ -27,6 +27,7 @@ if bpy is not None:
         operator.SelectType,
         operator.LoadBcfProject,
         operator.SaveBcfProject,
+        operator.AddBcfTopic,
         operator.ViewBcfTopic,
         operator.ActivateBcfViewpoint,
         operator.OpenBcfFileReference,

@@ -517,13 +517,14 @@ class LoadBcfProject(bpy.types.Operator):
 
         bcfplugin.openProject(self.filepath)
         bcf.BcfStore.topics = bcfplugin.getTopics()
+        bpy.context.scene.BCFProperties.is_editable = False
+        bpy.context.scene.BCFProperties.name = bcfplugin.getProjectName()
         while len(bpy.context.scene.BCFProperties.topics) > 0:
             bpy.context.scene.BCFProperties.topics.remove(0)
         for topic in bcf.BcfStore.topics:
             new = bpy.context.scene.BCFProperties.topics.add()
             new.name = topic[0]
-        # Note: set this last, as we use it to check whether or not the project has been loaded
-        bpy.context.scene.BCFProperties.name = bcfplugin.getProjectName()
+        bpy.context.scene.BCFProperties.is_editable = True
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -544,6 +545,21 @@ class SaveBcfProject(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
+
+
+class AddBcfTopic(bpy.types.Operator):
+    bl_idname = "bim.add_bcf_topic"
+    bl_label = "Add BCF Topic"
+
+    def execute(self, context):
+        import bcfplugin
+        bcfplugin.addTopic("New Topic", bpy.context.scene.BCFProperties.author)
+        bpy.context.scene.BCFProperties.is_editable = False
+        new = bpy.context.scene.BCFProperties.topics.add()
+        new.name = "New Topic"
+        bcf.BcfStore.topics = bcfplugin.getTopics()
+        bpy.context.scene.BCFProperties.is_editable = True
+        return {"FINISHED"}
 
 
 class ViewBcfTopic(bpy.types.Operator):
