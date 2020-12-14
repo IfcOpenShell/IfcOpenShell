@@ -1678,7 +1678,10 @@ class BIM_PT_bcf(Panel):
             return
 
         props = bpy.context.scene.BCFProperties
-        layout.template_list("BIM_UL_topics", "", props, "topics", props, "active_topic_index")
+        row = layout.row()
+        row.template_list("BIM_UL_topics", "", props, "topics", props, "active_topic_index")
+        col = row.column(align=True)
+        col.operator("bim.add_bcf_topic", icon="ADD", text="")
 
         row = layout.row()
         row.prop(props, "topic_description", text="")

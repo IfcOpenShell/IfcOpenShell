@@ -916,6 +916,8 @@ def updateBcfProjectName(self, context):
 
 
 def updateBcfTopicAttribute(context, name, value):
+    if not bpy.context.scene.BCFProperties.is_editable:
+        return
     import bcfplugin
     props = bpy.context.scene.BCFProperties
     topic = bcf.BcfStore.topics[props.active_topic_index][1]
@@ -925,8 +927,7 @@ def updateBcfTopicAttribute(context, name, value):
 
 
 def updateBcfTopicName(self, context):
-    if bpy.context.scene.BCFProperties.name:
-        updateBcfTopicAttribute(context, "title", self.name)
+    updateBcfTopicAttribute(context, "title", self.name)
 
 
 def updateBcfTopicType(self, context):
@@ -943,6 +944,10 @@ def updateBcfTopicPriority(self, context):
 
 def updateBcfTopicStage(self, context):
     updateBcfTopicAttribute(context, "stage", self.topic_stage)
+
+
+def updateBcfTopicDescription(self, context):
+    updateBcfTopicAttribute(context, "description", self.topic_description)
 
 
 class BcfTopic(PropertyGroup):
@@ -1634,6 +1639,7 @@ class BIMProperties(PropertyGroup):
 
 
 class BCFProperties(PropertyGroup):
+    is_editable: BoolProperty(name="Is Editable", default=False)
     name: StringProperty(default="", name="Project Name", update=updateBcfProjectName)
     author: StringProperty(default="john@doe.com", name="Author Email")
     topics: CollectionProperty(name="BCF Topics", type=BcfTopic)
@@ -1650,7 +1656,7 @@ class BCFProperties(PropertyGroup):
     topic_modified_author: StringProperty(default="", name="Topic Modified By")
     topic_assigned_to: StringProperty(default="", name="Topic Assigned To")
     topic_due_date: StringProperty(default="", name="Topic Due Date")
-    topic_description: StringProperty(default="", name="Topic Description")
+    topic_description: StringProperty(default="", name="Topic Description", update=updateBcfTopicDescription)
     topic_labels: CollectionProperty(name="BCF Topic Labels", type=BcfTopicLabel)
     topic_files: CollectionProperty(name="BCF Topic Files", type=BcfTopicFile)
     topic_links: CollectionProperty(name="BCF Topic Links", type=BcfTopicLink)
