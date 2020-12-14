@@ -25,6 +25,7 @@ if bpy is not None:
         operator.UnassignClass,
         operator.SelectClass,
         operator.SelectType,
+        operator.NewBcfProject,
         operator.LoadBcfProject,
         operator.SaveBcfProject,
         operator.AddBcfTopic,

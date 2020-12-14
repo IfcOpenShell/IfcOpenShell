@@ -1661,12 +1661,13 @@ class BIM_PT_bcf(Panel):
         props = bpy.context.scene.BCFProperties
 
         row = layout.row(align=True)
-        row.operator("bim.load_bcf_project")
+        row.operator("bim.new_bcf_project", text="New Project")
+        row.operator("bim.load_bcf_project", text="Load Project")
 
-        if not props.topics:
+        if not props.is_loaded:
             return
 
-        row.operator("bim.save_bcf_project")
+        row.operator("bim.save_bcf_project", text="Save Project")
 
         row = layout.row()
         row.prop(props, "name")
@@ -1674,14 +1675,14 @@ class BIM_PT_bcf(Panel):
         row = layout.row()
         row.prop(props, "author")
 
-        if not props.topics:
-            return
-
         props = bpy.context.scene.BCFProperties
         row = layout.row()
         row.template_list("BIM_UL_topics", "", props, "topics", props, "active_topic_index")
         col = row.column(align=True)
         col.operator("bim.add_bcf_topic", icon="ADD", text="")
+
+        if not props.topics:
+            return
 
         row = layout.row()
         row.prop(props, "topic_description", text="")

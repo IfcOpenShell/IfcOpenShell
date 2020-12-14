@@ -507,6 +507,24 @@ class RejectElement(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class NewBcfProject(bpy.types.Operator):
+    bl_idname = "bim.new_bcf_project"
+    bl_label = "New BCF Project"
+
+    def execute(self, context):
+        import bcfplugin
+        bcfplugin.newProject("New BCF Project")
+        bcf.BcfStore.topics = bcfplugin.getTopics()
+        bpy.context.scene.BCFProperties.is_editable = False
+        bpy.context.scene.BCFProperties.name = bcfplugin.getProjectName()
+        while len(bpy.context.scene.BCFProperties.topics) > 0:
+            bpy.context.scene.BCFProperties.topics.remove(0)
+        bpy.context.scene.BCFProperties.is_editable = True
+        bpy.context.scene.BCFProperties.directory = bcfplugin.util.getBcfDir()
+        bpy.context.scene.BCFProperties.is_loaded = True
+        return {"FINISHED"}
+
+
 class LoadBcfProject(bpy.types.Operator):
     bl_idname = "bim.load_bcf_project"
     bl_label = "Load BCF Project"
@@ -525,6 +543,7 @@ class LoadBcfProject(bpy.types.Operator):
             new = bpy.context.scene.BCFProperties.topics.add()
             new.name = topic[0]
         bpy.context.scene.BCFProperties.is_editable = True
+        bpy.context.scene.BCFProperties.is_loaded = True
         return {"FINISHED"}
 
     def invoke(self, context, event):
