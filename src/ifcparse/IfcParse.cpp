@@ -1304,7 +1304,7 @@ void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::Ar
 //
 #ifdef USE_MMAP
 IfcFile::IfcFile(const std::string& fn, bool mmap) {
-	return IfcFile::Init(new IfcSpfStream(fn, mmap));
+	initialize_(new IfcSpfStream(fn, mmap));
 }
 #else
 IfcFile::IfcFile(const std::string& fn) {
