@@ -1,6 +1,8 @@
 """Viewport decorations"""
 import math
 from functools import reduce
+from itertools import chain
+
 from bpy.types import SpaceView3D
 from mathutils import Vector
 import bpy
@@ -137,14 +139,23 @@ class DimensionDecorator(ViewDecorator):
         drawing = self.props.drawings[self.props.active_drawing_index]
         collection = bpy.data.collections.get("IfcGroup/" + drawing.name)
 
-        curves = [o for o in collection.objects if "IfcAnnotation/Dimension" in o.name]
-        segments = []
-        for curve in curves:
-            segments.extend(list(self.iter_segments(curve)))
+        segments = self.get_segments(self.get_curves(collection, "IfcAnnotation/Dimension"))
 
         self.draw_arrows(segments)
         for segm in segments:
-            self.draw_label(segm)
+            self.draw_label(segm, f"{segm[2]:.2f}")
+
+        segments = self.get_segments(self.get_curves(collection, "IfcAnnotation/Equal"))
+
+        self.draw_arrows(segments)
+        for segm in segments:
+            self.draw_label(segm, "EQ")
+
+    def get_curves(self, collection, basename):
+        return list(filter(lambda o: basename in o.name, collection.objects))
+
+    def get_segments(self, curves):
+        return list(chain.from_iterable(self.iter_segments(curve) for curve in curves))
 
     def iter_segments(self, curve):
         """Yields each segment converted to world coords
@@ -159,11 +170,11 @@ class DimensionDecorator(ViewDecorator):
                 length = (p1 - p0).length
                 yield (p0, p1, length)
 
-    def draw_label(self, segm):
+    def draw_label(self, segm, text):
         """Draw text of segment length
         aligned and centered at segment middle
         """
-        p0, p1, length = segm
+        p0, p1, _ = segm
 
         # convert to view coords
         region = self.context.region
@@ -174,8 +185,6 @@ class DimensionDecorator(ViewDecorator):
 
         if proj.length < 0.001:
             return
-
-        text = f"{length:.2f}"
 
         ang = -Vector((1, 0)).angle_signed(proj)
         cos = math.cos(ang)
