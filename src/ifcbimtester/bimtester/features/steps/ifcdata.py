@@ -1,5 +1,6 @@
 from behave import step
 
+from utils import assert_schema
 from utils import IfcFile
 
 
@@ -13,10 +14,9 @@ def step_impl(context, file):
 
 @step("IFC data must use the {schema} schema")
 def step_impl(context, schema):
-    assert IfcFile.get().schema == schema, "We expected a schema of {} but instead got {}".format(
-        schema, IfcFile.get().schema
-    )
-
+    context.schema = IfcFile.get().schema
+    assert_schema(schema, context.schema)
+    
 
 @step('The IFC file "{file}" is exempt from being provided')
 def step_impl(context, file):
