@@ -78,3 +78,10 @@ def assert_pset(element, pset_name, prop_name=None, value=None):
     assert actual_value == value, 'We expected a value of "{}" but instead got "{}" for the element {}'.format(
         value, actual_value, element
     )
+
+
+def assert_schema(real_schema, target_schema):
+    assert real_schema == target_schema, (
+        "We expected a schema of {} but instead got {}"
+        .format(target_schema, real_schema)
+    )
