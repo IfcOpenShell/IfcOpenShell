@@ -25,6 +25,21 @@ class RelatedTopic:
         self.guid = None
 
 
+class HeaderFile:
+    def __init__(self):
+        self.filename = None
+        self.date = None
+        self.reference = None
+        self.ifc_project = None
+        self.ifc_spatial_structure_element = None
+        self.is_external = True
+
+
+class Header:
+    def __init__(self):
+        self.files = []
+
+
 class Topic:
     def __init__(self):
         self.reference_links = []
@@ -46,6 +61,10 @@ class Topic:
         self.topic_status = None
         self.topic_type = None
         self.guid = None
+
+        self.header = None
+        self.comments = {}
+        self.viewpoints = {}
 
 
 class Comment:
