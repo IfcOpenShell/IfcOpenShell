@@ -70,6 +70,7 @@ class DimensionDecorator(ViewDecorator):
         // converting to and from square-space coordinates to calculate arrows
         mat4 clip2square = mat4(aspect, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
         mat4 square2clip = mat4(1/aspect, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+
         vec4 dir = normalize((p1 - p0) * clip2square) * length;
         vec4 head = dir * square2clip;
         vec4 arr_a = dir * rot_a * square2clip;
@@ -212,12 +213,20 @@ class DimensionDecorator(ViewDecorator):
         batch = batch_for_shader(self.shader, 'LINES', {'pos': points})
         self.shader.bind()
 
-        matrix = self.context.region_data.perspective_matrix
+        region = self.context.region_data
+        matrix = region.perspective_matrix
         aspect = self.context.region.width / self.context.region.height
         self.shader.uniform_float("viewMatrix", matrix)
         # TODO: get everything from styles
         self.shader.uniform_float('aspect', aspect)
         self.shader.uniform_float('color', (1.0, 1.0, 1.0))
         self.shader.uniform_float('angle', math.pi / 12)
-        self.shader.uniform_float('length', 32 / self.context.region.height)
+
+        # brute-force perspective fix
+        # TODO: move the fix into shader + align heads to view plane
+        length = 32 / self.context.region.height
+        if region.is_perspective:
+            length *= 8
+
+        self.shader.uniform_float('length', length)
         batch.draw(self.shader)
