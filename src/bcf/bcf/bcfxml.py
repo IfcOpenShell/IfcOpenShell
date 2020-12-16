@@ -1,9 +1,12 @@
 import os
-import tempfile
+import uuid
 import shutil
 import zipfile
 import logging
+import tempfile
 import bcf.data
+from datetime import datetime
+from xml.dom import minidom
 from xmlschema import XMLSchema
 from contextlib import contextmanager
 
@@ -25,6 +28,7 @@ class BcfXml:
     def __init__(self):
         self.filepath = None
         self.logger = logging.getLogger("bcfxml")
+        self.author = "john@doe.com"
         self.project = bcf.data.Project()
         self.topics = {}
 
@@ -40,7 +44,13 @@ class BcfXml:
         return self.project
 
     def edit_project(self):
-        pass
+        self.document = minidom.Document()
+        root = self._create_element(self.document, "ProjectExtension")
+        project = self._create_element(root, "Project", {"ProjectId": self.project.project_id})
+        self._create_element(project, "Name", text=self.project.name)
+        self._create_element(root, "ExtensionSchema", text="extensions.xsd")
+        with open(os.path.join(self.filepath, "project.bcfp"), "wb") as f:
+            f.write(self.document.toprettyxml(encoding="utf-8"))
 
     def save_project(self, filepath):
         with cd(self.filepath):
@@ -64,6 +74,28 @@ class BcfXml:
         for subdir in subdirs:
             self.topics[subdir] = self.get_topic(subdir)
         return self.topics
+
+    def get_header(self, guid):
+        data = self._read_xml(os.path.join(guid, "markup.bcf"), "markup.xsd")
+        if "Header" not in data:
+            return
+        header = bcf.data.Header()
+        for item in data["Header"]["File"]:
+            header_file = bcf.data.HeaderFile()
+            optional_keys = {
+                "filename": "Filename",
+                "date": "Date",
+                "reference": "Reference",
+                "ifc_project": "@IfcProject",
+                "ifc_spatial_structure_element": "@IfcSpatialStructureElement",
+                "is_external": "@isExternal",
+            }
+            for key, value in optional_keys.items():
+                if value in item:
+                    setattr(header_file, key, item[value])
+            header.files.append(header_file)
+        self.topics[guid].header = header
+        return header
 
     def get_topic(self, guid):
         if guid in self.topics:
@@ -132,11 +164,309 @@ class BcfXml:
                 topic.related_topics.append(related_topic)
         return topic
 
-    def get_header(self, guid):
-        data = self._read_xml(os.path.join(guid, "markup.bcf"), "markup.xsd")
+    def add_topic(self, topic=None):
+        if topic is None:
+            topic = bcf.data.Topic()
+        if not topic.guid:
+            topic.guid = str(uuid.uuid4())
+        if not topic.title:
+            topic.title = "New Topic"
+        os.mkdir(os.path.join(self.filepath, topic.guid))
+        self.edit_topic(topic)
+
+    def edit_topic(self, topic):
+        if not topic.creation_date:
+            topic.creation_date = datetime.utcnow().isoformat()
+            topic.creation_author = self.author
+        else:
+            topic.modified_date = datetime.utcnow().isoformat()
+            topic.modified_author = self.author
+
+        self.document = minidom.Document()
+        root = self._create_element(self.document, "Markup")
+
+        topic_el = self._create_element(
+            root,
+            "Topic",
+            {
+                "Guid": topic.guid,
+                "TopicType": topic.topic_type,
+                "TopicStatus": topic.topic_status,
+            },
+        )
+
+        text_map = {
+            "Title": topic.title,
+            "Priority": topic.priority,
+            "Index": topic.index,
+            "CreationDate": topic.creation_date,
+            "CreationAuthor": topic.creation_author,
+            "ModifiedDate": topic.modified_date,
+            "ModifiedAuthor": topic.modified_author,
+            "DueDate": topic.due_date,
+            "AssignedTo": topic.assigned_to,
+            "Stage": topic.stage,
+            "Description": topic.description,
+        }
+        for key, value in text_map.items():
+            if value:
+                self._create_element(topic_el, key, text=value)
+
+        for reference_link in topic.reference_links:
+            self._create_element(topic_el, "ReferenceLink", text=reference_link)
+        for label in topic.labels:
+            self._create_element(topic_el, "Labels", text=label)
+        if topic.bim_snippet:
+            bim_snippet = self._create_element(
+                topic_el,
+                "BimSnippet",
+                {"SnippetType": topic.bim_snippet.snippet_type, "isExternal": topic.bim_snippet.is_external},
+            )
+            self._create_element(bim_snippet, "Reference", text=topic.bim_snippet.reference)
+            self._create_element(bim_snippet, "ReferenceSchema", text=topic.bim_snippet.reference_schema)
+        for reference in topic.document_references:
+            reference_el = self._create_element(
+                topic_el, "DocumentReference", {"Guid": reference.guid, "isExternal": reference.is_external}
+            )
+            self._create_element(reference_el, "ReferencedDocument", text=reference.referenced_document)
+            self._create_element(reference_el, "Description", text=reference.description)
+        for related_topic in topic.related_topics:
+            self._create_element(topic_el, "RelatedTopic", {"Guid": related_topic.guid})
+
+        self.write_header(topic.header, root)
+        self.write_comments(topic.comments, root)
+        self.write_viewpoints(topic.viewpoints, root, topic)
+
+        with open(os.path.join(self.filepath, topic.guid, "markup.bcf"), "wb") as f:
+            f.write(self.document.toprettyxml(encoding="utf-8"))
+
+    def write_header(self, header, root):
+        if not header:
+            return
+        header_el = self._create_element(root, "Header")
+        for f in header.files:
+            file_el = self._create_element(
+                header_el,
+                "File",
+                {
+                    "IfcProject": f.ifc_project,
+                    "IfcSpatialStructureElement": f.ifc_spatial_structure_element,
+                    "isExternal": f.is_external,
+                },
+            )
+            self._create_element(file_el, "Filename", text=f.filename)
+            self._create_element(file_el, "Date", text=f.date)
+            self._create_element(file_el, "Reference", text=f.reference)
+
+    def write_comments(self, comments, root):
+        for comment in comments.values():
+            comment_el = self._create_element(root, "Comment", {"Guid": comment.guid})
+            text_map = {
+                "Date": comment.date,
+                "Author": comment.author,
+                "Comment": comment.comment,
+                "ModifiedDate": comment.modified_date,
+                "ModifiedAuthor": comment.modified_author,
+            }
+            for key, value in text_map.items():
+                if value:
+                    self._create_element(comment_el, key, text=value)
+            if comment.viewpoint:
+                self._create_element(comment_el, "Viewpoint", {"Guid": comment.viewpoint.guid})
+
+    def add_comment(self, comment=None):
+        if comment is None:
+            comment = bcf.data.Comment()
+        if not comment.guid:
+            comment.guid = str(uuid.uuid4())
+        if not comment.comment:
+            comment.comment = "'Free software' is a matter of liberty, not price. To understand the concept, you should think of 'free' as in 'free speech,' not as in 'free beer'."
+        self.edit_comment(comment)
+
+    def edit_comment(self, comment, topic):
+        if not comment.date:
+            comment.date = datetime.utcnow().isoformat()
+            comment.author = self.author
+        else:
+            comment.modified_date = datetime.utcnow().isoformat()
+            comment.modified_author = self.author
+        self.edit_topic(topic)
+
+    def delete_comment(self, guid, topic):
+        if guid in topic.comments:
+            del topic.comments[guid]
+        self.edit_topic(topic)
+
+    def delete_topic(self, guid):
+        if guid in self.topics:
+            del self.topics[guid]
+        shutil.rmtree(os.path.join(self.filepath, guid))
+
+    def write_viewpoints(self, viewpoints, root, topic):
+        for viewpoint in viewpoints.values():
+            viewpoint_el = self._create_element(root, "Viewpoints", {"Guid": viewpoint.guid})
+            text_map = {"Viewpoint": viewpoint.viewpoint, "Snapshot": viewpoint.snapshot, "Index": viewpoint.index}
+            for key, value in text_map.items():
+                if value:
+                    self._create_element(viewpoint_el, key, text=value)
+            self.write_viewpoint(viewpoint, topic)
+
+    def write_viewpoint(self, viewpoint, topic):
+        document = minidom.Document()
+        root = self._create_element(document, "VisualizationInfo")
+        self.write_viewpoint_components(viewpoint, root)
+        self.write_viewpoint_orthogonal_camera(viewpoint, root)
+        self.write_viewpoint_perspective_camera(viewpoint, root)
+        self.write_viewpoint_lines(viewpoint, root)
+        self.write_viewpoint_clipping_planes(viewpoint, root)
+        self.write_viewpoint_bitmaps(viewpoint, root)
+        with open(os.path.join(self.filepath, topic.guid, viewpoint.viewpoint), "wb") as f:
+            f.write(document.toprettyxml(encoding="utf-8"))
+
+    def write_viewpoint_components(self, viewpoint, parent):
+        if not viewpoint.components:
+            return
+        components_el = self._create_element(parent, "Components")
+        if viewpoint.components.view_setup_hints:
+            view_setup_hints = self._create_element(
+                components_el,
+                "ViewSetupHints",
+                {
+                    "SpacesVisible": viewpoint.components.view_setup_hints.spaces_visible,
+                    "SpaceBoundiresVisible": viewpoint.components.view_setup_hints.space_boundaries_visible,
+                    "OpeningsVisible": viewpoint.components.view_setup_hints.openings_visible,
+                },
+            )
+        if viewpoint.components.selection:
+            selection_el = self._create_element(components_el, "Selection")
+        for selection in viewpoint.components.selection:
+            self.write_component(selection, selection_el)
+        visibility = self._create_element(
+            components_el, "Visibility", {"DefaultVisibility": viewpoint.components.visibility.default_visibility}
+        )
+        if viewpoint.components.visibility.exceptions:
+            exceptions_el = self._create_element(visibility, "Exceptions")
+        for exception in viewpoint.components.visibility.exceptions:
+            self.write_component(exception, exceptions_el)
+        if viewpoint.components.coloring:
+            coloring_el = self._create_element(components_el, "Coloring")
+        for color in viewpoint.components.coloring:
+            color_el = self._create_element(coloring_el, "Color", {"Color": color.color})
+            for component in color.components:
+                self.write_component(component, color_el)
+
+    def write_viewpoint_orthogonal_camera(self, viewpoint, parent):
+        if not viewpoint.orthogonal_camera:
+            return
+        camera = viewpoint.orthogonal_camera
+        camera_el = self._create_element(parent, "OrthogonalCamera")
+        camera_view_point = self._create_element(camera_el, "CameraViewPoint")
+        self.write_vector(camera_view_point, camera.camera_view_point)
+        camera_direction = self._create_element(camera_el, "CameraDirection")
+        self.write_vector(camera_direction, camera.camera_direction)
+        camera_up_vector = self._create_element(camera_el, "CameraUpVector")
+        self.write_vector(camera_up_vector, camera.camera_up_vector)
+        self._create_element(camera_el, "ViewToWorldScale", text=camera.view_to_world_scale)
+
+    def write_viewpoint_perspective_camera(self, viewpoint, parent):
+        if not viewpoint.perspective_camera:
+            return
+        camera = viewpoint.perspective_camera
+        camera_el = self._create_element(parent, "PerspectiveCamera")
+        camera_view_point = self._create_element(camera_el, "CameraViewPoint")
+        self.write_vector(camera_view_point, camera.camera_view_point)
+        camera_direction = self._create_element(camera_el, "CameraDirection")
+        self.write_vector(camera_direction, camera.camera_direction)
+        camera_up_vector = self._create_element(camera_el, "CameraUpVector")
+        self.write_vector(camera_up_vector, camera.camera_up_vector)
+        self._create_element(camera_el, "FieldOfView", text=camera.field_of_view)
+
+    def write_viewpoint_lines(self, viewpoint, parent):
+        if not viewpoint.lines:
+            return
+        lines_el = self._create_element(parent, "Lines")
+        for line in viewpoint.lines:
+            line_el = self._create_element(lines_el, "Line")
+            start_point_el = self._create_element(line_el, "StartPoint")
+            self.write_vector(start_point_el, line.start_point)
+            end_point_el = self._create_element(line_el, "EndPoint")
+            self.write_vector(end_point_el, line.end_point)
+
+    def write_viewpoint_clipping_planes(self, viewpoint, parent):
+        if not viewpoint.clipping_planes:
+            return
+        planes_el = self._create_element(parent, "ClippingPlanes")
+        for plane in viewpoint.clipping_planes:
+            plane_el = self._create_element(planes_el, "ClippingPlane")
+            location_el = self._create_element(plane_el, "Location")
+            self.write_vector(location_el, plane.location)
+            direction_el = self._create_element(plane_el, "Direction")
+            self.write_vector(direction_el, plane.direction)
+
+    def write_viewpoint_bitmaps(self, viewpoint, parent):
+        if not viewpoint.bitmaps:
+            return
+        for bitmap in viewpoint.bitmaps:
+            bitmap_el = self._create_element(parent, "Bitmap")
+            text_map = {"Bitmap": bitmap.bitmap_type, "Reference": bitmap.reference, "Height": bitmap.height}
+            for key, value in text_map.items():
+                self._create_element(bitmap_el, key, text=value)
+            location_el = self._create_element(bitmap_el, "Location")
+            self.write_vector(location_el, bitmap.location)
+            normal_el = self._create_element(bitmap_el, "Normal")
+            self.write_vector(normal_el, bitmap.normal)
+            up_el = self._create_element(bitmap_el, "Up")
+            self.write_vector(up_el, bitmap.up)
+
+    def write_vector(self, parent, from_obj):
+        self._create_element(parent, "X", text=from_obj.x)
+        self._create_element(parent, "Y", text=from_obj.y)
+        self._create_element(parent, "Z", text=from_obj.z)
+
+    def write_component(self, data, parent):
+        component_el = self._create_element(parent, "Component", {"IfcGuid": data.ifc_guid})
+        text_map = {"OriginatingSystem": data.originating_system, "AuthoringToolId": data.authoring_tool_id}
+        for key, value in text_map.items():
+            if value:
+                self._create_element(component_el, key, text=value)
+
+    def add_viewpoint(self, topic, viewpoint=None):
+        if not viewpoint:
+            viewpoint = bcf.data.Viewpoint()
+        if not viewpoint.guid:
+            viewpoint.guid = str(uuid.uuid4())
+        if not viewpoint.viewpoint:
+            viewpoint.viewpoint = f"{viewpoint.guid}.bcfv"
+        if viewpoint.snapshot:
+            topic_filepath = os.path.join(self.filepath, topic.guid)
+            filepath = os.path.join(topic_filepath, viewpoint.snapshot)
+            if not os.path.exists(filepath):
+                pass  # TODO: handle uploading files
+        self.edit_topic(topic)
+
+    def delete_viewpoint(self, guid, topic):
+        if guid not in topic.viewpoints:
+            return
+        viewpoint = topic.viewpoints[guid]
+        if viewpoint.snapshot:
+            filepath = os.path.join(self.filepath, topic.guid, viewpoint.snapshot)
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        if viewpoint.viewpoint:
+            filepath = os.path.join(self.filepath, topic.guid, viewpoint.viewpoint)
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        for bitmap in viewpoint.bitmaps:
+            if not bitmap.reference:
+                continue
+            filepath = os.path.join(self.filepath, topic.guid, bitmap.reference)
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        del topic.viewpoints[guid]
+        self.edit_topic(topic)
 
     def get_comments(self, guid):
-        comments = []
+        comments = {}
         data = self._read_xml(os.path.join(guid, "markup.bcf"), "markup.xsd")
         if "Comment" not in data:
             return comments
@@ -153,16 +483,19 @@ class BcfXml:
                 viewpoint = bcf.data.Viewpoint()
                 viewpoint.guid = item["Viewpoint"]["@Guid"]
                 comment.viewpoint = viewpoint
-            comments.append(comment)
+            comments[comment.guid] = comment
+        self.topics[guid].comments = comments
         return comments
 
     def get_viewpoints(self, guid):
-        viewpoints = []
+        viewpoints = {}
         data = self._read_xml(os.path.join(guid, "markup.bcf"), "markup.xsd")
         if "Viewpoints" not in data:
             return viewpoints
         for item in data["Viewpoints"]:
-            viewpoints.append(self.get_viewpoint(item, guid))
+            viewpoint = self.get_viewpoint(item, guid)
+            viewpoints[viewpoint.guid] = viewpoint
+        self.topics[guid].viewpoints = viewpoints
         return viewpoints
 
     def get_viewpoint(self, data, topic_guid):
@@ -226,6 +559,7 @@ class BcfXml:
         self.set_vector(camera.camera_direction, data["CameraDirection"])
         self.set_vector(camera.camera_up_vector, data["CameraUpVector"])
         camera.view_to_world_scale = data["ViewToWorldScale"]
+        return camera
 
     def get_viewpoint_perspective_camera(self, visinfo):
         if "PerspectiveCamera" not in visinfo:
@@ -236,6 +570,7 @@ class BcfXml:
         self.set_vector(camera.camera_direction, data["CameraDirection"])
         self.set_vector(camera.camera_up_vector, data["CameraUpVector"])
         camera.field_of_view = data["FieldOfView"]
+        return camera
 
     def get_viewpoint_lines(self, visinfo):
         if "Lines" not in visinfo:
@@ -301,6 +636,19 @@ class BcfXml:
         for error in errors:
             self.logger.error(error)
         return data
+
+    def _create_element(self, parent, name, attributes={}, text=None):
+        element = self.document.createElement(name)
+        for key, value in attributes.items():
+            if isinstance(value, bool):
+                element.setAttribute(key, str(value).lower())
+            elif value:
+                element.setAttribute(key, value)
+        if text is not None:
+            text = self.document.createTextNode(str(text))
+            element.appendChild(text)
+        parent.appendChild(element)
+        return element
 
     def __del__(self):
         self.close_project()
