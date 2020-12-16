@@ -169,10 +169,14 @@ class DimensionDecorator(ViewDecorator):
         region3d = self.context.region_data
         p0 = location_3d_to_region_2d(region, region3d, p0)
         p1 = location_3d_to_region_2d(region, region3d, p1)
+        proj = p1 - p0
+
+        if proj.length < 0.001:
+            return
 
         text = f"{length:.2f}"
 
-        ang = -Vector((1, 0)).angle_signed(p1 - p0)
+        ang = -Vector((1, 0)).angle_signed(proj)
         cos = math.cos(ang)
         sin = math.sin(ang)
 
