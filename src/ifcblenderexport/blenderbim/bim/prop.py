@@ -917,7 +917,7 @@ def getBcfViewpoints(self, context):
         props = bpy.context.scene.BCFProperties
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         topic = props.topics[props.active_topic_index]
-        viewpoints = bcfxml.get_viewpoints(topic.guid)
+        viewpoints = bcfxml.get_viewpoints(topic.name)
         bcfviewpoints_enum.extend([(v, f"Viewpoint {i+1}", "") for i, v in enumerate(viewpoints.keys())])
     return bcfviewpoints_enum
 
@@ -936,9 +936,19 @@ class BcfDocumentReference(PropertyGroup):
     is_external: BoolProperty(name="Is External")
 
 
+class BcfComment(PropertyGroup):
+    name: StringProperty(name="GUID")
+    date: StringProperty(name="Date")
+    author: StringProperty(name="Author")
+    comment: StringProperty(name="Comment")
+    viewpoint: StringProperty(name="Viewpoint")
+    modified_date: StringProperty(name="Modified Date")
+    modified_author: StringProperty(name="Modified Author")
+
+
 class BcfTopic(PropertyGroup):
-    name: StringProperty(name="Name")
-    guid: StringProperty(default="", name="GUID")
+    name: StringProperty(name="GUID")
+    title: StringProperty(default="", name="Title")
     type: StringProperty(default="", name="Type")
     status: StringProperty(default="", name="Status")
     priority: StringProperty(default="", name="Priority")
@@ -957,6 +967,7 @@ class BcfTopic(PropertyGroup):
     bim_snippet: PointerProperty(type=BcfBimSnippet)
     document_references: CollectionProperty(name="Document References", type=BcfDocumentReference)
     related_topics: CollectionProperty(name="Related Topics", type=StrProperty)
+    comments: CollectionProperty(name="Comments", type=BcfComment)
 
 
 def refreshBcfTopic(self, context):
@@ -966,7 +977,7 @@ def refreshBcfTopic(self, context):
     props = bpy.context.scene.BCFProperties
     bcfxml = bcfstore.BcfStore.get_bcfxml()
     topic = props.topics[props.active_topic_index]
-    header = bcfxml.get_header(topic.guid)
+    header = bcfxml.get_header(topic.name)
     getBcfViewpoints(self, context)
 
 
@@ -1478,6 +1489,7 @@ class BIMProperties(PropertyGroup):
 class BCFProperties(PropertyGroup):
     is_editable: BoolProperty(name="Is Editable", default=False)
     is_loaded: BoolProperty(name="Is Loaded", default=False)
+    comment_text_width: IntProperty(name="Comment Text Width", default=40)
     name: StringProperty(default="", name="Project Name")
     author: StringProperty(default="john@doe.com", name="Author Email")
     topics: CollectionProperty(name="BCF Topics", type=BcfTopic)

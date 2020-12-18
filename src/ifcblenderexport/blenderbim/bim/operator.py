@@ -550,8 +550,8 @@ class LoadBcfTopics(bpy.types.Operator):
         for topic in bcfxml.topics.values():
             new = bpy.context.scene.BCFProperties.topics.add()
             data_map = {
-                "name": topic.title,
-                "guid": topic.guid,
+                "name": topic.guid,
+                "title": topic.title,
                 "type": topic.topic_type,
                 "status": topic.topic_status,
                 "priority": topic.priority,
@@ -597,6 +597,33 @@ class LoadBcfTopics(bpy.types.Operator):
             for related_topic in topic.related_topics:
                 new2 = new.related_topics.add()
                 new2.name = related_topic.guid
+            bpy.ops.bim.load_bcf_comments(topic_guid = topic.guid)
+        return {"FINISHED"}
+
+
+class LoadBcfComments(bpy.types.Operator):
+    bl_idname = "bim.load_bcf_comments"
+    bl_label = "Load BCF Comments"
+    topic_guid: bpy.props.StringProperty()
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        bcfxml.get_comments(self.topic_guid)
+        blender_topic = bpy.context.scene.BCFProperties.topics.get(self.topic_guid)
+        for comment in bcfxml.topics[self.topic_guid].comments.values():
+            new = blender_topic.comments.add()
+            data_map = {
+                "name": comment.guid,
+                "comment": comment.comment,
+                "viewpoint": comment.viewpoint.guid if comment.viewpoint else None,
+                "date": comment.date,
+                "author": comment.author,
+                "modified_date": comment.modified_date,
+                "modified_author": comment.modified_author,
+            }
+            for key, value in data_map.items():
+                if value is not None:
+                    setattr(new, key, str(value))
         return {"FINISHED"}
 
 
