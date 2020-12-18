@@ -283,7 +283,9 @@ class IfcClasher:
                 continue
             clashes = clash_set["clashes"]
             if len(clashes) == 0:
+                print(f"Skipping clash set [{clash_set['name']}] since it contains no clash results.")
                 continue
+
             count_of_input_clashes += len(clashes)
 
             positions = []
@@ -307,7 +309,13 @@ class IfcClasher:
             if len(pred) == len(clashes.values()):
                 i = 0
                 for clash in clashes.values():
-                    clash["smart_group"] = int(pred[i])
+                    int_prediction = int(pred[i])
+                    if int_prediction == -1:
+                        # ungroup this clash since it's a single clash that we were not able to group.
+                        new_clash_group_number = np.amax(pred).item() + 1 + i
+                        clash["smart_group"] = new_clash_group_number
+                    else:
+                        clash["smart_group"] = int_prediction
                     i += 1
 
         # Create JSON with smart_groups that contain GlobalIDs
@@ -325,6 +333,17 @@ class IfcClasher:
                     smart_groups[content['smart_group']].append(object_id_list)
             count_of_smart_groups += len(smart_groups)   
             output_clash_sets[clash_set["name"]].append(smart_groups)
+
+        # Rename the clash groups to something more sensible
+        for clash_set, smart_groups in output_clash_sets.items():
+            clash_set_name = clash_set
+            # Only select the clashes that correspond to the actively selected IFC Clash Set
+            i = 1
+            new_smart_group_name = ""
+            for smart_group, global_id_pairs in list(smart_groups[0].items()):
+                new_smart_group_name = f"{clash_set_name} - {i}"
+                smart_groups[0][new_smart_group_name] = smart_groups[0].pop(smart_group)
+                i += 1
 
         count_of_final_clash_sets = len(output_clash_sets)
         print(f"Took {count_of_input_clashes} clashes in {count_of_clash_sets} clash sets and turned", 
