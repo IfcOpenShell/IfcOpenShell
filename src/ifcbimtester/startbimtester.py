@@ -49,6 +49,15 @@ if __name__ == "__main__":
         help="Generate a HTML report after running the tests"
     )
     parser.add_argument(
+        "-path",
+        "--path",
+        type=str,
+        help=(
+            "Specify a path to prepend to feature and ifc file"
+        ),
+        default=""
+    )
+    parser.add_argument(
         "-c",
         "--console",
         action="store_true",
@@ -100,6 +109,12 @@ if __name__ == "__main__":
 
     args = vars(parser.parse_args())
     print(args)
+
+    if args["path"]:
+        if args["feature"]:
+            args["feature"] = os.path.join(args["path"], args["feature"])
+        if not args["gui"]:
+            args["ifcfile"] = os.path.join(args["path"], args["ifcfile"])
 
     if args["purge"]:
         clean.TestPurger().purge()

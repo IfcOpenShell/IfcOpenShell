@@ -31,6 +31,10 @@ def run_tests(args):
         behave_args.extend(args["advanced_arguments"].split())
     elif not args["console"]:
         behave_args.extend(["--format", "json.pretty", "--outfile", "report/report.json"])
+    if args["ifcfile"]:
+        behave_args.extend(["--define", "ifcfile={}".format(args["ifcfile"])])
+    if args["path"]:
+        behave_args.extend(["--define", "path={}".format(args["path"])])
     behave_main(behave_args)
     print("# All tests are finished.")
     return True
