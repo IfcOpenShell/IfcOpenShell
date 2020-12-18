@@ -1708,7 +1708,7 @@ class BIM_PT_bcf(Panel):
             col.prop(topic, "modified_author")
 
             bcfxml = bcfstore.BcfStore.get_bcfxml()
-            bcf_topic = bcfxml.topics[topic.guid]
+            bcf_topic = bcfxml.topics[topic.name]
 
             if bcf_topic.header:
                 layout.label(text="Header Files:")
@@ -1720,7 +1720,7 @@ class BIM_PT_bcf(Panel):
                         row.operator("bim.open_uri", icon="URL", text="").uri = f.reference
                     else:
                         op = row.operator("bim.open_uri", icon="FILE_FOLDER", text="")
-                        op.uri = os.path.join(bcfxml.filepath, topic.guid, f.reference)
+                        op.uri = os.path.join(bcfxml.filepath, topic.name, f.reference)
                     box.label(text=f.date)
                     #box.label(text=f.ifc_project)
                     #box.label(text=f.ifc_spatial_structure_element)
@@ -1751,7 +1751,7 @@ class BIM_PT_bcf(Panel):
                     row.operator("bim.open_uri", icon="URL", text="").uri = topic.bim_snippet.reference
                 else:
                     op = row.operator("bim.open_uri", icon="FILE_FOLDER", text="")
-                    op.uri = os.path.join(bcfxml.filepath, topic.guid, topic.bim_snippet.reference)
+                    op.uri = os.path.join(bcfxml.filepath, topic.name, topic.bim_snippet.reference)
 
             if topic.document_references:
                 layout.label(text="Document References:")
@@ -1763,7 +1763,7 @@ class BIM_PT_bcf(Panel):
                         row.operator("bim.open_uri", icon="URL", text="").uri = doc.reference
                     else:
                         op = row.operator("bim.open_uri", icon="FILE_FOLDER", text="")
-                        op.uri = os.path.join(bcfxml.filepath, topic.guid, doc.reference)
+                        op.uri = os.path.join(bcfxml.filepath, topic.name, doc.reference)
                     row = box.row(align=True)
                     row.prop(doc, "description")
 
@@ -1772,6 +1772,51 @@ class BIM_PT_bcf(Panel):
                 for related_topic in topic.related_topics:
                     row = layout.row(align=True)
                     row.operator("bim.view_bcf_topic", text=related_topic.name).topic_guid = related_topic.name
+
+
+class BIM_PT_bcf_comments(Panel):
+    bl_label = "BCF Comments"
+    bl_idname = "BIM_PT_bcf_comments"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_bcf"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+
+        scene = context.scene
+        props = bpy.context.scene.BCFProperties
+
+        if props.active_topic_index >= len(props.topics):
+            layout.label(text="No BCF project is loaded")
+            return
+
+        row = layout.row()
+        row.prop(props, "comment_text_width")
+
+        topic = props.topics[props.active_topic_index]
+        for comment in topic.comments:
+            box = self.layout.box()
+            box.separator()
+            author_text = "{} ({})".format(comment.author, comment.date)
+            if comment.modified_author:
+                author_text = "*{} ({})".format(comment.modified_author, comment.modified_date)
+            box.label(text=author_text, icon="WORDWRAP_ON")
+            box.separator()
+            box.scale_y = 0.5
+            words = comment.comment.split()
+            while words:
+                total_line_chars = 0
+                line_words = []
+                while words and total_line_chars < props.comment_text_width:
+                    word = words.pop(0)
+                    line_words.append(word)
+                    total_line_chars += len(word) + 1 # 1 is for the space
+                box.label(text=" ".join(line_words))
+            box.separator()
 
 
 class BIM_PT_qa(Panel):
@@ -2105,7 +2150,7 @@ class BIM_UL_topics(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         ob = data
         if item:
-            layout.prop(item, "name", text="", emboss=False)
+            layout.prop(item, "title", text="", emboss=False)
         else:
             layout.label(text="", translate=False)
 
