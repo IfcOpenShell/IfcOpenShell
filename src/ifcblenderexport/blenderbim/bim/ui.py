@@ -1,4 +1,6 @@
+import os
 import bpy
+from . import bcfstore
 from bpy.types import Panel
 from bpy.props import StringProperty
 
@@ -1681,97 +1683,95 @@ class BIM_PT_bcf(Panel):
         col = row.column(align=True)
         col.operator("bim.add_bcf_topic", icon="ADD", text="")
 
-        if not props.topics:
-            return
-
-        row = layout.row()
-        row.prop(props, "topic_description", text="")
-
-        row = layout.row()
-        row.prop(props, "viewpoints")
-        row.operator("bim.activate_bcf_viewpoint", icon="SCENE", text="")
-
-        col = layout.column(align=True)
-        col.prop(props, "topic_type", text="Type")
-        col.prop(props, "topic_status", text="Status")
-        col.prop(props, "topic_priority", text="Priority")
-        col.prop(props, "topic_stage", text="Stage")
-        col.prop(props, "topic_assigned_to", text="Assigned To")
-        col.prop(props, "topic_due_date", text="Due Date")
-
-        col = layout.column(align=True)
-        col.enabled = False
-        col.prop(props, "topic_creation_date", text="Date")
-        col.prop(props, "topic_creation_author", text="Author")
-        col.prop(props, "topic_modified_date", text="Modified On")
-        col.prop(props, "topic_modified_author", text="Modified By")
-
-
-        layout.label(text="Header Files:")
-        for index, f in enumerate(props.topic_files):
+        if props.active_topic_index < len(props.topics):
+            topic = props.topics[props.active_topic_index]
             row = layout.row()
-            row.prop(f, "name", text="File {} Name".format(index + 1))
+            row.prop(topic, "description", text="")
+
             row = layout.row()
-            row.prop(f, "reference", text="File {} URI".format(index + 1))
-            if f.is_external:
-                row.operator("bim.open_bcf_file_reference", icon="URL", text="").data = index
-            else:
-                row.operator("bim.open_bcf_file_reference", icon="FILE_FOLDER", text="").data = "{}/{}".format(
-                    props.topic_guid, index
-                )
-            row = layout.row()
-            row.prop(f, "date", text="File {} Date".format(index + 1))
-            row = layout.row()
-            row.prop(f, "ifc_project", text="File {} Project".format(index + 1))
-            row = layout.row()
-            row.prop(f, "ifc_spatial", text="File {} Spatial".format(index + 1))
+            row.prop(topic, "viewpoints")
+            row.operator("bim.activate_bcf_viewpoint", icon="SCENE", text="")
 
-        layout.label(text="Reference Links:")
-        for index, label in enumerate(props.topic_links):
-            row = layout.row()
-            row.prop(label, "name", text="Link {}".format(index + 1))
-            row.operator("bim.open_bcf_reference_link", icon="URL", text="").index = index
+            col = layout.column(align=True)
+            col.prop(topic, "type")
+            col.prop(topic, "status")
+            col.prop(topic, "priority")
+            col.prop(topic, "stage")
+            col.prop(topic, "assigned_to")
+            col.prop(topic, "due_date")
 
-        layout.label(text="Labels:")
-        for index, label in enumerate(props.topic_labels):
-            row = layout.row(align=True)
-            row.prop(label, "name", text="")
+            col = layout.column(align=True)
+            col.enabled = False
+            col.prop(topic, "creation_date")
+            col.prop(topic, "creation_author")
+            col.prop(topic, "modified_date")
+            col.prop(topic, "modified_author")
 
-        layout.label(text="BIM Snippet:")
-        if props.topic_has_snippet:
-            row = layout.row(align=True)
-            row.prop(props, "topic_snippet_type")
-            if props.topic_snippet_schema:
-                row.operator("bim.open_bcf_bim_snippet_schema", icon="URL", text="")
+            bcfxml = bcfstore.BcfStore.get_bcfxml()
+            bcf_topic = bcfxml.topics[topic.guid]
 
-            row = layout.row(align=True)
-            row.prop(props, "topic_snippet_reference")
-            if props.topic_snippet_is_external:
-                row.operator("bim.open_bcf_bim_snippet_reference", icon="URL", text="")
-            else:
-                row.operator(
-                    "bim.open_bcf_bim_snippet_reference", icon="FILE_FOLDER", text=""
-                ).topic_guid = props.topic_guid
+            if bcf_topic.header:
+                layout.label(text="Header Files:")
+                for index, f in enumerate(bcf_topic.header.files):
+                    box = self.layout.box()
+                    row = box.row(align=True)
+                    row.label(text=f.filename, icon="FILE_BLANK")
+                    if f.is_external:
+                        row.operator("bim.open_uri", icon="URL", text="").uri = f.reference
+                    else:
+                        op = row.operator("bim.open_uri", icon="FILE_FOLDER", text="")
+                        op.uri = os.path.join(bcfxml.filepath, topic.guid, f.reference)
+                    box.label(text=f.date)
+                    #box.label(text=f.ifc_project)
+                    #box.label(text=f.ifc_spatial_structure_element)
 
-        layout.label(text="Document References:")
-        for index, doc in enumerate(props.topic_document_references):
-            row = layout.row(align=True)
-            row.prop(doc, "name", text=f"File {index+1} URI")
-            if doc.is_external:
-                row.operator("bim.open_bcf_document_reference", icon="URL", text="").data = "{}/{}".format(
-                    props.topic_guid, index
-                )
-            else:
-                row.operator("bim.open_bcf_document_reference", icon="FILE_FOLDER", text="").data = "{}/{}".format(
-                    props.topic_guid, index
-                )
-            row = layout.row(align=True)
-            row.prop(doc, "description", text=f"File {index+1} Description:")
+            if topic.reference_links:
+                layout.label(text="Reference Links:")
+                for index, link in enumerate(topic.reference_links):
+                    row = layout.row(align=True)
+                    row.prop(link, "name")
+                    row.operator("bim.open_uri", icon="URL", text="").uri = link.name
 
-        layout.label(text="Related Topics:")
-        for topic in props.topic_related_topics:
-            row = layout.row(align=True)
-            row.operator("bim.view_bcf_topic", text=topic.name).topic_guid = topic.guid
+            if topic.labels:
+                layout.label(text="Labels:")
+                for index, label in enumerate(topic.labels):
+                    row = layout.row(align=True)
+                    row.prop(label, "name", text="")
+
+            if topic.bim_snippet.schema:
+                layout.label(text="BIM Snippet:")
+                row = layout.row(align=True)
+                row.prop(topic.bim_snippet, "type")
+                if topic.bim_snippet.schema:
+                    row.operator("bim.open_uri", icon="URL", text="").uri = topic.bim_snippet.schema
+
+                row = layout.row(align=True)
+                row.prop(topic.bim_snippet, "reference")
+                if topic.bim_snippet.is_external:
+                    row.operator("bim.open_uri", icon="URL", text="").uri = topic.bim_snippet.reference
+                else:
+                    op = row.operator("bim.open_uri", icon="FILE_FOLDER", text="")
+                    op.uri = os.path.join(bcfxml.filepath, topic.guid, topic.bim_snippet.reference)
+
+            if topic.document_references:
+                layout.label(text="Document References:")
+                for index, doc in enumerate(topic.document_references):
+                    box = self.layout.box()
+                    row = box.row(align=True)
+                    row.prop(doc, "reference")
+                    if doc.is_external:
+                        row.operator("bim.open_uri", icon="URL", text="").uri = doc.reference
+                    else:
+                        op = row.operator("bim.open_uri", icon="FILE_FOLDER", text="")
+                        op.uri = os.path.join(bcfxml.filepath, topic.guid, doc.reference)
+                    row = box.row(align=True)
+                    row.prop(doc, "description")
+
+            if topic.related_topics:
+                layout.label(text="Related Topics:")
+                for related_topic in topic.related_topics:
+                    row = layout.row(align=True)
+                    row.operator("bim.view_bcf_topic", text=related_topic.name).topic_guid = related_topic.name
 
 
 class BIM_PT_qa(Panel):
