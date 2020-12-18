@@ -1,4 +1,5 @@
 import gettext
+import os
 from behave import step, given
 
 from ifcdata_methods import assert_schema
@@ -8,6 +9,8 @@ from utils import switch_locale
 @step('The IFC schema "{schema}" must be provided')
 def step_impl(context, schema):
     try:
+        if context.config.userdata.get('path'):
+            schema = os.path.join(context.config.userdata.get('path'), schema)
         IfcFile.load_schema(schema)
     except:
         assert False, f"The schema {schema} could not be loaded"
