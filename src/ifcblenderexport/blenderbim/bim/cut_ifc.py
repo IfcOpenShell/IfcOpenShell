@@ -482,13 +482,20 @@ class IfcCutter:
 
         import bpy
 
-        multiprocessing.set_executable(bpy.app.binary_path_python)
-
-        with multiprocessing.Pool(9) as p:
-            results = p.map(do_cut, process_data)
-            for result in results:
-                polygons = [p for p in result if p["points"]]
+        if bpy.app.version > (2, 90, 0) and os.name == 'nt':
+            # See bug #1148
+            for data in process_data:
+                results = do_cut(data)
+                polygons = [r for r in results if r["points"]]
                 self.cut_polygons.extend(polygons)
+        else:
+            multiprocessing.set_executable(bpy.app.binary_path_python)
+
+            with multiprocessing.Pool(9) as p:
+                results = p.map(do_cut, process_data)
+                for result in results:
+                    polygons = [p for p in result if p["points"]]
+                    self.cut_polygons.extend(polygons)
 
     def get_polygon_metadata(self, polygon, position):
         polygon["metadata"] = {"classes": self.get_classes(self.get_ifc_element(polygon["global_id"]), position)}
