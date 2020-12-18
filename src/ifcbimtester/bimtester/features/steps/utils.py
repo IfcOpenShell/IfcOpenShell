@@ -80,8 +80,11 @@ def assert_pset(element, pset_name, prop_name=None, value=None):
     )
 
 
-def assert_schema(real_schema, target_schema):
-    assert real_schema == target_schema, (
-        "We expected a schema of {} but instead got {}"
-        .format(target_schema, real_schema)
+def switch_locale(locale_dir, locale_id="en"):
+    from gettext import translation
+    newlang = translation(
+        "messages",
+        localedir=locale_dir,
+        languages=[locale_id]
     )
+    newlang.install()

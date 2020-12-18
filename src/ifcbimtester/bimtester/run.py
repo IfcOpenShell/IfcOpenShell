@@ -11,6 +11,9 @@ from behave.__main__ import main as behave_main
 # get bimtester source code module path
 bimtester_path = os.path.dirname(os.path.realpath(__file__))
 # print(bimtester_path)
+locale_path = os.path.join(bimtester_path, "locale")
+
+
 try:
     # PyInstaller creates a temp folder and stores path in _MEIPASS
     base_path = sys._MEIPASS
@@ -36,6 +39,10 @@ def run_tests(args):
             "--outfile",
             "report/report.json"
         ])
+    behave_args.extend([
+        "--define",
+        "localedir={}".format(locale_path)
+    ])
     behave_main(behave_args)
     print("# All tests are finished.")
     return True
@@ -262,7 +269,10 @@ def run_intmp_tests(args={}):
             os.path.join(report_path, "report.json"),
             # next two lines are one arg
             "--define",
-            "ifcbasename={}".format(os.path.splitext(ifc_filename)[0])
+            "ifcbasename={}".format(os.path.splitext(ifc_filename)[0]),
+            # next two lines are one arg
+            "--define",
+            "localedir={}".format(locale_path)
         ])
     print(behave_args)
 
