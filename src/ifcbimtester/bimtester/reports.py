@@ -4,8 +4,8 @@ import os
 import pystache
 
 
-def generate_report(adir="."):
-    print("# Generating HTML reports now.")
+def generate_report(adir=".", use_report_folder=True, report_file_name="", html_template_file_path=""):
+    #print("# Generating HTML reports now.")
 
     # get html template
     html_template_file = os.path.join(
@@ -13,11 +13,20 @@ def generate_report(adir="."):
         "features/template.html"
     )
 
+    if html_template_file_path:
+        html_template_file = os.path.join(html_template_file_path, "template.html")
+
     # get report file
-    report_dir = os.path.join(adir, "report")
+    report_dir = adir
+    if use_report_folder:
+        report_dir = os.path.join(adir, "report")
     if not os.path.exists(report_dir):
         return print("No report directory was found.")
-    report_path = os.path.join(report_dir, "report.json")
+
+    if report_file_name:
+      report_path = os.path.join(report_dir, report_file_name)
+    else:
+      report_path = os.path.join(report_dir, "report.json")
     # print(report_path)
     if not os.path.exists(report_path):
         return print("No report data was found.")
@@ -58,7 +67,12 @@ def generate_report(adir="."):
                 if "match" in step and "arguments" in step["match"]:
                     for a in step["match"]["arguments"]:
                         name = name.replace(a["value"], "<b>" + a["value"] + "</b>")
-                if "result" not in step or step["result"]["status"] == "undefined":
+                if "result" not in step:
+                    step["result"] = {}
+                    step["result"]["status"] = "skipped"
+                    step["result"]["duration"] = 0
+                    step["result"]["error_message"] = "This requirement has been skipped due to a previous failing step."
+                elif step["result"]["status"] == "undefined":
                     step["result"] = {}
                     step["result"]["status"] = "undefined"
                     step["result"]["duration"] = 0
@@ -68,7 +82,8 @@ def generate_report(adir="."):
                         "name": name,
                         "time": round(step["result"]["duration"], 2),
                         "is_success": step["result"]["status"] == "passed",
-                        "is_unspecified": "result" not in step or step["result"]["status"] == "undefined",
+                        "is_unspecified": step["result"]["status"] == "undefined",
+                        "is_skipped": step["result"]["status"] == "skipped",
                         "error_message": None
                         if step["result"]["status"] == "passed"
                         else step["result"]["error_message"],
