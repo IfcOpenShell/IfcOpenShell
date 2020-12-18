@@ -1,7 +1,9 @@
+import gettext
 from behave import step
 
-from utils import assert_schema
+from ifcdata_methods import assert_schema
 from utils import IfcFile
+from utils import switch_locale
 
 
 @step('The IFC file "{file}" must be provided')
@@ -14,8 +16,8 @@ def step_impl(context, file):
 
 @step("IFC data must use the {schema} schema")
 def step_impl(context, schema):
-    context.schema = IfcFile.get().schema
-    assert_schema(schema, context.schema)
+    switch_locale(context.localedir, "en")
+    assert_schema(context, schema)
     
 
 @step('The IFC file "{file}" is exempt from being provided')

@@ -1,13 +1,9 @@
 from behave import step
 
-from utils import assert_schema
-
+from ifcdata_methods import assert_schema
+from utils import switch_locale
 
 @step("Les données IFC doivent utiliser le schéma {schema}")
 def step_impl(context, schema):
-    try:
-        context.execute_steps(
-            "* IFC data must use the {schema} schema".format(schema=schema)
-        )
-    except Exception:
-        assert_schema(schema, context.schema)
+    switch_locale(context.localedir, "fr")
+    assert_schema(context, schema)
