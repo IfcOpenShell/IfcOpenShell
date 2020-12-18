@@ -5,7 +5,7 @@ import ifcopenshell.util.pset
 from pathlib import Path
 from . import export_ifc
 from . import schema
-from . import bcf
+from . import bcfstore
 from . import ifc
 from . import annotation
 from . import decoration
@@ -52,7 +52,7 @@ persons_enum = []
 organisations_enum = []
 sheets_enum = []
 vector_styles_enum = []
-bcfviewpoints_enum = []
+bcfviewpoints_enum = None
 
 
 @persistent
@@ -814,7 +814,7 @@ class PresentationLayer(PropertyGroup):
     layer_blocked: BoolProperty(name="LayerBlocked", default=False)
 
 class SmartClashGroup(PropertyGroup):
-    number: IntProperty(name="Number")
+    number: StringProperty(name="Number")
     global_ids: CollectionProperty(name="GlobalIDs", type=StrProperty)
 
 
@@ -910,187 +910,75 @@ class Constraint(PropertyGroup):
     user_defined_qualifier: StringProperty(name="Custom Qualifier")
 
 
-class BcfTopic(PropertyGroup):
-    name: StringProperty(name="Name")
+def getBcfViewpoints(self, context):
+    global bcfviewpoints_enum
+    if bcfviewpoints_enum is None:
+        bcfviewpoints_enum = []
+        props = bpy.context.scene.BCFProperties
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        topic = props.topics[props.active_topic_index]
+        viewpoints = bcfxml.get_viewpoints(topic.name)
+        bcfviewpoints_enum.extend([(v, f"Viewpoint {i+1}", "") for i, v in enumerate(viewpoints.keys())])
+    return bcfviewpoints_enum
 
 
-class BcfTopicLabel(PropertyGroup):
-    name: StringProperty(name="Name")
-
-
-class BcfTopicLink(PropertyGroup):
-    name: StringProperty(name="Name")
-
-
-class BcfTopicFile(PropertyGroup):
-    name: StringProperty(name="Name")
+class BcfBimSnippet(PropertyGroup):
+    schema: StringProperty(name="Schema")
     reference: StringProperty(name="Reference")
-    date: StringProperty(name="Date")
+    type: StringProperty(name="Type")
     is_external: BoolProperty(name="Is External")
-    ifc_project: StringProperty(name="IFC Project")
-    ifc_spatial: StringProperty(name="IFC Spatial")
 
 
-class BcfTopicDocumentReference(PropertyGroup):
-    name: StringProperty(name="Reference")
+class BcfDocumentReference(PropertyGroup):
+    reference: StringProperty(name="Reference")
     description: StringProperty(name="Description")
     guid: StringProperty(name="GUID")
     is_external: BoolProperty(name="Is External")
 
 
-class BcfTopicRelatedTopic(PropertyGroup):
-    name: StringProperty(name="Name")
-    guid: StringProperty(name="GUID")
+class BcfComment(PropertyGroup):
+    name: StringProperty(name="GUID")
+    date: StringProperty(name="Date")
+    author: StringProperty(name="Author")
+    comment: StringProperty(name="Comment")
+    viewpoint: StringProperty(name="Viewpoint")
+    modified_date: StringProperty(name="Modified Date")
+    modified_author: StringProperty(name="Modified Author")
+
+
+class BcfTopic(PropertyGroup):
+    name: StringProperty(name="GUID")
+    title: StringProperty(default="", name="Title")
+    type: StringProperty(default="", name="Type")
+    status: StringProperty(default="", name="Status")
+    priority: StringProperty(default="", name="Priority")
+    stage: StringProperty(default="", name="Stage")
+    creation_date: StringProperty(default="", name="Date")
+    creation_author: StringProperty(default="", name="Author")
+    modified_date: StringProperty(default="", name="Modified Date")
+    modified_author: StringProperty(default="", name="Modified By")
+    assigned_to: StringProperty(default="", name="Assigned To")
+    due_date: StringProperty(default="", name="Due Date")
+    description: StringProperty(default="", name="Description")
+    viewpoints: EnumProperty(items=getBcfViewpoints, name="BCF Viewpoints")
+    files: CollectionProperty(name="Files", type=StrProperty)
+    reference_links: CollectionProperty(name="Reference Links", type=StrProperty)
+    labels: CollectionProperty(name="Labels", type=StrProperty)
+    bim_snippet: PointerProperty(type=BcfBimSnippet)
+    document_references: CollectionProperty(name="Document References", type=BcfDocumentReference)
+    related_topics: CollectionProperty(name="Related Topics", type=StrProperty)
+    comments: CollectionProperty(name="Comments", type=BcfComment)
 
 
 def refreshBcfTopic(self, context):
-    RefreshBcfTopic.refresh(context)
-
-
-class RefreshBcfTopic:
-    props: None
-    topic: None
-
-    @classmethod
-    def refresh(cls, context):
-
-        global bcfviewpoints_enum
-
-        cls.props = bpy.context.scene.BCFProperties
-        cls.topic = bcf.BcfStore.topics[cls.props.active_topic_index][1]
-
-        cls.load_topic_metadata()
-        cls.load_topic_labels()
-        cls.load_topic_files()
-        cls.load_topic_links()
-        cls.load_snippet()
-        cls.load_document_references()
-        cls.load_related_topics()
-        cls.load_viewpoints()
-        cls.load_comments()
-
-    @classmethod
-    def load_topic_metadata(cls):
-        cls.props.topic_guid = str(cls.topic.xmlId)
-        cls.props.topic_type = cls.topic.type
-        cls.props.topic_status = cls.topic.status
-        cls.props.topic_priority = cls.topic.priority
-        cls.props.topic_stage = cls.topic.stage
-        if cls.topic.date:
-            cls.props.topic_creation_date = cls.topic.date.strftime("%a %Y-%m-%d %H:%S")
-        else:
-            cls.props.topic_creation_date = ""
-        cls.props.topic_creation_author = cls.topic.author
-        if cls.topic.modDate:
-            cls.props.topic_modified_date = cls.topic.modDate.strftime("%a %Y-%m-%d %H:%S")
-        else:
-            cls.props.topic_modified_date = ""
-        cls.props.topic_modified_author = cls.topic.modAuthor
-        cls.props.topic_assigned_to = cls.topic.assignee
-        if cls.topic.dueDate:
-            cls.props.topic_due_date = cls.topic.dueDate.strftime("%a %Y-%m-%d %H:%S")
-        else:
-            cls.props.topic_due_date = ""
-        cls.props.topic_description = cls.topic.description
-
-    @classmethod
-    def load_topic_labels(cls):
-        while len(cls.props.topic_labels) > 0:
-            cls.props.topic_labels.remove(0)
-        for label in cls.topic.labels:
-            new = cls.props.topic_labels.add()
-            new.name = label.value
-
-    @classmethod
-    def load_topic_files(cls):
-        import bcfplugin
-
-        while len(cls.props.topic_files) > 0:
-            cls.props.topic_files.remove(0)
-        files = bcfplugin.getRelevantIfcFiles(cls.topic)
-        for f in files:
-            new = cls.props.topic_files.add()
-            new.name = f.filename
-            new.date = f.time.strftime("%a %Y-%m-%d %H:%S")
-            new.reference = f.reference.uri
-            new.ifc_project = f.ifcProjectId
-            new.ifc_spatial = f.ifcSpatialStructureElement
-            new.is_external = f.external
-
-    @classmethod
-    def load_topic_links(cls):
-        while len(cls.props.topic_links) > 0:
-            cls.props.topic_links.remove(0)
-        for link in cls.topic.referenceLinks:
-            new = cls.props.topic_links.add()
-            new.name = link.value
-
-    @classmethod
-    def load_snippet(cls):
-        cls.props.topic_has_snippet = bool(cls.topic.bimSnippet)
-        if cls.topic.bimSnippet:
-            cls.props.topic_snippet_reference = cls.topic.bimSnippet.reference.uri
-            if cls.topic.bimSnippet.schema.uri:
-                cls.props.topic_snippet_schema = cls.topic.bimSnippet.schema.uri
-            cls.props.topic_snippet_type = cls.topic.bimSnippet.type
-            if cls.topic.bimSnippet.external:
-                cls.props.topic_snippet_is_external = cls.topic.bimSnippet.external
-            else:
-                cls.props.topic_snippet_is_external = False
-
-    @classmethod
-    def load_document_references(cls):
-        while len(cls.props.topic_document_references) > 0:
-            cls.props.topic_document_references.remove(0)
-        for doc in cls.topic.docRefs:
-            new = cls.props.topic_document_references.add()
-            new.name = doc.reference.uri
-            new.description = doc.description
-            new.guid = str(doc.guid)
-            new.is_external = doc.external
-
-    @classmethod
-    def load_related_topics(cls):
-        import bcfplugin
-
-        while len(cls.props.topic_related_topics) > 0:
-            cls.props.topic_related_topics.remove(0)
-        for t in cls.topic.relatedTopics:
-            new = cls.props.topic_related_topics.add()
-            new.name = bcfplugin.getTopicFromUUID(t.value).title
-            new.guid = str(t.value)
-
-    @classmethod
-    def load_viewpoints(cls):
-        import bcfplugin
-
-        bcfviewpoints_enum.clear()
-        bcf.BcfStore.viewpoints = bcfplugin.getViewpoints(cls.topic, realViewpoint=False)
-        for i, viewpoint in enumerate(bcf.BcfStore.viewpoints):
-            bcfviewpoints_enum.append((str(i), "View {}".format(i + 1), ""))
-
-    @classmethod
-    def load_comments(cls):
-        import bcfplugin
-
-        bcf.BcfStore.comments = bcfplugin.getComments(cls.topic)
-        comments = bpy.data.texts.get("BCF Comments")
-        if comments:
-            comments.clear()
-        else:
-            comments = bpy.data.texts.new("BCF Comments")
-        for i, comment in enumerate(bcf.BcfStore.comments):
-            comments.write("# Comment {} - {}\n".format(i + 1, comment[1].xmlId))
-            comments.write("# From: {} on {}\n".format(comment[1].author, comment[1].date))
-            if comment[1].modDate:
-                comments.write("# Modified by {} on {}\n".format(comment[1].modAuthor, comment[1].modDate))
-            comments.write(comment[1].comment)
-            comments.write("\n\n-----\n\n")
-
-
-def getBcfViewpoints(self, context):
     global bcfviewpoints_enum
-    return bcfviewpoints_enum
+    bcfviewpoints_enum = None
+
+    props = bpy.context.scene.BCFProperties
+    bcfxml = bcfstore.BcfStore.get_bcfxml()
+    topic = props.topics[props.active_topic_index]
+    header = bcfxml.get_header(topic.name)
+    getBcfViewpoints(self, context)
 
 
 class PropertySetTemplate(PropertyGroup):
@@ -1599,32 +1487,13 @@ class BIMProperties(PropertyGroup):
 
 
 class BCFProperties(PropertyGroup):
-    bcf_file: StringProperty(default="", name="BCF File")
+    is_editable: BoolProperty(name="Is Editable", default=False)
+    is_loaded: BoolProperty(name="Is Loaded", default=False)
+    comment_text_width: IntProperty(name="Comment Text Width", default=40)
+    name: StringProperty(default="", name="Project Name")
+    author: StringProperty(default="john@doe.com", name="Author Email")
     topics: CollectionProperty(name="BCF Topics", type=BcfTopic)
     active_topic_index: IntProperty(name="Active BCF Topic Index", update=refreshBcfTopic)
-    viewpoints: EnumProperty(items=getBcfViewpoints, name="BCF Viewpoints")
-    topic_guid: StringProperty(default="", name="Topic GUID")
-    topic_type: StringProperty(default="", name="Topic Type")
-    topic_status: StringProperty(default="", name="Topic Status")
-    topic_priority: StringProperty(default="", name="Topic Priority")
-    topic_stage: StringProperty(default="", name="Topic Stage")
-    topic_creation_date: StringProperty(default="", name="Topic Date")
-    topic_creation_author: StringProperty(default="", name="Topic Author")
-    topic_modified_date: StringProperty(default="", name="Topic Modified Date")
-    topic_modified_author: StringProperty(default="", name="Topic Modified By")
-    topic_assigned_to: StringProperty(default="", name="Topic Assigned To")
-    topic_due_date: StringProperty(default="", name="Topic Due Date")
-    topic_description: StringProperty(default="", name="Topic Description")
-    topic_labels: CollectionProperty(name="BCF Topic Labels", type=BcfTopicLabel)
-    topic_files: CollectionProperty(name="BCF Topic Files", type=BcfTopicFile)
-    topic_links: CollectionProperty(name="BCF Topic Links", type=BcfTopicLink)
-    topic_has_snippet: BoolProperty(name="BCF Topic Has Snippet", default=False)
-    topic_snippet_reference: StringProperty(name="BIM Snippet Reference")
-    topic_snippet_schema: StringProperty(name="BIM Snippet Schema")
-    topic_snippet_type: StringProperty(name="BIM Snippet Type")
-    topic_snippet_is_external: BoolProperty(name="Is BIM Snippet External")
-    topic_document_references: CollectionProperty(name="BCF Topic Document References", type=BcfTopicDocumentReference)
-    topic_related_topics: CollectionProperty(name="BCF Topic Related Topics", type=BcfTopicRelatedTopic)
 
 
 class MapConversion(PropertyGroup):

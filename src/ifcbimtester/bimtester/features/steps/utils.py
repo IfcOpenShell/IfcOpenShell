@@ -78,3 +78,13 @@ def assert_pset(element, pset_name, prop_name=None, value=None):
     assert actual_value == value, 'We expected a value of "{}" but instead got "{}" for the element {}'.format(
         value, actual_value, element
     )
+
+
+def switch_locale(locale_dir, locale_id="en"):
+    from gettext import translation
+    newlang = translation(
+        "messages",
+        localedir=locale_dir,
+        languages=[locale_id]
+    )
+    newlang.install()

@@ -1,6 +1,8 @@
 """Viewport decorations"""
 import math
 from functools import reduce
+from itertools import chain
+
 from bpy.types import SpaceView3D
 from mathutils import Vector
 import bpy
@@ -70,6 +72,7 @@ class DimensionDecorator(ViewDecorator):
         // converting to and from square-space coordinates to calculate arrows
         mat4 clip2square = mat4(aspect, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
         mat4 square2clip = mat4(1/aspect, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+
         vec4 dir = normalize((p1 - p0) * clip2square) * length;
         vec4 head = dir * square2clip;
         vec4 arr_a = dir * rot_a * square2clip;
@@ -136,14 +139,23 @@ class DimensionDecorator(ViewDecorator):
         drawing = self.props.drawings[self.props.active_drawing_index]
         collection = bpy.data.collections.get("IfcGroup/" + drawing.name)
 
-        curves = [o for o in collection.objects if "IfcAnnotation/Dimension" in o.name]
-        segments = []
-        for curve in curves:
-            segments.extend(list(self.iter_segments(curve)))
+        segments = self.get_segments(self.get_curves(collection, "IfcAnnotation/Dimension"))
 
         self.draw_arrows(segments)
         for segm in segments:
-            self.draw_label(segm)
+            self.draw_label(segm, f"{segm[2]:.2f}")
+
+        segments = self.get_segments(self.get_curves(collection, "IfcAnnotation/Equal"))
+
+        self.draw_arrows(segments)
+        for segm in segments:
+            self.draw_label(segm, "EQ")
+
+    def get_curves(self, collection, basename):
+        return list(filter(lambda o: basename in o.name, collection.objects))
+
+    def get_segments(self, curves):
+        return list(chain.from_iterable(self.iter_segments(curve) for curve in curves))
 
     def iter_segments(self, curve):
         """Yields each segment converted to world coords
@@ -158,21 +170,23 @@ class DimensionDecorator(ViewDecorator):
                 length = (p1 - p0).length
                 yield (p0, p1, length)
 
-    def draw_label(self, segm):
+    def draw_label(self, segm, text):
         """Draw text of segment length
         aligned and centered at segment middle
         """
-        p0, p1, length = segm
+        p0, p1, _ = segm
 
         # convert to view coords
         region = self.context.region
         region3d = self.context.region_data
         p0 = location_3d_to_region_2d(region, region3d, p0)
         p1 = location_3d_to_region_2d(region, region3d, p1)
+        proj = p1 - p0
 
-        text = f"{length:.2f}"
+        if proj.length < 0.001:
+            return
 
-        ang = -Vector((1, 0)).angle_signed(p1 - p0)
+        ang = -Vector((1, 0)).angle_signed(proj)
         cos = math.cos(ang)
         sin = math.sin(ang)
 
@@ -208,12 +222,20 @@ class DimensionDecorator(ViewDecorator):
         batch = batch_for_shader(self.shader, 'LINES', {'pos': points})
         self.shader.bind()
 
-        matrix = self.context.region_data.perspective_matrix
+        region = self.context.region_data
+        matrix = region.perspective_matrix
         aspect = self.context.region.width / self.context.region.height
         self.shader.uniform_float("viewMatrix", matrix)
         # TODO: get everything from styles
         self.shader.uniform_float('aspect', aspect)
         self.shader.uniform_float('color', (1.0, 1.0, 1.0))
         self.shader.uniform_float('angle', math.pi / 12)
-        self.shader.uniform_float('length', 32 / self.context.region.height)
+
+        # brute-force perspective fix
+        # TODO: move the fix into shader + align heads to view plane
+        length = 32 / self.context.region.height
+        if region.is_perspective:
+            length *= 8
+
+        self.shader.uniform_float('length', length)
         batch.draw(self.shader)
