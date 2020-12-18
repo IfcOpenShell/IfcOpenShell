@@ -20,10 +20,15 @@ def step_impl(context):
 @given(u'a set of specific related elements taken from the file "{path_file}"')
 def step_impl(context, path_file):
     import csv
+    import os
     model = getattr(context, "model", None)
     if not model:
         context.model = TableModel()
-    with open(path_file, encoding="utf-8") as csvfile:
+    if context.config.userdata.get('path'):
+        path_file = os.path.join(context.config.userdata.get('path'), path_file)
+    if not os.path.exists(path_file):
+        assert False, "File {} not found".format(path_file)
+    with open(path_file, 'r', encoding="utf-8-sig") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             context.model.add_row(row["RelatedObjects"], row["RelatingGroup"])

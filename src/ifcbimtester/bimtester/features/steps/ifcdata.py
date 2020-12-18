@@ -1,4 +1,4 @@
-from behave import step
+from behave import step, given
 
 from utils import IfcFile
 
@@ -7,8 +7,7 @@ def step_impl(context, schema):
     try:
         IfcFile.load_schema(schema)
     except:
-        assert False
-
+        assert False, f"The schema {schema} could not be loaded"
 
 @step('The IFC file "{file}" must be provided')
 def step_impl(context, file):
@@ -17,6 +16,19 @@ def step_impl(context, file):
     except:
         assert False, f"The file {file} could not be loaded"
 
+@given('The IFC file has been provided through an argument')
+def step_impl(context):
+    try:
+        IfcFile.load(context.config.userdata.get("ifcfile"))
+    except:
+        assert False, f"The IFC {context.config.userdata.get('ifcfile')} file could not be loaded"
+
+@given('A file path has been provided through an argument')
+def step_impl(context):
+    try:
+        assert context.config.userdata.get("path")
+    except:
+        assert False, f"The path {context.config.userdata.get('path')} could not be loaded"
 
 @step("IFC data must use the {schema} schema")
 def step_impl(context, schema):
