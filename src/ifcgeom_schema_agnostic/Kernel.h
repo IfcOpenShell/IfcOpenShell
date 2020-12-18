@@ -90,6 +90,7 @@ namespace IfcGeom {
 		static bool is_manifold(const TopoDS_Shape& a);
 		static IfcUtil::IfcBaseEntity* get_decomposing_entity(IfcUtil::IfcBaseEntity*, bool include_openings=true);
 		static std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers(IfcUtil::IfcBaseEntity*);
+		static std::map<std::string, IfcUtil::IfcBaseEntity*> get_representationContexts(IfcUtil::IfcBaseEntity*);
 	};
 
 	namespace impl {

@@ -40,7 +40,7 @@
  *     orientation and translation of the mesh in relation to the world origin  *
  *                                                                              *
  * IfcGeom::Iterator::initialize()                                              *
- *   finds the most suitable representation contexts. Returns true iff          *
+ *   finds the most suitable representation contexts. Returns true if           *
  *   at least a single representation will process successfully                 *
  *                                                                              *
  * IfcGeom::Iterator::get()                                                     *
@@ -112,6 +112,15 @@ namespace IfcGeom {
 			if (implementation_) {
 				return implementation_->initialize();
 			} else {
+				return false;
+			}
+		}
+
+		bool initialize(std::set<std::string> allowed_context_ids) {
+			if (implementation_) {
+				return implementation_->initialize(allowed_context_ids);
+			}
+			else {
 				return false;
 			}
 		}

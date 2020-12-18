@@ -207,7 +207,25 @@ namespace {
 		}
 		return layers;
 	}
+
+	template <typename Schema>
+	static std::map<std::string, IfcUtil::IfcBaseEntity*> get_representationContext_impl(typename Schema::IfcProduct* prod) {
+		std::map<std::string, IfcUtil::IfcBaseEntity*> representationContexts;
+		if (prod->hasRepresentation()) {
+			IfcEntityList::ptr r = IfcParse::traverse(prod->Representation());
+			typename Schema::IfcRepresentation::list::ptr representations = r->as<typename Schema::IfcRepresentation>();
+			for (typename Schema::IfcRepresentation::list::it it = representations->begin(); it != representations->end(); ++it) {
+				typename Schema::IfcPresentationLayerAssignment::list::ptr a = (*it)->LayerAssignments();
+				for (typename Schema::IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
+					representationContexts[(*jt)->Name()] = *jt;
+				}
+			}
+		}
+		return representationContexts;
+	}
 }
+
+
 
 std::map<std::string, IfcUtil::IfcBaseEntity*> IfcGeom::Kernel::get_layers(IfcUtil::IfcBaseEntity* inst) {
 	if (inst->as<Ifc2x3::IfcProduct>()) {
@@ -221,6 +239,27 @@ std::map<std::string, IfcUtil::IfcBaseEntity*> IfcGeom::Kernel::get_layers(IfcUt
 	} else if (inst->as<Ifc4x3_rc1::IfcProduct>()) {
 		return get_layers_impl<Ifc4x3_rc1>(inst->as<Ifc4x3_rc1::IfcProduct>());
 	} else {
+		throw IfcParse::IfcException("Unexpected entity " + inst->declaration().name());
+	}
+}
+
+std::map<std::string, IfcUtil::IfcBaseEntity*> IfcGeom::Kernel::get_representationContexts(IfcUtil::IfcBaseEntity* inst) {
+	if (inst->as<Ifc2x3::IfcProduct>()) {
+		return get_layers_impl<Ifc2x3>(inst->as<Ifc2x3::IfcProduct>());
+	}
+	else if (inst->as<Ifc4::IfcProduct>()) {
+		return get_layers_impl<Ifc4>(inst->as<Ifc4::IfcProduct>());
+	}
+	else if (inst->as<Ifc4x1::IfcProduct>()) {
+		return get_layers_impl<Ifc4x1>(inst->as<Ifc4x1::IfcProduct>());
+	}
+	else if (inst->as<Ifc4x2::IfcProduct>()) {
+		return get_layers_impl<Ifc4x2>(inst->as<Ifc4x2::IfcProduct>());
+	}
+	else if (inst->as<Ifc4x3_rc1::IfcProduct>()) {
+		return get_layers_impl<Ifc4x3_rc1>(inst->as<Ifc4x3_rc1::IfcProduct>());
+	}
+	else {
 		throw IfcParse::IfcException("Unexpected entity " + inst->declaration().name());
 	}
 }
