@@ -30,7 +30,18 @@ class BcfXml:
         self.logger = logging.getLogger("bcfxml")
         self.author = "john@doe.com"
         self.project = bcf.data.Project()
+        self.version = "2.1"
         self.topics = {}
+
+    def new_project(self):
+        self.project.project_id = str(uuid.uuid4())
+        self.project.name = "New Project"
+        self.topics = {}
+        if self.filepath:
+            self.close_project()
+        self.filepath = tempfile.mkdtemp()
+        self.edit_project()
+        self.edit_version()
 
     def get_project(self, filepath=None):
         if not filepath:
@@ -62,7 +73,15 @@ class BcfXml:
 
     def get_version(self):
         data = self._read_xml("bcf.version", "version.xsd")
-        return data["@VersionId"]
+        self.version = data["@VersionId"]
+        return self.version
+
+    def edit_version(self):
+        self.document = minidom.Document()
+        root = self._create_element(self.document, "Version", {"VersionId": self.version})
+        version = self._create_element(root, "DetailedVersion", text=self.version)
+        with open(os.path.join(self.filepath, "bcf.version"), "wb") as f:
+            f.write(self.document.toprettyxml(encoding="utf-8"))
 
     def get_topics(self):
         self.topics = {}
@@ -117,14 +136,15 @@ class BcfXml:
             "priority": "Priority",
             "index": "Index",
             "labels": "Labels",
+            "reference_links": "ReferenceLink",
             "modified_date": "ModifiedDate",
             "modified_author": "ModifiedAuthor",
             "due_date": "DueDate",
             "assigned_to": "AssignedTo",
             "stage": "Stage",
             "description": "Description",
-            "topic_status": "TopicStatus",
-            "topic_type": "TopicType",
+            "topic_status": "@TopicStatus",
+            "topic_type": "@TopicType",
         }
         for key, value in optional_keys.items():
             if value in data["Topic"]:
@@ -173,6 +193,7 @@ class BcfXml:
             topic.title = "New Topic"
         os.mkdir(os.path.join(self.filepath, topic.guid))
         self.edit_topic(topic)
+        return topic
 
     def edit_topic(self, topic):
         if not topic.creation_date:

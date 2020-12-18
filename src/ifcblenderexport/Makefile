@@ -138,57 +138,22 @@ endif
 	cp -r dist/working/pyparsing-2.4.5/pyparsing.py dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
-	# Required by bcfplugin
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/82/c3/534ddba230bd4fbbd3b7a3d35f3341d014cca213f369a9940925e7e5f691/pytz-2019.3.tar.gz
-	cd dist/working && tar -xzvf pytz*
-	cp -r dist/working/pytz-2019.3/pytz dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by bcfplugin
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/be/ed/5bbc91f03fa4c839c4c7360375da77f9659af5f7086b7a7bdda65771c8e0/python-dateutil-2.8.1.tar.gz
-	cd dist/working && tar -xzvf python-dateutil*
-	cp -r dist/working/python-dateutil-2.8.1/dateutil dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by bcfplugin
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/21/9f/b251f7f8a76dec1d6651be194dfba8fb8d7781d10ab3987190de8391d08e/six-1.14.0.tar.gz
-	cd dist/working && tar -xzvf six*
-	cp -r dist/working/six-1.14.0/six.py dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by bcfplugin
+	# Required by bcf
 	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/bb/41/ad9ce53bb978b68af8ae415293cafc89b165b8ad55a593725299dca76729/xmlschema-1.1.1.tar.gz
 	cd dist/working && tar -xzvf xmlschema*
 	cp -r dist/working/xmlschema-1.1.1/xmlschema dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
-	# Required by bcfplugin
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/12/f9/f9960222d5274944b01391749e55e4dcdf28d8f0c108b64ac931ceff6fdb/elementpath-1.4.3.tar.gz
-	cd dist/working && tar -xzvf elementpath*
-	cp -r dist/working/elementpath-1.4.3/elementpath dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Provides bcfplugin functionality
-	mkdir dist/working
-	cd dist/working && wget https://github.com/podestplatz/bcf/archive/master.zip
-	cd dist/working && unzip master*
-	cp -r dist/working/bcf-master/bcfplugin dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by bcfplugin
-	mkdir dist/working
-	cd dist/working && wget https://raw.githubusercontent.com/buildingSMART/BCF-XML/release_2_1/Schemas/project.xsd
-	cd dist/working && wget https://raw.githubusercontent.com/buildingSMART/BCF-XML/release_2_1/Extension%20Schemas/extensions.xsd
-	cd dist/working && wget https://raw.githubusercontent.com/buildingSMART/BCF-XML/release_2_1/Schemas/markup.xsd
-	cd dist/working && wget https://raw.githubusercontent.com/buildingSMART/BCF-XML/release_2_1/Schemas/version.xsd
-	cd dist/working && wget https://raw.githubusercontent.com/buildingSMART/BCF-XML/release_2_1/Schemas/visinfo.xsd
-	mkdir dist/blenderbim/libs/site/packages/bcfplugin/schemas/
-	cp -r dist/working/*.xsd dist/blenderbim/libs/site/packages/bcfplugin/schemas/
+	# Provides bcf functionality
+	mkdir dist/blenderbim/libs/site/packages/bcf
+	mkdir dist/blenderbim/libs/site/packages/bcf/xsd
+	cd dist/blenderbim/libs/site/packages/bcf && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/bcf/bcf/bcfxml.py
+	cd dist/blenderbim/libs/site/packages/bcf && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/bcf/bcf/data.py
+	cd dist/blenderbim/libs/site/packages/bcf/xsd && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/bcf/bcf/xsd/markup.xsd
+	cd dist/blenderbim/libs/site/packages/bcf/xsd && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/bcf/bcf/xsd/project.xsd
+	cd dist/blenderbim/libs/site/packages/bcf/xsd && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/bcf/bcf/xsd/version.xsd
+	cd dist/blenderbim/libs/site/packages/bcf/xsd && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/bcf/bcf/xsd/visinfo.xsd
 	rm -rf dist/working
 
 	# Required by IFCCSV and ifcopenshell.util.selector
