@@ -14,7 +14,7 @@ def generate_report(adir=".", use_report_folder=True, report_file_name="", html_
     )
 
     if html_template_file_path:
-        html_template_file = os.path.join(html_template_file_path, "template.html")
+        report_template_path = html_template_file_path
 
     # get report file
     report_dir = adir
