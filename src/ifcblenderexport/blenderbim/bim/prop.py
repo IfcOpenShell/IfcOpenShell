@@ -540,6 +540,35 @@ def refreshFontSize(self, context):
     annotation.Annotator.resize_text(context.active_object)
 
 
+def updateBcfProjectName(self, context):
+    bpy.ops.bim.edit_bcf_project_name()
+
+
+def updateBcfAuthor(self, context):
+    bpy.ops.bim.edit_bcf_author()
+
+
+def updateBcfTopicName(self, context):
+    bpy.ops.bim.edit_bcf_topic_name()
+
+
+def updateBcfTopicIsEditable(self, context):
+    if not self.is_editable:
+        print("EDITING!")
+        bpy.ops.bim.edit_bcf_topic()
+
+
+def refreshBcfTopic(self, context):
+    global bcfviewpoints_enum
+    bcfviewpoints_enum = None
+
+    props = bpy.context.scene.BCFProperties
+    bcfxml = bcfstore.BcfStore.get_bcfxml()
+    topic = props.topics[props.active_topic_index]
+    header = bcfxml.get_header(topic.name)
+    getBcfViewpoints(self, context)
+
+
 class StrProperty(PropertyGroup):
     pass
 
@@ -948,7 +977,7 @@ class BcfComment(PropertyGroup):
 
 class BcfTopic(PropertyGroup):
     name: StringProperty(name="GUID")
-    title: StringProperty(default="", name="Title")
+    title: StringProperty(default="", name="Title", update=updateBcfTopicName)
     type: StringProperty(default="", name="Type")
     status: StringProperty(default="", name="Status")
     priority: StringProperty(default="", name="Priority")
@@ -968,17 +997,7 @@ class BcfTopic(PropertyGroup):
     document_references: CollectionProperty(name="Document References", type=BcfDocumentReference)
     related_topics: CollectionProperty(name="Related Topics", type=StrProperty)
     comments: CollectionProperty(name="Comments", type=BcfComment)
-
-
-def refreshBcfTopic(self, context):
-    global bcfviewpoints_enum
-    bcfviewpoints_enum = None
-
-    props = bpy.context.scene.BCFProperties
-    bcfxml = bcfstore.BcfStore.get_bcfxml()
-    topic = props.topics[props.active_topic_index]
-    header = bcfxml.get_header(topic.name)
-    getBcfViewpoints(self, context)
+    is_editable: BoolProperty(name="Is Editable", default=False, update=updateBcfTopicIsEditable)
 
 
 class PropertySetTemplate(PropertyGroup):
@@ -1487,11 +1506,10 @@ class BIMProperties(PropertyGroup):
 
 
 class BCFProperties(PropertyGroup):
-    is_editable: BoolProperty(name="Is Editable", default=False)
     is_loaded: BoolProperty(name="Is Loaded", default=False)
     comment_text_width: IntProperty(name="Comment Text Width", default=40)
-    name: StringProperty(default="", name="Project Name")
-    author: StringProperty(default="john@doe.com", name="Author Email")
+    name: StringProperty(default="", name="Project Name", update=updateBcfProjectName)
+    author: StringProperty(default="john@doe.com", name="Author Email", update=updateBcfAuthor)
     topics: CollectionProperty(name="BCF Topics", type=BcfTopic)
     active_topic_index: IntProperty(name="Active BCF Topic Index", update=refreshBcfTopic)
 
