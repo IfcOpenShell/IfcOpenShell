@@ -527,7 +527,6 @@ class LoadBcfProject(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         if self.filepath:
             bcfxml.get_project(self.filepath)
-        bpy.context.scene.BCFProperties.is_editable = False
         bpy.context.scene.BCFProperties.name = bcfxml.project.name
         bpy.ops.bim.load_bcf_topics()
         bpy.context.scene.BCFProperties.is_loaded = True
@@ -624,6 +623,64 @@ class LoadBcfComments(bpy.types.Operator):
             for key, value in data_map.items():
                 if value is not None:
                     setattr(new, key, str(value))
+        return {"FINISHED"}
+
+
+class EditBcfProjectName(bpy.types.Operator):
+    bl_idname = "bim.edit_bcf_project_name"
+    bl_label = "Edit BCF Project Name"
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        bcfxml.project.name = bpy.context.scene.BCFProperties.name
+        bcfxml.edit_project()
+        return {"FINISHED"}
+
+
+class EditBcfAuthor(bpy.types.Operator):
+    bl_idname = "bim.edit_bcf_author"
+    bl_label = "Edit BCF Author"
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        bcfxml.author = bpy.context.scene.BCFProperties.author
+        return {"FINISHED"}
+
+
+class EditBcfTopicName(bpy.types.Operator):
+    bl_idname = "bim.edit_bcf_topic_name"
+    bl_label = "Edit BCF Topic Name"
+
+    def execute(self, context):
+        props = bpy.context.scene.BCFProperties
+        blender_topic = props.topics[props.active_topic_index]
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        topic = bcfxml.topics[blender_topic.name]
+        topic.title = blender_topic.title
+        bcfxml.edit_topic(topic)
+        return {"FINISHED"}
+
+
+class EditBcfTopic(bpy.types.Operator):
+    bl_idname = "bim.edit_bcf_topic"
+    bl_label = "Edit BCF Topic"
+
+    def execute(self, context):
+        props = bpy.context.scene.BCFProperties
+        blender_topic = props.topics[props.active_topic_index]
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+
+        topic = bcfxml.topics[blender_topic.name]
+        topic.title = blender_topic.title or None
+        topic.priority = blender_topic.priority or None
+        topic.due_date = blender_topic.due_date or None
+        topic.assigned_to = blender_topic.assigned_to or None
+        topic.stage = blender_topic.stage or None
+        topic.description = blender_topic.description or None
+        topic.topic_status = blender_topic.status or None
+        topic.topic_type = blender_topic.type or None
+
+        bcfxml.edit_topic(topic)
         return {"FINISHED"}
 
 
