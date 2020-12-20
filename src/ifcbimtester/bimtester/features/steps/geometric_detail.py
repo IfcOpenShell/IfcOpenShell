@@ -1,6 +1,7 @@
 from behave import step
 
 from geometric_detail_methods import class_geometric_representation
+from geometric_detail_methods import check_geometric_representation
 from utils import assert_elements
 from utils import IfcFile
 from utils import switch_locale
@@ -38,3 +39,11 @@ def step_impl(context, number):
 def step_impl(context, ifc_class, representation_class):
     switch_locale(context.localedir, "en")
     class_geometric_representation(context, ifc_class, representation_class)
+
+
+@step("all {ifc_class} elements must have a geometric representation without errors")
+def step_impl(context, ifc_class):
+    switch_locale(context.localedir, "en")
+    check_geometric_representation(context, ifc_class)
+
+

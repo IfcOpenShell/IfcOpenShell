@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2020-12-17 15:14+0100\n"
-"PO-Revision-Date: 2020-12-18 06:11+0100\n"
+"POT-Creation-Date: 2020-12-18 15:40+0100\n"
+"PO-Revision-Date: 2020-12-18 15:42+0100\n"
 "Last-Translator: \n"
 "Language: de\n"
 "Language-Team: de <LL@li.org>\n"
@@ -19,6 +19,81 @@ msgstr ""
 "Generated-By: Babel 2.6.0\n"
 "X-Generator: Poedit 2.2.1\n"
 
+#: features/steps/geometric_detail_methods.py:74
+msgid "The geometry of all {elemcount} {ifc_class} elements have errors."
+msgstr ""
+"Die geometrischen Repräsentationen von allen {elemcount} {ifc_class} Bauteilen "
+"haben Fehler."
+
+#: features/steps/geometric_detail_methods.py:75
+msgid ""
+"The geometry of {falsecount} out of all {elemcount} {ifc_class} elements have "
+"errors: {falseelems}"
+msgstr ""
+"Die geometrischen Repräsentationen von {falsecount} von allen {elemcount} "
+"{ifc_class} Bauteilen haben Fehler: {falseelems}"
+
+#: features/steps/geometric_detail_methods.py:76
+#: features/steps/geometric_detail_methods.py:126
+msgid "There are no {ifc_class} elements in the IFC file."
+msgstr "Es sind keine {ifc_class} Bauteile in der IFC-Datei."
+
+#: features/steps/geometric_detail_methods.py:124
+msgid "All {elemcount} {ifc_class} elements are not a {parameter} representation."
+msgstr ""
+"Alle {elemcount} {ifc_class} Bauteile haben keine geometrische Repräsentation "
+"der Klasse {parameter}."
+
+#: features/steps/geometric_detail_methods.py:125
+msgid ""
+"The following {falsecount} of {elemcount} {ifc_class} elements are not a "
+"{parameter} representation: {falseelems}"
+msgstr ""
+"Die Anzahl Bauteile {falsecount} von allen {elemcount} {ifc_class} Bauteilen "
+"haben keine geometrische Repräsentation der Klasse {parameter}: {falseelems}"
+
 #: features/steps/ifcdata_methods.py:7
 msgid "We expected a schema of {} but instead got {}"
 msgstr "Wir haben das Schema {} erwartet, aber die Daten nutzen das Schema {}"
+
+#: features/steps/utils.py:139
+msgid "Error in falsecount, something went wrong."
+msgstr "Fehler in falsecount, es ist etwas falsch gelaufen."
+
+#~ msgid "The geometry of all {} {} elements have errors."
+#~ msgstr ""
+#~ "Die geometrischen Repräsentationen von allen {} {} Bauteilen haben Fehler."
+
+#~ msgid "The geometry of {} out of all {} {} elements have errors: {}"
+#~ msgstr ""
+#~ "Die geometrischen Repräsentationen von {} von allen {} {} Bauteilen haben "
+#~ "Fehler: {}"
+
+#~ msgid "There are no {} elements in the IFC file."
+#~ msgstr "Es sind keine {} Bauteile in der IFC-Datei."
+
+#~ msgid "All {} {} elements are not a IfcFacetedBrep representation."
+#~ msgstr ""
+#~ "Alle {} {} Bauteile haben keine geometrische Repräsentation der Klasse "
+#~ "IfcFacetedBrep."
+
+#~ msgid ""
+#~ "The following {} of {} {} elements are not a IfcFacetedBrep representation: "
+#~ "{}"
+#~ msgstr ""
+#~ "Die Anzahl Bauteile {} von allen {} {} Bauteilen haben keine geometrische "
+#~ "Repräsentation der Klasse IfcFacetedBrep: {}"
+
+#~ msgid ""
+#~ "All {elemcount} {ifc_class} elements are not a IfcFacetedBrep representation."
+#~ msgstr ""
+#~ "Alle {elemcount} {ifc_class} Bauteile haben keine geometrische "
+#~ "Repräsentation der Klasse IfcFacetedBrep."
+
+#~ msgid ""
+#~ "The following {falsecount} of {elemcount} {ifc_class} elements are not a "
+#~ "IfcFacetedBrep representation: {falseelems}"
+#~ msgstr ""
+#~ "Die Anzahl Bauteile {falsecount} von allen {elemcount} {ifc_class} Bauteilen "
+#~ "haben keine geometrische Repräsentation der Klasse IfcFacetedBrep: "
+#~ "{falseelems}"

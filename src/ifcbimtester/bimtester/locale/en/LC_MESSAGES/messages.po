@@ -7,18 +7,76 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2020-12-17 15:14+0100\n"
-"PO-Revision-Date: 2020-12-18 06:12+0100\n"
+"POT-Creation-Date: 2020-12-18 15:40+0100\n"
+"PO-Revision-Date: 2020-12-18 11:41+0100\n"
 "Last-Translator: \n"
 "Language: en\n"
 "Language-Team: en <LL@li.org>\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Plural-Forms: nplurals=2; plural=(n != 1)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.6.0\n"
-"X-Generator: Poedit 2.2.1\n"
+
+#: features/steps/geometric_detail_methods.py:74
+msgid "The geometry of all {elemcount} {ifc_class} elements have errors."
+msgstr ""
+
+#: features/steps/geometric_detail_methods.py:75
+msgid ""
+"The geometry of {falsecount} out of all {elemcount} {ifc_class} elements "
+"have errors: {falseelems}"
+msgstr ""
+
+#: features/steps/geometric_detail_methods.py:76
+#: features/steps/geometric_detail_methods.py:126
+msgid "There are no {ifc_class} elements in the IFC file."
+msgstr ""
+
+#: features/steps/geometric_detail_methods.py:124
+msgid "All {elemcount} {ifc_class} elements are not a {parameter} representation."
+msgstr ""
+
+#: features/steps/geometric_detail_methods.py:125
+msgid ""
+"The following {falsecount} of {elemcount} {ifc_class} elements are not a "
+"{parameter} representation: {falseelems}"
+msgstr ""
 
 #: features/steps/ifcdata_methods.py:7
 msgid "We expected a schema of {} but instead got {}"
-msgstr "We expected a schema of {} but instead got {}"
+msgstr ""
+
+#: features/steps/utils.py:139
+msgid "Error in falsecount, something went wrong."
+msgstr ""
+
+#~ msgid "The geometry of all {} {} elements have errors."
+#~ msgstr ""
+
+#~ msgid "The geometry of {} out of all {} {} elements have errors: {}"
+#~ msgstr ""
+
+#~ msgid "There are no {} elements in the IFC file."
+#~ msgstr ""
+
+#~ msgid "All {} {} elements are not a IfcFacetedBrep representation."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "The following {} of {} {} elements"
+#~ " are not a IfcFacetedBrep representation:"
+#~ " {}"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "All {elemcount} {ifc_class} elements are "
+#~ "not a IfcFacetedBrep representation."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "The following {falsecount} of {elemcount} "
+#~ "{ifc_class} elements are not a "
+#~ "IfcFacetedBrep representation: {falseelems}"
+#~ msgstr ""
+
