@@ -38,7 +38,7 @@ class MaterialCreator:
     def __init__(self, ifc_import_settings, ifc_importer):
         self.mesh = None
         self.materials = {}
-        self.parsed_meshes = []
+        self.parsed_meshes = set()
         self.ifc_import_settings = ifc_import_settings
         self.ifc_importer = ifc_importer
 
@@ -54,7 +54,7 @@ class MaterialCreator:
             return
         if self.mesh.name in self.parsed_meshes:
             return
-        self.parsed_meshes.append(self.mesh.name)
+        self.parsed_meshes.add(self.mesh.name)
         if self.parse_representations(element):
             self.assign_material_slots_to_faces(obj)
 
@@ -465,10 +465,10 @@ class IfcImporter:
         ):
             self.merge_materials_by_colour()
             self.profile_code("Merging by colour")
-        self.add_project_to_scene()
-        self.profile_code("Add project to scene")
         self.create_presentation_layers()
         self.profile_code("Create presentation layers")
+        self.add_project_to_scene()
+        self.profile_code("Add project to scene")
         if self.ifc_import_settings.should_clean_mesh and len(self.file.by_type("IfcElement")) < 10000:
             self.clean_mesh()
             self.profile_code("Mesh cleaning")
@@ -1333,19 +1333,15 @@ class IfcImporter:
             for item in assignment.AssignedItems:
                 # TODO: This is a simplified implementation of assigning presentation layers that ignores assigned
                 # representation items, does not consider mapped representations, and assumes a Body context. See #1109.
-                guids = []
                 if not hasattr(item, "OfProductRepresentation") or item.RepresentationIdentifier != "Body":
                     continue
                 for product_representation in item.OfProductRepresentation:
                     for product in product_representation.ShapeOfProduct:
-                        guids.append(product.GlobalId)
-                for obj in bpy.context.selectable_objects:
-                    global_id = obj.BIMObjectProperties.attributes.get("GlobalId")
-                    if global_id and global_id.string_value in guids:
-                        if not obj.data or not hasattr(obj.data, "BIMMeshProperties"):
-                            continue
-                        obj.data.BIMMeshProperties.presentation_layer_index = layer_index
-                        obj.hide_set(not layer.layer_on)
+                        try:
+                            obj = self.added_data[product.GlobalId]
+                            obj.data.BIMMeshProperties.presentation_layer_index = layer_index
+                        except:
+                            pass # Occurs for example in opening elements or exclusions
 
     def clean_mesh(self):
         obj = None
