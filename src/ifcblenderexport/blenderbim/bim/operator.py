@@ -2265,7 +2265,6 @@ class CreateAggregate(bpy.types.Operator):
                 project.collection.children.link(aggregates)
             for aggregate_collection in [c for c in project.children if "Aggregates" in c.name]:
                 aggregate_collection.collection.children.link(aggregate)
-                aggregate_collection.children[aggregate.name].hide_viewport = True
                 break
             break
         for obj in bpy.context.selected_objects:
@@ -2296,9 +2295,7 @@ class EditAggregate(bpy.types.Operator):
         bpy.context.view_layer.objects[obj.name].hide_viewport = True
         for project in [c for c in bpy.context.view_layer.layer_collection.children if "IfcProject" in c.name]:
             for aggregate_collection in [c for c in project.children if "Aggregates" in c.name]:
-                for aggregate in [c for c in aggregate_collection.children if c.name == obj.instance_collection.name]:
-                    aggregate.hide_viewport = False
-                    break
+                aggregate_collection.hide_viewport = False
         return {"FINISHED"}
 
 
@@ -2312,8 +2309,8 @@ class SaveAggregate(bpy.types.Operator):
         names = [c.name for c in obj.users_collection]
         for project in [c for c in bpy.context.view_layer.layer_collection.children if "IfcProject" in c.name]:
             for aggregate_collection in [c for c in project.children if "Aggregates" in c.name]:
+                aggregate_collection.hide_viewport = True
                 for collection in [c for c in aggregate_collection.children if c.name in names]:
-                    collection.hide_viewport = True
                     aggregate = collection.collection
                     break
         if not aggregate:
