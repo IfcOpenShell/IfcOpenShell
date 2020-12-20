@@ -2542,6 +2542,9 @@ class BIM_PT_debug(Panel):
         props = scene.BIMDebugProperties
 
         row = layout.row()
+        row.operator("bim.profile_import_ifc")
+
+        row = layout.row()
         row.prop(props, "step_id", text="")
         row = layout.row()
         row.operator("bim.create_shape_from_step_id")

@@ -49,6 +49,7 @@ if bpy is not None:
         operator.ValidateIfcFile,
         operator.ExportIFC,
         operator.ImportIFC,
+        operator.ProfileImportIFC,
         operator.ColourByClass,
         operator.ColourByAttribute,
         operator.ColourByPset,

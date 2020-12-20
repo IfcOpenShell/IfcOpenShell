@@ -138,6 +138,19 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         return {"FINISHED"}
 
 
+class ProfileImportIFC(bpy.types.Operator):
+    bl_idname = "bim.profile_import_ifc"
+    bl_label = "Profile Import IFC"
+
+    def execute(self, context):
+        import cProfile
+        import pstats
+        cProfile.run(f"import bpy; bpy.ops.import_ifc.bim(filepath='{bpy.context.scene.BIMProperties.ifc_file}')", "blender.prof")
+        p = pstats.Stats("blender.prof")
+        p.sort_stats("cumulative").print_stats(50)
+        return {"FINISHED"}
+
+
 class SelectGlobalId(bpy.types.Operator):
     bl_idname = "bim.select_global_id"
     bl_label = "Select GlobalId"
