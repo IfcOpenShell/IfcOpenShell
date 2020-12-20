@@ -85,8 +85,11 @@ class MaterialCreator:
         item_id = self.mesh.BIMMeshProperties.ifc_item_ids.add()
         item_id.name = str(item.id())
 
-        styled_item = item.StyledByItem[0]
-        style_name = self.get_style_name(styled_item)
+        styled_item = item.StyledByItem[0] # Cardinality is S[0:1]
+        style_name = self.get_surface_style_name(styled_item)
+
+        if not style_name:
+            return
 
         if self.mesh.materials.get(style_name):
             item_id.slot_index = self.mesh.materials.find(style_name)
@@ -266,7 +269,7 @@ class MaterialCreator:
                     continue
                 self.parse_styled_item(item, obj)
 
-    def get_style_name(self, styled_item):
+    def get_surface_style_name(self, styled_item):
         if styled_item.Name:
             return styled_item.Name
         styles = self.get_styled_item_styles(styled_item)
@@ -276,7 +279,7 @@ class MaterialCreator:
             if style.Name:
                 return style.Name
             return str(style.id())
-        return str(styled_item.id())
+        return None # We only support surface styles right now
 
     def parse_styled_item(self, styled_item, material):
         styles = self.get_styled_item_styles(styled_item)
@@ -1098,7 +1101,7 @@ class IfcImporter:
         if not item.StyledByItem:
             return
         styled_item = item.StyledByItem[0]
-        return self.material_creator.get_style_name(styled_item)
+        return self.material_creator.get_surface_style_name(styled_item)
 
     def transform_curve(self, curve, matrix):
         for spline in curve.splines:
