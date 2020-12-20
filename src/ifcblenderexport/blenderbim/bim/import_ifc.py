@@ -1308,18 +1308,10 @@ class IfcImporter:
         except:
             # Occurs when reloading a project
             pass
-        for collection in (
-            bpy.context.view_layer.layer_collection.children[self.project["blender"].name]
-            .children[self.aggregate_collection.name]
-            .children
-        ):
-            collection.hide_viewport = True
-        bpy.context.view_layer.layer_collection.children[self.project["blender"].name].children[
-            self.opening_collection.name
-        ].hide_viewport = True
-        bpy.context.view_layer.layer_collection.children[self.project["blender"].name].children[
-            self.type_collection.name
-        ].hide_viewport = True
+        project_collection = bpy.context.view_layer.layer_collection.children[self.project["blender"].name]
+        project_collection.children[self.aggregate_collection.name].hide_viewport = True
+        project_collection.children[self.opening_collection.name].hide_viewport = True
+        project_collection.children[self.type_collection.name].hide_viewport = True
 
     def create_presentation_layers(self):
         for assignment in self.file.by_type("IfcPresentationLayerAssignment"):
