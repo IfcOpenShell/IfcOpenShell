@@ -14,10 +14,6 @@ from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertForma
 from gpu_extras.batch import batch_for_shader
 
 
-class Shaders:
-    pass
-
-
 class BaseDecorator():
     # base name of objects to decorate
     basename = "IfcAnnotation/Something"
@@ -192,8 +188,7 @@ class BaseDecorator():
         self.shader.bind()
         self.shader.uniform_float
         self.shader.uniform_float("viewMatrix", region3d.perspective_matrix)
-        self.shader.uniform_float("windowW", region.width)
-        self.shader.uniform_float("windowH", region.height)
+        self.shader.uniform_float("winsize", (region.width, region.height))
         batch.draw(self.shader)
 
     def draw_lines_styled(self, obj, geom):
@@ -217,8 +212,7 @@ class BaseDecorator():
         self.shader.bind()
         self.shader.uniform_float
         self.shader.uniform_float("viewMatrix", region3d.perspective_matrix)
-        self.shader.uniform_float("windowW", region.width)
-        self.shader.uniform_float("windowH", region.height)
+        self.shader.uniform_float("winsize", (region.width, region.height))
         batch.draw(self.shader)
 
 
@@ -230,27 +224,26 @@ class DimensionDecorator(BaseDecorator):
     basename = "IfcAnnotation/Dimension"
     installed = None
     GEOM_GLSL = """
+    uniform vec2 winsize;
+
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;
-
-    uniform float windowW;
-    uniform float windowH;
 
     void main() {
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
 
-        // converting NDC to/from window coords
-        float hw = windowW/2, hh= windowH/2;
-        mat4 windowMatrix = mat4(hw, 0, 0, 0,   0, hh, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
+        mat4 windowMatrix = mat4(winsize.x/2, 0, 0, 0,   0, winsize.y/2, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
         mat4 unwindowMatrix = inverse(windowMatrix);
+
         vec2 p0w = (windowMatrix * (p0 / p0.w)).xy, p1w = (windowMatrix * (p1 / p1.w)).xy;
 
         vec2 head[3];
         vec4 head_ndc[3];
         arrow_head(p0w, p1w, head);
         for(int i=0; i<3; i++) head_ndc[i] = unwindowMatrix * vec4(head[i], 0, 0) * p1.w;
-        vec4 nose = head_ndc[0];
+        vec4 gap = head_ndc[0];
 
+        // start edge arrow
         gl_Position = p0;
         EmitVertex();
         gl_Position = p0 + head_ndc[1];
@@ -261,6 +254,7 @@ class DimensionDecorator(BaseDecorator):
         EmitVertex();
         EndPrimitive();
 
+        // end edge arrow
         gl_Position = p1;
         EmitVertex();
         gl_Position = p1 - head_ndc[1];
@@ -271,9 +265,10 @@ class DimensionDecorator(BaseDecorator):
         EmitVertex();
         EndPrimitive();
 
-        gl_Position = p0 + nose;
+        // stem, adjusted for arrows
+        gl_Position = p0 + gap;
         EmitVertex();
-        gl_Position = p1 - nose;
+        gl_Position = p1 - gap;
         EmitVertex();
         EndPrimitive();
     }
@@ -367,30 +362,29 @@ class LeaderDecorator(BaseDecorator):
     installed = None
 
     GEOM_GLSL = """
+    uniform vec2 winsize;
+
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;
     in uint vstyle[];
-
-    uniform float windowW;
-    uniform float windowH;
 
     void main() {
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
         uint s0 = vstyle[0], s1 = vstyle[1];
 
-        // converting NDC to/from window coords
-        float hw = windowW/2, hh= windowH/2;
-        mat4 windowMatrix = mat4(hw, 0, 0, 0,   0, hh, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
+        mat4 windowMatrix = mat4(winsize.x/2, 0, 0, 0,   0, winsize.y/2, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
         mat4 unwindowMatrix = inverse(windowMatrix);
+
         vec2 p0w = (windowMatrix * (p0 / p0.w)).xy, p1w = (windowMatrix * (p1 / p1.w)).xy;
 
-        vec4 nose1 = vec4(0);
+        vec4 gap1 = vec4(0);
 
         vec2 head[3];
         vec4 head_ndc[3];
         arrow_head(p0w, p1w, head);
         for(int i=0; i<3; i++) head_ndc[i] = unwindowMatrix * vec4(head[i], 0, 0) * p1.w;
 
+        // end edge arrow for last segment
         if (s1 == 2u) {
             gl_Position = p1;
             EmitVertex();
@@ -402,13 +396,14 @@ class LeaderDecorator(BaseDecorator):
             EmitVertex();
             EndPrimitive();
 
-            vec2 nose = normalize(p1w - p0w) * ARROW_SIZE;
-            nose1 = unwindowMatrix * vec4(nose, 0, 0) * p1.w;
+            vec2 gap = normalize(p1w - p0w) * ARROW_SIZE;
+            gap1 = unwindowMatrix * vec4(gap, 0, 0) * p1.w;
         }
 
+        // stem, adjusted for and arrow
         gl_Position = p0;
         EmitVertex();
-        gl_Position = p1 - nose1;
+        gl_Position = p1 - gap1;
         EmitVertex();
         EndPrimitive();
     }
@@ -429,25 +424,24 @@ class StairDecorator(BaseDecorator):
     installed = None
 
     GEOM_GLSL = """
+    uniform vec2 winsize;
+
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;
     in uint vstyle[];
-
-    uniform float windowW;
-    uniform float windowH;
 
     void main() {
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
         uint s0 = vstyle[0], s1 = vstyle[1];
 
-        // converting NDC to/from window coords
-        float hw = windowW/2, hh= windowH/2;
-        mat4 windowMatrix = mat4(hw, 0, 0, 0,   0, hh, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
+        mat4 windowMatrix = mat4(winsize.x/2, 0, 0, 0,   0, winsize.y/2, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
         mat4 unwindowMatrix = inverse(windowMatrix);
+
         vec2 p0w = (windowMatrix * (p0 / p0.w)).xy, p1w = (windowMatrix * (p1 / p1.w)).xy;
 
-        vec4 nose0 = vec4(0), nose1 = vec4(0);
+        vec4 gap0 = vec4(0), gap1 = vec4(0);
 
+        // start edge circle for first segment
         if (s0 == 1u) {
             vec2 head[CIRCLE_SEGS];
             circle_head(p0w, p1w, head);
@@ -459,10 +453,11 @@ class StairDecorator(BaseDecorator):
             EmitVertex();
             EndPrimitive();
 
-            vec2 nose = normalize(p1w - p0w) * CIRCLE_SIZE;
-            nose0 = unwindowMatrix * vec4(nose, 0, 0) * p0.w;
+            vec2 gap = normalize(p1w - p0w) * CIRCLE_SIZE;
+            gap0 = unwindowMatrix * vec4(gap, 0, 0) * p0.w;
         }
 
+        // end edge arrow for last segment
         if (s1 == 2u) {
             vec2 head[3];
             vec4 head_ndc[3];
@@ -479,13 +474,14 @@ class StairDecorator(BaseDecorator):
             EmitVertex();
             EndPrimitive();
 
-            vec2 nose = normalize(p1w - p0w) * ARROW_SIZE;
-            nose1 = unwindowMatrix * vec4(nose, 0, 0) * p1.w;
+            vec2 gap = normalize(p1w - p0w) * ARROW_SIZE;
+            gap1 = unwindowMatrix * vec4(gap, 0, 0) * p1.w;
         }
 
-        gl_Position = p0 + nose0;
+        // stem, adjusted for edge decoration
+        gl_Position = p0 + gap0;
         EmitVertex();
-        gl_Position = p1 - nose1;
+        gl_Position = p1 - gap1;
         EmitVertex();
         EndPrimitive();
     }
@@ -506,7 +502,7 @@ class HiddenDecorator(BaseDecorator):
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;
 
-    out float dist;
+    out float dist; // distance from starging point along segment
 
     void main() {
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
@@ -517,6 +513,8 @@ class HiddenDecorator(BaseDecorator):
         vec2 segm = p1w - p0w;
         vec2 gap = normalize(segm) * DASH_GAP;
         vec4 gap_ndc = unwindowMatrix * vec4(gap, 0, 0);
+
+        // NB: something should be used to affect position, otherwise compiler eliminates winsize
 
         dist = 0;
         gl_Position = p0 + gap_ndc * p0.w;
@@ -547,25 +545,3 @@ class HiddenDecorator(BaseDecorator):
     def decorate(self, obj):
         geom = self.get_mesh_geom(obj)
         self.draw_lines(obj, geom)
-
-    def draw_lines(self, obj, geom):
-        region = self.context.region
-        region3d = self.context.region_data
-
-        vertices, indices, styles = geom
-
-        fmt = GPUVertFormat()
-        fmt.attr_add(id="pos", comp_type='F32', len=3, fetch_mode='FLOAT')
-
-        vbo = GPUVertBuf(len=len(vertices), format=fmt)
-        vbo.attr_fill(id="pos", data=vertices)
-
-        ibo = GPUIndexBuf(type='LINES', seq=indices)
-
-        batch = GPUBatch(type='LINES', buf=vbo, elem=ibo)
-
-        self.shader.bind()
-        self.shader.uniform_float
-        self.shader.uniform_float("viewMatrix", region3d.perspective_matrix)
-        self.shader.uniform_float("winsize", (region.width, region.height))
-        batch.draw(self.shader)
