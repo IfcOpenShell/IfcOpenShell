@@ -4,7 +4,7 @@ from functools import reduce
 from itertools import chain
 
 from bpy.types import SpaceView3D
-from mathutils import Vector
+from mathutils import Vector, Matrix
 import bpy
 import blf
 from bpy_extras.view3d_utils import location_3d_to_region_2d
@@ -51,6 +51,8 @@ class DimensionDecorator(ViewDecorator):
     layout(lines) in;
     layout(line_strip, max_vertices=10) out;
 
+    uniform float windowW;
+    uniform float windowH;
     uniform float angle;
     uniform float length;
     uniform float aspect;
@@ -58,37 +60,38 @@ class DimensionDecorator(ViewDecorator):
     void main() {
         /** generates arrows from lines */
 
+        // converting NDC to/from window coords
+        float hw = windowW/2, hh= windowH/2;
+        mat4 windowMatrix = mat4(hw, 0, 0, 0,   0, hh, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
+        mat4 unwindowMatrix = inverse(windowMatrix);
+
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+
+        vec4 p0w = windowMatrix * (p0 / p0.w), p1w = windowMatrix * (p1 / p1.w);
+
+        // arrow head of specified length in direction of a segment
+        // rotating the head left/right to form triangle
+        vec4 head = normalize(p1w - p0w) * length;
         float c = cos(angle), s = sin(angle);
-        mat4 rot_a = mat4( c, -s, 0, 0,
-                          +s,  c, 0, 0,
-                           0,  0, 1, 0,
-                           0,  0, 0, 1);
-        mat4 rot_b = mat4( c, +s, 0, 0,
-                          -s,  c, 0, 0,
-                           0,  0, 1, 0,
-                           0,  0, 0, 1);
+        vec4 head_a = mat4( c, -s, 0, 0,  +s, c, 0, 0,  0, 0, 1, 0,  0, 0, 0, 1) * head;
+        vec4 head_b = mat4( c, +s, 0, 0,  -s, c, 0, 0,  0, 0, 1, 0,  0, 0, 0, 1) * head;
 
-        // converting to and from square-space coordinates to calculate arrows
-        mat4 clip2square = mat4(aspect, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
-        mat4 square2clip = mat4(1/aspect, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+        // projecting back to NDC
+        vec4 head_ndc = unwindowMatrix * head;
+        vec4 head_a_ndc = unwindowMatrix * head_a;
+        vec4 head_b_ndc = unwindowMatrix * head_b;
 
-        vec4 dir = normalize((p1 - p0) * clip2square) * length;
-        vec4 head = dir * square2clip;
-        vec4 arr_a = dir * rot_a * square2clip;
-        vec4 arr_b = dir * rot_b * square2clip;
-
-        gl_Position = p0 + head;
+        gl_Position = p0 + head_ndc * p0.w;
         EmitVertex();
-        gl_Position = p1 - head;
+        gl_Position = p1 - head_ndc * p1.w;
         EmitVertex();
         EndPrimitive();
 
         gl_Position = p0;
         EmitVertex();
-        gl_Position = p0 + arr_a;
+        gl_Position = p0 + head_a_ndc * p0.w;
         EmitVertex();
-        gl_Position = p0 + arr_b;
+        gl_Position = p0 + head_b_ndc * p0.w;
         EmitVertex();
         gl_Position = p0;
         EmitVertex();
@@ -96,20 +99,13 @@ class DimensionDecorator(ViewDecorator):
 
         gl_Position = p1;
         EmitVertex();
-        gl_Position = p1 - arr_b;
+        gl_Position = p1 - head_b_ndc * p1.w;
         EmitVertex();
-        gl_Position = p1 - arr_a;
+        gl_Position = p1 - head_a_ndc * p1.w;
         EmitVertex();
         gl_Position = p1;
         EmitVertex();
         EndPrimitive();
-/*
-        gl_Position = vec4(0, 0, 0, 1) * square2clip;
-        EmitVertex();
-        gl_Position = vec4(0.25, 0.25, 0, 1) * square2clip;
-        EmitVertex();
-        EndPrimitive();
-*/
     }
     """
     FRAG_GLSL = """
@@ -145,11 +141,11 @@ class DimensionDecorator(ViewDecorator):
         for segm in segments:
             self.draw_label(segm, f"{segm[2]:.2f}")
 
-        segments = self.get_segments(self.get_curves(collection, "IfcAnnotation/Equal"))
+        # segments = self.get_segments(self.get_curves(collection, "IfcAnnotation/Equal"))
 
-        self.draw_arrows(segments)
-        for segm in segments:
-            self.draw_label(segm, "EQ")
+        # self.draw_arrows(segments)
+        # for segm in segments:
+        #     self.draw_label(segm, "EQ")
 
     def get_curves(self, collection, basename):
         return list(filter(lambda o: basename in o.name, collection.objects))
@@ -222,20 +218,15 @@ class DimensionDecorator(ViewDecorator):
         batch = batch_for_shader(self.shader, 'LINES', {'pos': points})
         self.shader.bind()
 
-        region = self.context.region_data
-        matrix = region.perspective_matrix
-        aspect = self.context.region.width / self.context.region.height
-        self.shader.uniform_float("viewMatrix", matrix)
+        region = self.context.region
+        region3d = self.context.region_data
+
+        self.shader.uniform_float("viewMatrix", region3d.perspective_matrix)
+        self.shader.uniform_float("windowW", region.width)
+        self.shader.uniform_float("windowH", region.height)
+
         # TODO: get everything from styles
-        self.shader.uniform_float('aspect', aspect)
         self.shader.uniform_float('color', (1.0, 1.0, 1.0))
         self.shader.uniform_float('angle', math.pi / 12)
-
-        # brute-force perspective fix
-        # TODO: move the fix into shader + align heads to view plane
-        length = 32 / self.context.region.height
-        if region.is_perspective:
-            length *= 8
-
-        self.shader.uniform_float('length', length)
+        self.shader.uniform_float('length', 16)
         batch.draw(self.shader)
