@@ -138,6 +138,19 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         return {"FINISHED"}
 
 
+class ProfileImportIFC(bpy.types.Operator):
+    bl_idname = "bim.profile_import_ifc"
+    bl_label = "Profile Import IFC"
+
+    def execute(self, context):
+        import cProfile
+        import pstats
+        cProfile.run(f"import bpy; bpy.ops.import_ifc.bim(filepath='{bpy.context.scene.BIMProperties.ifc_file}')", "blender.prof")
+        p = pstats.Stats("blender.prof")
+        p.sort_stats("cumulative").print_stats(50)
+        return {"FINISHED"}
+
+
 class SelectGlobalId(bpy.types.Operator):
     bl_idname = "bim.select_global_id"
     bl_label = "Select GlobalId"
@@ -527,7 +540,6 @@ class LoadBcfProject(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         if self.filepath:
             bcfxml.get_project(self.filepath)
-        bpy.context.scene.BCFProperties.is_editable = False
         bpy.context.scene.BCFProperties.name = bcfxml.project.name
         bpy.ops.bim.load_bcf_topics()
         bpy.context.scene.BCFProperties.is_loaded = True
@@ -550,8 +562,8 @@ class LoadBcfTopics(bpy.types.Operator):
         for topic in bcfxml.topics.values():
             new = bpy.context.scene.BCFProperties.topics.add()
             data_map = {
-                "name": topic.title,
-                "guid": topic.guid,
+                "name": topic.guid,
+                "title": topic.title,
                 "type": topic.topic_type,
                 "status": topic.topic_status,
                 "priority": topic.priority,
@@ -597,6 +609,91 @@ class LoadBcfTopics(bpy.types.Operator):
             for related_topic in topic.related_topics:
                 new2 = new.related_topics.add()
                 new2.name = related_topic.guid
+            bpy.ops.bim.load_bcf_comments(topic_guid = topic.guid)
+        return {"FINISHED"}
+
+
+class LoadBcfComments(bpy.types.Operator):
+    bl_idname = "bim.load_bcf_comments"
+    bl_label = "Load BCF Comments"
+    topic_guid: bpy.props.StringProperty()
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        bcfxml.get_comments(self.topic_guid)
+        blender_topic = bpy.context.scene.BCFProperties.topics.get(self.topic_guid)
+        for comment in bcfxml.topics[self.topic_guid].comments.values():
+            new = blender_topic.comments.add()
+            data_map = {
+                "name": comment.guid,
+                "comment": comment.comment,
+                "viewpoint": comment.viewpoint.guid if comment.viewpoint else None,
+                "date": comment.date,
+                "author": comment.author,
+                "modified_date": comment.modified_date,
+                "modified_author": comment.modified_author,
+            }
+            for key, value in data_map.items():
+                if value is not None:
+                    setattr(new, key, str(value))
+        return {"FINISHED"}
+
+
+class EditBcfProjectName(bpy.types.Operator):
+    bl_idname = "bim.edit_bcf_project_name"
+    bl_label = "Edit BCF Project Name"
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        bcfxml.project.name = bpy.context.scene.BCFProperties.name
+        bcfxml.edit_project()
+        return {"FINISHED"}
+
+
+class EditBcfAuthor(bpy.types.Operator):
+    bl_idname = "bim.edit_bcf_author"
+    bl_label = "Edit BCF Author"
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        bcfxml.author = bpy.context.scene.BCFProperties.author
+        return {"FINISHED"}
+
+
+class EditBcfTopicName(bpy.types.Operator):
+    bl_idname = "bim.edit_bcf_topic_name"
+    bl_label = "Edit BCF Topic Name"
+
+    def execute(self, context):
+        props = bpy.context.scene.BCFProperties
+        blender_topic = props.topics[props.active_topic_index]
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        topic = bcfxml.topics[blender_topic.name]
+        topic.title = blender_topic.title
+        bcfxml.edit_topic(topic)
+        return {"FINISHED"}
+
+
+class EditBcfTopic(bpy.types.Operator):
+    bl_idname = "bim.edit_bcf_topic"
+    bl_label = "Edit BCF Topic"
+
+    def execute(self, context):
+        props = bpy.context.scene.BCFProperties
+        blender_topic = props.topics[props.active_topic_index]
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+
+        topic = bcfxml.topics[blender_topic.name]
+        topic.title = blender_topic.title or None
+        topic.priority = blender_topic.priority or None
+        topic.due_date = blender_topic.due_date or None
+        topic.assigned_to = blender_topic.assigned_to or None
+        topic.stage = blender_topic.stage or None
+        topic.description = blender_topic.description or None
+        topic.topic_status = blender_topic.status or None
+        topic.topic_type = blender_topic.type or None
+
+        bcfxml.edit_topic(topic)
         return {"FINISHED"}
 
 
@@ -2168,7 +2265,6 @@ class CreateAggregate(bpy.types.Operator):
                 project.collection.children.link(aggregates)
             for aggregate_collection in [c for c in project.children if "Aggregates" in c.name]:
                 aggregate_collection.collection.children.link(aggregate)
-                aggregate_collection.children[aggregate.name].hide_viewport = True
                 break
             break
         for obj in bpy.context.selected_objects:
@@ -2199,9 +2295,7 @@ class EditAggregate(bpy.types.Operator):
         bpy.context.view_layer.objects[obj.name].hide_viewport = True
         for project in [c for c in bpy.context.view_layer.layer_collection.children if "IfcProject" in c.name]:
             for aggregate_collection in [c for c in project.children if "Aggregates" in c.name]:
-                for aggregate in [c for c in aggregate_collection.children if c.name == obj.instance_collection.name]:
-                    aggregate.hide_viewport = False
-                    break
+                aggregate_collection.hide_viewport = False
         return {"FINISHED"}
 
 
@@ -2215,8 +2309,8 @@ class SaveAggregate(bpy.types.Operator):
         names = [c.name for c in obj.users_collection]
         for project in [c for c in bpy.context.view_layer.layer_collection.children if "IfcProject" in c.name]:
             for aggregate_collection in [c for c in project.children if "Aggregates" in c.name]:
+                aggregate_collection.hide_viewport = True
                 for collection in [c for c in aggregate_collection.children if c.name in names]:
-                    collection.hide_viewport = True
                     aggregate = collection.collection
                     break
         if not aggregate:
