@@ -66,19 +66,19 @@ class BaseDecorator():
     }
 
     void circle_head(in vec2 p0, in vec2 p1, out vec2 head[CIRCLE_SEGS]) {
-        vec2 nose = normalize(p1 - p0) * CIRCLE_SIZE ;
-        float angle = PI / (CIRCLE_SEGS / 2);
+        float angle_d = PI * 2 / CIRCLE_SEGS;
         for(int i = 0; i<CIRCLE_SEGS; i++) {
-            float c = cos(angle * i), s = sin(angle * i);
-            head[i] = mat2(c, -s, +s, c) * nose;
+            float angle = angle_d * i;
+            head[i] = vec2(cos(angle), sin(angle)) * CIRCLE_SIZE;
         }
     }
     """
 
     DEF_GLSL = """
         #define PI 3.141592653589793
-        #define CIRCLE_SEGS 36
-        #define SEGMENT_POINTS 42
+        #define CIRCLE_SEGS 24
+        // max points = SEGS (circle) + 2 (stem) + 3 (arrow)
+        #define MAX_POINTS 29
         #define ARROW_ANGLE PI / 12.0
         #define ARROW_SIZE 16.0
         #define CIRCLE_SIZE 8.0
@@ -130,13 +130,7 @@ class BaseDecorator():
         collection = bpy.data.collections.get("IfcGroup/" + drawing.name)
         return filter(lambda o: self.basename in o.name, collection.objects)
 
-    def decorate(self, object):
-        """perform actuall drawing stuff"""
-        raise NotImplementedError()
-
-
-class PathDecorator():
-    def get_geom(self, obj):
+    def get_path_geom(self, obj):
         """parse path geometry into line segments
         returns:
         - vertices: 3-tuples of coords
@@ -161,15 +155,124 @@ class PathDecorator():
 
         return vertices, indices, styles
 
+    def get_mesh_geom(self, obj):
+        """parse mesh geometry into line segments
+        returns:
+        - vertices: 3-tuples of coords
+        - indices: 2-tuples of each segment verices' indices
+        - styles: 0=internal, 1=beginning, 2=ending
+        """
+        pass
 
-class DimensionDecorator(PathDecorator, BaseDecorator):
+    def decorate(self, object):
+        """perform actuall drawing stuff"""
+        raise NotImplementedError()
+
+    def draw_lines(self, obj, geom):
+        region = self.context.region
+        region3d = self.context.region_data
+
+        vertices, indices, styles = geom
+
+        fmt = GPUVertFormat()
+        fmt.attr_add(id="pos", comp_type='F32', len=3, fetch_mode='FLOAT')
+
+        vbo = GPUVertBuf(len=len(vertices), format=fmt)
+        vbo.attr_fill(id="pos", data=vertices)
+
+        ibo = GPUIndexBuf(type='LINES', seq=indices)
+
+        batch = GPUBatch(type='LINES', buf=vbo, elem=ibo)
+
+        self.shader.bind()
+        self.shader.uniform_float
+        self.shader.uniform_float("viewMatrix", region3d.perspective_matrix)
+        self.shader.uniform_float("windowW", region.width)
+        self.shader.uniform_float("windowH", region.height)
+        batch.draw(self.shader)
+
+    def draw_lines_styled(self, obj, geom):
+        region = self.context.region
+        region3d = self.context.region_data
+
+        vertices, indices, styles = geom
+
+        fmt = GPUVertFormat()
+        fmt.attr_add(id="pos", comp_type='F32', len=3, fetch_mode='FLOAT')
+        fmt.attr_add(id="style", comp_type='U8', len=1, fetch_mode='INT')
+
+        vbo = GPUVertBuf(len=len(vertices), format=fmt)
+        vbo.attr_fill(id="pos", data=vertices)
+        vbo.attr_fill(id="style", data=styles)
+
+        ibo = GPUIndexBuf(type='LINES', seq=indices)
+
+        batch = GPUBatch(type='LINES', buf=vbo, elem=ibo)
+
+        self.shader.bind()
+        self.shader.uniform_float
+        self.shader.uniform_float("viewMatrix", region3d.perspective_matrix)
+        self.shader.uniform_float("windowW", region.width)
+        self.shader.uniform_float("windowH", region.height)
+        batch.draw(self.shader)
+
+
+class DimensionDecorator(BaseDecorator):
     """Decorator for dimension objects
-    - outlines each segment
-    - augments with arrows on both sides
+    - each edge of a segment with arrow
     - puts metric text next to each segment
     """
     basename = "IfcAnnotation/Dimension"
     installed = None
+    GEOM_GLSL = """
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+
+    uniform float windowW;
+    uniform float windowH;
+
+    void main() {
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+
+        // converting NDC to/from window coords
+        float hw = windowW/2, hh= windowH/2;
+        mat4 windowMatrix = mat4(hw, 0, 0, 0,   0, hh, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
+        mat4 unwindowMatrix = inverse(windowMatrix);
+        vec2 p0w = (windowMatrix * (p0 / p0.w)).xy, p1w = (windowMatrix * (p1 / p1.w)).xy;
+
+        vec2 head[3];
+        vec4 head_ndc[3];
+        arrow_head(p0w, p1w, head);
+        for(int i=0; i<3; i++) head_ndc[i] = unwindowMatrix * vec4(head[i], 0, 0) * p1.w;
+        vec4 nose = head_ndc[0];
+
+        gl_Position = p0;
+        EmitVertex();
+        gl_Position = p0 + head_ndc[1];
+        EmitVertex();
+        gl_Position = p0 + head_ndc[2];
+        EmitVertex();
+        gl_Position = p0;
+        EmitVertex();
+        EndPrimitive();
+
+        gl_Position = p1;
+        EmitVertex();
+        gl_Position = p1 - head_ndc[1];
+        EmitVertex();
+        gl_Position = p1 - head_ndc[2];
+        EmitVertex();
+        gl_Position = p1;
+        EmitVertex();
+        EndPrimitive();
+
+        gl_Position = p0 + nose;
+        EmitVertex();
+        gl_Position = p1 - nose;
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
 
     def __init__(self, props, context):
         super().__init__(props, context)
@@ -177,7 +280,8 @@ class DimensionDecorator(PathDecorator, BaseDecorator):
         self.dpi = context.preferences.system.dpi
 
     def decorate(self, obj):
-        geom = self.get_geom(obj)
+        geom = self.get_path_geom(obj)
+        self.draw_lines(obj, geom)
         self.draw_labels(obj, geom)
 
     def draw_labels(self, obj, geom):
@@ -250,26 +354,20 @@ class EqualityDecorator(DimensionDecorator):
 
 
 class LeaderDecorator(BaseDecorator):
+    """Decorating stairs
+    - head point with arrow
+    - middle points w/out decorations
+    """
     basename = "IfcAnnotation/Leader"
-    installed = None
-
-    def decorate(self, obj):
-        pass
-
-
-class StairDecorator(PathDecorator, BaseDecorator):
-    basename = "IfcAnnotation/Stair"
     installed = None
 
     GEOM_GLSL = """
     layout(lines) in;
-    layout(line_strip, max_vertices=SEGMENT_POINTS) out;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
     in uint vstyle[];
 
     uniform float windowW;
     uniform float windowH;
-    uniform float arrow_length;
-    uniform float arrow_angle;
 
     void main() {
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
@@ -281,11 +379,69 @@ class StairDecorator(PathDecorator, BaseDecorator):
         mat4 unwindowMatrix = inverse(windowMatrix);
         vec2 p0w = (windowMatrix * (p0 / p0.w)).xy, p1w = (windowMatrix * (p1 / p1.w)).xy;
 
+        vec4 nose1 = vec4(0);
+
+        vec2 head[3];
+        vec4 head_ndc[3];
+        arrow_head(p0w, p1w, head);
+        for(int i=0; i<3; i++) head_ndc[i] = unwindowMatrix * vec4(head[i], 0, 0) * p1.w;
+
+        if (s1 == 2u) {
+            gl_Position = p1;
+            EmitVertex();
+            gl_Position = p1 - head_ndc[1];
+            EmitVertex();
+            gl_Position = p1 - head_ndc[2];
+            EmitVertex();
+            gl_Position = p1;
+            EmitVertex();
+            EndPrimitive();
+
+            vec2 nose = normalize(p1w - p0w) * ARROW_SIZE;
+            nose1 = unwindowMatrix * vec4(nose, 0, 0) * p1.w;
+        }
+
         gl_Position = p0;
         EmitVertex();
-        gl_Position = p1;
+        gl_Position = p1 - nose1;
         EmitVertex();
         EndPrimitive();
+    }
+    """
+
+    def decorate(self, obj):
+        geom = self.get_path_geom(obj)
+        self.draw_lines_styled(obj, geom)
+
+
+class StairDecorator(BaseDecorator):
+    """Decorating stairs
+    - head point with arrow
+    - tail point with circle
+    - middle points w/out decorations
+    """
+    basename = "IfcAnnotation/Stair"
+    installed = None
+
+    GEOM_GLSL = """
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+    in uint vstyle[];
+
+    uniform float windowW;
+    uniform float windowH;
+
+    void main() {
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+        uint s0 = vstyle[0], s1 = vstyle[1];
+
+        // converting NDC to/from window coords
+        float hw = windowW/2, hh= windowH/2;
+        mat4 windowMatrix = mat4(hw, 0, 0, 0,   0, hh, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
+        mat4 unwindowMatrix = inverse(windowMatrix);
+        vec2 p0w = (windowMatrix * (p0 / p0.w)).xy, p1w = (windowMatrix * (p1 / p1.w)).xy;
+
+        vec4 nose0 = vec4(0), nose1 = vec4(0);
 
         if (s0 == 1u) {
             vec2 head[CIRCLE_SEGS];
@@ -297,6 +453,9 @@ class StairDecorator(PathDecorator, BaseDecorator):
             gl_Position = p0 + unwindowMatrix * vec4(head[0], 0, 0) * p0.w;
             EmitVertex();
             EndPrimitive();
+
+            vec2 nose = normalize(p1w - p0w) * CIRCLE_SIZE;
+            nose0 = unwindowMatrix * vec4(nose, 0, 0) * p0.w;
         }
 
         if (s1 == 2u) {
@@ -314,38 +473,22 @@ class StairDecorator(PathDecorator, BaseDecorator):
             gl_Position = p1;
             EmitVertex();
             EndPrimitive();
+
+            vec2 nose = normalize(p1w - p0w) * ARROW_SIZE;
+            nose1 = unwindowMatrix * vec4(nose, 0, 0) * p1.w;
         }
+
+        gl_Position = p0 + nose0;
+        EmitVertex();
+        gl_Position = p1 - nose1;
+        EmitVertex();
+        EndPrimitive();
     }
     """
 
     def decorate(self, obj):
-        geom = self.get_geom(obj)
-        self.draw_lines(obj, geom)
-
-    def draw_lines(self, obj, geom):
-        region = self.context.region
-        region3d = self.context.region_data
-
-        vertices, indices, styles = geom
-
-        fmt = GPUVertFormat()
-        fmt.attr_add(id="pos", comp_type='F32', len=3, fetch_mode='FLOAT')
-        fmt.attr_add(id="style", comp_type='U8', len=1, fetch_mode='INT')
-
-        vbo = GPUVertBuf(len=len(vertices), format=fmt)
-        vbo.attr_fill(id="pos", data=vertices)
-        vbo.attr_fill(id="style", data=styles)
-
-        ibo = GPUIndexBuf(type='LINES', seq=indices)
-
-        batch = GPUBatch(type='LINES', buf=vbo, elem=ibo)
-
-        self.shader.bind()
-        self.shader.uniform_float
-        self.shader.uniform_float("viewMatrix", region3d.perspective_matrix)
-        self.shader.uniform_float("windowW", region.width)
-        self.shader.uniform_float("windowH", region.height)
-        batch.draw(self.shader)
+        geom = self.get_path_geom(obj)
+        self.draw_lines_styled(obj, geom)
 
 
 class HiddenDecorator(BaseDecorator):
@@ -353,4 +496,5 @@ class HiddenDecorator(BaseDecorator):
     installed = None
 
     def decorate(self, obj):
-        pass
+        geom = self.get_mesh_geom(obj)
+        self.draw_lines(obj, geom)
