@@ -67,3 +67,9 @@ def get_subcontext(identifier, type, target_view):
     assert False, "The subcontext with identifier {}, type {}, and target view {} could not be found".format(
         identifier, type, target_view
     )
+
+
+@step('the project has a {attribute_name} attribute with a value of "{attribute_value}"')
+def step_impl(context, attribute_name, attribute_value):
+    project = IfcFile.get().by_type("IfcProject")[0]
+    assert getattr(project, attribute_name) == attribute_value

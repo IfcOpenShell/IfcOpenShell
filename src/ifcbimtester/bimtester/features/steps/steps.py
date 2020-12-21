@@ -109,12 +109,6 @@ def step_impl(context, ifc_class, qto_name, quantity_name):
 use_step_matcher("parse")
 
 
-@step('the project has a {attribute_name} attribute with a value of "{attribute_value}"')
-def step_impl(context, attribute_name, attribute_value):
-    project = IfcFile.get().by_type("IfcProject")[0]
-    assert getattr(project, attribute_name) == attribute_value
-
-
 @step('there is an {ifc_class} element with a {attribute_name} attribute with a value of "{attribute_value}"')
 def step_impl(context, ifc_class, attribute_name, attribute_value):
     elements = IfcFile.get().by_type(ifc_class)
