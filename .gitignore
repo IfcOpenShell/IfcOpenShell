@@ -12,3 +12,5 @@ __pycache__
 .vscode
 # PyCharm files
 .idea
+# gettext binary translation files
+*.mo
