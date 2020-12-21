@@ -1,11 +1,13 @@
 from behave import step
 
+from attributes_eleclasses_methods import no_element_class_ele
 from utils import IfcFile
 
 
 @step("there are no {ifc_class} elements because {reason}")
 def step_impl(context, ifc_class, reason):
-    assert len(IfcFile.get().by_type(ifc_class)) == 0
+    switch_locale(context.localedir, "en")
+    no_element_class_ele(context, ifc_class, reason)
 
 
 @step('all {ifc_class} elements have a name matching the pattern "{pattern}"')
