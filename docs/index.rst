@@ -1,3 +1,6 @@
+IfcOpenShell
+============
+
 .. toctree::
    :maxdepth: 3
 
