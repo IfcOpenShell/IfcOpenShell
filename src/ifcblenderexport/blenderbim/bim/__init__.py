@@ -238,6 +238,7 @@ if bpy is not None:
         operator.ExecuteBlenderClash,
         operator.CleanWireframes,
         operator.LinkIfc,
+        operator.SnapSpacesTogether,
         prop.StrProperty,
         prop.Attribute,
         prop.MaterialLayer,

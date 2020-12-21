@@ -5010,3 +5010,49 @@ class LinkIfc(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
+
+
+class SnapSpacesTogether(bpy.types.Operator):
+    bl_idname = "bim.snap_spaces_together"
+    bl_label = "Snap Spaces Together"
+
+    def execute(self, context):
+        threshold = 0.5
+        processed_polygons = set()
+        for obj in bpy.context.selected_objects:
+            if obj.type != "MESH":
+                continue
+            for polygon in obj.data.polygons:
+                center = obj.matrix_world @ polygon.center
+                distance = None
+                for obj2 in bpy.context.selected_objects:
+                    if obj2 == obj or obj.type != "MESH":
+                        continue
+                    result = obj2.ray_cast(
+                        obj2.matrix_world.inverted() @ center,
+                        polygon.normal,
+                        distance=threshold
+                    )
+                    if not result[0]:
+                        continue
+                    hit = obj2.matrix_world @ result[1]
+                    distance = (hit - center).length / 2
+                    if distance < 0.01:
+                        distance = None
+                        break
+
+                    if (obj2.name, result[3]) in processed_polygons:
+                        distance *= 2
+                        continue
+
+                    offset = polygon.normal * distance * -1
+                    processed_polygons.add((obj2.name, result[3]))
+                    for v in obj2.data.polygons[result[3]].vertices:
+                        obj2.data.vertices[v].co += offset
+                    break
+                if distance:
+                    offset = polygon.normal * distance
+                    processed_polygons.add((obj.name, polygon.index))
+                    for v in polygon.vertices:
+                        obj.data.vertices[v].co += offset
+        return {"FINISHED"}
