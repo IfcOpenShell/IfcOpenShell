@@ -1,3 +1,4 @@
+import gettext
 import ifcopenshell
 import ifcopenshell.express
 import ifcopenshell.util
@@ -99,9 +100,66 @@ def assert_pset(element, pset_name, prop_name=None, value=None):
     )
 
 
+def assert_elements(
+    ifc_class,
+    elemcount,
+    falsecount,
+    falseelems,
+    message_all_falseelems,
+    message_some_falseelems,
+    message_no_elems,
+    parameter=None
+):
+    if elemcount > 0 and falsecount == 0:
+        return  # Test OK
+    elif elemcount == 0:
+        assert False, (
+            message_no_elems.format(
+                ifc_class=ifc_class
+            )
+        )
+    elif falsecount == elemcount:
+        if parameter is None:
+            assert False, (
+                message_all_falseelems.format(
+                    elemcount=elemcount,
+                    ifc_class=ifc_class
+                )
+            )
+        else:
+            assert False, (
+                message_all_falseelems.format(
+                    elemcount=elemcount,
+                    ifc_class=ifc_class,
+                    parameter=parameter
+                )
+            )
+    elif falsecount > 0 and falsecount < elemcount:
+        if parameter is None:
+            assert False, (
+                message_some_falseelems.format(
+                    falsecount=falsecount,
+                    elemcount=elemcount,
+                    ifc_class=ifc_class,
+                    falseelems=falseelems,
+                )
+            )
+        else:
+            assert False, (
+                message_some_falseelems.format(
+                    falsecount=falsecount,
+                    elemcount=elemcount,
+                    ifc_class=ifc_class,
+                    falseelems=falseelems,
+                    parameter=parameter
+                )
+            )
+    else:
+        assert False, _("Error in falsecount, something went wrong.")
+
+
 def switch_locale(locale_dir, locale_id="en"):
-    from gettext import translation
-    newlang = translation(
+    newlang = gettext.translation(
         "messages",
         localedir=locale_dir,
         languages=[locale_id]
