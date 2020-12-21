@@ -2525,6 +2525,8 @@ class BIM_PT_misc_utilities(Panel):
         row.operator("bim.set_override_colour")
         row = layout.row(align=True)
         row.operator("bim.set_viewport_shadow_from_sun")
+        row = layout.row(align=True)
+        row.operator("bim.snap_spaces_together")
 
 
 class BIM_PT_debug(Panel):
