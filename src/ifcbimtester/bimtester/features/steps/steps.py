@@ -18,6 +18,34 @@ def step_impl(context, ifc_class, pattern):
             assert False
 
 
+@step("all {ifc_class} elements have a {qto_name}.{quantity_name} quantity")
+def step_impl(context, ifc_class, qto_name, quantity_name):
+    elements = IfcFile.get().by_type(ifc_class)
+    for element in elements:
+        is_successful = False
+        if not element.IsDefinedBy:
+            assert False
+        for relationship in element.IsDefinedBy:
+            if relationship.RelatingPropertyDefinition.Name == qto_name:
+                for quantity in relationship.RelatingPropertyDefinition.Quantities:
+                    if quantity.Name == quantity_name:
+                        is_successful = True
+        if not is_successful:
+            assert False
+
+
+@step('there is an {ifc_class} element with a {attribute_name} attribute with a value of "{attribute_value}"')
+def step_impl(context, ifc_class, attribute_name, attribute_value):
+    elements = IfcFile.get().by_type(ifc_class)
+    for element in elements:
+        if hasattr(element, attribute_name) and getattr(element, attribute_name) == attribute_value:
+            return
+    assert False
+
+
+# ------------------------------------------------------------------------
+# STEPS with Regular Expression Matcher ("re")
+# ------------------------------------------------------------------------
 use_step_matcher("re")
 
 
@@ -85,34 +113,3 @@ def step_impl(context, ifc_class, attributes, list_file):
             attribute_values.append(getattr(element, attribute))
         if attribute_values not in values:
             assert False, f"Failed at element {element.GlobalId}"
-
-
-use_step_matcher("parse")
-
-
-@step("all {ifc_class} elements have a {qto_name}.{quantity_name} quantity")
-def step_impl(context, ifc_class, qto_name, quantity_name):
-    elements = IfcFile.get().by_type(ifc_class)
-    for element in elements:
-        is_successful = False
-        if not element.IsDefinedBy:
-            assert False
-        for relationship in element.IsDefinedBy:
-            if relationship.RelatingPropertyDefinition.Name == qto_name:
-                for quantity in relationship.RelatingPropertyDefinition.Quantities:
-                    if quantity.Name == quantity_name:
-                        is_successful = True
-        if not is_successful:
-            assert False
-
-
-use_step_matcher("parse")
-
-
-@step('there is an {ifc_class} element with a {attribute_name} attribute with a value of "{attribute_value}"')
-def step_impl(context, ifc_class, attribute_name, attribute_value):
-    elements = IfcFile.get().by_type(ifc_class)
-    for element in elements:
-        if hasattr(element, attribute_name) and getattr(element, attribute_name) == attribute_value:
-            return
-    assert False
