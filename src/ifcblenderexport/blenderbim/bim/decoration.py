@@ -82,6 +82,9 @@ class BaseDecorator():
         #define ARROW_ANGLE PI / 12.0
         #define ARROW_SIZE 16.0
         #define CIRCLE_SIZE 8.0
+        #define DASH_SIZE 16.0
+        #define DASH_RATIO 0.5
+        #define DASH_GAP 4.0
     """
 
     # class var for single handler
@@ -162,7 +165,9 @@ class BaseDecorator():
         - indices: 2-tuples of each segment verices' indices
         - styles: 0=internal, 1=beginning, 2=ending
         """
-        pass
+        vertices = [obj.matrix_world @ v.co for v in obj.data.vertices]
+        indices = [e.vertices for e in obj.data.edges]
+        return vertices, indices, None
 
     def decorate(self, object):
         """perform actuall drawing stuff"""
@@ -495,6 +500,72 @@ class HiddenDecorator(BaseDecorator):
     basename = "IfcAnnotation/Hidden"
     installed = None
 
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+
+    out float dist;
+
+    void main() {
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+
+        mat4 windowMatrix = mat4(winsize.x/2, 0, 0, 0,   0, winsize.y/2, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
+        mat4 unwindowMatrix = inverse(windowMatrix);
+        vec2 p0w = (windowMatrix * (p0 / p0.w)).xy, p1w = (windowMatrix * (p1 / p1.w)).xy;
+        vec2 segm = p1w - p0w;
+        vec2 gap = normalize(segm) * DASH_GAP;
+        vec4 gap_ndc = unwindowMatrix * vec4(gap, 0, 0);
+
+        dist = 0;
+        gl_Position = p0 + gap_ndc * p0.w;
+        EmitVertex();
+        dist = length(segm);
+        gl_Position = p1 - gap_ndc * p1.w;
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    FRAG_GLSL = """
+    in vec2 gl_FragCoord;
+    in float dist;
+    out vec4 fragColor;
+
+    void main() {
+        float t = fract(dist / DASH_SIZE);
+        // fragColor = vec4(1.0, 1.0, 1.0, 1.0) * t;
+        if (t > DASH_RATIO) {
+            discard;
+        } else {
+            fragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        }
+    }
+    """
+
     def decorate(self, obj):
         geom = self.get_mesh_geom(obj)
         self.draw_lines(obj, geom)
+
+    def draw_lines(self, obj, geom):
+        region = self.context.region
+        region3d = self.context.region_data
+
+        vertices, indices, styles = geom
+
+        fmt = GPUVertFormat()
+        fmt.attr_add(id="pos", comp_type='F32', len=3, fetch_mode='FLOAT')
+
+        vbo = GPUVertBuf(len=len(vertices), format=fmt)
+        vbo.attr_fill(id="pos", data=vertices)
+
+        ibo = GPUIndexBuf(type='LINES', seq=indices)
+
+        batch = GPUBatch(type='LINES', buf=vbo, elem=ibo)
+
+        self.shader.bind()
+        self.shader.uniform_float
+        self.shader.uniform_float("viewMatrix", region3d.perspective_matrix)
+        self.shader.uniform_float("winsize", (region.width, region.height))
+        batch.draw(self.shader)
