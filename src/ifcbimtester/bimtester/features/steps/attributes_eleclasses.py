@@ -1,5 +1,6 @@
 from behave import step
 
+from attributes_eleclasses_methods import all_element_attribs_have_a_value
 from attributes_eleclasses_methods import no_element_class_ele
 from utils import IfcFile
 
@@ -8,6 +9,12 @@ from utils import IfcFile
 def step_impl(context, ifc_class, reason):
     switch_locale(context.localedir, "en")
     no_element_class_ele(context, ifc_class, reason)
+
+
+@step('all {ifc_class} elements class attributes have a value')
+def step_impl(context, ifc_class):
+    switch_locale(context.localedir, "en")
+    all_element_attribs_have_a_value(context, ifc_class)
 
 
 @step('all {ifc_class} elements have a name matching the pattern "{pattern}"')
