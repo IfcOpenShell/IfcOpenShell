@@ -122,10 +122,3 @@ def step_impl(context, ifc_class, attribute_name, attribute_value):
         if hasattr(element, attribute_name) and getattr(element, attribute_name) == attribute_value:
             return
     assert False
-
-
-@step("all buildings have an address")
-def step_impl(context):
-    for building in IfcFile.get().by_type("IfcBuilding"):
-        if not building.BuildingAddress:
-            assert False, f'The building "{building.Name}" has no address.'
