@@ -18,35 +18,6 @@ def step_impl(context, ifc_class, pattern):
             assert False
 
 
-@step("all {ifc_class} elements have an {representation_class} representation")
-def step_impl(context, ifc_class, representation_class):
-    def is_item_a_representation(item, representation):
-        if "/" in representation:
-            for cls in representation.split("/"):
-                if item.is_a(cls):
-                    return True
-        elif item.is_a(representation):
-            return True
-
-    elements = IfcFile.get().by_type(ifc_class)
-    for element in elements:
-        if not element.Representation:
-            continue
-        has_representation = False
-        for representation in element.Representation.Representations:
-            for item in representation.Items:
-                if item.is_a("IfcMappedItem"):
-                    # We only check one more level deep.
-                    for item2 in item.MappingSource.MappedRepresentation.Items:
-                        if is_item_a_representation(item2, representation_class):
-                            has_representation = True
-                else:
-                    if is_item_a_representation(item, representation_class):
-                        has_representation = True
-        if not has_representation:
-            assert False
-
-
 use_step_matcher("re")
 
 
