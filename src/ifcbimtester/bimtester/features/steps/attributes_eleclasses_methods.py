@@ -17,7 +17,6 @@ def no_element_class_ele(context, ifc_class, reason):
     context.elemcount = len(elements)
     context.falsecount = len(context.falseelems)
 
-
     if context.elemcount == 0 and context.falsecount == 0:
         return  # Test OK, thus we can not use the assert_elements method
     elif context.falsecount == context.elemcount:
