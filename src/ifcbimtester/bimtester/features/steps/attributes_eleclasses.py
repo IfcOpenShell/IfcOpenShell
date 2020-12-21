@@ -3,6 +3,7 @@ from behave import step
 from attributes_eleclasses_methods import all_element_attribs_have_a_value
 from attributes_eleclasses_methods import no_element_class_ele
 from utils import IfcFile
+from utils import switch_locale
 
 
 @step("there are no {ifc_class} elements because {reason}")
