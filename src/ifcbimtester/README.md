@@ -16,3 +16,14 @@ python3 ./bimtester.py -g
 `$ pyinstaller --onefile --clean --icon=icon.ico --add-data "features:features" bimtester.py`
 + Windows:
  `$ pyinstaller --onefile --clean --icon=icon.ico --add-data "features;features" bimtester.py`
+
+
+### Translation files
++ the binary mo translation files are not part of the repo
++ they might be needed to be recreated
++ use the following commands on Linux
+```
+cd YourIfcopenshellRepository/src/ifcbimtester/bimtester/locale
+pybabel compile -d .
+
+```
