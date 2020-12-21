@@ -362,8 +362,16 @@ def toggleDecorations(self, context):
     toggle = self.should_draw_decorations
     if toggle:
         decoration.DimensionDecorator.install(self, context)
+        decoration.EqualityDecorator.install(self, context)
+        decoration.LeaderDecorator.install(self, context)
+        decoration.StairDecorator.install(self, context)
+        decoration.HiddenDecorator.install(self, context)
     else:
         decoration.DimensionDecorator.uninstall()
+        decoration.EqualityDecorator.uninstall()
+        decoration.LeaderDecorator.uninstall()
+        decoration.StairDecorator.uninstall()
+        decoration.HiddenDecorator.uninstall()
 
 
 def getScenarios(self, context):
