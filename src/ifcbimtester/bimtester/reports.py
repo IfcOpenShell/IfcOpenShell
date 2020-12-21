@@ -4,20 +4,29 @@ import os
 import pystache
 
 
-def generate_report(adir="."):
-    print("# Generating HTML reports now.")
+def generate_report(adir=".", use_report_folder=True, report_file_name="", html_template_file_path=""):
+    #print("# Generating HTML reports now.")
 
-    # get html template
-    html_template_file = os.path.join(
+    # get html template path
+    report_template_path = os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
-        "features/template.html"
+        "features/"
     )
 
+    if html_template_file_path:
+        report_template_path = html_template_file_path
+
     # get report file
-    report_dir = os.path.join(adir, "report")
+    report_dir = adir
+    if use_report_folder:
+        report_dir = os.path.join(adir, "report")
     if not os.path.exists(report_dir):
         return print("No report directory was found.")
-    report_path = os.path.join(report_dir, "report.json")
+
+    if report_file_name:
+      report_path = os.path.join(report_dir, report_file_name)
+    else:
+      report_path = os.path.join(report_dir, "report.json")
     # print(report_path)
     if not os.path.exists(report_path):
         return print("No report data was found.")
@@ -58,7 +67,12 @@ def generate_report(adir="."):
                 if "match" in step and "arguments" in step["match"]:
                     for a in step["match"]["arguments"]:
                         name = name.replace(a["value"], "<b>" + a["value"] + "</b>")
-                if "result" not in step or step["result"]["status"] == "undefined":
+                if "result" not in step:
+                    step["result"] = {}
+                    step["result"]["status"] = "skipped"
+                    step["result"]["duration"] = 0
+                    step["result"]["error_message"] = "This requirement has been skipped due to a previous failing step."
+                elif step["result"]["status"] == "undefined":
                     step["result"] = {}
                     step["result"]["status"] = "undefined"
                     step["result"]["duration"] = 0
@@ -68,7 +82,8 @@ def generate_report(adir="."):
                         "name": name,
                         "time": round(step["result"]["duration"], 2),
                         "is_success": step["result"]["status"] == "passed",
-                        "is_unspecified": "result" not in step or step["result"]["status"] == "undefined",
+                        "is_unspecified": step["result"]["status"] == "undefined",
+                        "is_skipped": step["result"]["status"] == "skipped",
                         "error_message": None
                         if step["result"]["status"] == "passed"
                         else step["result"]["error_message"],
@@ -93,7 +108,40 @@ def generate_report(adir="."):
         data["total_steps"] = sum([s["total_steps"] for s in data["scenarios"]])
         data["pass_rate"] = round((data["total_passes"] / data["total_steps"]) * 100)
 
-        html_report_file = os.path.join(report_dir, "{}.html".format(file_name))
-        with open(html_report_file, "w") as out:
-            with open(html_template_file) as template:
+        # translate report
+        # json.dump(mydict, myfile, indent=4)
+        # workaround for retrieving the feature file language
+        print(feature["keyword"])
+        if feature["keyword"] == "Feature":
+            strings_file_report = os.path.join(
+                report_template_path,
+                "strings_template_en.json"
+            )
+        elif feature["keyword"] == "Funktionalität":
+            strings_file_report = os.path.join(
+                report_template_path,
+                "strings_template_de.json"
+            )
+        elif feature["keyword"] == "Fonctionnalité":
+            strings_file_report = os.path.join(
+                report_template_path,
+                "strings_template_fr.json"
+            )
+        else:
+            # standard English
+            strings_file_report = os.path.join(
+                report_template_path,
+                "strings_template_en.json"
+            )
+        strings_report = json.loads(
+            open(strings_file_report, encoding="utf8").read()
+        )
+        # print(strings_report)
+        data.update(strings_report)
+        # print(data)
+
+        html_report = os.path.join(report_dir, "{}.html".format(file_name))
+        html_tmpl = os.path.join(report_template_path, "template.html")
+        with open(html_report, "w", encoding="utf8") as out:
+            with open(html_tmpl, encoding="utf8") as template:
                 out.write(pystache.render(template.read(), data))

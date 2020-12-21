@@ -11,6 +11,9 @@ from behave.__main__ import main as behave_main
 # get bimtester source code module path
 bimtester_path = os.path.dirname(os.path.realpath(__file__))
 # print(bimtester_path)
+locale_path = os.path.join(bimtester_path, "locale")
+
+
 try:
     # PyInstaller creates a temp folder and stores path in _MEIPASS
     base_path = sys._MEIPASS
@@ -30,7 +33,20 @@ def run_tests(args):
     if args["advanced_arguments"]:
         behave_args.extend(args["advanced_arguments"].split())
     elif not args["console"]:
-        behave_args.extend(["--format", "json.pretty", "--outfile", "report/report.json"])
+        behave_args.extend([
+            "--format",
+            "json.pretty",
+            "--outfile",
+            "report/report.json"
+        ])
+    behave_args.extend([
+        "--define",
+        "localedir={}".format(locale_path)
+    ])
+    if args["ifcfile"]:
+        behave_args.extend(["--define", "ifcfile={}".format(args["ifcfile"])])
+    if args["path"]:
+        behave_args.extend(["--define", "path={}".format(args["path"])])
     behave_main(behave_args)
     print("# All tests are finished.")
     return True
@@ -43,7 +59,13 @@ def get_features(args):
         if f.endswith(".feature"):
             os.remove(os.path.join(features_dir, f))
     if args["feature"]:
-        shutil.copyfile(args["feature"], os.path.join(get_resource_path("features"), os.path.basename(args["feature"])))
+        shutil.copyfile(
+            args["feature"],
+            os.path.join(
+                get_resource_path("features"),
+                os.path.basename(args["feature"])
+            )
+        )
         return True
     if os.path.exists("features"):
         shutil.copytree("features", get_resource_path("features"))
@@ -55,7 +77,10 @@ def get_features(args):
         if args["feature"] and args["feature"] != f:
             continue
         has_features = True
-        shutil.copyfile(f, os.path.join(get_resource_path("features"), os.path.basename(f)))
+        shutil.copyfile(
+            f,
+            os.path.join(get_resource_path("features"), os.path.basename(f))
+        )
     return has_features
 
 
@@ -111,16 +136,23 @@ def run_intmp_tests(args={}):
     """
 
     from behave import __version__ as behave_version
-
     # https://github.com/behave/behave/issues/871
     if behave_version == "1.2.5":
-        print("At least behave version 1.2.6 is needed, but version {} found.".format(behave_version))
+        print(
+            "At least behave version 1.2.6 is needed, but version {} found."
+            .format(behave_version)
+        )
         return False
 
     # get the features_path, the feature files where the tests are in
     if "features" in args and args["features"] != "":
-        # TODO check if path exists, and if features dir is inside
         features_path = os.path.join(args["features"], "features")
+        if not os.path.isdir(features_path):
+            print(
+                "The features directory does not exist: {}"
+                .format(features_path)
+            )
+            return False
     else:
         # TODO assume features beside ifc thus use ifc path
         print("No features path was given.")
@@ -152,7 +184,6 @@ def run_intmp_tests(args={}):
     run_path = os.path.join(tempfile.gettempdir(), "bimtesterfc")
     if os.path.isdir(run_path):
         from shutil import rmtree
-
         rmtree(run_path)  # fails on read only files
     if os.path.isdir(run_path):
         print("Delete former beimtester run dir {} failed".format(run_path))
@@ -185,7 +216,10 @@ def run_intmp_tests(args={}):
                 theline = line
                 if ifc_filename is None:
                     ifc_filename = os.path.basename(theline.split('"')[1])
-                newifcline = ' * The IFC file "{}" must be provided\n'.format(os.path.join(ifc_path, ifc_filename))
+                newifcline = (
+                    ' * The IFC file "{}" must be provided\n'
+                    .format(os.path.join(ifc_path, ifc_filename))
+                )
                 # print(newifcline)
                 break
         else:
@@ -199,15 +233,26 @@ def run_intmp_tests(args={}):
                 print(line.replace(theline, newifcline), end="")
 
     # copy step files and environment file
-    steps_path = os.path.join(bimtester_path, "features", "steps")
+    steps_path = os.path.join(
+        bimtester_path,
+        "features",
+        "steps"
+    )
     # print(steps_path)
     # print(copy_steps_path)
     if os.path.exists(steps_path):
         shutil.copytree(steps_path, copy_steps_path)
 
-    environment_file = os.path.join(bimtester_path, "features", "environment.py")
+    environment_file = os.path.join(
+        bimtester_path,
+        "features",
+        "environment.py"
+    )
     if os.path.isfile(environment_file):
-        shutil.copyfile(environment_file, os.path.join(copy_features_path, "environment.py"))
+        shutil.copyfile(
+            environment_file,
+            os.path.join(copy_features_path, "environment.py")
+        )
 
     # get advanced args
     # print to console from inside step files, add "--no-capture" flag
@@ -216,27 +261,27 @@ def run_intmp_tests(args={}):
     if "advanced_arguments" in args:
         behave_args.extend(args["advanced_arguments"].split())
     elif "console" not in args:
-        behave_args.extend(
-            [
-                # redirect prints in step methods
-                # if step fails some output is catched, thus might not be printed
-                "--no-capture",
-                # next two lines are one arg
-                "--format",
-                "json.pretty",
-                # next two lines are one arg
-                "--outfile",
-                os.path.join(report_path, "report.json"),
-                # next two lines are one arg
-                "--define",
-                "ifcbasename={}".format(os.path.splitext(ifc_filename)[0]),
-            ]
-        )
+        behave_args.extend([
+            # redirect prints in step methods
+            # if step fails some output is catched, thus might not be printed
+            "--no-capture",
+            # next two lines are one arg
+            "--format",
+            "json.pretty",
+            # next two lines are one arg
+            "--outfile",
+            os.path.join(report_path, "report.json"),
+            # next two lines are one arg
+            "--define",
+            "ifcbasename={}".format(os.path.splitext(ifc_filename)[0]),
+            # next two lines are one arg
+            "--define",
+            "localedir={}".format(locale_path)
+        ])
     print(behave_args)
 
     # run tests
     from behave.__main__ import main as behave_main
-
     behave_main(behave_args)
     print("All tests are finished.")
 
@@ -249,7 +294,10 @@ def run_intmp_tests(args={}):
 def run_all(the_features_path, the_ifcfile):
 
     # run bimtester
-    runpath = run_intmp_tests({"features": the_features_path, "ifcfile": the_ifcfile})
+    runpath = run_intmp_tests({
+        "features": the_features_path,
+        "ifcfile": the_ifcfile
+    })
     print(runpath)
 
     # check if it worked out well
@@ -263,12 +311,17 @@ def run_all(the_features_path, the_ifcfile):
 
     # create html report and open in webbrowser
     from .reports import generate_report
-
     generate_report(runpath)
     # get the feature files
-    feature_files = os.listdir(os.path.join(the_features_path, "features"))
+    feature_files = os.listdir(
+        os.path.join(the_features_path, "features")
+    )
     # print(feature_files)
     for ff in feature_files:
-        webbrowser.open(os.path.join(runpath, "report", ff + ".html"))
+        webbrowser.open(os.path.join(
+            runpath,
+            "report",
+            ff + ".html"
+        ))
 
     return True
