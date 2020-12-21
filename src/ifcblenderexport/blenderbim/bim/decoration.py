@@ -25,10 +25,13 @@ class BaseDecorator():
     VERT_GLSL = """
     uniform mat4 viewMatrix;
     in vec3 pos;
+    in uint style;
     out vec4 gl_Position;
+    out uint vstyle;
 
     void main() {
         gl_Position = viewMatrix * vec4(pos, 1.0);
+        vstyle = style;
     }
     """
     GEOM_GLSL = """
@@ -44,13 +47,41 @@ class BaseDecorator():
         EndPrimitive();
     }
     """
+
     FRAG_GLSL = """
-    uniform vec3 color;
     out vec4 fragColor;
 
     void main() {
-        fragColor = vec4(color, 1.0);
+        fragColor = vec4(1.0, 1.0, 1.0, 1.0);
     }
+    """
+
+    LIB_GLSL = """
+    void arrow_head(in vec2 p0, in vec2 p1, out vec2 head[3]) {
+        vec2 nose = normalize(p1 - p0) * ARROW_SIZE;
+        float c = cos(ARROW_ANGLE), s = sin(ARROW_ANGLE);
+        head[0] = nose;
+        head[1] = mat2(c, -s, +s, c) * nose;
+        head[2] = mat2(c, +s, -s, c) * nose;
+    }
+
+    void circle_head(in vec2 p0, in vec2 p1, out vec2 head[CIRCLE_SEGS]) {
+        vec2 nose = normalize(p1 - p0) * CIRCLE_SIZE ;
+        float angle = PI / (CIRCLE_SEGS / 2);
+        for(int i = 0; i<CIRCLE_SEGS; i++) {
+            float c = cos(angle * i), s = sin(angle * i);
+            head[i] = mat2(c, -s, +s, c) * nose;
+        }
+    }
+    """
+
+    DEF_GLSL = """
+        #define PI 3.141592653589793
+        #define CIRCLE_SEGS 36
+        #define SEGMENT_POINTS 42
+        #define ARROW_ANGLE PI / 12.0
+        #define ARROW_SIZE 16.0
+        #define CIRCLE_SIZE 8.0
     """
 
     # class var for single handler
@@ -76,18 +107,18 @@ class BaseDecorator():
 
     @classmethod
     def create_shader(cls):
-        return GPUShader(vertexcode=cls.VERT_GLSL, fragcode=cls.FRAG_GLSL, geocode=cls.GEOM_GLSL)
+        # NB: libcode param doesn't work
+        return GPUShader(vertexcode=cls.VERT_GLSL,
+                         fragcode=cls.FRAG_GLSL,
+                         geocode=cls.LIB_GLSL + cls.GEOM_GLSL,
+                         defines=cls.DEF_GLSL)
 
     def __call__(self):
-        # get active drawing, if any
         if self.props.active_drawing_index is None or len(self.props.drawings) == 0:
             return
 
-        objects = list(self.get_objects())
-        if not objects:
-            return
-
-        self.decorate(objects)
+        for obj in self.get_objects():
+            self.decorate(obj)
 
     def get_objects(self):
         """find relevant objects
@@ -99,38 +130,36 @@ class BaseDecorator():
         collection = bpy.data.collections.get("IfcGroup/" + drawing.name)
         return filter(lambda o: self.basename in o.name, collection.objects)
 
-    def decorate(self, objects):
+    def decorate(self, object):
         """perform actuall drawing stuff"""
         raise NotImplementedError()
 
-    def flat_points(self, segments):
-        """flatten segments into list of their points
-        returns: iterable of points as coords tuples
+
+class PathDecorator():
+    def get_geom(self, obj):
+        """parse path geometry into line segments
+        returns:
+        - vertices: 3-tuples of coords
+        - indices: 2-tuples of each segment verices' indices
+        - styles: 0=internal, 1=beginning, 2=ending
         """
-        def coords(v):
-            return tuple(v)[:3]
-        return reduce(lambda points, segm: points + [coords(segm[0]), coords(segm[1])], segments, [])
+        vertices = []
+        indices = []
+        styles = []
 
-
-class PathDecorator:
-    def get_segments(self, object):
-        """extract segments from curve object"""
-        for spline in object.data.splines:
+        idx = 0
+        for spline in obj.data.splines:
             spline_points = spline.bezier_points if spline.bezier_points else spline.points
-            points = [object.matrix_world @ p.co for p in spline_points]
-            for i in range(len(points)-1):
-                p0 = points[i]
-                p1 = points[i+1]
-                yield (p0, p1)
+            points = [obj.matrix_world @ p.co for p in spline_points]
+            cnt = len(points)
+            vertices.extend(p[:3] for p in points)
+            styles.append(1)
+            styles.extend([0] * max(0, cnt - 2))
+            styles.append(2)
+            indices.extend((idx+i, idx+i+1) for i in range(cnt-1))
+            idx += cnt
 
-
-class MeshDecorator:
-    def get_segments(self, object):
-        """extract segments from mesh object"""
-        for edge in object.data.edges:
-            p0 = object.data.vertices[edge.vertices[0]].co
-            p1 = object.data.vertices[edge.vertices[1]].co
-            yield (p0, p1)
+        return vertices, indices, styles
 
 
 class DimensionDecorator(PathDecorator, BaseDecorator):
@@ -142,95 +171,32 @@ class DimensionDecorator(PathDecorator, BaseDecorator):
     basename = "IfcAnnotation/Dimension"
     installed = None
 
-    GEOM_GLSL = """
-    layout(lines) in;
-    layout(line_strip, max_vertices=10) out;
-
-    uniform float windowW;
-    uniform float windowH;
-    uniform float arrow_length;
-    uniform float arrow_angle;
-
-    void arrow_head(in vec2 p0, in vec2 p1, out vec2 head[3]) {
-        vec2 nose = normalize(p1 - p0) * arrow_length;
-        float c = cos(arrow_angle), s = sin(arrow_angle);
-        head[0] = nose;
-        head[1] = mat2( c, -s, +s, c) * nose;
-        head[2] = mat2( c, +s, -s, c) * nose;
-    }
-
-    void main() {
-        /** generates arrows from lines */
-        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-
-        // converting NDC to/from window coords
-        float hw = windowW/2, hh= windowH/2;
-        mat4 windowMatrix = mat4(hw, 0, 0, 0,   0, hh, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
-        mat4 unwindowMatrix = inverse(windowMatrix);
-
-        vec2 head[3];
-        vec4 head_ndc[3];
-
-        vec4 p0w = windowMatrix * (p0 / p0.w), p1w = windowMatrix * (p1 / p1.w);
-        arrow_head(p0w.xy, p1w.xy, head);
-        for(int i=0; i<3; i++) head_ndc[i] = unwindowMatrix * vec4(head[i], 0, 0);
-
-        gl_Position = p0 + head_ndc[0] * p0.w;
-        EmitVertex();
-        gl_Position = p1 - head_ndc[0] * p1.w;
-        EmitVertex();
-        EndPrimitive();
-
-        gl_Position = p0;
-        EmitVertex();
-        gl_Position = p0 + head_ndc[1] * p0.w;
-        EmitVertex();
-        gl_Position = p0 + head_ndc[2] * p0.w;
-        EmitVertex();
-        gl_Position = p0;
-        EmitVertex();
-        EndPrimitive();
-
-        gl_Position = p1;
-        EmitVertex();
-        gl_Position = p1 - head_ndc[1] * p1.w;
-        EmitVertex();
-        gl_Position = p1 - head_ndc[2] * p1.w;
-        EmitVertex();
-        gl_Position = p1;
-        EmitVertex();
-        EndPrimitive();
-    }
-    """
-
     def __init__(self, props, context):
         super().__init__(props, context)
         self.font_id = 0
         self.dpi = context.preferences.system.dpi
 
-    def decorate(self, objects):
-        segments = list(chain.from_iterable(self.get_segments(obj) for obj in objects))
-        if not segments:
-            return
+    def decorate(self, obj):
+        geom = self.get_geom(obj)
+        self.draw_labels(obj, geom)
 
-        for segm in segments:
-            length = (segm[1] - segm[0]).length
+    def draw_labels(self, obj, geom):
+        region = self.context.region
+        region3d = self.context.region_data
+        vertices, indices, _ = geom
+        for i0, i1 in indices:
+            v0 = Vector(vertices[i0])
+            v1 = Vector(vertices[i1])
+            length = (v1 - v0).length
             text = f"{length:.2f}"
-            self.draw_label(segm, text)
+            p0 = location_3d_to_region_2d(region, region3d, v0)
+            p1 = location_3d_to_region_2d(region, region3d, v1)
+            self.draw_label(p0, p1, text)
 
-        self.draw_arrows(segments)
-
-    def draw_label(self, segm, text):
+    def draw_label(self, p0, p1, text):
         """Draw text of segment length
         aligned and centered at segment middle
         """
-        p0, p1 = segm
-
-        # convert to view coords
-        region = self.context.region
-        region3d = self.context.region_data
-        p0 = location_3d_to_region_2d(region, region3d, p0)
-        p1 = location_3d_to_region_2d(region, region3d, p1)
         proj = p1 - p0
 
         if proj.length < 0.001:
@@ -254,30 +220,12 @@ class DimensionDecorator(PathDecorator, BaseDecorator):
         # TODO: take padding from styles and adjust to line width
         pos += Vector((-sin, cos)) * 4
 
-        # TODO: handle overlapping of text with arrows for narrow segments
-
         blf.enable(self.font_id, blf.ROTATION)
         blf.position(self.font_id, pos.x, pos.y, 0)
 
         blf.rotation(self.font_id, ang)
         blf.draw(self.font_id, text)
         blf.disable(self.font_id, blf.ROTATION)
-
-    def draw_arrows(self, segments):
-        region = self.context.region
-        region3d = self.context.region_data
-        points = self.flat_points(segments)
-
-        batch = batch_for_shader(self.shader, 'LINES', {'pos': points})
-        self.shader.bind()
-        self.shader.uniform_float("viewMatrix", region3d.perspective_matrix)
-        self.shader.uniform_float("windowW", region.width)
-        self.shader.uniform_float("windowH", region.height)
-        # # TODO: get everything from styles
-        self.shader.uniform_float('color', (1.0, 1.0, 1.0))
-        self.shader.uniform_float('arrow_angle', math.pi / 12)
-        self.shader.uniform_float('arrow_length', 16)
-        batch.draw(self.shader)
 
 
 class EqualityDecorator(DimensionDecorator):
@@ -289,66 +237,120 @@ class EqualityDecorator(DimensionDecorator):
     basename = "IfcAnnotation/Equal"
     installed = None
 
-    def decorate(self, objects):
-        segments = list(chain.from_iterable(self.get_segments(obj) for obj in objects))
-        if not segments:
-            return
+    def draw_labels(self, obj, geom):
+        region = self.context.region
+        region3d = self.context.region_data
+        vertices, indices, _ = geom
+        for i0, i1 in indices:
+            v0 = Vector(vertices[i0])
+            v1 = Vector(vertices[i1])
+            p0 = location_3d_to_region_2d(region, region3d, v0)
+            p1 = location_3d_to_region_2d(region, region3d, v1)
+            self.draw_label(p0, p1, "EQ")
 
-        for segm in segments:
-            self.draw_label(segm, 'EQ')
 
-        self.draw_arrows(segments)
-
-
-class LeaderDecorator(PathDecorator, BaseDecorator):
+class LeaderDecorator(BaseDecorator):
     basename = "IfcAnnotation/Leader"
     installed = None
 
-    def decorate(self, objects):
-        segments = list(chain.from_iterable(self.get_segments(obj) for obj in objects))
-        if not segments:
-            return
-
-        region3d = self.context.region_data
-        points = self.flat_points(segments)
-        batch = batch_for_shader(self.shader, 'LINES', {'pos': points})
-        self.shader.bind()
-        self.shader.uniform_float("viewMatrix", region3d.perspective_matrix)
-        self.shader.uniform_float('color', (1.0, 1.0, 1.0))
-        batch.draw(self.shader)
+    def decorate(self, obj):
+        pass
 
 
 class StairDecorator(PathDecorator, BaseDecorator):
     basename = "IfcAnnotation/Stair"
     installed = None
 
-    def decorate(self, objects):
-        segments = list(chain.from_iterable(self.get_segments(obj) for obj in objects))
-        if not segments:
-            return
+    GEOM_GLSL = """
+    layout(lines) in;
+    layout(line_strip, max_vertices=SEGMENT_POINTS) out;
+    in uint vstyle[];
 
+    uniform float windowW;
+    uniform float windowH;
+    uniform float arrow_length;
+    uniform float arrow_angle;
+
+    void main() {
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+        uint s0 = vstyle[0], s1 = vstyle[1];
+
+        // converting NDC to/from window coords
+        float hw = windowW/2, hh= windowH/2;
+        mat4 windowMatrix = mat4(hw, 0, 0, 0,   0, hh, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
+        mat4 unwindowMatrix = inverse(windowMatrix);
+        vec2 p0w = (windowMatrix * (p0 / p0.w)).xy, p1w = (windowMatrix * (p1 / p1.w)).xy;
+
+        gl_Position = p0;
+        EmitVertex();
+        gl_Position = p1;
+        EmitVertex();
+        EndPrimitive();
+
+        if (s0 == 1u) {
+            vec2 head[CIRCLE_SEGS];
+            circle_head(p0w, p1w, head);
+            for(int i=0; i<CIRCLE_SEGS; i++) {
+                gl_Position = p0 + unwindowMatrix * vec4(head[i], 0, 0) * p0.w;
+                EmitVertex();
+            }
+            gl_Position = p0 + unwindowMatrix * vec4(head[0], 0, 0) * p0.w;
+            EmitVertex();
+            EndPrimitive();
+        }
+
+        if (s1 == 2u) {
+            vec2 head[3];
+            vec4 head_ndc[3];
+            arrow_head(p0w, p1w, head);
+            for(int i=0; i<3; i++) head_ndc[i] = unwindowMatrix * vec4(head[i], 0, 0) * p1.w;
+
+            gl_Position = p1;
+            EmitVertex();
+            gl_Position = p1 - head_ndc[1];
+            EmitVertex();
+            gl_Position = p1 - head_ndc[2];
+            EmitVertex();
+            gl_Position = p1;
+            EmitVertex();
+            EndPrimitive();
+        }
+    }
+    """
+
+    def decorate(self, obj):
+        geom = self.get_geom(obj)
+        self.draw_lines(obj, geom)
+
+    def draw_lines(self, obj, geom):
+        region = self.context.region
         region3d = self.context.region_data
-        points = self.flat_points(segments)
-        batch = batch_for_shader(self.shader, 'LINES', {'pos': points})
+
+        vertices, indices, styles = geom
+
+        fmt = GPUVertFormat()
+        fmt.attr_add(id="pos", comp_type='F32', len=3, fetch_mode='FLOAT')
+        fmt.attr_add(id="style", comp_type='U8', len=1, fetch_mode='INT')
+
+        vbo = GPUVertBuf(len=len(vertices), format=fmt)
+        vbo.attr_fill(id="pos", data=vertices)
+        vbo.attr_fill(id="style", data=styles)
+
+        ibo = GPUIndexBuf(type='LINES', seq=indices)
+
+        batch = GPUBatch(type='LINES', buf=vbo, elem=ibo)
+
         self.shader.bind()
+        self.shader.uniform_float
         self.shader.uniform_float("viewMatrix", region3d.perspective_matrix)
-        self.shader.uniform_float('color', (1.0, 1.0, 1.0))
+        self.shader.uniform_float("windowW", region.width)
+        self.shader.uniform_float("windowH", region.height)
         batch.draw(self.shader)
 
 
-class HiddenDecorator(MeshDecorator, BaseDecorator):
+class HiddenDecorator(BaseDecorator):
     basename = "IfcAnnotation/Hidden"
     installed = None
 
-    def decorate(self, objects):
-        segments = list(chain.from_iterable(self.get_segments(obj) for obj in objects))
-        if not segments:
-            return
-
-        region3d = self.context.region_data
-        points = self.flat_points(segments)
-        batch = batch_for_shader(self.shader, 'LINES', {'pos': points})
-        self.shader.bind()
-        self.shader.uniform_float("viewMatrix", region3d.perspective_matrix)
-        self.shader.uniform_float('color', (1.0, 1.0, 1.0))
-        batch.draw(self.shader)
+    def decorate(self, obj):
+        pass
