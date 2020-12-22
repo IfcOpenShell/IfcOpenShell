@@ -313,9 +313,10 @@ namespace IfcGeom {
 						if (allowed_context_types.find(context_type) == allowed_context_types.end()) {
 							Logger::Warning(std::string("ContextType '") + context->ContextType() + "' not allowed:", context);
 						}
+
 						if (context_types.find(context_type) != context_types.end()) {
 							std::string context_name = context->ContextIdentifier();
-							if (allowed_context_identifiers.empty()
+							if (allowed_context_identifiers.empty()	 //Additional filtering if user aims for special context
 								|| allowed_context_identifiers.find(context_name) != allowed_context_identifiers.end())
 							{
 								filtered_contexts->push(context);
@@ -341,19 +342,32 @@ namespace IfcGeom {
 			for (it = filtered_contexts->begin(); it != filtered_contexts->end(); ++it) {
 				IfcSchema::IfcGeometricRepresentationContext* context = *it;
 
-				representations->push(context->RepresentationsInContext());
-				try {
-					if (context->hasPrecision() && context->Precision() < lowest_precision_encountered) {
-						lowest_precision_encountered = context->Precision();
-						any_precision_encountered = true;
+				std::string context_name = context->ContextIdentifier();
+				if (allowed_context_identifiers.empty() //Additional filtering if user aims for special context
+					|| allowed_context_identifiers.find(context_name) != allowed_context_identifiers.end())
+				{
+					representations->push(context->RepresentationsInContext());
+					try {
+						if (context->hasPrecision() && context->Precision() < lowest_precision_encountered) {
+							lowest_precision_encountered = context->Precision();
+							any_precision_encountered = true;
+						}
 					}
-				} catch (const std::exception& e) {
-					Logger::Error(e);
+					catch (const std::exception& e) {
+						Logger::Error(e);
+					}
 				}
-
+				
+				//Hier muss eingegriffen werden. Falls eine Liste mit erlaubten Kontexten übergeben --> Filtern
 				IfcSchema::IfcGeometricRepresentationSubContext::list::ptr sub_contexts = context->HasSubContexts();
 				for (jt = sub_contexts->begin(); jt != sub_contexts->end(); ++jt) {
-					representations->push((*jt)->RepresentationsInContext());
+					std::string sub_context_name = (*jt)->ContextIdentifier();
+					if (allowed_context_identifiers.empty()
+						|| allowed_context_identifiers.find(context_name) != allowed_context_identifiers.end()
+						|| allowed_context_identifiers.find(sub_context_name) != allowed_context_identifiers.end())
+					{
+						representations->push((*jt)->RepresentationsInContext());
+					}
 				}
 				// There is no need for full recursion as the following is governed by the schema:
 				// WR31: The parent context shall not be another geometric representation sub context. 
