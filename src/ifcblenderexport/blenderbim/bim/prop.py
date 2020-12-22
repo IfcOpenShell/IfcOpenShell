@@ -1006,6 +1006,8 @@ class BcfTopic(PropertyGroup):
     related_topics: CollectionProperty(name="Related Topics", type=StrProperty)
     comments: CollectionProperty(name="Comments", type=BcfComment)
     is_editable: BoolProperty(name="Is Editable", default=False, update=updateBcfTopicIsEditable)
+    comment: StringProperty(default="", name="Comment")
+    has_related_viewpoint: BoolProperty(name="Has Related Viewpoint", default=False)
 
 
 class PropertySetTemplate(PropertyGroup):

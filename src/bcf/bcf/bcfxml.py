@@ -304,14 +304,15 @@ class BcfXml:
             if comment.viewpoint:
                 self._create_element(comment_el, "Viewpoint", {"Guid": comment.viewpoint.guid})
 
-    def add_comment(self, comment=None):
+    def add_comment(self, topic, comment=None):
         if comment is None:
             comment = bcf.data.Comment()
         if not comment.guid:
             comment.guid = str(uuid.uuid4())
         if not comment.comment:
             comment.comment = "'Free software' is a matter of liberty, not price. To understand the concept, you should think of 'free' as in 'free speech,' not as in 'free beer'."
-        self.edit_comment(comment)
+        topic.comments[comment.guid] = comment
+        self.edit_comment(comment, topic)
 
     def edit_comment(self, comment, topic):
         if not comment.date:
