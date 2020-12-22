@@ -622,6 +622,8 @@ class LoadBcfComments(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         bcfxml.get_comments(self.topic_guid)
         blender_topic = bpy.context.scene.BCFProperties.topics.get(self.topic_guid)
+        while len(blender_topic.comments) > 0:
+            blender_topic.comments.remove(0)
         for comment in bcfxml.topics[self.topic_guid].comments.values():
             new = blender_topic.comments.add()
             data_map = {
@@ -694,6 +696,7 @@ class EditBcfTopic(bpy.types.Operator):
         topic.topic_type = blender_topic.type or None
 
         bcfxml.edit_topic(topic)
+        props.active_topic_index = props.active_topic_index # Refreshes the BCF Topic
         return {"FINISHED"}
 
 
@@ -749,6 +752,22 @@ class RemoveBcfViewpoint(bpy.types.Operator):
         topic = bcfxml.topics[blender_topic.name]
         bcfxml.delete_viewpoint(viewpoint_guid, topic)
         props.active_topic_index = props.active_topic_index # Refreshes the BCF Topic
+        return {"FINISHED"}
+
+
+class RemoveBcfComment(bpy.types.Operator):
+    bl_idname = "bim.remove_bcf_comment"
+    bl_label = "Remove BCF Comment"
+    comment_guid: bpy.props.StringProperty()
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        props = bpy.context.scene.BCFProperties
+        blender_topic = props.topics[props.active_topic_index]
+        topic = bcfxml.topics[blender_topic.name]
+        bcfxml.delete_comment(self.comment_guid, topic)
+        props.active_topic_index = props.active_topic_index # Refreshes the BCF Topic
+        bpy.ops.bim.load_bcf_comments(topic_guid = topic.guid)
         print(bcfxml.filepath)
         return {"FINISHED"}
 

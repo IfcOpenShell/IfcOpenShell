@@ -37,6 +37,7 @@ if bpy is not None:
         operator.AddBcfTopic,
         operator.ViewBcfTopic,
         operator.RemoveBcfViewpoint,
+        operator.RemoveBcfComment,
         operator.ActivateBcfViewpoint,
         operator.OpenUri,
         operator.OpenBcfReferenceLink,

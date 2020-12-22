@@ -438,15 +438,19 @@ class BcfXml:
             return
         for bitmap in viewpoint.bitmaps:
             bitmap_el = self._create_element(parent, "Bitmap")
-            text_map = {"Bitmap": bitmap.bitmap_type, "Reference": bitmap.reference, "Height": bitmap.height}
+
+            text_map = {"Bitmap": bitmap.bitmap_type, "Reference": bitmap.reference}
             for key, value in text_map.items():
                 self._create_element(bitmap_el, key, text=value)
+
             location_el = self._create_element(bitmap_el, "Location")
             self.write_vector(location_el, bitmap.location)
             normal_el = self._create_element(bitmap_el, "Normal")
             self.write_vector(normal_el, bitmap.normal)
             up_el = self._create_element(bitmap_el, "Up")
             self.write_vector(up_el, bitmap.up)
+
+            self._create_element(bitmap_el, "Height", text=bitmap.height)
 
     def write_vector(self, parent, from_obj):
         self._create_element(parent, "X", text=from_obj.x)
@@ -631,7 +635,7 @@ class BcfXml:
         for item in visinfo["Bitmap"]:
             bitmap = bcf.data.Bitmap()
             bitmap.reference = item["Reference"]
-            bitmap.bitmap_type = item["Bitmap"].lower()
+            bitmap.bitmap_type = item["Bitmap"].upper()
             self.set_vector(bitmap.location, item["Location"])
             self.set_vector(bitmap.normal, item["Normal"])
             self.set_vector(bitmap.up, item["Up"])
