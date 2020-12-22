@@ -1,5 +1,6 @@
 import os
 import bpy
+import bcf
 import uuid
 import time
 import json
@@ -766,7 +767,28 @@ class RemoveBcfComment(bpy.types.Operator):
         blender_topic = props.topics[props.active_topic_index]
         topic = bcfxml.topics[blender_topic.name]
         bcfxml.delete_comment(self.comment_guid, topic)
-        props.active_topic_index = props.active_topic_index # Refreshes the BCF Topic
+        bpy.ops.bim.load_bcf_comments(topic_guid = topic.guid)
+        return {"FINISHED"}
+
+
+class AddBcfComment(bpy.types.Operator):
+    bl_idname = "bim.add_bcf_comment"
+    bl_label = "Add BCF Comment"
+    comment_guid: bpy.props.StringProperty()
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        props = bpy.context.scene.BCFProperties
+        blender_topic = props.topics[props.active_topic_index]
+        topic = bcfxml.topics[blender_topic.name]
+        if not blender_topic.comment:
+            return {"FINISHED"}
+        comment = bcf.data.Comment()
+        comment.comment = blender_topic.comment
+        if blender_topic.has_related_viewpoint and blender_topic.viewpoints:
+            comment.viewpoint = bcf.data.Viewpoint()
+            comment.viewpoint.guid = blender_topic.viewpoints
+        bcfxml.add_comment(topic, comment)
         bpy.ops.bim.load_bcf_comments(topic_guid = topic.guid)
         print(bcfxml.filepath)
         return {"FINISHED"}

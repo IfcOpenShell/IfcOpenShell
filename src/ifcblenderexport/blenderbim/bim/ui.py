@@ -1857,6 +1857,13 @@ class BIM_PT_bcf_comments(Panel):
                     total_line_chars += len(word) + 1  # 1 is for the space
                 col.label(text=" ".join(line_words))
 
+        row = layout.row()
+        row.prop(topic, "comment")
+        row = layout.row()
+        row.prop(topic, "has_related_viewpoint")
+        row = layout.row()
+        row.operator("bim.add_bcf_comment")
+
 
 class BIM_PT_qa(Panel):
     bl_label = "BIMTester Quality Auditing"
