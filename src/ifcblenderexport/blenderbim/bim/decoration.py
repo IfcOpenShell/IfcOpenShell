@@ -54,9 +54,9 @@ class BaseDecorator():
     """
 
     LIB_GLSL = """
-    void arrow_head(in vec2 p0, in vec2 p1, out vec2 head[3]) {
-        vec2 nose = normalize(p1 - p0) * ARROW_SIZE;
-        float c = cos(ARROW_ANGLE), s = sin(ARROW_ANGLE);
+    void arrow_head(in vec2 p0, in vec2 p1, in float size, in float angle, out vec2 head[3]) {
+        vec2 nose = normalize(p1 - p0) * size;
+        float c = cos(angle), s = sin(angle);
         head[0] = nose;
         head[1] = mat2(c, -s, +s, c) * nose;
         head[2] = mat2(c, +s, -s, c) * nose;
@@ -76,8 +76,10 @@ class BaseDecorator():
         #define CIRCLE_SEGS 24
         // max points = SEGS (circle) + 2 (stem) + 3 (arrow)
         #define MAX_POINTS 29
-        #define ARROW_ANGLE PI / 12.0
-        #define ARROW_SIZE 16.0
+        #define ARROW1_ANGLE PI / 12.0
+        #define ARROW2_ANGLE PI / 3.0
+        #define ARROW1_SIZE 16.0
+        #define ARROW2_SIZE 24.0
         #define CIRCLE_SIZE 8.0
         #define DASH_SIZE 16.0
         #define DASH_RATIO 0.5
@@ -244,7 +246,7 @@ class DimensionDecorator(BaseDecorator):
 
         vec2 head[3];
         vec4 head_ndc[3];
-        arrow_head(p0w, p1w, head);
+        arrow_head(p0w, p1w, ARROW1_SIZE, ARROW1_ANGLE, head);
         for(int i=0; i<3; i++) head_ndc[i] = unwindowMatrix * vec4(head[i], 0, 0) * p1.w;
         vec4 gap = head_ndc[0];
 
@@ -384,7 +386,7 @@ class LeaderDecorator(BaseDecorator):
 
         vec2 head[3];
         vec4 head_ndc[3];
-        arrow_head(p0w, p1w, head);
+        arrow_head(p0w, p1w, ARROW1_SIZE, ARROW1_ANGLE, head);
         for(int i=0; i<3; i++) head_ndc[i] = unwindowMatrix * vec4(head[i], 0, 0) * p1.w;
 
         // end edge arrow for last segment
@@ -399,7 +401,7 @@ class LeaderDecorator(BaseDecorator):
             EmitVertex();
             EndPrimitive();
 
-            vec2 gap = normalize(p1w - p0w) * ARROW_SIZE;
+            vec2 gap = normalize(p1w - p0w) * ARROW1_SIZE;
             gap1 = unwindowMatrix * vec4(gap, 0, 0) * p1.w;
         }
 
@@ -442,7 +444,7 @@ class StairDecorator(BaseDecorator):
 
         vec2 p0w = (windowMatrix * (p0 / p0.w)).xy, p1w = (windowMatrix * (p1 / p1.w)).xy;
 
-        vec4 gap0 = vec4(0), gap1 = vec4(0);
+        vec4 gap0 = vec4(0);
 
         // start edge circle for first segment
         if (t0 == 1u) {
@@ -464,27 +466,23 @@ class StairDecorator(BaseDecorator):
         if (t1 == 2u) {
             vec2 head[3];
             vec4 head_ndc[3];
-            arrow_head(p0w, p1w, head);
+            arrow_head(p0w, p1w, ARROW2_SIZE, ARROW2_ANGLE, head);
             for(int i=0; i<3; i++) head_ndc[i] = unwindowMatrix * vec4(head[i], 0, 0) * p1.w;
 
-            gl_Position = p1;
-            EmitVertex();
             gl_Position = p1 - head_ndc[1];
+            EmitVertex();
+            gl_Position = p1;
             EmitVertex();
             gl_Position = p1 - head_ndc[2];
             EmitVertex();
-            gl_Position = p1;
-            EmitVertex();
             EndPrimitive();
 
-            vec2 gap = normalize(p1w - p0w) * ARROW_SIZE;
-            gap1 = unwindowMatrix * vec4(gap, 0, 0) * p1.w;
         }
 
         // stem, adjusted for edge decoration
         gl_Position = p0 + gap0;
         EmitVertex();
-        gl_Position = p1 - gap1;
+        gl_Position = p1;
         EmitVertex();
         EndPrimitive();
     }
