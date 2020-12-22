@@ -209,6 +209,10 @@ endfunction()
 
 if(BUILD_IFCGEOM)
 
+IF(MSVC)
+	add_debug_variants(LIBXML2_LIBRARIES "${LIBXML2_LIBRARIES}" d)
+ENDIF()
+
 # Find Open CASCADE
 IF("${OCC_INCLUDE_DIR}" STREQUAL "")
 	SET(OCC_INCLUDE_DIR "/usr/include/oce/" CACHE FILEPATH "Open CASCADE header files")
