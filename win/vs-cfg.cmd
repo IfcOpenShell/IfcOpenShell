@@ -23,7 +23,7 @@
 :: the VisualStudioVersion environment variable and from the location of cl.exe.
 ::
 :: The generator string must be in the CMake 3.0 and newer format, i.e.
-:: "Visual Studio 10 2010" instead of "Visual Studio 10"
+:: "Visual Studio 12 2013" instead of "Visual Studio 12"
 ::
 :: User-friendly VS generators are preferred, since they permit a more accurate
 :: platform and toolset configuration. Some examples:
@@ -41,14 +41,11 @@
 set GENERATOR=%1
 
 :: Supported Visual Studio versions:
-set GENERATORS[1]="Visual Studio 9 2008"
-set GENERATORS[2]="Visual Studio 10 2010"
-set GENERATORS[3]="Visual Studio 11 2012"
-set GENERATORS[4]="Visual Studio 12 2013"
-set GENERATORS[5]="Visual Studio 14 2015"
-set GENERATORS[6]="Visual Studio 15 2017"
-set GENERATORS[7]="Visual Studio 16 2019"
-set LAST_GENERATOR_IDX=7
+set GENERATORS[1]="Visual Studio 12 2013"
+set GENERATORS[2]="Visual Studio 14 2015"
+set GENERATORS[3]="Visual Studio 15 2017"
+set GENERATORS[4]="Visual Studio 16 2019"
+set LAST_GENERATOR_IDX=4
 
 :: Is generator shorthand used?
 set GEN_SHORTHAND=!GENERATOR:vs=!
@@ -61,10 +58,6 @@ echo(!GEN_SHORTHAND! | findstr /c:"-x64"     >nul && ( set "VS_PLATFORM=x64" )
 echo(!GEN_SHORTHAND! | findstr /c:"-ARM"     >nul && ( set "VS_PLATFORM=ARM" )
 echo(!GEN_SHORTHAND! | findstr /c:"-ARM64"   >nul && ( set "VS_PLATFORM=ARM64" )
 
-echo(!GEN_SHORTHAND! | findstr /c:"-v90"     >nul && ( set "VS_TOOLSET=v90" )     && ( set "BOOST_TOOLSET=9.0" )
-echo(!GEN_SHORTHAND! | findstr /c:"-v100"    >nul && ( set "VS_TOOLSET=v100" )    && ( set "BOOST_TOOLSET=10.0" )
-echo(!GEN_SHORTHAND! | findstr /c:"-v110"    >nul && ( set "VS_TOOLSET=v110" )    && ( set "BOOST_TOOLSET=11.0" )
-echo(!GEN_SHORTHAND! | findstr /c:"-v110_xp" >nul && ( set "VS_TOOLSET=v110_xp" ) && ( set "BOOST_TOOLSET=11.0" )
 echo(!GEN_SHORTHAND! | findstr /c:"-v120"    >nul && ( set "VS_TOOLSET=v120" )    && ( set "BOOST_TOOLSET=12.0" )
 echo(!GEN_SHORTHAND! | findstr /c:"-v120_xp" >nul && ( set "VS_TOOLSET=v120_xp" ) && ( set "BOOST_TOOLSET=12.0" )
 echo(!GEN_SHORTHAND! | findstr /c:"-v140"    >nul && ( set "VS_TOOLSET=v140" )    && ( set "BOOST_TOOLSET=14.0" )
@@ -91,14 +84,15 @@ echo(!GENERATOR! | findstr /c:"vs20" >nul && (
 where cl.exe | findstr "amd64 x64" >nul
 set START=%ERRORLEVEL%
 
+:: NOTE add space before VC_VER so that e.g. "12" doesn't match with "2012"
 IF "!GENERATOR!"=="" IF NOT "%VisualStudioVersion%"=="" (
     set VC_VER=%VisualStudioVersion:.0=%
     FOR /L %%i in (%START%,1,%LAST_GENERATOR_IDX%) DO (
-        :: NOTE add space before VC_VER so that e.g. "12" doesn't match with "2012"
         echo(!GENERATORS[%%i]! | findstr /c:" !VC_VER!" >nul && (
             set GENERATOR=!GENERATORS[%%i]!
             call utils\cecho.cmd black cyan "Generator not passed, but VisualStudioVersion=%VisualStudioVersion% environment variable detected:"
             call utils\cecho.cmd black cyan "using '`"!GENERATOR!`'" as the generator."
+			SET VS_VER=!GENERATOR:~-5,4!
             GOTO :GeneratorValid
         )
     )
@@ -150,9 +144,6 @@ FOR %%i IN (%GENERATOR_SPLIT%) DO (
 :PlatformDefined
 
 :: determine the Visual C++ default version
-IF %VS_VER%==2008 ( set "VC_VER=9.0" )
-IF %VS_VER%==2010 ( set "VC_VER=10.0" )
-IF %VS_VER%==2012 ( set "VC_VER=11.0" )
 IF %VS_VER%==2013 ( set "VC_VER=12.0" )
 IF %VS_VER%==2015 ( set "VC_VER=14.0" )
 IF %VS_VER%==2017 ( set "VC_VER=14.1" )
@@ -199,10 +190,11 @@ FOR /f "delims=" %%i in ('where cmake') DO set CMAKE_PATH=%%i
 IF NOT "%CMAKE_PATH%"=="" (
     FOR /f "delims=" %%i in ('cmake --version ^| findstr /C:"cmake version 3"') DO GOTO :CMake3AndNewer
 )
-:: CMake older than 3.0.0: convert new format generators to the old format (simple brute force for simplicity)
-set GENERATOR=%GENERATOR: 2013=%
-set GENERATOR=%GENERATOR: 2012=%
-set GENERATOR=%GENERATOR: 2010=%
+
+:: reject older CMake, see also build-deps.cmd
+echo "CMake v3.11.4 or higher is required"
+exit /b 1
+
 :CMake3AndNewer
 
     :: check variables for debugging
@@ -226,7 +218,6 @@ IF DEFINED VS_TOOLSET (
 
 :: VS project file extension is different on older VS versions
 set VCPROJ_FILE_EXT=vcxproj
-IF %VS_VER%==2008 set VCPROJ_FILE_EXT=vcproj
 
 :: Add utils to PATH
 set ORIGINAL_PATH=%PATH%
