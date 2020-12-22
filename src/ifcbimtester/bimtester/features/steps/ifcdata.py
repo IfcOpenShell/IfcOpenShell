@@ -1,7 +1,19 @@
+import gettext  # noqa
+from behave import given
 from behave import step
 
+from ifcdata_methods import assert_schema
 from utils import IfcFile
+from utils import switch_locale
 
+@step('The IFC schema "{schema}" must be provided')
+def step_impl(context, schema):
+    try:
+        if context.config.userdata.get('path'):
+            schema = os.path.join(context.config.userdata.get('path'), schema)
+        IfcFile.load_schema(schema)
+    except:
+        assert False, f"The schema {schema} could not be loaded"
 
 @step('The IFC file "{file}" must be provided')
 def step_impl(context, file):
@@ -10,13 +22,25 @@ def step_impl(context, file):
     except:
         assert False, f"The file {file} could not be loaded"
 
+@given('The IFC file has been provided through an argument')
+def step_impl(context):
+    try:
+        IfcFile.load(context.config.userdata.get("ifcfile"))
+    except:
+        assert False, f"The IFC {context.config.userdata.get('ifcfile')} file could not be loaded"
+
+@given('A file path has been provided through an argument')
+def step_impl(context):
+    try:
+        assert context.config.userdata.get("path")
+    except:
+        assert False, f"The path {context.config.userdata.get('path')} could not be loaded"
 
 @step("IFC data must use the {schema} schema")
 def step_impl(context, schema):
-    assert IfcFile.get().schema == schema, "We expected a schema of {} but instead got {}".format(
-        schema, IfcFile.get().schema
-    )
-
+    switch_locale(context.localedir, "en")
+    assert_schema(context, schema)
+    
 
 @step('The IFC file "{file}" is exempt from being provided')
 def step_impl(context, file):

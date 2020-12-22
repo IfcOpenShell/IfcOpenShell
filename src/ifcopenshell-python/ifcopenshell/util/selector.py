@@ -204,7 +204,7 @@ class Selector:
             value = filter_rule.children[2].children[0][1:-1]
         for element in elements:
             element_value = self.get_element_value(element, key)
-            if not element_value:
+            if element_value is None:
                 continue
             if not comparison or self.filter_element(element, element_value, comparison, value):
                 results.append(element)
