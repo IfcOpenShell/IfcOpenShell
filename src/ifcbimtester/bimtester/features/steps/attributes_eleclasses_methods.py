@@ -82,3 +82,53 @@ def all_element_attribs_have_a_value(context, ifc_class):
         message_no_elems=_("There are no {ifc_class} elements in the IFC file."),
         parameter=failed_attribs
     )
+
+
+def name_has_a_value(context, ifc_class):
+
+    context.falseelems = []
+    context.falseguids = []
+
+    elements = IfcFile.get().by_type(ifc_class)
+    for elem in elements:
+        # print(elem.Name)
+        if not elem.Name:
+            context.falseelems.append(str(elem))
+            context.falseguids.append(elem.GlobalId)
+ 
+    context.elemcount = len(elements)
+    context.falsecount = len(context.falseelems)
+    assert_elements(
+        ifc_class,
+        context.elemcount,
+        context.falsecount,
+        context.falseelems,
+        message_all_falseelems=_("The name of all {elemcount} {elemcount} elements is not set."),
+        message_some_falseelems=_("The name of {falsecount} out of {elemcount} {ifc_class} elements is not set: {falseelems}"),
+        message_no_elems=_("There are no {ifc_class} elements in the IFC file."),
+    )
+
+
+def description_has_a_value(context, ifc_class):
+
+    context.falseelems = []
+    context.falseguids = []
+
+    elements = IfcFile.get().by_type(ifc_class)
+    for elem in elements:
+        # print(elem.Description)
+        if not elem.Description:
+            context.falseelems.append(str(elem))
+            context.falseguids.append(elem.GlobalId)
+ 
+    context.elemcount = len(elements)
+    context.falsecount = len(context.falseelems)
+    assert_elements(
+        ifc_class,
+        context.elemcount,
+        context.falsecount,
+        context.falseelems,
+        message_all_falseelems=_("The description of all {elemcount} {elemcount} elements is not set."),
+        message_some_falseelems=_("The description of {falsecount} out of {elemcount} {ifc_class} elements is not set: {falseelems}"),
+        message_no_elems=_("There are no {ifc_class} elements in the IFC file."),
+    )
