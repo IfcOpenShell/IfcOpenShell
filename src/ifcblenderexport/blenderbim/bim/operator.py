@@ -737,6 +737,22 @@ class ViewBcfTopic(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class RemoveBcfViewpoint(bpy.types.Operator):
+    bl_idname = "bim.remove_bcf_viewpoint"
+    bl_label = "Remove BCF Viewpoint"
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        props = bpy.context.scene.BCFProperties
+        blender_topic = props.topics[props.active_topic_index]
+        viewpoint_guid = blender_topic.viewpoints
+        topic = bcfxml.topics[blender_topic.name]
+        bcfxml.delete_viewpoint(viewpoint_guid, topic)
+        props.active_topic_index = props.active_topic_index # Refreshes the BCF Topic
+        print(bcfxml.filepath)
+        return {"FINISHED"}
+
+
 class ActivateBcfViewpoint(bpy.types.Operator):
     bl_idname = "bim.activate_bcf_viewpoint"
     bl_label = "Activate BCF Viewpoint"
@@ -745,7 +761,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         props = bpy.context.scene.BCFProperties
         blender_topic = props.topics[props.active_topic_index]
-        topic = bcfxml.topics[blender_topic.guid]
+        topic = bcfxml.topics[blender_topic.name]
         if not topic.viewpoints:
             return {"FINISHED"}
 

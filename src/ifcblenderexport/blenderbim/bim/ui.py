@@ -1696,6 +1696,7 @@ class BIM_PT_bcf(Panel):
             row = layout.row()
             row.prop(topic, "viewpoints")
             row.operator("bim.activate_bcf_viewpoint", icon="SCENE", text="")
+            row.operator("bim.remove_bcf_viewpoint", icon="X", text="")
 
             col = layout.column(align=True)
             if topic.type:
@@ -1757,8 +1758,8 @@ class BIM_PT_bcf_metadata(Panel):
                     op = row.operator("bim.open_uri", icon="FILE_FOLDER", text="")
                     op.uri = os.path.join(bcfxml.filepath, topic.name, f.reference)
                 box.label(text=f.date)
-                #box.label(text=f.ifc_project)
-                #box.label(text=f.ifc_spatial_structure_element)
+                # box.label(text=f.ifc_project)
+                # box.label(text=f.ifc_spatial_structure_element)
 
         if topic.reference_links:
             layout.label(text="Reference Links:")
@@ -1850,7 +1851,7 @@ class BIM_PT_bcf_comments(Panel):
                 while words and total_line_chars < props.comment_text_width:
                     word = words.pop(0)
                     line_words.append(word)
-                    total_line_chars += len(word) + 1 # 1 is for the space
+                    total_line_chars += len(word) + 1  # 1 is for the space
                 box.label(text=" ".join(line_words))
             box.separator()
 
@@ -2199,13 +2200,15 @@ class BIM_UL_clash_sets(bpy.types.UIList):
         else:
             layout.label(text="", translate=False)
 
+
 class BIM_UL_smart_groups(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         ob = data
         if item:
-            layout.label(text=str(item.number), translate=False, icon='NONE', icon_value=0)
+            layout.label(text=str(item.number), translate=False, icon="NONE", icon_value=0)
         else:
             layout.label(text="", translate=False)
+
 
 class BIM_UL_constraints(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
@@ -2469,6 +2472,7 @@ class BIM_PT_qto_utilities(Panel):
         row = layout.row(align=True)
         row.operator("bim.calculate_object_volumes")
 
+
 class BIM_PT_clash_manager(Panel):
     bl_idname = "BIM_PT_clash_manager"
     bl_label = "Clash Manager"
@@ -2503,10 +2507,11 @@ class BIM_PT_clash_manager(Panel):
         row = layout.row(align=True)
         row.operator("bim.load_smart_groups_for_active_clash_set")
 
-        layout.template_list('BIM_UL_smart_groups', '', props, 'smart_clash_groups', props, 'active_smart_group_index')
+        layout.template_list("BIM_UL_smart_groups", "", props, "smart_clash_groups", props, "active_smart_group_index")
 
         row = layout.row(align=True)
         row.operator("bim.select_smart_group")
+
 
 class BIM_PT_misc_utilities(Panel):
     bl_idname = "BIM_PT_misc_utilities"

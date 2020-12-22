@@ -206,6 +206,8 @@ class BcfXml:
         self.document = minidom.Document()
         root = self._create_element(self.document, "Markup")
 
+        self.write_header(topic.header, root)
+
         topic_el = self._create_element(
             root,
             "Topic",
@@ -216,10 +218,22 @@ class BcfXml:
             },
         )
 
+        for reference_link in topic.reference_links:
+            self._create_element(topic_el, "ReferenceLink", text=reference_link)
+
         text_map = {
             "Title": topic.title,
             "Priority": topic.priority,
             "Index": topic.index,
+        }
+        for key, value in text_map.items():
+            if value:
+                self._create_element(topic_el, key, text=value)
+
+        for label in topic.labels:
+            self._create_element(topic_el, "Labels", text=label)
+
+        text_map = {
             "CreationDate": topic.creation_date,
             "CreationAuthor": topic.creation_author,
             "ModifiedDate": topic.modified_date,
@@ -233,10 +247,6 @@ class BcfXml:
             if value:
                 self._create_element(topic_el, key, text=value)
 
-        for reference_link in topic.reference_links:
-            self._create_element(topic_el, "ReferenceLink", text=reference_link)
-        for label in topic.labels:
-            self._create_element(topic_el, "Labels", text=label)
         if topic.bim_snippet:
             bim_snippet = self._create_element(
                 topic_el,
@@ -254,7 +264,6 @@ class BcfXml:
         for related_topic in topic.related_topics:
             self._create_element(topic_el, "RelatedTopic", {"Guid": related_topic.guid})
 
-        self.write_header(topic.header, root)
         self.write_comments(topic.comments, root)
         self.write_viewpoints(topic.viewpoints, root, topic)
 
@@ -334,7 +343,7 @@ class BcfXml:
 
     def write_viewpoint(self, viewpoint, topic):
         document = minidom.Document()
-        root = self._create_element(document, "VisualizationInfo")
+        root = self._create_element(document, "VisualizationInfo", { "Guid": viewpoint.guid })
         self.write_viewpoint_components(viewpoint, root)
         self.write_viewpoint_orthogonal_camera(viewpoint, root)
         self.write_viewpoint_perspective_camera(viewpoint, root)
@@ -354,7 +363,7 @@ class BcfXml:
                 "ViewSetupHints",
                 {
                     "SpacesVisible": viewpoint.components.view_setup_hints.spaces_visible,
-                    "SpaceBoundiresVisible": viewpoint.components.view_setup_hints.space_boundaries_visible,
+                    "SpaceBoundariesVisible": viewpoint.components.view_setup_hints.space_boundaries_visible,
                     "OpeningsVisible": viewpoint.components.view_setup_hints.openings_visible,
                 },
             )
