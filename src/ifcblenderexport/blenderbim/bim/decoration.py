@@ -6,6 +6,7 @@ from itertools import chain
 from bpy.types import SpaceView3D
 from mathutils import Vector, Matrix
 import bpy
+import bmesh
 import blf
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 import gpu
@@ -173,6 +174,22 @@ class BaseDecorator():
         """
         vertices = [obj.matrix_world @ v.co for v in obj.data.vertices]
         indices = [e.vertices for e in obj.data.edges]
+        return vertices, indices
+
+    def get_editmesh_geom(self, obj):
+        """Parses editmode mesh geometry into line segments
+        """
+        mesh = bmesh.from_edit_mesh(obj.data)
+        vertices = []
+        indices = []
+        idx = 0
+
+        for edge in mesh.edges:
+            vertices.extend(edge.verts)
+            indices.append((idx, idx+1))
+            idx += 2
+        vertices = [obj.matrix_world @ v.co for v in vertices]
+
         return vertices, indices
 
     def decorate(self, object):
@@ -528,5 +545,8 @@ class HiddenDecorator(BaseDecorator):
     """
 
     def decorate(self, obj):
-        verts, idxs = self.get_mesh_geom(obj)
+        if obj.data.is_editmode:
+            verts, idxs = self.get_editmesh_geom(obj)
+        else:
+            verts, idxs = self.get_mesh_geom(obj)
         self.draw_lines(obj, verts, idxs)
