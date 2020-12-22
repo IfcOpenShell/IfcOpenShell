@@ -281,6 +281,23 @@ class BaseDecorator():
         blf.draw(self.font_id, text)
         blf.disable(self.font_id, blf.ROTATION)
 
+    def format_value(self, value):
+        unit_system = bpy.context.scene.unit_settings.system
+        if unit_system == 'IMPERIAL':
+            precision = bpy.context.scene.BIMProperties.imperial_precision
+            if precision == "NONE":
+                precision = 256
+            elif precision == "1":
+                precision = 1
+            elif "/" in precision:
+                precision = int(precision.split("/")[1])
+        elif unit_system == 'METRIC':
+            precision = 3
+        else:
+            return
+
+        return bpy.utils.units.to_string(unit_system, 'LENGTH', value, precision, split_unit=True)
+
 
 class DimensionDecorator(BaseDecorator):
     """Decorator for dimension objects
@@ -352,7 +369,7 @@ class DimensionDecorator(BaseDecorator):
             v0 = Vector(vertices[i0])
             v1 = Vector(vertices[i1])
             length = (v1 - v0).length
-            text = f"{length:.2f}"
+            text = self.format_value(length)
             p0 = location_3d_to_region_2d(region, region3d, v0)
             p1 = location_3d_to_region_2d(region, region3d, v1)
             dir = p1 - p0
@@ -658,8 +675,7 @@ class PlanDecorator(LevelDecorator):
             p0 = location_3d_to_region_2d(region, region3d, v0)
             p1 = location_3d_to_region_2d(region, region3d, v1)
             dir = p1 - p0
-            elev = verts[-1].z
-            text = f"RL {elev:.2f}"
+            text = "RL " + self.format_value(verts[-1].z)
             self.draw_label(text, p0, dir, gap=8, center=False)
 
 
@@ -732,6 +748,5 @@ class SectionDecorator(LevelDecorator):
             p0 = location_3d_to_region_2d(region, region3d, v0)
             p1 = location_3d_to_region_2d(region, region3d, v1)
             dir = p1 - p0
-            elev = verts[-1].z
-            text = f"RL {elev:.2f}"
+            text = "RL " + self.format_value(verts[-1].z)
             self.draw_label(text, p0 + dir.normalized() * 16, -dir, gap=16, center=False)
