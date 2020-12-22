@@ -1837,13 +1837,16 @@ class BIM_PT_bcf_comments(Panel):
         topic = props.topics[props.active_topic_index]
         for comment in topic.comments:
             box = self.layout.box()
-            box.separator()
+
             author_text = "{} ({})".format(comment.author, comment.date)
             if comment.modified_author:
                 author_text = "*{} ({})".format(comment.modified_author, comment.modified_date)
-            box.label(text=author_text, icon="WORDWRAP_ON")
-            box.separator()
-            box.scale_y = 0.5
+            row = box.row(align=True)
+            row.label(text=author_text, icon="WORDWRAP_ON")
+            row.operator("bim.remove_bcf_comment", icon="X", text="").comment_guid = comment.name
+
+            col = box.column(align=True)
+            col.scale_y = 0.8
             words = comment.comment.split()
             while words:
                 total_line_chars = 0
@@ -1852,8 +1855,7 @@ class BIM_PT_bcf_comments(Panel):
                     word = words.pop(0)
                     line_words.append(word)
                     total_line_chars += len(word) + 1  # 1 is for the space
-                box.label(text=" ".join(line_words))
-            box.separator()
+                col.label(text=" ".join(line_words))
 
 
 class BIM_PT_qa(Panel):
