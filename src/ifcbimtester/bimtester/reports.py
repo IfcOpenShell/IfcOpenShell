@@ -10,7 +10,8 @@ def generate_report(adir=".", use_report_folder=True, report_file_name="", html_
     # get html template path
     report_template_path = os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
-        "reportdata/"
+        "resources",
+        "reports"
     )
 
     if html_template_file_path:
