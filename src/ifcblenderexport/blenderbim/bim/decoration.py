@@ -21,13 +21,13 @@ class BaseDecorator():
     VERT_GLSL = """
     uniform mat4 viewMatrix;
     in vec3 pos;
-    in uint style;
+    in uint topo;
     out vec4 gl_Position;
-    out uint vstyle;
+    out uint type;
 
     void main() {
         gl_Position = viewMatrix * vec4(pos, 1.0);
-        vstyle = style;
+        type = topo;
     }
     """
     GEOM_GLSL = """
@@ -129,16 +129,22 @@ class BaseDecorator():
         collection = bpy.data.collections.get("IfcGroup/" + drawing.name)
         return filter(lambda o: self.basename in o.name, collection.objects)
 
-    def get_path_geom(self, obj):
-        """parse path geometry into line segments
-        returns:
-        - vertices: 3-tuples of coords
-        - indices: 2-tuples of each segment verices' indices
-        - styles: 0=internal, 1=beginning, 2=ending
+    def get_path_geom(self, obj, topo=True):
+        """Parses path geometry into line segments
+        Args:
+          obj: Blender object with data of type Curve
+          topo: bool; if types of vertices are needed
+        Returns:
+          vertices: 3-tuples of coords
+          indices: 2-tuples of each segment verices' indices
+          topology: types of vertices
+            0: internal
+            1: beginning
+            2: ending
         """
         vertices = []
         indices = []
-        styles = []
+        topology = []
 
         idx = 0
         for spline in obj.data.splines:
@@ -146,64 +152,46 @@ class BaseDecorator():
             points = [obj.matrix_world @ p.co for p in spline_points]
             cnt = len(points)
             vertices.extend(p[:3] for p in points)
-            styles.append(1)
-            styles.extend([0] * max(0, cnt - 2))
-            styles.append(2)
+            if topo:
+                topology.append(1)
+                topology.extend([0] * max(0, cnt - 2))
+                topology.append(2)
             indices.extend((idx+i, idx+i+1) for i in range(cnt-1))
             idx += cnt
 
-        return vertices, indices, styles
+        return vertices, indices, topology
 
     def get_mesh_geom(self, obj):
-        """parse mesh geometry into line segments
-        returns:
-        - vertices: 3-tuples of coords
-        - indices: 2-tuples of each segment verices' indices
-        - styles: 0=internal, 1=beginning, 2=ending
+        """Parses mesh geometry into line segments
+
+        Args:
+          obj: Blender object with data of type Mesh
+
+        Returns:
+          vertices: 3-tuples of coords
+          indices: 2-tuples of each segment verices' indices
         """
         vertices = [obj.matrix_world @ v.co for v in obj.data.vertices]
         indices = [e.vertices for e in obj.data.edges]
-        return vertices, indices, None
+        return vertices, indices
 
     def decorate(self, object):
         """perform actuall drawing stuff"""
         raise NotImplementedError()
 
-    def draw_lines(self, obj, geom):
+    def draw_lines(self, obj, vertices, indices, topology=None):
         region = self.context.region
         region3d = self.context.region_data
 
-        vertices, indices, styles = geom
-
         fmt = GPUVertFormat()
         fmt.attr_add(id="pos", comp_type='F32', len=3, fetch_mode='FLOAT')
+        if topology:
+            fmt.attr_add(id="topo", comp_type='U8', len=1, fetch_mode='INT')
 
         vbo = GPUVertBuf(len=len(vertices), format=fmt)
         vbo.attr_fill(id="pos", data=vertices)
-
-        ibo = GPUIndexBuf(type='LINES', seq=indices)
-
-        batch = GPUBatch(type='LINES', buf=vbo, elem=ibo)
-
-        self.shader.bind()
-        self.shader.uniform_float
-        self.shader.uniform_float("viewMatrix", region3d.perspective_matrix)
-        self.shader.uniform_float("winsize", (region.width, region.height))
-        batch.draw(self.shader)
-
-    def draw_lines_styled(self, obj, geom):
-        region = self.context.region
-        region3d = self.context.region_data
-
-        vertices, indices, styles = geom
-
-        fmt = GPUVertFormat()
-        fmt.attr_add(id="pos", comp_type='F32', len=3, fetch_mode='FLOAT')
-        fmt.attr_add(id="style", comp_type='U8', len=1, fetch_mode='INT')
-
-        vbo = GPUVertBuf(len=len(vertices), format=fmt)
-        vbo.attr_fill(id="pos", data=vertices)
-        vbo.attr_fill(id="style", data=styles)
+        if topology:
+            vbo.attr_fill(id="topo", data=topology)
 
         ibo = GPUIndexBuf(type='LINES', seq=indices)
 
@@ -280,14 +268,13 @@ class DimensionDecorator(BaseDecorator):
         self.dpi = context.preferences.system.dpi
 
     def decorate(self, obj):
-        geom = self.get_path_geom(obj)
-        self.draw_lines(obj, geom)
-        self.draw_labels(obj, geom)
+        verts, idxs, _ = self.get_path_geom(obj, topo=False)
+        self.draw_lines(obj, verts, idxs)
+        self.draw_labels(obj, verts, idxs)
 
-    def draw_labels(self, obj, geom):
+    def draw_labels(self, obj, vertices, indices):
         region = self.context.region
         region3d = self.context.region_data
-        vertices, indices, _ = geom
         for i0, i1 in indices:
             v0 = Vector(vertices[i0])
             v1 = Vector(vertices[i1])
@@ -341,10 +328,9 @@ class EqualityDecorator(DimensionDecorator):
     basename = "IfcAnnotation/Equal"
     installed = None
 
-    def draw_labels(self, obj, geom):
+    def draw_labels(self, obj, vertices, indices):
         region = self.context.region
         region3d = self.context.region_data
-        vertices, indices, _ = geom
         for i0, i1 in indices:
             v0 = Vector(vertices[i0])
             v1 = Vector(vertices[i1])
@@ -366,11 +352,11 @@ class LeaderDecorator(BaseDecorator):
 
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;
-    in uint vstyle[];
+    in uint type[];
 
     void main() {
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-        uint s0 = vstyle[0], s1 = vstyle[1];
+        uint t0 = type[0], t1 = type[1];
 
         mat4 windowMatrix = mat4(winsize.x/2, 0, 0, 0,   0, winsize.y/2, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
         mat4 unwindowMatrix = inverse(windowMatrix);
@@ -385,7 +371,7 @@ class LeaderDecorator(BaseDecorator):
         for(int i=0; i<3; i++) head_ndc[i] = unwindowMatrix * vec4(head[i], 0, 0) * p1.w;
 
         // end edge arrow for last segment
-        if (s1 == 2u) {
+        if (t1 == 2u) {
             gl_Position = p1;
             EmitVertex();
             gl_Position = p1 - head_ndc[1];
@@ -410,8 +396,8 @@ class LeaderDecorator(BaseDecorator):
     """
 
     def decorate(self, obj):
-        geom = self.get_path_geom(obj)
-        self.draw_lines_styled(obj, geom)
+        verts, idxs, topo = self.get_path_geom(obj)
+        self.draw_lines(obj, verts, idxs, topo)
 
 
 class StairDecorator(BaseDecorator):
@@ -428,11 +414,11 @@ class StairDecorator(BaseDecorator):
 
     layout(lines) in;
     layout(line_strip, max_vertices=MAX_POINTS) out;
-    in uint vstyle[];
+    in uint type[];
 
     void main() {
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-        uint s0 = vstyle[0], s1 = vstyle[1];
+        uint t0 = type[0], t1 = type[1];
 
         mat4 windowMatrix = mat4(winsize.x/2, 0, 0, 0,   0, winsize.y/2, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
         mat4 unwindowMatrix = inverse(windowMatrix);
@@ -442,7 +428,7 @@ class StairDecorator(BaseDecorator):
         vec4 gap0 = vec4(0), gap1 = vec4(0);
 
         // start edge circle for first segment
-        if (s0 == 1u) {
+        if (t0 == 1u) {
             vec2 head[CIRCLE_SEGS];
             circle_head(p0w, p1w, head);
             for(int i=0; i<CIRCLE_SEGS; i++) {
@@ -458,7 +444,7 @@ class StairDecorator(BaseDecorator):
         }
 
         // end edge arrow for last segment
-        if (s1 == 2u) {
+        if (t1 == 2u) {
             vec2 head[3];
             vec4 head_ndc[3];
             arrow_head(p0w, p1w, head);
@@ -488,8 +474,8 @@ class StairDecorator(BaseDecorator):
     """
 
     def decorate(self, obj):
-        geom = self.get_path_geom(obj)
-        self.draw_lines_styled(obj, geom)
+        verts, idxs, topo = self.get_path_geom(obj)
+        self.draw_lines(obj, verts, idxs, topo)
 
 
 class HiddenDecorator(BaseDecorator):
@@ -533,7 +519,6 @@ class HiddenDecorator(BaseDecorator):
 
     void main() {
         float t = fract(dist / DASH_SIZE);
-        // fragColor = vec4(1.0, 1.0, 1.0, 1.0) * t;
         if (t > DASH_RATIO) {
             discard;
         } else {
@@ -543,5 +528,5 @@ class HiddenDecorator(BaseDecorator):
     """
 
     def decorate(self, obj):
-        geom = self.get_mesh_geom(obj)
-        self.draw_lines(obj, geom)
+        verts, idxs = self.get_mesh_geom(obj)
+        self.draw_lines(obj, verts, idxs)
