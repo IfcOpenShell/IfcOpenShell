@@ -62,12 +62,32 @@ class BaseDecorator():
         head[2] = mat2(c, +s, -s, c) * nose;
     }
 
-    void circle_head(in vec2 p0, in vec2 p1, out vec2 head[CIRCLE_SEGS]) {
+    void circle_head(in vec2 p0, in vec2 p1, in float size, out vec2 head[CIRCLE_SEGS]) {
         float angle_d = PI * 2 / CIRCLE_SEGS;
         for(int i = 0; i<CIRCLE_SEGS; i++) {
             float angle = angle_d * i;
-            head[i] = vec2(cos(angle), sin(angle)) * CIRCLE_SIZE;
+            head[i] = vec2(cos(angle), sin(angle)) * size;
         }
+    }
+
+    void cross_head(in vec2 p0, in vec2 p1, in float size, out vec2 head[3]) {
+        vec2 nose = normalize(p1 - p0) * size;
+        float c = cos(PI/2), s = sin(PI/2);
+        head[0] = nose;
+        head[1] = mat2(c, -s, +s, c) * nose;
+        head[2] = mat2(c, +s, -s, c) * nose;
+    }
+
+    void callout_head(in vec2 p0, in vec2 p1, out vec2 head[4]) {
+        vec2 nose = normalize(p1 - p0);
+        vec2 gap = nose * CALLOUT_GAP;
+        vec2 tail = nose * -CALLOUT_SIZE;
+        vec2 side = cross(vec3(nose, 0), vec3(0, 0, 1)).xy * CALLOUT_GAP;
+
+        head[0] = tail + side;
+        head[1] = gap * 2 + side;
+        head[2] = gap;
+        head[3] = side;
     }
     """
 
@@ -80,10 +100,14 @@ class BaseDecorator():
         #define ARROW2_ANGLE PI / 3.0
         #define ARROW1_SIZE 16.0
         #define ARROW2_SIZE 24.0
-        #define CIRCLE_SIZE 8.0
-        #define DASH_SIZE 16.0
-        #define DASH_RATIO 0.5
+        #define CIRCLE1_SIZE 8.0
+        #define CIRCLE2_SIZE 8.0
+        #define DASH1_SIZE 16.0
+        #define DASH2_SIZE 48.0
         #define DASH_GAP 4.0
+        #define CROSS_SIZE 16.0
+        #define CALLOUT_GAP 8.0
+        #define CALLOUT_SIZE 64.0
     """
 
     # class var for single handler
@@ -106,6 +130,9 @@ class BaseDecorator():
         self.context = context
         self.props = props
         self.shader = self.create_shader()
+        self.font_id = 0
+        self.font_size = 16
+        self.dpi = context.preferences.system.dpi
 
     @classmethod
     def create_shader(cls):
@@ -134,9 +161,11 @@ class BaseDecorator():
 
     def get_path_geom(self, obj, topo=True):
         """Parses path geometry into line segments
+
         Args:
           obj: Blender object with data of type Curve
           topo: bool; if types of vertices are needed
+
         Returns:
           vertices: 3-tuples of coords
           indices: 2-tuples of each segment verices' indices
@@ -222,6 +251,36 @@ class BaseDecorator():
         self.shader.uniform_float("winsize", (region.width, region.height))
         batch.draw(self.shader)
 
+    def draw_label(self, text, pos, dir, gap=4, center=True):
+        """Draw text label
+
+        Args:
+          pos: bottom-center
+
+        aligned and centered at segment middle
+        """
+        ang = -Vector((1, 0)).angle_signed(dir)
+        cos = math.cos(ang)
+        sin = math.sin(ang)
+
+        blf.size(self.font_id, self.font_size, self.dpi)
+
+        if center:
+            # centering
+            w, _ = blf.dimensions(self.font_id, text)
+            pos -= Vector((cos, sin)) * w * 0.5
+
+        if gap:
+            # side-shifting
+            pos += Vector((-sin, cos)) * gap
+
+        blf.enable(self.font_id, blf.ROTATION)
+        blf.position(self.font_id, pos.x, pos.y, 0)
+
+        blf.rotation(self.font_id, ang)
+        blf.draw(self.font_id, text)
+        blf.disable(self.font_id, blf.ROTATION)
+
 
 class DimensionDecorator(BaseDecorator):
     """Decorator for dimension objects
@@ -281,11 +340,6 @@ class DimensionDecorator(BaseDecorator):
     }
     """
 
-    def __init__(self, props, context):
-        super().__init__(props, context)
-        self.font_id = 0
-        self.dpi = context.preferences.system.dpi
-
     def decorate(self, obj):
         verts, idxs, _ = self.get_path_geom(obj, topo=False)
         self.draw_lines(obj, verts, idxs)
@@ -301,41 +355,8 @@ class DimensionDecorator(BaseDecorator):
             text = f"{length:.2f}"
             p0 = location_3d_to_region_2d(region, region3d, v0)
             p1 = location_3d_to_region_2d(region, region3d, v1)
-            self.draw_label(p0, p1, text)
-
-    def draw_label(self, p0, p1, text):
-        """Draw text of segment length
-        aligned and centered at segment middle
-        """
-        proj = p1 - p0
-
-        if proj.length < 0.001:
-            return
-
-        ang = -Vector((1, 0)).angle_signed(proj)
-        cos = math.cos(ang)
-        sin = math.sin(ang)
-
-        # midpoint
-        pos = p0 + (p1 - p0) * .5
-
-        # TODO: take font size from styles
-        blf.size(self.font_id, 16, self.dpi)
-        w, h = blf.dimensions(self.font_id, text)
-
-        # align centered
-        pos -= Vector((cos, sin)) * w * 0.5
-
-        # add padding
-        # TODO: take padding from styles and adjust to line width
-        pos += Vector((-sin, cos)) * 4
-
-        blf.enable(self.font_id, blf.ROTATION)
-        blf.position(self.font_id, pos.x, pos.y, 0)
-
-        blf.rotation(self.font_id, ang)
-        blf.draw(self.font_id, text)
-        blf.disable(self.font_id, blf.ROTATION)
+            dir = p1 - p0
+            self.draw_label(text, p0 + (dir) * .5, dir)
 
 
 class EqualityDecorator(DimensionDecorator):
@@ -355,7 +376,8 @@ class EqualityDecorator(DimensionDecorator):
             v1 = Vector(vertices[i1])
             p0 = location_3d_to_region_2d(region, region3d, v0)
             p1 = location_3d_to_region_2d(region, region3d, v1)
-            self.draw_label(p0, p1, "EQ")
+            dir = p1 - p0
+            self.draw_label("EQ", p0 + (dir) * .5, dir)
 
 
 class LeaderDecorator(BaseDecorator):
@@ -384,13 +406,13 @@ class LeaderDecorator(BaseDecorator):
 
         vec4 gap1 = vec4(0);
 
-        vec2 head[3];
-        vec4 head_ndc[3];
-        arrow_head(p0w, p1w, ARROW1_SIZE, ARROW1_ANGLE, head);
-        for(int i=0; i<3; i++) head_ndc[i] = unwindowMatrix * vec4(head[i], 0, 0) * p1.w;
-
         // end edge arrow for last segment
         if (t1 == 2u) {
+            vec2 head[3];
+            vec4 head_ndc[3];
+            arrow_head(p0w, p1w, ARROW1_SIZE, ARROW1_ANGLE, head);
+            for(int i=0; i<3; i++) head_ndc[i] = unwindowMatrix * vec4(head[i], 0, 0) * p1.w;
+
             gl_Position = p1;
             EmitVertex();
             gl_Position = p1 - head_ndc[1];
@@ -449,7 +471,7 @@ class StairDecorator(BaseDecorator):
         // start edge circle for first segment
         if (t0 == 1u) {
             vec2 head[CIRCLE_SEGS];
-            circle_head(p0w, p1w, head);
+            circle_head(p0w, p1w, CIRCLE1_SIZE, head);
             for(int i=0; i<CIRCLE_SEGS; i++) {
                 gl_Position = p0 + unwindowMatrix * vec4(head[i], 0, 0) * p0.w;
                 EmitVertex();
@@ -458,7 +480,7 @@ class StairDecorator(BaseDecorator):
             EmitVertex();
             EndPrimitive();
 
-            vec2 gap = normalize(p1w - p0w) * CIRCLE_SIZE;
+            vec2 gap = normalize(p1w - p0w) * CIRCLE1_SIZE;
             gap0 = unwindowMatrix * vec4(gap, 0, 0) * p0.w;
         }
 
@@ -533,8 +555,8 @@ class HiddenDecorator(BaseDecorator):
     out vec4 fragColor;
 
     void main() {
-        float t = fract(dist / DASH_SIZE);
-        if (t > DASH_RATIO) {
+        float t = fract(dist / DASH1_SIZE);
+        if (t > 0.5) {
             discard;
         } else {
             fragColor = vec4(1.0, 1.0, 1.0, 1.0);
@@ -548,3 +570,168 @@ class HiddenDecorator(BaseDecorator):
         else:
             verts, idxs = self.get_mesh_geom(obj)
         self.draw_lines(obj, verts, idxs)
+
+
+class LevelDecorator(BaseDecorator):
+
+    def get_splines(self, obj):
+        """Iterates through splines
+        Args:
+          obj: Blender object with Curve data
+
+        Yields:
+          verts: points of each spline, world coords
+        """
+        for spline in obj.data.splines:
+            spline_points = spline.bezier_points if spline.bezier_points else spline.points
+            yield [obj.matrix_world @ p.co for p in spline_points]
+
+    def decorate(self, obj):
+        verts, idxs, topo = self.get_path_geom(obj)
+        self.draw_lines(obj, verts, idxs, topo)
+        splines = self.get_splines(obj)
+        self.draw_labels(obj, splines)
+
+
+class PlanDecorator(LevelDecorator):
+    basename = "IfcAnnotation/Plan Level"
+    installed = None
+
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+    in uint type[];
+
+    void main() {
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+        uint t0 = type[0], t1 = type[1];
+
+        mat4 windowMatrix = mat4(winsize.x/2, 0, 0, 0,   0, winsize.y/2, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
+        mat4 unwindowMatrix = inverse(windowMatrix);
+
+        vec2 p0w = (windowMatrix * (p0 / p0.w)).xy, p1w = (windowMatrix * (p1 / p1.w)).xy;
+
+        vec4 gap1 = vec4(0);
+
+        // end edge cross+circle for last segment
+        if (t1 == 2u) {
+            vec2 head_o[CIRCLE_SEGS];
+
+            circle_head(p0w, p1w, CIRCLE2_SIZE, head_o);
+            for(int i=0; i<CIRCLE_SEGS; i++) {
+                gl_Position = p1 + unwindowMatrix * vec4(head_o[i], 0, 0) * p1.w;
+                EmitVertex();
+            }
+            gl_Position = p1 + unwindowMatrix * vec4(head_o[0], 0, 0) * p1.w;
+            EmitVertex();
+            EndPrimitive();
+
+            vec2 head_x[3];
+            cross_head(p0w, p1w, CROSS_SIZE, head_x);
+
+            gl_Position = p1 + unwindowMatrix * vec4(head_x[1], 0, 0) * p1.w;
+            EmitVertex();
+            gl_Position = p1 + unwindowMatrix * vec4(head_x[2], 0, 0) * p1.w;
+            EmitVertex();
+            EndPrimitive();
+
+            gap1 = unwindowMatrix * vec4(head_x[0], 0, 0) * p1.w;
+        }
+
+        // stem, adjusted for and arrow
+        gl_Position = p0;
+        EmitVertex();
+        gl_Position = p1 + gap1;
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    def draw_labels(self, obj, splines):
+        region = self.context.region
+        region3d = self.context.region_data
+        for verts in splines:
+            v0 = verts[0]
+            v1 = verts[1]
+            p0 = location_3d_to_region_2d(region, region3d, v0)
+            p1 = location_3d_to_region_2d(region, region3d, v1)
+            dir = p1 - p0
+            elev = verts[-1].z
+            text = f"RL {elev:.2f}"
+            self.draw_label(text, p0, dir, gap=8, center=False)
+
+
+class SectionDecorator(LevelDecorator):
+    basename = "IfcAnnotation/Section Level"
+    installed = None
+
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+    in uint type[];
+    out float dist; // distance from starging point along segment
+
+    void main() {
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+        uint t0 = type[0], t1 = type[1];
+
+        mat4 windowMatrix = mat4(winsize.x/2, 0, 0, 0,   0, winsize.y/2, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
+        mat4 unwindowMatrix = inverse(windowMatrix);
+
+        vec2 p0w = (windowMatrix * (p0 / p0.w)).xy, p1w = (windowMatrix * (p1 / p1.w)).xy;
+
+        // start edge callout
+        if (t0 == 1u) {
+            vec2 head[4];
+            callout_head(p0w, p1w, head);
+
+            for(int i=0; i<4; i++) {
+                gl_Position = p0 + unwindowMatrix * vec4(head[i], 0, 0) * p0.w;
+                EmitVertex();
+            }
+            EndPrimitive();
+        }
+
+        // stem
+        dist = 0;
+        gl_Position = p0;
+        EmitVertex();
+        dist = length(p1w - p0w);
+        gl_Position = p1;
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    FRAG_GLSL = """
+    in vec2 gl_FragCoord;
+    in float dist;
+    out vec4 fragColor;
+
+    void main() {
+        float t = fract(dist / DASH2_SIZE);
+        // pattern: 11011110
+        if (t > 0.875 || (t > 0.25 && t < 0.375)) {
+            discard;
+        } else {
+            fragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        }
+    }
+    """
+
+    def draw_labels(self, obj, splines):
+        region = self.context.region
+        region3d = self.context.region_data
+        for verts in splines:
+            v0 = verts[0]
+            v1 = verts[1]
+            p0 = location_3d_to_region_2d(region, region3d, v0)
+            p1 = location_3d_to_region_2d(region, region3d, v1)
+            dir = p1 - p0
+            elev = verts[-1].z
+            text = f"RL {elev:.2f}"
+            self.draw_label(text, p0 + dir.normalized() * 16, -dir, gap=16, center=False)

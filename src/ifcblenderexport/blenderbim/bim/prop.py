@@ -366,12 +366,16 @@ def toggleDecorations(self, context):
         decoration.LeaderDecorator.install(self, context)
         decoration.StairDecorator.install(self, context)
         decoration.HiddenDecorator.install(self, context)
+        decoration.PlanDecorator.install(self, context)
+        decoration.SectionDecorator.install(self, context)
     else:
         decoration.DimensionDecorator.uninstall()
         decoration.EqualityDecorator.uninstall()
         decoration.LeaderDecorator.uninstall()
         decoration.StairDecorator.uninstall()
         decoration.HiddenDecorator.uninstall()
+        decoration.PlanDecorator.uninstall()
+        decoration.SectionDecorator.uninstall()
 
 
 def getScenarios(self, context):
