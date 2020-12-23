@@ -771,6 +771,24 @@ class RemoveBcfComment(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class EditBcfComment(bpy.types.Operator):
+    bl_idname = "bim.edit_bcf_comment"
+    bl_label = "Edit BCF Comment"
+    comment_guid: bpy.props.StringProperty()
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        props = bpy.context.scene.BCFProperties
+        blender_topic = props.topics[props.active_topic_index]
+        blender_comment = blender_topic.comments.get(self.comment_guid)
+        topic = bcfxml.topics[blender_topic.name]
+        comment = topic.comments[self.comment_guid]
+        comment.comment = blender_comment.comment
+        bcfxml.edit_comment(comment, topic)
+        bpy.ops.bim.load_bcf_comments(topic_guid = topic.guid)
+        return {"FINISHED"}
+
+
 class AddBcfComment(bpy.types.Operator):
     bl_idname = "bim.add_bcf_comment"
     bl_label = "Add BCF Comment"
