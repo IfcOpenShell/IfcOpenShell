@@ -28,7 +28,7 @@ from . import helper
 from bpy_extras.io_utils import ImportHelper
 from itertools import cycle
 from mathutils import Vector, Matrix, Euler, geometry
-from math import radians, atan, tan, cos, sin
+from math import radians, degrees, atan, tan, cos, sin
 from pathlib import Path
 from bpy.app.handlers import persistent
 
@@ -741,6 +741,53 @@ class ViewBcfTopic(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AddBcfViewpoint(bpy.types.Operator):
+    bl_idname = "bim.add_bcf_viewpoint"
+    bl_label = "Add BCF Viewpoint"
+
+    def execute(self, context):
+        if not bpy.context.scene.camera:
+            return {"FINISHED"}
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        props = bpy.context.scene.BCFProperties
+        blender_topic = props.topics[props.active_topic_index]
+        topic = bcfxml.topics[blender_topic.name]
+        viewpoint = bcf.data.Viewpoint()
+
+        if bpy.context.scene.camera.data.type == "ORTHO":
+            camera = bcf.data.OrthogonalCamera()
+            camera.view_to_world_scale = bpy.context.scene.camera.data.ortho_scale
+            viewpoint.orthogonal_camera = camera
+        elif bpy.context.scene.camera.data.type == "PERSP":
+            camera = bcf.data.PerspectiveCamera()
+            camera.field_of_view = degrees(bpy.context.scene.camera.data.angle)
+            viewpoint.perspective_camera = camera
+        camera.camera_view_point.x = bpy.context.scene.camera.location.x
+        camera.camera_view_point.y = bpy.context.scene.camera.location.y
+        camera.camera_view_point.z = bpy.context.scene.camera.location.z
+        direction = bpy.context.scene.camera.matrix_world.to_quaternion() @ Vector((0.0, 0.0, -1.0))
+        camera.camera_direction.x = direction.x
+        camera.camera_direction.y = direction.y
+        camera.camera_direction.z = direction.z
+        up = bpy.context.scene.camera.matrix_world.to_quaternion() @ Vector((0.0, 1.0, 0.0))
+        camera.camera_up_vector.x = up.x
+        camera.camera_up_vector.y = up.y
+        camera.camera_up_vector.z = up.z
+
+        old_file_format = bpy.context.scene.render.image_settings.file_format
+        bpy.context.scene.render.image_settings.file_format = "PNG"
+        old_filepath = bpy.context.scene.render.filepath
+        bpy.context.scene.render.filepath = os.path.join(bpy.context.scene.BIMProperties.data_dir, "snapshot.png")
+        bpy.ops.render.opengl(write_still=True)
+        viewpoint.snapshot = bpy.context.scene.render.filepath
+
+        bcfxml.add_viewpoint(topic, viewpoint)
+        bpy.context.scene.render.filepath = old_filepath
+        bpy.context.scene.render.image_settings.file_format = old_file_format
+        props.active_topic_index = props.active_topic_index # refreshes the BCF Topic
+        return {"FINISHED"}
+
+
 class RemoveBcfViewpoint(bpy.types.Operator):
     bl_idname = "bim.remove_bcf_viewpoint"
     bl_label = "Remove BCF Viewpoint"
@@ -896,6 +943,8 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         return {"FINISHED"}
 
     def set_viewpoint_components(self, viewpoint):
+        if not viewpoint.components:
+            return
         selected_global_ids = [s.ifc_guid for s in viewpoint.components.selection]
         exception_global_ids = [v.ifc_guid for v in viewpoint.components.visibility.exceptions]
         global_id_colours = {}

@@ -1696,6 +1696,7 @@ class BIM_PT_bcf(Panel):
             row = layout.row()
             row.prop(topic, "viewpoints")
             row.operator("bim.activate_bcf_viewpoint", icon="SCENE", text="")
+            row.operator("bim.add_bcf_viewpoint", icon="ADD", text="")
             row.operator("bim.remove_bcf_viewpoint", icon="X", text="")
 
             col = layout.column(align=True)
