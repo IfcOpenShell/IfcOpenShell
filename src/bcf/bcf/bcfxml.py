@@ -272,7 +272,7 @@ class BcfXml:
             f.write(self.document.toprettyxml(encoding="utf-8"))
 
     def write_header(self, header, root):
-        if not header:
+        if not header or not header.files:
             return
         header_el = self._create_element(root, "Header")
         for f in header.files:
@@ -502,6 +502,15 @@ class BcfXml:
             if os.path.exists(filepath):
                 os.remove(filepath)
         del topic.viewpoints[guid]
+        self.edit_topic(topic)
+
+    def delete_file(self, topic, index):
+        if not topic.header:
+            return
+        f = topic.header.files.pop(index)
+        filepath = os.path.join(self.filepath, topic.guid, f.reference)
+        if not f.is_external and os.path.exists(filepath):
+            os.remove(filepath)
         self.edit_topic(topic)
 
     def get_comments(self, guid):

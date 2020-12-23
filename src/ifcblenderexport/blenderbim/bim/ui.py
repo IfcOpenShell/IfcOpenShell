@@ -1747,7 +1747,7 @@ class BIM_PT_bcf_metadata(Panel):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         bcf_topic = bcfxml.topics[topic.name]
 
-        if bcf_topic.header:
+        if bcf_topic.header and bcf_topic.header.files:
             layout.label(text="Header Files:")
             for index, f in enumerate(bcf_topic.header.files):
                 box = self.layout.box()
@@ -1758,6 +1758,7 @@ class BIM_PT_bcf_metadata(Panel):
                 else:
                     op = row.operator("bim.open_uri", icon="FILE_FOLDER", text="")
                     op.uri = os.path.join(bcfxml.filepath, topic.name, f.reference)
+                row.operator("bim.remove_bcf_file", icon="X", text="").index = index
                 box.label(text=f.date)
                 # box.label(text=f.ifc_project)
                 # box.label(text=f.ifc_spatial_structure_element)

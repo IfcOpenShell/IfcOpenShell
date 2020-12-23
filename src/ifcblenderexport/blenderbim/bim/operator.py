@@ -803,6 +803,21 @@ class RemoveBcfViewpoint(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class RemoveBcfFile(bpy.types.Operator):
+    bl_idname = "bim.remove_bcf_file"
+    bl_label = "Remove BCF File"
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        props = bpy.context.scene.BCFProperties
+        blender_topic = props.topics[props.active_topic_index]
+        topic = bcfxml.topics[blender_topic.name]
+        bcfxml.delete_file(topic, self.index)
+        props.active_topic_index = props.active_topic_index # Refreshes the BCF Topic
+        return {"FINISHED"}
+
+
 class RemoveBcfComment(bpy.types.Operator):
     bl_idname = "bim.remove_bcf_comment"
     bl_label = "Remove BCF Comment"

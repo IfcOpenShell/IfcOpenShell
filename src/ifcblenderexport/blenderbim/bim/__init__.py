@@ -42,6 +42,7 @@ if bpy is not None:
         operator.ActivateBcfViewpoint,
         operator.AddBcfViewpoint,
         operator.RemoveBcfViewpoint,
+        operator.RemoveBcfFile,
         operator.OpenUri,
         operator.OpenBcfReferenceLink,
         operator.SelectFeaturesDir,
