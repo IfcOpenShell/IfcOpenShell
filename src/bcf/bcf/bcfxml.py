@@ -9,6 +9,7 @@ from datetime import datetime
 from xml.dom import minidom
 from xmlschema import XMLSchema
 from contextlib import contextmanager
+from shutil import copyfile
 
 
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -476,7 +477,10 @@ class BcfXml:
             topic_filepath = os.path.join(self.filepath, topic.guid)
             filepath = os.path.join(topic_filepath, viewpoint.snapshot)
             if not os.path.exists(filepath):
-                pass  # TODO: handle uploading files
+                filename = viewpoint.guid + "." + viewpoint.snapshot[-3:]
+                copyfile(viewpoint.snapshot, os.path.join(topic_filepath, filename))
+                viewpoint.snapshot = filename
+        topic.viewpoints[viewpoint.guid] = viewpoint
         self.edit_topic(topic)
 
     def delete_viewpoint(self, guid, topic):
