@@ -1,7 +1,10 @@
 import datetime
+import gettext  # noqa
 import json
 import os
 import pystache
+
+from .features.steps.utils import switch_locale
 
 
 def generate_report(
@@ -12,6 +15,12 @@ def generate_report(
 ):
 
     # print("# Generating HTML reports now.")
+
+    # get locale path
+    localedir = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "locale"
+    )
 
     # get html template path
     report_template_path = os.path.join(
@@ -120,29 +129,15 @@ def generate_report(
         # workaround for retrieving the feature file language
         print(feature["keyword"])
         if feature["keyword"] == "Feature":
-            strings_file_report = os.path.join(
-                report_template_path,
-                "strings_template_en.json"
-            )
+            switch_locale(localedir, "en")
         elif feature["keyword"] == "Funktionalität":
-            strings_file_report = os.path.join(
-                report_template_path,
-                "strings_template_de.json"
-            )
+            switch_locale(localedir, "de")
         elif feature["keyword"] == "Fonctionnalité":
-            strings_file_report = os.path.join(
-                report_template_path,
-                "strings_template_fr.json"
-            )
+            switch_locale(localedir, "fr")
         else:
             # standard English
-            strings_file_report = os.path.join(
-                report_template_path,
-                "strings_template_en.json"
-            )
-        strings_report = json.loads(
-            open(strings_file_report, encoding="utf8").read()
-        )
+            switch_locale(localedir, "en")
+        strings_report = get_html_template_strings()
         # print(strings_report)
         data.update(strings_report)
         # print(data)
@@ -152,3 +147,16 @@ def generate_report(
         with open(html_report, "w", encoding="utf8") as out:
             with open(html_tmpl, encoding="utf8") as template:
                 out.write(pystache.render(template.read(), data))
+
+
+def get_html_template_strings():
+    print(_("OpenBIM auditing is a feature of"))
+    return {
+        "tr_lang": _("en"),
+        "tr_success": _("Success"),
+        "tr_failure": _("Failure"),
+        "tr_tests_passed": _("Tests passed"),
+        "tr_duration": _("Duration"),
+        "tr_auditing": _("OpenBIM auditing is a feature of"),
+        "tr_and": _("and")
+    }
