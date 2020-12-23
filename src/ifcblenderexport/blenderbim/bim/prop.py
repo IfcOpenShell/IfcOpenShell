@@ -566,8 +566,12 @@ def updateBcfTopicName(self, context):
 
 def updateBcfTopicIsEditable(self, context):
     if not self.is_editable:
-        print("EDITING!")
         bpy.ops.bim.edit_bcf_topic()
+
+
+def updateBcfCommentIsEditable(self, context):
+    if not self.is_editable:
+        bpy.ops.bim.edit_bcf_comment(comment_guid = self.name)
 
 
 def refreshBcfTopic(self, context):
@@ -985,6 +989,7 @@ class BcfComment(PropertyGroup):
     viewpoint: StringProperty(name="Viewpoint")
     modified_date: StringProperty(name="Modified Date")
     modified_author: StringProperty(name="Modified Author")
+    is_editable: BoolProperty(name="Is Editable", default=False, update=updateBcfCommentIsEditable)
 
 
 class BcfTopic(PropertyGroup):

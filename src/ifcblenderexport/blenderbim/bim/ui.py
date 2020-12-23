@@ -1843,19 +1843,24 @@ class BIM_PT_bcf_comments(Panel):
                 author_text = "*{} ({})".format(comment.modified_author, comment.modified_date)
             row = box.row(align=True)
             row.label(text=author_text, icon="WORDWRAP_ON")
+            row.prop(comment, "is_editable", icon="CHECKMARK" if comment.is_editable else "GREASEPENCIL", icon_only=True)
             row.operator("bim.remove_bcf_comment", icon="X", text="").comment_guid = comment.name
 
-            col = box.column(align=True)
-            col.scale_y = 0.8
-            words = comment.comment.split()
-            while words:
-                total_line_chars = 0
-                line_words = []
-                while words and total_line_chars < props.comment_text_width:
-                    word = words.pop(0)
-                    line_words.append(word)
-                    total_line_chars += len(word) + 1  # 1 is for the space
-                col.label(text=" ".join(line_words))
+            if comment.is_editable:
+                row = box.row()
+                row.prop(comment, "comment", text="")
+            else:
+                col = box.column(align=True)
+                col.scale_y = 0.8
+                words = comment.comment.split()
+                while words:
+                    total_line_chars = 0
+                    line_words = []
+                    while words and total_line_chars < props.comment_text_width:
+                        word = words.pop(0)
+                        line_words.append(word)
+                        total_line_chars += len(word) + 1  # 1 is for the space
+                    col.label(text=" ".join(line_words))
 
         row = layout.row()
         row.prop(topic, "comment")
