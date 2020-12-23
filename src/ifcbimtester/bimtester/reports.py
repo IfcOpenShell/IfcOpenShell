@@ -4,8 +4,14 @@ import os
 import pystache
 
 
-def generate_report(adir=".", use_report_folder=True, report_file_name="", html_template_file_path=""):
-    #print("# Generating HTML reports now.")
+def generate_report(
+    adir=".",
+    use_report_folder=True,
+    report_file_name="",
+    html_template_file_path=""
+):
+
+    # print("# Generating HTML reports now.")
 
     # get html template path
     report_template_path = os.path.join(
@@ -25,9 +31,9 @@ def generate_report(adir=".", use_report_folder=True, report_file_name="", html_
         return print("No report directory was found.")
 
     if report_file_name:
-      report_path = os.path.join(report_dir, report_file_name)
+        report_path = os.path.join(report_dir, report_file_name)
     else:
-      report_path = os.path.join(report_dir, "report.json")
+        report_path = os.path.join(report_dir, "report.json")
     # print(report_path)
     if not os.path.exists(report_path):
         return print("No report data was found.")
