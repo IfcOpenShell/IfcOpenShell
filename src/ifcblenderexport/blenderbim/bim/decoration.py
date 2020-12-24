@@ -19,6 +19,26 @@ class BaseDecorator():
     # base name of objects to decorate
     basename = "IfcAnnotation/Something"
 
+    DEF_GLSL = """
+        #define PI 3.141592653589793
+        #define CIRCLE_SEGS 24
+        // max points = SEGS (circle) + 2 (stem) + 3 (arrow)
+        #define MAX_POINTS 29
+        #define ARROW1_ANGLE PI / 12.0
+        #define ARROW2_ANGLE PI / 3.0
+        #define ARROW1_SIZE 16.0
+        #define ARROW2_SIZE 24.0
+        #define CIRCLE1_SIZE 8.0
+        #define CIRCLE2_SIZE 8.0
+        #define DASH1_SIZE 16.0
+        #define DASH2_SIZE 48.0
+        #define DASH_GAP 4.0
+        #define CROSS_SIZE 16.0
+        #define CALLOUT_GAP 8.0
+        #define CALLOUT_SIZE 64.0
+        #define COLOR vec4({color[0]}, {color[1]}, {color[2]}, {color[3]})
+    """
+
     VERT_GLSL = """
     uniform mat4 viewMatrix;
     in vec3 pos;
@@ -31,6 +51,7 @@ class BaseDecorator():
         type = topo;
     }
     """
+
     GEOM_GLSL = """
     layout(lines) in;
     layout(line_strip, max_vertices=2) out;
@@ -49,7 +70,7 @@ class BaseDecorator():
     out vec4 fragColor;
 
     void main() {
-        fragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        fragColor = COLOR;
     }
     """
 
@@ -91,30 +112,13 @@ class BaseDecorator():
     }
     """
 
-    DEF_GLSL = """
-        #define PI 3.141592653589793
-        #define CIRCLE_SEGS 24
-        // max points = SEGS (circle) + 2 (stem) + 3 (arrow)
-        #define MAX_POINTS 29
-        #define ARROW1_ANGLE PI / 12.0
-        #define ARROW2_ANGLE PI / 3.0
-        #define ARROW1_SIZE 16.0
-        #define ARROW2_SIZE 24.0
-        #define CIRCLE1_SIZE 8.0
-        #define CIRCLE2_SIZE 8.0
-        #define DASH1_SIZE 16.0
-        #define DASH2_SIZE 48.0
-        #define DASH_GAP 4.0
-        #define CROSS_SIZE 16.0
-        #define CALLOUT_GAP 8.0
-        #define CALLOUT_SIZE 64.0
-    """
-
     # class var for single handler
     installed = None
 
     @classmethod
     def install(cls, *args, **kwargs):
+        if cls.installed:
+            cls.uninstall()
         handler = cls(*args, **kwargs)
         cls.installed = SpaceView3D.draw_handler_add(handler, (), 'WINDOW', 'POST_PIXEL')
 
@@ -134,13 +138,13 @@ class BaseDecorator():
         self.font_size = 16
         self.dpi = context.preferences.system.dpi
 
-    @classmethod
-    def create_shader(cls):
+    def create_shader(self):
+        defines = self.DEF_GLSL.format(color=self.props.decorations_colour)
         # NB: libcode param doesn't work
-        return GPUShader(vertexcode=cls.VERT_GLSL,
-                         fragcode=cls.FRAG_GLSL,
-                         geocode=cls.LIB_GLSL + cls.GEOM_GLSL,
-                         defines=cls.DEF_GLSL)
+        return GPUShader(vertexcode=self.VERT_GLSL,
+                         fragcode=self.FRAG_GLSL,
+                         geocode=self.LIB_GLSL + self.GEOM_GLSL,
+                         defines=defines)
 
     def __call__(self):
         if self.props.active_drawing_index is None or len(self.props.drawings) == 0:
@@ -280,6 +284,7 @@ class BaseDecorator():
         blf.position(self.font_id, pos.x, pos.y, 0)
 
         blf.rotation(self.font_id, ang)
+        blf.color(self.font_id, *self.props.decorations_colour)
         blf.draw(self.font_id, text)
         blf.disable(self.font_id, blf.ROTATION)
 
@@ -580,7 +585,7 @@ class HiddenDecorator(BaseDecorator):
         if (t > 0.5) {
             discard;
         } else {
-            fragColor = vec4(1.0, 1.0, 1.0, 1.0);
+            fragColor = COLOR;
         }
     }
     """

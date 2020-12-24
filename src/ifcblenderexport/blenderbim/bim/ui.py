@@ -2461,8 +2461,8 @@ class BIM_PT_annotation_utilities(Panel):
                 row.operator("bim.remove_drawing", icon="X", text="").index = props.active_drawing_index
             layout.template_list("BIM_UL_generic", "", props, "drawings", props, "active_drawing_index")
 
-        row = layout.row()
-        row.prop(props, "should_draw_decorations")
+        layout.prop(props, "should_draw_decorations")
+        layout.prop(props, "decorations_colour")
 
 
 class BIM_PT_qto_utilities(Panel):
