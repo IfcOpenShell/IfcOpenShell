@@ -181,6 +181,8 @@ class BaseDecorator():
         idx = 0
         for spline in obj.data.splines:
             spline_points = spline.bezier_points if spline.bezier_points else spline.points
+            if len(spline_points) < 2:
+                continue
             points = [obj.matrix_world @ p.co for p in spline_points]
             cnt = len(points)
             vertices.extend(p[:3] for p in points)
@@ -368,11 +370,13 @@ class DimensionDecorator(BaseDecorator):
         for i0, i1 in indices:
             v0 = Vector(vertices[i0])
             v1 = Vector(vertices[i1])
-            length = (v1 - v0).length
-            text = self.format_value(length)
             p0 = location_3d_to_region_2d(region, region3d, v0)
             p1 = location_3d_to_region_2d(region, region3d, v1)
             dir = p1 - p0
+            if dir.length < 1:
+                continue
+            length = (v1 - v0).length
+            text = self.format_value(length)
             self.draw_label(text, p0 + (dir) * .5, dir)
 
 
