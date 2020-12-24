@@ -723,6 +723,9 @@ class DocProperties(PropertyGroup):
     ifc_files: CollectionProperty(name="IFCs", type=StrProperty)
     drawing_styles: CollectionProperty(name="Drawing Styles", type=DrawingStyle)
     should_draw_decorations: BoolProperty(name="Should Draw Decorations", update=toggleDecorations)
+    decorations_colour: FloatVectorProperty(name="Decorations Colour", subtype="COLOR", default=(1, 0, 0, 1),
+                                            min=0.0, max=1.0, size=4,
+                                            update=toggleDecorations)
 
 
 class BIMCameraProperties(PropertyGroup):
