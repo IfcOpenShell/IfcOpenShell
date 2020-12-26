@@ -22,7 +22,7 @@ class Annotator:
         obj = bpy.data.objects.new("IfcAnnotation/Text", curve)
         obj.matrix_world = bpy.context.scene.camera.matrix_world
         if related_element is None:
-            location, co2 = Annotator.get_placeholder_coords()
+            location, _, _, _ = Annotator.get_placeholder_coords()
         else:
             obj.data.BIMTextProperties.related_element = related_element
             location = related_element.location
@@ -66,7 +66,7 @@ class Annotator:
     @staticmethod
     def add_line_to_annotation(obj, co1=None, co2=None):
         if co1 is None:
-            co1, co2 = Annotator.get_placeholder_coords()
+            co1, co2, _, _ = Annotator.get_placeholder_coords()
         co1 = obj.matrix_world.inverted() @ co1
         co2 = obj.matrix_world.inverted() @ co2
         if isinstance(obj.data, bpy.types.Mesh):
@@ -80,6 +80,55 @@ class Annotator:
             polyline.points.add(1)
             polyline.points[-2].co = list(co1) + [1]
             polyline.points[-1].co = list(co2) + [1]
+        return obj
+
+    @staticmethod
+    def add_plane_to_annotation(obj):
+        co1, co2, co3, co4 = Annotator.get_placeholder_coords()
+        co1 = obj.matrix_world.inverted() @ co1  # bot left
+        co2 = obj.matrix_world.inverted() @ co2  # top left
+        co3 = obj.matrix_world.inverted() @ co3  # bot right
+        co4 = obj.matrix_world.inverted() @ co4  # top right
+
+        obj.data.vertices.add(4)
+        v1 = obj.data.vertices[-4]
+        v2 = obj.data.vertices[-3]
+        v3 = obj.data.vertices[-2]
+        v4 = obj.data.vertices[-1]
+        v1.co = co4
+        v2.co = co2
+        v3.co = co1
+        v4.co = co3
+
+        obj.data.edges.add(4)
+        e1 = obj.data.edges[-4]
+        e2 = obj.data.edges[-3]
+        e3 = obj.data.edges[-2]
+        e4 = obj.data.edges[-1]
+        e1.vertices = (v1.index, v2.index)
+        e2.vertices = (v2.index, v3.index)
+        e3.vertices = (v3.index, v4.index)
+        e4.vertices = (v4.index, v1.index)
+
+        obj.data.loops.add(4)
+        l1 = obj.data.loops[-4]
+        l2 = obj.data.loops[-3]
+        l3 = obj.data.loops[-2]
+        l4 = obj.data.loops[-1]
+        l1.vertex_index = v1.index
+        l1.edge_index = e1.index
+        l2.vertex_index = v2.index
+        l2.edge_index = e2.index
+        l3.vertex_index = v3.index
+        l3.edge_index = e3.index
+        l4.vertex_index = v4.index
+        l4.edge_index = e4.index
+
+        obj.data.polygons.add(1)
+        p1 = obj.data.polygons[-1]
+        p1.vertices = (v1.index, v2.index, v3.index, v4.index)
+        p1.loop_start = l1.index
+        p1.loop_total = 4
         return obj
 
     @staticmethod
@@ -111,4 +160,8 @@ class Annotator:
         else:
             y = camera.data.ortho_scale / 4
         y_offset = camera.matrix_world.to_quaternion() @ Vector((0, y, 0))
-        return (camera.location + z_offset, camera.location + z_offset + y_offset)
+        x_offset = camera.matrix_world.to_quaternion() @ Vector((y/2, 0, 0))
+        return (camera.location + z_offset,
+                camera.location + z_offset + y_offset,
+                camera.location + z_offset + x_offset,
+                camera.location + z_offset + x_offset + y_offset)

@@ -3756,7 +3756,10 @@ class AddAnnotation(bpy.types.Operator):
                 obj = annotation.Annotator.add_text()
         else:
             obj = annotation.Annotator.get_annotation_obj(self.obj_name, self.data_type)
-            obj = annotation.Annotator.add_line_to_annotation(obj)
+            if self.obj_name == 'Break':
+                obj = annotation.Annotator.add_plane_to_annotation(obj)
+            else:
+                obj = annotation.Annotator.add_line_to_annotation(obj)
         bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = obj
         bpy.ops.object.mode_set(mode="EDIT")

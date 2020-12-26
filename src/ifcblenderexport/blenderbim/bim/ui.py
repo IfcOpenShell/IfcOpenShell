@@ -2448,6 +2448,11 @@ class BIM_PT_annotation_utilities(Panel):
         op.obj_name = "Section Level"
         op.data_type = "curve"
 
+        row = layout.row(align=True)
+        op = row.operator("bim.add_annotation", text="Breakline", icon="FCURVE")
+        op.obj_name = "Break"
+        op.data_type = "mesh"
+
         props = bpy.context.scene.DocProperties
 
         row = layout.row(align=True)
