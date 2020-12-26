@@ -5208,7 +5208,7 @@ class CopyGrid(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.DocProperties
         if props.active_drawing_index is None or len(props.drawings) == 0:
-            return {"CANCELED"}
+            return {"CANCELLED"}
         drawing = props.drawings[props.active_drawing_index]
         collection = bpy.data.collections.get("IfcGroup/" + drawing.name)
 
