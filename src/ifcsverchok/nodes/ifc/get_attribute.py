@@ -19,9 +19,15 @@ class SvIfcGetAttribute(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
         self.outputs.new("SvStringsSocket", "value")
 
     def process(self):
-        self.sv_input_names = ["entity", "attribute_name"]
         self.value_out = []
-        super().process()
+        entity_nested_inputs = self.inputs["entity"].sv_get()
+        attribute_name = self.inputs["attribute_name"].sv_get()[0][0]
+        for entities in entity_nested_inputs:
+            if hasattr(entities, "__iter__"):
+                for entity in entities:
+                    self.process_ifc(entity, attribute_name)
+            else:
+                self.process_ifc(entities, attribute_name)
         self.outputs["value"].sv_set(self.value_out)
 
     def process_ifc(self, entity, attribute_name):
