@@ -1,3 +1,4 @@
+from itertools import chain
 import os
 import bpy
 import bcf
@@ -5197,4 +5198,23 @@ class SnapSpacesTogether(bpy.types.Operator):
                     processed_polygons.add((obj.name, polygon.index))
                     for v in polygon.vertices:
                         obj.data.vertices[v].co += offset
+        return {"FINISHED"}
+
+
+class CopyGrid(bpy.types.Operator):
+    bl_idname = "bim.add_grid"
+    bl_label = "Add Grid"
+
+    def execute(self, context):
+        props = context.scene.DocProperties
+        if props.active_drawing_index is None or len(props.drawings) == 0:
+            return {"CANCELED"}
+        drawing = props.drawings[props.active_drawing_index]
+        collection = bpy.data.collections.get("IfcGroup/" + drawing.name)
+
+        for coll in bpy.data.collections:
+            if coll.name.startswith('IfcGrid'):
+                for obj in coll.all_objects:
+                    if obj.type == 'MESH':
+                        collection.objects.link(obj.copy())
         return {"FINISHED"}
