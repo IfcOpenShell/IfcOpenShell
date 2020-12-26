@@ -245,6 +245,7 @@ if bpy is not None:
         operator.CleanWireframes,
         operator.LinkIfc,
         operator.SnapSpacesTogether,
+        operator.CopyGrid,
         prop.StrProperty,
         prop.Attribute,
         prop.MaterialLayer,
