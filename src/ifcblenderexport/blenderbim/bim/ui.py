@@ -2454,6 +2454,9 @@ class BIM_PT_annotation_utilities(Panel):
         op = row.operator("bim.add_annotation", text="Breakline", icon="FCURVE")
         op.obj_name = "Break"
         op.data_type = "mesh"
+        op = row.operator("bim.add_annotation", text="Misc", icon="MESH_MONKEY")
+        op.obj_name = "Misc"
+        op.data_type = "mesh"
 
         props = bpy.context.scene.DocProperties
 
