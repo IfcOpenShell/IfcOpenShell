@@ -598,6 +598,13 @@ class HiddenDecorator(BaseDecorator):
         self.draw_lines(obj, verts, idxs)
 
 
+class MiscDecorator(HiddenDecorator):
+    basename = "IfcAnnotation/Misc"
+    installed = None
+
+    FRAG_GLSL = BaseDecorator.FRAG_GLSL
+
+
 class LevelDecorator(BaseDecorator):
 
     def get_splines(self, obj):
