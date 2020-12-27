@@ -743,8 +743,10 @@ class AddBcfHeaderFile(bpy.types.Operator):
         header_file.reference = blender_topic.file_reference
         if not os.path.exists(header_file.reference):
             header_file.filename = header_file.reference
-        header_file.ifc_project = blender_topic.file_ifc_project
-        header_file.ifc_spatial_structure_element = blender_topic.file_ifc_spatial_structure_element
+        if len(blender_topic.file_ifc_project) == 22:
+            header_file.ifc_project = blender_topic.file_ifc_project
+        if len(blender_topic.file_ifc_spatial_structure_element) == 22:
+            header_file.ifc_spatial_structure_element = blender_topic.file_ifc_spatial_structure_element
         bcfxml.add_file(topic, header_file)
         props.active_topic_index = props.active_topic_index # refreshes the BCF Topic
         return {"FINISHED"}
@@ -835,6 +837,23 @@ class RemoveBcfFile(bpy.types.Operator):
         blender_topic = props.topics[props.active_topic_index]
         topic = bcfxml.topics[blender_topic.name]
         bcfxml.delete_file(topic, self.index)
+        props.active_topic_index = props.active_topic_index # Refreshes the BCF Topic
+        return {"FINISHED"}
+
+
+class RemoveBcfReferenceLink(bpy.types.Operator):
+    bl_idname = "bim.remove_bcf_reference_link"
+    bl_label = "Remove BCF Reference Link"
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        props = bpy.context.scene.BCFProperties
+        blender_topic = props.topics[props.active_topic_index]
+        topic = bcfxml.topics[blender_topic.name]
+        del topic.reference_links[self.index]
+        bcfxml.edit_topic(topic)
+        blender_topic.reference_links.remove(self.index)
         props.active_topic_index = props.active_topic_index # Refreshes the BCF Topic
         return {"FINISHED"}
 

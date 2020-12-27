@@ -1791,6 +1791,7 @@ class BIM_PT_bcf_metadata(Panel):
                 row = layout.row(align=True)
                 row.prop(link, "name")
                 row.operator("bim.open_uri", icon="URL", text="").uri = link.name
+                row.operator("bim.remove_bcf_reference_link", icon="X", text="").index = index
 
         if topic.labels:
             layout.label(text="Labels:")
