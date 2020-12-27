@@ -513,6 +513,19 @@ class BcfXml:
             os.remove(filepath)
         self.edit_topic(topic)
 
+    def add_file(self, topic, header_file):
+        if os.path.exists(header_file.reference):
+            topic_filepath = os.path.join(self.filepath, topic.guid)
+            header_file.filename = os.path.basename(header_file.reference)
+            copyfile(header_file.reference, os.path.join(topic_filepath, header_file.filename))
+            header_file.reference = header_file.filename
+            header_file.is_external = False
+        header_file.date = datetime.utcnow().isoformat()
+        if not topic.header:
+            topic.header = bcf.data.Header()
+        topic.header.files.append(header_file)
+        self.edit_topic(topic)
+
     def get_comments(self, guid):
         comments = {}
         data = self._read_xml(os.path.join(guid, "markup.bcf"), "markup.xsd")

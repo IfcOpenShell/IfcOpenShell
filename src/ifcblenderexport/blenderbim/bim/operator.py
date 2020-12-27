@@ -730,6 +730,26 @@ class AddBcfTopic(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AddBcfHeaderFile(bpy.types.Operator):
+    bl_idname = "bim.add_bcf_header_file"
+    bl_label = "Add BCF Header File"
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        props = bpy.context.scene.BCFProperties
+        blender_topic = props.topics[props.active_topic_index]
+        topic = bcfxml.topics[blender_topic.name]
+        header_file = bcf.data.HeaderFile()
+        header_file.reference = blender_topic.file_reference
+        if not os.path.exists(header_file.reference):
+            header_file.filename = header_file.reference
+        header_file.ifc_project = blender_topic.file_ifc_project
+        header_file.ifc_spatial_structure_element = blender_topic.file_ifc_spatial_structure_element
+        bcfxml.add_file(topic, header_file)
+        props.active_topic_index = props.active_topic_index # refreshes the BCF Topic
+        return {"FINISHED"}
+
+
 class ViewBcfTopic(bpy.types.Operator):
     bl_idname = "bim.view_bcf_topic"
     bl_label = "Get BCF Topic"
@@ -2306,6 +2326,24 @@ class SelectSmartGroup(bpy.types.Operator):
                         obj.select_set(True)
 
         return {"FINISHED"}
+
+
+class SelectBcfHeaderFile(bpy.types.Operator):
+    bl_idname = "bim.select_bcf_header_file"
+    bl_label = "Select BCF Header File"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    target: bpy.props.StringProperty()
+
+    def execute(self, context):
+        if self.filepath:
+            props = bpy.context.scene.BCFProperties
+            topic = props.topics[props.active_topic_index]
+            topic.file_reference = self.filepath
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
 
 
 class SelectFeaturesDir(bpy.types.Operator):
