@@ -36,6 +36,7 @@ if bpy is not None:
         operator.SaveBcfProject,
         operator.AddBcfTopic,
         operator.AddBcfHeaderFile,
+        operator.AddBcfReferenceLink,
         operator.ViewBcfTopic,
         operator.RemoveBcfComment,
         operator.RemoveBcfReferenceLink,
