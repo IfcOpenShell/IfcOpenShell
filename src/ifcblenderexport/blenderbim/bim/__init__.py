@@ -38,6 +38,7 @@ if bpy is not None:
         operator.AddBcfHeaderFile,
         operator.ViewBcfTopic,
         operator.RemoveBcfComment,
+        operator.RemoveBcfReferenceLink,
         operator.EditBcfComment,
         operator.AddBcfComment,
         operator.ActivateBcfViewpoint,
