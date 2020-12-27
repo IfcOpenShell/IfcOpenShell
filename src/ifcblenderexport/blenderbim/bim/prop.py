@@ -1017,6 +1017,7 @@ class BcfTopic(PropertyGroup):
     file_ifc_project: StringProperty(default="", name="IFC Project")
     file_ifc_spatial_structure_element: StringProperty(default="", name="IFC Spatial Structure Element")
     reference_links: CollectionProperty(name="Reference Links", type=StrProperty)
+    reference_link: StringProperty(default="", name="Reference Link")
     labels: CollectionProperty(name="Labels", type=StrProperty)
     bim_snippet: PointerProperty(type=BcfBimSnippet)
     document_references: CollectionProperty(name="Document References", type=BcfDocumentReference)
