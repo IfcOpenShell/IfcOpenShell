@@ -1759,9 +1759,31 @@ class BIM_PT_bcf_metadata(Panel):
                     op = row.operator("bim.open_uri", icon="FILE_FOLDER", text="")
                     op.uri = os.path.join(bcfxml.filepath, topic.name, f.reference)
                 row.operator("bim.remove_bcf_file", icon="X", text="").index = index
-                box.label(text=f.date)
-                # box.label(text=f.ifc_project)
-                # box.label(text=f.ifc_spatial_structure_element)
+
+                row = box.row()
+                row.label(text="Date")
+                row.label(text=f.date)
+
+                if f.ifc_project:
+                    row = box.row()
+                    row.label(text="IFC Project")
+                    row.label(text=f.ifc_project)
+
+                if f.ifc_spatial_structure_element:
+                    row = box.row()
+                    row.label(text="IFC Spatial Structure Element")
+                    row.label(text=f.ifc_spatial_structure_element)
+
+        row = layout.row(align=True)
+        row.prop(topic, "file_reference")
+        row.operator("bim.select_bcf_header_file", icon="FILE_FOLDER", text="")
+        row = layout.row()
+        row.prop(topic, "file_ifc_project")
+        row = layout.row()
+        row.prop(topic, "file_ifc_spatial_structure_element")
+
+        row = layout.row()
+        row.operator("bim.add_bcf_header_file")
 
         if topic.reference_links:
             layout.label(text="Reference Links:")
