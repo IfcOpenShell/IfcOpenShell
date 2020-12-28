@@ -3778,6 +3778,10 @@ class ExportIfcCsv(bpy.types.Operator):
         ifc_csv.output = self.filepath
         ifc_csv.attributes = [a.name for a in bpy.context.scene.BIMProperties.csv_attributes]
         ifc_csv.selector = selector
+        if bpy.context.scene.BIMProperties.csv_delimiter == "CUSTOM":
+            ifc_csv.delimiter = bpy.context.scene.BIMProperties.csv_custom_delimiter
+        else:
+            ifc_csv.delimiter = bpy.context.scene.BIMProperties.csv_delimiter
         ifc_csv.export(ifc_file, results)
         return {"FINISHED"}
 
