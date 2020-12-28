@@ -523,6 +523,15 @@ class BcfXml:
         topic.bim_snippet = None
         self.edit_topic(topic)
 
+    def delete_document_reference(self, topic, index):
+        document_reference = topic.document_references[index]
+        if document_reference.referenced_document and not document_reference.is_external:
+            filepath = os.path.join(self.filepath, topic.guid, document_reference.referenced_document)
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        del topic.document_references[index]
+        self.edit_topic(topic)
+
     def add_bim_snippet(self, topic, bim_snippet):
         if topic.bim_snippet:
             self.delete_bim_snippet(topic)

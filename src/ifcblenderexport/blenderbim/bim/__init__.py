@@ -44,6 +44,7 @@ if bpy is not None:
         operator.RemoveBcfComment,
         operator.RemoveBcfBimSnippet,
         operator.RemoveBcfReferenceLink,
+        operator.RemoveBcfDocumentReference,
         operator.EditBcfReferenceLinks,
         operator.EditBcfLabels,
         operator.RemoveBcfLabel,

@@ -1002,6 +1002,21 @@ class RemoveBcfBimSnippet(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class RemoveBcfDocumentReference(bpy.types.Operator):
+    bl_idname = "bim.remove_bcf_document_reference"
+    bl_label = "Remove BCF Document Reference"
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        props = bpy.context.scene.BCFProperties
+        blender_topic = props.topics[props.active_topic_index]
+        topic = bcfxml.topics[blender_topic.name]
+        bcfxml.delete_document_reference(topic, self.index)
+        bpy.ops.bim.load_bcf_topic(topic_guid = topic.guid, topic_index = props.active_topic_index)
+        return {"FINISHED"}
+
+
 class RemoveBcfComment(bpy.types.Operator):
     bl_idname = "bim.remove_bcf_comment"
     bl_label = "Remove BCF Comment"
