@@ -365,6 +365,7 @@ if bpy is not None:
         ui.BIM_PT_clash_manager,
         ui.BIM_PT_misc_utilities,
         ui.BIM_UL_generic,
+        ui.BIM_UL_drawinglist,
         ui.BIM_UL_clash_sets,
         ui.BIM_UL_smart_groups,
         ui.BIM_UL_constraints,
