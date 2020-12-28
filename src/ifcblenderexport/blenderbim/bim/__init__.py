@@ -160,6 +160,7 @@ if bpy is not None:
         operator.AddDrawingToSheet,
         operator.CreateSheets,
         operator.OpenView,
+        operator.OpenViewCamera,
         operator.ActivateView,
         operator.ExecuteIfcDiff,
         operator.VisualiseDiff,
