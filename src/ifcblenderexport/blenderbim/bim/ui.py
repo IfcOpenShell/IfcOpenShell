@@ -1748,30 +1748,32 @@ class BIM_PT_bcf_metadata(Panel):
         bcf_topic = bcfxml.topics[topic.name]
 
         layout.label(text="Header Files:")
-        for index, f in enumerate(bcf_topic.header.files):
-            box = self.layout.box()
-            row = box.row(align=True)
-            row.label(text=f.filename, icon="FILE_BLANK")
-            if f.is_external:
-                row.operator("bim.open_uri", icon="URL", text="").uri = f.reference
-            else:
-                op = row.operator("bim.open_uri", icon="FILE_FOLDER", text="")
-                op.uri = os.path.join(bcfxml.filepath, topic.name, f.reference)
-            row.operator("bim.remove_bcf_file", icon="X", text="").index = index
 
-            row = box.row()
-            row.label(text="Date")
-            row.label(text=f.date)
+        if bcf_topic.header:
+            for index, f in enumerate(bcf_topic.header.files):
+                box = self.layout.box()
+                row = box.row(align=True)
+                row.label(text=f.filename, icon="FILE_BLANK")
+                if f.is_external:
+                    row.operator("bim.open_uri", icon="URL", text="").uri = f.reference
+                else:
+                    op = row.operator("bim.open_uri", icon="FILE_FOLDER", text="")
+                    op.uri = os.path.join(bcfxml.filepath, topic.name, f.reference)
+                row.operator("bim.remove_bcf_file", icon="X", text="").index = index
 
-            if f.ifc_project:
                 row = box.row()
-                row.label(text="IFC Project")
-                row.label(text=f.ifc_project)
+                row.label(text="Date")
+                row.label(text=f.date)
 
-            if f.ifc_spatial_structure_element:
-                row = box.row()
-                row.label(text="IFC Spatial Structure Element")
-                row.label(text=f.ifc_spatial_structure_element)
+                if f.ifc_project:
+                    row = box.row()
+                    row.label(text="IFC Project")
+                    row.label(text=f.ifc_project)
+
+                if f.ifc_spatial_structure_element:
+                    row = box.row()
+                    row.label(text="IFC Spatial Structure Element")
+                    row.label(text=f.ifc_spatial_structure_element)
 
         row = layout.row(align=True)
         row.prop(topic, "file_reference")
@@ -1800,6 +1802,10 @@ class BIM_PT_bcf_metadata(Panel):
             row = layout.row(align=True)
             row.prop(label, "name", text="")
             row.operator("bim.remove_bcf_label", icon="X", text="").index = index
+        row = layout.row()
+        row.prop(topic, "label")
+        row = layout.row()
+        row.operator("bim.add_bcf_label")
 
         if topic.bim_snippet.schema:
             layout.label(text="BIM Snippet:")
