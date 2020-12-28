@@ -772,6 +772,29 @@ class AddBcfBimSnippet(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AddBcfRelatedTopic(bpy.types.Operator):
+    bl_idname = "bim.add_bcf_related_topic"
+    bl_label = "Add BCF Related Topic"
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        props = bpy.context.scene.BCFProperties
+        blender_topic = props.topics[props.active_topic_index]
+        related_topic = None
+        for topic in bcfxml.topics.values():
+            if topic.title == blender_topic.related_topic:
+                related_topic = bcf.data.RelatedTopic()
+                related_topic.guid = topic.guid
+                break
+        if not related_topic:
+            return {"FINISHED"}
+        topic = bcfxml.topics[blender_topic.name]
+        topic.related_topics.append(related_topic)
+        bcfxml.edit_topic(topic)
+        bpy.ops.bim.load_bcf_topic(topic_guid = topic.guid, topic_index = props.active_topic_index)
+        return {"FINISHED"}
+
+
 class AddBcfHeaderFile(bpy.types.Operator):
     bl_idname = "bim.add_bcf_header_file"
     bl_label = "Add BCF Header File"
