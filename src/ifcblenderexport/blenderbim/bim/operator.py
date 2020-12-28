@@ -2981,6 +2981,25 @@ class OpenView(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class OpenViewCamera(bpy.types.Operator):
+    bl_idname = "bim.open_view_camera"
+    bl_label = "Open View Camera"
+    view_name: bpy.props.StringProperty()
+
+    def execute(self, context):
+        new_drawing_index = bpy.context.scene.DocProperties.drawings.find(self.view_name)
+        bpy.context.scene.DocProperties.active_drawing_index = new_drawing_index
+        drawing = bpy.context.scene.DocProperties.drawings[new_drawing_index]
+        bpy.context.view_layer.objects.active = drawing.camera
+        bpy.ops.object.select_all(action="DESELECT")
+        drawing.camera.select_set(True)
+        for area in bpy.context.screen.areas:
+            if area.ui_type == "PROPERTIES":
+                for space in area.spaces:
+                    space.context = "DATA"
+        return {"FINISHED"}
+
+
 class CutSection(bpy.types.Operator):
     bl_idname = "bim.cut_section"
     bl_label = "Cut Section"

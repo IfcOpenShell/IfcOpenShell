@@ -2259,6 +2259,17 @@ class BIM_UL_generic(bpy.types.UIList):
             layout.label(text="", translate=False)
 
 
+class BIM_UL_drawinglist(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            row.prop(item, "name", text="", emboss=False)
+            op = row.operator("bim.open_view_camera", icon="OUTLINER_OB_CAMERA", text="")
+            op.view_name = item.name
+        else:
+            layout.label(text="", translate=False)
+
+
 class BIM_UL_topics(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         ob = data
@@ -2529,7 +2540,7 @@ class BIM_PT_annotation_utilities(Panel):
                 op = row.operator("bim.open_view", icon="URL", text="")
                 op.view = props.drawings[props.active_drawing_index].name
                 row.operator("bim.remove_drawing", icon="X", text="").index = props.active_drawing_index
-            layout.template_list("BIM_UL_generic", "", props, "drawings", props, "active_drawing_index")
+            layout.template_list("BIM_UL_drawinglist", "", props, "drawings", props, "active_drawing_index")
 
         layout.prop(props, "should_draw_decorations")
         layout.prop(props, "decorations_colour")
