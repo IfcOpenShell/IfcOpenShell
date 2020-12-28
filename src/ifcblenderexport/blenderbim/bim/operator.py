@@ -945,6 +945,22 @@ class RemoveBcfLabel(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class RemoveBcfBimSnippet(bpy.types.Operator):
+    bl_idname = "bim.remove_bcf_bim_snippet"
+    bl_label = "Remove BCF BIM Snippet"
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        props = bpy.context.scene.BCFProperties
+        blender_topic = props.topics[props.active_topic_index]
+        topic = bcfxml.topics[blender_topic.name]
+        bcfxml.delete_bim_snippet(topic)
+        blender_topic.bim_snippet.schema = ""
+        blender_topic.bim_snippet.reference = ""
+        blender_topic.bim_snippet.type = ""
+        return {"FINISHED"}
+
+
 class RemoveBcfComment(bpy.types.Operator):
     bl_idname = "bim.remove_bcf_comment"
     bl_label = "Remove BCF Comment"

@@ -40,6 +40,7 @@ if bpy is not None:
         operator.AddBcfLabel,
         operator.ViewBcfTopic,
         operator.RemoveBcfComment,
+        operator.RemoveBcfBimSnippet,
         operator.RemoveBcfReferenceLink,
         operator.EditBcfReferenceLinks,
         operator.EditBcfLabels,
