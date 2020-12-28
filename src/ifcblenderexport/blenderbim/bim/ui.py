@@ -1859,11 +1859,11 @@ class BIM_PT_bcf_metadata(Panel):
         row = layout.row()
         row.operator("bim.add_bcf_document_reference")
 
-        if topic.related_topics:
-            layout.label(text="Related Topics:")
-            for related_topic in topic.related_topics:
-                row = layout.row(align=True)
-                row.operator("bim.view_bcf_topic", text=related_topic.name).topic_guid = related_topic.name
+        layout.label(text="Related Topics:")
+        for index, related_topic in enumerate(topic.related_topics):
+            row = layout.row(align=True)
+            row.operator("bim.view_bcf_topic", text=bcfxml.topics[related_topic.name.lower()].title).topic_guid = related_topic.name
+            row.operator("bim.remove_bcf_related_topic", icon="X", text="").index = index
 
 
 class BIM_PT_bcf_comments(Panel):
