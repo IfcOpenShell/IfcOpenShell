@@ -81,7 +81,7 @@ script:
 after_success:
   - pwds
   - cd ../../docs
-  - sudo mv ../src/ifcblenderexport/docs/_build/* ./output
+  - sudo mv ../src/ifcblenderexport/docs/_build ./output
   - ls -al ./output
   - pwd
   - ls -al
