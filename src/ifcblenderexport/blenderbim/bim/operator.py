@@ -893,6 +893,22 @@ class RemoveBcfReferenceLink(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class RemoveBcfLabel(bpy.types.Operator):
+    bl_idname = "bim.remove_bcf_label"
+    bl_label = "Remove BCF Label"
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        props = bpy.context.scene.BCFProperties
+        blender_topic = props.topics[props.active_topic_index]
+        topic = bcfxml.topics[blender_topic.name]
+        del topic.labels[self.index]
+        bcfxml.edit_topic(topic)
+        blender_topic.labels.remove(self.index)
+        return {"FINISHED"}
+
+
 class RemoveBcfComment(bpy.types.Operator):
     bl_idname = "bim.remove_bcf_comment"
     bl_label = "Remove BCF Comment"
