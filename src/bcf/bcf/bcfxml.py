@@ -513,6 +513,16 @@ class BcfXml:
             os.remove(filepath)
         self.edit_topic(topic)
 
+    def delete_bim_snippet(self, topic):
+        if not topic.bim_snippet:
+            return
+        if topic.bim_snippet.reference and not topic.bim_snippet.is_external:
+            filepath = os.path.join(self.filepath, topic.guid, topic.bim_snippet.reference)
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        topic.bim_snippet = None
+        self.edit_topic(topic)
+
     def add_file(self, topic, header_file):
         if os.path.exists(header_file.reference):
             topic_filepath = os.path.join(self.filepath, topic.guid)

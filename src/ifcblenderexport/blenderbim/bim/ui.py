@@ -1807,20 +1807,21 @@ class BIM_PT_bcf_metadata(Panel):
         row = layout.row()
         row.operator("bim.add_bcf_label")
 
+        layout.label(text="BIM Snippet:")
         if topic.bim_snippet.schema:
-            layout.label(text="BIM Snippet:")
             row = layout.row(align=True)
-            row.prop(topic.bim_snippet, "type")
+            row.prop(topic.bim_snippet, "type", emboss=False)
             if topic.bim_snippet.schema:
                 row.operator("bim.open_uri", icon="URL", text="").uri = topic.bim_snippet.schema
 
             row = layout.row(align=True)
-            row.prop(topic.bim_snippet, "reference")
+            row.prop(topic.bim_snippet, "reference", emboss=False)
             if topic.bim_snippet.is_external:
                 row.operator("bim.open_uri", icon="URL", text="").uri = topic.bim_snippet.reference
             else:
                 op = row.operator("bim.open_uri", icon="FILE_FOLDER", text="")
                 op.uri = os.path.join(bcfxml.filepath, topic.name, topic.bim_snippet.reference)
+            row.operator("bim.remove_bcf_bim_snippet", icon="X", text="")
 
         if topic.document_references:
             layout.label(text="Document References:")
