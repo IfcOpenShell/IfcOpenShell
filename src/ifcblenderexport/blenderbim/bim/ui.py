@@ -1795,11 +1795,11 @@ class BIM_PT_bcf_metadata(Panel):
         row = layout.row()
         row.operator("bim.add_bcf_reference_link")
 
-        if topic.labels:
-            layout.label(text="Labels:")
-            for index, label in enumerate(topic.labels):
-                row = layout.row(align=True)
-                row.prop(label, "name", text="")
+        layout.label(text="Labels:")
+        for index, label in enumerate(topic.labels):
+            row = layout.row(align=True)
+            row.prop(label, "name", text="")
+            row.operator("bim.remove_bcf_label", icon="X", text="").index = index
 
         if topic.bim_snippet.schema:
             layout.label(text="BIM Snippet:")
