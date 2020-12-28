@@ -1864,6 +1864,10 @@ class BIM_PT_bcf_metadata(Panel):
             row = layout.row(align=True)
             row.operator("bim.view_bcf_topic", text=bcfxml.topics[related_topic.name.lower()].title).topic_guid = related_topic.name
             row.operator("bim.remove_bcf_related_topic", icon="X", text="").index = index
+        row = layout.row()
+        row.prop(topic, "related_topic")
+        row = layout.row()
+        row.operator("bim.add_bcf_related_topic")
 
 
 class BIM_PT_bcf_comments(Panel):

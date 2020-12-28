@@ -1044,6 +1044,7 @@ class BcfTopic(PropertyGroup):
     document_reference: StringProperty(default="", name="Referenced Document")
     document_reference_description: StringProperty(default="", name="Description")
     related_topics: CollectionProperty(name="Related Topics", type=StrProperty)
+    related_topic: StringProperty(default="", name="Related Topic")
     comments: CollectionProperty(name="Comments", type=BcfComment)
     is_editable: BoolProperty(name="Is Editable", default=False, update=updateBcfTopicIsEditable)
     comment: StringProperty(default="", name="Comment")
