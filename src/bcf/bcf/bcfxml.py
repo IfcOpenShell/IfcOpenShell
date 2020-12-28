@@ -537,6 +537,7 @@ class BcfXml:
             topic_filepath = os.path.join(self.filepath, topic.guid)
             filename = os.path.basename(document_reference.referenced_document)
             copyfile(document_reference.referenced_document, os.path.join(topic_filepath, filename))
+            document_reference.referenced_document = filename
             document_reference.is_external = False
         else:
             document_reference.is_external = True
