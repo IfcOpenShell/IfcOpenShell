@@ -171,6 +171,10 @@ def updateBcfReferenceLink(self, context):
     bpy.ops.bim.edit_bcf_reference_links()
 
 
+def updateBcfLabel(self, context):
+    bpy.ops.bim.edit_bcf_labels()
+
+
 def getDiagramScales(self, context):
     global diagram_scales_enum
     if (
@@ -593,6 +597,10 @@ def refreshBcfTopic(self, context):
 
 class BcfReferenceLink(PropertyGroup):
     name: StringProperty(name="Name", update=updateBcfReferenceLink)
+
+
+class BcfLabel(PropertyGroup):
+    name: StringProperty(name="Name", update=updateBcfLabel)
 
 
 class StrProperty(PropertyGroup):
@@ -1026,7 +1034,7 @@ class BcfTopic(PropertyGroup):
     file_ifc_spatial_structure_element: StringProperty(default="", name="IFC Spatial Structure Element")
     reference_links: CollectionProperty(name="Reference Links", type=BcfReferenceLink)
     reference_link: StringProperty(default="", name="Reference Link")
-    labels: CollectionProperty(name="Labels", type=StrProperty)
+    labels: CollectionProperty(name="Labels", type=BcfLabel)
     label: StringProperty(default="", name="Label")
     bim_snippet: PointerProperty(type=BcfBimSnippet)
     document_references: CollectionProperty(name="Document References", type=BcfDocumentReference)
