@@ -1839,19 +1839,19 @@ class BIM_PT_bcf_metadata(Panel):
             row = layout.row()
             row.operator("bim.add_bcf_bim_snippet")
 
-        if topic.document_references:
-            layout.label(text="Document References:")
-            for index, doc in enumerate(topic.document_references):
-                box = self.layout.box()
-                row = box.row(align=True)
-                row.prop(doc, "reference")
-                if doc.is_external:
-                    row.operator("bim.open_uri", icon="URL", text="").uri = doc.reference
-                else:
-                    op = row.operator("bim.open_uri", icon="FILE_FOLDER", text="")
-                    op.uri = os.path.join(bcfxml.filepath, topic.name, doc.reference)
-                row = box.row(align=True)
-                row.prop(doc, "description")
+        layout.label(text="Document References:")
+        for index, doc in enumerate(topic.document_references):
+            box = self.layout.box()
+            row = box.row(align=True)
+            row.prop(doc, "reference")
+            if doc.is_external:
+                row.operator("bim.open_uri", icon="URL", text="").uri = doc.reference
+            else:
+                op = row.operator("bim.open_uri", icon="FILE_FOLDER", text="")
+                op.uri = os.path.join(bcfxml.filepath, topic.name, doc.reference)
+            row.operator("bim.remove_bcf_document_reference", icon="X", text="").index = index
+            row = box.row(align=True)
+            row.prop(doc, "description")
 
         if topic.related_topics:
             layout.label(text="Related Topics:")
@@ -1893,7 +1893,9 @@ class BIM_PT_bcf_comments(Panel):
                 author_text = "*{} ({})".format(comment.modified_author, comment.modified_date)
             row = box.row(align=True)
             row.label(text=author_text, icon="WORDWRAP_ON")
-            row.prop(comment, "is_editable", icon="CHECKMARK" if comment.is_editable else "GREASEPENCIL", icon_only=True)
+            row.prop(
+                comment, "is_editable", icon="CHECKMARK" if comment.is_editable else "GREASEPENCIL", icon_only=True
+            )
             row.operator("bim.remove_bcf_comment", icon="X", text="").comment_guid = comment.name
 
             if comment.is_editable:
