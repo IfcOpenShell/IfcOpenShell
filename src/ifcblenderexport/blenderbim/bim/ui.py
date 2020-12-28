@@ -1643,6 +1643,11 @@ class BIM_PT_ifccsv(Panel):
             row.operator("bim.remove_csv_attribute", icon="X", text="").index = index
 
         row = layout.row(align=True)
+        row.prop(props, "csv_delimiter")
+        row = layout.row(align=True)
+        row.prop(props, "csv_custom_delimiter")
+
+        row = layout.row(align=True)
         row.operator("bim.export_ifccsv", icon="EXPORT")
         row.operator("bim.import_ifccsv", icon="IMPORT")
 
