@@ -167,6 +167,10 @@ def refreshPredefinedTypes(self, context):
     context.scene.BIMProperties.ifc_predefined_type = enum[0][0]
 
 
+def updateBcfReferenceLink(self, context):
+    bpy.ops.bim.edit_bcf_reference_links()
+
+
 def getDiagramScales(self, context):
     global diagram_scales_enum
     if (
@@ -585,6 +589,10 @@ def refreshBcfTopic(self, context):
     topic = props.topics[props.active_topic_index]
     header = bcfxml.get_header(topic.name)
     getBcfViewpoints(self, context)
+
+
+class BcfReferenceLink(PropertyGroup):
+    name: StringProperty(name="Name", update=updateBcfReferenceLink)
 
 
 class StrProperty(PropertyGroup):
@@ -1016,7 +1024,7 @@ class BcfTopic(PropertyGroup):
     file_reference: StringProperty(default="", name="Reference")
     file_ifc_project: StringProperty(default="", name="IFC Project")
     file_ifc_spatial_structure_element: StringProperty(default="", name="IFC Spatial Structure Element")
-    reference_links: CollectionProperty(name="Reference Links", type=StrProperty)
+    reference_links: CollectionProperty(name="Reference Links", type=BcfReferenceLink)
     reference_link: StringProperty(default="", name="Reference Link")
     labels: CollectionProperty(name="Labels", type=StrProperty)
     bim_snippet: PointerProperty(type=BcfBimSnippet)
