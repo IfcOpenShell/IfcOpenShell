@@ -1041,6 +1041,8 @@ class BcfTopic(PropertyGroup):
     bim_snippet_reference: StringProperty(default="", name="Reference")
     bim_snippet_schema: StringProperty(default="", name="Schema")
     document_references: CollectionProperty(name="Document References", type=BcfDocumentReference)
+    document_reference: StringProperty(default="", name="Referenced Document")
+    document_reference_description: StringProperty(default="", name="Description")
     related_topics: CollectionProperty(name="Related Topics", type=StrProperty)
     comments: CollectionProperty(name="Comments", type=BcfComment)
     is_editable: BoolProperty(name="Is Editable", default=False, update=updateBcfTopicIsEditable)
