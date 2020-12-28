@@ -403,6 +403,8 @@ class EqualityDecorator(DimensionDecorator):
             p0 = location_3d_to_region_2d(region, region3d, v0)
             p1 = location_3d_to_region_2d(region, region3d, v1)
             dir = p1 - p0
+            if dir.length < 1:
+                continue
             self.draw_label("EQ", p0 + (dir) * .5, dir)
 
 
@@ -617,6 +619,8 @@ class LevelDecorator(BaseDecorator):
         """
         for spline in obj.data.splines:
             spline_points = spline.bezier_points if spline.bezier_points else spline.points
+            if len(spline_points) < 2:
+                continue
             yield [obj.matrix_world @ p.co for p in spline_points]
 
     def decorate(self, obj):
@@ -691,6 +695,8 @@ class PlanDecorator(LevelDecorator):
             p0 = location_3d_to_region_2d(region, region3d, v0)
             p1 = location_3d_to_region_2d(region, region3d, v1)
             dir = p1 - p0
+            if dir.length < 1:
+                continue
             text = "RL " + self.format_value(verts[-1].z)
             self.draw_label(text, p0, dir, gap=8, center=False)
 
@@ -764,5 +770,7 @@ class SectionDecorator(LevelDecorator):
             p0 = location_3d_to_region_2d(region, region3d, v0)
             p1 = location_3d_to_region_2d(region, region3d, v1)
             dir = p1 - p0
+            if dir.length < 1:
+                continue
             text = "RL " + self.format_value(verts[-1].z)
             self.draw_label(text, p0 + dir.normalized() * 16, -dir, gap=16, center=False)
