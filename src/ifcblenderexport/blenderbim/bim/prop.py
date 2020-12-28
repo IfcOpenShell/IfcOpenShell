@@ -1027,6 +1027,7 @@ class BcfTopic(PropertyGroup):
     reference_links: CollectionProperty(name="Reference Links", type=BcfReferenceLink)
     reference_link: StringProperty(default="", name="Reference Link")
     labels: CollectionProperty(name="Labels", type=StrProperty)
+    label: StringProperty(default="", name="Label")
     bim_snippet: PointerProperty(type=BcfBimSnippet)
     document_references: CollectionProperty(name="Document References", type=BcfDocumentReference)
     related_topics: CollectionProperty(name="Related Topics", type=StrProperty)

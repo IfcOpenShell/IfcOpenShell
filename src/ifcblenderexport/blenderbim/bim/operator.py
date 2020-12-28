@@ -860,6 +860,25 @@ class AddBcfReferenceLink(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AddBcfLabel(bpy.types.Operator):
+    bl_idname = "bim.add_bcf_label"
+    bl_label = "Add BCF Label"
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        props = bpy.context.scene.BCFProperties
+        blender_topic = props.topics[props.active_topic_index]
+        topic = bcfxml.topics[blender_topic.name]
+        if not blender_topic.label:
+            return {"FINISHED"}
+        new = blender_topic.labels.add()
+        new.name = blender_topic.label
+        topic.labels.append(blender_topic.label)
+        bcfxml.edit_topic(topic)
+        blender_topic.label = ""
+        return {"FINISHED"}
+
+
 class EditBcfReferenceLinks(bpy.types.Operator):
     bl_idname = "bim.edit_bcf_reference_links"
     bl_label = "Edit BCF Reference Link"
