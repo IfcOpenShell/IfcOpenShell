@@ -896,6 +896,23 @@ class EditBcfReferenceLinks(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class EditBcfLabels(bpy.types.Operator):
+    bl_idname = "bim.edit_bcf_labels"
+    bl_label = "Edit BCF Labels"
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        props = bpy.context.scene.BCFProperties
+        blender_topic = props.topics[props.active_topic_index]
+        topic = bcfxml.topics[blender_topic.name]
+        for index, label in enumerate(topic.labels):
+            if label == blender_topic.labels[index].name:
+                continue
+            topic.labels[index] = blender_topic.labels[index].name
+        bcfxml.edit_topic(topic)
+        return {"FINISHED"}
+
+
 class RemoveBcfReferenceLink(bpy.types.Operator):
     bl_idname = "bim.remove_bcf_reference_link"
     bl_label = "Remove BCF Reference Link"
