@@ -750,7 +750,7 @@ class SectionDecorator(LevelDecorator):
         if (t > 0.875 || (t > 0.25 && t < 0.375)) {
             discard;
         } else {
-            fragColor = vec4(1.0, 1.0, 1.0, 1.0);
+            fragColor = COLOR;
         }
     }
     """
