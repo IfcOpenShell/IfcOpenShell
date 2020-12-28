@@ -561,57 +561,81 @@ class LoadBcfTopics(bpy.types.Operator):
         bcfxml.get_topics()
         while len(bpy.context.scene.BCFProperties.topics) > 0:
             bpy.context.scene.BCFProperties.topics.remove(0)
-        for topic in bcfxml.topics.values():
+        index = 0
+        for topic_guid in bcfxml.topics.keys():
             new = bpy.context.scene.BCFProperties.topics.add()
+            bpy.ops.bim.load_bcf_topic(topic_guid = topic_guid, topic_index = index)
+            index += 1
+        return {"FINISHED"}
+
+
+class LoadBcfTopic(bpy.types.Operator):
+    bl_idname = "bim.load_bcf_topic"
+    bl_label = "Load BCF Topics"
+    topic_guid: bpy.props.StringProperty()
+    topic_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        topic = bcfxml.get_topic(self.topic_guid)
+        new = bpy.context.scene.BCFProperties.topics[self.topic_index]
+        data_map = {
+            "name": topic.guid,
+            "title": topic.title,
+            "type": topic.topic_type,
+            "status": topic.topic_status,
+            "priority": topic.priority,
+            "stage": topic.stage,
+            "creation_date": topic.creation_date,
+            "creation_author": topic.creation_author,
+            "modified_date": topic.modified_date,
+            "modified_author": topic.modified_author,
+            "assigned_to": topic.assigned_to,
+            "due_date": topic.due_date,
+            "description": topic.description
+        }
+        for key, value in data_map.items():
+            if value is not None:
+                setattr(new, key, str(value))
+        while len(new.reference_links) > 0:
+            new.reference_links.remove(0)
+        for reference_link in topic.reference_links:
+            new2 = new.reference_links.add()
+            new2.name = reference_link
+        while len(new.labels) > 0:
+            new.labels.remove(0)
+        for label in topic.labels:
+            new2 = new.labels.add()
+            new2.name = label
+        if topic.bim_snippet:
             data_map = {
-                "name": topic.guid,
-                "title": topic.title,
-                "type": topic.topic_type,
-                "status": topic.topic_status,
-                "priority": topic.priority,
-                "stage": topic.stage,
-                "creation_date": topic.creation_date,
-                "creation_author": topic.creation_author,
-                "modified_date": topic.modified_date,
-                "modified_author": topic.modified_author,
-                "assigned_to": topic.assigned_to,
-                "due_date": topic.due_date,
-                "description": topic.description
+                "type": topic.bim_snippet.snippet_type,
+                "is_external": topic.bim_snippet.is_external,
+                "reference": topic.bim_snippet.reference,
+                "schema": topic.bim_snippet.reference_schema
             }
             for key, value in data_map.items():
                 if value is not None:
-                    setattr(new, key, str(value))
-            for reference_link in topic.reference_links:
-                new2 = new.reference_links.add()
-                new2.name = reference_link
-            for label in topic.labels:
-                new2 = new.labels.add()
-                new2.name = label
-            if topic.bim_snippet:
-                data_map = {
-                    "type": topic.bim_snippet.snippet_type,
-                    "is_external": topic.bim_snippet.is_external,
-                    "reference": topic.bim_snippet.reference,
-                    "schema": topic.bim_snippet.reference_schema
-                }
-                for key, value in data_map.items():
-                    if value is not None:
-                        setattr(new.bim_snippet, key, value)
-            for doc in topic.document_references:
-                new2 = new.document_references.add()
-                data_map = {
-                    "reference": doc.referenced_document,
-                    "description": doc.description,
-                    "guid": doc.guid,
-                    "is_external": doc.is_external
-                }
-                for key, value in data_map.items():
-                    if value is not None:
-                        setattr(new2, key, value)
-            for related_topic in topic.related_topics:
-                new2 = new.related_topics.add()
-                new2.name = related_topic.guid
-            bpy.ops.bim.load_bcf_comments(topic_guid = topic.guid)
+                    setattr(new.bim_snippet, key, value)
+        while len(new.document_references) > 0:
+            new.document_references.remove(0)
+        for doc in topic.document_references:
+            new2 = new.document_references.add()
+            data_map = {
+                "reference": doc.referenced_document,
+                "description": doc.description,
+                "guid": doc.guid,
+                "is_external": doc.is_external
+            }
+            for key, value in data_map.items():
+                if value is not None:
+                    setattr(new2, key, value)
+        while len(new.related_topics) > 0:
+            new.related_topics.remove(0)
+        for related_topic in topic.related_topics:
+            new2 = new.related_topics.add()
+            new2.name = related_topic.guid
+        bpy.ops.bim.load_bcf_comments(topic_guid = topic.guid)
         return {"FINISHED"}
 
 
@@ -727,6 +751,24 @@ class AddBcfTopic(bpy.types.Operator):
         new = bpy.context.scene.BCFProperties.topics.add()
         new.name = "New Topic"
         bpy.ops.bim.load_bcf_topics()
+        return {"FINISHED"}
+
+
+class AddBcfBimSnippet(bpy.types.Operator):
+    bl_idname = "bim.add_bcf_bim_snippet"
+    bl_label = "Add BCF BIM Snippet"
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        props = bpy.context.scene.BCFProperties
+        blender_topic = props.topics[props.active_topic_index]
+        topic = bcfxml.topics[blender_topic.name]
+        bim_snippet = bcf.data.BimSnippet()
+        bim_snippet.reference = blender_topic.bim_snippet_reference
+        bim_snippet.reference_schema = blender_topic.bim_snippet_schema
+        bim_snippet.snippet_type = blender_topic.bim_snippet_type
+        bcfxml.add_bim_snippet(topic, bim_snippet)
+        bpy.ops.bim.load_bcf_topic(topic_guid = topic.guid, topic_index = props.active_topic_index)
         return {"FINISHED"}
 
 
@@ -852,10 +894,9 @@ class AddBcfReferenceLink(bpy.types.Operator):
         topic = bcfxml.topics[blender_topic.name]
         if not blender_topic.reference_link:
             return {"FINISHED"}
-        new = blender_topic.reference_links.add()
-        new.name = blender_topic.reference_link
         topic.reference_links.append(blender_topic.reference_link)
         bcfxml.edit_topic(topic)
+        bpy.ops.bim.load_bcf_topic(topic_guid = topic.guid, topic_index = props.active_topic_index)
         blender_topic.reference_link = ""
         return {"FINISHED"}
 
@@ -2454,13 +2495,29 @@ class SelectBcfHeaderFile(bpy.types.Operator):
     bl_idname = "bim.select_bcf_header_file"
     bl_label = "Select BCF Header File"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-    target: bpy.props.StringProperty()
 
     def execute(self, context):
         if self.filepath:
             props = bpy.context.scene.BCFProperties
             topic = props.topics[props.active_topic_index]
             topic.file_reference = self.filepath
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+
+class SelectBcfBimSnippetReference(bpy.types.Operator):
+    bl_idname = "bim.select_bcf_bim_snippet_reference"
+    bl_label = "Select BCF BIM Snippet Reference"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        if self.filepath:
+            props = bpy.context.scene.BCFProperties
+            topic = props.topics[props.active_topic_index]
+            topic.bim_snippet_reference = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):

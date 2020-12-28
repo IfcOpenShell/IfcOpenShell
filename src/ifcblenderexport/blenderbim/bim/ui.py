@@ -1827,6 +1827,17 @@ class BIM_PT_bcf_metadata(Panel):
                 op = row.operator("bim.open_uri", icon="FILE_FOLDER", text="")
                 op.uri = os.path.join(bcfxml.filepath, topic.name, topic.bim_snippet.reference)
             row.operator("bim.remove_bcf_bim_snippet", icon="X", text="")
+        else:
+            row = layout.row(align=True)
+            row.prop(topic, "bim_snippet_reference")
+            row.operator("bim.select_bcf_bim_snippet_reference", icon="FILE_FOLDER", text="")
+            row = layout.row()
+            row.prop(topic, "bim_snippet_type")
+            row = layout.row()
+            row.prop(topic, "bim_snippet_schema")
+
+            row = layout.row()
+            row.operator("bim.add_bcf_bim_snippet")
 
         if topic.document_references:
             layout.label(text="Document References:")
