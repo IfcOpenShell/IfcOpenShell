@@ -109,6 +109,7 @@ class IfcCsv:
         self.attributes = []
         self.output = ""
         self.selector = None
+        self.delimiter = ";"
 
     def export(self, ifc_file, elements):
         self.ifc_file = ifc_file
@@ -151,7 +152,7 @@ class IfcCsv:
     def Import(self, ifc):
         ifc_file = ifcopenshell.open(ifc)
         with open(self.output, newline="", encoding="utf-8") as f:
-            reader = csv.reader(f)
+            reader = csv.reader(f, delimiter=self.delimiter)
             headers = []
             for row in reader:
                 if not headers:

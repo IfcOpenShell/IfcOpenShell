@@ -1477,6 +1477,12 @@ class BIMProperties(PropertyGroup):
     )
     ifc_selector: StringProperty(default="", name="IFC Selector")
     csv_attributes: CollectionProperty(name="CSV Attributes", type=StrProperty)
+    csv_delimiter: EnumProperty(
+        items=[(";", ";", ""), (",", ",", ""), (".", ".", ""), ("CUSTOM", "Custom", ""),],
+        name="IFC CSV Delimiter",
+        default=";",
+    )
+    csv_custom_delimiter: StringProperty(default="", name="Custom Delimiter")
     document_information: CollectionProperty(name="Document Information", type=DocumentInformation)
     active_document_information_index: IntProperty(name="Active Document Information Index")
     document_references: CollectionProperty(name="Document References", type=DocumentReference)
