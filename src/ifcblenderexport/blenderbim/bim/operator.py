@@ -901,6 +901,27 @@ class AddBcfReferenceLink(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AddBcfDocumentReference(bpy.types.Operator):
+    bl_idname = "bim.add_bcf_document_reference"
+    bl_label = "Add BCF Document Reference"
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        props = bpy.context.scene.BCFProperties
+        blender_topic = props.topics[props.active_topic_index]
+        topic = bcfxml.topics[blender_topic.name]
+        if not blender_topic.document_reference:
+            return {"FINISHED"}
+        document_reference = bcf.data.DocumentReference()
+        document_reference.referenced_document = blender_topic.document_reference
+        document_reference.description = blender_topic.document_reference_description or None
+        bcfxml.add_document_reference(topic, document_reference)
+        bpy.ops.bim.load_bcf_topic(topic_guid = topic.guid, topic_index = props.active_topic_index)
+        blender_topic.document_reference = ""
+        blender_topic.document_reference_description = ""
+        return {"FINISHED"}
+
+
 class AddBcfLabel(bpy.types.Operator):
     bl_idname = "bim.add_bcf_label"
     bl_label = "Add BCF Label"
@@ -946,8 +967,8 @@ class EditBcfLabels(bpy.types.Operator):
         props = bpy.context.scene.BCFProperties
         blender_topic = props.topics[props.active_topic_index]
         topic = bcfxml.topics[blender_topic.name]
-        for index, label in enumerate(topic.labels):
-            if label == blender_topic.labels[index].name:
+        for index, label in enumerate(blender_topic.labels):
+            if label.name == topic.labels[index]:
                 continue
             topic.labels[index] = blender_topic.labels[index].name
         bcfxml.edit_topic(topic)
@@ -2533,6 +2554,23 @@ class SelectBcfBimSnippetReference(bpy.types.Operator):
             props = bpy.context.scene.BCFProperties
             topic = props.topics[props.active_topic_index]
             topic.bim_snippet_reference = self.filepath
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+
+class SelectBcfDocumentReference(bpy.types.Operator):
+    bl_idname = "bim.select_bcf_document_reference"
+    bl_label = "Select BCF Document Reference"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        if self.filepath:
+            props = bpy.context.scene.BCFProperties
+            topic = props.topics[props.active_topic_index]
+            topic.document_reference = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):

@@ -1835,7 +1835,6 @@ class BIM_PT_bcf_metadata(Panel):
             row.prop(topic, "bim_snippet_type")
             row = layout.row()
             row.prop(topic, "bim_snippet_schema")
-
             row = layout.row()
             row.operator("bim.add_bcf_bim_snippet")
 
@@ -1852,6 +1851,13 @@ class BIM_PT_bcf_metadata(Panel):
             row.operator("bim.remove_bcf_document_reference", icon="X", text="").index = index
             row = box.row(align=True)
             row.prop(doc, "description")
+        row = layout.row(align=True)
+        row.prop(topic, "document_reference")
+        row.operator("bim.select_bcf_document_reference", icon="FILE_FOLDER", text="")
+        row = layout.row()
+        row.prop(topic, "document_reference_description")
+        row = layout.row()
+        row.operator("bim.add_bcf_document_reference")
 
         if topic.related_topics:
             layout.label(text="Related Topics:")

@@ -532,6 +532,19 @@ class BcfXml:
         del topic.document_references[index]
         self.edit_topic(topic)
 
+    def add_document_reference(self, topic, document_reference):
+        if os.path.exists(document_reference.referenced_document):
+            topic_filepath = os.path.join(self.filepath, topic.guid)
+            filename = os.path.basename(document_reference.referenced_document)
+            copyfile(document_reference.referenced_document, os.path.join(topic_filepath, filename))
+            document_reference.is_external = False
+        else:
+            document_reference.is_external = True
+        if not document_reference.guid:
+            document_reference.guid = str(uuid.uuid4())
+        topic.document_references.append(document_reference)
+        self.edit_topic(topic)
+
     def add_bim_snippet(self, topic, bim_snippet):
         if topic.bim_snippet:
             self.delete_bim_snippet(topic)
