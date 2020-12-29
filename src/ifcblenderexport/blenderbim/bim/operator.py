@@ -4678,9 +4678,18 @@ class CopyGrid(bpy.types.Operator):
         drawing = props.drawings[props.active_drawing_index]
         collection = bpy.data.collections.get("IfcGroup/" + drawing.name)
 
-        for coll in bpy.data.collections:
-            if coll.name.startswith('IfcGrid'):
-                for obj in coll.all_objects:
-                    if obj.type == 'MESH':
-                        collection.objects.link(obj.copy())
+        existing = [obj for obj in collection.objects if obj.name.startswith('IfcGridAxis')]
+        for obj in existing:
+            collection.objects.unlink(obj)
+
+        source = [obj
+                    for coll in bpy.data.collections
+                    if coll.name.startswith('IfcGrid')
+                    for obj in coll.all_objects
+                    if obj.type == 'MESH']
+        for obj in source:
+            dstobj = obj.copy()
+            dstobj.data = dstobj.data.copy()
+            collection.objects.link(dstobj)
+
         return {"FINISHED"}
