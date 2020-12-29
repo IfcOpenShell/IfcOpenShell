@@ -18,32 +18,37 @@ bcfviewpoints_enum = None
 
 
 def updateBcfReferenceLink(self, context):
-    bpy.ops.bim.edit_bcf_reference_links()
+    if bpy.context.scene.BCFProperties.is_loaded:
+        bpy.ops.bim.edit_bcf_reference_links()
 
 
 def updateBcfLabel(self, context):
-    bpy.ops.bim.edit_bcf_labels()
+    if bpy.context.scene.BCFProperties.is_loaded:
+        bpy.ops.bim.edit_bcf_labels()
 
 
 def updateBcfProjectName(self, context):
-    bpy.ops.bim.edit_bcf_project_name()
+    if bpy.context.scene.BCFProperties.is_loaded:
+        bpy.ops.bim.edit_bcf_project_name()
 
 
 def updateBcfAuthor(self, context):
-    bpy.ops.bim.edit_bcf_author()
+    if bpy.context.scene.BCFProperties.is_loaded:
+        bpy.ops.bim.edit_bcf_author()
 
 
 def updateBcfTopicName(self, context):
-    bpy.ops.bim.edit_bcf_topic_name()
+    if bpy.context.scene.BCFProperties.is_loaded:
+        bpy.ops.bim.edit_bcf_topic_name()
 
 
 def updateBcfTopicIsEditable(self, context):
-    if not self.is_editable:
+    if bpy.context.scene.BCFProperties.is_loaded and not self.is_editable:
         bpy.ops.bim.edit_bcf_topic()
 
 
 def updateBcfCommentIsEditable(self, context):
-    if not self.is_editable:
+    if bpy.context.scene.BCFProperties.is_loaded and not self.is_editable:
         bpy.ops.bim.edit_bcf_comment(comment_guid = self.name)
 
 

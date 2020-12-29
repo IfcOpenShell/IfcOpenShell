@@ -79,7 +79,7 @@ ch.setLevel(logging.INFO)
 logger.addHandler(ch)
 
 PROJECT_NAME="IfcOpenShell"
-PYTHON_VERSIONS=["2.7.16", "3.2.6", "3.3.6", "3.4.6", "3.5.3", "3.6.2", "3.7.3", "3.8.2"]
+PYTHON_VERSIONS=["2.7.16", "3.2.6", "3.3.6", "3.4.6", "3.5.3", "3.6.2", "3.7.3", "3.8.6", "3.9.1"]
 JSON_VERSION="v3.6.1"
 OCE_VERSION="0.18"
 # OCCT_VERSION="7.1.0"
@@ -87,7 +87,7 @@ OCE_VERSION="0.18"
 # OCCT_VERSION="7.2.0"
 # OCCT_HASH="88af392"
 OCCT_VERSION="7.3.0p3"
-BOOST_VERSION="1.59.0"
+BOOST_VERSION="1.71.0"
 #PCRE_VERSION="8.39"
 PCRE_VERSION="8.41"
 #LIBXML2_VERSION="2.9.3"
@@ -157,6 +157,13 @@ TOOLSET = None
 if get_os() == "Darwin":
     # C++11 features used in OCCT 7+ need a more recent stdlib
     TOOLSET = "10.9" if USE_OCCT else "10.6"
+
+# python 3.4 doesn't seem to build anymore on recent versions of clang
+if get_os() == "Darwin":
+    try:
+        PYTHON_VERSIONS.remove("3.4.6")
+    except ValueError as e:
+        pass
    
 try:
     IFCOS_NUM_BUILD_PROCS = os.environ["IFCOS_NUM_BUILD_PROCS"]
@@ -303,7 +310,7 @@ def run(cmds, cwd=None):
 BOOST_VERSION_UNDERSCORE=BOOST_VERSION.replace(".", "_")
 
 OCE_LOCATION="https://github.com/tpaviot/oce/archive/OCE-%s.tar.gz" % (OCE_VERSION,)
-BOOST_LOCATION="http://downloads.sourceforge.net/project/boost/boost/%s/boost_%s.tar.bz2" % (BOOST_VERSION, BOOST_VERSION_UNDERSCORE)
+BOOST_LOCATION="https://dl.bintray.com/boostorg/release/%s/source/" % (BOOST_VERSION,)
 
 # Helper functions
 
@@ -580,7 +587,7 @@ if "OpenCOLLADA" in targets:
         download_url="https://github.com/KhronosGroup/OpenCOLLADA.git",
         download_name="OpenCOLLADA",
         download_tool=download_tool_git,
-        patch="./patches/opencollada/pr622.patch",
+        patch="./patches/opencollada/pr622_and_disable_subdirs.patch",
         revision=OPENCOLLADA_VERSION
     )
 
@@ -644,7 +651,7 @@ if "boost" in targets:
             list(map(str_concat("cxxflags"), CXXFLAGS.strip().split(' '))) + \
             list(map(str_concat("linkflags"), LDFLAGS.strip().split(' '))) + \
             ["stage", "-s", "NO_BZIP2=1"],
-        download_url="http://downloads.sourceforge.net/project/boost/boost/{BOOST_VERSION}/".format(**locals()),
+        download_url=BOOST_LOCATION,
         download_name="boost_{BOOST_VERSION_UNDERSCORE}.tar.bz2".format(**locals())
     )
     
