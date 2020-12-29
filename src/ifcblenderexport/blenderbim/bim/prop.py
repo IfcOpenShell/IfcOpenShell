@@ -368,6 +368,7 @@ def toggleDecorations(self, context):
         decoration.SectionDecorator.install(self, context)
         decoration.MiscDecorator.install(self, context)
         decoration.BreakDecorator.install(self, context)
+        decoration.GridDecorator.install(self, context)
     else:
         decoration.DimensionDecorator.uninstall()
         decoration.EqualityDecorator.uninstall()
@@ -378,6 +379,7 @@ def toggleDecorations(self, context):
         decoration.SectionDecorator.uninstall()
         decoration.MiscDecorator.uninstall()
         decoration.BreakDecorator.uninstall()
+        decoration.GridDecorator.uninstall()
 
 
 def getScenarios(self, context):
