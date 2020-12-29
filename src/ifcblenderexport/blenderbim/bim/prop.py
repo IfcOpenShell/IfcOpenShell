@@ -359,27 +359,11 @@ def refreshTitleblocks(self, context):
 def toggleDecorations(self, context):
     toggle = self.should_draw_decorations
     if toggle:
-        decoration.DimensionDecorator.install(self, context)
-        decoration.EqualityDecorator.install(self, context)
-        decoration.LeaderDecorator.install(self, context)
-        decoration.StairDecorator.install(self, context)
-        decoration.HiddenDecorator.install(self, context)
-        decoration.PlanDecorator.install(self, context)
-        decoration.SectionDecorator.install(self, context)
-        decoration.MiscDecorator.install(self, context)
-        decoration.BreakDecorator.install(self, context)
-        decoration.GridDecorator.install(self, context)
+        for dec in decoration.all_decorators:
+            dec.install(self, context)
     else:
-        decoration.DimensionDecorator.uninstall()
-        decoration.EqualityDecorator.uninstall()
-        decoration.LeaderDecorator.uninstall()
-        decoration.StairDecorator.uninstall()
-        decoration.HiddenDecorator.uninstall()
-        decoration.PlanDecorator.uninstall()
-        decoration.SectionDecorator.uninstall()
-        decoration.MiscDecorator.uninstall()
-        decoration.BreakDecorator.uninstall()
-        decoration.GridDecorator.uninstall()
+        for dec in decoration.all_decorators:
+            dec.uninstall()
 
 
 def getScenarios(self, context):

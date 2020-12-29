@@ -21,29 +21,40 @@ class BaseDecorator():
 
     DEF_GLSL = """
         #define PI 3.141592653589793
+        #define COLOR vec4({color[0]}, {color[1]}, {color[2]}, {color[3]})
         #define MAX_POINTS 64
         #define CIRCLE_SEGS 24
-        #define ARROW1_ANGLE PI / 12.0
-        #define ARROW2_ANGLE PI / 3.0
-        #define ARROW1_SIZE 16.0
-        #define ARROW2_SIZE 24.0
-        #define CIRCLE1_SIZE 8.0
-        #define CIRCLE2_SIZE 8.0
-        #define DASH1_SIZE 16.0
-        #define DASH2_SIZE 48.0
-        #define DASH_GAP 4.0
-        #define CROSS_SIZE 16.0
-        #define CALLOUT_GAP 8.0
-        #define CALLOUT_SIZE 64.0
-        #define COLOR vec4({color[0]}, {color[1]}, {color[2]}, {color[3]})
-        #define BREAK_LENGTH 32.0
-        #define BREAK_WIDTH 16.0
+    """
 
-        #define DASH_SIZE 48.0
-        #define CIRCLE_SIZE 16.0
-        #define DASH_PATTERN 0x03C0FFFFU
+    LIB_GLSL = """
+    #define matCLIP2WIN() vec4(winsize.x/2, winsize.y/2, 1, 1)
+    #define matWIN2CLIP() vec4(2/winsize.x, 2/winsize.y, 1, 1)
+    #define CLIP2WIN(v) (clip2win * v / v.w)
+    #define WIN2CLIP(v) (win2clip * v * v.w)
 
-        #define UNPROJ(v, p) (unwindowMatrix * vec4(v, 0, 0) * p.w);
+    void arrow_head(in vec4 dir, in float size, in float angle, out vec4 head[3]) {
+        vec4 nose = dir * size;
+        float c = cos(angle), s = sin(angle);
+        head[0] = nose;
+        head[1] = vec4(mat2(c, -s, +s, c) * nose.xy, 0, 0);
+        head[2] = vec4(mat2(c, +s, -s, c) * nose.xy, 0, 0);
+    }
+
+    void circle_head(in float size, out vec4 head[CIRCLE_SEGS]) {
+        float angle_d = PI * 2 / CIRCLE_SEGS;
+        for(int i = 0; i<CIRCLE_SEGS; i++) {
+            float angle = angle_d * i;
+            head[i] = vec4(cos(angle), sin(angle), 0, 0) * size;
+        }
+    }
+
+    void cross_head(in vec4 dir, in float size, out vec4 head[3]) {
+        vec4 nose = dir * size;
+        float c = cos(PI/2), s = sin(PI/2);
+        head[0] = nose;
+        head[1] = vec4(mat2(c, -s, +s, c) * nose.xy, 0, 0);
+        head[2] = vec4(mat2(c, +s, -s, c) * nose.xy, 0, 0);
+    }
     """
 
     VERT_GLSL = """
@@ -60,14 +71,28 @@ class BaseDecorator():
     """
 
     GEOM_GLSL = """
+    uniform vec2 winsize;
+
     layout(lines) in;
     layout(line_strip, max_vertices=2) out;
 
     void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-        gl_Position = p0;
+
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+        vec4 gap = dir * 16.0;
+
+        vec4 p;
+
+        p = p0w + gap;
+        gl_Position = WIN2CLIP(p);
         EmitVertex();
-        gl_Position = p1;
+        p = p1w - gap;
+        gl_Position = WIN2CLIP(p);
         EmitVertex();
         EndPrimitive();
     }
@@ -78,44 +103,6 @@ class BaseDecorator():
 
     void main() {
         fragColor = COLOR;
-    }
-    """
-
-    LIB_GLSL = """
-    void arrow_head(in vec2 p0, in vec2 p1, in float size, in float angle, out vec2 head[3]) {
-        vec2 nose = normalize(p1 - p0) * size;
-        float c = cos(angle), s = sin(angle);
-        head[0] = nose;
-        head[1] = mat2(c, -s, +s, c) * nose;
-        head[2] = mat2(c, +s, -s, c) * nose;
-    }
-
-    void circle_head(in vec2 p0, in vec2 p1, in float size, out vec2 head[CIRCLE_SEGS]) {
-        float angle_d = PI * 2 / CIRCLE_SEGS;
-        for(int i = 0; i<CIRCLE_SEGS; i++) {
-            float angle = angle_d * i;
-            head[i] = vec2(cos(angle), sin(angle)) * size;
-        }
-    }
-
-    void cross_head(in vec2 p0, in vec2 p1, in float size, out vec2 head[3]) {
-        vec2 nose = normalize(p1 - p0) * size;
-        float c = cos(PI/2), s = sin(PI/2);
-        head[0] = nose;
-        head[1] = mat2(c, -s, +s, c) * nose;
-        head[2] = mat2(c, +s, -s, c) * nose;
-    }
-
-    void callout_head(in vec2 p0, in vec2 p1, out vec2 head[4]) {
-        vec2 nose = normalize(p1 - p0);
-        vec2 gap = nose * CALLOUT_GAP;
-        vec2 tail = nose * -CALLOUT_SIZE;
-        vec2 side = cross(vec3(nose, 0), vec3(0, 0, 1)).xy * CALLOUT_GAP;
-
-        head[0] = tail + side;
-        head[1] = gap * 2 + side;
-        head[2] = gap;
-        head[3] = side;
     }
     """
 
@@ -327,6 +314,12 @@ class DimensionDecorator(BaseDecorator):
     """
     basename = "IfcAnnotation/Dimension"
     installed = None
+
+    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+        #define ARROW_ANGLE PI / 12.0
+        #define ARROW_SIZE 16.0
+    """
+
     GEOM_GLSL = """
     uniform vec2 winsize;
 
@@ -334,25 +327,27 @@ class DimensionDecorator(BaseDecorator):
     layout(line_strip, max_vertices=MAX_POINTS) out;
 
     void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
 
-        mat4 windowMatrix = mat4(winsize.x/2, 0, 0, 0,   0, winsize.y/2, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
-        mat4 unwindowMatrix = inverse(windowMatrix);
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
 
-        vec2 p0w = (windowMatrix * (p0 / p0.w)).xy, p1w = (windowMatrix * (p1 / p1.w)).xy;
+        vec4 p;
 
-        vec2 head[3];
-        vec4 head_ndc[3];
-        arrow_head(p0w, p1w, ARROW1_SIZE, ARROW1_ANGLE, head);
-        for(int i=0; i<3; i++) head_ndc[i] = unwindowMatrix * vec4(head[i], 0, 0) * p1.w;
-        vec4 gap = head_ndc[0];
+        vec4 head[3];
+        arrow_head(dir, ARROW_SIZE, ARROW_ANGLE, head);
 
         // start edge arrow
         gl_Position = p0;
         EmitVertex();
-        gl_Position = p0 + head_ndc[1];
+        p = p0w + head[1];
+        gl_Position = WIN2CLIP(p);
         EmitVertex();
-        gl_Position = p0 + head_ndc[2];
+        p = p0w + head[2];
+        gl_Position = WIN2CLIP(p);
         EmitVertex();
         gl_Position = p0;
         EmitVertex();
@@ -361,18 +356,22 @@ class DimensionDecorator(BaseDecorator):
         // end edge arrow
         gl_Position = p1;
         EmitVertex();
-        gl_Position = p1 - head_ndc[1];
+        p = p1w - head[1];
+        gl_Position = WIN2CLIP(p);
         EmitVertex();
-        gl_Position = p1 - head_ndc[2];
+        p = p1w - head[2];
+        gl_Position = WIN2CLIP(p);
         EmitVertex();
         gl_Position = p1;
         EmitVertex();
         EndPrimitive();
 
-        // stem, adjusted for arrows
-        gl_Position = p0 + gap;
+        // stem, with gaps for arrows
+        p = p0w + head[0];
+        gl_Position = WIN2CLIP(p);
         EmitVertex();
-        gl_Position = p1 - gap;
+        p = p1w - head[0];
+        gl_Position = WIN2CLIP(p);
         EmitVertex();
         EndPrimitive();
     }
@@ -430,6 +429,11 @@ class LeaderDecorator(BaseDecorator):
     basename = "IfcAnnotation/Leader"
     installed = None
 
+    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+        #define ARROW_ANGLE PI / 12.0
+        #define ARROW_SIZE 16.0
+    """
+
     GEOM_GLSL = """
     uniform vec2 winsize;
 
@@ -438,41 +442,43 @@ class LeaderDecorator(BaseDecorator):
     in uint type[];
 
     void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
         uint t0 = type[0], t1 = type[1];
 
-        mat4 windowMatrix = mat4(winsize.x/2, 0, 0, 0,   0, winsize.y/2, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
-        mat4 unwindowMatrix = inverse(windowMatrix);
-
-        vec2 p0w = (windowMatrix * (p0 / p0.w)).xy, p1w = (windowMatrix * (p1 / p1.w)).xy;
-
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
         vec4 gap1 = vec4(0);
+
+        vec4 p;
 
         // end edge arrow for last segment
         if (t1 == 2u) {
-            vec2 head[3];
-            vec4 head_ndc[3];
-            arrow_head(p0w, p1w, ARROW1_SIZE, ARROW1_ANGLE, head);
-            for(int i=0; i<3; i++) head_ndc[i] = unwindowMatrix * vec4(head[i], 0, 0) * p1.w;
+            vec4 head[3];
+            arrow_head(dir, ARROW_SIZE, ARROW_ANGLE, head);
 
             gl_Position = p1;
             EmitVertex();
-            gl_Position = p1 - head_ndc[1];
+            p = p1w - head[1];
+            gl_Position = WIN2CLIP(p);
             EmitVertex();
-            gl_Position = p1 - head_ndc[2];
+            p = p1w - head[2];
+            gl_Position = WIN2CLIP(p);
             EmitVertex();
             gl_Position = p1;
             EmitVertex();
             EndPrimitive();
 
-            vec2 gap = normalize(p1w - p0w) * ARROW1_SIZE;
-            gap1 = unwindowMatrix * vec4(gap, 0, 0) * p1.w;
+            gap1 = dir * ARROW_SIZE;
         }
 
         // stem, adjusted for and arrow
         gl_Position = p0;
         EmitVertex();
-        gl_Position = p1 - gap1;
+        p = p1w - gap1;
+        gl_Position = WIN2CLIP(p);
         EmitVertex();
         EndPrimitive();
     }
@@ -492,6 +498,12 @@ class StairDecorator(BaseDecorator):
     basename = "IfcAnnotation/Stair"
     installed = None
 
+    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+        #define CIRCLE_SIZE 8.0
+        #define ARROW_ANGLE PI / 3.0
+        #define ARROW_SIZE 24.0
+    """
+
     GEOM_GLSL = """
     uniform vec2 winsize;
 
@@ -500,51 +512,57 @@ class StairDecorator(BaseDecorator):
     in uint type[];
 
     void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
         uint t0 = type[0], t1 = type[1];
 
-        mat4 windowMatrix = mat4(winsize.x/2, 0, 0, 0,   0, winsize.y/2, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
-        mat4 unwindowMatrix = inverse(windowMatrix);
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+        vec4 gap0 = vec4(0), gap1 = vec4(0);
 
-        vec2 p0w = (windowMatrix * (p0 / p0.w)).xy, p1w = (windowMatrix * (p1 / p1.w)).xy;
-
-        vec4 gap0 = vec4(0);
+        vec4 p;
 
         // start edge circle for first segment
         if (t0 == 1u) {
-            vec2 head[CIRCLE_SEGS];
-            circle_head(p0w, p1w, CIRCLE1_SIZE, head);
+            vec4 head[CIRCLE_SEGS];
+            circle_head(CIRCLE_SIZE, head);
+
             for(int i=0; i<CIRCLE_SEGS; i++) {
-                gl_Position = p0 + unwindowMatrix * vec4(head[i], 0, 0) * p0.w;
+                p = p0w + head[i];
+                gl_Position = WIN2CLIP(p);
                 EmitVertex();
             }
-            gl_Position = p0 + unwindowMatrix * vec4(head[0], 0, 0) * p0.w;
+            p = p0w + head[0];
+            gl_Position = WIN2CLIP(p);
             EmitVertex();
             EndPrimitive();
 
-            vec2 gap = normalize(p1w - p0w) * CIRCLE1_SIZE;
-            gap0 = unwindowMatrix * vec4(gap, 0, 0) * p0.w;
+            gap0 = dir * CIRCLE_SIZE;
         }
 
         // end edge arrow for last segment
         if (t1 == 2u) {
-            vec2 head[3];
-            vec4 head_ndc[3];
-            arrow_head(p0w, p1w, ARROW2_SIZE, ARROW2_ANGLE, head);
-            for(int i=0; i<3; i++) head_ndc[i] = unwindowMatrix * vec4(head[i], 0, 0) * p1.w;
+            vec4 head[3];
+            arrow_head(dir, ARROW_SIZE, ARROW_ANGLE, head);
 
-            gl_Position = p1 - head_ndc[1];
+            p = p1w - head[1];
+            gl_Position = WIN2CLIP(p);
             EmitVertex();
+
             gl_Position = p1;
             EmitVertex();
-            gl_Position = p1 - head_ndc[2];
+
+            p = p1w - head[2];
+            gl_Position = WIN2CLIP(p);
             EmitVertex();
             EndPrimitive();
-
         }
 
-        // stem, adjusted for edge decoration
-        gl_Position = p0 + gap0;
+        // stem, with gaps for edge decoration
+        p = p0w + gap0;
+        gl_Position = WIN2CLIP(p);
         EmitVertex();
         gl_Position = p1;
         EmitVertex();
@@ -561,6 +579,11 @@ class HiddenDecorator(BaseDecorator):
     basename = "IfcAnnotation/Hidden"
     installed = None
 
+    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+        #define DASH_SIZE 16.0
+        #define DASH_PATTERN 0x0000FFFFU
+    """
+
     GEOM_GLSL = """
     uniform vec2 winsize;
 
@@ -570,22 +593,26 @@ class HiddenDecorator(BaseDecorator):
     out float dist; // distance from starging point along segment
 
     void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
 
-        mat4 windowMatrix = mat4(winsize.x/2, 0, 0, 0,   0, winsize.y/2, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
-        mat4 unwindowMatrix = inverse(windowMatrix);
-        vec2 p0w = (windowMatrix * (p0 / p0.w)).xy, p1w = (windowMatrix * (p1 / p1.w)).xy;
-        vec2 segm = p1w - p0w;
-        vec2 gap = normalize(segm) * DASH_GAP;
-        vec4 gap_ndc = unwindowMatrix * vec4(gap, 0, 0);
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+        vec4 gap = dir * 1;
+
+        vec4 p;
 
         // NB: something should be used to affect position, otherwise compiler eliminates winsize
 
         dist = 0;
-        gl_Position = p0 + gap_ndc * p0.w;
+        p = p0w + gap;
+        gl_Position = WIN2CLIP(p);
         EmitVertex();
-        dist = length(segm);
-        gl_Position = p1 - gap_ndc * p1.w;
+        dist = length(edge);
+        p = p1w - gap;
+        gl_Position = WIN2CLIP(p);
         EmitVertex();
         EndPrimitive();
     }
@@ -597,12 +624,9 @@ class HiddenDecorator(BaseDecorator):
     out vec4 fragColor;
 
     void main() {
-        float t = fract(dist / DASH1_SIZE);
-        if (t > 0.5) {
-            discard;
-        } else {
-            fragColor = COLOR;
-        }
+        uint bit = uint(fract(dist / DASH_SIZE) * 32);
+        if ((DASH_PATTERN & (1U<<bit)) == 0U) discard;
+        fragColor = COLOR;
     }
     """
 
@@ -648,6 +672,11 @@ class PlanDecorator(LevelDecorator):
     basename = "IfcAnnotation/Plan Level"
     installed = None
 
+    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+        #define CIRCLE_SIZE 8.0
+        #define CROSS_SIZE 16.0
+    """
+
     GEOM_GLSL = """
     uniform vec2 winsize;
 
@@ -656,45 +685,52 @@ class PlanDecorator(LevelDecorator):
     in uint type[];
 
     void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
         uint t0 = type[0], t1 = type[1];
 
-        mat4 windowMatrix = mat4(winsize.x/2, 0, 0, 0,   0, winsize.y/2, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
-        mat4 unwindowMatrix = inverse(windowMatrix);
-
-        vec2 p0w = (windowMatrix * (p0 / p0.w)).xy, p1w = (windowMatrix * (p1 / p1.w)).xy;
-
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
         vec4 gap1 = vec4(0);
+
+        vec4 p;
 
         // end edge cross+circle for last segment
         if (t1 == 2u) {
-            vec2 head_o[CIRCLE_SEGS];
+            vec4 head_o[CIRCLE_SEGS];
+            circle_head(CIRCLE_SIZE, head_o);
 
-            circle_head(p0w, p1w, CIRCLE2_SIZE, head_o);
             for(int i=0; i<CIRCLE_SEGS; i++) {
-                gl_Position = p1 + unwindowMatrix * vec4(head_o[i], 0, 0) * p1.w;
+                p = p1w + head_o[i];
+                gl_Position = WIN2CLIP(p);
                 EmitVertex();
             }
-            gl_Position = p1 + unwindowMatrix * vec4(head_o[0], 0, 0) * p1.w;
+            p = p1w + head_o[0];
+            gl_Position = WIN2CLIP(p);
             EmitVertex();
             EndPrimitive();
 
-            vec2 head_x[3];
-            cross_head(p0w, p1w, CROSS_SIZE, head_x);
+            vec4 head_x[3];
+            cross_head(dir, CROSS_SIZE, head_x);
 
-            gl_Position = p1 + unwindowMatrix * vec4(head_x[1], 0, 0) * p1.w;
+            p = p1w + head_x[1];
+            gl_Position = WIN2CLIP(p);
             EmitVertex();
-            gl_Position = p1 + unwindowMatrix * vec4(head_x[2], 0, 0) * p1.w;
+            p = p1w + head_x[2];
+            gl_Position = WIN2CLIP(p);
             EmitVertex();
             EndPrimitive();
 
-            gap1 = unwindowMatrix * vec4(head_x[0], 0, 0) * p1.w;
+            gap1 = head_x[0];
         }
 
         // stem, adjusted for and arrow
         gl_Position = p0;
         EmitVertex();
-        gl_Position = p1 + gap1;
+        p = p1w + gap1;
+        gl_Position = WIN2CLIP(p);
         EmitVertex();
         EndPrimitive();
     }
@@ -719,6 +755,11 @@ class SectionDecorator(LevelDecorator):
     basename = "IfcAnnotation/Section Level"
     installed = None
 
+    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+        #define CALLOUT_GAP 8.0
+        #define CALLOUT_SIZE 64.0
+    """
+
     GEOM_GLSL = """
     uniform vec2 winsize;
 
@@ -727,22 +768,38 @@ class SectionDecorator(LevelDecorator):
     in uint type[];
     out float dist; // distance from starging point along segment
 
+    void callout_head(in vec4 dir, out vec4 head[4]) {
+        vec2 gap = dir.xy * CALLOUT_GAP;
+        vec2 tail = dir.xy * -CALLOUT_SIZE;
+        vec2 side = cross(vec3(dir.xy, 0), vec3(0, 0, 1)).xy * CALLOUT_GAP;
+
+        head[0] = vec4(tail + side, 0, 0);
+        head[1] = vec4(gap * 2 + side, 0, 0);
+        head[2] = vec4(gap, 0, 0);
+        head[3] = vec4(side, 0, 0);
+    }
+
     void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
         uint t0 = type[0], t1 = type[1];
 
-        mat4 windowMatrix = mat4(winsize.x/2, 0, 0, 0,   0, winsize.y/2, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
-        mat4 unwindowMatrix = inverse(windowMatrix);
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+        vec4 gap = dir * 16.0;
 
-        vec2 p0w = (windowMatrix * (p0 / p0.w)).xy, p1w = (windowMatrix * (p1 / p1.w)).xy;
+        vec4 p;
 
         // start edge callout
         if (t0 == 1u) {
-            vec2 head[4];
-            callout_head(p0w, p1w, head);
+            vec4 head[4];
+            callout_head(dir, head);
 
             for(int i=0; i<4; i++) {
-                gl_Position = p0 + unwindowMatrix * vec4(head[i], 0, 0) * p0.w;
+                p = p0w + head[i];
+                gl_Position = WIN2CLIP(p);
                 EmitVertex();
             }
             EndPrimitive();
@@ -783,6 +840,11 @@ class BreakDecorator(BaseDecorator):
     basename = "IfcAnnotation/Break"
     installed = None
 
+    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+        #define BREAK_LENGTH 32.0
+        #define BREAK_WIDTH 16.0
+    """
+
     GEOM_GLSL = """
     uniform vec2 winsize;
 
@@ -790,30 +852,41 @@ class BreakDecorator(BaseDecorator):
     layout(line_strip, max_vertices=MAX_POINTS) out;
 
     void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-        vec4 pm = (p1 - p0) * .5 + p0;
 
-        mat4 windowMatrix = mat4(winsize.x/2, 0, 0, 0,   0, winsize.y/2, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
-        mat4 unwindowMatrix = inverse(windowMatrix);
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1), pmw = (p0w + p1w) * .5;
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+        vec4 gap = dir * 16.0;
 
-        vec2 p0w = (windowMatrix * (p0 / p0.w)).xy, p1w = (windowMatrix * (p1 / p1.w)).xy;
-        vec2 edge = p1w - p0w;
-        vec2 dir = normalize(edge);
-        vec2 quart = dir * BREAK_LENGTH * .25;
-        vec2 side = cross(vec3(dir, 0), vec3(0, 0, 1)).xy * BREAK_WIDTH;
+        vec4 p;
+
+        vec4 quart = dir * BREAK_LENGTH * .25;
+        vec4 side = vec4(cross(vec3(dir.xy, 0), vec3(0, 0, 1)).xy, 0, 0) * BREAK_WIDTH;
 
         // TODO: check if there's enough length for zigzag
 
         gl_Position = p0;
         EmitVertex();
-        gl_Position = pm;
+
+        p = pmw;
+        gl_Position = WIN2CLIP(p);
         EmitVertex();
-        gl_Position = pm + UNPROJ(quart - side, pm);
+
+        p = pmw + quart - side;
+        gl_Position = WIN2CLIP(p);
         EmitVertex();
-        gl_Position = pm + UNPROJ(quart * 3 + side, pm);
+
+        p = pmw + quart * 3 + side;
+        gl_Position = WIN2CLIP(p);
         EmitVertex();
-        gl_Position = pm + UNPROJ(quart * 4, pm);
+
+        p = pmw + quart * 4;
+        gl_Position = WIN2CLIP(p);
         EmitVertex();
+
         gl_Position = p1;
         EmitVertex();
         EndPrimitive();
@@ -843,6 +916,12 @@ class GridDecorator(BaseDecorator):
     basename = "IfcGridAxis/"
     installed = None
 
+    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+        #define CIRCLE_SIZE 16.0
+        #define DASH_SIZE 48.0
+        #define DASH_PATTERN 0x03C0FFFFU
+    """
+
     GEOM_GLSL = """
     uniform vec2 winsize;
 
@@ -852,41 +931,52 @@ class GridDecorator(BaseDecorator):
     out float dist; // distance from starging point along segment
 
     void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
         vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
 
-        mat4 windowMatrix = mat4(winsize.x/2, 0, 0, 0,   0, winsize.y/2, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
-        mat4 unwindowMatrix = inverse(windowMatrix);
-        vec2 p0w = (windowMatrix * (p0 / p0.w)).xy, p1w = (windowMatrix * (p1 / p1.w)).xy;
-        vec2 edge = p1w - p0w;
-        vec2 dir = normalize(edge);
-        vec2 gap = dir * CIRCLE_SIZE;
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+        vec4 gap = dir * CIRCLE_SIZE;
 
-        vec2 head[CIRCLE_SEGS];
-        circle_head(p0w, p1w, CIRCLE_SIZE, head);
+        vec4 p;
+
+        vec4 head[CIRCLE_SEGS];
+        circle_head(CIRCLE_SIZE, head);
 
         dist = 0;
 
+        // start edge circle
         for(int i=0; i<CIRCLE_SEGS; i++) {
-            gl_Position = p0 + UNPROJ(head[i], p0);
+            p = p0w + head[i];
+            gl_Position = WIN2CLIP(p);
             EmitVertex();
         }
-        gl_Position = p0 + UNPROJ(head[0], p0);
+        p = p0w + head[0];
+        gl_Position = WIN2CLIP(p);
         EmitVertex();
         EndPrimitive();
 
+        // end edge circle
         for(int i=0; i<CIRCLE_SEGS; i++) {
-            gl_Position = p1 + UNPROJ(head[i], p1);
+            p = p1w + head[i];
+            gl_Position = WIN2CLIP(p);
             EmitVertex();
         }
-        gl_Position = p1 + UNPROJ(head[0], p1);
+        p = p1w + head[0];
+        gl_Position = WIN2CLIP(p);
         EmitVertex();
         EndPrimitive();
 
+        // stem
         dist = 0;
-        gl_Position = p0 + UNPROJ(gap, p0);
+        p = p0w + gap;
+        gl_Position = WIN2CLIP(p);
         EmitVertex();
         dist = length(edge);
-        gl_Position = p1 - UNPROJ(gap, p1);
+        p = p1w - gap;
+        gl_Position = WIN2CLIP(p);
         EmitVertex();
         EndPrimitive();
     }
@@ -936,3 +1026,17 @@ class GridDecorator(BaseDecorator):
         text = obj.BIMObjectProperties.attributes['AxisTag'].string_value
         self.draw_label(text, p0, dir, vcenter=True, gap=0)
         self.draw_label(text, p1, dir, vcenter=True, gap=0)
+
+
+all_decorators = [
+    DimensionDecorator,
+    EqualityDecorator,
+    GridDecorator,
+    HiddenDecorator,
+    LeaderDecorator,
+    MiscDecorator,
+    PlanDecorator,
+    SectionDecorator,
+    StairDecorator,
+    BreakDecorator
+]
