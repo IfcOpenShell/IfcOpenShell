@@ -5,21 +5,11 @@ bpy = sys.modules.get("bpy")
 
 if bpy is not None:
     import bpy
+    import blenderbim.bim.module.covetool
+    import blenderbim.bim.module.model
     from . import ui, prop, operator
 
-    from .module.covetool import prop as covetool_prop
-    from .module.covetool import ui as covetool_ui
-    from .module.covetool import operator as covetool_operator
-
-    from .module.model import grid as model_grid
-    from .module.model import wall as model_wall
-    from .module.model import stair as model_stair
-    from .module.model import door as model_door
-    from .module.model import window as model_window
-    from .module.model import slab as model_slab
-    from .module.model import opening as model_opening
-
-    classes = (
+    classes = [
         operator.ReassignClass,
         operator.AssignClass,
         operator.UnassignClass,
@@ -374,22 +364,10 @@ if bpy is not None:
         ui.BIM_UL_topics,
         ui.BIM_UL_classifications,
         ui.BIM_ADDON_preferences,
-        covetool_prop.CoveToolProject,
-        covetool_prop.CoveToolSimpleAnalysis,
-        covetool_prop.CoveToolProperties,
-        covetool_ui.BIM_UL_covetool_projects,
-        covetool_ui.BIM_PT_covetool,
-        covetool_operator.Login,
-        covetool_operator.RunSimpleAnalysis,
-        covetool_operator.RunAnalysis,
-        model_grid.BIM_OT_add_object,
-        model_wall.BIM_OT_add_object,
-        model_stair.BIM_OT_add_object,
-        model_door.BIM_OT_add_object,
-        model_window.BIM_OT_add_object,
-        model_slab.BIM_OT_add_object,
-        model_opening.BIM_OT_add_object,
-    )
+    ]
+
+    classes.extend(module.covetool.classes)
+    classes.extend(module.model.classes)
 
     def menu_func_export(self, context):
         self.layout.operator(operator.ExportIFC.bl_idname, text="Industry Foundation Classes (.ifc/.ifczip/.ifcjson)")
@@ -421,15 +399,9 @@ if bpy is not None:
         bpy.types.Mesh.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
         bpy.types.Camera.BIMCameraProperties = bpy.props.PointerProperty(type=prop.BIMCameraProperties)
         bpy.types.TextCurve.BIMTextProperties = bpy.props.PointerProperty(type=prop.BIMTextProperties)
-        bpy.types.Scene.CoveToolProperties = bpy.props.PointerProperty(type=covetool_prop.CoveToolProperties)
         bpy.types.SCENE_PT_unit.append(ui.ifc_units)
-        bpy.types.VIEW3D_MT_mesh_add.append(model_grid.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.append(model_wall.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.append(model_stair.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.append(model_door.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.append(model_window.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.append(model_slab.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.append(model_opening.add_object_button)
+        blenderbim.bim.module.covetool.register()
+        blenderbim.bim.module.model.register()
         bpy.app.handlers.depsgraph_update_pre.append(operator.depsgraph_update_pre_handler)
 
     def unregister():
@@ -451,11 +423,6 @@ if bpy is not None:
         del bpy.types.Camera.BIMCameraProperties
         del bpy.types.TextCurve.BIMTextProperties
         bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
-        bpy.types.VIEW3D_MT_mesh_add.remove(model_grid.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.remove(model_wall.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.remove(model_stair.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.remove(model_door.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.remove(model_window.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.remove(model_slab.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.remove(model_opening.add_object_button)
+        blenderbim.bim.module.model.unregister()
+        blenderbim.bim.module.covetool.unregister()
         bpy.app.handlers.depsgraph_update_pre.remove(operator.depsgraph_update_pre_handler)
