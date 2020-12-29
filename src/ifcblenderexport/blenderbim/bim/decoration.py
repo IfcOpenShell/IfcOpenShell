@@ -37,6 +37,10 @@ class BaseDecorator():
         #define CALLOUT_GAP 8.0
         #define CALLOUT_SIZE 64.0
         #define COLOR vec4({color[0]}, {color[1]}, {color[2]}, {color[3]})
+        #define BREAK_LENGTH 32.0
+        #define BREAK_WIDTH 16.0
+
+        #define UNPROJ(v, p) (unwindowMatrix * vec4(v, 0, 0) * p.w);
     """
 
     VERT_GLSL = """
@@ -745,22 +749,6 @@ class SectionDecorator(LevelDecorator):
     }
     """
 
-    FRAG_GLSL = """
-    in vec2 gl_FragCoord;
-    in float dist;
-    out vec4 fragColor;
-
-    void main() {
-        float t = fract(dist / DASH2_SIZE);
-        // pattern: 11011110
-        if (t > 0.875 || (t > 0.25 && t < 0.375)) {
-            discard;
-        } else {
-            fragColor = COLOR;
-        }
-    }
-    """
-
     def draw_labels(self, obj, splines):
         region = self.context.region
         region3d = self.context.region_data
@@ -774,3 +762,68 @@ class SectionDecorator(LevelDecorator):
                 continue
             text = "RL " + self.format_value(verts[-1].z)
             self.draw_label(text, p0 + dir.normalized() * 16, -dir, gap=16, center=False)
+
+
+class BreakDecorator(BaseDecorator):
+    """Decorator for dimension objects
+    - first edge of a mesh with zigzag thingy in the middle
+
+    Uses first two vertices in verts list.
+    """
+    basename = "IfcAnnotation/Break"
+    installed = None
+
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+
+    void main() {
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+        vec4 pm = (p1 - p0) * .5 + p0;
+
+        mat4 windowMatrix = mat4(winsize.x/2, 0, 0, 0,   0, winsize.y/2, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
+        mat4 unwindowMatrix = inverse(windowMatrix);
+
+        vec2 p0w = (windowMatrix * (p0 / p0.w)).xy, p1w = (windowMatrix * (p1 / p1.w)).xy;
+        vec2 edge = p1w - p0w;
+        vec2 dir = normalize(edge);
+        vec2 quart = dir * BREAK_LENGTH * .25;
+        vec2 side = cross(vec3(dir, 0), vec3(0, 0, 1)).xy * BREAK_WIDTH;
+
+        // TODO: check if there's enough length for zigzag
+
+        gl_Position = p0;
+        EmitVertex();
+        gl_Position = pm;
+        EmitVertex();
+        gl_Position = pm + UNPROJ(quart - side, pm);
+        EmitVertex();
+        gl_Position = pm + UNPROJ(quart * 3 + side, pm);
+        EmitVertex();
+        gl_Position = pm + UNPROJ(quart * 4, pm);
+        EmitVertex();
+        gl_Position = p1;
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    def decorate(self, obj):
+        if obj.data.is_editmode:
+            verts = self.get_editmesh_geom(obj)
+        else:
+            verts = self.get_mesh_geom(obj)
+        self.draw_lines(obj, verts, [(0, 1)])
+
+    def get_mesh_geom(self, obj):
+        # first vertices only
+        vertices = [obj.matrix_world @ obj.data.vertices[i].co for i in (0, 1)]
+        return vertices
+
+    def get_editmesh_geom(self, obj):
+        # first vertices only
+        mesh = bmesh.from_edit_mesh(obj.data)
+        vertices = [obj.matrix_world @ v.co for v in mesh.edges[0].verts]
+        return vertices
