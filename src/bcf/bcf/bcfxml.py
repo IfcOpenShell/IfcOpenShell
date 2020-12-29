@@ -345,7 +345,7 @@ class BcfXml:
 
     def write_viewpoint(self, viewpoint, topic):
         document = minidom.Document()
-        root = self._create_element(document, "VisualizationInfo", { "Guid": viewpoint.guid })
+        root = self._create_element(document, "VisualizationInfo", {"Guid": viewpoint.guid})
         self.write_viewpoint_components(viewpoint, root)
         self.write_viewpoint_orthogonal_camera(viewpoint, root)
         self.write_viewpoint_perspective_camera(viewpoint, root)
