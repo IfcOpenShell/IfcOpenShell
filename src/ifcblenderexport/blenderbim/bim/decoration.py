@@ -21,9 +21,8 @@ class BaseDecorator():
 
     DEF_GLSL = """
         #define PI 3.141592653589793
+        #define MAX_POINTS 64
         #define CIRCLE_SEGS 24
-        // max points = SEGS (circle) + 2 (stem) + 3 (arrow)
-        #define MAX_POINTS 29
         #define ARROW1_ANGLE PI / 12.0
         #define ARROW2_ANGLE PI / 3.0
         #define ARROW1_SIZE 16.0
@@ -39,6 +38,10 @@ class BaseDecorator():
         #define COLOR vec4({color[0]}, {color[1]}, {color[2]}, {color[3]})
         #define BREAK_LENGTH 32.0
         #define BREAK_WIDTH 16.0
+
+        #define DASH_SIZE 48.0
+        #define CIRCLE_SIZE 16.0
+        #define DASH_PATTERN 0x03C0FFFFU
 
         #define UNPROJ(v, p) (unwindowMatrix * vec4(v, 0, 0) * p.w);
     """
@@ -261,7 +264,7 @@ class BaseDecorator():
         self.shader.uniform_float("winsize", (region.width, region.height))
         batch.draw(self.shader)
 
-    def draw_label(self, text, pos, dir, gap=4, center=True):
+    def draw_label(self, text, pos, dir, gap=4, center=True, vcenter=False):
         """Draw text label
 
         Args:
@@ -275,10 +278,17 @@ class BaseDecorator():
 
         blf.size(self.font_id, self.font_size, self.dpi)
 
+        w, h = 0, 0
+        if center or vcenter:
+            w, h = blf.dimensions(self.font_id, text)
+
         if center:
-            # centering
-            w, _ = blf.dimensions(self.font_id, text)
+            # horizontal centering
             pos -= Vector((cos, sin)) * w * 0.5
+
+        if vcenter:
+            # vertical centering
+            pos -= Vector((-sin, cos)) * h * 0.5
 
         if gap:
             # side-shifting
@@ -827,3 +837,102 @@ class BreakDecorator(BaseDecorator):
         mesh = bmesh.from_edit_mesh(obj.data)
         vertices = [obj.matrix_world @ v.co for v in mesh.edges[0].verts]
         return vertices
+
+
+class GridDecorator(BaseDecorator):
+    basename = "IfcGridAxis/"
+    installed = None
+
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+
+    out float dist; // distance from starging point along segment
+
+    void main() {
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+
+        mat4 windowMatrix = mat4(winsize.x/2, 0, 0, 0,   0, winsize.y/2, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1);
+        mat4 unwindowMatrix = inverse(windowMatrix);
+        vec2 p0w = (windowMatrix * (p0 / p0.w)).xy, p1w = (windowMatrix * (p1 / p1.w)).xy;
+        vec2 edge = p1w - p0w;
+        vec2 dir = normalize(edge);
+        vec2 gap = dir * CIRCLE_SIZE;
+
+        vec2 head[CIRCLE_SEGS];
+        circle_head(p0w, p1w, CIRCLE_SIZE, head);
+
+        dist = 0;
+
+        for(int i=0; i<CIRCLE_SEGS; i++) {
+            gl_Position = p0 + UNPROJ(head[i], p0);
+            EmitVertex();
+        }
+        gl_Position = p0 + UNPROJ(head[0], p0);
+        EmitVertex();
+        EndPrimitive();
+
+        for(int i=0; i<CIRCLE_SEGS; i++) {
+            gl_Position = p1 + UNPROJ(head[i], p1);
+            EmitVertex();
+        }
+        gl_Position = p1 + UNPROJ(head[0], p1);
+        EmitVertex();
+        EndPrimitive();
+
+        dist = 0;
+        gl_Position = p0 + UNPROJ(gap, p0);
+        EmitVertex();
+        dist = length(edge);
+        gl_Position = p1 - UNPROJ(gap, p1);
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    FRAG_GLSL = """
+    in vec2 gl_FragCoord;
+    in float dist;
+    out vec4 fragColor;
+
+    void main() {
+        uint bit = uint(fract(dist / DASH_SIZE) * 32);
+        if ((DASH_PATTERN & (1U<<bit)) == 0U) discard;
+        fragColor = COLOR;
+    }
+    """
+
+    def get_mesh_geom(self, obj):
+        # first vertices only
+        vertices = [obj.matrix_world @ obj.data.vertices[i].co for i in (0, 1)]
+        return vertices
+
+    def get_editmesh_geom(self, obj):
+        # first vertices only
+        mesh = bmesh.from_edit_mesh(obj.data)
+        vertices = [obj.matrix_world @ v.co for v in mesh.edges[0].verts]
+        return vertices
+
+    def decorate(self, obj):
+        if obj.data.is_editmode:
+            verts = self.get_editmesh_geom(obj)
+        else:
+            verts = self.get_mesh_geom(obj)
+        self.draw_lines(obj, verts, [(0, 1)])
+        self.draw_labels(obj, verts)
+
+    def draw_labels(self, obj, vertices):
+        region = self.context.region
+        region3d = self.context.region_data
+        v0 = Vector(vertices[0])
+        v1 = Vector(vertices[1])
+        p0 = location_3d_to_region_2d(region, region3d, v0)
+        p1 = location_3d_to_region_2d(region, region3d, v1)
+        dir = p1 - p0
+        if dir.length < 1:
+            return
+        text = obj.BIMObjectProperties.attributes['AxisTag'].string_value
+        self.draw_label(text, p0, dir, vcenter=True, gap=0)
+        self.draw_label(text, p1, dir, vcenter=True, gap=0)
