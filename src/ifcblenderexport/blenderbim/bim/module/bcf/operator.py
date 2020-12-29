@@ -2,6 +2,8 @@ import os
 import bpy
 import bcf
 from . import bcfstore
+from math import radians, degrees, atan, tan, cos, sin
+from mathutils import Vector, Matrix, Euler, geometry
 
 class NewBcfProject(bpy.types.Operator):
     bl_idname = "bim.new_bcf_project"

@@ -1568,11 +1568,12 @@ class SelectSmartGroupedClashesPath(bpy.types.Operator):
 class ExecuteIfcClash(bpy.types.Operator):
     bl_idname = "bim.execute_ifc_clash"
     bl_label = "Execute IFC Clash"
-    filename_ext = ".json"
+    filename_ext = ".bcf"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def invoke(self, context, event):
-        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
+        if ".json" not in bpy.data.filepath:
+            self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".bcf")
         WindowManager = context.window_manager
         WindowManager.fileselect_add(self)
         return {"RUNNING_MODAL"}
@@ -1581,7 +1582,8 @@ class ExecuteIfcClash(bpy.types.Operator):
         import ifcclash
 
         settings = ifcclash.IfcClashSettings()
-        self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
+        if ".json" not in self.filepath:
+            self.filepath = bpy.path.ensure_ext(self.filepath, ".bcf")
         settings.output = self.filepath
         settings.logger = logging.getLogger("Clash")
         settings.logger.setLevel(logging.DEBUG)
