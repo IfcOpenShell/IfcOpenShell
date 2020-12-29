@@ -1020,9 +1020,7 @@ class GridDecorator(BaseDecorator):
         v1 = Vector(vertices[1])
         p0 = location_3d_to_region_2d(region, region3d, v0)
         p1 = location_3d_to_region_2d(region, region3d, v1)
-        dir = p1 - p0
-        if dir.length < 1:
-            return
+        dir = Vector((1, 0))
         text = obj.BIMObjectProperties.attributes['AxisTag'].string_value
         self.draw_label(text, p0, dir, vcenter=True, gap=0)
         self.draw_label(text, p1, dir, vcenter=True, gap=0)
