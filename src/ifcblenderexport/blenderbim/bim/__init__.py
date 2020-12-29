@@ -5,8 +5,9 @@ bpy = sys.modules.get("bpy")
 
 if bpy is not None:
     import bpy
-    import blenderbim.bim.module.covetool
-    import blenderbim.bim.module.model
+    import blenderbim.bim.module.covetool as module_covetool
+    import blenderbim.bim.module.model as module_model
+    import blenderbim.bim.module.bcf as module_bcf
     from . import ui, prop, operator
 
     classes = [
@@ -15,43 +16,7 @@ if bpy is not None:
         operator.UnassignClass,
         operator.SelectClass,
         operator.SelectType,
-        operator.NewBcfProject,
-        operator.LoadBcfProject,
-        operator.LoadBcfTopics,
-        operator.LoadBcfTopic,
-        operator.LoadBcfComments,
-        operator.EditBcfProjectName,
-        operator.EditBcfAuthor,
-        operator.EditBcfTopicName,
-        operator.EditBcfTopic,
-        operator.SaveBcfProject,
-        operator.AddBcfTopic,
-        operator.AddBcfHeaderFile,
-        operator.AddBcfBimSnippet,
-        operator.AddBcfReferenceLink,
-        operator.AddBcfDocumentReference,
-        operator.AddBcfLabel,
-        operator.AddBcfRelatedTopic,
-        operator.ViewBcfTopic,
-        operator.RemoveBcfComment,
-        operator.RemoveBcfBimSnippet,
-        operator.RemoveBcfReferenceLink,
-        operator.RemoveBcfDocumentReference,
-        operator.RemoveBcfRelatedTopic,
-        operator.EditBcfReferenceLinks,
-        operator.EditBcfLabels,
-        operator.RemoveBcfLabel,
-        operator.EditBcfComment,
-        operator.AddBcfComment,
-        operator.ActivateBcfViewpoint,
-        operator.AddBcfViewpoint,
-        operator.RemoveBcfViewpoint,
-        operator.RemoveBcfFile,
         operator.OpenUri,
-        operator.OpenBcfReferenceLink,
-        operator.SelectBcfHeaderFile,
-        operator.SelectBcfBimSnippetReference,
-        operator.SelectBcfDocumentReference,
         operator.SelectFeaturesDir,
         operator.SelectDiffJsonFile,
         operator.SelectDiffNewFile,
@@ -255,8 +220,6 @@ if bpy is not None:
         operator.SnapSpacesTogether,
         operator.CopyGrid,
         prop.StrProperty,
-        prop.BcfReferenceLink,
-        prop.BcfLabel,
         prop.Attribute,
         prop.MaterialLayer,
         prop.MaterialConstituent,
@@ -282,15 +245,10 @@ if bpy is not None:
         prop.Schedule,
         prop.DrawingStyle,
         prop.Sheet,
-        prop.BcfBimSnippet,
-        prop.BcfDocumentReference,
-        prop.BcfComment,
-        prop.BcfTopic,
         prop.Subcontext,
         prop.PresentationLayer,
         prop.BIMProperties,
         prop.BIMDebugProperties,
-        prop.BCFProperties,
         prop.DocProperties,
         prop.BIMLibrary,
         prop.MapConversion,
@@ -319,9 +277,6 @@ if bpy is not None:
         ui.BIM_PT_search,
         ui.BIM_PT_ifccsv,
         ui.BIM_PT_ifcclash,
-        ui.BIM_PT_bcf,
-        ui.BIM_PT_bcf_metadata,
-        ui.BIM_PT_bcf_comments,
         ui.BIM_PT_owner,
         ui.BIM_PT_people,
         ui.BIM_PT_organisations,
@@ -366,8 +321,9 @@ if bpy is not None:
         ui.BIM_ADDON_preferences,
     ]
 
-    classes.extend(module.covetool.classes)
-    classes.extend(module.model.classes)
+    classes.extend(module_bcf.classes)
+    classes.extend(module_covetool.classes)
+    classes.extend(module_model.classes)
 
     def menu_func_export(self, context):
         self.layout.operator(operator.ExportIFC.bl_idname, text="Industry Foundation Classes (.ifc/.ifczip/.ifcjson)")
@@ -388,7 +344,6 @@ if bpy is not None:
         bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
         bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
         bpy.types.Scene.BIMDebugProperties = bpy.props.PointerProperty(type=prop.BIMDebugProperties)
-        bpy.types.Scene.BCFProperties = bpy.props.PointerProperty(type=prop.BCFProperties)
         bpy.types.Scene.DocProperties = bpy.props.PointerProperty(type=prop.DocProperties)
         bpy.types.Scene.BIMLibrary = bpy.props.PointerProperty(type=prop.BIMLibrary)
         bpy.types.Scene.MapConversion = bpy.props.PointerProperty(type=prop.MapConversion)
@@ -400,8 +355,9 @@ if bpy is not None:
         bpy.types.Camera.BIMCameraProperties = bpy.props.PointerProperty(type=prop.BIMCameraProperties)
         bpy.types.TextCurve.BIMTextProperties = bpy.props.PointerProperty(type=prop.BIMTextProperties)
         bpy.types.SCENE_PT_unit.append(ui.ifc_units)
-        blenderbim.bim.module.covetool.register()
-        blenderbim.bim.module.model.register()
+        module_bcf.register()
+        module_covetool.register()
+        module_model.register()
         bpy.app.handlers.depsgraph_update_pre.append(operator.depsgraph_update_pre_handler)
 
     def unregister():
@@ -412,7 +368,6 @@ if bpy is not None:
         bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
         del bpy.types.Scene.BIMProperties
         del bpy.types.Scene.BIMDebugProperties
-        del bpy.types.Scene.BCFProperties
         del bpy.types.Scene.DocProperties
         del bpy.types.Scene.MapConversion
         del bpy.types.Scene.TargetCRS
@@ -423,6 +378,7 @@ if bpy is not None:
         del bpy.types.Camera.BIMCameraProperties
         del bpy.types.TextCurve.BIMTextProperties
         bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
-        blenderbim.bim.module.model.unregister()
-        blenderbim.bim.module.covetool.unregister()
+        module_model.unregister()
+        module_covetool.unregister()
+        module_bcf.unregister()
         bpy.app.handlers.depsgraph_update_pre.remove(operator.depsgraph_update_pre_handler)
