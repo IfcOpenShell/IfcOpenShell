@@ -1345,6 +1345,9 @@ class IfcExporter:
         self.roundtrip_id_new_to_old = {}
 
     def export(self, selected_objects):
+        self.file = ifc.IfcStore.get_file()
+        if self.file and self.ifc_export_settings.should_export_from_memory:
+            return self.write_ifc_file()
         self.schema_version = self.ifc_export_settings.schema
         self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.schema_version)
         self.file = ifcopenshell.file(schema=self.schema_version)
@@ -3526,6 +3529,7 @@ class IfcExportSettings:
         ]
         self.should_use_presentation_style_assignment = False
         self.should_guess_quantities = False
+        self.should_export_from_memory = False
         self.context_tree = []
 
     @staticmethod
@@ -3545,6 +3549,7 @@ class IfcExportSettings:
         settings.should_force_faceted_brep = scene_bim.export_should_force_faceted_brep
         settings.should_force_triangulation = scene_bim.export_should_force_triangulation
         settings.should_roundtrip_native = scene_bim.import_export_should_roundtrip_native
+        settings.should_export_from_memory = scene_bim.export_should_export_from_memory
         settings.context_tree = []
         for ifc_context in ["model", "plan"]:
             if getattr(scene_bim, "has_{}_context".format(ifc_context)):

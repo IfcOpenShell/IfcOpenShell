@@ -1263,6 +1263,7 @@ class BIMProperties(PropertyGroup):
     )
     export_should_force_faceted_brep: BoolProperty(name="Export with Faceted Breps", default=False)
     export_should_force_triangulation: BoolProperty(name="Export with Triangulation", default=False)
+    export_should_export_from_memory: BoolProperty(name="Export from Memory", default=False)
     import_should_ignore_site_coordinates: BoolProperty(name="Import Ignoring Site Coordinates", default=False)
     import_should_ignore_building_coordinates: BoolProperty(name="Import Ignoring Building Coordinates", default=False)
     import_should_reset_absolute_coordinates: BoolProperty(name="Import Resetting Absolute Coordinates", default=False)
