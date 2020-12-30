@@ -370,6 +370,10 @@ int main(int argc, char** argv) {
 			"Element at which vertical cross sections should be created")
 		("elevation-ref", po::value<std::string>(&elevation_ref),
 			"Element at which vertical elevations should be created")
+		("auto-section",
+			"Creates SVG cross section drawings automatically based on model extents")
+		("auto-elevation",
+			"Creates SVG elevation drawings automatically based on model extents")
 		("door-arcs", "Draw door openings arcs for IfcDoor elements")
 		("section-height", po::value<double>(&section_height),
 		    "Specifies the cut section height for SVG 2D geometry.")
@@ -945,6 +949,12 @@ int main(int argc, char** argv) {
 		}
 		if (vmap.count("elevation-ref")) {
 			static_cast<SvgSerializer*>(serializer.get())->setElevationRef(elevation_ref);
+		}
+		if (vmap.count("auto-section")) {
+			static_cast<SvgSerializer*>(serializer.get())->setAutoSection(true);
+		}
+		if (vmap.count("auto-elevation")) {
+			static_cast<SvgSerializer*>(serializer.get())->setAutoElevation(true);
 		}
 		if (relative_center_x && relative_center_y) {
 			static_cast<SvgSerializer*>(serializer.get())->setDrawingCenter(*relative_center_x, *relative_center_y);
