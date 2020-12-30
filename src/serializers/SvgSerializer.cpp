@@ -1093,7 +1093,7 @@ void SvgSerializer::finalize() {
 			} else {
 				auto n = it->first.second;
 				IfcUtil::escape_xml(n);
-				svg_file << "    <g data-name=\"" << n << "\" class=\"section\">\n";
+				svg_file << "    <g " << namespace_prefix_  << "name=\"" << n << "\" class=\"section\">\n";
 			}
 		}
 		svg_file << "        <g " << it->second.first << ">\n";
@@ -1113,6 +1113,9 @@ void SvgSerializer::finalize() {
 
 void SvgSerializer::writeHeader() {
 	svg_file << "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"";
+	if (use_namespace_) {
+		svg_file << " xmlns:ifc=\"http://www.ifcopenshell.org/ns\"";
+	}
 	if (scale_) {
 		svg_file << 
 			" width=\"" << width << "mm\""
@@ -1183,8 +1186,8 @@ std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* storey, con
 	return nameElement_({
 		{"id", with_section_heights_from_storey_ ? object_id(storey, elem) : GeometrySerializer::object_id(elem)},
 		{"class", elem->type()},
-		{"data-name", n},
-		{"data-guid", elem->guid()}
+		{namespace_prefix_ + "name", n},
+		{namespace_prefix_ + "guid", elem->guid()}
 		});
 }
 
@@ -1214,8 +1217,8 @@ std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* elem) {
 	return nameElement_({
 		{"id", idElement(elem)},
 		{"class", entity},
-		{"data-name", ifc_name},
-		{"data-guid", *elem->get("GlobalId")}
+		{namespace_prefix_ + "name", ifc_name},
+		{namespace_prefix_ + "guid", *elem->get("GlobalId")}
 		});
 }
 
