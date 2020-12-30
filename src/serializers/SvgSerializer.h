@@ -121,6 +121,7 @@ protected:
 	bool with_section_heights_from_storey_, rescale, print_space_names_, print_space_areas_;
 	bool draw_door_arcs_, is_floor_plan_;
 	bool auto_section_, auto_elevation_;
+	bool use_namespace_;
 
 	IfcParse::IfcFile* file;
 	IfcUtil::IfcBaseEntity* storey_;
@@ -134,6 +135,8 @@ protected:
 	std::list<geometry_data> element_buffer_;
 
 	Handle(HLRBRep_Algo) hlr;
+
+	std::string namespace_prefix_;
 public:
 	SvgSerializer(const std::string& out_filename, const SerializerSettings& settings)
 		: GeometrySerializer(settings)
@@ -150,11 +153,13 @@ public:
 		, is_floor_plan_(true)
 		, auto_section_(false)
 		, auto_elevation_(false)
+		, use_namespace_(false)
 		, file(0)
 		, storey_(0)
 		, xcoords_begin(0)
 		, ycoords_begin(0)
 		, radii_begin(0)
+		, namespace_prefix_("data-")
 	{}
     void addXCoordinate(const boost::shared_ptr<util::string_buffer::float_item>& fi) { xcoords.push_back(fi); }
     void addYCoordinate(const boost::shared_ptr<util::string_buffer::float_item>& fi) { ycoords.push_back(fi); }
@@ -195,6 +200,11 @@ public:
 
 	void setAutoElevation(bool b) {
 		auto_elevation_ = b;
+	}
+
+	void setUseNamespace(bool b) {
+		use_namespace_ = b;
+		namespace_prefix_ = use_namespace_ ? "ifc:" : "data-";
 	}
 
 	void setScale(double s) { scale_ = s; }

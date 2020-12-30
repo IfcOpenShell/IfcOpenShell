@@ -374,6 +374,8 @@ int main(int argc, char** argv) {
 			"Creates SVG cross section drawings automatically based on model extents")
 		("auto-elevation",
 			"Creates SVG elevation drawings automatically based on model extents")
+		("svg-xmlns",
+			"Stores name and guid in a separate namespace as opposed to data-name, data-guid")
 		("door-arcs", "Draw door openings arcs for IfcDoor elements")
 		("section-height", po::value<double>(&section_height),
 		    "Specifies the cut section height for SVG 2D geometry.")
@@ -956,6 +958,7 @@ int main(int argc, char** argv) {
 		if (vmap.count("auto-elevation")) {
 			static_cast<SvgSerializer*>(serializer.get())->setAutoElevation(true);
 		}
+		static_cast<SvgSerializer*>(serializer.get())->setUseNamespace(vmap.count("svg-xmlns") > 0);
 		if (relative_center_x && relative_center_y) {
 			static_cast<SvgSerializer*>(serializer.get())->setDrawingCenter(*relative_center_x, *relative_center_y);
 		}
