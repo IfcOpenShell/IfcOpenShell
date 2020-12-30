@@ -1,5 +1,6 @@
 import os
 import bpy
+from . import ifc
 from bpy.types import Panel
 from bpy.props import StringProperty
 
@@ -637,27 +638,34 @@ class BIM_PT_representations(Panel):
         layout = self.layout
         props = context.active_object.BIMObjectProperties
 
-        if not props.representation_contexts:
+        if not props.representations:
             layout.label(text="No representations found")
 
         row = layout.row(align=True)
         row.prop(bpy.context.scene.BIMProperties, "available_contexts", text="")
         row.prop(bpy.context.scene.BIMProperties, "available_subcontexts", text="")
         row.prop(bpy.context.scene.BIMProperties, "available_target_views", text="")
-        op = row.operator("bim.switch_context", icon="ADD", text="")
-        op.has_target_context = False
+        # TODO: reimplement with incremental editing
+        # op = row.operator("bim.switch_context", icon="ADD", text="")
+        # op.has_target_context = False
 
-        for index, subcontext in enumerate(props.representation_contexts):
+        self.file = ifc.IfcStore.get_file()
+        for index, representation in enumerate(props.representations):
             row = layout.row(align=True)
-            row.prop(subcontext, "context", text="")
-            row.prop(subcontext, "name", text="")
-            row.prop(subcontext, "target_view", text="")
-            op = row.operator("bim.switch_context", icon="OUTLINER_DATA_MESH", text="")
-            op.has_target_context = True
-            op.context_name = subcontext.context
-            op.subcontext_name = subcontext.name
-            op.target_view_name = subcontext.target_view
-            row.operator("bim.remove_context", icon="X", text="").index = index
+            row.prop(representation, "name", text="")
+            row.prop(representation, "type", text="")
+            if not representation.ifc_definition_id:
+                continue
+            subcontext = self.file.by_id(representation.ifc_definition_id).ContextOfItems
+            if subcontext.is_a() == "IfcGeometricRepresentationContext":
+                continue
+            # TODO: reimplement with incremental editing
+            # op = row.operator("bim.switch_context", icon="OUTLINER_DATA_MESH", text="")
+            # op.has_target_context = True
+            # op.context_name = subcontext.ContextType
+            # op.subcontext_name = subcontext.ContextIdentifier
+            # op.target_view_name = subcontext.TargetView
+            # row.operator("bim.remove_context", icon="X", text="").index = index
 
 
 class BIM_PT_classification_references(Panel):

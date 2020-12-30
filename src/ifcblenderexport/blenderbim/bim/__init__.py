@@ -246,6 +246,7 @@ if bpy is not None:
         prop.DrawingStyle,
         prop.Sheet,
         prop.Subcontext,
+        prop.Representation,
         prop.PresentationLayer,
         prop.BIMProperties,
         prop.BIMDebugProperties,

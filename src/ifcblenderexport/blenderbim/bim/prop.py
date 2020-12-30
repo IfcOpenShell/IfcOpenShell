@@ -565,6 +565,12 @@ class Subcontext(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
+class Representation(PropertyGroup):
+    name: StringProperty(name="Name")
+    type: StringProperty(name="Type")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+
 class MaterialLayer(PropertyGroup):
     name: StringProperty(name="Name")
     material: PointerProperty(name="Material", type=bpy.types.Material)
@@ -1502,7 +1508,7 @@ class BIMObjectProperties(PropertyGroup):
     has_boundary_condition: BoolProperty(name="Has Boundary Condition")
     boundary_condition: PointerProperty(name="Boundary Condition", type=BoundaryCondition)
     structural_member_connection: PointerProperty(name="Structural Member Connection", type=bpy.types.Object)
-    representation_contexts: CollectionProperty(name="Representation Contexts", type=Subcontext)
+    representations: CollectionProperty(name="Representations", type=Representation)
     # Address applies to IfcSite's SiteAddress and IfcBuilding's BuildingAddress
     address: PointerProperty(name="Address", type=Address)
 

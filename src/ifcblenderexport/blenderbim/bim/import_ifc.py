@@ -848,7 +848,7 @@ class IfcImporter:
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
         self.add_type_product_psets(element, obj)
-        self.add_product_representation_contexts(element, obj)
+        self.add_product_representations(element, obj)
         self.type_collection.objects.link(obj)
         self.type_products[element.GlobalId] = obj
 
@@ -974,7 +974,7 @@ class IfcImporter:
         self.add_defines_by_type_relation(element, obj)
         self.add_opening_relation(element, obj)
         self.add_product_definitions(element, obj)
-        self.add_product_representation_contexts(element, obj)
+        self.add_product_representations(element, obj)
         self.added_data[element.GlobalId] = obj
 
         if element.is_a("IfcOpeningElement"):
@@ -1355,57 +1355,23 @@ class IfcImporter:
         bpy.ops.mesh.normals_make_consistent(context_override)
         bpy.ops.object.editmode_toggle(context_override)
 
-    def add_product_representation_contexts(self, element, obj):
-        subcontexts = []
-        ifc_definition_ids = []
+    def add_product_representations(self, element, obj):
         if element.is_a("IfcProduct"):
             if not element.Representation:
                 return
             for r in element.Representation.Representations:
-                ifc_definition_ids.append(r.id())
-                if r.ContextOfItems.is_a("IfcGeometricRepresentationSubContext"):
-                    subcontexts.append(
-                        "{}/{}/{}".format(
-                            r.ContextOfItems.ContextType or "",
-                            r.ContextOfItems.ContextIdentifier or "",
-                            r.ContextOfItems.TargetView or "",
-                        )
-                    )
-                else:
-                    subcontexts.append(
-                        "{}/{}/{}".format(
-                            r.ContextOfItems.ContextType or "", r.ContextOfItems.ContextIdentifier or "", ""
-                        )
-                    )
+                new = obj.BIMObjectProperties.representations.add()
+                new.name = r.RepresentationIdentifier
+                new.type = r.RepresentationType
+                new.ifc_definition_id = r.id()
         elif element.is_a("IfcTypeProduct"):
             if not element.RepresentationMaps:
                 return
             for r in element.RepresentationMaps:
-                ifc_definition_ids.append(r.id())
-                if r.MappedRepresentation.ContextOfItems.is_a("IfcGeometricRepresentationSubContext"):
-                    subcontexts.append(
-                        "{}/{}/{}".format(
-                            r.MappedRepresentation.ContextOfItems.ContextType or "",
-                            r.MappedRepresentation.ContextOfItems.ContextIdentifier or "",
-                            r.MappedRepresentation.ContextOfItems.TargetView or "",
-                        )
-                    )
-                else:
-                    subcontexts.append(
-                        "{}/{}/{}".format(
-                            r.MappedRepresentation.ContextOfItems.ContextType or "",
-                            r.MappedRepresentation.ContextOfItems.ContextIdentifier or "",
-                            "",
-                        )
-                    )
-        for i, subcontext in enumerate(subcontexts):
-            representation_context = obj.BIMObjectProperties.representation_contexts.add()
-            (
-                representation_context.context,
-                representation_context.name,
-                representation_context.target_view,
-            ) = subcontext.split("/")
-            representation_context.ifc_definition_id = ifc_definition_ids[i]
+                new = obj.BIMObjectProperties.representations.add()
+                new.name = r.MappedRepresentation.RepresentationIdentifier
+                new.type = r.MappedRepresentation.RepresentationType
+                new.ifc_definition_id = r.MappedRepresentation.id()
 
     def add_product_definitions(self, element, obj):
         if not hasattr(element, "IsDefinedBy") or not element.IsDefinedBy:
@@ -1580,6 +1546,7 @@ class IfcImporter:
                 subcontext = subcontexts.add()
                 subcontext.name = context.ContextIdentifier
                 subcontext.target_view = context.TargetView
+                subcontext.ifc_definition_id = context.id()
             elif context.ContextType == "Model":
                 bpy.context.scene.BIMProperties.has_model_context = True
             elif context.ContextType == "Plan":
