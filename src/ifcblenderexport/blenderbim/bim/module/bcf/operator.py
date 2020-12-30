@@ -10,9 +10,11 @@ class NewBcfProject(bpy.types.Operator):
     bl_label = "New BCF Project"
 
     def execute(self, context):
+        bpy.context.scene.BCFProperties.is_loaded = False
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         bcfxml.new_project()
         bpy.ops.bim.load_bcf_project()
+        bpy.context.scene.BCFProperties.is_loaded = True
         return {"FINISHED"}
 
 
@@ -22,6 +24,7 @@ class LoadBcfProject(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
+        bpy.context.scene.BCFProperties.is_loaded = False
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         if self.filepath:
             bcfxml.get_project(self.filepath)

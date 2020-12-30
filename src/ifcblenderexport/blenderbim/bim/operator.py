@@ -1588,6 +1588,28 @@ class ExecuteIfcClash(bpy.types.Operator):
         settings.logger = logging.getLogger("Clash")
         settings.logger.setLevel(logging.DEBUG)
         ifc_clasher = ifcclash.IfcClasher(settings)
+
+        if bpy.context.scene.BIMProperties.should_create_clash_snapshots:
+            def get_viewpoint_snapshot(self, viewpoint, mat):
+                camera = bpy.data.objects.get('IFC Clash Camera')
+                if not camera:
+                    camera = bpy.data.objects.new("IFC Clash Camera", bpy.data.cameras.new("IFC Clash Camera"))
+                    bpy.context.scene.collection.objects.link(camera)
+                camera.matrix_world = Matrix(mat)
+                bpy.context.scene.camera = camera
+                camera.data.angle = radians(60)
+                area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+                area.spaces[0].region_3d.view_perspective = "CAMERA"
+                area.spaces[0].shading.show_xray = True
+                bpy.context.scene.render.resolution_x = 480
+                bpy.context.scene.render.resolution_y = 270
+                bpy.context.scene.render.image_settings.file_format = "PNG"
+                bpy.context.scene.render.filepath = os.path.join(bpy.context.scene.BIMProperties.data_dir, "snapshot.png")
+                bpy.ops.render.opengl(write_still=True)
+                return bpy.context.scene.render.filepath
+
+            ifcclash.IfcClasher.get_viewpoint_snapshot = get_viewpoint_snapshot
+
         ifc_clasher.clash_sets = []
         for clash_set in bpy.context.scene.BIMProperties.clash_sets:
             self.a = []

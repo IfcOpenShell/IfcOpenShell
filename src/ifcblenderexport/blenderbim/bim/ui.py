@@ -2172,9 +2172,9 @@ class BIM_PT_ifcclash(Panel):
                 row.prop(source, "selector", text="")
 
             row = layout.row()
+            row.prop(props, "should_create_clash_snapshots")
+            row = layout.row(align=True)
             row.operator("bim.execute_ifc_clash")
-
-            row = layout.row()
             row.operator("bim.select_ifc_clash_results")
 
 

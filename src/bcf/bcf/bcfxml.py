@@ -476,7 +476,7 @@ class BcfXml:
         if viewpoint.snapshot:
             topic_filepath = os.path.join(self.filepath, topic.guid)
             filepath = os.path.join(topic_filepath, viewpoint.snapshot)
-            if not os.path.exists(filepath):
+            if not os.path.exists(filepath) or topic_filepath not in filepath:
                 filename = viewpoint.guid + "." + viewpoint.snapshot[-3:]
                 copyfile(viewpoint.snapshot, os.path.join(topic_filepath, filename))
                 viewpoint.snapshot = filename
