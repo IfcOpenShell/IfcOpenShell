@@ -187,11 +187,24 @@ class IfcClasher:
                 viewpoint.perspective_camera.camera_up_vector.x = mat[0][1]
                 viewpoint.perspective_camera.camera_up_vector.y = mat[1][1]
                 viewpoint.perspective_camera.camera_up_vector.z = mat[2][1]
+                viewpoint.components = bcf.data.Components()
+                c1 = bcf.data.Component()
+                c1.ifc_guid = clash["a_global_id"]
+                c2 = bcf.data.Component()
+                c2.ifc_guid = clash["b_global_id"]
+                viewpoint.components.selection.append(c1)
+                viewpoint.components.selection.append(c2)
+                viewpoint.components.visibility = bcf.data.ComponentVisibility()
+                viewpoint.components.visibility.default_visibility = True
+                viewpoint.snapshot = self.get_viewpoint_snapshot(viewpoint, mat)
                 bcfxml.add_viewpoint(topic, viewpoint)
             if i == 0:
                 bcfxml.save_project(self.settings.output)
             else:
                 bcfxml.save_project(self.settings.output + f".{i}")
+
+    def get_viewpoint_snapshot(self, viewpoint, mat):
+        return None # Possible to overload this function in a GUI application if used as a library
 
     # https://blender.stackexchange.com/questions/68834/recreate-to-track-quat-with-two-vectors-using-python/141706#141706
     def get_track_to_matrix(self, camera_position, target_position):
