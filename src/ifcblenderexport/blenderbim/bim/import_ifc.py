@@ -3,7 +3,6 @@ import ifcopenshell.geom
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.selector
 import ifcopenshell.util.element
-import ifcopenshell.util.pset
 import bpy
 import bmesh
 import os
@@ -22,6 +21,7 @@ from itertools import cycle
 from datetime import datetime
 from . import helper
 from . import ifc
+from . import schema
 
 
 class FileCopy(threading.Thread):
@@ -1394,8 +1394,8 @@ class IfcImporter:
     def add_pset(self, pset, props):
         new_pset = props.psets.add()
         new_pset.name = pset.Name
-        if new_pset.name in ifcopenshell.util.pset.psets:
-            for prop_name in ifcopenshell.util.pset.psets[new_pset.name]["HasPropertyTemplates"].keys():
+        if new_pset.name in schema.ifc.psetqto.psets:
+            for prop_name in schema.ifc.psetqto.psets[new_pset.name]["HasPropertyTemplates"].keys():
                 prop = new_pset.properties.add()
                 prop.name = prop_name
         try:
@@ -1421,8 +1421,8 @@ class IfcImporter:
     def add_qto(self, qto, obj):
         new_qto = obj.BIMObjectProperties.qtos.add()
         new_qto.name = str(qto.Name)
-        if new_qto.name in ifcopenshell.util.pset.qtos:
-            for prop_name in ifcopenshell.util.pset.qtos[new_qto.name]["HasPropertyTemplates"].keys():
+        if new_qto.name in schema.ifc.psetqto.qtos:
+            for prop_name in schema.ifc.psetqto.qtos[new_qto.name]["HasPropertyTemplates"].keys():
                 prop = new_qto.properties.add()
                 prop.name = prop_name
         for prop in qto.Quantities:
