@@ -249,6 +249,11 @@ class BaseDecorator():
         self.shader.uniform_float
         self.shader.uniform_float("viewMatrix", region3d.perspective_matrix)
         self.shader.uniform_float("winsize", (region.width, region.height))
+
+        bgl.glEnable(bgl.GL_LINE_SMOOTH)
+        bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
+        bgl.glEnable(bgl.GL_BLEND)
+        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
         batch.draw(self.shader)
 
     def draw_label(self, text, pos, dir, gap=4, center=True, vcenter=False):
