@@ -156,7 +156,7 @@ class Bitmap:
     def __init__(self):
         self.reference = ""  # Only in BCF-XML
         self.bitmap_data = None  # Only in BCF-API
-        self.bitmap_type = "png"  # Enum of png or jpg
+        self.bitmap_type = "PNG"  # Enum of png or jpg
         self.location = Point()
         self.normal = Direction()
         self.up = Direction()

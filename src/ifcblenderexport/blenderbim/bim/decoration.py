@@ -4,8 +4,9 @@ from functools import reduce
 from itertools import chain
 
 from bpy.types import SpaceView3D
-from mathutils import Vector
+from mathutils import Vector, Matrix
 import bpy
+import bmesh
 import blf
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 import gpu
@@ -14,12 +15,104 @@ from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertForma
 from gpu_extras.batch import batch_for_shader
 
 
-class ViewDecorator(object):
+class BaseDecorator():
+    # base name of objects to decorate
+    basename = "IfcAnnotation/Something"
+
+    DEF_GLSL = """
+        #define PI 3.141592653589793
+        #define COLOR vec4({color[0]}, {color[1]}, {color[2]}, {color[3]})
+        #define MAX_POINTS 64
+        #define CIRCLE_SEGS 24
+    """
+
+    LIB_GLSL = """
+    #define matCLIP2WIN() vec4(winsize.x/2, winsize.y/2, 1, 1)
+    #define matWIN2CLIP() vec4(2/winsize.x, 2/winsize.y, 1, 1)
+    #define CLIP2WIN(v) (clip2win * v / v.w)
+    #define WIN2CLIP(v) (win2clip * v * v.w)
+
+    void arrow_head(in vec4 dir, in float size, in float angle, out vec4 head[3]) {
+        vec4 nose = dir * size;
+        float c = cos(angle), s = sin(angle);
+        head[0] = nose;
+        head[1] = vec4(mat2(c, -s, +s, c) * nose.xy, 0, 0);
+        head[2] = vec4(mat2(c, +s, -s, c) * nose.xy, 0, 0);
+    }
+
+    void circle_head(in float size, out vec4 head[CIRCLE_SEGS]) {
+        float angle_d = PI * 2 / CIRCLE_SEGS;
+        for(int i = 0; i<CIRCLE_SEGS; i++) {
+            float angle = angle_d * i;
+            head[i] = vec4(cos(angle), sin(angle), 0, 0) * size;
+        }
+    }
+
+    void cross_head(in vec4 dir, in float size, out vec4 head[3]) {
+        vec4 nose = dir * size;
+        float c = cos(PI/2), s = sin(PI/2);
+        head[0] = nose;
+        head[1] = vec4(mat2(c, -s, +s, c) * nose.xy, 0, 0);
+        head[2] = vec4(mat2(c, +s, -s, c) * nose.xy, 0, 0);
+    }
+    """
+
+    VERT_GLSL = """
+    uniform mat4 viewMatrix;
+    in vec3 pos;
+    in uint topo;
+    out vec4 gl_Position;
+    out uint type;
+
+    void main() {
+        gl_Position = viewMatrix * vec4(pos, 1.0);
+        type = topo;
+    }
+    """
+
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=2) out;
+
+    void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+        vec4 gap = dir * 16.0;
+
+        vec4 p;
+
+        p = p0w + gap;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p1w - gap;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    FRAG_GLSL = """
+    out vec4 fragColor;
+
+    void main() {
+        fragColor = COLOR;
+    }
+    """
+
     # class var for single handler
     installed = None
 
     @classmethod
     def install(cls, *args, **kwargs):
+        if cls.installed:
+            cls.uninstall()
         handler = cls(*args, **kwargs)
         cls.installed = SpaceView3D.draw_handler_add(handler, (), 'WINDOW', 'POST_PIXEL')
 
@@ -31,211 +124,917 @@ class ViewDecorator(object):
             pass
         cls.installed = None
 
-
-class DimensionDecorator(ViewDecorator):
-    """Decorates dimension curves
-    - outlines each segment with an arrow
-    - puts metric text next to each segment
-    """
-
-    VERT_GLSL = """
-    uniform mat4 viewMatrix;
-    in vec3 pos;
-    out vec4 gl_Position;
-
-    void main() {
-        gl_Position = viewMatrix * vec4(pos, 1.0);
-    }
-    """
-    GEOM_GLSL = """
-    layout(lines) in;
-    layout(line_strip, max_vertices=10) out;
-
-    uniform float angle;
-    uniform float length;
-    uniform float aspect;
-
-    void main() {
-        /** generates arrows from lines */
-
-        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
-        float c = cos(angle), s = sin(angle);
-        mat4 rot_a = mat4( c, -s, 0, 0,
-                          +s,  c, 0, 0,
-                           0,  0, 1, 0,
-                           0,  0, 0, 1);
-        mat4 rot_b = mat4( c, +s, 0, 0,
-                          -s,  c, 0, 0,
-                           0,  0, 1, 0,
-                           0,  0, 0, 1);
-
-        // converting to and from square-space coordinates to calculate arrows
-        mat4 clip2square = mat4(aspect, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
-        mat4 square2clip = mat4(1/aspect, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
-
-        vec4 dir = normalize((p1 - p0) * clip2square) * length;
-        vec4 head = dir * square2clip;
-        vec4 arr_a = dir * rot_a * square2clip;
-        vec4 arr_b = dir * rot_b * square2clip;
-
-        gl_Position = p0 + head;
-        EmitVertex();
-        gl_Position = p1 - head;
-        EmitVertex();
-        EndPrimitive();
-
-        gl_Position = p0;
-        EmitVertex();
-        gl_Position = p0 + arr_a;
-        EmitVertex();
-        gl_Position = p0 + arr_b;
-        EmitVertex();
-        gl_Position = p0;
-        EmitVertex();
-        EndPrimitive();
-
-        gl_Position = p1;
-        EmitVertex();
-        gl_Position = p1 - arr_b;
-        EmitVertex();
-        gl_Position = p1 - arr_a;
-        EmitVertex();
-        gl_Position = p1;
-        EmitVertex();
-        EndPrimitive();
-/*
-        gl_Position = vec4(0, 0, 0, 1) * square2clip;
-        EmitVertex();
-        gl_Position = vec4(0.25, 0.25, 0, 1) * square2clip;
-        EmitVertex();
-        EndPrimitive();
-*/
-    }
-    """
-    FRAG_GLSL = """
-    uniform vec3 color;
-    out vec4 fragColor;
-
-    void main() {
-        fragColor = vec4(color, 1.0);
-    }
-    """
-
     def __init__(self, props, context):
         self.context = context
         self.props = props
-        self.font_id = 0  # TODO: take font from styles
-        self.dpi = context.preferences.system.dpi
         self.shader = self.create_shader()
+        self.font_id = 0
+        self.font_size = 16
+        self.dpi = context.preferences.system.dpi
 
-    @classmethod
-    def create_shader(cls):
-        return GPUShader(vertexcode=cls.VERT_GLSL, fragcode=cls.FRAG_GLSL, geocode=cls.GEOM_GLSL)
+    def create_shader(self):
+        defines = self.DEF_GLSL.format(color=self.props.decorations_colour)
+        # NB: libcode param doesn't work
+        return GPUShader(vertexcode=self.VERT_GLSL,
+                         fragcode=self.FRAG_GLSL,
+                         geocode=self.LIB_GLSL + self.GEOM_GLSL,
+                         defines=defines)
 
     def __call__(self):
-        # get active drawing, if any
         if self.props.active_drawing_index is None or len(self.props.drawings) == 0:
             return
+
+        for obj in self.get_objects():
+            self.decorate(obj)
+
+    def get_objects(self):
+        """find relevant objects
+        using class.basename
+
+        returns: iterable of blender objects
+        """
         drawing = self.props.drawings[self.props.active_drawing_index]
         collection = bpy.data.collections.get("IfcGroup/" + drawing.name)
+        return filter(lambda o: self.basename in o.name, collection.objects)
 
-        segments = self.get_segments(self.get_curves(collection, "IfcAnnotation/Dimension"))
+    def get_path_geom(self, obj, topo=True):
+        """Parses path geometry into line segments
 
-        self.draw_arrows(segments)
-        for segm in segments:
-            self.draw_label(segm, f"{segm[2]:.2f}")
+        Args:
+          obj: Blender object with data of type Curve
+          topo: bool; if types of vertices are needed
 
-        segments = self.get_segments(self.get_curves(collection, "IfcAnnotation/Equal"))
-
-        self.draw_arrows(segments)
-        for segm in segments:
-            self.draw_label(segm, "EQ")
-
-    def get_curves(self, collection, basename):
-        return list(filter(lambda o: basename in o.name, collection.objects))
-
-    def get_segments(self, curves):
-        return list(chain.from_iterable(self.iter_segments(curve) for curve in curves))
-
-    def iter_segments(self, curve):
-        """Yields each segment converted to world coords
-        (v0, v1, length)
+        Returns:
+          vertices: 3-tuples of coords
+          indices: 2-tuples of each segment verices' indices
+          topology: types of vertices
+            0: internal
+            1: beginning
+            2: ending
         """
-        for spline in curve.data.splines:
+        vertices = []
+        indices = []
+        topology = []
+
+        idx = 0
+        for spline in obj.data.splines:
             spline_points = spline.bezier_points if spline.bezier_points else spline.points
-            points = [curve.matrix_world @ p.co for p in spline_points]
-            for i in range(len(points)-1):
-                p0 = points[i]
-                p1 = points[i+1]
-                length = (p1 - p0).length
-                yield (p0, p1, length)
+            if len(spline_points) < 2:
+                continue
+            points = [obj.matrix_world @ p.co for p in spline_points]
+            cnt = len(points)
+            vertices.extend(p[:3] for p in points)
+            if topo:
+                topology.append(1)
+                topology.extend([0] * max(0, cnt - 2))
+                topology.append(2)
+            indices.extend((idx+i, idx+i+1) for i in range(cnt-1))
+            idx += cnt
 
-    def draw_label(self, segm, text):
-        """Draw text of segment length
-        aligned and centered at segment middle
+        return vertices, indices, topology
+
+    def get_mesh_geom(self, obj):
+        """Parses mesh geometry into line segments
+
+        Args:
+          obj: Blender object with data of type Mesh
+
+        Returns:
+          vertices: 3-tuples of coords
+          indices: 2-tuples of each segment verices' indices
         """
-        p0, p1, _ = segm
+        vertices = [obj.matrix_world @ v.co for v in obj.data.vertices]
+        indices = [e.vertices for e in obj.data.edges]
+        return vertices, indices
 
-        # convert to view coords
+    def get_editmesh_geom(self, obj):
+        """Parses editmode mesh geometry into line segments
+        """
+        mesh = bmesh.from_edit_mesh(obj.data)
+        vertices = []
+        indices = []
+        idx = 0
+
+        for edge in mesh.edges:
+            vertices.extend(edge.verts)
+            indices.append((idx, idx+1))
+            idx += 2
+        vertices = [obj.matrix_world @ v.co for v in vertices]
+
+        return vertices, indices
+
+    def decorate(self, object):
+        """perform actuall drawing stuff"""
+        raise NotImplementedError()
+
+    def draw_lines(self, obj, vertices, indices, topology=None):
         region = self.context.region
         region3d = self.context.region_data
-        p0 = location_3d_to_region_2d(region, region3d, p0)
-        p1 = location_3d_to_region_2d(region, region3d, p1)
-        proj = p1 - p0
 
-        if proj.length < 0.001:
-            return
+        fmt = GPUVertFormat()
+        fmt.attr_add(id="pos", comp_type='F32', len=3, fetch_mode='FLOAT')
+        if topology:
+            fmt.attr_add(id="topo", comp_type='U8', len=1, fetch_mode='INT')
 
-        ang = -Vector((1, 0)).angle_signed(proj)
+        vbo = GPUVertBuf(len=len(vertices), format=fmt)
+        vbo.attr_fill(id="pos", data=vertices)
+        if topology:
+            vbo.attr_fill(id="topo", data=topology)
+
+        ibo = GPUIndexBuf(type='LINES', seq=indices)
+
+        batch = GPUBatch(type='LINES', buf=vbo, elem=ibo)
+
+        self.shader.bind()
+        self.shader.uniform_float
+        self.shader.uniform_float("viewMatrix", region3d.perspective_matrix)
+        self.shader.uniform_float("winsize", (region.width, region.height))
+        batch.draw(self.shader)
+
+    def draw_label(self, text, pos, dir, gap=4, center=True, vcenter=False):
+        """Draw text label
+
+        Args:
+          pos: bottom-center
+
+        aligned and centered at segment middle
+        """
+        ang = -Vector((1, 0)).angle_signed(dir)
         cos = math.cos(ang)
         sin = math.sin(ang)
 
-        # midpoint
-        pos = p0 + (p1 - p0) * .5
+        blf.size(self.font_id, self.font_size, self.dpi)
 
-        # TODO: take font size from styles
-        blf.size(self.font_id, 16, self.dpi)
-        w, h = blf.dimensions(self.font_id, text)
+        w, h = 0, 0
+        if center or vcenter:
+            w, h = blf.dimensions(self.font_id, text)
 
-        # align centered
-        pos -= Vector((cos, sin)) * w * 0.5
+        if center:
+            # horizontal centering
+            pos -= Vector((cos, sin)) * w * 0.5
 
-        # add padding
-        # TODO: take padding from styles and adjust to line width
-        pos += Vector((-sin, cos)) * 4
+        if vcenter:
+            # vertical centering
+            pos -= Vector((-sin, cos)) * h * 0.5
 
-        # TODO: handle overlapping of text with arrows for narrow segments
+        if gap:
+            # side-shifting
+            pos += Vector((-sin, cos)) * gap
 
         blf.enable(self.font_id, blf.ROTATION)
         blf.position(self.font_id, pos.x, pos.y, 0)
 
         blf.rotation(self.font_id, ang)
+        blf.color(self.font_id, *self.props.decorations_colour)
         blf.draw(self.font_id, text)
         blf.disable(self.font_id, blf.ROTATION)
 
-    def draw_arrows(self, segments):
-        def coords(segm):
-            return [(segm[0].x, segm[0].y, segm[0].z),
-                    (segm[1].x, segm[1].y, segm[1].z)]
-        points = list(reduce(lambda points, segm: points + coords(segm),
-                             segments, []))
-        batch = batch_for_shader(self.shader, 'LINES', {'pos': points})
-        self.shader.bind()
+    def format_value(self, value):
+        unit_system = bpy.context.scene.unit_settings.system
+        if unit_system == 'IMPERIAL':
+            precision = bpy.context.scene.BIMProperties.imperial_precision
+            if precision == "NONE":
+                precision = 256
+            elif precision == "1":
+                precision = 1
+            elif "/" in precision:
+                precision = int(precision.split("/")[1])
+        elif unit_system == 'METRIC':
+            precision = 3
+        else:
+            return
 
-        region = self.context.region_data
-        matrix = region.perspective_matrix
-        aspect = self.context.region.width / self.context.region.height
-        self.shader.uniform_float("viewMatrix", matrix)
-        # TODO: get everything from styles
-        self.shader.uniform_float('aspect', aspect)
-        self.shader.uniform_float('color', (1.0, 1.0, 1.0))
-        self.shader.uniform_float('angle', math.pi / 12)
+        return bpy.utils.units.to_string(unit_system, 'LENGTH', value, precision, split_unit=True)
 
-        # brute-force perspective fix
-        # TODO: move the fix into shader + align heads to view plane
-        length = 32 / self.context.region.height
-        if region.is_perspective:
-            length *= 8
 
-        self.shader.uniform_float('length', length)
-        batch.draw(self.shader)
+class DimensionDecorator(BaseDecorator):
+    """Decorator for dimension objects
+    - each edge of a segment with arrow
+    - puts metric text next to each segment
+    """
+    basename = "IfcAnnotation/Dimension"
+    installed = None
+
+    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+        #define ARROW_ANGLE PI / 12.0
+        #define ARROW_SIZE 16.0
+    """
+
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+
+    void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+
+        vec4 p;
+
+        vec4 head[3];
+        arrow_head(dir, ARROW_SIZE, ARROW_ANGLE, head);
+
+        // start edge arrow
+        gl_Position = p0;
+        EmitVertex();
+        p = p0w + head[1];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p0w + head[2];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        gl_Position = p0;
+        EmitVertex();
+        EndPrimitive();
+
+        // end edge arrow
+        gl_Position = p1;
+        EmitVertex();
+        p = p1w - head[1];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p1w - head[2];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        gl_Position = p1;
+        EmitVertex();
+        EndPrimitive();
+
+        // stem, with gaps for arrows
+        p = p0w + head[0];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p1w - head[0];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    def decorate(self, obj):
+        verts, idxs, _ = self.get_path_geom(obj, topo=False)
+        self.draw_lines(obj, verts, idxs)
+        self.draw_labels(obj, verts, idxs)
+
+    def draw_labels(self, obj, vertices, indices):
+        region = self.context.region
+        region3d = self.context.region_data
+        for i0, i1 in indices:
+            v0 = Vector(vertices[i0])
+            v1 = Vector(vertices[i1])
+            p0 = location_3d_to_region_2d(region, region3d, v0)
+            p1 = location_3d_to_region_2d(region, region3d, v1)
+            dir = p1 - p0
+            if dir.length < 1:
+                continue
+            length = (v1 - v0).length
+            text = self.format_value(length)
+            self.draw_label(text, p0 + (dir) * .5, dir)
+
+
+class EqualityDecorator(DimensionDecorator):
+    """Decorator for equality objects
+    - outlines each segment
+    - augments with arrows on both sides
+    - puts 'EQ' label
+    """
+    basename = "IfcAnnotation/Equal"
+    installed = None
+
+    def draw_labels(self, obj, vertices, indices):
+        region = self.context.region
+        region3d = self.context.region_data
+        for i0, i1 in indices:
+            v0 = Vector(vertices[i0])
+            v1 = Vector(vertices[i1])
+            p0 = location_3d_to_region_2d(region, region3d, v0)
+            p1 = location_3d_to_region_2d(region, region3d, v1)
+            dir = p1 - p0
+            if dir.length < 1:
+                continue
+            self.draw_label("EQ", p0 + (dir) * .5, dir)
+
+
+class LeaderDecorator(BaseDecorator):
+    """Decorating stairs
+    - head point with arrow
+    - middle points w/out decorations
+    """
+    basename = "IfcAnnotation/Leader"
+    installed = None
+
+    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+        #define ARROW_ANGLE PI / 12.0
+        #define ARROW_SIZE 16.0
+    """
+
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+    in uint type[];
+
+    void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+        uint t0 = type[0], t1 = type[1];
+
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+        vec4 gap1 = vec4(0);
+
+        vec4 p;
+
+        // end edge arrow for last segment
+        if (t1 == 2u) {
+            vec4 head[3];
+            arrow_head(dir, ARROW_SIZE, ARROW_ANGLE, head);
+
+            gl_Position = p1;
+            EmitVertex();
+            p = p1w - head[1];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            p = p1w - head[2];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            gl_Position = p1;
+            EmitVertex();
+            EndPrimitive();
+
+            gap1 = dir * ARROW_SIZE;
+        }
+
+        // stem, adjusted for and arrow
+        gl_Position = p0;
+        EmitVertex();
+        p = p1w - gap1;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    def decorate(self, obj):
+        verts, idxs, topo = self.get_path_geom(obj)
+        self.draw_lines(obj, verts, idxs, topo)
+
+
+class StairDecorator(BaseDecorator):
+    """Decorating stairs
+    - head point with arrow
+    - tail point with circle
+    - middle points w/out decorations
+    """
+    basename = "IfcAnnotation/Stair"
+    installed = None
+
+    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+        #define CIRCLE_SIZE 8.0
+        #define ARROW_ANGLE PI / 3.0
+        #define ARROW_SIZE 24.0
+    """
+
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+    in uint type[];
+
+    void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+        uint t0 = type[0], t1 = type[1];
+
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+        vec4 gap0 = vec4(0), gap1 = vec4(0);
+
+        vec4 p;
+
+        // start edge circle for first segment
+        if (t0 == 1u) {
+            vec4 head[CIRCLE_SEGS];
+            circle_head(CIRCLE_SIZE, head);
+
+            for(int i=0; i<CIRCLE_SEGS; i++) {
+                p = p0w + head[i];
+                gl_Position = WIN2CLIP(p);
+                EmitVertex();
+            }
+            p = p0w + head[0];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            EndPrimitive();
+
+            gap0 = dir * CIRCLE_SIZE;
+        }
+
+        // end edge arrow for last segment
+        if (t1 == 2u) {
+            vec4 head[3];
+            arrow_head(dir, ARROW_SIZE, ARROW_ANGLE, head);
+
+            p = p1w - head[1];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+
+            gl_Position = p1;
+            EmitVertex();
+
+            p = p1w - head[2];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            EndPrimitive();
+        }
+
+        // stem, with gaps for edge decoration
+        p = p0w + gap0;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        gl_Position = p1;
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    def decorate(self, obj):
+        verts, idxs, topo = self.get_path_geom(obj)
+        self.draw_lines(obj, verts, idxs, topo)
+
+
+class HiddenDecorator(BaseDecorator):
+    basename = "IfcAnnotation/Hidden"
+    installed = None
+
+    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+        #define DASH_SIZE 16.0
+        #define DASH_PATTERN 0x0000FFFFU
+    """
+
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+
+    out float dist; // distance from starging point along segment
+
+    void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+        vec4 gap = dir * 1;
+
+        vec4 p;
+
+        // NB: something should be used to affect position, otherwise compiler eliminates winsize
+
+        dist = 0;
+        p = p0w + gap;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        dist = length(edge);
+        p = p1w - gap;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    FRAG_GLSL = """
+    in vec2 gl_FragCoord;
+    in float dist;
+    out vec4 fragColor;
+
+    void main() {
+        uint bit = uint(fract(dist / DASH_SIZE) * 32);
+        if ((DASH_PATTERN & (1U<<bit)) == 0U) discard;
+        fragColor = COLOR;
+    }
+    """
+
+    def decorate(self, obj):
+        if obj.data.is_editmode:
+            verts, idxs = self.get_editmesh_geom(obj)
+        else:
+            verts, idxs = self.get_mesh_geom(obj)
+        self.draw_lines(obj, verts, idxs)
+
+
+class MiscDecorator(HiddenDecorator):
+    basename = "IfcAnnotation/Misc"
+    installed = None
+
+    FRAG_GLSL = BaseDecorator.FRAG_GLSL
+
+
+class LevelDecorator(BaseDecorator):
+
+    def get_splines(self, obj):
+        """Iterates through splines
+        Args:
+          obj: Blender object with Curve data
+
+        Yields:
+          verts: points of each spline, world coords
+        """
+        for spline in obj.data.splines:
+            spline_points = spline.bezier_points if spline.bezier_points else spline.points
+            if len(spline_points) < 2:
+                continue
+            yield [obj.matrix_world @ p.co for p in spline_points]
+
+    def decorate(self, obj):
+        verts, idxs, topo = self.get_path_geom(obj)
+        self.draw_lines(obj, verts, idxs, topo)
+        splines = self.get_splines(obj)
+        self.draw_labels(obj, splines)
+
+
+class PlanDecorator(LevelDecorator):
+    basename = "IfcAnnotation/Plan Level"
+    installed = None
+
+    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+        #define CIRCLE_SIZE 8.0
+        #define CROSS_SIZE 16.0
+    """
+
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+    in uint type[];
+
+    void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+        uint t0 = type[0], t1 = type[1];
+
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+        vec4 gap1 = vec4(0);
+
+        vec4 p;
+
+        // end edge cross+circle for last segment
+        if (t1 == 2u) {
+            vec4 head_o[CIRCLE_SEGS];
+            circle_head(CIRCLE_SIZE, head_o);
+
+            for(int i=0; i<CIRCLE_SEGS; i++) {
+                p = p1w + head_o[i];
+                gl_Position = WIN2CLIP(p);
+                EmitVertex();
+            }
+            p = p1w + head_o[0];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            EndPrimitive();
+
+            vec4 head_x[3];
+            cross_head(dir, CROSS_SIZE, head_x);
+
+            p = p1w + head_x[1];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            p = p1w + head_x[2];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+            EndPrimitive();
+
+            gap1 = head_x[0];
+        }
+
+        // stem, adjusted for and arrow
+        gl_Position = p0;
+        EmitVertex();
+        p = p1w + gap1;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    def draw_labels(self, obj, splines):
+        region = self.context.region
+        region3d = self.context.region_data
+        for verts in splines:
+            v0 = verts[0]
+            v1 = verts[1]
+            p0 = location_3d_to_region_2d(region, region3d, v0)
+            p1 = location_3d_to_region_2d(region, region3d, v1)
+            dir = p1 - p0
+            if dir.length < 1:
+                continue
+            text = "RL " + self.format_value(verts[-1].z)
+            self.draw_label(text, p0, dir, gap=8, center=False)
+
+
+class SectionDecorator(LevelDecorator):
+    basename = "IfcAnnotation/Section Level"
+    installed = None
+
+    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+        #define CALLOUT_GAP 8.0
+        #define CALLOUT_SIZE 64.0
+    """
+
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+    in uint type[];
+    out float dist; // distance from starging point along segment
+
+    void callout_head(in vec4 dir, out vec4 head[4]) {
+        vec2 gap = dir.xy * CALLOUT_GAP;
+        vec2 tail = dir.xy * -CALLOUT_SIZE;
+        vec2 side = cross(vec3(dir.xy, 0), vec3(0, 0, 1)).xy * CALLOUT_GAP;
+
+        head[0] = vec4(tail + side, 0, 0);
+        head[1] = vec4(gap * 2 + side, 0, 0);
+        head[2] = vec4(gap, 0, 0);
+        head[3] = vec4(side, 0, 0);
+    }
+
+    void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+        uint t0 = type[0], t1 = type[1];
+
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+        vec4 gap = dir * 16.0;
+
+        vec4 p;
+
+        // start edge callout
+        if (t0 == 1u) {
+            vec4 head[4];
+            callout_head(dir, head);
+
+            for(int i=0; i<4; i++) {
+                p = p0w + head[i];
+                gl_Position = WIN2CLIP(p);
+                EmitVertex();
+            }
+            EndPrimitive();
+        }
+
+        // stem
+        dist = 0;
+        gl_Position = p0;
+        EmitVertex();
+        dist = length(p1w - p0w);
+        gl_Position = p1;
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    def draw_labels(self, obj, splines):
+        region = self.context.region
+        region3d = self.context.region_data
+        for verts in splines:
+            v0 = verts[0]
+            v1 = verts[1]
+            p0 = location_3d_to_region_2d(region, region3d, v0)
+            p1 = location_3d_to_region_2d(region, region3d, v1)
+            dir = p1 - p0
+            if dir.length < 1:
+                continue
+            text = "RL " + self.format_value(verts[-1].z)
+            self.draw_label(text, p0 + dir.normalized() * 16, -dir, gap=16, center=False)
+
+
+class BreakDecorator(BaseDecorator):
+    """Decorator for dimension objects
+    - first edge of a mesh with zigzag thingy in the middle
+
+    Uses first two vertices in verts list.
+    """
+    basename = "IfcAnnotation/Break"
+    installed = None
+
+    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+        #define BREAK_LENGTH 32.0
+        #define BREAK_WIDTH 16.0
+    """
+
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+
+    void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1), pmw = (p0w + p1w) * .5;
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+        vec4 gap = dir * 16.0;
+
+        vec4 p;
+
+        vec4 quart = dir * BREAK_LENGTH * .25;
+        vec4 side = vec4(cross(vec3(dir.xy, 0), vec3(0, 0, 1)).xy, 0, 0) * BREAK_WIDTH;
+
+        // TODO: check if there's enough length for zigzag
+
+        gl_Position = p0;
+        EmitVertex();
+
+        p = pmw;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+
+        p = pmw + quart - side;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+
+        p = pmw + quart * 3 + side;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+
+        p = pmw + quart * 4;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+
+        gl_Position = p1;
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    def decorate(self, obj):
+        if obj.data.is_editmode:
+            verts = self.get_editmesh_geom(obj)
+        else:
+            verts = self.get_mesh_geom(obj)
+        self.draw_lines(obj, verts, [(0, 1)])
+
+    def get_mesh_geom(self, obj):
+        # first vertices only
+        vertices = [obj.matrix_world @ obj.data.vertices[i].co for i in (0, 1)]
+        return vertices
+
+    def get_editmesh_geom(self, obj):
+        # first vertices only
+        mesh = bmesh.from_edit_mesh(obj.data)
+        vertices = [obj.matrix_world @ v.co for v in mesh.edges[0].verts]
+        return vertices
+
+
+class GridDecorator(BaseDecorator):
+    basename = "IfcGridAxis/"
+    installed = None
+
+    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+        #define CIRCLE_SIZE 16.0
+        #define DASH_SIZE 48.0
+        #define DASH_PATTERN 0x03C0FFFFU
+    """
+
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+
+    out float dist; // distance from starging point along segment
+
+    void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+        vec4 gap = dir * CIRCLE_SIZE;
+
+        vec4 p;
+
+        vec4 head[CIRCLE_SEGS];
+        circle_head(CIRCLE_SIZE, head);
+
+        dist = 0;
+
+        // start edge circle
+        for(int i=0; i<CIRCLE_SEGS; i++) {
+            p = p0w + head[i];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+        }
+        p = p0w + head[0];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+
+        // end edge circle
+        for(int i=0; i<CIRCLE_SEGS; i++) {
+            p = p1w + head[i];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+        }
+        p = p1w + head[0];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+
+        // stem
+        dist = 0;
+        p = p0w + gap;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        dist = length(edge);
+        p = p1w - gap;
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    FRAG_GLSL = """
+    in vec2 gl_FragCoord;
+    in float dist;
+    out vec4 fragColor;
+
+    void main() {
+        uint bit = uint(fract(dist / DASH_SIZE) * 32);
+        if ((DASH_PATTERN & (1U<<bit)) == 0U) discard;
+        fragColor = COLOR;
+    }
+    """
+
+    def get_mesh_geom(self, obj):
+        # first vertices only
+        vertices = [obj.matrix_world @ obj.data.vertices[i].co for i in (0, 1)]
+        return vertices
+
+    def get_editmesh_geom(self, obj):
+        # first vertices only
+        mesh = bmesh.from_edit_mesh(obj.data)
+        vertices = [obj.matrix_world @ v.co for v in mesh.edges[0].verts]
+        return vertices
+
+    def decorate(self, obj):
+        if obj.data.is_editmode:
+            verts = self.get_editmesh_geom(obj)
+        else:
+            verts = self.get_mesh_geom(obj)
+        self.draw_lines(obj, verts, [(0, 1)])
+        self.draw_labels(obj, verts)
+
+    def draw_labels(self, obj, vertices):
+        region = self.context.region
+        region3d = self.context.region_data
+        v0 = Vector(vertices[0])
+        v1 = Vector(vertices[1])
+        p0 = location_3d_to_region_2d(region, region3d, v0)
+        p1 = location_3d_to_region_2d(region, region3d, v1)
+        dir = Vector((1, 0))
+        text = obj.BIMObjectProperties.attributes['AxisTag'].string_value
+        self.draw_label(text, p0, dir, vcenter=True, gap=0)
+        self.draw_label(text, p1, dir, vcenter=True, gap=0)
+
+
+all_decorators = [
+    DimensionDecorator,
+    EqualityDecorator,
+    GridDecorator,
+    HiddenDecorator,
+    LeaderDecorator,
+    MiscDecorator,
+    PlanDecorator,
+    SectionDecorator,
+    StairDecorator,
+    BreakDecorator
+]

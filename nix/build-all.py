@@ -23,7 +23,7 @@
 # This script builds IfcOpenShell and its dependencies                        #
 #                                                                             #
 # Prerequisites for this script to function correctly:                        #
-#     * git * bzip2 * tar * c(++) compilers * yacc * autoconf                 #
+#     * cmake * git * bzip2 * tar * c(++) compilers * yacc * autoconf         #
 #                                                                             #
 #   if building with USE_OCCT additionally:                                   #
 #     * freetype * glx.h                                                      #
@@ -38,15 +38,15 @@
 #     * libffi(-dev[el])                                                      #
 #                                                                             #
 #     on debian 7.8 these can be obtained with:                               #
-#          $ apt-get install git gcc g++ autoconf bison bzip2                 #
+#          $ apt-get install git gcc g++ autoconf bison bzip2 cmake           #
 #            libfreetype6-dev mesa-common-dev libffi-dev libfontconfig1-dev   #
 #                                                                             #
 #     on ubuntu 14.04:                                                        #
-#          $ apt-get install git gcc g++ autoconf bison make                  #
+#          $ apt-get install git gcc g++ autoconf bison make cmake            #
 #            libfreetype6-dev mesa-common-dev libffi-dev libfontconfig1-dev   #
 #                                                                             #
 #     on OS X El Capitan with homebrew:                                       #
-#          $ brew install git bison autoconf automake freetype libffi         #
+#          $ brew install git bison autoconf automake freetype libffi cmake   #
 #                                                                             #
 ###############################################################################
 
@@ -79,7 +79,7 @@ ch.setLevel(logging.INFO)
 logger.addHandler(ch)
 
 PROJECT_NAME="IfcOpenShell"
-PYTHON_VERSIONS=["2.7.16", "3.2.6", "3.3.6", "3.4.6", "3.5.3", "3.6.2", "3.7.3", "3.8.2"]
+PYTHON_VERSIONS=["2.7.16", "3.2.6", "3.3.6", "3.4.6", "3.5.3", "3.6.2", "3.7.3", "3.8.6", "3.9.1"]
 JSON_VERSION="v3.6.1"
 OCE_VERSION="0.18"
 # OCCT_VERSION="7.1.0"
@@ -87,13 +87,11 @@ OCE_VERSION="0.18"
 # OCCT_VERSION="7.2.0"
 # OCCT_HASH="88af392"
 OCCT_VERSION="7.3.0p3"
-BOOST_VERSION="1.59.0"
+BOOST_VERSION="1.71.0"
 #PCRE_VERSION="8.39"
 PCRE_VERSION="8.41"
 #LIBXML2_VERSION="2.9.3"
 LIBXML2_VERSION="2.9.9"
-CMAKE_VERSION="3.4.3"
-#CMAKE_VERSION="3.14.5"
 SWIG_VERSION="3.0.12"
 #SWIG_VERSION="4.0.0"
 #OPENCOLLADA_VERSION="v1.6.63"
@@ -159,6 +157,13 @@ TOOLSET = None
 if get_os() == "Darwin":
     # C++11 features used in OCCT 7+ need a more recent stdlib
     TOOLSET = "10.9" if USE_OCCT else "10.6"
+
+# python 3.4 doesn't seem to build anymore on recent versions of clang
+if get_os() == "Darwin":
+    try:
+        PYTHON_VERSIONS.remove("3.4.6")
+    except ValueError as e:
+        pass
    
 try:
     IFCOS_NUM_BUILD_PROCS = os.environ["IFCOS_NUM_BUILD_PROCS"]
@@ -259,7 +264,7 @@ print("Building:", *sorted(targets, key=lambda t: len(list(v(t)))))
 
 # Check that required tools are in PATH
 
-for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, yacc, make, "patch"]:
+for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, yacc, make, "patch", "cmake"]:
     if which(cmd) is None:
         raise ValueError("Required tool '%s' not installed or not added to PATH" % (cmd,))
 
@@ -303,10 +308,9 @@ def run(cmds, cwd=None):
     return stdout.strip()
 
 BOOST_VERSION_UNDERSCORE=BOOST_VERSION.replace(".", "_")
-CMAKE_VERSION_2=CMAKE_VERSION[:CMAKE_VERSION.rindex('.')]
 
 OCE_LOCATION="https://github.com/tpaviot/oce/archive/OCE-%s.tar.gz" % (OCE_VERSION,)
-BOOST_LOCATION="http://downloads.sourceforge.net/project/boost/boost/%s/boost_%s.tar.bz2" % (BOOST_VERSION, BOOST_VERSION_UNDERSCORE)
+BOOST_LOCATION="https://dl.bintray.com/boostorg/release/%s/source/" % (BOOST_VERSION,)
 
 # Helper functions
 
@@ -322,8 +326,7 @@ def run_cmake(arg1, cmake_args, cmake_dir=None, cwd=None):
         P=".."
     else:
         P=cmake_dir
-    cmake_path= os.path.join(DEPS_DIR, "install", "cmake-%s" % (CMAKE_VERSION,), "bin", "cmake")
-    run([cmake_path, P]+cmake_args+["-DCMAKE_BUILD_TYPE=%s" % (BUILD_CFG,)], cwd=cwd)
+    run(["cmake", P]+cmake_args+["-DCMAKE_BUILD_TYPE=%s" % (BUILD_CFG,)], cwd=cwd)
 
 def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
     """Lazily clones the `git` repository denoted by `clone_url` into
@@ -424,7 +427,7 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
         else:
             raise ValueError()
         logger.info("\rBuilding %s...   " % (name,))
-        run([make, "-j%s" % (IFCOS_NUM_BUILD_PROCS,)], cwd=extract_build_dir)
+        run([make, "-j%s" % (IFCOS_NUM_BUILD_PROCS,), "VERBOSE=1"], cwd=extract_build_dir)
         logger.info( "\rInstalling %s... " % (name,))
         run([make, "install"], cwd=extract_build_dir)
         logger.info( "\rInstalled %s     \n" % (name,))
@@ -445,7 +448,10 @@ cecho("Collecting dependencies:", GREEN)
 ADDITIONAL_ARGS=[]
 BOOST_ADDRESS_MODEL=[]
 if TARGET_ARCH == "i686" and run([uname, "-m"]).strip() == "x86_64":
-    ADDITIONAL_ARGS=["-m32", "-arch i386"]
+    if get_os() == "Darwin":
+        ADDITIONAL_ARGS=["-m32", "-arch i386"]
+    else:
+        ADDITIONAL_ARGS=["-m32"]
     BOOST_ADDRESS_MODEL=["architecture=x86", "address-model=32"]
 
 if get_os() == "Darwin":
@@ -484,25 +490,8 @@ os.environ["CFLAGS"] = CFLAGS
 os.environ["LDFLAGS"] = LDFLAGS
 
 # Some dependencies need a more recent CMake version than most distros provide
-build_dependency(name="cmake-%s" % (CMAKE_VERSION,), mode="autoconf", build_tool_args=[], download_url="https://cmake.org/files/v%s" % (CMAKE_VERSION_2,), download_name="cmake-%s.tar.gz" % (CMAKE_VERSION,))
-
-# Extract compiler flags from CMake to harmonize settings with other autoconf dependencies
-CMAKE_FLAG_EXTRACT_DIR="ifcopenshell_cmake_test_%s" % (time.time(),)
-# was sp.check_output([bash, "-c", "cat /dev/urandom | env LC_CTYPE=C tr -dc 'a-zA-Z0-9' | head -c 32"]), in bash script, unclear what the exact required format is and whether it's needed
-if os.path.exists(CMAKE_FLAG_EXTRACT_DIR):
-    shutil.rmtree(CMAKE_FLAG_EXTRACT_DIR)
-os.makedirs(CMAKE_FLAG_EXTRACT_DIR)
-BUILD_CFG_UPPER=BUILD_CFG.upper()
-for FL in ["C", "CXX"]:
-    run([bash, "-c", """echo "
-    message(\"\${CMAKE_%s_FLAGS_%s}\")
-    " > CMakeLists.txt""" % (FL, BUILD_CFG_UPPER)], cwd=CMAKE_FLAG_EXTRACT_DIR)
-    FL="%sFLAGS" % (FL,)
-    FLM="%sFLAGS_MINIMAL" % (FL,)
-# @TODO: bash code unclear
-#    exec("%sFLAGS=%s" % (FL, sp.check_output([os.path.join(DEPS_DIR, "install", "cmake-%s" % (CMAKE_VERSION,), "bin", "cmake"), "."
-#    declare ${FL}FLAGS_MINIMAL="`$DEPS_DIR/install/cmake-$CMAKE_VERSION/bin/cmake . 2>&1 >/dev/null` ${!FLM}"
-shutil.rmtree(CMAKE_FLAG_EXTRACT_DIR)
+# @tfk: this is no longer needed
+# build_dependency(name="cmake-%s" % (CMAKE_VERSION,), mode="autoconf", build_tool_args=[], download_url="https://cmake.org/files/v%s" % (CMAKE_VERSION_2,), download_name="cmake-%s.tar.gz" % (CMAKE_VERSION,))
 
 if "json" in targets:
     json_url = "https://github.com/nlohmann/json/releases/download/{JSON_VERSION}/json.hpp".format(**locals())
@@ -527,7 +516,7 @@ if "swig" in targets:
     build_dependency(
         name="swig",
         mode="autoconf",
-        build_tool_args=["--with-pcre-prefix={DEPS_DIR}/install/pcre-{PCRE_VERSION}".format(**locals())],
+        build_tool_args=["--disable-ccache", "--with-pcre-prefix={DEPS_DIR}/install/pcre-{PCRE_VERSION}".format(**locals())],
         download_url="https://github.com/swig/swig.git",
         download_name="swig",
         download_tool=download_tool_git,
@@ -598,7 +587,7 @@ if "OpenCOLLADA" in targets:
         download_url="https://github.com/KhronosGroup/OpenCOLLADA.git",
         download_name="OpenCOLLADA",
         download_tool=download_tool_git,
-        patch="./patches/opencollada/pr622.patch",
+        patch="./patches/opencollada/pr622_and_disable_subdirs.patch",
         revision=OPENCOLLADA_VERSION
     )
 
@@ -662,7 +651,7 @@ if "boost" in targets:
             list(map(str_concat("cxxflags"), CXXFLAGS.strip().split(' '))) + \
             list(map(str_concat("linkflags"), LDFLAGS.strip().split(' '))) + \
             ["stage", "-s", "NO_BZIP2=1"],
-        download_url="http://downloads.sourceforge.net/project/boost/boost/{BOOST_VERSION}/".format(**locals()),
+        download_url=BOOST_LOCATION,
         download_name="boost_{BOOST_VERSION_UNDERSCORE}.tar.bz2".format(**locals())
     )
     

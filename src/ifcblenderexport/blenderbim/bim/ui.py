@@ -1,6 +1,6 @@
 import os
 import bpy
-from . import bcfstore
+from . import ifc
 from bpy.types import Panel
 from bpy.props import StringProperty
 
@@ -638,27 +638,34 @@ class BIM_PT_representations(Panel):
         layout = self.layout
         props = context.active_object.BIMObjectProperties
 
-        if not props.representation_contexts:
+        if not props.representations:
             layout.label(text="No representations found")
 
         row = layout.row(align=True)
         row.prop(bpy.context.scene.BIMProperties, "available_contexts", text="")
         row.prop(bpy.context.scene.BIMProperties, "available_subcontexts", text="")
         row.prop(bpy.context.scene.BIMProperties, "available_target_views", text="")
-        op = row.operator("bim.switch_context", icon="ADD", text="")
-        op.has_target_context = False
+        # TODO: reimplement with incremental editing
+        # op = row.operator("bim.switch_context", icon="ADD", text="")
+        # op.has_target_context = False
 
-        for index, subcontext in enumerate(props.representation_contexts):
+        self.file = ifc.IfcStore.get_file()
+        for index, representation in enumerate(props.representations):
             row = layout.row(align=True)
-            row.prop(subcontext, "context", text="")
-            row.prop(subcontext, "name", text="")
-            row.prop(subcontext, "target_view", text="")
-            op = row.operator("bim.switch_context", icon="OUTLINER_DATA_MESH", text="")
-            op.has_target_context = True
-            op.context_name = subcontext.context
-            op.subcontext_name = subcontext.name
-            op.target_view_name = subcontext.target_view
-            row.operator("bim.remove_context", icon="X", text="").index = index
+            row.prop(representation, "name", text="")
+            row.prop(representation, "type", text="")
+            if not representation.ifc_definition_id:
+                continue
+            subcontext = self.file.by_id(representation.ifc_definition_id).ContextOfItems
+            if subcontext.is_a() == "IfcGeometricRepresentationContext":
+                continue
+            # TODO: reimplement with incremental editing
+            # op = row.operator("bim.switch_context", icon="OUTLINER_DATA_MESH", text="")
+            # op.has_target_context = True
+            # op.context_name = subcontext.ContextType
+            # op.subcontext_name = subcontext.ContextIdentifier
+            # op.target_view_name = subcontext.TargetView
+            # row.operator("bim.remove_context", icon="X", text="").index = index
 
 
 class BIM_PT_classification_references(Panel):
@@ -1643,216 +1650,13 @@ class BIM_PT_ifccsv(Panel):
             row.operator("bim.remove_csv_attribute", icon="X", text="").index = index
 
         row = layout.row(align=True)
-        row.operator("bim.export_ifccsv", icon="EXPORT")
-        row.operator("bim.import_ifccsv", icon="IMPORT")
-
-
-class BIM_PT_bcf(Panel):
-    bl_label = "BIM Collaboration Format (BCF)"
-    bl_idname = "BIM_PT_bcf"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-        layout.use_property_decorate = False
-
-        scene = context.scene
-        props = bpy.context.scene.BCFProperties
+        row.prop(props, "csv_delimiter")
+        row = layout.row(align=True)
+        row.prop(props, "csv_custom_delimiter")
 
         row = layout.row(align=True)
-        row.operator("bim.new_bcf_project", text="New Project")
-        row.operator("bim.load_bcf_project", text="Load Project")
-
-        if not props.is_loaded:
-            return
-
-        row.operator("bim.save_bcf_project", text="Save Project")
-
-        row = layout.row()
-        row.prop(props, "name")
-
-        row = layout.row()
-        row.prop(props, "author")
-
-        props = bpy.context.scene.BCFProperties
-        row = layout.row()
-        row.template_list("BIM_UL_topics", "", props, "topics", props, "active_topic_index")
-        col = row.column(align=True)
-        col.operator("bim.add_bcf_topic", icon="ADD", text="")
-        if props.active_topic_index < len(props.topics):
-            topic = props.topics[props.active_topic_index]
-            col.prop(topic, "is_editable", icon="CHECKMARK" if topic.is_editable else "GREASEPENCIL", icon_only=True)
-
-        if props.active_topic_index < len(props.topics):
-            topic = props.topics[props.active_topic_index]
-            row = layout.row()
-            row.enabled = topic.is_editable
-            row.prop(topic, "description", text="")
-
-            row = layout.row()
-            row.prop(topic, "viewpoints")
-            row.operator("bim.activate_bcf_viewpoint", icon="SCENE", text="")
-
-            col = layout.column(align=True)
-            if topic.type:
-                col.prop(topic, "type", emboss=topic.is_editable)
-            if topic.status:
-                col.prop(topic, "status", emboss=topic.is_editable)
-            if topic.priority:
-                col.prop(topic, "priority", emboss=topic.is_editable)
-            if topic.stage:
-                col.prop(topic, "stage", emboss=topic.is_editable)
-            if topic.assigned_to:
-                col.prop(topic, "assigned_to", emboss=topic.is_editable)
-            if topic.due_date:
-                col.prop(topic, "due_date", emboss=topic.is_editable)
-
-            col = layout.column(align=True)
-            if topic.modified_date:
-                col.prop(topic, "modified_date", emboss=False)
-                col.prop(topic, "modified_author", emboss=False)
-            else:
-                col.prop(topic, "creation_date", emboss=False)
-                col.prop(topic, "creation_author", emboss=False)
-
-
-class BIM_PT_bcf_metadata(Panel):
-    bl_label = "BCF Metadata"
-    bl_idname = "BIM_PT_bcf_metadata"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-    bl_parent_id = "BIM_PT_bcf"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-        layout.use_property_decorate = False
-
-        scene = context.scene
-        props = bpy.context.scene.BCFProperties
-
-        if props.active_topic_index >= len(props.topics):
-            layout.label(text="No BCF project is loaded")
-            return
-
-        topic = props.topics[props.active_topic_index]
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
-        bcf_topic = bcfxml.topics[topic.name]
-
-        if bcf_topic.header:
-            layout.label(text="Header Files:")
-            for index, f in enumerate(bcf_topic.header.files):
-                box = self.layout.box()
-                row = box.row(align=True)
-                row.label(text=f.filename, icon="FILE_BLANK")
-                if f.is_external:
-                    row.operator("bim.open_uri", icon="URL", text="").uri = f.reference
-                else:
-                    op = row.operator("bim.open_uri", icon="FILE_FOLDER", text="")
-                    op.uri = os.path.join(bcfxml.filepath, topic.name, f.reference)
-                box.label(text=f.date)
-                #box.label(text=f.ifc_project)
-                #box.label(text=f.ifc_spatial_structure_element)
-
-        if topic.reference_links:
-            layout.label(text="Reference Links:")
-            for index, link in enumerate(topic.reference_links):
-                row = layout.row(align=True)
-                row.prop(link, "name")
-                row.operator("bim.open_uri", icon="URL", text="").uri = link.name
-
-        if topic.labels:
-            layout.label(text="Labels:")
-            for index, label in enumerate(topic.labels):
-                row = layout.row(align=True)
-                row.prop(label, "name", text="")
-
-        if topic.bim_snippet.schema:
-            layout.label(text="BIM Snippet:")
-            row = layout.row(align=True)
-            row.prop(topic.bim_snippet, "type")
-            if topic.bim_snippet.schema:
-                row.operator("bim.open_uri", icon="URL", text="").uri = topic.bim_snippet.schema
-
-            row = layout.row(align=True)
-            row.prop(topic.bim_snippet, "reference")
-            if topic.bim_snippet.is_external:
-                row.operator("bim.open_uri", icon="URL", text="").uri = topic.bim_snippet.reference
-            else:
-                op = row.operator("bim.open_uri", icon="FILE_FOLDER", text="")
-                op.uri = os.path.join(bcfxml.filepath, topic.name, topic.bim_snippet.reference)
-
-        if topic.document_references:
-            layout.label(text="Document References:")
-            for index, doc in enumerate(topic.document_references):
-                box = self.layout.box()
-                row = box.row(align=True)
-                row.prop(doc, "reference")
-                if doc.is_external:
-                    row.operator("bim.open_uri", icon="URL", text="").uri = doc.reference
-                else:
-                    op = row.operator("bim.open_uri", icon="FILE_FOLDER", text="")
-                    op.uri = os.path.join(bcfxml.filepath, topic.name, doc.reference)
-                row = box.row(align=True)
-                row.prop(doc, "description")
-
-        if topic.related_topics:
-            layout.label(text="Related Topics:")
-            for related_topic in topic.related_topics:
-                row = layout.row(align=True)
-                row.operator("bim.view_bcf_topic", text=related_topic.name).topic_guid = related_topic.name
-
-
-class BIM_PT_bcf_comments(Panel):
-    bl_label = "BCF Comments"
-    bl_idname = "BIM_PT_bcf_comments"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-    bl_parent_id = "BIM_PT_bcf"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-        layout.use_property_decorate = False
-
-        scene = context.scene
-        props = bpy.context.scene.BCFProperties
-
-        if props.active_topic_index >= len(props.topics):
-            layout.label(text="No BCF project is loaded")
-            return
-
-        row = layout.row()
-        row.prop(props, "comment_text_width")
-
-        topic = props.topics[props.active_topic_index]
-        for comment in topic.comments:
-            box = self.layout.box()
-            box.separator()
-            author_text = "{} ({})".format(comment.author, comment.date)
-            if comment.modified_author:
-                author_text = "*{} ({})".format(comment.modified_author, comment.modified_date)
-            box.label(text=author_text, icon="WORDWRAP_ON")
-            box.separator()
-            box.scale_y = 0.5
-            words = comment.comment.split()
-            while words:
-                total_line_chars = 0
-                line_words = []
-                while words and total_line_chars < props.comment_text_width:
-                    word = words.pop(0)
-                    line_words.append(word)
-                    total_line_chars += len(word) + 1 # 1 is for the space
-                box.label(text=" ".join(line_words))
-            box.separator()
+        row.operator("bim.export_ifccsv", icon="EXPORT")
+        row.operator("bim.import_ifccsv", icon="IMPORT")
 
 
 class BIM_PT_qa(Panel):
@@ -2092,6 +1896,8 @@ class BIM_PT_mvd(Panel):
         row = layout.row()
         row.prop(bim_properties, "import_export_should_roundtrip_native")
         row = layout.row()
+        row.prop(bim_properties, "export_should_export_from_memory")
+        row = layout.row()
         row.prop(bim_properties, "import_should_use_cpu_multiprocessing")
         row = layout.row()
         row.prop(bim_properties, "import_should_import_with_profiling")
@@ -2182,6 +1988,17 @@ class BIM_UL_generic(bpy.types.UIList):
             layout.label(text="", translate=False)
 
 
+class BIM_UL_drawinglist(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            row.prop(item, "name", text="", emboss=False)
+            op = row.operator("bim.open_view_camera", icon="OUTLINER_OB_CAMERA", text="")
+            op.view_name = item.name
+        else:
+            layout.label(text="", translate=False)
+
+
 class BIM_UL_topics(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         ob = data
@@ -2199,13 +2016,15 @@ class BIM_UL_clash_sets(bpy.types.UIList):
         else:
             layout.label(text="", translate=False)
 
+
 class BIM_UL_smart_groups(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         ob = data
         if item:
-            layout.label(text=str(item.number), translate=False, icon='NONE', icon_value=0)
+            layout.label(text=str(item.number), translate=False, icon="NONE", icon_value=0)
         else:
             layout.label(text="", translate=False)
+
 
 class BIM_UL_constraints(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
@@ -2363,9 +2182,9 @@ class BIM_PT_ifcclash(Panel):
                 row.prop(source, "selector", text="")
 
             row = layout.row()
+            row.prop(props, "should_create_clash_snapshots")
+            row = layout.row(align=True)
             row.operator("bim.execute_ifc_clash")
-
-            row = layout.row()
             row.operator("bim.select_ifc_clash_results")
 
 
@@ -2397,6 +2216,8 @@ class BIM_PT_annotation_utilities(Panel):
         row.operator("bim.clean_wireframes")
         row = layout.row(align=True)
         row.operator("bim.link_ifc")
+        row = layout.row(align=True)
+        row.operator("bim.add_grid")
 
         row = layout.row(align=True)
         op = row.operator("bim.add_annotation", text="Dim", icon="ARROW_LEFTRIGHT")
@@ -2429,6 +2250,14 @@ class BIM_PT_annotation_utilities(Panel):
         op.obj_name = "Section Level"
         op.data_type = "curve"
 
+        row = layout.row(align=True)
+        op = row.operator("bim.add_annotation", text="Breakline", icon="FCURVE")
+        op.obj_name = "Break"
+        op.data_type = "mesh"
+        op = row.operator("bim.add_annotation", text="Misc", icon="MESH_MONKEY")
+        op.obj_name = "Misc"
+        op.data_type = "mesh"
+
         props = bpy.context.scene.DocProperties
 
         row = layout.row(align=True)
@@ -2440,10 +2269,10 @@ class BIM_PT_annotation_utilities(Panel):
                 op = row.operator("bim.open_view", icon="URL", text="")
                 op.view = props.drawings[props.active_drawing_index].name
                 row.operator("bim.remove_drawing", icon="X", text="").index = props.active_drawing_index
-            layout.template_list("BIM_UL_generic", "", props, "drawings", props, "active_drawing_index")
+            layout.template_list("BIM_UL_drawinglist", "", props, "drawings", props, "active_drawing_index")
 
-        row = layout.row()
-        row.prop(props, "should_draw_decorations")
+        layout.prop(props, "should_draw_decorations")
+        layout.prop(props, "decorations_colour")
 
 
 class BIM_PT_qto_utilities(Panel):
@@ -2468,6 +2297,7 @@ class BIM_PT_qto_utilities(Panel):
         row.operator("bim.calculate_face_areas")
         row = layout.row(align=True)
         row.operator("bim.calculate_object_volumes")
+
 
 class BIM_PT_clash_manager(Panel):
     bl_idname = "BIM_PT_clash_manager"
@@ -2503,10 +2333,11 @@ class BIM_PT_clash_manager(Panel):
         row = layout.row(align=True)
         row.operator("bim.load_smart_groups_for_active_clash_set")
 
-        layout.template_list('BIM_UL_smart_groups', '', props, 'smart_clash_groups', props, 'active_smart_group_index')
+        layout.template_list("BIM_UL_smart_groups", "", props, "smart_clash_groups", props, "active_smart_group_index")
 
         row = layout.row(align=True)
         row.operator("bim.select_smart_group")
+
 
 class BIM_PT_misc_utilities(Panel):
     bl_idname = "BIM_PT_misc_utilities"
@@ -2525,6 +2356,8 @@ class BIM_PT_misc_utilities(Panel):
         row.operator("bim.set_override_colour")
         row = layout.row(align=True)
         row.operator("bim.set_viewport_shadow_from_sun")
+        row = layout.row(align=True)
+        row.operator("bim.snap_spaces_together")
 
 
 class BIM_PT_debug(Panel):

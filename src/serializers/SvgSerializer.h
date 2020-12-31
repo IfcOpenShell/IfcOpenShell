@@ -119,7 +119,9 @@ protected:
 	boost::optional<double> scale_, calculated_scale_, center_x_, center_y_;
 
 	bool with_section_heights_from_storey_, rescale, print_space_names_, print_space_areas_;
-	bool draw_door_arcs_, buffer_elements_, is_floor_plan_;
+	bool draw_door_arcs_, is_floor_plan_;
+	bool auto_section_, auto_elevation_;
+	bool use_namespace_;
 
 	IfcParse::IfcFile* file;
 	IfcUtil::IfcBaseEntity* storey_;
@@ -133,6 +135,8 @@ protected:
 	std::list<geometry_data> element_buffer_;
 
 	Handle(HLRBRep_Algo) hlr;
+
+	std::string namespace_prefix_;
 public:
 	SvgSerializer(const std::string& out_filename, const SerializerSettings& settings)
 		: GeometrySerializer(settings)
@@ -146,13 +150,16 @@ public:
 		, print_space_names_(false)
 		, print_space_areas_(false)
 		, draw_door_arcs_(false)
-		, buffer_elements_(false)
 		, is_floor_plan_(true)
+		, auto_section_(false)
+		, auto_elevation_(false)
+		, use_namespace_(false)
 		, file(0)
 		, storey_(0)
 		, xcoords_begin(0)
 		, ycoords_begin(0)
 		, radii_begin(0)
+		, namespace_prefix_("data-")
 	{}
     void addXCoordinate(const boost::shared_ptr<util::string_buffer::float_item>& fi) { xcoords.push_back(fi); }
     void addYCoordinate(const boost::shared_ptr<util::string_buffer::float_item>& fi) { ycoords.push_back(fi); }
@@ -176,15 +183,30 @@ public:
 	void setPrintSpaceNames(bool b) { print_space_names_ = b; }
 	void setPrintSpaceAreas(bool b) { print_space_areas_ = b; }
 	void setDrawDoorArcs(bool b) { draw_door_arcs_ = b; }
+
 	void resize();
+	void resetScale();
+
 	void setSectionRef(const boost::optional<std::string>& s) { 
 		section_ref_ = s; 
-		buffer_elements_ = true;
 	}
 	void setElevationRef(const boost::optional<std::string>& s) {
 		elevation_ref_ = s; 
-		buffer_elements_ = true;
 	}
+
+	void setAutoSection(bool b) {
+		auto_section_ = b;
+	}
+
+	void setAutoElevation(bool b) {
+		auto_elevation_ = b;
+	}
+
+	void setUseNamespace(bool b) {
+		use_namespace_ = b;
+		namespace_prefix_ = use_namespace_ ? "ifc:" : "data-";
+	}
+
 	void setScale(double s) { scale_ = s; }
 	void setDrawingCenter(double x, double y) {
 		center_x_ = x; center_y_ = y;

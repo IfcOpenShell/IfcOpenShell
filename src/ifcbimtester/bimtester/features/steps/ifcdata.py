@@ -1,6 +1,6 @@
-import gettext
-import os
-from behave import step, given
+import gettext  # noqa
+from behave import given
+from behave import step
 
 from ifcdata_methods import assert_schema
 from utils import IfcFile

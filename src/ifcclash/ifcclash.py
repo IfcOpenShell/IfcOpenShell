@@ -11,6 +11,7 @@ import sys
 import argparse
 import logging
 
+
 class Mesh:
     faces: []
     vertices: []
@@ -153,6 +154,77 @@ class IfcClasher:
         return None
 
     def export(self):
+        if len(self.settings.output) > 4 and self.settings.output[-4:] == ".bcf":
+            return self.export_bcfxml()
+        self.export_json()
+
+    def export_bcfxml(self):
+        import bcf
+        import bcf.bcfxml
+
+        for i, clash_set in enumerate(self.clash_sets):
+            bcfxml = bcf.bcfxml.BcfXml()
+            bcfxml.new_project()
+            bcfxml.project.name = clash_set["name"]
+            bcfxml.edit_project()
+            for key, clash in clash_set["clashes"].items():
+                topic = bcf.data.Topic()
+                topic.title = "{}/{} and {}/{}".format(
+                    clash["a_ifc_class"], clash["a_name"], clash["b_ifc_class"], clash["b_name"]
+                )
+                topic = bcfxml.add_topic(topic)
+                viewpoint = bcf.data.Viewpoint()
+                viewpoint.perspective_camera = bcf.data.PerspectiveCamera()
+                position = np.array(clash["position"])
+                point = position + np.array((5, 5, 5)) # Dumb, but works!
+                viewpoint.perspective_camera.camera_view_point.x = point[0]
+                viewpoint.perspective_camera.camera_view_point.y = point[1]
+                viewpoint.perspective_camera.camera_view_point.z = point[2]
+                mat = self.get_track_to_matrix(point, position)
+                viewpoint.perspective_camera.camera_direction.x = mat[0][2] * -1
+                viewpoint.perspective_camera.camera_direction.y = mat[1][2] * -1
+                viewpoint.perspective_camera.camera_direction.z = mat[2][2] * -1
+                viewpoint.perspective_camera.camera_up_vector.x = mat[0][1]
+                viewpoint.perspective_camera.camera_up_vector.y = mat[1][1]
+                viewpoint.perspective_camera.camera_up_vector.z = mat[2][1]
+                viewpoint.components = bcf.data.Components()
+                c1 = bcf.data.Component()
+                c1.ifc_guid = clash["a_global_id"]
+                c2 = bcf.data.Component()
+                c2.ifc_guid = clash["b_global_id"]
+                viewpoint.components.selection.append(c1)
+                viewpoint.components.selection.append(c2)
+                viewpoint.components.visibility = bcf.data.ComponentVisibility()
+                viewpoint.components.visibility.default_visibility = True
+                viewpoint.snapshot = self.get_viewpoint_snapshot(viewpoint, mat)
+                bcfxml.add_viewpoint(topic, viewpoint)
+            if i == 0:
+                bcfxml.save_project(self.settings.output)
+            else:
+                bcfxml.save_project(self.settings.output + f".{i}")
+
+    def get_viewpoint_snapshot(self, viewpoint, mat):
+        return None # Possible to overload this function in a GUI application if used as a library
+
+    # https://blender.stackexchange.com/questions/68834/recreate-to-track-quat-with-two-vectors-using-python/141706#141706
+    def get_track_to_matrix(self, camera_position, target_position):
+        camera_direction = camera_position - target_position
+        camera_direction = camera_direction / np.linalg.norm(camera_direction)
+        camera_right = np.cross(np.array([0.0, 0.0, 1.0]), camera_direction)
+        camera_right = camera_right / np.linalg.norm(camera_right)
+        camera_up = np.cross(camera_direction, camera_right)
+        camera_up = camera_up / np.linalg.norm(camera_up)
+        rotation_transform = np.zeros((4, 4))
+        rotation_transform[0, :3] = camera_right
+        rotation_transform[1, :3] = camera_up
+        rotation_transform[2, :3] = camera_direction
+        rotation_transform[-1, -1] = 1
+        translation_transform = np.eye(4)
+        translation_transform[:3, -1] = - camera_position
+        look_at_transform = np.matmul(rotation_transform, translation_transform)
+        return np.linalg.inv(look_at_transform)
+
+    def export_json(self):
         results = self.clash_sets.copy()
         for result in results:
             del result["a_cm"]
@@ -269,14 +341,14 @@ class IfcClasher:
     def smart_group_clashes(self, clash_sets, max_clustering_distance):
         from sklearn.cluster import OPTICS
         from collections import defaultdict
-        
+
         count_of_input_clashes = 0
         count_of_clash_sets = 0
         count_of_smart_groups = 0
         count_of_final_clash_sets = 0
 
         count_of_clash_sets = len(clash_sets)
-                    
+
         for clash_set in clash_sets:
             if not "clashes" in clash_set.keys():
                 print(f"Skipping clash set [{clash_set['name']}] since it contains no clash results.")
@@ -324,14 +396,14 @@ class IfcClasher:
             if not "clashes" in clash_set.keys():
                 continue
             smart_groups = defaultdict(list)
-            for clash_id, content in clash_set['clashes'].items():
+            for clash_id, content in clash_set["clashes"].items():
                 if "smart_group" in content:
                     object_id_list = list()
                     # Clash has been grouped, let's extract it.
-                    object_id_list.append(content['a_global_id'])
-                    object_id_list.append(content['b_global_id'])
-                    smart_groups[content['smart_group']].append(object_id_list)
-            count_of_smart_groups += len(smart_groups)   
+                    object_id_list.append(content["a_global_id"])
+                    object_id_list.append(content["b_global_id"])
+                    smart_groups[content["smart_group"]].append(object_id_list)
+            count_of_smart_groups += len(smart_groups)
             output_clash_sets[clash_set["name"]].append(smart_groups)
 
         # Rename the clash groups to something more sensible
@@ -346,8 +418,10 @@ class IfcClasher:
                 i += 1
 
         count_of_final_clash_sets = len(output_clash_sets)
-        print(f"Took {count_of_input_clashes} clashes in {count_of_clash_sets} clash sets and turned", 
-            f"them into {count_of_smart_groups} smart groups in {count_of_final_clash_sets} clash sets")
+        print(
+            f"Took {count_of_input_clashes} clashes in {count_of_clash_sets} clash sets and turned",
+            f"them into {count_of_smart_groups} smart groups in {count_of_final_clash_sets} clash sets",
+        )
 
         return output_clash_sets
 

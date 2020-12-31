@@ -215,27 +215,20 @@ def format_distance(value, isArea=False, hide_units=True):
             feet += 1
             inches = 0
 
-        if inches != 0:
-            inchesString = str(inches)
-            if frac != 0:
-                inchesString += "-"
-            else:
-                inchesString += '"'
-        else:
-            inchesString = ""
-
-        if feet != 0:
-            feetString = str(feet) + "' "
-        else:
-            feetString = ""
-
-        if frac != 0:
-            fracString = str(frac) + "/" + str(base) + '"'
-        else:
-            fracString = ""
-
         if not isArea:
-            tx_dist = feetString + inchesString + fracString
+            tx_dist = ""
+            if feet:
+                tx_dist += str(feet) + "'"
+            if feet and inches:
+                tx_dist += " - "
+            if inches:
+                tx_dist += str(inches)
+            if inches and frac:
+                tx_dist += " "
+            if frac:
+                tx_dist += str(frac) + "/" + str(base)
+            if inches or frac:
+                tx_dist += '"'
         else:
             tx_dist = str("%1.3f" % (value * toInches / inPerFoot)) + " sq. ft."
 

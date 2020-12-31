@@ -397,7 +397,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 	double elev = p ? p->second : std::numeric_limits<double>::quiet_NaN();
 	geometry_data data{ compound_local, trsf, brep_obj->product(), storey, elev, brep_obj->name(), nameElement(storey, brep_obj) };
 
-	if (buffer_elements_) {
+	if (auto_section_ || auto_elevation_ || section_ref_ || elevation_ref_) {
 		element_buffer_.push_back(data);
 	}
 
@@ -533,6 +533,7 @@ void SvgSerializer::write(const geometry_data& data) {
 		std::pair<double, double> range;
 
 		gp_Vec projection_direction;
+		gp_Pln projection_plane;
 
 		IfcUtil::IfcBaseEntity* storey = nullptr;
 		std::string drawing_name;
@@ -555,6 +556,7 @@ void SvgSerializer::write(const geometry_data& data) {
 		} else if (variant.which() == 2) {
 			const auto& section = boost::get<vertical_section>(variant);
 			projection_direction = section.plane.Axis().Direction();
+			projection_plane = section.plane;
 			drawing_name = section.name;
 			use_hlr = section.with_projection;
 		}
@@ -562,7 +564,40 @@ void SvgSerializer::write(const geometry_data& data) {
 		auto& compound_to_use = is_floor_plan_ ? compound : compound_unmirrored;
 
 		if (use_hlr && hlr) {
-			hlr->Add(compound_to_use);
+
+			// Check if any of the bounding box points is on the correct side of the plane
+			Bnd_Box bb;
+			try {
+				BRepBndLib::Add(compound_to_use, bb);
+			}
+			catch (const Standard_Failure&) {}
+
+			if (bb.IsVoid()) {
+				continue;
+			}
+
+			double xs[2], ys[2], zs[2];
+			bb.Get(xs[0], ys[0], zs[0], xs[1], ys[1], zs[1]);
+
+			bool any = false;
+
+			for (int i = 0; i < 8; ++i) {
+				gp_Pnt p(xs[(i & 1) == 1], ys[(i & 2) == 2], zs[(i & 4) == 4]);
+				auto d = (p.XYZ() - projection_plane.Location().XYZ()).Dot(projection_plane.Axis().Direction().XYZ());
+				int state;
+				if (std::abs(d) < 1.e-5) {
+					state = 0;
+				} else {
+					state = d < 0. ? -1 : 1;
+				}
+				if (state == 1) {
+					any = true;
+				}
+			}
+
+			if (any) {
+				hlr->Add(compound_to_use);
+			}
 		}
 
 		TopoDS_Iterator it(compound_to_use);
@@ -865,13 +900,16 @@ void SvgSerializer::resize() {
 			sc = (*scale_) * 1000;
 			cx = (xmax + xmin) / 2. * sc - width * center_x_.get_value_or(0.5);
 			cy = (ymax + ymin) / 2. * sc - height * center_y_.get_value_or(0.5);
-		} else {
+		}
+		else {
 			if (calculated_scale_) {
 				sc = *calculated_scale_;
-			} else {
+			}
+			else {
 				if (dx / width > dy / height) {
 					sc = width / dx;
-				} else {
+				}
+				else {
 					sc = height / dy;
 				}
 				calculated_scale_ = sc;
@@ -893,8 +931,12 @@ void SvgSerializer::resize() {
 			(*it)->value() *= sc;
 		}
 	}
+}
 
+void SvgSerializer::resetScale() {
 	// reset the bounding box, as a subsequent drawing (elevation, section) will be centered, but use the same scale.
+	// this is a separate call now as we first need to read drawing extents for automatically positioning sections and
+	// elevations
 	xmin = +std::numeric_limits<double>::infinity();
 	ymin = +std::numeric_limits<double>::infinity();
 	xmax = -std::numeric_limits<double>::infinity();
@@ -904,6 +946,63 @@ void SvgSerializer::resize() {
 void SvgSerializer::finalize() {
 	resize();
 
+	if (!deferred_section_data_.is_initialized() && (auto_section_ || auto_elevation_)) {
+		deferred_section_data_.emplace();
+	}
+
+	// @nb keep in mind Y-axis is negated in these 6 definitions to account
+	// for coordinate system differences.
+	if (auto_section_) {
+		{
+			gp_Pln pln(gp_Ax3(
+				gp_Pnt((xmin + xmax) / 2., (ymin + ymax) / 2., 0.),
+				gp_Dir(-1, 0, 0),
+				gp_Dir(0, -1, 0)));
+			deferred_section_data_->push_back(vertical_section{ pln , "Section North South", false });
+		}
+		{
+			gp_Pln pln(gp_Ax3(
+				gp_Pnt((xmin + xmax) / 2., (ymin + ymax) / -2., 0.),
+				gp_Dir(0, -1, 0),
+				gp_Dir(-1, 0, 0)));
+			deferred_section_data_->push_back(vertical_section{ pln , "Section East West", true });
+		}
+	}
+
+	if (auto_elevation_) {
+		{
+			gp_Pln pln(gp_Ax3(
+				gp_Pnt((xmin + xmax) / 2., -(ymin - 1.e-1), 0.),
+				gp_Dir(0, -1, 0),
+				gp_Dir(-1, 0, 0)));
+			deferred_section_data_->push_back(vertical_section{ pln , "Elevation South", true });
+		}
+		{
+			gp_Pln pln(gp_Ax3(
+				gp_Pnt(xmax + 1.e-1, (ymin + ymax) / -2., 0.),
+				gp_Dir(-1, 0, 0),
+				gp_Dir(0, -1, 0)));
+			deferred_section_data_->push_back(vertical_section{ pln , "Elevation East", true });
+		}
+		{
+			gp_Pln pln(gp_Ax3(
+				gp_Pnt((xmin + xmax) / 2., -(ymax + 1.e-1), 0.),
+				gp_Dir(0, -1, 0),
+				gp_Dir(1, 0, 0)));
+			deferred_section_data_->push_back(vertical_section{ pln , "Elevation North", true });
+		}
+		{
+			gp_Pln pln(gp_Ax3(
+				gp_Pnt(xmin - 1.e-1, (ymin + ymax) / -2., 0.),
+				gp_Dir(-1, 0, 0),
+				gp_Dir(0, -1, 0)));
+			deferred_section_data_->push_back(vertical_section{ pln , "Elevation West", true });
+		}
+	}
+
+	resetScale();
+
+	
 	if (deferred_section_data_ && deferred_section_data_->size() && element_buffer_.size()) {
 
 		// Draw door arcs only on floor plans.
@@ -922,7 +1021,7 @@ void SvgSerializer::finalize() {
 				hlr = new HLRBRep_Algo;
 			}
 
-			*section_data_ = { sd };
+			section_data_ = std::vector<section_data>{ sd };
 			for (auto& e : element_buffer_) {
 				write(e);
 			}
@@ -939,35 +1038,40 @@ void SvgSerializer::finalize() {
 				HLRBRep_HLRToShape hlr_shapes(hlr);
 				auto hlr_compound_unmirrored = hlr_shapes.VCompound();
 
-				// Compound 3D curves for mirroring to work
-				ShapeFix_Edge sfe;
-				TopExp_Explorer exp(hlr_compound_unmirrored, TopAbs_EDGE);
-				for (; exp.More(); exp.Next()) {
-					sfe.FixAddCurve3d(TopoDS::Edge(exp.Current()));
+				if (!hlr_compound_unmirrored.IsNull()) {
+
+					// Compound 3D curves for mirroring to work
+					ShapeFix_Edge sfe;
+					TopExp_Explorer exp(hlr_compound_unmirrored, TopAbs_EDGE);
+					for (; exp.More(); exp.Next()) {
+						sfe.FixAddCurve3d(TopoDS::Edge(exp.Current()));
+					}
+
+					// Mirror to match SVG coord system.
+					// @todo this is very wasteful. We better do the Y-mirror in the SVG writing and
+					// not on the TopoDS_Shape input.
+
+					gp_Trsf trsf_mirror;
+					trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
+					BRepBuilderAPI_Transform make_transform_mirror(hlr_compound_unmirrored, trsf_mirror, true);
+					make_transform_mirror.Build();
+					auto hlr_compound = make_transform_mirror.Shape();
+
+					exp.Init(hlr_compound, TopAbs_EDGE);
+					BRep_Builder B;
+					auto& po = start_path(drawing_name, "class=\"projection\"");
+					for (; exp.More(); exp.Next()) {
+						TopoDS_Wire w;
+						B.MakeWire(w);
+						B.Add(w, exp.Current());
+						write(po, w);
+					}
+
 				}
-
-				// Mirror to match SVG coord system.
-				// @todo this is very wasteful. We better do the Y-mirror in the SVG writing and
-				// not on the TopoDS_Shape input.
-
-				gp_Trsf trsf_mirror;
-				trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
-				BRepBuilderAPI_Transform make_transform_mirror(hlr_compound_unmirrored, trsf_mirror, true);
-				make_transform_mirror.Build();
-				auto hlr_compound = make_transform_mirror.Shape();
-
-				exp.Init(hlr_compound, TopAbs_EDGE);
-				BRep_Builder B;
-				auto& po = start_path(drawing_name, "class=\"projection\"");
-				for (; exp.More(); exp.Next()) {
-					TopoDS_Wire w;
-					B.MakeWire(w);
-					B.Add(w, exp.Current());					
-					write(po, w);
-				}				
 			}
 
 			resize();
+			resetScale();
 
 			if (use_hlr) {
 				hlr.Nullify();
@@ -987,7 +1091,9 @@ void SvgSerializer::finalize() {
 			if (it->first.first) {
 				svg_file << "    <g " << nameElement(it->first.first) << ">\n";
 			} else {
-				svg_file << "    <g data-name=\"" << it->first.second << "\" class=\"section\">\n";
+				auto n = it->first.second;
+				IfcUtil::escape_xml(n);
+				svg_file << "    <g " << namespace_prefix_  << "name=\"" << n << "\" class=\"section\">\n";
 			}
 		}
 		svg_file << "        <g " << it->second.first << ">\n";
@@ -1007,6 +1113,9 @@ void SvgSerializer::finalize() {
 
 void SvgSerializer::writeHeader() {
 	svg_file << "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"";
+	if (use_namespace_) {
+		svg_file << " xmlns:ifc=\"http://www.ifcopenshell.org/ns\"";
+	}
 	if (scale_) {
 		svg_file << 
 			" width=\"" << width << "mm\""
@@ -1071,11 +1180,14 @@ return oss.str();
 }
 
 std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element<real_t>* elem) {
+	auto n = elem->name();
+	IfcUtil::escape_xml(n);
+
 	return nameElement_({
 		{"id", with_section_heights_from_storey_ ? object_id(storey, elem) : GeometrySerializer::object_id(elem)},
 		{"class", elem->type()},
-		{"data-name", elem->name()},
-		{"data-guid", elem->guid()}
+		{namespace_prefix_ + "name", n},
+		{namespace_prefix_ + "guid", elem->guid()}
 		});
 }
 
@@ -1099,13 +1211,14 @@ std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* elem) {
 	std::string ifc_name;
 	if (!elem->get("Name")->isNull()) {
 		ifc_name = (std::string) *elem->get("Name");
+		IfcUtil::escape_xml(ifc_name);
 	}
 
 	return nameElement_({
 		{"id", idElement(elem)},
 		{"class", entity},
-		{"data-name", ifc_name},
-		{"data-guid", *elem->get("GlobalId")}
+		{namespace_prefix_ + "name", ifc_name},
+		{namespace_prefix_ + "guid", *elem->get("GlobalId")}
 		});
 }
 
