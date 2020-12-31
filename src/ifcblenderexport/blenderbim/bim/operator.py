@@ -1,3 +1,4 @@
+from itertools import chain
 import os
 import bpy
 import uuid
@@ -20,14 +21,13 @@ from . import svgwriter
 from . import sheeter
 from . import scheduler
 from . import schema
-from . import bcfstore
 from . import ifc
 from . import annotation
 from . import helper
 from bpy_extras.io_utils import ImportHelper
 from itertools import cycle
 from mathutils import Vector, Matrix, Euler, geometry
-from math import radians, atan, tan, cos, sin
+from math import radians, degrees, atan, tan, cos, sin
 from pathlib import Path
 from bpy.app.handlers import persistent
 
@@ -520,415 +520,6 @@ class RejectElement(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class NewBcfProject(bpy.types.Operator):
-    bl_idname = "bim.new_bcf_project"
-    bl_label = "New BCF Project"
-
-    def execute(self, context):
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
-        bcfxml.new_project()
-        bpy.ops.bim.load_bcf_project()
-        return {"FINISHED"}
-
-
-class LoadBcfProject(bpy.types.Operator):
-    bl_idname = "bim.load_bcf_project"
-    bl_label = "Load BCF Project"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
-        if self.filepath:
-            bcfxml.get_project(self.filepath)
-        bpy.context.scene.BCFProperties.name = bcfxml.project.name
-        bpy.ops.bim.load_bcf_topics()
-        bpy.context.scene.BCFProperties.is_loaded = True
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-
-class LoadBcfTopics(bpy.types.Operator):
-    bl_idname = "bim.load_bcf_topics"
-    bl_label = "Load BCF Topics"
-
-    def execute(self, context):
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
-        bcfxml.get_topics()
-        while len(bpy.context.scene.BCFProperties.topics) > 0:
-            bpy.context.scene.BCFProperties.topics.remove(0)
-        for topic in bcfxml.topics.values():
-            new = bpy.context.scene.BCFProperties.topics.add()
-            data_map = {
-                "name": topic.guid,
-                "title": topic.title,
-                "type": topic.topic_type,
-                "status": topic.topic_status,
-                "priority": topic.priority,
-                "stage": topic.stage,
-                "creation_date": topic.creation_date,
-                "creation_author": topic.creation_author,
-                "modified_date": topic.modified_date,
-                "modified_author": topic.modified_author,
-                "assigned_to": topic.assigned_to,
-                "due_date": topic.due_date,
-                "description": topic.description
-            }
-            for key, value in data_map.items():
-                if value is not None:
-                    setattr(new, key, str(value))
-            for reference_link in topic.reference_links:
-                new2 = new.reference_links.add()
-                new2.name = reference_link
-            for label in topic.labels:
-                new2 = new.labels.add()
-                new2.name = label
-            if topic.bim_snippet:
-                data_map = {
-                    "type": topic.bim_snippet.snippet_type,
-                    "is_external": topic.bim_snippet.is_external,
-                    "reference": topic.bim_snippet.reference,
-                    "schema": topic.bim_snippet.reference_schema
-                }
-                for key, value in data_map.items():
-                    if value is not None:
-                        setattr(new.bim_snippet, key, value)
-            for doc in topic.document_references:
-                new2 = new.document_references.add()
-                data_map = {
-                    "reference": doc.referenced_document,
-                    "description": doc.description,
-                    "guid": doc.guid,
-                    "is_external": doc.is_external
-                }
-                for key, value in data_map.items():
-                    if value is not None:
-                        setattr(new2, key, value)
-            for related_topic in topic.related_topics:
-                new2 = new.related_topics.add()
-                new2.name = related_topic.guid
-            bpy.ops.bim.load_bcf_comments(topic_guid = topic.guid)
-        return {"FINISHED"}
-
-
-class LoadBcfComments(bpy.types.Operator):
-    bl_idname = "bim.load_bcf_comments"
-    bl_label = "Load BCF Comments"
-    topic_guid: bpy.props.StringProperty()
-
-    def execute(self, context):
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
-        bcfxml.get_comments(self.topic_guid)
-        blender_topic = bpy.context.scene.BCFProperties.topics.get(self.topic_guid)
-        for comment in bcfxml.topics[self.topic_guid].comments.values():
-            new = blender_topic.comments.add()
-            data_map = {
-                "name": comment.guid,
-                "comment": comment.comment,
-                "viewpoint": comment.viewpoint.guid if comment.viewpoint else None,
-                "date": comment.date,
-                "author": comment.author,
-                "modified_date": comment.modified_date,
-                "modified_author": comment.modified_author,
-            }
-            for key, value in data_map.items():
-                if value is not None:
-                    setattr(new, key, str(value))
-        return {"FINISHED"}
-
-
-class EditBcfProjectName(bpy.types.Operator):
-    bl_idname = "bim.edit_bcf_project_name"
-    bl_label = "Edit BCF Project Name"
-
-    def execute(self, context):
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
-        bcfxml.project.name = bpy.context.scene.BCFProperties.name
-        bcfxml.edit_project()
-        return {"FINISHED"}
-
-
-class EditBcfAuthor(bpy.types.Operator):
-    bl_idname = "bim.edit_bcf_author"
-    bl_label = "Edit BCF Author"
-
-    def execute(self, context):
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
-        bcfxml.author = bpy.context.scene.BCFProperties.author
-        return {"FINISHED"}
-
-
-class EditBcfTopicName(bpy.types.Operator):
-    bl_idname = "bim.edit_bcf_topic_name"
-    bl_label = "Edit BCF Topic Name"
-
-    def execute(self, context):
-        props = bpy.context.scene.BCFProperties
-        blender_topic = props.topics[props.active_topic_index]
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
-        topic = bcfxml.topics[blender_topic.name]
-        topic.title = blender_topic.title
-        bcfxml.edit_topic(topic)
-        return {"FINISHED"}
-
-
-class EditBcfTopic(bpy.types.Operator):
-    bl_idname = "bim.edit_bcf_topic"
-    bl_label = "Edit BCF Topic"
-
-    def execute(self, context):
-        props = bpy.context.scene.BCFProperties
-        blender_topic = props.topics[props.active_topic_index]
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
-
-        topic = bcfxml.topics[blender_topic.name]
-        topic.title = blender_topic.title or None
-        topic.priority = blender_topic.priority or None
-        topic.due_date = blender_topic.due_date or None
-        topic.assigned_to = blender_topic.assigned_to or None
-        topic.stage = blender_topic.stage or None
-        topic.description = blender_topic.description or None
-        topic.topic_status = blender_topic.status or None
-        topic.topic_type = blender_topic.type or None
-
-        bcfxml.edit_topic(topic)
-        return {"FINISHED"}
-
-
-class SaveBcfProject(bpy.types.Operator):
-    bl_idname = "bim.save_bcf_project"
-    bl_label = "Save BCF Project"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
-        bcfxml.save_project(self.filepath)
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-
-class AddBcfTopic(bpy.types.Operator):
-    bl_idname = "bim.add_bcf_topic"
-    bl_label = "Add BCF Topic"
-
-    def execute(self, context):
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
-        bcfxml.add_topic()
-        new = bpy.context.scene.BCFProperties.topics.add()
-        new.name = "New Topic"
-        bpy.ops.bim.load_bcf_topics()
-        return {"FINISHED"}
-
-
-class ViewBcfTopic(bpy.types.Operator):
-    bl_idname = "bim.view_bcf_topic"
-    bl_label = "Get BCF Topic"
-    topic_guid: bpy.props.StringProperty()
-
-    def execute(self, context):
-        for index, topic in enumerate(bpy.context.scene.BCFProperties.topics):
-            if topic.guid.lower() == self.topic_guid.lower():
-                bpy.context.scene.BCFProperties.active_topic_index = index
-        return {"FINISHED"}
-
-
-class ActivateBcfViewpoint(bpy.types.Operator):
-    bl_idname = "bim.activate_bcf_viewpoint"
-    bl_label = "Activate BCF Viewpoint"
-
-    def execute(self, context):
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
-        props = bpy.context.scene.BCFProperties
-        blender_topic = props.topics[props.active_topic_index]
-        topic = bcfxml.topics[blender_topic.guid]
-        if not topic.viewpoints:
-            return {"FINISHED"}
-
-        viewpoint_guid = blender_topic.viewpoints
-        viewpoint = topic.viewpoints[viewpoint_guid]
-        obj = bpy.data.objects.get("Viewpoint")
-        if not obj:
-            obj = bpy.data.objects.new("Viewpoint", bpy.data.cameras.new("Viewpoint"))
-            bpy.context.scene.collection.objects.link(obj)
-            bpy.context.scene.camera = obj
-
-        cam_width = bpy.context.scene.render.resolution_x
-        cam_height = bpy.context.scene.render.resolution_y
-        cam_aspect = cam_width / cam_height
-
-        if viewpoint.snapshot:
-            obj.data.show_background_images = True
-            while len(obj.data.background_images) > 0:
-                obj.data.background_images.remove(obj.data.background_images[0])
-            background = obj.data.background_images.new()
-            background.image = bpy.data.images.load(
-                os.path.join(bcfxml.filepath, topic.guid, viewpoint.snapshot)
-            )
-            src_width = background.image.size[0]
-            src_height = background.image.size[1]
-            src_aspect = src_width / src_height
-
-            if src_aspect > cam_aspect:
-                background.frame_method = "FIT"
-            else:
-                background.frame_method = "CROP"
-            background.display_depth = "FRONT"
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].region_3d.view_perspective = "CAMERA"
-
-        if viewpoint.orthogonal_camera:
-            camera = viewpoint.orthogonal_camera
-            obj.data.type = "ORTHO"
-            obj.data.ortho_scale = viewpoint.orthogonal_camera.view_to_world_scale
-        elif viewpoint.perspective_camera:
-            camera = viewpoint.perspective_camera
-            obj.data.type = "PERSP"
-            if cam_aspect >= 1:
-                obj.data.angle = radians(camera.field_of_view)
-            else:
-                # https://blender.stackexchange.com/questions/23431/how-to-set-camera-horizontal-and-vertical-fov
-                obj.data.angle = 2 * atan((0.5 * cam_height) / (0.5 * cam_width / tan(radians(camera.field_of_view) / 2)))
-
-        self.set_viewpoint_components(viewpoint)
-
-        gp = bpy.data.grease_pencils.get("BCF")
-        if gp:
-            bpy.data.grease_pencils.remove(gp)
-        if viewpoint.lines:
-            self.draw_lines(viewpoint)
-
-        self.delete_clipping_planes()
-        if viewpoint.clipping_planes:
-            self.create_clipping_planes(viewpoint)
-
-        self.delete_bitmaps()
-        if viewpoint.bitmaps:
-            self.create_bitmaps(bcfxml, viewpoint, topic)
-
-        z_axis = Vector((-camera.camera_direction.x, -camera.camera_direction.y, -camera.camera_direction.z)).normalized()
-        y_axis = Vector((camera.camera_up_vector.x, camera.camera_up_vector.y, camera.camera_up_vector.z)).normalized()
-        x_axis = y_axis.cross(z_axis).normalized()
-        rotation = Matrix((x_axis, y_axis, z_axis))
-        rotation.invert()
-        location = Vector((camera.camera_view_point.x, camera.camera_view_point.y, camera.camera_view_point.z))
-        obj.matrix_world = rotation.to_4x4()
-        obj.location = location
-        return {"FINISHED"}
-
-    def set_viewpoint_components(self, viewpoint):
-        selected_global_ids = [s.ifc_guid for s in viewpoint.components.selection]
-        exception_global_ids = [v.ifc_guid for v in viewpoint.components.visibility.exceptions]
-        global_id_colours = {}
-        for coloring in viewpoint.components.coloring:
-            for component in coloring.components:
-                global_id_colours.setdefault(component.ifc_guid, coloring.color)
-
-        for obj in bpy.data.objects:
-            global_id = obj.BIMObjectProperties.attributes.get("GlobalId")
-            if not global_id:
-                continue
-            global_id = global_id.string_value
-            is_visible = viewpoint.components.visibility.default_visibility
-            if global_id in exception_global_ids:
-                is_visible = not is_visible
-            if not is_visible:
-                obj.hide_set(True)
-                continue
-            if "IfcSpace" in obj.name:
-                is_visible = viewpoint.components.viewSetuphints.spacesVisible
-            elif "IfcOpeningElement" in obj.name:
-                is_visible = viewpoint.components.viewSetuphints.openingsVisible
-            obj.hide_set(not is_visible)
-            if not is_visible:
-                continue
-            obj.select_set(global_id in selected_global_ids)
-            if global_id in global_id_colours:
-                obj.color = self.hex_to_rgb(global_id_colours[global_id])
-
-    def draw_lines(self, viewpoint):
-        gp = bpy.data.grease_pencils.new("BCF")
-        scene = bpy.context.scene
-        scene.grease_pencil = gp
-        scene.frame_set(1)
-        layer = gp.layers.new("BCF Annotation", set_active=True)
-        layer.thickness = 3
-        layer.color = (1, 0, 0)
-        frame = layer.frames.new(1)
-        stroke = frame.strokes.new()
-        stroke.display_mode = "3DSPACE"
-        stroke.points.add(len(viewpoint.lines) * 2)
-        coords = []
-        for l in viewpoint.lines:
-            coords.extend([l.start_point.x, l.start_point.y, l.start_point.z, l.end_point.x, l.end_point.y, l.end_point.z])
-        stroke.points.foreach_set("co", coords)
-
-    def create_clipping_planes(self, viewpoint):
-        n = 0
-        for plane in viewpoint.clipping_planes:
-            bpy.ops.bim.add_section_plane()
-            if n == 0:
-                obj = bpy.data.objects["Section"]
-            else:
-                obj = bpy.data.objects["Section.{:03d}".format(n)]
-            obj.location = (plane.location.x, plane.location.y, plane.location.z)
-            obj.rotation_mode = "QUATERNION"
-            obj.rotation_quaternion = Vector((plane.direction.x, plane.direction.y, plane.direction.z)).to_track_quat(
-                "Z", "Y"
-            )
-            n += 1
-
-    def delete_clipping_planes(self):
-        collection = bpy.data.collections.get("Sections")
-        if not collection:
-            return
-        for section in collection.objects:
-            bpy.context.view_layer.objects.active = section
-            bpy.ops.bim.remove_section_plane()
-
-    def delete_bitmaps(self):
-        collection = bpy.data.collections.get("Bitmaps")
-        if not collection:
-            collection = bpy.data.collections.new("Bitmaps")
-            bpy.context.scene.collection.children.link(collection)
-        for bitmap in collection.objects:
-            bpy.data.objects.remove(bitmap)
-
-    def create_bitmaps(self, bcfxml, viewpoint, topic):
-        collection = bpy.data.collections.get("Bitmaps")
-        if not collection:
-            collection = bpy.data.collections.new("Bitmaps")
-        for bitmap in viewpoint.bitmaps:
-            obj = bpy.data.objects.new("Bitmap", None)
-            obj.empty_display_type = "IMAGE"
-            image = bpy.data.images.load(os.path.join(bcfxml.filepath, topic.guid, bitmap.reference))
-            src_width = image.size[0]
-            src_height = image.size[1]
-            if src_height > src_width:
-                obj.empty_display_size = bitmap.height
-            else:
-                obj.empty_display_size = bitmap.height * (src_width / src_height)
-            obj.data = image
-            y = Vector((bitmap.up.x, bitmap.up.y, bitmap.up.z))
-            z = Vector((bitmap.normal.x, bitmap.normal.y, bitmap.normal.z))
-            x = y.cross(z)
-            obj.matrix_world = Matrix(
-                [[x[0], y[0], z[0], 0], [x[1], y[1], z[1], 0], [x[2], y[2], z[2], 0], [0, 0, 0, 1]]
-            )
-            obj.location = (bitmap.location.x, bitmap.location.y, bitmap.location.z)
-            collection.objects.link(obj)
-
-    def hex_to_rgb(self, value):
-        value = value.lstrip("#")
-        lv = len(value)
-        t = tuple(int(value[i : i + lv // 3], 16) for i in range(0, lv, lv // 3))
-        return [t[0] / 255.0, t[1] / 255.0, t[2] / 255.0, 1]
-
-
 class OpenUri(bpy.types.Operator):
     bl_idname = "bim.open_uri"
     bl_label = "Open URI"
@@ -936,16 +527,6 @@ class OpenUri(bpy.types.Operator):
 
     def execute(self, context):
         webbrowser.open(self.uri)
-        return {"FINISHED"}
-
-
-class OpenBcfReferenceLink(bpy.types.Operator):
-    bl_idname = "bim.open_bcf_reference_link"
-    bl_label = "Open BCF Reference Link"
-    index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        webbrowser.open(bpy.context.scene.BCFProperties.topic_links[self.index].name)
         return {"FINISHED"}
 
 
@@ -1987,11 +1568,12 @@ class SelectSmartGroupedClashesPath(bpy.types.Operator):
 class ExecuteIfcClash(bpy.types.Operator):
     bl_idname = "bim.execute_ifc_clash"
     bl_label = "Execute IFC Clash"
-    filename_ext = ".json"
+    filename_ext = ".bcf"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def invoke(self, context, event):
-        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
+        if ".json" not in bpy.data.filepath:
+            self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".bcf")
         WindowManager = context.window_manager
         WindowManager.fileselect_add(self)
         return {"RUNNING_MODAL"}
@@ -2000,11 +1582,34 @@ class ExecuteIfcClash(bpy.types.Operator):
         import ifcclash
 
         settings = ifcclash.IfcClashSettings()
-        self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
+        if ".json" not in self.filepath:
+            self.filepath = bpy.path.ensure_ext(self.filepath, ".bcf")
         settings.output = self.filepath
         settings.logger = logging.getLogger("Clash")
         settings.logger.setLevel(logging.DEBUG)
         ifc_clasher = ifcclash.IfcClasher(settings)
+
+        if bpy.context.scene.BIMProperties.should_create_clash_snapshots:
+            def get_viewpoint_snapshot(self, viewpoint, mat):
+                camera = bpy.data.objects.get('IFC Clash Camera')
+                if not camera:
+                    camera = bpy.data.objects.new("IFC Clash Camera", bpy.data.cameras.new("IFC Clash Camera"))
+                    bpy.context.scene.collection.objects.link(camera)
+                camera.matrix_world = Matrix(mat)
+                bpy.context.scene.camera = camera
+                camera.data.angle = radians(60)
+                area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+                area.spaces[0].region_3d.view_perspective = "CAMERA"
+                area.spaces[0].shading.show_xray = True
+                bpy.context.scene.render.resolution_x = 480
+                bpy.context.scene.render.resolution_y = 270
+                bpy.context.scene.render.image_settings.file_format = "PNG"
+                bpy.context.scene.render.filepath = os.path.join(bpy.context.scene.BIMProperties.data_dir, "snapshot.png")
+                bpy.ops.render.opengl(write_still=True)
+                return bpy.context.scene.render.filepath
+
+            ifcclash.IfcClasher.get_viewpoint_snapshot = get_viewpoint_snapshot
+
         ifc_clasher.clash_sets = []
         for clash_set in bpy.context.scene.BIMProperties.clash_sets:
             self.a = []
@@ -2529,6 +2134,25 @@ class OpenView(bpy.types.Operator):
             bpy.context.preferences.addons["blenderbim"].preferences.svg_command,
             os.path.join(bpy.context.scene.BIMProperties.data_dir, "diagrams", self.view + ".svg"),
         )
+        return {"FINISHED"}
+
+
+class OpenViewCamera(bpy.types.Operator):
+    bl_idname = "bim.open_view_camera"
+    bl_label = "Open View Camera"
+    view_name: bpy.props.StringProperty()
+
+    def execute(self, context):
+        new_drawing_index = bpy.context.scene.DocProperties.drawings.find(self.view_name)
+        bpy.context.scene.DocProperties.active_drawing_index = new_drawing_index
+        drawing = bpy.context.scene.DocProperties.drawings[new_drawing_index]
+        bpy.context.view_layer.objects.active = drawing.camera
+        bpy.ops.object.select_all(action="DESELECT")
+        drawing.camera.select_set(True)
+        for area in bpy.context.screen.areas:
+            if area.ui_type == "PROPERTIES":
+                for space in area.spaces:
+                    space.context = "DATA"
         return {"FINISHED"}
 
 
@@ -3478,6 +3102,10 @@ class ExportIfcCsv(bpy.types.Operator):
         ifc_csv.output = self.filepath
         ifc_csv.attributes = [a.name for a in bpy.context.scene.BIMProperties.csv_attributes]
         ifc_csv.selector = selector
+        if bpy.context.scene.BIMProperties.csv_delimiter == "CUSTOM":
+            ifc_csv.delimiter = bpy.context.scene.BIMProperties.csv_custom_delimiter
+        else:
+            ifc_csv.delimiter = bpy.context.scene.BIMProperties.csv_delimiter
         ifc_csv.export(ifc_file, results)
         return {"FINISHED"}
 
@@ -3617,7 +3245,10 @@ class AddAnnotation(bpy.types.Operator):
                 obj = annotation.Annotator.add_text()
         else:
             obj = annotation.Annotator.get_annotation_obj(self.obj_name, self.data_type)
-            obj = annotation.Annotator.add_line_to_annotation(obj)
+            if self.obj_name == 'Break':
+                obj = annotation.Annotator.add_plane_to_annotation(obj)
+            else:
+                obj = annotation.Annotator.add_line_to_annotation(obj)
         bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = obj
         bpy.ops.object.mode_set(mode="EDIT")
@@ -5010,3 +4641,77 @@ class LinkIfc(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
+
+
+class SnapSpacesTogether(bpy.types.Operator):
+    bl_idname = "bim.snap_spaces_together"
+    bl_label = "Snap Spaces Together"
+
+    def execute(self, context):
+        threshold = 0.5
+        processed_polygons = set()
+        for obj in bpy.context.selected_objects:
+            if obj.type != "MESH":
+                continue
+            for polygon in obj.data.polygons:
+                center = obj.matrix_world @ polygon.center
+                distance = None
+                for obj2 in bpy.context.selected_objects:
+                    if obj2 == obj or obj.type != "MESH":
+                        continue
+                    result = obj2.ray_cast(
+                        obj2.matrix_world.inverted() @ center,
+                        polygon.normal,
+                        distance=threshold
+                    )
+                    if not result[0]:
+                        continue
+                    hit = obj2.matrix_world @ result[1]
+                    distance = (hit - center).length / 2
+                    if distance < 0.01:
+                        distance = None
+                        break
+
+                    if (obj2.name, result[3]) in processed_polygons:
+                        distance *= 2
+                        continue
+
+                    offset = polygon.normal * distance * -1
+                    processed_polygons.add((obj2.name, result[3]))
+                    for v in obj2.data.polygons[result[3]].vertices:
+                        obj2.data.vertices[v].co += offset
+                    break
+                if distance:
+                    offset = polygon.normal * distance
+                    processed_polygons.add((obj.name, polygon.index))
+                    for v in polygon.vertices:
+                        obj.data.vertices[v].co += offset
+        return {"FINISHED"}
+
+
+class CopyGrid(bpy.types.Operator):
+    bl_idname = "bim.add_grid"
+    bl_label = "Add Grid"
+
+    def execute(self, context):
+        props = context.scene.DocProperties
+        if props.active_drawing_index is None or len(props.drawings) == 0:
+            return {"CANCELLED"}
+        drawing = props.drawings[props.active_drawing_index]
+        collection = bpy.data.collections.get("IfcGroup/" + drawing.name)
+
+        existing = [obj for obj in collection.objects if obj.name.startswith('IfcGridAxis')]
+        for obj in existing:
+            collection.objects.unlink(obj)
+
+        source = [obj
+                    for coll in bpy.data.collections
+                    if coll.name.startswith('IfcGrid')
+                    for obj in coll.all_objects
+                    if obj.type == 'MESH']
+        for obj in source:
+            dstobj = obj.copy()
+            dstobj.data = dstobj.data.copy()
+            collection.objects.link(dstobj)
+
+        return {"FINISHED"}

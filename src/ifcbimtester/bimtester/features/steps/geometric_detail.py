@@ -1,6 +1,9 @@
 from behave import step
 
+from geometric_detail_methods import class_geometric_representation
+from utils import assert_elements
 from utils import IfcFile
+from utils import switch_locale
 
 
 @step("All elements must be under {number} polygons")
@@ -29,3 +32,9 @@ def step_impl(context, number):
         for error in errors:
             message += "Polygons: {} - {}\n".format(error[0], error[1])
         assert False, message
+
+
+@step("all {ifc_class} elements have an {representation_class} representation")
+def step_impl(context, ifc_class, representation_class):
+    switch_locale(context.localedir, "en")
+    class_geometric_representation(context, ifc_class, representation_class)
