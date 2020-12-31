@@ -8,7 +8,6 @@ import os
 import zipfile
 import tempfile
 import ifcopenshell
-import ifcopenshell.util.pset
 import ifcopenshell.util.schema
 from pathlib import Path
 from mathutils import Vector, Matrix
@@ -477,10 +476,10 @@ class IfcParser:
             return
         qto_names = self.get_applicable_qtos(ifc_class)
         for name in qto_names:
-            if name not in ifcopenshell.util.pset.qtos:
+            if name not in schema.ifc.psetqto.qtos:
                 continue
             has_automatic_value = False
-            props = ifcopenshell.util.pset.qtos[name]["HasPropertyTemplates"].keys()
+            props = schema.ifc.psetqto.qtos[name]["HasPropertyTemplates"].keys()
             guessed_values = {}
             for prop_name in props:
                 value = self.qto_calculator.guess_quantity(prop_name, props, obj)
@@ -1699,12 +1698,12 @@ class IfcExporter:
             pset["ifc"] = self.file.create_entity("IfcMaterialProperties", **pset["attributes"])
 
     def create_qto_properties(self, qto):
-        if qto["attributes"]["Name"] in ifcopenshell.util.pset.qtos:
+        if qto["attributes"]["Name"] in schema.ifc.psetqto.qtos:
             return self.create_templated_qto_properties(qto)
         return self.create_custom_qto_properties(qto)
 
     def create_pset_properties(self, pset):
-        if pset["attributes"]["Name"] in ifcopenshell.util.pset.psets:
+        if pset["attributes"]["Name"] in schema.ifc.psetqto.psets:
             return self.create_templated_pset_properties(pset)
         return self.create_custom_pset_properties(pset)
 
@@ -1737,7 +1736,7 @@ class IfcExporter:
 
     def create_templated_pset_properties(self, pset):
         properties = []
-        templates = ifcopenshell.util.pset.psets[pset["attributes"]["Name"]]["HasPropertyTemplates"]
+        templates = schema.ifc.psetqto.psets[pset["attributes"]["Name"]]["HasPropertyTemplates"]
         for name, data in templates.items():
             if name not in pset["raw"]:
                 continue
@@ -1764,7 +1763,7 @@ class IfcExporter:
 
     def create_templated_qto_properties(self, qto):
         properties = []
-        templates = ifcopenshell.util.pset.qtos[qto["attributes"]["Name"]]["HasPropertyTemplates"]
+        templates = schema.ifc.psetqto.qtos[qto["attributes"]["Name"]]["HasPropertyTemplates"]
         for name, data in templates.items():
             if name not in qto["raw"]:
                 continue
