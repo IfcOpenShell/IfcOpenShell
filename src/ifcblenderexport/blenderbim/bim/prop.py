@@ -1480,6 +1480,7 @@ class BoundaryCondition(PropertyGroup):
 
 
 class BIMObjectProperties(PropertyGroup):
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_reassigning_class: BoolProperty(name="Is Reassigning Class")
     global_ids: CollectionProperty(name="GlobalIds", type=GlobalId)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
@@ -1544,6 +1545,7 @@ class ItemSlotMap(PropertyGroup):
 
 
 class BIMMeshProperties(PropertyGroup):
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_native: BoolProperty(name="Is Native", default=False)
     is_swept_solid: BoolProperty(name="Is Swept Solid")
     swept_solids: CollectionProperty(name="Swept Solids", type=SweptSolid)
@@ -1553,4 +1555,4 @@ class BIMMeshProperties(PropertyGroup):
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     active_representation_item_index: IntProperty(name="Active Representation Item Index")
     presentation_layer_index: IntProperty(name="Presentation Layer Index", default=-1)
-    ifc_item_ids: CollectionProperty(name="IFC Definition ID", type=ItemSlotMap)
+    ifc_item_ids: CollectionProperty(name="IFC Item IDs", type=ItemSlotMap)

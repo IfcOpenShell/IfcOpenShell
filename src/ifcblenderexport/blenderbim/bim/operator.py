@@ -10,6 +10,7 @@ import subprocess
 import ifcopenshell
 import ifcopenshell.util.selector
 import ifcopenshell.util.geolocation
+import ifcopenshell.util.element
 import ifcopenshell.util.schema
 import tempfile
 from . import export_ifc
@@ -2156,6 +2157,7 @@ class CutSection(bpy.types.Operator):
     bl_label = "Cut Section"
 
     def execute(self, context):
+        self.file = ifc.IfcStore.get_file()
         camera = bpy.context.scene.camera
         if not (camera.type == "CAMERA" and camera.data.type == "ORTHO"):
             return {"FINISHED"}
@@ -2322,11 +2324,10 @@ class CutSection(bpy.types.Operator):
             bpy.data.objects[name].hide_set(value)
 
     def does_obj_have_target_view_representation(self, obj, camera):
-        return camera.data.BIMCameraProperties.target_view in [
-            c.target_view
-            for c in obj.BIMObjectProperties.representation_contexts
-            if c.context == "Plan" and c.name == "Annotation"
-        ]
+        for representation in obj.BIMObjectProperties.representations:
+            element = self.file.by_id(representation.ifc_definition_id)
+            if ifcopenshell.util.element.is_representation_of_context(element, "Plan", "Annotation", camera.data.BIMCameraProperties.target_view):
+                return True
 
     def is_landscape(self):
         return bpy.context.scene.render.resolution_x > bpy.context.scene.render.resolution_y
@@ -2464,109 +2465,45 @@ class ActivateView(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SwitchContext(bpy.types.Operator):
-    bl_idname = "bim.switch_context"
-    bl_label = "Switch Context"
-    has_target_context: bpy.props.BoolProperty()
-    context_name: bpy.props.StringProperty()
-    subcontext_name: bpy.props.StringProperty()
-    target_view_name: bpy.props.StringProperty()
+class AddRepresentation(bpy.types.Operator):
+    bl_idname = "bim.add_representation"
+    bl_label = "Add Representation"
 
-    # Warning: This is an incredibly experimental operator. It effectively does
-    # a mini-import. A better approach will make this obsolete in the future.
     def execute(self, context):
         self.obj = bpy.context.active_object
 
+        self.file = ifc.IfcStore.get_file()
         if "/" not in self.obj.data.name:
             self.obj.data.name = ifcopenshell.guid.compress(str(uuid.uuid4()).replace("-", ""))
             self.obj.data.name = "Model/Body/MODEL_VIEW/" + self.obj.data.name
-            has_default_context = False
-            for subcontext in self.obj.BIMObjectProperties.representation_contexts:
-                if (
-                    subcontext.context == "Model"
-                    and subcontext.name == "Body"
-                    and subcontext.target_view == "MODEL_VIEW"
-                ):
-                    has_default_context = True
-                    break
-            if not has_default_context:
-                representation_context = self.obj.BIMObjectProperties.representation_contexts.add()
-                representation_context.context = "Model"
-                representation_context.name = "Body"
-                representation_context.target_view = "MODEL_VIEW"
 
         self.context = bpy.context.scene.BIMProperties.available_contexts
         self.subcontext = bpy.context.scene.BIMProperties.available_subcontexts
         self.target_view = bpy.context.scene.BIMProperties.available_target_views
 
-        if self.has_target_context:
-            self.context = self.context_name
-            self.subcontext = self.subcontext_name
-            self.target_view = self.target_view_name
-
         existing_mesh = self.obj.data
         existing_mesh.use_fake_user = True
-        mesh = bpy.data.meshes.get(
-            "{}/{}/{}/{}".format(self.context, self.subcontext, self.target_view, self.obj.data.name.split("/")[3])
+        mesh = self.obj.data.copy()
+        mesh.name = "{}/{}/{}/{}".format(
+            self.context, self.subcontext, self.target_view, self.obj.data.name.split("/")[3]
         )
-        if not mesh:
-            try:
-                global_id = self.obj.BIMObjectProperties.attributes.get("GlobalId").string_value
-                mesh = self.pull_mesh_from_ifc(global_id)
-            except:
-                mesh = self.obj.data.copy()
-                mesh.name = "{}/{}/{}/{}".format(
-                    self.context, self.subcontext, self.target_view, self.obj.data.name.split("/")[3]
-                )
-                has_context = False
-                for context in self.obj.BIMObjectProperties.representation_contexts:
-                    if (
-                        context.context == self.context
-                        and context.name == self.subcontext
-                        and context.target_view == self.target_view
-                    ):
-                        has_context = True
-                        break
-                if not has_context:
-                    representation_context = self.obj.BIMObjectProperties.representation_contexts.add()
-                    representation_context.context = self.context
-                    representation_context.name = self.subcontext
-                    representation_context.target_view = self.target_view
-            mesh.use_fake_user = True
+        representation = self.obj.BIMObjectProperties.representations.add()
+        representation.name = self.subcontext
+        representation.type = "Brep" if self.file.schema == "IFC2X3" else "Tessellation"
+        mesh.use_fake_user = True
         self.obj.data = mesh
+
+        # TODO: push representation
         return {"FINISHED"}
 
-    def pull_mesh_from_ifc(self, global_id):
+    def push_mesh_to_ifc(self):
         self.file = ifc.IfcStore.get_file()
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = import_ifc.IfcImportSettings.factory(bpy.context, ifc.IfcStore.path, logger)
-        element = self.file.by_id(global_id)
+        element = self.file.by_id(self.obj.BIMObjectProperties.ifc_definition_id)
         settings = ifcopenshell.geom.settings()
         settings.set(settings.INCLUDE_CURVES, True)
-        if element.is_a("IfcProduct"):
-            representations = element.Representation.Representations
-        else:
-            representations = element.RepresentationMaps
-
-        for rep in element.Representation.Representations:
-            if (
-                rep.ContextOfItems.is_a("IfcGeometricRepresentationSubContext")
-                and rep.ContextOfItems.ContextType == self.context
-                and rep.ContextOfItems.ContextIdentifier == self.subcontext
-                and rep.ContextOfItems.TargetView == self.target_view
-            ):
-                break
-            elif (
-                rep.ContextOfItems.is_a("IfcGeometricRepresentationContext")
-                and rep.ContextOfItems.ContextType == self.context
-                and rep.ContextOfItems.ContextIdentifier == self.subcontext
-            ):
-                break
-
-        if not element.is_a("IfcProduct"):
-            rep = rep.MappedRepresentation
-
-        shape = ifcopenshell.geom.create_shape(settings, rep)
+        shape = ifcopenshell.geom.create_shape(settings, self.file.by_id(self.ifc_definition_id))
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = self.file
         mesh = ifc_importer.create_mesh(element, shape)
@@ -2574,37 +2511,94 @@ class SwitchContext(bpy.types.Operator):
             self.context, self.subcontext, self.target_view, self.obj.data.name.split("/")[3]
         )
         self.obj.data = mesh
-        material_creator = import_ifc.MaterialCreator(ifc_import_settings)
+        material_creator = import_ifc.MaterialCreator(ifc_import_settings, ifc_importer)
         material_creator.create(element, self.obj, mesh)
         return mesh
 
 
-class RemoveContext(bpy.types.Operator):
-    bl_idname = "bim.remove_context"
-    bl_label = "Remove Context"
+class SwitchRepresentation(bpy.types.Operator):
+    bl_idname = "bim.switch_representation"
+    bl_label = "Switch Representation"
+    ifc_definition_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.obj = bpy.context.active_object
+
+        self.file = ifc.IfcStore.get_file()
+        if "/" not in self.obj.data.name:
+            self.obj.data.name = ifcopenshell.guid.compress(str(uuid.uuid4()).replace("-", ""))
+            self.obj.data.name = "Model/Body/MODEL_VIEW/" + self.obj.data.name
+
+        context_of_items = self.file.by_id(self.ifc_definition_id).ContextOfItems
+        self.context = context_of_items.ContextType
+        self.subcontext = context_of_items.ContextIdentifier
+        self.target_view = context_of_items.TargetView
+
+        existing_mesh = self.obj.data
+        existing_mesh.use_fake_user = True
+        mesh = bpy.data.meshes.get(
+            "{}/{}/{}/{}".format(self.context, self.subcontext, self.target_view, self.obj.data.name.split("/")[3])
+        )
+        if not mesh:
+            mesh = self.pull_mesh_from_ifc()
+            mesh.use_fake_user = True
+        self.obj.data = mesh
+        return {"FINISHED"}
+
+    def pull_mesh_from_ifc(self):
+        self.file = ifc.IfcStore.get_file()
+        logger = logging.getLogger("ImportIFC")
+        ifc_import_settings = import_ifc.IfcImportSettings.factory(bpy.context, ifc.IfcStore.path, logger)
+        element = self.file.by_id(self.obj.BIMObjectProperties.ifc_definition_id)
+        settings = ifcopenshell.geom.settings()
+        settings.set(settings.INCLUDE_CURVES, True)
+        shape = ifcopenshell.geom.create_shape(settings, self.file.by_id(self.ifc_definition_id))
+        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = self.file
+        mesh = ifc_importer.create_mesh(element, shape)
+        mesh.name = "{}/{}/{}/{}".format(
+            self.context, self.subcontext, self.target_view, self.obj.data.name.split("/")[3]
+        )
+        self.obj.data = mesh
+        material_creator = import_ifc.MaterialCreator(ifc_import_settings, ifc_importer)
+        material_creator.create(element, self.obj, mesh)
+        return mesh
+
+
+class RemoveRepresentation(bpy.types.Operator):
+    bl_idname = "bim.remove_representation"
+    bl_label = "Remove Representation"
     index: bpy.props.IntProperty()
 
     def execute(self, context):
+        # TODO This should be refactored into a testable agnostic module. See #1222.
+        # Prep work
+        self.file = ifc.IfcStore.get_file()
         obj = bpy.context.active_object
-        data = obj.BIMObjectProperties.representation_contexts[self.index]
+        representation = obj.BIMObjectProperties.representations[self.index]
+        element = self.file.by_id(representation.ifc_definition_id)
+        c = element.ContextOfItems
 
+        # Blender work
         if "/" not in obj.data.name:
             obj.data.name = "Model/Body/MODEL_VIEW/" + obj.data.name
-
         mesh = bpy.data.meshes.get(
-            "{}/{}/{}/{}".format(data.context, data.name, data.target_view, obj.data.name.split("/")[3])
+            "{}/{}/{}/{}".format(c.ContextType, c.ContextIdentifier, c.TargetView, obj.data.name.split("/")[3])
         )
-
         if mesh:
             if obj.data == mesh:
+                # TODO we can do better than this
                 void_name = "Void/Void/Void/" + obj.data.name.split("/")[3]
                 void_mesh = bpy.data.meshes.get(void_name)
                 if not void_mesh:
                     void_mesh = bpy.data.meshes.new(void_name)
                 obj.data = void_mesh
             bpy.data.meshes.remove(mesh)
+        obj.BIMObjectProperties.representations.remove(self.index)
 
-        obj.BIMObjectProperties.representation_contexts.remove(self.index)
+        # IFC work
+        # TODO: this works as a MVP but leaves a bunch of junk in the file. See #1222.
+        self.file.remove(element)
         return {"FINISHED"}
 
 
@@ -4427,6 +4421,7 @@ class GetRepresentationIfcParameters(bpy.types.Operator):
     bl_label = "Get Representation IFC Parameters"
 
     def execute(self, context):
+        self.file = ifc.IfcStore.get_file()
         obj = bpy.context.active_object
         props = obj.data.BIMMeshProperties
         element_id = self.get_ifc_definition_id(obj)
@@ -4452,9 +4447,10 @@ class GetRepresentationIfcParameters(bpy.types.Operator):
             context, subcontext, target_view = ("Model", "Body", "MODEL_VIEW")
         else:
             context, subcontext, target_view = obj.data.name.split("/")[0:3]
-        for c in obj.BIMObjectProperties.representation_contexts:
-            if c.context == context and c.name == subcontext and c.target_view == target_view:
-                return c.ifc_definition_id or None
+        for representation in obj.BIMObjectProperties.representations:
+            element = self.file.by_id(representation.ifc_definition_id)
+            if ifcopenshell.util.element.is_representation_of_context(element, context, subcontext, target_view):
+                return representation.ifc_definition_id or None
 
 
 class BakeParametricGeometry(bpy.types.Operator):
@@ -4462,14 +4458,16 @@ class BakeParametricGeometry(bpy.types.Operator):
     bl_label = "Bake Parametric Geometry"
 
     def execute(self, context):
-        obj = bpy.context.active_object
-        if "/" not in obj.data.name:
-            context, subcontext, target_view = ("Model", "Body", "MODEL_VIEW")
-        else:
-            context, subcontext, target_view = obj.data.name.split("/")[0:3]
-        for c in obj.BIMObjectProperties.representation_contexts:
-            if c.context == context and c.name == subcontext and c.target_view == target_view:
-                c.ifc_definition_id = 0
+        # TODO rewrite, see #1222
+        # obj = bpy.context.active_object
+        # if "/" not in obj.data.name:
+        #     context, subcontext, target_view = ("Model", "Body", "MODEL_VIEW")
+        # else:
+        #     context, subcontext, target_view = obj.data.name.split("/")[0:3]
+        # for representation in obj.BIMObjectProperties.representations:
+        #     element = self.file.by_id(representation.ifc_definition_id)
+        #     if ifcopenshell.util.element.is_representation_of_context(element, context, subcontext, target_view):
+        #         representation.ifc_definition_id = 0
         return {"FINISHED"}
 
 
@@ -4479,6 +4477,7 @@ class UpdateIfcRepresentation(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
+        self.file = ifc.IfcStore.get_file()
         props = bpy.context.active_object.data.BIMMeshProperties
         parameter = props.ifc_parameters[self.index]
         element = ifc.IfcStore.get_file().by_id(parameter.step_id)[parameter.index] = parameter.value
@@ -4505,9 +4504,10 @@ class UpdateIfcRepresentation(bpy.types.Operator):
             context, subcontext, target_view = ("Model", "Body", "MODEL_VIEW")
         else:
             context, subcontext, target_view = obj.data.name.split("/")[0:3]
-        for c in obj.BIMObjectProperties.representation_contexts:
-            if c.context == context and c.name == subcontext and c.target_view == target_view:
-                return c.ifc_definition_id or None
+        for representation in obj.BIMObjectProperties.representations:
+            c = self.file.by_id(self.ifc_definition_id).ContextOfItems
+            if c.ContextType == context and c.ContextIdentifier == subcontext and c.TargetView == target_view:
+                return representation.ifc_definition_id or None
 
 
 class BlenderClasher:
