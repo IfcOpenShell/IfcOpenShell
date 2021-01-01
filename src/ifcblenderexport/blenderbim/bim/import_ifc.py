@@ -773,6 +773,7 @@ class IfcImporter:
             obj = self.existing_elements[element.GlobalId]
         else:
             obj = bpy.data.objects.new(f"{element.is_a()}/{element.Name}", None)
+            obj.BIMObjectProperties.ifc_definition_id = element.id()
             self.add_element_attributes(element, obj.BIMObjectProperties)
             group_collection.objects.link(obj)
         self.groups[element.GlobalId] = {"ifc": element, "blender": obj}
@@ -809,6 +810,7 @@ class IfcImporter:
             shape = ifcopenshell.geom.create_shape(self.settings_2d, axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(f"IfcGridAxis/{axis.AxisTag}", mesh)
+            obj.BIMObjectProperties.ifc_definition_id = element.id()
             obj.matrix_world = matrix_world
             self.add_element_attributes(axis, obj.BIMObjectProperties)
             grid.objects.link(obj)
@@ -843,6 +845,7 @@ class IfcImporter:
             except:
                 self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
         obj = bpy.data.objects.new(self.get_name(element), mesh)
+        obj.BIMObjectProperties.ifc_definition_id = element.id()
         self.material_creator.create(element, obj, mesh)
         self.add_element_attributes(element, obj.BIMObjectProperties)
         self.add_element_classifications(element, obj)
@@ -955,6 +958,7 @@ class IfcImporter:
             mesh = None
 
         obj = bpy.data.objects.new(self.get_name(element), mesh)
+        obj.BIMObjectProperties.ifc_definition_id = element.id()
 
         if shape:
             m = shape.transformation.matrix.data
@@ -1760,6 +1764,7 @@ class IfcImporter:
         element = rel_aggregate.RelatingObject
 
         obj = bpy.data.objects.new("{}/{}".format(element.is_a(), element.Name), None)
+        obj.BIMObjectProperties.ifc_definition_id = element.id()
         obj.instance_type = "COLLECTION"
         obj.instance_collection = collection
         self.place_object_in_spatial_tree(element, obj)
@@ -1823,6 +1828,7 @@ class IfcImporter:
             return
 
         obj = bpy.data.objects.new(self.get_name(element), mesh)
+        obj.BIMObjectProperties.ifc_definition_id = element.id()
         self.material_creator.create(element, obj, mesh)
         obj.matrix_world = self.get_element_matrix(element, mesh_name)
         self.add_element_attributes(element, obj.BIMObjectProperties)

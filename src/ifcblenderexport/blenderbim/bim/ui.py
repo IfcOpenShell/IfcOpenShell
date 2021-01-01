@@ -645,9 +645,7 @@ class BIM_PT_representations(Panel):
         row.prop(bpy.context.scene.BIMProperties, "available_contexts", text="")
         row.prop(bpy.context.scene.BIMProperties, "available_subcontexts", text="")
         row.prop(bpy.context.scene.BIMProperties, "available_target_views", text="")
-        # TODO: reimplement with incremental editing
-        # op = row.operator("bim.switch_context", icon="ADD", text="")
-        # op.has_target_context = False
+        row.operator("bim.add_representation", icon="ADD", text="")
 
         self.file = ifc.IfcStore.get_file()
         for index, representation in enumerate(props.representations):
@@ -656,16 +654,12 @@ class BIM_PT_representations(Panel):
             row.prop(representation, "type", text="")
             if not representation.ifc_definition_id:
                 continue
-            subcontext = self.file.by_id(representation.ifc_definition_id).ContextOfItems
-            if subcontext.is_a() == "IfcGeometricRepresentationContext":
+            context_of_items = self.file.by_id(representation.ifc_definition_id).ContextOfItems
+            if context_of_items.is_a() == "IfcGeometricRepresentationContext":
                 continue
-            # TODO: reimplement with incremental editing
-            # op = row.operator("bim.switch_context", icon="OUTLINER_DATA_MESH", text="")
-            # op.has_target_context = True
-            # op.context_name = subcontext.ContextType
-            # op.subcontext_name = subcontext.ContextIdentifier
-            # op.target_view_name = subcontext.TargetView
-            # row.operator("bim.remove_context", icon="X", text="").index = index
+            op = row.operator("bim.switch_representation", icon="OUTLINER_DATA_MESH", text="")
+            op.ifc_definition_id = representation.ifc_definition_id
+            row.operator("bim.remove_representation", icon="X", text="").index = index
 
 
 class BIM_PT_classification_references(Panel):
