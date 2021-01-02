@@ -2102,10 +2102,20 @@ class AddSubcontext(bpy.types.Operator):
     context: bpy.props.StringProperty()
 
     def execute(self, context):
+        self.file = ifc.IfcStore.get_file()
+        import blenderbim.bim.module.context.add_context as add_context
+        usecase = add_context.Usecase(self.file, {
+            "context": self.context.capitalize(),
+            "subcontext": bpy.context.scene.BIMProperties.available_subcontexts,
+            "target_view": bpy.context.scene.BIMProperties.available_target_views,
+        })
+        result = usecase.execute()
+
         props = bpy.context.scene.BIMProperties
         subcontext = getattr(bpy.context.scene.BIMProperties, "{}_subcontexts".format(self.context)).add()
         subcontext.name = bpy.context.scene.BIMProperties.available_subcontexts
         subcontext.target_view = bpy.context.scene.BIMProperties.available_target_views
+        subcontext.ifc_definition_id = int(result)
         return {"FINISHED"}
 
 
@@ -2117,7 +2127,16 @@ class RemoveSubcontext(bpy.types.Operator):
     def execute(self, context):
         context, subcontext_index = self.indexes.split("-")
         subcontext_index = int(subcontext_index)
-        getattr(bpy.context.scene.BIMProperties, "{}_subcontexts".format(context)).remove(subcontext_index)
+        subcontexts = getattr(bpy.context.scene.BIMProperties, "{}_subcontexts".format(context))
+
+        self.file = ifc.IfcStore.get_file()
+        import blenderbim.bim.module.context.remove_context as remove_context
+        usecase = remove_context.Usecase(self.file, {
+            "context": self.file.by_id(subcontexts[subcontext_index].ifc_definition_id)
+        })
+        usecase.execute()
+
+        subcontexts.remove(subcontext_index)
         return {"FINISHED"}
 
 

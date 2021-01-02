@@ -5,10 +5,7 @@ import ifcopenshell.util.placement
 class Usecase:
     def __init__(self, file, settings=None):
         self.file = file
-        self.settings = {
-            "product": None,
-            "matrix": np.eye(4)
-        }
+        self.settings = {"product": None, "matrix": np.eye(4)}
         for key, value in settings.items():
             self.settings[key] = value
 
@@ -18,9 +15,7 @@ class Usecase:
             placement_rel_to = None
         else:
             placement_rel_to = self.settings["product"].ObjectPlacement.PlacementRelTo
-        placement = self.file.createIfcLocalPlacement(
-            placement_rel_to, self.get_relative_placement(placement_rel_to)
-        )
+        placement = self.file.createIfcLocalPlacement(placement_rel_to, self.get_relative_placement(placement_rel_to))
         self.settings["product"].ObjectPlacement = placement
         return placement
 
@@ -37,12 +32,11 @@ class Usecase:
         z = np.array((m[0][2], m[1][2], m[2][2]))
         o = np.array((m[0][3], m[1][3], m[2][3]))
         object_matrix = ifcopenshell.util.placement.a2p(o, z, x)
-        #relative_placement_matrix = relating_object_matrix.inverted() @ object_matrix
         relative_placement_matrix = relating_object_matrix @ object_matrix
         return self.create_ifc_axis_2_placement_3d(
-            relative_placement_matrix[:,3][0:3],
-            relative_placement_matrix[:,2][0:3],
-            relative_placement_matrix[:,0][0:3],
+            relative_placement_matrix[:, 3][0:3],
+            relative_placement_matrix[:, 2][0:3],
+            relative_placement_matrix[:, 0][0:3],
         )
 
     def create_ifc_axis_2_placement_3d(self, point, up, forward):
