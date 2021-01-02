@@ -68,6 +68,8 @@
 
 #include <ShapeFix_Edge.hxx>
 
+#include <HLRBRep_PolyHLRToShape.hxx>
+
 #include "../ifcparse/IfcGlobalId.h"
 
 #include "SvgSerializer.h"
@@ -566,7 +568,7 @@ void SvgSerializer::write(const geometry_data& data) {
 
 		auto& compound_to_use = is_floor_plan_ ? compound : compound_unmirrored;
 
-		if (use_hlr && hlr) {
+		if (use_hlr && (hlr_poly || hlr_brep)) {
 
 			// Check if any of the bounding box points is on the correct side of the plane
 			Bnd_Box bb;
@@ -593,13 +595,19 @@ void SvgSerializer::write(const geometry_data& data) {
 				} else {
 					state = d < 0. ? -1 : 1;
 				}
-				if (state == 1) {
+				if (state == -1) {
 					any = true;
 				}
 			}
 
 			if (any) {
-				hlr->Add(compound_to_use);
+				if (hlr_brep) {
+					hlr_brep->Add(compound_to_use);
+				}
+				if (hlr_poly) {
+					BRepMesh_IncrementalMesh(compound_to_use, 0.10);
+					hlr_poly->Load(compound_to_use);
+				}
 			}
 		}
 
@@ -988,30 +996,30 @@ void SvgSerializer::finalize() {
 	if (auto_elevation_) {
 		{
 			gp_Pln pln(gp_Ax3(
-				gp_Pnt((xmin + xmax) / 2., -(ymin - 1.e-1), 0.),
-				gp_Dir(0, -1, 0),
-				gp_Dir(-1, 0, 0)));
+				gp_Pnt(0., -(ymin - 10.), 0.),
+				gp_Dir(0, 1, 0),
+				gp_Dir(1, 0, 0)));
 			deferred_section_data_->push_back(vertical_section{ pln , "Elevation South", true });
 		}
 		{
 			gp_Pln pln(gp_Ax3(
-				gp_Pnt(xmax + 1.e-1, (ymin + ymax) / -2., 0.),
-				gp_Dir(-1, 0, 0),
-				gp_Dir(0, -1, 0)));
+				gp_Pnt(xmax + 10., 0., 0.),
+				gp_Dir(1, 0, 0),
+				gp_Dir(0, 1, 0)));
 			deferred_section_data_->push_back(vertical_section{ pln , "Elevation East", true });
 		}
 		{
 			gp_Pln pln(gp_Ax3(
-				gp_Pnt((xmin + xmax) / 2., -(ymax + 1.e-1), 0.),
-				gp_Dir(0, 1, 0),
-				gp_Dir(1, 0, 0)));
+				gp_Pnt(0., -(ymax + 10.), 0.),
+				gp_Dir(0, -1, 0),
+				gp_Dir(-1, 0, 0)));
 			deferred_section_data_->push_back(vertical_section{ pln , "Elevation North", true });
 		}
 		{
 			gp_Pln pln(gp_Ax3(
-				gp_Pnt(xmin - 1.e-1, (ymin + ymax) / -2., 0.),
-				gp_Dir(1, 0, 0),
-				gp_Dir(0, 1, 0)));
+				gp_Pnt(xmin - 10., 0., 0.),
+				gp_Dir(-1, 0, 0),
+				gp_Dir(0, -1, 0)));
 			deferred_section_data_->push_back(vertical_section{ pln , "Elevation West", true });
 		}
 	}
@@ -1033,7 +1041,11 @@ void SvgSerializer::finalize() {
 			}
 
 			if (use_hlr) {
-				hlr = new HLRBRep_Algo;
+				if (use_hlr_poly_) {
+					hlr_poly = new HLRBRep_PolyAlgo;
+				} else {
+					hlr_brep = new HLRBRep_Algo;
+				}
 			}
 
 			section_data_ = std::vector<section_data>{ sd };
@@ -1043,18 +1055,30 @@ void SvgSerializer::finalize() {
 
 			if (use_hlr) {
 				const auto& section = boost::get<vertical_section>(sd);
-				gp_Ax2 transform = section.plane.Position().Ax2();
-				HLRAlgo_Projector projector(transform);
-				hlr->Projector(projector);
 
-				hlr->Update();
-				hlr->Hide();
+				gp_Trsf trsf;
+				trsf.SetTransformation(section.plane.Position());
+				HLRAlgo_Projector projector(trsf, false, 1.);
+			
+				TopoDS_Shape hlr_compound_unmirrored;
+				
+				if (use_hlr_poly_) {
+					hlr_poly->Projector(projector);
 
-				HLRBRep_HLRToShape hlr_shapes(hlr);
-				auto hlr_compound_unmirrored = hlr_shapes.VCompound();
+					hlr_poly->Update();
+					HLRBRep_PolyHLRToShape hlr_shapes;
+					hlr_shapes.Update(hlr_poly);
+					hlr_compound_unmirrored = hlr_shapes.VCompound();
+				} else {
+					hlr_brep->Projector(projector);
+
+					hlr_brep->Update();
+					hlr_brep->Hide();
+					HLRBRep_HLRToShape hlr_shapes(hlr_brep);
+					hlr_compound_unmirrored = hlr_shapes.VCompound();
+				}
 
 				if (!hlr_compound_unmirrored.IsNull()) {
-
 					// Compound 3D curves for mirroring to work
 					ShapeFix_Edge sfe;
 					TopExp_Explorer exp(hlr_compound_unmirrored, TopAbs_EDGE);
@@ -1092,9 +1116,8 @@ void SvgSerializer::finalize() {
 
 			resetScale();
 
-			if (use_hlr) {
-				hlr.Nullify();
-			}
+			if (hlr_brep) hlr_brep.Nullify();
+			if (hlr_poly) hlr_poly.Nullify();
 		}
 	}
 
