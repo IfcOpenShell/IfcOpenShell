@@ -1336,9 +1336,9 @@ namespace {
 	template <typename T>
 	std::string array_to_string(const T& v) {
 		return "[" + std::accumulate(
-			++v.begin(), v.end(), 
+			v.begin() + 1, v.end(), 
 			array_to_string(v.front()),
-			[](const std::string& accum, auto const & item) {
+			[](const std::string& accum, decltype(*v.cbegin())& item) {
 				return accum + "," + array_to_string(item);
 		}) + "]";
 	}
