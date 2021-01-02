@@ -24,7 +24,7 @@ if (DOXYGEN_FOUND)
 
 add_custom_target(Sphinx ALL
                   COMMAND
-                  ${SPHINX_EXECUTABLE} -b html
+                  ${SPHINX_EXECUTABLE} -v -b html
 				  ${SPHINX_SOURCE} ${CMAKE_CURRENT_SOURCE_DIR}/output
 				  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/output
                   COMMENT "Generating documentation with Sphinx")
