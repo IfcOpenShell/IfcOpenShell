@@ -1,35 +1,10 @@
 import ifcopenshell.util.geolocation
-import numpy as np
+import ifcopenshell.util.placement
 from behave import step
 
 from utils import assert_number
 from utils import assert_type
 from utils import IfcFile
-
-
-def a2p(o, z, x):
-    y = np.cross(z, x)
-    r = np.eye(4)
-    r[:-1, :-1] = x, y, z
-    r[-1, :-1] = o
-    return r.T
-
-
-def get_axis2placement(plc):
-    z = np.array(plc.Axis.DirectionRatios if plc.Axis else (0, 0, 1))
-    x = np.array(plc.RefDirection.DirectionRatios if plc.RefDirection else (1, 0, 0))
-    o = plc.Location.Coordinates
-    return a2p(o, z, x)
-
-
-def get_local_placement(plc):
-    if plc is None:
-        return np.eye(4)
-    if plc.PlacementRelTo is None:
-        parent = np.eye(4)
-    else:
-        parent = get_local_placement(plc.PlacementRelTo)
-    return np.dot(get_axis2placement(plc.RelativePlacement), parent)
 
 
 def get_decimal_points(value):
@@ -83,7 +58,7 @@ def step_impl(context, guid, easting, northing, elevation):
     element = IfcFile.by_guid(guid)
     if not element.ObjectPlacement:
         assert False, "The element does not have an object placement: {}".format(element)
-    m = get_local_placement(element.ObjectPlacement)
+    m = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
     e, n, h = ifcopenshell.util.geolocation.xyz2enh(
         m[0][3],
         m[1][3],
@@ -110,7 +85,7 @@ def step_impl(context, guid, x, y, z):
     element = IfcFile.by_guid(guid)
     if not element.ObjectPlacement:
         assert False, "The element does not have an object placement: {}".format(element)
-    m = get_local_placement(element.ObjectPlacement)
+    m = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
     element_x = round(m[0][3], get_decimal_points(x))
     element_y = round(m[1][3], get_decimal_points(y))
     element_z = round(m[2][3], get_decimal_points(z))
