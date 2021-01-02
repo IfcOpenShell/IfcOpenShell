@@ -3,6 +3,7 @@ import ifcopenshell.geom
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.selector
 import ifcopenshell.util.element
+import ifcopenshell.util.unit
 import bpy
 import bmesh
 import os
@@ -19,7 +20,6 @@ import tempfile
 from pathlib import Path
 from itertools import cycle
 from datetime import datetime
-from . import helper
 from . import ifc
 from . import schema
 
@@ -953,6 +953,10 @@ class IfcImporter:
                     mesh = self.create_native_mesh(element, shape)
                 if mesh is None:
                     mesh = self.create_mesh(element, shape)
+                    if "-" in shape.geometry.id:
+                        mesh.BIMMeshProperties.ifc_definition_id = int(shape.geometry.id.split("-")[0])
+                    else:
+                        mesh.BIMMeshProperties.ifc_definition_id = int(shape.geometry.id)
                 self.meshes[mesh_name] = mesh
         else:
             mesh = None
@@ -1503,7 +1507,7 @@ class IfcImporter:
                 self.unit_scale *= unit.ConversionFactor.ValueComponent.wrappedValue
                 unit = unit.ConversionFactor.UnitComponent
             if unit.is_a("IfcSIUnit"):
-                self.unit_scale *= helper.SIUnitHelper.get_prefix_multiplier(unit.Prefix)
+                self.unit_scale *= ifcopenshell.util.unit.get_prefix_multiplier(unit.Prefix)
 
     def set_units(self):
         units = self.file.by_type("IfcUnitAssignment")[0]

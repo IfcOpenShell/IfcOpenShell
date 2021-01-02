@@ -809,9 +809,6 @@ class BIM_PT_mesh(Panel):
         layout = self.layout
         props = context.active_object.data.BIMMeshProperties
 
-        row = layout.row(align=True)
-        row.operator("bim.push_representation")
-
         row = layout.row()
         row.prop(props, "geometry_type")
         layout.label(text="IFC Parameters:")
