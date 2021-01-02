@@ -21,25 +21,12 @@ class Usecase:
 
     def execute(self):
         if self.settings["unit_scale"] is None:
-            self.settings["unit_scale"] = self.calculate_unit_scale()
+            self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         if self.settings["context"].ContextType == "Model":
             return self.create_model_representation()
         elif self.settings["context"].ContextType == "Plan":
             return self.create_plan_representation()
         return self.create_variable_representation()
-
-    def calculate_unit_scale(self):
-        units = self.file.by_type("IfcUnitAssignment")[0]
-        unit_scale = 1
-        for unit in units.Units:
-            if not hasattr(unit, "UnitType") or unit.UnitType != "LENGTHUNIT":
-                continue
-            while unit.is_a("IfcConversionBasedUnit"):
-                unit_scale *= unit.ConversionFactor.ValueComponent.wrappedValue
-                unit = unit.ConversionFactor.UnitComponent
-            if unit.is_a("IfcSIUnit"):
-                unit_scale *= ifcopenshell.util.unit.get_prefix_multiplier(unit.Prefix)
-        return unit_scale
 
     def create_model_representation(self):
         if self.settings["context"].is_a() == "IfcGeometricRepresentationContext":

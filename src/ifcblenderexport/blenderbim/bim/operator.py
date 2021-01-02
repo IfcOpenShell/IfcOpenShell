@@ -13,6 +13,7 @@ import ifcopenshell.util.geolocation
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
 import tempfile
+import numpy as np
 from . import export_ifc
 from . import import_ifc
 from . import qto
@@ -4350,6 +4351,13 @@ class BakeParametricGeometry(bpy.types.Operator):
         obj = bpy.context.active_object
         self.file = ifc.IfcStore.get_file()
         element = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+
+        import blenderbim.bim.module.geometry.add_object_placement as add_object_placement
+        usecase = add_object_placement.Usecase(self.file, {
+            "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
+            "matrix": np.array(obj.matrix_world)
+        })
+        result = usecase.execute()
 
         import blenderbim.bim.module.geometry.add_shape_representation as add_shape_representation
         usecase = add_shape_representation.Usecase(self.file, {

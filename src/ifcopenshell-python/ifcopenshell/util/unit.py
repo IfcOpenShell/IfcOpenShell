@@ -142,3 +142,17 @@ def convert(value, from_prefix, from_unit, to_prefix, to_unit):
             value *= 1 / get_prefix_multiplier(to_prefix)
             value *= 1 / get_prefix_multiplier(to_prefix)
     return value
+
+
+def calculate_unit_scale(file):
+    units = file.by_type("IfcUnitAssignment")[0]
+    unit_scale = 1
+    for unit in units.Units:
+        if not hasattr(unit, "UnitType") or unit.UnitType != "LENGTHUNIT":
+            continue
+        while unit.is_a("IfcConversionBasedUnit"):
+            unit_scale *= unit.ConversionFactor.ValueComponent.wrappedValue
+            unit = unit.ConversionFactor.UnitComponent
+        if unit.is_a("IfcSIUnit"):
+            unit_scale *= get_prefix_multiplier(unit.Prefix)
+    return unit_scale
