@@ -162,7 +162,6 @@ if bpy is not None:
         operator.AddVariable,
         operator.RemoveVariable,
         operator.PropagateTextData,
-        operator.PushRepresentation,
         operator.ConvertLocalToGlobal,
         operator.ConvertGlobalToLocal,
         operator.GuessQuantity,

@@ -3362,117 +3362,6 @@ class PropagateTextData(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class PushRepresentation(bpy.types.Operator):
-    bl_idname = "bim.push_representation"
-    bl_label = "Push Representation"
-
-    # Warning: This is an incredibly experimental operator.
-    def execute(self, context):
-        self.file = ifc.IfcStore.get_file()
-
-        logger = logging.getLogger("ExportIFC")
-        output_file = "tmp.ifc"
-        ifc_export_settings = export_ifc.IfcExportSettings.factory(context, output_file, logger)
-        qto_calculator = qto.QtoCalculator()
-        ifc_parser = export_ifc.IfcParser(ifc_export_settings, qto_calculator)
-        ifc_parser.parse([bpy.context.active_object])
-        self.ifc_exporter = export_ifc.IfcExporter(ifc_export_settings, ifc_parser)
-        self.ifc_exporter.file = ifcopenshell.file(schema=self.file.schema)
-        self.ifc_exporter.create_origin()
-        self.ifc_exporter.create_rep_context()
-        self.ifc_exporter.create_representations()
-
-        self.context, self.subcontext, self.target_view, self.mesh_name = bpy.context.active_object.data.name.split("/")
-        rep_context = self.get_geometric_representation_context()
-
-        for key, rep in self.ifc_exporter.ifc_parser.representations.items():
-            if key != bpy.context.active_object.data.name:
-                continue
-            if rep_context:
-                self.ifc_exporter.file.add(rep_context)
-                rep["ifc"].MappedRepresentation.ContextOfItems = rep_context
-            self.push_representation(rep["ifc"])
-            break
-        self.file.write(bpy.context.scene.BIMProperties.ifc_file[0:-4] + "-patch.ifc")
-        return {"FINISHED"}
-
-    def get_geometric_representation_context(self):
-        for element in self.file.by_type("IfcGeometricRepresentationSubContext"):
-            if self.is_current_context(element):
-                return element
-
-    def push_representation(self, new_representation):
-        element = self.file.by_guid(
-            bpy.context.active_object.BIMObjectProperties.attributes.get("GlobalId").string_value
-        )
-        old_shape = None
-        new_shape = self.file.add(new_representation.MappedRepresentation)
-        if element.is_a("IfcProduct"):
-            representations = element.Representation.Representations
-        else:
-            representations = [rm.MappedRepresentation for rm in element.RepresentationMaps]
-        for representation in representations:
-            if self.is_current_context(representation.ContextOfItems):
-                old_shape = self.resolve_mapped_representation(representation)
-                break
-        if old_shape:
-            self.swap_old_representation(old_shape, new_shape)
-        else:
-            self.add_new_representation(element, new_shape)
-
-    def resolve_mapped_representation(self, representation):
-        if representation.RepresentationType == "MappedRepresentation":
-            if representation.Items:
-                return representation.Items[0].MappingSource.MappedRepresentation
-        return representation
-
-    def swap_old_representation(self, old, new):
-        inverse_elements = self.file.get_inverse(old)
-        for element in inverse_elements:
-            for i, attribute in enumerate(element):
-                if (isinstance(attribute, list) or isinstance(attribute, tuple)) and old in attribute:
-                    items = list(attribute)
-                    for j, item in enumerate(items):
-                        if item == old:
-                            del items[j]
-                    items.append(new)
-                    element[i] = items
-                elif attribute == old:
-                    element[i] = new
-
-    def add_new_representation(self, element, new):
-        if element.is_a("IfcProduct"):
-            self.add_new_representation_to_product(element, new)
-            return
-
-        if element.RepresentationMaps:
-            representation_maps = list(element.RepresentationMaps)
-            representation_maps.append(self.file.createIfcRepresentationMap(self.ifc_exporter.origin, new))
-            element.RepresentationMaps = representation_maps
-        else:
-            element.RepresentationMaps = self.file.createIfcRepresentationMap(self.ifc_exporter.origin, new)
-
-        if hasattr(element, "Types"):
-            related_objects = element.Types[0].RelatedObjects
-        elif hasattr(element, "ObjectTypeOf"):  # IFC2X3
-            related_objects = element.ObjectTypeOf[0].RelatedObjects
-
-        for related_object in related_objects:
-            self.add_new_representation_to_product(related_object, new)
-
-    def add_new_representation_to_product(self, element, new):
-        representations = list(element.Representation.Representations)
-        representations.append(new)
-        element.Representation.Representations = representations
-
-    def is_current_context(self, element):
-        return (
-            element.ContextType == self.context
-            and element.ContextIdentifier == self.subcontext
-            and element.TargetView == self.target_view
-        )
-
-
 class ConvertLocalToGlobal(bpy.types.Operator):
     bl_idname = "bim.convert_local_to_global"
     bl_label = "Convert Local To Global"
@@ -4458,16 +4347,23 @@ class BakeParametricGeometry(bpy.types.Operator):
     bl_label = "Bake Parametric Geometry"
 
     def execute(self, context):
-        # TODO rewrite, see #1222
-        # obj = bpy.context.active_object
-        # if "/" not in obj.data.name:
-        #     context, subcontext, target_view = ("Model", "Body", "MODEL_VIEW")
-        # else:
-        #     context, subcontext, target_view = obj.data.name.split("/")[0:3]
-        # for representation in obj.BIMObjectProperties.representations:
-        #     element = self.file.by_id(representation.ifc_definition_id)
-        #     if ifcopenshell.util.element.is_representation_of_context(element, context, subcontext, target_view):
-        #         representation.ifc_definition_id = 0
+        import blenderbim.bim.module.geometry.add_shape_representation as add_shape_representation
+        obj = bpy.context.active_object
+        self.file = ifc.IfcStore.get_file()
+        element = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        usecase = add_shape_representation.Usecase(self.file, {
+            "context": element.ContextOfItems,
+            "geometry": obj.data,
+            "total_items": max(1, len(obj.material_slots)),
+        })
+        result = usecase.execute()
+        if not result:
+            print("Failed to write shape representation")
+            return {"FINISHED"}
+        for inverse in self.file.get_inverse(element):
+            ifcopenshell.util.element.replace_attribute(inverse, element, result)
+        obj.data.BIMMeshProperties.ifc_definition_id = int(result.id())
+        print(result)
         return {"FINISHED"}
 
 
