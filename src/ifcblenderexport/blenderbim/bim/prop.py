@@ -1525,6 +1525,9 @@ class BIMMaterialProperties(PropertyGroup):
     psets: CollectionProperty(name="Psets", type=PsetQto)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     applicable_attributes: EnumProperty(items=getApplicableMaterialAttributes, name="Attribute Names")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+    # In Blender, a material object can map to an IFC material, IFC surface style, or both
+    ifc_style_id: IntProperty(name="IFC Style ID")
 
 
 class SweptSolid(PropertyGroup):
