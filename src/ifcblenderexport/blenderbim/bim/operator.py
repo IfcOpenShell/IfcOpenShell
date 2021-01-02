@@ -4347,10 +4347,11 @@ class BakeParametricGeometry(bpy.types.Operator):
     bl_label = "Bake Parametric Geometry"
 
     def execute(self, context):
-        import blenderbim.bim.module.geometry.add_shape_representation as add_shape_representation
         obj = bpy.context.active_object
         self.file = ifc.IfcStore.get_file()
         element = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+
+        import blenderbim.bim.module.geometry.add_shape_representation as add_shape_representation
         usecase = add_shape_representation.Usecase(self.file, {
             "context": element.ContextOfItems,
             "geometry": obj.data,
@@ -4360,10 +4361,17 @@ class BakeParametricGeometry(bpy.types.Operator):
         if not result:
             print("Failed to write shape representation")
             return {"FINISHED"}
+
+        import blenderbim.bim.module.geometry.assign_styles as assign_styles
+        usecase = assign_styles.Usecase(self.file, {
+            "shape_representation": result,
+            "styles": [self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id) for s in obj.material_slots if s.material]
+        })
+        usecase.execute()
+
         for inverse in self.file.get_inverse(element):
             ifcopenshell.util.element.replace_attribute(inverse, element, result)
         obj.data.BIMMeshProperties.ifc_definition_id = int(result.id())
-        print(result)
         return {"FINISHED"}
 
 

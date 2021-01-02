@@ -18,7 +18,6 @@ class Usecase:
         self.ifc_vertices = []
         for key, value in settings.items():
             self.settings[key] = value
-        self.context_of_items = None
 
     def execute(self):
         if self.settings["unit_scale"] is None:

@@ -256,6 +256,7 @@ class MaterialCreator:
 
     def create_new_single(self, material):
         self.materials[material.Name] = obj = bpy.data.materials.new(material.Name)
+        obj.BIMMaterialProperties.ifc_definition_id = int(material.id())
         self.ifc_importer.add_element_attributes(material, obj.BIMMaterialProperties)
         for pset in getattr(material, "HasProperties", ()):
             self.ifc_importer.add_pset(pset, obj.BIMMaterialProperties)
@@ -286,6 +287,7 @@ class MaterialCreator:
         for style in styles:
             if not style.is_a("IfcSurfaceStyle"):
                 continue
+            material.BIMMaterialProperties.ifc_style_id = int(style.id())
             external_style = None
             for surface_style in style.Styles:
                 if surface_style.is_a("IfcSurfaceStyleShading"):
