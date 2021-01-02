@@ -29,6 +29,8 @@
 
 #include <HLRBRep_Algo.hxx>
 #include <HLRBRep_HLRToShape.hxx>
+#include <HLRBRep_PolyAlgo.hxx>
+#include <HLRAlgo_Projector.hxx>
 #include <gp_Pln.hxx>
 
 #include <sstream>
@@ -126,7 +128,7 @@ protected:
 	bool with_section_heights_from_storey_, rescale, print_space_names_, print_space_areas_;
 	bool draw_door_arcs_, is_floor_plan_;
 	bool auto_section_, auto_elevation_;
-	bool use_namespace_;
+	bool use_namespace_, use_hlr_poly_;
 
 	IfcParse::IfcFile* file;
 	IfcUtil::IfcBaseEntity* storey_;
@@ -140,7 +142,8 @@ protected:
 	
 	std::list<geometry_data> element_buffer_;
 
-	Handle(HLRBRep_Algo) hlr;
+	Handle(HLRBRep_Algo) hlr_brep;
+	Handle(HLRBRep_PolyAlgo) hlr_poly;
 
 	std::string namespace_prefix_;
 public:
@@ -160,6 +163,7 @@ public:
 		, auto_section_(false)
 		, auto_elevation_(false)
 		, use_namespace_(false)
+		, use_hlr_poly_(false)
 		, file(0)
 		, storey_(0)
 		, xcoords_begin(0)
@@ -211,6 +215,10 @@ public:
 	void setUseNamespace(bool b) {
 		use_namespace_ = b;
 		namespace_prefix_ = use_namespace_ ? "ifc:" : "data-";
+	}
+
+	void setUseHlrPoly(bool b) {
+		use_hlr_poly_ = b;
 	}
 
 	void setScale(double s) { scale_ = s; }
