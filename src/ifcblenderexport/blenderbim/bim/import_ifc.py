@@ -1404,8 +1404,9 @@ class IfcImporter:
     def add_pset(self, pset, props):
         new_pset = props.psets.add()
         new_pset.name = pset.Name
-        if new_pset.name in schema.ifc.psetqto.psets:
-            for prop_name in schema.ifc.psetqto.psets[new_pset.name]["HasPropertyTemplates"].keys():
+        pset_template = schema.ifc.psetqto.get_by_name(new_pset.name)
+        if pset_template:
+            for prop_name in (p.Name for p in pset_template.HasPropertyTemplates):
                 prop = new_pset.properties.add()
                 prop.name = prop_name
         try:
@@ -1431,8 +1432,9 @@ class IfcImporter:
     def add_qto(self, qto, obj):
         new_qto = obj.BIMObjectProperties.qtos.add()
         new_qto.name = str(qto.Name)
-        if new_qto.name in schema.ifc.psetqto.qtos:
-            for prop_name in schema.ifc.psetqto.qtos[new_qto.name]["HasPropertyTemplates"].keys():
+        qto_template = schema.ifc.psetqto.get_by_name(new_qto.name)
+        if qto_template:
+            for prop_name in (p.Name for p in qto_template.HasPropertyTemplates):
                 prop = new_qto.properties.add()
                 prop.name = prop_name
         for prop in qto.Quantities:
