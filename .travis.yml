@@ -54,7 +54,7 @@ script:
     -DJSON_INCLUDE_DIR=/usr/include/json \
     -DBUILD_DOCUMENTATION=On \
     ..
-  - sudo make -j2 install
+  - travis_wait sudo make -j2 install
     
   # - cd ../../test
   # - /usr/bin/python2.7 tests.py
@@ -95,4 +95,4 @@ after_success:
   - git config user.name "IfcOpenBot"
   - git add .
   - git commit -m "${MESSAGE}"
-  - git push
+  - travis_wait git push
