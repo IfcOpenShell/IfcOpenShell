@@ -41,8 +41,8 @@ script:
   - cd cmake
   - mkdir build
   - cd build
-  - travis_wait |
-    cmake \
+  - |
+    travis_wait cmake \
     -DOCC_INCLUDE_DIR=/usr/include/opencascade \
     -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
     -DPYTHON_LIBRARY=/usr/lib/python2.7/config-x86_64-linux-gnu/libpython2.7.so \
