@@ -1465,42 +1465,6 @@ def draw_addresses_ui(layout, parent, parent_type):
                 row.prop(address, "messaging_ids")
 
 
-class BIM_PT_context(Panel):
-    bl_label = "IFC Geometric Representation Contexts"
-    bl_idname = "BIM_PT_context"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    def draw(self, context):
-        layout = self.layout
-
-        scene = context.scene
-        props = scene.BIMProperties
-
-        for context in ["model", "plan"]:
-            row = layout.row(align=True)
-            row.prop(props, f"has_{context}_context")
-
-            if not getattr(props, f"has_{context}_context"):
-                continue
-
-            layout.label(text="Geometric Representation Subcontexts:")
-            row = layout.row(align=True)
-            row.prop(props, "available_subcontexts", text="")
-            row.prop(props, "available_target_views", text="")
-            row.operator("bim.add_subcontext", icon="ADD", text="").context = context
-
-            for subcontext_index, subcontext in enumerate(getattr(props, "{}_subcontexts".format(context))):
-                row = layout.row(align=True)
-                row.prop(subcontext, "name", text="")
-                row.prop(subcontext, "target_view", text="")
-                row.operator("bim.remove_subcontext", icon="X", text="").indexes = "{}-{}".format(
-                    context, subcontext_index
-                )
-
-
 class BIM_PT_bim(Panel):
     bl_label = "Building Information Modeling"
     bl_idname = "BIM_PT_bim"
