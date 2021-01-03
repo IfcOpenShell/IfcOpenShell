@@ -41,7 +41,7 @@ script:
   - cd cmake
   - mkdir build
   - cd build
-  - |
+  - travis_wait |
     cmake \
     -DOCC_INCLUDE_DIR=/usr/include/opencascade \
     -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
