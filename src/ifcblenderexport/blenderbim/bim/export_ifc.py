@@ -3553,15 +3553,4 @@ class IfcExportSettings:
         settings.should_roundtrip_native = scene_bim.import_export_should_roundtrip_native
         settings.should_export_from_memory = scene_bim.export_should_export_from_memory
         settings.context_tree = []
-        for ifc_context in ["model", "plan"]:
-            if getattr(scene_bim, "has_{}_context".format(ifc_context)):
-                subcontexts = {}
-                for subcontext in getattr(scene_bim, "{}_subcontexts".format(ifc_context)):
-                    subcontexts.setdefault(subcontext.name, []).append(subcontext.target_view)
-                settings.context_tree.append(
-                    {
-                        "name": ifc_context.title(),
-                        "subcontexts": [{"name": key, "target_views": value} for key, value in subcontexts.items()],
-                    }
-                )
         return settings

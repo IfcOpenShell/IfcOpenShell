@@ -626,42 +626,6 @@ class BIM_PT_constraint_relations(Panel):
                     layout.label(text="Constraint is invalid")
 
 
-class BIM_PT_representations(Panel):
-    bl_label = "IFC Representations"
-    bl_idname = "BIM_PT_representations"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "object"
-
-    def draw(self, context):
-        layout = self.layout
-        props = context.active_object.BIMObjectProperties
-
-        if not props.representations:
-            layout.label(text="No representations found")
-
-        row = layout.row(align=True)
-        row.prop(bpy.context.scene.BIMProperties, "available_contexts", text="")
-        row.prop(bpy.context.scene.BIMProperties, "available_subcontexts", text="")
-        row.prop(bpy.context.scene.BIMProperties, "available_target_views", text="")
-        row.operator("bim.add_representation", icon="ADD", text="")
-
-        self.file = ifc.IfcStore.get_file()
-        for index, representation in enumerate(props.representations):
-            row = layout.row(align=True)
-            row.prop(representation, "name", text="")
-            row.prop(representation, "type", text="")
-            if not representation.ifc_definition_id:
-                continue
-            context_of_items = self.file.by_id(representation.ifc_definition_id).ContextOfItems
-            if context_of_items.is_a() == "IfcGeometricRepresentationContext":
-                continue
-            op = row.operator("bim.switch_representation", icon="OUTLINER_DATA_MESH", text="")
-            op.ifc_definition_id = representation.ifc_definition_id
-            row.operator("bim.remove_representation", icon="X", text="").index = index
-
-
 class BIM_PT_classification_references(Panel):
     bl_label = "IFC Classification References"
     bl_idname = "BIM_PT_classification_references"
@@ -809,8 +773,6 @@ class BIM_PT_mesh(Panel):
         layout = self.layout
         props = context.active_object.data.BIMMeshProperties
 
-        row = layout.row()
-        row.prop(props, "geometry_type")
         layout.label(text="IFC Parameters:")
         row = layout.row()
         row.operator("bim.get_representation_ifc_parameters")

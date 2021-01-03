@@ -411,8 +411,6 @@ class IfcImporter:
         self.profile_code("Patching ifc")
         self.set_units()
         self.profile_code("Set units")
-        self.create_geometric_representation_contexts()
-        self.profile_code("Create contexts")
         self.create_project()
         self.profile_code("Create project")
         self.create_classifications()
@@ -853,7 +851,6 @@ class IfcImporter:
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
         self.add_type_product_psets(element, obj)
-        self.add_product_representations(element, obj)
         self.type_collection.objects.link(obj)
         self.type_products[element.GlobalId] = obj
 
@@ -984,7 +981,6 @@ class IfcImporter:
         self.add_defines_by_type_relation(element, obj)
         self.add_opening_relation(element, obj)
         self.add_product_definitions(element, obj)
-        self.add_product_representations(element, obj)
         self.added_data[element.GlobalId] = obj
 
         if element.is_a("IfcOpeningElement"):
@@ -1365,24 +1361,6 @@ class IfcImporter:
         bpy.ops.mesh.normals_make_consistent(context_override)
         bpy.ops.object.editmode_toggle(context_override)
 
-    def add_product_representations(self, element, obj):
-        if element.is_a("IfcProduct"):
-            if not element.Representation:
-                return
-            for r in element.Representation.Representations:
-                new = obj.BIMObjectProperties.representations.add()
-                new.name = r.RepresentationIdentifier
-                new.type = r.RepresentationType
-                new.ifc_definition_id = r.id()
-        elif element.is_a("IfcTypeProduct"):
-            if not element.RepresentationMaps:
-                return
-            for r in element.RepresentationMaps:
-                new = obj.BIMObjectProperties.representations.add()
-                new.name = r.MappedRepresentation.RepresentationIdentifier
-                new.type = r.MappedRepresentation.RepresentationType
-                new.ifc_definition_id = r.MappedRepresentation.id()
-
     def add_product_definitions(self, element, obj):
         if not hasattr(element, "IsDefinedBy") or not element.IsDefinedBy:
             return
@@ -1539,28 +1517,6 @@ class IfcImporter:
                 bpy.context.scene.BIMProperties.volume_unit = "{}{}".format(
                     unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", name
                 )
-
-    def create_geometric_representation_contexts(self):
-        bpy.context.scene.BIMProperties.has_model_context = False
-        for context in self.file.by_type("IfcGeometricRepresentationContext"):
-            if context.is_a("IfcGeometricRepresentationSubContext"):
-                if not context.ContextIdentifier:
-                    # Revit creates invalid contexts, so we just ignore them
-                    continue
-                if context.ContextType == "Model":
-                    subcontexts = bpy.context.scene.BIMProperties.model_subcontexts
-                elif context.ContextType == "Plan":
-                    subcontexts = bpy.context.scene.BIMProperties.plan_subcontexts
-                if subcontexts.get(context.ContextIdentifier):
-                    continue
-                subcontext = subcontexts.add()
-                subcontext.name = context.ContextIdentifier
-                subcontext.target_view = context.TargetView
-                subcontext.ifc_definition_id = context.id()
-            elif context.ContextType == "Model":
-                bpy.context.scene.BIMProperties.has_model_context = True
-            elif context.ContextType == "Plan":
-                bpy.context.scene.BIMProperties.has_plan_context = True
 
     def create_project(self):
         self.project = {"ifc": self.file.by_type("IfcProject")[0]}
@@ -2064,23 +2020,6 @@ class IfcImporter:
             ):
                 return representation.Items[0].MappingTarget
 
-    def get_geometry_type(self, element):
-        tree = []
-        if hasattr(element, "Representation"):
-            tree = self.file.traverse(element.Representation)
-        elif hasattr(element, "RepresentationMaps"):
-            for representation_map in element.RepresentationMaps:
-                tree.extend(self.file.traverse(representation_map))
-        representations = [
-            e
-            for e in tree
-            if e.is_a("IfcRepresentation")
-            and e.RepresentationIdentifier == "Body"
-            and e.RepresentationType != "MappedRepresentation"
-        ]
-        for representation in representations:
-            return representation.Items[0].is_a()
-
     def create_mesh(self, element, shape, is_curve=False):
         try:
             if hasattr(shape, "geometry"):
@@ -2091,7 +2030,13 @@ class IfcImporter:
             if is_curve:
                 return self.create_curve(geometry)
 
-            mesh = bpy.data.meshes.new(geometry.id)
+            representation_id = geometry.id
+            if "-" in representation_id:
+                representation_id = int(re.sub(r"\D", "", representation_id.split("-")[0]))
+            else:
+                representation_id = int(re.sub(r"\D", "", representation_id))
+            mesh = bpy.data.meshes.new("{}/{}".format(
+                self.file.by_id(representation_id).ContextOfItems.id(), geometry.id))
 
             if geometry.faces:
                 num_vertices = len(geometry.verts) // 3
@@ -2132,7 +2077,6 @@ class IfcImporter:
                     ios_materials.append(mat.name)
             mesh["ios_materials"] = ios_materials
             mesh["ios_material_ids"] = geometry.material_ids
-            mesh.BIMMeshProperties.geometry_type = str(self.get_geometry_type(element))
             return mesh
         except:
             self.ifc_import_settings.logger.error("Could not create mesh for %s", element)
