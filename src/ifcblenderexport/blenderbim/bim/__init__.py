@@ -5,9 +5,10 @@ bpy = sys.modules.get("bpy")
 
 if bpy is not None:
     import bpy
+    import blenderbim.bim.module.bcf as module_bcf
+    import blenderbim.bim.module.context as module_context
     import blenderbim.bim.module.covetool as module_covetool
     import blenderbim.bim.module.model as module_model
-    import blenderbim.bim.module.bcf as module_bcf
     from . import ui, prop, operator
 
     classes = [
@@ -107,8 +108,6 @@ if bpy is not None:
         operator.FetchLibraryInformation,
         operator.FetchExternalMaterial,
         operator.FetchObjectPassport,
-        operator.AddSubcontext,
-        operator.RemoveSubcontext,
         operator.CutSection,
         operator.AddSheet,
         operator.OpenSheet,
@@ -281,7 +280,6 @@ if bpy is not None:
         ui.BIM_PT_owner,
         ui.BIM_PT_people,
         ui.BIM_PT_organisations,
-        ui.BIM_PT_context,
         ui.BIM_PT_qa,
         ui.BIM_PT_library,
         ui.BIM_PT_gis,
@@ -323,6 +321,7 @@ if bpy is not None:
     ]
 
     classes.extend(module_bcf.classes)
+    classes.extend(module_context.classes)
     classes.extend(module_covetool.classes)
     classes.extend(module_model.classes)
 
@@ -357,6 +356,7 @@ if bpy is not None:
         bpy.types.TextCurve.BIMTextProperties = bpy.props.PointerProperty(type=prop.BIMTextProperties)
         bpy.types.SCENE_PT_unit.append(ui.ifc_units)
         module_bcf.register()
+        module_context.register()
         module_covetool.register()
         module_model.register()
         bpy.app.handlers.depsgraph_update_pre.append(operator.depsgraph_update_pre_handler)
@@ -381,5 +381,6 @@ if bpy is not None:
         bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
         module_model.unregister()
         module_covetool.unregister()
+        module_context.unregister()
         module_bcf.unregister()
         bpy.app.handlers.depsgraph_update_pre.remove(operator.depsgraph_update_pre_handler)
