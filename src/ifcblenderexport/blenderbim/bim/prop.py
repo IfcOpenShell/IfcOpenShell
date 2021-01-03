@@ -54,20 +54,6 @@ vector_styles_enum = []
 
 @persistent
 def setDefaultProperties(scene):
-    if (
-        bpy.context.scene.BIMProperties.has_model_context
-        and len(bpy.context.scene.BIMProperties.model_subcontexts) == 0
-    ):
-        subcontext = bpy.context.scene.BIMProperties.model_subcontexts.add()
-        subcontext.name = "Body"
-        subcontext.target_view = "MODEL_VIEW"
-        subcontext = bpy.context.scene.BIMProperties.model_subcontexts.add()
-        subcontext.name = "Box"
-        subcontext.target_view = "MODEL_VIEW"
-    if bpy.context.scene.BIMProperties.has_plan_context and len(bpy.context.scene.BIMProperties.plan_subcontexts) == 0:
-        subcontext = bpy.context.scene.BIMProperties.plan_subcontexts.add()
-        subcontext.name = "Annotation"
-        subcontext.target_view = "PLAN_VIEW"
     if len(bpy.context.scene.DocProperties.drawing_styles) == 0:
         drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
         drawing_style.name = "Technical"
@@ -501,6 +487,19 @@ def getMaterialTypes(self, context):
     return materialtypes_enum
 
 
+def getContexts(self, context):
+    from blenderbim.bim.module.context.data import Data
+    if not Data.is_loaded:
+        Data.load()
+    results = []
+    for ifc_id, context in Data.contexts.items():
+        results.append((str(ifc_id), context["ContextType"], ""))
+        for ifc_id2, subcontext in context["HasSubContexts"].items():
+            results.append((str(ifc_id2), "{}/{}/{}".format(
+                subcontext["ContextType"], subcontext["ContextIdentifier"], subcontext["TargetView"]), ""))
+    return results
+
+
 def getSubcontexts(self, context):
     global subcontexts_enum
     subcontexts_enum.clear()
@@ -549,19 +548,6 @@ class Attribute(PropertyGroup):
     bool_value: BoolProperty(name="Value")
     int_value: IntProperty(name="Value")
     float_value: FloatProperty(name="Value")
-
-
-class Subcontext(PropertyGroup):
-    name: StringProperty(name="Name")
-    context: StringProperty(name="Context")
-    target_view: StringProperty(name="Target View")
-    ifc_definition_id: IntProperty(name="IFC Definition ID")
-
-
-class Representation(PropertyGroup):
-    name: StringProperty(name="Name")
-    type: StringProperty(name="Type")
-    ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
 class MaterialLayer(PropertyGroup):
@@ -1321,10 +1307,7 @@ class BIMProperties(PropertyGroup):
     classification: EnumProperty(items=getClassifications, name="Classification", update=refreshReferences)
     active_classification_name: StringProperty(name="Active Classification Name")
     classifications: CollectionProperty(name="Classifications", type=Classification)
-    has_model_context: BoolProperty(name="Has Model Context", default=True)
-    has_plan_context: BoolProperty(name="Has Plan Context", default=True)
-    model_subcontexts: CollectionProperty(name="Model Subcontexts", type=Subcontext)
-    plan_subcontexts: CollectionProperty(name="Plan Subcontexts", type=Subcontext)
+    contexts: EnumProperty(items=getContexts, name="Contexts")
     available_contexts: EnumProperty(items=[("Model", "Model", ""), ("Plan", "Plan", "")], name="Available Contexts")
     available_subcontexts: EnumProperty(items=getSubcontexts, name="Available Subcontexts")
     available_target_views: EnumProperty(items=getTargetViews, name="Available Target Views")
@@ -1502,7 +1485,6 @@ class BIMObjectProperties(PropertyGroup):
     has_boundary_condition: BoolProperty(name="Has Boundary Condition")
     boundary_condition: PointerProperty(name="Boundary Condition", type=BoundaryCondition)
     structural_member_connection: PointerProperty(name="Structural Member Connection", type=bpy.types.Object)
-    representations: CollectionProperty(name="Representations", type=Representation)
     # Address applies to IfcSite's SiteAddress and IfcBuilding's BuildingAddress
     address: PointerProperty(name="Address", type=Address)
 
@@ -1553,7 +1535,6 @@ class BIMMeshProperties(PropertyGroup):
     is_swept_solid: BoolProperty(name="Is Swept Solid")
     swept_solids: CollectionProperty(name="Swept Solids", type=SweptSolid)
     is_parametric: BoolProperty(name="Is Parametric", default=False)
-    geometry_type: StringProperty(name="Geometry Type")
     ifc_definition: StringProperty(name="IFC Definition")
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     active_representation_item_index: IntProperty(name="Active Representation Item Index")

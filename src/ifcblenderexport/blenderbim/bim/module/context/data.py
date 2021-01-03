@@ -1,6 +1,5 @@
-import blenderbim.bim.ifc
+from blenderbim.bim.ifc import IfcStore
 
-is_loaded = False
 
 class Data:
     is_loaded = False
@@ -8,7 +7,7 @@ class Data:
 
     @classmethod
     def load(cls):
-        file = blenderbim.bim.ifc.IfcStore.get_file()
+        file = IfcStore.get_file()
         if not file:
             return
         cls.contexts = {}

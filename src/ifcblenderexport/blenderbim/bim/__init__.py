@@ -8,6 +8,7 @@ if bpy is not None:
     import blenderbim.bim.module.bcf as module_bcf
     import blenderbim.bim.module.context as module_context
     import blenderbim.bim.module.covetool as module_covetool
+    import blenderbim.bim.module.geometry as module_geometry
     import blenderbim.bim.module.model as module_model
     from . import ui, prop, operator
 
@@ -132,9 +133,6 @@ if bpy is not None:
         operator.SmartClashGroup,
         operator.SelectSmartGroup,
         operator.LoadSmartGroupsForActiveClashSet,
-        operator.AddRepresentation,
-        operator.SwitchRepresentation,
-        operator.RemoveRepresentation,
         operator.OpenUpstream,
         operator.BIM_OT_ChangeClassificationLevel,
         operator.AddPropertySetTemplate,
@@ -208,9 +206,6 @@ if bpy is not None:
         operator.InspectFromObject,
         operator.RewindInspector,
         operator.RefreshDrawingList,
-        operator.GetRepresentationIfcParameters,
-        operator.BakeParametricGeometry,
-        operator.UpdateIfcRepresentation,
         operator.SetBlenderClashSetA,
         operator.SetBlenderClashSetB,
         operator.ExecuteBlenderClash,
@@ -244,8 +239,6 @@ if bpy is not None:
         prop.Schedule,
         prop.DrawingStyle,
         prop.Sheet,
-        prop.Subcontext,
-        prop.Representation,
         prop.PresentationLayer,
         prop.BIMProperties,
         prop.BIMDebugProperties,
@@ -296,7 +289,6 @@ if bpy is not None:
         ui.BIM_PT_object_material,
         ui.BIM_PT_object_psets,
         ui.BIM_PT_object_qto,
-        ui.BIM_PT_representations,
         ui.BIM_PT_classification_references,
         ui.BIM_PT_documents,
         ui.BIM_PT_constraint_relations,
@@ -323,6 +315,7 @@ if bpy is not None:
     classes.extend(module_bcf.classes)
     classes.extend(module_context.classes)
     classes.extend(module_covetool.classes)
+    classes.extend(module_geometry.classes)
     classes.extend(module_model.classes)
 
     def menu_func_export(self, context):
@@ -358,6 +351,7 @@ if bpy is not None:
         module_bcf.register()
         module_context.register()
         module_covetool.register()
+        module_geometry.register()
         module_model.register()
         bpy.app.handlers.depsgraph_update_pre.append(operator.depsgraph_update_pre_handler)
 
@@ -380,6 +374,7 @@ if bpy is not None:
         del bpy.types.TextCurve.BIMTextProperties
         bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
         module_model.unregister()
+        module_geometry.unregister()
         module_covetool.unregister()
         module_context.unregister()
         module_bcf.unregister()
