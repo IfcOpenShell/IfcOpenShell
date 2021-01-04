@@ -23,29 +23,6 @@ class BIM_PT_object(Panel):
         props = context.active_object.BIMObjectProperties
         bim_properties = context.scene.BIMProperties
 
-        if props.is_reassigning_class or "/" not in context.active_object.name:
-            row = layout.row()
-            row.prop(bim_properties, "ifc_product")
-            row = layout.row()
-            row.prop(bim_properties, "ifc_class")
-            if bim_properties.ifc_predefined_type:
-                row = layout.row()
-                row.prop(bim_properties, "ifc_predefined_type")
-            if bim_properties.ifc_predefined_type == "USERDEFINED":
-                row = layout.row()
-                row.prop(bim_properties, "ifc_userdefined_type")
-            row = layout.row(align=True)
-            if "Ifc" not in context.active_object.name:
-                op = row.operator("bim.assign_class")
-            else:
-                op = row.operator("bim.assign_class")
-            op.object_name = context.active_object.name
-            op = row.operator("bim.unassign_class", icon="X", text="")
-            op.object_name = context.active_object.name
-        else:
-            row = layout.row()
-            row.operator("bim.reassign_class", text="Reassign IFC Class")
-
         if "Ifc" not in context.active_object.name:
             return
 

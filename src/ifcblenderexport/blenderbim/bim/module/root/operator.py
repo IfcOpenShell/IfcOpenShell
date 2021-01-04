@@ -1,7 +1,9 @@
 import bpy
 import numpy as np
 import ifcopenshell
-import blenderbim.bim.module.root.assign_class as assign_class
+import blenderbim.bim.module.root.create_product as create_product
+import blenderbim.bim.module.root.remove_product as remove_product
+import blenderbim.bim.module.root.reassign_class as reassign_class
 import blenderbim.bim.module.geometry.add_representation as add_representation
 import blenderbim.bim.module.geometry.assign_styles as assign_styles
 import blenderbim.bim.module.geometry.assign_representation as assign_representation
@@ -11,9 +13,9 @@ from blenderbim.bim.ifc import IfcStore
 # from blenderbim.bim.module.geometry.data import Data
 
 
-class ReassignClass(bpy.types.Operator):
-    bl_idname = "bim.reassign_class"
-    bl_label = "Reassign IFC Class"
+class EnableReassignClass(bpy.types.Operator):
+    bl_idname = "bim.enable_reassign_class"
+    bl_label = "Enable Reassign IFC Class"
 
     def execute(self, context):
         obj = bpy.context.active_object
@@ -40,6 +42,40 @@ class ReassignClass(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class DisableReassignClass(bpy.types.Operator):
+    bl_idname = "bim.disable_reassign_class"
+    bl_label = "Disable Reassign IFC Class"
+
+    def execute(self, context):
+        bpy.context.active_object.BIMObjectProperties.is_reassigning_class = False
+        return {"FINISHED"}
+
+
+class ReassignClass(bpy.types.Operator):
+    bl_idname = "bim.reassign_class"
+    bl_label = "Reassign IFC Class"
+
+    def execute(self, context):
+        obj = bpy.context.active_object
+        self.file = IfcStore.get_file()
+        predefined_type = bpy.context.scene.BIMProperties.ifc_predefined_type
+        if predefined_type == "USERDEFINED":
+            predefined_type = bpy.context.scene.BIMProperties.ifc_userdefined_type
+        usecase = reassign_class.Usecase(
+            self.file,
+            {
+                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
+                "ifc_class": bpy.context.scene.BIMProperties.ifc_class,
+                "predefined_type": predefined_type,
+            },
+        )
+        product = usecase.execute()
+        obj.name = "{}/{}".format(product.is_a(), "/".join(obj.name.split("/")[1:]))
+        obj.BIMObjectProperties.ifc_definition_id = int(product.id())
+        bpy.context.active_object.BIMObjectProperties.is_reassigning_class = False
+        return {"FINISHED"}
+
+
 class AssignClass(bpy.types.Operator):
     bl_idname = "bim.assign_class"
     bl_label = "Assign IFC Class"
@@ -51,11 +87,14 @@ class AssignClass(bpy.types.Operator):
         for obj in objects:
             if obj.BIMObjectProperties.ifc_definition_id:
                 continue
-            usecase = assign_class.Usecase(
+            predefined_type = bpy.context.scene.BIMProperties.ifc_predefined_type
+            if predefined_type == "USERDEFINED":
+                predefined_type = bpy.context.scene.BIMProperties.ifc_userdefined_type
+            usecase = create_product.Usecase(
                 self.file,
                 {
                     "ifc_class": bpy.context.scene.BIMProperties.ifc_class,
-                    "predefined_type": bpy.context.scene.BIMProperties.ifc_predefined_type,
+                    "predefined_type": predefined_type,
                     "name": obj.name,
                 },
             )
@@ -124,12 +163,20 @@ class UnassignClass(bpy.types.Operator):
     object_name: bpy.props.StringProperty()
 
     def execute(self, context):
+        self.file = IfcStore.get_file()
         if self.object_name:
             objects = [bpy.data.objects.get(self.object_name)]
         else:
             objects = bpy.context.selected_objects
         for obj in objects:
-            existing_class = None
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            usecase = remove_product.Usecase(
+                self.file,
+                {"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)},
+            )
+            usecase.execute()
+            obj.BIMObjectProperties.ifc_definition_id = 0
             if "/" in obj.name and obj.name[0:3] == "Ifc":
                 obj.name = "/".join(obj.name.split("/")[1:])
         return {"FINISHED"}
