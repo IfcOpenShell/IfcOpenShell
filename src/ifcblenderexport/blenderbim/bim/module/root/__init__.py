@@ -1,10 +1,13 @@
 import bpy
-from . import operator
+from . import ui, operator
 
 classes = (
+    operator.EnableReassignClass,
+    operator.DisableReassignClass,
     operator.ReassignClass,
     operator.AssignClass,
     operator.UnassignClass,
+    ui.BIM_PT_class,
 )
 
 
