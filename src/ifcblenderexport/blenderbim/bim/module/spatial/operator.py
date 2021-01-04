@@ -18,6 +18,7 @@ class AssignContainer(bpy.types.Operator):
                 relating_structure = self.file.by_id(
                     bpy.data.objects.get(collection.name).BIMObjectProperties.ifc_definition_id
                 )
+                break
         if not relating_structure:
             return {"FINISHED"}
         usecase = assign_container.Usecase(
