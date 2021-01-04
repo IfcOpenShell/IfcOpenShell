@@ -8,6 +8,7 @@ import blenderbim.bim.module.geometry.add_representation as add_representation
 import blenderbim.bim.module.geometry.assign_styles as assign_styles
 import blenderbim.bim.module.geometry.assign_representation as assign_representation
 import blenderbim.bim.module.geometry.add_object_placement as add_object_placement
+import blenderbim.bim.module.spatial.assign_container as assign_container
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -136,8 +137,26 @@ class AssignClass(bpy.types.Operator):
                 )
                 usecase.execute()
 
+            relating_structure = None
+            for collection in obj.users_collection:
+                if "Ifc" in collection.name:
+                    relating_structure = self.file.by_id(
+                        bpy.data.objects.get(collection.name).BIMObjectProperties.ifc_definition_id
+                    )
+                    break
+
+            if relating_structure:
+                usecase = assign_container.Usecase(
+                    self.file,
+                    {
+                        "product": product,
+                        "relating_structure": relating_structure,
+                    },
+                )
+                usecase.execute()
+
             obj.name = "{}/{}".format(bpy.context.scene.BIMProperties.ifc_class, obj.name)
-            obj.BIMObjectProperties.ifc_definition_id = int(result.id())
+            obj.BIMObjectProperties.ifc_definition_id = int(product.id())
             if bpy.context.scene.BIMProperties.ifc_product == "IfcElementType":
                 self.place_in_types_collection(obj)
         return {"FINISHED"}
