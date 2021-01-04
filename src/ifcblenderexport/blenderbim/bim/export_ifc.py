@@ -471,38 +471,27 @@ class IfcParser:
                 continue
             results[item_key] = {"ifc": None, "raw": raw, "material": material, "attributes": {"Name": item.name}}
 
-    def add_automatic_qtos(self, ifc_class, obj):
+    def add_automatic_qtos(self, ifc_class: str, obj):
         if not obj.data:
             return
-        qto_names = self.get_applicable_qtos(ifc_class)
-        for name in qto_names:
-            if name not in schema.ifc.psetqto.qtos:
-                continue
+        applicable_qtos = schema.ifc.psetqto.get_applicable(ifc_class, qto_only=True)
+        for applicable_qto in applicable_qtos:
             has_automatic_value = False
-            props = schema.ifc.psetqto.qtos[name]["HasPropertyTemplates"].keys()
             guessed_values = {}
-            for prop_name in props:
-                value = self.qto_calculator.guess_quantity(prop_name, props, obj)
+            prop_names = [p.Name for p in applicable_qto.HasPropertyTemplates]
+            for prop_name in prop_names:
+                value = self.qto_calculator.guess_quantity(prop_name, prop_names, obj)
                 if value:
                     guessed_values[prop_name] = value
                     has_automatic_value = True
             if has_automatic_value:
                 qto = obj.BIMObjectProperties.qtos.add()
-                qto.name = name
-                for prop_name in props:
+                qto.name = applicable_qto.Name
+                for prop_name in prop_names:
                     prop = qto.properties.add()
                     prop.name = prop_name
                     if prop_name in guessed_values:
                         prop.string_value = str(guessed_values[prop_name])
-
-    def get_applicable_qtos(self, ifc_class):
-        results = []
-        empty = ifcopenshell.file(schema=self.ifc_export_settings.schema)
-        element = empty.create_entity(ifc_class)
-        for ifc_class, qto_names in schema.ifc.applicable_qtos.items():
-            if element.is_a(ifc_class):
-                results.extend(qto_names)
-        return results
 
     def get_product_relating_structure(self, product, obj):
         relating_structure = obj.BIMObjectProperties.relating_structure
@@ -1701,13 +1690,15 @@ class IfcExporter:
             pset["ifc"] = self.file.create_entity("IfcMaterialProperties", **pset["attributes"])
 
     def create_qto_properties(self, qto):
-        if qto["attributes"]["Name"] in schema.ifc.psetqto.qtos:
-            return self.create_templated_qto_properties(qto)
+        qto_template = schema.ifc.psetqto.get_by_name(qto["attributes"]["Name"])
+        if qto_template:
+            return self.create_templated_qto_properties(qto, qto_template)
         return self.create_custom_qto_properties(qto)
 
     def create_pset_properties(self, pset):
-        if pset["attributes"]["Name"] in schema.ifc.psetqto.psets:
-            return self.create_templated_pset_properties(pset)
+        pset_template = schema.ifc.psetqto.get_by_name(pset["attributes"]["Name"])
+        if pset_template:
+            return self.create_templated_pset_properties(pset, pset_template)
         return self.create_custom_pset_properties(pset)
 
     def create_custom_pset_properties(self, pset):
@@ -1737,15 +1728,15 @@ class IfcExporter:
             )
         return properties
 
-    def create_templated_pset_properties(self, pset):
+    def create_templated_pset_properties(self, pset, pset_template):
         properties = []
-        templates = schema.ifc.psetqto.psets[pset["attributes"]["Name"]]["HasPropertyTemplates"]
-        for name, data in templates.items():
+        for prop in pset_template.HasPropertyTemplates:
+            name = prop.Name
             if name not in pset["raw"]:
                 continue
-            if data.TemplateType == "P_SINGLEVALUE" or data.TemplateType == "P_ENUMERATEDVALUE":
-                if data.PrimaryMeasureType:
-                    value_type = data.PrimaryMeasureType
+            if prop.TemplateType == "P_SINGLEVALUE" or prop.TemplateType == "P_ENUMERATEDVALUE":
+                if prop.PrimaryMeasureType:
+                    value_type = prop.PrimaryMeasureType
                 else:
                     # The IFC spec is missing some, so we provide a fallback
                     value_type = "IfcLabel"
@@ -1755,7 +1746,8 @@ class IfcExporter:
                 properties.append(
                     self.file.create_entity("IfcPropertySingleValue", **{"Name": name, "NominalValue": nominal_value})
                 )
-        invalid_pset_keys = [k for k in pset["raw"].keys() if k not in templates.keys()]
+        templates_names = [prop.Name for prop in qto_template.HasPropertyTemplates]
+        invalid_pset_keys = [k for k in pset["raw"].keys() if k not in templates_names]
         if invalid_pset_keys:
             self.ifc_export_settings.logger.error(
                 "One or more properties were invalid in the pset {}: {}".format(
@@ -1764,20 +1756,21 @@ class IfcExporter:
             )
         return properties
 
-    def create_templated_qto_properties(self, qto):
+    def create_templated_qto_properties(self, qto, qto_template):
         properties = []
-        templates = schema.ifc.psetqto.qtos[qto["attributes"]["Name"]]["HasPropertyTemplates"]
-        for name, data in templates.items():
+        for prop in qto_template.HasPropertyTemplates:
+            name = prop.Name
             if name not in qto["raw"]:
                 continue
-            if data.TemplateType[0:2] == "Q_":
-                value_basename = data.TemplateType[2:].title()
+            if prop.TemplateType[0:2] == "Q_":
+                value_basename = prop.TemplateType[2:].title()
                 value_name = f"{value_basename}Value"
                 class_name = f"IfcQuantity{value_basename}"
                 properties.append(
                     self.file.create_entity(class_name, **{"Name": name, value_name: float(qto["raw"][name])})
                 )
-        invalid_qto_keys = [k for k in qto["raw"].keys() if k not in templates.keys()]
+        templates_names = [prop.Name for prop in qto_template.HasPropertyTemplates]
+        invalid_qto_keys = [k for k in qto["raw"].keys() if k not in templates_names]
         if invalid_qto_keys:
             self.ifc_export_settings.logger.error(
                 "One or more properties were invalid in the qto {}/{}: {}".format(
