@@ -492,27 +492,22 @@ class AddQto(bpy.types.Operator):
     bl_label = "Add Qto"
 
     def execute(self, context):
-        self.applicable_qtos_cache = {}
         name = bpy.context.active_object.BIMObjectProperties.qto_name
-        if name not in schema.ifc.psetqto.qtos:
+        qto_template = schema.ifc.psetqto.get_by_name(name)
+        if not qto_template:
             return {"FINISHED"}
         for obj in bpy.context.selected_objects:
             if "/" not in obj.name or obj.BIMObjectProperties.qtos.find(name) != -1:
                 continue
-            applicable_qtos = self.get_applicable_qtos(obj.name.split("/")[0])
+            applicable_qtos = schema.ifc.psetqto.get_applicable_names(obj.name.split("/")[0], qto_only=True)
             if name not in applicable_qtos:
                 continue
             qto = obj.BIMObjectProperties.qtos.add()
             qto.name = name
-            for prop_name in schema.ifc.psetqto.qtos[name]["HasPropertyTemplates"].keys():
+            for prop_name in (p.Name for p in qto_template.HasPropertyTemplates):
                 prop = qto.properties.add()
                 prop.name = prop_name
         return {"FINISHED"}
-
-    def get_applicable_qtos(self, ifc_class):
-        if ifc_class not in self.applicable_qtos_cache:
-            self.applicable_qtos_cache[ifc_class] = schema.ifc.psetqto.get_applicable_names(ifc_class, qto_only=True)
-        return self.applicable_qtos_cache[ifc_class]
 
 
 class AddPset(bpy.types.Operator):
@@ -520,27 +515,22 @@ class AddPset(bpy.types.Operator):
     bl_label = "Add Pset"
 
     def execute(self, context):
-        self.applicable_psets_cache = {}
         name = bpy.context.active_object.BIMObjectProperties.pset_name
-        if name not in schema.ifc.psetqto.psets:
+        pset_template = schema.ifc.psetqto.get_by_name(name)
+        if not pset_template:
             return {"FINISHED"}
         for obj in bpy.context.selected_objects:
             if "/" not in obj.name or obj.BIMObjectProperties.psets.find(name) != -1:
                 continue
-            applicable_psets = self.get_applicable_psets(obj.name.split("/")[0])
+            applicable_psets = schema.ifc.psetqto.get_applicable_names(obj.name.split("/")[0], pset_only=True)
             if name not in applicable_psets:
                 continue
             pset = obj.BIMObjectProperties.psets.add()
             pset.name = name
-            for prop_name in schema.ifc.psetqto.psets[name]["HasPropertyTemplates"].keys():
+            for prop_name in (p.Name for p in pset_template.HasPropertyTemplates):
                 prop = pset.properties.add()
                 prop.name = prop_name
         return {"FINISHED"}
-
-    def get_applicable_psets(self, ifc_class):
-        if ifc_class not in self.applicable_psets_cache:
-            self.applicable_psets_cache[ifc_class] = schema.ifc.psetqto.get_applicable_names(ifc_class, pset_only=True)
-        return self.applicable_psets_cache[ifc_class]
 
 
 class RemovePset(bpy.types.Operator):
@@ -582,13 +572,14 @@ class AddMaterialPset(bpy.types.Operator):
     def execute(self, context):
         material = bpy.context.active_object.active_material
         name = material.BIMMaterialProperties.pset_name
-        if name not in schema.ifc.psetqto.psets:
+        pset_template = schema.ifc.psetqto.get_by_name(name)
+        if not pset_template:
             return {"FINISHED"}
         if material.BIMMaterialProperties.psets.find(name) != -1:
             return {"FINISHED"}
         pset = material.BIMMaterialProperties.psets.add()
         pset.name = name
-        for prop_name in schema.ifc.psetqto.psets[name]["HasPropertyTemplates"].keys():
+        for prop_name in (p.Name for p in pset_template.HasPropertyTemplates):
             prop = pset.properties.add()
             prop.name = prop_name
         return {"FINISHED"}
@@ -2371,29 +2362,26 @@ class CopyPropertyToSelection(bpy.types.Operator):
     prop_value: bpy.props.StringProperty()
 
     def execute(self, context):
-        self.applicable_psets_cache = {}
         for obj in bpy.context.selected_objects:
             if "/" not in obj.name:
                 continue
             pset = obj.BIMObjectProperties.psets.get(self.pset_name)
             if not pset:
-                applicable_psets = self.get_applicable_psets(obj.name.split("/")[0])
-                if self.pset_name not in applicable_psets:
+                applicable_psets = schema.ifc.psetqto.get_applicable(obj.name.split("/")[0], pset_only=True)
+                for pset_template in applicable_psets:
+                    if pset_template.Name == self.pset_name:
+                        break
+                else:
                     continue
                 pset = obj.BIMObjectProperties.psets.add()
                 pset.name = self.pset_name
-                for template_prop_name in schema.ifc.psetqto.psets[self.pset_name]["HasPropertyTemplates"].keys():
+                for template_prop_name in (p.Name for p in pset_template.HasPropertyTemplates):
                     prop = pset.properties.add()
                     prop.name = template_prop_name
             prop = pset.properties.get(self.prop_name)
             if prop:
                 prop.string_value = self.prop_value
         return {"FINISHED"}
-
-    def get_applicable_psets(self, ifc_class):
-        if ifc_class not in self.applicable_psets_cache:
-            self.applicable_psets_cache[ifc_class] = schema.ifc.psetqto.get_applicable_names(ifc_class, pset_only=True)
-        return self.applicable_psets_cache[ifc_class]
 
 
 class CopyAttributeToSelection(bpy.types.Operator):
@@ -3193,11 +3181,12 @@ class GuessQuantity(bpy.types.Operator):
         prop.string_value = str(round(quantity, 3))
 
     def add_qto(self, obj, name):
-        if name not in schema.ifc.psetqto.qtos:
+        qto_template = schema.ifc.psetqto.get_by_name(name)
+        if not qto_template:
             return
         qto = obj.BIMObjectProperties.qtos.add()
         qto.name = name
-        for prop_name in schema.ifc.psetqto.qtos[name]["HasPropertyTemplates"].keys():
+        for prop_name in (p.Name for p in qto_template.HasPropertyTemplates):
             prop = qto.properties.add()
             prop.name = prop_name
         return qto
