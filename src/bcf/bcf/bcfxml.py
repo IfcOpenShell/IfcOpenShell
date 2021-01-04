@@ -9,6 +9,7 @@ from datetime import datetime
 from xml.dom import minidom
 from xmlschema import XMLSchema
 from contextlib import contextmanager
+from shutil import copyfile
 
 
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -206,6 +207,8 @@ class BcfXml:
         self.document = minidom.Document()
         root = self._create_element(self.document, "Markup")
 
+        self.write_header(topic.header, root)
+
         topic_el = self._create_element(
             root,
             "Topic",
@@ -216,10 +219,22 @@ class BcfXml:
             },
         )
 
+        for reference_link in topic.reference_links:
+            self._create_element(topic_el, "ReferenceLink", text=reference_link)
+
         text_map = {
             "Title": topic.title,
             "Priority": topic.priority,
             "Index": topic.index,
+        }
+        for key, value in text_map.items():
+            if value:
+                self._create_element(topic_el, key, text=value)
+
+        for label in topic.labels:
+            self._create_element(topic_el, "Labels", text=label)
+
+        text_map = {
             "CreationDate": topic.creation_date,
             "CreationAuthor": topic.creation_author,
             "ModifiedDate": topic.modified_date,
@@ -233,10 +248,6 @@ class BcfXml:
             if value:
                 self._create_element(topic_el, key, text=value)
 
-        for reference_link in topic.reference_links:
-            self._create_element(topic_el, "ReferenceLink", text=reference_link)
-        for label in topic.labels:
-            self._create_element(topic_el, "Labels", text=label)
         if topic.bim_snippet:
             bim_snippet = self._create_element(
                 topic_el,
@@ -254,7 +265,6 @@ class BcfXml:
         for related_topic in topic.related_topics:
             self._create_element(topic_el, "RelatedTopic", {"Guid": related_topic.guid})
 
-        self.write_header(topic.header, root)
         self.write_comments(topic.comments, root)
         self.write_viewpoints(topic.viewpoints, root, topic)
 
@@ -262,7 +272,7 @@ class BcfXml:
             f.write(self.document.toprettyxml(encoding="utf-8"))
 
     def write_header(self, header, root):
-        if not header:
+        if not header or not header.files:
             return
         header_el = self._create_element(root, "Header")
         for f in header.files:
@@ -295,14 +305,15 @@ class BcfXml:
             if comment.viewpoint:
                 self._create_element(comment_el, "Viewpoint", {"Guid": comment.viewpoint.guid})
 
-    def add_comment(self, comment=None):
+    def add_comment(self, topic, comment=None):
         if comment is None:
             comment = bcf.data.Comment()
         if not comment.guid:
             comment.guid = str(uuid.uuid4())
         if not comment.comment:
             comment.comment = "'Free software' is a matter of liberty, not price. To understand the concept, you should think of 'free' as in 'free speech,' not as in 'free beer'."
-        self.edit_comment(comment)
+        topic.comments[comment.guid] = comment
+        self.edit_comment(comment, topic)
 
     def edit_comment(self, comment, topic):
         if not comment.date:
@@ -334,7 +345,7 @@ class BcfXml:
 
     def write_viewpoint(self, viewpoint, topic):
         document = minidom.Document()
-        root = self._create_element(document, "VisualizationInfo")
+        root = self._create_element(document, "VisualizationInfo", {"Guid": viewpoint.guid})
         self.write_viewpoint_components(viewpoint, root)
         self.write_viewpoint_orthogonal_camera(viewpoint, root)
         self.write_viewpoint_perspective_camera(viewpoint, root)
@@ -354,7 +365,7 @@ class BcfXml:
                 "ViewSetupHints",
                 {
                     "SpacesVisible": viewpoint.components.view_setup_hints.spaces_visible,
-                    "SpaceBoundiresVisible": viewpoint.components.view_setup_hints.space_boundaries_visible,
+                    "SpaceBoundariesVisible": viewpoint.components.view_setup_hints.space_boundaries_visible,
                     "OpeningsVisible": viewpoint.components.view_setup_hints.openings_visible,
                 },
             )
@@ -429,15 +440,19 @@ class BcfXml:
             return
         for bitmap in viewpoint.bitmaps:
             bitmap_el = self._create_element(parent, "Bitmap")
-            text_map = {"Bitmap": bitmap.bitmap_type, "Reference": bitmap.reference, "Height": bitmap.height}
+
+            text_map = {"Bitmap": bitmap.bitmap_type, "Reference": bitmap.reference}
             for key, value in text_map.items():
                 self._create_element(bitmap_el, key, text=value)
+
             location_el = self._create_element(bitmap_el, "Location")
             self.write_vector(location_el, bitmap.location)
             normal_el = self._create_element(bitmap_el, "Normal")
             self.write_vector(normal_el, bitmap.normal)
             up_el = self._create_element(bitmap_el, "Up")
             self.write_vector(up_el, bitmap.up)
+
+            self._create_element(bitmap_el, "Height", text=bitmap.height)
 
     def write_vector(self, parent, from_obj):
         self._create_element(parent, "X", text=from_obj.x)
@@ -461,8 +476,11 @@ class BcfXml:
         if viewpoint.snapshot:
             topic_filepath = os.path.join(self.filepath, topic.guid)
             filepath = os.path.join(topic_filepath, viewpoint.snapshot)
-            if not os.path.exists(filepath):
-                pass  # TODO: handle uploading files
+            if not os.path.exists(filepath) or topic_filepath not in filepath:
+                filename = viewpoint.guid + "." + viewpoint.snapshot[-3:]
+                copyfile(viewpoint.snapshot, os.path.join(topic_filepath, filename))
+                viewpoint.snapshot = filename
+        topic.viewpoints[viewpoint.guid] = viewpoint
         self.edit_topic(topic)
 
     def delete_viewpoint(self, guid, topic):
@@ -484,6 +502,75 @@ class BcfXml:
             if os.path.exists(filepath):
                 os.remove(filepath)
         del topic.viewpoints[guid]
+        self.edit_topic(topic)
+
+    def delete_file(self, topic, index):
+        if not topic.header:
+            return
+        f = topic.header.files.pop(index)
+        filepath = os.path.join(self.filepath, topic.guid, f.reference)
+        if not f.is_external and os.path.exists(filepath):
+            os.remove(filepath)
+        self.edit_topic(topic)
+
+    def delete_bim_snippet(self, topic):
+        if not topic.bim_snippet:
+            return
+        if topic.bim_snippet.reference and not topic.bim_snippet.is_external:
+            filepath = os.path.join(self.filepath, topic.guid, topic.bim_snippet.reference)
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        topic.bim_snippet = None
+        self.edit_topic(topic)
+
+    def delete_document_reference(self, topic, index):
+        document_reference = topic.document_references[index]
+        if document_reference.referenced_document and not document_reference.is_external:
+            filepath = os.path.join(self.filepath, topic.guid, document_reference.referenced_document)
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        del topic.document_references[index]
+        self.edit_topic(topic)
+
+    def add_document_reference(self, topic, document_reference):
+        if os.path.exists(document_reference.referenced_document):
+            topic_filepath = os.path.join(self.filepath, topic.guid)
+            filename = os.path.basename(document_reference.referenced_document)
+            copyfile(document_reference.referenced_document, os.path.join(topic_filepath, filename))
+            document_reference.referenced_document = filename
+            document_reference.is_external = False
+        else:
+            document_reference.is_external = True
+        if not document_reference.guid:
+            document_reference.guid = str(uuid.uuid4())
+        topic.document_references.append(document_reference)
+        self.edit_topic(topic)
+
+    def add_bim_snippet(self, topic, bim_snippet):
+        if topic.bim_snippet:
+            self.delete_bim_snippet(topic)
+        if os.path.exists(bim_snippet.reference):
+            topic_filepath = os.path.join(self.filepath, topic.guid)
+            filename = os.path.basename(bim_snippet.reference)
+            copyfile(bim_snippet.reference, os.path.join(topic_filepath, filename))
+            bim_snippet.reference = filename
+            bim_snippet.is_external = False
+        else:
+            bim_snippet.is_external = True
+        topic.bim_snippet = bim_snippet
+        self.edit_topic(topic)
+
+    def add_file(self, topic, header_file):
+        if os.path.exists(header_file.reference):
+            topic_filepath = os.path.join(self.filepath, topic.guid)
+            header_file.filename = os.path.basename(header_file.reference)
+            copyfile(header_file.reference, os.path.join(topic_filepath, header_file.filename))
+            header_file.reference = header_file.filename
+            header_file.is_external = False
+        header_file.date = datetime.utcnow().isoformat()
+        if not topic.header:
+            topic.header = bcf.data.Header()
+        topic.header.files.append(header_file)
         self.edit_topic(topic)
 
     def get_comments(self, guid):
@@ -622,7 +709,7 @@ class BcfXml:
         for item in visinfo["Bitmap"]:
             bitmap = bcf.data.Bitmap()
             bitmap.reference = item["Reference"]
-            bitmap.bitmap_type = item["Bitmap"].lower()
+            bitmap.bitmap_type = item["Bitmap"].upper()
             self.set_vector(bitmap.location, item["Location"])
             self.set_vector(bitmap.normal, item["Normal"])
             self.set_vector(bitmap.up, item["Up"])

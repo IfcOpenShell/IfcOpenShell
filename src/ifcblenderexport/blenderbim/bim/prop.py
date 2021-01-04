@@ -1,11 +1,9 @@
 import json
 import os
 import ifcopenshell
-import ifcopenshell.util.pset
 from pathlib import Path
 from . import export_ifc
 from . import schema
-from . import bcfstore
 from . import ifc
 from . import annotation
 from . import decoration
@@ -52,25 +50,10 @@ persons_enum = []
 organisations_enum = []
 sheets_enum = []
 vector_styles_enum = []
-bcfviewpoints_enum = None
 
 
 @persistent
 def setDefaultProperties(scene):
-    if (
-        bpy.context.scene.BIMProperties.has_model_context
-        and len(bpy.context.scene.BIMProperties.model_subcontexts) == 0
-    ):
-        subcontext = bpy.context.scene.BIMProperties.model_subcontexts.add()
-        subcontext.name = "Body"
-        subcontext.target_view = "MODEL_VIEW"
-        subcontext = bpy.context.scene.BIMProperties.model_subcontexts.add()
-        subcontext.name = "Box"
-        subcontext.target_view = "MODEL_VIEW"
-    if bpy.context.scene.BIMProperties.has_plan_context and len(bpy.context.scene.BIMProperties.plan_subcontexts) == 0:
-        subcontext = bpy.context.scene.BIMProperties.plan_subcontexts.add()
-        subcontext.name = "Annotation"
-        subcontext.target_view = "PLAN_VIEW"
     if len(bpy.context.scene.DocProperties.drawing_styles) == 0:
         drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
         drawing_style.name = "Technical"
@@ -361,17 +344,11 @@ def refreshTitleblocks(self, context):
 def toggleDecorations(self, context):
     toggle = self.should_draw_decorations
     if toggle:
-        decoration.DimensionDecorator.install(self, context)
-        decoration.EqualityDecorator.install(self, context)
-        decoration.LeaderDecorator.install(self, context)
-        decoration.StairDecorator.install(self, context)
-        decoration.HiddenDecorator.install(self, context)
+        for dec in decoration.all_decorators:
+            dec.install(self, context)
     else:
-        decoration.DimensionDecorator.uninstall()
-        decoration.EqualityDecorator.uninstall()
-        decoration.LeaderDecorator.uninstall()
-        decoration.StairDecorator.uninstall()
-        decoration.HiddenDecorator.uninstall()
+        for dec in decoration.all_decorators:
+            dec.uninstall()
 
 
 def getScenarios(self, context):
@@ -441,9 +418,7 @@ def getPsetNames(self, context):
     global psetnames_enum
     psetnames_enum.clear()
     if "/" in context.active_object.name and context.active_object.name.split("/")[0] in schema.ifc.elements:
-        pset_names = ifcopenshell.util.pset.get_applicable_psetqtos(
-            bpy.context.scene.BIMProperties.export_schema, context.active_object.name.split("/")[0], is_pset=True
-        )
+        pset_names = schema.ifc.psetqto.get_applicable_names(context.active_object.name.split("/")[0], pset_only=True)
         psetnames_enum.extend([(p, p, "") for p in pset_names])
     return psetnames_enum
 
@@ -451,9 +426,7 @@ def getPsetNames(self, context):
 def getMaterialPsetNames(self, context):
     global materialpsetnames_enum
     materialpsetnames_enum.clear()
-    pset_names = ifcopenshell.util.pset.get_applicable_psetqtos(
-        bpy.context.scene.BIMProperties.export_schema, "IfcMaterial", is_pset=True
-    )
+    pset_names = schema.ifc.psetqto.get_applicable_names("IfcMaterial", pset_only=True)
     materialpsetnames_enum.extend([(p, p, "") for p in pset_names])
     return materialpsetnames_enum
 
@@ -462,9 +435,7 @@ def getQtoNames(self, context):
     global qtonames_enum
     qtonames_enum.clear()
     if "/" in context.active_object.name and context.active_object.name.split("/")[0] in schema.ifc.elements:
-        qto_names = ifcopenshell.util.pset.get_applicable_psetqtos(
-            bpy.context.scene.BIMProperties.export_schema, context.active_object.name.split("/")[0], is_qto=True
-        )
+        qto_names = schema.ifc.psetqto.get_applicable_names(context.active_object.name.split("/")[0], qto_only=True)
         qtonames_enum.extend([(q, q, "") for q in qto_names])
     return qtonames_enum
 
@@ -516,6 +487,19 @@ def getMaterialTypes(self, context):
     return materialtypes_enum
 
 
+def getContexts(self, context):
+    from blenderbim.bim.module.context.data import Data
+    if not Data.is_loaded:
+        Data.load()
+    results = []
+    for ifc_id, context in Data.contexts.items():
+        results.append((str(ifc_id), context["ContextType"], ""))
+        for ifc_id2, subcontext in context["HasSubContexts"].items():
+            results.append((str(ifc_id2), "{}/{}/{}".format(
+                subcontext["ContextType"], subcontext["ContextIdentifier"], subcontext["TargetView"]), ""))
+    return results
+
+
 def getSubcontexts(self, context):
     global subcontexts_enum
     subcontexts_enum.clear()
@@ -548,35 +532,6 @@ def refreshFontSize(self, context):
     annotation.Annotator.resize_text(context.active_object)
 
 
-def updateBcfProjectName(self, context):
-    bpy.ops.bim.edit_bcf_project_name()
-
-
-def updateBcfAuthor(self, context):
-    bpy.ops.bim.edit_bcf_author()
-
-
-def updateBcfTopicName(self, context):
-    bpy.ops.bim.edit_bcf_topic_name()
-
-
-def updateBcfTopicIsEditable(self, context):
-    if not self.is_editable:
-        print("EDITING!")
-        bpy.ops.bim.edit_bcf_topic()
-
-
-def refreshBcfTopic(self, context):
-    global bcfviewpoints_enum
-    bcfviewpoints_enum = None
-
-    props = bpy.context.scene.BCFProperties
-    bcfxml = bcfstore.BcfStore.get_bcfxml()
-    topic = props.topics[props.active_topic_index]
-    header = bcfxml.get_header(topic.name)
-    getBcfViewpoints(self, context)
-
-
 class StrProperty(PropertyGroup):
     pass
 
@@ -593,13 +548,6 @@ class Attribute(PropertyGroup):
     bool_value: BoolProperty(name="Value")
     int_value: IntProperty(name="Value")
     float_value: FloatProperty(name="Value")
-
-
-class Subcontext(PropertyGroup):
-    name: StringProperty(name="Name")
-    context: StringProperty(name="Context")
-    target_view: StringProperty(name="Target View")
-    ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
 class MaterialLayer(PropertyGroup):
@@ -715,6 +663,9 @@ class DocProperties(PropertyGroup):
     ifc_files: CollectionProperty(name="IFCs", type=StrProperty)
     drawing_styles: CollectionProperty(name="Drawing Styles", type=DrawingStyle)
     should_draw_decorations: BoolProperty(name="Should Draw Decorations", update=toggleDecorations)
+    decorations_colour: FloatVectorProperty(name="Decorations Colour", subtype="COLOR", default=(1, 0, 0, 1),
+                                            min=0.0, max=1.0, size=4,
+                                            update=toggleDecorations)
 
 
 class BIMCameraProperties(PropertyGroup):
@@ -945,67 +896,6 @@ class Constraint(PropertyGroup):
         name="Qualifier",
     )
     user_defined_qualifier: StringProperty(name="Custom Qualifier")
-
-
-def getBcfViewpoints(self, context):
-    global bcfviewpoints_enum
-    if bcfviewpoints_enum is None:
-        bcfviewpoints_enum = []
-        props = bpy.context.scene.BCFProperties
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
-        topic = props.topics[props.active_topic_index]
-        viewpoints = bcfxml.get_viewpoints(topic.name)
-        bcfviewpoints_enum.extend([(v, f"Viewpoint {i+1}", "") for i, v in enumerate(viewpoints.keys())])
-    return bcfviewpoints_enum
-
-
-class BcfBimSnippet(PropertyGroup):
-    schema: StringProperty(name="Schema")
-    reference: StringProperty(name="Reference")
-    type: StringProperty(name="Type")
-    is_external: BoolProperty(name="Is External")
-
-
-class BcfDocumentReference(PropertyGroup):
-    reference: StringProperty(name="Reference")
-    description: StringProperty(name="Description")
-    guid: StringProperty(name="GUID")
-    is_external: BoolProperty(name="Is External")
-
-
-class BcfComment(PropertyGroup):
-    name: StringProperty(name="GUID")
-    date: StringProperty(name="Date")
-    author: StringProperty(name="Author")
-    comment: StringProperty(name="Comment")
-    viewpoint: StringProperty(name="Viewpoint")
-    modified_date: StringProperty(name="Modified Date")
-    modified_author: StringProperty(name="Modified Author")
-
-
-class BcfTopic(PropertyGroup):
-    name: StringProperty(name="GUID")
-    title: StringProperty(default="", name="Title", update=updateBcfTopicName)
-    type: StringProperty(default="", name="Type")
-    status: StringProperty(default="", name="Status")
-    priority: StringProperty(default="", name="Priority")
-    stage: StringProperty(default="", name="Stage")
-    creation_date: StringProperty(default="", name="Date")
-    creation_author: StringProperty(default="", name="Author")
-    modified_date: StringProperty(default="", name="Modified Date")
-    modified_author: StringProperty(default="", name="Modified By")
-    assigned_to: StringProperty(default="", name="Assigned To")
-    due_date: StringProperty(default="", name="Due Date")
-    description: StringProperty(default="", name="Description")
-    viewpoints: EnumProperty(items=getBcfViewpoints, name="BCF Viewpoints")
-    files: CollectionProperty(name="Files", type=StrProperty)
-    reference_links: CollectionProperty(name="Reference Links", type=StrProperty)
-    labels: CollectionProperty(name="Labels", type=StrProperty)
-    bim_snippet: PointerProperty(type=BcfBimSnippet)
-    document_references: CollectionProperty(name="Document References", type=BcfDocumentReference)
-    related_topics: CollectionProperty(name="Related Topics", type=StrProperty)
-    comments: CollectionProperty(name="Comments", type=BcfComment)
-    is_editable: BoolProperty(name="Is Editable", default=False, update=updateBcfTopicIsEditable)
 
 
 class PropertySetTemplate(PropertyGroup):
@@ -1358,6 +1248,7 @@ class BIMProperties(PropertyGroup):
     )
     export_should_force_faceted_brep: BoolProperty(name="Export with Faceted Breps", default=False)
     export_should_force_triangulation: BoolProperty(name="Export with Triangulation", default=False)
+    export_should_export_from_memory: BoolProperty(name="Export from Memory", default=False)
     import_should_ignore_site_coordinates: BoolProperty(name="Import Ignoring Site Coordinates", default=False)
     import_should_ignore_building_coordinates: BoolProperty(name="Import Ignoring Building Coordinates", default=False)
     import_should_reset_absolute_coordinates: BoolProperty(name="Import Resetting Absolute Coordinates", default=False)
@@ -1416,10 +1307,7 @@ class BIMProperties(PropertyGroup):
     classification: EnumProperty(items=getClassifications, name="Classification", update=refreshReferences)
     active_classification_name: StringProperty(name="Active Classification Name")
     classifications: CollectionProperty(name="Classifications", type=Classification)
-    has_model_context: BoolProperty(name="Has Model Context", default=True)
-    has_plan_context: BoolProperty(name="Has Plan Context", default=True)
-    model_subcontexts: CollectionProperty(name="Model Subcontexts", type=Subcontext)
-    plan_subcontexts: CollectionProperty(name="Plan Subcontexts", type=Subcontext)
+    contexts: EnumProperty(items=getContexts, name="Contexts")
     available_contexts: EnumProperty(items=[("Model", "Model", ""), ("Plan", "Plan", "")], name="Available Contexts")
     available_subcontexts: EnumProperty(items=getSubcontexts, name="Available Subcontexts")
     available_target_views: EnumProperty(items=getTargetViews, name="Available Target Views")
@@ -1440,6 +1328,12 @@ class BIMProperties(PropertyGroup):
     )
     ifc_selector: StringProperty(default="", name="IFC Selector")
     csv_attributes: CollectionProperty(name="CSV Attributes", type=StrProperty)
+    csv_delimiter: EnumProperty(
+        items=[(";", ";", ""), (",", ",", ""), (".", ".", ""), ("CUSTOM", "Custom", ""),],
+        name="IFC CSV Delimiter",
+        default=";",
+    )
+    csv_custom_delimiter: StringProperty(default="", name="Custom Delimiter")
     document_information: CollectionProperty(name="Document Information", type=DocumentInformation)
     active_document_information_index: IntProperty(name="Active Document Information Index")
     document_references: CollectionProperty(name="Document References", type=DocumentReference)
@@ -1447,6 +1341,7 @@ class BIMProperties(PropertyGroup):
     blender_clash_set_a: CollectionProperty(name="Blender Clash Set A", type=StrProperty)
     blender_clash_set_b: CollectionProperty(name="Blender Clash Set B", type=StrProperty)
     clash_sets: CollectionProperty(name="Clash Sets", type=ClashSet)
+    should_create_clash_snapshots: BoolProperty(name="Create Snapshots", default=True)
     clash_results_path: StringProperty(name="Clash Results Path")
     smart_grouped_clashes_path: StringProperty(name="Smart Grouped Clashes Path")
     active_clash_set_index: IntProperty(name="Active Clash Set Index")
@@ -1513,15 +1408,6 @@ class BIMProperties(PropertyGroup):
     presentation_layers: CollectionProperty(name="Presentation Layers", type=PresentationLayer)
 
 
-class BCFProperties(PropertyGroup):
-    is_loaded: BoolProperty(name="Is Loaded", default=False)
-    comment_text_width: IntProperty(name="Comment Text Width", default=40)
-    name: StringProperty(default="", name="Project Name", update=updateBcfProjectName)
-    author: StringProperty(default="john@doe.com", name="Author Email", update=updateBcfAuthor)
-    topics: CollectionProperty(name="BCF Topics", type=BcfTopic)
-    active_topic_index: IntProperty(name="Active BCF Topic Index", update=refreshBcfTopic)
-
-
 class MapConversion(PropertyGroup):
     eastings: StringProperty(name="Eastings")
     northings: StringProperty(name="Northings")
@@ -1577,6 +1463,7 @@ class BoundaryCondition(PropertyGroup):
 
 
 class BIMObjectProperties(PropertyGroup):
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_reassigning_class: BoolProperty(name="Is Reassigning Class")
     global_ids: CollectionProperty(name="GlobalIds", type=GlobalId)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
@@ -1598,7 +1485,6 @@ class BIMObjectProperties(PropertyGroup):
     has_boundary_condition: BoolProperty(name="Has Boundary Condition")
     boundary_condition: PointerProperty(name="Boundary Condition", type=BoundaryCondition)
     structural_member_connection: PointerProperty(name="Structural Member Connection", type=bpy.types.Object)
-    representation_contexts: CollectionProperty(name="Representation Contexts", type=Subcontext)
     # Address applies to IfcSite's SiteAddress and IfcBuilding's BuildingAddress
     address: PointerProperty(name="Address", type=Address)
 
@@ -1621,6 +1507,9 @@ class BIMMaterialProperties(PropertyGroup):
     psets: CollectionProperty(name="Psets", type=PsetQto)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     applicable_attributes: EnumProperty(items=getApplicableMaterialAttributes, name="Attribute Names")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+    # In Blender, a material object can map to an IFC material, IFC surface style, or both
+    ifc_style_id: IntProperty(name="IFC Style ID")
 
 
 class SweptSolid(PropertyGroup):
@@ -1641,13 +1530,13 @@ class ItemSlotMap(PropertyGroup):
 
 
 class BIMMeshProperties(PropertyGroup):
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_native: BoolProperty(name="Is Native", default=False)
     is_swept_solid: BoolProperty(name="Is Swept Solid")
     swept_solids: CollectionProperty(name="Swept Solids", type=SweptSolid)
     is_parametric: BoolProperty(name="Is Parametric", default=False)
-    geometry_type: StringProperty(name="Geometry Type")
     ifc_definition: StringProperty(name="IFC Definition")
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     active_representation_item_index: IntProperty(name="Active Representation Item Index")
     presentation_layer_index: IntProperty(name="Presentation Layer Index", default=-1)
-    ifc_item_ids: CollectionProperty(name="IFC Definition ID", type=ItemSlotMap)
+    ifc_item_ids: CollectionProperty(name="IFC Item IDs", type=ItemSlotMap)

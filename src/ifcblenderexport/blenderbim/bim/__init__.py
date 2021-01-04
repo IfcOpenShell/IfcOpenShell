@@ -5,40 +5,19 @@ bpy = sys.modules.get("bpy")
 
 if bpy is not None:
     import bpy
+    import blenderbim.bim.module.root as module_root
+    import blenderbim.bim.module.bcf as module_bcf
+    import blenderbim.bim.module.context as module_context
+    import blenderbim.bim.module.covetool as module_covetool
+    import blenderbim.bim.module.geometry as module_geometry
+    import blenderbim.bim.module.model as module_model
+    import blenderbim.bim.module.spatial as module_spatial
     from . import ui, prop, operator
 
-    from .module.covetool import prop as covetool_prop
-    from .module.covetool import ui as covetool_ui
-    from .module.covetool import operator as covetool_operator
-
-    from .module.model import grid as model_grid
-    from .module.model import wall as model_wall
-    from .module.model import stair as model_stair
-    from .module.model import door as model_door
-    from .module.model import window as model_window
-    from .module.model import slab as model_slab
-    from .module.model import opening as model_opening
-
-    classes = (
-        operator.ReassignClass,
-        operator.AssignClass,
-        operator.UnassignClass,
+    classes = [
         operator.SelectClass,
         operator.SelectType,
-        operator.NewBcfProject,
-        operator.LoadBcfProject,
-        operator.LoadBcfTopics,
-        operator.LoadBcfComments,
-        operator.EditBcfProjectName,
-        operator.EditBcfAuthor,
-        operator.EditBcfTopicName,
-        operator.EditBcfTopic,
-        operator.SaveBcfProject,
-        operator.AddBcfTopic,
-        operator.ViewBcfTopic,
-        operator.ActivateBcfViewpoint,
         operator.OpenUri,
-        operator.OpenBcfReferenceLink,
         operator.SelectFeaturesDir,
         operator.SelectDiffJsonFile,
         operator.SelectDiffNewFile,
@@ -129,14 +108,13 @@ if bpy is not None:
         operator.FetchLibraryInformation,
         operator.FetchExternalMaterial,
         operator.FetchObjectPassport,
-        operator.AddSubcontext,
-        operator.RemoveSubcontext,
         operator.CutSection,
         operator.AddSheet,
         operator.OpenSheet,
         operator.AddDrawingToSheet,
         operator.CreateSheets,
         operator.OpenView,
+        operator.OpenViewCamera,
         operator.ActivateView,
         operator.ExecuteIfcDiff,
         operator.VisualiseDiff,
@@ -154,8 +132,6 @@ if bpy is not None:
         operator.SmartClashGroup,
         operator.SelectSmartGroup,
         operator.LoadSmartGroupsForActiveClashSet,
-        operator.SwitchContext,
-        operator.RemoveContext,
         operator.OpenUpstream,
         operator.BIM_OT_ChangeClassificationLevel,
         operator.AddPropertySetTemplate,
@@ -182,7 +158,6 @@ if bpy is not None:
         operator.AddVariable,
         operator.RemoveVariable,
         operator.PropagateTextData,
-        operator.PushRepresentation,
         operator.ConvertLocalToGlobal,
         operator.ConvertGlobalToLocal,
         operator.GuessQuantity,
@@ -230,15 +205,13 @@ if bpy is not None:
         operator.InspectFromObject,
         operator.RewindInspector,
         operator.RefreshDrawingList,
-        operator.GetRepresentationIfcParameters,
-        operator.BakeParametricGeometry,
-        operator.UpdateIfcRepresentation,
         operator.SetBlenderClashSetA,
         operator.SetBlenderClashSetB,
         operator.ExecuteBlenderClash,
         operator.CleanWireframes,
         operator.LinkIfc,
         operator.SnapSpacesTogether,
+        operator.CopyGrid,
         prop.StrProperty,
         prop.Attribute,
         prop.MaterialLayer,
@@ -265,15 +238,9 @@ if bpy is not None:
         prop.Schedule,
         prop.DrawingStyle,
         prop.Sheet,
-        prop.BcfBimSnippet,
-        prop.BcfDocumentReference,
-        prop.BcfComment,
-        prop.BcfTopic,
-        prop.Subcontext,
         prop.PresentationLayer,
         prop.BIMProperties,
         prop.BIMDebugProperties,
-        prop.BCFProperties,
         prop.DocProperties,
         prop.BIMLibrary,
         prop.MapConversion,
@@ -302,13 +269,9 @@ if bpy is not None:
         ui.BIM_PT_search,
         ui.BIM_PT_ifccsv,
         ui.BIM_PT_ifcclash,
-        ui.BIM_PT_bcf,
-        ui.BIM_PT_bcf_metadata,
-        ui.BIM_PT_bcf_comments,
         ui.BIM_PT_owner,
         ui.BIM_PT_people,
         ui.BIM_PT_organisations,
-        ui.BIM_PT_context,
         ui.BIM_PT_qa,
         ui.BIM_PT_library,
         ui.BIM_PT_gis,
@@ -325,7 +288,6 @@ if bpy is not None:
         ui.BIM_PT_object_material,
         ui.BIM_PT_object_psets,
         ui.BIM_PT_object_qto,
-        ui.BIM_PT_representations,
         ui.BIM_PT_classification_references,
         ui.BIM_PT_documents,
         ui.BIM_PT_constraint_relations,
@@ -338,6 +300,7 @@ if bpy is not None:
         ui.BIM_PT_clash_manager,
         ui.BIM_PT_misc_utilities,
         ui.BIM_UL_generic,
+        ui.BIM_UL_drawinglist,
         ui.BIM_UL_clash_sets,
         ui.BIM_UL_smart_groups,
         ui.BIM_UL_constraints,
@@ -346,22 +309,15 @@ if bpy is not None:
         ui.BIM_UL_topics,
         ui.BIM_UL_classifications,
         ui.BIM_ADDON_preferences,
-        covetool_prop.CoveToolProject,
-        covetool_prop.CoveToolSimpleAnalysis,
-        covetool_prop.CoveToolProperties,
-        covetool_ui.BIM_UL_covetool_projects,
-        covetool_ui.BIM_PT_covetool,
-        covetool_operator.Login,
-        covetool_operator.RunSimpleAnalysis,
-        covetool_operator.RunAnalysis,
-        model_grid.BIM_OT_add_object,
-        model_wall.BIM_OT_add_object,
-        model_stair.BIM_OT_add_object,
-        model_door.BIM_OT_add_object,
-        model_window.BIM_OT_add_object,
-        model_slab.BIM_OT_add_object,
-        model_opening.BIM_OT_add_object,
-    )
+    ]
+
+    classes.extend(module_root.classes)
+    classes.extend(module_bcf.classes)
+    classes.extend(module_context.classes)
+    classes.extend(module_covetool.classes)
+    classes.extend(module_geometry.classes)
+    classes.extend(module_model.classes)
+    classes.extend(module_spatial.classes)
 
     def menu_func_export(self, context):
         self.layout.operator(operator.ExportIFC.bl_idname, text="Industry Foundation Classes (.ifc/.ifczip/.ifcjson)")
@@ -382,7 +338,6 @@ if bpy is not None:
         bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
         bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
         bpy.types.Scene.BIMDebugProperties = bpy.props.PointerProperty(type=prop.BIMDebugProperties)
-        bpy.types.Scene.BCFProperties = bpy.props.PointerProperty(type=prop.BCFProperties)
         bpy.types.Scene.DocProperties = bpy.props.PointerProperty(type=prop.DocProperties)
         bpy.types.Scene.BIMLibrary = bpy.props.PointerProperty(type=prop.BIMLibrary)
         bpy.types.Scene.MapConversion = bpy.props.PointerProperty(type=prop.MapConversion)
@@ -393,15 +348,14 @@ if bpy is not None:
         bpy.types.Mesh.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
         bpy.types.Camera.BIMCameraProperties = bpy.props.PointerProperty(type=prop.BIMCameraProperties)
         bpy.types.TextCurve.BIMTextProperties = bpy.props.PointerProperty(type=prop.BIMTextProperties)
-        bpy.types.Scene.CoveToolProperties = bpy.props.PointerProperty(type=covetool_prop.CoveToolProperties)
         bpy.types.SCENE_PT_unit.append(ui.ifc_units)
-        bpy.types.VIEW3D_MT_mesh_add.append(model_grid.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.append(model_wall.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.append(model_stair.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.append(model_door.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.append(model_window.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.append(model_slab.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.append(model_opening.add_object_button)
+        module_root.register()
+        module_bcf.register()
+        module_context.register()
+        module_covetool.register()
+        module_geometry.register()
+        module_model.register()
+        module_spatial.register()
         bpy.app.handlers.depsgraph_update_pre.append(operator.depsgraph_update_pre_handler)
 
     def unregister():
@@ -412,7 +366,6 @@ if bpy is not None:
         bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
         del bpy.types.Scene.BIMProperties
         del bpy.types.Scene.BIMDebugProperties
-        del bpy.types.Scene.BCFProperties
         del bpy.types.Scene.DocProperties
         del bpy.types.Scene.MapConversion
         del bpy.types.Scene.TargetCRS
@@ -423,11 +376,11 @@ if bpy is not None:
         del bpy.types.Camera.BIMCameraProperties
         del bpy.types.TextCurve.BIMTextProperties
         bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
-        bpy.types.VIEW3D_MT_mesh_add.remove(model_grid.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.remove(model_wall.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.remove(model_stair.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.remove(model_door.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.remove(model_window.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.remove(model_slab.add_object_button)
-        bpy.types.VIEW3D_MT_mesh_add.remove(model_opening.add_object_button)
+        module_spatial.unregister()
+        module_model.unregister()
+        module_geometry.unregister()
+        module_covetool.unregister()
+        module_context.unregister()
+        module_bcf.unregister()
+        module_root.unregister()
         bpy.app.handlers.depsgraph_update_pre.remove(operator.depsgraph_update_pre_handler)

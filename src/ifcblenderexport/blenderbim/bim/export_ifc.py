@@ -8,7 +8,6 @@ import os
 import zipfile
 import tempfile
 import ifcopenshell
-import ifcopenshell.util.pset
 import ifcopenshell.util.schema
 from pathlib import Path
 from mathutils import Vector, Matrix
@@ -472,38 +471,27 @@ class IfcParser:
                 continue
             results[item_key] = {"ifc": None, "raw": raw, "material": material, "attributes": {"Name": item.name}}
 
-    def add_automatic_qtos(self, ifc_class, obj):
+    def add_automatic_qtos(self, ifc_class: str, obj):
         if not obj.data:
             return
-        qto_names = self.get_applicable_qtos(ifc_class)
-        for name in qto_names:
-            if name not in ifcopenshell.util.pset.qtos:
-                continue
+        applicable_qtos = schema.ifc.psetqto.get_applicable(ifc_class, qto_only=True)
+        for applicable_qto in applicable_qtos:
             has_automatic_value = False
-            props = ifcopenshell.util.pset.qtos[name]["HasPropertyTemplates"].keys()
             guessed_values = {}
-            for prop_name in props:
-                value = self.qto_calculator.guess_quantity(prop_name, props, obj)
+            prop_names = [p.Name for p in applicable_qto.HasPropertyTemplates]
+            for prop_name in prop_names:
+                value = self.qto_calculator.guess_quantity(prop_name, prop_names, obj)
                 if value:
                     guessed_values[prop_name] = value
                     has_automatic_value = True
             if has_automatic_value:
                 qto = obj.BIMObjectProperties.qtos.add()
-                qto.name = name
-                for prop_name in props:
+                qto.name = applicable_qto.Name
+                for prop_name in prop_names:
                     prop = qto.properties.add()
                     prop.name = prop_name
                     if prop_name in guessed_values:
                         prop.string_value = str(guessed_values[prop_name])
-
-    def get_applicable_qtos(self, ifc_class):
-        results = []
-        empty = ifcopenshell.file(schema=self.ifc_export_settings.schema)
-        element = empty.create_entity(ifc_class)
-        for ifc_class, qto_names in schema.ifc.applicable_qtos.items():
-            if element.is_a(ifc_class):
-                results.extend(qto_names)
-        return results
 
     def get_product_relating_structure(self, product, obj):
         relating_structure = obj.BIMObjectProperties.relating_structure
@@ -1057,29 +1045,32 @@ class IfcParser:
         for context in self.ifc_export_settings.context_tree:
             for subcontext in context["subcontexts"]:
                 for target_view in subcontext["target_views"]:
-                    rep_context = self.get_obj_representation_context(obj, context["name"], subcontext["name"], target_view)
-                    if rep_context:
-                        self.append_representation_in_context(obj, rep_context, name)
+                    representation = self.get_shape_representation(obj, context["name"], subcontext["name"], target_view)
+                    if representation:
+                        self.append_representation_in_context(obj, representation, name)
 
-    def get_obj_representation_context(self, obj, context, subcontext, target_view):
-        for c in obj.BIMObjectProperties.representation_contexts:
-            if c.context == context and c.name == subcontext and c.target_view == target_view:
-                return c
-        if obj.BIMObjectProperties.representation_contexts:
+    def get_shape_representation(self, obj, context, subcontext, target_view):
+        for representation in obj.BIMObjectProperties.representations:
+            c = self.stored_file.by_id(representation.ifc_definition_id)
+            if c.ContextType == context and c.ContextIdentifier == subcontext and c.TargetView == target_view:
+                return representation
+        if obj.BIMObjectProperties.representations:
             return
-        if context == "Model" and subcontext == "Body" and target_view == "MODEL_VIEW":
-            representation_context = obj.BIMObjectProperties.representation_contexts.add()
-            representation_context.context = "Model"
-            representation_context.name = "Body"
-            representation_context.target_view = "MODEL_VIEW"
-            return representation_context
+        # TODO: reimplement - see bug #1222
+        #if context == "Model" and subcontext == "Body" and target_view == "MODEL_VIEW":
+        #    representation_context = obj.BIMObjectProperties.representation_contexts.add()
+        #    representation_context.context = "Model"
+        #    representation_context.name = "Body"
+        #    representation_context.target_view = "MODEL_VIEW"
+        #    return representation_context
 
-    def append_representation_in_context(self, obj, rep_context, name):
-        context = rep_context.context
-        subcontext = rep_context.name
-        target_view = rep_context.target_view
+    def append_representation_in_context(self, obj, shape_representation, name):
+        context_of_items = self.stored_file.by_id(shape_representation.ifc_definition_id).ContextOfItems
+        context = context_of_items.ContextType
+        subcontext = context_of_items.ContextIdentifier
+        target_view = context_of_items.TargetView
 
-        if self.ifc_export_settings.should_roundtrip_native and rep_context.ifc_definition_id:
+        if self.ifc_export_settings.should_roundtrip_native and shape_representation.ifc_definition_id:
             self.representations[
                 "{}/{}/{}/{}".format(context, subcontext, target_view, name)
             ] = self.get_representation(obj.data, obj, context, subcontext, target_view)
@@ -1088,7 +1079,6 @@ class IfcParser:
         context_prefix = "/".join([context, subcontext, target_view])
         mesh_name = "/".join([context_prefix, name])
         mesh = self.search_for_mesh_or_curve_data(mesh_name)
-        # TODO: if the search result is empty, we should check for ifc_definition_id
         if mesh:
             self.representations[mesh_name] = self.get_representation(mesh, obj, context, subcontext, target_view)
             if "Model/Box/MODEL_VIEW" in self.generated_subcontexts and context_prefix == "Model/Body/MODEL_VIEW":
@@ -1113,7 +1103,7 @@ class IfcParser:
         return data
 
     def get_representation(self, mesh, obj, context, subcontext, target_view):
-        rep_context = self.get_obj_representation_context(obj, context, subcontext, target_view)
+        representation = self.get_shape_representation(obj, context, subcontext, target_view)
         return {
             "ifc": None,
             "raw": mesh,
@@ -1121,9 +1111,9 @@ class IfcParser:
             "context": context,
             "subcontext": subcontext,
             "target_view": target_view,
-            "has_ifc_definition": rep_context and rep_context.ifc_definition_id,
+            "has_ifc_definition": representation and representation.ifc_definition_id,
             "ifc_definition": mesh.BIMMeshProperties.ifc_definition if hasattr(mesh, "BIMMeshProperties") else None,
-            "ifc_definition_id": rep_context.ifc_definition_id if rep_context else 0
+            "ifc_definition_id": representation.ifc_definition_id if representation else 0
             if hasattr(mesh, "BIMMeshProperties")
             else None,
             "is_parametric": mesh.BIMMeshProperties.is_parametric if hasattr(mesh, "BIMMeshProperties") else False,
@@ -1345,6 +1335,10 @@ class IfcExporter:
         self.roundtrip_id_new_to_old = {}
 
     def export(self, selected_objects):
+        self.stored_file = ifc.IfcStore.get_file() # See bug #1222
+        if self.stored_file and self.ifc_export_settings.should_export_from_memory:
+            self.file = self.stored_file
+            return self.write_ifc_file()
         self.schema_version = self.ifc_export_settings.schema
         self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.schema_version)
         self.file = ifcopenshell.file(schema=self.schema_version)
@@ -1696,13 +1690,15 @@ class IfcExporter:
             pset["ifc"] = self.file.create_entity("IfcMaterialProperties", **pset["attributes"])
 
     def create_qto_properties(self, qto):
-        if qto["attributes"]["Name"] in ifcopenshell.util.pset.qtos:
-            return self.create_templated_qto_properties(qto)
+        qto_template = schema.ifc.psetqto.get_by_name(qto["attributes"]["Name"])
+        if qto_template:
+            return self.create_templated_qto_properties(qto, qto_template)
         return self.create_custom_qto_properties(qto)
 
     def create_pset_properties(self, pset):
-        if pset["attributes"]["Name"] in ifcopenshell.util.pset.psets:
-            return self.create_templated_pset_properties(pset)
+        pset_template = schema.ifc.psetqto.get_by_name(pset["attributes"]["Name"])
+        if pset_template:
+            return self.create_templated_pset_properties(pset, pset_template)
         return self.create_custom_pset_properties(pset)
 
     def create_custom_pset_properties(self, pset):
@@ -1732,15 +1728,15 @@ class IfcExporter:
             )
         return properties
 
-    def create_templated_pset_properties(self, pset):
+    def create_templated_pset_properties(self, pset, pset_template):
         properties = []
-        templates = ifcopenshell.util.pset.psets[pset["attributes"]["Name"]]["HasPropertyTemplates"]
-        for name, data in templates.items():
+        for prop in pset_template.HasPropertyTemplates:
+            name = prop.Name
             if name not in pset["raw"]:
                 continue
-            if data.TemplateType == "P_SINGLEVALUE" or data.TemplateType == "P_ENUMERATEDVALUE":
-                if data.PrimaryMeasureType:
-                    value_type = data.PrimaryMeasureType
+            if prop.TemplateType == "P_SINGLEVALUE" or prop.TemplateType == "P_ENUMERATEDVALUE":
+                if prop.PrimaryMeasureType:
+                    value_type = prop.PrimaryMeasureType
                 else:
                     # The IFC spec is missing some, so we provide a fallback
                     value_type = "IfcLabel"
@@ -1750,7 +1746,8 @@ class IfcExporter:
                 properties.append(
                     self.file.create_entity("IfcPropertySingleValue", **{"Name": name, "NominalValue": nominal_value})
                 )
-        invalid_pset_keys = [k for k in pset["raw"].keys() if k not in templates.keys()]
+        templates_names = [prop.Name for prop in qto_template.HasPropertyTemplates]
+        invalid_pset_keys = [k for k in pset["raw"].keys() if k not in templates_names]
         if invalid_pset_keys:
             self.ifc_export_settings.logger.error(
                 "One or more properties were invalid in the pset {}: {}".format(
@@ -1759,20 +1756,21 @@ class IfcExporter:
             )
         return properties
 
-    def create_templated_qto_properties(self, qto):
+    def create_templated_qto_properties(self, qto, qto_template):
         properties = []
-        templates = ifcopenshell.util.pset.qtos[qto["attributes"]["Name"]]["HasPropertyTemplates"]
-        for name, data in templates.items():
+        for prop in qto_template.HasPropertyTemplates:
+            name = prop.Name
             if name not in qto["raw"]:
                 continue
-            if data.TemplateType[0:2] == "Q_":
-                value_basename = data.TemplateType[2:].title()
+            if prop.TemplateType[0:2] == "Q_":
+                value_basename = prop.TemplateType[2:].title()
                 value_name = f"{value_basename}Value"
                 class_name = f"IfcQuantity{value_basename}"
                 properties.append(
                     self.file.create_entity(class_name, **{"Name": name, value_name: float(qto["raw"][name])})
                 )
-        invalid_qto_keys = [k for k in qto["raw"].keys() if k not in templates.keys()]
+        templates_names = [prop.Name for prop in qto_template.HasPropertyTemplates]
+        invalid_qto_keys = [k for k in qto["raw"].keys() if k not in templates_names]
         if invalid_qto_keys:
             self.ifc_export_settings.logger.error(
                 "One or more properties were invalid in the qto {}/{}: {}".format(
@@ -2036,8 +2034,8 @@ class IfcExporter:
             # At the moment, we assume that styled items only apply to the body context.
             if representation.RepresentationIdentifier != "Body":
                 continue
-            rep_context = self.ifc_parser.get_obj_representation_context(product["raw"], "Model", "Body", "MODEL_VIEW")
-            if self.ifc_export_settings.should_roundtrip_native and rep_context and rep_context.ifc_definition_id:
+            rep = self.ifc_parser.get_shape_representation(product["raw"], "Model", "Body", "MODEL_VIEW")
+            if self.ifc_export_settings.should_roundtrip_native and rep and rep.ifc_definition_id:
                 # For native roundtripping, each slot could be a one to many relationship to items
                 for item in self.get_geometric_representation_items(representation):
                     original_id = self.roundtrip_id_new_to_old[item.id()]
@@ -3526,6 +3524,7 @@ class IfcExportSettings:
         ]
         self.should_use_presentation_style_assignment = False
         self.should_guess_quantities = False
+        self.should_export_from_memory = False
         self.context_tree = []
 
     @staticmethod
@@ -3545,16 +3544,6 @@ class IfcExportSettings:
         settings.should_force_faceted_brep = scene_bim.export_should_force_faceted_brep
         settings.should_force_triangulation = scene_bim.export_should_force_triangulation
         settings.should_roundtrip_native = scene_bim.import_export_should_roundtrip_native
+        settings.should_export_from_memory = scene_bim.export_should_export_from_memory
         settings.context_tree = []
-        for ifc_context in ["model", "plan"]:
-            if getattr(scene_bim, "has_{}_context".format(ifc_context)):
-                subcontexts = {}
-                for subcontext in getattr(scene_bim, "{}_subcontexts".format(ifc_context)):
-                    subcontexts.setdefault(subcontext.name, []).append(subcontext.target_view)
-                settings.context_tree.append(
-                    {
-                        "name": ifc_context.title(),
-                        "subcontexts": [{"name": key, "target_views": value} for key, value in subcontexts.items()],
-                    }
-                )
         return settings

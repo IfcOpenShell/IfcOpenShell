@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2020-12-17 15:14+0100\n"
-"PO-Revision-Date: 2020-12-18 06:11+0100\n"
+"POT-Creation-Date: 2020-12-23 11:03+0100\n"
+"PO-Revision-Date: 2020-12-23 11:20+0100\n"
 "Last-Translator: \n"
 "Language: de\n"
 "Language-Team: de <LL@li.org>\n"
@@ -19,6 +19,165 @@ msgstr ""
 "Generated-By: Babel 2.6.0\n"
 "X-Generator: Poedit 2.2.1\n"
 
+#: reports.py:153 reports.py:160
+msgid "OpenBIM auditing is a feature of"
+msgstr "OpenBIM auditing ist eine Funktionalität von"
+
+#: reports.py:155
+msgid "en"
+msgstr "de"
+
+#: reports.py:156
+msgid "Success"
+msgstr "Bestanden"
+
+#: reports.py:157
+msgid "Failure"
+msgstr "Durchgefallen"
+
+#: reports.py:158
+msgid "Tests passed"
+msgstr "Erfolgreiche Tests"
+
+#: reports.py:159
+msgid "Duration"
+msgstr "Dauer"
+
+#: reports.py:161
+msgid "and"
+msgstr "und"
+
+#: features/steps/attributes_eleclasses_methods.py:24
+msgid "All {elemcount} elements in the file are {ifc_class}."
+msgstr ""
+
+#: features/steps/attributes_eleclasses_methods.py:32
+msgid "{falsecount} of {elemcount} element are {ifc_class} elements: {falseelems}"
+msgstr ""
+
+#: features/steps/attributes_eleclasses_methods.py:41 features/steps/utils.py:158
+msgid "Error in falsecount, something went wrong."
+msgstr "Fehler in falsecount, es ist etwas falsch gelaufen."
+
+#: features/steps/attributes_eleclasses_methods.py:80
+msgid ""
+"For all {elemcount} {ifc_class} elements at least one of these class attributes "
+"{parameter} has no value."
+msgstr ""
+
+#: features/steps/attributes_eleclasses_methods.py:81
+msgid ""
+"For the following {falsecount} out of {elemcount} {ifc_class} elements at least "
+"one of these class attributes {parameter} has no value: {falseelems}"
+msgstr ""
+
+#: features/steps/attributes_eleclasses_methods.py:82
+#: features/steps/attributes_eleclasses_methods.py:108
+#: features/steps/attributes_eleclasses_methods.py:133
+#: features/steps/attributes_psets_methods.py:31
+#: features/steps/geometric_detail_methods.py:52
+#: features/steps/geometric_detail_methods.py:127
+msgid "There are no {ifc_class} elements in the IFC file."
+msgstr "Es sind keine {ifc_class} Bauteile in der IFC-Datei."
+
+#: features/steps/attributes_eleclasses_methods.py:106
+msgid "The name of all {elemcount} {elemcount} elements is not set."
+msgstr ""
+
+#: features/steps/attributes_eleclasses_methods.py:107
+msgid ""
+"The name of {falsecount} out of {elemcount} {ifc_class} elements is not set: "
+"{falseelems}"
+msgstr ""
+
+#: features/steps/attributes_eleclasses_methods.py:131
+msgid "The description of all {elemcount} {elemcount} elements is not set."
+msgstr ""
+
+#: features/steps/attributes_eleclasses_methods.py:132
+msgid ""
+"The description of {falsecount} out of {elemcount} {ifc_class} elements is not "
+"set: {falseelems}"
+msgstr ""
+
+#: features/steps/attributes_psets_methods.py:29
+msgid ""
+"All {elemcount} {ifc_class} elements are missing the property {parameter} in "
+"the pset."
+msgstr ""
+
+#: features/steps/attributes_psets_methods.py:30
+msgid ""
+"The following {falsecount} of {elemcount} {ifc_class} elements are missing the "
+"property {parameter} in the pset: {falseelems}"
+msgstr ""
+
+#: features/steps/geometric_detail_methods.py:50
+msgid "All {elemcount} {ifc_class} elements are not a {parameter} representation."
+msgstr ""
+"Alle {elemcount} {ifc_class} Bauteile haben keine geometrische Repräsentation "
+"der Klasse {parameter}."
+
+#: features/steps/geometric_detail_methods.py:51
+msgid ""
+"The following {falsecount} of {elemcount} {ifc_class} elements are not a "
+"{parameter} representation: {falseelems}"
+msgstr ""
+"Die Anzahl Bauteile {falsecount} von allen {elemcount} {ifc_class} Bauteilen "
+"haben keine geometrische Repräsentation der Klasse {parameter}: {falseelems}"
+
+#: features/steps/geometric_detail_methods.py:125
+msgid "The geometry of all {elemcount} {ifc_class} elements have errors."
+msgstr ""
+"Die geometrischen Repräsentationen von allen {elemcount} {ifc_class} Bauteilen "
+"haben Fehler."
+
+#: features/steps/geometric_detail_methods.py:126
+msgid ""
+"The geometry of {falsecount} out of all {elemcount} {ifc_class} elements have "
+"errors: {falseelems}"
+msgstr ""
+"Die geometrischen Repräsentationen von {falsecount} von allen {elemcount} "
+"{ifc_class} Bauteilen haben Fehler: {falseelems}"
+
 #: features/steps/ifcdata_methods.py:7
 msgid "We expected a schema of {} but instead got {}"
 msgstr "Wir haben das Schema {} erwartet, aber die Daten nutzen das Schema {}"
+
+#~ msgid "The geometry of all {} {} elements have errors."
+#~ msgstr ""
+#~ "Die geometrischen Repräsentationen von allen {} {} Bauteilen haben Fehler."
+
+#~ msgid "The geometry of {} out of all {} {} elements have errors: {}"
+#~ msgstr ""
+#~ "Die geometrischen Repräsentationen von {} von allen {} {} Bauteilen haben "
+#~ "Fehler: {}"
+
+#~ msgid "There are no {} elements in the IFC file."
+#~ msgstr "Es sind keine {} Bauteile in der IFC-Datei."
+
+#~ msgid "All {} {} elements are not a IfcFacetedBrep representation."
+#~ msgstr ""
+#~ "Alle {} {} Bauteile haben keine geometrische Repräsentation der Klasse "
+#~ "IfcFacetedBrep."
+
+#~ msgid ""
+#~ "The following {} of {} {} elements are not a IfcFacetedBrep representation: "
+#~ "{}"
+#~ msgstr ""
+#~ "Die Anzahl Bauteile {} von allen {} {} Bauteilen haben keine geometrische "
+#~ "Repräsentation der Klasse IfcFacetedBrep: {}"
+
+#~ msgid ""
+#~ "All {elemcount} {ifc_class} elements are not a IfcFacetedBrep representation."
+#~ msgstr ""
+#~ "Alle {elemcount} {ifc_class} Bauteile haben keine geometrische "
+#~ "Repräsentation der Klasse IfcFacetedBrep."
+
+#~ msgid ""
+#~ "The following {falsecount} of {elemcount} {ifc_class} elements are not a "
+#~ "IfcFacetedBrep representation: {falseelems}"
+#~ msgstr ""
+#~ "Die Anzahl Bauteile {falsecount} von allen {elemcount} {ifc_class} Bauteilen "
+#~ "haben keine geometrische Repräsentation der Klasse IfcFacetedBrep: "
+#~ "{falseelems}"

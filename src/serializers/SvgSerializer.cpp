@@ -24,6 +24,7 @@
 #include <cstdio>
 #include <limits>
 #include <algorithm>
+#include <numeric>
 
 #include <gp_Pln.hxx>
 #include <gp_Trsf.hxx>
@@ -66,6 +67,8 @@
 #include <BRepBuilderAPI_MakeEdge.hxx>
 
 #include <ShapeFix_Edge.hxx>
+
+#include <HLRBRep_PolyHLRToShape.hxx>
 
 #include "../ifcparse/IfcGlobalId.h"
 
@@ -292,16 +295,18 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
 	p.second.push_back(path);
 }
 
-SvgSerializer::path_object& SvgSerializer::start_path(IfcUtil::IfcBaseEntity* storey, const std::string& id) {
+SvgSerializer::path_object& SvgSerializer::start_path(const gp_Pln& pln, IfcUtil::IfcBaseEntity* storey, const std::string& id) {
 	auto key = std::make_pair(std::make_pair(storey, ""), path_object());
 	SvgSerializer::path_object& p = paths.insert(key)->second;
+	drawing_metadata[key.first].pln_3d = pln;
 	p.first = id;
 	return p;
 }
 
-SvgSerializer::path_object& SvgSerializer::start_path(const std::string& drawing_name, const std::string& id) {
+SvgSerializer::path_object& SvgSerializer::start_path(const gp_Pln& pln, const std::string& drawing_name, const std::string& id) {
 	auto key = std::make_pair(std::make_pair(nullptr, drawing_name), path_object());
 	SvgSerializer::path_object& p = paths.insert(key)->second;
+	drawing_metadata[key.first].pln_3d = pln;
 	p.first = id;
 	return p;
 }
@@ -397,7 +402,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 	double elev = p ? p->second : std::numeric_limits<double>::quiet_NaN();
 	geometry_data data{ compound_local, trsf, brep_obj->product(), storey, elev, brep_obj->name(), nameElement(storey, brep_obj) };
 
-	if (buffer_elements_) {
+	if (auto_section_ || auto_elevation_ || section_ref_ || elevation_ref_) {
 		element_buffer_.push_back(data);
 	}
 
@@ -533,6 +538,7 @@ void SvgSerializer::write(const geometry_data& data) {
 		std::pair<double, double> range;
 
 		gp_Vec projection_direction;
+		gp_Pln projection_plane;
 
 		IfcUtil::IfcBaseEntity* storey = nullptr;
 		std::string drawing_name;
@@ -555,14 +561,54 @@ void SvgSerializer::write(const geometry_data& data) {
 		} else if (variant.which() == 2) {
 			const auto& section = boost::get<vertical_section>(variant);
 			projection_direction = section.plane.Axis().Direction();
+			projection_plane = section.plane;
 			drawing_name = section.name;
 			use_hlr = section.with_projection;
 		}
 
 		auto& compound_to_use = is_floor_plan_ ? compound : compound_unmirrored;
 
-		if (use_hlr && hlr) {
-			hlr->Add(compound_to_use);
+		if (use_hlr && (hlr_poly || hlr_brep)) {
+
+			// Check if any of the bounding box points is on the correct side of the plane
+			Bnd_Box bb;
+			try {
+				BRepBndLib::Add(compound_to_use, bb);
+			}
+			catch (const Standard_Failure&) {}
+
+			if (bb.IsVoid()) {
+				continue;
+			}
+
+			double xs[2], ys[2], zs[2];
+			bb.Get(xs[0], ys[0], zs[0], xs[1], ys[1], zs[1]);
+
+			bool any = false;
+
+			for (int i = 0; i < 8; ++i) {
+				gp_Pnt p(xs[(i & 1) == 1], ys[(i & 2) == 2], zs[(i & 4) == 4]);
+				auto d = (p.XYZ() - projection_plane.Location().XYZ()).Dot(projection_plane.Axis().Direction().XYZ());
+				int state;
+				if (std::abs(d) < 1.e-5) {
+					state = 0;
+				} else {
+					state = d < 0. ? -1 : 1;
+				}
+				if (state == -1) {
+					any = true;
+				}
+			}
+
+			if (any) {
+				if (hlr_brep) {
+					hlr_brep->Add(compound_to_use);
+				}
+				if (hlr_poly) {
+					BRepMesh_IncrementalMesh(compound_to_use, 0.10);
+					hlr_poly->Load(compound_to_use);
+				}
+			}
 		}
 
 		TopoDS_Iterator it(compound_to_use);
@@ -598,6 +644,15 @@ void SvgSerializer::write(const geometry_data& data) {
 				cut_z = zmin + 1.;
 			}
 
+			gp_Pln pln;
+			if (variant.which() < 2) {
+				pln = gp_Pln(gp_Pnt(0, 0, cut_z), gp::DZ());
+			}
+			else {
+				const auto& section = boost::get<vertical_section>(variant);
+				pln = section.plane;
+			}
+
 			gp_Vec bbmin(x1, y1, zmin);
 			gp_Vec bbmax(x2, y2, zmax);
 			auto bbdif = bbmax - bbmin;
@@ -606,9 +661,9 @@ void SvgSerializer::write(const geometry_data& data) {
 			if (data.product->declaration().is("IfcAnnotation") && (proj.Magnitude() > 1.e-5) && zmin >= range.first && zmin <= range.second) {
 				if (po == nullptr) {
 					if (storey) {
-						po = &start_path(storey, data.svg_name);
+						po = &start_path(pln, storey, data.svg_name);
 					} else {
-						po = &start_path(drawing_name, data.svg_name);
+						po = &start_path(pln, drawing_name, data.svg_name);
 					}
 				}
 
@@ -682,20 +737,12 @@ void SvgSerializer::write(const geometry_data& data) {
 
 			if (po == nullptr) {
 				if (storey) {
-					po = &start_path(storey, data.svg_name);
+					po = &start_path(pln, storey, data.svg_name);
 				} else {
-					po = &start_path(drawing_name, data.svg_name);
+					po = &start_path(pln, drawing_name, data.svg_name);
 				}
 			}
 
-			// Create a horizontal cross section 1 meter above the bottom point of the shape		
-			gp_Pln pln;
-			if (variant.which() < 2) {
-				pln = gp_Pln(gp_Pnt(0, 0, cut_z), gp::DZ());
-			} else {
-				const auto& section = boost::get<vertical_section>(variant);
-				pln = section.plane;
-			}
 			TopoDS_Shape result = BRepAlgoAPI_Section(subshape, pln);
 
 			if (variant.which() == 2) {
@@ -854,7 +901,10 @@ void SvgSerializer::setBoundingRectangle(double width, double height) {
 	this->rescale = true;
 }
 
-void SvgSerializer::resize() {
+std::array<std::array<double, 3>, 3> SvgSerializer::resize() {
+	// identity matrix;
+	std::array<std::array<double, 3>, 3> m = {{ {{1,0,0}},{{0,1,0}},{{0,0,1}} }};
+
 	if (rescale) {
 		// Scale the resulting image to a bounding rectangle specified by command line arguments
 		const double dx = xmax - xmin;
@@ -865,13 +915,16 @@ void SvgSerializer::resize() {
 			sc = (*scale_) * 1000;
 			cx = (xmax + xmin) / 2. * sc - width * center_x_.get_value_or(0.5);
 			cy = (ymax + ymin) / 2. * sc - height * center_y_.get_value_or(0.5);
-		} else {
+		}
+		else {
 			if (calculated_scale_) {
 				sc = *calculated_scale_;
-			} else {
+			}
+			else {
 				if (dx / width > dy / height) {
 					sc = width / dx;
-				} else {
+				}
+				else {
 					sc = height / dy;
 				}
 				calculated_scale_ = sc;
@@ -879,6 +932,8 @@ void SvgSerializer::resize() {
 			cx = xmin * sc;
 			cy = ymin * sc;
 		}
+
+		m = {{ {{sc,0,-cx}},{{0,sc,-cy}},{{0,0,1}} }};
 
 		float_item_list::const_iterator it;
 		for (it = xcoords.begin() + xcoords_begin; it != xcoords.end(); ++it, ++xcoords_begin) {
@@ -894,7 +949,13 @@ void SvgSerializer::resize() {
 		}
 	}
 
+	return m;
+}
+
+void SvgSerializer::resetScale() {
 	// reset the bounding box, as a subsequent drawing (elevation, section) will be centered, but use the same scale.
+	// this is a separate call now as we first need to read drawing extents for automatically positioning sections and
+	// elevations
 	xmin = +std::numeric_limits<double>::infinity();
 	ymin = +std::numeric_limits<double>::infinity();
 	xmax = -std::numeric_limits<double>::infinity();
@@ -902,8 +963,69 @@ void SvgSerializer::resize() {
 }
 
 void SvgSerializer::finalize() {
-	resize();
+	auto m = resize();
 
+	// Update the paper space scale matrices
+	for (auto& p : paths) {
+		drawing_metadata[p.first].matrix_3 = m;
+	}
+
+	if (!deferred_section_data_.is_initialized() && (auto_section_ || auto_elevation_)) {
+		deferred_section_data_.emplace();
+	}
+
+	// @nb keep in mind Y-axis is negated in these 6 definitions to account
+	// for coordinate system differences.
+	if (auto_section_) {
+		{
+			gp_Pln pln(gp_Ax3(
+				gp_Pnt((xmin + xmax) / 2., (ymin + ymax) / 2., 0.),
+				gp_Dir(-1, 0, 0),
+				gp_Dir(0, -1, 0)));
+			deferred_section_data_->push_back(vertical_section{ pln , "Section North South", false });
+		}
+		{
+			gp_Pln pln(gp_Ax3(
+				gp_Pnt((xmin + xmax) / 2., (ymin + ymax) / -2., 0.),
+				gp_Dir(0, -1, 0),
+				gp_Dir(-1, 0, 0)));
+			deferred_section_data_->push_back(vertical_section{ pln , "Section East West", true });
+		}
+	}
+
+	if (auto_elevation_) {
+		{
+			gp_Pln pln(gp_Ax3(
+				gp_Pnt(0., -(ymin - 10.), 0.),
+				gp_Dir(0, 1, 0),
+				gp_Dir(1, 0, 0)));
+			deferred_section_data_->push_back(vertical_section{ pln , "Elevation South", true });
+		}
+		{
+			gp_Pln pln(gp_Ax3(
+				gp_Pnt(xmax + 10., 0., 0.),
+				gp_Dir(1, 0, 0),
+				gp_Dir(0, 1, 0)));
+			deferred_section_data_->push_back(vertical_section{ pln , "Elevation East", true });
+		}
+		{
+			gp_Pln pln(gp_Ax3(
+				gp_Pnt(0., -(ymax + 10.), 0.),
+				gp_Dir(0, -1, 0),
+				gp_Dir(-1, 0, 0)));
+			deferred_section_data_->push_back(vertical_section{ pln , "Elevation North", true });
+		}
+		{
+			gp_Pln pln(gp_Ax3(
+				gp_Pnt(xmin - 10., 0., 0.),
+				gp_Dir(-1, 0, 0),
+				gp_Dir(0, -1, 0)));
+			deferred_section_data_->push_back(vertical_section{ pln , "Elevation West", true });
+		}
+	}
+
+	resetScale();
+	
 	if (deferred_section_data_ && deferred_section_data_->size() && element_buffer_.size()) {
 
 		// Draw door arcs only on floor plans.
@@ -919,59 +1041,83 @@ void SvgSerializer::finalize() {
 			}
 
 			if (use_hlr) {
-				hlr = new HLRBRep_Algo;
+				if (use_hlr_poly_) {
+					hlr_poly = new HLRBRep_PolyAlgo;
+				} else {
+					hlr_brep = new HLRBRep_Algo;
+				}
 			}
 
-			*section_data_ = { sd };
+			section_data_ = std::vector<section_data>{ sd };
 			for (auto& e : element_buffer_) {
 				write(e);
 			}
 
 			if (use_hlr) {
 				const auto& section = boost::get<vertical_section>(sd);
-				gp_Ax2 transform = section.plane.Position().Ax2();
-				HLRAlgo_Projector projector(transform);
-				hlr->Projector(projector);
 
-				hlr->Update();
-				hlr->Hide();
+				gp_Trsf trsf;
+				trsf.SetTransformation(section.plane.Position());
+				HLRAlgo_Projector projector(trsf, false, 1.);
+			
+				TopoDS_Shape hlr_compound_unmirrored;
+				
+				if (use_hlr_poly_) {
+					hlr_poly->Projector(projector);
 
-				HLRBRep_HLRToShape hlr_shapes(hlr);
-				auto hlr_compound_unmirrored = hlr_shapes.VCompound();
+					hlr_poly->Update();
+					HLRBRep_PolyHLRToShape hlr_shapes;
+					hlr_shapes.Update(hlr_poly);
+					hlr_compound_unmirrored = hlr_shapes.VCompound();
+				} else {
+					hlr_brep->Projector(projector);
 
-				// Compound 3D curves for mirroring to work
-				ShapeFix_Edge sfe;
-				TopExp_Explorer exp(hlr_compound_unmirrored, TopAbs_EDGE);
-				for (; exp.More(); exp.Next()) {
-					sfe.FixAddCurve3d(TopoDS::Edge(exp.Current()));
+					hlr_brep->Update();
+					hlr_brep->Hide();
+					HLRBRep_HLRToShape hlr_shapes(hlr_brep);
+					hlr_compound_unmirrored = hlr_shapes.VCompound();
 				}
 
-				// Mirror to match SVG coord system.
-				// @todo this is very wasteful. We better do the Y-mirror in the SVG writing and
-				// not on the TopoDS_Shape input.
+				if (!hlr_compound_unmirrored.IsNull()) {
+					// Compound 3D curves for mirroring to work
+					ShapeFix_Edge sfe;
+					TopExp_Explorer exp(hlr_compound_unmirrored, TopAbs_EDGE);
+					for (; exp.More(); exp.Next()) {
+						sfe.FixAddCurve3d(TopoDS::Edge(exp.Current()));
+					}
 
-				gp_Trsf trsf_mirror;
-				trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
-				BRepBuilderAPI_Transform make_transform_mirror(hlr_compound_unmirrored, trsf_mirror, true);
-				make_transform_mirror.Build();
-				auto hlr_compound = make_transform_mirror.Shape();
+					// Mirror to match SVG coord system.
+					// @todo this is very wasteful. We better do the Y-mirror in the SVG writing and
+					// not on the TopoDS_Shape input.
 
-				exp.Init(hlr_compound, TopAbs_EDGE);
-				BRep_Builder B;
-				auto& po = start_path(drawing_name, "class=\"projection\"");
-				for (; exp.More(); exp.Next()) {
-					TopoDS_Wire w;
-					B.MakeWire(w);
-					B.Add(w, exp.Current());					
-					write(po, w);
-				}				
+					gp_Trsf trsf_mirror;
+					trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
+					BRepBuilderAPI_Transform make_transform_mirror(hlr_compound_unmirrored, trsf_mirror, true);
+					make_transform_mirror.Build();
+					auto hlr_compound = make_transform_mirror.Shape();
+
+					exp.Init(hlr_compound, TopAbs_EDGE);
+					BRep_Builder B;
+					auto& po = start_path(section.plane, drawing_name, "class=\"projection\"");
+					for (; exp.More(); exp.Next()) {
+						TopoDS_Wire w;
+						B.MakeWire(w);
+						B.Add(w, exp.Current());
+						write(po, w);
+					}
+
+				}
 			}
 
-			resize();
+			auto m3 = resize();
 
-			if (use_hlr) {
-				hlr.Nullify();
-			}
+			auto k = std::make_pair(nullptr, drawing_name);
+			drawing_metadata[k].matrix_3 = m3;
+
+			resetScale();
+
+			if (hlr_brep) hlr_brep.Nullify();
+			if (hlr_poly) hlr_poly.Nullify();
 		}
 	}
 
@@ -985,9 +1131,11 @@ void SvgSerializer::finalize() {
 			}
 			std::ostringstream oss;
 			if (it->first.first) {
-				svg_file << "    <g " << nameElement(it->first.first) << ">\n";
+				svg_file << "    <g " << nameElement(it->first.first) << " " << writeMetadata(drawing_metadata[it->first]) << ">\n";
 			} else {
-				svg_file << "    <g data-name=\"" << it->first.second << "\" class=\"section\">\n";
+				auto n = it->first.second;
+				IfcUtil::escape_xml(n);
+				svg_file << "    <g " << namespace_prefix_  << "name=\"" << n << "\" class=\"section\" " << writeMetadata(drawing_metadata[it->first]) << ">\n";
 			}
 		}
 		svg_file << "        <g " << it->second.first << ">\n";
@@ -1007,6 +1155,9 @@ void SvgSerializer::finalize() {
 
 void SvgSerializer::writeHeader() {
 	svg_file << "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"";
+	if (use_namespace_) {
+		svg_file << " xmlns:ifc=\"http://www.ifcopenshell.org/ns\"";
+	}
 	if (scale_) {
 		svg_file << 
 			" width=\"" << width << "mm\""
@@ -1071,11 +1222,14 @@ return oss.str();
 }
 
 std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element<real_t>* elem) {
+	auto n = elem->name();
+	IfcUtil::escape_xml(n);
+
 	return nameElement_({
 		{"id", with_section_heights_from_storey_ ? object_id(storey, elem) : GeometrySerializer::object_id(elem)},
 		{"class", elem->type()},
-		{"data-name", elem->name()},
-		{"data-guid", elem->guid()}
+		{namespace_prefix_ + "name", n},
+		{namespace_prefix_ + "guid", elem->guid()}
 		});
 }
 
@@ -1099,13 +1253,14 @@ std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* elem) {
 	std::string ifc_name;
 	if (!elem->get("Name")->isNull()) {
 		ifc_name = (std::string) *elem->get("Name");
+		IfcUtil::escape_xml(ifc_name);
 	}
 
 	return nameElement_({
 		{"id", idElement(elem)},
 		{"class", entity},
-		{"data-name", ifc_name},
-		{"data-guid", *elem->get("GlobalId")}
+		{namespace_prefix_ + "name", ifc_name},
+		{namespace_prefix_ + "guid", *elem->get("GlobalId")}
 		});
 }
 
@@ -1171,4 +1326,34 @@ void SvgSerializer::setSectionHeightsFromStoreys(double offset) {
 	} else {
 		section_data_->push_back(horizontal_plan_at_element{});
 	}
+}
+
+namespace {
+	std::string array_to_string(double v) {
+		return std::to_string(v);
+	}
+
+	template <typename T>
+	std::string array_to_string(const T& v) {
+		return "[" + std::accumulate(
+			v.begin() + 1, v.end(), 
+			array_to_string(v.front()),
+			[](const std::string& accum, decltype(*v.cbegin())& item) {
+				return accum + "," + array_to_string(item);
+		}) + "]";
+	}
+}
+
+std::string SvgSerializer::writeMetadata(const drawing_meta& m) {
+	gp_Trsf trsf;
+	trsf.SetTransformation(m.pln_3d.Position(), gp::XOY());
+	auto m43 = IfcGeom::Matrix<real_t>(IfcGeom::ElementSettings(IfcGeom::IteratorSettings(), 1., ""), trsf).data();
+	std::array<std::array<double, 4>, 4> m4 = {{
+		{{ (double)m43[0], (double)m43[3], (double)m43[6], (double)m43[9] }},
+		{{ (double)m43[1], (double)m43[4], (double)m43[7], (double)m43[10] }},
+		{{ (double)m43[2], (double)m43[5], (double)m43[8], (double)m43[11] }},
+		{{ 0, 0, 0, 1 }}
+	}};
+	return namespace_prefix_ + "plane=\""+ array_to_string(m4) +"\" " +
+		namespace_prefix_ + "matrix3=\"" + array_to_string(m.matrix_3) + "\"";
 }
