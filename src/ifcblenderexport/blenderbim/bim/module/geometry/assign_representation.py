@@ -12,6 +12,7 @@ class Usecase:
         definition = self.settings["product"].Representation
         if not definition:
             definition = self.file.createIfcProductDefinitionShape()
-        representations = list(definition.Representations)
+            self.settings["product"].Representation = definition
+        representations = list(definition.Representations) if definition.Representations else []
         representations.append(self.settings["representation"])
         definition.Representations = representations
