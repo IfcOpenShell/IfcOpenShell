@@ -20,7 +20,7 @@ class PsetQto:
             templates = [ifcopenshell.open(path)]
         self.templates = templates
 
-    @lru_cache
+    @lru_cache()
     def get_applicable(
         self, ifc_class="", predefined_type="", pset_only=False, qto_only=False
     ) -> Generator[entity_instance, entity_instance, None]:
@@ -65,7 +65,7 @@ class PsetQto:
                 return self.is_applicable(entity.supertype(), applicable_class)
         return False
 
-    @lru_cache
+    @lru_cache()
     def get_by_name(self, name: str) -> Optional[entity_instance]:
         for template in self.templates:
             for prop_set in template.by_type("IfcPropertySetTemplate"):
