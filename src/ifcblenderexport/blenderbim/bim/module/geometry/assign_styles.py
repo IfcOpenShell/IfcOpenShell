@@ -6,6 +6,8 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
+        if not self.settings["styles"]:
+            return []
         self.results = []
         for element in self.file.traverse(self.settings["shape_representation"]):
             if not element.is_a("IfcShapeRepresentation"):

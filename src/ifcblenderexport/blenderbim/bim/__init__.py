@@ -5,6 +5,7 @@ bpy = sys.modules.get("bpy")
 
 if bpy is not None:
     import bpy
+    import blenderbim.bim.module.root as module_root
     import blenderbim.bim.module.bcf as module_bcf
     import blenderbim.bim.module.context as module_context
     import blenderbim.bim.module.covetool as module_covetool
@@ -13,9 +14,6 @@ if bpy is not None:
     from . import ui, prop, operator
 
     classes = [
-        operator.ReassignClass,
-        operator.AssignClass,
-        operator.UnassignClass,
         operator.SelectClass,
         operator.SelectType,
         operator.OpenUri,
@@ -312,6 +310,7 @@ if bpy is not None:
         ui.BIM_ADDON_preferences,
     ]
 
+    classes.extend(module_root.classes)
     classes.extend(module_bcf.classes)
     classes.extend(module_context.classes)
     classes.extend(module_covetool.classes)
@@ -348,6 +347,7 @@ if bpy is not None:
         bpy.types.Camera.BIMCameraProperties = bpy.props.PointerProperty(type=prop.BIMCameraProperties)
         bpy.types.TextCurve.BIMTextProperties = bpy.props.PointerProperty(type=prop.BIMTextProperties)
         bpy.types.SCENE_PT_unit.append(ui.ifc_units)
+        module_root.register()
         module_bcf.register()
         module_context.register()
         module_covetool.register()
@@ -378,4 +378,5 @@ if bpy is not None:
         module_covetool.unregister()
         module_context.unregister()
         module_bcf.unregister()
+        module_root.unregister()
         bpy.app.handlers.depsgraph_update_pre.remove(operator.depsgraph_update_pre_handler)

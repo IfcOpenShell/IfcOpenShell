@@ -22,20 +22,35 @@ class AddRepresentation(bpy.types.Operator):
         self.context_id = bpy.context.scene.BIMProperties.contexts
 
         element = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-        usecase = add_representation.Usecase(self.file, {
-            "context": self.file.by_id(int(self.context_id)),
-            "geometry": obj.data,
-            "total_items": max(1, len(obj.material_slots)),
-        })
+        usecase = add_representation.Usecase(
+            self.file,
+            {
+                "context": self.file.by_id(int(self.context_id)),
+                "geometry": obj.data,
+                "total_items": max(1, len(obj.material_slots)),
+            },
+        )
         result = usecase.execute()
         if not result:
             print("Failed to write shape representation")
             return {"FINISHED"}
 
-        usecase = assign_representation.Usecase(self.file, {
-            "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-            "representation": result
-        })
+        usecase = assign_styles.Usecase(
+            self.file,
+            {
+                "shape_representation": result,
+                "styles": [
+                    self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
+                    for s in obj.material_slots
+                    if s.material
+                ],
+            },
+        )
+        usecase.execute()
+
+        usecase = assign_representation.Usecase(
+            self.file, {"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id), "representation": result}
+        )
         usecase.execute()
 
         existing_mesh = obj.data
@@ -116,27 +131,40 @@ class BakeParametricGeometry(bpy.types.Operator):
         obj = bpy.context.active_object
         self.file = IfcStore.get_file()
 
-        usecase = add_object_placement.Usecase(self.file, {
-            "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-            "matrix": np.array(obj.matrix_world)
-        })
+        usecase = add_object_placement.Usecase(
+            self.file,
+            {
+                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
+                "matrix": np.array(obj.matrix_world),
+            },
+        )
         result = usecase.execute()
 
         element = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-        usecase = add_representation.Usecase(self.file, {
-            "context": element.ContextOfItems,
-            "geometry": obj.data,
-            "total_items": max(1, len(obj.material_slots)),
-        })
+        usecase = add_representation.Usecase(
+            self.file,
+            {
+                "context": element.ContextOfItems,
+                "geometry": obj.data,
+                "total_items": max(1, len(obj.material_slots)),
+            },
+        )
         result = usecase.execute()
         if not result:
             print("Failed to write shape representation")
             return {"FINISHED"}
 
-        usecase = assign_styles.Usecase(self.file, {
-            "shape_representation": result,
-            "styles": [self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id) for s in obj.material_slots if s.material]
-        })
+        usecase = assign_styles.Usecase(
+            self.file,
+            {
+                "shape_representation": result,
+                "styles": [
+                    self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
+                    for s in obj.material_slots
+                    if s.material
+                ],
+            },
+        )
         usecase.execute()
 
         for inverse in self.file.get_inverse(element):
@@ -157,7 +185,7 @@ class UpdateIfcRepresentation(bpy.types.Operator):
         props = obj.data.BIMMeshProperties
         parameter = props.ifc_parameters[self.index]
         element = IfcStore.get_file().by_id(parameter.step_id)[parameter.index] = parameter.value
-        bpy.ops.bim.switch_representation(ifc_definition_id = props.ifc_definition_id)
+        bpy.ops.bim.switch_representation(ifc_definition_id=props.ifc_definition_id)
         return {"FINISHED"}
 
 
