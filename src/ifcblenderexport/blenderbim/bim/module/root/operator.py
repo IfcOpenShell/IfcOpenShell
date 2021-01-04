@@ -10,8 +10,6 @@ import blenderbim.bim.module.geometry.assign_representation as assign_representa
 import blenderbim.bim.module.geometry.add_object_placement as add_object_placement
 from blenderbim.bim.ifc import IfcStore
 
-# from blenderbim.bim.module.geometry.data import Data
-
 
 class EnableReassignClass(bpy.types.Operator):
     bl_idname = "bim.enable_reassign_class"
