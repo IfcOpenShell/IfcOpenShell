@@ -28,6 +28,7 @@ from . import helper
 from bpy_extras.io_utils import ImportHelper
 from itertools import cycle
 from mathutils import Vector, Matrix, Euler, geometry
+import bmesh
 from math import radians, degrees, atan, tan, cos, sin
 from pathlib import Path
 from bpy.app.handlers import persistent
@@ -4226,13 +4227,42 @@ class CopyGrid(bpy.types.Operator):
             collection.objects.unlink(obj)
 
         source = [obj
-                    for coll in bpy.data.collections
-                    if coll.name.startswith('IfcGrid')
-                    for obj in coll.all_objects
-                    if obj.type == 'MESH']
-        for obj in source:
-            dstobj = obj.copy()
-            dstobj.data = dstobj.data.copy()
-            collection.objects.link(dstobj)
+                  for coll in bpy.data.collections
+                  if coll.name.startswith("IfcGrid")
+                  for obj in coll.all_objects
+                  if obj.name.startswith("IfcGridAxis")]
+        camera = [obj
+                  for obj in collection.all_objects
+                  if obj.type == 'CAMERA'][0]
+
+        clipping = camera.data.type == 'ORTHO'
+        bounds = helper.ortho_view_frame(camera.data) if clipping else None
+
+        for src in source:
+            bm = bmesh.new()
+            bm.from_mesh(src.data)
+            bm.verts.ensure_lookup_table()
+
+            if clipping:
+                proj = src.matrix_world @ camera.matrix_world.inverted()
+                unproj = src.matrix_world.inverted() @ camera.matrix_world
+
+                bm.transform(proj)
+
+                points_orig = [v.co for v in bm.verts[0:2]]
+                points_clip = helper.clip_segment(bounds, points_orig)
+
+                if points_clip is None:
+                    continue
+
+                bm.verts[0].co = points_clip[0]
+                bm.verts[1].co = points_clip[1]
+
+                bm.transform(unproj)
+
+            dst = src.copy()
+            dst.data = bpy.data.meshes.new(dst.name)
+            bm.to_mesh(dst.data)
+            collection.objects.link(dst)
 
         return {"FINISHED"}

@@ -1,4 +1,6 @@
 import math
+from mathutils import geometry
+from mathutils import Vector
 import bpy
 
 
@@ -285,3 +287,94 @@ def format_distance(value, isArea=False, hide_units=True):
         tx_dist = fmt % value
 
     return tx_dist
+
+
+def parse_diagram_scale(camera):
+    """Returns numeric value of scale"""
+    if camera.BIMCameraProperties.diagram_scale == "CUSTOM":
+        _, fraction = camera.BIMCameraProperties.custom_diagram_scale.split("|")
+    else:
+        _, fraction = camera.BIMCameraProperties.diagram_scale.split("|")
+    numerator, denominator = fraction.split("/")
+    return float(numerator) / float(denominator)
+
+
+def ortho_view_frame(camera, margin=0.015):
+    """Calculates 2d bounding box of camera view area.
+
+    Similar to `bpy.types.Camera.view_frame`
+
+    :arg camera: camera of drawing
+    :type camera: bpy.types.Camera + BIMCameraProperties
+    :arg margin: margins, in scene units
+    :type margin: float
+    :return: (xmin, xmax, ymin, ymax) in local camera coordinates
+    """
+    aspect = camera.BIMCameraProperties.raster_y / camera.BIMCameraProperties.raster_x
+    size = camera.ortho_scale
+    hwidth = size * .5
+    hheight = size * .5 * aspect
+    scale = parse_diagram_scale(camera)
+    xmarg = margin * scale
+    ymarg = margin * scale * aspect
+    return (-hwidth + xmarg, hwidth - xmarg, -hheight + ymarg, hheight - ymarg)
+
+
+def clip_segment(bounds, segm):
+    """Clipping line segment to bounds
+
+    :arg bounds: (xmin, xmax, ymin, ymax)
+    :arg segm: 2 vertices of the segment
+    :return: 2 new vertices of segment or None if segment outside the bounding box
+    """
+    # Liang–Barsky algorithm
+
+    def iszero(v):
+        return abs(v) < 1e-10
+
+    xmin, xmax, ymin, ymax = bounds
+    p1, p2 = segm
+
+    dlt = p2 - p1
+    q_l = p1.x - xmin
+    q_r = xmax - p1.x
+    q_t = p1.y - ymin
+    q_b = ymax - p1.y
+
+    pos = [1]
+    neg = [0]
+
+    if (iszero(dlt.x) and (q_l < 0 or q_r < 0)) or (iszero(dlt.y) and (q_t < 0 or q_b < 0)):
+        # parallel to a boundary and outside it
+        return None
+
+    if not iszero(dlt.x):
+        t_l = q_l / -dlt.x
+        t_r = q_r / dlt.x
+        if t_l < 0:
+            neg.append(t_l)
+            pos.append(t_r)
+        else:
+            neg.append(t_r)
+            pos.append(t_l)
+
+    if not iszero(dlt.y):
+        t_t = q_t / -dlt.y
+        t_b = q_b / dlt.y
+        if t_t < 0:
+            neg.append(t_t)
+            pos.append(t_b)
+        else:
+            neg.append(t_b)
+            pos.append(t_t)
+
+    t1 = max(neg)
+    t2 = min(pos)
+
+    if t1 > t2:
+        return None
+
+    p1c = p1 + dlt * t1
+    p2c = p1 + dlt * t2
+
+    return p1c, p2c
