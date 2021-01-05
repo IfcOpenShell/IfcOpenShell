@@ -1369,9 +1369,6 @@ class BIM_PT_bim(Panel):
 
         layout.label(text="System Setup:")
 
-        row = layout.row()
-        row.operator("bim.quick_project_setup")
-
         row = layout.row(align=True)
         row.prop(bim_properties, "schema_dir")
         row.operator("bim.select_schema_dir", icon="FILE_FOLDER", text="")
@@ -1390,22 +1387,6 @@ class BIM_PT_bim(Panel):
         row.prop(bim_properties, "ifc_cache")
 
         layout.label(text="IFC Categorisation:")
-
-        row = layout.row()
-        row.prop(bim_properties, "ifc_product")
-        row = layout.row()
-        row.prop(bim_properties, "ifc_class")
-        if bim_properties.ifc_predefined_type:
-            row = layout.row()
-            row.prop(bim_properties, "ifc_predefined_type")
-        if bim_properties.ifc_predefined_type == "USERDEFINED":
-            row = layout.row()
-            row.prop(bim_properties, "ifc_userdefined_type")
-        row = layout.row(align=True)
-        op = row.operator("bim.assign_class")
-        op.object_name = ""
-        op = row.operator("bim.unassign_class", icon="X", text="")
-        op.object_name = ""
 
         row = layout.row(align=True)
         row.operator("bim.select_class")

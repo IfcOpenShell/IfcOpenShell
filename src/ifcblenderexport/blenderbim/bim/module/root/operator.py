@@ -60,15 +60,14 @@ class ReassignClass(bpy.types.Operator):
         predefined_type = bpy.context.scene.BIMProperties.ifc_predefined_type
         if predefined_type == "USERDEFINED":
             predefined_type = bpy.context.scene.BIMProperties.ifc_userdefined_type
-        usecase = reassign_class.Usecase(
+        product = reassign_class.Usecase(
             self.file,
             {
                 "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
                 "ifc_class": bpy.context.scene.BIMProperties.ifc_class,
                 "predefined_type": predefined_type,
             },
-        )
-        product = usecase.execute()
+        ).execute()
         obj.name = "{}/{}".format(product.is_a(), "/".join(obj.name.split("/")[1:]))
         obj.BIMObjectProperties.ifc_definition_id = int(product.id())
         bpy.context.active_object.BIMObjectProperties.is_reassigning_class = False
@@ -78,48 +77,51 @@ class ReassignClass(bpy.types.Operator):
 class AssignClass(bpy.types.Operator):
     bl_idname = "bim.assign_class"
     bl_label = "Assign IFC Class"
-    object_name: bpy.props.StringProperty()
+    obj: bpy.props.StringProperty()
+    ifc_class: bpy.props.StringProperty()
+    predefined_type: bpy.props.StringProperty()
+    userdefined_type: bpy.props.StringProperty()
 
     def execute(self, context):
-        objects = [bpy.data.objects.get(self.object_name)] if self.object_name else bpy.context.selected_objects
+        objects = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
         self.file = IfcStore.get_file()
         for obj in objects:
             if obj.BIMObjectProperties.ifc_definition_id:
                 continue
-            predefined_type = bpy.context.scene.BIMProperties.ifc_predefined_type
-            if predefined_type == "USERDEFINED":
-                predefined_type = bpy.context.scene.BIMProperties.ifc_userdefined_type
-            usecase = create_product.Usecase(
+            if self.predefined_type == "USERDEFINED":
+                predefined_type = self.ifc_userdefined_type
+            elif self.predefined_type == "":
+                predefined_type = None
+            else:
+                predefined_type = self.predefined_type
+            product = create_product.Usecase(
                 self.file,
                 {
-                    "ifc_class": bpy.context.scene.BIMProperties.ifc_class,
+                    "ifc_class": self.ifc_class,
                     "predefined_type": predefined_type,
                     "name": obj.name,
                 },
-            )
-            product = usecase.execute()
+            ).execute()
 
-            usecase = add_object_placement.Usecase(
+            add_object_placement.Usecase(
                 self.file,
                 {
                     "product": product,
                     "matrix": np.array(obj.matrix_world),
                 },
-            )
-            result = usecase.execute()
+            ).execute()
 
             if obj.data:
-                usecase = add_representation.Usecase(
+                representation = add_representation.Usecase(
                     self.file,
                     {
                         "context": self.file.by_id(int(bpy.context.scene.BIMProperties.contexts)),
                         "geometry": obj.data,
                         "total_items": max(1, len(obj.material_slots)),
                     },
-                )
-                representation = usecase.execute()
+                ).execute()
 
-                usecase = assign_styles.Usecase(
+                assign_styles.Usecase(
                     self.file,
                     {
                         "shape_representation": representation,
@@ -129,13 +131,11 @@ class AssignClass(bpy.types.Operator):
                             if s.material
                         ],
                     },
-                )
-                usecase.execute()
+                ).execute()
 
-                usecase = assign_representation.Usecase(
+                assign_representation.Usecase(
                     self.file, {"product": product, "representation": representation}
-                )
-                usecase.execute()
+                ).execute()
 
             relating_structure = None
             for collection in obj.users_collection:
@@ -146,16 +146,15 @@ class AssignClass(bpy.types.Operator):
                     break
 
             if relating_structure:
-                usecase = assign_container.Usecase(
+                assign_container.Usecase(
                     self.file,
                     {
                         "product": product,
                         "relating_structure": relating_structure,
                     },
-                )
-                usecase.execute()
+                ).execute()
 
-            obj.name = "{}/{}".format(bpy.context.scene.BIMProperties.ifc_class, obj.name)
+            obj.name = "{}/{}".format(product.is_a(), obj.name)
             obj.BIMObjectProperties.ifc_definition_id = int(product.id())
             if bpy.context.scene.BIMProperties.ifc_product == "IfcElementType":
                 self.place_in_types_collection(obj)

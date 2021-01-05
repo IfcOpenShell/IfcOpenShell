@@ -1414,15 +1414,16 @@ class IfcExporter:
         self.file.wrapped_data.header.file_name.originating_system = "{} {}".format(
             self.get_application_name(), self.get_application_version()
         )
-        if self.owner_history:
-            if self.schema_version == "IFC2X3":
-                self.file.wrapped_data.header.file_name.authorization = self.owner_history.OwningUser.ThePerson.Id
-            else:
-                self.file.wrapped_data.header.file_name.authorization = (
-                    self.owner_history.OwningUser.ThePerson.Identification
-                )
-        else:
-            self.file.wrapped_data.header.file_name.authorization = "Nobody"
+        # TODO: reimplement. See #1222.
+        #if self.owner_history:
+        #    if self.schema_version == "IFC2X3":
+        #        self.file.wrapped_data.header.file_name.authorization = self.owner_history.OwningUser.ThePerson.Id
+        #    else:
+        #        self.file.wrapped_data.header.file_name.authorization = (
+        #            self.owner_history.OwningUser.ThePerson.Identification
+        #        )
+        #else:
+        #    self.file.wrapped_data.header.file_name.authorization = "Nobody"
 
     def get_application_name(self):
         return "BlenderBIM"
@@ -3463,6 +3464,7 @@ class IfcExporter:
         return co * self.ifc_parser.unit_scale
 
     def write_ifc_file(self):
+        self.set_header()
         extension = self.ifc_export_settings.output_file.split(".")[-1]
         if extension == "ifczip":
             with tempfile.TemporaryDirectory() as unzipped_path:

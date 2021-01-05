@@ -461,33 +461,6 @@ class SelectAudited(bpy.types.Operator):
         return word[0] in ["0", "1", "2", "3"] and len(word) == 22
 
 
-class QuickProjectSetup(bpy.types.Operator):
-    bl_idname = "bim.quick_project_setup"
-    bl_label = "Quick Project Setup"
-
-    def execute(self, context):
-        project = bpy.data.collections.new("IfcProject/My Project")
-        site = bpy.data.collections.new("IfcSite/My Site")
-        building = bpy.data.collections.new("IfcBuilding/My Building")
-        building_storey = bpy.data.collections.new("IfcBuildingStorey/Ground Floor")
-
-        project_obj = bpy.data.objects.new("IfcProject/My Project", None)
-        site_obj = bpy.data.objects.new("IfcSite/My Site", None)
-        building_obj = bpy.data.objects.new("IfcBuilding/My Building", None)
-        building_storey_obj = bpy.data.objects.new("IfcBuildingStorey/Ground Floor", None)
-
-        bpy.context.scene.collection.children.link(project)
-        project.children.link(site)
-        site.children.link(building)
-        building.children.link(building_storey)
-
-        project.objects.link(project_obj)
-        site.objects.link(site_obj)
-        building.objects.link(building_obj)
-        building_storey.objects.link(building_storey_obj)
-        return {"FINISHED"}
-
-
 class AddQto(bpy.types.Operator):
     bl_idname = "bim.add_qto"
     bl_label = "Add Qto"
