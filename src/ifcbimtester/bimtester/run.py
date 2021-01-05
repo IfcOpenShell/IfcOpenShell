@@ -144,13 +144,13 @@ def run_intmp_tests(args={}):
         )
         return False
 
-    # get the features_path, the feature files where the tests are in
+    # get the features_path, the dir where the feature files to test are in
     if "features" in args and args["features"] != "":
-        features_path = os.path.join(args["features"], "features")
-        if not os.path.isdir(features_path):
+        the_features_path = os.path.join(args["features"], "features")
+        if not os.path.isdir(the_features_path):
             print(
                 "The features directory does not exist: {}"
-                .format(features_path)
+                .format(the_features_path)
             )
             return False
     else:
@@ -191,23 +191,47 @@ def run_intmp_tests(args={}):
     os.mkdir(run_path)
     report_path = os.path.join(run_path, "report")
     copy_features_path = os.path.join(run_path, "features")
-    copy_steps_path = os.path.join(copy_features_path, "steps")
+
+    # copy features path from bimtester source code
+    srccode_features_path = os.path.join(
+        bimtester_path,
+        "features",
+    )
+    # print(srccode_features_path)
+    if os.path.exists(srccode_features_path):
+        shutil.copytree(srccode_features_path, copy_features_path)
+    else:
+        print(
+            "Bimtester source code features directory {} not found."
+            .format(srccode_features_path)
+        )
+        return False
 
     # copy features files
-    # print(features_path)
+    # print(the_features_path)
     # print(copy_features_path)
-    if os.path.exists(features_path):
-        shutil.copytree(features_path, copy_features_path)
+    # parameter dirs_exist_ok=True, from py 3.8
+    # if os.path.exists(the_features_path):
+    #     shutil.copytree(
+    #         the_features_path,
+    #         copy_features_path,
+    #         dirs_exist_ok=True
+    # )
 
-    # replace ifcpath in feature files
-    # IMHO better than copy the ifc file which could be 500 MB
-    feature_files = os.listdir(copy_features_path)
+    # copy feature files and replace ifcpath in feature files
+    # replaceing is IMHO better than copy the ifc file which could be 500 MB
+    feature_files = os.listdir(the_features_path)
     # print(feature_files)
     for feature_file in feature_files:
-        feature_file = os.path.join(copy_features_path, feature_file)
+        cp_feature_file = os.path.join(copy_features_path, feature_file)
         # print(feature_file)
+        # copy file
+        shutil.copyfile(
+            os.path.join(the_features_path, feature_file),
+            cp_feature_file
+        )
         # search the line
-        ff = open(feature_file, "r")
+        ff = open(cp_feature_file, "r")
         lines = ff.readlines()
         ff.close()
         theline = ""
@@ -228,31 +252,9 @@ def run_intmp_tests(args={}):
         # replace the line
         if newifcline != "":
             # https://stackoverflow.com/a/290494
-            for line in fileinput.input(feature_file, inplace=True):
+            for line in fileinput.input(cp_feature_file, inplace=True):
                 # the print replaces the line in the file
                 print(line.replace(theline, newifcline), end="")
-
-    # copy step files and environment file
-    steps_path = os.path.join(
-        bimtester_path,
-        "features",
-        "steps"
-    )
-    # print(steps_path)
-    # print(copy_steps_path)
-    if os.path.exists(steps_path):
-        shutil.copytree(steps_path, copy_steps_path)
-
-    environment_file = os.path.join(
-        bimtester_path,
-        "features",
-        "environment.py"
-    )
-    if os.path.isfile(environment_file):
-        shutil.copyfile(
-            environment_file,
-            os.path.join(copy_features_path, "environment.py")
-        )
 
     # get advanced args
     # print to console from inside step files, add "--no-capture" flag
