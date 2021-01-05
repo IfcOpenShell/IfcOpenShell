@@ -21,13 +21,12 @@ class AssignContainer(bpy.types.Operator):
                 break
         if not relating_structure:
             return {"FINISHED"}
-        usecase = assign_container.Usecase(
+        assign_container.Usecase(
             self.file,
             {
                 "product": self.file.by_id(props.ifc_definition_id),
                 "relating_structure": relating_structure,
             },
-        )
-        usecase.execute()
+        ).execute()
         Data.load(props.ifc_definition_id)
         return {"FINISHED"}

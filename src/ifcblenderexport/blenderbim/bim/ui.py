@@ -678,65 +678,6 @@ class BIM_PT_classifications(Panel):
         row.prop(props, "classifications")
 
 
-class BIM_PT_mesh(Panel):
-    bl_label = "IFC Representations"
-    bl_idname = "BIM_PT_mesh"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "data"
-
-    @classmethod
-    def poll(cls, context):
-        return (
-            context.active_object is not None
-            and context.active_object.type == "MESH"
-            and hasattr(context.active_object.data, "BIMMeshProperties")
-        )
-
-    def draw(self, context):
-        if not context.active_object.data:
-            return
-        layout = self.layout
-        props = context.active_object.data.BIMMeshProperties
-
-        layout.label(text="IFC Parameters:")
-        row = layout.row()
-        row.operator("bim.get_representation_ifc_parameters")
-        row = layout.row()
-        row.operator("bim.bake_parametric_geometry")
-        for index, ifc_parameter in enumerate(props.ifc_parameters):
-            row = layout.row(align=True)
-            row.prop(ifc_parameter, "name", text="")
-            row.prop(ifc_parameter, "value", text="")
-            row.operator("bim.update_ifc_representation", icon="FILE_REFRESH", text="").index = index
-
-        row = layout.row()
-        row.prop(props, "is_parametric")
-        row = layout.row()
-        row.prop(props, "is_native")
-        row = layout.row()
-        row.prop(props, "is_swept_solid")
-
-        row = layout.row()
-        row.operator("bim.add_swept_solid")
-        for index, swept_solid in enumerate(props.swept_solids):
-            row = layout.row(align=True)
-            row.prop(swept_solid, "name", text="")
-            row.operator("bim.remove_swept_solid", icon="X", text="").index = index
-            row = layout.row()
-            sub = row.row(align=True)
-            sub.operator("bim.assign_swept_solid_outer_curve").index = index
-            sub.operator("bim.select_swept_solid_outer_curve", icon="RESTRICT_SELECT_OFF", text="").index = index
-            sub = row.row(align=True)
-            sub.operator("bim.add_swept_solid_inner_curve").index = index
-            sub.operator("bim.select_swept_solid_inner_curves", icon="RESTRICT_SELECT_OFF", text="").index = index
-            row = layout.row(align=True)
-            row.operator("bim.assign_swept_solid_extrusion").index = index
-            row.operator("bim.select_swept_solid_extrusion", icon="RESTRICT_SELECT_OFF", text="").index = index
-        row = layout.row()
-        row.prop(props, "swept_solids")
-
-
 class BIM_PT_presentation_layer_data(Panel):
     bl_label = "IFC Presentation Layers"
     bl_idname = "BIM_PT_presentation"

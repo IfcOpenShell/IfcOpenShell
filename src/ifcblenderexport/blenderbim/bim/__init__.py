@@ -283,7 +283,6 @@ if bpy is not None:
         ui.BIM_PT_mvd,
         ui.BIM_PT_debug,
         ui.BIM_PT_material,
-        ui.BIM_PT_mesh,
         ui.BIM_PT_presentation_layer_data,
         ui.BIM_PT_object,
         ui.BIM_PT_object_material,
