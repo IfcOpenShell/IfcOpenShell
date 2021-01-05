@@ -14,6 +14,7 @@ if bpy is not None:
     import blenderbim.bim.module.geometry as module_geometry
     import blenderbim.bim.module.model as module_model
     import blenderbim.bim.module.spatial as module_spatial
+    import blenderbim.bim.module.unit as module_unit
     from . import ui, prop, operator
 
     classes = [
@@ -320,6 +321,7 @@ if bpy is not None:
     classes.extend(module_geometry.classes)
     classes.extend(module_model.classes)
     classes.extend(module_spatial.classes)
+    classes.extend(module_unit.classes)
 
     def menu_func_export(self, context):
         self.layout.operator(operator.ExportIFC.bl_idname, text="Industry Foundation Classes (.ifc/.ifczip/.ifcjson)")
@@ -360,6 +362,7 @@ if bpy is not None:
         module_geometry.register()
         module_model.register()
         module_spatial.register()
+        module_unit.register()
         bpy.app.handlers.depsgraph_update_pre.append(operator.depsgraph_update_pre_handler)
 
     def unregister():
@@ -380,6 +383,7 @@ if bpy is not None:
         del bpy.types.Camera.BIMCameraProperties
         del bpy.types.TextCurve.BIMTextProperties
         bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
+        module_unit.unregister()
         module_spatial.unregister()
         module_model.unregister()
         module_geometry.unregister()
