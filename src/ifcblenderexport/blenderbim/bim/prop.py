@@ -353,6 +353,15 @@ def toggleDecorations(self, context):
         decoration.DecorationsHandler.uninstall()
 
 
+@persistent
+def toggleDecorationsOnLoad(*args):
+    toggle = bpy.context.scene.DocProperties.should_draw_decorations
+    if toggle:
+        decoration.DecorationsHandler.install(bpy.context)
+    else:
+        decoration.DecorationsHandler.uninstall()
+
+
 def getScenarios(self, context):
     global scenarios_enum
     if len(scenarios_enum) < 1:

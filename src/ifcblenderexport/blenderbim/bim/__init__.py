@@ -366,6 +366,7 @@ if bpy is not None:
         module_spatial.register()
         module_unit.register()
         bpy.app.handlers.depsgraph_update_pre.append(operator.depsgraph_update_pre_handler)
+        bpy.app.handlers.load_post.append(prop.toggleDecorationsOnLoad)
 
     def unregister():
         for cls in reversed(classes):
