@@ -14,7 +14,6 @@ class IfcSchema:
         self.data_dir = Path(cwd).joinpath("data")  # TODO: make configurable
         # TODO: Make it less troublesome
         self.products = [
-            "IfcContext",
             "IfcElement",
             "IfcSpatialElement",
             "IfcGroup",

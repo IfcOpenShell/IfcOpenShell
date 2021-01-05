@@ -26,58 +26,9 @@ class BIM_PT_object(Panel):
         if "Ifc" not in context.active_object.name:
             return
 
-        layout.label(text="Attributes:")
-        row = layout.row(align=True)
-        row.prop(props, "applicable_attributes", text="")
-        row.operator("bim.add_attribute")
-
-        for index, attribute in enumerate(props.attributes):
-            row = layout.row(align=True)
-            row.prop(attribute, "name", text="")
-            row.prop(attribute, "string_value", text="")
-            if attribute.name == "GlobalId":
-                row.operator("bim.generate_global_id", icon="FILE_REFRESH", text="")
-            op = row.operator("bim.copy_attribute_to_selection", icon="COPYDOWN", text="")
-            op.attribute_name = attribute.name
-            op.attribute_value = attribute.string_value
-            row.operator("bim.remove_attribute", icon="X", text="").attribute_index = index
-
-        row = layout.row()
-        row.prop(props, "attributes")
-
-        if "IfcSite/" in context.active_object.name or "IfcBuilding/" in context.active_object.name:
-            self.draw_addresses_ui()
-
         row = layout.row(align=True)
         row.prop(props, "relating_type")
         row.operator("bim.select_similar_type", icon="RESTRICT_SELECT_OFF", text="")
-
-    def draw_addresses_ui(self):
-        layout = self.layout
-        layout.label(text="Address:")
-        address = bpy.context.active_object.BIMObjectProperties.address
-        row = layout.row()
-        row.prop(address, "purpose")
-        if address.purpose == "USERDEFINED":
-            row = layout.row()
-            row.prop(address, "user_defined_purpose")
-        row = layout.row()
-        row.prop(address, "description")
-
-        row = layout.row()
-        row.prop(address, "internal_location")
-        row = layout.row()
-        row.prop(address, "address_lines")
-        row = layout.row()
-        row.prop(address, "postal_box")
-        row = layout.row()
-        row.prop(address, "town")
-        row = layout.row()
-        row.prop(address, "region")
-        row = layout.row()
-        row.prop(address, "postal_code")
-        row = layout.row()
-        row.prop(address, "country")
 
 
 class BIM_PT_object_material(Panel):
@@ -1418,9 +1369,6 @@ class BIM_PT_bim(Panel):
 
         layout.label(text="System Setup:")
 
-        row = layout.row()
-        row.operator("bim.quick_project_setup")
-
         row = layout.row(align=True)
         row.prop(bim_properties, "schema_dir")
         row.operator("bim.select_schema_dir", icon="FILE_FOLDER", text="")
@@ -1439,22 +1387,6 @@ class BIM_PT_bim(Panel):
         row.prop(bim_properties, "ifc_cache")
 
         layout.label(text="IFC Categorisation:")
-
-        row = layout.row()
-        row.prop(bim_properties, "ifc_product")
-        row = layout.row()
-        row.prop(bim_properties, "ifc_class")
-        if bim_properties.ifc_predefined_type:
-            row = layout.row()
-            row.prop(bim_properties, "ifc_predefined_type")
-        if bim_properties.ifc_predefined_type == "USERDEFINED":
-            row = layout.row()
-            row.prop(bim_properties, "ifc_userdefined_type")
-        row = layout.row(align=True)
-        op = row.operator("bim.assign_class")
-        op.object_name = ""
-        op = row.operator("bim.unassign_class", icon="X", text="")
-        op.object_name = ""
 
         row = layout.row(align=True)
         row.operator("bim.select_class")

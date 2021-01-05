@@ -10,7 +10,9 @@ class Data:
         if not file:
             return
         product = file.by_id(product_id)
-        if product.ContainedInStructure:
+        if not hasattr(product, "ContainedInStructure"):
+            cls.products[product_id] = None
+        elif product.ContainedInStructure:
             structure = product.ContainedInStructure[0].RelatingStructure
             cls.products[product_id] = {"type": structure.is_a(), "Name": structure.Name, "id": int(structure.id())}
         else:

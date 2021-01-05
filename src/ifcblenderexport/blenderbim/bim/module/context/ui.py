@@ -1,6 +1,7 @@
 from bpy.types import Panel
 from blenderbim.bim.module.context.data import Data
 
+
 class BIM_PT_context(Panel):
     bl_label = "IFC Geometric Representation Contexts"
     bl_idname = "BIM_PT_context"

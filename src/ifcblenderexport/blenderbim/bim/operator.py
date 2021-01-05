@@ -461,33 +461,6 @@ class SelectAudited(bpy.types.Operator):
         return word[0] in ["0", "1", "2", "3"] and len(word) == 22
 
 
-class QuickProjectSetup(bpy.types.Operator):
-    bl_idname = "bim.quick_project_setup"
-    bl_label = "Quick Project Setup"
-
-    def execute(self, context):
-        project = bpy.data.collections.new("IfcProject/My Project")
-        site = bpy.data.collections.new("IfcSite/My Site")
-        building = bpy.data.collections.new("IfcBuilding/My Building")
-        building_storey = bpy.data.collections.new("IfcBuildingStorey/Ground Floor")
-
-        project_obj = bpy.data.objects.new("IfcProject/My Project", None)
-        site_obj = bpy.data.objects.new("IfcSite/My Site", None)
-        building_obj = bpy.data.objects.new("IfcBuilding/My Building", None)
-        building_storey_obj = bpy.data.objects.new("IfcBuildingStorey/Ground Floor", None)
-
-        bpy.context.scene.collection.children.link(project)
-        project.children.link(site)
-        site.children.link(building)
-        building.children.link(building_storey)
-
-        project.objects.link(project_obj)
-        site.objects.link(site_obj)
-        building.objects.link(building_obj)
-        building_storey.objects.link(building_storey_obj)
-        return {"FINISHED"}
-
-
 class AddQto(bpy.types.Operator):
     bl_idname = "bim.add_qto"
     bl_label = "Add Qto"
@@ -910,28 +883,6 @@ class GenerateGlobalId(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AddAttribute(bpy.types.Operator):
-    bl_idname = "bim.add_attribute"
-    bl_label = "Add Attribute"
-
-    def execute(self, context):
-        if not bpy.context.active_object.BIMObjectProperties.applicable_attributes:
-            return {"FINISHED"}
-        name = bpy.context.active_object.BIMObjectProperties.applicable_attributes
-        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(bpy.context.scene.BIMProperties.export_schema)
-        for obj in bpy.context.selected_objects:
-            if "/" not in obj.name or obj.BIMObjectProperties.attributes.find(name) != -1:
-                continue
-            entity = schema.declaration_by_name(obj.name.split("/")[0])
-            if name not in [a.name() for a in entity.all_attributes()]:
-                continue
-            attribute = obj.BIMObjectProperties.attributes.add()
-            attribute.name = name
-            if attribute.name == "GlobalId":
-                attribute.string_value = ifcopenshell.guid.new()
-        return {"FINISHED"}
-
-
 class AddMaterialAttribute(bpy.types.Operator):
     bl_idname = "bim.add_material_attribute"
     bl_label = "Add Material Attribute"
@@ -940,22 +891,6 @@ class AddMaterialAttribute(bpy.types.Operator):
         if bpy.context.active_object.active_material.BIMMaterialProperties.applicable_attributes:
             attribute = bpy.context.active_object.active_material.BIMMaterialProperties.attributes.add()
             attribute.name = bpy.context.active_object.active_material.BIMMaterialProperties.applicable_attributes
-        return {"FINISHED"}
-
-
-class RemoveAttribute(bpy.types.Operator):
-    bl_idname = "bim.remove_attribute"
-    bl_label = "Remove Attribute"
-    attribute_index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        name = bpy.context.active_object.BIMObjectProperties.attributes[self.attribute_index].name
-        for obj in bpy.context.selected_objects:
-            if "/" not in obj.name:
-                continue
-            index = obj.BIMObjectProperties.attributes.find(name)
-            if index != -1:
-                obj.BIMObjectProperties.attributes.remove(index)
         return {"FINISHED"}
 
 
@@ -3995,14 +3930,10 @@ class InspectFromObject(bpy.types.Operator):
     bl_label = "Inspect From Object"
 
     def execute(self, context):
-        global_id = bpy.context.active_object.BIMObjectProperties.attributes.get("GlobalId")
-        if not global_id:
+        ifc_definition_id = bpy.context.active_object.BIMObjectProperties.ifc_definition_id
+        if not ifc_definition_id:
             return {"FINISHED"}
-        global_id = global_id.string_value
-        self.file = ifc.IfcStore.get_file()
-        element = self.file.by_guid(global_id)
-        if element:
-            bpy.ops.bim.inspect_from_step_id(step_id=element.id())
+        bpy.ops.bim.inspect_from_step_id(step_id=ifc_definition_id)
         return {"FINISHED"}
 
 

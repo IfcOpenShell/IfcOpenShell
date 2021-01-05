@@ -274,6 +274,10 @@ def getIfcClasses(self, context):
     return classes_enum
 
 
+def getAttributeEnumValues(self, context):
+    return [(e, e, "") for e in json.loads(self.enum_items)]
+
+
 def getProfileDef(self, context):
     global profiledef_enum
     if len(profiledef_enum) < 1:
@@ -440,20 +444,6 @@ def getQtoNames(self, context):
     return qtonames_enum
 
 
-def getApplicableAttributes(self, context):
-    global attributes_enum
-    attributes_enum.clear()
-    if "/" in context.active_object.name and context.active_object.name.split("/")[0] in schema.ifc.elements:
-        attributes_enum.extend(
-            [
-                (a["name"], a["name"], "")
-                for a in schema.ifc.elements[context.active_object.name.split("/")[0]]["attributes"]
-                if self.attributes.find(a["name"]) == -1
-            ]
-        )
-    return attributes_enum
-
-
 def getApplicableMaterialAttributes(self, context):
     global materialattributes_enum
     materialattributes_enum.clear()
@@ -548,6 +538,9 @@ class Attribute(PropertyGroup):
     bool_value: BoolProperty(name="Value")
     int_value: IntProperty(name="Value")
     float_value: FloatProperty(name="Value")
+    is_null: BoolProperty(name="Is Null")
+    enum_items: StringProperty(name="Value")
+    enum_value: EnumProperty(items=getAttributeEnumValues, name="Value")
 
 
 class MaterialLayer(PropertyGroup):
@@ -1467,11 +1460,13 @@ class BIMObjectProperties(PropertyGroup):
     is_reassigning_class: BoolProperty(name="Is Reassigning Class")
     global_ids: CollectionProperty(name="GlobalIds", type=GlobalId)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
+    is_editing_attributes: BoolProperty(name="Is Editing Attributes")
+    relating_object: PointerProperty(name="Aggregate", type=bpy.types.Object)
+    is_editing_aggregate: BoolProperty(name="Is Editing Aggregate")
     relating_type: PointerProperty(name="Type Product", type=bpy.types.Object)
     relating_structure: PointerProperty(name="Spatial Container", type=bpy.types.Object)
     psets: CollectionProperty(name="Psets", type=PsetQto)
     qtos: CollectionProperty(name="Qtos", type=PsetQto)
-    applicable_attributes: EnumProperty(items=getApplicableAttributes, name="Attribute Names")
     document_references: CollectionProperty(name="Document References", type=DocumentReference)
     active_document_reference_index: IntProperty(name="Active Document Reference Index")
     constraints: CollectionProperty(name="Constraints", type=Constraint)

@@ -1,6 +1,7 @@
 import bpy
 from bpy.types import Panel
 from blenderbim.bim.module.root.data import Data
+from blenderbim.bim.ifc import IfcStore
 
 class BIM_PT_class(Panel):
     bl_label = "IFC Class"
@@ -9,16 +10,20 @@ class BIM_PT_class(Panel):
     bl_region_type = "WINDOW"
     bl_context = "object"
 
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
     def draw(self, context):
         props = context.active_object.BIMObjectProperties
         if props.ifc_definition_id:
             if props.ifc_definition_id not in Data.products:
                 Data.load(props.ifc_definition_id)
             if props.is_reassigning_class:
-                self.draw_class_dropdowns()
                 row = self.layout.row(align=True)
                 row.operator("bim.reassign_class", icon="CHECKMARK")
                 row.operator("bim.disable_reassign_class", icon="X", text="")
+                self.draw_class_dropdowns()
             else:
                 data = Data.products[props.ifc_definition_id]
                 name = data["type"]
@@ -35,7 +40,10 @@ class BIM_PT_class(Panel):
             self.draw_class_dropdowns()
             row = self.layout.row(align=True)
             op = row.operator("bim.assign_class")
-            op.object_name = context.active_object.name
+            op.obj = context.active_object.name
+            op.ifc_class = bpy.context.scene.BIMProperties.ifc_class
+            op.predefined_type = bpy.context.scene.BIMProperties.ifc_predefined_type
+            op.userdefined_type = bpy.context.scene.BIMProperties.ifc_userdefined_type
 
     def draw_class_dropdowns(self):
         props = bpy.context.scene.BIMProperties

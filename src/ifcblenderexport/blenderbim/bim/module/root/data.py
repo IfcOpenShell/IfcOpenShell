@@ -13,5 +13,5 @@ class Data:
         cls.products[product_id] = {
             "type": product.is_a(),
             "PredefinedType": product.PredefinedType if hasattr(product, "PredefinedType") else None,
-            "ObjectType": product.ObjectType or None
+            "ObjectType": product.ObjectType if hasattr(product, "ObjectType") else None
         }
