@@ -348,11 +348,9 @@ def refreshTitleblocks(self, context):
 def toggleDecorations(self, context):
     toggle = self.should_draw_decorations
     if toggle:
-        for dec in decoration.all_decorators:
-            dec.install(self, context)
+        decoration.DecorationsHandler.install(context)
     else:
-        for dec in decoration.all_decorators:
-            dec.uninstall()
+        decoration.DecorationsHandler.uninstall()
 
 
 def getScenarios(self, context):
@@ -657,8 +655,7 @@ class DocProperties(PropertyGroup):
     drawing_styles: CollectionProperty(name="Drawing Styles", type=DrawingStyle)
     should_draw_decorations: BoolProperty(name="Should Draw Decorations", update=toggleDecorations)
     decorations_colour: FloatVectorProperty(name="Decorations Colour", subtype="COLOR", default=(1, 0, 0, 1),
-                                            min=0.0, max=1.0, size=4,
-                                            update=toggleDecorations)
+                                            min=0.0, max=1.0, size=4)
 
 
 class BIMCameraProperties(PropertyGroup):
