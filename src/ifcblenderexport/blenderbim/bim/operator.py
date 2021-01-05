@@ -910,28 +910,6 @@ class GenerateGlobalId(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AddAttribute(bpy.types.Operator):
-    bl_idname = "bim.add_attribute"
-    bl_label = "Add Attribute"
-
-    def execute(self, context):
-        if not bpy.context.active_object.BIMObjectProperties.applicable_attributes:
-            return {"FINISHED"}
-        name = bpy.context.active_object.BIMObjectProperties.applicable_attributes
-        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(bpy.context.scene.BIMProperties.export_schema)
-        for obj in bpy.context.selected_objects:
-            if "/" not in obj.name or obj.BIMObjectProperties.attributes.find(name) != -1:
-                continue
-            entity = schema.declaration_by_name(obj.name.split("/")[0])
-            if name not in [a.name() for a in entity.all_attributes()]:
-                continue
-            attribute = obj.BIMObjectProperties.attributes.add()
-            attribute.name = name
-            if attribute.name == "GlobalId":
-                attribute.string_value = ifcopenshell.guid.new()
-        return {"FINISHED"}
-
-
 class AddMaterialAttribute(bpy.types.Operator):
     bl_idname = "bim.add_material_attribute"
     bl_label = "Add Material Attribute"
@@ -940,22 +918,6 @@ class AddMaterialAttribute(bpy.types.Operator):
         if bpy.context.active_object.active_material.BIMMaterialProperties.applicable_attributes:
             attribute = bpy.context.active_object.active_material.BIMMaterialProperties.attributes.add()
             attribute.name = bpy.context.active_object.active_material.BIMMaterialProperties.applicable_attributes
-        return {"FINISHED"}
-
-
-class RemoveAttribute(bpy.types.Operator):
-    bl_idname = "bim.remove_attribute"
-    bl_label = "Remove Attribute"
-    attribute_index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        name = bpy.context.active_object.BIMObjectProperties.attributes[self.attribute_index].name
-        for obj in bpy.context.selected_objects:
-            if "/" not in obj.name:
-                continue
-            index = obj.BIMObjectProperties.attributes.find(name)
-            if index != -1:
-                obj.BIMObjectProperties.attributes.remove(index)
         return {"FINISHED"}
 
 
