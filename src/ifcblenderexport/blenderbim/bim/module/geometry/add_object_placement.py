@@ -10,6 +10,8 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
+        if not hasattr(self.settings["product"], "ObjectPlacement"):
+            return
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         if not self.settings["product"].ObjectPlacement:
             placement_rel_to = None

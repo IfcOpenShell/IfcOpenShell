@@ -13,6 +13,7 @@ if bpy is not None:
     import blenderbim.bim.module.covetool as module_covetool
     import blenderbim.bim.module.geometry as module_geometry
     import blenderbim.bim.module.model as module_model
+    import blenderbim.bim.module.project as module_project
     import blenderbim.bim.module.spatial as module_spatial
     import blenderbim.bim.module.unit as module_unit
     from . import ui, prop, operator
@@ -92,7 +93,6 @@ if bpy is not None:
         operator.GenerateGlobalId,
         operator.AddMaterialAttribute,
         operator.RemoveMaterialAttribute,
-        operator.QuickProjectSetup,
         operator.SelectGlobalId,
         operator.SelectAttribute,
         operator.SelectPset,
@@ -320,6 +320,7 @@ if bpy is not None:
     classes.extend(module_covetool.classes)
     classes.extend(module_geometry.classes)
     classes.extend(module_model.classes)
+    classes.extend(module_project.classes)
     classes.extend(module_spatial.classes)
     classes.extend(module_unit.classes)
 
@@ -361,6 +362,7 @@ if bpy is not None:
         module_covetool.register()
         module_geometry.register()
         module_model.register()
+        module_project.register()
         module_spatial.register()
         module_unit.register()
         bpy.app.handlers.depsgraph_update_pre.append(operator.depsgraph_update_pre_handler)
@@ -385,6 +387,7 @@ if bpy is not None:
         bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
         module_unit.unregister()
         module_spatial.unregister()
+        module_project.unregister()
         module_model.unregister()
         module_geometry.unregister()
         module_covetool.unregister()

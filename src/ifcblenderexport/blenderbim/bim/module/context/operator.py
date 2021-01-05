@@ -8,18 +8,20 @@ from blenderbim.bim.module.context.data import Data
 class AddSubcontext(bpy.types.Operator):
     bl_idname = "bim.add_subcontext"
     bl_label = "Add Subcontext"
+    context: bpy.props.StringProperty()
+    subcontext: bpy.props.StringProperty()
+    target_view: bpy.props.StringProperty()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        usecase = add_context.Usecase(
+        add_context.Usecase(
             self.file,
             {
-                "context": bpy.context.scene.BIMProperties.available_contexts,
-                "subcontext": bpy.context.scene.BIMProperties.available_subcontexts,
-                "target_view": bpy.context.scene.BIMProperties.available_target_views,
+                "context": self.context or bpy.context.scene.BIMProperties.available_contexts,
+                "subcontext": self.subcontext or bpy.context.scene.BIMProperties.available_subcontexts,
+                "target_view": self.target_view or bpy.context.scene.BIMProperties.available_target_views,
             },
-        )
-        result = usecase.execute()
+        ).execute()
         Data.load()
         return {"FINISHED"}
 

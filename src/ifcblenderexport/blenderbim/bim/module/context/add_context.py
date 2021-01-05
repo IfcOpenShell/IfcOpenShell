@@ -18,8 +18,17 @@ class Usecase:
         if not parent:
             self.create_origin()
             if self.settings["context"] == "Plan":
-                return self.file.createIfcGeometricRepresentationContext(None, "Plan", 2, 1.0e-05, self.origin)
-            return self.file.createIfcGeometricRepresentationContext(None, "Model", 3, 1.0e-05, self.origin)
+                context = self.file.createIfcGeometricRepresentationContext(None, "Plan", 2, 1.0e-05, self.origin)
+            else:
+                context = self.file.createIfcGeometricRepresentationContext(None, "Model", 3, 1.0e-05, self.origin)
+            project = self.file.by_type("IfcProject")[0]
+            if project.RepresentationContexts:
+                contexts = list(project.RepresentationContexts)
+            else:
+                contexts = []
+            contexts.append(context)
+            project.RepresentationContexts = contexts
+            return context
         parent = parent[0]
         return self.file.create_entity("IfcGeometricRepresentationSubContext", **{
             "ContextIdentifier": self.settings["subcontext"],

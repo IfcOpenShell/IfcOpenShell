@@ -7,22 +7,23 @@ from blenderbim.bim.module.aggregate.data import Data
 class AssignObject(bpy.types.Operator):
     bl_idname = "bim.assign_object"
     bl_label = "Assign Object"
+    relating_object: bpy.props.StringProperty()
+    related_object: bpy.props.StringProperty()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        obj = bpy.context.active_object
+        obj = bpy.data.objects.get(self.related_object) if self.related_object else bpy.context.active_object
         props = obj.BIMObjectProperties
-        relating_object = props.relating_object
+        relating_object = bpy.data.objects.get(self.relating_object) if self.relating_object else props.relating_object
         if not relating_object or not relating_object.BIMObjectProperties.ifc_definition_id:
             return {"FINISHED"}
-        usecase = assign_object.Usecase(
+        assign_object.Usecase(
             self.file,
             {
                 "product": self.file.by_id(props.ifc_definition_id),
                 "relating_object": self.file.by_id(relating_object.BIMObjectProperties.ifc_definition_id),
             },
-        )
-        usecase.execute()
+        ).execute()
         Data.load(props.ifc_definition_id)
         bpy.ops.bim.disable_editing_aggregate()
         return {"FINISHED"}
