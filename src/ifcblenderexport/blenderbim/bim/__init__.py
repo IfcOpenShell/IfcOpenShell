@@ -6,6 +6,7 @@ bpy = sys.modules.get("bpy")
 if bpy is not None:
     import bpy
     import blenderbim.bim.module.root as module_root
+    import blenderbim.bim.module.aggregate as module_aggregate
     import blenderbim.bim.module.attribute as module_attribute
     import blenderbim.bim.module.bcf as module_bcf
     import blenderbim.bim.module.context as module_context
@@ -311,6 +312,7 @@ if bpy is not None:
     ]
 
     classes.extend(module_root.classes)
+    classes.extend(module_aggregate.classes)
     classes.extend(module_attribute.classes)
     classes.extend(module_bcf.classes)
     classes.extend(module_context.classes)
@@ -350,6 +352,7 @@ if bpy is not None:
         bpy.types.TextCurve.BIMTextProperties = bpy.props.PointerProperty(type=prop.BIMTextProperties)
         bpy.types.SCENE_PT_unit.append(ui.ifc_units)
         module_root.register()
+        module_aggregate.register()
         module_attribute.register()
         module_bcf.register()
         module_context.register()
@@ -384,5 +387,6 @@ if bpy is not None:
         module_context.unregister()
         module_bcf.unregister()
         module_attribute.register()
+        module_aggregate.register()
         module_root.unregister()
         bpy.app.handlers.depsgraph_update_pre.remove(operator.depsgraph_update_pre_handler)
