@@ -59,14 +59,12 @@ class EditAttributes(bpy.types.Operator):
             blender_attribute = props.attributes.get(attribute["name"])
             if not blender_attribute:
                 continue
-            if blender_attribute.is_null:
+            if attribute["is_optional"] and blender_attribute.is_null:
                 attributes[attribute["name"]] = None
             elif attribute["type"] == "string":
                 attributes[attribute["name"]] = blender_attribute.string_value
             elif attribute["type"] == "list":
                 values = blender_attribute.string_value[1:-1].split(", ")
-                print(attribute["name"])
-                print(attribute["list_type"])
                 if attribute["list_type"] == "float":
                     values = [float(v) for v in values]
                 elif attribute["list_type"] == "integer":

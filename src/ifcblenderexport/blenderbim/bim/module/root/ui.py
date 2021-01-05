@@ -15,10 +15,10 @@ class BIM_PT_class(Panel):
             if props.ifc_definition_id not in Data.products:
                 Data.load(props.ifc_definition_id)
             if props.is_reassigning_class:
-                self.draw_class_dropdowns()
                 row = self.layout.row(align=True)
                 row.operator("bim.reassign_class", icon="CHECKMARK")
                 row.operator("bim.disable_reassign_class", icon="X", text="")
+                self.draw_class_dropdowns()
             else:
                 data = Data.products[props.ifc_definition_id]
                 name = data["type"]

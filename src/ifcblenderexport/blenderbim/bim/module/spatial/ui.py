@@ -31,5 +31,7 @@ class BIM_PT_spatial(Panel):
         name = "{}/{}".format(
             Data.products[props.ifc_definition_id]["type"], Data.products[props.ifc_definition_id]["Name"]
         )
+        if name == "None/None":
+            name = "This object is not spatially contained"
         row.label(text=name)
         row.operator("bim.assign_container", icon="FILE_REFRESH", text="")

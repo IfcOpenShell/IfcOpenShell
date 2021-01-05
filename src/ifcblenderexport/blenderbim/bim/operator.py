@@ -3957,14 +3957,10 @@ class InspectFromObject(bpy.types.Operator):
     bl_label = "Inspect From Object"
 
     def execute(self, context):
-        global_id = bpy.context.active_object.BIMObjectProperties.attributes.get("GlobalId")
-        if not global_id:
+        ifc_definition_id = bpy.context.active_object.BIMObjectProperties.ifc_definition_id
+        if not ifc_definition_id:
             return {"FINISHED"}
-        global_id = global_id.string_value
-        self.file = ifc.IfcStore.get_file()
-        element = self.file.by_guid(global_id)
-        if element:
-            bpy.ops.bim.inspect_from_step_id(step_id=element.id())
+        bpy.ops.bim.inspect_from_step_id(step_id=ifc_definition_id)
         return {"FINISHED"}
 
 
