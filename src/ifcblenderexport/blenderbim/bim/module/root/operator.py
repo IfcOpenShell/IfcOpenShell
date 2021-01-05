@@ -102,40 +102,10 @@ class AssignClass(bpy.types.Operator):
                     "name": obj.name,
                 },
             ).execute()
+            obj.name = "{}/{}".format(product.is_a(), obj.name)
+            obj.BIMObjectProperties.ifc_definition_id = int(product.id())
 
-            add_object_placement.Usecase(
-                self.file,
-                {
-                    "product": product,
-                    "matrix": np.array(obj.matrix_world),
-                },
-            ).execute()
-
-            if obj.data:
-                representation = add_representation.Usecase(
-                    self.file,
-                    {
-                        "context": self.file.by_id(int(bpy.context.scene.BIMProperties.contexts)),
-                        "geometry": obj.data,
-                        "total_items": max(1, len(obj.material_slots)),
-                    },
-                ).execute()
-
-                assign_styles.Usecase(
-                    self.file,
-                    {
-                        "shape_representation": representation,
-                        "styles": [
-                            self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
-                            for s in obj.material_slots
-                            if s.material
-                        ],
-                    },
-                ).execute()
-
-                assign_representation.Usecase(
-                    self.file, {"product": product, "representation": representation}
-                ).execute()
+            bpy.ops.bim.add_representation(obj=obj.name)
 
             relating_structure = None
             for collection in obj.users_collection:
@@ -154,8 +124,6 @@ class AssignClass(bpy.types.Operator):
                     },
                 ).execute()
 
-            obj.name = "{}/{}".format(product.is_a(), obj.name)
-            obj.BIMObjectProperties.ifc_definition_id = int(product.id())
             if bpy.context.scene.BIMProperties.ifc_product == "IfcElementType":
                 self.place_in_types_collection(obj)
         return {"FINISHED"}

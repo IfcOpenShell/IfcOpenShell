@@ -15,50 +15,53 @@ from blenderbim.bim.module.geometry.data import Data
 class AddRepresentation(bpy.types.Operator):
     bl_idname = "bim.add_representation"
     bl_label = "Add Representation"
+    obj: bpy.props.StringProperty()
 
     def execute(self, context):
-        obj = bpy.context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
         self.context_id = bpy.context.scene.BIMProperties.contexts
 
-        element = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-        usecase = add_representation.Usecase(
+        add_object_placement.Usecase(
             self.file,
             {
-                "context": self.file.by_id(int(self.context_id)),
-                "geometry": obj.data,
-                "total_items": max(1, len(obj.material_slots)),
+                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
+                "matrix": np.array(obj.matrix_world),
             },
-        )
-        result = usecase.execute()
-        if not result:
-            print("Failed to write shape representation")
-            return {"FINISHED"}
+        ).execute()
 
-        usecase = assign_styles.Usecase(
-            self.file,
-            {
-                "shape_representation": result,
-                "styles": [
-                    self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
-                    for s in obj.material_slots
-                    if s.material
-                ],
-            },
-        )
-        usecase.execute()
+        if obj.data:
+            result = add_representation.Usecase(
+                self.file,
+                {
+                    "context": self.file.by_id(int(self.context_id)),
+                    "geometry": obj.data,
+                    "total_items": max(1, len(obj.material_slots)),
+                },
+            ).execute()
+            if not result:
+                print("Failed to write shape representation")
+                return {"FINISHED"}
+            assign_styles.Usecase(
+                self.file,
+                {
+                    "shape_representation": result,
+                    "styles": [
+                        self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
+                        for s in obj.material_slots
+                        if s.material
+                    ],
+                },
+            ).execute()
+            assign_representation.Usecase(
+                self.file, {"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id), "representation": result}
+            ).execute()
 
-        usecase = assign_representation.Usecase(
-            self.file, {"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id), "representation": result}
-        )
-        usecase.execute()
-
-        existing_mesh = obj.data
-        existing_mesh.use_fake_user = True
-        mesh = obj.data.copy()
-        mesh.name = "{}/{}".format(self.context_id, result.id())
-        mesh.BIMMeshProperties.ifc_definition_id = int(result.id())
-        obj.data = mesh
+            existing_mesh = obj.data
+            mesh = obj.data.copy()
+            mesh.name = "{}/{}".format(self.context_id, result.id())
+            mesh.BIMMeshProperties.ifc_definition_id = int(result.id())
+            obj.data = mesh
         Data.load(obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
@@ -117,44 +120,42 @@ class RemoveRepresentation(bpy.types.Operator):
                     void_mesh = bpy.data.meshes.new("Void")
                 obj.data = void_mesh
             bpy.data.meshes.remove(mesh)
-        usecase = remove_representation.Usecase(self.file, {"representation": representation})
-        result = usecase.execute()
+        remove_representation.Usecase(self.file, {"representation": representation}).execute()
         Data.load(obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
 
-class BakeParametricGeometry(bpy.types.Operator):
-    bl_idname = "bim.bake_parametric_geometry"
-    bl_label = "Bake Parametric Geometry"
+class UpdateMeshRepresentation(bpy.types.Operator):
+    bl_idname = "bim.update_mesh_representation"
+    bl_label = "Update Mesh Representation"
+    obj: bpy.props.StringProperty()
 
     def execute(self, context):
-        obj = bpy.context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
 
-        usecase = add_object_placement.Usecase(
+        add_object_placement.Usecase(
             self.file,
             {
                 "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
                 "matrix": np.array(obj.matrix_world),
             },
-        )
-        result = usecase.execute()
+        ).execute()
 
         element = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-        usecase = add_representation.Usecase(
+        result = add_representation.Usecase(
             self.file,
             {
                 "context": element.ContextOfItems,
                 "geometry": obj.data,
                 "total_items": max(1, len(obj.material_slots)),
             },
-        )
-        result = usecase.execute()
+        ).execute()
         if not result:
             print("Failed to write shape representation")
             return {"FINISHED"}
 
-        usecase = assign_styles.Usecase(
+        assign_styles.Usecase(
             self.file,
             {
                 "shape_representation": result,
@@ -164,9 +165,9 @@ class BakeParametricGeometry(bpy.types.Operator):
                     if s.material
                 ],
             },
-        )
-        usecase.execute()
+        ).execute()
 
+        # TODO: move this into a replace_representation usecase or something
         for inverse in self.file.get_inverse(element):
             ifcopenshell.util.element.replace_attribute(inverse, element, result)
         obj.data.BIMMeshProperties.ifc_definition_id = int(result.id())
@@ -174,9 +175,9 @@ class BakeParametricGeometry(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class UpdateIfcRepresentation(bpy.types.Operator):
-    bl_idname = "bim.update_ifc_representation"
-    bl_label = "Update IFC Representation"
+class UpdateParametricRepresentation(bpy.types.Operator):
+    bl_idname = "bim.update_parametric_representation"
+    bl_label = "Update Parametric Representation"
     index: bpy.props.IntProperty()
 
     def execute(self, context):

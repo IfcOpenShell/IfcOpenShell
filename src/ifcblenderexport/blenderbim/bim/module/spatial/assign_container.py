@@ -29,7 +29,7 @@ class Usecase:
         if contains_elements:
             related_elements = list(contains_elements[0].RelatedElements)
             related_elements.append(self.settings["product"])
-            contains_elements.RelatedElements = related_elements
+            contains_elements[0].RelatedElements = related_elements
         else:
             contains_elements = self.file.create_entity(
                 "IfcRelContainedInSpatialStructure",
