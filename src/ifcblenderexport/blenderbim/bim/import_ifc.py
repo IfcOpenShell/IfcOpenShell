@@ -847,7 +847,6 @@ class IfcImporter:
         obj = bpy.data.objects.new(self.get_name(element), mesh)
         obj.BIMObjectProperties.ifc_definition_id = element.id()
         self.material_creator.create(element, obj, mesh)
-        self.add_element_attributes(element, obj.BIMObjectProperties)
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
         self.add_type_product_psets(element, obj)
@@ -975,7 +974,6 @@ class IfcImporter:
             obj.matrix_world = self.get_element_matrix(element)
 
         self.add_element_representation_items(element, obj)
-        self.add_element_attributes(element, obj.BIMObjectProperties)
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
         self.add_defines_by_type_relation(element, obj)
@@ -1732,7 +1730,6 @@ class IfcImporter:
         obj.instance_type = "COLLECTION"
         obj.instance_collection = collection
         self.place_object_in_spatial_tree(element, obj)
-        self.add_element_attributes(element, obj.BIMObjectProperties)
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
         self.add_defines_by_type_relation(element, obj)
@@ -1795,7 +1792,6 @@ class IfcImporter:
         obj.BIMObjectProperties.ifc_definition_id = element.id()
         self.material_creator.create(element, obj, mesh)
         obj.matrix_world = self.get_element_matrix(element, mesh_name)
-        self.add_element_attributes(element, obj.BIMObjectProperties)
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
         self.add_defines_by_type_relation(element, obj)

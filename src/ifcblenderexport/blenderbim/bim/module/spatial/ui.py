@@ -11,7 +11,14 @@ class BIM_PT_spatial(Panel):
 
     @classmethod
     def poll(cls, context):
-        return bool(context.active_object.BIMObjectProperties.ifc_definition_id)
+        props = context.active_object.BIMObjectProperties
+        if not props.ifc_definition_id:
+            return False
+        if props.ifc_definition_id not in Data.products:
+            Data.load(props.ifc_definition_id)
+        if not Data.products[props.ifc_definition_id]:
+            return False
+        return True
 
     def draw(self, context):
         props = context.active_object.BIMObjectProperties
@@ -19,9 +26,6 @@ class BIM_PT_spatial(Panel):
             return
         if props.ifc_definition_id not in Data.products:
             Data.load(props.ifc_definition_id)
-
-        if "Ifc" not in context.active_object.name:
-            return
 
         row = self.layout.row(align=True)
         name = "{}/{}".format(
