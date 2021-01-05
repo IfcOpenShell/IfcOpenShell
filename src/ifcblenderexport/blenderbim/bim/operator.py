@@ -4145,6 +4145,7 @@ class SnapSpacesTogether(bpy.types.Operator):
 class CopyGrid(bpy.types.Operator):
     bl_idname = "bim.add_grid"
     bl_label = "Add Grid"
+    bl_options = {'UNDO'}
 
     def execute(self, context):
         props = context.scene.DocProperties
