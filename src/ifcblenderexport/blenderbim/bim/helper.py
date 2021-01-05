@@ -329,49 +329,39 @@ def clip_segment(bounds, segm):
     """
     # Liang–Barsky algorithm
 
-    def iszero(v):
-        return abs(v) < 1e-10
-
     xmin, xmax, ymin, ymax = bounds
     p1, p2 = segm
 
+    def clip_side(p, q):
+        if abs(p) < 1e-10:  # ~= 0, parallel to the side
+            if q < 0:
+                return None  # outside
+            else:
+                return 0, 1  # inside
+
+        t = q / p  # the intersection point
+
+        if p < 0:  # entering
+            return t, 1
+        else:  # leaving
+            return 0, t
+
     dlt = p2 - p1
-    q_l = p1.x - xmin
-    q_r = xmax - p1.x
-    q_t = p1.y - ymin
-    q_b = ymax - p1.y
 
-    pos = [1]
-    neg = [0]
+    tt = (
+        clip_side(-dlt.x, p1.x - xmin),  # left
+        clip_side(+dlt.x, xmax - p1.x),  # right
+        clip_side(-dlt.y, p1.y - ymin),  # bottom
+        clip_side(+dlt.y, ymax - p1.y),  # top
+    )
 
-    if (iszero(dlt.x) and (q_l < 0 or q_r < 0)) or (iszero(dlt.y) and (q_t < 0 or q_b < 0)):
-        # parallel to a boundary and outside it
+    if None in tt:
         return None
 
-    if not iszero(dlt.x):
-        t_l = q_l / -dlt.x
-        t_r = q_r / dlt.x
-        if t_l < 0:
-            neg.append(t_l)
-            pos.append(t_r)
-        else:
-            neg.append(t_r)
-            pos.append(t_l)
+    t1 = max(0, max(t[0] for t in tt))
+    t2 = min(1, min(t[1] for t in tt))
 
-    if not iszero(dlt.y):
-        t_t = q_t / -dlt.y
-        t_b = q_b / dlt.y
-        if t_t < 0:
-            neg.append(t_t)
-            pos.append(t_b)
-        else:
-            neg.append(t_b)
-            pos.append(t_t)
-
-    t1 = max(neg)
-    t2 = min(pos)
-
-    if t1 > t2:
+    if t1 >= t2:
         return None
 
     p1c = p1 + dlt * t1
