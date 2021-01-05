@@ -25,7 +25,7 @@ class AssignObject(bpy.types.Operator):
             },
         ).execute()
         Data.load(props.ifc_definition_id)
-        bpy.ops.bim.disable_editing_aggregate()
+        bpy.ops.bim.disable_editing_aggregate(obj=self.related_object)
         return {"FINISHED"}
 
 
@@ -42,7 +42,9 @@ class EnableEditingAggregate(bpy.types.Operator):
 class DisableEditingAggregate(bpy.types.Operator):
     bl_idname = "bim.disable_editing_aggregate"
     bl_label = "Disable Editing Aggregate"
+    obj: bpy.props.StringProperty()
 
     def execute(self, context):
-        bpy.context.active_object.BIMObjectProperties.is_editing_aggregate = False
+        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        obj.BIMObjectProperties.is_editing_aggregate = False
         return {"FINISHED"}
