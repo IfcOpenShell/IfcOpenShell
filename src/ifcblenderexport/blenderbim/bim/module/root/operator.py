@@ -1,6 +1,7 @@
 import bpy
 import numpy as np
 import ifcopenshell
+import ifcopenshell.util.schema
 import blenderbim.bim.module.root.create_product as create_product
 import blenderbim.bim.module.root.remove_product as remove_product
 import blenderbim.bim.module.root.reassign_class as reassign_class
@@ -19,7 +20,8 @@ class EnableReassignClass(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.context.active_object
         ifc_class = obj.name.split("/")[0]
-        ifc_schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(bpy.context.scene.BIMProperties.export_schema)
+        file = IfcStore.get_file()
+        ifc_schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(file.schema)
         bpy.context.active_object.BIMObjectProperties.is_reassigning_class = True
         ifc_products = [
             "IfcElement",
@@ -85,48 +87,38 @@ class AssignClass(bpy.types.Operator):
     def execute(self, context):
         objects = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
         self.file = IfcStore.get_file()
+        ifc_schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.file.schema)
+        self.declaration = ifc_schema.declaration_by_name(self.ifc_class)
+        if self.predefined_type == "USERDEFINED":
+            self.predefined_type = self.ifc_userdefined_type
+        elif self.predefined_type == "":
+            predefined_type = None
         for obj in objects:
-            if obj.BIMObjectProperties.ifc_definition_id:
-                continue
-            if self.predefined_type == "USERDEFINED":
-                predefined_type = self.ifc_userdefined_type
-            elif self.predefined_type == "":
-                predefined_type = None
-            else:
-                predefined_type = self.predefined_type
-            product = create_product.Usecase(
-                self.file,
-                {
-                    "ifc_class": self.ifc_class,
-                    "predefined_type": predefined_type,
-                    "name": obj.name,
-                },
-            ).execute()
-            obj.name = "{}/{}".format(product.is_a(), obj.name)
-            obj.BIMObjectProperties.ifc_definition_id = int(product.id())
-
-            bpy.ops.bim.add_representation(obj=obj.name)
-
-            relating_structure = None
-            for collection in obj.users_collection:
-                if "Ifc" in collection.name:
-                    relating_structure = self.file.by_id(
-                        bpy.data.objects.get(collection.name).BIMObjectProperties.ifc_definition_id
-                    )
-                    break
-
-            if relating_structure:
-                assign_container.Usecase(
-                    self.file,
-                    {
-                        "product": product,
-                        "relating_structure": relating_structure,
-                    },
-                ).execute()
-
-            if bpy.context.scene.BIMProperties.ifc_product == "IfcElementType":
-                self.place_in_types_collection(obj)
+            self.assign_class(obj)
         return {"FINISHED"}
+
+    def assign_class(self, obj):
+        if obj.BIMObjectProperties.ifc_definition_id:
+            return
+        product = create_product.Usecase(
+            self.file,
+            {
+                "ifc_class": self.ifc_class,
+                "predefined_type": self.predefined_type,
+                "name": obj.name,
+            },
+        ).execute()
+        obj.name = "{}/{}".format(product.is_a(), obj.name)
+        obj.BIMObjectProperties.ifc_definition_id = int(product.id())
+
+        bpy.ops.bim.add_representation(obj=obj.name)
+
+        if ifcopenshell.util.schema.is_a(self.declaration, "IfcElementType"):
+            self.place_in_types_collection(obj)
+        elif ifcopenshell.util.schema.is_a(self.declaration, "IfcSpatialElement") or self.ifc_class == "IfcProject":
+            self.place_in_spatial_collection(obj)
+        else:
+            self.assign_potential_spatial_container(obj)
 
     def place_in_types_collection(self, obj):
         for project in [c for c in bpy.context.view_layer.layer_collection.children if "IfcProject" in c.name]:
@@ -138,6 +130,29 @@ class AssignClass(bpy.types.Operator):
                     user_collection.objects.unlink(obj)
                 collection.collection.objects.link(obj)
                 break
+            break
+
+    def place_in_spatial_collection(self, obj):
+        for collection in obj.users_collection:
+            if collection.name == obj.name:
+                return
+        parent_collection = None
+        for collection in obj.users_collection:
+            collection.objects.unlink(obj)
+            if "Ifc" in collection.name:
+                parent_collection = collection
+        collection = bpy.data.collections.new(obj.name)
+        collection.objects.link(obj)
+        if parent_collection:
+            parent_collection.children.link(collection)
+        else:
+            bpy.context.scene.collection.children.link(collection)
+
+    def assign_potential_spatial_container(self, obj):
+        for collection in obj.users_collection:
+            if "Ifc" not in collection.name:
+                continue
+            bpy.ops.bim.assign_container(relating_structure=collection.name, related_element=obj.name)
             break
 
 

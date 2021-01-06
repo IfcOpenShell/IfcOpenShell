@@ -12,7 +12,7 @@ class Data:
             return
         cls.products[product_id] = []
         product = file.by_id(product_id)
-        if not product.Representation:
+        if not hasattr(product, "Representation") or not product.Representation:
             return
         for representation in product.Representation.Representations:
             c = representation.ContextOfItems

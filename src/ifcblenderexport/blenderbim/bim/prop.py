@@ -8,6 +8,7 @@ from . import ifc
 from . import annotation
 from . import decoration
 import bpy
+from blenderbim.bim.ifc import IfcStore
 from bpy.types import PropertyGroup
 from bpy.app.handlers import persistent
 from bpy.props import (
@@ -125,14 +126,14 @@ def setDefaultProperties(scene):
 
 def getIfcPredefinedTypes(self, context):
     global types_enum
-    if len(types_enum) < 1:
-        for name, data in schema.ifc.elements.items():
-            if name != self.ifc_class.strip():
-                continue
-            for attribute in data["attributes"]:
-                if attribute["name"] != "PredefinedType":
-                    continue
-                types_enum.extend([(e, e, "") for e in attribute["enum_values"]])
+    file = IfcStore.get_file()
+    if len(types_enum) < 1 and file:
+        ifc_schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(file.schema)
+        declaration = ifc_schema.declaration_by_name(self.ifc_class)
+        for attribute in declaration.attributes():
+            if attribute.name() == "PredefinedType":
+                types_enum.extend([(e, e, "") for e in attribute.type_of_attribute().declared_type().enumeration_items()])
+                break
     return types_enum
 
 
@@ -257,8 +258,7 @@ def getIfcProducts(self, context):
                     "IfcElementType",
                     "IfcSpatialElement",
                     "IfcGroup",
-                    "IfcStructural",
-                    "IfcPositioningElement",
+                    "IfcStructuralItem",
                     "IfcContext",
                     "IfcAnnotation",
                 ]
@@ -269,8 +269,19 @@ def getIfcProducts(self, context):
 
 def getIfcClasses(self, context):
     global classes_enum
-    if len(classes_enum) < 1:
-        classes_enum.extend([(e, e, "") for e in getattr(schema.ifc, self.ifc_product)])
+    file = IfcStore.get_file()
+    if len(classes_enum) < 1 and file:
+        ifc_schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(file.schema)
+        declaration = ifc_schema.declaration_by_name(self.ifc_product)
+        def get_classes(declaration):
+            results = []
+            if not declaration.is_abstract():
+                results.append(declaration.name())
+            for subtype in declaration.subtypes():
+                results.extend(get_classes(subtype))
+            return results
+        classes = get_classes(declaration)
+        classes_enum.extend([(c, c, "") for c in sorted(classes)])
     return classes_enum
 
 
