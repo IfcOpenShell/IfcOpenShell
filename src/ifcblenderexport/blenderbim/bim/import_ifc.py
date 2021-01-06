@@ -1835,8 +1835,6 @@ class IfcImporter:
         ):
             container = element.ContainedInStructure[0].RelatingStructure
             if container.is_a("IfcSpace"):
-                if self.ifc_import_settings.should_import_spaces and container.GlobalId in self.added_data:
-                    obj.BIMObjectProperties.relating_structure = self.added_data[container.GlobalId]
                 return self.place_object_in_spatial_tree(container, obj)
             elif element.is_a("IfcGrid"):
                 grid_collection = bpy.data.collections.get(obj.name)
