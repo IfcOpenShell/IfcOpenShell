@@ -976,7 +976,6 @@ class IfcImporter:
         self.add_element_representation_items(element, obj)
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
-        self.add_defines_by_type_relation(element, obj)
         self.add_opening_relation(element, obj)
         self.add_product_definitions(element, obj)
         self.added_data[element.GlobalId] = obj
@@ -1426,11 +1425,6 @@ class IfcImporter:
                     new_prop.name = prop.Name
                     new_prop.string_value = str(value)
 
-    def add_defines_by_type_relation(self, element, obj):
-        related_type = ifcopenshell.util.element.get_type(element)
-        if related_type:
-            obj.BIMObjectProperties.relating_type = self.type_products[related_type.GlobalId]
-
     def add_opening_relation(self, element, obj):
         if not element.is_a("IfcOpeningElement"):
             return
@@ -1732,7 +1726,6 @@ class IfcImporter:
         self.place_object_in_spatial_tree(element, obj)
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
-        self.add_defines_by_type_relation(element, obj)
         self.add_product_definitions(element, obj)
         self.aggregates[element.GlobalId] = obj
         self.aggregate_collections[rel_aggregate.id()] = collection
@@ -1794,7 +1787,6 @@ class IfcImporter:
         obj.matrix_world = self.get_element_matrix(element, mesh_name)
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
-        self.add_defines_by_type_relation(element, obj)
         self.add_product_definitions(element, obj)
         self.added_data[element.GlobalId] = obj
 

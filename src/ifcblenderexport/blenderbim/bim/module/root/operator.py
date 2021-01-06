@@ -20,8 +20,6 @@ class EnableReassignClass(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.context.active_object
         ifc_class = obj.name.split("/")[0]
-        file = IfcStore.get_file()
-        ifc_schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(file.schema)
         bpy.context.active_object.BIMObjectProperties.is_reassigning_class = True
         ifc_products = [
             "IfcElement",
@@ -34,7 +32,7 @@ class EnableReassignClass(bpy.types.Operator):
             "IfcAnnotation",
         ]
         for ifc_product in ifc_products:
-            if ifcopenshell.util.schema.is_a(ifc_schema.declaration_by_name(ifc_class), ifc_product):
+            if ifcopenshell.util.schema.is_a(IfcStore.get_schema().declaration_by_name(ifc_class), ifc_product):
                 bpy.context.scene.BIMProperties.ifc_product = ifc_product
         bpy.context.scene.BIMProperties.ifc_class = obj.name.split("/")[0]
         predefined_type = obj.BIMObjectProperties.attributes.get("PredefinedType")
@@ -87,8 +85,7 @@ class AssignClass(bpy.types.Operator):
     def execute(self, context):
         objects = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
         self.file = IfcStore.get_file()
-        ifc_schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.file.schema)
-        self.declaration = ifc_schema.declaration_by_name(self.ifc_class)
+        self.declaration = IfcStore.get_schema().declaration_by_name(self.ifc_class)
         if self.predefined_type == "USERDEFINED":
             self.predefined_type = self.ifc_userdefined_type
         elif self.predefined_type == "":

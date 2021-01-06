@@ -128,8 +128,7 @@ def getIfcPredefinedTypes(self, context):
     global types_enum
     file = IfcStore.get_file()
     if len(types_enum) < 1 and file:
-        ifc_schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(file.schema)
-        declaration = ifc_schema.declaration_by_name(self.ifc_class)
+        declaration = IfcStore.get_schema().declaration_by_name(self.ifc_class)
         for attribute in declaration.attributes():
             if attribute.name() == "PredefinedType":
                 types_enum.extend([(e, e, "") for e in attribute.type_of_attribute().declared_type().enumeration_items()])
@@ -271,8 +270,7 @@ def getIfcClasses(self, context):
     global classes_enum
     file = IfcStore.get_file()
     if len(classes_enum) < 1 and file:
-        ifc_schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(file.schema)
-        declaration = ifc_schema.declaration_by_name(self.ifc_product)
+        declaration = IfcStore.get_schema().declaration_by_name(self.ifc_product)
         def get_classes(declaration):
             results = []
             if not declaration.is_abstract():
@@ -1258,7 +1256,7 @@ class BIMProperties(PropertyGroup):
     )
     export_should_force_faceted_brep: BoolProperty(name="Export with Faceted Breps", default=False)
     export_should_force_triangulation: BoolProperty(name="Export with Triangulation", default=False)
-    export_should_export_from_memory: BoolProperty(name="Export from Memory", default=False)
+    export_should_export_from_memory: BoolProperty(name="Export from Memory", default=True)
     import_should_ignore_site_coordinates: BoolProperty(name="Import Ignoring Site Coordinates", default=False)
     import_should_ignore_building_coordinates: BoolProperty(name="Import Ignoring Building Coordinates", default=False)
     import_should_reset_absolute_coordinates: BoolProperty(name="Import Resetting Absolute Coordinates", default=False)
@@ -1270,7 +1268,7 @@ class BIMProperties(PropertyGroup):
     import_should_auto_set_workarounds: BoolProperty(name="Automatically Set Vendor Workarounds", default=True)
     import_should_use_legacy: BoolProperty(name="Import with Legacy Importer", default=False)
     import_should_import_native: BoolProperty(name="Import Native Representations", default=False)
-    import_export_should_roundtrip_native: BoolProperty(name="Roundtrip Native Representations", default=False)
+    import_export_should_roundtrip_native: BoolProperty(name="Roundtrip Native Representations", default=True)
     import_should_use_cpu_multiprocessing: BoolProperty(name="Import with CPU Multiprocessing", default=True)
     import_should_import_with_profiling: BoolProperty(name="Import with Profiling", default=True)
     import_should_import_aggregates: BoolProperty(name="Import Aggregates", default=True)
@@ -1481,6 +1479,8 @@ class BIMObjectProperties(PropertyGroup):
     relating_object: PointerProperty(name="Aggregate", type=bpy.types.Object)
     is_editing_aggregate: BoolProperty(name="Is Editing Aggregate")
     is_editing_container: BoolProperty(name="Is Editing Container")
+    relating_type: PointerProperty(name="Type", type=bpy.types.Object)
+    is_editing_type: BoolProperty(name="Is Editing Type")
     relating_type: PointerProperty(name="Type Product", type=bpy.types.Object)
     relating_structure: PointerProperty(name="Spatial Container", type=bpy.types.Object)
     psets: CollectionProperty(name="Psets", type=PsetQto)

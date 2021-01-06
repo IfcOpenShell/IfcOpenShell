@@ -29,10 +29,7 @@ class AssignObject(bpy.types.Operator):
         Data.load(props.ifc_definition_id)
         bpy.ops.bim.disable_editing_aggregate(obj=related_object.name)
 
-        file = IfcStore.get_file()
-        ifc_schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(file.schema)
-        declaration = ifc_schema.declaration_by_name(product.is_a())
-
+        declaration = IfcStore.get_schema().declaration_by_name(product.is_a())
         # TODO: we may not need this conditional if aggregates stop using collection instances
         if ifcopenshell.util.schema.is_a(declaration, "IfcSpatialElement"):
             related_collection = related_object.users_collection[0]

@@ -59,7 +59,6 @@ class IfcParser:
         self.rel_contained_in_spatial_structure = {}
         self.rel_nests = {}
         self.rel_space_boundaries = {}
-        self.rel_defines_by_type = {}
         self.rel_defines_by_qto = {}
         self.rel_defines_by_pset = {}
         self.rel_associates_document_object = {}
@@ -371,9 +370,6 @@ class IfcParser:
         product.update(metadata_override)
 
         type_product = obj.BIMObjectProperties.relating_type
-        if type_product and self.is_a_type(self.get_ifc_class(type_product.name)):
-            reference = self.get_type_product_reference(type_product.name)
-            self.rel_defines_by_type.setdefault(reference, []).append(self.product_index)
 
         if product["has_boundary_condition"]:
             product["boundary_condition_class"] = obj.BIMObjectProperties.boundary_condition.name
@@ -1374,7 +1370,6 @@ class IfcExporter:
         self.relate_objects_to_objects()
         self.relate_elements_to_spatial_structures()
         self.relate_nested_elements_to_hosted_elements()
-        self.relate_objects_to_types()
         self.relate_objects_to_qtos()
         self.relate_objects_to_psets()
         self.relate_objects_to_opening_elements()
@@ -3175,17 +3170,6 @@ class IfcExporter:
                 None,
                 self.ifc_parser.products[relating_object]["ifc"],
                 [o["ifc"] for o in related_objects],
-            )
-
-    def relate_objects_to_types(self):
-        for relating_type, related_objects in self.ifc_parser.rel_defines_by_type.items():
-            self.file.createIfcRelDefinesByType(
-                ifcopenshell.guid.new(),
-                self.owner_history,
-                None,
-                None,
-                [self.ifc_parser.products[o]["ifc"] for o in related_objects],
-                self.ifc_parser.type_products[relating_type]["ifc"],
             )
 
     def relate_objects_to_qtos(self):

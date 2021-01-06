@@ -16,6 +16,7 @@ if bpy is not None:
     import blenderbim.bim.module.project as module_project
     import blenderbim.bim.module.spatial as module_spatial
     import blenderbim.bim.module.style as module_style
+    import blenderbim.bim.module.type as module_type
     import blenderbim.bim.module.unit as module_unit
     from . import ui, prop, operator
 
@@ -150,7 +151,6 @@ if bpy is not None:
         operator.ImportIfcCsv,
         operator.EyedropIfcCsv,
         operator.ReloadIfcFile,
-        operator.SelectSimilarType,
         operator.AddIfcFile,
         operator.RemoveIfcFile,
         operator.SelectDocIfcFile,
@@ -285,7 +285,6 @@ if bpy is not None:
         ui.BIM_PT_debug,
         ui.BIM_PT_material,
         ui.BIM_PT_presentation_layer_data,
-        ui.BIM_PT_object,
         ui.BIM_PT_object_material,
         ui.BIM_PT_object_psets,
         ui.BIM_PT_object_qto,
@@ -323,6 +322,7 @@ if bpy is not None:
     classes.extend(module_project.classes)
     classes.extend(module_spatial.classes)
     classes.extend(module_style.classes)
+    classes.extend(module_type.classes)
     classes.extend(module_unit.classes)
 
     def menu_func_export(self, context):
@@ -366,6 +366,7 @@ if bpy is not None:
         module_project.register()
         module_spatial.register()
         module_style.register()
+        module_type.register()
         module_unit.register()
         bpy.app.handlers.depsgraph_update_pre.append(operator.depsgraph_update_pre_handler)
         bpy.app.handlers.load_post.append(prop.toggleDecorationsOnLoad)
@@ -389,6 +390,7 @@ if bpy is not None:
         del bpy.types.TextCurve.BIMTextProperties
         bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
         module_unit.unregister()
+        module_type.unregister()
         module_style.unregister()
         module_spatial.unregister()
         module_project.unregister()

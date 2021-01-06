@@ -5,32 +5,6 @@ from bpy.types import Panel
 from bpy.props import StringProperty
 
 
-class BIM_PT_object(Panel):
-    bl_label = "IFC Object"
-    bl_idname = "BIM_PT_object"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "object"
-
-    @classmethod
-    def poll(cls, context):
-        return context.active_object is not None and hasattr(context.active_object, "BIMObjectProperties")
-
-    def draw(self, context):
-        if context.active_object is None:
-            return
-        layout = self.layout
-        props = context.active_object.BIMObjectProperties
-        bim_properties = context.scene.BIMProperties
-
-        if "Ifc" not in context.active_object.name:
-            return
-
-        row = layout.row(align=True)
-        row.prop(props, "relating_type")
-        row.operator("bim.select_similar_type", icon="RESTRICT_SELECT_OFF", text="")
-
-
 class BIM_PT_object_material(Panel):
     bl_label = "IFC Object Material"
     bl_idname = "BIM_PT_object_material"
