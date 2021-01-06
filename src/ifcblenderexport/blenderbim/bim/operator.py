@@ -2832,23 +2832,6 @@ class ReloadIfcFile(bpy.types.Operator):
         ifc_importer.execute()
 
 
-class SelectSimilarType(bpy.types.Operator):
-    bl_idname = "bim.select_similar_type"
-    bl_label = "Select Similar Type"
-
-    def execute(self, context):
-        if context.active_object.BIMObjectProperties.relating_type:
-            relating_type = context.active_object.BIMObjectProperties.relating_type
-        elif "Type/" in context.active_object.name:
-            relating_type = context.active_object
-        else:
-            return {"FINISHED"}
-        for obj in bpy.context.visible_objects:
-            if obj.BIMObjectProperties.relating_type == relating_type:
-                obj.select_set(True)
-        return {"FINISHED"}
-
-
 class AddIfcFile(bpy.types.Operator):
     bl_idname = "bim.add_ifc_file"
     bl_label = "Add IFC File"

@@ -15,7 +15,7 @@ class Usecase:
         contained_in_structure = self.settings["product"].ContainedInStructure
         contains_elements = self.settings["relating_structure"].ContainsElements
 
-        if contains_elements and contained_in_structure == contains_elements:
+        if contains_elements and contained_in_structure and contained_in_structure[0] == contains_elements[0]:
             return
 
         if contained_in_structure:
