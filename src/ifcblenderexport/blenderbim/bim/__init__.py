@@ -15,6 +15,7 @@ if bpy is not None:
     import blenderbim.bim.module.model as module_model
     import blenderbim.bim.module.project as module_project
     import blenderbim.bim.module.spatial as module_spatial
+    import blenderbim.bim.module.style as module_style
     import blenderbim.bim.module.unit as module_unit
     from . import ui, prop, operator
 
@@ -321,6 +322,7 @@ if bpy is not None:
     classes.extend(module_model.classes)
     classes.extend(module_project.classes)
     classes.extend(module_spatial.classes)
+    classes.extend(module_style.classes)
     classes.extend(module_unit.classes)
 
     def menu_func_export(self, context):
@@ -363,6 +365,7 @@ if bpy is not None:
         module_model.register()
         module_project.register()
         module_spatial.register()
+        module_style.register()
         module_unit.register()
         bpy.app.handlers.depsgraph_update_pre.append(operator.depsgraph_update_pre_handler)
         bpy.app.handlers.load_post.append(prop.toggleDecorationsOnLoad)
@@ -386,6 +389,7 @@ if bpy is not None:
         del bpy.types.TextCurve.BIMTextProperties
         bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
         module_unit.unregister()
+        module_style.unregister()
         module_spatial.unregister()
         module_project.unregister()
         module_model.unregister()
