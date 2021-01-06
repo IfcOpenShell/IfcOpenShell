@@ -1469,6 +1469,7 @@ class BIMObjectProperties(PropertyGroup):
     is_editing_attributes: BoolProperty(name="Is Editing Attributes")
     relating_object: PointerProperty(name="Aggregate", type=bpy.types.Object)
     is_editing_aggregate: BoolProperty(name="Is Editing Aggregate")
+    is_editing_container: BoolProperty(name="Is Editing Container")
     relating_type: PointerProperty(name="Type Product", type=bpy.types.Object)
     relating_structure: PointerProperty(name="Spatial Container", type=bpy.types.Object)
     psets: CollectionProperty(name="Psets", type=PsetQto)

@@ -27,11 +27,17 @@ class BIM_PT_spatial(Panel):
         if props.ifc_definition_id not in Data.products:
             Data.load(props.ifc_definition_id)
 
-        row = self.layout.row(align=True)
-        name = "{}/{}".format(
-            Data.products[props.ifc_definition_id]["type"], Data.products[props.ifc_definition_id]["Name"]
-        )
-        if name == "None/None":
-            name = "This object is not spatially contained"
-        row.label(text=name)
-        row.operator("bim.assign_container", icon="FILE_REFRESH", text="")
+        if props.is_editing_container:
+            row = self.layout.row(align=True)
+            row.prop(props, "relating_structure", text="")
+            row.operator("bim.assign_container", icon="CHECKMARK", text="")
+            row.operator("bim.disable_editing_container", icon="X", text="")
+        else:
+            row = self.layout.row(align=True)
+            name = "{}/{}".format(
+                Data.products[props.ifc_definition_id]["type"], Data.products[props.ifc_definition_id]["Name"]
+            )
+            if name == "None/None":
+                name = "This object is not spatially contained"
+            row.label(text=name)
+            row.operator("bim.enable_editing_container", icon="GREASEPENCIL", text="")
