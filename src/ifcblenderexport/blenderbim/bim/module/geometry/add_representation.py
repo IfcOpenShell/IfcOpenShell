@@ -119,6 +119,25 @@ class Usecase:
             items,
         )
 
+    def create_polygonal_face_set(self):
+        ifc_raw_items = [None] * self.settings["total_items"]
+        for i, value in enumerate(ifc_raw_items):
+            ifc_raw_items[i] = []
+        for polygon in self.settings["geometry"].polygons:
+            ifc_raw_items[polygon.material_index % self.settings["total_items"]].append(
+                self.file.createIfcIndexedPolygonalFace([v + 1 for v in polygon.vertices])
+            )
+        coordinates = self.file.createIfcCartesianPointList3D(
+            [self.convert_si_to_unit(v.co) for v in self.settings["geometry"].vertices]
+        )
+        items = [self.file.createIfcPolygonalFaceSet(coordinates, None, i) for i in ifc_raw_items if i]
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "Tessellation",
+            items,
+        )
+
     def create_vertices(self, is_2d=False):
         if is_2d:
             for v in self.settings["geometry"].vertices:
