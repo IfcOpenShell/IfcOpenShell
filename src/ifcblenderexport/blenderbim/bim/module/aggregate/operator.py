@@ -1,5 +1,4 @@
 import bpy
-import ifcopenshell.util.schema
 import blenderbim.bim.module.aggregate.assign_object as assign_object
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.aggregate.data import Data
@@ -29,11 +28,9 @@ class AssignObject(bpy.types.Operator):
         Data.load(props.ifc_definition_id)
         bpy.ops.bim.disable_editing_aggregate(obj=related_object.name)
 
-        declaration = IfcStore.get_schema().declaration_by_name(product.is_a())
-        # TODO: we may not need this conditional if aggregates stop using collection instances
-        if ifcopenshell.util.schema.is_a(declaration, "IfcSpatialElement"):
-            related_collection = related_object.users_collection[0]
-            relating_collection = relating_object.users_collection[0]
+        related_collection = bpy.data.collections.get(related_object.name)
+        if related_collection:
+            relating_collection = bpy.data.collections.get(relating_object.name)
             self.remove_collection(bpy.context.scene.collection, related_collection)
             for collection in bpy.data.collections:
                 if collection == relating_collection:

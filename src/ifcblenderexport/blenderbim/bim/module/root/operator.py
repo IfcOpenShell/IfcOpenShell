@@ -110,9 +110,14 @@ class AssignClass(bpy.types.Operator):
 
         bpy.ops.bim.add_representation(obj=obj.name)
 
-        if ifcopenshell.util.schema.is_a(self.declaration, "IfcElementType"):
+        if product.is_a("IfcElementType"):
             self.place_in_types_collection(obj)
-        elif ifcopenshell.util.schema.is_a(self.declaration, "IfcSpatialElement") or self.ifc_class == "IfcProject":
+        elif (
+            product.is_a("IfcSpatialElement")
+            or product.is_a("IfcSpatialStructureElement")
+            or product.is_a("IfcProject")
+            or product.is_a("IfcContext")
+        ):
             self.place_in_spatial_collection(obj)
         else:
             self.assign_potential_spatial_container(obj)
