@@ -14,7 +14,7 @@ def generate_report(
     html_template_file_path=""
 ):
 
-    # print("# Generating HTML reports now.")
+    print("# Generating HTML reports now.")
 
     # get locale path
     localedir = os.path.join(
@@ -150,7 +150,7 @@ def generate_report(
 
 
 def get_html_template_strings():
-    print(_("OpenBIM auditing is a feature of"))
+
     return {
         "tr_lang": _("en"),
         "tr_success": _("Success"),
