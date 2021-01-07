@@ -6,6 +6,10 @@ from ifcdata_methods import assert_schema
 from utils import IfcFile
 from utils import switch_locale
 
+
+the_lang = "en"
+
+
 @step('The IFC schema "{schema}" must be provided')
 def step_impl(context, schema):
     try:
@@ -38,7 +42,7 @@ def step_impl(context):
 
 @step("IFC data must use the {schema} schema")
 def step_impl(context, schema):
-    switch_locale(context.localedir, "en")
+    switch_locale(context.localedir, the_lang)
     assert_schema(context, schema)
     
 
