@@ -375,7 +375,6 @@ class IfcImporter:
         self.native_data = {}
         self.groups = {}
         self.aggregates = {}
-        self.aggregate_collection = None
         self.aggregate_collections = {}
 
         self.material_creator = MaterialCreator(ifc_import_settings, self)
@@ -1311,7 +1310,6 @@ class IfcImporter:
             # Occurs when reloading a project
             pass
         project_collection = bpy.context.view_layer.layer_collection.children[self.project["blender"].name]
-        project_collection.children[self.aggregate_collection.name].hide_viewport = True
         project_collection.children[self.opening_collection.name].hide_viewport = True
         project_collection.children[self.type_collection.name].hide_viewport = True
 
@@ -1693,27 +1691,21 @@ class IfcImporter:
                 ]
         else:
             rel_aggregates = [a for a in self.file.by_type("IfcRelAggregates") if a.RelatingObject.is_a("IfcElement")]
-        for collection in self.project["blender"].children:
-            if collection.name == "Aggregates":
-                self.aggregate_collection = collection
-                break
-        if not self.aggregate_collection:
-            self.aggregate_collection = bpy.data.collections.new("Aggregates")
-            self.project["blender"].children.link(self.aggregate_collection)
-
         for rel_aggregate in rel_aggregates:
             self.create_aggregate(rel_aggregate)
 
     def create_aggregate(self, rel_aggregate):
-        collection = bpy.data.collections.new(f"IfcRelAggregates/{rel_aggregate.id()}")
-        self.aggregate_collection.children.link(collection)
         element = rel_aggregate.RelatingObject
 
         obj = bpy.data.objects.new("{}/{}".format(element.is_a(), element.Name), None)
         obj.BIMObjectProperties.ifc_definition_id = element.id()
-        obj.instance_type = "COLLECTION"
-        obj.instance_collection = collection
         self.place_object_in_spatial_tree(element, obj)
+
+        collection = bpy.data.collections.new(obj.name)
+        obj.users_collection[0].children.link(collection)
+        obj.users_collection[0].objects.unlink(obj)
+        collection.objects.link(obj)
+
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
         self.add_product_definitions(element, obj)
