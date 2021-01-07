@@ -484,45 +484,6 @@ class AddQto(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AddPset(bpy.types.Operator):
-    bl_idname = "bim.add_pset"
-    bl_label = "Add Pset"
-
-    def execute(self, context):
-        name = bpy.context.active_object.BIMObjectProperties.pset_name
-        pset_template = schema.ifc.psetqto.get_by_name(name)
-        if not pset_template:
-            return {"FINISHED"}
-        for obj in bpy.context.selected_objects:
-            if "/" not in obj.name or obj.BIMObjectProperties.psets.find(name) != -1:
-                continue
-            applicable_psets = schema.ifc.psetqto.get_applicable_names(obj.name.split("/")[0], pset_only=True)
-            if name not in applicable_psets:
-                continue
-            pset = obj.BIMObjectProperties.psets.add()
-            pset.name = name
-            for prop_name in (p.Name for p in pset_template.HasPropertyTemplates):
-                prop = pset.properties.add()
-                prop.name = prop_name
-        return {"FINISHED"}
-
-
-class RemovePset(bpy.types.Operator):
-    bl_idname = "bim.remove_pset"
-    bl_label = "Remove Pset"
-    pset_index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        name = bpy.context.active_object.BIMObjectProperties.psets[self.pset_index].name
-        for obj in bpy.context.selected_objects:
-            if "/" not in obj.name:
-                continue
-            index = obj.BIMObjectProperties.psets.find(name)
-            if index != -1:
-                obj.BIMObjectProperties.psets.remove(index)
-        return {"FINISHED"}
-
-
 class RemoveQto(bpy.types.Operator):
     bl_idname = "bim.remove_qto"
     bl_label = "Remove Qto"

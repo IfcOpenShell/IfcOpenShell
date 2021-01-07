@@ -76,11 +76,10 @@ class EditAttributes(bpy.types.Operator):
                 attributes[attribute["name"]] = blender_attribute.float_value
             elif attribute["type"] == "enum":
                 attributes[attribute["name"]] = blender_attribute.enum_value
-        usecase = edit_attributes.Usecase(self.file, {
+        edit_attributes.Usecase(self.file, {
             "product": self.file.by_id(props.ifc_definition_id),
             "attributes": attributes
-        })
-        usecase.execute()
+        }).execute()
         Data.load(props.ifc_definition_id)
         bpy.ops.bim.disable_editing_attributes()
         return {"FINISHED"}

@@ -12,7 +12,6 @@ class Data:
             return
         product = file.by_id(product_id)
         cls.products[product_id] = []
-        attributes = product.get_info()
         declaration = IfcStore.get_schema().declaration_by_name(product.is_a())
         for attribute in declaration.all_attributes():
             data_type = str(attribute.type_of_attribute())
