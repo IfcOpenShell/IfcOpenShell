@@ -849,7 +849,6 @@ class IfcImporter:
         self.material_creator.create(element, obj, mesh)
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
-        self.add_type_product_psets(element, obj)
         self.type_collection.objects.link(obj)
         self.type_products[element.GlobalId] = obj
 
@@ -1364,17 +1363,8 @@ class IfcImporter:
         for definition in element.IsDefinedBy:
             if not definition.is_a("IfcRelDefinesByProperties"):
                 continue
-            if definition.RelatingPropertyDefinition.is_a("IfcPropertySet"):
-                self.add_pset(definition.RelatingPropertyDefinition, obj.BIMObjectProperties)
-            elif definition.RelatingPropertyDefinition.is_a("IfcElementQuantity"):
+            if definition.RelatingPropertyDefinition.is_a("IfcElementQuantity"):
                 self.add_qto(definition.RelatingPropertyDefinition, obj)
-
-    def add_type_product_psets(self, element, obj):
-        if not hasattr(element, "HasPropertySets") or not element.HasPropertySets:
-            return
-        for definition in element.HasPropertySets:
-            if definition.is_a("IfcPropertySet"):
-                self.add_pset(definition, obj.BIMObjectProperties)
 
     def add_pset(self, pset, props):
         new_pset = props.psets.add()

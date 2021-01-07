@@ -20,9 +20,6 @@ class BIM_PT_attributes(Panel):
         if props.ifc_definition_id not in Data.products:
             Data.load(props.ifc_definition_id)
 
-        props = context.active_object.BIMObjectProperties
-
-
         if props.is_editing_attributes:
             row = self.layout.row(align=True)
             row.operator("bim.edit_attributes", icon="CHECKMARK", text="Save Attributes")

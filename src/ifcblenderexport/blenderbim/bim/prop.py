@@ -40,7 +40,7 @@ psettemplatefiles_enum = []
 propertysettemplates_enum = []
 classification_enum = []
 attributes_enum = []
-psetnames_enum = []
+psetnames = {}
 qtonames_enum = []
 materialattributes_enum = []
 materialtypes_enum = []
@@ -435,12 +435,14 @@ def refreshReferences(self, context):
 
 
 def getPsetNames(self, context):
-    global psetnames_enum
-    psetnames_enum.clear()
-    if "/" in context.active_object.name and context.active_object.name.split("/")[0] in schema.ifc.elements:
-        pset_names = schema.ifc.psetqto.get_applicable_names(context.active_object.name.split("/")[0], pset_only=True)
-        psetnames_enum.extend([(p, p, "") for p in pset_names])
-    return psetnames_enum
+    global psetnames
+    if "/" in context.active_object.name:
+        ifc_class = context.active_object.name.split("/")[0]
+        if ifc_class not in psetnames:
+            psets = schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
+            psetnames[ifc_class] = [(p.Name, p.Name, "") for p in psets]
+        return psetnames[ifc_class]
+    return []
 
 
 def getMaterialPsetNames(self, context):
@@ -1483,6 +1485,9 @@ class BIMObjectProperties(PropertyGroup):
     is_editing_type: BoolProperty(name="Is Editing Type")
     relating_type: PointerProperty(name="Type Product", type=bpy.types.Object)
     relating_structure: PointerProperty(name="Spatial Container", type=bpy.types.Object)
+    active_pset_id: IntProperty(name="Active Pset ID")
+    active_pset_name: StringProperty(name="Pset Name")
+    properties: CollectionProperty(name="Properties", type=Attribute)
     psets: CollectionProperty(name="Psets", type=PsetQto)
     qtos: CollectionProperty(name="Qtos", type=PsetQto)
     document_references: CollectionProperty(name="Document References", type=DocumentReference)

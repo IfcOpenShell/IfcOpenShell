@@ -14,6 +14,7 @@ if bpy is not None:
     import blenderbim.bim.module.geometry as module_geometry
     import blenderbim.bim.module.model as module_model
     import blenderbim.bim.module.project as module_project
+    import blenderbim.bim.module.pset as module_pset
     import blenderbim.bim.module.spatial as module_spatial
     import blenderbim.bim.module.style as module_style
     import blenderbim.bim.module.type as module_type
@@ -52,8 +53,6 @@ if bpy is not None:
         operator.SelectSweptSolidInnerCurves,
         operator.AssignSweptSolidExtrusion,
         operator.SelectSweptSolidExtrusion,
-        operator.AddPset,
-        operator.RemovePset,
         operator.AddQto,
         operator.RemoveQto,
         operator.AddMaterialPset,
@@ -286,7 +285,6 @@ if bpy is not None:
         ui.BIM_PT_material,
         ui.BIM_PT_presentation_layer_data,
         ui.BIM_PT_object_material,
-        ui.BIM_PT_object_psets,
         ui.BIM_PT_object_qto,
         ui.BIM_PT_classification_references,
         ui.BIM_PT_documents,
@@ -320,6 +318,7 @@ if bpy is not None:
     classes.extend(module_geometry.classes)
     classes.extend(module_model.classes)
     classes.extend(module_project.classes)
+    classes.extend(module_pset.classes)
     classes.extend(module_spatial.classes)
     classes.extend(module_style.classes)
     classes.extend(module_type.classes)
@@ -364,6 +363,7 @@ if bpy is not None:
         module_geometry.register()
         module_model.register()
         module_project.register()
+        module_pset.register()
         module_spatial.register()
         module_style.register()
         module_type.register()
@@ -393,6 +393,7 @@ if bpy is not None:
         module_type.unregister()
         module_style.unregister()
         module_spatial.unregister()
+        module_pset.unregister()
         module_project.unregister()
         module_model.unregister()
         module_geometry.unregister()
