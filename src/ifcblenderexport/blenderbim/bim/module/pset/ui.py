@@ -11,7 +11,16 @@ class BIM_PT_object_psets(Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.active_object is not None and hasattr(context.active_object, "BIMObjectProperties")
+        if not context.active_object:
+            return False
+        props = context.active_object.BIMObjectProperties
+        if not props.ifc_definition_id:
+            return False
+        if props.ifc_definition_id not in Data.products:
+            Data.load(props.ifc_definition_id)
+        if not Data.products[props.ifc_definition_id]:
+            return False
+        return True
 
     def draw(self, context):
         props = context.active_object.BIMObjectProperties

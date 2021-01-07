@@ -248,6 +248,7 @@ def refreshActiveDrawingIndex(self, context):
 
 def getIfcProducts(self, context):
     global products_enum
+    file = IfcStore.get_file()
     if len(products_enum) < 1:
         products_enum.extend(
             [
@@ -263,6 +264,8 @@ def getIfcProducts(self, context):
                 ]
             ]
         )
+        if file.schema == "IFC2X3":
+            products_enum[2] = ("IfcSpatialStructureElement", "IfcSpatialStructureElement", "")
     return products_enum
 
 
