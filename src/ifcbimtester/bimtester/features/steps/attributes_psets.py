@@ -1,6 +1,6 @@
 from behave import step
 
-from attributes_psets_methods import all_eleclass_elements_have_prop_in_pset
+import attributes_psets_methods as apm
 from utils import assert_elements
 from utils import IfcFile
 from utils import switch_locale
@@ -9,7 +9,12 @@ from utils import switch_locale
 @step("all {ifc_class} elements have an {aproperty} property in the {pset} pset")
 def step_impl(context, ifc_class, aproperty, pset):
     switch_locale(context.localedir, "en")
-    all_eleclass_elements_have_prop_in_pset(context, ifc_class, aproperty, pset)
+    apm.eleclass_has_property_in_pset(
+        context,
+        ifc_class,
+        aproperty,
+        pset
+    )
 
 
 # ------------------------------------------------------------------------
