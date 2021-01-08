@@ -86,6 +86,10 @@ class AssignClass(bpy.types.Operator):
         elif self.predefined_type == "":
             predefined_type = None
         for obj in objects:
+            if obj.data:
+                for material in obj.data.materials:
+                    if not material.BIMMaterialProperties.ifc_style_id:
+                        bpy.ops.bim.add_style(material=material.name)
             self.assign_class(obj)
         return {"FINISHED"}
 

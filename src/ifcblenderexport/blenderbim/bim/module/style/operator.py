@@ -41,7 +41,7 @@ class AddStyle(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        material = bpy.data.objects.get(self.material) if self.material else bpy.context.active_object.active_material
+        material = bpy.data.materials.get(self.material) if self.material else bpy.context.active_object.active_material
         settings = get_colour_settings(material)
         settings["Name"] = material.name
         settings["external_definition"] = None # TODO: Implement. See #1222

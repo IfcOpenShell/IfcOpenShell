@@ -14,6 +14,7 @@ if bpy is not None:
     import blenderbim.bim.module.debug as module_debug
     import blenderbim.bim.module.geometry as module_geometry
     import blenderbim.bim.module.model as module_model
+    import blenderbim.bim.module.person as module_person
     import blenderbim.bim.module.project as module_project
     import blenderbim.bim.module.pset as module_pset
     import blenderbim.bim.module.spatial as module_spatial
@@ -71,8 +72,6 @@ if bpy is not None:
         operator.AssignConstraint,
         operator.UnassignConstraint,
         operator.RemoveObjectConstraint,
-        operator.AddPerson,
-        operator.RemovePerson,
         operator.AddPersonRole,
         operator.RemovePersonRole,
         operator.AddPersonAddress,
@@ -265,7 +264,6 @@ if bpy is not None:
         ui.BIM_PT_ifccsv,
         ui.BIM_PT_ifcclash,
         ui.BIM_PT_owner,
-        ui.BIM_PT_people,
         ui.BIM_PT_organisations,
         ui.BIM_PT_qa,
         ui.BIM_PT_library,
@@ -311,6 +309,7 @@ if bpy is not None:
     classes.extend(module_debug.classes)
     classes.extend(module_geometry.classes)
     classes.extend(module_model.classes)
+    classes.extend(module_person.classes)
     classes.extend(module_project.classes)
     classes.extend(module_pset.classes)
     classes.extend(module_spatial.classes)
@@ -356,6 +355,7 @@ if bpy is not None:
         module_debug.register()
         module_geometry.register()
         module_model.register()
+        module_person.register()
         module_project.register()
         module_pset.register()
         module_spatial.register()
@@ -388,6 +388,7 @@ if bpy is not None:
         module_spatial.unregister()
         module_pset.unregister()
         module_project.unregister()
+        module_person.unregister()
         module_model.unregister()
         module_geometry.unregister()
         module_debug.unregister()
