@@ -3,7 +3,11 @@ from utils import assert_elements
 from utils import IfcFile
 
 
-def class_geometric_representation(context, ifc_class, representation_class):
+def eleclass_has_geometric_representation_of_specific_class(
+    context,
+    ifc_class,
+    representation_class
+):
 
     def is_item_a_representation(item, representation):
         if "/" in representation:
