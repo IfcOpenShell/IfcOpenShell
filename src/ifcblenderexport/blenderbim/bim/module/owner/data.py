@@ -4,6 +4,8 @@ from blenderbim.bim.ifc import IfcStore
 class Data:
     is_loaded = False
     people = {}
+    addresses = {}
+    roles = {}
 
     @classmethod
     def load(cls):
@@ -14,19 +16,25 @@ class Data:
         for person in file.by_type("IfcPerson"):
             data = person.get_info()
 
-            roles = {}
+            roles = []
             if data["Roles"]:
                 for role in data["Roles"]:
-                    roles[role.id()] = role.get_info()
+                    roles.append(role.id())
             data["Roles"] = roles
 
             addresses = []
             if data["Addresses"]:
                 for address in data["Addresses"]:
-                    addresses.append(address.get_info())
+                    addresses.append(address.id())
             data["Addresses"] = addresses
 
             data["is_engaged"] = bool(person.EngagedIn)
 
             cls.people[person.id()] = data
+
+        for address in file.by_type("IfcAddress"):
+            cls.addresses[address.id()] = address.get_info()
+
+        for role in file.by_type("IfcActorRole"):
+            cls.roles[role.id()] = role.get_info()
         cls.is_loaded = True
