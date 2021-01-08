@@ -25,6 +25,7 @@ class AssignObject(bpy.types.Operator):
                 "relating_object": self.file.by_id(relating_object.BIMObjectProperties.ifc_definition_id),
             },
         ).execute()
+        bpy.ops.bim.edit_object_placement(obj=related_object.name)
         Data.load(props.ifc_definition_id)
         bpy.ops.bim.disable_editing_aggregate(obj=related_object.name)
 

@@ -67,3 +67,9 @@ class BIM_PT_mesh(Panel):
             row.prop(ifc_parameter, "name", text="")
             row.prop(ifc_parameter, "value", text="")
             row.operator("bim.update_parametric_representation", icon="FILE_REFRESH", text="").index = index
+
+
+def BIM_PT_transform(self, context):
+    if context.active_object and context.active_object.BIMObjectProperties.ifc_definition_id:
+        row = self.layout.row()
+        row.operator("bim.edit_object_placement")

@@ -5,11 +5,6 @@ import ifcopenshell.util.schema
 import blenderbim.bim.module.root.create_product as create_product
 import blenderbim.bim.module.root.remove_product as remove_product
 import blenderbim.bim.module.root.reassign_class as reassign_class
-import blenderbim.bim.module.geometry.add_representation as add_representation
-import blenderbim.bim.module.geometry.assign_styles as assign_styles
-import blenderbim.bim.module.geometry.assign_representation as assign_representation
-import blenderbim.bim.module.geometry.add_object_placement as add_object_placement
-import blenderbim.bim.module.spatial.assign_container as assign_container
 from blenderbim.bim.ifc import IfcStore
 
 

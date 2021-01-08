@@ -2,7 +2,7 @@ import bpy
 import numpy as np
 import ifcopenshell
 import logging
-import blenderbim.bim.module.geometry.add_object_placement as add_object_placement
+import blenderbim.bim.module.geometry.edit_object_placement as edit_object_placement
 import blenderbim.bim.module.geometry.add_representation as add_representation
 import blenderbim.bim.module.geometry.assign_styles as assign_styles
 import blenderbim.bim.module.geometry.assign_representation as assign_representation
@@ -10,6 +10,24 @@ import blenderbim.bim.module.geometry.remove_representation as remove_representa
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim import import_ifc
 from blenderbim.bim.module.geometry.data import Data
+
+
+class EditObjectPlacement(bpy.types.Operator):
+    bl_idname = "bim.edit_object_placement"
+    bl_label = "Edit Object Placement"
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        self.file = IfcStore.get_file()
+        edit_object_placement.Usecase(
+            self.file,
+            {
+                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
+                "matrix": np.array(obj.matrix_world),
+            },
+        ).execute()
+        return {"FINISHED"}
 
 
 class AddRepresentation(bpy.types.Operator):
@@ -22,13 +40,7 @@ class AddRepresentation(bpy.types.Operator):
         self.file = IfcStore.get_file()
         self.context_id = bpy.context.scene.BIMProperties.contexts
 
-        add_object_placement.Usecase(
-            self.file,
-            {
-                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                "matrix": np.array(obj.matrix_world),
-            },
-        ).execute()
+        bpy.ops.bim.edit_object_placement(obj=obj.name)
 
         if obj.data:
             result = add_representation.Usecase(
@@ -134,13 +146,7 @@ class UpdateMeshRepresentation(bpy.types.Operator):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
 
-        add_object_placement.Usecase(
-            self.file,
-            {
-                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                "matrix": np.array(obj.matrix_world),
-            },
-        ).execute()
+        bpy.ops.bim.edit_object_placement(obj=obj.name)
 
         element = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         result = add_representation.Usecase(
