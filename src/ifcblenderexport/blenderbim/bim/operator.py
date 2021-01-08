@@ -578,26 +578,6 @@ class RemoveObjectConstraint(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AddPerson(bpy.types.Operator):
-    bl_idname = "bim.add_person"
-    bl_label = "Add Person"
-
-    def execute(self, context):
-        new = bpy.context.scene.BIMProperties.people.add()
-        new.name = "New Person"
-        return {"FINISHED"}
-
-
-class RemovePerson(bpy.types.Operator):
-    bl_idname = "bim.remove_person"
-    bl_label = "Remove Person"
-    index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        bpy.context.scene.BIMProperties.people.remove(self.index)
-        return {"FINISHED"}
-
-
 class AddPersonAddress(bpy.types.Operator):
     bl_idname = "bim.add_person_address"
     bl_label = "Add Person Address"

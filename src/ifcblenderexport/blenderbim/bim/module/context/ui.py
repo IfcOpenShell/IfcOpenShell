@@ -1,5 +1,6 @@
 from bpy.types import Panel
 from blenderbim.bim.module.context.data import Data
+from blenderbim.bim.ifc import IfcStore
 
 
 class BIM_PT_context(Panel):
@@ -10,14 +11,17 @@ class BIM_PT_context(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
     def draw(self, context):
         if not Data.is_loaded:
             Data.load()
 
-        layout = self.layout
         props = context.scene.BIMProperties
 
-        row = layout.row(align=True)
+        row = self.layout.row(align=True)
         row.prop(props, "available_contexts", text="")
         row.prop(props, "available_subcontexts", text="")
         row.prop(props, "available_target_views", text="")

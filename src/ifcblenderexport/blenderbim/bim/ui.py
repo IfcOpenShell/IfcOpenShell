@@ -1058,47 +1058,6 @@ class BIM_PT_owner(Panel):
             row.prop(props, "organisation")
 
 
-class BIM_PT_people(Panel):
-    bl_label = "IFC People"
-    bl_idname = "BIM_PT_people"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-
-        props = context.scene.BIMProperties
-
-        row = layout.row()
-        row.operator("bim.add_person")
-
-        if props.people:
-            layout.template_list("BIM_UL_generic", "", props, "people", props, "active_person_index")
-
-            if props.active_person_index < len(props.people):
-                person = props.people[props.active_person_index]
-                row = layout.row()
-                row.prop(person, "name")
-                row.operator("bim.remove_person", icon="X", text="").index = props.active_person_index
-                row = layout.row()
-                row.prop(person, "family_name")
-                row = layout.row()
-                row.prop(person, "given_name")
-                row = layout.row()
-                row.prop(person, "middle_names")
-                row = layout.row()
-                row.prop(person, "prefix_titles")
-                row = layout.row()
-                row.prop(person, "suffix_titles")
-                layout.label(text="Roles:")
-                draw_roles_ui(layout, person, "person")
-                layout.label(text="Addresses:")
-                draw_addresses_ui(layout, person, "person")
-
-
 class BIM_PT_organisations(Panel):
     bl_label = "IFC Organisations"
     bl_idname = "BIM_PT_organisations"
