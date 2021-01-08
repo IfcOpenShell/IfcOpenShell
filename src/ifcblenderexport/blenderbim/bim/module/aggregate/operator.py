@@ -28,15 +28,19 @@ class AssignObject(bpy.types.Operator):
         Data.load(props.ifc_definition_id)
         bpy.ops.bim.disable_editing_aggregate(obj=related_object.name)
 
-        related_collection = bpy.data.collections.get(related_object.name)
-        if related_collection:
-            relating_collection = bpy.data.collections.get(relating_object.name)
-            self.remove_collection(bpy.context.scene.collection, related_collection)
+        spatial_collection = bpy.data.collections.get(related_object.name)
+        relating_collection = bpy.data.collections.get(relating_object.name)
+        if spatial_collection:
+            self.remove_collection(bpy.context.scene.collection, spatial_collection)
             for collection in bpy.data.collections:
                 if collection == relating_collection:
-                    collection.children.link(related_collection)
+                    collection.children.link(spatial_collection)
                     continue
-                self.remove_collection(collection, related_collection)
+                self.remove_collection(collection, spatial_collection)
+        else:
+            for collection in related_object.users_collection:
+                collection.objects.unlink(related_object)
+            relating_collection.objects.link(related_object)
         return {"FINISHED"}
 
     def remove_collection(self, parent, child):
@@ -64,4 +68,20 @@ class DisableEditingAggregate(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         obj.BIMObjectProperties.is_editing_aggregate = False
+        return {"FINISHED"}
+
+
+class AddAggregate(bpy.types.Operator):
+    bl_idname = "bim.add_aggregate"
+    bl_label = "Add Aggregate"
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        aggregate_collection = bpy.data.collections.new("IfcElementAssembly/Assembly")
+        bpy.context.scene.collection.children.link(aggregate_collection)
+        aggregate = bpy.data.objects.new("Assembly", None)
+        aggregate_collection.objects.link(aggregate)
+        bpy.ops.bim.assign_class(obj=aggregate.name, ifc_class="IfcElementAssembly")
+        bpy.ops.bim.assign_object(related_object=obj.name, relating_object=aggregate.name)
         return {"FINISHED"}

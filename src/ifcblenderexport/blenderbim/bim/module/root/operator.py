@@ -152,7 +152,7 @@ class AssignClass(bpy.types.Operator):
 
     def assign_potential_spatial_container(self, obj):
         for collection in obj.users_collection:
-            if "Ifc" not in collection.name:
+            if "Ifc" not in collection.name or collection.name == obj.name:
                 continue
             bpy.ops.bim.assign_container(relating_structure=collection.name, related_element=obj.name)
             break

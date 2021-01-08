@@ -41,3 +41,4 @@ class BIM_PT_aggregate(Panel):
                 name = "This object is not part of an aggregation"
             row.label(text=name)
             row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")
+            row.operator("bim.add_aggregate", icon="ADD", text="")

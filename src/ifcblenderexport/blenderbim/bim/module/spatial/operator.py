@@ -1,5 +1,6 @@
 import bpy
 import blenderbim.bim.module.spatial.assign_container as assign_container
+import blenderbim.bim.module.spatial.remove_container as remove_container
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.spatial.data import Data
 
@@ -12,9 +13,13 @@ class AssignContainer(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        related_element = bpy.data.objects.get(self.related_element) if self.related_element else bpy.context.active_object
+        related_element = (
+            bpy.data.objects.get(self.related_element) if self.related_element else bpy.context.active_object
+        )
         props = related_element.BIMObjectProperties
-        relating_structure = bpy.data.objects.get(self.relating_structure) if self.relating_structure else props.relating_structure
+        relating_structure = (
+            bpy.data.objects.get(self.relating_structure) if self.relating_structure else props.relating_structure
+        )
         if not relating_structure or not relating_structure.BIMObjectProperties.ifc_definition_id:
             return {"FINISHED"}
         assign_container.Usecase(
@@ -27,11 +32,24 @@ class AssignContainer(bpy.types.Operator):
         Data.load(props.ifc_definition_id)
         bpy.ops.bim.disable_editing_container(obj=related_element.name)
 
-        for collection in related_element.users_collection:
-            collection.objects.unlink(related_element)
-        collection = bpy.data.collections.get(relating_structure.name)
-        collection.objects.link(related_element)
+        aggregate_collection = bpy.data.collections.get(related_element.name)
+        relating_collection = bpy.data.collections.get(relating_structure.name)
+        if aggregate_collection:
+            self.remove_collection(bpy.context.scene.collection, aggregate_collection)
+            for collection in bpy.data.collections:
+                self.remove_collection(collection, aggregate_collection)
+            relating_collection.children.link(aggregate_collection)
+        else:
+            for collection in related_element.users_collection:
+                collection.objects.unlink(related_element)
+            relating_collection.objects.link(related_element)
         return {"FINISHED"}
+
+    def remove_collection(self, parent, child):
+        try:
+            parent.children.unlink(child)
+        except:
+            pass
 
 
 class EnableEditingContainer(bpy.types.Operator):
@@ -53,3 +71,34 @@ class DisableEditingContainer(bpy.types.Operator):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         obj.BIMObjectProperties.is_editing_container = False
         return {"FINISHED"}
+
+
+class RemoveContainer(bpy.types.Operator):
+    bl_idname = "bim.remove_container"
+    bl_label = "Remvoe Container"
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        props = obj.BIMObjectProperties
+        self.file = IfcStore.get_file()
+        remove_container.Usecase(self.file, {"product": self.file.by_id(props.ifc_definition_id)}).execute()
+        Data.load(props.ifc_definition_id)
+
+        aggregate_collection = bpy.data.collections.get(obj.name)
+        if aggregate_collection:
+            self.remove_collection(bpy.context.scene.collection, aggregate_collection)
+            for collection in bpy.data.collections:
+                self.remove_collection(collection, spatial_collection)
+            bpy.context.scene.collection.children.link(aggregate_collection)
+        else:
+            for collection in obj.users_collection:
+                collection.objects.unlink(obj)
+            bpy.context.scene.collection.objects.link(obj)
+        return {"FINISHED"}
+
+    def remove_collection(self, parent, child):
+        try:
+            parent.children.unlink(child)
+        except:
+            pass
