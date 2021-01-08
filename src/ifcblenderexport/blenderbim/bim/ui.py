@@ -1522,6 +1522,7 @@ class BIM_PT_patch(Panel):
 class BIM_PT_mvd(Panel):
     bl_label = "Model View Definitions (MVD)"
     bl_idname = "BIM_PT_mvd"
+    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"

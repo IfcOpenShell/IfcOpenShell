@@ -29,6 +29,7 @@ class AssignContainer(bpy.types.Operator):
                 "relating_structure": self.file.by_id(relating_structure.BIMObjectProperties.ifc_definition_id),
             },
         ).execute()
+        bpy.ops.bim.edit_object_placement(obj=related_element.name)
         Data.load(props.ifc_definition_id)
         bpy.ops.bim.disable_editing_container(obj=related_element.name)
 
