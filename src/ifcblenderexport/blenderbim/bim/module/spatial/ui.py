@@ -11,6 +11,8 @@ class BIM_PT_spatial(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not context.active_object:
+            return False
         props = context.active_object.BIMObjectProperties
         if not props.ifc_definition_id:
             return False
@@ -41,3 +43,4 @@ class BIM_PT_spatial(Panel):
                 name = "This object is not spatially contained"
             row.label(text=name)
             row.operator("bim.enable_editing_container", icon="GREASEPENCIL", text="")
+            row.operator("bim.remove_container", icon="X", text="")
