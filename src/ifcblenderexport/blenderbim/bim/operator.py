@@ -140,19 +140,6 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         return {"FINISHED"}
 
 
-class ProfileImportIFC(bpy.types.Operator):
-    bl_idname = "bim.profile_import_ifc"
-    bl_label = "Profile Import IFC"
-
-    def execute(self, context):
-        import cProfile
-        import pstats
-        cProfile.run(f"import bpy; bpy.ops.import_ifc.bim(filepath='{bpy.context.scene.BIMProperties.ifc_file}')", "blender.prof")
-        p = pstats.Stats("blender.prof")
-        p.sort_stats("cumulative").print_stats(50)
-        return {"FINISHED"}
-
-
 class SelectGlobalId(bpy.types.Operator):
     bl_idname = "bim.select_global_id"
     bl_label = "Select GlobalId"
@@ -1380,8 +1367,9 @@ class ExecuteIfcClash(bpy.types.Operator):
         ifc_clasher = ifcclash.IfcClasher(settings)
 
         if bpy.context.scene.BIMProperties.should_create_clash_snapshots:
+
             def get_viewpoint_snapshot(self, viewpoint, mat):
-                camera = bpy.data.objects.get('IFC Clash Camera')
+                camera = bpy.data.objects.get("IFC Clash Camera")
                 if not camera:
                     camera = bpy.data.objects.new("IFC Clash Camera", bpy.data.cameras.new("IFC Clash Camera"))
                     bpy.context.scene.collection.objects.link(camera)
@@ -1394,7 +1382,9 @@ class ExecuteIfcClash(bpy.types.Operator):
                 bpy.context.scene.render.resolution_x = 480
                 bpy.context.scene.render.resolution_y = 270
                 bpy.context.scene.render.image_settings.file_format = "PNG"
-                bpy.context.scene.render.filepath = os.path.join(bpy.context.scene.BIMProperties.data_dir, "snapshot.png")
+                bpy.context.scene.render.filepath = os.path.join(
+                    bpy.context.scene.BIMProperties.data_dir, "snapshot.png"
+                )
                 bpy.ops.render.opengl(write_still=True)
                 return bpy.context.scene.render.filepath
 
@@ -2095,7 +2085,9 @@ class CutSection(bpy.types.Operator):
     def does_obj_have_target_view_representation(self, obj, camera):
         for representation in obj.BIMObjectProperties.representations:
             element = self.file.by_id(representation.ifc_definition_id)
-            if ifcopenshell.util.element.is_representation_of_context(element, "Plan", "Annotation", camera.data.BIMCameraProperties.target_view):
+            if ifcopenshell.util.element.is_representation_of_context(
+                element, "Plan", "Annotation", camera.data.BIMCameraProperties.target_view
+            ):
                 return True
 
     def is_landscape(self):
@@ -2844,7 +2836,7 @@ class AddAnnotation(bpy.types.Operator):
                 obj = annotation.Annotator.add_text()
         else:
             obj = annotation.Annotator.get_annotation_obj(self.obj_name, self.data_type)
-            if self.obj_name == 'Break':
+            if self.obj_name == "Break":
                 obj = annotation.Annotator.add_plane_to_annotation(obj)
             else:
                 obj = annotation.Annotator.add_line_to_annotation(obj)
@@ -3785,118 +3777,6 @@ class RemoveDrawingStyleAttribute(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class CreateShapeFromStepId(bpy.types.Operator):
-    bl_idname = "bim.create_shape_from_step_id"
-    bl_label = "Create Shape From STEP ID"
-
-    def execute(self, context):
-        logger = logging.getLogger("ImportIFC")
-        self.ifc_import_settings = import_ifc.IfcImportSettings.factory(bpy.context, ifc.IfcStore.path, logger)
-        self.file = ifc.IfcStore.get_file()
-        element = self.file.by_id(int(bpy.context.scene.BIMDebugProperties.step_id))
-        settings = ifcopenshell.geom.settings()
-        # settings.set(settings.INCLUDE_CURVES, True)
-        shape = ifcopenshell.geom.create_shape(settings, element)
-        ifc_importer = import_ifc.IfcImporter(self.ifc_import_settings)
-        ifc_importer.file = self.file
-        mesh = ifc_importer.create_mesh(element, shape)
-        obj = bpy.data.objects.new("Debug", mesh)
-        bpy.context.scene.collection.objects.link(obj)
-        return {"FINISHED"}
-
-
-class SelectHighPolygonMeshes(bpy.types.Operator):
-    bl_idname = "bim.select_high_polygon_meshes"
-    bl_label = "Select High Polygon Meshes"
-
-    def execute(self, context):
-        results = {}
-        for obj in bpy.data.objects:
-            if not isinstance(obj.data, bpy.types.Mesh) or len(obj.data.polygons) < int(
-                bpy.context.scene.BIMDebugProperties.number_of_polygons
-            ):
-                continue
-            try:
-                obj.select_set(True)
-            except:
-                # If it is not in the view layer
-                pass
-            relating_type = obj.BIMObjectProperties.relating_type
-            if relating_type:
-                relating_type.select_set(True)
-        return {"FINISHED"}
-
-
-class InspectFromStepId(bpy.types.Operator):
-    bl_idname = "bim.inspect_from_step_id"
-    bl_label = "Inspect From STEP ID"
-    step_id: bpy.props.IntProperty()
-
-    def execute(self, context):
-        self.file = ifc.IfcStore.get_file()
-        bpy.context.scene.BIMDebugProperties.active_step_id = self.step_id
-        crumb = bpy.context.scene.BIMDebugProperties.step_id_breadcrumb.add()
-        crumb.name = str(self.step_id)
-        element = self.file.by_id(self.step_id)
-        while len(bpy.context.scene.BIMDebugProperties.attributes) > 0:
-            bpy.context.scene.BIMDebugProperties.attributes.remove(0)
-        while len(bpy.context.scene.BIMDebugProperties.inverse_attributes) > 0:
-            bpy.context.scene.BIMDebugProperties.inverse_attributes.remove(0)
-        for key, value in element.get_info().items():
-            self.add_attribute(bpy.context.scene.BIMDebugProperties.attributes, key, value)
-        for key in dir(element):
-            if (
-                not key[0].isalpha()
-                or key[0] != key[0].upper()
-                or key in element.get_info()
-                or not getattr(element, key)
-            ):
-                continue
-            self.add_attribute(bpy.context.scene.BIMDebugProperties.inverse_attributes, key, getattr(element, key))
-        return {"FINISHED"}
-
-    def add_attribute(self, prop, key, value):
-        if isinstance(value, tuple) and len(value) < 10:
-            for i, item in enumerate(value):
-                self.add_attribute(prop, key + f"[{i}]", item)
-            return
-        elif isinstance(value, tuple) and len(value) >= 10:
-            key = key + "({})".format(len(value))
-        new = prop.add()
-        new.name = key
-        new.string_value = str(value)
-        if isinstance(value, ifcopenshell.entity_instance):
-            new.int_value = int(value.id())
-
-
-class InspectFromObject(bpy.types.Operator):
-    bl_idname = "bim.inspect_from_object"
-    bl_label = "Inspect From Object"
-
-    def execute(self, context):
-        ifc_definition_id = bpy.context.active_object.BIMObjectProperties.ifc_definition_id
-        if not ifc_definition_id:
-            return {"FINISHED"}
-        bpy.ops.bim.inspect_from_step_id(step_id=ifc_definition_id)
-        return {"FINISHED"}
-
-
-class RewindInspector(bpy.types.Operator):
-    bl_idname = "bim.rewind_inspector"
-    bl_label = "Rewind Inspector"
-
-    def execute(self, context):
-        props = bpy.context.scene.BIMDebugProperties
-        total_breadcrumbs = len(props.step_id_breadcrumb)
-        if total_breadcrumbs < 2:
-            return {"FINISHED"}
-        previous_step_id = int(props.step_id_breadcrumb[total_breadcrumbs - 2].name)
-        props.step_id_breadcrumb.remove(total_breadcrumbs - 1)
-        props.step_id_breadcrumb.remove(total_breadcrumbs - 2)
-        bpy.ops.bim.inspect_from_step_id(step_id=previous_step_id)
-        return {"FINISHED"}
-
-
 class RefreshDrawingList(bpy.types.Operator):
     bl_idname = "bim.refresh_drawing_list"
     bl_label = "Refresh Drawing List"
@@ -4019,8 +3899,8 @@ class LinkIfc(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        #bpy.context.active_object.active_material.BIMMaterialProperties.location = self.filepath
-        #coll_name = "MyCollection"
+        # bpy.context.active_object.active_material.BIMMaterialProperties.location = self.filepath
+        # coll_name = "MyCollection"
 
         with bpy.data.libraries.load(self.filepath, link=True) as (data_from, data_to):
             data_to.scenes = data_from.scenes
@@ -4056,11 +3936,7 @@ class SnapSpacesTogether(bpy.types.Operator):
                 for obj2 in bpy.context.selected_objects:
                     if obj2 == obj or obj.type != "MESH":
                         continue
-                    result = obj2.ray_cast(
-                        obj2.matrix_world.inverted() @ center,
-                        polygon.normal,
-                        distance=threshold
-                    )
+                    result = obj2.ray_cast(obj2.matrix_world.inverted() @ center, polygon.normal, distance=threshold)
                     if not result[0]:
                         continue
                     hit = obj2.matrix_world @ result[1]
@@ -4089,7 +3965,7 @@ class SnapSpacesTogether(bpy.types.Operator):
 class CopyGrid(bpy.types.Operator):
     bl_idname = "bim.add_grid"
     bl_label = "Add Grid"
-    bl_options = {'UNDO'}
+    bl_options = {"UNDO"}
 
     def execute(self, context):
         props = context.scene.DocProperties
@@ -4098,20 +3974,20 @@ class CopyGrid(bpy.types.Operator):
         drawing = props.drawings[props.active_drawing_index]
         collection = bpy.data.collections.get("IfcGroup/" + drawing.name)
 
-        existing = [obj for obj in collection.objects if obj.name.startswith('IfcGridAxis')]
+        existing = [obj for obj in collection.objects if obj.name.startswith("IfcGridAxis")]
         for obj in existing:
             collection.objects.unlink(obj)
 
-        source = [obj
-                  for coll in bpy.data.collections
-                  if coll.name.startswith("IfcGrid")
-                  for obj in coll.all_objects
-                  if obj.name.startswith("IfcGridAxis")]
-        camera = [obj
-                  for obj in collection.all_objects
-                  if obj.type == 'CAMERA'][0]
+        source = [
+            obj
+            for coll in bpy.data.collections
+            if coll.name.startswith("IfcGrid")
+            for obj in coll.all_objects
+            if obj.name.startswith("IfcGridAxis")
+        ]
+        camera = [obj for obj in collection.all_objects if obj.type == "CAMERA"][0]
 
-        clipping = camera.data.type == 'ORTHO'
+        clipping = camera.data.type == "ORTHO"
         bounds = helper.ortho_view_frame(camera.data) if clipping else None
 
         for src in source:

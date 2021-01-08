@@ -11,6 +11,7 @@ if bpy is not None:
     import blenderbim.bim.module.bcf as module_bcf
     import blenderbim.bim.module.context as module_context
     import blenderbim.bim.module.covetool as module_covetool
+    import blenderbim.bim.module.debug as module_debug
     import blenderbim.bim.module.geometry as module_geometry
     import blenderbim.bim.module.model as module_model
     import blenderbim.bim.module.project as module_project
@@ -35,7 +36,6 @@ if bpy is not None:
         operator.ValidateIfcFile,
         operator.ExportIFC,
         operator.ImportIFC,
-        operator.ProfileImportIFC,
         operator.ColourByClass,
         operator.ColourByAttribute,
         operator.ColourByPset,
@@ -200,11 +200,6 @@ if bpy is not None:
         operator.RemoveDrawingStyleAttribute,
         operator.CopyPropertyToSelection,
         operator.CopyAttributeToSelection,
-        operator.CreateShapeFromStepId,
-        operator.SelectHighPolygonMeshes,
-        operator.InspectFromStepId,
-        operator.InspectFromObject,
-        operator.RewindInspector,
         operator.RefreshDrawingList,
         operator.SetBlenderClashSetA,
         operator.SetBlenderClashSetB,
@@ -241,7 +236,6 @@ if bpy is not None:
         prop.Sheet,
         prop.PresentationLayer,
         prop.BIMProperties,
-        prop.BIMDebugProperties,
         prop.DocProperties,
         prop.BIMLibrary,
         prop.MapConversion,
@@ -281,7 +275,6 @@ if bpy is not None:
         ui.BIM_PT_cobie,
         ui.BIM_PT_patch,
         ui.BIM_PT_mvd,
-        ui.BIM_PT_debug,
         ui.BIM_PT_material,
         ui.BIM_PT_presentation_layer_data,
         ui.BIM_PT_object_material,
@@ -315,6 +308,7 @@ if bpy is not None:
     classes.extend(module_bcf.classes)
     classes.extend(module_context.classes)
     classes.extend(module_covetool.classes)
+    classes.extend(module_debug.classes)
     classes.extend(module_geometry.classes)
     classes.extend(module_model.classes)
     classes.extend(module_project.classes)
@@ -342,7 +336,6 @@ if bpy is not None:
         bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
         bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
         bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
-        bpy.types.Scene.BIMDebugProperties = bpy.props.PointerProperty(type=prop.BIMDebugProperties)
         bpy.types.Scene.DocProperties = bpy.props.PointerProperty(type=prop.DocProperties)
         bpy.types.Scene.BIMLibrary = bpy.props.PointerProperty(type=prop.BIMLibrary)
         bpy.types.Scene.MapConversion = bpy.props.PointerProperty(type=prop.MapConversion)
@@ -360,6 +353,7 @@ if bpy is not None:
         module_bcf.register()
         module_context.register()
         module_covetool.register()
+        module_debug.register()
         module_geometry.register()
         module_model.register()
         module_project.register()
@@ -378,7 +372,6 @@ if bpy is not None:
         bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
         bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
         del bpy.types.Scene.BIMProperties
-        del bpy.types.Scene.BIMDebugProperties
         del bpy.types.Scene.DocProperties
         del bpy.types.Scene.MapConversion
         del bpy.types.Scene.TargetCRS
@@ -397,6 +390,7 @@ if bpy is not None:
         module_project.unregister()
         module_model.unregister()
         module_geometry.unregister()
+        module_debug.unregister()
         module_covetool.unregister()
         module_context.unregister()
         module_bcf.unregister()
