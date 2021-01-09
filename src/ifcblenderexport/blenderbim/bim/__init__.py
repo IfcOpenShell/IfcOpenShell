@@ -253,7 +253,6 @@ if bpy is not None:
         ui.BIM_PT_search,
         ui.BIM_PT_ifccsv,
         ui.BIM_PT_ifcclash,
-        ui.BIM_PT_owner,
         ui.BIM_PT_qa,
         ui.BIM_PT_library,
         ui.BIM_PT_gis,

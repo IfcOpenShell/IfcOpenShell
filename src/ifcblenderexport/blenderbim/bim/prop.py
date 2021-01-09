@@ -47,8 +47,6 @@ materialtypes_enum = []
 contexts_enum = []
 subcontexts_enum = []
 target_views_enum = []
-persons_enum = []
-organisations_enum = []
 sheets_enum = []
 vector_styles_enum = []
 
@@ -298,17 +296,27 @@ def getProfileDef(self, context):
 
 
 def getPersons(self, context):
-    global persons_enum
-    persons_enum.clear()
-    persons_enum.extend([(p.name, p.name, "") for p in bpy.context.scene.BIMProperties.people])
-    return persons_enum
+    from blenderbim.bim.module.owner.data import Data
+    if not Data.is_loaded:
+        Data.load()
+    results = []
+    for ifc_id, person in Data.people.items():
+        if "Id" in person:
+            identifier = person["Id"] or ""
+        else:
+            identifier = person["Identifier"] or ""
+        results.append((str(ifc_id), identifier, ""))
+    return results
 
 
 def getOrganisations(self, context):
-    global organisations_enum
-    organisations_enum.clear()
-    organisations_enum.extend([(o.name, o.name, "") for o in bpy.context.scene.BIMProperties.organisations])
-    return organisations_enum
+    from blenderbim.bim.module.owner.data import Data
+    if not Data.is_loaded:
+        Data.load()
+    results = []
+    for ifc_id, organisation in Data.organisations.items():
+        results.append((str(ifc_id), organisation["Name"], ""))
+    return results
 
 
 def getIfcPatchRecipes(self, context):
@@ -1282,8 +1290,6 @@ class BIMProperties(PropertyGroup):
     import_should_offset_model: BoolProperty(name="Import and Offset Model", default=False)
     import_model_offset_coordinates: StringProperty(name="Model Offset Coordinates", default="0,0,0")
     qa_reject_element_reason: StringProperty(name="Element Rejection Reason")
-    people: CollectionProperty(name="People", type=Person)
-    organisations: CollectionProperty(name="Organisations", type=Organisation)
 
     person: PointerProperty(type=Person)
     active_person_id: IntProperty(name="Active Person Id")
@@ -1293,6 +1299,8 @@ class BIMProperties(PropertyGroup):
     active_role_id: IntProperty(name="Active Role Id")
     address: PointerProperty(type=Address)
     active_address_id: IntProperty(name="Active Address Id")
+    user_person: EnumProperty(items=getPersons, name="Person")
+    user_organisation: EnumProperty(items=getOrganisations, name="Organisation")
 
     has_georeferencing: BoolProperty(name="Has Georeferencing", default=False)
     has_library: BoolProperty(name="Has Project Library", default=False)

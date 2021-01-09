@@ -1030,34 +1030,6 @@ class BIM_PT_text(Panel):
             row.prop(variable, "prop_key")
 
 
-class BIM_PT_owner(Panel):
-    bl_label = "IFC Owner History"
-    bl_idname = "BIM_PT_owner"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-
-        scene = context.scene
-        props = scene.BIMProperties
-
-        if not props.person:
-            layout.label(text="No people found.")
-        else:
-            row = layout.row()
-            row.prop(props, "person")
-
-        if not props.organisation:
-            layout.label(text="No organisations found.")
-        else:
-            row = layout.row()
-            row.prop(props, "organisation")
-
-
 class BIM_PT_bim(Panel):
     bl_label = "Building Information Modeling"
     bl_idname = "BIM_PT_bim"
