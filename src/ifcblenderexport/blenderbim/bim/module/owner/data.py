@@ -4,6 +4,7 @@ from blenderbim.bim.ifc import IfcStore
 class Data:
     is_loaded = False
     people = {}
+    organisations = {}
     addresses = {}
     roles = {}
 
@@ -15,6 +16,8 @@ class Data:
         cls.people = {}
         for person in file.by_type("IfcPerson"):
             data = person.get_info()
+            data["is_engaged"] = bool(person.EngagedIn)
+            cls.people[person.id()] = data
 
             roles = []
             if data["Roles"]:
@@ -28,9 +31,24 @@ class Data:
                     addresses.append(address.id())
             data["Addresses"] = addresses
 
-            data["is_engaged"] = bool(person.EngagedIn)
+        for organisation in file.by_type("IfcOrganization"):
+            data = organisation.get_info()
+            data["is_engaged"] = (
+                bool(organisation.IsRelatedBy) or bool(organisation.Relates) or bool(organisation.Engages)
+            )
+            cls.organisations[organisation.id()] = data
 
-            cls.people[person.id()] = data
+            roles = []
+            if data["Roles"]:
+                for role in data["Roles"]:
+                    roles.append(role.id())
+            data["Roles"] = roles
+
+            addresses = []
+            if data["Addresses"]:
+                for address in data["Addresses"]:
+                    addresses.append(address.id())
+            data["Addresses"] = addresses
 
         for address in file.by_type("IfcAddress"):
             cls.addresses[address.id()] = address.get_info()

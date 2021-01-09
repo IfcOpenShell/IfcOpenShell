@@ -7,6 +7,11 @@ classes = (
     operator.AddPerson,
     operator.EditPerson,
     operator.RemovePerson,
+    operator.EnableEditingOrganisation,
+    operator.DisableEditingOrganisation,
+    operator.AddOrganisation,
+    operator.EditOrganisation,
+    operator.RemoveOrganisation,
     operator.EnableEditingRole,
     operator.DisableEditingRole,
     operator.AddRole,
@@ -18,6 +23,7 @@ classes = (
     operator.EditAddress,
     operator.RemoveAddress,
     ui.BIM_PT_people,
+    ui.BIM_PT_organisations,
 )
 
 
