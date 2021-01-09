@@ -197,3 +197,35 @@ class BIM_PT_organisations(Panel):
                 row.operator("bim.enable_editing_organisation", icon="GREASEPENCIL", text="").organisation_id = organisation_id
                 if not organisation["is_engaged"]:
                     row.operator("bim.remove_organisation", icon="X", text="").organisation_id = organisation_id
+
+
+class BIM_PT_owner(Panel):
+    bl_label = "IFC Owner History"
+    bl_idname = "BIM_PT_owner"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
+    def draw(self, context):
+        if not Data.is_loaded:
+            Data.load()
+
+        self.layout.use_property_split = True
+        props = context.scene.BIMProperties
+
+        if not Data.people:
+            self.layout.label(text="No people found.")
+        else:
+            row = self.layout.row()
+            row.prop(props, "user_person")
+
+        if not Data.organisations:
+            self.layout.label(text="No organisations found.")
+        else:
+            row = self.layout.row()
+            row.prop(props, "user_organisation")

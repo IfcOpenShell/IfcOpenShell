@@ -24,6 +24,7 @@ classes = (
     operator.RemoveAddress,
     ui.BIM_PT_people,
     ui.BIM_PT_organisations,
+    ui.BIM_PT_owner,
 )
 
 

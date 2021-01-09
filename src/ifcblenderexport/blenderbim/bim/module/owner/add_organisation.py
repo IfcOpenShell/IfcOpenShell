@@ -3,4 +3,4 @@ class Usecase:
         self.file = file
 
     def execute(self):
-        self.file.createIfcOrganization("APTR", "Apeture Science")
+        self.file.createIfcOrganization("APTR", "Aperture Science")
