@@ -1866,7 +1866,12 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 
 	if (entity->declaration().is(*ifcroot_type_)) {
 		const std::string global_id = *entity->data().getArgument(0);
-		byguid.erase(byguid.find(global_id));
+		auto it = byguid.find(global_id);
+		if (it != byguid.end()) {
+			byguid.erase(it);
+		} else {
+			Logger::Warning("GlobalId on rooted instance not encountered in map");
+		}
 	}
 	
 	byid.erase(byid.find(id));
