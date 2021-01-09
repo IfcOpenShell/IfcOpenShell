@@ -63,7 +63,7 @@ def open(fn):
         raise IOError("Unable to open file for reading")
 
 
-def create_entity(type, *args, schema='IFC4', **kwargs):
+def create_entity(type, schema='IFC4', *args, **kwargs):
     e = entity_instance((schema, type))
     attrs = list(enumerate(args)) + [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
     for idx, arg in attrs:
