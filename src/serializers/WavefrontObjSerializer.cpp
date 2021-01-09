@@ -88,11 +88,8 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<real_t>* 
 {
     obj_stream << "g " << object_id(o) << "\n";
 	obj_stream << "s 1" << "\n";
-	bool isyup = true;
-	if (settings().get(SerializerSettings::USE_Z_UP) ){ //settings().get(SerializerSettings::USE_Z_UP)
-		isyup = false;
-	}
-	
+	const bool isyup = settings().get(SerializerSettings::USE_Y_UP);
+
     const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
 
 	const int vcount = (int)mesh.verts().size() / 3;
@@ -101,10 +98,10 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<real_t>* 
         const real_t y = *(it++);
         const real_t z = *(it++);
 		
-		if(isyup){	
+		if (isyup) {
+			obj_stream << "v " << x << " " << z << " " << -y << "\n";
+		} else {
 			obj_stream << "v " << x << " " << y << " " << z << "\n";
-		}else{
-			obj_stream << "v " << -x << " " << z << " " << y << "\n";
 		}
 	}
 

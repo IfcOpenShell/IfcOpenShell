@@ -402,7 +402,7 @@ int main(int argc, char** argv) {
 		("site-local-placement",
 			"Place elements locally in the IfcSite coordinate system, instead of placing "
 			"them in the IFC global coords. Applicable for OBJ and DAE output.")
-		("use-z-up", "Z UP. default Y UP，Applicable for OBJ output.")
+		("y-up", "Change the 'up' axis to positive Y, default is Z UP，Applicable for OBJ output.")
 		("building-local-placement",
 			"Similar to --site-local-placement, but placing elements in locally in the parent IfcBuilding coord system")
         ("precision", po::value<short>(&precision)->default_value(SerializerSettings::DEFAULT_PRECISION),
@@ -468,7 +468,7 @@ int main(int argc, char** argv) {
 	const bool use_material_names = vmap.count("use-material-names") != 0;
 	const bool use_element_types = vmap.count("use-element-types") != 0;
 	const bool use_element_hierarchy = vmap.count("use-element-hierarchy") != 0;
-	const bool use_z_up = vmap.count("use-z-up") != 0;
+	const bool use_y_up = vmap.count("y-up") != 0;
 	const bool no_normals = vmap.count("no-normals") != 0;
 	const bool center_model = vmap.count("center-model") != 0;
 	const bool center_model_geometry = vmap.count("center-model-geometry") != 0;
@@ -742,7 +742,7 @@ int main(int argc, char** argv) {
 
     settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);
-	settings.set(SerializerSettings::USE_Z_UP, use_z_up);
+	settings.set(SerializerSettings::USE_Y_UP, use_y_up);
 	settings.set(SerializerSettings::USE_ELEMENT_STEPIDS, use_element_stepids);
 	settings.set(SerializerSettings::USE_MATERIAL_NAMES, use_material_names);
 	settings.set(SerializerSettings::USE_ELEMENT_TYPES, use_element_types);
