@@ -3,6 +3,9 @@ import json
 import blenderbim.bim.module.owner.add_person as add_person
 import blenderbim.bim.module.owner.edit_person as edit_person
 import blenderbim.bim.module.owner.remove_person as remove_person
+import blenderbim.bim.module.owner.add_organisation as add_organisation
+import blenderbim.bim.module.owner.edit_organisation as edit_organisation
+import blenderbim.bim.module.owner.remove_organisation as remove_organisation
 import blenderbim.bim.module.owner.add_role as add_role
 import blenderbim.bim.module.owner.edit_role as edit_role
 import blenderbim.bim.module.owner.remove_role as remove_role
@@ -277,5 +280,76 @@ class RemoveAddress(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         remove_address.Usecase(self.file, {"address": self.file.by_id(self.address_id)}).execute()
+        Data.load()
+        return {"FINISHED"}
+
+
+class EnableEditingOrganisation(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_organisation"
+    bl_label = "Enable Editing Organisation"
+    organisation_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        props = context.scene.BIMProperties
+        props.active_organisation_id = self.organisation_id
+        data = Data.organisations[self.organisation_id]
+        identification = data["Id"] if self.file.schema == "IFC2X3" else data["Identification"]
+        props.organisation.identification = identification or ""
+        props.organisation.name = data["Name"]
+        props.organisation.description = data["Description"] or ""
+        return {"FINISHED"}
+
+
+class DisableEditingOrganisation(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_organisation"
+    bl_label = "Disable Editing Organisation"
+
+    def execute(self, context):
+        context.scene.BIMProperties.active_organisation_id = 0
+        return {"FINISHED"}
+
+
+class AddOrganisation(bpy.types.Operator):
+    bl_idname = "bim.add_organisation"
+    bl_label = "Add Organisation"
+
+    def execute(self, context):
+        add_organisation.Usecase(IfcStore.get_file()).execute()
+        Data.load()
+        return {"FINISHED"}
+
+
+class EditOrganisation(bpy.types.Operator):
+    bl_idname = "bim.edit_organisation"
+    bl_label = "Edit Organisation"
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        props = context.scene.BIMProperties
+        attributes = {
+            "Identification": props.organisation.identification or None,
+            "Name": props.organisation.name,
+            "Description": props.organisation.description or None,
+        }
+        if self.file.schema == "IFC2X3":
+            attributes["Id"] = attributes["Identification"]
+            del attributes["Identification"]
+        edit_organisation.Usecase(
+            self.file, {"organisation": self.file.by_id(props.active_organisation_id), "attributes": attributes}
+        ).execute()
+        Data.load()
+        bpy.ops.bim.disable_editing_organisation()
+        return {"FINISHED"}
+
+
+class RemoveOrganisation(bpy.types.Operator):
+    bl_idname = "bim.remove_organisation"
+    bl_label = "Remove Organisation"
+    organisation_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        remove_organisation.Usecase(self.file, {"organisation": self.file.by_id(self.organisation_id)}).execute()
         Data.load()
         return {"FINISHED"}

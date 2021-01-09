@@ -1151,12 +1151,9 @@ class Role(PropertyGroup):
 
 
 class Organisation(PropertyGroup):
+    identification: StringProperty(name="Identification")
     name: StringProperty(name="Name")
     description: StringProperty(name="Description")
-    roles: CollectionProperty(name="Roles", type=Role)
-    active_role_index: bpy.props.IntProperty()
-    addresses: CollectionProperty(name="Addresses", type=Address)
-    active_address_index: bpy.props.IntProperty()
 
 
 class Person(PropertyGroup):
@@ -1285,18 +1282,18 @@ class BIMProperties(PropertyGroup):
     import_should_offset_model: BoolProperty(name="Import and Offset Model", default=False)
     import_model_offset_coordinates: StringProperty(name="Model Offset Coordinates", default="0,0,0")
     qa_reject_element_reason: StringProperty(name="Element Rejection Reason")
-    organisation: EnumProperty(items=getOrganisations, name="Organisation")
     people: CollectionProperty(name="People", type=Person)
     organisations: CollectionProperty(name="Organisations", type=Organisation)
 
     person: PointerProperty(type=Person)
     active_person_id: IntProperty(name="Active Person Id")
+    organisation: PointerProperty(type=Organisation)
+    active_organisation_id: IntProperty(name="Active Organisation Id")
     role: PointerProperty(type=Role)
     active_role_id: IntProperty(name="Active Role Id")
     address: PointerProperty(type=Address)
     active_address_id: IntProperty(name="Active Address Id")
 
-    active_organisation_index: IntProperty(name="Active Organisation Index")
     has_georeferencing: BoolProperty(name="Has Georeferencing", default=False)
     has_library: BoolProperty(name="Has Project Library", default=False)
     search_regex: BoolProperty(name="Search With Regex", default=False)
