@@ -21,6 +21,7 @@ if bpy is not None:
     import blenderbim.bim.module.style as module_style
     import blenderbim.bim.module.type as module_type
     import blenderbim.bim.module.unit as module_unit
+    import blenderbim.bim.module.cobie as module_cobie
     from . import ui, prop, operator
 
     classes = [
@@ -304,7 +305,8 @@ if bpy is not None:
     classes.extend(module_style.classes)
     classes.extend(module_type.classes)
     classes.extend(module_unit.classes)
-
+    classes.extend(module_cobie.classes)
+    
     def menu_func_export(self, context):
         self.layout.operator(operator.ExportIFC.bl_idname, text="Industry Foundation Classes (.ifc/.ifczip/.ifcjson)")
 
@@ -350,6 +352,7 @@ if bpy is not None:
         module_style.register()
         module_type.register()
         module_unit.register()
+        module_cobie.register()
         bpy.app.handlers.depsgraph_update_pre.append(operator.depsgraph_update_pre_handler)
         bpy.app.handlers.load_post.append(prop.toggleDecorationsOnLoad)
 
@@ -370,6 +373,7 @@ if bpy is not None:
         del bpy.types.Camera.BIMCameraProperties
         del bpy.types.TextCurve.BIMTextProperties
         bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
+        module_cobie.unregister()
         module_unit.unregister()
         module_type.unregister()
         module_style.unregister()
