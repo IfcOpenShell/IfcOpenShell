@@ -29,6 +29,8 @@
 
 #include <HLRBRep_Algo.hxx>
 #include <HLRBRep_HLRToShape.hxx>
+#include <HLRBRep_PolyAlgo.hxx>
+#include <HLRAlgo_Projector.hxx>
 #include <gp_Pln.hxx>
 
 #include <sstream>
@@ -107,6 +109,11 @@ struct geometry_data {
 	std::string ifc_name, svg_name;
 };
 
+struct drawing_meta {
+	gp_Pln pln_3d;
+	std::array<std::array<double, 3>, 3> matrix_3;
+};
+
 class SvgSerializer : public GeometrySerializer {
 public:
 	typedef std::pair<std::string, std::vector<util::string_buffer> > path_object;
@@ -121,11 +128,12 @@ protected:
 	bool with_section_heights_from_storey_, rescale, print_space_names_, print_space_areas_;
 	bool draw_door_arcs_, is_floor_plan_;
 	bool auto_section_, auto_elevation_;
-	bool use_namespace_;
+	bool use_namespace_, use_hlr_poly_;
 
 	IfcParse::IfcFile* file;
 	IfcUtil::IfcBaseEntity* storey_;
 	std::multimap<drawing_key, path_object, storey_sorter> paths;
+	std::map<drawing_key, drawing_meta> drawing_metadata;
 
 	float_item_list xcoords, ycoords, radii;
 	size_t xcoords_begin, ycoords_begin, radii_begin;
@@ -134,7 +142,8 @@ protected:
 	
 	std::list<geometry_data> element_buffer_;
 
-	Handle(HLRBRep_Algo) hlr;
+	Handle(HLRBRep_Algo) hlr_brep;
+	Handle(HLRBRep_PolyAlgo) hlr_poly;
 
 	std::string namespace_prefix_;
 public:
@@ -154,6 +163,7 @@ public:
 		, auto_section_(false)
 		, auto_elevation_(false)
 		, use_namespace_(false)
+		, use_hlr_poly_(false)
 		, file(0)
 		, storey_(0)
 		, xcoords_begin(0)
@@ -171,8 +181,8 @@ public:
     void write(const IfcGeom::BRepElement<real_t>* o);
     void write(path_object& p, const TopoDS_Wire& wire);
 	void write(const geometry_data& data);
-    path_object& start_path(IfcUtil::IfcBaseEntity* storey, const std::string& id);
-	path_object& start_path(const std::string& drawing_name, const std::string& id);
+    path_object& start_path(const gp_Pln& p, IfcUtil::IfcBaseEntity* storey, const std::string& id);
+	path_object& start_path(const gp_Pln& p, const std::string& drawing_name, const std::string& id);
 	bool isTesselated() const { return false; }
     void finalize();
     void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
@@ -184,7 +194,7 @@ public:
 	void setPrintSpaceAreas(bool b) { print_space_areas_ = b; }
 	void setDrawDoorArcs(bool b) { draw_door_arcs_ = b; }
 
-	void resize();
+	std::array<std::array<double, 3>, 3> resize();
 	void resetScale();
 
 	void setSectionRef(const boost::optional<std::string>& s) { 
@@ -207,6 +217,10 @@ public:
 		namespace_prefix_ = use_namespace_ ? "ifc:" : "data-";
 	}
 
+	void setUseHlrPoly(bool b) {
+		use_hlr_poly_ = b;
+	}
+
 	void setScale(double s) { scale_ = s; }
 	void setDrawingCenter(double x, double y) {
 		center_x_ = x; center_y_ = y;
@@ -221,6 +235,9 @@ public:
 			return GeometrySerializer::object_id(o);
 		}
 	}
+
+protected:
+	std::string writeMetadata(const drawing_meta& m);
 };
 
 #endif

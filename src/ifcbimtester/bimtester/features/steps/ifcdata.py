@@ -6,6 +6,10 @@ from ifcdata_methods import assert_schema
 from utils import IfcFile
 from utils import switch_locale
 
+
+the_lang = "en"
+
+
 @step('The IFC schema "{schema}" must be provided')
 def step_impl(context, schema):
     try:
@@ -15,12 +19,14 @@ def step_impl(context, schema):
     except:
         assert False, f"The schema {schema} could not be loaded"
 
+
 @step('The IFC file "{file}" must be provided')
 def step_impl(context, file):
     try:
         IfcFile.load(file)
     except:
         assert False, f"The file {file} could not be loaded"
+
 
 @given('The IFC file has been provided through an argument')
 def step_impl(context):
@@ -29,6 +35,7 @@ def step_impl(context):
     except:
         assert False, f"The IFC {context.config.userdata.get('ifcfile')} file could not be loaded"
 
+
 @given('A file path has been provided through an argument')
 def step_impl(context):
     try:
@@ -36,9 +43,10 @@ def step_impl(context):
     except:
         assert False, f"The path {context.config.userdata.get('path')} could not be loaded"
 
+
 @step("IFC data must use the {schema} schema")
 def step_impl(context, schema):
-    switch_locale(context.localedir, "en")
+    switch_locale(context.localedir, the_lang)
     assert_schema(context, schema)
     
 

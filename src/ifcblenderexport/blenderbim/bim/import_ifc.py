@@ -3,7 +3,7 @@ import ifcopenshell.geom
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.selector
 import ifcopenshell.util.element
-import ifcopenshell.util.pset
+import ifcopenshell.util.unit
 import bpy
 import bmesh
 import os
@@ -20,8 +20,8 @@ import tempfile
 from pathlib import Path
 from itertools import cycle
 from datetime import datetime
-from . import helper
 from . import ifc
+from . import schema
 
 
 class FileCopy(threading.Thread):
@@ -256,6 +256,7 @@ class MaterialCreator:
 
     def create_new_single(self, material):
         self.materials[material.Name] = obj = bpy.data.materials.new(material.Name)
+        obj.BIMMaterialProperties.ifc_definition_id = int(material.id())
         self.ifc_importer.add_element_attributes(material, obj.BIMMaterialProperties)
         for pset in getattr(material, "HasProperties", ()):
             self.ifc_importer.add_pset(pset, obj.BIMMaterialProperties)
@@ -286,6 +287,7 @@ class MaterialCreator:
         for style in styles:
             if not style.is_a("IfcSurfaceStyle"):
                 continue
+            material.BIMMaterialProperties.ifc_style_id = int(style.id())
             external_style = None
             for surface_style in style.Styles:
                 if surface_style.is_a("IfcSurfaceStyleShading"):
@@ -373,7 +375,6 @@ class IfcImporter:
         self.native_data = {}
         self.groups = {}
         self.aggregates = {}
-        self.aggregate_collection = None
         self.aggregate_collections = {}
 
         self.material_creator = MaterialCreator(ifc_import_settings, self)
@@ -409,8 +410,6 @@ class IfcImporter:
         self.profile_code("Patching ifc")
         self.set_units()
         self.profile_code("Set units")
-        self.create_geometric_representation_contexts()
-        self.profile_code("Create contexts")
         self.create_project()
         self.profile_code("Create project")
         self.create_classifications()
@@ -773,6 +772,7 @@ class IfcImporter:
             obj = self.existing_elements[element.GlobalId]
         else:
             obj = bpy.data.objects.new(f"{element.is_a()}/{element.Name}", None)
+            obj.BIMObjectProperties.ifc_definition_id = element.id()
             self.add_element_attributes(element, obj.BIMObjectProperties)
             group_collection.objects.link(obj)
         self.groups[element.GlobalId] = {"ifc": element, "blender": obj}
@@ -809,6 +809,7 @@ class IfcImporter:
             shape = ifcopenshell.geom.create_shape(self.settings_2d, axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(f"IfcGridAxis/{axis.AxisTag}", mesh)
+            obj.BIMObjectProperties.ifc_definition_id = element.id()
             obj.matrix_world = matrix_world
             self.add_element_attributes(axis, obj.BIMObjectProperties)
             grid.objects.link(obj)
@@ -843,12 +844,10 @@ class IfcImporter:
             except:
                 self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
         obj = bpy.data.objects.new(self.get_name(element), mesh)
+        obj.BIMObjectProperties.ifc_definition_id = element.id()
         self.material_creator.create(element, obj, mesh)
-        self.add_element_attributes(element, obj.BIMObjectProperties)
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
-        self.add_type_product_psets(element, obj)
-        self.add_product_representations(element, obj)
         self.type_collection.objects.link(obj)
         self.type_products[element.GlobalId] = obj
 
@@ -950,11 +949,16 @@ class IfcImporter:
                     mesh = self.create_native_mesh(element, shape)
                 if mesh is None:
                     mesh = self.create_mesh(element, shape)
+                    if "-" in shape.geometry.id:
+                        mesh.BIMMeshProperties.ifc_definition_id = int(shape.geometry.id.split("-")[0])
+                    else:
+                        mesh.BIMMeshProperties.ifc_definition_id = int(shape.geometry.id)
                 self.meshes[mesh_name] = mesh
         else:
             mesh = None
 
         obj = bpy.data.objects.new(self.get_name(element), mesh)
+        obj.BIMObjectProperties.ifc_definition_id = element.id()
 
         if shape:
             m = shape.transformation.matrix.data
@@ -968,13 +972,10 @@ class IfcImporter:
             obj.matrix_world = self.get_element_matrix(element)
 
         self.add_element_representation_items(element, obj)
-        self.add_element_attributes(element, obj.BIMObjectProperties)
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
-        self.add_defines_by_type_relation(element, obj)
         self.add_opening_relation(element, obj)
         self.add_product_definitions(element, obj)
-        self.add_product_representations(element, obj)
         self.added_data[element.GlobalId] = obj
 
         if element.is_a("IfcOpeningElement"):
@@ -1309,7 +1310,6 @@ class IfcImporter:
             # Occurs when reloading a project
             pass
         project_collection = bpy.context.view_layer.layer_collection.children[self.project["blender"].name]
-        project_collection.children[self.aggregate_collection.name].hide_viewport = True
         project_collection.children[self.opening_collection.name].hide_viewport = True
         project_collection.children[self.type_collection.name].hide_viewport = True
 
@@ -1355,47 +1355,21 @@ class IfcImporter:
         bpy.ops.mesh.normals_make_consistent(context_override)
         bpy.ops.object.editmode_toggle(context_override)
 
-    def add_product_representations(self, element, obj):
-        if element.is_a("IfcProduct"):
-            if not element.Representation:
-                return
-            for r in element.Representation.Representations:
-                new = obj.BIMObjectProperties.representations.add()
-                new.name = r.RepresentationIdentifier
-                new.type = r.RepresentationType
-                new.ifc_definition_id = r.id()
-        elif element.is_a("IfcTypeProduct"):
-            if not element.RepresentationMaps:
-                return
-            for r in element.RepresentationMaps:
-                new = obj.BIMObjectProperties.representations.add()
-                new.name = r.MappedRepresentation.RepresentationIdentifier
-                new.type = r.MappedRepresentation.RepresentationType
-                new.ifc_definition_id = r.MappedRepresentation.id()
-
     def add_product_definitions(self, element, obj):
         if not hasattr(element, "IsDefinedBy") or not element.IsDefinedBy:
             return
         for definition in element.IsDefinedBy:
             if not definition.is_a("IfcRelDefinesByProperties"):
                 continue
-            if definition.RelatingPropertyDefinition.is_a("IfcPropertySet"):
-                self.add_pset(definition.RelatingPropertyDefinition, obj.BIMObjectProperties)
-            elif definition.RelatingPropertyDefinition.is_a("IfcElementQuantity"):
+            if definition.RelatingPropertyDefinition.is_a("IfcElementQuantity"):
                 self.add_qto(definition.RelatingPropertyDefinition, obj)
-
-    def add_type_product_psets(self, element, obj):
-        if not hasattr(element, "HasPropertySets") or not element.HasPropertySets:
-            return
-        for definition in element.HasPropertySets:
-            if definition.is_a("IfcPropertySet"):
-                self.add_pset(definition, obj.BIMObjectProperties)
 
     def add_pset(self, pset, props):
         new_pset = props.psets.add()
         new_pset.name = pset.Name
-        if new_pset.name in ifcopenshell.util.pset.psets:
-            for prop_name in ifcopenshell.util.pset.psets[new_pset.name]["HasPropertyTemplates"].keys():
+        pset_template = schema.ifc.psetqto.get_by_name(new_pset.name)
+        if pset_template:
+            for prop_name in (p.Name for p in pset_template.HasPropertyTemplates):
                 prop = new_pset.properties.add()
                 prop.name = prop_name
         try:
@@ -1421,8 +1395,9 @@ class IfcImporter:
     def add_qto(self, qto, obj):
         new_qto = obj.BIMObjectProperties.qtos.add()
         new_qto.name = str(qto.Name)
-        if new_qto.name in ifcopenshell.util.pset.qtos:
-            for prop_name in ifcopenshell.util.pset.qtos[new_qto.name]["HasPropertyTemplates"].keys():
+        qto_template = schema.ifc.psetqto.get_by_name(new_qto.name)
+        if qto_template:
+            for prop_name in (p.Name for p in qto_template.HasPropertyTemplates):
                 prop = new_qto.properties.add()
                 prop.name = prop_name
         for prop in qto.Quantities:
@@ -1437,11 +1412,6 @@ class IfcImporter:
                     new_prop = new_qto.properties.add()
                     new_prop.name = prop.Name
                     new_prop.string_value = str(value)
-
-    def add_defines_by_type_relation(self, element, obj):
-        related_type = ifcopenshell.util.element.get_type(element)
-        if related_type:
-            obj.BIMObjectProperties.relating_type = self.type_products[related_type.GlobalId]
 
     def add_opening_relation(self, element, obj):
         if not element.is_a("IfcOpeningElement"):
@@ -1499,7 +1469,7 @@ class IfcImporter:
                 self.unit_scale *= unit.ConversionFactor.ValueComponent.wrappedValue
                 unit = unit.ConversionFactor.UnitComponent
             if unit.is_a("IfcSIUnit"):
-                self.unit_scale *= helper.SIUnitHelper.get_prefix_multiplier(unit.Prefix)
+                self.unit_scale *= ifcopenshell.util.unit.get_prefix_multiplier(unit.Prefix)
 
     def set_units(self):
         units = self.file.by_type("IfcUnitAssignment")[0]
@@ -1529,28 +1499,6 @@ class IfcImporter:
                 bpy.context.scene.BIMProperties.volume_unit = "{}{}".format(
                     unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", name
                 )
-
-    def create_geometric_representation_contexts(self):
-        bpy.context.scene.BIMProperties.has_model_context = False
-        for context in self.file.by_type("IfcGeometricRepresentationContext"):
-            if context.is_a("IfcGeometricRepresentationSubContext"):
-                if not context.ContextIdentifier:
-                    # Revit creates invalid contexts, so we just ignore them
-                    continue
-                if context.ContextType == "Model":
-                    subcontexts = bpy.context.scene.BIMProperties.model_subcontexts
-                elif context.ContextType == "Plan":
-                    subcontexts = bpy.context.scene.BIMProperties.plan_subcontexts
-                if subcontexts.get(context.ContextIdentifier):
-                    continue
-                subcontext = subcontexts.add()
-                subcontext.name = context.ContextIdentifier
-                subcontext.target_view = context.TargetView
-                subcontext.ifc_definition_id = context.id()
-            elif context.ContextType == "Model":
-                bpy.context.scene.BIMProperties.has_model_context = True
-            elif context.ContextType == "Plan":
-                bpy.context.scene.BIMProperties.has_plan_context = True
 
     def create_project(self):
         self.project = {"ifc": self.file.by_type("IfcProject")[0]}
@@ -1743,30 +1691,23 @@ class IfcImporter:
                 ]
         else:
             rel_aggregates = [a for a in self.file.by_type("IfcRelAggregates") if a.RelatingObject.is_a("IfcElement")]
-        for collection in self.project["blender"].children:
-            if collection.name == "Aggregates":
-                self.aggregate_collection = collection
-                break
-        if not self.aggregate_collection:
-            self.aggregate_collection = bpy.data.collections.new("Aggregates")
-            self.project["blender"].children.link(self.aggregate_collection)
-
         for rel_aggregate in rel_aggregates:
             self.create_aggregate(rel_aggregate)
 
     def create_aggregate(self, rel_aggregate):
-        collection = bpy.data.collections.new(f"IfcRelAggregates/{rel_aggregate.id()}")
-        self.aggregate_collection.children.link(collection)
         element = rel_aggregate.RelatingObject
 
         obj = bpy.data.objects.new("{}/{}".format(element.is_a(), element.Name), None)
-        obj.instance_type = "COLLECTION"
-        obj.instance_collection = collection
+        obj.BIMObjectProperties.ifc_definition_id = element.id()
         self.place_object_in_spatial_tree(element, obj)
-        self.add_element_attributes(element, obj.BIMObjectProperties)
+
+        collection = bpy.data.collections.new(obj.name)
+        obj.users_collection[0].children.link(collection)
+        obj.users_collection[0].objects.unlink(obj)
+        collection.objects.link(obj)
+
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
-        self.add_defines_by_type_relation(element, obj)
         self.add_product_definitions(element, obj)
         self.aggregates[element.GlobalId] = obj
         self.aggregate_collections[rel_aggregate.id()] = collection
@@ -1823,12 +1764,11 @@ class IfcImporter:
             return
 
         obj = bpy.data.objects.new(self.get_name(element), mesh)
+        obj.BIMObjectProperties.ifc_definition_id = element.id()
         self.material_creator.create(element, obj, mesh)
         obj.matrix_world = self.get_element_matrix(element, mesh_name)
-        self.add_element_attributes(element, obj.BIMObjectProperties)
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
-        self.add_defines_by_type_relation(element, obj)
         self.add_product_definitions(element, obj)
         self.added_data[element.GlobalId] = obj
 
@@ -1869,8 +1809,6 @@ class IfcImporter:
         ):
             container = element.ContainedInStructure[0].RelatingStructure
             if container.is_a("IfcSpace"):
-                if self.ifc_import_settings.should_import_spaces and container.GlobalId in self.added_data:
-                    obj.BIMObjectProperties.relating_structure = self.added_data[container.GlobalId]
                 return self.place_object_in_spatial_tree(container, obj)
             elif element.is_a("IfcGrid"):
                 grid_collection = bpy.data.collections.get(obj.name)
@@ -2052,23 +1990,6 @@ class IfcImporter:
             ):
                 return representation.Items[0].MappingTarget
 
-    def get_geometry_type(self, element):
-        tree = []
-        if hasattr(element, "Representation"):
-            tree = self.file.traverse(element.Representation)
-        elif hasattr(element, "RepresentationMaps"):
-            for representation_map in element.RepresentationMaps:
-                tree.extend(self.file.traverse(representation_map))
-        representations = [
-            e
-            for e in tree
-            if e.is_a("IfcRepresentation")
-            and e.RepresentationIdentifier == "Body"
-            and e.RepresentationType != "MappedRepresentation"
-        ]
-        for representation in representations:
-            return representation.Items[0].is_a()
-
     def create_mesh(self, element, shape, is_curve=False):
         try:
             if hasattr(shape, "geometry"):
@@ -2079,7 +2000,13 @@ class IfcImporter:
             if is_curve:
                 return self.create_curve(geometry)
 
-            mesh = bpy.data.meshes.new(geometry.id)
+            representation_id = geometry.id
+            if "-" in representation_id:
+                representation_id = int(re.sub(r"\D", "", representation_id.split("-")[0]))
+            else:
+                representation_id = int(re.sub(r"\D", "", representation_id))
+            mesh = bpy.data.meshes.new("{}/{}".format(
+                self.file.by_id(representation_id).ContextOfItems.id(), geometry.id))
 
             if geometry.faces:
                 num_vertices = len(geometry.verts) // 3
@@ -2120,7 +2047,6 @@ class IfcImporter:
                     ios_materials.append(mat.name)
             mesh["ios_materials"] = ios_materials
             mesh["ios_material_ids"] = geometry.material_ids
-            mesh.BIMMeshProperties.geometry_type = str(self.get_geometry_type(element))
             return mesh
         except:
             self.ifc_import_settings.logger.error("Could not create mesh for %s", element)

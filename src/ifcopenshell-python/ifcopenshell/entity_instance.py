@@ -271,3 +271,10 @@ class entity_instance(object):
         return return_type(_())
 
     __dict__ = property(get_info)
+    
+    def get_info_2(self, include_identifier=True, recursive=False, return_type=dict, ignore=()):
+        assert include_identifier
+        assert recursive
+        assert return_type is dict
+        assert len(ignore) == 0
+        return ifcopenshell_wrapper.get_info_cpp(self.wrapped_data)

@@ -24,6 +24,7 @@
 #include <cstdio>
 #include <limits>
 #include <algorithm>
+#include <numeric>
 
 #include <gp_Pln.hxx>
 #include <gp_Trsf.hxx>
@@ -66,6 +67,8 @@
 #include <BRepBuilderAPI_MakeEdge.hxx>
 
 #include <ShapeFix_Edge.hxx>
+
+#include <HLRBRep_PolyHLRToShape.hxx>
 
 #include "../ifcparse/IfcGlobalId.h"
 
@@ -292,16 +295,18 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
 	p.second.push_back(path);
 }
 
-SvgSerializer::path_object& SvgSerializer::start_path(IfcUtil::IfcBaseEntity* storey, const std::string& id) {
+SvgSerializer::path_object& SvgSerializer::start_path(const gp_Pln& pln, IfcUtil::IfcBaseEntity* storey, const std::string& id) {
 	auto key = std::make_pair(std::make_pair(storey, ""), path_object());
 	SvgSerializer::path_object& p = paths.insert(key)->second;
+	drawing_metadata[key.first].pln_3d = pln;
 	p.first = id;
 	return p;
 }
 
-SvgSerializer::path_object& SvgSerializer::start_path(const std::string& drawing_name, const std::string& id) {
+SvgSerializer::path_object& SvgSerializer::start_path(const gp_Pln& pln, const std::string& drawing_name, const std::string& id) {
 	auto key = std::make_pair(std::make_pair(nullptr, drawing_name), path_object());
 	SvgSerializer::path_object& p = paths.insert(key)->second;
+	drawing_metadata[key.first].pln_3d = pln;
 	p.first = id;
 	return p;
 }
@@ -563,7 +568,7 @@ void SvgSerializer::write(const geometry_data& data) {
 
 		auto& compound_to_use = is_floor_plan_ ? compound : compound_unmirrored;
 
-		if (use_hlr && hlr) {
+		if (use_hlr && (hlr_poly || hlr_brep)) {
 
 			// Check if any of the bounding box points is on the correct side of the plane
 			Bnd_Box bb;
@@ -590,13 +595,19 @@ void SvgSerializer::write(const geometry_data& data) {
 				} else {
 					state = d < 0. ? -1 : 1;
 				}
-				if (state == 1) {
+				if (state == -1) {
 					any = true;
 				}
 			}
 
 			if (any) {
-				hlr->Add(compound_to_use);
+				if (hlr_brep) {
+					hlr_brep->Add(compound_to_use);
+				}
+				if (hlr_poly) {
+					BRepMesh_IncrementalMesh(compound_to_use, 0.10);
+					hlr_poly->Load(compound_to_use);
+				}
 			}
 		}
 
@@ -633,6 +644,15 @@ void SvgSerializer::write(const geometry_data& data) {
 				cut_z = zmin + 1.;
 			}
 
+			gp_Pln pln;
+			if (variant.which() < 2) {
+				pln = gp_Pln(gp_Pnt(0, 0, cut_z), gp::DZ());
+			}
+			else {
+				const auto& section = boost::get<vertical_section>(variant);
+				pln = section.plane;
+			}
+
 			gp_Vec bbmin(x1, y1, zmin);
 			gp_Vec bbmax(x2, y2, zmax);
 			auto bbdif = bbmax - bbmin;
@@ -641,9 +661,9 @@ void SvgSerializer::write(const geometry_data& data) {
 			if (data.product->declaration().is("IfcAnnotation") && (proj.Magnitude() > 1.e-5) && zmin >= range.first && zmin <= range.second) {
 				if (po == nullptr) {
 					if (storey) {
-						po = &start_path(storey, data.svg_name);
+						po = &start_path(pln, storey, data.svg_name);
 					} else {
-						po = &start_path(drawing_name, data.svg_name);
+						po = &start_path(pln, drawing_name, data.svg_name);
 					}
 				}
 
@@ -717,20 +737,12 @@ void SvgSerializer::write(const geometry_data& data) {
 
 			if (po == nullptr) {
 				if (storey) {
-					po = &start_path(storey, data.svg_name);
+					po = &start_path(pln, storey, data.svg_name);
 				} else {
-					po = &start_path(drawing_name, data.svg_name);
+					po = &start_path(pln, drawing_name, data.svg_name);
 				}
 			}
 
-			// Create a horizontal cross section 1 meter above the bottom point of the shape		
-			gp_Pln pln;
-			if (variant.which() < 2) {
-				pln = gp_Pln(gp_Pnt(0, 0, cut_z), gp::DZ());
-			} else {
-				const auto& section = boost::get<vertical_section>(variant);
-				pln = section.plane;
-			}
 			TopoDS_Shape result = BRepAlgoAPI_Section(subshape, pln);
 
 			if (variant.which() == 2) {
@@ -889,7 +901,10 @@ void SvgSerializer::setBoundingRectangle(double width, double height) {
 	this->rescale = true;
 }
 
-void SvgSerializer::resize() {
+std::array<std::array<double, 3>, 3> SvgSerializer::resize() {
+	// identity matrix;
+	std::array<std::array<double, 3>, 3> m = {{ {{1,0,0}},{{0,1,0}},{{0,0,1}} }};
+
 	if (rescale) {
 		// Scale the resulting image to a bounding rectangle specified by command line arguments
 		const double dx = xmax - xmin;
@@ -918,6 +933,8 @@ void SvgSerializer::resize() {
 			cy = ymin * sc;
 		}
 
+		m = {{ {{sc,0,-cx}},{{0,sc,-cy}},{{0,0,1}} }};
+
 		float_item_list::const_iterator it;
 		for (it = xcoords.begin() + xcoords_begin; it != xcoords.end(); ++it, ++xcoords_begin) {
 			double& v = (*it)->value();
@@ -931,6 +948,8 @@ void SvgSerializer::resize() {
 			(*it)->value() *= sc;
 		}
 	}
+
+	return m;
 }
 
 void SvgSerializer::resetScale() {
@@ -944,7 +963,12 @@ void SvgSerializer::resetScale() {
 }
 
 void SvgSerializer::finalize() {
-	resize();
+	auto m = resize();
+
+	// Update the paper space scale matrices
+	for (auto& p : paths) {
+		drawing_metadata[p.first].matrix_3 = m;
+	}
 
 	if (!deferred_section_data_.is_initialized() && (auto_section_ || auto_elevation_)) {
 		deferred_section_data_.emplace();
@@ -972,28 +996,28 @@ void SvgSerializer::finalize() {
 	if (auto_elevation_) {
 		{
 			gp_Pln pln(gp_Ax3(
-				gp_Pnt((xmin + xmax) / 2., -(ymin - 1.e-1), 0.),
-				gp_Dir(0, -1, 0),
-				gp_Dir(-1, 0, 0)));
+				gp_Pnt(0., -(ymin - 10.), 0.),
+				gp_Dir(0, 1, 0),
+				gp_Dir(1, 0, 0)));
 			deferred_section_data_->push_back(vertical_section{ pln , "Elevation South", true });
 		}
 		{
 			gp_Pln pln(gp_Ax3(
-				gp_Pnt(xmax + 1.e-1, (ymin + ymax) / -2., 0.),
-				gp_Dir(-1, 0, 0),
-				gp_Dir(0, -1, 0)));
+				gp_Pnt(xmax + 10., 0., 0.),
+				gp_Dir(1, 0, 0),
+				gp_Dir(0, 1, 0)));
 			deferred_section_data_->push_back(vertical_section{ pln , "Elevation East", true });
 		}
 		{
 			gp_Pln pln(gp_Ax3(
-				gp_Pnt((xmin + xmax) / 2., -(ymax + 1.e-1), 0.),
+				gp_Pnt(0., -(ymax + 10.), 0.),
 				gp_Dir(0, -1, 0),
-				gp_Dir(1, 0, 0)));
+				gp_Dir(-1, 0, 0)));
 			deferred_section_data_->push_back(vertical_section{ pln , "Elevation North", true });
 		}
 		{
 			gp_Pln pln(gp_Ax3(
-				gp_Pnt(xmin - 1.e-1, (ymin + ymax) / -2., 0.),
+				gp_Pnt(xmin - 10., 0., 0.),
 				gp_Dir(-1, 0, 0),
 				gp_Dir(0, -1, 0)));
 			deferred_section_data_->push_back(vertical_section{ pln , "Elevation West", true });
@@ -1001,7 +1025,6 @@ void SvgSerializer::finalize() {
 	}
 
 	resetScale();
-
 	
 	if (deferred_section_data_ && deferred_section_data_->size() && element_buffer_.size()) {
 
@@ -1018,7 +1041,11 @@ void SvgSerializer::finalize() {
 			}
 
 			if (use_hlr) {
-				hlr = new HLRBRep_Algo;
+				if (use_hlr_poly_) {
+					hlr_poly = new HLRBRep_PolyAlgo;
+				} else {
+					hlr_brep = new HLRBRep_Algo;
+				}
 			}
 
 			section_data_ = std::vector<section_data>{ sd };
@@ -1028,18 +1055,30 @@ void SvgSerializer::finalize() {
 
 			if (use_hlr) {
 				const auto& section = boost::get<vertical_section>(sd);
-				gp_Ax2 transform = section.plane.Position().Ax2();
-				HLRAlgo_Projector projector(transform);
-				hlr->Projector(projector);
 
-				hlr->Update();
-				hlr->Hide();
+				gp_Trsf trsf;
+				trsf.SetTransformation(section.plane.Position());
+				HLRAlgo_Projector projector(trsf, false, 1.);
+			
+				TopoDS_Shape hlr_compound_unmirrored;
+				
+				if (use_hlr_poly_) {
+					hlr_poly->Projector(projector);
 
-				HLRBRep_HLRToShape hlr_shapes(hlr);
-				auto hlr_compound_unmirrored = hlr_shapes.VCompound();
+					hlr_poly->Update();
+					HLRBRep_PolyHLRToShape hlr_shapes;
+					hlr_shapes.Update(hlr_poly);
+					hlr_compound_unmirrored = hlr_shapes.VCompound();
+				} else {
+					hlr_brep->Projector(projector);
+
+					hlr_brep->Update();
+					hlr_brep->Hide();
+					HLRBRep_HLRToShape hlr_shapes(hlr_brep);
+					hlr_compound_unmirrored = hlr_shapes.VCompound();
+				}
 
 				if (!hlr_compound_unmirrored.IsNull()) {
-
 					// Compound 3D curves for mirroring to work
 					ShapeFix_Edge sfe;
 					TopExp_Explorer exp(hlr_compound_unmirrored, TopAbs_EDGE);
@@ -1059,7 +1098,7 @@ void SvgSerializer::finalize() {
 
 					exp.Init(hlr_compound, TopAbs_EDGE);
 					BRep_Builder B;
-					auto& po = start_path(drawing_name, "class=\"projection\"");
+					auto& po = start_path(section.plane, drawing_name, "class=\"projection\"");
 					for (; exp.More(); exp.Next()) {
 						TopoDS_Wire w;
 						B.MakeWire(w);
@@ -1070,12 +1109,15 @@ void SvgSerializer::finalize() {
 				}
 			}
 
-			resize();
+			auto m3 = resize();
+
+			auto k = std::make_pair(nullptr, drawing_name);
+			drawing_metadata[k].matrix_3 = m3;
+
 			resetScale();
 
-			if (use_hlr) {
-				hlr.Nullify();
-			}
+			if (hlr_brep) hlr_brep.Nullify();
+			if (hlr_poly) hlr_poly.Nullify();
 		}
 	}
 
@@ -1089,11 +1131,11 @@ void SvgSerializer::finalize() {
 			}
 			std::ostringstream oss;
 			if (it->first.first) {
-				svg_file << "    <g " << nameElement(it->first.first) << ">\n";
+				svg_file << "    <g " << nameElement(it->first.first) << " " << writeMetadata(drawing_metadata[it->first]) << ">\n";
 			} else {
 				auto n = it->first.second;
 				IfcUtil::escape_xml(n);
-				svg_file << "    <g " << namespace_prefix_  << "name=\"" << n << "\" class=\"section\">\n";
+				svg_file << "    <g " << namespace_prefix_  << "name=\"" << n << "\" class=\"section\" " << writeMetadata(drawing_metadata[it->first]) << ">\n";
 			}
 		}
 		svg_file << "        <g " << it->second.first << ">\n";
@@ -1284,4 +1326,34 @@ void SvgSerializer::setSectionHeightsFromStoreys(double offset) {
 	} else {
 		section_data_->push_back(horizontal_plan_at_element{});
 	}
+}
+
+namespace {
+	std::string array_to_string(double v) {
+		return std::to_string(v);
+	}
+
+	template <typename T>
+	std::string array_to_string(const T& v) {
+		return "[" + std::accumulate(
+			v.begin() + 1, v.end(), 
+			array_to_string(v.front()),
+			[](const std::string& accum, decltype(*v.cbegin())& item) {
+				return accum + "," + array_to_string(item);
+		}) + "]";
+	}
+}
+
+std::string SvgSerializer::writeMetadata(const drawing_meta& m) {
+	gp_Trsf trsf;
+	trsf.SetTransformation(m.pln_3d.Position(), gp::XOY());
+	auto m43 = IfcGeom::Matrix<real_t>(IfcGeom::ElementSettings(IfcGeom::IteratorSettings(), 1., ""), trsf).data();
+	std::array<std::array<double, 4>, 4> m4 = {{
+		{{ (double)m43[0], (double)m43[3], (double)m43[6], (double)m43[9] }},
+		{{ (double)m43[1], (double)m43[4], (double)m43[7], (double)m43[10] }},
+		{{ (double)m43[2], (double)m43[5], (double)m43[8], (double)m43[11] }},
+		{{ 0, 0, 0, 1 }}
+	}};
+	return namespace_prefix_ + "plane=\""+ array_to_string(m4) +"\" " +
+		namespace_prefix_ + "matrix3=\"" + array_to_string(m.matrix_3) + "\"";
 }

@@ -18,6 +18,25 @@ def is_a(entity, ifc_class):
     return False
 
 
+def reassign_class(ifc_file, element, new_class):
+    try:
+        new_element = ifc_file.create_entity(new_class)
+    except:
+        print(f"Class of {element} could not be changed to {new_class}")
+        return element
+    new_attributes = [new_element.attribute_name(i) for i, attribute in enumerate(new_element)]
+    for i, attribute in enumerate(element):
+        try:
+            new_element[new_attributes.index(element.attribute_name(i))] = attribute
+        except:
+            continue
+    for inverse in ifc_file.get_inverse(element):
+        ifcopenshell.util.element.replace_attribute(inverse, element, new_element)
+    ifc_file.remove(element)
+    return new_element
+
+
+
 class Migrator:
     def __init__(self):
         self.migrated_ids = {}
