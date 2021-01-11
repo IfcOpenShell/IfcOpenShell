@@ -1,7 +1,6 @@
 import bpy
 from blenderbim.bim.ifc import IfcStore
 
-
 class SelectCobieIfcFile(bpy.types.Operator):
     bl_idname = "bim.select_cobie_ifc_file"
     bl_label = "Select COBie IFC File"
