@@ -1,36 +1,49 @@
 from behave import step
 
-from attributes_eleclasses_methods import all_element_attribs_have_a_value
-from attributes_eleclasses_methods import name_has_a_value
-from attributes_eleclasses_methods import description_has_a_value
-from attributes_eleclasses_methods import no_element_class_ele
+import attributes_eleclasses_methods as aem
 from utils import assert_elements
 from utils import IfcFile
 from utils import switch_locale
 
 
+the_lang = "en"
+
+
 @step("there are no {ifc_class} elements because {reason}")
 def step_impl(context, ifc_class, reason):
-    switch_locale(context.localedir, "en")
-    no_element_class_ele(context, ifc_class, reason)
+    switch_locale(context.localedir, the_lang)
+    aem.no_eleclass_because_reason(
+        context,
+        ifc_class,
+        reason
+    )
 
 
 @step('all {ifc_class} elements class attributes have a value')
 def step_impl(context, ifc_class):
-    switch_locale(context.localedir, "en")
-    all_element_attribs_have_a_value(context, ifc_class)
+    switch_locale(context.localedir, the_lang)
+    aem.eleclass_have_class_attributes_with_a_value(
+        context,
+        ifc_class
+    )
 
 
 @step('all {ifc_class} elements have a name given')
 def step_impl(context, ifc_class):
-    switch_locale(context.localedir, "en")
-    name_has_a_value(context, ifc_class)
+    switch_locale(context.localedir, the_lang)
+    aem.eleclass_has_name_with_a_value(
+        context,
+        ifc_class
+    )
 
 
 @step('all {ifc_class} elements have a description given')
 def step_impl(context, ifc_class):
-    switch_locale(context.localedir, "en")
-    description_has_a_value(context, ifc_class)
+    switch_locale(context.localedir, the_lang)
+    aem.eleclass_has_description_with_a_value(
+        context,
+        ifc_class
+    )
 
 
 @step('all {ifc_class} elements have a name matching the pattern "{pattern}"')

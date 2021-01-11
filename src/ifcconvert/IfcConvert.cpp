@@ -376,6 +376,8 @@ int main(int argc, char** argv) {
 			"Creates SVG elevation drawings automatically based on model extents")
 		("svg-xmlns",
 			"Stores name and guid in a separate namespace as opposed to data-name, data-guid")
+		("svg-poly",
+			"Uses the polygonal algorithm for hidden line rendering")
 		("door-arcs", "Draw door openings arcs for IfcDoor elements")
 		("section-height", po::value<double>(&section_height),
 		    "Specifies the cut section height for SVG 2D geometry.")
@@ -467,6 +469,7 @@ int main(int argc, char** argv) {
 	const bool use_element_types = vmap.count("use-element-types") != 0;
 	const bool use_element_hierarchy = vmap.count("use-element-hierarchy") != 0;
 	const bool use_z_up = vmap.count("use-z-up") != 0;
+
 	const bool no_normals = vmap.count("no-normals") != 0;
 	const bool center_model = vmap.count("center-model") != 0;
 	const bool center_model_geometry = vmap.count("center-model-geometry") != 0;
@@ -741,6 +744,7 @@ int main(int argc, char** argv) {
     settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);
 	settings.set(SerializerSettings::USE_Z_UP, use_z_up);
+
 	settings.set(SerializerSettings::USE_ELEMENT_STEPIDS, use_element_stepids);
 	settings.set(SerializerSettings::USE_MATERIAL_NAMES, use_material_names);
 	settings.set(SerializerSettings::USE_ELEMENT_TYPES, use_element_types);
@@ -962,6 +966,7 @@ int main(int argc, char** argv) {
 			static_cast<SvgSerializer*>(serializer.get())->setAutoElevation(true);
 		}
 		static_cast<SvgSerializer*>(serializer.get())->setUseNamespace(vmap.count("svg-xmlns") > 0);
+		static_cast<SvgSerializer*>(serializer.get())->setUseHlrPoly(vmap.count("svg-poly") > 0);
 		if (relative_center_x && relative_center_y) {
 			static_cast<SvgSerializer*>(serializer.get())->setDrawingCenter(*relative_center_x, *relative_center_y);
 		}

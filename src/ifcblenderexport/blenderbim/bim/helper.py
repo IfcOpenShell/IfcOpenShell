@@ -1,4 +1,6 @@
 import math
+from mathutils import geometry
+from mathutils import Vector
 import bpy
 
 
@@ -285,3 +287,84 @@ def format_distance(value, isArea=False, hide_units=True):
         tx_dist = fmt % value
 
     return tx_dist
+
+
+def parse_diagram_scale(camera):
+    """Returns numeric value of scale"""
+    if camera.BIMCameraProperties.diagram_scale == "CUSTOM":
+        _, fraction = camera.BIMCameraProperties.custom_diagram_scale.split("|")
+    else:
+        _, fraction = camera.BIMCameraProperties.diagram_scale.split("|")
+    numerator, denominator = fraction.split("/")
+    return float(numerator) / float(denominator)
+
+
+def ortho_view_frame(camera, margin=0.015):
+    """Calculates 2d bounding box of camera view area.
+
+    Similar to `bpy.types.Camera.view_frame`
+
+    :arg camera: camera of drawing
+    :type camera: bpy.types.Camera + BIMCameraProperties
+    :arg margin: margins, in scene units
+    :type margin: float
+    :return: (xmin, xmax, ymin, ymax) in local camera coordinates
+    """
+    aspect = camera.BIMCameraProperties.raster_y / camera.BIMCameraProperties.raster_x
+    size = camera.ortho_scale
+    hwidth = size * .5
+    hheight = size * .5 * aspect
+    scale = parse_diagram_scale(camera)
+    xmarg = margin * scale
+    ymarg = margin * scale * aspect
+    return (-hwidth + xmarg, hwidth - xmarg, -hheight + ymarg, hheight - ymarg)
+
+
+def clip_segment(bounds, segm):
+    """Clipping line segment to bounds
+
+    :arg bounds: (xmin, xmax, ymin, ymax)
+    :arg segm: 2 vertices of the segment
+    :return: 2 new vertices of segment or None if segment outside the bounding box
+    """
+    # Liang–Barsky algorithm
+
+    xmin, xmax, ymin, ymax = bounds
+    p1, p2 = segm
+
+    def clip_side(p, q):
+        if abs(p) < 1e-10:  # ~= 0, parallel to the side
+            if q < 0:
+                return None  # outside
+            else:
+                return 0, 1  # inside
+
+        t = q / p  # the intersection point
+
+        if p < 0:  # entering
+            return t, 1
+        else:  # leaving
+            return 0, t
+
+    dlt = p2 - p1
+
+    tt = (
+        clip_side(-dlt.x, p1.x - xmin),  # left
+        clip_side(+dlt.x, xmax - p1.x),  # right
+        clip_side(-dlt.y, p1.y - ymin),  # bottom
+        clip_side(+dlt.y, ymax - p1.y),  # top
+    )
+
+    if None in tt:
+        return None
+
+    t1 = max(0, max(t[0] for t in tt))
+    t2 = min(1, min(t[1] for t in tt))
+
+    if t1 >= t2:
+        return None
+
+    p1c = p1 + dlt * t1
+    p2c = p1 + dlt * t2
+
+    return p1c, p2c

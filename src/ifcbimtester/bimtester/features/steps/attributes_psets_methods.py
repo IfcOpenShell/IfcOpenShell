@@ -4,7 +4,9 @@ from utils import assert_elements
 from utils import IfcFile
 
 
-def all_eleclass_elements_have_prop_in_pset(context, ifc_class, aproperty, pset):
+def eleclass_has_property_in_pset(
+    context, ifc_class, aproperty, pset
+):
 
     context.falseelems = []
     context.falseguids = []

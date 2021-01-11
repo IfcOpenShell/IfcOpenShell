@@ -5,106 +5,6 @@ from bpy.types import Panel
 from bpy.props import StringProperty
 
 
-class BIM_PT_object(Panel):
-    bl_label = "IFC Object"
-    bl_idname = "BIM_PT_object"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "object"
-
-    @classmethod
-    def poll(cls, context):
-        return context.active_object is not None and hasattr(context.active_object, "BIMObjectProperties")
-
-    def draw(self, context):
-        if context.active_object is None:
-            return
-        layout = self.layout
-        props = context.active_object.BIMObjectProperties
-        bim_properties = context.scene.BIMProperties
-
-        if props.is_reassigning_class or "/" not in context.active_object.name:
-            row = layout.row()
-            row.prop(bim_properties, "ifc_product")
-            row = layout.row()
-            row.prop(bim_properties, "ifc_class")
-            if bim_properties.ifc_predefined_type:
-                row = layout.row()
-                row.prop(bim_properties, "ifc_predefined_type")
-            if bim_properties.ifc_predefined_type == "USERDEFINED":
-                row = layout.row()
-                row.prop(bim_properties, "ifc_userdefined_type")
-            row = layout.row(align=True)
-            if "Ifc" not in context.active_object.name:
-                op = row.operator("bim.assign_class")
-            else:
-                op = row.operator("bim.assign_class")
-            op.object_name = context.active_object.name
-            op = row.operator("bim.unassign_class", icon="X", text="")
-            op.object_name = context.active_object.name
-        else:
-            row = layout.row()
-            row.operator("bim.reassign_class", text="Reassign IFC Class")
-
-        if "Ifc" not in context.active_object.name:
-            return
-
-        layout.label(text="Attributes:")
-        row = layout.row(align=True)
-        row.prop(props, "applicable_attributes", text="")
-        row.operator("bim.add_attribute")
-
-        for index, attribute in enumerate(props.attributes):
-            row = layout.row(align=True)
-            row.prop(attribute, "name", text="")
-            row.prop(attribute, "string_value", text="")
-            if attribute.name == "GlobalId":
-                row.operator("bim.generate_global_id", icon="FILE_REFRESH", text="")
-            op = row.operator("bim.copy_attribute_to_selection", icon="COPYDOWN", text="")
-            op.attribute_name = attribute.name
-            op.attribute_value = attribute.string_value
-            row.operator("bim.remove_attribute", icon="X", text="").attribute_index = index
-
-        row = layout.row()
-        row.prop(props, "attributes")
-
-        if "IfcSite/" in context.active_object.name or "IfcBuilding/" in context.active_object.name:
-            self.draw_addresses_ui()
-
-        row = layout.row(align=True)
-        row.prop(props, "relating_type")
-        row.operator("bim.select_similar_type", icon="RESTRICT_SELECT_OFF", text="")
-        row = layout.row()
-        row.prop(props, "relating_structure")
-
-    def draw_addresses_ui(self):
-        layout = self.layout
-        layout.label(text="Address:")
-        address = bpy.context.active_object.BIMObjectProperties.address
-        row = layout.row()
-        row.prop(address, "purpose")
-        if address.purpose == "USERDEFINED":
-            row = layout.row()
-            row.prop(address, "user_defined_purpose")
-        row = layout.row()
-        row.prop(address, "description")
-
-        row = layout.row()
-        row.prop(address, "internal_location")
-        row = layout.row()
-        row.prop(address, "address_lines")
-        row = layout.row()
-        row.prop(address, "postal_box")
-        row = layout.row()
-        row.prop(address, "town")
-        row = layout.row()
-        row.prop(address, "region")
-        row = layout.row()
-        row.prop(address, "postal_code")
-        row = layout.row()
-        row.prop(address, "country")
-
-
 class BIM_PT_object_material(Panel):
     bl_label = "IFC Object Material"
     bl_idname = "BIM_PT_object_material"
@@ -241,73 +141,6 @@ class BIM_PT_object_material(Panel):
                     row = layout.row(align=True)
                     row.prop(attribute, "name", text="")
                     row.prop(attribute, "string_value", text="")
-
-
-class BIM_PT_object_psets(Panel):
-    bl_label = "IFC Object Property Sets"
-    bl_idname = "BIM_PT_object_psets"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "object"
-
-    @classmethod
-    def poll(cls, context):
-        return context.active_object is not None and hasattr(context.active_object, "BIMObjectProperties")
-
-    def draw(self, context):
-        if context.active_object is None:
-            return
-        layout = self.layout
-        props = context.active_object.BIMObjectProperties
-        row = layout.row(align=True)
-        row.prop(props, "pset_name", text="")
-        row.operator("bim.add_pset")
-
-        self.draw_psets_ui(props)
-
-        if props.relating_type and props.relating_type.BIMObjectProperties.psets:
-            layout.label(text="Inherited Psets:")
-            self.draw_psets_ui(props.relating_type.BIMObjectProperties, enabled=False)
-
-    def draw_psets_ui(self, props, enabled=True):
-        for index, pset in enumerate(props.psets):
-            box = self.layout.box()
-            row = box.row(align=True)
-            row.prop(
-                pset,
-                "is_expanded",
-                icon="TRIA_DOWN" if pset.is_expanded else "TRIA_RIGHT",
-                icon_only=True,
-                emboss=False,
-            )
-            row2 = row.row(align=True)
-            row2.enabled = enabled
-            row2.prop(pset, "name", text="", icon="COPY_ID", emboss=pset.is_editable)
-
-            if enabled:
-                row.prop(pset, "is_editable", icon="CHECKMARK" if pset.is_editable else "GREASEPENCIL", icon_only=True)
-                row.operator("bim.remove_pset", icon="X", text="").pset_index = index
-            if not pset.is_expanded:
-                continue
-            if pset.is_editable:
-                for prop in pset.properties:
-                    row = box.row(align=True)
-                    row.enabled = enabled
-                    row.prop(prop, "name", text="")
-                    row.prop(prop, "string_value", text="")
-                    if not enabled:
-                        continue
-                    op = row.operator("bim.copy_property_to_selection", icon="COPYDOWN", text="")
-                    op.pset_name = pset.name
-                    op.prop_name = prop.name
-                    op.prop_value = prop.string_value
-            else:
-                col = box.column(align=True)
-                for prop in pset.properties:
-                    if not prop.string_value:
-                        continue
-                    col.enabled = enabled
-                    col.prop(prop, "string_value", text=prop.name)
 
 
 class BIM_PT_object_qto(Panel):
@@ -626,48 +459,6 @@ class BIM_PT_constraint_relations(Panel):
                     layout.label(text="Constraint is invalid")
 
 
-class BIM_PT_representations(Panel):
-    bl_label = "IFC Representations"
-    bl_idname = "BIM_PT_representations"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "object"
-
-    def draw(self, context):
-        layout = self.layout
-        props = context.active_object.BIMObjectProperties
-
-        if not props.representations:
-            layout.label(text="No representations found")
-
-        row = layout.row(align=True)
-        row.prop(bpy.context.scene.BIMProperties, "available_contexts", text="")
-        row.prop(bpy.context.scene.BIMProperties, "available_subcontexts", text="")
-        row.prop(bpy.context.scene.BIMProperties, "available_target_views", text="")
-        # TODO: reimplement with incremental editing
-        # op = row.operator("bim.switch_context", icon="ADD", text="")
-        # op.has_target_context = False
-
-        self.file = ifc.IfcStore.get_file()
-        for index, representation in enumerate(props.representations):
-            row = layout.row(align=True)
-            row.prop(representation, "name", text="")
-            row.prop(representation, "type", text="")
-            if not representation.ifc_definition_id:
-                continue
-            subcontext = self.file.by_id(representation.ifc_definition_id).ContextOfItems
-            if subcontext.is_a() == "IfcGeometricRepresentationContext":
-                continue
-            # TODO: reimplement with incremental editing
-            # op = row.operator("bim.switch_context", icon="OUTLINER_DATA_MESH", text="")
-            # op.has_target_context = True
-            # op.context_name = subcontext.ContextType
-            # op.subcontext_name = subcontext.ContextIdentifier
-            # op.target_view_name = subcontext.TargetView
-            # row.operator("bim.remove_context", icon="X", text="").index = index
-
-
 class BIM_PT_classification_references(Panel):
     bl_label = "IFC Classification References"
     bl_idname = "BIM_PT_classification_references"
@@ -792,70 +583,6 @@ class BIM_PT_classifications(Panel):
 
         row = layout.row()
         row.prop(props, "classifications")
-
-
-class BIM_PT_mesh(Panel):
-    bl_label = "IFC Representations"
-    bl_idname = "BIM_PT_mesh"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "data"
-
-    @classmethod
-    def poll(cls, context):
-        return (
-            context.active_object is not None
-            and context.active_object.type == "MESH"
-            and hasattr(context.active_object.data, "BIMMeshProperties")
-        )
-
-    def draw(self, context):
-        if not context.active_object.data:
-            return
-        layout = self.layout
-        props = context.active_object.data.BIMMeshProperties
-
-        row = layout.row(align=True)
-        row.operator("bim.push_representation")
-
-        row = layout.row()
-        row.prop(props, "geometry_type")
-        layout.label(text="IFC Parameters:")
-        row = layout.row()
-        row.operator("bim.get_representation_ifc_parameters")
-        row = layout.row()
-        row.operator("bim.bake_parametric_geometry")
-        for index, ifc_parameter in enumerate(props.ifc_parameters):
-            row = layout.row(align=True)
-            row.prop(ifc_parameter, "name", text="")
-            row.prop(ifc_parameter, "value", text="")
-            row.operator("bim.update_ifc_representation", icon="FILE_REFRESH", text="").index = index
-
-        row = layout.row()
-        row.prop(props, "is_parametric")
-        row = layout.row()
-        row.prop(props, "is_native")
-        row = layout.row()
-        row.prop(props, "is_swept_solid")
-
-        row = layout.row()
-        row.operator("bim.add_swept_solid")
-        for index, swept_solid in enumerate(props.swept_solids):
-            row = layout.row(align=True)
-            row.prop(swept_solid, "name", text="")
-            row.operator("bim.remove_swept_solid", icon="X", text="").index = index
-            row = layout.row()
-            sub = row.row(align=True)
-            sub.operator("bim.assign_swept_solid_outer_curve").index = index
-            sub.operator("bim.select_swept_solid_outer_curve", icon="RESTRICT_SELECT_OFF", text="").index = index
-            sub = row.row(align=True)
-            sub.operator("bim.add_swept_solid_inner_curve").index = index
-            sub.operator("bim.select_swept_solid_inner_curves", icon="RESTRICT_SELECT_OFF", text="").index = index
-            row = layout.row(align=True)
-            row.operator("bim.assign_swept_solid_extrusion").index = index
-            row.operator("bim.select_swept_solid_extrusion", icon="RESTRICT_SELECT_OFF", text="").index = index
-        row = layout.row()
-        row.prop(props, "swept_solids")
 
 
 class BIM_PT_presentation_layer_data(Panel):
@@ -1303,213 +1030,6 @@ class BIM_PT_text(Panel):
             row.prop(variable, "prop_key")
 
 
-class BIM_PT_owner(Panel):
-    bl_label = "IFC Owner History"
-    bl_idname = "BIM_PT_owner"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-
-        scene = context.scene
-        props = scene.BIMProperties
-
-        if not props.person:
-            layout.label(text="No people found.")
-        else:
-            row = layout.row()
-            row.prop(props, "person")
-
-        if not props.organisation:
-            layout.label(text="No organisations found.")
-        else:
-            row = layout.row()
-            row.prop(props, "organisation")
-
-
-class BIM_PT_people(Panel):
-    bl_label = "IFC People"
-    bl_idname = "BIM_PT_people"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-
-        props = context.scene.BIMProperties
-
-        row = layout.row()
-        row.operator("bim.add_person")
-
-        if props.people:
-            layout.template_list("BIM_UL_generic", "", props, "people", props, "active_person_index")
-
-            if props.active_person_index < len(props.people):
-                person = props.people[props.active_person_index]
-                row = layout.row()
-                row.prop(person, "name")
-                row.operator("bim.remove_person", icon="X", text="").index = props.active_person_index
-                row = layout.row()
-                row.prop(person, "family_name")
-                row = layout.row()
-                row.prop(person, "given_name")
-                row = layout.row()
-                row.prop(person, "middle_names")
-                row = layout.row()
-                row.prop(person, "prefix_titles")
-                row = layout.row()
-                row.prop(person, "suffix_titles")
-                layout.label(text="Roles:")
-                draw_roles_ui(layout, person, "person")
-                layout.label(text="Addresses:")
-                draw_addresses_ui(layout, person, "person")
-
-
-class BIM_PT_organisations(Panel):
-    bl_label = "IFC Organisations"
-    bl_idname = "BIM_PT_organisations"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-
-        props = context.scene.BIMProperties
-
-        row = layout.row()
-        row.operator("bim.add_organisation")
-
-        if props.organisations:
-            layout.template_list("BIM_UL_generic", "", props, "organisations", props, "active_organisation_index")
-
-            if props.active_organisation_index < len(props.organisations):
-                organisation = props.organisations[props.active_organisation_index]
-                row = layout.row()
-                row.prop(organisation, "name")
-                row.operator("bim.remove_organisation", icon="X", text="").index = props.active_organisation_index
-                row = layout.row()
-                row.prop(organisation, "description")
-                layout.label(text="Roles:")
-                draw_roles_ui(layout, organisation, "organisation")
-                layout.label(text="Addresses:")
-                draw_addresses_ui(layout, organisation, "organisation")
-
-
-def draw_roles_ui(layout, parent, parent_type):
-    row = layout.row()
-    row.operator(f"bim.add_{parent_type}_role")
-
-    if parent.roles:
-        layout.template_list("BIM_UL_generic", "", parent, "roles", parent, "active_role_index")
-
-        if parent.active_role_index < len(parent.roles):
-            role = parent.roles[parent.active_role_index]
-            row = layout.row()
-            row.prop(role, "name")
-            row.operator(f"bim.remove_{parent_type}_role", icon="X", text="").index = parent.active_role_index
-            if role.name == "USERDEFINED":
-                row = layout.row()
-                row.prop(role, "user_defined_role")
-            row = layout.row()
-            row.prop(role, "description")
-
-
-def draw_addresses_ui(layout, parent, parent_type):
-    row = layout.row()
-    row.operator(f"bim.add_{parent_type}_address")
-
-    if parent.addresses:
-        layout.template_list("BIM_UL_generic", "", parent, "addresses", parent, "active_address_index")
-
-        if parent.active_address_index < len(parent.addresses):
-            address = parent.addresses[parent.active_address_index]
-            row = layout.row()
-            row.prop(address, "name")
-            row.operator(f"bim.remove_{parent_type}_address", icon="X", text="").index = parent.active_address_index
-            row = layout.row()
-            row.prop(address, "purpose")
-            if address.purpose == "USERDEFINED":
-                row = layout.row()
-                row.prop(address, "user_defined_purpose")
-            row = layout.row()
-            row.prop(address, "description")
-
-            if "IfcPostalAddress" in address.name:
-                row = layout.row()
-                row.prop(address, "internal_location")
-                row = layout.row()
-                row.prop(address, "address_lines")
-                row = layout.row()
-                row.prop(address, "postal_box")
-                row = layout.row()
-                row.prop(address, "town")
-                row = layout.row()
-                row.prop(address, "region")
-                row = layout.row()
-                row.prop(address, "postal_code")
-                row = layout.row()
-                row.prop(address, "country")
-            elif "IfcTelecomAddress" in address.name:
-                row = layout.row()
-                row.prop(address, "telephone_numbers")
-                row = layout.row()
-                row.prop(address, "fascimile_numbers")
-                row = layout.row()
-                row.prop(address, "pager_number")
-                row = layout.row()
-                row.prop(address, "electronic_mail_addresses")
-                row = layout.row()
-                row.prop(address, "www_home_page_url")
-                row = layout.row()
-                row.prop(address, "messaging_ids")
-
-
-class BIM_PT_context(Panel):
-    bl_label = "IFC Geometric Representation Contexts"
-    bl_idname = "BIM_PT_context"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    def draw(self, context):
-        layout = self.layout
-
-        scene = context.scene
-        props = scene.BIMProperties
-
-        for context in ["model", "plan"]:
-            row = layout.row(align=True)
-            row.prop(props, f"has_{context}_context")
-
-            if not getattr(props, f"has_{context}_context"):
-                continue
-
-            layout.label(text="Geometric Representation Subcontexts:")
-            row = layout.row(align=True)
-            row.prop(props, "available_subcontexts", text="")
-            row.prop(props, "available_target_views", text="")
-            row.operator("bim.add_subcontext", icon="ADD", text="").context = context
-
-            for subcontext_index, subcontext in enumerate(getattr(props, "{}_subcontexts".format(context))):
-                row = layout.row(align=True)
-                row.prop(subcontext, "name", text="")
-                row.prop(subcontext, "target_view", text="")
-                row.operator("bim.remove_subcontext", icon="X", text="").indexes = "{}-{}".format(
-                    context, subcontext_index
-                )
-
-
 class BIM_PT_bim(Panel):
     bl_label = "Building Information Modeling"
     bl_idname = "BIM_PT_bim"
@@ -1525,9 +1045,6 @@ class BIM_PT_bim(Panel):
         bim_properties = scene.BIMProperties
 
         layout.label(text="System Setup:")
-
-        row = layout.row()
-        row.operator("bim.quick_project_setup")
 
         row = layout.row(align=True)
         row.prop(bim_properties, "schema_dir")
@@ -1547,22 +1064,6 @@ class BIM_PT_bim(Panel):
         row.prop(bim_properties, "ifc_cache")
 
         layout.label(text="IFC Categorisation:")
-
-        row = layout.row()
-        row.prop(bim_properties, "ifc_product")
-        row = layout.row()
-        row.prop(bim_properties, "ifc_class")
-        if bim_properties.ifc_predefined_type:
-            row = layout.row()
-            row.prop(bim_properties, "ifc_predefined_type")
-        if bim_properties.ifc_predefined_type == "USERDEFINED":
-            row = layout.row()
-            row.prop(bim_properties, "ifc_userdefined_type")
-        row = layout.row(align=True)
-        op = row.operator("bim.assign_class")
-        op.object_name = ""
-        op = row.operator("bim.unassign_class", icon="X", text="")
-        op.object_name = ""
 
         row = layout.row(align=True)
         row.operator("bim.select_class")
@@ -1850,6 +1351,7 @@ class BIM_PT_patch(Panel):
 class BIM_PT_mvd(Panel):
     bl_label = "Model View Definitions (MVD)"
     bl_idname = "BIM_PT_mvd"
+    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -2358,68 +1860,6 @@ class BIM_PT_misc_utilities(Panel):
         row.operator("bim.set_viewport_shadow_from_sun")
         row = layout.row(align=True)
         row.operator("bim.snap_spaces_together")
-
-
-class BIM_PT_debug(Panel):
-    bl_label = "IFC Debug"
-    bl_idname = "BIM_PT_debug"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    def draw(self, context):
-        layout = self.layout
-
-        scene = context.scene
-        props = scene.BIMDebugProperties
-
-        row = layout.row()
-        row.operator("bim.profile_import_ifc")
-
-        row = layout.row()
-        row.prop(props, "step_id", text="")
-        row = layout.row()
-        row.operator("bim.create_shape_from_step_id")
-
-        row = layout.row()
-        row.prop(props, "number_of_polygons", text="")
-        row = layout.row()
-        row.operator("bim.select_high_polygon_meshes")
-
-        layout.label(text="Inspector:")
-
-        row = layout.row(align=True)
-        if len(props.step_id_breadcrumb) >= 2:
-            row.operator("bim.rewind_inspector", icon="FRAME_PREV", text="")
-        row.prop(props, "active_step_id", text="")
-        row = layout.row(align=True)
-        row.operator("bim.inspect_from_step_id").step_id = bpy.context.scene.BIMDebugProperties.active_step_id
-        row.operator("bim.inspect_from_object")
-
-        if props.attributes:
-            layout.label(text="Direct attributes:")
-
-        for index, attribute in enumerate(props.attributes):
-            row = layout.row(align=True)
-            row.prop(attribute, "name", text="")
-            row.prop(attribute, "string_value", text="")
-            if attribute.int_value:
-                row.operator(
-                    "bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text=""
-                ).step_id = attribute.int_value
-
-        if props.inverse_attributes:
-            layout.label(text="Inverse attributes:")
-
-        for index, attribute in enumerate(props.inverse_attributes):
-            row = layout.row(align=True)
-            row.prop(attribute, "name", text="")
-            row.prop(attribute, "string_value", text="")
-            if attribute.int_value:
-                row.operator(
-                    "bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text=""
-                ).step_id = attribute.int_value
 
 
 def ifc_units(self, context):

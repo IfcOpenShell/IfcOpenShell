@@ -54,7 +54,6 @@ public:
 		/// Applicable for OBJ, DAE, and SVG output.
 		USE_ELEMENT_STEPIDS = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 6),
 		/// Use step Z UP .
-		/// Applicable for OBJ output.
 		USE_Z_UP = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 7),
 		/// Number of different setting flags.
         NUM_SETTINGS = 7
