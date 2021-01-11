@@ -1,8 +1,5 @@
 import bpy
-import blenderbim.bim.module.context.add_context as add_context
-import blenderbim.bim.module.context.remove_context as remove_context
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.context.data import Data
 
 
 class SelectCobieIfcFile(bpy.types.Operator):
