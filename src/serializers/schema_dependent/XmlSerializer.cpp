@@ -351,18 +351,44 @@ ptree* descend(IfcSchema::IfcObjectDefinition* product, ptree& tree, IfcUtil::If
 	return &child;
 }
 
-// Format IfcProperty instances and insert into the DOM. IfcComplexProperties are flattened out.
-void format_properties(IfcSchema::IfcProperty::list::ptr properties, ptree& node) {
-	for (IfcSchema::IfcProperty::list::it it = properties->begin(); it != properties->end(); ++it) {
-		IfcSchema::IfcProperty* p = *it;
-		if (p->declaration().is(IfcSchema::IfcComplexProperty::Class())) {
-			IfcSchema::IfcComplexProperty* complex = (IfcSchema::IfcComplexProperty*) p;
-			format_properties(complex->HasProperties(), node);
-		} else {
-			format_entity_instance(p, node);
+	void writeGroupToNode(IfcSchema::IfcGroup* group, ptree& node, std::set<std::string>notRootGroups)
+	{
+		if (notRootGroups.find(group->Name()) != notRootGroups.end()) {
+			return;
+		}
+		ptree* node2 = descend(group, node);//write one group to root
+		auto father = group->IsGroupedBy();
+		for (auto iter = father->begin(); iter != father->end(); iter++)
+		{
+			IfcSchema::IfcRelAssigns* ii = *iter;
+			auto objs = ii->RelatedObjects();
+			for (auto objit = objs->begin(); objit != objs->end(); objit++) {
+				auto entity = *objit;
+				if (entity->declaration().is(IfcSchema::IfcGroup::Class())) {
+					writeGroupToNode(entity->as<IfcSchema::IfcGroup>(), *node2, notRootGroups);
+					notRootGroups.emplace(entity->Name());
+				}
+				else {
+					descend(entity, *node2);//write son to father group
+				}
+			}
 		}
 	}
-}
+
+
+	// Format IfcProperty instances and insert into the DOM. IfcComplexProperties are flattened out.
+	void format_properties(IfcSchema::IfcProperty::list::ptr properties, ptree& node) {
+		for (IfcSchema::IfcProperty::list::it it = properties->begin(); it != properties->end(); ++it) {
+			IfcSchema::IfcProperty* p = *it;
+			if (p->declaration().is(IfcSchema::IfcComplexProperty::Class())) {
+				IfcSchema::IfcComplexProperty* complex = (IfcSchema::IfcComplexProperty*) p;
+				format_properties(complex->HasProperties(), node);
+			}
+			else {
+				format_entity_instance(p, node);
+			}
+		}
+	}
 
 // Format IfcElementQuantity instances and insert into the DOM.
 void format_quantities(IfcSchema::IfcPhysicalQuantity::list::ptr quantities, ptree& node) {
@@ -388,8 +414,8 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 	}
 	IfcSchema::IfcProject* project = *projects->begin();
 
-	ptree root, header, units, decomposition, properties, quantities, types, layers, materials;
-	
+	ptree root, header, units, decomposition, properties, quantities, types, layers, materials, groups;
+
 	// Write the SPF header as XML nodes.
 	BOOST_FOREACH(const std::string& s, file->header().file_description().description()) {
 		header.add_child("file_description.description", ptree(s));
@@ -464,7 +490,23 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 			format_properties(pset->HasProperties(), *node);
 		}
 	}
-	
+
+	// Write all group sets and values as XML nodes.
+	IfcSchema::IfcGroup::list::ptr gsets = file->instances_by_type<IfcSchema::IfcGroup>();
+	std::set<std::string> notRootGroups;//selfname, fathername
+	for (IfcSchema::IfcGroup::list::it it = gsets->begin(); it != gsets->end(); ++it) {
+		writeGroupToNode(*it, groups, notRootGroups);
+	}
+	for (auto it = groups.begin(); it != groups.end();)//root
+	{
+		if (notRootGroups.find(it->second.get<std::string>("<xmlattr>.Name")) != notRootGroups.end()) {
+			it = groups.erase(it);
+		}
+		else {
+			it++;
+		}
+	}
+
 	// Write all quantities and values as XML nodes.
 	IfcSchema::IfcElementQuantity::list::ptr qtosets = file->instances_by_type<IfcSchema::IfcElementQuantity>();
 	for (IfcSchema::IfcElementQuantity::list::it it = qtosets->begin(); it != qtosets->end(); ++it) {
@@ -557,13 +599,14 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 		}
 	}
 
-	root.add_child("ifc.header",        header);
-	root.add_child("ifc.units",         units);
-	root.add_child("ifc.properties",    properties);
-	root.add_child("ifc.quantities",    quantities);
-	root.add_child("ifc.types",         types);
-    	root.add_child("ifc.layers",        layers);
-	root.add_child("ifc.materials",     materials);
+	root.add_child("ifc.header", header);
+	root.add_child("ifc.units", units);
+	root.add_child("ifc.properties", properties);
+	root.add_child("ifc.quantities", quantities);
+	root.add_child("ifc.types", types);
+	root.add_child("ifc.layers", layers);
+	root.add_child("ifc.groups", groups);
+	root.add_child("ifc.materials", materials);
 	root.add_child("ifc.decomposition", decomposition);
 
 	root.put("ifc.<xmlattr>.xmlns:xlink", "http://www.w3.org/1999/xlink");
