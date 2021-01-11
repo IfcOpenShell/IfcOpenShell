@@ -3757,24 +3757,18 @@ class CopyGrid(bpy.types.Operator):
     bl_options = {"UNDO"}
 
     def execute(self, context):
-        props = context.scene.DocProperties
-        if props.active_drawing_index is None or len(props.drawings) == 0:
-            return {"CANCELLED"}
-        drawing = props.drawings[props.active_drawing_index]
-        collection = bpy.data.collections.get("IfcGroup/" + drawing.name)
+        proj_coll = helper.get_project_collection(context.scene)
+        view_coll, camera = helper.get_active_drawing(context.scene)
 
-        existing = [obj for obj in collection.objects if obj.name.startswith("IfcGridAxis")]
+        existing = [obj for obj in view_coll.objects if obj.name.startswith("IfcGridAxis")]
         for obj in existing:
-            collection.objects.unlink(obj)
+            view_coll.objects.unlink(obj)
 
         source = [
             obj
-            for coll in bpy.data.collections
-            if coll.name.startswith("IfcGrid")
-            for obj in coll.all_objects
+            for obj in proj_coll.all_objects
             if obj.name.startswith("IfcGridAxis")
         ]
-        camera = [obj for obj in collection.all_objects if obj.type == "CAMERA"][0]
 
         clipping = camera.data.type == "ORTHO"
         bounds = helper.ortho_view_frame(camera.data) if clipping else None
@@ -3804,6 +3798,6 @@ class CopyGrid(bpy.types.Operator):
             dst = src.copy()
             dst.data = bpy.data.meshes.new(dst.name)
             bm.to_mesh(dst.data)
-            collection.objects.link(dst)
+            view_coll.objects.link(dst)
 
         return {"FINISHED"}
