@@ -1,5 +1,4 @@
 from bpy.types import Panel
-from blenderbim.bim.module.context.data import Data
 from blenderbim.bim.ifc import IfcStore
 
 
