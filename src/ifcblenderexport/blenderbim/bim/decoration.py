@@ -13,6 +13,7 @@ import gpu
 import bgl
 from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertFormat
 from gpu_extras.batch import batch_for_shader
+from . import helper
 
 
 class BaseDecorator():
@@ -1031,11 +1032,9 @@ class DecorationsHandler():
         self.decorators = [cls() for cls in self.decorators_classes]
 
     def __call__(self, context):
-        props = context.scene.DocProperties
-        if props.active_drawing_index is None or len(props.drawings) == 0:
+        collection, _ = helper.get_active_drawing(context.scene)
+        if collection is None:
             return
-        drawing = props.drawings[props.active_drawing_index]
-        collection = bpy.data.collections.get("IfcGroup/" + drawing.name)
 
         for decorator in self.decorators:
             for obj in decorator.get_objects(collection):

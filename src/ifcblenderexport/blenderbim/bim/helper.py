@@ -299,6 +299,27 @@ def parse_diagram_scale(camera):
     return float(numerator) / float(denominator)
 
 
+def get_project_collection(scene):
+    """Get main project collection"""
+
+    colls = [c for c in scene.collection.children if c.name.startswith('IfcProject')]
+    if len(colls) != 1:
+        raise RuntimeError("project collection missing or not unique")
+    return colls[0]
+
+
+def get_active_drawing(scene):
+    """Get active drawing collection and camera"""
+    props = scene.DocProperties
+    if props.active_drawing_index is None or len(props.drawings) == 0:
+        return None, None
+    try:
+        drawing = props.drawings[props.active_drawing_index]
+        return scene.collection.children['Views'].children[f"IfcGroup/{drawing.name}"], drawing.camera
+    except (KeyError, IndexError):
+        raise RuntimeError("missing drawing collection")
+
+
 def ortho_view_frame(camera, margin=0.015):
     """Calculates 2d bounding box of camera view area.
 
