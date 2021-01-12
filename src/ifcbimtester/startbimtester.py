@@ -83,25 +83,34 @@ if __name__ == "__main__":
         "--gui",
         action="store_true",
         help=(
-            "Start the gui. The option t (run in temp directory) "
+            "Start the gui. The option t (copyintemprun) "
             "is triggered automaticly."
         )
     )
     parser.add_argument(
-        "featuresdir",
+        "-t",
+        "--copyintemprun",
+        action="store_true",
+        help=(
+            "Copy steps and feature files into a temporary directory "
+            "and run bimtester with them."
+        )
+    )
+    parser.add_argument(
+        "-d",
+        "--featuresdir",
         type=str,
-        nargs="?",
         help=(
             "Specify a features directory. This should contain "
-            " a directory named features which contains all the "
+            "a directory named 'features' which contains all the "
             "feature files."
         ),
         default=""
     )
     parser.add_argument(
-        "ifcfile",
+        "-i",
+        "--ifcfile",
         type=str,
-        nargs="?",
         help=(
             "Specify a ifc file."
         ),
@@ -109,7 +118,8 @@ if __name__ == "__main__":
     )
 
     args = vars(parser.parse_args())
-    print(args)
+    from json import dumps
+    print(dumps(args, indent=4))
 
     if args["path"]:
         if args["feature"]:
@@ -123,8 +133,11 @@ if __name__ == "__main__":
         reports.generate_report()
     elif args["gui"]:
         show_widget(args["featuresdir"], args["ifcfile"])
+    elif args["copyintemprun"]:
+        run.run_copyintmp_tests(args)
     else:
         run.run_tests(args)
         if args["report_after_run"]:
             reports.generate_report()
+
     print("# All tasks are complete :-)")
