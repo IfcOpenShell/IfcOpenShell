@@ -208,19 +208,19 @@ def run_copyintmp_tests(args={}):
     # set up paths
     # a unique temp path should not be used
     # behave raises an ambiguous step exception
-    # run_path = tempfile.mkdtemp()
+    # copy_base_path = tempfile.mkdtemp()
     # thus use the same path on every run
     # but delete it if exists
-    run_path = os.path.join(tempfile.gettempdir(), "bimtesterfc")
-    if os.path.isdir(run_path):
+    copy_base_path = os.path.join(tempfile.gettempdir(), "bimtesterfc")
+    if os.path.isdir(copy_base_path):
         from shutil import rmtree
-        rmtree(run_path)  # fails on read only files
-    if os.path.isdir(run_path):
-        print("Delete former beimtester run dir {} failed".format(run_path))
+        rmtree(copy_base_path)  # fails on read only files
+    if os.path.isdir(copy_base_path):
+        print("Delete former beimtester run dir {} failed".format(copy_base_path))
         return False
-    os.mkdir(run_path)
-    report_path = os.path.join(run_path, "report")
-    copy_features_path = os.path.join(run_path, "features")
+    os.mkdir(copy_base_path)
+    report_path = os.path.join(copy_base_path, "report")
+    copy_features_path = os.path.join(copy_base_path, "features")
 
     # copy features path from bimtester source code
     srccode_features_path = os.path.join(
@@ -320,7 +320,7 @@ def run_copyintmp_tests(args={}):
     # delete steps
     # shutil.rmtree(steps_path)
 
-    return run_path
+    return copy_base_path
 
 
 def run_all(the_features_path, the_ifcfile):
