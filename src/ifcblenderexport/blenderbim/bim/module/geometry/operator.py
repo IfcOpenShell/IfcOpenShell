@@ -34,11 +34,12 @@ class AddRepresentation(bpy.types.Operator):
     bl_idname = "bim.add_representation"
     bl_label = "Add Representation"
     obj: bpy.props.StringProperty()
+    context_id: bpy.props.IntProperty()
 
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
-        self.context_id = bpy.context.scene.BIMProperties.contexts
+        context_id = self.context_id or int(bpy.context.scene.BIMProperties.contexts)
 
         bpy.ops.bim.edit_object_placement(obj=obj.name)
 
@@ -46,7 +47,7 @@ class AddRepresentation(bpy.types.Operator):
             result = add_representation.Usecase(
                 self.file,
                 {
-                    "context": self.file.by_id(int(self.context_id)),
+                    "context": self.file.by_id(context_id),
                     "geometry": obj.data,
                     "total_items": max(1, len(obj.material_slots)),
                 },
@@ -71,7 +72,7 @@ class AddRepresentation(bpy.types.Operator):
 
             existing_mesh = obj.data
             mesh = obj.data.copy()
-            mesh.name = "{}/{}".format(self.context_id, result.id())
+            mesh.name = "{}/{}".format(context_id, result.id())
             mesh.BIMMeshProperties.ifc_definition_id = int(result.id())
             obj.data = mesh
         Data.load(obj.BIMObjectProperties.ifc_definition_id)

@@ -5,24 +5,32 @@ bpy = sys.modules.get("bpy")
 
 if bpy is not None:
     import bpy
-    import blenderbim.bim.module.root as module_root
-    import blenderbim.bim.module.aggregate as module_aggregate
-    import blenderbim.bim.module.attribute as module_attribute
-    import blenderbim.bim.module.bcf as module_bcf
-    import blenderbim.bim.module.context as module_context
-    import blenderbim.bim.module.covetool as module_covetool
-    import blenderbim.bim.module.debug as module_debug
-    import blenderbim.bim.module.geometry as module_geometry
-    import blenderbim.bim.module.model as module_model
-    import blenderbim.bim.module.owner as module_owner
-    import blenderbim.bim.module.project as module_project
-    import blenderbim.bim.module.pset as module_pset
-    import blenderbim.bim.module.spatial as module_spatial
-    import blenderbim.bim.module.style as module_style
-    import blenderbim.bim.module.type as module_type
-    import blenderbim.bim.module.unit as module_unit
-    import blenderbim.bim.module.cobie as module_cobie
+    import importlib
     from . import ui, prop, operator
+
+    modules = {
+        "root": None,
+        "aggregate": None,
+        "attribute": None,
+        "bcf": None,
+        "cobie": None,
+        "context": None,
+        "covetool": None,
+        "debug": None,
+        "geometry": None,
+        "model": None,
+        "owner": None,
+        "project": None,
+        "pset": None,
+        "spatial": None,
+        "style": None,
+        "type": None,
+        "unit": None,
+        "void": None,
+    }
+
+    for name in modules.keys():
+        modules[name] = importlib.import_module(f"blenderbim.bim.module.{name}")
 
     classes = [
         operator.SelectClass,
@@ -286,24 +294,9 @@ if bpy is not None:
         ui.BIM_ADDON_preferences,
     ]
 
-    classes.extend(module_root.classes)
-    classes.extend(module_aggregate.classes)
-    classes.extend(module_attribute.classes)
-    classes.extend(module_bcf.classes)
-    classes.extend(module_context.classes)
-    classes.extend(module_covetool.classes)
-    classes.extend(module_debug.classes)
-    classes.extend(module_geometry.classes)
-    classes.extend(module_model.classes)
-    classes.extend(module_owner.classes)
-    classes.extend(module_project.classes)
-    classes.extend(module_pset.classes)
-    classes.extend(module_spatial.classes)
-    classes.extend(module_style.classes)
-    classes.extend(module_type.classes)
-    classes.extend(module_unit.classes)
-    classes.extend(module_cobie.classes)
-    
+    for module in modules.values():
+        classes.extend(module.classes)
+
     def menu_func_export(self, context):
         self.layout.operator(operator.ExportIFC.bl_idname, text="Industry Foundation Classes (.ifc/.ifczip/.ifcjson)")
 
@@ -333,23 +326,10 @@ if bpy is not None:
         bpy.types.Camera.BIMCameraProperties = bpy.props.PointerProperty(type=prop.BIMCameraProperties)
         bpy.types.TextCurve.BIMTextProperties = bpy.props.PointerProperty(type=prop.BIMTextProperties)
         bpy.types.SCENE_PT_unit.append(ui.ifc_units)
-        module_root.register()
-        module_aggregate.register()
-        module_attribute.register()
-        module_bcf.register()
-        module_context.register()
-        module_covetool.register()
-        module_debug.register()
-        module_geometry.register()
-        module_model.register()
-        module_owner.register()
-        module_project.register()
-        module_pset.register()
-        module_spatial.register()
-        module_style.register()
-        module_type.register()
-        module_unit.register()
-        module_cobie.register()
+
+        for module in modules.values():
+            module.register()
+
         bpy.app.handlers.depsgraph_update_pre.append(operator.depsgraph_update_pre_handler)
         bpy.app.handlers.load_post.append(prop.toggleDecorationsOnLoad)
 
@@ -370,21 +350,8 @@ if bpy is not None:
         del bpy.types.Camera.BIMCameraProperties
         del bpy.types.TextCurve.BIMTextProperties
         bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
-        module_cobie.unregister()
-        module_unit.unregister()
-        module_type.unregister()
-        module_style.unregister()
-        module_spatial.unregister()
-        module_pset.unregister()
-        module_project.unregister()
-        module_owner.unregister()
-        module_model.unregister()
-        module_geometry.unregister()
-        module_debug.unregister()
-        module_covetool.unregister()
-        module_context.unregister()
-        module_bcf.unregister()
-        module_attribute.register()
-        module_aggregate.register()
-        module_root.unregister()
+
+        for module in reversed(list(modules.values())):
+            module.unregister()
+
         bpy.app.handlers.depsgraph_update_pre.remove(operator.depsgraph_update_pre_handler)
