@@ -471,7 +471,7 @@ class IfcImporter:
         self.profile_code("Create presentation layers")
         self.add_project_to_scene()
         self.profile_code("Add project to scene")
-        if self.ifc_import_settings.should_clean_mesh and len(self.file.by_type("IfcElement")) < 10000:
+        if self.ifc_import_settings.should_clean_mesh and len(self.file.by_type("IfcElement")) < 1000:
             self.clean_mesh()
             self.profile_code("Mesh cleaning")
 

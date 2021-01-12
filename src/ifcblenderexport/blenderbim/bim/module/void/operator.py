@@ -1,6 +1,8 @@
 import bpy
 import blenderbim.bim.module.void.add_opening as add_opening
 import blenderbim.bim.module.void.remove_opening as remove_opening
+import blenderbim.bim.module.void.add_filling as add_filling
+import blenderbim.bim.module.void.remove_filling as remove_filling
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.void.data import Data
 from blenderbim.bim.module.context.data import Data as ContextData
@@ -30,10 +32,13 @@ class AddOpening(bpy.types.Operator):
 
         self.file = IfcStore.get_file()
         element_id = obj.BIMObjectProperties.ifc_definition_id
-        add_opening.Usecase(self.file, {
-            "opening": self.file.by_id(opening.BIMObjectProperties.ifc_definition_id),
-            "element": self.file.by_id(element_id)
-        }).execute()
+        add_opening.Usecase(
+            self.file,
+            {
+                "opening": self.file.by_id(opening.BIMObjectProperties.ifc_definition_id),
+                "element": self.file.by_id(element_id),
+            },
+        ).execute()
         Data.load(element_id)
 
         has_modifier = False
@@ -70,5 +75,42 @@ class RemoveOpening(bpy.types.Operator):
                 break
 
         remove_opening.Usecase(self.file, {"opening": self.file.by_id(self.opening_id)}).execute()
+        Data.load(obj.BIMObjectProperties.ifc_definition_id)
+        return {"FINISHED"}
+
+
+class AddFilling(bpy.types.Operator):
+    bl_idname = "bim.add_filling"
+    bl_label = "Add Filling"
+    opening: bpy.props.StringProperty()
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        opening = bpy.data.objects.get(self.opening) if self.opening else context.scene.VoidProperties.desired_opening
+        self.file = IfcStore.get_file()
+        element_id = obj.BIMObjectProperties.ifc_definition_id
+        add_filling.Usecase(
+            self.file,
+            {
+                "opening": self.file.by_id(opening.BIMObjectProperties.ifc_definition_id),
+                "element": self.file.by_id(element_id),
+            },
+        ).execute()
+        Data.load(element_id)
+        return {"FINISHED"}
+
+
+class RemoveFilling(bpy.types.Operator):
+    bl_idname = "bim.remove_filling"
+    bl_label = "Remove Filling"
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        self.file = IfcStore.get_file()
+        remove_filling.Usecase(
+            self.file, {"element": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)}
+        ).execute()
         Data.load(obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
