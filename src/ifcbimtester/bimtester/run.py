@@ -118,6 +118,9 @@ def run_copyintmp_tests(args={}):
     advanced_arguments: optional
         they will be directly passed to the behave call
 
+    the following differentiation has to be made here because the decision
+    if the ifc file path in the feature file will be changed or not
+
     features and ifcfile are given:
     the ifcfile in feature files is replaced
 
@@ -144,22 +147,29 @@ def run_copyintmp_tests(args={}):
         )
         return False
 
-    # get the features_path, the dir where the feature files to test are in
-    if "features" in args and args["features"] != "":
+    if ("features" in args and args["features"] != ""):
+        is_features = True
+    else:
+        is_features = False
+    if ("ifcfile" in args and args["ifcfile"] != ""):
+        is_ifcfile = True
+    else:
+        is_ifcfile = False
+
+    if is_features is True and is_ifcfile is True:
+        # features and ifcfile are given:
+        # the ifcfile in feature files is replaced
+
+        # get the features_path, the dir where the feature files to test are in
         the_features_path = os.path.join(args["features"], "features")
         if not os.path.isdir(the_features_path):
             print(
-                "The features directory does not exist: {}"
+                "Error, the features directory '{}' does not exist."
                 .format(the_features_path)
             )
             return False
-    else:
-        # TODO assume features beside ifc thus use ifc path
-        print("No features path was given.")
-        return False
 
-    # get ifc path and ifc filename
-    if "ifcfile" in args and args["ifcfile"] != "":
+        # get ifc path and ifc filename
         ifcfile = args["ifcfile"]
         ifc_path = os.path.dirname(os.path.realpath(ifcfile))
         if os.path.isdir(ifc_path) is False:
@@ -168,11 +178,31 @@ def run_copyintmp_tests(args={}):
         if os.path.isfile(ifcfile) is True:
             ifc_filename = os.path.basename(ifcfile)
         else:
-            print("ifc file '{}' does not exist.".format(ifcfile))
+            print("Error, the ifc file '{}' does not exist.".format(ifcfile))
             return False
+
+    elif is_features is False and is_ifcfile is True:
+        # ifcfile only is given (TODO):
+        # features = ifcfile directory
+        # the ifcfile in feature files is replaced
+        print("Not yet implemented: features was NOT given, ifcfile was given.")
+        return False
+
+    elif is_features is True and is_ifcfile is False:
+        # features only is given (TODO):
+        # the ifcfile provided in the feature files is used
+        print("Not yet implemented: features was given, ifcfile was NOT given.")
+        return False
+
+    elif is_features is False and is_ifcfile is False:
+        # none of both is given (TODO):
+        # the current directory = features
+        # the ifcfile provided in the feature files is used
+        print("Not yet implemented: features NOT was given, ifcfile was NOT given.")
+        return False
+
     else:
-        # TODO use ifc path from feature files
-        print("No ifc file was given.")
+        print("Error: this should never happen, please debug.")
         return False
 
     # set up paths
