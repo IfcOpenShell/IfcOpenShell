@@ -15,11 +15,17 @@ class BIM_PT_cobie(Panel):
         layout.use_property_split = True
 
         scene = context.scene
-        props = scene.BIMProperties
+        props = scene.COBieProperties
 
-        row = layout.row(align=True)
-        row.prop(props, "cobie_ifc_file")
-        row.operator("bim.select_cobie_ifc_file", icon="FILE_FOLDER", text="")
+
+        if IfcStore.get_file():       
+            row = layout.row()
+            row.prop(props, "should_load_from_memory")
+          
+        if not IfcStore.get_file() or not props.should_load_from_memory:
+            row = layout.row(align=True)
+            row.prop(props, "cobie_ifc_file")
+            row.operator("bim.select_cobie_ifc_file", icon="FILE_FOLDER", text="")
 
         row = layout.row()
         row.prop(props, "cobie_types")
