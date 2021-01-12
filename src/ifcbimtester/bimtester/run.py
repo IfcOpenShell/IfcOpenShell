@@ -103,7 +103,7 @@ reset_runtime()
 # like German Umlaute behave gives an error
 
 
-def run_intmp_tests(args={}):
+def run_copyintmp_tests(args={}):
 
     """
     run bimtester unit test in a temporary directory
@@ -296,7 +296,7 @@ def run_intmp_tests(args={}):
 def run_all(the_features_path, the_ifcfile):
 
     # run bimtester
-    runpath = run_intmp_tests({
+    runpath = run_copyintmp_tests({
         "features": the_features_path,
         "ifcfile": the_ifcfile
     })
