@@ -195,6 +195,7 @@ if bpy is not None:
         operator.LinkIfc,
         operator.SnapSpacesTogether,
         operator.CopyGrid,
+        operator.AddSectionsAnnotations,
         prop.StrProperty,
         prop.Attribute,
         prop.MaterialLayer,
