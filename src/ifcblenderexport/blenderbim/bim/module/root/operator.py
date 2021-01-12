@@ -76,6 +76,7 @@ class AssignClass(bpy.types.Operator):
     ifc_class: bpy.props.StringProperty()
     predefined_type: bpy.props.StringProperty()
     userdefined_type: bpy.props.StringProperty()
+    context_id: bpy.props.IntProperty()
 
     def execute(self, context):
         objects = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
@@ -107,7 +108,7 @@ class AssignClass(bpy.types.Operator):
         obj.name = "{}/{}".format(product.is_a(), obj.name)
         obj.BIMObjectProperties.ifc_definition_id = int(product.id())
 
-        bpy.ops.bim.add_representation(obj=obj.name)
+        bpy.ops.bim.add_representation(obj=obj.name, context_id=self.context_id)
 
         if product.is_a("IfcElementType"):
             self.place_in_types_collection(obj)
@@ -160,12 +161,12 @@ class AssignClass(bpy.types.Operator):
 class UnassignClass(bpy.types.Operator):
     bl_idname = "bim.unassign_class"
     bl_label = "Unassign IFC Class"
-    object_name: bpy.props.StringProperty()
+    obj: bpy.props.StringProperty()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        if self.object_name:
-            objects = [bpy.data.objects.get(self.object_name)]
+        if self.obj:
+            objects = [bpy.data.objects.get(self.obj)]
         else:
             objects = bpy.context.selected_objects
         for obj in objects:
