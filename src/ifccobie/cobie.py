@@ -54,12 +54,17 @@ class IfcCobieParser:
         }
         self.default_date = (datetime.datetime(1970, 1, 1) + datetime.timedelta(seconds=-2177452801)).isoformat()
 
-    def parse(self, filename, type_query=".COBieType", component_query=".COBie", custom_data={}):
+    def parse(self, file, type_query=".COBieType", component_query=".COBie", custom_data={}):
         self.custom_data = custom_data
         for sheet in self.sheets:
             if sheet not in self.custom_data:
                 self.custom_data[sheet] = {}
-        self.file = ifcopenshell.open(filename)
+        
+        if isinstance(file, str):             
+            self.file = ifcopenshell.open(file)
+        else:
+            self.file = file
+            
         self.type_assets = self.selector.parse(self.file, type_query)
         self.component_assets = self.selector.parse(self.file, component_query)
         self.get_contacts()
