@@ -8,7 +8,7 @@ from bimtester import reports
 from bimtester import run
 
 
-def show_widget(features="", ifcfile=""):
+def show_widget(features="", ifcfile="", get_featurepath_from_ifcpath=False):
 
     import sys
     from PySide2 import QtWidgets
@@ -19,7 +19,7 @@ def show_widget(features="", ifcfile=""):
     app = QtWidgets.QApplication(sys.argv)
 
     # Create and show the form
-    form = GuiWidgetBimTester(features, ifcfile)
+    form = GuiWidgetBimTester(features, ifcfile, get_featurepath_from_ifcpath)
     form.show()
 
     # Run the main Qt loop
@@ -132,7 +132,12 @@ if __name__ == "__main__":
     elif args["report"]:
         reports.generate_report()
     elif args["gui"]:
-        show_widget(args["featuresdir"], args["ifcfile"])
+        fea = args["featuresdir"]
+        ifc = args["ifcfile"]
+        if fea != "" and ifc != "":
+            show_widget(fea, ifc, False)
+        elif fea == "" and ifc != "":
+            show_widget(fea, ifc, True)
     elif args["copyintemprun"]:
         run.run_copyintmp_tests(args)
     else:

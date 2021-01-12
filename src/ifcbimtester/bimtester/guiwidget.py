@@ -15,25 +15,30 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
 
     def __init__(
         self,
-        features="",
-        ifcfile=""
+        featurespath="",
+        ifcfile="",
+        get_featurepath_from_ifcpath=False
     ):
         super(GuiWidgetBimTester, self).__init__()
 
-        # get features dir
         user_path = os.path.expanduser("~")
-        # print(features)
-        self.initial_featurespath = features
-        if not os.path.isdir(self.initial_featurespath):
-            self.initial_featurespath = user_path
-        print(self.initial_featurespath)
+
+        # get features dir
+        # print(featurespath)
+        if not os.path.isdir(featurespath):
+            featurespath = user_path
 
         # get ifc file
         # print(ifcfile)
+        if not os.path.isfile(ifcfile):
+            ifcfile = user_path
+
+        self.initial_featurespath = featurespath
         self.initial_ifcfile = ifcfile
-        if not os.path.isfile(self.initial_ifcfile):
-            self.initial_ifcfile = user_path
-        print(self.initial_ifcfile)
+        self.get_featurepath_from_ifcpath = get_featurepath_from_ifcpath
+        # print(self.initial_featurespath)
+        # print(self.initial_ifcfile)
+        # print(self.get_featurepath_from_ifcpath)
 
         # init ui
         self._setup_ui()
@@ -143,6 +148,9 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
         layout.setRowStretch(0, 10)
         self.setLayout(layout)
 
+        # set button state, needs to be here after gui has beed set up
+        self.featuredirfromifc_cb.setChecked(self.get_featurepath_from_ifcpath)
+
     # **********************************************************
     def select_ifcfile(self):
         # print(self.get_ifcfile())
@@ -162,11 +170,8 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
     def featuredirfromifc_clicked(self):
         if self.featuredirfromifc_cb.isChecked() is True:
             self.set_featurefilesdir("")
-            # TODO
             self.featurefilesdir_text.setEnabled(False)
             self.feafilesdir_browse_btn.setEnabled(False)
-            # deactivate feature path browser button
-            # deactivate lineedit text
         else:
             self.set_featurefilesdir(self.initial_featurespath)
             self.featurefilesdir_text.setEnabled(True)
