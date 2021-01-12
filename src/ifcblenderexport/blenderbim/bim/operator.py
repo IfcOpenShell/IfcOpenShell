@@ -3759,45 +3759,74 @@ class CopyGrid(bpy.types.Operator):
     def execute(self, context):
         proj_coll = helper.get_project_collection(context.scene)
         view_coll, camera = helper.get_active_drawing(context.scene)
+        if view_coll is None:
+            return {'CANCELLED'}
+        is_ortho = camera.data.type == "ORTHO"
+        bounds = helper.ortho_view_frame(camera.data) if is_ortho else None
+        clipping = is_ortho and camera.data.BIMCameraProperties.target_view in ('PLAN_VIEW', 'REFLECTED_PLAN_VIEW')
+        elevating = is_ortho and camera.data.BIMCameraProperties.target_view in ('ELEVATION_VIEW', 'SECTION_VIEW')
 
-        existing = [obj for obj in view_coll.objects if obj.name.startswith("IfcGridAxis")]
-        for obj in existing:
+        def grep(coll):
+            return [obj for obj in coll.all_objects if obj.name.startswith("IfcGridAxis")]
+
+        def clone(src):
+            dst = src.copy()
+            dst.data = dst.data.copy()
+            return dst
+
+        def disassemble(obj):
+            mesh = bmesh.new()
+            mesh.verts.ensure_lookup_table()
+            mesh.from_mesh(obj.data)
+            return obj, mesh
+
+        def assemble(obj, mesh):
+            mesh.to_mesh(obj.data)
+            return obj
+
+        def localize(obj, mesh):
+            # convert to camera coords
+            mesh.transform(camera.matrix_world.inverted() @ obj.matrix_world)
+            obj.matrix_world = camera.matrix_world
+            return obj, mesh
+
+        def clip(mesh):
+            # clip segment against camera view bounds
+            mesh.verts.ensure_lookup_table()
+            points = [v.co for v in mesh.verts[0:2]]
+            points = helper.clip_segment(bounds, points)
+            if points is None:
+                return None
+            mesh.verts[0].co = points[0]
+            mesh.verts[1].co = points[1]
+            return mesh
+
+        def elev(mesh):
+            # put camera-perpendicular segments vertically
+            mesh.verts.ensure_lookup_table()
+            points = [v.co for v in mesh.verts[0:2]]
+            points = helper.elevate_segment(bounds, points)
+            if points is None:
+                return None
+            points = helper.clip_segment(bounds, points)
+            if points is None:
+                return None
+            mesh.verts[0].co = points[0]
+            mesh.verts[1].co = points[1]
+            return mesh
+
+        for obj in grep(view_coll):
             view_coll.objects.unlink(obj)
 
-        source = [
-            obj
-            for obj in proj_coll.all_objects
-            if obj.name.startswith("IfcGridAxis")
-        ]
+        grid = [localize(*disassemble(clone(obj))) for obj in grep(proj_coll)]
 
-        clipping = camera.data.type == "ORTHO"
-        bounds = helper.ortho_view_frame(camera.data) if clipping else None
+        if clipping:
+            grid = [(obj, clip(mesh)) for obj, mesh in grid]
+        elif elevating:
+            grid = [(obj, elev(mesh)) for obj, mesh in grid]
 
-        for src in source:
-            bm = bmesh.new()
-            bm.from_mesh(src.data)
-            bm.verts.ensure_lookup_table()
-
-            if clipping:
-                proj = src.matrix_world @ camera.matrix_world.inverted()
-                unproj = src.matrix_world.inverted() @ camera.matrix_world
-
-                bm.transform(proj)
-
-                points_orig = [v.co for v in bm.verts[0:2]]
-                points_clip = helper.clip_segment(bounds, points_orig)
-
-                if points_clip is None:
-                    continue
-
-                bm.verts[0].co = points_clip[0]
-                bm.verts[1].co = points_clip[1]
-
-                bm.transform(unproj)
-
-            dst = src.copy()
-            dst.data = bpy.data.meshes.new(dst.name)
-            bm.to_mesh(dst.data)
-            view_coll.objects.link(dst)
+        for obj, mesh in grid:
+            if mesh is not None:
+                view_coll.objects.link(assemble(obj, mesh))
 
         return {"FINISHED"}
