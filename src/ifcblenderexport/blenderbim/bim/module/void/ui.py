@@ -18,7 +18,7 @@ class BIM_PT_voids(Panel):
 
         row = self.layout.row(align=True)
         if len(context.selected_objects) == 2:
-            op = row.operator("bim.add_opening", icon="ADD", text="Add Selected")
+            op = row.operator("bim.add_opening", icon="ADD", text="Add Opening")
             for obj in context.selected_objects:
                 if "IfcOpeningElement" in obj.name or not obj.BIMObjectProperties.ifc_definition_id:
                     op.opening = obj.name
@@ -35,22 +35,36 @@ class BIM_PT_voids(Panel):
                 else:
                     obj_name = obj.name
             if opening_id and obj_name:
-                op = row.operator("bim.remove_opening", icon="X", text="Remove Selected")
+                op = row.operator("bim.remove_opening", icon="X", text="Remove Opening")
                 op.opening_id = opening_id
                 op.obj = obj_name
         else:
             row.label(text="Select an opening and an element to modify", icon="HELP")
 
-        for opening_id in Data.products[props.ifc_definition_id]:
+        opening_ids = Data.products[props.ifc_definition_id]
+        if not opening_ids:
+            row = self.layout.row(align=True)
+            row.label(text="No Openings", icon="SELECT_SUBTRACT")
+        for opening_id in opening_ids:
             opening = Data.openings[opening_id]
             if opening["HasFillings"]:
                 for filling_id in opening["HasFillings"]:
                     filling = Data.fillings[filling_id]
                     row = self.layout.row(align=True)
-                    row.label(text=opening["Name"])
-                    row.label(text=filling["Name"])
+                    row.label(text=opening["Name"], icon="SELECT_SUBTRACT")
+                    row.label(text=filling["Name"], icon="SELECT_INTERSECT")
             else:
                 row = self.layout.row(align=True)
-                row.label(text=opening["Name"])
+                row.label(text=opening["Name"], icon="SELECT_SUBTRACT")
             op = row.operator("bim.remove_opening", icon="X", text="")
             op.opening_id = opening_id
+
+        if props.ifc_definition_id not in Data.fillings:
+            row = self.layout.row(align=True)
+            row.prop(context.scene.VoidProperties, "desired_opening", text="", icon="SELECT_INTERSECT")
+            row.operator("bim.add_filling", icon="ADD", text="")
+        else:
+            opening = Data.openings[Data.fillings[props.ifc_definition_id]["FillsVoid"]]
+            row = self.layout.row(align=True)
+            row.label(text=opening["Name"], icon="SELECT_INTERSECT")
+            row.operator("bim.remove_filling", icon="X", text="")

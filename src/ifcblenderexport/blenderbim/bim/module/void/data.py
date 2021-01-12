@@ -8,11 +8,12 @@ class Data:
 
     @classmethod
     def load(cls, product_id):
-        print('loading', product_id)
         file = IfcStore.get_file()
         if not file:
             return
         cls.products[product_id] = set()
+        if product_id in cls.fillings:
+            del cls.fillings[product_id]
         product = file.by_id(product_id)
         for rel in file.by_type("IfcRelVoidsElement"):
             building_element = rel.RelatingBuildingElement
@@ -25,10 +26,15 @@ class Data:
         for rel in file.by_type("IfcRelFillsElement"):
             opening = rel.RelatingOpeningElement
             opening_id = int(opening.id())
-            if opening_id not in cls.openings:
-                continue
             filling = rel.RelatedBuildingElement
             filling_id = int(filling.id())
+
+            if filling_id == product_id and opening_id not in cls.openings:
+                cls.openings[opening_id] = {"Name": opening.Name, "HasFillings": set()}
+
+            if opening_id not in cls.openings:
+                continue
+
             cls.fillings[filling_id] = {"Name": filling.Name, "FillsVoid": opening_id}
             cls.openings[opening_id]["HasFillings"].add(filling_id)
         return  # See bug #1224
