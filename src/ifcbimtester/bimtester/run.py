@@ -147,29 +147,22 @@ def run_copyintmp_tests(args={}):
         )
         return False
 
-    if ("features" in args and args["features"] != ""):
+    # get the features_path, the dir where the feature files to test are in
+    if ("featuresdir" in args and args["featuresdir"] != ""):
         is_features = True
-    else:
-        is_features = False
-    if ("ifcfile" in args and args["ifcfile"] != ""):
-        is_ifcfile = True
-    else:
-        is_ifcfile = False
-
-    if is_features is True and is_ifcfile is True:
-        # features and ifcfile are given:
-        # the ifcfile in feature files is replaced
-
-        # get the features_path, the dir where the feature files to test are in
-        the_features_path = os.path.join(args["features"], "features")
+        the_features_path = os.path.join(args["featuresdir"], "features")
         if not os.path.isdir(the_features_path):
             print(
                 "Error, the features directory '{}' does not exist."
                 .format(the_features_path)
             )
             return False
+    else:
+        is_features = False
 
-        # get ifc path and ifc filename
+    # get ifc path and ifc filename
+    if ("ifcfile" in args and args["ifcfile"] != ""):
+        is_ifcfile = True
         ifcfile = args["ifcfile"]
         ifc_path = os.path.dirname(os.path.realpath(ifcfile))
         if os.path.isdir(ifc_path) is False:
@@ -180,25 +173,33 @@ def run_copyintmp_tests(args={}):
         else:
             print("Error, the ifc file '{}' does not exist.".format(ifcfile))
             return False
+    else:
+        is_ifcfile = False
+
+    # print(is_features)
+    # print(is_ifcfile)
+
+    if is_features is True and is_ifcfile is True:
+        print("features given, ifcfile given.")
+        # the ifcfile in feature files is replaced
 
     elif is_features is False and is_ifcfile is True:
-        # ifcfile only is given (TODO):
+        print("features given, ifcfile NOT given.")
         # features = ifcfile directory
         # the ifcfile in feature files is replaced
-        print("Not yet implemented: features was NOT given, ifcfile was given.")
-        return False
+        the_features_path = os.path.join(ifc_path, "features")
 
     elif is_features is True and is_ifcfile is False:
-        # features only is given (TODO):
+        print("features given, ifcfile NOT given.")
         # the ifcfile provided in the feature files is used
-        print("Not yet implemented: features was given, ifcfile was NOT given.")
+        print("Not yet implemented.")
         return False
 
     elif is_features is False and is_ifcfile is False:
-        # none of both is given (TODO):
+        print("features NOT given, ifcfile NOT given.")
         # the current directory = features
         # the ifcfile provided in the feature files is used
-        print("Not yet implemented: features NOT was given, ifcfile was NOT given.")
+        print("Not yet implemented.")
         return False
 
     else:
@@ -216,7 +217,10 @@ def run_copyintmp_tests(args={}):
         from shutil import rmtree
         rmtree(copy_base_path)  # fails on read only files
     if os.path.isdir(copy_base_path):
-        print("Delete former beimtester run dir {} failed".format(copy_base_path))
+        print(
+            "Delete former beimtester run dir '{}' failed"
+            .format(copy_base_path)
+        )
         return False
     os.mkdir(copy_base_path)
     report_path = os.path.join(copy_base_path, "report")
@@ -286,39 +290,35 @@ def run_copyintmp_tests(args={}):
                 # the print replaces the line in the file
                 print(line.replace(theline, newifcline), end="")
 
-    # get advanced args
-    # print to console from inside step files, add "--no-capture" flag
-    # https://github.com/behave/behave/issues/346
+    # get behave args
     behave_args = [copy_features_path]
+    behave_args.extend([
+        # redirect prints in step methods
+        # if step fails some output is catched, thus might not be printed
+        # https://github.com/behave/behave/issues/346
+        "--no-capture",
+        # next two lines are one arg
+        "--format",
+        "json.pretty",
+        # next two lines are one arg
+        "--outfile",
+        os.path.join(report_path, "report.json"),
+        # next two lines are one arg
+        "--define",
+        "ifcbasename={}".format(os.path.splitext(ifc_filename)[0]),
+        # next two lines are one arg
+        "--define",
+        "localedir={}".format(locale_path)
+    ])
     if "advanced_arguments" in args:
         behave_args.extend(args["advanced_arguments"].split())
-    elif "console" not in args:
-        behave_args.extend([
-            # redirect prints in step methods
-            # if step fails some output is catched, thus might not be printed
-            "--no-capture",
-            # next two lines are one arg
-            "--format",
-            "json.pretty",
-            # next two lines are one arg
-            "--outfile",
-            os.path.join(report_path, "report.json"),
-            # next two lines are one arg
-            "--define",
-            "ifcbasename={}".format(os.path.splitext(ifc_filename)[0]),
-            # next two lines are one arg
-            "--define",
-            "localedir={}".format(locale_path)
-        ])
-    print(behave_args)
+    from json import dumps
+    print(dumps(behave_args, indent=4))
 
     # run tests
     from behave.__main__ import main as behave_main
     behave_main(behave_args)
     print("All tests are finished.")
-
-    # delete steps
-    # shutil.rmtree(steps_path)
 
     return copy_base_path
 
@@ -327,7 +327,7 @@ def run_all(the_features_path, the_ifcfile):
 
     # run bimtester
     runpath = run_copyintmp_tests({
-        "features": the_features_path,
+        "featuresdir": the_features_path,
         "ifcfile": the_ifcfile
     })
     print(runpath)
