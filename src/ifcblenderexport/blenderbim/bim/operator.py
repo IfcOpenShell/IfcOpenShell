@@ -3830,3 +3830,54 @@ class CopyGrid(bpy.types.Operator):
                 view_coll.objects.link(assemble(obj, mesh))
 
         return {"FINISHED"}
+
+
+class AddSectionsAnnotations(bpy.types.Operator):
+    bl_idname = "bim.add_sections_annotations"
+    bl_label = "Add Sections"
+    bl_options = {"UNDO"}
+
+    def execute(self, context):
+        scene = context.scene
+        view_coll, camera = helper.get_active_drawing(scene)
+        is_ortho = camera.data.type == "ORTHO"
+        if not is_ortho:
+            return {'CANCELLED'}
+        bounds = helper.ortho_view_frame(camera.data) if is_ortho else None
+
+        drawings = [d
+                    for d in scene.DocProperties.drawings
+                    if (d.camera is not camera and
+                        d.camera.data.type == "ORTHO" and
+                        d.camera.data.BIMCameraProperties.target_view == 'SECTION_VIEW')]
+
+        def sideview(cam):
+            # leftmost and righmost points of camera view area, local coords
+            xmin, xmax, _, _, _, _ = helper.ortho_view_frame(cam.data, margin=0)
+            proj = camera.matrix_world.inverted() @ cam.matrix_world
+            p_l = proj @ Vector((xmin, 0, 0))
+            p_r = proj @ Vector((xmax, 0, 0))
+            return helper.clip_segment(bounds, (p_l, p_r))
+
+        def annotation(drawing, points):
+            # object with path geometry
+            name = drawing.name
+            curve = bpy.data.curves.new(f"Section/{name}", 'CURVE')
+            spline = curve.splines.new('POLY')  # has 1 initial point
+            spline.points.add(1)
+            p1, p2 = points
+            z = bounds[4] - 1e-5  # zmin
+            spline.points[0].co = (p1.x, p1.y, z, 1)
+            spline.points[1].co = (p2.x, p2.y, z, 1)
+            obj = bpy.data.objects.new(f"IfcAnnotation/Section/{name}", curve)
+            obj.matrix_world = camera.matrix_world
+            return obj
+
+        for d in drawings:
+            points = sideview(d.camera)
+            if points is None:
+                continue
+            obj = annotation(d, points)
+            view_coll.objects.link(obj)
+
+        return {'FINISHED'}
