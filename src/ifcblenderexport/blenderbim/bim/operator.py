@@ -16,7 +16,6 @@ import tempfile
 import numpy as np
 from . import export_ifc
 from . import import_ifc
-from . import qto
 from . import cut_ifc
 from . import svgwriter
 from . import sheeter
