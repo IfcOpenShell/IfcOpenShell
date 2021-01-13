@@ -10,11 +10,9 @@ classes = (
 )
 
 
-
 def register():
     bpy.types.Scene.COBieProperties = bpy.props.PointerProperty(type=prop.COBieProperties)
 
 
 def unregister():
     del bpy.types.Scene.COBieProperties
-

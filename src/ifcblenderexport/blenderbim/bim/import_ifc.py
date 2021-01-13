@@ -975,7 +975,6 @@ class IfcImporter:
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
         self.add_opening_relation(element, obj)
-        self.add_product_definitions(element, obj)
         self.added_data[element.GlobalId] = obj
 
         if element.is_a("IfcOpeningElement"):
@@ -1355,15 +1354,6 @@ class IfcImporter:
         bpy.ops.mesh.normals_make_consistent(context_override)
         bpy.ops.object.editmode_toggle(context_override)
 
-    def add_product_definitions(self, element, obj):
-        if not hasattr(element, "IsDefinedBy") or not element.IsDefinedBy:
-            return
-        for definition in element.IsDefinedBy:
-            if not definition.is_a("IfcRelDefinesByProperties"):
-                continue
-            if definition.RelatingPropertyDefinition.is_a("IfcElementQuantity"):
-                self.add_qto(definition.RelatingPropertyDefinition, obj)
-
     def add_pset(self, pset, props):
         new_pset = props.psets.add()
         new_pset.name = pset.Name
@@ -1391,27 +1381,6 @@ class IfcImporter:
                     new_prop = new_pset.properties.add()
                     new_prop.name = prop.Name
                     new_prop.string_value = str(prop.NominalValue.wrappedValue)
-
-    def add_qto(self, qto, obj):
-        new_qto = obj.BIMObjectProperties.qtos.add()
-        new_qto.name = str(qto.Name)
-        qto_template = schema.ifc.psetqto.get_by_name(new_qto.name)
-        if qto_template:
-            for prop_name in (p.Name for p in qto_template.HasPropertyTemplates):
-                prop = new_qto.properties.add()
-                prop.name = prop_name
-        for prop in qto.Quantities:
-            if prop.is_a("IfcPhysicalSimpleQuantity"):
-                value = getattr(prop, "{}Value".format(prop.is_a()[len("IfcQuantity") :]))
-                if not value:
-                    continue
-                index = new_qto.properties.find(prop.Name)
-                if index >= 0:
-                    new_qto.properties[index].string_value = str(value)
-                else:
-                    new_prop = new_qto.properties.add()
-                    new_prop.name = prop.Name
-                    new_prop.string_value = str(value)
 
     def add_opening_relation(self, element, obj):
         if not element.is_a("IfcOpeningElement"):
@@ -1708,7 +1677,6 @@ class IfcImporter:
 
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
-        self.add_product_definitions(element, obj)
         self.aggregates[element.GlobalId] = obj
         self.aggregate_collections[rel_aggregate.id()] = collection
 
@@ -1769,7 +1737,6 @@ class IfcImporter:
         obj.matrix_world = self.get_element_matrix(element, mesh_name)
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
-        self.add_product_definitions(element, obj)
         self.added_data[element.GlobalId] = obj
 
     def add_element_document_relations(self, element, obj):

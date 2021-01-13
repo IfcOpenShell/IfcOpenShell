@@ -40,8 +40,6 @@ psettemplatefiles_enum = []
 propertysettemplates_enum = []
 classification_enum = []
 attributes_enum = []
-psetnames = {}
-qtonames_enum = []
 materialattributes_enum = []
 materialtypes_enum = []
 contexts_enum = []
@@ -445,32 +443,12 @@ def refreshReferences(self, context):
     context.scene.BIMProperties.classification_references.root = ""
 
 
-def getPsetNames(self, context):
-    global psetnames
-    if "/" in context.active_object.name:
-        ifc_class = context.active_object.name.split("/")[0]
-        if ifc_class not in psetnames:
-            psets = schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
-            psetnames[ifc_class] = [(p.Name, p.Name, "") for p in psets]
-        return psetnames[ifc_class]
-    return []
-
-
 def getMaterialPsetNames(self, context):
     global materialpsetnames_enum
     materialpsetnames_enum.clear()
     pset_names = schema.ifc.psetqto.get_applicable_names("IfcMaterial", pset_only=True)
     materialpsetnames_enum.extend([(p, p, "") for p in pset_names])
     return materialpsetnames_enum
-
-
-def getQtoNames(self, context):
-    global qtonames_enum
-    qtonames_enum.clear()
-    if "/" in context.active_object.name and context.active_object.name.split("/")[0] in schema.ifc.elements:
-        qto_names = schema.ifc.psetqto.get_applicable_names(context.active_object.name.split("/")[0], qto_only=True)
-        qtonames_enum.extend([(q, q, "") for q in qto_names])
-    return qtonames_enum
 
 
 def getApplicableMaterialAttributes(self, context):
@@ -1492,9 +1470,6 @@ class BIMObjectProperties(PropertyGroup):
     is_editing_type: BoolProperty(name="Is Editing Type")
     relating_type: PointerProperty(name="Type Product", type=bpy.types.Object)
     relating_structure: PointerProperty(name="Spatial Container", type=bpy.types.Object)
-    active_pset_id: IntProperty(name="Active Pset ID")
-    active_pset_name: StringProperty(name="Pset Name")
-    properties: CollectionProperty(name="Properties", type=Attribute)
     psets: CollectionProperty(name="Psets", type=PsetQto)
     qtos: CollectionProperty(name="Qtos", type=PsetQto)
     document_references: CollectionProperty(name="Document References", type=DocumentReference)
@@ -1505,8 +1480,6 @@ class BIMObjectProperties(PropertyGroup):
     material_type: EnumProperty(items=getMaterialTypes, name="Material Type")
     material: PointerProperty(name="Material", type=bpy.types.Material)
     material_set: PointerProperty(name="Material Set", type=MaterialSet)
-    pset_name: EnumProperty(items=getPsetNames, name="Pset Name")
-    qto_name: EnumProperty(items=getQtoNames, name="Qto Name")
     has_boundary_condition: BoolProperty(name="Has Boundary Condition")
     boundary_condition: PointerProperty(name="Boundary Condition", type=BoundaryCondition)
     structural_member_connection: PointerProperty(name="Structural Member Connection", type=bpy.types.Object)
