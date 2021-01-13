@@ -143,61 +143,6 @@ class BIM_PT_object_material(Panel):
                     row.prop(attribute, "string_value", text="")
 
 
-class BIM_PT_object_qto(Panel):
-    bl_label = "IFC Object Quantity Sets"
-    bl_idname = "BIM_PT_object_qto"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "object"
-
-    @classmethod
-    def poll(cls, context):
-        return context.active_object is not None and hasattr(context.active_object, "BIMObjectProperties")
-
-    def draw(self, context):
-        if context.active_object is None:
-            return
-        layout = self.layout
-        props = context.active_object.BIMObjectProperties
-        row = layout.row(align=True)
-        row.prop(props, "qto_name", text="")
-        row.operator("bim.add_qto")
-
-        for index, qto in enumerate(props.qtos):
-            box = self.layout.box()
-            row = box.row(align=True)
-
-            row.prop(
-                qto, "is_expanded", icon="TRIA_DOWN" if qto.is_expanded else "TRIA_RIGHT", icon_only=True, emboss=False
-            )
-            row.prop(qto, "name", text="", icon="COPY_ID")
-            row.operator("bim.remove_qto", icon="X", text="").index = index
-            if not qto.is_expanded:
-                continue
-            for index2, prop in enumerate(qto.properties):
-                row = box.row(align=True)
-                row.prop(prop, "name", text="")
-                row.prop(prop, "string_value", text="")
-                if (
-                    "length" in prop.name.lower()
-                    or "width" in prop.name.lower()
-                    or "height" in prop.name.lower()
-                    or "depth" in prop.name.lower()
-                    or "perimeter" in prop.name.lower()
-                ):
-                    op = row.operator("bim.guess_quantity", icon="IPO_EASE_IN_OUT", text="")
-                    op.qto_index = index
-                    op.prop_index = index2
-                elif "area" in prop.name.lower():
-                    op = row.operator("bim.guess_quantity", icon="MESH_CIRCLE", text="")
-                    op.qto_index = index
-                    op.prop_index = index2
-                elif "volume" in prop.name.lower():
-                    op = row.operator("bim.guess_quantity", icon="SPHERE", text="")
-                    op.qto_index = index
-                    op.prop_index = index2
-
-
 class BIM_PT_object_structural(Panel):
     bl_label = "IFC Structural Relationships"
     bl_idname = "BIM_PT_object_structural"

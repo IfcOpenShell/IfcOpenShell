@@ -105,7 +105,7 @@ class ExportIFC(bpy.types.Operator):
         else:
             output_file = bpy.path.ensure_ext(self.filepath, ".ifc")
         ifc_export_settings = export_ifc.IfcExportSettings.factory(context, output_file, logger)
-        qto_calculator = qto.QtoCalculator()
+        qto_calculator = None # TODO: remove from export
         ifc_parser = export_ifc.IfcParser(ifc_export_settings, qto_calculator)
         ifc_exporter = export_ifc.IfcExporter(ifc_export_settings, ifc_parser)
         ifc_export_settings.logger.info("Starting export")
@@ -2805,70 +2805,6 @@ class ConvertGlobalToLocal(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class GuessQuantity(bpy.types.Operator):
-    bl_idname = "bim.guess_quantity"
-    bl_label = "Guess Quantity"
-    qto_index: bpy.props.IntProperty()
-    prop_index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        self.qto_calculator = qto.QtoCalculator()
-        source_qto = bpy.context.active_object.BIMObjectProperties.qtos[self.qto_index]
-        props = source_qto.properties
-        prop = props[self.prop_index]
-        for obj in bpy.context.selected_objects:
-            dest_qto = obj.BIMObjectProperties.qtos.get(source_qto.name)
-            if not dest_qto:
-                if source_qto.name not in obj.BIMObjectProperties.qto_name:
-                    continue
-                dest_qto = self.add_qto(obj, source_qto.name)
-            prop = dest_qto.properties.get(prop.name)
-            self.guess_quantity(obj, prop, props)
-        return {"FINISHED"}
-
-    def guess_quantity(self, obj, prop, props):
-        quantity = self.qto_calculator.guess_quantity(prop.name, [p.name for p in props], obj)
-        if "area" in prop.name.lower():
-            if bpy.context.scene.BIMProperties.area_unit:
-                prefix, name = self.get_prefix_name(bpy.context.scene.BIMProperties.area_unit)
-                quantity = helper.SIUnitHelper.convert(quantity, None, "SQUARE_METRE", prefix, name)
-        elif "volume" in prop.name.lower():
-            if bpy.context.scene.BIMProperties.volume_unit:
-                prefix, name = self.get_prefix_name(bpy.context.scene.BIMProperties.volume_unit)
-                quantity = helper.SIUnitHelper.convert(quantity, None, "CUBIC_METRE", prefix, name)
-        else:
-            prefix, name = self.get_blender_prefix_name()
-            quantity = helper.SIUnitHelper.convert(quantity, None, "METRE", prefix, name)
-        prop.string_value = str(round(quantity, 3))
-
-    def add_qto(self, obj, name):
-        qto_template = schema.ifc.psetqto.get_by_name(name)
-        if not qto_template:
-            return
-        qto = obj.BIMObjectProperties.qtos.add()
-        qto.name = name
-        for prop_name in (p.Name for p in qto_template.HasPropertyTemplates):
-            prop = qto.properties.add()
-            prop.name = prop_name
-        return qto
-
-    def get_prefix_name(self, value):
-        if "/" in value:
-            return value.split("/")
-        return None, value
-
-    def get_blender_prefix_name(self):
-        if bpy.context.scene.unit_settings.system == "IMPERIAL":
-            if bpy.context.scene.unit_settings.length_unit == "INCHES":
-                return None, "inch"
-            elif bpy.context.scene.unit_settings.length_unit == "FEET":
-                return None, "foot"
-        elif bpy.context.scene.unit_settings.system == "METRIC":
-            if bpy.context.scene.unit_settings.length_unit == "METERS":
-                return None, "METRE"
-            return bpy.context.scene.unit_settings.length_unit[0 : -len("METERS")], "METRE"
-
-
 class ExecuteBIMTester(bpy.types.Operator):
     bl_idname = "bim.execute_bim_tester"
     bl_label = "Execute BIMTester"
@@ -2982,6 +2918,7 @@ class CalculateObjectVolumes(bpy.types.Operator):
     bl_label = "Calculate Object Volumes"
 
     def execute(self, context):
+        # TODO: reimplement
         qto_calculator = qto.QtoCalculator()
         result = 0
         for obj in bpy.context.selected_objects:
