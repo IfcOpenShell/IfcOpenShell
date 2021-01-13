@@ -587,6 +587,21 @@ class IfcParser:
     def get_window_attributes(self):
         return self.get_predefined_attributes("window")
 
+    def get_predefined_attributes(self, attr):
+        results = {}
+        for filename in Path(self.data_dir + attr + "/").glob("**/*.csv"):
+            with open(filename, "r") as f:
+                type_name = filename.parts[-2]
+                pset_name = filename.stem
+                results.setdefault(type_name, []).append(
+                    {
+                        "ifc": None,
+                        "raw": {x[0]: x[1] for x in list(csv.reader(f))},
+                        "pset_name": pset_name.split(".")[0],
+                    }
+                )
+        return results
+
     def get_classifications(self):
         results = {}
         for classification in bpy.context.scene.BIMProperties.classifications:

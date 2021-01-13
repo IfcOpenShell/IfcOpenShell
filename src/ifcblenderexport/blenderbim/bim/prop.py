@@ -1343,6 +1343,7 @@ class BIMProperties(PropertyGroup):
         items=[("NONE", "None", ""), ("WHITELIST", "Whitelist", ""), ("BLACKLIST", "Blacklist", ""),],
         name="Import Filter",
     )
+    ifc_selector: StringProperty(default="", name="IFC Selector")
     document_information: CollectionProperty(name="Document Information", type=DocumentInformation)
     active_document_information_index: IntProperty(name="Active Document Information Index")
     document_references: CollectionProperty(name="Document References", type=DocumentReference)
