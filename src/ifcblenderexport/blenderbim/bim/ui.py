@@ -1069,42 +1069,6 @@ class BIM_PT_search(Panel):
         row.operator("bim.colour_by_pset", text="", icon="BRUSH_DATA")
 
 
-class BIM_PT_ifccsv(Panel):
-    bl_label = "IFC CSV Import/Export"
-    bl_idname = "BIM_PT_ifccsv"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    def draw(self, context):
-        layout = self.layout
-
-        scene = context.scene
-        props = scene.BIMProperties
-
-        row = layout.row(align=True)
-        row.prop(props, "ifc_selector")
-        row.operator("bim.eyedrop_ifccsv", icon="EYEDROPPER", text="")
-
-        row = layout.row()
-        row.operator("bim.add_csv_attribute")
-
-        for index, attribute in enumerate(props.csv_attributes):
-            row = layout.row(align=True)
-            row.prop(attribute, "name", text="")
-            row.operator("bim.remove_csv_attribute", icon="X", text="").index = index
-
-        row = layout.row(align=True)
-        row.prop(props, "csv_delimiter")
-        row = layout.row(align=True)
-        row.prop(props, "csv_custom_delimiter")
-
-        row = layout.row(align=True)
-        row.operator("bim.export_ifccsv", icon="EXPORT")
-        row.operator("bim.import_ifccsv", icon="IMPORT")
-
-
 class BIM_PT_qa(Panel):
     bl_label = "BIMTester Quality Auditing"
     bl_idname = "BIM_PT_qa"
