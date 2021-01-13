@@ -5,6 +5,7 @@ bpy = sys.modules.get("bpy")
 
 if bpy is not None:
     import bpy
+    import importlib
     from . import ui, prop, operator
 
     modules = {
