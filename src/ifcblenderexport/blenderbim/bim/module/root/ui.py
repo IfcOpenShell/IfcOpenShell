@@ -3,6 +3,7 @@ from bpy.types import Panel
 from blenderbim.bim.module.root.data import Data
 from blenderbim.bim.ifc import IfcStore
 
+
 class BIM_PT_class(Panel):
     bl_label = "IFC Class"
     bl_idname = "BIM_PT_class"
@@ -34,8 +35,7 @@ class BIM_PT_class(Panel):
                 row = self.layout.row(align=True)
                 row.label(text=name)
                 row.operator("bim.enable_reassign_class", icon="GREASEPENCIL", text="")
-                op = row.operator("bim.unassign_class", icon="X", text="")
-                op.object_name = context.active_object.name
+                row.operator("bim.unassign_class", icon="X", text="").obj = context.active_object.name
         else:
             self.draw_class_dropdowns()
             row = self.layout.row(align=True)

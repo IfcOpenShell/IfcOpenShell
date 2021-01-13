@@ -103,7 +103,7 @@ reset_runtime()
 # like German Umlaute behave gives an error
 
 
-def run_intmp_tests(args={}):
+def run_copyintmp_tests(args={}):
 
     """
     run bimtester unit test in a temporary directory
@@ -117,6 +117,9 @@ def run_intmp_tests(args={}):
         the ifc file
     advanced_arguments: optional
         they will be directly passed to the behave call
+
+    the following differentiation has to be made here because the decision
+    if the ifc file path in the feature file will be changed or not
 
     features and ifcfile are given:
     the ifcfile in feature files is replaced
@@ -145,21 +148,21 @@ def run_intmp_tests(args={}):
         return False
 
     # get the features_path, the dir where the feature files to test are in
-    if "features" in args and args["features"] != "":
-        the_features_path = os.path.join(args["features"], "features")
+    if ("featuresdir" in args and args["featuresdir"] != ""):
+        is_features = True
+        the_features_path = os.path.join(args["featuresdir"], "features")
         if not os.path.isdir(the_features_path):
             print(
-                "The features directory does not exist: {}"
+                "Error, the features directory '{}' does not exist."
                 .format(the_features_path)
             )
             return False
     else:
-        # TODO assume features beside ifc thus use ifc path
-        print("No features path was given.")
-        return False
+        is_features = False
 
     # get ifc path and ifc filename
-    if "ifcfile" in args and args["ifcfile"] != "":
+    if ("ifcfile" in args and args["ifcfile"] != ""):
+        is_ifcfile = True
         ifcfile = args["ifcfile"]
         ifc_path = os.path.dirname(os.path.realpath(ifcfile))
         if os.path.isdir(ifc_path) is False:
@@ -168,29 +171,60 @@ def run_intmp_tests(args={}):
         if os.path.isfile(ifcfile) is True:
             ifc_filename = os.path.basename(ifcfile)
         else:
-            print("ifc file '{}' does not exist.".format(ifcfile))
+            print("Error, the ifc file '{}' does not exist.".format(ifcfile))
             return False
     else:
-        # TODO use ifc path from feature files
-        print("No ifc file was given.")
+        is_ifcfile = False
+
+    # print(is_features)
+    # print(is_ifcfile)
+
+    if is_features is True and is_ifcfile is True:
+        print("features given, ifcfile given.")
+        # the ifcfile in feature files is replaced
+
+    elif is_features is False and is_ifcfile is True:
+        print("features given, ifcfile NOT given.")
+        # features = ifcfile directory
+        # the ifcfile in feature files is replaced
+        the_features_path = os.path.join(ifc_path, "features")
+
+    elif is_features is True and is_ifcfile is False:
+        print("features given, ifcfile NOT given.")
+        # the ifcfile provided in the feature files is used
+        print("Not yet implemented.")
+        return False
+
+    elif is_features is False and is_ifcfile is False:
+        print("features NOT given, ifcfile NOT given.")
+        # the current directory = features
+        # the ifcfile provided in the feature files is used
+        print("Not yet implemented.")
+        return False
+
+    else:
+        print("Error: this should never happen, please debug.")
         return False
 
     # set up paths
     # a unique temp path should not be used
     # behave raises an ambiguous step exception
-    # run_path = tempfile.mkdtemp()
+    # copy_base_path = tempfile.mkdtemp()
     # thus use the same path on every run
     # but delete it if exists
-    run_path = os.path.join(tempfile.gettempdir(), "bimtesterfc")
-    if os.path.isdir(run_path):
+    copy_base_path = os.path.join(tempfile.gettempdir(), "bimtesterfc")
+    if os.path.isdir(copy_base_path):
         from shutil import rmtree
-        rmtree(run_path)  # fails on read only files
-    if os.path.isdir(run_path):
-        print("Delete former beimtester run dir {} failed".format(run_path))
+        rmtree(copy_base_path)  # fails on read only files
+    if os.path.isdir(copy_base_path):
+        print(
+            "Delete former beimtester run dir '{}' failed"
+            .format(copy_base_path)
+        )
         return False
-    os.mkdir(run_path)
-    report_path = os.path.join(run_path, "report")
-    copy_features_path = os.path.join(run_path, "features")
+    os.mkdir(copy_base_path)
+    report_path = os.path.join(copy_base_path, "report")
+    copy_features_path = os.path.join(copy_base_path, "features")
 
     # copy features path from bimtester source code
     srccode_features_path = os.path.join(
@@ -256,48 +290,44 @@ def run_intmp_tests(args={}):
                 # the print replaces the line in the file
                 print(line.replace(theline, newifcline), end="")
 
-    # get advanced args
-    # print to console from inside step files, add "--no-capture" flag
-    # https://github.com/behave/behave/issues/346
+    # get behave args
     behave_args = [copy_features_path]
+    behave_args.extend([
+        # redirect prints in step methods
+        # if step fails some output is catched, thus might not be printed
+        # https://github.com/behave/behave/issues/346
+        "--no-capture",
+        # next two lines are one arg
+        "--format",
+        "json.pretty",
+        # next two lines are one arg
+        "--outfile",
+        os.path.join(report_path, "report.json"),
+        # next two lines are one arg
+        "--define",
+        "ifcbasename={}".format(os.path.splitext(ifc_filename)[0]),
+        # next two lines are one arg
+        "--define",
+        "localedir={}".format(locale_path)
+    ])
     if "advanced_arguments" in args:
         behave_args.extend(args["advanced_arguments"].split())
-    elif "console" not in args:
-        behave_args.extend([
-            # redirect prints in step methods
-            # if step fails some output is catched, thus might not be printed
-            "--no-capture",
-            # next two lines are one arg
-            "--format",
-            "json.pretty",
-            # next two lines are one arg
-            "--outfile",
-            os.path.join(report_path, "report.json"),
-            # next two lines are one arg
-            "--define",
-            "ifcbasename={}".format(os.path.splitext(ifc_filename)[0]),
-            # next two lines are one arg
-            "--define",
-            "localedir={}".format(locale_path)
-        ])
-    print(behave_args)
+    from json import dumps
+    print(dumps(behave_args, indent=4))
 
     # run tests
     from behave.__main__ import main as behave_main
     behave_main(behave_args)
     print("All tests are finished.")
 
-    # delete steps
-    # shutil.rmtree(steps_path)
-
-    return run_path
+    return copy_base_path
 
 
 def run_all(the_features_path, the_ifcfile):
 
     # run bimtester
-    runpath = run_intmp_tests({
-        "features": the_features_path,
+    runpath = run_copyintmp_tests({
+        "featuresdir": the_features_path,
         "ifcfile": the_ifcfile
     })
     print(runpath)

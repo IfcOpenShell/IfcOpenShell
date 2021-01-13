@@ -13,6 +13,7 @@ import gpu
 import bgl
 from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertFormat
 from gpu_extras.batch import batch_for_shader
+from . import helper
 
 
 class BaseDecorator():
@@ -641,7 +642,7 @@ class LevelDecorator(BaseDecorator):
         self.draw_labels(context, obj, splines)
 
 
-class PlanDecorator(LevelDecorator):
+class PlanLevelDecorator(LevelDecorator):
     basename = "IfcAnnotation/Plan Level"
 
     DEF_GLSL = BaseDecorator.DEF_GLSL + """
@@ -723,7 +724,7 @@ class PlanDecorator(LevelDecorator):
             self.draw_label(context, text, p0, dir, gap=8, center=False)
 
 
-class SectionDecorator(LevelDecorator):
+class SectionLevelDecorator(LevelDecorator):
     basename = "IfcAnnotation/Section Level"
 
     DEF_GLSL = BaseDecorator.DEF_GLSL + """
@@ -996,6 +997,108 @@ class GridDecorator(BaseDecorator):
         self.draw_label(context, text, p1, dir, vcenter=True, gap=0)
 
 
+class SectionViewDecorator(LevelDecorator):
+    basename = "IfcAnnotation/Section"
+
+    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+        #define CIRCLE_SIZE 8.0
+        #define TRIANGLE_L 32.0
+        #define TRIANGLE_W 16.0
+    """
+
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+
+    void triangle_head(in vec4 dir, in vec4 side, in float length, in float width, out vec4 head[3]) {
+        vec4 nose = dir * length;
+        vec4 ear = side * width;
+        head[0] = vec4(0);
+        head[1] = nose * .5 + ear;
+        head[2] = nose;
+    }
+
+    void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+        vec4 gap = dir * TRIANGLE_L * .5;
+        vec4 side = vec4(cross(vec3(dir.xy, 0), vec3(0, 0, 1)).xy, 0, 0);
+        vec4 p;
+
+        vec4 head[CIRCLE_SEGS];
+        circle_head(CIRCLE_SIZE, head);
+
+        vec4 head3[3];
+
+        // start edge circle
+        for(int i=0; i<CIRCLE_SEGS; i++) {
+            p = p0w + gap + head[i];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+        }
+        p = p0w + gap + head[0];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+
+        // start edge triangle
+        triangle_head(dir, -side, TRIANGLE_L, TRIANGLE_W, head3);
+        p = p0w + head3[0];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p0w + head3[1];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p0w + head3[2];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+
+        // end edge circle
+        for(int i=0; i<CIRCLE_SEGS; i++) {
+            p = p1w - gap + head[i];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+        }
+        p = p1w - gap + head[0];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+
+        // end edge triangle
+        triangle_head(-dir, -side, TRIANGLE_L, TRIANGLE_W, head3);
+        p = p1w + head3[0];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p1w + head3[1];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p1w + head3[2];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+
+        // stem
+        gl_Position = p0;
+        EmitVertex();
+        gl_Position = p1;
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    def decorate(self, context, obj):
+        verts, _, _ = self.get_path_geom(obj, topo=False)
+        self.draw_lines(context, obj, verts, [(0, 1)])
+
+
 class DecorationsHandler():
     decorators_classes = [
         DimensionDecorator,
@@ -1004,10 +1107,11 @@ class DecorationsHandler():
         HiddenDecorator,
         LeaderDecorator,
         MiscDecorator,
-        PlanDecorator,
-        SectionDecorator,
+        PlanLevelDecorator,
+        SectionLevelDecorator,
         StairDecorator,
-        BreakDecorator
+        BreakDecorator,
+        SectionViewDecorator
     ]
 
     installed = None
@@ -1031,11 +1135,9 @@ class DecorationsHandler():
         self.decorators = [cls() for cls in self.decorators_classes]
 
     def __call__(self, context):
-        props = context.scene.DocProperties
-        if props.active_drawing_index is None or len(props.drawings) == 0:
+        collection, _ = helper.get_active_drawing(context.scene)
+        if collection is None:
             return
-        drawing = props.drawings[props.active_drawing_index]
-        collection = bpy.data.collections.get("IfcGroup/" + drawing.name)
 
         for decorator in self.decorators:
             for obj in decorator.get_objects(collection):

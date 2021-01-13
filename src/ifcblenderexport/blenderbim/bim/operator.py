@@ -3673,53 +3673,127 @@ class CopyGrid(bpy.types.Operator):
     bl_options = {"UNDO"}
 
     def execute(self, context):
-        props = context.scene.DocProperties
-        if props.active_drawing_index is None or len(props.drawings) == 0:
-            return {"CANCELLED"}
-        drawing = props.drawings[props.active_drawing_index]
-        collection = bpy.data.collections.get("IfcGroup/" + drawing.name)
+        proj_coll = helper.get_project_collection(context.scene)
+        view_coll, camera = helper.get_active_drawing(context.scene)
+        if view_coll is None:
+            return {'CANCELLED'}
+        is_ortho = camera.data.type == "ORTHO"
+        bounds = helper.ortho_view_frame(camera.data) if is_ortho else None
+        clipping = is_ortho and camera.data.BIMCameraProperties.target_view in ('PLAN_VIEW', 'REFLECTED_PLAN_VIEW')
+        elevating = is_ortho and camera.data.BIMCameraProperties.target_view in ('ELEVATION_VIEW', 'SECTION_VIEW')
 
-        existing = [obj for obj in collection.objects if obj.name.startswith("IfcGridAxis")]
-        for obj in existing:
-            collection.objects.unlink(obj)
+        def grep(coll):
+            return [obj for obj in coll.all_objects if obj.name.startswith("IfcGridAxis")]
 
-        source = [
-            obj
-            for coll in bpy.data.collections
-            if coll.name.startswith("IfcGrid")
-            for obj in coll.all_objects
-            if obj.name.startswith("IfcGridAxis")
-        ]
-        camera = [obj for obj in collection.all_objects if obj.type == "CAMERA"][0]
-
-        clipping = camera.data.type == "ORTHO"
-        bounds = helper.ortho_view_frame(camera.data) if clipping else None
-
-        for src in source:
-            bm = bmesh.new()
-            bm.from_mesh(src.data)
-            bm.verts.ensure_lookup_table()
-
-            if clipping:
-                proj = src.matrix_world @ camera.matrix_world.inverted()
-                unproj = src.matrix_world.inverted() @ camera.matrix_world
-
-                bm.transform(proj)
-
-                points_orig = [v.co for v in bm.verts[0:2]]
-                points_clip = helper.clip_segment(bounds, points_orig)
-
-                if points_clip is None:
-                    continue
-
-                bm.verts[0].co = points_clip[0]
-                bm.verts[1].co = points_clip[1]
-
-                bm.transform(unproj)
-
+        def clone(src):
             dst = src.copy()
-            dst.data = bpy.data.meshes.new(dst.name)
-            bm.to_mesh(dst.data)
-            collection.objects.link(dst)
+            dst.data = dst.data.copy()
+            return dst
+
+        def disassemble(obj):
+            mesh = bmesh.new()
+            mesh.verts.ensure_lookup_table()
+            mesh.from_mesh(obj.data)
+            return obj, mesh
+
+        def assemble(obj, mesh):
+            mesh.to_mesh(obj.data)
+            return obj
+
+        def localize(obj, mesh):
+            # convert to camera coords
+            mesh.transform(camera.matrix_world.inverted() @ obj.matrix_world)
+            obj.matrix_world = camera.matrix_world
+            return obj, mesh
+
+        def clip(mesh):
+            # clip segment against camera view bounds
+            mesh.verts.ensure_lookup_table()
+            points = [v.co for v in mesh.verts[0:2]]
+            points = helper.clip_segment(bounds, points)
+            if points is None:
+                return None
+            mesh.verts[0].co = points[0]
+            mesh.verts[1].co = points[1]
+            return mesh
+
+        def elev(mesh):
+            # put camera-perpendicular segments vertically
+            mesh.verts.ensure_lookup_table()
+            points = [v.co for v in mesh.verts[0:2]]
+            points = helper.elevate_segment(bounds, points)
+            if points is None:
+                return None
+            points = helper.clip_segment(bounds, points)
+            if points is None:
+                return None
+            mesh.verts[0].co = points[0]
+            mesh.verts[1].co = points[1]
+            return mesh
+
+        for obj in grep(view_coll):
+            view_coll.objects.unlink(obj)
+
+        grid = [localize(*disassemble(clone(obj))) for obj in grep(proj_coll)]
+
+        if clipping:
+            grid = [(obj, clip(mesh)) for obj, mesh in grid]
+        elif elevating:
+            grid = [(obj, elev(mesh)) for obj, mesh in grid]
+
+        for obj, mesh in grid:
+            if mesh is not None:
+                view_coll.objects.link(assemble(obj, mesh))
 
         return {"FINISHED"}
+
+
+class AddSectionsAnnotations(bpy.types.Operator):
+    bl_idname = "bim.add_sections_annotations"
+    bl_label = "Add Sections"
+    bl_options = {"UNDO"}
+
+    def execute(self, context):
+        scene = context.scene
+        view_coll, camera = helper.get_active_drawing(scene)
+        is_ortho = camera.data.type == "ORTHO"
+        if not is_ortho:
+            return {'CANCELLED'}
+        bounds = helper.ortho_view_frame(camera.data) if is_ortho else None
+
+        drawings = [d
+                    for d in scene.DocProperties.drawings
+                    if (d.camera is not camera and
+                        d.camera.data.type == "ORTHO" and
+                        d.camera.data.BIMCameraProperties.target_view == 'SECTION_VIEW')]
+
+        def sideview(cam):
+            # leftmost and righmost points of camera view area, local coords
+            xmin, xmax, _, _, _, _ = helper.ortho_view_frame(cam.data, margin=0)
+            proj = camera.matrix_world.inverted() @ cam.matrix_world
+            p_l = proj @ Vector((xmin, 0, 0))
+            p_r = proj @ Vector((xmax, 0, 0))
+            return helper.clip_segment(bounds, (p_l, p_r))
+
+        def annotation(drawing, points):
+            # object with path geometry
+            name = drawing.name
+            curve = bpy.data.curves.new(f"Section/{name}", 'CURVE')
+            spline = curve.splines.new('POLY')  # has 1 initial point
+            spline.points.add(1)
+            p1, p2 = points
+            z = bounds[4] - 1e-5  # zmin
+            spline.points[0].co = (p1.x, p1.y, z, 1)
+            spline.points[1].co = (p2.x, p2.y, z, 1)
+            obj = bpy.data.objects.new(f"IfcAnnotation/Section/{name}", curve)
+            obj.matrix_world = camera.matrix_world
+            return obj
+
+        for d in drawings:
+            points = sideview(d.camera)
+            if points is None:
+                continue
+            obj = annotation(d, points)
+            view_coll.objects.link(obj)
+
+        return {'FINISHED'}

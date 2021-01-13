@@ -1647,6 +1647,8 @@ class BIM_PT_annotation_utilities(Panel):
         row.operator("bim.link_ifc")
         row = layout.row(align=True)
         row.operator("bim.add_grid")
+        row = layout.row(align=True)
+        row.operator("bim.add_sections_annotations")
 
         row = layout.row(align=True)
         op = row.operator("bim.add_annotation", text="Dim", icon="ARROW_LEFTRIGHT")
