@@ -281,15 +281,12 @@ def run_copyintmp_tests(args={}):
     return copy_base_path
 
 
-def run_all(the_features_path, the_ifcfile):
+def run_all(args):
 
     print("# Run all.")
 
     # run bimtester
-    runpath = run_copyintmp_tests({
-        "featuresdir": the_features_path,
-        "ifcfile": the_ifcfile
-    })
+    runpath = run_copyintmp_tests(args)
     print(runpath)
 
     # check if it worked out well
@@ -306,7 +303,7 @@ def run_all(the_features_path, the_ifcfile):
     generate_report(runpath)
     # get the feature files
     feature_files = os.listdir(
-        os.path.join(the_features_path, "features")
+        os.path.join(args["featuresdir"], "features")
     )
     # print(feature_files)
     for ff in feature_files:

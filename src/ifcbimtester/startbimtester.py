@@ -8,7 +8,12 @@ from bimtester import reports
 from bimtester import run
 
 
-def show_widget(features="", ifcfile="", get_featurepath_from_ifcpath=False):
+def show_widget(
+    features="",
+    ifcfile="",
+    get_featurepath_from_ifcpath=False,
+    args=[]
+):
 
     import sys
     from PySide2 import QtWidgets
@@ -19,7 +24,12 @@ def show_widget(features="", ifcfile="", get_featurepath_from_ifcpath=False):
     app = QtWidgets.QApplication(sys.argv)
 
     # Create and show the form
-    form = GuiWidgetBimTester(features, ifcfile, get_featurepath_from_ifcpath)
+    form = GuiWidgetBimTester(
+        features,
+        ifcfile,
+        get_featurepath_from_ifcpath,
+        args
+    )
     form.show()
 
     # Run the main Qt loop
@@ -59,6 +69,13 @@ if __name__ == "__main__":
         default=""
     )
     parser.add_argument(
+        "-f",
+        "--feature",
+        type=str,
+        help="Specify a feature file to test",
+        default=""
+    )
+    parser.add_argument(
         "-g",
         "--gui",
         action="store_true",
@@ -66,13 +83,6 @@ if __name__ == "__main__":
             "Start the gui. The option t (copyintemprun) "
             "is triggered automaticly."
         )
-    )
-    parser.add_argument(
-        "-f",
-        "--feature",
-        type=str,
-        help="Specify a feature file to test",
-        default=""
     )
     parser.add_argument(
         "-i",
@@ -135,12 +145,13 @@ if __name__ == "__main__":
     elif args["report"]:
         reports.generate_report()
     elif args["gui"]:
+        args["copyintemprun"] = True
         fea = args["featuresdir"]
         ifc = args["ifcfile"]
         if fea != "" and ifc != "":
-            show_widget(fea, ifc, False)
+            show_widget(fea, ifc, False, args)
         elif fea == "" and ifc != "":
-            show_widget(fea, ifc, True)
+            show_widget(fea, ifc, True, args)
     elif args["copyintemprun"]:
         run.run_copyintmp_tests(args)
     else:
