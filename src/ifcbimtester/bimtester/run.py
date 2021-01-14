@@ -4,7 +4,6 @@ import shutil
 import sys
 import tempfile
 import webbrowser
-from behave.__main__ import main as behave_main
 
 
 # TODO: if the ifc file name or path contains special character
@@ -35,6 +34,8 @@ def run_tests(args):
     if not get_features(args):
         print("No features could be found to check.")
         return False
+
+    # get behave args
     behave_args = [get_resource_path("features")]
     if args["advanced_arguments"]:
         behave_args.extend(args["advanced_arguments"].split())
@@ -53,8 +54,26 @@ def run_tests(args):
         behave_args.extend(["--define", "ifcfile={}".format(args["ifcfile"])])
     if args["path"]:
         behave_args.extend(["--define", "path={}".format(args["path"])])
+
+    # run tests
+    if behave_args != []:
+        run_behave(behave_args)
+    else:
+        print("Error, not able to run behave because of empty behave args.")
+        return False
+
+    return True
+
+
+def run_behave(behave_args):
+
+    from json import dumps
+    print(dumps(behave_args, indent=4))
+
+    from behave.__main__ import main as behave_main
     behave_main(behave_args)
     print("# All tests are finished.")
+
     return True
 
 
@@ -270,13 +289,13 @@ def run_copyintmp_tests(args={}):
     ])
     if "advanced_arguments" in args:
         behave_args.extend(args["advanced_arguments"].split())
-    from json import dumps
-    print(dumps(behave_args, indent=4))
 
     # run tests
-    from behave.__main__ import main as behave_main
-    behave_main(behave_args)
-    print("All tests are finished.")
+    if behave_args != []:
+        run_behave(behave_args)
+    else:
+        print("Error, not able to run behave because of empty behave args.")
+        return False
 
     return copy_base_path
 
