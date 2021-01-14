@@ -153,7 +153,8 @@ if __name__ == "__main__":
         elif fea == "" and ifc != "":
             show_widget(fea, ifc, True, args)
     elif args["copyintemprun"]:
-        run.run_copyintmp_tests(args)
+        run.run_tests(args)
+        # TODO merge with else, but do not forget the tmp dir is not known
     else:
         run.run_tests(args)
         if args["report_after_run"]:

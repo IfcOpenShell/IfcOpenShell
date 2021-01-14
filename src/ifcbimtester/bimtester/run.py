@@ -33,9 +33,20 @@ def run_tests(args):
 
     report_file = os.path.join("report", "report.json")
 
-    if not get_features(args):
-        print("No features could be found to check.")
-        return False
+    if "copyintemprun" in args and args["copyintemprun"] is True:
+        print("copyintemprun")
+        is_copyintemprun = True
+        args, copy_base_path = copy_intmp_tests(args)
+        features_path = os.path.join(copy_base_path, "features")
+        report_file = os.path.join(copy_base_path, report_file)
+
+    else:
+        print("No copyintemprun")
+        is_copyintemprun = False
+        if not get_features(args):
+            print("No features could be found to check.")
+            return False
+        features_path = get_resource_path("features")
 
     # get behave args
     behave_args = get_behave_args(args, features_path, report_file)
@@ -47,7 +58,10 @@ def run_tests(args):
         print("Error, not able to run behave because of empty behave args.")
         return False
 
-    return True
+    if is_copyintemprun is True:
+        return report_file
+    else:
+        return True
 
 
 def get_behave_args(args, features_path, report_file):
@@ -164,23 +178,9 @@ reset_runtime()
 """
 
 
-def run_copyintmp_tests(args={}):
+def copy_intmp_tests(args={}):
 
-    """
-    run bimtester unit test in a temporary directory
-    features, steps and environment.py are copied to a temp directory
-
-    Keys of parameter args
-    ----------------------
-    features: optional (ATM mandatory)
-        the path the features directory with feature files is in
-    ifcfile:  optional (ATM mandatory)
-        the ifc file
-    advanced_arguments: optional
-        they will be directly passed to the behave call
-    """
-
-    print("# Run run_copyintmp_tests.")
+    print("# Copy features and steps to temp.")
 
     from behave import __version__ as behave_version
     # https://github.com/behave/behave/issues/871
@@ -266,7 +266,6 @@ def run_copyintmp_tests(args={}):
         )
         return False
     os.mkdir(copy_base_path)
-    report_file = os.path.join(copy_base_path, "report", "report.json")
     copy_features_path = os.path.join(copy_base_path, "features")
 
     # copy features path from bimtester source code
@@ -307,17 +306,7 @@ def run_copyintmp_tests(args={}):
             cp_feature_file
         )
 
-    # get behave args
-    behave_args = get_behave_args(args, copy_features_path, report_file)
-
-    # run tests
-    if behave_args != []:
-        run_behave(behave_args)
-    else:
-        print("Error, not able to run behave because of empty behave args.")
-        return False
-
-    return copy_base_path
+    return args, copy_base_path
 
 
 def run_all(args):
@@ -325,21 +314,21 @@ def run_all(args):
     print("# Run all.")
 
     # run bimtester
-    runpath = run_copyintmp_tests(args)
-    print(runpath)
+    report_file = run_tests(args)
+    print(report_file)
 
     # check if it worked out well
-    if runpath is False:
+    if report_file is False:
         print("BIMTester behave tests returned False.")
         return False
 
-    if not os.path.isdir(runpath):
-        print("runpath does not exist. This should not happen. Debug")
+    if not os.path.isfile(report_file):
+        print("Report directory does not exist. This should not happen. Debug")
         return False
 
     # create html report and open in webbrowser
     from .reports import generate_report
-    generate_report(runpath)
+    generate_report(report_file=report_file)
     # get the feature files
     feature_files = os.listdir(
         os.path.join(args["featuresdir"], "features")
@@ -347,8 +336,7 @@ def run_all(args):
     # print(feature_files)
     for ff in feature_files:
         webbrowser.open(os.path.join(
-            runpath,
-            "report",
+            os.path.dirname(report_file),
             ff + ".html"
         ))
 
