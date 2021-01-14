@@ -15,8 +15,11 @@ def before_all(context):
 
     # get from userdata
     userdata = context.config.userdata
-    context.ifcbasename = userdata["ifcbasename"]
     context.localedir = userdata.get("localedir")
+    context.ifcfile = userdata["ifcfile"]
+    context.ifcbasename = os.path.basename(
+        os.path.splitext(context.ifcfile)[0]
+    )
 
     # do not break after a failed scenario
     # https://community.osarch.org/discussion/comment/3328/#Comment_3328
