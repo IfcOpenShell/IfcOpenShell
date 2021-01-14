@@ -31,9 +31,7 @@ classes_enum = []
 types_enum = []
 availablematerialpsets_enum = []
 ifcpatchrecipes_enum = []
-featuresfiles_enum = []
 titleblocks_enum = []
-scenarios_enum = []
 materialpsetnames_enum = []
 psetfiles_enum = []
 psettemplatefiles_enum = []
@@ -328,23 +326,6 @@ def getIfcPatchRecipes(self, context):
             ifcpatchrecipes_enum.append((f, f, ""))
     return ifcpatchrecipes_enum
 
-
-def getFeaturesFiles(self, context):
-    global featuresfiles_enum
-    if len(featuresfiles_enum) < 1:
-        featuresfiles_enum.clear()
-        for filename in Path(context.scene.BIMProperties.features_dir).glob("*.feature"):
-            f = str(filename.stem)
-            featuresfiles_enum.append((f, f, ""))
-    return featuresfiles_enum
-
-
-def refreshFeaturesFiles(self, context):
-    global featuresfiles_enum
-    featuresfiles_enum.clear()
-    getFeaturesFiles(self, context)
-
-
 def getTitleblocks(self, context):
     global titleblocks_enum
     if len(titleblocks_enum) < 1:
@@ -378,28 +359,6 @@ def toggleDecorationsOnLoad(*args):
         decoration.DecorationsHandler.install(bpy.context)
     else:
         decoration.DecorationsHandler.uninstall()
-
-
-def getScenarios(self, context):
-    global scenarios_enum
-    if len(scenarios_enum) < 1:
-        scenarios_enum.clear()
-        filename = os.path.join(
-            context.scene.BIMProperties.features_dir, context.scene.BIMProperties.features_file + ".feature"
-        )
-        with open(filename, "r") as feature_file:
-            lines = feature_file.readlines()
-            for line in lines:
-                if "Scenario:" in line:
-                    s = line.strip()[len("Scenario: ") :]
-                    scenarios_enum.append((s, s, ""))
-    return scenarios_enum
-
-
-def refreshScenarios(self, context):
-    global scenarios_enum
-    scenarios_enum.clear()
-    getScenarios(self, context)
 
 
 def getPsetTemplateFiles(self, context):
@@ -1226,7 +1185,6 @@ class BIMProperties(PropertyGroup):
     data_dir: StringProperty(default=os.path.join(cwd, "data") + os.path.sep, name="Data Directory")
     ifc_file: StringProperty(name="IFC File")
     ifc_cache: StringProperty(name="IFC Cache")
-    audit_ifc_class: EnumProperty(items=getIfcClasses, name="Audit Class")
     ifc_product: EnumProperty(items=getIfcProducts, name="Products", update=refreshClasses)
     ifc_class: EnumProperty(items=getIfcClasses, name="Class", update=refreshPredefinedTypes)
     ifc_predefined_type: EnumProperty(items=getIfcPredefinedTypes, name="Predefined Type", default=None)
@@ -1267,8 +1225,7 @@ class BIMProperties(PropertyGroup):
     import_should_allow_non_element_aggregates: BoolProperty(name="Import Non-Element Aggregates", default=False)
     import_should_offset_model: BoolProperty(name="Import and Offset Model", default=False)
     import_model_offset_coordinates: StringProperty(name="Model Offset Coordinates", default="0,0,0")
-    qa_reject_element_reason: StringProperty(name="Element Rejection Reason")
-
+ 
     person: PointerProperty(type=Person)
     active_person_id: IntProperty(name="Active Person Id")
     organisation: PointerProperty(type=Organisation)
@@ -1290,9 +1247,6 @@ class BIMProperties(PropertyGroup):
     search_pset_name: StringProperty(name="Search Pset Name")
     search_prop_name: StringProperty(name="Search Prop Name")
     search_pset_value: StringProperty(name="Search Pset Value")
-    features_dir: StringProperty(default="", name="Features Directory", update=refreshFeaturesFiles)
-    features_file: EnumProperty(items=getFeaturesFiles, name="Features File", update=refreshScenarios)
-    scenario: EnumProperty(items=getScenarios, name="Scenario")
     diff_json_file: StringProperty(default="", name="Diff JSON File")
     diff_old_file: StringProperty(default="", name="Diff Old IFC File")
     diff_new_file: StringProperty(default="", name="Diff New IFC File")
