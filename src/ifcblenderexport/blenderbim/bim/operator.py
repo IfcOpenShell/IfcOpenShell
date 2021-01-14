@@ -256,25 +256,6 @@ class SelectType(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ColourByClass(bpy.types.Operator):
-    bl_idname = "bim.colour_by_class"
-    bl_label = "Colour by Class"
-
-    def execute(self, context):
-        colours = cycle(colour_list)
-        ifc_classes = {}
-        for obj in bpy.context.visible_objects:
-            if "/" not in obj.name:
-                continue
-            ifc_class = obj.name.split("/")[0]
-            if ifc_class not in ifc_classes:
-                ifc_classes[ifc_class] = next(colours)
-            obj.color = ifc_classes[ifc_class]
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].shading.color_type = "OBJECT"
-        return {"FINISHED"}
-
-
 class ColourByAttribute(bpy.types.Operator):
     bl_idname = "bim.colour_by_attribute"
     bl_label = "Colour by Attribute"
@@ -321,98 +302,6 @@ class ColourByPset(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ResetObjectColours(bpy.types.Operator):
-    bl_idname = "bim.reset_object_colours"
-    bl_label = "Reset Colours"
-
-    def execute(self, context):
-        for object in bpy.context.selected_objects:
-            object.color = (1, 1, 1, 1)
-        return {"FINISHED"}
-
-
-class QAHelper:
-    @classmethod
-    def append_to_scenario(cls, lines):
-        filename = os.path.join(
-            bpy.context.scene.BIMProperties.features_dir, bpy.context.scene.BIMProperties.features_file + ".feature"
-        )
-        if os.path.exists(filename + "~"):
-            os.remove(filename + "~")
-        os.rename(filename, filename + "~")
-        with open(filename, "w") as destination:
-            with open(filename + "~", "r") as source:
-                is_in_scenario = False
-                for source_line in source:
-                    if (
-                        "Scenario: " in source_line
-                        and bpy.context.scene.BIMProperties.scenario == source_line.strip()[len("Scenario: ") :]
-                    ):
-                        is_in_scenario = True
-                    elif is_in_scenario:
-                        for line in lines:
-                            destination.write(line + "\n")
-                        is_in_scenario = False
-                    destination.write(source_line)
-        os.remove(filename + "~")
-
-
-class ApproveClass(bpy.types.Operator):
-    bl_idname = "bim.approve_class"
-    bl_label = "Approve Class"
-
-    def execute(self, context):
-        lines = []
-        for object in bpy.context.selected_objects:
-            index = object.BIMObjectProperties.attributes.find("GlobalId")
-            if index != -1:
-                lines.append(
-                    " * The element {} is an {}".format(
-                        object.BIMObjectProperties.attributes[index].string_value, object.name.split("/")[0]
-                    )
-                )
-        QAHelper.append_to_scenario(lines)
-        return {"FINISHED"}
-
-
-class RejectClass(bpy.types.Operator):
-    bl_idname = "bim.reject_class"
-    bl_label = "Reject Class"
-
-    def execute(self, context):
-        lines = []
-        for object in bpy.context.selected_objects:
-            lines.append(
-                " * The element {} is an {}".format(
-                    object.BIMObjectProperties.attributes[
-                        object.BIMObjectProperties.attributes.find("GlobalId")
-                    ].string_value,
-                    bpy.context.scene.BIMProperties.audit_ifc_class,
-                )
-            )
-        QAHelper.append_to_scenario(lines)
-        return {"FINISHED"}
-
-
-class RejectElement(bpy.types.Operator):
-    bl_idname = "bim.reject_element"
-    bl_label = "Reject Element"
-
-    def execute(self, context):
-        lines = []
-        for object in bpy.context.selected_objects:
-            lines.append(
-                " * The element {} should not exist because {}".format(
-                    object.BIMObjectProperties.attributes[
-                        object.BIMObjectProperties.attributes.find("GlobalId")
-                    ].string_value,
-                    bpy.context.scene.BIMProperties.qa_reject_element_reason,
-                )
-            )
-        QAHelper.append_to_scenario(lines)
-        return {"FINISHED"}
-
-
 class OpenUri(bpy.types.Operator):
     bl_idname = "bim.open_uri"
     bl_label = "Open URI"
@@ -421,30 +310,6 @@ class OpenUri(bpy.types.Operator):
     def execute(self, context):
         webbrowser.open(self.uri)
         return {"FINISHED"}
-
-
-class SelectAudited(bpy.types.Operator):
-    bl_idname = "bim.select_audited"
-    bl_label = "Select Audited"
-
-    def execute(self, context):
-        audited_global_ids = []
-        for filename in Path(bpy.context.scene.BIMProperties.features_dir).glob("*.feature"):
-            with open(filename, "r") as feature_file:
-                lines = feature_file.readlines()
-                for line in lines:
-                    words = line.strip().split()
-                    for word in words:
-                        if self.is_a_global_id(word):
-                            audited_global_ids.append(word)
-        for object in bpy.context.visible_objects:
-            index = object.BIMObjectProperties.attributes.find("GlobalId")
-            if index != -1 and object.BIMObjectProperties.attributes[index].string_value in audited_global_ids:
-                object.select_set(True)
-        return {"FINISHED"}
-
-    def is_a_global_id(self, word):
-        return word[0] in ["0", "1", "2", "3"] and len(word) == 22
 
 
 class AddQto(bpy.types.Operator):
@@ -1339,22 +1204,6 @@ class SelectSmartGroup(bpy.types.Operator):
                         obj.select_set(True)
 
         return {"FINISHED"}
-
-
-class SelectFeaturesDir(bpy.types.Operator):
-    bl_idname = "bim.select_features_dir"
-    bl_label = "Select Features Directory"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        bpy.context.scene.BIMProperties.features_dir = (
-            os.path.dirname(os.path.abspath(self.filepath)) if "." in self.filepath else self.filepath
-        )
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
 
 class SelectIfcFile(bpy.types.Operator):
@@ -2717,52 +2566,6 @@ class ConvertGlobalToLocal(bpy.types.Operator):
         )
         print("Coordinates:", results)
         bpy.context.scene.cursor.location = results
-        return {"FINISHED"}
-
-
-class ExecuteBIMTester(bpy.types.Operator):
-    bl_idname = "bim.execute_bim_tester"
-    bl_label = "Execute BIMTester"
-
-    def execute(self, context):
-        import bimtester
-        import bimtester.run
-        import bimtester.reports
-
-        filename = os.path.join(
-            bpy.context.scene.BIMProperties.features_dir, bpy.context.scene.BIMProperties.features_file + ".feature"
-        )
-        cwd = os.getcwd()
-        os.chdir(bpy.context.scene.BIMProperties.features_dir)
-        bimtester.run.run_tests({"feature": filename, "advanced_arguments": None, "console": False})
-        bimtester.reports.generate_report()
-        webbrowser.open(
-            "file://"
-            + os.path.join(
-                bpy.context.scene.BIMProperties.features_dir,
-                "report",
-                bpy.context.scene.BIMProperties.features_file + ".feature.html",
-            )
-        )
-        os.chdir(cwd)
-        return {"FINISHED"}
-
-
-class BIMTesterPurge(bpy.types.Operator):
-    bl_idname = "bim.bim_tester_purge"
-    bl_label = "Purge Tests"
-
-    def execute(self, context):
-        import bimtester
-        import bimtester.clean
-
-        filename = os.path.join(
-            bpy.context.scene.BIMProperties.features_dir, bpy.context.scene.BIMProperties.features_file + ".feature"
-        )
-        cwd = os.getcwd()
-        os.chdir(bpy.context.scene.BIMProperties.features_dir)
-        bimtester.clean.TestPurger().purge()
-        os.chdir(cwd)
         return {"FINISHED"}
 
 
