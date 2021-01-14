@@ -1,6 +1,9 @@
-# TODO: improve layout, start with feature file path and beside button !!!!!
+# TODO: all args should be passed to the gui,
+# either pass them further to behave or make it possible to edit them before
 # TODO: if browse widgets will be canceled, last QLineEdit should be restored
 # TODO: keep path or file if in browse widget canceled
+# TODO: make a frame around features direcory chooser and
+# use features path from ifc button
 
 import os
 
@@ -17,7 +20,8 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
         self,
         featurespath="",
         ifcfile="",
-        get_featurepath_from_ifcpath=False
+        get_featurepath_from_ifcpath=False,
+        args=[]
     ):
         super(GuiWidgetBimTester, self).__init__()
 
@@ -36,6 +40,7 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
         self.initial_featurespath = featurespath
         self.initial_ifcfile = ifcfile
         self.get_featurepath_from_ifcpath = get_featurepath_from_ifcpath
+        self.args = args
         # print(self.initial_featurespath)
         # print(self.initial_ifcfile)
         # print(self.get_featurepath_from_ifcpath)
@@ -198,18 +203,42 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
 
     # **********************************************************
     def run_bimtester(self):
-        print("Run BIMTester")
+        print("Run BIMTester by the GUI")
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
 
         # get features dir
         if self.featuredirfromifc_cb.isChecked() is True:
-            the_features_path = os.path.dirname(os.path.realpath(
-                self.get_ifcfile()
-            ))
+            ifcfile = self.get_ifcfile()
             print(
                 "Make sure the feature files are beside "
                 "the ifc file in a directory named 'features'."
             )
+            if ifcfile == "":
+                # os.path.realpath("") would return the cmd dir and not ""
+                print(
+                    "No ifcfile given, "
+                    "thus features files path will be set to ''."
+                )
+                the_features_path = ""
+            elif os.path.isfile(ifcfile) is not True:
+                # if ifcfile does not exist set features path to ""
+                print(
+                    "The ifcfile does not exist, "
+                    "thus features files path will be set to ''."
+                )
+                the_features_path = ""
+            else:
+                ifcfilepath = os.path.dirname(os.path.realpath(ifcfile))
+                if os.path.isdir(ifcfilepath):
+                    the_features_path = ifcfilepath
+                else:
+                    print(
+                        "ifcfilepath does not exist, "
+                        "thus features files path will be set to ''."
+                        "this shold never happen, please debug. "
+                    )
+                    the_features_path = ""
+
         else:
             the_features_path = self.get_featurefilesdir()
         print(the_features_path)
@@ -218,11 +247,13 @@ class GuiWidgetBimTester(QtWidgets.QWidget):
         the_ifcfile = self.get_ifcfile()
         print(the_ifcfile)
 
+        # overwrite the_features_path and ifcfile in args
+        patched_args = self.args
+        patched_args["featuresdir"] = the_features_path
+        patched_args["ifcfile"] = the_ifcfile
+
         # run bimtester
-        status = run_all(
-            the_features_path,
-            the_ifcfile,
-        )
+        status = run_all(patched_args)
         print(status)
 
         QtWidgets.QApplication.restoreOverrideCursor()
