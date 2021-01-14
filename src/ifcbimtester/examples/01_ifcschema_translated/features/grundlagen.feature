@@ -14,4 +14,4 @@ Szenario: Bereitstellen von IFC-Daten
 
  
  Szenario: Projektinformationen
- * The project name, code, or short identifier must be "Column"
+ * The project name, code, or short identifier must be "BIMTester Example 1"

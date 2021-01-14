@@ -12,4 +12,4 @@ Scenario: Receiving a file
 
  
 Scenario: Project information
- * The project name, code, or short identifier must be "Column"
+ * The project name, code, or short identifier must be "BIMTester Example 1"
