@@ -1,5 +1,4 @@
 import behave.formatter.pretty  # Needed for pyinstaller to package it
-import fileinput
 import os
 import shutil
 import sys
@@ -120,26 +119,9 @@ def run_copyintmp_tests(args={}):
         the ifc file
     advanced_arguments: optional
         they will be directly passed to the behave call
-
-    the following differentiation has to be made here because the decision
-    if the ifc file path in the feature file will be changed or not
-
-    features and ifcfile are given:
-    the ifcfile in feature files is replaced
-
-    features only is given (TODO):
-    the ifcfile provided in the feature files is used
-
-    ifcfile only is given (TODO):
-    features = ifcfile directory
-    the ifcfile in feature files is replaced
-
-    none of both is given (TODO):
-    the current directory = features
-    the ifcfile provided in the feature files is used
-
-    TODO: if the above is implemented adapt signature of run_all
     """
+
+    print("# Run run_copyintmp_tests.")
 
     from behave import __version__ as behave_version
     # https://github.com/behave/behave/issues/871
@@ -150,6 +132,7 @@ def run_copyintmp_tests(args={}):
         )
         return False
 
+    # print(args)
     # get the features_path, the dir where the feature files to test are in
     if ("featuresdir" in args and args["featuresdir"] != ""):
         is_features = True
@@ -167,14 +150,12 @@ def run_copyintmp_tests(args={}):
     if ("ifcfile" in args and args["ifcfile"] != ""):
         is_ifcfile = True
         ifcfile = args["ifcfile"]
+        if os.path.isfile(ifcfile) is not True:
+            print("Error, the ifc file '{}' does not exist.".format(ifcfile))
+            return False
         ifc_path = os.path.dirname(os.path.realpath(ifcfile))
         if os.path.isdir(ifc_path) is False:
             print("ifc path does not exist.")
-            return False
-        if os.path.isfile(ifcfile) is True:
-            ifc_filename = os.path.basename(ifcfile)
-        else:
-            print("Error, the ifc file '{}' does not exist.".format(ifcfile))
             return False
     else:
         is_ifcfile = False
@@ -184,17 +165,16 @@ def run_copyintmp_tests(args={}):
 
     if is_features is True and is_ifcfile is True:
         print("features given, ifcfile given.")
-        # the ifcfile in feature files is replaced
 
     elif is_features is False and is_ifcfile is True:
         print("features given, ifcfile NOT given.")
         # features = ifcfile directory
-        # the ifcfile in feature files is replaced
         the_features_path = os.path.join(ifc_path, "features")
 
     elif is_features is True and is_ifcfile is False:
         print("features given, ifcfile NOT given.")
         # the ifcfile provided in the feature files is used
+        # TODO What will be passed as ifcfile arg?
         print("Not yet implemented.")
         return False
 
@@ -202,6 +182,7 @@ def run_copyintmp_tests(args={}):
         print("features NOT given, ifcfile NOT given.")
         # the current directory = features
         # the ifcfile provided in the feature files is used
+        # TODO What will be passed as ifcfile arg?
         print("Not yet implemented.")
         return False
 
@@ -255,8 +236,7 @@ def run_copyintmp_tests(args={}):
     #         dirs_exist_ok=True
     # )
 
-    # copy feature files and replace ifcpath in feature files
-    # replaceing is IMHO better than copy the ifc file which could be 500 MB
+    # copy feature files
     feature_files = os.listdir(the_features_path)
     # print(feature_files)
     for feature_file in feature_files:
@@ -267,31 +247,6 @@ def run_copyintmp_tests(args={}):
             os.path.join(the_features_path, feature_file),
             cp_feature_file
         )
-        # search the line
-        ff = open(cp_feature_file, "r")
-        lines = ff.readlines()
-        ff.close()
-        theline = ""
-        for line in lines:
-            if "* The IFC file" in line and "must be provided" in line:
-                theline = line
-                if ifc_filename is None:
-                    ifc_filename = os.path.basename(theline.split('"')[1])
-                newifcline = (
-                    ' * The IFC file "{}" must be provided\n'
-                    .format(os.path.join(ifc_path, ifc_filename))
-                )
-                # print(newifcline)
-                break
-        else:
-            print("The line which sets the ifc file to test was not found.")
-            newifcline = ""
-        # replace the line
-        if newifcline != "":
-            # https://stackoverflow.com/a/290494
-            for line in fileinput.input(cp_feature_file, inplace=True):
-                # the print replaces the line in the file
-                print(line.replace(theline, newifcline), end="")
 
     # get behave args
     behave_args = [copy_features_path]
@@ -308,7 +263,7 @@ def run_copyintmp_tests(args={}):
         os.path.join(report_path, "report.json"),
         # next two lines are one arg
         "--define",
-        "ifcbasename={}".format(os.path.splitext(ifc_filename)[0]),
+        "ifcfile={}".format(args["ifcfile"]),
         # next two lines are one arg
         "--define",
         "localedir={}".format(locale_path)

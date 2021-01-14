@@ -9,7 +9,9 @@ Wir brauchen eine IFC-Datei
 
 Szenario: Bereitstellen von IFC-Daten
 
- # Dieser step wird aktuell nicht uebersetzt
- * The IFC file "myifc.ifc" must be provided
-
+ * The IFC file has been provided through an argument
  * Die IFC Daten müssen das IFC2X3 Schema benutzen
+
+ 
+ Szenario: Projektinformationen
+ * The project name, code, or short identifier must be "Column"
