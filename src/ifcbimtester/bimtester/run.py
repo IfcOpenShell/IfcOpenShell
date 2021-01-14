@@ -31,29 +31,14 @@ def run_tests(args):
 
     print("# Run tests.")
 
+    report_file = os.path.join("report", "report.json")
+
     if not get_features(args):
         print("No features could be found to check.")
         return False
 
     # get behave args
-    behave_args = [get_resource_path("features")]
-    if args["advanced_arguments"]:
-        behave_args.extend(args["advanced_arguments"].split())
-    elif not args["console"]:
-        behave_args.extend([
-            "--format",
-            "json.pretty",
-            "--outfile",
-            "report/report.json"
-        ])
-    behave_args.extend([
-        "--define",
-        "localedir={}".format(locale_path)
-    ])
-    if args["ifcfile"]:
-        behave_args.extend(["--define", "ifcfile={}".format(args["ifcfile"])])
-    if args["path"]:
-        behave_args.extend(["--define", "path={}".format(args["path"])])
+    behave_args = get_behave_args(args, features_path, report_file)
 
     # run tests
     if behave_args != []:
@@ -63,6 +48,61 @@ def run_tests(args):
         return False
 
     return True
+
+
+def get_behave_args(args, features_path, report_file):
+
+    if os.path.isdir(features_path):
+        behave_args = [features_path]
+    else:
+        return []
+
+    if os.path.isdir(locale_path):
+        behave_args.extend([
+            # path for translation files
+            # next two lines are one arg
+            "--define",
+            "localedir={}".format(locale_path)
+        ])
+    else:
+        print(
+            "Error, translation locals path '{}' does not exist."
+            .format(locale_path)
+        )
+
+    if args["advanced_arguments"]:
+        behave_args.extend(args["advanced_arguments"].split())
+
+    if args["ifcfile"]:
+        behave_args.extend([
+            # next two lines are one arg
+            "--define",
+            "ifcfile={}".format(args["ifcfile"])
+        ])
+
+    if args["path"]:
+        behave_args.extend([
+            # next two lines are one arg
+            "--define",
+            "path={}".format(args["path"])
+        ])
+
+    if not args["console"]:
+        behave_args.extend([
+            # redirect prints in step methods
+            # if step fails some output is catched, thus might not be printed
+            # https://github.com/behave/behave/issues/346
+            "--no-capture",
+            # next two lines are one arg
+            "--format",
+            "json.pretty",
+            # report file, if relative, than relative to current shell path
+            # next two lines are one arg
+            "--outfile",
+            report_file,
+        ])
+
+    return behave_args
 
 
 def run_behave(behave_args):
@@ -226,7 +266,7 @@ def run_copyintmp_tests(args={}):
         )
         return False
     os.mkdir(copy_base_path)
-    report_path = os.path.join(copy_base_path, "report")
+    report_file = os.path.join(copy_base_path, "report", "report.json")
     copy_features_path = os.path.join(copy_base_path, "features")
 
     # copy features path from bimtester source code
@@ -268,27 +308,7 @@ def run_copyintmp_tests(args={}):
         )
 
     # get behave args
-    behave_args = [copy_features_path]
-    behave_args.extend([
-        # redirect prints in step methods
-        # if step fails some output is catched, thus might not be printed
-        # https://github.com/behave/behave/issues/346
-        "--no-capture",
-        # next two lines are one arg
-        "--format",
-        "json.pretty",
-        # next two lines are one arg
-        "--outfile",
-        os.path.join(report_path, "report.json"),
-        # next two lines are one arg
-        "--define",
-        "ifcfile={}".format(args["ifcfile"]),
-        # next two lines are one arg
-        "--define",
-        "localedir={}".format(locale_path)
-    ])
-    if "advanced_arguments" in args:
-        behave_args.extend(args["advanced_arguments"].split())
+    behave_args = get_behave_args(args, copy_features_path, report_file)
 
     # run tests
     if behave_args != []:
