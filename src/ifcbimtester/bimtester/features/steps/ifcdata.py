@@ -28,12 +28,10 @@ def step_impl(context, file):
         assert False, f"The file {file} could not be loaded"
 
 
-@given('The IFC file has been provided through an argument')
+@given("The IFC file has been provided through an argument")
 def step_impl(context):
-    try:
-        IfcFile.load(context.config.userdata.get("ifcfile"))
-    except:
-        assert False, f"The IFC {context.config.userdata.get('ifcfile')} file could not be loaded"
+    switch_locale(context.localedir, the_lang)
+    idm.provide_ifcfile_by_argument(context)
 
 
 @given('A file path has been provided through an argument')
