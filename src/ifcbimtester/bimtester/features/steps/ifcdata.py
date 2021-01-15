@@ -2,7 +2,7 @@ import gettext  # noqa
 from behave import given
 from behave import step
 
-from ifcdata_methods import assert_schema
+import ifcdata_methods as idm
 from utils import IfcFile
 from utils import switch_locale
 
@@ -47,7 +47,7 @@ def step_impl(context):
 @step("IFC data must use the {schema} schema")
 def step_impl(context, schema):
     switch_locale(context.localedir, the_lang)
-    assert_schema(context, schema)
+    idm.has_ifcdata_specific_schema(context, schema)
     
 
 @step('The IFC file "{file}" is exempt from being provided')
