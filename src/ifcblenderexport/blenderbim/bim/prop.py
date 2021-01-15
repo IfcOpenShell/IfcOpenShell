@@ -1,7 +1,8 @@
 import json
 import os
-import ifcopenshell
 from pathlib import Path
+import importlib
+import ifcopenshell
 from . import export_ifc
 from . import schema
 from . import ifc
@@ -319,7 +320,8 @@ def getIfcPatchRecipes(self, context):
     global ifcpatchrecipes_enum
     if len(ifcpatchrecipes_enum) < 1:
         ifcpatchrecipes_enum.clear()
-        for filename in Path(os.path.join(cwd, "..", "libs", "site", "packages", "recipes")).glob("*.py"):
+        ifcpatch_path = Path(importlib.util.find_spec("ifcpatch").submodule_search_locations[0])
+        for filename in ifcpatch_path.joinpath("recipes").glob("*.py"):
             f = str(filename.stem)
             if f == "__init__":
                 continue
