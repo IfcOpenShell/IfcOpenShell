@@ -8,9 +8,9 @@ from .features.steps.utils import switch_locale
 
 
 def generate_report(
-    adir=".",
+    report_dir=".",
     use_report_folder=True,
-    report_file_name="",
+    report_file_name="report.json",
     html_template_file_path=""
 ):
 
@@ -32,23 +32,18 @@ def generate_report(
     if html_template_file_path:
         report_template_path = html_template_file_path
 
-    # get report file
-    report_dir = adir
+    # get report file and report dir
     if use_report_folder:
-        report_dir = os.path.join(adir, "report")
-    if not os.path.exists(report_dir):
-        return print("No report directory was found.")
-
-    if report_file_name:
-        report_path = os.path.join(report_dir, report_file_name)
-    else:
-        report_path = os.path.join(report_dir, "report.json")
-    # print(report_path)
-    if not os.path.exists(report_path):
-        return print("No report data was found.")
+        report_dir = os.path.join(report_dir, "report")
+    report_file = os.path.join(report_dir, report_file_name)
+    # print(report_file)
+    if not os.path.isdir(report_dir):
+        return print("Report directory does not exist.")
+    if not os.path.isfile(report_file):
+        return print("Report file does not exist.")
 
     # read json report and create html report for each feature
-    report = json.loads(open(report_path).read())
+    report = json.loads(open(report_file).read())
     for feature in report:
         file_name = os.path.basename(feature["location"]).split(":")[0]
         data = {
