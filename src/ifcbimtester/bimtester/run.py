@@ -8,6 +8,10 @@ import webbrowser
 from behave.__main__ import main as behave_main
 
 
+# TODO: if the ifc file name or path contains special character
+# like German Umlaute behave gives an error
+
+
 # get bimtester source code module path
 bimtester_path = os.path.dirname(os.path.realpath(__file__))
 # print(bimtester_path)
@@ -26,6 +30,9 @@ def get_resource_path(relative_path):
 
 
 def run_tests(args):
+
+    print("# Run tests.")
+
     if not get_features(args):
         print("No features could be found to check.")
         return False
@@ -97,10 +104,6 @@ from behave.runner_util import reset_runtime
 reset_runtime()
 
 """
-
-
-# TODO: if the ifc file name or path contains special character
-# like German Umlaute behave gives an error
 
 
 def run_copyintmp_tests(args={}):
@@ -324,6 +327,8 @@ def run_copyintmp_tests(args={}):
 
 
 def run_all(the_features_path, the_ifcfile):
+
+    print("# Run all.")
 
     # run bimtester
     runpath = run_copyintmp_tests({
