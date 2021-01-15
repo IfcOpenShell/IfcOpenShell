@@ -215,7 +215,6 @@ exit /b 1
      echo BOOST_BOOTSTRAP_VER: [!BOOST_BOOTSTRAP_VER!]
      echo BOOST_TOOLSET:       [!BOOST_TOOLSET!]
      echo BOOST_WIN_API:       [!BOOST_WIN_API!]
-     pause
 
 IF DEFINED VS_TOOLSET (
     set GEN_SHORTHAND=vs%VS_VER%-%VS_PLATFORM%-%VS_TOOLSET%
@@ -235,11 +234,11 @@ set PATH=%~dp0utils;%PATH%
 :: so no need for -%VS_VER%-%TARGET_ARCH% postfix.
 :: set DEPS_DIR=%CD%\deps-%VS_VER%-%TARGET_ARCH%
 pushd ..
-set DEPS_DIR=%CD%\deps
-set INSTALL_DIR=%CD%\deps-%GEN_SHORTHAND%-installed
+set DEPS_DIR=%CD%\_deps
+set INSTALL_DIR=%CD%\_deps-%GEN_SHORTHAND%-installed
 :: set INSTALL_DIR=%CD%\deps-vs%VS_VER%-%TARGET_ARCH%-%DEBUG_OR_RELEASE_LOWERCASE%-installed
 :: BUILD_DIR is a relative build directory used for CMake-based projects
-set BUILD_DIR=build-%GEN_SHORTHAND%
+set BUILD_DIR=_build-%GEN_SHORTHAND%
 popd
 
 GOTO :EOF
