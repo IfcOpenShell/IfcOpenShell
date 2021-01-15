@@ -9,8 +9,8 @@ Wir brauchen eine IFC-Datei
 
 Szenario: Bereitstellen von IFC-Daten
 
- * The IFC file has been provided through an argument
- * Die IFC Daten müssen das IFC2X3 Schema benutzen
+ * Die IFC-Datei wurde durch einen Startparameter zur Verfügung gestellt
+ * Die IFC-Daten müssen das IFC2X3 Schema benutzen
 
  
  Szenario: Projektinformationen
