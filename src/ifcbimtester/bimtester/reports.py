@@ -11,8 +11,12 @@ def generate_report(
     report_dir=".",
     use_report_folder=True,
     report_file_name="report.json",
-    html_template_file_path=""
+    html_template_file_path="",
+    report_file=""
 ):
+
+    # TODO use far less parameter
+    # to be discussed with other devs
 
     print("# Generating HTML reports now.")
 
@@ -33,9 +37,13 @@ def generate_report(
         report_template_path = html_template_file_path
 
     # get report file and report dir
-    if use_report_folder:
-        report_dir = os.path.join(report_dir, "report")
-    report_file = os.path.join(report_dir, report_file_name)
+    if report_file:
+        report_file = report_file
+        report_dir = os.path.dirname(report_file)
+    else:
+        if use_report_folder:
+            report_dir = os.path.join(report_dir, "report")
+        report_file = os.path.join(report_dir, report_file_name)
     # print(report_file)
     if not os.path.isdir(report_dir):
         return print("Report directory does not exist.")
