@@ -92,7 +92,6 @@ class iterator(_iterator):
 
             include_or_exclude = include if exclude is None else exclude
             include_or_exclude_type = set(x.__class__.__name__ for x in include_or_exclude)
-            print(include_or_exclude_type)
 
             if include_or_exclude_type == {"entity_instance"}:
                 if not all(inst.is_a("IfcProduct") for inst in include_or_exclude):
