@@ -297,6 +297,7 @@ if bpy is not None:
         bpy.types.Scene.MapConversion = bpy.props.PointerProperty(type=prop.MapConversion)
         bpy.types.Scene.TargetCRS = bpy.props.PointerProperty(type=prop.TargetCRS)
         bpy.types.Object.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
+        bpy.types.Material.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
         bpy.types.Collection.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties) # Check if we need this
         bpy.types.Material.BIMMaterialProperties = bpy.props.PointerProperty(type=prop.BIMMaterialProperties)
         bpy.types.Mesh.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
@@ -321,6 +322,7 @@ if bpy is not None:
         del bpy.types.Scene.MapConversion
         del bpy.types.Scene.TargetCRS
         del bpy.types.Object.BIMObjectProperties
+        del bpy.types.Material.BIMObjectProperties
         del bpy.types.Collection.BIMObjectProperties # Check if we need this
         del bpy.types.Material.BIMMaterialProperties
         del bpy.types.Mesh.BIMMeshProperties

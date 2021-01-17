@@ -437,64 +437,6 @@ class BIM_PT_presentation_layer_data(Panel):
             op.index = scene_props.active_presentation_layer_index
 
 
-class BIM_PT_material(Panel):
-    bl_label = "IFC Materials"
-    bl_idname = "BIM_PT_material"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "material"
-
-    @classmethod
-    def poll(cls, context):
-        return context.active_object is not None and context.active_object.active_material is not None
-
-    def draw(self, context):
-        if not bpy.context.active_object.active_material:
-            return
-        props = context.active_object.active_material.BIMMaterialProperties
-        layout = self.layout
-        row = layout.row()
-        row.prop(props, "is_external")
-        row = layout.row(align=True)
-        row.prop(props, "location")
-        row.operator("bim.select_external_material_dir", icon="FILE_FOLDER", text="")
-        row = layout.row()
-        row.prop(props, "identification")
-        row = layout.row()
-        row.prop(props, "name")
-
-        row = layout.row()
-        row.operator("bim.fetch_external_material")
-
-        layout.label(text="Attributes:")
-        row = layout.row(align=True)
-        row.prop(props, "applicable_attributes", text="")
-        row.operator("bim.add_material_attribute")
-
-        for index, attribute in enumerate(props.attributes):
-            row = layout.row(align=True)
-            row.prop(attribute, "name", text="")
-            row.prop(attribute, "string_value", text="")
-            row.operator("bim.remove_material_attribute", icon="X", text="").attribute_index = index
-
-        row = layout.row()
-        row.prop(props, "attributes")
-
-        layout.label(text="Property Sets:")
-        row = layout.row(align=True)
-        row.prop(props, "pset_name", text="")
-        row.operator("bim.add_material_pset")
-
-        for index, pset in enumerate(props.psets):
-            row = layout.row(align=True)
-            row.prop(pset, "name", text="")
-            row.operator("bim.remove_material_pset", icon="X", text="").pset_index = index
-            for prop in pset.properties:
-                row = layout.row(align=True)
-                row.prop(prop, "name", text="")
-                row.prop(prop, "string_value", text="")
-
-
 class BIM_PT_gis(Panel):
     bl_label = "IFC Georeferencing"
     bl_idname = "BIM_PT_gis"

@@ -1323,8 +1323,6 @@ class BIMObjectProperties(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_reassigning_class: BoolProperty(name="Is Reassigning Class")
     global_ids: CollectionProperty(name="GlobalIds", type=GlobalId)
-    attributes: CollectionProperty(name="Attributes", type=Attribute)
-    is_editing_attributes: BoolProperty(name="Is Editing Attributes")
     relating_object: PointerProperty(name="Aggregate", type=bpy.types.Object)
     is_editing_aggregate: BoolProperty(name="Is Editing Aggregate")
     is_editing_container: BoolProperty(name="Is Editing Container")
@@ -1355,7 +1353,6 @@ class BIMMaterialProperties(PropertyGroup):
     psets: CollectionProperty(name="Psets", type=PsetQto)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     applicable_attributes: EnumProperty(items=getApplicableMaterialAttributes, name="Attribute Names")
-    ifc_definition_id: IntProperty(name="IFC Definition ID")
     # In Blender, a material object can map to an IFC material, IFC surface style, or both
     ifc_style_id: IntProperty(name="IFC Style ID")
 
