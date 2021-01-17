@@ -8,6 +8,16 @@ another batch file, and/or while the Visual Studio ("MSVC") environment variable
 files that can also be invoked e.g. by double-clicking in the File Explorer. `.sh` files are for MSYS**2** + MinGW ("MSYS"
 ) compilation.
 
+## Recommendations for building
+
+To build IfcOpenShell, we recommend the following software:
+
+- [Git](https://git-scm.com/downloads)
+- [CMake 3.19](https://cmake.org/files/v3.19/)
+- [Visual Studio 2017](https://my.visualstudio.com/Downloads?q=visual%20studio%202017&wt.mc_id=o~msft~vscom~older-downloads) with C++ Workload (see Visual Studio Installer)
+- Windows Powershell (shipped with Windows 8 and newer)
+- Windows SDK 10.0.18362 (See Visual Studio Installer)
+
 Usage Instructions
 ------------------
 ### MSYS
@@ -18,7 +28,7 @@ of the shell scripts before using them. Note that contrary to MSVC, with MSYS al
 built or used as static libraries. Currently Release build is used for all libraries.
 
 ### MSVC
-Execute `build-deps.cmd` to fetch, build and install the dependencies. The batch file will print the requirements for
+Use the `Developer Command prompt for Visual Studio 2017` to execute all mentioned commands. This command prompt comes together with Visual Studio and inherits all necessary environment variables. Execute `build-deps.cmd` to fetch, build and install the dependencies. The batch file will print the requirements for
 a successful execution. The script allows a few user-configurable build options which are listed in the usage
 instructions. Either edit the script file or set these values before running the script.
 
@@ -29,15 +39,29 @@ deduced from the MSVC environment variables. User-friendly VS generator shorthan
 (`Build`, `Rebuild`, or `Clean`, defaults to `Build`) can be provided as `%3`. See `vs-cfg.cmd` if you wish to change
 the defaults. The batch file will create `deps\` and `deps-vs<VERSION>-<ARCHITECTURE>-installed\` directories to the
 project root. Debug and release builds of the dependencies can co-exist by simply running
+
 ```
 > build-deps.cmd <GENERATOR> Debug
 > build-deps.cmd <GENERATOR> <Release|RelWithDebInfo|MinSizeRel>
+```
+
+If you want to build IfcOpenShell 32 bit release with Visual Studio 2017 with MSVC use the following command line
+
+```
+> build-deps.cmd "Visual Studio 15 2017" Release
+```
+
+Use the next command line below if you need the 64 bit version
+
+```
+> build-deps.cmd "Visual Studio 15 2017 Win64" Release
 ```
 
 After the dependencies are build, execute `run-cmake.bat`. The batch file expects a CMake generator as `%1` and the
 rest of possible parameters are passed as is. If a generator is not provided, the generator is read from the
 BuildDepsCache file, or tried to be deduced from the location of `cl.exe`. If passing build options for the script,
 the generator must be always passed as the first option:
+
 ```
 > run-cmake.bat vs2015-x64 -DUSE_IFC4=1 -DBUILD_IFCPYTHON=0
 ```
@@ -55,6 +79,12 @@ files expect `%1` and `%2` in same fashion as above and possible extra parameter
 `run-cmake.bat`, `build-ifcopenshell.bat`, and `install-ifcopenshell.bat` can also be directly invoked from Filer Explorer
 or regular Command Prompt if BuildDepsCache file exists (the last modified version is used). Running the scripts without extra
 parameters reads the build options from an existing CMakeCache.txt.
+
+You can use the command line below to Build the IfcOpenShell.
+
+```
+> build-ifcopenshell.bat "Visual Studio 15 2017 Win 64" Release
+```
 
 The project will be installed to `installed-vs<VERSION>-<ARCHITECTURE>\` folder in the project's root folder and the
 required IfcOpenShell-Python parts are deployed to the `<PYTHONHOME>\Lib\site-packages\` folder. The 3ds Max plug-in,

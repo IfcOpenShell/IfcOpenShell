@@ -156,7 +156,7 @@ struct geom_filter
 {
     geom_filter(bool include, bool traverse) : type(UNUSED), include(include), traverse(traverse) {}
     geom_filter() : type(UNUSED), include(false), traverse(false) {}
-    enum filter_type { UNUSED, ENTITY_TYPE, LAYER_NAME, ENTITY_ARG };
+    enum filter_type { UNUSED, ENTITY_TYPE, LAYER_NAME, ENTITY_ARG};
     filter_type type;
     bool include;
     bool traverse;
@@ -169,6 +169,8 @@ struct inclusion_filter : public geom_filter { inclusion_filter() : geom_filter(
 struct inclusion_traverse_filter : public geom_filter { inclusion_traverse_filter() : geom_filter(true, true) {} };
 struct exclusion_filter : public geom_filter { exclusion_filter() : geom_filter(false, false) {} };
 struct exclusion_traverse_filter : public geom_filter { exclusion_traverse_filter() : geom_filter(false, true) {} };
+//struct geometricRepresentationContext_filter : public geom_filter { geometricRepresentationContext_filter() : geom_filter(true, false) {} };
+std::vector<std::string> include_geometricRepresentationContext_filter;
 
 size_t read_filters_from_file(const std::string&, inclusion_filter&, inclusion_traverse_filter&, exclusion_filter&, exclusion_traverse_filter&);
 void parse_filter(geom_filter &, const std::vector<std::string>&);
@@ -183,6 +185,20 @@ struct verbosity_counter {
 		count = c;
 	}
 };
+
+bool initialize_iterator(IfcGeom::Iterator<real_t> &localIterator)
+{
+	if (!include_geometricRepresentationContext_filter.empty())
+	{
+		std::set<std::string> tempSet;
+		tempSet.insert(include_geometricRepresentationContext_filter.begin(), include_geometricRepresentationContext_filter.end());
+		return localIterator.initialize(tempSet);
+	}
+	else
+	{
+		return localIterator.initialize();
+	}
+}
 
 #if defined(_MSC_VER) && defined(_UNICODE)
 int wmain(int argc, wchar_t** argv) {
@@ -318,6 +334,10 @@ int main(int argc, char** argv) {
 		("exclude+", po::value<exclusion_traverse_filter>(&exclude_traverse_filter)->multitoken(),
 			"Same as --exclude but applies filtering also to the decomposition and/or containment "
 			"of the filtered entity. See --include+ for more details.")
+		("geometricRepresentationContext", po::value<std::vector<std::string>>(&include_geometricRepresentationContext_filter)->multitoken(),
+				"Select the IfcGeometricRepresentation(Sub)Contexts for the geometries, which shall be exported. "
+				"All selected constexts must be of type 'model'. Includes all subcontexts. "
+				"If empty, all contexts of type 'model' are used for export.")
 		("filter-file", new po::typed_value<path_t, char_t>(&filter_filename),
 			"Specifies a filter file that describes the used filtering criteria. Supported formats "
 			"are '--include=arg GlobalId ...' and 'include arg GlobalId ...'. Spaces and tabs can be used as delimiters."
@@ -870,11 +890,24 @@ int main(int argc, char** argv) {
 			time(&start);
 			if (!quiet) Logger::Status("Computing bounds...");
 
+			/*if (!tmp_context_iterator.initialize()) {
+				/// @todo It would be nice to know and print separate error prints for a case where we found no entities
+				/// and for a case we found no entities that satisfy our filtering criteria.
+				Logger::Notice("No geometrical elements found or none succesfully converted");
+				serializer.reset();
+				IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
+				write_log(!quiet);
+				return EXIT_FAILURE;
+			}*/
+
 			if (center_model_geometry) {
-				if (!tmp_context_iterator.initialize()) {
+				std::set<std::string> tempSet;
+				tempSet.insert(include_geometricRepresentationContext_filter.begin (), include_geometricRepresentationContext_filter.end());
+				if (!initialize_iterator(tmp_context_iterator)) {
 					/// @todo It would be nice to know and print separate error prints for a case where we found no entities
 					/// and for a case we found no entities that satisfy our filtering criteria.
-					Logger::Notice("No geometrical elements found or none succesfully converted");
+					Logger::Notice("No geometrical elements found or none succesfully converted. "
+						"Check the Name of the geometric representation context");
 					serializer.reset();
 					IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
 					write_log(!quiet);
@@ -906,7 +939,7 @@ int main(int argc, char** argv) {
     }
 
 	IfcGeom::Iterator<real_t> context_iterator(settings, ifc_file, filter_funcs, num_threads);
-    if (!context_iterator.initialize()) {
+    if (!initialize_iterator(context_iterator)) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
         /// and for a case we found no entities that satisfy our filtering criteria.
         Logger::Notice("No geometrical elements found or none succesfully converted");
@@ -1290,7 +1323,7 @@ std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>& fil
 			attribute_filter.traverse = f.traverse;
 			attribute_filter.attribute_name = f.arg;
 			attribute_filter.populate(f.values);
-        }
+		}
     }
 
     // If no entity names are specified these are the defaults to skip from output
@@ -1414,7 +1447,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 
 	IfcGeom::Iterator<double> context_iterator(settings, &f);
 
-	if (!context_iterator.initialize()) {
+	if (!initialize_iterator(context_iterator)) {
 		return;
 	}
 
