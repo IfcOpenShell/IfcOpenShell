@@ -137,6 +137,10 @@ def generate_report(
             switch_locale(localedir, "de")
         elif feature["keyword"] == "Fonctionnalité":
             switch_locale(localedir, "fr")
+        elif feature["keyword"] == "Funzionalità":
+            switch_locale(localedir, "it")
+        elif feature["keyword"] == "Functionaliteit":
+            switch_locale(localedir, "nl")
         else:
             # standard English
             switch_locale(localedir, "en")
