@@ -14,4 +14,4 @@ Szenario: Bereitstellen von IFC-Daten
 
  
  Szenario: Projektinformationen
- * Der Name, die Abkürzung oder die Kurzkennung des Projektes ist "BIMTester Example 1"
+ * Der Name, die Abkürzung oder die Kurzkennung des Projektes ist "BIMTester Example 1 - IFC2X3"

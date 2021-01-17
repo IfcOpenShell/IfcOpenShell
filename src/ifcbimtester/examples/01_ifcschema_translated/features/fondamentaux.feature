@@ -13,4 +13,4 @@ Scénario: Recevoir e fichier
 
  
  Scénario: Project information
- * The project name, code, or short identifier must be "BIMTester Example 1"
+ * The project name, code, or short identifier must be "BIMTester Example 1 - IFC2X3"
