@@ -204,7 +204,7 @@ class MaterialCreator:
 
     def create_new_single(self, material):
         self.materials[material.Name] = obj = bpy.data.materials.new(material.Name)
-        obj.BIMMaterialProperties.ifc_definition_id = int(material.id())
+        obj.BIMObjectProperties.ifc_definition_id = int(material.id())
         if not material.HasRepresentation or not material.HasRepresentation[0].Representations:
             return
         for representation in material.HasRepresentation[0].Representations:
@@ -233,7 +233,6 @@ class MaterialCreator:
             if not style.is_a("IfcSurfaceStyle"):
                 continue
             material.BIMMaterialProperties.ifc_style_id = int(style.id())
-            external_style = None
             for surface_style in style.Styles:
                 if surface_style.is_a("IfcSurfaceStyleShading"):
                     alpha = 1.0
@@ -246,13 +245,6 @@ class MaterialCreator:
                         surface_style.SurfaceColour.Blue,
                         alpha,
                     )
-                elif surface_style.is_a("IfcExternallyDefinedSurfaceStyle"):
-                    external_style = surface_style
-            if external_style:
-                material.BIMMaterialProperties.is_external = True
-                material.BIMMaterialProperties.location = external_style.Location
-                material.BIMMaterialProperties.identification = external_style.Identification
-                material.BIMMaterialProperties.name = external_style.Name
 
     # IfcPresentationStyleAssignment is deprecated as of IFC4
     # However it is still widely used thanks to Revit :(

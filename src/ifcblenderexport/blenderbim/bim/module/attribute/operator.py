@@ -8,14 +8,20 @@ from blenderbim.bim.module.attribute.data import Data
 class EnableEditingAttributes(bpy.types.Operator):
     bl_idname = "bim.enable_editing_attributes"
     bl_label = "Enable Editing Attributes"
+    obj: bpy.props.StringProperty()
+    obj_type: bpy.props.StringProperty()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        obj = bpy.context.active_object
-        props = obj.BIMObjectProperties
+        if self.obj_type == "Object":
+            obj = bpy.data.objects.get(self.obj)
+        elif self.obj_type == "Material":
+            obj = bpy.data.materials.get(self.obj)
+        oprops = obj.BIMObjectProperties
+        props = obj.BIMAttributeProperties
         while len(props.attributes) > 0:
             props.attributes.remove(0)
-        for attribute in Data.products[props.ifc_definition_id]:
+        for attribute in Data.products[oprops.ifc_definition_id]:
             new = props.attributes.add()
             if attribute["type"] == "entity":
                 continue
@@ -38,10 +44,15 @@ class EnableEditingAttributes(bpy.types.Operator):
 class DisableEditingAttributes(bpy.types.Operator):
     bl_idname = "bim.disable_editing_attributes"
     bl_label = "Disable Editing Attributes"
+    obj: bpy.props.StringProperty()
+    obj_type: bpy.props.StringProperty()
 
     def execute(self, context):
-        obj = bpy.context.active_object
-        props = obj.BIMObjectProperties
+        if self.obj_type == "Object":
+            obj = bpy.data.objects.get(self.obj)
+        elif self.obj_type == "Material":
+            obj = bpy.data.materials.get(self.obj)
+        props = obj.BIMAttributeProperties
         props.is_editing_attributes = False
         return {"FINISHED"}
 
@@ -49,13 +60,19 @@ class DisableEditingAttributes(bpy.types.Operator):
 class EditAttributes(bpy.types.Operator):
     bl_idname = "bim.edit_attributes"
     bl_label = "Edit Attributes"
+    obj: bpy.props.StringProperty()
+    obj_type: bpy.props.StringProperty()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        obj = bpy.context.active_object
-        props = obj.BIMObjectProperties
+        if self.obj_type == "Object":
+            obj = bpy.data.objects.get(self.obj)
+        elif self.obj_type == "Material":
+            obj = bpy.data.materials.get(self.obj)
+        oprops = obj.BIMObjectProperties
+        props = obj.BIMAttributeProperties
         attributes = {}
-        for attribute in Data.products[props.ifc_definition_id]:
+        for attribute in Data.products[oprops.ifc_definition_id]:
             blender_attribute = props.attributes.get(attribute["name"])
             if not blender_attribute:
                 continue
@@ -77,9 +94,9 @@ class EditAttributes(bpy.types.Operator):
             elif attribute["type"] == "enum":
                 attributes[attribute["name"]] = blender_attribute.enum_value
         edit_attributes.Usecase(self.file, {
-            "product": self.file.by_id(props.ifc_definition_id),
+            "product": self.file.by_id(oprops.ifc_definition_id),
             "attributes": attributes
         }).execute()
-        Data.load(props.ifc_definition_id)
-        bpy.ops.bim.disable_editing_attributes()
+        Data.load(oprops.ifc_definition_id)
+        bpy.ops.bim.disable_editing_attributes(obj=self.obj, obj_type=self.obj_type)
         return {"FINISHED"}
