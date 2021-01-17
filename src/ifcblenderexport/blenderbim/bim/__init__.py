@@ -20,6 +20,7 @@ if bpy is not None:
         "bimtester": None,
         "debug": None,
         "geometry": None,
+        "material": None,
         "model": None,
         "owner": None,
         "project": None,
@@ -191,10 +192,6 @@ if bpy is not None:
         operator.AddSectionsAnnotations,
         prop.StrProperty,
         prop.Attribute,
-        prop.MaterialLayer,
-        prop.MaterialConstituent,
-        prop.MaterialProfile,
-        prop.MaterialSet,
         prop.Variable,
         prop.Role,
         prop.Address,
@@ -250,9 +247,7 @@ if bpy is not None:
         ui.BIM_PT_diff,
         ui.BIM_PT_patch,
         ui.BIM_PT_mvd,
-        ui.BIM_PT_material,
         ui.BIM_PT_presentation_layer_data,
-        ui.BIM_PT_object_material,
         ui.BIM_PT_classification_references,
         ui.BIM_PT_documents,
         ui.BIM_PT_constraint_relations,
@@ -302,7 +297,7 @@ if bpy is not None:
         bpy.types.Scene.MapConversion = bpy.props.PointerProperty(type=prop.MapConversion)
         bpy.types.Scene.TargetCRS = bpy.props.PointerProperty(type=prop.TargetCRS)
         bpy.types.Object.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
-        bpy.types.Collection.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
+        bpy.types.Collection.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties) # Check if we need this
         bpy.types.Material.BIMMaterialProperties = bpy.props.PointerProperty(type=prop.BIMMaterialProperties)
         bpy.types.Mesh.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
         bpy.types.Camera.BIMCameraProperties = bpy.props.PointerProperty(type=prop.BIMCameraProperties)
@@ -326,7 +321,7 @@ if bpy is not None:
         del bpy.types.Scene.MapConversion
         del bpy.types.Scene.TargetCRS
         del bpy.types.Object.BIMObjectProperties
-        del bpy.types.Collection.BIMObjectProperties
+        del bpy.types.Collection.BIMObjectProperties # Check if we need this
         del bpy.types.Material.BIMMaterialProperties
         del bpy.types.Mesh.BIMMeshProperties
         del bpy.types.Camera.BIMCameraProperties

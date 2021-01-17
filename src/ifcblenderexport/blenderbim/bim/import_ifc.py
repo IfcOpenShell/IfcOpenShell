@@ -180,86 +180,31 @@ class MaterialCreator:
     def create_single(self, material):
         if material.Name not in self.materials:
             self.create_new_single(material)
-        self.obj.BIMObjectProperties.material_type = "IfcMaterial"
-        self.obj.BIMObjectProperties.material = self.materials[material.Name]
 
     def create_layer_set(self, layer_set):
-        props = self.obj.BIMObjectProperties
-        props.material_type = "IfcMaterialLayerSet"
-        props.material_set.name = layer_set.LayerSetName or ""
-        if hasattr(layer_set, "Description"):  # IFC2X3 support
-            props.material_set.description = layer_set.Description or ""
         for layer in layer_set.MaterialLayers:
-            new = props.material_set.material_layers.add()
             if layer.Material:
                 if layer.Material.Name not in self.materials:
                     self.create_new_single(layer.Material)
-                new.material = self.materials[layer.Material.Name]
-            new.layer_thickness = layer.LayerThickness
-            new.is_ventilated = "TRUE" if layer.IsVentilated else "FALSE"
-            if not hasattr(layer, "Name"):
-                continue  # IFC2X3 support
-            new.name = layer.Name or ""
-            new.description = layer.Description or ""
-            try:
-                new.category = layer.Category if layer.Category else "None"
-            except:
-                new.custom_category = layer.Category or ""
-            new.priority = layer.Priority or 0
 
     def create_constituent_set(self, constituent_set):
-        props = self.obj.BIMObjectProperties
-        props.material_type = "IfcMaterialConstituentSet"
-        props.material_set.name = constituent_set.Name or ""
-        props.material_set.description = constituent_set.Description or ""
         for constituent in constituent_set.MaterialConstituents:
-            new = props.material_set.material_constituents.add()
-            new.name = constituent.Name or ""
-            new.description = constituent.Description or ""
             if constituent.Material.Name not in self.materials:
                 self.create_new_single(constituent.Material)
-            new.material = self.materials[constituent.Material.Name]
-            new.fraction = constituent.Fraction or 0.0
-            new.category = constituent.Category or ""
 
     def create_profile_set(self, profile_set):
-        props = self.obj.BIMObjectProperties
-        props.material_type = "IfcMaterialProfileSet"
-        props.material_set.name = profile_set.Name or ""
-        props.material_set.description = profile_set.Description or ""
         for profile in profile_set.MaterialProfiles:
-            new = props.material_set.material_profiles.add()
-            new.name = profile.Name or ""
-            new.description = profile.Description or ""
             if profile.Material.Name not in self.materials:
                 self.create_new_single(profile.Material)
-            new.material = self.materials[profile.Material.Name]
-            try:
-                new.profile = profile.Profile.is_a()
-                for i, attribute in enumerate(profile.Profile):
-                    newa = new.profile_attributes.add()
-                    newa.name = profile.Profile.attribute_name(i)
-                    newa.string_value = str(attribute)
-            except:
-                pass  # TODO: currently, only parametric profile sets are supported
-            new.priority = profile.Priority or 0
-            new.category = profile.Category or ""
 
     def create_material_list(self, material_list):
-        props = self.obj.BIMObjectProperties
-        props.material_type = "IfcMaterialConstituentSet"  # Constituent sets are the recommended upgrade path
         for material in material_list.Materials:
-            new = props.material_set.material_constituents.add()
             if material.Name not in self.materials:
                 self.create_new_single(material)
-            new.material = self.materials[material.Name]
 
     def create_new_single(self, material):
         self.materials[material.Name] = obj = bpy.data.materials.new(material.Name)
         obj.BIMMaterialProperties.ifc_definition_id = int(material.id())
-        self.ifc_importer.add_element_attributes(material, obj.BIMMaterialProperties)
-        for pset in getattr(material, "HasProperties", ()):
-            self.ifc_importer.add_pset(pset, obj.BIMMaterialProperties)
         if not material.HasRepresentation or not material.HasRepresentation[0].Representations:
             return
         for representation in material.HasRepresentation[0].Representations:
