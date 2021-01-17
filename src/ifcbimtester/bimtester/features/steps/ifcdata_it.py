@@ -7,7 +7,6 @@ from utils import switch_locale
 the_lang = "it"
 
 
-# TODO the next line needs translation
 @given("Il file IFC è stato fornito attraverso un argumento")
 def step_impl(context):
     switch_locale(context.localedir, the_lang)
