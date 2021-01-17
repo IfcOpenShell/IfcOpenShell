@@ -1,3 +1,5 @@
+# language: en
+
 Feature: Base setup
 
 In order to view the BIM data
@@ -12,4 +14,5 @@ Scenario: Receiving a file
 
  
 Scenario: Project information
+
  * The project name, code, or short identifier must be "BIMTester Example 1 - IFC2X3"
