@@ -29,6 +29,17 @@ def getPsetNames(self, context):
     return []
 
 
+def getMaterialPsetNames(self, context):
+    global psetnames
+    if "/" in context.active_object.name:
+        ifc_class = "IfcMaterial"
+        if ifc_class not in psetnames:
+            psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
+            psetnames[ifc_class] = [(p.Name, p.Name, "") for p in psets]
+        return psetnames[ifc_class]
+    return []
+
+
 def getQtoNames(self, context):
     global qtonames
     if "/" in context.active_object.name:
@@ -46,3 +57,4 @@ class PsetProperties(PropertyGroup):
     properties: CollectionProperty(name="Properties", type=Attribute)
     pset_name: EnumProperty(items=getPsetNames, name="Pset Name")
     qto_name: EnumProperty(items=getQtoNames, name="Qto Name")
+    material_pset_name: EnumProperty(items=getMaterialPsetNames, name="Pset Name")

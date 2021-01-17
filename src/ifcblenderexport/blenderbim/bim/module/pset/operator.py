@@ -27,9 +27,14 @@ class EnablePsetEditing(bpy.types.Operator):
     bl_idname = "bim.enable_pset_editing"
     bl_label = "Enable Pset Editing"
     pset_id: bpy.props.IntProperty()
+    obj: bpy.props.StringProperty()
+    obj_type: bpy.props.StringProperty()
 
     def execute(self, context):
-        obj = bpy.context.active_object
+        if self.obj_type == "Object":
+            obj = bpy.data.objects.get(self.obj)
+        elif self.obj_type == "Material":
+            obj = bpy.data.materials.get(self.obj)
         props = obj.PsetProperties
 
         while len(props.properties) > 0:
@@ -61,9 +66,14 @@ class EnablePsetEditing(bpy.types.Operator):
 class DisablePsetEditing(bpy.types.Operator):
     bl_idname = "bim.disable_pset_editing"
     bl_label = "Disable Pset Editing"
+    obj: bpy.props.StringProperty()
+    obj_type: bpy.props.StringProperty()
 
     def execute(self, context):
-        obj = bpy.context.active_object
+        if self.obj_type == "Object":
+            obj = bpy.data.objects.get(self.obj)
+        elif self.obj_type == "Material":
+            obj = bpy.data.materials.get(self.obj)
         props = obj.PsetProperties
         props.active_pset_id = 0
         return {"FINISHED"}
@@ -72,10 +82,15 @@ class DisablePsetEditing(bpy.types.Operator):
 class EditPset(bpy.types.Operator):
     bl_idname = "bim.edit_pset"
     bl_label = "Edit Pset"
+    obj: bpy.props.StringProperty()
+    obj_type: bpy.props.StringProperty()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        obj = bpy.context.active_object
+        if self.obj_type == "Object":
+            obj = bpy.data.objects.get(self.obj)
+        elif self.obj_type == "Material":
+            obj = bpy.data.materials.get(self.obj)
         oprops = obj.BIMObjectProperties
         props = obj.PsetProperties
         properties = {}
@@ -109,7 +124,7 @@ class EditPset(bpy.types.Operator):
                 "Properties": properties
             }).execute()
         Data.load(oprops.ifc_definition_id)
-        bpy.ops.bim.disable_pset_editing()
+        bpy.ops.bim.disable_pset_editing(obj=self.obj, obj_type=self.obj_type)
         return {"FINISHED"}
 
 
@@ -117,10 +132,15 @@ class RemovePset(bpy.types.Operator):
     bl_idname = "bim.remove_pset"
     bl_label = "Remove Pset"
     pset_id: bpy.props.IntProperty()
+    obj: bpy.props.StringProperty()
+    obj_type: bpy.props.StringProperty()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        obj = bpy.context.active_object
+        if self.obj_type == "Object":
+            obj = bpy.data.objects.get(self.obj)
+        elif self.obj_type == "Material":
+            obj = bpy.data.materials.get(self.obj)
         props = obj.BIMObjectProperties
         remove_pset.Usecase(self.file, {
             "product": self.file.by_id(props.ifc_definition_id),
@@ -133,15 +153,20 @@ class RemovePset(bpy.types.Operator):
 class AddPset(bpy.types.Operator):
     bl_idname = "bim.add_pset"
     bl_label = "Add Pset"
+    obj: bpy.props.StringProperty()
+    obj_type: bpy.props.StringProperty()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        obj = bpy.context.active_object
+        if self.obj_type == "Object":
+            obj = bpy.data.objects.get(self.obj)
+        elif self.obj_type == "Material":
+            obj = bpy.data.materials.get(self.obj)
         oprops = obj.BIMObjectProperties
         props = obj.PsetProperties
         add_pset.Usecase(self.file, {
             "product": self.file.by_id(oprops.ifc_definition_id),
-            "Name": props.pset_name,
+            "Name": props.pset_name if self.obj_type == "Object" else props.material_pset_name,
         }).execute()
         Data.load(oprops.ifc_definition_id)
         return {"FINISHED"}

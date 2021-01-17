@@ -1,22 +1,37 @@
 from bpy.types import Panel
 from blenderbim.bim.module.pset.data import Data
+from blenderbim.bim.ifc import IfcStore
 
-def draw_psetqto_ui(pset_id, pset, props, layout):
+
+def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
     box = layout.box()
     row = box.row(align=True)
     icon = "TRIA_DOWN" if pset["is_expanded"] else "TRIA_RIGHT"
     row.operator("bim.toggle_pset_expansion", icon=icon, text="", emboss=False).pset_id = pset_id
     if not props.active_pset_id:
         row.label(text=pset["Name"], icon="COPY_ID")
-        row.operator("bim.enable_pset_editing", icon="GREASEPENCIL", text="").pset_id = pset_id
-        row.operator("bim.remove_pset", icon="X", text="").pset_id = pset_id
+        op = row.operator("bim.enable_pset_editing", icon="GREASEPENCIL", text="")
+        op.pset_id = pset_id
+        op.obj = context.active_object.name if obj_type == "Object" else context.active_object.active_material.name
+        op.obj_type = obj_type
+        op = row.operator("bim.remove_pset", icon="X", text="")
+        op.pset_id = pset_id
+        op.obj = context.active_object.name if obj_type == "Object" else context.active_object.active_material.name
+        op.obj_type = obj_type
     elif props.active_pset_id != pset_id:
         row.label(text=pset["Name"], icon="COPY_ID")
-        row.operator("bim.remove_pset", icon="X", text="").pset_id = pset_id
+        op = row.operator("bim.remove_pset", icon="X", text="")
+        op.pset_id = pset_id
+        op.obj = context.active_object.name if obj_type == "Object" else context.active_object.active_material.name
+        op.obj_type = obj_type
     elif props.active_pset_id == pset_id:
         row.prop(props, "active_pset_name", icon="COPY_ID", text="")
-        row.operator("bim.edit_pset", icon="CHECKMARK", text="")
-        row.operator("bim.disable_pset_editing", icon="X", text="")
+        op = row.operator("bim.edit_pset", icon="CHECKMARK", text="")
+        op.obj = context.active_object.name if obj_type == "Object" else context.active_object.active_material.name
+        op.obj_type = obj_type
+        op = row.operator("bim.disable_pset_editing", icon="X", text="")
+        op.obj = context.active_object.name if obj_type == "Object" else context.active_object.active_material.name
+        op.obj_type = obj_type
     if pset["is_expanded"]:
         if props.active_pset_id == pset_id:
             for prop in pset["Properties"]:
@@ -29,6 +44,7 @@ def draw_psetqto_ui(pset_id, pset, props, layout):
                 row.scale_y = 0.8
                 row.label(text=prop["Name"])
                 row.label(text=str(prop["value"]))
+
 
 def draw_psetqto_editable_ui(box, props, prop):
     row = box.row(align=True)
@@ -60,6 +76,7 @@ def draw_psetqto_editable_ui(box, props, prop):
         op = row.operator("bim.guess_quantity", icon="SPHERE", text="")
         op.prop = prop["Name"]
 
+
 class BIM_PT_object_psets(Panel):
     bl_label = "IFC Object Property Sets"
     bl_idname = "BIM_PT_object_psets"
@@ -89,14 +106,16 @@ class BIM_PT_object_psets(Panel):
             Data.load(oprops.ifc_definition_id)
         row = self.layout.row(align=True)
         row.prop(props, "pset_name", text="")
-        row.operator("bim.add_pset", icon="ADD", text="")
+        op = row.operator("bim.add_pset", icon="ADD", text="")
+        op.obj = context.active_object.name
+        op.obj_type = "Object"
 
         for pset_id in Data.products[oprops.ifc_definition_id]["psets"]:
             pset = Data.psets[pset_id]
-            draw_psetqto_ui(pset_id, pset, props, self.layout)
+            draw_psetqto_ui(context, pset_id, pset, props, self.layout, "Object")
 
         # TODO reimplement. See #1222.
-        #if props.relating_type and props.relating_type.PsetProperties.psets:
+        # if props.relating_type and props.relating_type.PsetProperties.psets:
         #    self.layout.label(text="Inherited Psets:")
         #    self.draw_psets_ui(props.relating_type.PsetProperties, enabled=False)
 
@@ -134,4 +153,44 @@ class BIM_PT_object_qtos(Panel):
 
         for qto_id in Data.products[oprops.ifc_definition_id]["qtos"]:
             qto = Data.qtos[qto_id]
-            draw_psetqto_ui(qto_id, qto, props, self.layout)
+            draw_psetqto_ui(context, qto_id, qto, props, self.layout, "Object")
+
+
+class BIM_PT_material_psets(Panel):
+    bl_label = "IFC Material Property Sets"
+    bl_idname = "BIM_PT_material_psets"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "material"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            return False
+        props = context.active_object.active_material.BIMObjectProperties
+        if not props.ifc_definition_id:
+            return False
+        if IfcStore.get_file().schema == "IFC2X3":
+            return False # We don't support material psets in IFC2X3 because they suck
+        if props.ifc_definition_id not in Data.products:
+            Data.load(props.ifc_definition_id)
+        if not Data.products[props.ifc_definition_id]:
+            return False
+        return True
+
+    def draw(self, context):
+        oprops = context.active_object.active_material.BIMObjectProperties
+        props = context.active_object.active_material.PsetProperties
+        if not oprops.ifc_definition_id:
+            return
+        if oprops.ifc_definition_id not in Data.products:
+            Data.load(oprops.ifc_definition_id)
+        row = self.layout.row(align=True)
+        row.prop(props, "material_pset_name", text="")
+        op = row.operator("bim.add_pset", icon="ADD", text="")
+        op.obj = context.active_object.active_material.name
+        op.obj_type = "Material"
+
+        for pset_id in Data.products[oprops.ifc_definition_id]["psets"]:
+            pset = Data.psets[pset_id]
+            draw_psetqto_ui(context, pset_id, pset, props, self.layout, "Material")
