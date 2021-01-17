@@ -40,7 +40,6 @@ propertysettemplates_enum = []
 classification_enum = []
 attributes_enum = []
 materialattributes_enum = []
-materialtypes_enum = []
 contexts_enum = []
 subcontexts_enum = []
 target_views_enum = []
@@ -285,13 +284,6 @@ def getAttributeEnumValues(self, context):
     return [(e, e, "") for e in json.loads(self.enum_items)]
 
 
-def getProfileDef(self, context):
-    global profiledef_enum
-    if len(profiledef_enum) < 1:
-        profiledef_enum.extend([(e, e, "") for e in getattr(schema.ifc, "IfcParameterizedProfileDef")])
-    return profiledef_enum
-
-
 def getPersons(self, context):
     from blenderbim.bim.module.owner.data import Data
     if not Data.is_loaded:
@@ -424,27 +416,6 @@ def getApplicableMaterialAttributes(self, context):
     return materialattributes_enum
 
 
-def refreshProfileAttributes(self, context):
-    if not context.active_object:
-        return
-    props = context.active_object.BIMObjectProperties
-    profile = props.material_set.material_profiles[props.material_set.active_material_profile_index]
-    while len(profile.profile_attributes) > 0:
-        profile.profile_attributes.remove(0)
-    for attribute in schema.ifc.IfcParameterizedProfileDef[profile.profile]["attributes"]:
-        profile_attribute = profile.profile_attributes.add()
-        profile_attribute.name = attribute["name"]
-
-
-def getMaterialTypes(self, context):
-    global materialtypes_enum
-    materialtypes_enum.clear()
-    materialtypes_enum = [
-        (m, m, "") for m in ["None", "IfcMaterial", "IfcMaterialConstituentSet", "IfcMaterialLayerSet", "IfcMaterialProfileSet"]
-    ]
-    return materialtypes_enum
-
-
 def getContexts(self, context):
     from blenderbim.bim.module.context.data import Data
     if not Data.is_loaded:
@@ -509,64 +480,6 @@ class Attribute(PropertyGroup):
     is_null: BoolProperty(name="Is Null")
     enum_items: StringProperty(name="Value")
     enum_value: EnumProperty(items=getAttributeEnumValues, name="Value")
-
-
-class MaterialLayer(PropertyGroup):
-    name: StringProperty(name="Name")
-    material: PointerProperty(name="Material", type=bpy.types.Material)
-    layer_thickness: FloatProperty(name="Layer Thickness")
-    is_ventilated: EnumProperty(
-        items=[
-            ("TRUE", "True", "Is an air gap and provides air exchange from the layer to outside air"),
-            ("FALSE", "False", "Is a solid material layer"),
-            ("UNKNOWN", "Unknown", "Is an air gap but does not provide air exchange or not known"),
-        ],
-        name="Is Ventilated",
-        default="FALSE",
-    )
-    description: StringProperty(name="Description")
-    category: EnumProperty(
-        items=[
-            ("None", "None", ""),
-            ("LoadBearing", "Load Bearing", ""),
-            ("Insulation", "Insulation", ""),
-            ("Finish", "Finish", ""),
-            ("Custom", "Custom", ""),
-        ],
-        name="Category",
-        default="None",
-    )
-    custom_category: StringProperty(name="Custom Category")
-    priority: IntProperty(name="Priority")
-
-
-class MaterialConstituent(PropertyGroup):
-    name: StringProperty(name="Name")
-    description: StringProperty(name="Description")
-    material: PointerProperty(name="Material", type=bpy.types.Material)
-    fraction: FloatProperty(name="Fraction")
-    category: StringProperty(name="Category")
-
-
-class MaterialProfile(PropertyGroup):
-    name: StringProperty(name="Name")
-    description: StringProperty(name="Description")
-    material: PointerProperty(name="Material", type=bpy.types.Material)
-    profile: EnumProperty(items=getProfileDef, name="Parameterized Profile Def", update=refreshProfileAttributes)
-    profile_attributes: CollectionProperty(name="Profile Attributes", type=Attribute)
-    priority: IntProperty(name="Priority")
-    category: StringProperty(name="Category")
-
-
-class MaterialSet(PropertyGroup):
-    name: StringProperty(name="Name")
-    description: StringProperty(name="Description")
-    active_material_layer_index: IntProperty(name="Active Material Layer Index")
-    material_layers: CollectionProperty(name="Material Layers", type=MaterialLayer)
-    active_material_constituent_index: IntProperty(name="Active Material Constituent Index")
-    material_constituents: CollectionProperty(name="Material Constituents", type=MaterialConstituent)
-    active_material_profile_index: IntProperty(name="Active Material Profile Index")
-    material_profiles: CollectionProperty(name="Material Profiles", type=MaterialProfile)
 
 
 class Drawing(PropertyGroup):
@@ -1227,7 +1140,7 @@ class BIMProperties(PropertyGroup):
     import_should_allow_non_element_aggregates: BoolProperty(name="Import Non-Element Aggregates", default=False)
     import_should_offset_model: BoolProperty(name="Import and Offset Model", default=False)
     import_model_offset_coordinates: StringProperty(name="Model Offset Coordinates", default="0,0,0")
- 
+
     person: PointerProperty(type=Person)
     active_person_id: IntProperty(name="Active Person Id")
     organisation: PointerProperty(type=Organisation)
@@ -1426,9 +1339,6 @@ class BIMObjectProperties(PropertyGroup):
     constraints: CollectionProperty(name="Constraints", type=Constraint)
     active_constraint_index: IntProperty(name="Active Constraint Index")
     classifications: CollectionProperty(name="Classifications", type=ClassificationReference)
-    material_type: EnumProperty(items=getMaterialTypes, name="Material Type")
-    material: PointerProperty(name="Material", type=bpy.types.Material)
-    material_set: PointerProperty(name="Material Set", type=MaterialSet)
     has_boundary_condition: BoolProperty(name="Has Boundary Condition")
     boundary_condition: PointerProperty(name="Boundary Condition", type=BoundaryCondition)
     structural_member_connection: PointerProperty(name="Structural Member Connection", type=bpy.types.Object)
