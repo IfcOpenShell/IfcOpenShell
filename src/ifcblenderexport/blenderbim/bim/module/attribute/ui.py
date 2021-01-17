@@ -6,8 +6,6 @@ def draw_ui(context, layout, obj_type):
     obj = context.active_object if obj_type == "Object" else context.active_object.active_material
     oprops = obj.BIMObjectProperties
     props = obj.BIMAttributeProperties
-    if not oprops.ifc_definition_id:
-        return
     if oprops.ifc_definition_id not in Data.products:
         Data.load(oprops.ifc_definition_id)
 
@@ -88,7 +86,10 @@ class BIM_PT_material_attributes(Panel):
 
     @classmethod
     def poll(cls, context):
-        return bool(context.active_object.active_material.BIMObjectProperties.ifc_definition_id)
+        try:
+            return bool(context.active_object.active_material.BIMObjectProperties.ifc_definition_id)
+        except:
+            return False
 
     def draw(self, context):
         draw_ui(context, self.layout, "Material")
