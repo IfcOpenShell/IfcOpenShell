@@ -13,5 +13,6 @@ Szenario: Bereitstellen von IFC-Daten
  * Die IFC-Daten müssen das IFC2X3 Schema benutzen
 
  
- Szenario: Projektinformationen
+Szenario: Projektinformationen
+
  * Der Name, die Abkürzung oder die Kurzkennung des Projektes ist "BIMTester Example 1 - IFC2X3"
