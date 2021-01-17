@@ -1,0 +1,168 @@
+# Dutch translations for Bimtester.
+# Copyright (C) 2021 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# Marcel Plomp , 2021.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSIE\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRES\n"
+"POT-Creation-Date: 2020-12-23 11:03+0100\n"
+"PO-Revision-Date: 2020-12-18 11:41+0100\n"
+"Last-Translator: \n"
+"Language: nl\n"
+"Language-Team: nl <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.6.0\n"
+
+#: reports.py:153 reports.py:160
+msgid "OpenBIM auditing is a feature of"
+msgstr "OpenBIM-auditing is een kenmerk van"
+
+#: reports.py:155
+msgid "en"
+msgstr "nl"
+
+#: reports.py:156
+msgid "Success"
+msgstr "Succes"
+
+#: reports.py:157
+msgid "Failure"
+msgstr "Fout"
+
+#: reports.py:158
+msgid "Tests passed"
+msgstr "Tests geslaagd"
+
+#: reports.py:159
+msgid "Duration"
+msgstr "Tijdsduur"
+
+#: reports.py:161
+msgid "and"
+msgstr "en"
+
+#: features/steps/attributes_eleclasses_methods.py:24
+msgid "All {elemcount} elements in the file are {ifc_class}."
+msgstr "Alle {elemcount} de elementen in het bestand zijn {ifc_class}"
+
+#: features/steps/attributes_eleclasses_methods.py:32
+msgid "{falsecount} of {elemcount} element are {ifc_class} elements: {falseelems}"
+msgstr "{falsecount} van de {elemcount} elementen zijn {ifc_class} elementen: {falseelems}"
+
+#: features/steps/attributes_eleclasses_methods.py:41
+#: features/steps/utils.py:158
+msgid "Error in falsecount, something went wrong."
+msgstr "Fout in de telling, er is iets misgegaan."
+
+#: features/steps/attributes_eleclasses_methods.py:80
+msgid "For all {elemcount} {ifc_class} elements at least one of these class "
+"attributes {parameter} has no value."
+msgstr "Voor alle {elemcount} {ifc_class} elementen heeft ten minste één van deze class "
+"attributen {parameter} heeft geen waarde."
+
+#: features/steps/attributes_eleclasses_methods.py:81
+msgid "For the following {falsecount} out of {elemcount} {ifc_class} elements at"
+" least one of these class attributes {parameter} has no value: "
+"{falseelems}"
+msgstr "Van de {falsecount} uit {elemcount} {ifc_class} elementen op "
+"ten minste een van deze class-attributen {parameter} heeft geen waarde:"
+"{falseelems}"
+
+#: features/steps/attributes_eleclasses_methods.py:82
+#: features/steps/attributes_eleclasses_methods.py:108
+#: features/steps/attributes_eleclasses_methods.py:133
+#: features/steps/attributes_psets_methods.py:31
+#: features/steps/geometric_detail_methods.py:52
+#: features/steps/geometric_detail_methods.py:127
+msgid "There are no {ifc_class} elements in the IFC file."
+msgstr "Er zijn geen {ifc_class} elementen in het IFC-bestand."
+
+#: features/steps/attributes_eleclasses_methods.py:106
+msgid "The name of all {elemcount} {elemcount} elements is not set."
+msgstr "De naam van alle {elemcount} {elemcount} elementen is niet ingesteld."
+
+#: features/steps/attributes_eleclasses_methods.py:107
+msgid "The name of {falsecount} out of {elemcount} {ifc_class} elements is not "
+"set: {falseelems}"
+msgstr "De naam van {falsecount} van de {elemcount} {ifc_class} elementen is niet"
+"set: {falseelems}"
+
+#: features/steps/attributes_eleclasses_methods.py:131
+msgid "The description of all {elemcount} {elemcount} elements is not set."
+msgstr "De beschrijving van alle {elemcount} {elemcount} elementen is niet ingesteld."
+
+#: features/steps/attributes_eleclasses_methods.py:132
+msgid "The description of {falsecount} out of {elemcount} {ifc_class} elements "
+"is not set: {falseelems}"
+msgstr "De beschrijving van {falsecount} uit {elemcount} {ifc_class} elementen "
+"is niet ingesteld: {falseelems}"
+
+#: features/steps/attributes_psets_methods.py:29
+msgid "All {elemcount} {ifc_class} elements are missing the property {parameter}"
+" in the pset."
+msgstr "Alle {elemcount} {ifc_class} elementen missen de eigenschap {parameter} "
+"in de pset."
+
+#: features/steps/attributes_psets_methods.py:30
+msgid "The following {falsecount} of {elemcount} {ifc_class} elements are "
+"missing the property {parameter} in the pset: {falseelems}"
+msgstr "De volgende {falsecount} van {elemcount} {ifc_class} elementen zijn "
+"ontbreekt de eigenschap {parameter} in de pset: {falseelems}"
+
+#: features/steps/geometric_detail_methods.py:50
+msgid "All {elemcount} {ifc_class} elements are not a {parameter} representation."
+msgstr "Alle {elemcount} {ifc_class} elementen zijn geen {parameter} representatie."
+
+#: features/steps/geometric_detail_methods.py:51
+msgid "The following {falsecount} of {elemcount} {ifc_class} elements are not a "
+"{parameter} representation: {falseelems}"
+msgstr "De volgende {falsecount} van {elemcount} {ifc_class} -elementen zijn geen "
+"{parameter} representatie: {falseelems}"
+
+#: features/steps/geometric_detail_methods.py:125
+msgid "The geometry of all {elemcount} {ifc_class} elements have errors."
+msgstr "De geometrie van alle {elemcount} de {ifc_class} elementen bevatten fouten."
+
+#: features/steps/geometric_detail_methods.py:126
+msgid "The geometry of {falsecount} out of all {elemcount} {ifc_class} elements "
+"have errors: {falseelems}"
+msgstr "De geometrie van {falsecount} van alle {elemcount} {ifc_class} elementen "
+"hebben fouten: {falseelems}"
+
+#: features/steps/ifcdata_methods.py:7
+msgid "We expected a schema of {} but instead got {}"
+msgstr "We verwachtten een schema van {} maar kregen in plaats daarvan {}"
+
+#~ msgid "The geometry of all {} {} elements have errors."
+#~ msgstr ""
+
+#~ msgid "The geometry of {} out of all {} {} elements have errors: {}"
+#~ msgstr ""
+
+#~ msgid "There are no {} elements in the IFC file."
+#~ msgstr ""
+
+#~ msgid "All {} {} elements are not a IfcFacetedBrep representation."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "The following {} of {} {} elements"
+#~ " are not a IfcFacetedBrep representation:"
+#~ " {}"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "All {elemcount} {ifc_class} elements are "
+#~ "not a IfcFacetedBrep representation."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "The following {falsecount} of {elemcount} "
+#~ "{ifc_class} elements are not a "
+#~ "IfcFacetedBrep representation: {falseelems}"
+#~ msgstr ""
