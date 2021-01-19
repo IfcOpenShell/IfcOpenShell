@@ -2519,56 +2519,6 @@ class PropagateTextData(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ConvertLocalToGlobal(bpy.types.Operator):
-    bl_idname = "bim.convert_local_to_global"
-    bl_label = "Convert Local To Global"
-
-    def execute(self, context):
-        if bpy.context.scene.MapConversion.scale:
-            scale = float(bpy.context.scene.MapConversion.scale)
-        else:
-            scale = 1.0
-        results = ifcopenshell.util.geolocation.xyz2enh(
-            bpy.context.scene.cursor.location[0],
-            bpy.context.scene.cursor.location[1],
-            bpy.context.scene.cursor.location[2],
-            float(bpy.context.scene.MapConversion.eastings),
-            float(bpy.context.scene.MapConversion.northings),
-            float(bpy.context.scene.MapConversion.orthogonal_height),
-            float(bpy.context.scene.MapConversion.x_axis_abscissa),
-            float(bpy.context.scene.MapConversion.x_axis_ordinate),
-            scale,
-        )
-        print("Coordinates:", results)
-        bpy.context.scene.cursor.location = results
-        return {"FINISHED"}
-
-
-class ConvertGlobalToLocal(bpy.types.Operator):
-    bl_idname = "bim.convert_global_to_local"
-    bl_label = "Convert Global To Local"
-
-    def execute(self, context):
-        if bpy.context.scene.MapConversion.scale:
-            scale = float(bpy.context.scene.MapConversion.scale)
-        else:
-            scale = 1.0
-        results = ifcopenshell.util.geolocation.enh2xyz(
-            float(bpy.context.scene.BIMProperties.eastings),
-            float(bpy.context.scene.BIMProperties.northings),
-            float(bpy.context.scene.BIMProperties.orthogonal_height),
-            float(bpy.context.scene.MapConversion.eastings),
-            float(bpy.context.scene.MapConversion.northings),
-            float(bpy.context.scene.MapConversion.orthogonal_height),
-            float(bpy.context.scene.MapConversion.x_axis_abscissa),
-            float(bpy.context.scene.MapConversion.x_axis_ordinate),
-            scale,
-        )
-        print("Coordinates:", results)
-        bpy.context.scene.cursor.location = results
-        return {"FINISHED"}
-
-
 class SelectIfcPatchInput(bpy.types.Operator):
     bl_idname = "bim.select_ifc_patch_input"
     bl_label = "Select IFC Patch Input"
@@ -3107,31 +3057,6 @@ class SetViewportShadowFromSun(bpy.types.Operator):
         context.scene.display.light_direction = mat.inverted() @ (
             context.active_object.matrix_world.to_quaternion() @ Vector((0, 0, -1))
         )
-        return {"FINISHED"}
-
-
-class SetNorthOffset(bpy.types.Operator):
-    bl_idname = "bim.set_north_offset"
-    bl_label = "Set North Offset"
-
-    def execute(self, context):
-        context.scene.sun_pos_properties.north_offset = -radians(
-            ifcopenshell.util.geolocation.xy2angle(
-                float(bpy.context.scene.MapConversion.x_axis_abscissa),
-                float(bpy.context.scene.MapConversion.x_axis_ordinate),
-            )
-        )
-        return {"FINISHED"}
-
-
-class GetNorthOffset(bpy.types.Operator):
-    bl_idname = "bim.get_north_offset"
-    bl_label = "Get North Offset"
-
-    def execute(self, context):
-        x_angle = -context.scene.sun_pos_properties.north_offset
-        bpy.context.scene.MapConversion.x_axis_abscissa = str(cos(x_angle))
-        bpy.context.scene.MapConversion.x_axis_ordinate = str(sin(x_angle))
         return {"FINISHED"}
 
 

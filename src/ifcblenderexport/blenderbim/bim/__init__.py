@@ -20,6 +20,7 @@ if bpy is not None:
         "bimtester": None,
         "debug": None,
         "geometry": None,
+        "georeference": None,
         "material": None,
         "model": None,
         "owner": None,
@@ -146,8 +147,6 @@ if bpy is not None:
         operator.AddVariable,
         operator.RemoveVariable,
         operator.PropagateTextData,
-        operator.ConvertLocalToGlobal,
-        operator.ConvertGlobalToLocal,
         operator.SelectIfcPatchInput,
         operator.SelectIfcPatchOutput,
         operator.ExecuteIfcPatch,
@@ -170,8 +169,6 @@ if bpy is not None:
         operator.BuildSchedule,
         operator.AddScheduleToSheet,
         operator.SetViewportShadowFromSun,
-        operator.SetNorthOffset,
-        operator.GetNorthOffset,
         operator.AddPresentationLayer,
         operator.AssignPresentationLayer,
         operator.UnassignPresentationLayer,
@@ -216,8 +213,6 @@ if bpy is not None:
         prop.BIMProperties,
         prop.DocProperties,
         prop.BIMLibrary,
-        prop.MapConversion,
-        prop.TargetCRS,
         prop.IfcParameter,
         prop.BoundaryCondition,
         prop.PsetQto,
@@ -242,7 +237,6 @@ if bpy is not None:
         ui.BIM_PT_search,
         ui.BIM_PT_ifcclash,
         ui.BIM_PT_library,
-        ui.BIM_PT_gis,
         ui.BIM_PT_presentation_layers,
         ui.BIM_PT_diff,
         ui.BIM_PT_patch,
@@ -294,8 +288,6 @@ if bpy is not None:
         bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
         bpy.types.Scene.DocProperties = bpy.props.PointerProperty(type=prop.DocProperties)
         bpy.types.Scene.BIMLibrary = bpy.props.PointerProperty(type=prop.BIMLibrary)
-        bpy.types.Scene.MapConversion = bpy.props.PointerProperty(type=prop.MapConversion)
-        bpy.types.Scene.TargetCRS = bpy.props.PointerProperty(type=prop.TargetCRS)
         bpy.types.Object.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
         bpy.types.Material.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
         bpy.types.Collection.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties) # Check if we need this
@@ -319,8 +311,6 @@ if bpy is not None:
         bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
         del bpy.types.Scene.BIMProperties
         del bpy.types.Scene.DocProperties
-        del bpy.types.Scene.MapConversion
-        del bpy.types.Scene.TargetCRS
         del bpy.types.Object.BIMObjectProperties
         del bpy.types.Material.BIMObjectProperties
         del bpy.types.Collection.BIMObjectProperties # Check if we need this

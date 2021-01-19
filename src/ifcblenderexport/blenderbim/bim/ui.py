@@ -437,53 +437,6 @@ class BIM_PT_presentation_layer_data(Panel):
             op.index = scene_props.active_presentation_layer_index
 
 
-class BIM_PT_gis(Panel):
-    bl_label = "IFC Georeferencing"
-    bl_idname = "BIM_PT_gis"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-        scene = context.scene
-        layout.row().prop(scene.BIMProperties, "has_georeferencing")
-
-        layout.label(text="Map Conversion:")
-        layout.row().prop(scene.MapConversion, "eastings")
-        layout.row().prop(scene.MapConversion, "northings")
-        layout.row().prop(scene.MapConversion, "orthogonal_height")
-        layout.row().prop(scene.MapConversion, "x_axis_abscissa")
-        layout.row().prop(scene.MapConversion, "x_axis_ordinate")
-        layout.row().prop(scene.MapConversion, "scale")
-
-        layout.label(text="Target CRS:")
-        layout.row().prop(scene.TargetCRS, "name")
-        layout.row().prop(scene.TargetCRS, "description")
-        layout.row().prop(scene.TargetCRS, "geodetic_datum")
-        layout.row().prop(scene.TargetCRS, "vertical_datum")
-        layout.row().prop(scene.TargetCRS, "map_projection")
-        layout.row().prop(scene.TargetCRS, "map_zone")
-        layout.row().prop(scene.TargetCRS, "map_unit")
-
-        row = layout.row(align=True)
-        row.operator("bim.convert_local_to_global")
-
-        layout.row().prop(scene.BIMProperties, "eastings")
-        layout.row().prop(scene.BIMProperties, "northings")
-        layout.row().prop(scene.BIMProperties, "orthogonal_height")
-
-        row = layout.row(align=True)
-        row.operator("bim.convert_global_to_local")
-
-        if hasattr(bpy.context.scene, "sun_pos_properties"):
-            row = layout.row(align=True)
-            row.operator("bim.get_north_offset")
-            row.operator("bim.set_north_offset")
-
-
 class BIM_PT_presentation_layers(Panel):
     bl_label = "IFC Presentation Layers"
     bl_idname = "BIM_PT_presentation_layer"

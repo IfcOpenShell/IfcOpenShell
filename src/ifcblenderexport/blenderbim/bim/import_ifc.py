@@ -371,8 +371,6 @@ class IfcImporter:
         if self.ifc_import_settings.should_import_native:
             self.parse_native_elements()
             self.profile_code("Parsing native elements")
-        self.create_georeferencing()
-        self.profile_code("Georeferencing ifc")
         self.create_groups()
         self.profile_code("Creating groups")
         self.create_grids()
@@ -645,46 +643,6 @@ class IfcImporter:
         if element.ObjectPlacement.RelativePlacement.RefDirection:
             element.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1.0, 0.0, 0.0)
 
-    def create_georeferencing(self):
-        try:
-            map_conversion = self.file.by_type("IfcMapConversion")
-            projected_crs = self.file.by_type("IfcProjectedCRS")
-            if not map_conversion or not projected_crs:
-                return
-        except:
-            return  # For example, in IFC2X3
-        map_conversion = map_conversion[0]
-        projected_crs = projected_crs[0]
-        scene = bpy.context.scene
-        scene.BIMProperties.has_georeferencing = True
-        map_conversion_map = {
-            "Eastings": "eastings",
-            "Northings": "northings",
-            "OrthogonalHeight": "orthogonal_height",
-            "XAxisAbscissa": "x_axis_abscissa",
-            "XAxisOrdinate": "x_axis_ordinate",
-            "Scale": "scale",
-        }
-        target_crs_map = {
-            "Name": "name",
-            "Description": "description",
-            "GeodeticDatum": "geodetic_datum",
-            "VerticalDatum": "vertical_datum",
-            "MapProjection": "map_projection",
-            "MapZone": "map_zone",
-            "MapUnit": "map_unit",
-        }
-        for keyA, keyB in map_conversion_map.items():
-            value = getattr(map_conversion, keyA)
-            if value is not None:
-                setattr(scene.MapConversion, keyB, str(value))
-        for keyA, keyB in target_crs_map.items():
-            value = getattr(projected_crs, keyA)
-            if value is not None:
-                if keyA == "MapUnit":
-                    value = self.get_unit_name(value)
-                setattr(scene.TargetCRS, keyB, str(value))
-
     def get_unit_name(self, named_unit):
         name = ""
         if hasattr(named_unit, "Prefix") and named_unit.Prefix:
@@ -710,7 +668,6 @@ class IfcImporter:
         else:
             obj = bpy.data.objects.new(f"{element.is_a()}/{element.Name}", None)
             obj.BIMObjectProperties.ifc_definition_id = element.id()
-            self.add_element_attributes(element, obj.BIMObjectProperties)
             group_collection.objects.link(obj)
         self.groups[element.GlobalId] = {"ifc": element, "blender": obj}
 
@@ -748,7 +705,6 @@ class IfcImporter:
             obj = bpy.data.objects.new(f"IfcGridAxis/{axis.AxisTag}", mesh)
             obj.BIMObjectProperties.ifc_definition_id = element.id()
             obj.matrix_world = matrix_world
-            self.add_element_attributes(axis, obj.BIMObjectProperties)
             grid.objects.link(obj)
 
     def create_type_products(self):
@@ -1755,21 +1711,6 @@ class IfcImporter:
         else:
             self.ifc_import_settings.logger.warning("Warning: this object is outside the spatial hierarchy %s", element)
             bpy.context.scene.collection.objects.link(obj)
-
-    def add_element_attributes(self, element, props):
-        attributes = element.get_info()
-        for key, value in attributes.items():
-            if (
-                value is None
-                or isinstance(value, (tuple, ifcopenshell.entity_instance))
-                or key == "id"
-                or key == "type"
-            ):
-                continue
-            attribute = props.attributes.add()
-            attribute.name = key
-            attribute.data_type = "string"
-            attribute.string_value = str(self.cast_edge_case_attribute(element.is_a(), key, value))
 
     def cast_edge_case_attribute(self, ifc_class, key, value):
         if key == "RefLatitude" or key == "RefLongitude":
