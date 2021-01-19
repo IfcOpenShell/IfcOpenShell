@@ -1075,8 +1075,6 @@ class BIMProperties(PropertyGroup):
     diff_old_file: StringProperty(default="", name="Diff Old IFC File")
     diff_new_file: StringProperty(default="", name="Diff New IFC File")
     diff_relationships: StringProperty(default="", name="Diff Relationships")
-    aggregate_class: EnumProperty(items=getIfcClasses, name="Aggregate Class")
-    aggregate_name: StringProperty(name="Aggregate Name")
     classification: EnumProperty(items=getClassifications, name="Classification", update=refreshReferences)
     active_classification_name: StringProperty(name="Active Classification Name")
     classifications: CollectionProperty(name="Classifications", type=Classification)
