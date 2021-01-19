@@ -20,14 +20,42 @@ class EditObjectPlacement(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
+        # TODO: determine how to deal with this module dependency
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        matrix = np.array(obj.matrix_world)
+        if props.has_blender_offset and props.blender_offset_type == "OBJECT_PLACEMENT":
+            self.calculate_unit_scale()
+            # TODO: np.array? Why not matrix?
+            matrix = np.array(
+                ifcopenshell.util.geolocation.local2global(
+                    np.matrix(obj.matrix_world),
+                    float(props.blender_eastings) * self.unit_scale,
+                    float(props.blender_northings) * self.unit_scale,
+                    float(props.blender_orthogonal_height) * self.unit_scale,
+                    float(props.blender_x_axis_abscissa),
+                    float(props.blender_x_axis_ordinate),
+                )
+            )
         edit_object_placement.Usecase(
             self.file,
             {
                 "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                "matrix": np.array(obj.matrix_world),
+                "matrix": matrix,
             },
         ).execute()
         return {"FINISHED"}
+
+    def calculate_unit_scale(self):
+        self.unit_scale = 1
+        units = self.file.by_type("IfcUnitAssignment")[0]
+        for unit in units.Units:
+            if not hasattr(unit, "UnitType") or unit.UnitType != "LENGTHUNIT":
+                continue
+            while unit.is_a("IfcConversionBasedUnit"):
+                self.unit_scale *= unit.ConversionFactor.ValueComponent.wrappedValue
+                unit = unit.ConversionFactor.UnitComponent
+            if unit.is_a("IfcSIUnit"):
+                self.unit_scale *= ifcopenshell.util.unit.get_prefix_multiplier(unit.Prefix)
 
 
 class AddRepresentation(bpy.types.Operator):
@@ -67,7 +95,8 @@ class AddRepresentation(bpy.types.Operator):
                 },
             ).execute()
             assign_representation.Usecase(
-                self.file, {"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id), "representation": result}
+                self.file,
+                {"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id), "representation": result},
             ).execute()
 
             existing_mesh = obj.data

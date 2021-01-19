@@ -208,7 +208,7 @@ class ConvertLocalToGlobal(bpy.types.Operator):
             Data.map_conversion["Northings"],
             Data.map_conversion["OrthogonalHeight"],
             Data.map_conversion.get("XAxisAbscissa", 1.0),
-            Data.map_conversion.get("XAxisAbscissa", 0.0),
+            Data.map_conversion.get("XAxisOrdinate", 0.0),
             Data.map_conversion.get("Scale", 1.0),
         )
         props.coordinate_output = ",".join([str(r) for r in results])
@@ -233,7 +233,7 @@ class ConvertGlobalToLocal(bpy.types.Operator):
             Data.map_conversion["Northings"],
             Data.map_conversion["OrthogonalHeight"],
             Data.map_conversion.get("XAxisAbscissa", 1.0),
-            Data.map_conversion.get("XAxisAbscissa", 0.0),
+            Data.map_conversion.get("XAxisOrdinate", 0.0),
             Data.map_conversion.get("Scale", 1.0),
         )
         props.coordinate_output = ",".join([str(r) for r in results])
