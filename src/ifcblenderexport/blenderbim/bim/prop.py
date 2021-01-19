@@ -478,6 +478,7 @@ class Attribute(PropertyGroup):
     int_value: IntProperty(name="Value")
     float_value: FloatProperty(name="Value")
     is_null: BoolProperty(name="Is Null")
+    is_optional: BoolProperty(name="Is Optional")
     enum_items: StringProperty(name="Value")
     enum_value: EnumProperty(items=getAttributeEnumValues, name="Value")
 
@@ -1207,9 +1208,6 @@ class BIMProperties(PropertyGroup):
     smart_clash_grouping_max_distance: IntProperty(name="Smart Clash Grouping Max Distance", default=3, soft_min=1, soft_max=10)
     constraints: CollectionProperty(name="Constraints", type=Constraint)
     active_constraint_index: IntProperty(name="Active Constraint Index")
-    eastings: StringProperty(name="Eastings")
-    northings: StringProperty(name="Northings")
-    orthogonal_height: StringProperty(name="Orthogonal Height")
     ifc_patch_recipes: EnumProperty(items=getIfcPatchRecipes, name="Recipes")
     ifc_patch_input: StringProperty(default="", name="IFC Patch Input IFC")
     ifc_patch_output: StringProperty(default="", name="IFC Patch Output IFC")
@@ -1263,25 +1261,6 @@ class BIMProperties(PropertyGroup):
     )
     active_presentation_layer_index: IntProperty(name="Active Presentation Layer Index")
     presentation_layers: CollectionProperty(name="Presentation Layers", type=PresentationLayer)
-
-
-class MapConversion(PropertyGroup):
-    eastings: StringProperty(name="Eastings")
-    northings: StringProperty(name="Northings")
-    orthogonal_height: StringProperty(name="Orthogonal Height")
-    x_axis_abscissa: StringProperty(name="X Axis Abscissa")
-    x_axis_ordinate: StringProperty(name="X Axis Ordinate")
-    scale: StringProperty(name="Scale")
-
-
-class TargetCRS(PropertyGroup):
-    name: StringProperty(name="Name")
-    description: StringProperty(name="Description")
-    geodetic_datum: StringProperty(name="Geodetic Datum")
-    vertical_datum: StringProperty(name="Vertical Datum")
-    map_projection: StringProperty(name="Map Projection")
-    map_zone: StringProperty(name="Map Zone")
-    map_unit: StringProperty(name="Map Unit")
 
 
 class BIMLibrary(PropertyGroup):
