@@ -964,8 +964,6 @@ class BIM_PT_mvd(Panel):
         layout.label(text="Experimental Modes:")
 
         row = layout.row()
-        row.prop(bim_properties, "import_should_use_legacy")
-        row = layout.row()
         row.prop(bim_properties, "import_should_import_native")
         row = layout.row()
         row.prop(bim_properties, "import_export_should_roundtrip_native")

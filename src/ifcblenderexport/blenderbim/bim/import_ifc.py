@@ -85,7 +85,7 @@ class MaterialCreator:
         item_id = self.mesh.BIMMeshProperties.ifc_item_ids.add()
         item_id.name = str(item.id())
 
-        styled_item = item.StyledByItem[0] # Cardinality is S[0:1]
+        styled_item = item.StyledByItem[0]  # Cardinality is S[0:1]
         style_name = self.get_surface_style_name(styled_item)
 
         if not style_name:
@@ -130,7 +130,9 @@ class MaterialCreator:
             material_to_slot[i] = slot_index
 
         if len(self.mesh.polygons) == len(self.mesh["ios_material_ids"]):
-            material_index = [(material_to_slot[mat_id] if mat_id != -1 else 0) for mat_id in self.mesh["ios_material_ids"]]
+            material_index = [
+                (material_to_slot[mat_id] if mat_id != -1 else 0) for mat_id in self.mesh["ios_material_ids"]
+            ]
             self.mesh.polygons.foreach_set("material_index", material_index)
 
     def canonicalise_material_name(self, name):
@@ -225,7 +227,7 @@ class MaterialCreator:
             if style.Name:
                 return style.Name
             return str(style.id())
-        return None # We only support surface styles right now
+        return None  # We only support surface styles right now
 
     def parse_styled_item(self, styled_item, material):
         styles = self.get_styled_item_styles(styled_item)
@@ -378,12 +380,8 @@ class IfcImporter:
         if self.ifc_import_settings.should_import_native:
             self.create_native_products()
         self.profile_code("Creating native products")
-        # TODO: Deprecate after bug #682 is fixed and the new importer is stable
-        if self.ifc_import_settings.should_use_legacy:
-            self.create_products_legacy()
-        else:
-            self.create_products()
-            self.profile_code("Creating meshified products")
+        self.create_products()
+        self.profile_code("Creating meshified products")
         self.relate_openings()
         self.profile_code("Relating openings")
         self.place_objects_in_spatial_tree()
@@ -755,11 +753,6 @@ class IfcImporter:
                 and context.TargetView == "MODEL_VIEW"
             ):
                 return representation_map
-
-    def create_products_legacy(self):
-        elements = self.file.by_type("IfcElement") + self.file.by_type("IfcSpace")
-        for element in elements:
-            self.create_product_legacy(element)
 
     def create_native_products(self):
         if not self.native_elements:
@@ -1228,7 +1221,7 @@ class IfcImporter:
                             obj = self.added_data[product.GlobalId]
                             obj.data.BIMMeshProperties.presentation_layer_index = layer_index
                         except:
-                            pass # Occurs for example in opening elements or exclusions
+                            pass  # Occurs for example in opening elements or exclusions
 
     def clean_mesh(self):
         obj = None
@@ -1246,34 +1239,6 @@ class IfcImporter:
         bpy.ops.mesh.tris_convert_to_quads(context_override)
         bpy.ops.mesh.normals_make_consistent(context_override)
         bpy.ops.object.editmode_toggle(context_override)
-
-    def add_pset(self, pset, props):
-        new_pset = props.psets.add()
-        new_pset.name = pset.Name
-        pset_template = schema.ifc.psetqto.get_by_name(new_pset.name)
-        if pset_template:
-            for prop_name in (p.Name for p in pset_template.HasPropertyTemplates):
-                prop = new_pset.properties.add()
-                prop.name = prop_name
-        try:
-            if hasattr(pset, "HasProperties"):
-                props = pset.HasProperties
-            elif hasattr(pset, "Properties"):
-                props = pset.Properties
-        except:
-            return # I've seen ArchiCAD produce invalid IFCs with empty data
-        # Invalid IFC, but some vendors like Solidworks do this so we accomodate it
-        if not props:
-            return
-        for prop in props:
-            if prop.is_a("IfcPropertySingleValue") and prop.NominalValue:
-                index = new_pset.properties.find(prop.Name)
-                if index >= 0:
-                    new_pset.properties[index].string_value = str(prop.NominalValue.wrappedValue)
-                else:
-                    new_prop = new_pset.properties.add()
-                    new_prop.name = prop.Name
-                    new_prop.string_value = str(prop.NominalValue.wrappedValue)
 
     def add_opening_relation(self, element, obj):
         if not element.is_a("IfcOpeningElement"):
@@ -1592,46 +1557,6 @@ class IfcImporter:
                 objects_to_purge.append(obj)
         bpy.ops.object.delete({"selected_objects": objects_to_purge})
 
-    def create_product_legacy(self, element):
-        if (
-            self.diff
-            and element.GlobalId not in self.diff["added"]
-            and element.GlobalId not in self.diff["changed"].keys()
-        ):
-            return
-
-        self.ifc_import_settings.logger.info("Creating object %s", element)
-        self.time = time.time()
-        if element.is_a("IfcOpeningElement"):
-            return
-
-        try:
-            representation_id = self.get_representation_id(element)
-
-            mesh_name = "mesh-{}".format(representation_id)
-            mesh = self.meshes.get(mesh_name)
-            if mesh is None or representation_id is None:
-                shape = ifcopenshell.geom.create_shape(self.settings, element)
-                self.ifc_import_settings.logger.info("Shape was generated in %.2f", time.time() - self.time)
-                self.time = time.time()
-
-                mesh = self.create_mesh(element, shape)
-                self.meshes[mesh_name] = mesh
-                self.mesh_shapes[mesh_name] = shape
-            else:
-                self.ifc_import_settings.logger.info("Mesh reused.")
-        except:
-            self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
-            return
-
-        obj = bpy.data.objects.new(self.get_name(element), mesh)
-        obj.BIMObjectProperties.ifc_definition_id = element.id()
-        self.material_creator.create(element, obj, mesh)
-        obj.matrix_world = self.get_element_matrix(element, mesh_name)
-        self.add_element_classifications(element, obj)
-        self.add_element_document_relations(element, obj)
-        self.added_data[element.GlobalId] = obj
-
     def add_element_document_relations(self, element, obj):
         for association in element.HasAssociations:
             if association.is_a("IfcRelAssociatesDocument"):
@@ -1672,7 +1597,7 @@ class IfcImporter:
                 return self.place_object_in_spatial_tree(container, obj)
             elif element.is_a("IfcGrid"):
                 grid_collection = bpy.data.collections.get(obj.name)
-                if grid_collection: # Just in case we ran into invalid grids from Revit
+                if grid_collection:  # Just in case we ran into invalid grids from Revit
                     self.spatial_structure_elements[container.GlobalId]["blender"].children.link(grid_collection)
                     grid_collection.objects.link(obj)
             else:
@@ -2009,7 +1934,6 @@ class IfcImportSettings:
         self.should_use_cpu_multiprocessing = False
         self.should_import_with_profiling = False
         self.should_import_native = False
-        self.should_use_legacy = False
         self.should_merge_aggregates = False
         self.should_merge_by_class = False
         self.should_merge_by_material = False
@@ -2039,7 +1963,6 @@ class IfcImportSettings:
         settings.should_import_with_profiling = scene_bim.import_should_import_with_profiling
         settings.should_import_native = scene_bim.import_should_import_native
         settings.should_roundtrip_native = scene_bim.import_export_should_roundtrip_native
-        settings.should_use_legacy = scene_bim.import_should_use_legacy
         settings.should_import_aggregates = scene_bim.import_should_import_aggregates
         settings.should_merge_aggregates = scene_bim.import_should_merge_aggregates
         settings.should_merge_by_class = scene_bim.import_should_merge_by_class
