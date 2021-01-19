@@ -771,20 +771,6 @@ class BIM_PT_bim(Panel):
         row.operator("bim.select_class")
         row.operator("bim.select_type")
 
-        layout.label(text="Aggregates:")
-        row = layout.row()
-        row.prop(bim_properties, "aggregate_class")
-        row = layout.row()
-        row.prop(bim_properties, "aggregate_name")
-
-        row = layout.row(align=True)
-        row.operator("bim.create_aggregate")
-        row.operator("bim.explode_aggregate")
-
-        row = layout.row(align=True)
-        row.operator("bim.edit_aggregate")
-        row.operator("bim.save_aggregate")
-
 
 class BIM_PT_search(Panel):
     bl_label = "IFC Search"
