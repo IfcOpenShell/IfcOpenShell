@@ -23,7 +23,7 @@ class EnableEditingPerson(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        props = context.scene.BIMProperties
+        props = context.scene.BIMOwnerProperties
         props.active_person_id = self.person_id
         data = Data.people[self.person_id]
         name = data["Id"] if self.file.schema == "IFC2X3" else data["Identification"]
@@ -41,7 +41,7 @@ class DisableEditingPerson(bpy.types.Operator):
     bl_label = "Disable Editing Person"
 
     def execute(self, context):
-        context.scene.BIMProperties.active_person_id = 0
+        context.scene.BIMOwnerProperties.active_person_id = 0
         return {"FINISHED"}
 
 
@@ -61,7 +61,7 @@ class EditPerson(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        props = context.scene.BIMProperties
+        props = context.scene.BIMOwnerProperties
         attributes = {
             "Identification": props.person.name or None,
             "FamilyName": props.person.family_name or None,
@@ -100,7 +100,7 @@ class EnableEditingRole(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        props = context.scene.BIMProperties
+        props = context.scene.BIMOwnerProperties
         props.active_role_id = self.role_id
         data = Data.roles[self.role_id]
         props.role.name = data["Role"]
@@ -114,7 +114,7 @@ class DisableEditingRole(bpy.types.Operator):
     bl_label = "Disable Editing Role"
 
     def execute(self, context):
-        context.scene.BIMProperties.active_role_id = 0
+        context.scene.BIMOwnerProperties.active_role_id = 0
         return {"FINISHED"}
 
 
@@ -136,7 +136,7 @@ class EditRole(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        props = context.scene.BIMProperties
+        props = context.scene.BIMOwnerProperties
         attributes = {
             "Role": props.role.name,
             "UserDefinedRole": props.role.user_defined_role if props.role.name == "USERDEFINED" else None,
@@ -184,7 +184,7 @@ class EnableEditingAddress(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        props = context.scene.BIMProperties
+        props = context.scene.BIMOwnerProperties
         props.active_address_id = self.address_id
         data = Data.addresses[self.address_id]
         props.address.name = data["type"]
@@ -218,7 +218,7 @@ class DisableEditingAddress(bpy.types.Operator):
     bl_label = "Disable Editing Address"
 
     def execute(self, context):
-        context.scene.BIMProperties.active_address_id = 0
+        context.scene.BIMOwnerProperties.active_address_id = 0
         return {"FINISHED"}
 
 
@@ -228,7 +228,7 @@ class EditAddress(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        props = context.scene.BIMProperties
+        props = context.scene.BIMOwnerProperties
         attributes = {
             "Purpose": props.address.purpose,
             "UserDefinedPurpose": props.address.user_defined_purpose
@@ -291,7 +291,7 @@ class EnableEditingOrganisation(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        props = context.scene.BIMProperties
+        props = context.scene.BIMOwnerProperties
         props.active_organisation_id = self.organisation_id
         data = Data.organisations[self.organisation_id]
         identification = data["Id"] if self.file.schema == "IFC2X3" else data["Identification"]
@@ -306,7 +306,7 @@ class DisableEditingOrganisation(bpy.types.Operator):
     bl_label = "Disable Editing Organisation"
 
     def execute(self, context):
-        context.scene.BIMProperties.active_organisation_id = 0
+        context.scene.BIMOwnerProperties.active_organisation_id = 0
         return {"FINISHED"}
 
 
@@ -326,7 +326,7 @@ class EditOrganisation(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        props = context.scene.BIMProperties
+        props = context.scene.BIMOwnerProperties
         attributes = {
             "Identification": props.organisation.identification or None,
             "Name": props.organisation.name,

@@ -5,7 +5,7 @@ from blenderbim.bim.ifc import IfcStore
 
 
 def draw_roles_ui(box, assigned_object_id, roles):
-    props = bpy.context.scene.BIMProperties
+    props = bpy.context.scene.BIMOwnerProperties
     row = box.row(align=True)
     row.label(text="Roles")
     row.operator("bim.add_role", icon="ADD", text="").assigned_object_id = assigned_object_id
@@ -31,7 +31,7 @@ def draw_roles_ui(box, assigned_object_id, roles):
 
 
 def draw_addresses_ui(box, assigned_object_id, addresses, file):
-    props = bpy.context.scene.BIMProperties
+    props = bpy.context.scene.BIMOwnerProperties
     row = box.row(align=True)
     row.label(text="Addresses")
     op = row.operator("bim.add_address", icon="LINK_BLEND", text="")
@@ -110,7 +110,7 @@ class BIM_PT_people(Panel):
 
         self.file = IfcStore.get_file()
         self.layout.use_property_split = True
-        props = context.scene.BIMProperties
+        props = context.scene.BIMOwnerProperties
 
         row = self.layout.row()
         row.operator("bim.add_person", icon="ADD")
@@ -169,7 +169,7 @@ class BIM_PT_organisations(Panel):
 
         self.file = IfcStore.get_file()
         self.layout.use_property_split = True
-        props = context.scene.BIMProperties
+        props = context.scene.BIMOwnerProperties
 
         row = self.layout.row()
         row.operator("bim.add_organisation", icon="ADD")
@@ -216,7 +216,7 @@ class BIM_PT_owner(Panel):
             Data.load()
 
         self.layout.use_property_split = True
-        props = context.scene.BIMProperties
+        props = context.scene.BIMOwnerProperties
 
         if not Data.people:
             self.layout.label(text="No people found.")

@@ -284,30 +284,6 @@ def getAttributeEnumValues(self, context):
     return [(e, e, "") for e in json.loads(self.enum_items)]
 
 
-def getPersons(self, context):
-    from blenderbim.bim.module.owner.data import Data
-    if not Data.is_loaded:
-        Data.load()
-    results = []
-    for ifc_id, person in Data.people.items():
-        if "Id" in person:
-            identifier = person["Id"] or ""
-        else:
-            identifier = person["Identifier"] or ""
-        results.append((str(ifc_id), identifier, ""))
-    return results
-
-
-def getOrganisations(self, context):
-    from blenderbim.bim.module.owner.data import Data
-    if not Data.is_loaded:
-        Data.load()
-    results = []
-    for ifc_id, organisation in Data.organisations.items():
-        results.append((str(ifc_id), organisation["Name"], ""))
-    return results
-
-
 def getIfcPatchRecipes(self, context):
     global ifcpatchrecipes_enum
     if len(ifcpatchrecipes_enum) < 1:
@@ -1056,10 +1032,6 @@ class BIMProperties(PropertyGroup):
     import_should_allow_non_element_aggregates: BoolProperty(name="Import Non-Element Aggregates", default=False)
     import_should_offset_model: BoolProperty(name="Import and Offset Model", default=False)
     import_model_offset_coordinates: StringProperty(name="Model Offset Coordinates", default="0,0,0")
-
-    # TODO: move into owner module
-    user_person: EnumProperty(items=getPersons, name="Person")
-    user_organisation: EnumProperty(items=getOrganisations, name="Organisation")
 
     has_georeferencing: BoolProperty(name="Has Georeferencing", default=False)
     has_library: BoolProperty(name="Has Project Library", default=False)
