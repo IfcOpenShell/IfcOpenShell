@@ -21,7 +21,7 @@ class BIM_PT_gis(Panel):
 
         if props.is_editing:
             return self.draw_editable_ui(context)
-        self.draw_ui()
+        self.draw_ui(context)
 
     def draw_editable_ui(self, context):
         props = context.scene.BIMGeoreferenceProperties
@@ -70,11 +70,39 @@ class BIM_PT_gis(Panel):
             row.prop(props, "map_unit_imperial", text="")
         row.prop(props, "is_map_unit_null", icon="RADIOBUT_OFF" if props.is_map_unit_null else "RADIOBUT_ON", text="")
 
-    def draw_ui(self):
-        if not Data.map_conversion:
+    def draw_ui(self, context):
+        props = context.scene.BIMGeoreferenceProperties
+
+        if not Data.map_conversion and IfcStore.get_file().schema != "IFC2X3":
             row = self.layout.row(align=True)
             row.label(text="Not Georeferenced")
             row.operator("bim.add_georeferencing", icon="ADD", text="")
+
+        if props.has_blender_offset:
+            row = self.layout.row()
+            row.label(text="Blender Offset", icon="TRACKING_REFINE_FORWARDS")
+
+            row = self.layout.row(align=True)
+            row.label(text="Type")
+            row.label(text=props.blender_offset_type)
+            row = self.layout.row(align=True)
+            row.label(text="Eastings")
+            row.label(text=props.blender_eastings)
+            row = self.layout.row(align=True)
+            row.label(text="Northings")
+            row.label(text=props.blender_northings)
+            row = self.layout.row(align=True)
+            row.label(text="OrthogonalHeight")
+            row.label(text=props.blender_orthogonal_height)
+            row = self.layout.row(align=True)
+            row.label(text="XAxisAbscissa")
+            row.label(text=props.blender_x_axis_abscissa)
+            row = self.layout.row(align=True)
+            row.label(text="XAxisOrdinate")
+            row.label(text=props.blender_x_axis_ordinate)
+        elif IfcStore.get_file().schema == "IFC2X3":
+            row = self.layout.row()
+            row.label(text="Not Georeferenced")
 
         if Data.map_conversion:
             row = self.layout.row(align=True)

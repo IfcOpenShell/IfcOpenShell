@@ -1015,11 +1015,6 @@ class BIM_PT_mvd(Panel):
         row = layout.row()
         row.prop(bim_properties, "export_should_force_triangulation")
 
-        layout.label(text="Tekla Workarounds:")
-
-        row = layout.row()
-        row.prop(bim_properties, "import_should_ignore_site_coordinates")
-
         layout.label(text="ProStructures Workarounds:")
 
         row = layout.row()
@@ -1029,26 +1024,10 @@ class BIM_PT_mvd(Panel):
         row = layout.row()
         row.prop(bim_properties, "import_model_offset_coordinates")
 
-        layout.label(text="12D Workarounds:")
-
-        row = layout.row()
-        row.prop(bim_properties, "import_should_reset_absolute_coordinates")
-
-        layout.label(text="Civil 3D Workarounds:")
-
-        row = layout.row()
-        row.prop(bim_properties, "import_should_reset_absolute_coordinates")
-
         layout.label(text="Revit Workarounds:")
 
         row = layout.row()
         row.prop(bim_properties, "export_should_use_presentation_style_assignment")
-        row = layout.row()
-        row.prop(bim_properties, "import_should_guess_georeferencing")
-        row = layout.row()
-        row.prop(bim_properties, "import_should_ignore_site_coordinates")
-        row = layout.row()
-        row.prop(bim_properties, "import_should_ignore_building_coordinates")
 
 
 class BIM_UL_generic(bpy.types.UIList):
