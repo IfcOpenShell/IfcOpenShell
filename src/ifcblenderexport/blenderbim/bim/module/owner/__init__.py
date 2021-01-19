@@ -1,5 +1,5 @@
 import bpy
-from . import ui, operator
+from . import ui, prop, operator
 
 classes = (
     operator.EnableEditingPerson,
@@ -22,6 +22,11 @@ classes = (
     operator.AddAddress,
     operator.EditAddress,
     operator.RemoveAddress,
+    prop.Role,
+    prop.Address,
+    prop.Person,
+    prop.Organisation,
+    prop.BIMOwnerProperties,
     ui.BIM_PT_people,
     ui.BIM_PT_organisations,
     ui.BIM_PT_owner,
@@ -29,8 +34,8 @@ classes = (
 
 
 def register():
-    pass
+    bpy.types.Scene.BIMOwnerProperties = bpy.props.PointerProperty(type=prop.BIMOwnerProperties)
 
 
 def unregister():
-    pass
+    del bpy.types.Scene.BIMOwnerProperties
