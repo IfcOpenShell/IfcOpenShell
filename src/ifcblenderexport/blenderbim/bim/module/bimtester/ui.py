@@ -32,7 +32,7 @@ class BIM_PT_qa(Panel):
         else:
             return
 
-        if context.scene.BimTesterProperties.features_file != '': # To handle the error when no .feature file exists in the folder
+        if str(context.scene.BimTesterProperties.features_file) != '': # To handle the error when no .feature file exists in the folder
             row = layout.row()
             row.operator("bim.execute_bim_tester")
 
