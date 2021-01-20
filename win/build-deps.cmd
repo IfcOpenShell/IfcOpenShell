@@ -63,6 +63,10 @@ IF DEFINED VS_TOOLSET (
     set BUILDDEPTHCACHE=BuildDepsCache-%VS_PLATFORM%.txt
 )
 
+:: fix for Visual C++ hanging when compiling 32-bit release OCCT up to version 7.4.0
+:: see https://tracker.dev.opencascade.org/view.php?id=31628
+SET COMPILE_WITH_WPO=FALSE
+
 call build-type-cfg.cmd %2
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
@@ -288,10 +292,21 @@ cd "%DEPENDENCY_DIR%"
 call :RunCMake -DINSTALL_DIR="%INSTALL_DIR%\opencascade-%OCCT_VERSION%" -DBUILD_LIBRARY_TYPE="Static" -DCMAKE_DEBUG_POSTFIX=d ^
     -DBUILD_MODULE_Draw=0 -D3RDPARTY_FREETYPE_DIR="%INSTALL_DIR%\freetype"
 if not %ERRORLEVEL%==0 goto :Error
+
+:: whole program optimization avoids Visual C++ hanging when compiling 32-bit release OCCT up to version 7.4.0
+IF %ARCH_BITS%==32 (
+	IF %BUILD_CFG%==Release (
+		SET COMPILE_WITH_WPO=TRUE
+	)
+)
+
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\OCCT.sln" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
+
+SET COMPILE_WITH_WPO=FALSE
+
 :: Use a single lib directory for release and debug libraries as is done with OCE
 if not exist "%OCC_LIBRARY_DIR%". mkdir "%OCC_LIBRARY_DIR%"
 :: NOTE OCCT (at least occt-V7_0_0-9059ca1) directory creation code is hardcoded and doesn't seem handle future VC versions
@@ -527,7 +542,13 @@ exit /b %RET%
 :: Params: %1 solutioName, %2 configuration
 :BuildSolution
 call cecho.cmd 0 13 "Building %2 %DEPENDENCY_NAME%. Please be patient, this will take a while."
-%MSBUILD_CMD% %1 /p:configuration=%2;platform=%VS_PLATFORM%
+
+:: whole program optimization avoids Visual C++ hanging when compiling 32-bit release OCCT up to version 7.4.0
+IF %COMPILE_WITH_WPO%==FALSE (
+	%MSBUILD_CMD% %1 /p:configuration=%2;platform=%VS_PLATFORM%
+) ELSE (
+	%MSBUILD_CMD% %1 /p:configuration=%2;platform=%VS_PLATFORM%;WholeProgramOptimization=TRUE
+)
 exit /b %ERRORLEVEL%
 
 :: InstallCMakeProject - Builds the INSTALL project of CMake-based project
@@ -537,7 +558,13 @@ exit /b %ERRORLEVEL%
 :InstallCMakeProject
 pushd %1
 call cecho.cmd 0 13 "Installing %2 %DEPENDENCY_NAME%. Please be patient, this will take a while."
-%INSTALL_CMD% INSTALL.%VCPROJ_FILE_EXT% /p:configuration=%2;platform=%VS_PLATFORM%
+
+:: whole program optimization avoids Visual C++ hanging when compiling 32-bit release OCCT up to version 7.4.0
+IF %COMPILE_WITH_WPO%==FALSE (
+	%INSTALL_CMD% INSTALL.%VCPROJ_FILE_EXT% /p:configuration=%2;platform=%VS_PLATFORM%
+) ELSE (
+	%INSTALL_CMD% INSTALL.%VCPROJ_FILE_EXT% /p:configuration=%2;platform=%VS_PLATFORM%;WholeProgramOptimization=TRUE
+)
 set RET=%ERRORLEVEL%
 popd
 exit /b %RET%
