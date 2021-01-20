@@ -3,6 +3,7 @@ from . import ui, operator
 
 classes = (
     operator.CreateProject,
+    operator.ValidateIfcFile,
     ui.BIM_PT_project,
 )
 

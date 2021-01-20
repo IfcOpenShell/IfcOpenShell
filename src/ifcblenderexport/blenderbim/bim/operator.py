@@ -1220,19 +1220,6 @@ class SelectIfcFile(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
 
-class ValidateIfcFile(bpy.types.Operator):
-    bl_idname = "bim.validate_ifc_file"
-    bl_label = "Validate IFC File"
-
-    def execute(self, context):
-        import ifcopenshell.validate
-
-        logger = logging.getLogger("validate")
-        logger.setLevel(logging.DEBUG)
-        ifcopenshell.validate.validate(ifc.IfcStore.get_file(), logger)
-        return {"FINISHED"}
-
-
 class SelectDataDir(bpy.types.Operator):
     bl_idname = "bim.select_data_dir"
     bl_label = "Select Data Directory"
@@ -2210,32 +2197,8 @@ class ReloadIfcFile(bpy.types.Operator):
     bl_label = "Reload IFC File"
 
     def execute(self, context):
-        self.diff_ifc()
-        self.reimport_ifc(context)
+        # TODO: reimplement. See #1222.
         return {"FINISHED"}
-
-    def diff_ifc(self):
-        import ifcdiff
-
-        temp_file = tempfile.NamedTemporaryFile(delete=False)
-        temp_file.close()
-        ifc_diff = ifcdiff.IfcDiff(
-            bpy.context.scene.BIMProperties.ifc_cache, bpy.context.scene.BIMProperties.ifc_file, temp_file.name
-        )
-        ifc_diff.diff()
-        ifc_diff.export()
-        bpy.context.scene.BIMProperties.diff_json_file = temp_file.name
-
-    def reimport_ifc(self, context):
-        logger = logging.getLogger("ImportIFC")
-        logging.basicConfig(
-            filename=bpy.context.scene.BIMProperties.data_dir + "process.log", filemode="a", level=logging.DEBUG
-        )
-        ifc_import_settings = import_ifc.IfcImportSettings.factory(
-            context, bpy.context.scene.BIMProperties.ifc_file, logger
-        )
-        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
-        ifc_importer.execute()
 
 
 class AddIfcFile(bpy.types.Operator):
