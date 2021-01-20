@@ -335,8 +335,6 @@ class IfcImporter:
         self.profile_code("Purge diffs")
         self.load_existing_rooted_elements()
         self.profile_code("Load existing rooted elements")
-        self.cache_file()
-        self.profile_code("Caching file")
         self.load_file()
         self.profile_code("Loading file")
         self.set_ifc_file()
@@ -1218,15 +1216,6 @@ class IfcImporter:
             return
         with open(self.ifc_import_settings.diff_file, "r") as file:
             self.diff = json.load(file)
-
-    def cache_file(self):
-        destination = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache", "ifc")
-        copythread = FileCopy(self.ifc_import_settings.input_file, destination)
-        bpy.context.scene.BIMProperties.ifc_cache = os.path.join(
-            destination, os.path.basename(self.ifc_import_settings.input_file)
-        )
-        copythread.start()
-        copythread.join()
 
     def load_file(self):
         self.ifc_import_settings.logger.info("loading file %s", self.ifc_import_settings.input_file)

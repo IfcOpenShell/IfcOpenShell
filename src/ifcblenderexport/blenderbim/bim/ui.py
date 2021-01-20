@@ -732,46 +732,6 @@ class BIM_PT_text(Panel):
             row.prop(variable, "prop_key")
 
 
-class BIM_PT_bim(Panel):
-    bl_label = "Building Information Modeling"
-    bl_idname = "BIM_PT_bim"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-
-        scene = context.scene
-        bim_properties = scene.BIMProperties
-
-        layout.label(text="System Setup:")
-
-        row = layout.row(align=True)
-        row.prop(bim_properties, "schema_dir")
-        row.operator("bim.select_schema_dir", icon="FILE_FOLDER", text="")
-
-        row = layout.row(align=True)
-        row.prop(bim_properties, "data_dir")
-        row.operator("bim.select_data_dir", icon="FILE_FOLDER", text="")
-
-        row = layout.row(align=True)
-        row.prop(bim_properties, "ifc_file")
-        row.operator("bim.reload_ifc_file", icon="FILE_REFRESH", text="")
-        row.operator("bim.validate_ifc_file", icon="CHECKMARK", text="")
-        row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
-
-        row = layout.row(align=True)
-        row.prop(bim_properties, "ifc_cache")
-
-        layout.label(text="IFC Categorisation:")
-
-        row = layout.row(align=True)
-        row.operator("bim.select_class")
-        row.operator("bim.select_type")
-
-
 class BIM_PT_search(Panel):
     bl_label = "IFC Search"
     bl_idname = "BIM_PT_search"
@@ -811,6 +771,9 @@ class BIM_PT_search(Panel):
         row.operator("bim.select_pset", text="", icon="VIEWZOOM")
         row.operator("bim.colour_by_pset", text="", icon="BRUSH_DATA")
 
+        row = layout.row(align=True)
+        row.operator("bim.select_class")
+        row.operator("bim.select_type")
 
 
 class BIM_PT_library(Panel):
