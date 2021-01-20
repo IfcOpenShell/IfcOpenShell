@@ -14,6 +14,9 @@ class Data:
         if not file:
             return
         cls.people = {}
+        cls.organisations = {}
+        cls.addresses = {}
+        cls.roles = {}
         for person in file.by_type("IfcPerson"):
             data = person.get_info()
             data["is_engaged"] = bool(person.EngagedIn)

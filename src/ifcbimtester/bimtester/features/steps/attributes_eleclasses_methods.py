@@ -4,8 +4,8 @@ from utils import assert_elements
 from utils import IfcFile
 
 
-def no_eleclass_because_reason(
-    context, ifc_class, reason
+def no_eleclass(
+    context, ifc_class
 ):
 
     context.falseelems = []

@@ -24,7 +24,7 @@ class Usecase:
             if related_elements:
                 contained_in_structure[0].RelatedElements = related_elements
             else:
-                self.file.remove(contained_in_structure)
+                self.file.remove(contained_in_structure[0])
 
         if contains_elements:
             related_elements = list(contains_elements[0].RelatedElements)

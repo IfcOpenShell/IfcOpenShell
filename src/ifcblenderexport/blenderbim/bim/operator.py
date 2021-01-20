@@ -1128,19 +1128,6 @@ class SelectIfcFile(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
 
-class ValidateIfcFile(bpy.types.Operator):
-    bl_idname = "bim.validate_ifc_file"
-    bl_label = "Validate IFC File"
-
-    def execute(self, context):
-        import ifcopenshell.validate
-
-        logger = logging.getLogger("validate")
-        logger.setLevel(logging.DEBUG)
-        ifcopenshell.validate.validate(ifc.IfcStore.get_file(), logger)
-        return {"FINISHED"}
-
-
 class SelectDataDir(bpy.types.Operator):
     bl_idname = "bim.select_data_dir"
     bl_label = "Select Data Directory"
@@ -1167,106 +1154,6 @@ class SelectSchemaDir(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
-
-
-class CreateAggregate(bpy.types.Operator):
-    bl_idname = "bim.create_aggregate"
-    bl_label = "Create Aggregate"
-
-    def execute(self, context):
-        spatial_container = None
-        for obj in bpy.context.selected_objects:
-            if obj.instance_collection:
-                return {"FINISHED"}
-            for collection in obj.users_collection:
-                if "IfcRelAggregates" in collection.name:
-                    return {"FINISHED"}
-                elif collection.name[0:3] == "Ifc":
-                    spatial_container = collection
-        if not spatial_container:
-            return {"FINISHED"}
-
-        aggregate = bpy.data.collections.new(
-            "IfcRelAggregates/{}".format(bpy.context.scene.BIMProperties.aggregate_class)
-        )
-        for project in [c for c in bpy.context.view_layer.layer_collection.children if "IfcProject" in c.name]:
-            if not [c for c in project.children if "Aggregates" in c.name]:
-                aggregates = bpy.data.collections.new("Aggregates")
-                project.collection.children.link(aggregates)
-            for aggregate_collection in [c for c in project.children if "Aggregates" in c.name]:
-                aggregate_collection.collection.children.link(aggregate)
-                break
-            break
-        for obj in bpy.context.selected_objects:
-            for collection in obj.users_collection:
-                collection.objects.unlink(obj)
-            aggregate.objects.link(obj)
-
-        instance = bpy.data.objects.new(
-            "{}/{}".format(
-                bpy.context.scene.BIMProperties.aggregate_class, bpy.context.scene.BIMProperties.aggregate_name
-            ),
-            None,
-        )
-        instance.instance_type = "COLLECTION"
-        instance.instance_collection = aggregate
-        spatial_container.objects.link(instance)
-        return {"FINISHED"}
-
-
-class EditAggregate(bpy.types.Operator):
-    bl_idname = "bim.edit_aggregate"
-    bl_label = "Edit Aggregate"
-
-    def execute(self, context):
-        obj = bpy.context.active_object
-        if obj.instance_type != "COLLECTION" or "IfcRelAggregates" not in obj.instance_collection.name:
-            return {"FINISHED"}
-        bpy.context.view_layer.objects[obj.name].hide_viewport = True
-        for project in [c for c in bpy.context.view_layer.layer_collection.children if "IfcProject" in c.name]:
-            for aggregate_collection in [c for c in project.children if "Aggregates" in c.name]:
-                aggregate_collection.hide_viewport = False
-        return {"FINISHED"}
-
-
-class SaveAggregate(bpy.types.Operator):
-    bl_idname = "bim.save_aggregate"
-    bl_label = "Save Aggregate"
-
-    def execute(self, context):
-        obj = bpy.context.active_object
-        aggregate = None
-        names = [c.name for c in obj.users_collection]
-        for project in [c for c in bpy.context.view_layer.layer_collection.children if "IfcProject" in c.name]:
-            for aggregate_collection in [c for c in project.children if "Aggregates" in c.name]:
-                aggregate_collection.hide_viewport = True
-                for collection in [c for c in aggregate_collection.children if c.name in names]:
-                    aggregate = collection.collection
-                    break
-        if not aggregate:
-            return {"FINISHED"}
-        for obj in bpy.context.view_layer.objects:
-            if obj.instance_collection == aggregate:
-                obj.hide_viewport = False
-        return {"FINISHED"}
-
-
-class ExplodeAggregate(bpy.types.Operator):
-    bl_idname = "bim.explode_aggregate"
-    bl_label = "Explode Aggregate"
-
-    def execute(self, context):
-        obj = bpy.context.active_object
-        if obj.instance_type != "COLLECTION" or "IfcRelAggregates" not in obj.instance_collection.name:
-            return {"FINISHED"}
-        aggregate_collection = bpy.data.collections.get(obj.instance_collection.name)
-        spatial_collection = obj.users_collection[0]
-        for part in aggregate_collection.objects:
-            spatial_collection.objects.link(part)
-            aggregate_collection.objects.unlink(part)
-        bpy.data.objects.remove(obj, do_unlink=True)
-        bpy.data.collections.remove(aggregate_collection, do_unlink=True)
-        return {"FINISHED"}
 
 
 class LoadClassification(bpy.types.Operator):
@@ -2218,32 +2105,8 @@ class ReloadIfcFile(bpy.types.Operator):
     bl_label = "Reload IFC File"
 
     def execute(self, context):
-        self.diff_ifc()
-        self.reimport_ifc(context)
+        # TODO: reimplement. See #1222.
         return {"FINISHED"}
-
-    def diff_ifc(self):
-        import ifcdiff
-
-        temp_file = tempfile.NamedTemporaryFile(delete=False)
-        temp_file.close()
-        ifc_diff = ifcdiff.IfcDiff(
-            bpy.context.scene.BIMProperties.ifc_cache, bpy.context.scene.BIMProperties.ifc_file, temp_file.name
-        )
-        ifc_diff.diff()
-        ifc_diff.export()
-        bpy.context.scene.BIMProperties.diff_json_file = temp_file.name
-
-    def reimport_ifc(self, context):
-        logger = logging.getLogger("ImportIFC")
-        logging.basicConfig(
-            filename=bpy.context.scene.BIMProperties.data_dir + "process.log", filemode="a", level=logging.DEBUG
-        )
-        ifc_import_settings = import_ifc.IfcImportSettings.factory(
-            context, bpy.context.scene.BIMProperties.ifc_file, logger
-        )
-        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
-        ifc_importer.execute()
 
 
 class AddIfcFile(bpy.types.Operator):
@@ -2424,56 +2287,6 @@ class PropagateTextData(bpy.types.Operator):
                 new_variable = obj.data.BIMTextProperties.variables.add()
                 new_variable.name = variable.name
                 new_variable.prop_key = variable.prop_key
-        return {"FINISHED"}
-
-
-class ConvertLocalToGlobal(bpy.types.Operator):
-    bl_idname = "bim.convert_local_to_global"
-    bl_label = "Convert Local To Global"
-
-    def execute(self, context):
-        if bpy.context.scene.MapConversion.scale:
-            scale = float(bpy.context.scene.MapConversion.scale)
-        else:
-            scale = 1.0
-        results = ifcopenshell.util.geolocation.xyz2enh(
-            bpy.context.scene.cursor.location[0],
-            bpy.context.scene.cursor.location[1],
-            bpy.context.scene.cursor.location[2],
-            float(bpy.context.scene.MapConversion.eastings),
-            float(bpy.context.scene.MapConversion.northings),
-            float(bpy.context.scene.MapConversion.orthogonal_height),
-            float(bpy.context.scene.MapConversion.x_axis_abscissa),
-            float(bpy.context.scene.MapConversion.x_axis_ordinate),
-            scale,
-        )
-        print("Coordinates:", results)
-        bpy.context.scene.cursor.location = results
-        return {"FINISHED"}
-
-
-class ConvertGlobalToLocal(bpy.types.Operator):
-    bl_idname = "bim.convert_global_to_local"
-    bl_label = "Convert Global To Local"
-
-    def execute(self, context):
-        if bpy.context.scene.MapConversion.scale:
-            scale = float(bpy.context.scene.MapConversion.scale)
-        else:
-            scale = 1.0
-        results = ifcopenshell.util.geolocation.enh2xyz(
-            float(bpy.context.scene.BIMProperties.eastings),
-            float(bpy.context.scene.BIMProperties.northings),
-            float(bpy.context.scene.BIMProperties.orthogonal_height),
-            float(bpy.context.scene.MapConversion.eastings),
-            float(bpy.context.scene.MapConversion.northings),
-            float(bpy.context.scene.MapConversion.orthogonal_height),
-            float(bpy.context.scene.MapConversion.x_axis_abscissa),
-            float(bpy.context.scene.MapConversion.x_axis_ordinate),
-            scale,
-        )
-        print("Coordinates:", results)
-        bpy.context.scene.cursor.location = results
         return {"FINISHED"}
 
 
@@ -3015,31 +2828,6 @@ class SetViewportShadowFromSun(bpy.types.Operator):
         context.scene.display.light_direction = mat.inverted() @ (
             context.active_object.matrix_world.to_quaternion() @ Vector((0, 0, -1))
         )
-        return {"FINISHED"}
-
-
-class SetNorthOffset(bpy.types.Operator):
-    bl_idname = "bim.set_north_offset"
-    bl_label = "Set North Offset"
-
-    def execute(self, context):
-        context.scene.sun_pos_properties.north_offset = -radians(
-            ifcopenshell.util.geolocation.xy2angle(
-                float(bpy.context.scene.MapConversion.x_axis_abscissa),
-                float(bpy.context.scene.MapConversion.x_axis_ordinate),
-            )
-        )
-        return {"FINISHED"}
-
-
-class GetNorthOffset(bpy.types.Operator):
-    bl_idname = "bim.get_north_offset"
-    bl_label = "Get North Offset"
-
-    def execute(self, context):
-        x_angle = -context.scene.sun_pos_properties.north_offset
-        bpy.context.scene.MapConversion.x_axis_abscissa = str(cos(x_angle))
-        bpy.context.scene.MapConversion.x_axis_ordinate = str(sin(x_angle))
         return {"FINISHED"}
 
 

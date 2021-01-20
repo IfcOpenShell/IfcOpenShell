@@ -5,144 +5,6 @@ from bpy.types import Panel
 from bpy.props import StringProperty
 
 
-class BIM_PT_object_material(Panel):
-    bl_label = "IFC Object Material"
-    bl_idname = "BIM_PT_object_material"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "object"
-
-    @classmethod
-    def poll(cls, context):
-        return context.active_object is not None and hasattr(context.active_object, "BIMObjectProperties")
-
-    def draw(self, context):
-        if context.active_object is None:
-            return
-        layout = self.layout
-        props = context.active_object.BIMObjectProperties
-        row = layout.row()
-        row.prop(props, "material_type")
-
-        if props.material_type == "None" and props.relating_type:
-            props = props.relating_type.BIMObjectProperties
-            if props.material_type == "None":
-                pass
-            elif props.material_type == "IfcMaterial" and props.material:
-                layout.label(text="Inherited Material:")
-            elif props.material_set:
-                layout.label(text="Inherited Material Set:")
-
-        if props.material_type == "None":
-            pass
-        elif props.material_type == "IfcMaterial":
-            row = layout.row()
-            row.prop(props, "material")
-        else:
-            set_props = props.material_set
-            row = layout.row()
-            row.prop(set_props, "name", text="Name")
-            row = layout.row()
-            row.prop(set_props, "description", text="Description")
-            row = layout.row()
-
-        if props.material_type == "IfcMaterialLayerSet":
-            row.template_list(
-                "MATERIAL_UL_matslots", "", set_props, "material_layers", set_props, "active_material_layer_index"
-            )
-            col = row.column(align=True)
-            col.operator("bim.add_material_layer", icon="ADD", text="")
-            col.operator(
-                "bim.remove_material_layer", icon="REMOVE", text=""
-            ).index = set_props.active_material_layer_index
-            col.operator("bim.move_material_layer", icon="TRIA_UP", text="").direction = "UP"
-            col.operator("bim.move_material_layer", icon="TRIA_DOWN", text="").direction = "DOWN"
-
-            if set_props.active_material_layer_index < len(set_props.material_layers):
-                material = set_props.material_layers[set_props.active_material_layer_index]
-                row = layout.row()
-                row.prop(material, "material")
-                row = layout.row()
-                row.prop(material, "name")
-                row = layout.row()
-                row.prop(material, "description")
-                row = layout.row()
-                row.prop(material, "category")
-                if material.category == "Custom":
-                    row = layout.row()
-                    row.prop(material, "custom_category")
-                row = layout.row()
-                row.prop(material, "layer_thickness")
-                row = layout.row()
-                row.prop(material, "is_ventilated")
-                row = layout.row()
-                row.prop(material, "priority")
-        elif props.material_type == "IfcMaterialConstituentSet":
-            row.template_list(
-                "MATERIAL_UL_matslots",
-                "",
-                set_props,
-                "material_constituents",
-                set_props,
-                "active_material_constituent_index",
-            )
-            col = row.column(align=True)
-            col.operator("bim.add_material_constituent", icon="ADD", text="")
-            col.operator(
-                "bim.remove_material_constituent", icon="REMOVE", text=""
-            ).index = set_props.active_material_constituent_index
-            col.operator("bim.move_material_constituent", icon="TRIA_UP", text="").direction = "UP"
-            col.operator("bim.move_material_constituent", icon="TRIA_DOWN", text="").direction = "DOWN"
-
-            if set_props.active_material_constituent_index < len(set_props.material_constituents):
-                material = set_props.material_constituents[set_props.active_material_constituent_index]
-                row = layout.row()
-                row.prop(material, "material")
-                row = layout.row()
-                row.prop(material, "name")
-                row = layout.row()
-                row.prop(material, "description")
-                row = layout.row()
-                row.prop(material, "fraction")
-                row = layout.row()
-                row.prop(material, "category")
-        elif props.material_type == "IfcMaterialProfileSet":
-            row.template_list(
-                "MATERIAL_UL_matslots",
-                "",
-                set_props,
-                "material_profiles",
-                set_props,
-                "active_material_profile_index",
-            )
-            col = row.column(align=True)
-            col.operator("bim.add_material_profile", icon="ADD", text="")
-            col.operator(
-                "bim.remove_material_profile", icon="REMOVE", text=""
-            ).index = set_props.active_material_profile_index
-            col.operator("bim.move_material_profile", icon="TRIA_UP", text="").direction = "UP"
-            col.operator("bim.move_material_profile", icon="TRIA_DOWN", text="").direction = "DOWN"
-
-            if set_props.active_material_profile_index < len(set_props.material_profiles):
-                material = set_props.material_profiles[set_props.active_material_profile_index]
-                row = layout.row()
-                row.prop(material, "material")
-                row = layout.row()
-                row.prop(material, "name")
-                row = layout.row()
-                row.prop(material, "description")
-                row = layout.row()
-                row.prop(material, "priority")
-                row = layout.row()
-                row.prop(material, "category")
-                row = layout.row()
-                row.prop(material, "profile")
-                for index, attribute in enumerate(material.profile_attributes):
-                    row = layout.row(align=True)
-                    row.prop(attribute, "name", text="")
-                    row.prop(attribute, "string_value", text="")
-
-
 class BIM_PT_object_structural(Panel):
     bl_label = "IFC Structural Relationships"
     bl_idname = "BIM_PT_object_structural"
@@ -575,111 +437,6 @@ class BIM_PT_presentation_layer_data(Panel):
             op.index = scene_props.active_presentation_layer_index
 
 
-class BIM_PT_material(Panel):
-    bl_label = "IFC Materials"
-    bl_idname = "BIM_PT_material"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "material"
-
-    @classmethod
-    def poll(cls, context):
-        return context.active_object is not None and context.active_object.active_material is not None
-
-    def draw(self, context):
-        if not bpy.context.active_object.active_material:
-            return
-        props = context.active_object.active_material.BIMMaterialProperties
-        layout = self.layout
-        row = layout.row()
-        row.prop(props, "is_external")
-        row = layout.row(align=True)
-        row.prop(props, "location")
-        row.operator("bim.select_external_material_dir", icon="FILE_FOLDER", text="")
-        row = layout.row()
-        row.prop(props, "identification")
-        row = layout.row()
-        row.prop(props, "name")
-
-        row = layout.row()
-        row.operator("bim.fetch_external_material")
-
-        layout.label(text="Attributes:")
-        row = layout.row(align=True)
-        row.prop(props, "applicable_attributes", text="")
-        row.operator("bim.add_material_attribute")
-
-        for index, attribute in enumerate(props.attributes):
-            row = layout.row(align=True)
-            row.prop(attribute, "name", text="")
-            row.prop(attribute, "string_value", text="")
-            row.operator("bim.remove_material_attribute", icon="X", text="").attribute_index = index
-
-        row = layout.row()
-        row.prop(props, "attributes")
-
-        layout.label(text="Property Sets:")
-        row = layout.row(align=True)
-        row.prop(props, "pset_name", text="")
-        row.operator("bim.add_material_pset")
-
-        for index, pset in enumerate(props.psets):
-            row = layout.row(align=True)
-            row.prop(pset, "name", text="")
-            row.operator("bim.remove_material_pset", icon="X", text="").pset_index = index
-            for prop in pset.properties:
-                row = layout.row(align=True)
-                row.prop(prop, "name", text="")
-                row.prop(prop, "string_value", text="")
-
-
-class BIM_PT_gis(Panel):
-    bl_label = "IFC Georeferencing"
-    bl_idname = "BIM_PT_gis"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-        scene = context.scene
-        layout.row().prop(scene.BIMProperties, "has_georeferencing")
-
-        layout.label(text="Map Conversion:")
-        layout.row().prop(scene.MapConversion, "eastings")
-        layout.row().prop(scene.MapConversion, "northings")
-        layout.row().prop(scene.MapConversion, "orthogonal_height")
-        layout.row().prop(scene.MapConversion, "x_axis_abscissa")
-        layout.row().prop(scene.MapConversion, "x_axis_ordinate")
-        layout.row().prop(scene.MapConversion, "scale")
-
-        layout.label(text="Target CRS:")
-        layout.row().prop(scene.TargetCRS, "name")
-        layout.row().prop(scene.TargetCRS, "description")
-        layout.row().prop(scene.TargetCRS, "geodetic_datum")
-        layout.row().prop(scene.TargetCRS, "vertical_datum")
-        layout.row().prop(scene.TargetCRS, "map_projection")
-        layout.row().prop(scene.TargetCRS, "map_zone")
-        layout.row().prop(scene.TargetCRS, "map_unit")
-
-        row = layout.row(align=True)
-        row.operator("bim.convert_local_to_global")
-
-        layout.row().prop(scene.BIMProperties, "eastings")
-        layout.row().prop(scene.BIMProperties, "northings")
-        layout.row().prop(scene.BIMProperties, "orthogonal_height")
-
-        row = layout.row(align=True)
-        row.operator("bim.convert_global_to_local")
-
-        if hasattr(bpy.context.scene, "sun_pos_properties"):
-            row = layout.row(align=True)
-            row.operator("bim.get_north_offset")
-            row.operator("bim.set_north_offset")
-
-
 class BIM_PT_presentation_layers(Panel):
     bl_label = "IFC Presentation Layers"
     bl_idname = "BIM_PT_presentation_layer"
@@ -975,60 +732,6 @@ class BIM_PT_text(Panel):
             row.prop(variable, "prop_key")
 
 
-class BIM_PT_bim(Panel):
-    bl_label = "Building Information Modeling"
-    bl_idname = "BIM_PT_bim"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-
-        scene = context.scene
-        bim_properties = scene.BIMProperties
-
-        layout.label(text="System Setup:")
-
-        row = layout.row(align=True)
-        row.prop(bim_properties, "schema_dir")
-        row.operator("bim.select_schema_dir", icon="FILE_FOLDER", text="")
-
-        row = layout.row(align=True)
-        row.prop(bim_properties, "data_dir")
-        row.operator("bim.select_data_dir", icon="FILE_FOLDER", text="")
-
-        row = layout.row(align=True)
-        row.prop(bim_properties, "ifc_file")
-        row.operator("bim.reload_ifc_file", icon="FILE_REFRESH", text="")
-        row.operator("bim.validate_ifc_file", icon="CHECKMARK", text="")
-        row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
-
-        row = layout.row(align=True)
-        row.prop(bim_properties, "ifc_cache")
-
-        layout.label(text="IFC Categorisation:")
-
-        row = layout.row(align=True)
-        row.operator("bim.select_class")
-        row.operator("bim.select_type")
-
-        layout.label(text="Aggregates:")
-        row = layout.row()
-        row.prop(bim_properties, "aggregate_class")
-        row = layout.row()
-        row.prop(bim_properties, "aggregate_name")
-
-        row = layout.row(align=True)
-        row.operator("bim.create_aggregate")
-        row.operator("bim.explode_aggregate")
-
-        row = layout.row(align=True)
-        row.operator("bim.edit_aggregate")
-        row.operator("bim.save_aggregate")
-
-
 class BIM_PT_search(Panel):
     bl_label = "IFC Search"
     bl_idname = "BIM_PT_search"
@@ -1068,6 +771,9 @@ class BIM_PT_search(Panel):
         row.operator("bim.select_pset", text="", icon="VIEWZOOM")
         row.operator("bim.colour_by_pset", text="", icon="BRUSH_DATA")
 
+        row = layout.row(align=True)
+        row.operator("bim.select_class")
+        row.operator("bim.select_type")
 
 
 class BIM_PT_library(Panel):
@@ -1170,8 +876,6 @@ class BIM_PT_mvd(Panel):
         layout.label(text="Experimental Modes:")
 
         row = layout.row()
-        row.prop(bim_properties, "import_should_use_legacy")
-        row = layout.row()
         row.prop(bim_properties, "import_should_import_native")
         row = layout.row()
         row.prop(bim_properties, "import_export_should_roundtrip_native")
@@ -1223,11 +927,6 @@ class BIM_PT_mvd(Panel):
         row = layout.row()
         row.prop(bim_properties, "export_should_force_triangulation")
 
-        layout.label(text="Tekla Workarounds:")
-
-        row = layout.row()
-        row.prop(bim_properties, "import_should_ignore_site_coordinates")
-
         layout.label(text="ProStructures Workarounds:")
 
         row = layout.row()
@@ -1237,26 +936,10 @@ class BIM_PT_mvd(Panel):
         row = layout.row()
         row.prop(bim_properties, "import_model_offset_coordinates")
 
-        layout.label(text="12D Workarounds:")
-
-        row = layout.row()
-        row.prop(bim_properties, "import_should_reset_absolute_coordinates")
-
-        layout.label(text="Civil 3D Workarounds:")
-
-        row = layout.row()
-        row.prop(bim_properties, "import_should_reset_absolute_coordinates")
-
         layout.label(text="Revit Workarounds:")
 
         row = layout.row()
         row.prop(bim_properties, "export_should_use_presentation_style_assignment")
-        row = layout.row()
-        row.prop(bim_properties, "import_should_guess_georeferencing")
-        row = layout.row()
-        row.prop(bim_properties, "import_should_ignore_site_coordinates")
-        row = layout.row()
-        row.prop(bim_properties, "import_should_ignore_building_coordinates")
 
 
 class BIM_UL_generic(bpy.types.UIList):

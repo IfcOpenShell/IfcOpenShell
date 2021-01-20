@@ -17,6 +17,8 @@ class Data:
         cls.products[product_id] = {"psets": set(), "qtos": set()}
         if product.is_a("IfcElementType"):
             cls.add_type_product_psets(product, product_id)
+        elif product.is_a("IfcMaterialDefinition"):
+            cls.add_material_psets(product, product_id)
         else:
             cls.add_product_psets(product, product_id)
 
@@ -27,6 +29,13 @@ class Data:
         for definition in product.HasPropertySets:
             if definition.is_a("IfcPropertySet"):
                 cls.add_pset(definition, product_id)
+
+    @classmethod
+    def add_material_psets(cls, product, product_id):
+        if not product.HasProperties:
+            return
+        for pset in product.HasProperties:
+            cls.add_pset(pset, product_id)
 
     @classmethod
     def add_product_psets(cls, product, product_id):

@@ -17,6 +17,7 @@ import math
 import multiprocessing
 import zipfile
 import tempfile
+import numpy as np
 from pathlib import Path
 from itertools import cycle
 from datetime import datetime
@@ -85,7 +86,7 @@ class MaterialCreator:
         item_id = self.mesh.BIMMeshProperties.ifc_item_ids.add()
         item_id.name = str(item.id())
 
-        styled_item = item.StyledByItem[0] # Cardinality is S[0:1]
+        styled_item = item.StyledByItem[0]  # Cardinality is S[0:1]
         style_name = self.get_surface_style_name(styled_item)
 
         if not style_name:
@@ -130,7 +131,9 @@ class MaterialCreator:
             material_to_slot[i] = slot_index
 
         if len(self.mesh.polygons) == len(self.mesh["ios_material_ids"]):
-            material_index = [(material_to_slot[mat_id] if mat_id != -1 else 0) for mat_id in self.mesh["ios_material_ids"]]
+            material_index = [
+                (material_to_slot[mat_id] if mat_id != -1 else 0) for mat_id in self.mesh["ios_material_ids"]
+            ]
             self.mesh.polygons.foreach_set("material_index", material_index)
 
     def canonicalise_material_name(self, name):
@@ -180,86 +183,31 @@ class MaterialCreator:
     def create_single(self, material):
         if material.Name not in self.materials:
             self.create_new_single(material)
-        self.obj.BIMObjectProperties.material_type = "IfcMaterial"
-        self.obj.BIMObjectProperties.material = self.materials[material.Name]
 
     def create_layer_set(self, layer_set):
-        props = self.obj.BIMObjectProperties
-        props.material_type = "IfcMaterialLayerSet"
-        props.material_set.name = layer_set.LayerSetName or ""
-        if hasattr(layer_set, "Description"):  # IFC2X3 support
-            props.material_set.description = layer_set.Description or ""
         for layer in layer_set.MaterialLayers:
-            new = props.material_set.material_layers.add()
             if layer.Material:
                 if layer.Material.Name not in self.materials:
                     self.create_new_single(layer.Material)
-                new.material = self.materials[layer.Material.Name]
-            new.layer_thickness = layer.LayerThickness
-            new.is_ventilated = "TRUE" if layer.IsVentilated else "FALSE"
-            if not hasattr(layer, "Name"):
-                continue  # IFC2X3 support
-            new.name = layer.Name or ""
-            new.description = layer.Description or ""
-            try:
-                new.category = layer.Category if layer.Category else "None"
-            except:
-                new.custom_category = layer.Category or ""
-            new.priority = layer.Priority or 0
 
     def create_constituent_set(self, constituent_set):
-        props = self.obj.BIMObjectProperties
-        props.material_type = "IfcMaterialConstituentSet"
-        props.material_set.name = constituent_set.Name or ""
-        props.material_set.description = constituent_set.Description or ""
         for constituent in constituent_set.MaterialConstituents:
-            new = props.material_set.material_constituents.add()
-            new.name = constituent.Name or ""
-            new.description = constituent.Description or ""
             if constituent.Material.Name not in self.materials:
                 self.create_new_single(constituent.Material)
-            new.material = self.materials[constituent.Material.Name]
-            new.fraction = constituent.Fraction or 0.0
-            new.category = constituent.Category or ""
 
     def create_profile_set(self, profile_set):
-        props = self.obj.BIMObjectProperties
-        props.material_type = "IfcMaterialProfileSet"
-        props.material_set.name = profile_set.Name or ""
-        props.material_set.description = profile_set.Description or ""
         for profile in profile_set.MaterialProfiles:
-            new = props.material_set.material_profiles.add()
-            new.name = profile.Name or ""
-            new.description = profile.Description or ""
             if profile.Material.Name not in self.materials:
                 self.create_new_single(profile.Material)
-            new.material = self.materials[profile.Material.Name]
-            try:
-                new.profile = profile.Profile.is_a()
-                for i, attribute in enumerate(profile.Profile):
-                    newa = new.profile_attributes.add()
-                    newa.name = profile.Profile.attribute_name(i)
-                    newa.string_value = str(attribute)
-            except:
-                pass  # TODO: currently, only parametric profile sets are supported
-            new.priority = profile.Priority or 0
-            new.category = profile.Category or ""
 
     def create_material_list(self, material_list):
-        props = self.obj.BIMObjectProperties
-        props.material_type = "IfcMaterialConstituentSet"  # Constituent sets are the recommended upgrade path
         for material in material_list.Materials:
-            new = props.material_set.material_constituents.add()
             if material.Name not in self.materials:
                 self.create_new_single(material)
-            new.material = self.materials[material.Name]
 
     def create_new_single(self, material):
         self.materials[material.Name] = obj = bpy.data.materials.new(material.Name)
-        obj.BIMMaterialProperties.ifc_definition_id = int(material.id())
-        self.ifc_importer.add_element_attributes(material, obj.BIMMaterialProperties)
-        for pset in getattr(material, "HasProperties", ()):
-            self.ifc_importer.add_pset(pset, obj.BIMMaterialProperties)
+        obj.BIMObjectProperties.ifc_definition_id = int(material.id())
         if not material.HasRepresentation or not material.HasRepresentation[0].Representations:
             return
         for representation in material.HasRepresentation[0].Representations:
@@ -280,7 +228,7 @@ class MaterialCreator:
             if style.Name:
                 return style.Name
             return str(style.id())
-        return None # We only support surface styles right now
+        return None  # We only support surface styles right now
 
     def parse_styled_item(self, styled_item, material):
         styles = self.get_styled_item_styles(styled_item)
@@ -288,7 +236,6 @@ class MaterialCreator:
             if not style.is_a("IfcSurfaceStyle"):
                 continue
             material.BIMMaterialProperties.ifc_style_id = int(style.id())
-            external_style = None
             for surface_style in style.Styles:
                 if surface_style.is_a("IfcSurfaceStyleShading"):
                     alpha = 1.0
@@ -301,13 +248,6 @@ class MaterialCreator:
                         surface_style.SurfaceColour.Blue,
                         alpha,
                     )
-                elif surface_style.is_a("IfcExternallyDefinedSurfaceStyle"):
-                    external_style = surface_style
-            if external_style:
-                material.BIMMaterialProperties.is_external = True
-                material.BIMMaterialProperties.location = external_style.Location
-                material.BIMMaterialProperties.identification = external_style.Identification
-                material.BIMMaterialProperties.name = external_style.Name
 
     # IfcPresentationStyleAssignment is deprecated as of IFC4
     # However it is still widely used thanks to Revit :(
@@ -395,8 +335,6 @@ class IfcImporter:
         self.profile_code("Purge diffs")
         self.load_existing_rooted_elements()
         self.profile_code("Load existing rooted elements")
-        self.cache_file()
-        self.profile_code("Caching file")
         self.load_file()
         self.profile_code("Loading file")
         self.set_ifc_file()
@@ -406,8 +344,8 @@ class IfcImporter:
             self.profile_code("Set vendor worksarounds")
         self.calculate_unit_scale()
         self.profile_code("Calculate unit scale")
-        self.patch_ifc()
-        self.profile_code("Patching ifc")
+        self.calculate_model_offset()
+        self.profile_code("Calculate model offset")
         self.set_units()
         self.profile_code("Set units")
         self.create_project()
@@ -434,8 +372,6 @@ class IfcImporter:
         if self.ifc_import_settings.should_import_native:
             self.parse_native_elements()
             self.profile_code("Parsing native elements")
-        self.create_georeferencing()
-        self.profile_code("Georeferencing ifc")
         self.create_groups()
         self.profile_code("Creating groups")
         self.create_grids()
@@ -443,12 +379,8 @@ class IfcImporter:
         if self.ifc_import_settings.should_import_native:
             self.create_native_products()
         self.profile_code("Creating native products")
-        # TODO: Deprecate after bug #682 is fixed and the new importer is stable
-        if self.ifc_import_settings.should_use_legacy:
-            self.create_products_legacy()
-        else:
-            self.create_products()
-            self.profile_code("Creating meshified products")
+        self.create_products()
+        self.profile_code("Creating meshified products")
         self.relate_openings()
         self.profile_code("Relating openings")
         self.place_objects_in_spatial_tree()
@@ -476,41 +408,17 @@ class IfcImporter:
             self.profile_code("Mesh cleaning")
 
     def auto_set_workarounds(self):
-        if (
-            "DDS-CAD" in self.file.wrapped_data.header.file_name.originating_system
-            or "DDS" in self.file.wrapped_data.header.file_name.preprocessor_version
-        ):
-            self.ifc_import_settings.should_reset_absolute_coordinates = True
         applications = self.file.by_type("IfcApplication")
         if not applications:
             return
-        if applications[0].ApplicationIdentifier == "Revit":
-            if self.is_ifc_class_far_away("IfcSite"):
-                self.ifc_import_settings.should_ignore_site_coordinates = True
-                self.ifc_import_settings.should_guess_georeferencing = True
-            if self.is_ifc_class_far_away("IfcBuilding"):
-                self.ifc_import_settings.should_ignore_building_coordinates = True
-                self.ifc_import_settings.should_guess_georeferencing = True
-        elif "prostructures" in applications[0].ApplicationFullName.lower():
+        if "prostructures" in applications[0].ApplicationFullName.lower():
             self.ifc_import_settings.should_allow_non_element_aggregates = True
-        elif applications[0].ApplicationFullName.lower() == "12d model":
-            self.ifc_import_settings.should_reset_absolute_coordinates = True
-        elif "Civil 3D" in applications[0].ApplicationFullName:
-            self.ifc_import_settings.should_reset_absolute_coordinates = True
-        elif applications[0].ApplicationFullName == "Tekla Structures":
-            if self.is_ifc_class_far_away("IfcSite"):
-                self.ifc_import_settings.should_ignore_site_coordinates = True
 
-    def is_ifc_class_far_away(self, ifc_class):
-        for site in self.file.by_type(ifc_class):
-            if (
-                not site.ObjectPlacement
-                or not site.ObjectPlacement.RelativePlacement
-                or not site.ObjectPlacement.RelativePlacement.Location
-            ):
-                continue
-            if self.is_point_far_away(site.ObjectPlacement.RelativePlacement.Location):
-                return True
+    def is_element_far_away(self, element):
+        try:
+            return self.is_point_far_away(element.ObjectPlacement.RelativePlacement.Location)
+        except:
+            pass
 
     def is_point_far_away(self, point):
         # Arbitrary threshold based on experience
@@ -600,94 +508,94 @@ class IfcImporter:
                         products.extend(self.get_products_from_shape_representation(inverse_element))
         return products
 
-    def patch_ifc(self):
+    def calculate_model_offset(self):
         project = self.file.by_type("IfcProject")[0]
-        if self.ifc_import_settings.should_ignore_site_coordinates:
-            sites = self.find_decomposed_ifc_class(project, "IfcSite")
-            if self.ifc_import_settings.should_guess_georeferencing and sites:
-                self.guess_georeferencing(sites[0])
-            for site in sites:
-                self.patch_placement_to_origin(site)
-        if self.ifc_import_settings.should_ignore_building_coordinates:
-            buildings = self.find_decomposed_ifc_class(project, "IfcBuilding")
-            if self.ifc_import_settings.should_guess_georeferencing and buildings:
-                self.guess_georeferencing(buildings[0])
-            for building in buildings:
-                self.patch_placement_to_origin(building)
-        if self.ifc_import_settings.should_reset_absolute_coordinates:
-            self.reset_absolute_coordinates()
+        site = self.find_decomposed_ifc_class(project, "IfcSite")
+        if site and self.is_element_far_away(site[0]):
+            return self.guess_georeferencing(site[0])
+        building = self.find_decomposed_ifc_class(project, "IfcBuilding")
+        if building and self.is_element_far_away(building[0]):
+            return self.guess_georeferencing(building[0])
+        return self.guess_absolute_coordinate()
 
     def guess_georeferencing(self, element):
         if not element.ObjectPlacement.is_a("IfcLocalPlacement"):
             return
         placement = element.ObjectPlacement.RelativePlacement
-        bpy.context.scene.MapConversion.eastings = str(placement.Location.Coordinates[0])
-        bpy.context.scene.MapConversion.northings = str(placement.Location.Coordinates[1])
-        bpy.context.scene.MapConversion.orthogonal_height = str(placement.Location.Coordinates[2])
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        props.blender_eastings = str(placement.Location.Coordinates[0])
+        props.blender_northings = str(placement.Location.Coordinates[1])
+        props.blender_orthogonal_height = str(placement.Location.Coordinates[2])
         if placement.RefDirection:
-            bpy.context.scene.MapConversion.x_axis_abscissa = str(placement.RefDirection.DirectionRatios[0])
-            bpy.context.scene.MapConversion.x_axis_ordinate = str(placement.RefDirection.DirectionRatios[1] * -1)
-        bpy.context.scene.MapConversion.scale = "1"
+            props.blender_x_axis_abscissa = str(placement.RefDirection.DirectionRatios[0])
+            props.blender_x_axis_ordinate = str(placement.RefDirection.DirectionRatios[1])
+        props.has_blender_offset = True
+        props.blender_offset_type = "OBJECT_PLACEMENT"
 
-    def reset_absolute_coordinates(self):
-        # 12D can have some funky coordinates out of any sensible range. This
-        # method will not work all the time, but will catch most issues.
+    def guess_absolute_coordinate(self):
+        # Civil BIM applications like to work in absolute coordinates, where the ObjectPlacement is 0,0,0 but each
+        # individual coordinate of the shape representation is in absolute values.
+        offset_point = self.get_offset_point()
+        if not offset_point:
+            return
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        props.blender_eastings = str(offset_point[0])
+        props.blender_northings = str(offset_point[1])
+        props.blender_orthogonal_height = str(offset_point[2])
+        props.has_blender_offset = True
+        props.blender_offset_type = "CARTESIAN_POINT"
+
+    def get_offset_point(self):
         offset_point = None
+        elements_checked = 0
+        # If more than these points aren't far away, the file probably isn't absolutely positioned
+        element_checking_threshold = 100
         try:
             point_lists = self.file.by_type("IfcCartesianPointList3D")
         except:
             # IFC2X3 does not have IfcCartesianPointList3D
             point_lists = []
         for point_list in point_lists:
-            coord_list = [None] * len(point_list.CoordList)
+            elements_checked += 1
+            if elements_checked > element_checking_threshold:
+                return
             for i, point in enumerate(point_list.CoordList):
-                if len(point) == 2 or not self.is_point_far_away(point):
-                    coord_list[i] = point
-                    continue
-                if not offset_point:
-                    offset_point = (point[0], point[1], point[2])
-                    self.ifc_import_settings.logger.info("Resetting absolute coordinates by %s", point)
-                point = (point[0] - offset_point[0], point[1] - offset_point[1], point[2] - offset_point[2])
-                coord_list[i] = point
-            point_list.CoordList = coord_list
+                if len(point) == 3 and self.is_point_far_away(point):
+                    return point[0]
+                    # offset_point = (point[0], point[1], point[2])
+
         for point in self.file.by_type("IfcCartesianPoint"):
-            if len(point.Coordinates) == 2 or not self.is_point_far_away(point):
-                continue
-            if not offset_point:
-                offset_point = (point.Coordinates[0], point.Coordinates[1], point.Coordinates[2])
-                self.ifc_import_settings.logger.info("Resetting absolute coordinates by %s", point)
-            point.Coordinates = (
-                point.Coordinates[0] - offset_point[0],
-                point.Coordinates[1] - offset_point[1],
-                point.Coordinates[2] - offset_point[2],
+            elements_checked += 1
+            if elements_checked > element_checking_threshold:
+                return
+            if len(point.Coordinates) == 3 and self.is_point_far_away(point):
+                return point[0]
+
+    def apply_blender_offset_to_matrix(self, matrix):
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        if props.has_blender_offset and props.blender_offset_type == "OBJECT_PLACEMENT":
+            test = mathutils.Matrix(
+                ifcopenshell.util.geolocation.global2local(
+                    matrix,
+                    float(props.blender_eastings) * self.unit_scale,
+                    float(props.blender_northings) * self.unit_scale,
+                    float(props.blender_orthogonal_height) * self.unit_scale,
+                    float(props.blender_x_axis_abscissa),
+                    float(props.blender_x_axis_ordinate),
+                ).tolist()
             )
-        if not offset_point:
-            return
-        if self.file.wrapped_data.schema == "IFC2X3":
-            properties = [
-                self.file.createIfcPropertySingleValue(
-                    "Eastings", None, self.file.createIfcLengthMeasure(offset_point[0])
-                ),
-                self.file.createIfcPropertySingleValue(
-                    "Northings", None, self.file.createIfcLengthMeasure(offset_point[1])
-                ),
-                self.file.createIfcPropertySingleValue(
-                    "OrthogonalHeight", None, self.file.createIfcLengthMeasure(offset_point[2])
-                ),
-            ]
-            history = self.file.createIfcOwnerHistory()
-            pset = self.file.createIfcPropertySet(
-                ifcopenshell.guid.new(), history, "EPset_MapConversion", None, properties
+
+            return mathutils.Matrix(
+                ifcopenshell.util.geolocation.global2local(
+                    matrix,
+                    float(props.blender_eastings) * self.unit_scale,
+                    float(props.blender_northings) * self.unit_scale,
+                    float(props.blender_orthogonal_height) * self.unit_scale,
+                    float(props.blender_x_axis_abscissa),
+                    float(props.blender_x_axis_ordinate),
+                ).tolist()
             )
-            self.file.createIfcRelDefinesByProperties(
-                ifcopenshell.guid.new(), history, None, None, self.file.by_type("IfcSite"), pset
-            )
-        else:
-            # We don't have the full geolocation information, so we'll add what we can
-            scene = bpy.context.scene
-            scene.MapConversion.eastings = str(offset_point[0])
-            scene.MapConversion.northings = str(offset_point[1])
-            scene.MapConversion.orthogonal_height = str(offset_point[2])
+        return mathutils.Matrix(matrix.tolist())
 
     def find_decomposed_ifc_class(self, element, ifc_class):
         results = []
@@ -700,60 +608,6 @@ class IfcImporter:
                     results.append(part)
                 results.extend(self.find_decomposed_ifc_class(part, ifc_class))
         return results
-
-    def patch_placement_to_origin(self, element):
-        element.ObjectPlacement.RelativePlacement.Location.Coordinates = (0.0, 0.0, 0.0)
-        if element.ObjectPlacement.RelativePlacement.Axis:
-            element.ObjectPlacement.RelativePlacement.Axis.DirectionRatios = (0.0, 0.0, 1.0)
-        if element.ObjectPlacement.RelativePlacement.RefDirection:
-            element.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1.0, 0.0, 0.0)
-
-    def create_georeferencing(self):
-        try:
-            map_conversion = self.file.by_type("IfcMapConversion")
-            projected_crs = self.file.by_type("IfcProjectedCRS")
-            if not map_conversion or not projected_crs:
-                return
-        except:
-            return  # For example, in IFC2X3
-        map_conversion = map_conversion[0]
-        projected_crs = projected_crs[0]
-        scene = bpy.context.scene
-        scene.BIMProperties.has_georeferencing = True
-        map_conversion_map = {
-            "Eastings": "eastings",
-            "Northings": "northings",
-            "OrthogonalHeight": "orthogonal_height",
-            "XAxisAbscissa": "x_axis_abscissa",
-            "XAxisOrdinate": "x_axis_ordinate",
-            "Scale": "scale",
-        }
-        target_crs_map = {
-            "Name": "name",
-            "Description": "description",
-            "GeodeticDatum": "geodetic_datum",
-            "VerticalDatum": "vertical_datum",
-            "MapProjection": "map_projection",
-            "MapZone": "map_zone",
-            "MapUnit": "map_unit",
-        }
-        for keyA, keyB in map_conversion_map.items():
-            value = getattr(map_conversion, keyA)
-            if value is not None:
-                setattr(scene.MapConversion, keyB, str(value))
-        for keyA, keyB in target_crs_map.items():
-            value = getattr(projected_crs, keyA)
-            if value is not None:
-                if keyA == "MapUnit":
-                    value = self.get_unit_name(value)
-                setattr(scene.TargetCRS, keyB, str(value))
-
-    def get_unit_name(self, named_unit):
-        name = ""
-        if hasattr(named_unit, "Prefix") and named_unit.Prefix:
-            name += named_unit.Prefix
-        name += named_unit.Name
-        return name
 
     def create_groups(self):
         group_collection = None
@@ -773,7 +627,6 @@ class IfcImporter:
         else:
             obj = bpy.data.objects.new(f"{element.is_a()}/{element.Name}", None)
             obj.BIMObjectProperties.ifc_definition_id = element.id()
-            self.add_element_attributes(element, obj.BIMObjectProperties)
             group_collection.objects.link(obj)
         self.groups[element.GlobalId] = {"ifc": element, "blender": obj}
 
@@ -811,7 +664,6 @@ class IfcImporter:
             obj = bpy.data.objects.new(f"IfcGridAxis/{axis.AxisTag}", mesh)
             obj.BIMObjectProperties.ifc_definition_id = element.id()
             obj.matrix_world = matrix_world
-            self.add_element_attributes(axis, obj.BIMObjectProperties)
             grid.objects.link(obj)
 
     def create_type_products(self):
@@ -862,11 +714,6 @@ class IfcImporter:
                 and context.TargetView == "MODEL_VIEW"
             ):
                 return representation_map
-
-    def create_products_legacy(self):
-        elements = self.file.by_type("IfcElement") + self.file.by_type("IfcSpace")
-        for element in elements:
-            self.create_product_legacy(element)
 
     def create_native_products(self):
         if not self.native_elements:
@@ -962,14 +809,14 @@ class IfcImporter:
 
         if shape:
             m = shape.transformation.matrix.data
-            mat = mathutils.Matrix(
-                ([m[0], m[1], m[2], 0], [m[3], m[4], m[5], 0], [m[6], m[7], m[8], 0], [m[9], m[10], m[11], 1])
+            # We use numpy here because Blender mathutils.Matrix is not accurate enough
+            mat = np.matrix(
+                ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
             )
-            mat.transpose()
-            obj.matrix_world = mat
+            obj.matrix_world = self.apply_blender_offset_to_matrix(mat)
             self.material_creator.create(element, obj, mesh)
         elif hasattr(element, "ObjectPlacement"):
-            obj.matrix_world = self.get_element_matrix(element)
+            obj.matrix_world = self.apply_blender_offset_to_matrix(self.get_element_matrix(element))
 
         self.add_element_representation_items(element, obj)
         self.add_element_classifications(element, obj)
@@ -1335,7 +1182,7 @@ class IfcImporter:
                             obj = self.added_data[product.GlobalId]
                             obj.data.BIMMeshProperties.presentation_layer_index = layer_index
                         except:
-                            pass # Occurs for example in opening elements or exclusions
+                            pass  # Occurs for example in opening elements or exclusions
 
     def clean_mesh(self):
         obj = None
@@ -1354,34 +1201,6 @@ class IfcImporter:
         bpy.ops.mesh.normals_make_consistent(context_override)
         bpy.ops.object.editmode_toggle(context_override)
 
-    def add_pset(self, pset, props):
-        new_pset = props.psets.add()
-        new_pset.name = pset.Name
-        pset_template = schema.ifc.psetqto.get_by_name(new_pset.name)
-        if pset_template:
-            for prop_name in (p.Name for p in pset_template.HasPropertyTemplates):
-                prop = new_pset.properties.add()
-                prop.name = prop_name
-        try:
-            if hasattr(pset, "HasProperties"):
-                props = pset.HasProperties
-            elif hasattr(pset, "Properties"):
-                props = pset.Properties
-        except:
-            return # I've seen ArchiCAD produce invalid IFCs with empty data
-        # Invalid IFC, but some vendors like Solidworks do this so we accomodate it
-        if not props:
-            return
-        for prop in props:
-            if prop.is_a("IfcPropertySingleValue") and prop.NominalValue:
-                index = new_pset.properties.find(prop.Name)
-                if index >= 0:
-                    new_pset.properties[index].string_value = str(prop.NominalValue.wrappedValue)
-                else:
-                    new_prop = new_pset.properties.add()
-                    new_prop.name = prop.Name
-                    new_prop.string_value = str(prop.NominalValue.wrappedValue)
-
     def add_opening_relation(self, element, obj):
         if not element.is_a("IfcOpeningElement"):
             return
@@ -1397,15 +1216,6 @@ class IfcImporter:
             return
         with open(self.ifc_import_settings.diff_file, "r") as file:
             self.diff = json.load(file)
-
-    def cache_file(self):
-        destination = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache", "ifc")
-        copythread = FileCopy(self.ifc_import_settings.input_file, destination)
-        bpy.context.scene.BIMProperties.ifc_cache = os.path.join(
-            destination, os.path.basename(self.ifc_import_settings.input_file)
-        )
-        copythread.start()
-        copythread.join()
 
     def load_file(self):
         self.ifc_import_settings.logger.info("loading file %s", self.ifc_import_settings.input_file)
@@ -1699,46 +1509,6 @@ class IfcImporter:
                 objects_to_purge.append(obj)
         bpy.ops.object.delete({"selected_objects": objects_to_purge})
 
-    def create_product_legacy(self, element):
-        if (
-            self.diff
-            and element.GlobalId not in self.diff["added"]
-            and element.GlobalId not in self.diff["changed"].keys()
-        ):
-            return
-
-        self.ifc_import_settings.logger.info("Creating object %s", element)
-        self.time = time.time()
-        if element.is_a("IfcOpeningElement"):
-            return
-
-        try:
-            representation_id = self.get_representation_id(element)
-
-            mesh_name = "mesh-{}".format(representation_id)
-            mesh = self.meshes.get(mesh_name)
-            if mesh is None or representation_id is None:
-                shape = ifcopenshell.geom.create_shape(self.settings, element)
-                self.ifc_import_settings.logger.info("Shape was generated in %.2f", time.time() - self.time)
-                self.time = time.time()
-
-                mesh = self.create_mesh(element, shape)
-                self.meshes[mesh_name] = mesh
-                self.mesh_shapes[mesh_name] = shape
-            else:
-                self.ifc_import_settings.logger.info("Mesh reused.")
-        except:
-            self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
-            return
-
-        obj = bpy.data.objects.new(self.get_name(element), mesh)
-        obj.BIMObjectProperties.ifc_definition_id = element.id()
-        self.material_creator.create(element, obj, mesh)
-        obj.matrix_world = self.get_element_matrix(element, mesh_name)
-        self.add_element_classifications(element, obj)
-        self.add_element_document_relations(element, obj)
-        self.added_data[element.GlobalId] = obj
-
     def add_element_document_relations(self, element, obj):
         for association in element.HasAssociations:
             if association.is_a("IfcRelAssociatesDocument"):
@@ -1779,7 +1549,7 @@ class IfcImporter:
                 return self.place_object_in_spatial_tree(container, obj)
             elif element.is_a("IfcGrid"):
                 grid_collection = bpy.data.collections.get(obj.name)
-                if grid_collection: # Just in case we ran into invalid grids from Revit
+                if grid_collection:  # Just in case we ran into invalid grids from Revit
                     self.spatial_structure_elements[container.GlobalId]["blender"].children.link(grid_collection)
                     grid_collection.objects.link(obj)
             else:
@@ -1819,21 +1589,6 @@ class IfcImporter:
             self.ifc_import_settings.logger.warning("Warning: this object is outside the spatial hierarchy %s", element)
             bpy.context.scene.collection.objects.link(obj)
 
-    def add_element_attributes(self, element, props):
-        attributes = element.get_info()
-        for key, value in attributes.items():
-            if (
-                value is None
-                or isinstance(value, (tuple, ifcopenshell.entity_instance))
-                or key == "id"
-                or key == "type"
-            ):
-                continue
-            attribute = props.attributes.add()
-            attribute.name = key
-            attribute.data_type = "string"
-            attribute.string_value = str(self.cast_edge_case_attribute(element.is_a(), key, value))
-
     def cast_edge_case_attribute(self, ifc_class, key, value):
         if key == "RefLatitude" or key == "RefLongitude":
             return ifcopenshell.util.geolocation.dms2dd(*value)
@@ -1871,38 +1626,11 @@ class IfcImporter:
         return self.get_referenced_source_name(element.ReferencedSource)
 
     def get_element_matrix(self, element, mesh_name=None):
-        element_matrix = self.get_local_placement(element.ObjectPlacement)
-
-        if mesh_name:
-            # Blender supports reusing a mesh with a different transformation
-            # applied at the object level. In contrast, IFC supports reusing a mesh
-            # with a different transformation applied at the mesh level _as well as_
-            # the object level. For this reason, if the end-goal is to re-use mesh
-            # data, we must combine IFC's mesh-level transformation into Blender's
-            # object level transformation.
-
-            # The first step to do this is to _undo_ the mesh-level transformation
-            # from whatever shared mesh we are using, as it is not necessarily the
-            # same as the current mesh.
-            shared_shape_transformation = self.get_representation_cartesian_transformation(
-                self.file.by_id(self.mesh_shapes[mesh_name].product.id())
-            )
-            if shared_shape_transformation:
-                shared_transform = self.get_cartesiantransformationoperator(shared_shape_transformation)
-                shared_transform.invert()
-                element_matrix = element_matrix @ shared_transform
-
-            # The next step is to apply the current element's mesh level
-            # transformation to our current element's object transformation
-            transformation = self.get_representation_cartesian_transformation(element)
-            if transformation:
-                element_matrix = self.get_cartesiantransformationoperator(transformation) @ element_matrix
-
-        element_matrix[0][3] *= self.unit_scale
-        element_matrix[1][3] *= self.unit_scale
-        element_matrix[2][3] *= self.unit_scale
-
-        return element_matrix
+        result = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+        result[0][3] *= self.unit_scale
+        result[1][3] *= self.unit_scale
+        result[2][3] *= self.unit_scale
+        return result
 
     def get_body_representations(self, representations, matrix=None):
         if matrix is None:
@@ -1972,11 +1700,29 @@ class IfcImporter:
                 representation_id = int(re.sub(r"\D", "", representation_id.split("-")[0]))
             else:
                 representation_id = int(re.sub(r"\D", "", representation_id))
-            mesh = bpy.data.meshes.new("{}/{}".format(
-                self.file.by_id(representation_id).ContextOfItems.id(), geometry.id))
+            mesh = bpy.data.meshes.new(
+                "{}/{}".format(self.file.by_id(representation_id).ContextOfItems.id(), geometry.id)
+            )
+
+            props = bpy.context.scene.BIMGeoreferenceProperties
+            if props.has_blender_offset and props.blender_offset_type == "CARTESIAN_POINT":
+                ordinate_index = 0
+                verts = [None] * len(geometry.verts)
+                offset_point = (
+                    float(props.blender_eastings),
+                    float(props.blender_northings),
+                    float(props.blender_orthogonal_height),
+                )
+                for i, vert in enumerate(geometry.verts):
+                    if ordinate_index > 2:
+                        ordinate_index = 0
+                    verts[i] = vert - offset_point[ordinate_index]
+                    ordinate_index += 1
+            else:
+                verts = geometry.verts
 
             if geometry.faces:
-                num_vertices = len(geometry.verts) // 3
+                num_vertices = len(verts) // 3
                 total_faces = len(geometry.faces)
                 loop_start = range(0, total_faces, 3)
                 num_loops = total_faces // 3
@@ -1988,11 +1734,11 @@ class IfcImporter:
                     # Potentially, there is a smarter way to do this. See #1047
                     v_index = cycle((0, 1, 2))
                     verts = [
-                        v + self.ifc_import_settings.model_offset_coordinates[next(v_index)] for v in geometry.verts
+                        v + self.ifc_import_settings.model_offset_coordinates[next(v_index)] for v in verts
                     ]
                     mesh.vertices.foreach_set("co", verts)
                 else:
-                    mesh.vertices.foreach_set("co", geometry.verts)
+                    mesh.vertices.foreach_set("co", verts)
                 mesh.loops.add(num_vertex_indices)
                 mesh.loops.foreach_set("vertex_index", geometry.faces)
                 mesh.polygons.add(num_loops)
@@ -2001,7 +1747,7 @@ class IfcImporter:
                 mesh.update()
             else:
                 e = geometry.edges
-                v = geometry.verts
+                v = verts
                 vertices = [[v[i], v[i + 1], v[i + 2]] for i in range(0, len(v), 3)]
                 edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
                 mesh.from_pydata(vertices, edges, [])
@@ -2018,6 +1764,7 @@ class IfcImporter:
         except:
             self.ifc_import_settings.logger.error("Could not create mesh for %s", element)
             import traceback
+
             print(traceback.format_exc())
 
     def create_curve(self, geometry):
@@ -2122,7 +1869,6 @@ class IfcImportSettings:
         self.should_auto_set_workarounds = True
         self.should_ignore_site_coordinates = False
         self.should_ignore_building_coordinates = False
-        self.should_reset_absolute_coordinates = False
         self.should_merge_materials_by_colour = False
         self.should_import_type_representations = False
         self.should_import_curves = False
@@ -2131,7 +1877,6 @@ class IfcImportSettings:
         self.should_use_cpu_multiprocessing = False
         self.should_import_with_profiling = False
         self.should_import_native = False
-        self.should_use_legacy = False
         self.should_merge_aggregates = False
         self.should_merge_by_class = False
         self.should_merge_by_material = False
@@ -2148,10 +1893,6 @@ class IfcImportSettings:
         settings.diff_file = scene_bim.diff_json_file
         settings.ifc_import_filter = scene_bim.ifc_import_filter
         settings.ifc_selector = scene_bim.ifc_selector
-        settings.should_ignore_site_coordinates = scene_bim.import_should_ignore_site_coordinates
-        settings.should_ignore_building_coordinates = scene_bim.import_should_ignore_building_coordinates
-        settings.should_reset_absolute_coordinates = scene_bim.import_should_reset_absolute_coordinates
-        settings.should_guess_georeferencing = scene_bim.import_should_guess_georeferencing
         settings.should_import_type_representations = scene_bim.import_should_import_type_representations
         settings.should_import_curves = scene_bim.import_should_import_curves
         settings.should_import_opening_elements = scene_bim.import_should_import_opening_elements
@@ -2161,7 +1902,6 @@ class IfcImportSettings:
         settings.should_import_with_profiling = scene_bim.import_should_import_with_profiling
         settings.should_import_native = scene_bim.import_should_import_native
         settings.should_roundtrip_native = scene_bim.import_export_should_roundtrip_native
-        settings.should_use_legacy = scene_bim.import_should_use_legacy
         settings.should_import_aggregates = scene_bim.import_should_import_aggregates
         settings.should_merge_aggregates = scene_bim.import_should_merge_aggregates
         settings.should_merge_by_class = scene_bim.import_should_merge_by_class
