@@ -178,23 +178,23 @@ class UpdateMeshRepresentation(bpy.types.Operator):
 
         bpy.ops.bim.edit_object_placement(obj=obj.name)
 
-        element = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-        result = add_representation.Usecase(
+        old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        new_representation = add_representation.Usecase(
             self.file,
             {
-                "context": element.ContextOfItems,
+                "context": old_representation.ContextOfItems,
                 "geometry": obj.data,
                 "total_items": max(1, len(obj.material_slots)),
             },
         ).execute()
-        if not result:
+        if not new_representation:
             print("Failed to write shape representation")
             return {"FINISHED"}
 
         assign_styles.Usecase(
             self.file,
             {
-                "shape_representation": result,
+                "shape_representation": new_representation,
                 "styles": [
                     self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
                     for s in obj.material_slots
@@ -204,9 +204,12 @@ class UpdateMeshRepresentation(bpy.types.Operator):
         ).execute()
 
         # TODO: move this into a replace_representation usecase or something
-        for inverse in self.file.get_inverse(element):
-            ifcopenshell.util.element.replace_attribute(inverse, element, result)
-        obj.data.BIMMeshProperties.ifc_definition_id = int(result.id())
+        for inverse in self.file.get_inverse(old_representation):
+            ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
+
+        obj.data.BIMMeshProperties.ifc_definition_id = int(new_representation.id())
+        obj.data.name = f"{old_representation.ContextOfItems.id()}/{new_representation.id()}"
+        bpy.ops.bim.remove_representation(ifc_definition_id=old_representation.id())
         Data.load(obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
