@@ -23,7 +23,7 @@ class BIM_PT_project(Panel):
         props = context.scene.BIMProperties
         row = self.layout.row(align=True)
         row.label(text="IFC File", icon="FILE")
-        row.label(text=os.path.basename(props.ifc_file))
+        row.label(text=os.path.basename(props.ifc_file) or "No File Found")
 
         row = self.layout.row(align=True)
         row.label(text="IFC Schema", icon="FILE_CACHE")
