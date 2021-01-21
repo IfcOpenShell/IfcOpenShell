@@ -30,6 +30,9 @@ class Patcher:
             new_spatial_element = self.new.add(spatial_element)
             self.contained_ins.setdefault(spatial_element.GlobalId, set()).add(new_element)
             self.add_spatial_tree(spatial_element, new_spatial_element)
+        for opening in element.HasOpenings:
+            self.new.add(opening)
+            self.new.add(opening.RelatedOpeningElement)
 
     def add_spatial_tree(self, spatial_element, new_spatial_element):
         for rel in spatial_element.Decomposes:
