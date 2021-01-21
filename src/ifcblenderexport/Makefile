@@ -266,21 +266,7 @@ endif
 	rm -rf dist/working
 
 	# Provides IFCPatch functionality
-	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/ifcpatch.py
-	cd dist/blenderbim/libs/site/packages/ && mkdir recipes
-	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/__init__.py
-	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/ExtractElements.py
-	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/MergeProject.py
-	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/Migrate.py
-	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/OffsetObjectPlacements.py
-	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/OffsetStoreyElevations.py
-	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/Optimise.py
-	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/RecycleNonRootedElements.py
-	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/RemoveSiteRepresentation.py
-	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/ResetAbsoluteCoordinates.py
-	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/ResetSpatialElementLocations.py
-	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/SetRefElevation.py
-	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/SplitByBuildingStorey.py
+	cd dist/blenderbim/libs/site/packages/ && svn export https://github.com/IfcOpenShell/IfcOpenShell/trunk/src/ifcpatch
 
 	cd dist/blenderbim && sed -i "s/999999/$(VERSION)/" __init__.py
 	cd dist && zip -r blender28-bim-$(VERSION)-$(PLATFORM).zip ./*

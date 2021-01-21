@@ -16,7 +16,6 @@ import tempfile
 import numpy as np
 from . import export_ifc
 from . import import_ifc
-from . import qto
 from . import cut_ifc
 from . import svgwriter
 from . import sheeter
@@ -105,7 +104,7 @@ class ExportIFC(bpy.types.Operator):
         else:
             output_file = bpy.path.ensure_ext(self.filepath, ".ifc")
         ifc_export_settings = export_ifc.IfcExportSettings.factory(context, output_file, logger)
-        qto_calculator = qto.QtoCalculator()
+        qto_calculator = None # TODO: remove from export
         ifc_parser = export_ifc.IfcParser(ifc_export_settings, qto_calculator)
         ifc_exporter = export_ifc.IfcExporter(ifc_export_settings, ifc_parser)
         ifc_export_settings.logger.info("Starting export")
@@ -257,25 +256,6 @@ class SelectType(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ColourByClass(bpy.types.Operator):
-    bl_idname = "bim.colour_by_class"
-    bl_label = "Colour by Class"
-
-    def execute(self, context):
-        colours = cycle(colour_list)
-        ifc_classes = {}
-        for obj in bpy.context.visible_objects:
-            if "/" not in obj.name:
-                continue
-            ifc_class = obj.name.split("/")[0]
-            if ifc_class not in ifc_classes:
-                ifc_classes[ifc_class] = next(colours)
-            obj.color = ifc_classes[ifc_class]
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].shading.color_type = "OBJECT"
-        return {"FINISHED"}
-
-
 class ColourByAttribute(bpy.types.Operator):
     bl_idname = "bim.colour_by_attribute"
     bl_label = "Colour by Attribute"
@@ -322,98 +302,6 @@ class ColourByPset(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ResetObjectColours(bpy.types.Operator):
-    bl_idname = "bim.reset_object_colours"
-    bl_label = "Reset Colours"
-
-    def execute(self, context):
-        for object in bpy.context.selected_objects:
-            object.color = (1, 1, 1, 1)
-        return {"FINISHED"}
-
-
-class QAHelper:
-    @classmethod
-    def append_to_scenario(cls, lines):
-        filename = os.path.join(
-            bpy.context.scene.BIMProperties.features_dir, bpy.context.scene.BIMProperties.features_file + ".feature"
-        )
-        if os.path.exists(filename + "~"):
-            os.remove(filename + "~")
-        os.rename(filename, filename + "~")
-        with open(filename, "w") as destination:
-            with open(filename + "~", "r") as source:
-                is_in_scenario = False
-                for source_line in source:
-                    if (
-                        "Scenario: " in source_line
-                        and bpy.context.scene.BIMProperties.scenario == source_line.strip()[len("Scenario: ") :]
-                    ):
-                        is_in_scenario = True
-                    elif is_in_scenario:
-                        for line in lines:
-                            destination.write(line + "\n")
-                        is_in_scenario = False
-                    destination.write(source_line)
-        os.remove(filename + "~")
-
-
-class ApproveClass(bpy.types.Operator):
-    bl_idname = "bim.approve_class"
-    bl_label = "Approve Class"
-
-    def execute(self, context):
-        lines = []
-        for object in bpy.context.selected_objects:
-            index = object.BIMObjectProperties.attributes.find("GlobalId")
-            if index != -1:
-                lines.append(
-                    " * The element {} is an {}".format(
-                        object.BIMObjectProperties.attributes[index].string_value, object.name.split("/")[0]
-                    )
-                )
-        QAHelper.append_to_scenario(lines)
-        return {"FINISHED"}
-
-
-class RejectClass(bpy.types.Operator):
-    bl_idname = "bim.reject_class"
-    bl_label = "Reject Class"
-
-    def execute(self, context):
-        lines = []
-        for object in bpy.context.selected_objects:
-            lines.append(
-                " * The element {} is an {}".format(
-                    object.BIMObjectProperties.attributes[
-                        object.BIMObjectProperties.attributes.find("GlobalId")
-                    ].string_value,
-                    bpy.context.scene.BIMProperties.audit_ifc_class,
-                )
-            )
-        QAHelper.append_to_scenario(lines)
-        return {"FINISHED"}
-
-
-class RejectElement(bpy.types.Operator):
-    bl_idname = "bim.reject_element"
-    bl_label = "Reject Element"
-
-    def execute(self, context):
-        lines = []
-        for object in bpy.context.selected_objects:
-            lines.append(
-                " * The element {} should not exist because {}".format(
-                    object.BIMObjectProperties.attributes[
-                        object.BIMObjectProperties.attributes.find("GlobalId")
-                    ].string_value,
-                    bpy.context.scene.BIMProperties.qa_reject_element_reason,
-                )
-            )
-        QAHelper.append_to_scenario(lines)
-        return {"FINISHED"}
-
-
 class OpenUri(bpy.types.Operator):
     bl_idname = "bim.open_uri"
     bl_label = "Open URI"
@@ -422,30 +310,6 @@ class OpenUri(bpy.types.Operator):
     def execute(self, context):
         webbrowser.open(self.uri)
         return {"FINISHED"}
-
-
-class SelectAudited(bpy.types.Operator):
-    bl_idname = "bim.select_audited"
-    bl_label = "Select Audited"
-
-    def execute(self, context):
-        audited_global_ids = []
-        for filename in Path(bpy.context.scene.BIMProperties.features_dir).glob("*.feature"):
-            with open(filename, "r") as feature_file:
-                lines = feature_file.readlines()
-                for line in lines:
-                    words = line.strip().split()
-                    for word in words:
-                        if self.is_a_global_id(word):
-                            audited_global_ids.append(word)
-        for object in bpy.context.visible_objects:
-            index = object.BIMObjectProperties.attributes.find("GlobalId")
-            if index != -1 and object.BIMObjectProperties.attributes[index].string_value in audited_global_ids:
-                object.select_set(True)
-        return {"FINISHED"}
-
-    def is_a_global_id(self, word):
-        return word[0] in ["0", "1", "2", "3"] and len(word) == 22
 
 
 class AddQto(bpy.types.Operator):
@@ -864,85 +728,6 @@ class SelectExternalMaterialDir(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
 
-class SelectCobieIfcFile(bpy.types.Operator):
-    bl_idname = "bim.select_cobie_ifc_file"
-    bl_label = "Select COBie IFC File"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        bpy.context.scene.BIMProperties.cobie_ifc_file = self.filepath
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-
-class SelectCobieJsonFile(bpy.types.Operator):
-    bl_idname = "bim.select_cobie_json_file"
-    bl_label = "Select COBie JSON File"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        bpy.context.scene.BIMProperties.cobie_json_file = self.filepath
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-
-class ExecuteIfcCobie(bpy.types.Operator):
-    bl_idname = "bim.execute_ifc_cobie"
-    bl_label = "Execute IFCCOBie"
-    file_format: bpy.props.StringProperty()
-
-    def execute(self, context):
-        from cobie import IfcCobieParser
-
-        output_dir = os.path.dirname(bpy.context.scene.BIMProperties.cobie_ifc_file)
-        output = os.path.join(output_dir, "output")
-        logger = logging.getLogger("IFCtoCOBie")
-        fh = logging.FileHandler(os.path.join(output_dir, "cobie.log"))
-        fh.setLevel(logging.DEBUG)
-        fh.setFormatter(logging.Formatter("%(asctime)s : %(levelname)s : %(message)s"))
-        logger = logging.getLogger("IFCtoCOBie")
-        logger.addHandler(fh)
-        selector = ifcopenshell.util.selector.Selector()
-        if bpy.context.scene.BIMProperties.cobie_json_file:
-            with open(bpy.context.scene.BIMProperties.cobie_json_file, "r") as f:
-                custom_data = json.load(f)
-        else:
-            custom_data = {}
-        parser = IfcCobieParser(logger, selector)
-        parser.parse(
-            bpy.context.scene.BIMProperties.cobie_ifc_file,
-            bpy.context.scene.BIMProperties.cobie_types,
-            bpy.context.scene.BIMProperties.cobie_components,
-            custom_data,
-        )
-        if self.file_format == "xlsx":
-            from cobie import CobieXlsWriter
-
-            writer = CobieXlsWriter(parser, output)
-            writer.write()
-            webbrowser.open("file://" + output + "." + self.file_format)
-        elif self.file_format == "ods":
-            from cobie import CobieOdsWriter
-
-            writer = CobieOdsWriter(parser, output)
-            writer.write()
-            webbrowser.open("file://" + output + "." + self.file_format)
-        else:
-            from cobie import CobieCsvWriter
-
-            writer = CobieCsvWriter(parser, output_dir)
-            writer.write()
-            webbrowser.open("file://" + output_dir)
-        webbrowser.open("file://" + output_dir + "/cobie.log")
-        return {"FINISHED"}
-
-
 class ExecuteIfcPatch(bpy.types.Operator):
     bl_idname = "bim.execute_ifc_patch"
     bl_label = "Execute IFCPatch"
@@ -960,98 +745,6 @@ class ExecuteIfcPatch(bpy.types.Operator):
                 "log": bpy.context.scene.BIMProperties.data_dir + "process.log",
             }
         )
-        return {"FINISHED"}
-
-
-class SelectDiffJsonFile(bpy.types.Operator):
-    bl_idname = "bim.select_diff_json_file"
-    bl_label = "Select Diff JSON File"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        bpy.context.scene.BIMProperties.diff_json_file = self.filepath
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-
-class VisualiseDiff(bpy.types.Operator):
-    bl_idname = "bim.visualise_diff"
-    bl_label = "Visualise Diff"
-
-    def execute(self, context):
-        with open(bpy.context.scene.BIMProperties.diff_json_file, "r") as file:
-            diff = json.load(file)
-        for obj in bpy.context.visible_objects:
-            obj.color = (1.0, 1.0, 1.0, 0.2)
-            global_id = obj.BIMObjectProperties.attributes.get("GlobalId")
-            if not global_id:
-                continue
-            if global_id.string_value in diff["deleted"]:
-                obj.color = (1.0, 0.0, 0.0, 0.2)
-            elif global_id.string_value in diff["added"]:
-                obj.color = (0.0, 1.0, 0.0, 0.2)
-            elif global_id.string_value in diff["changed"]:
-                obj.color = (0.0, 0.0, 1.0, 0.2)
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].shading.color_type = "OBJECT"
-        return {"FINISHED"}
-
-
-class SelectDiffOldFile(bpy.types.Operator):
-    bl_idname = "bim.select_diff_old_file"
-    bl_label = "Select Diff Old File"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        bpy.context.scene.BIMProperties.diff_old_file = self.filepath
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-
-class SelectDiffNewFile(bpy.types.Operator):
-    bl_idname = "bim.select_diff_new_file"
-    bl_label = "Select Diff New File"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        bpy.context.scene.BIMProperties.diff_new_file = self.filepath
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-
-class ExecuteIfcDiff(bpy.types.Operator):
-    bl_idname = "bim.execute_ifc_diff"
-    bl_label = "Execute IFC Diff"
-    filename_ext = ".json"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def invoke(self, context, event):
-        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-    def execute(self, context):
-        import ifcdiff
-
-        ifc_diff = ifcdiff.IfcDiff(
-            bpy.context.scene.BIMProperties.diff_old_file,
-            bpy.context.scene.BIMProperties.diff_new_file,
-            self.filepath,
-            bpy.context.scene.BIMProperties.diff_relationships.split(),
-        )
-        ifc_diff.diff()
-        ifc_diff.export()
-        bpy.context.scene.BIMProperties.diff_json_file = self.filepath
         return {"FINISHED"}
 
 
@@ -1421,22 +1114,6 @@ class SelectSmartGroup(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SelectFeaturesDir(bpy.types.Operator):
-    bl_idname = "bim.select_features_dir"
-    bl_label = "Select Features Directory"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        bpy.context.scene.BIMProperties.features_dir = (
-            os.path.dirname(os.path.abspath(self.filepath)) if "." in self.filepath else self.filepath
-        )
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-
 class SelectIfcFile(bpy.types.Operator):
     bl_idname = "bim.select_ifc_file"
     bl_label = "Select IFC File"
@@ -1449,19 +1126,6 @@ class SelectIfcFile(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
-
-
-class ValidateIfcFile(bpy.types.Operator):
-    bl_idname = "bim.validate_ifc_file"
-    bl_label = "Validate IFC File"
-
-    def execute(self, context):
-        import ifcopenshell.validate
-
-        logger = logging.getLogger("validate")
-        logger.setLevel(logging.DEBUG)
-        ifcopenshell.validate.validate(ifc.IfcStore.get_file(), logger)
-        return {"FINISHED"}
 
 
 class SelectDataDir(bpy.types.Operator):
@@ -1490,106 +1154,6 @@ class SelectSchemaDir(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
-
-
-class CreateAggregate(bpy.types.Operator):
-    bl_idname = "bim.create_aggregate"
-    bl_label = "Create Aggregate"
-
-    def execute(self, context):
-        spatial_container = None
-        for obj in bpy.context.selected_objects:
-            if obj.instance_collection:
-                return {"FINISHED"}
-            for collection in obj.users_collection:
-                if "IfcRelAggregates" in collection.name:
-                    return {"FINISHED"}
-                elif collection.name[0:3] == "Ifc":
-                    spatial_container = collection
-        if not spatial_container:
-            return {"FINISHED"}
-
-        aggregate = bpy.data.collections.new(
-            "IfcRelAggregates/{}".format(bpy.context.scene.BIMProperties.aggregate_class)
-        )
-        for project in [c for c in bpy.context.view_layer.layer_collection.children if "IfcProject" in c.name]:
-            if not [c for c in project.children if "Aggregates" in c.name]:
-                aggregates = bpy.data.collections.new("Aggregates")
-                project.collection.children.link(aggregates)
-            for aggregate_collection in [c for c in project.children if "Aggregates" in c.name]:
-                aggregate_collection.collection.children.link(aggregate)
-                break
-            break
-        for obj in bpy.context.selected_objects:
-            for collection in obj.users_collection:
-                collection.objects.unlink(obj)
-            aggregate.objects.link(obj)
-
-        instance = bpy.data.objects.new(
-            "{}/{}".format(
-                bpy.context.scene.BIMProperties.aggregate_class, bpy.context.scene.BIMProperties.aggregate_name
-            ),
-            None,
-        )
-        instance.instance_type = "COLLECTION"
-        instance.instance_collection = aggregate
-        spatial_container.objects.link(instance)
-        return {"FINISHED"}
-
-
-class EditAggregate(bpy.types.Operator):
-    bl_idname = "bim.edit_aggregate"
-    bl_label = "Edit Aggregate"
-
-    def execute(self, context):
-        obj = bpy.context.active_object
-        if obj.instance_type != "COLLECTION" or "IfcRelAggregates" not in obj.instance_collection.name:
-            return {"FINISHED"}
-        bpy.context.view_layer.objects[obj.name].hide_viewport = True
-        for project in [c for c in bpy.context.view_layer.layer_collection.children if "IfcProject" in c.name]:
-            for aggregate_collection in [c for c in project.children if "Aggregates" in c.name]:
-                aggregate_collection.hide_viewport = False
-        return {"FINISHED"}
-
-
-class SaveAggregate(bpy.types.Operator):
-    bl_idname = "bim.save_aggregate"
-    bl_label = "Save Aggregate"
-
-    def execute(self, context):
-        obj = bpy.context.active_object
-        aggregate = None
-        names = [c.name for c in obj.users_collection]
-        for project in [c for c in bpy.context.view_layer.layer_collection.children if "IfcProject" in c.name]:
-            for aggregate_collection in [c for c in project.children if "Aggregates" in c.name]:
-                aggregate_collection.hide_viewport = True
-                for collection in [c for c in aggregate_collection.children if c.name in names]:
-                    aggregate = collection.collection
-                    break
-        if not aggregate:
-            return {"FINISHED"}
-        for obj in bpy.context.view_layer.objects:
-            if obj.instance_collection == aggregate:
-                obj.hide_viewport = False
-        return {"FINISHED"}
-
-
-class ExplodeAggregate(bpy.types.Operator):
-    bl_idname = "bim.explode_aggregate"
-    bl_label = "Explode Aggregate"
-
-    def execute(self, context):
-        obj = bpy.context.active_object
-        if obj.instance_type != "COLLECTION" or "IfcRelAggregates" not in obj.instance_collection.name:
-            return {"FINISHED"}
-        aggregate_collection = bpy.data.collections.get(obj.instance_collection.name)
-        spatial_collection = obj.users_collection[0]
-        for part in aggregate_collection.objects:
-            spatial_collection.objects.link(part)
-            aggregate_collection.objects.unlink(part)
-        bpy.data.objects.remove(obj, do_unlink=True)
-        bpy.data.collections.remove(aggregate_collection, do_unlink=True)
-        return {"FINISHED"}
 
 
 class LoadClassification(bpy.types.Operator):
@@ -2536,121 +2100,13 @@ class RemoveSectionPlane(bpy.types.Operator):
         bpy.ops.object.delete({"selected_objects": [bpy.context.active_object]})
 
 
-class AddCsvAttribute(bpy.types.Operator):
-    bl_idname = "bim.add_csv_attribute"
-    bl_label = "Add CSV Attribute"
-
-    def execute(self, context):
-        attribute = bpy.context.scene.BIMProperties.csv_attributes.add()
-        return {"FINISHED"}
-
-
-class RemoveCsvAttribute(bpy.types.Operator):
-    bl_idname = "bim.remove_csv_attribute"
-    bl_label = "Remove CSV Attribute"
-    index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        bpy.context.scene.BIMProperties.csv_attributes.remove(self.index)
-        return {"FINISHED"}
-
-
-class ExportIfcCsv(bpy.types.Operator):
-    bl_idname = "bim.export_ifccsv"
-    bl_label = "Export IFC to CSV"
-    filename_ext = ".csv"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def invoke(self, context, event):
-        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".csv")
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-    def execute(self, context):
-        import ifccsv
-
-        self.filepath = bpy.path.ensure_ext(self.filepath, ".csv")
-        ifc_file = ifcopenshell.open(bpy.context.scene.BIMProperties.ifc_file)
-        selector = ifcopenshell.util.selector.Selector()
-        results = selector.parse(ifc_file, bpy.context.scene.BIMProperties.ifc_selector)
-        ifc_csv = ifccsv.IfcCsv()
-        ifc_csv.output = self.filepath
-        ifc_csv.attributes = [a.name for a in bpy.context.scene.BIMProperties.csv_attributes]
-        ifc_csv.selector = selector
-        if bpy.context.scene.BIMProperties.csv_delimiter == "CUSTOM":
-            ifc_csv.delimiter = bpy.context.scene.BIMProperties.csv_custom_delimiter
-        else:
-            ifc_csv.delimiter = bpy.context.scene.BIMProperties.csv_delimiter
-        ifc_csv.export(ifc_file, results)
-        return {"FINISHED"}
-
-
-class ImportIfcCsv(bpy.types.Operator):
-    bl_idname = "bim.import_ifccsv"
-    bl_label = "Import CSV to IFC"
-    filename_ext = ".csv"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def invoke(self, context, event):
-        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".csv")
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-    def execute(self, context):
-        import ifccsv
-
-        ifc_csv = ifccsv.IfcCsv()
-        ifc_csv.output = self.filepath
-        ifc_csv.Import(bpy.context.scene.BIMProperties.ifc_file)
-        return {"FINISHED"}
-
-
-class EyedropIfcCsv(bpy.types.Operator):
-    bl_idname = "bim.eyedrop_ifccsv"
-    bl_label = "Query Selected Items"
-
-    def execute(self, context):
-        global_ids = []
-        for obj in bpy.context.selected_objects:
-            if hasattr(obj, "BIMObjectProperties") and obj.BIMObjectProperties.attributes.get("GlobalId"):
-                global_ids.append("#" + obj.BIMObjectProperties.attributes.get("GlobalId").string_value)
-        bpy.context.scene.BIMProperties.ifc_selector = "|".join(global_ids)
-        return {"FINISHED"}
-
-
 class ReloadIfcFile(bpy.types.Operator):
     bl_idname = "bim.reload_ifc_file"
     bl_label = "Reload IFC File"
 
     def execute(self, context):
-        self.diff_ifc()
-        self.reimport_ifc(context)
+        # TODO: reimplement. See #1222.
         return {"FINISHED"}
-
-    def diff_ifc(self):
-        import ifcdiff
-
-        temp_file = tempfile.NamedTemporaryFile(delete=False)
-        temp_file.close()
-        ifc_diff = ifcdiff.IfcDiff(
-            bpy.context.scene.BIMProperties.ifc_cache, bpy.context.scene.BIMProperties.ifc_file, temp_file.name
-        )
-        ifc_diff.diff()
-        ifc_diff.export()
-        bpy.context.scene.BIMProperties.diff_json_file = temp_file.name
-
-    def reimport_ifc(self, context):
-        logger = logging.getLogger("ImportIFC")
-        logging.basicConfig(
-            filename=bpy.context.scene.BIMProperties.data_dir + "process.log", filemode="a", level=logging.DEBUG
-        )
-        ifc_import_settings = import_ifc.IfcImportSettings.factory(
-            context, bpy.context.scene.BIMProperties.ifc_file, logger
-        )
-        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
-        ifc_importer.execute()
 
 
 class AddIfcFile(bpy.types.Operator):
@@ -2834,166 +2290,6 @@ class PropagateTextData(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ConvertLocalToGlobal(bpy.types.Operator):
-    bl_idname = "bim.convert_local_to_global"
-    bl_label = "Convert Local To Global"
-
-    def execute(self, context):
-        if bpy.context.scene.MapConversion.scale:
-            scale = float(bpy.context.scene.MapConversion.scale)
-        else:
-            scale = 1.0
-        results = ifcopenshell.util.geolocation.xyz2enh(
-            bpy.context.scene.cursor.location[0],
-            bpy.context.scene.cursor.location[1],
-            bpy.context.scene.cursor.location[2],
-            float(bpy.context.scene.MapConversion.eastings),
-            float(bpy.context.scene.MapConversion.northings),
-            float(bpy.context.scene.MapConversion.orthogonal_height),
-            float(bpy.context.scene.MapConversion.x_axis_abscissa),
-            float(bpy.context.scene.MapConversion.x_axis_ordinate),
-            scale,
-        )
-        print("Coordinates:", results)
-        bpy.context.scene.cursor.location = results
-        return {"FINISHED"}
-
-
-class ConvertGlobalToLocal(bpy.types.Operator):
-    bl_idname = "bim.convert_global_to_local"
-    bl_label = "Convert Global To Local"
-
-    def execute(self, context):
-        if bpy.context.scene.MapConversion.scale:
-            scale = float(bpy.context.scene.MapConversion.scale)
-        else:
-            scale = 1.0
-        results = ifcopenshell.util.geolocation.enh2xyz(
-            float(bpy.context.scene.BIMProperties.eastings),
-            float(bpy.context.scene.BIMProperties.northings),
-            float(bpy.context.scene.BIMProperties.orthogonal_height),
-            float(bpy.context.scene.MapConversion.eastings),
-            float(bpy.context.scene.MapConversion.northings),
-            float(bpy.context.scene.MapConversion.orthogonal_height),
-            float(bpy.context.scene.MapConversion.x_axis_abscissa),
-            float(bpy.context.scene.MapConversion.x_axis_ordinate),
-            scale,
-        )
-        print("Coordinates:", results)
-        bpy.context.scene.cursor.location = results
-        return {"FINISHED"}
-
-
-class GuessQuantity(bpy.types.Operator):
-    bl_idname = "bim.guess_quantity"
-    bl_label = "Guess Quantity"
-    qto_index: bpy.props.IntProperty()
-    prop_index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        self.qto_calculator = qto.QtoCalculator()
-        source_qto = bpy.context.active_object.BIMObjectProperties.qtos[self.qto_index]
-        props = source_qto.properties
-        prop = props[self.prop_index]
-        for obj in bpy.context.selected_objects:
-            dest_qto = obj.BIMObjectProperties.qtos.get(source_qto.name)
-            if not dest_qto:
-                if source_qto.name not in obj.BIMObjectProperties.qto_name:
-                    continue
-                dest_qto = self.add_qto(obj, source_qto.name)
-            prop = dest_qto.properties.get(prop.name)
-            self.guess_quantity(obj, prop, props)
-        return {"FINISHED"}
-
-    def guess_quantity(self, obj, prop, props):
-        quantity = self.qto_calculator.guess_quantity(prop.name, [p.name for p in props], obj)
-        if "area" in prop.name.lower():
-            if bpy.context.scene.BIMProperties.area_unit:
-                prefix, name = self.get_prefix_name(bpy.context.scene.BIMProperties.area_unit)
-                quantity = helper.SIUnitHelper.convert(quantity, None, "SQUARE_METRE", prefix, name)
-        elif "volume" in prop.name.lower():
-            if bpy.context.scene.BIMProperties.volume_unit:
-                prefix, name = self.get_prefix_name(bpy.context.scene.BIMProperties.volume_unit)
-                quantity = helper.SIUnitHelper.convert(quantity, None, "CUBIC_METRE", prefix, name)
-        else:
-            prefix, name = self.get_blender_prefix_name()
-            quantity = helper.SIUnitHelper.convert(quantity, None, "METRE", prefix, name)
-        prop.string_value = str(round(quantity, 3))
-
-    def add_qto(self, obj, name):
-        qto_template = schema.ifc.psetqto.get_by_name(name)
-        if not qto_template:
-            return
-        qto = obj.BIMObjectProperties.qtos.add()
-        qto.name = name
-        for prop_name in (p.Name for p in qto_template.HasPropertyTemplates):
-            prop = qto.properties.add()
-            prop.name = prop_name
-        return qto
-
-    def get_prefix_name(self, value):
-        if "/" in value:
-            return value.split("/")
-        return None, value
-
-    def get_blender_prefix_name(self):
-        if bpy.context.scene.unit_settings.system == "IMPERIAL":
-            if bpy.context.scene.unit_settings.length_unit == "INCHES":
-                return None, "inch"
-            elif bpy.context.scene.unit_settings.length_unit == "FEET":
-                return None, "foot"
-        elif bpy.context.scene.unit_settings.system == "METRIC":
-            if bpy.context.scene.unit_settings.length_unit == "METERS":
-                return None, "METRE"
-            return bpy.context.scene.unit_settings.length_unit[0 : -len("METERS")], "METRE"
-
-
-class ExecuteBIMTester(bpy.types.Operator):
-    bl_idname = "bim.execute_bim_tester"
-    bl_label = "Execute BIMTester"
-
-    def execute(self, context):
-        import bimtester
-        import bimtester.run
-        import bimtester.reports
-
-        filename = os.path.join(
-            bpy.context.scene.BIMProperties.features_dir, bpy.context.scene.BIMProperties.features_file + ".feature"
-        )
-        cwd = os.getcwd()
-        os.chdir(bpy.context.scene.BIMProperties.features_dir)
-        bimtester.run.run_tests({"feature": filename, "advanced_arguments": None, "console": False})
-        bimtester.reports.generate_report()
-        webbrowser.open(
-            "file://"
-            + os.path.join(
-                bpy.context.scene.BIMProperties.features_dir,
-                "report",
-                bpy.context.scene.BIMProperties.features_file + ".feature.html",
-            )
-        )
-        os.chdir(cwd)
-        return {"FINISHED"}
-
-
-class BIMTesterPurge(bpy.types.Operator):
-    bl_idname = "bim.bim_tester_purge"
-    bl_label = "Purge Tests"
-
-    def execute(self, context):
-        import bimtester
-        import bimtester.clean
-
-        filename = os.path.join(
-            bpy.context.scene.BIMProperties.features_dir, bpy.context.scene.BIMProperties.features_file + ".feature"
-        )
-        cwd = os.getcwd()
-        os.chdir(bpy.context.scene.BIMProperties.features_dir)
-        bimtester.clean.TestPurger().purge()
-        os.chdir(cwd)
-        return {"FINISHED"}
-
-
 class SelectIfcPatchInput(bpy.types.Operator):
     bl_idname = "bim.select_ifc_patch_input"
     bl_label = "Select IFC Patch Input"
@@ -3061,6 +2357,7 @@ class CalculateObjectVolumes(bpy.types.Operator):
     bl_label = "Calculate Object Volumes"
 
     def execute(self, context):
+        # TODO: reimplement
         qto_calculator = qto.QtoCalculator()
         result = 0
         for obj in bpy.context.selected_objects:
@@ -3534,31 +2831,6 @@ class SetViewportShadowFromSun(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SetNorthOffset(bpy.types.Operator):
-    bl_idname = "bim.set_north_offset"
-    bl_label = "Set North Offset"
-
-    def execute(self, context):
-        context.scene.sun_pos_properties.north_offset = -radians(
-            ifcopenshell.util.geolocation.xy2angle(
-                float(bpy.context.scene.MapConversion.x_axis_abscissa),
-                float(bpy.context.scene.MapConversion.x_axis_ordinate),
-            )
-        )
-        return {"FINISHED"}
-
-
-class GetNorthOffset(bpy.types.Operator):
-    bl_idname = "bim.get_north_offset"
-    bl_label = "Get North Offset"
-
-    def execute(self, context):
-        x_angle = -context.scene.sun_pos_properties.north_offset
-        bpy.context.scene.MapConversion.x_axis_abscissa = str(cos(x_angle))
-        bpy.context.scene.MapConversion.x_axis_ordinate = str(sin(x_angle))
-        return {"FINISHED"}
-
-
 class AssignPresentationLayer(bpy.types.Operator):
     bl_idname = "bim.assign_presentation_layer"
     bl_label = "Assign Presentation Layer"
@@ -3836,53 +3108,127 @@ class CopyGrid(bpy.types.Operator):
     bl_options = {"UNDO"}
 
     def execute(self, context):
-        props = context.scene.DocProperties
-        if props.active_drawing_index is None or len(props.drawings) == 0:
-            return {"CANCELLED"}
-        drawing = props.drawings[props.active_drawing_index]
-        collection = bpy.data.collections.get("IfcGroup/" + drawing.name)
+        proj_coll = helper.get_project_collection(context.scene)
+        view_coll, camera = helper.get_active_drawing(context.scene)
+        if view_coll is None:
+            return {'CANCELLED'}
+        is_ortho = camera.data.type == "ORTHO"
+        bounds = helper.ortho_view_frame(camera.data) if is_ortho else None
+        clipping = is_ortho and camera.data.BIMCameraProperties.target_view in ('PLAN_VIEW', 'REFLECTED_PLAN_VIEW')
+        elevating = is_ortho and camera.data.BIMCameraProperties.target_view in ('ELEVATION_VIEW', 'SECTION_VIEW')
 
-        existing = [obj for obj in collection.objects if obj.name.startswith("IfcGridAxis")]
-        for obj in existing:
-            collection.objects.unlink(obj)
+        def grep(coll):
+            return [obj for obj in coll.all_objects if obj.name.startswith("IfcGridAxis")]
 
-        source = [
-            obj
-            for coll in bpy.data.collections
-            if coll.name.startswith("IfcGrid")
-            for obj in coll.all_objects
-            if obj.name.startswith("IfcGridAxis")
-        ]
-        camera = [obj for obj in collection.all_objects if obj.type == "CAMERA"][0]
-
-        clipping = camera.data.type == "ORTHO"
-        bounds = helper.ortho_view_frame(camera.data) if clipping else None
-
-        for src in source:
-            bm = bmesh.new()
-            bm.from_mesh(src.data)
-            bm.verts.ensure_lookup_table()
-
-            if clipping:
-                proj = src.matrix_world @ camera.matrix_world.inverted()
-                unproj = src.matrix_world.inverted() @ camera.matrix_world
-
-                bm.transform(proj)
-
-                points_orig = [v.co for v in bm.verts[0:2]]
-                points_clip = helper.clip_segment(bounds, points_orig)
-
-                if points_clip is None:
-                    continue
-
-                bm.verts[0].co = points_clip[0]
-                bm.verts[1].co = points_clip[1]
-
-                bm.transform(unproj)
-
+        def clone(src):
             dst = src.copy()
-            dst.data = bpy.data.meshes.new(dst.name)
-            bm.to_mesh(dst.data)
-            collection.objects.link(dst)
+            dst.data = dst.data.copy()
+            return dst
+
+        def disassemble(obj):
+            mesh = bmesh.new()
+            mesh.verts.ensure_lookup_table()
+            mesh.from_mesh(obj.data)
+            return obj, mesh
+
+        def assemble(obj, mesh):
+            mesh.to_mesh(obj.data)
+            return obj
+
+        def localize(obj, mesh):
+            # convert to camera coords
+            mesh.transform(camera.matrix_world.inverted() @ obj.matrix_world)
+            obj.matrix_world = camera.matrix_world
+            return obj, mesh
+
+        def clip(mesh):
+            # clip segment against camera view bounds
+            mesh.verts.ensure_lookup_table()
+            points = [v.co for v in mesh.verts[0:2]]
+            points = helper.clip_segment(bounds, points)
+            if points is None:
+                return None
+            mesh.verts[0].co = points[0]
+            mesh.verts[1].co = points[1]
+            return mesh
+
+        def elev(mesh):
+            # put camera-perpendicular segments vertically
+            mesh.verts.ensure_lookup_table()
+            points = [v.co for v in mesh.verts[0:2]]
+            points = helper.elevate_segment(bounds, points)
+            if points is None:
+                return None
+            points = helper.clip_segment(bounds, points)
+            if points is None:
+                return None
+            mesh.verts[0].co = points[0]
+            mesh.verts[1].co = points[1]
+            return mesh
+
+        for obj in grep(view_coll):
+            view_coll.objects.unlink(obj)
+
+        grid = [localize(*disassemble(clone(obj))) for obj in grep(proj_coll)]
+
+        if clipping:
+            grid = [(obj, clip(mesh)) for obj, mesh in grid]
+        elif elevating:
+            grid = [(obj, elev(mesh)) for obj, mesh in grid]
+
+        for obj, mesh in grid:
+            if mesh is not None:
+                view_coll.objects.link(assemble(obj, mesh))
 
         return {"FINISHED"}
+
+
+class AddSectionsAnnotations(bpy.types.Operator):
+    bl_idname = "bim.add_sections_annotations"
+    bl_label = "Add Sections"
+    bl_options = {"UNDO"}
+
+    def execute(self, context):
+        scene = context.scene
+        view_coll, camera = helper.get_active_drawing(scene)
+        is_ortho = camera.data.type == "ORTHO"
+        if not is_ortho:
+            return {'CANCELLED'}
+        bounds = helper.ortho_view_frame(camera.data) if is_ortho else None
+
+        drawings = [d
+                    for d in scene.DocProperties.drawings
+                    if (d.camera is not camera and
+                        d.camera.data.type == "ORTHO" and
+                        d.camera.data.BIMCameraProperties.target_view == 'SECTION_VIEW')]
+
+        def sideview(cam):
+            # leftmost and righmost points of camera view area, local coords
+            xmin, xmax, _, _, _, _ = helper.ortho_view_frame(cam.data, margin=0)
+            proj = camera.matrix_world.inverted() @ cam.matrix_world
+            p_l = proj @ Vector((xmin, 0, 0))
+            p_r = proj @ Vector((xmax, 0, 0))
+            return helper.clip_segment(bounds, (p_l, p_r))
+
+        def annotation(drawing, points):
+            # object with path geometry
+            name = drawing.name
+            curve = bpy.data.curves.new(f"Section/{name}", 'CURVE')
+            spline = curve.splines.new('POLY')  # has 1 initial point
+            spline.points.add(1)
+            p1, p2 = points
+            z = bounds[4] - 1e-5  # zmin
+            spline.points[0].co = (p1.x, p1.y, z, 1)
+            spline.points[1].co = (p2.x, p2.y, z, 1)
+            obj = bpy.data.objects.new(f"IfcAnnotation/Section/{name}", curve)
+            obj.matrix_world = camera.matrix_world
+            return obj
+
+        for d in drawings:
+            points = sideview(d.camera)
+            if points is None:
+                continue
+            obj = annotation(d, points)
+            view_coll.objects.link(obj)
+
+        return {'FINISHED'}

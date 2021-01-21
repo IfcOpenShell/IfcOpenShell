@@ -1,7 +1,8 @@
 import json
 import os
-import ifcopenshell
 from pathlib import Path
+import importlib
+import ifcopenshell
 from . import export_ifc
 from . import schema
 from . import ifc
@@ -31,19 +32,14 @@ classes_enum = []
 types_enum = []
 availablematerialpsets_enum = []
 ifcpatchrecipes_enum = []
-featuresfiles_enum = []
 titleblocks_enum = []
-scenarios_enum = []
 materialpsetnames_enum = []
 psetfiles_enum = []
 psettemplatefiles_enum = []
 propertysettemplates_enum = []
 classification_enum = []
 attributes_enum = []
-psetnames = {}
-qtonames_enum = []
 materialattributes_enum = []
-materialtypes_enum = []
 contexts_enum = []
 subcontexts_enum = []
 target_views_enum = []
@@ -288,64 +284,17 @@ def getAttributeEnumValues(self, context):
     return [(e, e, "") for e in json.loads(self.enum_items)]
 
 
-def getProfileDef(self, context):
-    global profiledef_enum
-    if len(profiledef_enum) < 1:
-        profiledef_enum.extend([(e, e, "") for e in getattr(schema.ifc, "IfcParameterizedProfileDef")])
-    return profiledef_enum
-
-
-def getPersons(self, context):
-    from blenderbim.bim.module.owner.data import Data
-    if not Data.is_loaded:
-        Data.load()
-    results = []
-    for ifc_id, person in Data.people.items():
-        if "Id" in person:
-            identifier = person["Id"] or ""
-        else:
-            identifier = person["Identifier"] or ""
-        results.append((str(ifc_id), identifier, ""))
-    return results
-
-
-def getOrganisations(self, context):
-    from blenderbim.bim.module.owner.data import Data
-    if not Data.is_loaded:
-        Data.load()
-    results = []
-    for ifc_id, organisation in Data.organisations.items():
-        results.append((str(ifc_id), organisation["Name"], ""))
-    return results
-
-
 def getIfcPatchRecipes(self, context):
     global ifcpatchrecipes_enum
     if len(ifcpatchrecipes_enum) < 1:
         ifcpatchrecipes_enum.clear()
-        for filename in Path(os.path.join(cwd, "..", "libs", "site", "packages", "recipes")).glob("*.py"):
+        ifcpatch_path = Path(importlib.util.find_spec("ifcpatch").submodule_search_locations[0])
+        for filename in ifcpatch_path.joinpath("recipes").glob("*.py"):
             f = str(filename.stem)
             if f == "__init__":
                 continue
             ifcpatchrecipes_enum.append((f, f, ""))
     return ifcpatchrecipes_enum
-
-
-def getFeaturesFiles(self, context):
-    global featuresfiles_enum
-    if len(featuresfiles_enum) < 1:
-        featuresfiles_enum.clear()
-        for filename in Path(context.scene.BIMProperties.features_dir).glob("*.feature"):
-            f = str(filename.stem)
-            featuresfiles_enum.append((f, f, ""))
-    return featuresfiles_enum
-
-
-def refreshFeaturesFiles(self, context):
-    global featuresfiles_enum
-    featuresfiles_enum.clear()
-    getFeaturesFiles(self, context)
-
 
 def getTitleblocks(self, context):
     global titleblocks_enum
@@ -380,28 +329,6 @@ def toggleDecorationsOnLoad(*args):
         decoration.DecorationsHandler.install(bpy.context)
     else:
         decoration.DecorationsHandler.uninstall()
-
-
-def getScenarios(self, context):
-    global scenarios_enum
-    if len(scenarios_enum) < 1:
-        scenarios_enum.clear()
-        filename = os.path.join(
-            context.scene.BIMProperties.features_dir, context.scene.BIMProperties.features_file + ".feature"
-        )
-        with open(filename, "r") as feature_file:
-            lines = feature_file.readlines()
-            for line in lines:
-                if "Scenario:" in line:
-                    s = line.strip()[len("Scenario: ") :]
-                    scenarios_enum.append((s, s, ""))
-    return scenarios_enum
-
-
-def refreshScenarios(self, context):
-    global scenarios_enum
-    scenarios_enum.clear()
-    getScenarios(self, context)
 
 
 def getPsetTemplateFiles(self, context):
@@ -445,32 +372,12 @@ def refreshReferences(self, context):
     context.scene.BIMProperties.classification_references.root = ""
 
 
-def getPsetNames(self, context):
-    global psetnames
-    if "/" in context.active_object.name:
-        ifc_class = context.active_object.name.split("/")[0]
-        if ifc_class not in psetnames:
-            psets = schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
-            psetnames[ifc_class] = [(p.Name, p.Name, "") for p in psets]
-        return psetnames[ifc_class]
-    return []
-
-
 def getMaterialPsetNames(self, context):
     global materialpsetnames_enum
     materialpsetnames_enum.clear()
     pset_names = schema.ifc.psetqto.get_applicable_names("IfcMaterial", pset_only=True)
     materialpsetnames_enum.extend([(p, p, "") for p in pset_names])
     return materialpsetnames_enum
-
-
-def getQtoNames(self, context):
-    global qtonames_enum
-    qtonames_enum.clear()
-    if "/" in context.active_object.name and context.active_object.name.split("/")[0] in schema.ifc.elements:
-        qto_names = schema.ifc.psetqto.get_applicable_names(context.active_object.name.split("/")[0], qto_only=True)
-        qtonames_enum.extend([(q, q, "") for q in qto_names])
-    return qtonames_enum
 
 
 def getApplicableMaterialAttributes(self, context):
@@ -483,27 +390,6 @@ def getApplicableMaterialAttributes(self, context):
             [(a.name(), a.name(), "") for a in entity.all_attributes() if self.attributes.find(a.name()) == -1]
         )
     return materialattributes_enum
-
-
-def refreshProfileAttributes(self, context):
-    if not context.active_object:
-        return
-    props = context.active_object.BIMObjectProperties
-    profile = props.material_set.material_profiles[props.material_set.active_material_profile_index]
-    while len(profile.profile_attributes) > 0:
-        profile.profile_attributes.remove(0)
-    for attribute in schema.ifc.IfcParameterizedProfileDef[profile.profile]["attributes"]:
-        profile_attribute = profile.profile_attributes.add()
-        profile_attribute.name = attribute["name"]
-
-
-def getMaterialTypes(self, context):
-    global materialtypes_enum
-    materialtypes_enum.clear()
-    materialtypes_enum = [
-        (m, m, "") for m in ["None", "IfcMaterial", "IfcMaterialConstituentSet", "IfcMaterialLayerSet", "IfcMaterialProfileSet"]
-    ]
-    return materialtypes_enum
 
 
 def getContexts(self, context):
@@ -568,66 +454,9 @@ class Attribute(PropertyGroup):
     int_value: IntProperty(name="Value")
     float_value: FloatProperty(name="Value")
     is_null: BoolProperty(name="Is Null")
+    is_optional: BoolProperty(name="Is Optional")
     enum_items: StringProperty(name="Value")
     enum_value: EnumProperty(items=getAttributeEnumValues, name="Value")
-
-
-class MaterialLayer(PropertyGroup):
-    name: StringProperty(name="Name")
-    material: PointerProperty(name="Material", type=bpy.types.Material)
-    layer_thickness: FloatProperty(name="Layer Thickness")
-    is_ventilated: EnumProperty(
-        items=[
-            ("TRUE", "True", "Is an air gap and provides air exchange from the layer to outside air"),
-            ("FALSE", "False", "Is a solid material layer"),
-            ("UNKNOWN", "Unknown", "Is an air gap but does not provide air exchange or not known"),
-        ],
-        name="Is Ventilated",
-        default="FALSE",
-    )
-    description: StringProperty(name="Description")
-    category: EnumProperty(
-        items=[
-            ("None", "None", ""),
-            ("LoadBearing", "Load Bearing", ""),
-            ("Insulation", "Insulation", ""),
-            ("Finish", "Finish", ""),
-            ("Custom", "Custom", ""),
-        ],
-        name="Category",
-        default="None",
-    )
-    custom_category: StringProperty(name="Custom Category")
-    priority: IntProperty(name="Priority")
-
-
-class MaterialConstituent(PropertyGroup):
-    name: StringProperty(name="Name")
-    description: StringProperty(name="Description")
-    material: PointerProperty(name="Material", type=bpy.types.Material)
-    fraction: FloatProperty(name="Fraction")
-    category: StringProperty(name="Category")
-
-
-class MaterialProfile(PropertyGroup):
-    name: StringProperty(name="Name")
-    description: StringProperty(name="Description")
-    material: PointerProperty(name="Material", type=bpy.types.Material)
-    profile: EnumProperty(items=getProfileDef, name="Parameterized Profile Def", update=refreshProfileAttributes)
-    profile_attributes: CollectionProperty(name="Profile Attributes", type=Attribute)
-    priority: IntProperty(name="Priority")
-    category: StringProperty(name="Category")
-
-
-class MaterialSet(PropertyGroup):
-    name: StringProperty(name="Name")
-    description: StringProperty(name="Description")
-    active_material_layer_index: IntProperty(name="Active Material Layer Index")
-    material_layers: CollectionProperty(name="Material Layers", type=MaterialLayer)
-    active_material_constituent_index: IntProperty(name="Active Material Constituent Index")
-    material_constituents: CollectionProperty(name="Material Constituents", type=MaterialConstituent)
-    active_material_profile_index: IntProperty(name="Active Material Profile Index")
-    material_profiles: CollectionProperty(name="Material Profiles", type=MaterialProfile)
 
 
 class Drawing(PropertyGroup):
@@ -1093,86 +922,6 @@ class PropertyTemplate(PropertyGroup):
     )
 
 
-class Address(PropertyGroup):
-    name: StringProperty(name="Name", default="IfcPostalAddress")  # Stores IfcPostalAddress or IfcTelecomAddress
-    purpose: EnumProperty(
-        items=[
-            ("None", "None", ""),
-            ("OFFICE", "OFFICE", "An office address."),
-            ("SITE", "SITE", "A site address."),
-            ("HOME", "HOME", "A home address."),
-            ("DISTRIBUTIONPOINT", "DISTRIBUTIONPOINT", "A postal distribution point address."),
-            ("USERDEFINED", "USERDEFINED", "A user defined address type to be provided."),
-        ],
-        name="Purpose",
-    )
-    description: StringProperty(name="Description")
-    user_defined_purpose: StringProperty(name="Custom Purpose")
-
-    internal_location: StringProperty(name="Internal Location")
-    address_lines: StringProperty(name="Address")
-    postal_box: StringProperty(name="Postal Box")
-    town: StringProperty(name="Town")
-    region: StringProperty(name="Region")
-    postal_code: StringProperty(name="Postal Code")
-    country: StringProperty(name="Country")
-
-    telephone_numbers: StringProperty(name="Telephone Numbers")
-    facsimile_numbers: StringProperty(name="Facsimile Numbers")
-    pager_number: StringProperty(name="Pager Number")
-    electronic_mail_addresses: StringProperty(name="Emails")
-    www_home_page_url: StringProperty(name="Websites")
-    messaging_ids: StringProperty(name="IMs")
-
-
-class Role(PropertyGroup):
-    name: EnumProperty(
-        items=[
-            ("SUPPLIER", "SUPPLIER", ""),
-            ("MANUFACTURER", "MANUFACTURER", ""),
-            ("CONTRACTOR", "CONTRACTOR", ""),
-            ("SUBCONTRACTOR", "SUBCONTRACTOR", ""),
-            ("ARCHITECT", "ARCHITECT", ""),
-            ("STRUCTURALENGINEER", "STRUCTURALENGINEER", ""),
-            ("COSTENGINEER", "COSTENGINEER", ""),
-            ("CLIENT", "CLIENT", ""),
-            ("BUILDINGOWNER", "BUILDINGOWNER", ""),
-            ("BUILDINGOPERATOR", "BUILDINGOPERATOR", ""),
-            ("MECHANICALENGINEER", "MECHANICALENGINEER", ""),
-            ("ELECTRICALENGINEER", "ELECTRICALENGINEER", ""),
-            ("PROJECTMANAGER", "PROJECTMANAGER", ""),
-            ("FACILITIESMANAGER", "FACILITIESMANAGER", ""),
-            ("CIVILENGINEER", "CIVILENGINEER", ""),
-            ("COMMISSIONINGENGINEER", "COMMISSIONINGENGINEER", ""),
-            ("ENGINEER", "ENGINEER", ""),
-            ("OWNER", "OWNER", ""),
-            ("CONSULTANT", "CONSULTANT", ""),
-            ("CONSTRUCTIONMANAGER", "CONSTRUCTIONMANAGER", ""),
-            ("FIELDCONSTRUCTIONMANAGER", "FIELDCONSTRUCTIONMANAGER", ""),
-            ("RESELLER", "RESELLER", ""),
-            ("USERDEFINED", "USERDEFINED", ""),
-        ],
-        name="Name",
-    )
-    user_defined_role: StringProperty(name="Custom Role")
-    description: StringProperty(name="Description")
-
-
-class Organisation(PropertyGroup):
-    identification: StringProperty(name="Identification")
-    name: StringProperty(name="Name")
-    description: StringProperty(name="Description")
-
-
-class Person(PropertyGroup):
-    name: StringProperty(name="Identification")
-    family_name: StringProperty(name="Family Name")
-    given_name: StringProperty(name="Given Name")
-    middle_names: StringProperty(name="Middle Names")
-    prefix_titles: StringProperty(name="Prefixes")
-    suffix_titles: StringProperty(name="Suffixes")
-
-
 class Classification(PropertyGroup):
     name: StringProperty(name="Name")
     source: StringProperty(name="Source")
@@ -1247,8 +996,6 @@ class BIMProperties(PropertyGroup):
     schema_dir: StringProperty(default=os.path.join(cwd, "schema") + os.path.sep, name="Schema Directory")
     data_dir: StringProperty(default=os.path.join(cwd, "data") + os.path.sep, name="Data Directory")
     ifc_file: StringProperty(name="IFC File")
-    ifc_cache: StringProperty(name="IFC Cache")
-    audit_ifc_class: EnumProperty(items=getIfcClasses, name="Audit Class")
     ifc_product: EnumProperty(items=getIfcProducts, name="Products", update=refreshClasses)
     ifc_class: EnumProperty(items=getIfcClasses, name="Class", update=refreshPredefinedTypes)
     ifc_predefined_type: EnumProperty(items=getIfcPredefinedTypes, name="Predefined Type", default=None)
@@ -1264,16 +1011,11 @@ class BIMProperties(PropertyGroup):
     export_should_force_faceted_brep: BoolProperty(name="Export with Faceted Breps", default=False)
     export_should_force_triangulation: BoolProperty(name="Export with Triangulation", default=False)
     export_should_export_from_memory: BoolProperty(name="Export from Memory", default=True)
-    import_should_ignore_site_coordinates: BoolProperty(name="Import Ignoring Site Coordinates", default=False)
-    import_should_ignore_building_coordinates: BoolProperty(name="Import Ignoring Building Coordinates", default=False)
-    import_should_reset_absolute_coordinates: BoolProperty(name="Import Resetting Absolute Coordinates", default=False)
-    import_should_guess_georeferencing: BoolProperty(name="Import Guessing Georeferencing", default=False)
     import_should_import_type_representations: BoolProperty(name="Import Type Representations", default=False)
     import_should_import_curves: BoolProperty(name="Import Curves", default=False)
     import_should_import_opening_elements: BoolProperty(name="Import Opening Elements", default=False)
     import_should_import_spaces: BoolProperty(name="Import Spaces", default=False)
     import_should_auto_set_workarounds: BoolProperty(name="Automatically Set Vendor Workarounds", default=True)
-    import_should_use_legacy: BoolProperty(name="Import with Legacy Importer", default=False)
     import_should_import_native: BoolProperty(name="Import Native Representations", default=False)
     import_export_should_roundtrip_native: BoolProperty(name="Roundtrip Native Representations", default=True)
     import_should_use_cpu_multiprocessing: BoolProperty(name="Import with CPU Multiprocessing", default=True)
@@ -1289,18 +1031,6 @@ class BIMProperties(PropertyGroup):
     import_should_allow_non_element_aggregates: BoolProperty(name="Import Non-Element Aggregates", default=False)
     import_should_offset_model: BoolProperty(name="Import and Offset Model", default=False)
     import_model_offset_coordinates: StringProperty(name="Model Offset Coordinates", default="0,0,0")
-    qa_reject_element_reason: StringProperty(name="Element Rejection Reason")
-
-    person: PointerProperty(type=Person)
-    active_person_id: IntProperty(name="Active Person Id")
-    organisation: PointerProperty(type=Organisation)
-    active_organisation_id: IntProperty(name="Active Organisation Id")
-    role: PointerProperty(type=Role)
-    active_role_id: IntProperty(name="Active Role Id")
-    address: PointerProperty(type=Address)
-    active_address_id: IntProperty(name="Active Address Id")
-    user_person: EnumProperty(items=getPersons, name="Person")
-    user_organisation: EnumProperty(items=getOrganisations, name="Organisation")
 
     has_georeferencing: BoolProperty(name="Has Georeferencing", default=False)
     has_library: BoolProperty(name="Has Project Library", default=False)
@@ -1312,19 +1042,6 @@ class BIMProperties(PropertyGroup):
     search_pset_name: StringProperty(name="Search Pset Name")
     search_prop_name: StringProperty(name="Search Prop Name")
     search_pset_value: StringProperty(name="Search Pset Value")
-    features_dir: StringProperty(default="", name="Features Directory", update=refreshFeaturesFiles)
-    features_file: EnumProperty(items=getFeaturesFiles, name="Features File", update=refreshScenarios)
-    scenario: EnumProperty(items=getScenarios, name="Scenario")
-    cobie_ifc_file: StringProperty(default="", name="COBie IFC File")
-    cobie_types: StringProperty(default=".COBieType", name="COBie Types")
-    cobie_components: StringProperty(default=".COBie", name="COBie Components")
-    cobie_json_file: StringProperty(default="", name="COBie JSON File")
-    diff_json_file: StringProperty(default="", name="Diff JSON File")
-    diff_old_file: StringProperty(default="", name="Diff Old IFC File")
-    diff_new_file: StringProperty(default="", name="Diff New IFC File")
-    diff_relationships: StringProperty(default="", name="Diff Relationships")
-    aggregate_class: EnumProperty(items=getIfcClasses, name="Aggregate Class")
-    aggregate_name: StringProperty(name="Aggregate Name")
     classification: EnumProperty(items=getClassifications, name="Classification", update=refreshReferences)
     active_classification_name: StringProperty(name="Active Classification Name")
     classifications: CollectionProperty(name="Classifications", type=Classification)
@@ -1348,13 +1065,6 @@ class BIMProperties(PropertyGroup):
         name="Import Filter",
     )
     ifc_selector: StringProperty(default="", name="IFC Selector")
-    csv_attributes: CollectionProperty(name="CSV Attributes", type=StrProperty)
-    csv_delimiter: EnumProperty(
-        items=[(";", ";", ""), (",", ",", ""), (".", ".", ""), ("CUSTOM", "Custom", ""),],
-        name="IFC CSV Delimiter",
-        default=";",
-    )
-    csv_custom_delimiter: StringProperty(default="", name="Custom Delimiter")
     document_information: CollectionProperty(name="Document Information", type=DocumentInformation)
     active_document_information_index: IntProperty(name="Active Document Information Index")
     document_references: CollectionProperty(name="Document References", type=DocumentReference)
@@ -1371,9 +1081,6 @@ class BIMProperties(PropertyGroup):
     smart_clash_grouping_max_distance: IntProperty(name="Smart Clash Grouping Max Distance", default=3, soft_min=1, soft_max=10)
     constraints: CollectionProperty(name="Constraints", type=Constraint)
     active_constraint_index: IntProperty(name="Active Constraint Index")
-    eastings: StringProperty(name="Eastings")
-    northings: StringProperty(name="Northings")
-    orthogonal_height: StringProperty(name="Orthogonal Height")
     ifc_patch_recipes: EnumProperty(items=getIfcPatchRecipes, name="Recipes")
     ifc_patch_input: StringProperty(default="", name="IFC Patch Input IFC")
     ifc_patch_output: StringProperty(default="", name="IFC Patch Output IFC")
@@ -1429,25 +1136,6 @@ class BIMProperties(PropertyGroup):
     presentation_layers: CollectionProperty(name="Presentation Layers", type=PresentationLayer)
 
 
-class MapConversion(PropertyGroup):
-    eastings: StringProperty(name="Eastings")
-    northings: StringProperty(name="Northings")
-    orthogonal_height: StringProperty(name="Orthogonal Height")
-    x_axis_abscissa: StringProperty(name="X Axis Abscissa")
-    x_axis_ordinate: StringProperty(name="X Axis Ordinate")
-    scale: StringProperty(name="Scale")
-
-
-class TargetCRS(PropertyGroup):
-    name: StringProperty(name="Name")
-    description: StringProperty(name="Description")
-    geodetic_datum: StringProperty(name="Geodetic Datum")
-    vertical_datum: StringProperty(name="Vertical Datum")
-    map_projection: StringProperty(name="Map Projection")
-    map_zone: StringProperty(name="Map Zone")
-    map_unit: StringProperty(name="Map Unit")
-
-
 class BIMLibrary(PropertyGroup):
     name: StringProperty(name="Name")
     version: StringProperty(name="Version")
@@ -1487,8 +1175,6 @@ class BIMObjectProperties(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_reassigning_class: BoolProperty(name="Is Reassigning Class")
     global_ids: CollectionProperty(name="GlobalIds", type=GlobalId)
-    attributes: CollectionProperty(name="Attributes", type=Attribute)
-    is_editing_attributes: BoolProperty(name="Is Editing Attributes")
     relating_object: PointerProperty(name="Aggregate", type=bpy.types.Object)
     is_editing_aggregate: BoolProperty(name="Is Editing Aggregate")
     is_editing_container: BoolProperty(name="Is Editing Container")
@@ -1496,9 +1182,6 @@ class BIMObjectProperties(PropertyGroup):
     is_editing_type: BoolProperty(name="Is Editing Type")
     relating_type: PointerProperty(name="Type Product", type=bpy.types.Object)
     relating_structure: PointerProperty(name="Spatial Container", type=bpy.types.Object)
-    active_pset_id: IntProperty(name="Active Pset ID")
-    active_pset_name: StringProperty(name="Pset Name")
-    properties: CollectionProperty(name="Properties", type=Attribute)
     psets: CollectionProperty(name="Psets", type=PsetQto)
     qtos: CollectionProperty(name="Qtos", type=PsetQto)
     document_references: CollectionProperty(name="Document References", type=DocumentReference)
@@ -1506,16 +1189,9 @@ class BIMObjectProperties(PropertyGroup):
     constraints: CollectionProperty(name="Constraints", type=Constraint)
     active_constraint_index: IntProperty(name="Active Constraint Index")
     classifications: CollectionProperty(name="Classifications", type=ClassificationReference)
-    material_type: EnumProperty(items=getMaterialTypes, name="Material Type")
-    material: PointerProperty(name="Material", type=bpy.types.Material)
-    material_set: PointerProperty(name="Material Set", type=MaterialSet)
-    pset_name: EnumProperty(items=getPsetNames, name="Pset Name")
-    qto_name: EnumProperty(items=getQtoNames, name="Qto Name")
     has_boundary_condition: BoolProperty(name="Has Boundary Condition")
     boundary_condition: PointerProperty(name="Boundary Condition", type=BoundaryCondition)
     structural_member_connection: PointerProperty(name="Structural Member Connection", type=bpy.types.Object)
-    # Address applies to IfcSite's SiteAddress and IfcBuilding's BuildingAddress
-    address: PointerProperty(name="Address", type=Address)
 
 
 class BIMMaterialProperties(PropertyGroup):
@@ -1527,7 +1203,6 @@ class BIMMaterialProperties(PropertyGroup):
     psets: CollectionProperty(name="Psets", type=PsetQto)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     applicable_attributes: EnumProperty(items=getApplicableMaterialAttributes, name="Attribute Names")
-    ifc_definition_id: IntProperty(name="IFC Definition ID")
     # In Blender, a material object can map to an IFC material, IFC surface style, or both
     ifc_style_id: IntProperty(name="IFC Style ID")
 

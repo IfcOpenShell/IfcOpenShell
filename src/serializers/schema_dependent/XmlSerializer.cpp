@@ -351,29 +351,7 @@ ptree* descend(IfcSchema::IfcObjectDefinition* product, ptree& tree, IfcUtil::If
 	return &child;
 }
 
-	void writeGroupToNode(IfcSchema::IfcGroup* group, ptree& node, std::set<std::string>notRootGroups)
-	{
-		if (notRootGroups.find(group->Name()) != notRootGroups.end()) {
-			return;
-		}
-		ptree* node2 = descend(group, node);//write one group to root
-		auto father = group->IsGroupedBy();
-		for (auto iter = father->begin(); iter != father->end(); iter++)
-		{
-			IfcSchema::IfcRelAssigns* ii = *iter;
-			auto objs = ii->RelatedObjects();
-			for (auto objit = objs->begin(); objit != objs->end(); objit++) {
-				auto entity = *objit;
-				if (entity->declaration().is(IfcSchema::IfcGroup::Class())) {
-					writeGroupToNode(entity->as<IfcSchema::IfcGroup>(), *node2, notRootGroups);
-					notRootGroups.emplace(entity->Name());
-				}
-				else {
-					descend(entity, *node2);//write son to father group
-				}
-			}
-		}
-	}
+
 
 
 	// Format IfcProperty instances and insert into the DOM. IfcComplexProperties are flattened out.
@@ -493,13 +471,50 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 
 	// Write all group sets and values as XML nodes.
 	IfcSchema::IfcGroup::list::ptr gsets = file->instances_by_type<IfcSchema::IfcGroup>();
-	std::set<std::string> notRootGroups;//selfname, fathername
-	for (IfcSchema::IfcGroup::list::it it = gsets->begin(); it != gsets->end(); ++it) {
-		writeGroupToNode(*it, groups, notRootGroups);
-	}
-	for (auto it = groups.begin(); it != groups.end();)//root
+	std::set<unsigned> notRootGroups;//selfname, fathername
+	std::map<unsigned, int> rootGroups;
+	std::function<void(IfcSchema::IfcGroup* group, ptree& node)> writeGroupToNode =
+		[&](IfcSchema::IfcGroup* group, ptree& node)->void
 	{
-		if (notRootGroups.find(it->second.get<std::string>("<xmlattr>.Name")) != notRootGroups.end()) {
+		ptree* node2 = descend(group, node);//write one group to root
+		auto father = group->IsGroupedBy();
+		for (auto iter = father->begin(); iter != father->end(); iter++)
+		{
+			IfcSchema::IfcRelAssigns* ii = *iter;
+			auto objs = ii->RelatedObjects();
+			for (auto objit = objs->begin(); objit != objs->end(); objit++) {
+				auto entity = *objit;
+				if (entity->declaration().is(IfcSchema::IfcGroup::Class())) {
+					writeGroupToNode(entity->as<IfcSchema::IfcGroup>(), *node2);
+					notRootGroups.emplace(entity->data().id());
+				}
+				else {
+					descend(entity, *node2);//write son to father group
+				}
+			}
+		}
+		return;
+	};
+	int idx = 0;
+	for (IfcSchema::IfcGroup::list::it it = gsets->begin(); it != gsets->end(); ++it) {
+		if (notRootGroups.find((*it)->data().id()) != notRootGroups.end()) {
+			continue;
+		}
+		writeGroupToNode(*it, groups);
+		rootGroups.emplace((*it)->data().id(), idx++);//map record the index of each group id in xml
+	}
+	std::set<int> idxNeedToDelete;
+	for (auto it = notRootGroups.begin(); it != notRootGroups.end(); it++) {//delete double writes in root
+		auto mapIt = rootGroups.find(*it);
+		if (mapIt != rootGroups.end())//need to delete somebody
+		{
+			idxNeedToDelete.emplace(mapIt->second);
+		}
+	}
+	idx = 0;
+	for (auto it = groups.begin(); it != groups.end(); idx++)//root
+	{
+		if (idxNeedToDelete.find(idx) != idxNeedToDelete.end()){
 			it = groups.erase(it);
 		}
 		else {
