@@ -8,11 +8,15 @@ from .features.steps.utils import switch_locale
 
 
 def generate_report(
-    adir=".",
+    report_dir=".",
     use_report_folder=True,
-    report_file_name="",
-    html_template_file_path=""
+    report_file_name="report.json",
+    html_template_file_path="",
+    report_file=""
 ):
+
+    # TODO use far less parameter
+    # to be discussed with other devs
 
     print("# Generating HTML reports now.")
 
@@ -32,23 +36,22 @@ def generate_report(
     if html_template_file_path:
         report_template_path = html_template_file_path
 
-    # get report file
-    report_dir = adir
-    if use_report_folder:
-        report_dir = os.path.join(adir, "report")
-    if not os.path.exists(report_dir):
-        return print("No report directory was found.")
-
-    if report_file_name:
-        report_path = os.path.join(report_dir, report_file_name)
+    # get report file and report dir
+    if report_file:
+        report_file = report_file
+        report_dir = os.path.dirname(report_file)
     else:
-        report_path = os.path.join(report_dir, "report.json")
-    # print(report_path)
-    if not os.path.exists(report_path):
-        return print("No report data was found.")
+        if use_report_folder:
+            report_dir = os.path.join(report_dir, "report")
+        report_file = os.path.join(report_dir, report_file_name)
+    # print(report_file)
+    if not os.path.isdir(report_dir):
+        return print("Report directory does not exist.")
+    if not os.path.isfile(report_file):
+        return print("Report file does not exist.")
 
     # read json report and create html report for each feature
-    report = json.loads(open(report_path).read())
+    report = json.loads(open(report_file).read())
     for feature in report:
         file_name = os.path.basename(feature["location"]).split(":")[0]
         data = {
@@ -134,6 +137,10 @@ def generate_report(
             switch_locale(localedir, "de")
         elif feature["keyword"] == "Fonctionnalité":
             switch_locale(localedir, "fr")
+        elif feature["keyword"] == "Funzionalità":
+            switch_locale(localedir, "it")
+        elif feature["keyword"] == "Functionaliteit":
+            switch_locale(localedir, "nl")
         else:
             # standard English
             switch_locale(localedir, "en")

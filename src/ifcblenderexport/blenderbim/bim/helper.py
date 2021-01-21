@@ -299,6 +299,27 @@ def parse_diagram_scale(camera):
     return float(numerator) / float(denominator)
 
 
+def get_project_collection(scene):
+    """Get main project collection"""
+
+    colls = [c for c in scene.collection.children if c.name.startswith('IfcProject')]
+    if len(colls) != 1:
+        raise RuntimeError("project collection missing or not unique")
+    return colls[0]
+
+
+def get_active_drawing(scene):
+    """Get active drawing collection and camera"""
+    props = scene.DocProperties
+    if props.active_drawing_index is None or len(props.drawings) == 0:
+        return None, None
+    try:
+        drawing = props.drawings[props.active_drawing_index]
+        return scene.collection.children['Views'].children[f"IfcGroup/{drawing.name}"], drawing.camera
+    except (KeyError, IndexError):
+        raise RuntimeError("missing drawing collection")
+
+
 def ortho_view_frame(camera, margin=0.015):
     """Calculates 2d bounding box of camera view area.
 
@@ -308,7 +329,7 @@ def ortho_view_frame(camera, margin=0.015):
     :type camera: bpy.types.Camera + BIMCameraProperties
     :arg margin: margins, in scene units
     :type margin: float
-    :return: (xmin, xmax, ymin, ymax) in local camera coordinates
+    :return: (xmin, xmax, ymin, ymax, zmin, zmax) in local camera coordinates
     """
     aspect = camera.BIMCameraProperties.raster_y / camera.BIMCameraProperties.raster_x
     size = camera.ortho_scale
@@ -317,7 +338,11 @@ def ortho_view_frame(camera, margin=0.015):
     scale = parse_diagram_scale(camera)
     xmarg = margin * scale
     ymarg = margin * scale * aspect
-    return (-hwidth + xmarg, hwidth - xmarg, -hheight + ymarg, hheight - ymarg)
+    return (-hwidth + xmarg, hwidth - xmarg, -hheight + ymarg, hheight - ymarg, -camera.clip_start, -camera.clip_end)
+
+
+def almost_zero(v):
+    return abs(v) < 1e-5
 
 
 def clip_segment(bounds, segm):
@@ -329,11 +354,11 @@ def clip_segment(bounds, segm):
     """
     # Liang–Barsky algorithm
 
-    xmin, xmax, ymin, ymax = bounds
+    xmin, xmax, ymin, ymax, _, _ = bounds
     p1, p2 = segm
 
     def clip_side(p, q):
-        if abs(p) < 1e-10:  # ~= 0, parallel to the side
+        if almost_zero(p):  # ~= 0, parallel to the side
             if q < 0:
                 return None  # outside
             else:
@@ -368,3 +393,19 @@ def clip_segment(bounds, segm):
     p2c = p1 + dlt * t2
 
     return p1c, p2c
+
+
+def elevate_segment(bounds, segm):
+    """Elevate line xy-perpendicular segment vertically
+
+    :arg bounds: (xmin, xmax, ymin, ymax)
+    :arg segm: 2 vertices of the segment
+    :return: 2 new vertices of segment or None if segment outside the bounding box
+    """
+    _, _, ymin, ymax, zmin, _ = bounds
+    p1, p2 = segm
+    dlt = p2 - p1
+    if not (almost_zero(dlt.x) and almost_zero(dlt.y)):
+        return None
+    x = p1.x
+    return [Vector((x, ymin, zmin)), Vector((x, ymax, zmin))]

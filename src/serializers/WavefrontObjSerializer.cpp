@@ -104,7 +104,7 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<real_t>* 
 		if(isyup){	
 			obj_stream << "v " << x << " " << y << " " << z << "\n";
 		}else{
-			obj_stream << "v " << -x << " " << z << " " << y << "\n";
+			obj_stream << "v " << x << " " << z << " " << -y << "\n";
 		}
 	}
 

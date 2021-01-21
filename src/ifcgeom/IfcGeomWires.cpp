@@ -383,14 +383,24 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 		// ParentCurve: The *bounded curve* which defines the geometry of the segment. 
 		// At least let's exclude IfcLine as an infinite linear segment
 		// definitely does not make any sense.
-		if (curve->as<IfcSchema::IfcLine>()) {
-			Logger::Warning("IfcLine not allowed as ParentCurve of segment", *it);
-			continue;
-		}
-
 		TopoDS_Wire segment;
 
-		if (!convert_wire(curve, segment)) {
+		if (curve->as<IfcSchema::IfcLine>()) {
+			Logger::Notice("Infinite IfcLine used as ParentCurve of segment, treating as a segment", *it);
+			Handle_Geom_Curve handle;
+			convert_curve(curve, handle);
+			double u0 = 0.0;
+			double u1 = curve->as<IfcSchema::IfcLine>()->Dir()->Magnitude() * getValue(GV_LENGTH_UNIT);
+			if (u1 < getValue(GV_PRECISION)) {
+				Logger::Warning("Segment length below tolerance", *it);
+			}
+			BRepBuilderAPI_MakeEdge me(handle, u0, u1);
+			if (me.IsDone()) {
+				BRep_Builder B;
+				B.MakeWire(segment);
+				B.Add(segment, me.Edge());
+			}
+		} else if (!convert_wire(curve, segment)) {
 			const bool failed_on_purpose = curve->as<IfcSchema::IfcPolyline>() && !segment.IsNull();
 			Logger::Message(failed_on_purpose ? Logger::LOG_WARNING : Logger::LOG_ERROR, "Failed to convert curve:", curve);
 			continue;

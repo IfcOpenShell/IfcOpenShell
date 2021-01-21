@@ -5,46 +5,49 @@ bpy = sys.modules.get("bpy")
 
 if bpy is not None:
     import bpy
-    import blenderbim.bim.module.root as module_root
-    import blenderbim.bim.module.aggregate as module_aggregate
-    import blenderbim.bim.module.attribute as module_attribute
-    import blenderbim.bim.module.bcf as module_bcf
-    import blenderbim.bim.module.context as module_context
-    import blenderbim.bim.module.covetool as module_covetool
-    import blenderbim.bim.module.debug as module_debug
-    import blenderbim.bim.module.geometry as module_geometry
-    import blenderbim.bim.module.model as module_model
-    import blenderbim.bim.module.owner as module_owner
-    import blenderbim.bim.module.project as module_project
-    import blenderbim.bim.module.pset as module_pset
-    import blenderbim.bim.module.spatial as module_spatial
-    import blenderbim.bim.module.style as module_style
-    import blenderbim.bim.module.type as module_type
-    import blenderbim.bim.module.unit as module_unit
+    import importlib
     from . import ui, prop, operator
+
+    modules = {
+        "root": None,
+        "aggregate": None,
+        "attribute": None,
+        "bcf": None,
+        "cobie": None,
+        "context": None,
+        "covetool": None,
+        "csv": None,
+        "diff": None,
+        "bimtester": None,
+        "debug": None,
+        "geometry": None,
+        "georeference": None,
+        "material": None,
+        "model": None,
+        "owner": None,
+        "project": None,
+        "pset": None,
+        "spatial": None,
+        "style": None,
+        "type": None,
+        "unit": None,
+        "void": None,
+    }
+
+    for name in modules.keys():
+        modules[name] = importlib.import_module(f"blenderbim.bim.module.{name}")
 
     classes = [
         operator.SelectClass,
         operator.SelectType,
         operator.OpenUri,
-        operator.SelectFeaturesDir,
-        operator.SelectDiffJsonFile,
-        operator.SelectDiffNewFile,
-        operator.SelectDiffOldFile,
         operator.SelectDataDir,
         operator.SelectSchemaDir,
         operator.SelectIfcFile,
-        operator.ValidateIfcFile,
         operator.ExportIFC,
         operator.ImportIFC,
-        operator.ColourByClass,
         operator.ColourByAttribute,
         operator.ColourByPset,
-        operator.ResetObjectColours,
-        operator.ApproveClass,
-        operator.RejectClass,
-        operator.SelectAudited,
-        operator.RejectElement,
         operator.SelectExternalMaterialDir,
         operator.AddSweptSolid,
         operator.RemoveSweptSolid,
@@ -54,8 +57,6 @@ if bpy is not None:
         operator.SelectSweptSolidInnerCurves,
         operator.AssignSweptSolidExtrusion,
         operator.SelectSweptSolidExtrusion,
-        operator.AddQto,
-        operator.RemoveQto,
         operator.AddMaterialPset,
         operator.RemoveMaterialPset,
         operator.AddMaterialLayer,
@@ -86,10 +87,6 @@ if bpy is not None:
         operator.SelectGlobalId,
         operator.SelectAttribute,
         operator.SelectPset,
-        operator.CreateAggregate,
-        operator.EditAggregate,
-        operator.SaveAggregate,
-        operator.ExplodeAggregate,
         operator.LoadClassification,
         operator.AddClassification,
         operator.RemoveClassification,
@@ -107,8 +104,6 @@ if bpy is not None:
         operator.OpenView,
         operator.OpenViewCamera,
         operator.ActivateView,
-        operator.ExecuteIfcDiff,
-        operator.VisualiseDiff,
         operator.ExportClashSets,
         operator.ImportClashSets,
         operator.AddClashSet,
@@ -133,11 +128,6 @@ if bpy is not None:
         operator.RemovePropertyTemplate,
         operator.AddSectionPlane,
         operator.RemoveSectionPlane,
-        operator.AddCsvAttribute,
-        operator.RemoveCsvAttribute,
-        operator.ExportIfcCsv,
-        operator.ImportIfcCsv,
-        operator.EyedropIfcCsv,
         operator.ReloadIfcFile,
         operator.AddIfcFile,
         operator.RemoveIfcFile,
@@ -148,14 +138,6 @@ if bpy is not None:
         operator.AddVariable,
         operator.RemoveVariable,
         operator.PropagateTextData,
-        operator.ConvertLocalToGlobal,
-        operator.ConvertGlobalToLocal,
-        operator.GuessQuantity,
-        operator.ExecuteBIMTester,
-        operator.BIMTesterPurge,
-        operator.SelectCobieIfcFile,
-        operator.SelectCobieJsonFile,
-        operator.ExecuteIfcCobie,
         operator.SelectIfcPatchInput,
         operator.SelectIfcPatchOutput,
         operator.ExecuteIfcPatch,
@@ -178,8 +160,6 @@ if bpy is not None:
         operator.BuildSchedule,
         operator.AddScheduleToSheet,
         operator.SetViewportShadowFromSun,
-        operator.SetNorthOffset,
-        operator.GetNorthOffset,
         operator.AddPresentationLayer,
         operator.AssignPresentationLayer,
         operator.UnassignPresentationLayer,
@@ -197,17 +177,10 @@ if bpy is not None:
         operator.LinkIfc,
         operator.SnapSpacesTogether,
         operator.CopyGrid,
+        operator.AddSectionsAnnotations,
         prop.StrProperty,
         prop.Attribute,
-        prop.MaterialLayer,
-        prop.MaterialConstituent,
-        prop.MaterialProfile,
-        prop.MaterialSet,
         prop.Variable,
-        prop.Role,
-        prop.Address,
-        prop.Person,
-        prop.Organisation,
         prop.Classification,
         prop.ClassificationReference,
         prop.ClassificationView,
@@ -227,8 +200,6 @@ if bpy is not None:
         prop.BIMProperties,
         prop.DocProperties,
         prop.BIMLibrary,
-        prop.MapConversion,
-        prop.TargetCRS,
         prop.IfcParameter,
         prop.BoundaryCondition,
         prop.PsetQto,
@@ -245,26 +216,17 @@ if bpy is not None:
         ui.BIM_PT_drawings,
         ui.BIM_PT_schedules,
         ui.BIM_PT_sheets,
-        ui.BIM_PT_bim,
         ui.BIM_PT_psets,
         ui.BIM_PT_classifications,
         ui.BIM_PT_document_information,
         ui.BIM_PT_constraints,
         ui.BIM_PT_search,
-        ui.BIM_PT_ifccsv,
         ui.BIM_PT_ifcclash,
-        ui.BIM_PT_qa,
         ui.BIM_PT_library,
-        ui.BIM_PT_gis,
         ui.BIM_PT_presentation_layers,
-        ui.BIM_PT_diff,
-        ui.BIM_PT_cobie,
         ui.BIM_PT_patch,
         ui.BIM_PT_mvd,
-        ui.BIM_PT_material,
         ui.BIM_PT_presentation_layer_data,
-        ui.BIM_PT_object_material,
-        ui.BIM_PT_object_qto,
         ui.BIM_PT_classification_references,
         ui.BIM_PT_documents,
         ui.BIM_PT_constraint_relations,
@@ -288,22 +250,8 @@ if bpy is not None:
         ui.BIM_ADDON_preferences,
     ]
 
-    classes.extend(module_root.classes)
-    classes.extend(module_aggregate.classes)
-    classes.extend(module_attribute.classes)
-    classes.extend(module_bcf.classes)
-    classes.extend(module_context.classes)
-    classes.extend(module_covetool.classes)
-    classes.extend(module_debug.classes)
-    classes.extend(module_geometry.classes)
-    classes.extend(module_model.classes)
-    classes.extend(module_owner.classes)
-    classes.extend(module_project.classes)
-    classes.extend(module_pset.classes)
-    classes.extend(module_spatial.classes)
-    classes.extend(module_style.classes)
-    classes.extend(module_type.classes)
-    classes.extend(module_unit.classes)
+    for module in modules.values():
+        classes.extend(module.classes)
 
     def menu_func_export(self, context):
         self.layout.operator(operator.ExportIFC.bl_idname, text="Industry Foundation Classes (.ifc/.ifczip/.ifcjson)")
@@ -325,31 +273,18 @@ if bpy is not None:
         bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
         bpy.types.Scene.DocProperties = bpy.props.PointerProperty(type=prop.DocProperties)
         bpy.types.Scene.BIMLibrary = bpy.props.PointerProperty(type=prop.BIMLibrary)
-        bpy.types.Scene.MapConversion = bpy.props.PointerProperty(type=prop.MapConversion)
-        bpy.types.Scene.TargetCRS = bpy.props.PointerProperty(type=prop.TargetCRS)
         bpy.types.Object.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
-        bpy.types.Collection.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
+        bpy.types.Material.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
+        bpy.types.Collection.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties) # Check if we need this
         bpy.types.Material.BIMMaterialProperties = bpy.props.PointerProperty(type=prop.BIMMaterialProperties)
         bpy.types.Mesh.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
         bpy.types.Camera.BIMCameraProperties = bpy.props.PointerProperty(type=prop.BIMCameraProperties)
         bpy.types.TextCurve.BIMTextProperties = bpy.props.PointerProperty(type=prop.BIMTextProperties)
         bpy.types.SCENE_PT_unit.append(ui.ifc_units)
-        module_root.register()
-        module_aggregate.register()
-        module_attribute.register()
-        module_bcf.register()
-        module_context.register()
-        module_covetool.register()
-        module_debug.register()
-        module_geometry.register()
-        module_model.register()
-        module_owner.register()
-        module_project.register()
-        module_pset.register()
-        module_spatial.register()
-        module_style.register()
-        module_type.register()
-        module_unit.register()
+
+        for module in modules.values():
+            module.register()
+
         bpy.app.handlers.depsgraph_update_pre.append(operator.depsgraph_update_pre_handler)
         bpy.app.handlers.load_post.append(prop.toggleDecorationsOnLoad)
 
@@ -361,29 +296,16 @@ if bpy is not None:
         bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
         del bpy.types.Scene.BIMProperties
         del bpy.types.Scene.DocProperties
-        del bpy.types.Scene.MapConversion
-        del bpy.types.Scene.TargetCRS
         del bpy.types.Object.BIMObjectProperties
-        del bpy.types.Collection.BIMObjectProperties
+        del bpy.types.Material.BIMObjectProperties
+        del bpy.types.Collection.BIMObjectProperties # Check if we need this
         del bpy.types.Material.BIMMaterialProperties
         del bpy.types.Mesh.BIMMeshProperties
         del bpy.types.Camera.BIMCameraProperties
         del bpy.types.TextCurve.BIMTextProperties
         bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
-        module_unit.unregister()
-        module_type.unregister()
-        module_style.unregister()
-        module_spatial.unregister()
-        module_pset.unregister()
-        module_project.unregister()
-        module_owner.unregister()
-        module_model.unregister()
-        module_geometry.unregister()
-        module_debug.unregister()
-        module_covetool.unregister()
-        module_context.unregister()
-        module_bcf.unregister()
-        module_attribute.register()
-        module_aggregate.register()
-        module_root.unregister()
+
+        for module in reversed(list(modules.values())):
+            module.unregister()
+
         bpy.app.handlers.depsgraph_update_pre.remove(operator.depsgraph_update_pre_handler)
