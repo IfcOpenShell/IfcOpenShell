@@ -37,7 +37,6 @@ materialpsetnames_enum = []
 psetfiles_enum = []
 psettemplatefiles_enum = []
 propertysettemplates_enum = []
-classification_enum = []
 attributes_enum = []
 materialattributes_enum = []
 contexts_enum = []
@@ -355,21 +354,6 @@ def getPropertySetTemplates(self, context):
         templates = ifc.IfcStore.pset_template_file.by_type("IfcPropertySetTemplate")
         propertysettemplates_enum.extend([(t.GlobalId, t.Name, "") for t in templates])
     return propertysettemplates_enum
-
-
-def getClassifications(self, context):
-    global classification_enum
-    if len(classification_enum) < 1:
-        classification_enum.clear()
-        files = os.listdir(os.path.join(self.schema_dir, "classifications"))
-        classification_enum.extend([(f.replace(".ifc", ""), f.replace(".ifc", ""), "") for f in files])
-    return classification_enum
-
-
-def refreshReferences(self, context):
-    context.scene.BIMProperties.classification_references.root = None
-    ClassificationView.raw_data = schema.ifc.load_classification(context.scene.BIMProperties.classification)
-    context.scene.BIMProperties.classification_references.root = ""
 
 
 def getMaterialPsetNames(self, context):
@@ -922,76 +906,6 @@ class PropertyTemplate(PropertyGroup):
     )
 
 
-class Classification(PropertyGroup):
-    name: StringProperty(name="Name")
-    source: StringProperty(name="Source")
-    edition: StringProperty(name="Edition")
-    edition_date: StringProperty(name="Edition Date")
-    description: StringProperty(name="Description")
-    location: StringProperty(name="Location")
-    reference_tokens: StringProperty(name="Reference Tokens")
-    data: StringProperty(name="Data")
-
-
-class ClassificationReference(PropertyGroup):
-    name: StringProperty(name="Identification")
-    location: StringProperty(name="Location")
-    human_name: StringProperty(name="Name")
-    referenced_source: StringProperty(name="Source")
-    description: StringProperty(name="Description")
-    sort: StringProperty(name="Sort")
-
-
-class ClassificationView(PropertyGroup):
-    crumbs: None
-    children: None
-    active_index: bpy.props.IntProperty()
-    raw_data = {}
-
-    @property
-    def root(self):
-        data = self.raw_data
-        for crumb in self.crumbs:
-            data = data["children"].get(crumb.name)
-            if not data:
-                raise TypeError("Cannot resolve crumb path")
-        return data
-
-    @root.setter
-    def root(self, rt):
-        if rt == None:
-            self.crumbs.clear()
-            self.children.clear()
-        elif rt == "":
-            if self.crumbs:
-                self.crumbs.remove(len(self.crumbs) - 1)
-            self.children.clear()
-            for child in self.root["children"].keys():
-                self.children.add().name = child
-        else:
-            data = self.root
-            if rt in data["children"].keys():
-                self.crumbs.add().name = rt
-                self.children.clear()
-                for child in data["children"][rt]["children"].keys():
-                    self.children.add().name = child
-
-    def draw_stub(self, context, layout):
-        if not self.children:
-            op = layout.operator("bim.change_classification_level", text="@Toplevel")
-        else:
-            op = layout.operator("bim.change_classification_level", text=self.root["name"])
-        op.path_sid = "%r" % self.id_data
-        op.path_lst = self.path_from_id()
-        op.path_itm = ""
-        layout.template_list("BIM_UL_classifications", self.path_from_id(), self, "children", self, "active_index")
-
-
-# Monkey-patched, just to keep registration in one block
-ClassificationView.__annotations__["crumbs"] = bpy.props.CollectionProperty(type=StrProperty)
-ClassificationView.__annotations__["children"] = bpy.props.CollectionProperty(type=StrProperty)
-
-
 class BIMProperties(PropertyGroup):
     schema_dir: StringProperty(default=os.path.join(cwd, "schema") + os.path.sep, name="Schema Directory")
     data_dir: StringProperty(default=os.path.join(cwd, "data") + os.path.sep, name="Data Directory")
@@ -1042,14 +956,10 @@ class BIMProperties(PropertyGroup):
     search_pset_name: StringProperty(name="Search Pset Name")
     search_prop_name: StringProperty(name="Search Prop Name")
     search_pset_value: StringProperty(name="Search Pset Value")
-    classification: EnumProperty(items=getClassifications, name="Classification", update=refreshReferences)
-    active_classification_name: StringProperty(name="Active Classification Name")
-    classifications: CollectionProperty(name="Classifications", type=Classification)
     contexts: EnumProperty(items=getContexts, name="Contexts")
     available_contexts: EnumProperty(items=[("Model", "Model", ""), ("Plan", "Plan", "")], name="Available Contexts")
     available_subcontexts: EnumProperty(items=getSubcontexts, name="Available Subcontexts")
     available_target_views: EnumProperty(items=getTargetViews, name="Available Target Views")
-    classification_references: PointerProperty(type=ClassificationView)
     pset_template_files: EnumProperty(
         items=getPsetTemplateFiles, name="Pset Template Files", update=refreshPropertySetTemplates
     )
@@ -1188,7 +1098,6 @@ class BIMObjectProperties(PropertyGroup):
     active_document_reference_index: IntProperty(name="Active Document Reference Index")
     constraints: CollectionProperty(name="Constraints", type=Constraint)
     active_constraint_index: IntProperty(name="Active Constraint Index")
-    classifications: CollectionProperty(name="Classifications", type=ClassificationReference)
     has_boundary_condition: BoolProperty(name="Has Boundary Condition")
     boundary_condition: PointerProperty(name="Boundary Condition", type=BoundaryCondition)
     structural_member_connection: PointerProperty(name="Structural Member Connection", type=bpy.types.Object)
