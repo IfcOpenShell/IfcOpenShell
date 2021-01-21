@@ -300,7 +300,6 @@ class IfcImporter:
         self.include_elements = []
         self.exclude_elements = []
         self.project = None
-        self.classifications = {}
         self.spatial_structure_elements = {}
         self.elements = {}
         self.type_collection = None
@@ -350,8 +349,6 @@ class IfcImporter:
         self.profile_code("Set units")
         self.create_project()
         self.profile_code("Create project")
-        self.create_classifications()
-        self.profile_code("Create classifications")
         self.create_constraints()
         self.profile_code("Create constraints")
         self.create_document_information()
@@ -362,9 +359,8 @@ class IfcImporter:
         self.profile_code("Create spatial hierarchy")
         self.create_type_products()
         self.profile_code("Create type products")
-        if self.ifc_import_settings.should_import_aggregates:
-            self.create_aggregates()
-            self.profile_code("Create aggregates")
+        self.create_aggregates()
+        self.profile_code("Create aggregates")
         self.create_openings_collection()
         self.profile_code("Create opening collection")
         self.process_element_filter()
@@ -385,9 +381,6 @@ class IfcImporter:
         self.profile_code("Relating openings")
         self.place_objects_in_spatial_tree()
         self.profile_code("Placing objects in spatial tree")
-        if self.ifc_import_settings.should_merge_aggregates:
-            self.merge_aggregates()
-            self.profile_code("Merging aggregates")
         if self.ifc_import_settings.should_merge_by_class:
             self.merge_by_class()
             self.profile_code("Merging by class")
@@ -698,7 +691,6 @@ class IfcImporter:
         obj = bpy.data.objects.new(self.get_name(element), mesh)
         obj.BIMObjectProperties.ifc_definition_id = element.id()
         self.material_creator.create(element, obj, mesh)
-        self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
         self.type_collection.objects.link(obj)
         self.type_products[element.GlobalId] = obj
@@ -819,7 +811,6 @@ class IfcImporter:
             obj.matrix_world = self.apply_blender_offset_to_matrix(self.get_element_matrix(element))
 
         self.add_element_representation_items(element, obj)
-        self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
         self.add_opening_relation(element, obj)
         self.added_data[element.GlobalId] = obj
@@ -1071,37 +1062,6 @@ class IfcImporter:
         bm.faces.ensure_lookup_table()
         return bm
 
-    def merge_aggregates(self):
-        self.merge_objects_inside_aggregates()
-        self.convert_aggregate_instances_to_object()
-
-    def merge_objects_inside_aggregates(self):
-        global_ids_to_delete = []
-        for collection in self.aggregate_collections.values():
-            obs = []
-            for i, ob in enumerate(collection.objects):
-                if ob.type == "MESH":
-                    if i > 0:
-                        global_ids_to_delete.append(ob.BIMObjectProperties.attributes.get("GlobalId").string_value)
-                    obs.append(ob)
-            ctx = {}
-            ctx["active_object"] = obs[0]
-            ctx["selected_editable_objects"] = obs
-            if obs[0].data.users > 1:
-                obs[0].data = obs[0].data.copy()
-            bpy.ops.object.join(ctx)
-
-        for global_id in global_ids_to_delete:
-            del self.added_data[global_id]
-
-    def convert_aggregate_instances_to_object(self):
-        for obj in self.aggregates.values():
-            aggregate = obj.instance_collection.objects[0]
-            obj.users_collection[0].objects.link(aggregate)
-            aggregate.name = obj.name
-            bpy.data.collections.remove(obj.instance_collection)
-            bpy.data.objects.remove(obj)
-
     def merge_by_class(self):
         merge_set = {}
         for obj in self.added_data.values():
@@ -1290,63 +1250,6 @@ class IfcImporter:
             self.project["blender"].objects.link(obj)
             del self.added_data[self.project["ifc"].GlobalId]
 
-    def create_classifications(self):
-        for element in self.file.by_type("IfcClassification"):
-            classification = bpy.context.scene.BIMProperties.classifications.add()
-            data_map = {
-                "name": "Name",
-                "source": "Source",
-                "edition": "Edition",
-                "edition_date": "EditionDate",
-                "description": "Description",
-                "location": "Location",
-                "reference_tokens": "ReferenceTokens",
-            }
-            for key, value in data_map.items():
-                if hasattr(element, value) and getattr(element, value):
-                    setattr(classification, key, str(getattr(element, value)))
-            classification_file = ifcopenshell.file()
-
-            # IFC2X3 has no references, so let's manually add them
-            if self.file.wrapped_data.schema == "IFC2X3":
-                if element.EditionDate:
-                    edition_date = "{}-{}-{}".format(
-                        element.EditionDate.YearComponent,
-                        element.EditionDate.MonthComponent,
-                        element.EditionDate.DayComponent,
-                    )
-                else:
-                    edition_date = None
-                classification_element = classification_file.createIfcClassification(
-                    element.Source, element.Edition, edition_date, element.Name
-                )
-                for reference in self.file.by_type("IfcClassificationReference"):
-                    classification_file.createIfcClassificationReference(
-                        reference.Location, reference.ItemReference, reference.Name, classification_element
-                    )
-            else:
-                references = [element]
-                while references:
-                    entities_to_add = references
-                    references = self.get_classification_references(references)
-                for entity in entities_to_add:
-                    classification_file.add(entity)
-
-            classification.data = classification_file.to_string()
-            self.classifications[classification.name] = classification
-
-        self.schema_dir = bpy.context.scene.BIMProperties.schema_dir
-        from . import prop
-
-        prop.classification_enum.clear()
-        prop.getClassifications(self, bpy.context)
-
-    def get_classification_references(self, references):
-        results = []
-        for reference in references:
-            results.extend(self.file.get_inverse(reference))
-        return results
-
     def create_constraints(self):
         for element in self.file.by_type("IfcObjective"):
             constraint = bpy.context.scene.BIMProperties.constraints.add()
@@ -1485,7 +1388,6 @@ class IfcImporter:
         obj.users_collection[0].objects.unlink(obj)
         collection.objects.link(obj)
 
-        self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
         self.aggregates[element.GlobalId] = obj
         self.aggregate_collections[rel_aggregate.id()] = collection
@@ -1575,10 +1477,8 @@ class IfcImporter:
                 # since it does not have a collection within an IfcSpace
                 if not collection:
                     return self.place_object_in_spatial_tree(element.Decomposes[0].RelatingObject, obj)
-            elif self.ifc_import_settings.should_import_aggregates:
-                collection = self.aggregate_collections[element.Decomposes[0].id()]
             else:
-                return self.place_object_in_spatial_tree(element.Decomposes[0].RelatingObject, obj)
+                collection = self.aggregate_collections[element.Decomposes[0].id()]
             if collection:
                 collection.objects.link(obj)
             else:
@@ -1593,37 +1493,6 @@ class IfcImporter:
         if key == "RefLatitude" or key == "RefLongitude":
             return ifcopenshell.util.geolocation.dms2dd(*value)
         return value
-
-    def add_element_classifications(self, element, obj):
-        if not element.HasAssociations:
-            return
-        for association in element.HasAssociations:
-            if not association.is_a("IfcRelAssociatesClassification"):
-                continue
-            data = association.RelatingClassification
-            reference = obj.BIMObjectProperties.classifications.add()
-            data_map = {
-                "name": "Identification",
-                "location": "Location",
-                "human_name": "Name",
-                "description": "Description",
-                "sort": "Sort",
-            }
-            if self.file.schema == "IFC2X3":
-                data_map["name"] = "ItemReference"
-            for key, value in data_map.items():
-                if hasattr(data, value) and getattr(data, value):
-                    setattr(reference, key, getattr(data, value))
-            if hasattr(data, "ReferencedSource") and data.ReferencedSource:
-                reference.referenced_source = self.get_referenced_source_name(data.ReferencedSource)
-
-    def get_referenced_source_name(self, element):
-        if not hasattr(element, "ReferencedSource") or not element.ReferencedSource:
-            if element.is_a("IfcClassification"):
-                return element.Name
-            else:
-                return element.Identification
-        return self.get_referenced_source_name(element.ReferencedSource)
 
     def get_element_matrix(self, element, mesh_name=None):
         result = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
@@ -1877,10 +1746,8 @@ class IfcImportSettings:
         self.should_use_cpu_multiprocessing = False
         self.should_import_with_profiling = False
         self.should_import_native = False
-        self.should_merge_aggregates = False
         self.should_merge_by_class = False
         self.should_merge_by_material = False
-        self.should_import_aggregates = True
         self.should_clean_mesh = True
         self.diff_file = None
 
@@ -1903,8 +1770,6 @@ class IfcImportSettings:
         settings.should_import_with_profiling = scene_bim.import_should_import_with_profiling
         settings.should_import_native = scene_bim.import_should_import_native
         settings.should_roundtrip_native = scene_bim.import_export_should_roundtrip_native
-        settings.should_import_aggregates = scene_bim.import_should_import_aggregates
-        settings.should_merge_aggregates = scene_bim.import_should_merge_aggregates
         settings.should_merge_by_class = scene_bim.import_should_merge_by_class
         settings.should_merge_by_material = scene_bim.import_should_merge_by_material
         settings.should_merge_materials_by_colour = scene_bim.import_should_merge_materials_by_colour
