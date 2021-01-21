@@ -19,34 +19,45 @@
 
 
 # normalize the line endings of the following files
-# standard files
+*.cpp text
+*.css text
+*.csv text
 *.feature text
+*.gitattributes text
+*.gitignore text
+*.gitkeep
+*.h text
 *.html text
 *.ifc text
+*.json text
 *.md text
 *.po text
 *.pot text
 *.py text
+*.txt text
 
 
-# files which are human readable
-# but for which it is not sure if normalize is ok
-# svg
-
-
-# binary files
+# files not normalized ATM
+# bat
+# bnf
+# blend
+# i
 # ico
 # mo
+# mpass
+# png
+# pth
+# pyc
+# rst
+# svg
+# ttf
+# xsd
 
 
-# line endings of the directories commented will be normalized
-# bimtester/** -text
-# examples/** -text
-
-
-# line endings of the directories NOT commented will NOT be normalized
-# Be carefully changes here could affect a lot of files automatically!
-# none ATM
+# line endings of all directories will be normalized
+# to exclude a directory from being normalized add it here
+# example: to exclude dirctory ifcbimtester use the following line without #
+# ifcbimtester/** -text
 
 
 # use git to manually correct the file endings
