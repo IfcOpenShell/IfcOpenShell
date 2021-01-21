@@ -3,7 +3,7 @@ from blenderbim.bim.module.aggregate.data import Data
 
 
 class BIM_PT_aggregate(Panel):
-    bl_label = "IFC Aggregation"
+    bl_label = "IFC Aggregates"
     bl_idname = "BIM_PT_aggregate"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -38,7 +38,7 @@ class BIM_PT_aggregate(Panel):
                 Data.products[props.ifc_definition_id]["type"], Data.products[props.ifc_definition_id]["Name"]
             )
             if name == "None/None":
-                name = "This object is not part of an aggregation"
+                name = "No Aggregate Found"
             row.label(text=name)
             row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")
             row.operator("bim.add_aggregate", icon="ADD", text="")

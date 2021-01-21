@@ -1887,10 +1887,11 @@ class IfcImportSettings:
     @staticmethod
     def factory(context, input_file, logger):
         scene_bim = context.scene.BIMProperties
+        scene_diff = context.scene.DiffProperties
         settings = IfcImportSettings()
         settings.input_file = input_file
         settings.logger = logger
-        settings.diff_file = scene_bim.diff_json_file
+        settings.diff_file = scene_diff.diff_json_file
         settings.ifc_import_filter = scene_bim.ifc_import_filter
         settings.ifc_selector = scene_bim.ifc_selector
         settings.should_import_type_representations = scene_bim.import_should_import_type_representations
