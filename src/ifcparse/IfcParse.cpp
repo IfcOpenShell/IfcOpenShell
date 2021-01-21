@@ -1903,6 +1903,16 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 			break;
 		}
 	}
+
+	// This entity_file_map remains obviously flawed, but until we have proper lookup by value, or another mechanism,
+	// to prevent duplicate definitions with usage of add() we have to keep it. This might be a good moment to clear it.
+	for (auto it = entity_file_map.begin(); it != entity_file_map.end();) {
+		if (it->second == entity) {
+			it = entity_file_map.erase(it);
+		} else {
+			++it;
+		}
+	}
 	
 	delete entity;
 }
