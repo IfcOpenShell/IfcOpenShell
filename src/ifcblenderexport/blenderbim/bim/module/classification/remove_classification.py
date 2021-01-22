@@ -1,6 +1,3 @@
-import ifcopenshell.util.schema
-
-
 class Usecase:
     def __init__(self, file, settings=None):
         self.file = file
