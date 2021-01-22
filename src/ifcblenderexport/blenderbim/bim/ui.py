@@ -37,100 +37,6 @@ class BIM_PT_object_structural(Panel):
         row.prop(props, "structural_member_connection")
 
 
-class BIM_PT_document_information(Panel):
-    bl_label = "IFC Documents"
-    bl_idname = "BIM_PT_document_information"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-        props = context.scene.BIMProperties
-
-        row = layout.row()
-        row.operator("bim.add_document_information")
-
-        if props.document_information:
-            layout.template_list(
-                "BIM_UL_document_information",
-                "",
-                props,
-                "document_information",
-                props,
-                "active_document_information_index",
-            )
-
-            if props.active_document_information_index < len(props.document_information):
-                information = props.document_information[props.active_document_information_index]
-                row = layout.row(align=True)
-                row.prop(information, "name")
-                row.operator(
-                    "bim.remove_document_information", icon="X", text=""
-                ).index = props.active_document_information_index
-                row = layout.row()
-                row.prop(information, "human_name")
-                row = layout.row()
-                row.prop(information, "description")
-                row = layout.row()
-                row.prop(information, "location")
-                row = layout.row()
-                row.prop(information, "purpose")
-                row = layout.row()
-                row.prop(information, "intended_use")
-                row = layout.row()
-                row.prop(information, "scope")
-                row = layout.row()
-                row.prop(information, "revision")
-                row = layout.row()
-                row.prop(information, "creation_time")
-                row = layout.row()
-                row.prop(information, "last_revision_time")
-                row = layout.row()
-                row.prop(information, "electronic_format")
-                row = layout.row()
-                row.prop(information, "valid_from")
-                row = layout.row()
-                row.prop(information, "valid_until")
-                row = layout.row()
-                row.prop(information, "confidentiality")
-                row = layout.row()
-                row.prop(information, "status")
-
-        row = layout.row()
-        row.operator("bim.add_document_reference")
-
-        if props.document_references:
-            layout.template_list(
-                "BIM_UL_document_references", "", props, "document_references", props, "active_document_reference_index"
-            )
-
-            if props.active_document_reference_index < len(props.document_references):
-                reference = props.document_references[props.active_document_reference_index]
-                row = layout.row(align=True)
-                row.prop(reference, "name")
-                row.operator(
-                    "bim.remove_document_reference", icon="X", text=""
-                ).index = props.active_document_reference_index
-                row = layout.row()
-                row.prop(reference, "human_name")
-                row = layout.row()
-                row.prop(reference, "location")
-                row = layout.row()
-                row.prop(reference, "description")
-                row = layout.row(align=True)
-                row.prop(reference, "referenced_document")
-                row.operator(
-                    "bim.assign_document_information", icon="LINKED", text=""
-                ).index = props.active_document_reference_index
-
-            row = layout.row(align=True)
-            row.operator("bim.assign_document_reference", text="Assign Reference")
-            row.operator("bim.unassign_document_reference", text="Unassign Reference")
-
-
 class BIM_PT_constraints(Panel):
     bl_label = "IFC Constraints"
     bl_idname = "BIM_PT_constraints"
@@ -173,51 +79,6 @@ class BIM_PT_constraints(Panel):
             row = layout.row(align=True)
             row.operator("bim.assign_constraint", text="Assign Constraint")
             row.operator("bim.unassign_constraint", text="Unassign Constraint")
-
-
-class BIM_PT_documents(Panel):
-    bl_label = "IFC Documents"
-    bl_idname = "BIM_PT_documents"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "object"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-        props = context.active_object.BIMObjectProperties
-
-        if not props.document_references:
-            layout.label(text="No documents found")
-
-        row = layout.row()
-        row.operator("bim.fetch_object_passport")
-
-        if props.document_references:
-            layout.template_list(
-                "BIM_UL_document_references", "", props, "document_references", props, "active_document_reference_index"
-            )
-
-            if props.active_document_reference_index < len(props.document_references):
-                reference = props.document_references[props.active_document_reference_index]
-                row = layout.row(align=True)
-                row.prop(reference, "name")
-                if reference.name in bpy.context.scene.BIMProperties.document_references:
-                    reference = bpy.context.scene.BIMProperties.document_references[reference.name]
-                    row.operator(
-                        "bim.remove_object_document_reference", icon="X", text=""
-                    ).index = props.active_document_reference_index
-                    row = layout.row()
-                    row.prop(reference, "human_name")
-                    row = layout.row()
-                    row.prop(reference, "location")
-                    row = layout.row()
-                    row.prop(reference, "description")
-                    row = layout.row()
-                    row.prop(reference, "referenced_document")
-                else:
-                    layout.label(text="Reference is invalid")
 
 
 class BIM_PT_constraint_relations(Panel):
@@ -903,24 +764,6 @@ class BIM_UL_smart_groups(bpy.types.UIList):
 
 
 class BIM_UL_constraints(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        ob = data
-        if item:
-            layout.prop(item, "name", text="", emboss=False)
-        else:
-            layout.label(text="", translate=False)
-
-
-class BIM_UL_document_information(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        ob = data
-        if item:
-            layout.prop(item, "name", text="", emboss=False)
-        else:
-            layout.label(text="", translate=False)
-
-
-class BIM_UL_document_references(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         ob = data
         if item:

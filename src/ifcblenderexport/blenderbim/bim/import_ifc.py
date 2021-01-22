@@ -351,10 +351,6 @@ class IfcImporter:
         self.profile_code("Create project")
         self.create_constraints()
         self.profile_code("Create constraints")
-        self.create_document_information()
-        self.profile_code("Create doc info")
-        self.create_document_references()
-        self.profile_code("Create doc refs")
         self.create_spatial_hierarchy()
         self.profile_code("Create spatial hierarchy")
         self.create_type_products()
@@ -691,7 +687,6 @@ class IfcImporter:
         obj = bpy.data.objects.new(self.get_name(element), mesh)
         obj.BIMObjectProperties.ifc_definition_id = element.id()
         self.material_creator.create(element, obj, mesh)
-        self.add_element_document_relations(element, obj)
         self.type_collection.objects.link(obj)
         self.type_products[element.GlobalId] = obj
 
@@ -811,7 +806,6 @@ class IfcImporter:
             obj.matrix_world = self.apply_blender_offset_to_matrix(self.get_element_matrix(element))
 
         self.add_element_representation_items(element, obj)
-        self.add_element_document_relations(element, obj)
         self.add_opening_relation(element, obj)
         self.added_data[element.GlobalId] = obj
 
@@ -1266,73 +1260,6 @@ class IfcImporter:
                 if hasattr(element, value) and getattr(element, value):
                     setattr(constraint, key, getattr(element, value))
 
-    def create_document_information(self):
-        for element in self.file.by_type("IfcDocumentInformation"):
-            info = bpy.context.scene.BIMProperties.document_information.add()
-            data_map = {
-                "name": "Identification",
-                "human_name": "Name",
-                "description": "Description",
-                "location": "Location",
-                "purpose": "Purpose",
-                "intended_use": "IntendedUse",
-                "scope": "Scope",
-                "revision": "Revision",
-                "creation_time": "CreationTime",
-                "last_revision_time": "LastRevisionTime",
-                "electronic_format": "ElectronicFormat",
-                "valid_from": "ValidFrom",
-                "valid_until": "ValidUntil",
-                "confidentiality": "Confidentiality",
-                "status": "Status",
-            }
-            if self.file.schema == "IFC2X3":
-                data_map["name"] = "DocumentId"
-            for key, value in data_map.items():
-                if hasattr(element, value) and getattr(element, value):
-                    element_value = getattr(element, value)
-                    if self.file.schema == "IFC2X3" and isinstance(element_value, ifcopenshell.entity_instance):
-                        if element_value.is_a("IfcDateAndTime"):
-                            element_value = self.convert_ifc_date_and_time_to_string(element_value)
-                        elif element_value.is_a("IfcDocumentElectronicFormat"):
-                            element_value = self.convert_ifc_document_electronic_format(element_value)
-                    setattr(info, key, element_value)
-
-    # TODO Maybe a candidate for ifcopenshell.util?
-    def convert_ifc_date_and_time_to_string(self, element):
-        return datetime(
-            element.DateComponent.YearComponent,
-            element.DateComponent.MonthComponent,
-            element.DateComponent.DayComponent,
-            element.TimeComponent.HourComponent,
-            element.TimeComponent.MinuteComponent if element.TimeComponent.MinuteComponent else 0,
-            int(element.TimeComponent.SecondComponent) if element.TimeComponent.SecondComponent else 0,
-        ).isoformat()
-
-    def convert_ifc_document_electronic_format(self, element):
-        if not element.MimeContentType or not element.MimeSubtype:
-            return ""
-        return "{}/{}".format(element.MimeContentType, element.MimeSubtype)
-
-    def create_document_references(self):
-        for element in self.file.by_type("IfcDocumentReference"):
-            reference = bpy.context.scene.BIMProperties.document_references.add()
-            data_map = {
-                "name": "Identification",
-                "human_name": "Name",
-                "location": "Location",
-                "description": "Description",
-            }
-            for key, value in data_map.items():
-                if hasattr(element, value) and getattr(element, value):
-                    setattr(reference, key, getattr(element, value))
-            if self.file.schema == "IFC2X3":
-                if element.ReferenceToDocument:
-                    reference.referenced_document = element.ReferenceToDocument[0].DocumentId
-            else:
-                if element.ReferencedDocument:
-                    reference.referenced_document = element.ReferencedDocument.Identification
-
     def create_spatial_hierarchy(self):
         if self.project["ifc"].IsDecomposedBy:
             for rel_aggregate in self.project["ifc"].IsDecomposedBy:
@@ -1388,7 +1315,6 @@ class IfcImporter:
         obj.users_collection[0].objects.unlink(obj)
         collection.objects.link(obj)
 
-        self.add_element_document_relations(element, obj)
         self.aggregates[element.GlobalId] = obj
         self.aggregate_collections[rel_aggregate.id()] = collection
 
@@ -1410,21 +1336,6 @@ class IfcImporter:
             if global_id in self.diff["deleted"] or global_id in self.diff["changed"].keys():
                 objects_to_purge.append(obj)
         bpy.ops.object.delete({"selected_objects": objects_to_purge})
-
-    def add_element_document_relations(self, element, obj):
-        for association in element.HasAssociations:
-            if association.is_a("IfcRelAssociatesDocument"):
-                reference = obj.BIMObjectProperties.document_references.add()
-                data_map = {
-                    "name": "Identification",
-                    "human_name": "Name",
-                    "description": "Description",
-                    "location": "Location",
-                }
-                attributes = {}
-                for key, value in data_map.items():
-                    if hasattr(association.RelatingDocument, value) and getattr(association.RelatingDocument, value):
-                        setattr(reference, key, getattr(association.RelatingDocument, value))
 
     def relate_openings(self):
         for global_id, opening in self.openings.items():
