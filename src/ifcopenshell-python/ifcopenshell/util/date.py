@@ -35,6 +35,8 @@ def ifc2datetime(element):
 
 
 def datetime2ifc(dt, ifc_type):
+    if isinstance(dt, str):
+        dt = datetime.fromisoformat(dt)
     if ifc_type == "IfcTimeStamp":
         return int(dt.timestamp())
     elif ifc_type == "IfcDateTime":

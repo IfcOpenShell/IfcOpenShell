@@ -1,6 +1,6 @@
 import ifcopenshell
+import ifcopenshell.util.date
 from blenderbim.bim.ifc import IfcStore
-from datetime import datetime
 
 
 class Data:
@@ -39,11 +39,7 @@ class Data:
         for classification in cls._file.by_type("IfcClassification"):
             data = classification.get_info()
             if cls._file.schema == "IFC2X3" and data["EditionDate"]:
-                data["EditionDate"] = datetime(
-                    classification.EditionDate.YearComponent,
-                    classification.EditionDate.MonthComponent,
-                    classification.EditionDate.DayComponent,
-                ).isoformat()
+                data["EditionDate"] = ifcopenshell.util.date(data.EditionDate).isoformat()
             cls.classifications[classification.id()] = data
 
     @classmethod

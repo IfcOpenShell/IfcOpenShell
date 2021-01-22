@@ -1,6 +1,7 @@
 import ifcopenshell
 import ifcopenshell.util.schema
 
+
 class Usecase:
     def __init__(self, file, settings=None):
         self.file = file
@@ -14,13 +15,19 @@ class Usecase:
 
     def execute(self):
         relating_classification = None
+
+        if hasattr(self.settings["reference"], "ItemReference"):
+            identification = self.settings["reference"].ItemReference  # IFC2X3
+        else:
+            identification = self.settings["reference"].Identification
+
         for reference in self.file.by_type("IfcClassificationReference"):
             if self.file.schema == "IFC2X3":
-                if reference.ItemReference == self.settings["reference"].ItemReference:
+                if reference.ItemReference == identification:
                     relating_classification = reference
                     break
             else:
-                if reference.Identification == self.settings["reference"].Identification:
+                if reference.Identification == identification:
                     relating_classification = reference
                     break
 
@@ -38,16 +45,19 @@ class Usecase:
         relating_classification = migrator.migrate(self.settings["reference"], self.file)
         relating_classification.ReferencedSource = self.settings["classification"]
         self.settings["reference"].ReferencedSource = old_referenced_source
-        self.file.create_entity("IfcRelAssociatesClassification", **{
-            "GlobalId": ifcopenshell.guid.new(),
-            "RelatedObjects": [self.settings["product"]],
-            "RelatingClassification": relating_classification
-        })
+        self.file.create_entity(
+            "IfcRelAssociatesClassification",
+            **{
+                "GlobalId": ifcopenshell.guid.new(),
+                "RelatedObjects": [self.settings["product"]],
+                "RelatingClassification": relating_classification,
+            }
+        )
 
     def get_association(self, reference):
         if self.file.schema == "IFC2X3":
             for association in self.file.by_type("IfcRelAssociatesClassification"):
-                if relating_classification == reference:
+                if association.RelatingClassification == reference:
                     return association
         elif reference.ClassificationRefForObjects:
             return reference.ClassificationRefForObjects[0]
