@@ -83,6 +83,11 @@ def get_material(element):
                 return relationship.RelatingMaterial
 
 
+def get_container(element):
+    if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
+        return element.ContainedInStructure[0].RelatingStructure
+
+
 def replace_attribute(element, old, new):
     for i, attribute in enumerate(element):
         if attribute == old:
