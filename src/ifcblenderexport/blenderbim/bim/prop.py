@@ -557,57 +557,6 @@ class BIMTextProperties(PropertyGroup):
     variables: CollectionProperty(name="Variables", type=Variable)
 
 
-class DocumentInformation(PropertyGroup):
-    name: StringProperty(name="Identification")
-    human_name: StringProperty(name="Name")
-    description: StringProperty(name="Description")
-    location: StringProperty(name="Location")
-    purpose: StringProperty(name="Purpose")
-    intended_use: StringProperty(name="Intended Use")
-    scope: StringProperty(name="Scope")
-    revision: StringProperty(name="Revision")
-    document_owner: StringProperty(name="Owner")
-    editors: StringProperty(name="Editors")
-    creation_time: StringProperty(name="Created On")
-    last_revision_time: StringProperty(name="Last Revised")
-    electronic_format: StringProperty(name="Format")
-    valid_from: StringProperty(name="Valid From")
-    valid_until: StringProperty(name="Valid Until")
-    confidentiality: EnumProperty(
-        items=[
-            ("NOTDEFINED", "NOTDEFINED", "Not defined."),
-            ("PUBLIC", "PUBLIC", "Document is publicly available."),
-            ("RESTRICTED", "RESTRICTED", "Document availability is restricted."),
-            (
-                "CONFIDENTIAL",
-                "CONFIDENTIAL",
-                "Document is confidential and its contents should not be revealed without permission.",
-            ),
-            ("PERSONAL", "PERSONAL", "Document is personal to the author."),
-            ("USERDEFINED", "USERDEFINED", "Describe confidentiality elsewhere."),
-        ],
-        name="Confidentiality",
-    )
-    status: EnumProperty(
-        items=[
-            ("NOTDEFINED", "NOTDEFINED", "Not defined"),
-            ("DRAFT", "DRAFT", "Document is a draft."),
-            ("FINALDRAFT", "FINALDRAFT", "Document is a final draft."),
-            ("FINAL", "FINAL", "Document is final."),
-            ("REVISION", "REVISION", "Document has undergone revision."),
-        ],
-        name="Status",
-    )
-
-
-class DocumentReference(PropertyGroup):
-    location: StringProperty(name="Location")
-    name: StringProperty(name="Identification")
-    human_name: StringProperty(name="Name")
-    description: StringProperty(name="Description")
-    referenced_document: StringProperty(name="Referenced Document")
-
-
 class ClashSource(PropertyGroup):
     name: StringProperty(name="File")
     selector: StringProperty(name="Selector")
@@ -975,10 +924,6 @@ class BIMProperties(PropertyGroup):
         name="Import Filter",
     )
     ifc_selector: StringProperty(default="", name="IFC Selector")
-    document_information: CollectionProperty(name="Document Information", type=DocumentInformation)
-    active_document_information_index: IntProperty(name="Active Document Information Index")
-    document_references: CollectionProperty(name="Document References", type=DocumentReference)
-    active_document_reference_index: IntProperty(name="Active Document Reference Index")
     blender_clash_set_a: CollectionProperty(name="Blender Clash Set A", type=StrProperty)
     blender_clash_set_b: CollectionProperty(name="Blender Clash Set B", type=StrProperty)
     clash_sets: CollectionProperty(name="Clash Sets", type=ClashSet)
@@ -1094,8 +1039,6 @@ class BIMObjectProperties(PropertyGroup):
     relating_structure: PointerProperty(name="Spatial Container", type=bpy.types.Object)
     psets: CollectionProperty(name="Psets", type=PsetQto)
     qtos: CollectionProperty(name="Qtos", type=PsetQto)
-    document_references: CollectionProperty(name="Document References", type=DocumentReference)
-    active_document_reference_index: IntProperty(name="Active Document Reference Index")
     constraints: CollectionProperty(name="Constraints", type=Constraint)
     active_constraint_index: IntProperty(name="Active Constraint Index")
     has_boundary_condition: BoolProperty(name="Has Boundary Condition")
