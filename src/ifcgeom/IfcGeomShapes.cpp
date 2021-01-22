@@ -1035,13 +1035,13 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 	if (!is_plane) {
 		TopoDS_Shape surface_shell;
 		if (!convert_shape(l->ReferenceSurface(), surface_shell)) {
+			Logger::Error("Failed to convert reference surface", l);
 			return false;
 		}
 		if (count(surface_shell, TopAbs_FACE) != 1) {
+			Logger::Error("Non-continuous reference surface", l);
 			return false;
 		}
-		std::ofstream ofs("debug.txt");
-		BRepTools::Dump(surface_shell, ofs);
 		surface_face = TopoDS::Face(TopExp_Explorer(surface_shell, TopAbs_FACE).Current());
 	}
 	
