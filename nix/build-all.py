@@ -681,7 +681,8 @@ cmake_args=[
     "-DCMAKE_INSTALL_PREFIX="          "{DEPS_DIR}/install/ifcopenshell".format(**locals()),
     "-DBOOST_ROOT="                    "{DEPS_DIR}/install/boost-{BOOST_VERSION}".format(**locals()),
     "-DGLTF_SUPPORT="                  "ON",
-    "-DJSON_INCLUDE_DIR="              "{DEPS_DIR}/install/json".format(**locals())
+    "-DJSON_INCLUDE_DIR="              "{DEPS_DIR}/install/json".format(**locals()),
+    "-DBoost_NO_BOOST_CMAKE="          "On"
 ]
 
 if "occ" in targets and USE_OCCT:
