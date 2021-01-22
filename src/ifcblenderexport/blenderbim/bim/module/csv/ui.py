@@ -16,20 +16,20 @@ class BIM_PT_ifccsv(Panel):
         scene = context.scene
         props = scene.CsvProperties
 
-        if IfcStore.get_file():       
+        if IfcStore.get_file():
             row = layout.row()
             row.prop(props, "should_load_from_memory")
-          
+
         if not IfcStore.get_file() or not props.should_load_from_memory:
             row = layout.row(align=True)
             row.prop(props, "csv_ifc_file")
-            row.operator("bim.import_ifccsv", icon="FILE_FOLDER", text="")
-            row = layout.row(align=True)
-            row.prop(props, "ifc_selector")
-            row.operator("bim.eyedrop_ifccsv", icon="EYEDROPPER", text="")
+            row.operator("bim.select_csv_ifc_file", icon="FILE_FOLDER", text="")
+
+        row = layout.row(align=True)
+        row.prop(props, "ifc_selector")
+        row.operator("bim.eyedrop_ifccsv", icon="EYEDROPPER", text="")
 
         row = layout.row()
-        row.label(text="Add IFC attributes to filter", icon="FILE_BLANK")
         row.operator("bim.add_csv_attribute")
 
         for index, attribute in enumerate(props.csv_attributes):
@@ -40,11 +40,10 @@ class BIM_PT_ifccsv(Panel):
         row = layout.row(align=True)
         row.prop(props, "csv_delimiter")
 
-        if(props.csv_delimiter == 'CUSTOM'):
+        if props.csv_delimiter == "CUSTOM":
             row = layout.row(align=True)
             row.prop(props, "csv_custom_delimiter")
 
         row = layout.row(align=True)
         row.operator("bim.export_ifccsv", icon="EXPORT")
         row.operator("bim.import_ifccsv", icon="IMPORT")
-

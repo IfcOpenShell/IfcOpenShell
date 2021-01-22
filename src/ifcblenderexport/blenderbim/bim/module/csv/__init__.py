@@ -7,6 +7,7 @@ classes = (
     operator.ExportIfcCsv,
     operator.ImportIfcCsv,
     operator.EyedropIfcCsv,
+    operator.SelectCsvIfcFile,
     prop.CsvProperties,
     ui.BIM_PT_ifccsv,
 )
