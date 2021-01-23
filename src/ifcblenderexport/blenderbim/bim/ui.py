@@ -37,96 +37,6 @@ class BIM_PT_object_structural(Panel):
         row.prop(props, "structural_member_connection")
 
 
-class BIM_PT_constraints(Panel):
-    bl_label = "IFC Constraints"
-    bl_idname = "BIM_PT_constraints"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-        props = context.scene.BIMProperties
-
-        row = layout.row()
-        row.operator("bim.add_constraint")
-
-        if props.constraints:
-            layout.template_list("BIM_UL_constraints", "", props, "constraints", props, "active_constraint_index")
-
-            if props.active_constraint_index < len(props.constraints):
-                constraint = props.constraints[props.active_constraint_index]
-                row = layout.row(align=True)
-                row.prop(constraint, "name")
-                row.operator("bim.remove_constraint", icon="X", text="").index = props.active_constraint_index
-                row = layout.row()
-                row.prop(constraint, "description")
-                row = layout.row()
-                row.prop(constraint, "constraint_grade")
-                if constraint.constraint_grade == "USERDEFINED":
-                    row = layout.row()
-                    row.prop(constraint, "user_defined_grade")
-                row = layout.row()
-                row.prop(constraint, "constraint_source")
-                row = layout.row()
-                row.prop(constraint, "objective_qualifier")
-                if constraint.objective_qualifier == "USERDEFINED":
-                    row = layout.row()
-                    row.prop(constraint, "user_defined_qualifier")
-
-            row = layout.row(align=True)
-            row.operator("bim.assign_constraint", text="Assign Constraint")
-            row.operator("bim.unassign_constraint", text="Unassign Constraint")
-
-
-class BIM_PT_constraint_relations(Panel):
-    bl_label = "IFC Constraints"
-    bl_idname = "BIM_PT_constraint_relations"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "object"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-        props = context.active_object.BIMObjectProperties
-
-        if not props.constraints:
-            layout.label(text="No constraints found")
-
-        if props.constraints:
-            layout.template_list("BIM_UL_constraints", "", props, "constraints", props, "active_constraint_index")
-
-            if props.active_constraint_index < len(props.constraints):
-                constraint = props.constraints[props.active_constraint_index]
-                row = layout.row(align=True)
-                row.prop(constraint, "name")
-                if constraint.name in bpy.context.scene.BIMProperties.constraints:
-                    constraint = bpy.context.scene.BIMProperties.constraints[constraint.name]
-                    row.operator(
-                        "bim.remove_object_constraint", icon="X", text=""
-                    ).index = props.active_constraint_index
-                    row = layout.row()
-                    row.prop(constraint, "description")
-                    row = layout.row()
-                    row.prop(constraint, "constraint_grade")
-                    if constraint.constraint_grade == "USERDEFINED":
-                        row = layout.row()
-                        row.prop(constraint, "user_defined_grade")
-                    row = layout.row()
-                    row.prop(constraint, "constraint_source")
-                    row = layout.row()
-                    row.prop(constraint, "objective_qualifier")
-                    if constraint.objective_qualifier == "USERDEFINED":
-                        row = layout.row()
-                        row.prop(constraint, "user_defined_qualifier")
-                else:
-                    layout.label(text="Constraint is invalid")
-
-
 class BIM_PT_psets(Panel):
     bl_label = "IFC Property Sets"
     bl_idname = "BIM_PT_psets"
@@ -715,15 +625,6 @@ class BIM_UL_smart_groups(bpy.types.UIList):
         ob = data
         if item:
             layout.label(text=str(item.number), translate=False, icon="NONE", icon_value=0)
-        else:
-            layout.label(text="", translate=False)
-
-
-class BIM_UL_constraints(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        ob = data
-        if item:
-            layout.prop(item, "name", text="", emboss=False)
         else:
             layout.label(text="", translate=False)
 
