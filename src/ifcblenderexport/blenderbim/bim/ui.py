@@ -514,8 +514,6 @@ class BIM_PT_mvd(Panel):
         row = layout.row()
         row.prop(bim_properties, "import_should_import_curves")
         row = layout.row()
-        row.prop(bim_properties, "import_should_import_opening_elements")
-        row = layout.row()
         row.prop(bim_properties, "import_should_import_spaces")
 
         layout.label(text="Experimental Modes:")
