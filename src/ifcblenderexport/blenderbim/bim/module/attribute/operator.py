@@ -1,5 +1,6 @@
 import bpy
 import json
+import ifcopenshell
 import blenderbim.bim.module.attribute.edit_attributes as edit_attributes
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.attribute.data import Data
@@ -99,4 +100,20 @@ class EditAttributes(bpy.types.Operator):
         }).execute()
         Data.load(oprops.ifc_definition_id)
         bpy.ops.bim.disable_editing_attributes(obj=self.obj, obj_type=self.obj_type)
+        return {"FINISHED"}
+
+
+class GenerateGlobalId(bpy.types.Operator):
+    bl_idname = "bim.generate_global_id"
+    bl_label = "Regenerate GlobalId"
+
+    def execute(self, context):
+        index = bpy.context.active_object.BIMAttributeProperties.attributes.find("GlobalId")
+        if index >= 0:
+            global_id = bpy.context.active_object.BIMAttributeProperties.attributes[index]
+        else:
+            global_id = bpy.context.active_object.BIMAttributeProperties.attributes.add()
+        global_id.name = "GlobalId"
+        global_id.data_type = "string"
+        global_id.string_value = ifcopenshell.guid.new()
         return {"FINISHED"}

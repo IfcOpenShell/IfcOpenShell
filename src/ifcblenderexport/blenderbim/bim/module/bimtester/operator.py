@@ -15,7 +15,8 @@ class ExecuteBIMTester(bpy.types.Operator):
     def execute(self, context):
 
         filename = os.path.join(
-            bpy.context.scene.BimTesterProperties.features_dir, bpy.context.scene.BimTesterProperties.features_file + ".feature"
+            bpy.context.scene.BimTesterProperties.features_dir,
+            bpy.context.scene.BimTesterProperties.features_file + ".feature",
         )
         cwd = os.getcwd()
         os.chdir(bpy.context.scene.BimTesterProperties.features_dir)
@@ -32,6 +33,7 @@ class ExecuteBIMTester(bpy.types.Operator):
         os.chdir(cwd)
         return {"FINISHED"}
 
+
 class BIMTesterPurge(bpy.types.Operator):
     bl_idname = "bim.bim_tester_purge"
     bl_label = "Purge Tests"
@@ -39,13 +41,15 @@ class BIMTesterPurge(bpy.types.Operator):
     def execute(self, context):
 
         filename = os.path.join(
-            bpy.context.scene.BimTesterProperties.features_dir, bpy.context.scene.BimTesterProperties.features_file + ".feature"
+            bpy.context.scene.BimTesterProperties.features_dir,
+            bpy.context.scene.BimTesterProperties.features_file + ".feature",
         )
         cwd = os.getcwd()
         os.chdir(bpy.context.scene.BimTesterProperties.features_dir)
         bimtester.clean.TestPurger().purge()
         os.chdir(cwd)
         return {"FINISHED"}
+
 
 class SelectFeaturesDir(bpy.types.Operator):
     bl_idname = "bim.select_features_dir"
@@ -61,6 +65,7 @@ class SelectFeaturesDir(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
+
 
 class RejectElement(bpy.types.Operator):
     bl_idname = "bim.reject_element"
@@ -79,32 +84,6 @@ class RejectElement(bpy.types.Operator):
         QAHelper.append_to_scenario(lines)
         return {"FINISHED"}
 
-class ColourByClass(bpy.types.Operator):
-    bl_idname = "bim.colour_by_class"
-    bl_label = "Colour by Class"
-
-    def execute(self, context):
-        colours = cycle(colour_list)
-        ifc_classes = {}
-        for obj in bpy.context.visible_objects:
-            if "/" not in obj.name:
-                continue
-            ifc_class = obj.name.split("/")[0]
-            if ifc_class not in ifc_classes:
-                ifc_classes[ifc_class] = next(colours)
-            obj.color = ifc_classes[ifc_class]
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].shading.color_type = "OBJECT"
-        return {"FINISHED"}
-
-class ResetObjectColours(bpy.types.Operator):
-    bl_idname = "bim.reset_object_colours"
-    bl_label = "Reset Colours"
-
-    def execute(self, context):
-        for object in bpy.context.selected_objects:
-            object.color = (1, 1, 1, 1)
-        return {"FINISHED"}
 
 class ApproveClass(bpy.types.Operator):
     bl_idname = "bim.approve_class"
@@ -117,13 +96,10 @@ class ApproveClass(bpy.types.Operator):
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            lines.append(
-                " * The element {} is an {}".format(
-                    element.GlobalId, element.is_a()
-                )
-            )
+            lines.append(" * The element {} is an {}".format(element.GlobalId, element.is_a()))
         QAHelper.append_to_scenario(lines)
         return {"FINISHED"}
+
 
 class RejectClass(bpy.types.Operator):
     bl_idname = "bim.reject_class"
@@ -143,6 +119,7 @@ class RejectClass(bpy.types.Operator):
             )
         QAHelper.append_to_scenario(lines)
         return {"FINISHED"}
+
 
 class SelectAudited(bpy.types.Operator):
     bl_idname = "bim.select_audited"
@@ -169,11 +146,13 @@ class SelectAudited(bpy.types.Operator):
     def is_a_global_id(self, word):
         return word[0] in ["0", "1", "2", "3"] and len(word) == 22
 
+
 class QAHelper:
     @classmethod
     def append_to_scenario(cls, lines):
         filename = os.path.join(
-            bpy.context.scene.BimTesterProperties.features_dir, bpy.context.scene.BimTesterProperties.features_file + ".feature"
+            bpy.context.scene.BimTesterProperties.features_dir,
+            bpy.context.scene.BimTesterProperties.features_file + ".feature",
         )
         if os.path.exists(filename + "~"):
             os.remove(filename + "~")
@@ -193,6 +172,7 @@ class QAHelper:
                         is_in_scenario = False
                     destination.write(source_line)
         os.remove(filename + "~")
+
 
 colour_list = [
     (0.651, 0.81, 0.892, 1),
