@@ -520,98 +520,6 @@ class SmartClashGroup(PropertyGroup):
     global_ids: CollectionProperty(name="GlobalIDs", type=StrProperty)
 
 
-class Constraint(PropertyGroup):
-    name: StringProperty(name="Name")
-    description: StringProperty(name="Description")
-    constraint_grade: EnumProperty(
-        items=[
-            (
-                "HARD",
-                "HARD",
-                "Qualifies a constraint such that it must be followed rigidly within or at the values set.",
-            ),
-            ("SOFT", "SOFT", "Qualifies a constraint such that it should be followed within or at the values set."),
-            (
-                "ADVISORY",
-                "ADVISORY",
-                "Qualifies a constraint such that it is advised that it is followed within or at the values set.",
-            ),
-            (
-                "USERDEFINED",
-                "USERDEFINED",
-                "A user-defined grade indicated by a separate attribute at the referencing entity.",
-            ),
-            ("NOTDEFINED", "NOTDEFINED", "Grade has not been specified."),
-        ],
-        name="Grade",
-    )
-    constraint_source: StringProperty(name="Source")
-    user_defined_grade: StringProperty(name="Custom Grade")
-    objective_qualifier: EnumProperty(
-        items=[
-            (
-                "CODECOMPLIANCE",
-                "CODECOMPLIANCE",
-                "A constraint whose objective is to ensure satisfaction of a code compliance provision.",
-            ),
-            (
-                "CODEWAIVER",
-                "CODEWAIVER",
-                "A constraint whose objective is to identify an agreement that code compliance requirements (the waiver) will not be enforced.",
-            ),
-            (
-                "DESIGNINTENT",
-                "DESIGNINTENT",
-                "A constraint whose objective is to ensure satisfaction of a design intent provision.",
-            ),
-            (
-                "EXTERNAL",
-                "EXTERNAL",
-                "A constraint whose objective is to synchronize data with an external source such as a file",
-            ),
-            (
-                "HEALTHANDSAFETY",
-                "HEALTHANDSAFETY",
-                "A constraint whose objective is to ensure satisfaction of a health and safety provision.",
-            ),
-            (
-                "MERGECONFLICT",
-                "MERGECONFLICT",
-                "A constraint whose objective is to resolve a conflict such as merging data from multiple sources.",
-            ),
-            (
-                "MODELVIEW",
-                "MODELVIEW",
-                "A constraint whose objective is to ensure data conforms to a model view definition.",
-            ),
-            (
-                "PARAMETER",
-                "PARAMETER",
-                "A constraint whose objective is to calculate a value based on other referenced values.",
-            ),
-            (
-                "REQUIREMENT",
-                "REQUIREMENT",
-                "A constraint whose objective is to ensure satisfaction of a project requirement provision.",
-            ),
-            (
-                "SPECIFICATION",
-                "SPECIFICATION",
-                "A constraint whose objective is to ensure satisfaction of a specification provision.",
-            ),
-            (
-                "TRIGGERCONDITION",
-                "TRIGGERCONDITION",
-                "A constraint whose objective is to indicate a limiting value beyond which the condition of an object requires a particular form of attention.",
-            ),
-            ("USERDEFINED", "USERDEFINED", ""),
-            ("NOTDEFINED", "NOTDEFINED", ""),
-        ],
-        name="Qualifier",
-    )
-    user_defined_qualifier: StringProperty(name="Custom Qualifier")
-
-
 class PropertySetTemplate(PropertyGroup):
     global_id: StringProperty(name="Global ID")
     name: StringProperty(name="Name")
@@ -852,8 +760,6 @@ class BIMProperties(PropertyGroup):
     smart_clash_groups: CollectionProperty(name="Smart Clash Groups", type=SmartClashGroup)
     active_smart_group_index: IntProperty(name="Active Smart Group Index")
     smart_clash_grouping_max_distance: IntProperty(name="Smart Clash Grouping Max Distance", default=3, soft_min=1, soft_max=10)
-    constraints: CollectionProperty(name="Constraints", type=Constraint)
-    active_constraint_index: IntProperty(name="Active Constraint Index")
     ifc_patch_recipes: EnumProperty(items=getIfcPatchRecipes, name="Recipes")
     ifc_patch_input: StringProperty(default="", name="IFC Patch Input IFC")
     ifc_patch_output: StringProperty(default="", name="IFC Patch Output IFC")
@@ -957,8 +863,6 @@ class BIMObjectProperties(PropertyGroup):
     relating_structure: PointerProperty(name="Spatial Container", type=bpy.types.Object)
     psets: CollectionProperty(name="Psets", type=PsetQto)
     qtos: CollectionProperty(name="Qtos", type=PsetQto)
-    constraints: CollectionProperty(name="Constraints", type=Constraint)
-    active_constraint_index: IntProperty(name="Active Constraint Index")
     has_boundary_condition: BoolProperty(name="Has Boundary Condition")
     boundary_condition: PointerProperty(name="Boundary Condition", type=BoundaryCondition)
     structural_member_connection: PointerProperty(name="Structural Member Connection", type=bpy.types.Object)

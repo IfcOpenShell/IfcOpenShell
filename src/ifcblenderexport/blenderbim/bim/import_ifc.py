@@ -349,8 +349,6 @@ class IfcImporter:
         self.profile_code("Set units")
         self.create_project()
         self.profile_code("Create project")
-        self.create_constraints()
-        self.profile_code("Create constraints")
         self.create_spatial_hierarchy()
         self.profile_code("Create spatial hierarchy")
         self.create_type_products()
@@ -1244,22 +1242,6 @@ class IfcImporter:
         if obj:
             self.project["blender"].objects.link(obj)
             del self.added_data[self.project["ifc"].GlobalId]
-
-    def create_constraints(self):
-        for element in self.file.by_type("IfcObjective"):
-            constraint = bpy.context.scene.BIMProperties.constraints.add()
-            data_map = {
-                "name": "Name",
-                "description": "Description",
-                "constraint_grade": "ConstraintGrade",
-                "constraint_source": "ConstraintSource",
-                "user_defined_grade": "UserDefinedGrade",
-                "objective_qualifier": "ObjectiveQualifier",
-                "user_defined_qualifier": "UserDefinedQualifier",
-            }
-            for key, value in data_map.items():
-                if hasattr(element, value) and getattr(element, value):
-                    setattr(constraint, key, getattr(element, value))
 
     def create_spatial_hierarchy(self):
         if self.project["ifc"].IsDecomposedBy:

@@ -18,10 +18,9 @@ class Usecase:
         rel.RelatedObjects = list(related_objects)
 
     def get_document_rel(self):
-        rel = None
         if self.file.schema == "IFC2X3":
-            for association in self.file.by_type("IfcRelAssociatesDocument"):
-                if association.RelatingDocument == self.settings["document"]:
+            for rel in self.file.by_type("IfcRelAssociatesDocument"):
+                if rel.RelatingDocument == self.settings["document"]:
                     return rel
         else:
             if (
