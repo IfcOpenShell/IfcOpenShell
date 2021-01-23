@@ -764,7 +764,6 @@ class BIMProperties(PropertyGroup):
     ifc_patch_input: StringProperty(default="", name="IFC Patch Input IFC")
     ifc_patch_output: StringProperty(default="", name="IFC Patch Output IFC")
     ifc_patch_args: StringProperty(default="", name="Arguments")
-    qto_result: StringProperty(default="", name="Qto Result")
     area_unit: EnumProperty(
         default="SQUARE_METRE",
         items=[
