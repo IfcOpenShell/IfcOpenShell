@@ -25,27 +25,11 @@ from . import ifc
 from . import annotation
 from . import helper
 from bpy_extras.io_utils import ImportHelper
-from itertools import cycle
 from mathutils import Vector, Matrix, Euler, geometry
 import bmesh
 from math import radians, degrees, atan, tan, cos, sin
 from pathlib import Path
 from bpy.app.handlers import persistent
-
-colour_list = [
-    (0.651, 0.81, 0.892, 1),
-    (0.121, 0.471, 0.706, 1),
-    (0.699, 0.876, 0.54, 1),
-    (0.199, 0.629, 0.174, 1),
-    (0.983, 0.605, 0.602, 1),
-    (0.89, 0.101, 0.112, 1),
-    (0.989, 0.751, 0.427, 1),
-    (0.986, 0.497, 0.1, 1),
-    (0.792, 0.699, 0.839, 1),
-    (0.414, 0.239, 0.603, 1),
-    (0.993, 0.999, 0.6, 1),
-    (0.693, 0.349, 0.157, 1),
-]
 
 
 @persistent
@@ -136,169 +120,6 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         ifc_importer.execute()
         ifc_import_settings.logger.info("Import finished in {:.2f} seconds".format(time.time() - start))
         print("Import finished in {:.2f} seconds".format(time.time() - start))
-        return {"FINISHED"}
-
-
-class SelectGlobalId(bpy.types.Operator):
-    bl_idname = "bim.select_global_id"
-    bl_label = "Select GlobalId"
-
-    def execute(self, context):
-        for obj in bpy.context.visible_objects:
-            index = obj.BIMObjectProperties.attributes.find("GlobalId")
-            if (
-                index != -1
-                and obj.BIMObjectProperties.attributes[index].string_value == bpy.context.scene.BIMProperties.global_id
-            ):
-                obj.select_set(True)
-                break
-        return {"FINISHED"}
-
-
-class SelectAttribute(bpy.types.Operator):
-    bl_idname = "bim.select_attribute"
-    bl_label = "Select Attribute"
-
-    def execute(self, context):
-        import re
-
-        search_value = bpy.context.scene.BIMProperties.search_attribute_value
-        for object in bpy.context.visible_objects:
-            index = object.BIMObjectProperties.attributes.find(bpy.context.scene.BIMProperties.search_attribute_name)
-            if index == -1:
-                continue
-            value = object.BIMObjectProperties.attributes[index].string_value
-            if (
-                bpy.context.scene.BIMProperties.search_regex
-                and bpy.context.scene.BIMProperties.search_ignorecase
-                and re.search(search_value, value, flags=re.IGNORECASE)
-            ):
-                object.select_set(True)
-            elif bpy.context.scene.BIMProperties.search_regex and re.search(search_value, value):
-                object.select_set(True)
-            elif bpy.context.scene.BIMProperties.search_ignorecase and value.lower() == search_value.lower():
-                object.select_set(True)
-            elif value == search_value:
-                object.select_set(True)
-        return {"FINISHED"}
-
-
-class SelectPset(bpy.types.Operator):
-    bl_idname = "bim.select_pset"
-    bl_label = "Select Pset"
-
-    def execute(self, context):
-        import re
-
-        search_pset_name = bpy.context.scene.BIMProperties.search_pset_name
-        search_prop_name = bpy.context.scene.BIMProperties.search_prop_name
-        search_value = bpy.context.scene.BIMProperties.search_pset_value
-        for object in bpy.context.visible_objects:
-            pset_index = object.BIMObjectProperties.psets.find(search_pset_name)
-            if pset_index == -1:
-                continue
-            prop_index = object.BIMObjectProperties.psets[pset_index].properties.find(search_prop_name)
-            if prop_index == -1:
-                continue
-            value = object.BIMObjectProperties.psets[pset_index].properties[prop_index].string_value
-            if (
-                bpy.context.scene.BIMProperties.search_regex
-                and bpy.context.scene.BIMProperties.search_ignorecase
-                and re.search(search_value, value, flags=re.IGNORECASE)
-            ):
-                object.select_set(True)
-            elif bpy.context.scene.BIMProperties.search_regex and re.search(search_value, value):
-                object.select_set(True)
-            elif bpy.context.scene.BIMProperties.search_ignorecase and value.lower() == search_value.lower():
-                object.select_set(True)
-            elif value == search_value:
-                object.select_set(True)
-        return {"FINISHED"}
-
-
-class SelectClass(bpy.types.Operator):
-    bl_idname = "bim.select_class"
-    bl_label = "Select IFC Class"
-
-    def execute(self, context):
-        for object in bpy.context.visible_objects:
-            if (
-                "/" in object.name
-                and object.name[0:3] == "Ifc"
-                and object.name.split("/")[0] == bpy.context.scene.BIMProperties.ifc_class
-            ):
-                object.select_set(True)
-        return {"FINISHED"}
-
-
-class SelectType(bpy.types.Operator):
-    bl_idname = "bim.select_type"
-    bl_label = "Select IFC Type"
-
-    def execute(self, context):
-        for object in bpy.context.visible_objects:
-            if (
-                "/" in object.name
-                and object.name[0:3] == "Ifc"
-                and object.name.split("/")[0] == bpy.context.scene.BIMProperties.ifc_class
-                and "PredefinedType" in object.BIMObjectProperties.attributes
-                and object.BIMObjectProperties.attributes["PredefinedType"].string_value
-                == bpy.context.scene.BIMProperties.ifc_predefined_type
-            ):
-                if bpy.context.scene.BIMProperties.ifc_predefined_type != "USERDEFINED":
-                    object.select_set(True)
-                elif (
-                    "ObjectType" in object.BIMObjectProperties.attributes
-                    and object.BIMObjectProperties.attributes["ObjectType"].string_value
-                    == bpy.context.scene.BIMProperties.ifc_userdefined_type
-                ):
-                    object.select_set(True)
-        return {"FINISHED"}
-
-
-class ColourByAttribute(bpy.types.Operator):
-    bl_idname = "bim.colour_by_attribute"
-    bl_label = "Colour by Attribute"
-
-    def execute(self, context):
-        colours = cycle(colour_list)
-        values = {}
-        attribute_name = bpy.context.scene.BIMProperties.search_attribute_name
-        for obj in bpy.context.visible_objects:
-            index = obj.BIMObjectProperties.attributes.find(attribute_name)
-            if index == -1:
-                continue
-            value = obj.BIMObjectProperties.attributes[index].string_value
-            if value not in values:
-                values[value] = next(colours)
-            obj.color = values[value]
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].shading.color_type = "OBJECT"
-        return {"FINISHED"}
-
-
-class ColourByPset(bpy.types.Operator):
-    bl_idname = "bim.colour_by_pset"
-    bl_label = "Colour by Pset"
-
-    def execute(self, context):
-        colours = cycle(colour_list)
-        values = {}
-        search_pset_name = bpy.context.scene.BIMProperties.search_pset_name
-        search_prop_name = bpy.context.scene.BIMProperties.search_prop_name
-        for obj in bpy.context.visible_objects:
-            pset_index = obj.BIMObjectProperties.psets.find(search_pset_name)
-            if pset_index == -1:
-                continue
-            prop_index = obj.BIMObjectProperties.psets[pset_index].properties.find(search_prop_name)
-            if prop_index == -1:
-                continue
-            value = obj.BIMObjectProperties.psets[pset_index].properties[prop_index].string_value
-            if value not in values:
-                values[value] = next(colours)
-            obj.color = values[value]
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].shading.color_type = "OBJECT"
         return {"FINISHED"}
 
 
@@ -439,22 +260,6 @@ class RemoveObjectConstraint(bpy.types.Operator):
 
     def execute(self, context):
         bpy.context.active_object.BIMObjectProperties.constraints.remove(self.index)
-        return {"FINISHED"}
-
-
-class GenerateGlobalId(bpy.types.Operator):
-    bl_idname = "bim.generate_global_id"
-    bl_label = "Regenerate GlobalId"
-
-    def execute(self, context):
-        index = bpy.context.active_object.BIMObjectProperties.attributes.find("GlobalId")
-        if index >= 0:
-            global_id = bpy.context.active_object.BIMObjectProperties.attributes[index]
-        else:
-            global_id = bpy.context.active_object.BIMObjectProperties.attributes.add()
-        global_id.name = "GlobalId"
-        global_id.data_type = "string"
-        global_id.string_value = ifcopenshell.guid.new()
         return {"FINISHED"}
 
 

@@ -511,50 +511,6 @@ class BIM_PT_text(Panel):
             row.prop(variable, "prop_key")
 
 
-class BIM_PT_search(Panel):
-    bl_label = "IFC Search"
-    bl_idname = "BIM_PT_search"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    def draw(self, context):
-        layout = self.layout
-
-        scene = context.scene
-        props = scene.BIMProperties
-
-        row = layout.row()
-        row.prop(props, "search_regex")
-        row = layout.row()
-        row.prop(props, "search_ignorecase")
-
-        layout.label(text="Global ID:")
-        row = layout.row(align=True)
-        row.prop(props, "global_id", text="")
-        row.operator("bim.select_global_id", text="", icon="VIEWZOOM")
-
-        layout.label(text="Attribute:")
-        row = layout.row(align=True)
-        row.prop(props, "search_attribute_name", text="")
-        row.prop(props, "search_attribute_value", text="")
-        row.operator("bim.select_attribute", text="", icon="VIEWZOOM")
-        row.operator("bim.colour_by_attribute", text="", icon="BRUSH_DATA")
-
-        layout.label(text="Pset:")
-        row = layout.row(align=True)
-        row.prop(props, "search_pset_name", text="")
-        row.prop(props, "search_prop_name", text="")
-        row.prop(props, "search_pset_value", text="")
-        row.operator("bim.select_pset", text="", icon="VIEWZOOM")
-        row.operator("bim.colour_by_pset", text="", icon="BRUSH_DATA")
-
-        row = layout.row(align=True)
-        row.operator("bim.select_class")
-        row.operator("bim.select_type")
-
-
 class BIM_PT_library(Panel):
     bl_label = "IFC BIM Server Library"
     bl_idname = "BIM_PT_library"

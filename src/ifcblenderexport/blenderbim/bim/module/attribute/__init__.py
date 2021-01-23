@@ -5,6 +5,7 @@ classes = (
     operator.EnableEditingAttributes,
     operator.DisableEditingAttributes,
     operator.EditAttributes,
+    operator.GenerateGlobalId,
     prop.BIMAttributeProperties,
     ui.BIM_PT_object_attributes,
     ui.BIM_PT_material_attributes,
