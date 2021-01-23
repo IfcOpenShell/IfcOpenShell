@@ -2,6 +2,7 @@ import os
 import bpy
 import bcf
 from . import bcfstore
+from blenderbim.bim.ifc import IfcStore
 from math import radians, degrees, atan, tan, cos, sin
 from mathutils import Vector, Matrix, Euler, geometry
 
@@ -624,6 +625,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
     bl_label = "Activate BCF Viewpoint"
 
     def execute(self, context):
+        self.file = IfcStore.get_file()
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         props = bpy.context.scene.BCFProperties
         blender_topic = props.topics[props.active_topic_index]
@@ -713,10 +715,9 @@ class ActivateBcfViewpoint(bpy.types.Operator):
                 global_id_colours.setdefault(component.ifc_guid, coloring.color)
 
         for obj in bpy.data.objects:
-            global_id = obj.BIMObjectProperties.attributes.get("GlobalId")
-            if not global_id:
+            if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
-            global_id = global_id.string_value
+            global_id = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId
             is_visible = viewpoint.components.visibility.default_visibility
             if global_id in exception_global_ids:
                 is_visible = not is_visible
@@ -724,9 +725,9 @@ class ActivateBcfViewpoint(bpy.types.Operator):
                 obj.hide_set(True)
                 continue
             if "IfcSpace" in obj.name:
-                is_visible = viewpoint.components.viewSetuphints.spacesVisible
+                is_visible = viewpoint.components.view_setup_hints.spaces_visible
             elif "IfcOpeningElement" in obj.name:
-                is_visible = viewpoint.components.viewSetuphints.openingsVisible
+                is_visible = viewpoint.components.view_setup_hints.openings_visible
             obj.hide_set(not is_visible)
             if not is_visible:
                 continue
