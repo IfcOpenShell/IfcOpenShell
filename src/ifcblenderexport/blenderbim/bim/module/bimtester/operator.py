@@ -5,6 +5,7 @@ import os
 import webbrowser
 from pathlib import Path
 from itertools import cycle
+from blenderbim.bim.ifc import IfcStore
 
 
 class ExecuteBIMTester(bpy.types.Operator):
@@ -67,12 +68,11 @@ class RejectElement(bpy.types.Operator):
 
     def execute(self, context):
         lines = []
-        for object in bpy.context.selected_objects:
+        self.file = IfcStore.get_file()
+        for obj in bpy.context.selected_objects:
             lines.append(
                 " * The element {} should not exist because {}".format(
-                    object.BIMObjectProperties.attributes[
-                        object.BIMObjectProperties.attributes.find("GlobalId")
-                    ].string_value,
+                    self.file.by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId,
                     bpy.context.scene.BimTesterProperties.qa_reject_element_reason,
                 )
             )
@@ -112,14 +112,16 @@ class ApproveClass(bpy.types.Operator):
 
     def execute(self, context):
         lines = []
-        for object in bpy.context.selected_objects:
-            index = object.BIMObjectProperties.attributes.find("GlobalId")
-            if index != -1:
-                lines.append(
-                    " * The element {} is an {}".format(
-                        object.BIMObjectProperties.attributes[index].string_value, object.name.split("/")[0]
-                    )
+        self.file = IfcStore.get_file()
+        for obj in bpy.context.selected_objects:
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            lines.append(
+                " * The element {} is an {}".format(
+                    element.GlobalId, element.is_a()
                 )
+            )
         QAHelper.append_to_scenario(lines)
         return {"FINISHED"}
 
@@ -129,12 +131,13 @@ class RejectClass(bpy.types.Operator):
 
     def execute(self, context):
         lines = []
-        for object in bpy.context.selected_objects:
+        self.file = IfcStore.get_file()
+        for obj in bpy.context.selected_objects:
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
             lines.append(
                 " * The element {} is an {}".format(
-                    object.BIMObjectProperties.attributes[
-                        object.BIMObjectProperties.attributes.find("GlobalId")
-                    ].string_value,
+                    self.file.by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId,
                     bpy.context.scene.BimTesterProperties.audit_ifc_class,
                 )
             )
@@ -147,6 +150,7 @@ class SelectAudited(bpy.types.Operator):
 
     def execute(self, context):
         audited_global_ids = []
+        self.file = IfcStore.get_file()
         for filename in Path(bpy.context.scene.BimTesterProperties.features_dir).glob("*.feature"):
             with open(filename, "r") as feature_file:
                 lines = feature_file.readlines()
@@ -155,10 +159,11 @@ class SelectAudited(bpy.types.Operator):
                     for word in words:
                         if self.is_a_global_id(word):
                             audited_global_ids.append(word)
-        for object in bpy.context.visible_objects:
-            index = object.BIMObjectProperties.attributes.find("GlobalId")
-            if index != -1 and object.BIMObjectProperties.attributes[index].string_value in audited_global_ids:
-                object.select_set(True)
+        for obj in bpy.context.visible_objects:
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            if self.file.by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId in audited_global_ids:
+                obj.select_set(True)
         return {"FINISHED"}
 
     def is_a_global_id(self, word):

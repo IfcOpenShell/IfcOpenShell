@@ -90,9 +90,10 @@ class EyedropIfcCsv(bpy.types.Operator):
 
     def execute(self, context):
         global_ids = []
+        self.file = IfcStore.get_file()
         for obj in context.selected_objects:
-            if hasattr(obj, "BIMObjectProperties") and obj.BIMObjectProperties.attributes.get("GlobalId"):
-                global_ids.append("#" + obj.BIMObjectProperties.attributes.get("GlobalId").string_value)
+            if hasattr(obj, "BIMObjectProperties") and obj.BIMObjectProperties.ifc_definition_id:
+                global_ids.append("#" + self.file.by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId)
         context.scene.CsvProperties.ifc_selector = "|".join(global_ids)
         return {"FINISHED"}
 
