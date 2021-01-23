@@ -14,6 +14,7 @@ class EnableReassignClass(bpy.types.Operator):
 
     def execute(self, context):
         obj = bpy.context.active_object
+        self.file = IfcStore.get_file()
         ifc_class = obj.name.split("/")[0]
         bpy.context.active_object.BIMObjectProperties.is_reassigning_class = True
         ifc_products = [
@@ -28,11 +29,11 @@ class EnableReassignClass(bpy.types.Operator):
         ]
         for ifc_product in ifc_products:
             if ifcopenshell.util.schema.is_a(IfcStore.get_schema().declaration_by_name(ifc_class), ifc_product):
-                bpy.context.scene.BIMProperties.ifc_product = ifc_product
-        bpy.context.scene.BIMProperties.ifc_class = obj.name.split("/")[0]
-        predefined_type = obj.BIMObjectProperties.attributes.get("PredefinedType")
-        if predefined_type:
-            bpy.context.scene.BIMProperties.ifc_predefined_type = predefined_type.string_value
+                bpy.context.scene.BIMRootProperties.ifc_product = ifc_product
+        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        bpy.context.scene.BIMRootProperties.ifc_class = element.is_a()
+        if hasattr(element, "PredefinedType") and element.PredefinedType:
+            bpy.context.scene.BIMRootProperties.ifc_predefined_type = element.PredefinedType
         return {"FINISHED"}
 
 
@@ -52,14 +53,14 @@ class ReassignClass(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.context.active_object
         self.file = IfcStore.get_file()
-        predefined_type = bpy.context.scene.BIMProperties.ifc_predefined_type
+        predefined_type = bpy.context.scene.BIMRootProperties.ifc_predefined_type
         if predefined_type == "USERDEFINED":
-            predefined_type = bpy.context.scene.BIMProperties.ifc_userdefined_type
+            predefined_type = bpy.context.scene.BIMRootProperties.ifc_userdefined_type
         product = reassign_class.Usecase(
             self.file,
             {
                 "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                "ifc_class": bpy.context.scene.BIMProperties.ifc_class,
+                "ifc_class": bpy.context.scene.BIMRootProperties.ifc_class,
                 "predefined_type": predefined_type,
             },
         ).execute()

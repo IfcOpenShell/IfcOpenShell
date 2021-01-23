@@ -32,7 +32,6 @@ class VisualiseDiff(bpy.types.Operator):
         for obj in bpy.context.visible_objects:
             obj.color = (1.0, 1.0, 1.0, 0.2)
             global_id = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId
-            #global_id = obj.BIMObjectProperties.attributes.get("GlobalId")
             if not global_id:
                 continue
             if global_id.string_value in diff["deleted"]:
