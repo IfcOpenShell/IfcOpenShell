@@ -12,6 +12,7 @@ from bpy.props import (
     CollectionProperty,
 )
 
+
 class Document(PropertyGroup):
     name: StringProperty(name="Name")
     identification: StringProperty(name="Identification")
@@ -24,3 +25,10 @@ class BIMDocumentProperties(PropertyGroup):
     documents: CollectionProperty(name="Documents", type=Document)
     active_document_index: IntProperty(name="Active Document Index")
     is_editing: StringProperty(name="Is Editing")
+
+
+class BIMObjectDocumentProperties(PropertyGroup):
+    is_adding: StringProperty(name="Is Adding")
+    available_document_types: EnumProperty(
+        items=[(d, d, "") for d in ["IfcDocumentInformation", "IfcDocumentReference"]], name="Available Document Types"
+    )
