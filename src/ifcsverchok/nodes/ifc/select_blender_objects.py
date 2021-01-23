@@ -5,6 +5,7 @@ import ifcsverchok.helper
 from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
+from blenderbim.bim.ifc import IfcStore
 
 
 class SvIfcSelectBlenderObjectsRefresh(bpy.types.Operator):
@@ -36,12 +37,14 @@ class SvIfcSelectBlenderObjects(bpy.types.Node, SverchCustomTreeNode, ifcsvercho
         )
 
     def process(self):
+        self.file = IfcStore.get_file()
         self.sv_input_names = ["entities"]
         self.guids = []
         super().process()
         for obj in bpy.context.visible_objects:
-            index = obj.BIMObjectProperties.attributes.find("GlobalId")
-            if index != -1 and obj.BIMObjectProperties.attributes[index].string_value in self.guids:
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            if self.file.by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId in self.guids:
                 obj.select_set(True)
 
     def process_ifc(self, entities):
