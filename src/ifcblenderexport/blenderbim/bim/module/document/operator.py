@@ -5,6 +5,8 @@ import blenderbim.bim.module.document.add_reference as add_reference
 import blenderbim.bim.module.document.edit_information as edit_information
 import blenderbim.bim.module.document.edit_reference as edit_reference
 import blenderbim.bim.module.document.remove_document as remove_document
+import blenderbim.bim.module.document.assign_document as assign_document
+import blenderbim.bim.module.document.unassign_document as unassign_document
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.document.data import Data
 
@@ -183,4 +185,66 @@ class RemoveDocument(bpy.types.Operator):
             bpy.ops.bim.load_information()
         elif props.is_editing == "reference":
             bpy.ops.bim.load_document_references()
+        return {"FINISHED"}
+
+
+class EnableAssigningDocument(bpy.types.Operator):
+    bl_idname = "bim.enable_assigning_document"
+    bl_label = "Enable Assigning Document"
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
+        props = obj.BIMObjectDocumentProperties
+        if props.available_document_types == "IfcDocumentInformation":
+            bpy.ops.bim.load_information()
+        elif props.available_document_types == "IfcDocumentReference":
+            bpy.ops.bim.load_document_references()
+        props.is_adding = props.available_document_types
+        return {"FINISHED"}
+
+
+class DisableAssigningDocument(bpy.types.Operator):
+    bl_idname = "bim.disable_assigning_document"
+    bl_label = "Disable Assigning Document"
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
+        props = obj.BIMObjectDocumentProperties
+        props.is_adding = ""
+        return {"FINISHED"}
+
+
+class AssignDocument(bpy.types.Operator):
+    bl_idname = "bim.assign_document"
+    bl_label = "Assign Document"
+    obj: bpy.props.StringProperty()
+    document: bpy.props.IntProperty()
+
+    def execute(self, context):
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
+        self.file = IfcStore.get_file()
+        assign_document.Usecase(self.file, {
+            "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
+            "document": self.file.by_id(self.document)
+        }).execute()
+        Data.load(obj.BIMObjectProperties.ifc_definition_id)
+        return {"FINISHED"}
+
+
+class UnassignDocument(bpy.types.Operator):
+    bl_idname = "bim.unassign_document"
+    bl_label = "Unassign Document"
+    obj: bpy.props.StringProperty()
+    document: bpy.props.IntProperty()
+
+    def execute(self, context):
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
+        self.file = IfcStore.get_file()
+        unassign_document.Usecase(self.file, {
+            "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
+            "document": self.file.by_id(self.document)
+        }).execute()
+        Data.load(obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
