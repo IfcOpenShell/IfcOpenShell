@@ -281,19 +281,13 @@ class IfcImporter:
         self.diff = None
         self.file = None
         self.settings = ifcopenshell.geom.settings()
+        self.settings.set(self.settings.DISABLE_OPENING_SUBTRACTIONS, True)
         self.settings.set_deflection_tolerance(self.ifc_import_settings.deflection_tolerance)
-        # Uncomment this when the latest IfcOpenBot build is ready
-        # self.settings.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
+        self.settings.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
         if self.ifc_import_settings.should_import_curves:
             self.settings.set(self.settings.INCLUDE_CURVES, True)
         self.settings_native = ifcopenshell.geom.settings()
         self.settings_native.set(self.settings_native.INCLUDE_CURVES, True)
-        if self.ifc_import_settings.should_import_native:
-            self.settings.set(self.settings.DISABLE_OPENING_SUBTRACTIONS, True)
-            self.ifc_import_settings.should_import_opening_elements = True
-        if self.ifc_import_settings.should_roundtrip_native:
-            self.settings.set(self.settings.DISABLE_OPENING_SUBTRACTIONS, True)
-            self.ifc_import_settings.should_import_opening_elements = True
         self.settings_2d = ifcopenshell.geom.settings()
         self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
         self.existing_elements = {}
@@ -312,7 +306,6 @@ class IfcImporter:
         self.added_data = {}
         self.native_elements = {}
         self.native_data = {}
-        self.groups = {}
         self.aggregates = {}
         self.aggregate_collections = {}
 
@@ -362,8 +355,6 @@ class IfcImporter:
         if self.ifc_import_settings.should_import_native:
             self.parse_native_elements()
             self.profile_code("Parsing native elements")
-        self.create_groups()
-        self.profile_code("Creating groups")
         self.create_grids()
         self.profile_code("Creating grids")
         if self.ifc_import_settings.should_import_native:
@@ -596,27 +587,6 @@ class IfcImporter:
                 results.extend(self.find_decomposed_ifc_class(part, ifc_class))
         return results
 
-    def create_groups(self):
-        group_collection = None
-        for collection in self.project["blender"].children:
-            if collection.name == "Groups":
-                group_collection = collection
-                break
-        if group_collection is None:
-            group_collection = bpy.data.collections.new("Groups")
-            self.project["blender"].children.link(group_collection)
-        for element in self.file.by_type("IfcGroup"):
-            self.create_group(element, group_collection)
-
-    def create_group(self, element, group_collection):
-        if element.GlobalId in self.existing_elements:
-            obj = self.existing_elements[element.GlobalId]
-        else:
-            obj = bpy.data.objects.new(f"{element.is_a()}/{element.Name}", None)
-            obj.BIMObjectProperties.ifc_definition_id = element.id()
-            group_collection.objects.link(obj)
-        self.groups[element.GlobalId] = {"ifc": element, "blender": obj}
-
     def create_grids(self):
         grids = self.file.by_type("IfcGrid")
         for grid in grids:
@@ -761,9 +731,6 @@ class IfcImporter:
         if element is None:
             return
 
-        if not self.ifc_import_settings.should_import_opening_elements and element.is_a("IfcOpeningElement"):
-            return
-
         if not self.ifc_import_settings.should_import_spaces and element.is_a("IfcSpace"):
             return
 
@@ -803,34 +770,12 @@ class IfcImporter:
         elif hasattr(element, "ObjectPlacement"):
             obj.matrix_world = self.apply_blender_offset_to_matrix(self.get_element_matrix(element))
 
-        self.add_element_representation_items(element, obj)
         self.add_opening_relation(element, obj)
         self.added_data[element.GlobalId] = obj
 
         if element.is_a("IfcOpeningElement"):
             obj.display_type = "WIRE"
         return obj
-
-    def add_element_representation_items(self, element, obj):
-        if not obj.data or "ios_items" not in obj.data:
-            return
-        cumulative_vertex_index = 0
-        for i, item in enumerate(obj.data["ios_items"]):
-            vg = obj.vertex_groups.new(name=f"Item/{i}/" + item["name"])
-            vg.add(
-                [
-                    v.index
-                    for v in obj.data.vertices[
-                        cumulative_vertex_index : cumulative_vertex_index + item["total_vertices"]
-                    ]
-                ],
-                1,
-                "ADD",
-            )
-            for subitem in item["subitems"]:
-                vg = obj.vertex_groups.new(name=f"Subitem/{i}/" + subitem["name"])
-                vg.add([v + cumulative_vertex_index for v in subitem["vertices"]], 1, "ADD")
-            cumulative_vertex_index += item["total_vertices"]
 
     def create_native_mesh(self, element, shape):
         # TODO This should be split off into its own module for run-time native mesh conversion
@@ -1635,7 +1580,6 @@ class IfcImportSettings:
         self.should_merge_materials_by_colour = False
         self.should_import_type_representations = False
         self.should_import_curves = False
-        self.should_import_opening_elements = False
         self.should_import_spaces = False
         self.should_use_cpu_multiprocessing = False
         self.should_import_with_profiling = False
@@ -1657,7 +1601,6 @@ class IfcImportSettings:
         settings.ifc_selector = scene_bim.ifc_selector
         settings.should_import_type_representations = scene_bim.import_should_import_type_representations
         settings.should_import_curves = scene_bim.import_should_import_curves
-        settings.should_import_opening_elements = scene_bim.import_should_import_opening_elements
         settings.should_import_spaces = scene_bim.import_should_import_spaces
         settings.should_auto_set_workarounds = scene_bim.import_should_auto_set_workarounds
         settings.should_use_cpu_multiprocessing = scene_bim.import_should_use_cpu_multiprocessing
