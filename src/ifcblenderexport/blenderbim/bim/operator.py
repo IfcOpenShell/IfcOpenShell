@@ -88,11 +88,9 @@ class ExportIFC(bpy.types.Operator):
         else:
             output_file = bpy.path.ensure_ext(self.filepath, ".ifc")
         ifc_export_settings = export_ifc.IfcExportSettings.factory(context, output_file, logger)
-        qto_calculator = None # TODO: remove from export
-        ifc_parser = export_ifc.IfcParser(ifc_export_settings, qto_calculator)
-        ifc_exporter = export_ifc.IfcExporter(ifc_export_settings, ifc_parser)
+        ifc_exporter = export_ifc.IfcExporter(ifc_export_settings)
         ifc_export_settings.logger.info("Starting export")
-        ifc_exporter.export(context.selected_objects)
+        ifc_exporter.export()
         ifc_export_settings.logger.info("Export finished in {:.2f} seconds".format(time.time() - start))
         if not bpy.context.scene.DocProperties.ifc_files:
             new = bpy.context.scene.DocProperties.ifc_files.add()

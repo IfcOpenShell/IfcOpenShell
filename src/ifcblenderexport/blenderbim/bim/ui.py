@@ -523,8 +523,6 @@ class BIM_PT_mvd(Panel):
         row = layout.row()
         row.prop(bim_properties, "import_export_should_roundtrip_native")
         row = layout.row()
-        row.prop(bim_properties, "export_should_export_from_memory")
-        row = layout.row()
         row.prop(bim_properties, "import_should_use_cpu_multiprocessing")
         row = layout.row()
         row.prop(bim_properties, "import_should_import_with_profiling")
