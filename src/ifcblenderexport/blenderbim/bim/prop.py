@@ -708,7 +708,6 @@ class BIMProperties(PropertyGroup):
     )
     export_should_force_faceted_brep: BoolProperty(name="Export with Faceted Breps", default=False)
     export_should_force_triangulation: BoolProperty(name="Export with Triangulation", default=False)
-    export_should_export_from_memory: BoolProperty(name="Export from Memory", default=True)
     import_should_import_type_representations: BoolProperty(name="Import Type Representations", default=False)
     import_should_import_curves: BoolProperty(name="Import Curves", default=False)
     import_should_import_opening_elements: BoolProperty(name="Import Opening Elements", default=False)
