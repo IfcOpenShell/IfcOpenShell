@@ -1161,9 +1161,10 @@ class IfcImporter:
         self.openings[element.GlobalId] = obj
 
     def load_existing_rooted_elements(self):
+        # TODO: consider how this impacts file reloading, for now we assume you only ever load the same file again
         for obj in bpy.data.objects:
-            if hasattr(obj, "BIMObjectProperties") and obj.BIMObjectProperties.attributes.get("GlobalId"):
-                self.existing_elements[obj.BIMObjectProperties.attributes.get("GlobalId").string_value] = obj
+            if hasattr(obj, "BIMObjectProperties") and obj.BIMObjectProperties.ifc_definition_id:
+                self.existing_elements[self.file.by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId] = obj
 
     def load_diff(self):
         if not self.ifc_import_settings.diff_file:
