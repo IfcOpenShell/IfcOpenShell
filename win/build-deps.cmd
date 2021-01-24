@@ -442,12 +442,14 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 :cgal
 set DEPENDENCY_NAME=cgal
 set DEPENDENCY_DIR=%DEPS_DIR%\cgal
-call :GitCloneAndCheckoutRevision https://github.com/CGAL/cgal.git "%DEPENDENCY_DIR%" releases/CGAL-4.13.3
+REM call :GitCloneAndCheckoutRevision https://github.com/CGAL/cgal.git "%DEPENDENCY_DIR%" releases/CGAL-4.13.3
+call :GitCloneAndCheckoutRevision https://github.com/CGAL/cgal.git "%DEPENDENCY_DIR%" v5.2
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
 git reset --hard
 git apply "%~dp0patches\cgal_no_zlib.patch"
-git apply "%~dp0patches\cgal_4768.patch"
+REM merged upstrem
+REM git apply "%~dp0patches\cgal_4768.patch"
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\cgal"    ^
                -DBOOST_ROOT="%DEPS_DIR%\boost_%BOOST_VER%"    ^
                -DGMP_INCLUDE_DIR="%INSTALL_DIR%\mpir"         ^
