@@ -51,9 +51,7 @@ class MaterialCreator:
             hasattr(element, "RepresentationMaps") and not element.RepresentationMaps
         ):
             return
-        if not self.mesh:
-            return
-        if self.mesh.name in self.parsed_meshes:
+        if not self.mesh or self.mesh.name in self.parsed_meshes:
             return
         self.parsed_meshes.add(self.mesh.name)
         if self.parse_representations(element):
@@ -97,10 +95,9 @@ class MaterialCreator:
             return True
 
         style = bpy.data.materials.get(style_name)
-
         if not style:
             style = bpy.data.materials.new(style_name)
-            self.parse_styled_item(styled_item, style)
+        self.parse_styled_item(styled_item, style)
 
         self.assign_style_to_mesh(style)
         item_id.slot_index = len(self.mesh.materials) - 1
@@ -312,8 +309,6 @@ class IfcImporter:
         self.material_creator = MaterialCreator(ifc_import_settings, self)
 
     def profile_code(self, message):
-        if not self.ifc_import_settings.should_import_with_profiling:
-            return
         if not self.time:
             self.time = time.time()
         print("{} :: {:.2f}".format(message, time.time() - self.time))
@@ -352,14 +347,14 @@ class IfcImporter:
         self.profile_code("Create opening collection")
         self.process_element_filter()
         self.profile_code("Process element filter")
-        if self.ifc_import_settings.should_import_native:
-            self.parse_native_elements()
-            self.profile_code("Parsing native elements")
+        # TODO: Deprecate
+        #self.parse_native_elements()
+        #self.profile_code("Parsing native elements")
         self.create_grids()
         self.profile_code("Creating grids")
-        if self.ifc_import_settings.should_import_native:
-            self.create_native_products()
-        self.profile_code("Creating native products")
+        # TODO: Deprecate
+        #self.create_native_products()
+        #self.profile_code("Creating native products")
         self.create_products()
         self.profile_code("Creating meshified products")
         self.relate_openings()
@@ -1574,20 +1569,24 @@ class IfcImportSettings:
     def __init__(self):
         self.logger = None
         self.input_file = None
-        self.should_auto_set_workarounds = True
-        self.should_ignore_site_coordinates = False
-        self.should_ignore_building_coordinates = False
-        self.should_merge_materials_by_colour = False
-        self.should_import_type_representations = False
-        self.should_import_curves = False
-        self.should_import_spaces = False
-        self.should_use_cpu_multiprocessing = False
-        self.should_import_with_profiling = False
-        self.should_import_native = False
-        self.should_merge_by_class = False
-        self.should_merge_by_material = False
-        self.should_clean_mesh = True
         self.diff_file = None
+        self.should_import_type_representations: False
+        self.should_import_curves: False
+        self.should_import_spaces: False
+        self.should_auto_set_workarounds: True
+        self.should_use_cpu_multiprocessing: True
+        self.should_merge_by_class: False
+        self.should_merge_by_material: False
+        self.should_merge_materials_by_colour: False
+        self.should_clean_mesh: True
+        self.deflection_tolerance: 0.001
+        self.angular_tolerance: 0.5
+        self.should_allow_non_element_aggregates: False
+        self.should_offset_model: False
+        self.model_offset_coordinates: (0, 0, 0)
+        self.ifc_import_filter: "NONE"
+        self.ifc_selector: ""
+
 
     @staticmethod
     def factory(context, input_file, logger):
@@ -1597,27 +1596,4 @@ class IfcImportSettings:
         settings.input_file = input_file
         settings.logger = logger
         settings.diff_file = scene_diff.diff_json_file
-        settings.ifc_import_filter = scene_bim.ifc_import_filter
-        settings.ifc_selector = scene_bim.ifc_selector
-        settings.should_import_type_representations = scene_bim.import_should_import_type_representations
-        settings.should_import_curves = scene_bim.import_should_import_curves
-        settings.should_import_spaces = scene_bim.import_should_import_spaces
-        settings.should_auto_set_workarounds = scene_bim.import_should_auto_set_workarounds
-        settings.should_use_cpu_multiprocessing = scene_bim.import_should_use_cpu_multiprocessing
-        settings.should_import_with_profiling = scene_bim.import_should_import_with_profiling
-        settings.should_import_native = scene_bim.import_should_import_native
-        settings.should_roundtrip_native = scene_bim.import_export_should_roundtrip_native
-        settings.should_merge_by_class = scene_bim.import_should_merge_by_class
-        settings.should_merge_by_material = scene_bim.import_should_merge_by_material
-        settings.should_merge_materials_by_colour = scene_bim.import_should_merge_materials_by_colour
-        settings.should_clean_mesh = scene_bim.import_should_clean_mesh
-        settings.should_allow_non_element_aggregates = scene_bim.import_should_allow_non_element_aggregates
-        settings.should_offset_model = scene_bim.import_should_offset_model
-        settings.model_offset_coordinates = (
-            [float(o) for o in scene_bim.import_model_offset_coordinates.split(",")]
-            if scene_bim.import_model_offset_coordinates
-            else (0, 0, 0)
-        )
-        settings.deflection_tolerance = scene_bim.import_deflection_tolerance
-        settings.angular_tolerance = scene_bim.import_angular_tolerance
         return settings
