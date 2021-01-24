@@ -55,6 +55,7 @@ class BIM_PT_mesh(Panel):
             context.active_object is not None
             and context.active_object.type == "MESH"
             and hasattr(context.active_object.data, "BIMMeshProperties")
+            and context.active_object.data.BIMMeshProperties.ifc_definition_id
         )
 
     def draw(self, context):
@@ -78,3 +79,30 @@ def BIM_PT_transform(self, context):
     if context.active_object and context.active_object.BIMObjectProperties.ifc_definition_id:
         row = self.layout.row()
         row.operator("bim.edit_object_placement")
+
+
+class BIM_PT_workarounds(Panel):
+    bl_label = "IFC Vendor Workarounds"
+    bl_idname = "BIM_PT_workarounds"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "data"
+
+    @classmethod
+    def poll(cls, context):
+        return (
+            context.active_object is not None
+            and context.active_object.type == "MESH"
+            and hasattr(context.active_object.data, "BIMMeshProperties")
+            and context.active_object.data.BIMMeshProperties.ifc_definition_id
+        )
+
+    def draw(self, context):
+        props = context.scene.BIMGeometryProperties
+        row = self.layout.row()
+        row.prop(props, "should_force_faceted_brep")
+        row = self.layout.row()
+        row.prop(props, "should_force_triangulation")
+        row = self.layout.row()
+        row.prop(props, "should_use_presentation_style_assignment")

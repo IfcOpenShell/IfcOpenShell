@@ -30,4 +30,4 @@ def register():
 
 def unregister():
     del bpy.types.Scene.BIMConstraintProperties
-    del bpy.types.Scene.BIMObjectConstraintProperties
+    del bpy.types.Object.BIMObjectConstraintProperties

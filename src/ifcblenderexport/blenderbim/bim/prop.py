@@ -295,18 +295,6 @@ def getMaterialPsetNames(self, context):
     return materialpsetnames_enum
 
 
-def getApplicableMaterialAttributes(self, context):
-    global materialattributes_enum
-    materialattributes_enum.clear()
-    if "/" in context.active_object.name:
-        ifc_schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(bpy.context.scene.BIMProperties.export_schema)
-        entity = ifc_schema.declaration_by_name("IfcMaterial")
-        materialattributes_enum.extend(
-            [(a.name(), a.name(), "") for a in entity.all_attributes() if self.attributes.find(a.name()) == -1]
-        )
-    return materialattributes_enum
-
-
 def getContexts(self, context):
     from blenderbim.bim.module.context.data import Data
     if not Data.is_loaded:
@@ -699,36 +687,6 @@ class BIMProperties(PropertyGroup):
     data_dir: StringProperty(default=os.path.join(cwd, "data") + os.path.sep, name="Data Directory")
     ifc_file: StringProperty(name="IFC File")
     export_schema: EnumProperty(items=[("IFC4", "IFC4", ""), ("IFC2X3", "IFC2X3", "")], name="IFC Schema")
-    export_json_version: EnumProperty(items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version")
-    export_json_compact: BoolProperty(name="Export Compact IFCJSON", default=False)
-    export_has_representations: BoolProperty(name="Export Representations", default=True)
-    export_should_guess_quantities: BoolProperty(name="Export with Guessed Quantities", default=False)
-    export_should_use_presentation_style_assignment: BoolProperty(
-        name="Export with Presentation Style Assignment", default=False
-    )
-    export_should_force_faceted_brep: BoolProperty(name="Export with Faceted Breps", default=False)
-    export_should_force_triangulation: BoolProperty(name="Export with Triangulation", default=False)
-    import_should_import_type_representations: BoolProperty(name="Import Type Representations", default=False)
-    import_should_import_curves: BoolProperty(name="Import Curves", default=False)
-    import_should_import_opening_elements: BoolProperty(name="Import Opening Elements", default=False)
-    import_should_import_spaces: BoolProperty(name="Import Spaces", default=False)
-    import_should_auto_set_workarounds: BoolProperty(name="Automatically Set Vendor Workarounds", default=True)
-    import_should_import_native: BoolProperty(name="Import Native Representations", default=False)
-    import_export_should_roundtrip_native: BoolProperty(name="Roundtrip Native Representations", default=True)
-    import_should_use_cpu_multiprocessing: BoolProperty(name="Import with CPU Multiprocessing", default=True)
-    import_should_import_with_profiling: BoolProperty(name="Import with Profiling", default=True)
-    import_should_import_aggregates: BoolProperty(name="Import Aggregates", default=True)
-    import_should_merge_by_class: BoolProperty(name="Import and Merge by Class", default=False)
-    import_should_merge_by_material: BoolProperty(name="Import and Merge by Material", default=False)
-    import_should_merge_materials_by_colour: BoolProperty(name="Import and Merge Materials by Colour", default=False)
-    import_should_clean_mesh: BoolProperty(name="Import and Clean Mesh", default=True)
-    import_deflection_tolerance: FloatProperty(name="Import Deflection Tolerance", default=0.001)
-    import_angular_tolerance: FloatProperty(name="Import Angular Tolerance", default=0.5)
-    import_should_allow_non_element_aggregates: BoolProperty(name="Import Non-Element Aggregates", default=False)
-    import_should_offset_model: BoolProperty(name="Import and Offset Model", default=False)
-    import_model_offset_coordinates: StringProperty(name="Model Offset Coordinates", default="0,0,0")
-
-    has_georeferencing: BoolProperty(name="Has Georeferencing", default=False)
     has_library: BoolProperty(name="Has Project Library", default=False)
     contexts: EnumProperty(items=getContexts, name="Contexts")
     available_contexts: EnumProperty(items=[("Model", "Model", ""), ("Plan", "Plan", "")], name="Available Contexts")
@@ -744,11 +702,6 @@ class BIMProperties(PropertyGroup):
     section_plane_colour: FloatVectorProperty(
         name="Temporary Section Cutaway Colour", subtype="COLOR", default=(1, 0, 0), min=0.0, max=1.0
     )
-    ifc_import_filter: EnumProperty(
-        items=[("NONE", "None", ""), ("WHITELIST", "Whitelist", ""), ("BLACKLIST", "Blacklist", ""),],
-        name="Import Filter",
-    )
-    ifc_selector: StringProperty(default="", name="IFC Selector")
     blender_clash_set_a: CollectionProperty(name="Blender Clash Set A", type=StrProperty)
     blender_clash_set_b: CollectionProperty(name="Blender Clash Set B", type=StrProperty)
     clash_sets: CollectionProperty(name="Clash Sets", type=ClashSet)
@@ -874,7 +827,6 @@ class BIMMaterialProperties(PropertyGroup):
     pset_name: EnumProperty(items=getMaterialPsetNames, name="Pset Name")
     psets: CollectionProperty(name="Psets", type=PsetQto)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
-    applicable_attributes: EnumProperty(items=getApplicableMaterialAttributes, name="Attribute Names")
     # In Blender, a material object can map to an IFC material, IFC surface style, or both
     ifc_style_id: IntProperty(name="IFC Style ID")
 

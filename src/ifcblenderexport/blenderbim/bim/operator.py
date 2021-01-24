@@ -66,6 +66,8 @@ class ExportIFC(bpy.types.Operator):
     bl_label = "Export IFC"
     filename_ext = ".ifc"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    json_version: bpy.props.EnumProperty(items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version")
+    json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
 
     def invoke(self, context, event):
         if not self.filepath:
@@ -87,11 +89,15 @@ class ExportIFC(bpy.types.Operator):
             output_file = bpy.path.ensure_ext(self.filepath, ".ifcjson")
         else:
             output_file = bpy.path.ensure_ext(self.filepath, ".ifc")
-        ifc_export_settings = export_ifc.IfcExportSettings.factory(context, output_file, logger)
-        ifc_exporter = export_ifc.IfcExporter(ifc_export_settings)
-        ifc_export_settings.logger.info("Starting export")
+
+        settings = export_ifc.IfcExportSettings.factory(context, output_file, logger)
+        settings.json_version = self.json_version
+        settings.json_compact = self.json_compact
+
+        ifc_exporter = export_ifc.IfcExporter(settings)
+        settings.logger.info("Starting export")
         ifc_exporter.export()
-        ifc_export_settings.logger.info("Export finished in {:.2f} seconds".format(time.time() - start))
+        settings.logger.info("Export finished in {:.2f} seconds".format(time.time() - start))
         if not bpy.context.scene.DocProperties.ifc_files:
             new = bpy.context.scene.DocProperties.ifc_files.add()
             new.name = output_file
@@ -106,17 +112,59 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
 
+    should_import_type_representations: bpy.props.BoolProperty(name="Import Type Representations", default=False)
+    should_import_curves: bpy.props.BoolProperty(name="Import Curves", default=False)
+    should_import_spaces: bpy.props.BoolProperty(name="Import Spaces", default=False)
+    should_auto_set_workarounds: bpy.props.BoolProperty(name="Automatically Set Vendor Workarounds", default=True)
+    should_use_cpu_multiprocessing: bpy.props.BoolProperty(name="Import with CPU Multiprocessing", default=True)
+    should_merge_by_class: bpy.props.BoolProperty(name="Import and Merge by Class", default=False)
+    should_merge_by_material: bpy.props.BoolProperty(name="Import and Merge by Material", default=False)
+    should_merge_materials_by_colour: bpy.props.BoolProperty(name="Import and Merge Materials by Colour", default=False)
+    should_clean_mesh: bpy.props.BoolProperty(name="Import and Clean Mesh", default=True)
+    deflection_tolerance: bpy.props.FloatProperty(name="Import Deflection Tolerance", default=0.001)
+    angular_tolerance: bpy.props.FloatProperty(name="Import Angular Tolerance", default=0.5)
+    should_allow_non_element_aggregates: bpy.props.BoolProperty(name="Import Non-Element Aggregates", default=False)
+    should_offset_model: bpy.props.BoolProperty(name="Import and Offset Model", default=False)
+    model_offset_coordinates: bpy.props.StringProperty(name="Model Offset Coordinates", default="0,0,0")
+    ifc_import_filter: bpy.props.EnumProperty(
+        items=[("NONE", "None", ""), ("WHITELIST", "Whitelist", ""), ("BLACKLIST", "Blacklist", ""),],
+        name="Import Filter",
+    )
+    ifc_selector: bpy.props.StringProperty(default="", name="IFC Selector")
+
     def execute(self, context):
         start = time.time()
         logger = logging.getLogger("ImportIFC")
         logging.basicConfig(
             filename=bpy.context.scene.BIMProperties.data_dir + "process.log", filemode="a", level=logging.DEBUG
         )
-        ifc_import_settings = import_ifc.IfcImportSettings.factory(context, self.filepath, logger)
-        ifc_import_settings.logger.info("Starting import")
-        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+
+        settings = import_ifc.IfcImportSettings.factory(context, self.filepath, logger)
+        settings.should_import_type_representations = self.should_import_type_representations
+        settings.should_import_curves = self.should_import_curves
+        settings.should_import_spaces = self.should_import_spaces
+        settings.should_auto_set_workarounds = self.should_auto_set_workarounds
+        settings.should_use_cpu_multiprocessing = self.should_use_cpu_multiprocessing
+        settings.should_merge_by_class = self.should_merge_by_class
+        settings.should_merge_by_material = self.should_merge_by_material
+        settings.should_merge_materials_by_colour = self.should_merge_materials_by_colour
+        settings.should_clean_mesh = self.should_clean_mesh
+        settings.deflection_tolerance = self.deflection_tolerance
+        settings.angular_tolerance = self.angular_tolerance
+        settings.should_allow_non_element_aggregates = self.should_allow_non_element_aggregates
+        settings.should_offset_model = self.should_offset_model
+        settings.model_offset_coordinates = (
+            [float(o) for o in self.model_offset_coordinates.split(",")]
+            if self.model_offset_coordinates
+            else (0, 0, 0)
+        )
+        settings.ifc_import_filter = self.ifc_import_filter
+        settings.ifc_selector = self.ifc_selector
+
+        settings.logger.info("Starting import")
+        ifc_importer = import_ifc.IfcImporter(settings)
         ifc_importer.execute()
-        ifc_import_settings.logger.info("Import finished in {:.2f} seconds".format(time.time() - start))
+        settings.logger.info("Import finished in {:.2f} seconds".format(time.time() - start))
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
 
@@ -1249,6 +1297,7 @@ class CopyAttributeToSelection(bpy.types.Operator):
     attribute_value: bpy.props.StringProperty()
 
     def execute(self, context):
+        # TODO: reimplement
         self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(bpy.context.scene.BIMProperties.export_schema)
         self.applicable_attributes_cache = {}
         for obj in bpy.context.selected_objects:

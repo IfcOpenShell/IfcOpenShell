@@ -188,7 +188,6 @@ if bpy is not None:
         ui.BIM_PT_library,
         ui.BIM_PT_presentation_layers,
         ui.BIM_PT_patch,
-        ui.BIM_PT_mvd,
         ui.BIM_PT_presentation_layer_data,
         ui.BIM_PT_object_structural,
         ui.BIM_PT_camera,

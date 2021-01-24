@@ -93,6 +93,4 @@ class IfcExportSettings:
         settings = IfcExportSettings()
         settings.output_file = output_file
         settings.logger = logger
-        settings.json_version = scene_bim.export_json_version
-        settings.json_compact = scene_bim.export_json_compact
         return settings

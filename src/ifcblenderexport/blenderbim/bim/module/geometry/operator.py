@@ -76,8 +76,11 @@ class AddRepresentation(bpy.types.Operator):
                 self.file,
                 {
                     "context": self.file.by_id(context_id),
+                    "blender_object": obj,
                     "geometry": obj.data,
                     "total_items": max(1, len(obj.material_slots)),
+                    "should_force_faceted_brep": context.scene.BIMGeometryProperties.should_force_faceted_brep,
+                    "should_force_triangulation": context.scene.BIMGeometryProperties.should_force_triangulation
                 },
             ).execute()
             if not result:
@@ -92,6 +95,7 @@ class AddRepresentation(bpy.types.Operator):
                         for s in obj.material_slots
                         if s.material
                     ],
+                    "should_use_presentation_style_assignment": context.scene.BIMGeometryProperties.should_use_presentation_style_assignment
                 },
             ).execute()
             assign_representation.Usecase(
@@ -183,8 +187,11 @@ class UpdateMeshRepresentation(bpy.types.Operator):
             self.file,
             {
                 "context": old_representation.ContextOfItems,
+                "blender_object": obj,
                 "geometry": obj.data,
                 "total_items": max(1, len(obj.material_slots)),
+                "should_force_faceted_brep": context.scene.BIMGeometryProperties.should_force_faceted_brep,
+                "should_force_triangulation": context.scene.BIMGeometryProperties.should_force_triangulation
             },
         ).execute()
         if not new_representation:
@@ -200,6 +207,7 @@ class UpdateMeshRepresentation(bpy.types.Operator):
                     for s in obj.material_slots
                     if s.material
                 ],
+                "should_use_presentation_style_assignment": context.scene.BIMGeometryProperties.should_use_presentation_style_assignment
             },
         ).execute()
 

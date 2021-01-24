@@ -33,4 +33,4 @@ def register():
 
 def unregister():
     del bpy.types.Scene.BIMDocumentProperties
-    del bpy.types.Scene.BIMObjectDocumentProperties
+    del bpy.types.Object.BIMObjectDocumentProperties
