@@ -28,7 +28,6 @@ cwd = os.path.dirname(os.path.realpath(__file__))
 diagram_scales_enum = []
 profiledef_enum = []
 availablematerialpsets_enum = []
-ifcpatchrecipes_enum = []
 titleblocks_enum = []
 materialpsetnames_enum = []
 attributes_enum = []
@@ -210,18 +209,6 @@ def refreshActiveDrawingIndex(self, context):
 def getAttributeEnumValues(self, context):
     return [(e, e, "") for e in json.loads(self.enum_items)]
 
-
-def getIfcPatchRecipes(self, context):
-    global ifcpatchrecipes_enum
-    if len(ifcpatchrecipes_enum) < 1:
-        ifcpatchrecipes_enum.clear()
-        ifcpatch_path = Path(importlib.util.find_spec("ifcpatch").submodule_search_locations[0])
-        for filename in ifcpatch_path.joinpath("recipes").glob("*.py"):
-            f = str(filename.stem)
-            if f == "__init__":
-                continue
-            ifcpatchrecipes_enum.append((f, f, ""))
-    return ifcpatchrecipes_enum
 
 def getTitleblocks(self, context):
     global titleblocks_enum
@@ -503,10 +490,6 @@ class BIMProperties(PropertyGroup):
     smart_clash_groups: CollectionProperty(name="Smart Clash Groups", type=SmartClashGroup)
     active_smart_group_index: IntProperty(name="Active Smart Group Index")
     smart_clash_grouping_max_distance: IntProperty(name="Smart Clash Grouping Max Distance", default=3, soft_min=1, soft_max=10)
-    ifc_patch_recipes: EnumProperty(items=getIfcPatchRecipes, name="Recipes")
-    ifc_patch_input: StringProperty(default="", name="IFC Patch Input IFC")
-    ifc_patch_output: StringProperty(default="", name="IFC Patch Output IFC")
-    ifc_patch_args: StringProperty(default="", name="Arguments")
     area_unit: EnumProperty(
         default="SQUARE_METRE",
         items=[
