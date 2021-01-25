@@ -270,7 +270,18 @@ def getSubcontexts(self, context):
     global subcontexts_enum
     subcontexts_enum.clear()
     # TODO: allow override of generated subcontexts?
-    subcontexts = export_ifc.IfcExportSettings().subcontexts
+    subcontexts = [
+        "Annotation",
+        "Axis",
+        "Box",
+        "FootPrint",
+        "Reference",
+        "Body",
+        "Clearance",
+        "CoG",
+        "Profile",
+        "SurveyPoints",
+    ]
     for subcontext in subcontexts:
         subcontexts_enum.append((subcontext, subcontext, ""))
     return subcontexts_enum
@@ -279,7 +290,18 @@ def getSubcontexts(self, context):
 def getTargetViews(self, context):
     global target_views_enum
     target_views_enum.clear()
-    for target_view in export_ifc.IfcExportSettings().target_views:
+    target_views = [
+        "GRAPH_VIEW",
+        "SKETCH_VIEW",
+        "MODEL_VIEW",
+        "PLAN_VIEW",
+        "REFLECTED_PLAN_VIEW",
+        "SECTION_VIEW",
+        "ELEVATION_VIEW",
+        "USERDEFINED",
+        "NOTDEFINED",
+    ]
+    for target_view in target_views:
         target_views_enum.append((target_view, target_view, ""))
     return target_views_enum
 

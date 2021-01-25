@@ -565,20 +565,6 @@ class BIM_PT_ifcclash(Panel):
             row.operator("bim.select_ifc_clash_results")
 
 
-class BIM_PT_modeling_utilities(Panel):
-    bl_idname = "BIM_PT_modeling_utilities"
-    bl_label = "Architectural"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "BlenderBIM"
-
-    def draw(self, context):
-        layout = self.layout
-
-        row = layout.row(align=True)
-        row.operator("bim.add_opening")
-
-
 class BIM_PT_annotation_utilities(Panel):
     bl_idname = "BIM_PT_annotation_utilities"
     bl_label = "Annotation"

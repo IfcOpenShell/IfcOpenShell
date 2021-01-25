@@ -181,7 +181,6 @@ if bpy is not None:
         ui.BIM_PT_object_structural,
         ui.BIM_PT_camera,
         ui.BIM_PT_text,
-        ui.BIM_PT_modeling_utilities,
         ui.BIM_PT_annotation_utilities,
         ui.BIM_PT_clash_manager,
         ui.BIM_PT_misc_utilities,

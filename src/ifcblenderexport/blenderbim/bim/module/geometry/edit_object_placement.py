@@ -40,6 +40,7 @@ class Usecase:
                     inverse, self.settings["product"].ObjectPlacement, placement
                 )
             old = self.settings["product"].ObjectPlacement
+            old.PlacementRelTo = None
             self.settings["product"].ObjectPlacement = None
             if not self.file.get_inverse(old):
                 ifcopenshell.util.element.remove_deep(self.file, old)
