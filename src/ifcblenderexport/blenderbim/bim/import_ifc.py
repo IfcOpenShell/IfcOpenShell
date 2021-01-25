@@ -372,8 +372,6 @@ class IfcImporter:
         ):
             self.merge_materials_by_colour()
             self.profile_code("Merging by colour")
-        self.create_presentation_layers()
-        self.profile_code("Create presentation layers")
         self.add_project_to_scene()
         self.profile_code("Add project to scene")
         if self.ifc_import_settings.should_clean_mesh and len(self.file.by_type("IfcElement")) < 1000:
@@ -1050,31 +1048,6 @@ class IfcImporter:
         project_collection = bpy.context.view_layer.layer_collection.children[self.project["blender"].name]
         project_collection.children[self.opening_collection.name].hide_viewport = True
         project_collection.children[self.type_collection.name].hide_viewport = True
-
-    def create_presentation_layers(self):
-        for assignment in self.file.by_type("IfcPresentationLayerAssignment"):
-            layer = bpy.context.scene.BIMProperties.presentation_layers.add()
-            layer_index = len(bpy.context.scene.BIMProperties.presentation_layers) - 1
-            layer.name = assignment.Name
-            layer.description = assignment.Description or ""
-            layer.identifier = assignment.Identifier or ""
-            if assignment.is_a() == "IfcPresentationLayerWithStyle":
-                layer.layer_on = assignment.LayerOn if assignment.LayerOn is not None else True
-                layer.layer_frozen = assignment.LayerFrozen if assignment.LayerFrozen is not None else False
-                layer.layer_blocked = assignment.LayerBlocked if assignment.LayerBlocked is not None else False
-
-            for item in assignment.AssignedItems:
-                # TODO: This is a simplified implementation of assigning presentation layers that ignores assigned
-                # representation items, does not consider mapped representations, and assumes a Body context. See #1109.
-                if not hasattr(item, "OfProductRepresentation") or item.RepresentationIdentifier != "Body":
-                    continue
-                for product_representation in item.OfProductRepresentation:
-                    for product in product_representation.ShapeOfProduct:
-                        try:
-                            obj = self.added_data[product.GlobalId]
-                            obj.data.BIMMeshProperties.presentation_layer_index = layer_index
-                        except:
-                            pass  # Occurs for example in opening elements or exclusions
 
     def clean_mesh(self):
         obj = None
