@@ -17,6 +17,7 @@ class AddOpening(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         opening = bpy.data.objects.get(self.opening)
+        opening.display_type = "WIRE"
         if not opening.BIMObjectProperties.ifc_definition_id:
             body_context_id = None
             if not ContextData.is_loaded:

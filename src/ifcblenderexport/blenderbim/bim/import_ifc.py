@@ -1570,22 +1570,22 @@ class IfcImportSettings:
         self.logger = None
         self.input_file = None
         self.diff_file = None
-        self.should_import_type_representations: False
-        self.should_import_curves: False
-        self.should_import_spaces: False
-        self.should_auto_set_workarounds: True
-        self.should_use_cpu_multiprocessing: True
-        self.should_merge_by_class: False
-        self.should_merge_by_material: False
-        self.should_merge_materials_by_colour: False
-        self.should_clean_mesh: True
-        self.deflection_tolerance: 0.001
-        self.angular_tolerance: 0.5
-        self.should_allow_non_element_aggregates: False
-        self.should_offset_model: False
-        self.model_offset_coordinates: (0, 0, 0)
-        self.ifc_import_filter: "NONE"
-        self.ifc_selector: ""
+        self.should_import_type_representations = False
+        self.should_import_curves = False
+        self.should_import_spaces = False
+        self.should_auto_set_workarounds = True
+        self.should_use_cpu_multiprocessing = True
+        self.should_merge_by_class = False
+        self.should_merge_by_material = False
+        self.should_merge_materials_by_colour = False
+        self.should_clean_mesh = True
+        self.deflection_tolerance = 0.001
+        self.angular_tolerance = 0.5
+        self.should_allow_non_element_aggregates = False
+        self.should_offset_model = False
+        self.model_offset_coordinates = (0, 0, 0)
+        self.ifc_import_filter = "NONE"
+        self.ifc_selector = ""
 
 
     @staticmethod
