@@ -725,9 +725,15 @@ class ActivateBcfViewpoint(bpy.types.Operator):
                 obj.hide_set(True)
                 continue
             if "IfcSpace" in obj.name:
-                is_visible = viewpoint.components.view_setup_hints.spaces_visible
+                if viewpoint.components.view_setup_hints:
+                    is_visible = viewpoint.components.view_setup_hints.spaces_visible
+                else:
+                    is_visible = False
             elif "IfcOpeningElement" in obj.name:
-                is_visible = viewpoint.components.view_setup_hints.openings_visible
+                if viewpoint.components.view_setup_hints:
+                    is_visible = viewpoint.components.view_setup_hints.openings_visible
+                else:
+                    is_visible = False
             obj.hide_set(not is_visible)
             if not is_visible:
                 continue

@@ -26,12 +26,8 @@ from bpy.props import (
 cwd = os.path.dirname(os.path.realpath(__file__))
 
 diagram_scales_enum = []
-profiledef_enum = []
-availablematerialpsets_enum = []
 titleblocks_enum = []
 materialpsetnames_enum = []
-attributes_enum = []
-materialattributes_enum = []
 contexts_enum = []
 subcontexts_enum = []
 target_views_enum = []
@@ -255,14 +251,22 @@ def getMaterialPsetNames(self, context):
 
 def getContexts(self, context):
     from blenderbim.bim.module.context.data import Data
+
     if not Data.is_loaded:
         Data.load()
     results = []
     for ifc_id, context in Data.contexts.items():
         results.append((str(ifc_id), context["ContextType"], ""))
         for ifc_id2, subcontext in context["HasSubContexts"].items():
-            results.append((str(ifc_id2), "{}/{}/{}".format(
-                subcontext["ContextType"], subcontext["ContextIdentifier"], subcontext["TargetView"]), ""))
+            results.append(
+                (
+                    str(ifc_id2),
+                    "{}/{}/{}".format(
+                        subcontext["ContextType"], subcontext["ContextIdentifier"], subcontext["TargetView"]
+                    ),
+                    "",
+                )
+            )
     return results
 
 
@@ -372,7 +376,11 @@ class DrawingStyle(PropertyGroup):
     name: StringProperty(name="Name")
     raster_style: StringProperty(name="Raster Style")
     render_type: EnumProperty(
-        items=[("NONE", "None", ""), ("DEFAULT", "Default", ""), ("VIEWPORT", "Viewport", ""),],
+        items=[
+            ("NONE", "None", ""),
+            ("DEFAULT", "Default", ""),
+            ("VIEWPORT", "Viewport", ""),
+        ],
         name="Render Type",
         default="VIEWPORT",
     )
@@ -397,8 +405,9 @@ class DocProperties(PropertyGroup):
     ifc_files: CollectionProperty(name="IFCs", type=StrProperty)
     drawing_styles: CollectionProperty(name="Drawing Styles", type=DrawingStyle)
     should_draw_decorations: BoolProperty(name="Should Draw Decorations", update=toggleDecorations)
-    decorations_colour: FloatVectorProperty(name="Decorations Colour", subtype="COLOR", default=(1, 0, 0, 1),
-                                            min=0.0, max=1.0, size=4)
+    decorations_colour: FloatVectorProperty(
+        name="Decorations Colour", subtype="COLOR", default=(1, 0, 0, 1), min=0.0, max=1.0, size=4
+    )
 
 
 class BIMCameraProperties(PropertyGroup):
@@ -448,36 +457,16 @@ class BIMTextProperties(PropertyGroup):
         name="Font Size",
     )
     symbol: EnumProperty(
-        items=[("None", "None", ""), ("rectangle-tag", "Rectangle Tag", ""), ("door-tag", "Door Tag", ""),],
+        items=[
+            ("None", "None", ""),
+            ("rectangle-tag", "Rectangle Tag", ""),
+            ("door-tag", "Door Tag", ""),
+        ],
         update=refreshFontSize,
         name="Symbol",
     )
     related_element: PointerProperty(name="Related Element", type=bpy.types.Object)
     variables: CollectionProperty(name="Variables", type=Variable)
-
-
-class ClashSource(PropertyGroup):
-    name: StringProperty(name="File")
-    selector: StringProperty(name="Selector")
-    mode: EnumProperty(
-        items=[
-            ("i", "Include", "Only the selected objects are included for clashing"),
-            ("e", "Exclude", "All objects except the selected objects are included for clashing"),
-        ],
-        name="Mode",
-    )
-
-
-class ClashSet(PropertyGroup):
-    name: StringProperty(name="Name")
-    tolerance: FloatProperty(name="Tolerance")
-    a: CollectionProperty(name="Group A", type=ClashSource)
-    b: CollectionProperty(name="Group B", type=ClashSource)
-
-
-class SmartClashGroup(PropertyGroup):
-    number: StringProperty(name="Number")
-    global_ids: CollectionProperty(name="GlobalIDs", type=StrProperty)
 
 
 class BIMProperties(PropertyGroup):
@@ -494,16 +483,6 @@ class BIMProperties(PropertyGroup):
     section_plane_colour: FloatVectorProperty(
         name="Temporary Section Cutaway Colour", subtype="COLOR", default=(1, 0, 0), min=0.0, max=1.0
     )
-    blender_clash_set_a: CollectionProperty(name="Blender Clash Set A", type=StrProperty)
-    blender_clash_set_b: CollectionProperty(name="Blender Clash Set B", type=StrProperty)
-    clash_sets: CollectionProperty(name="Clash Sets", type=ClashSet)
-    should_create_clash_snapshots: BoolProperty(name="Create Snapshots", default=True)
-    clash_results_path: StringProperty(name="Clash Results Path")
-    smart_grouped_clashes_path: StringProperty(name="Smart Grouped Clashes Path")
-    active_clash_set_index: IntProperty(name="Active Clash Set Index")
-    smart_clash_groups: CollectionProperty(name="Smart Clash Groups", type=SmartClashGroup)
-    active_smart_group_index: IntProperty(name="Active Smart Group Index")
-    smart_clash_grouping_max_distance: IntProperty(name="Smart Clash Grouping Max Distance", default=3, soft_min=1, soft_max=10)
     area_unit: EnumProperty(
         default="SQUARE_METRE",
         items=[
