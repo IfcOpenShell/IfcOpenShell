@@ -16,13 +16,17 @@ class LoadInformation(bpy.types.Operator):
     bl_label = "Load Information"
 
     def execute(self, context):
+        self.file = IfcStore.get_file()
         props = context.scene.BIMDocumentProperties
         while len(props.documents) > 0:
             props.documents.remove(0)
         for information_id, information in Data.information.items():
             new = props.documents.add()
             new.name = information["Name"] or "Unnamed"
-            new.identification = information["Identification"] or "*"
+            if self.file.schema == "IFC2X3":
+                new.identification = information["DocumentId"] or "*"
+            else:
+                new.identification = information["Identification"] or "*"
             new.ifc_definition_id = information_id
         props.is_editing = "information"
         bpy.ops.bim.disable_editing_document()
@@ -34,13 +38,17 @@ class LoadDocumentReferences(bpy.types.Operator):
     bl_label = "Load Document References"
 
     def execute(self, context):
+        self.file = IfcStore.get_file()
         props = context.scene.BIMDocumentProperties
         while len(props.documents) > 0:
             props.documents.remove(0)
         for reference_id, reference in Data.references.items():
             new = props.documents.add()
             new.name = reference["Name"] or "Unnamed"
-            new.identification = reference["Identification"] or "*"
+            if self.file.schema == "IFC2X3":
+                new.identification = reference["ItemReference"] or "*"
+            else:
+                new.identification = reference["Identification"] or "*"
             new.ifc_definition_id = reference_id
         props.is_editing = "reference"
         bpy.ops.bim.disable_editing_document()

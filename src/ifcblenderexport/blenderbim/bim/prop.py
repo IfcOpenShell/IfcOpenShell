@@ -475,14 +475,6 @@ class ClashSet(PropertyGroup):
     b: CollectionProperty(name="Group B", type=ClashSource)
 
 
-class PresentationLayer(PropertyGroup):
-    name: StringProperty(name="Name")
-    description: StringProperty(name="Description")
-    identifier: StringProperty(name="Identifier")
-    layer_on: BoolProperty(name="LayerOn", default=True)
-    layer_frozen: BoolProperty(name="LayerFrozen", default=False)
-    layer_blocked: BoolProperty(name="LayerBlocked", default=False)
-
 class SmartClashGroup(PropertyGroup):
     number: StringProperty(name="Number")
     global_ids: CollectionProperty(name="GlobalIDs", type=StrProperty)
@@ -558,8 +550,6 @@ class BIMProperties(PropertyGroup):
     override_colour: FloatVectorProperty(
         name="Override Colour", subtype="COLOR", default=(1, 0, 0, 1), min=0.0, max=1.0, size=4
     )
-    active_presentation_layer_index: IntProperty(name="Active Presentation Layer Index")
-    presentation_layers: CollectionProperty(name="Presentation Layers", type=PresentationLayer)
 
 
 class BIMLibrary(PropertyGroup):
@@ -652,6 +642,4 @@ class BIMMeshProperties(PropertyGroup):
     is_parametric: BoolProperty(name="Is Parametric", default=False)
     ifc_definition: StringProperty(name="IFC Definition")
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
-    active_representation_item_index: IntProperty(name="Active Representation Item Index")
-    presentation_layer_index: IntProperty(name="Presentation Layer Index", default=-1)
     ifc_item_ids: CollectionProperty(name="IFC Item IDs", type=ItemSlotMap)

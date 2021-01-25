@@ -25,19 +25,19 @@ class BIM_PT_documents(Panel):
             row = self.layout.row(align=True)
             row.label(text="{} Documents Found".format(len(Data.information)), icon="FILE")
             if self.props.is_editing == "information":
-                row.operator("bim.disable_document_editing_ui", text="", icon="CHECKMARK")
                 row.operator("bim.add_information", text="", icon="ADD")
+                row.operator("bim.disable_document_editing_ui", text="", icon="X")
             else:
-                row.operator("bim.load_information", text="", icon="GREASEPENCIL")
+                row.operator("bim.load_information", text="", icon="IMPORT")
 
         if not self.props.is_editing or self.props.is_editing == "reference":
             row = self.layout.row(align=True)
             row.label(text="{} References Found".format(len(Data.references)), icon="FILE_HIDDEN")
             if self.props.is_editing == "reference":
-                row.operator("bim.disable_document_editing_ui", text="", icon="CHECKMARK")
                 row.operator("bim.add_document_reference", text="", icon="ADD")
+                row.operator("bim.disable_document_editing_ui", text="", icon="X")
             else:
-                row.operator("bim.load_document_references", text="", icon="GREASEPENCIL")
+                row.operator("bim.load_document_references", text="", icon="IMPORT")
 
         if self.props.is_editing:
             self.layout.template_list(
@@ -51,7 +51,6 @@ class BIM_PT_documents(Panel):
 
         if self.props.active_document_id:
             self.draw_editable_ui(context)
-        return
 
     def draw_editable_ui(self, context):
         for attribute in self.props.document_attributes:
