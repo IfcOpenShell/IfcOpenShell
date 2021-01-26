@@ -38,6 +38,7 @@ vector_styles_enum = []
 @persistent
 def clearIfcStore(scene):
     IfcStore.file = None
+    IfcStore.schema = None
 
 
 @persistent
