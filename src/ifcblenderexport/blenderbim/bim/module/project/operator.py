@@ -2,9 +2,6 @@ import bpy
 import logging
 import ifcopenshell
 import blenderbim.bim.module.project.create_file as create_file
-import blenderbim.bim.module.context.add_context as add_context
-import blenderbim.bim.module.root.create_product as create_product
-import blenderbim.bim.module.aggregate.assign_object as assign_object
 import bpy
 from blenderbim.bim.ifc import IfcStore
 
@@ -22,6 +19,9 @@ class CreateProject(bpy.types.Operator):
 
         IfcStore.file = create_file.Usecase({"version": bpy.context.scene.BIMProperties.export_schema}).execute()
         self.file = IfcStore.get_file()
+
+        bpy.ops.bim.add_person()
+        bpy.ops.bim.add_organisation()
 
         project = bpy.data.objects.new("My Project", None)
         site = bpy.data.objects.new("My Site", None)
@@ -49,15 +49,6 @@ class CreateProject(bpy.types.Operator):
         bpy.ops.bim.assign_object(related_object=building_storey.name, relating_object=building.name)
         # Data.load()
         return {"FINISHED"}
-
-    def assign_object(self, product, relating_object):
-        assign_object.Usecase(
-            self.file,
-            {
-                "product": product,
-                "relating_object": relating_object,
-            },
-        ).execute()
 
 
 class ValidateIfcFile(bpy.types.Operator):

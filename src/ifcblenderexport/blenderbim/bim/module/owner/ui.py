@@ -110,6 +110,7 @@ class BIM_PT_people(Panel):
 
         self.file = IfcStore.get_file()
         self.layout.use_property_split = True
+        self.layout.use_property_decorate = False
         props = context.scene.BIMOwnerProperties
 
         row = self.layout.row()
@@ -169,6 +170,7 @@ class BIM_PT_organisations(Panel):
 
         self.file = IfcStore.get_file()
         self.layout.use_property_split = True
+        self.layout.use_property_decorate = False
         props = context.scene.BIMOwnerProperties
 
         row = self.layout.row()
@@ -216,6 +218,7 @@ class BIM_PT_owner(Panel):
             Data.load()
 
         self.layout.use_property_split = True
+        self.layout.use_property_decorate = False
         props = context.scene.BIMOwnerProperties
 
         if not Data.people:
