@@ -612,7 +612,7 @@ class IfcImporter:
             shape = ifcopenshell.geom.create_shape(self.settings_2d, axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(f"IfcGridAxis/{axis.AxisTag}", mesh)
-            obj.BIMObjectProperties.ifc_definition_id = element.id()
+            obj.BIMObjectProperties.ifc_definition_id = axis.id()
             obj.matrix_world = matrix_world
             grid.objects.link(obj)
 
@@ -1376,8 +1376,10 @@ class IfcImporter:
                 representation_id = int(re.sub(r"\D", "", representation_id.split("-")[0]))
             else:
                 representation_id = int(re.sub(r"\D", "", representation_id))
+            representation = self.file.by_id(representation_id)
+            context_id = representation.ContextOfItems.id() if hasattr(representation, "ContextOfItems") else 0
             mesh = bpy.data.meshes.new(
-                "{}/{}".format(self.file.by_id(representation_id).ContextOfItems.id(), geometry.id)
+                "{}/{}".format(context_id, geometry.id)
             )
 
             props = bpy.context.scene.BIMGeoreferenceProperties
