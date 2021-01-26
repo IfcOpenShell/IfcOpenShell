@@ -474,7 +474,6 @@ class BIMProperties(PropertyGroup):
     data_dir: StringProperty(default=os.path.join(cwd, "data") + os.path.sep, name="Data Directory")
     ifc_file: StringProperty(name="IFC File")
     export_schema: EnumProperty(items=[("IFC4", "IFC4", ""), ("IFC2X3", "IFC2X3", "")], name="IFC Schema")
-    has_library: BoolProperty(name="Has Project Library", default=False)
     contexts: EnumProperty(items=getContexts, name="Contexts")
     available_contexts: EnumProperty(items=[("Model", "Model", ""), ("Plan", "Plan", "")], name="Available Contexts")
     available_subcontexts: EnumProperty(items=getSubcontexts, name="Available Subcontexts")
@@ -529,15 +528,6 @@ class BIMProperties(PropertyGroup):
     override_colour: FloatVectorProperty(
         name="Override Colour", subtype="COLOR", default=(1, 0, 0, 1), min=0.0, max=1.0, size=4
     )
-
-
-class BIMLibrary(PropertyGroup):
-    name: StringProperty(name="Name")
-    version: StringProperty(name="Version")
-    publisher: StringProperty(name="Publisher")
-    version_date: StringProperty(name="Version Date")
-    location: StringProperty(name="Location")
-    description: StringProperty(name="Description")
 
 
 class IfcParameter(PropertyGroup):
