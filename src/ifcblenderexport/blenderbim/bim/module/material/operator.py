@@ -25,6 +25,7 @@ class AddMaterial(bpy.types.Operator):
         self.file = IfcStore.get_file()
         result = add_material.Usecase(self.file, {"Name": obj.name}).execute()
         obj.BIMObjectProperties.ifc_definition_id = result.id()
+        Data.load()
         return {"FINISHED"}
 
 
@@ -40,6 +41,7 @@ class RemoveMaterial(bpy.types.Operator):
             self.file, {"material": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)}
         ).execute()
         obj.BIMObjectProperties.ifc_definition_id = 0
+        Data.load()
         return {"FINISHED"}
 
 

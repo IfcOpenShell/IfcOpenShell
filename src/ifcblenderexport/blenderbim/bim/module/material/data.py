@@ -31,25 +31,33 @@ class Data:
 
     @classmethod
     def load_materials(cls):
+        cls.materials = {}
         cls.load_element("IfcMaterial", cls.materials)
 
     @classmethod
     def load_constituents(cls):
+        cls.constituent_sets = {}
+        cls.constituents = {}
         cls.load_element("IfcMaterialConstituent", cls.constituents)
         cls.load_element("IfcMaterialConstituentSet", cls.constituent_sets)
 
     @classmethod
     def load_layers(cls):
+        cls.layer_sets = {}
+        cls.layers = {}
         cls.load_element("IfcMaterialLayer", cls.layers)
         cls.load_element("IfcMaterialLayerSet", cls.layer_sets)
 
     @classmethod
     def load_profiles(cls):
+        cls.profile_sets = {}
+        cls.profiles = {}
         cls.load_element("IfcMaterialProfile", cls.profiles)
         cls.load_element("IfcMaterialProfileSet", cls.profile_sets)
 
     @classmethod
     def load_lists(cls):
+        cls.lists = {}
         cls.load_element("IfcMaterialList", cls.lists)
 
     @classmethod
