@@ -27,7 +27,12 @@ class BIM_PT_object_material(Panel):
 
     @classmethod
     def poll(cls, context):
-        return bool(context.active_object.BIMObjectProperties.ifc_definition_id)
+        props = context.active_object.BIMObjectProperties
+        if not props.ifc_definition_id:
+            return False
+        if not hasattr(IfcStore.get_file().by_id(props.ifc_definition_id), "HasAssociations"):
+            return False
+        return True
 
     def draw(self, context):
         self.file = IfcStore.get_file()
