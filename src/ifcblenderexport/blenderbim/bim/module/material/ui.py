@@ -39,6 +39,11 @@ class BIM_PT_object_material(Panel):
             Data.load(self.oprops.ifc_definition_id)
         self.product_data = Data.products[self.oprops.ifc_definition_id]
 
+        if not Data.materials:
+            row = self.layout.row()
+            row.label(text="No Materials Available")
+            return
+
         if self.product_data:
             if self.product_data["type"] == "IfcMaterialConstituentSet":
                 self.material_set_data = Data.constituent_sets[self.product_data["id"]]
