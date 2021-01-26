@@ -3,7 +3,7 @@ from bpy.types import Panel
 
 
 class BIM_PT_qa(Panel):
-    bl_label = "BIMTester Quality Auditing"
+    bl_label = "BIMTester"
     bl_idname = "BIM_PT_qa"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

@@ -33,23 +33,6 @@ endif
 	cd dist/working && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcblenderexport/occ_utils.py
 	cd dist/working && mv occ_utils.py ../blenderbim/libs/site/packages/ifcopenshell/geom/occ_utils.py
 	rm -rf dist/working
-	# IfcOpenBot sometimes lags behind, so we hotfix the Python utilities
-	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f attribute_4_to_2x3.json
-	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f class_4_to_2x3.json
-	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f element.py
-	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f geolocation.py
-	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f selector.py
-	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f unit.py
-	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f pset.py
-	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f schema.py
-	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/attribute_4_to_2x3.json
-	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/class_4_to_2x3.json
-	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/element.py
-	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/geolocation.py
-	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/selector.py
-	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/unit.py
-	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/pset.py
-	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/schema.py
 
 	# Provides Python OCC functionality for cutting IFC geometry for construction documentation
 	mkdir dist/working
@@ -95,6 +78,28 @@ ifeq ($(PLATFORM), macos)
 	cd dist/working && cp -r *.dylib ../blenderbim/libs/
 	rm -rf dist/working
 endif
+
+	# Provides dependencies that are part of IfcOpenShell
+	mkdir dist/working
+	cd dist/working && wget https://github.com/IfcOpenShell/IfcOpenShell/archive/v0.6.0.zip
+	cd dist/working && unzip v0.6.0.zip
+	# IfcOpenBot sometimes lags behind, so we hotfix the Python utilities
+	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcopenshell-python/ifcopenshell/util/* dist/blenderbim/libs/site/packages/ifcopenshell/util/
+	# Provides bcf functionality
+	cp -r dist/working/IfcOpenShell-0.6.0/src/bcf/bcf dist/blenderbim/libs/site/packages/
+	# Provides IFCClash functionality
+	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcclash/* dist/blenderbim/libs/site/packages/
+	# Provides BIMTester functionality
+	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcbimtester/bimtester dist/blenderbim/libs/site/packages/
+	# Provides IFCCOBie functionality
+	cp -r dist/working/IfcOpenShell-0.6.0/src/ifccobie/* dist/blenderbim/libs/site/packages/
+	# Provides IFCDiff functionality
+	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcdiff/* dist/blenderbim/libs/site/packages/
+	# Provides IFCCSV functionality
+	cp -r dist/working/IfcOpenShell-0.6.0/src/ifccsv/* dist/blenderbim/libs/site/packages/
+	# Provides IFCPatch functionality
+	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcpatch dist/blenderbim/libs/site/packages/
+	rm -rf dist/working
 
 	# Provides Mustache templating in construction documentation
 	mkdir dist/working
@@ -145,15 +150,18 @@ endif
 	cp -r dist/working/xmlschema-1.1.1/xmlschema dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
-	# Provides bcf functionality
-	mkdir dist/blenderbim/libs/site/packages/bcf
-	mkdir dist/blenderbim/libs/site/packages/bcf/xsd
-	cd dist/blenderbim/libs/site/packages/bcf && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/bcf/bcf/bcfxml.py
-	cd dist/blenderbim/libs/site/packages/bcf && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/bcf/bcf/data.py
-	cd dist/blenderbim/libs/site/packages/bcf/xsd && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/bcf/bcf/xsd/markup.xsd
-	cd dist/blenderbim/libs/site/packages/bcf/xsd && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/bcf/bcf/xsd/project.xsd
-	cd dist/blenderbim/libs/site/packages/bcf/xsd && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/bcf/bcf/xsd/version.xsd
-	cd dist/blenderbim/libs/site/packages/bcf/xsd && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/bcf/bcf/xsd/visinfo.xsd
+	# Required by bcf
+	mkdir dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/12/f9/f9960222d5274944b01391749e55e4dcdf28d8f0c108b64ac931ceff6fdb/elementpath-1.4.3.tar.gz
+	cd dist/working && tar -xzvf elementpath*
+	cp -r dist/working/elementpath-1.4.3/elementpath dist/blenderbim/libs/site/packages/
+	rm -rf dist/working
+
+	# Required by bcf
+	mkdir dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/21/9f/b251f7f8a76dec1d6651be194dfba8fb8d7781d10ab3987190de8391d08e/six-1.14.0.tar.gz
+	cd dist/working && tar -xzvf six*
+	cp -r dist/working/six-1.14.0/six.py dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Required by IFCCSV and ifcopenshell.util.selector
@@ -181,10 +189,6 @@ ifeq ($(PLATFORM), win)
 	rm -rf dist/working
 endif
 
-	# Provides IFCClash functionality
-	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcclash/collision.py
-	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcclash/ifcclash.py
-
 	# Required by BIMTester
 	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/c8/4b/d0a8c23b6c8985e5544ea96d27105a273ea22051317f850c2cdbf2029fe4/behave-1.2.6.tar.gz
@@ -205,28 +209,6 @@ endif
 	cd dist/working && tar -xzvf parse_type*
 	cd dist/working/parse_type-0.5.2/ && cp -r parse_type ../../blenderbim/libs/site/packages/
 	rm -rf dist/working
-
-	# Provides BIMTester functionality
-	mkdir dist/blenderbim/libs/site/packages/bimtester/
-	cd dist/blenderbim/libs/site/packages/bimtester && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/__init__.py
-	cd dist/blenderbim/libs/site/packages/bimtester && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/clean.py
-	cd dist/blenderbim/libs/site/packages/bimtester && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/guiwidget.py
-	cd dist/blenderbim/libs/site/packages/bimtester && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/reports.py
-	cd dist/blenderbim/libs/site/packages/bimtester && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/run.py
-	mkdir dist/blenderbim/libs/site/packages/bimtester/features/
-	mkdir dist/blenderbim/libs/site/packages/bimtester/features/steps/
-	cd dist/blenderbim/libs/site/packages/bimtester/features/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/environment.py
-	cd dist/blenderbim/libs/site/packages/bimtester/features/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/template.html
-	cd dist/blenderbim/libs/site/packages/bimtester/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/steps/classification.py
-	cd dist/blenderbim/libs/site/packages/bimtester/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/steps/element_classes.py
-	cd dist/blenderbim/libs/site/packages/bimtester/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/steps/geocoding.py
-	cd dist/blenderbim/libs/site/packages/bimtester/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/steps/geolocation.py
-	cd dist/blenderbim/libs/site/packages/bimtester/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/steps/geometric_detail.py
-	cd dist/blenderbim/libs/site/packages/bimtester/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/steps/ifcdata.py
-	cd dist/blenderbim/libs/site/packages/bimtester/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/steps/model_federation.py
-	cd dist/blenderbim/libs/site/packages/bimtester/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/steps/project_setup.py
-	cd dist/blenderbim/libs/site/packages/bimtester/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/steps/steps.py
-	cd dist/blenderbim/libs/site/packages/bimtester/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester/features/steps/utils.py
 
 	# Required by IFCCOBie for XLSX support
 	mkdir dist/working
@@ -249,24 +231,12 @@ endif
 	cd dist/working/defusedxml-0.6.0/ && cp -r defusedxml ../../blenderbim/libs/site/packages/
 	rm -rf dist/working
 
-	# Provides IFCCOBie functionality
-	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifccobie/cobie.py
-
-	# Provides IFCDiff functionality
-	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcdiff/ifcdiff.py
-
-	# Provides IFCCSV functionality
-	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifccsv/ifccsv.py
-
 	# Provides IFCJSON functionality
 	mkdir dist/working
 	cd dist/working && wget https://github.com/IFCJSON-Team/IFC2JSON_python/archive/master.zip
 	cd dist/working && unzip master.zip
 	cp -r dist/working/IFC2JSON_python-master/file_converters/ifcjson dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
-
-	# Provides IFCPatch functionality
-	cd dist/blenderbim/libs/site/packages/ && svn export https://github.com/IfcOpenShell/IfcOpenShell/trunk/src/ifcpatch
 
 	cd dist/blenderbim && sed -i "s/999999/$(VERSION)/" __init__.py
 	cd dist && zip -r blender28-bim-$(VERSION)-$(PLATFORM).zip ./*

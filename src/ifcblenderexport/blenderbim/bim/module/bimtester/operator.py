@@ -1,6 +1,8 @@
 import bpy
 import ifcopenshell
 import bimtester
+import bimtester.run
+import bimtester.reports
 import os
 import webbrowser
 from pathlib import Path
@@ -20,7 +22,16 @@ class ExecuteBIMTester(bpy.types.Operator):
         )
         cwd = os.getcwd()
         os.chdir(bpy.context.scene.BimTesterProperties.features_dir)
-        bimtester.run.run_tests({"feature": filename, "advanced_arguments": None, "console": False})
+        bimtester.run.run_tests({
+            "advanced_arguments": "",
+            "console": False,
+            "featuresdir": "",
+            "feature": filename,
+            "gui": False,
+            "ifcfile": "",
+            "purge": False,
+            "path": "",
+        })
         bimtester.reports.generate_report()
         webbrowser.open(
             "file://"
