@@ -93,10 +93,10 @@ class AssignClass(bpy.types.Operator):
                 for material in obj.data.materials:
                     if not material.BIMMaterialProperties.ifc_style_id:
                         bpy.ops.bim.add_style(material=material.name)
-            self.assign_class(obj)
+            self.assign_class(context, obj)
         return {"FINISHED"}
 
-    def assign_class(self, obj):
+    def assign_class(self, context, obj):
         if obj.BIMObjectProperties.ifc_definition_id:
             return
         product = create_product.Usecase(
@@ -125,6 +125,7 @@ class AssignClass(bpy.types.Operator):
             self.place_in_spatial_collection(obj)
         else:
             self.assign_potential_spatial_container(obj)
+        context.view_layer.objects.active = obj
 
     def place_in_types_collection(self, obj):
         for project in [c for c in bpy.context.view_layer.layer_collection.children if "IfcProject" in c.name]:
