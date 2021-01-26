@@ -36,6 +36,11 @@ vector_styles_enum = []
 
 
 @persistent
+def clearIfcStore(scene):
+    IfcStore.file = None
+
+
+@persistent
 def setDefaultProperties(scene):
     if len(bpy.context.scene.DocProperties.drawing_styles) == 0:
         drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()

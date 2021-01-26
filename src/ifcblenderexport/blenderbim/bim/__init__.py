@@ -163,6 +163,7 @@ if bpy is not None:
             bpy.utils.register_class(cls)
         bpy.app.handlers.depsgraph_update_post.append(on_register)
         bpy.app.handlers.load_post.append(prop.setDefaultProperties)
+        bpy.app.handlers.load_post.append(prop.clearIfcStore)
         bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
         bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
         bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)

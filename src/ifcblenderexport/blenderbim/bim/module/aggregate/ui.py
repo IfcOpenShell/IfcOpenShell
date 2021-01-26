@@ -1,5 +1,6 @@
 from bpy.types import Panel
 from blenderbim.bim.module.aggregate.data import Data
+from blenderbim.bim.ifc import IfcStore
 
 
 class BIM_PT_aggregate(Panel):
@@ -14,6 +15,8 @@ class BIM_PT_aggregate(Panel):
     def poll(cls, context):
         props = context.active_object.BIMObjectProperties
         if not props.ifc_definition_id:
+            return False
+        if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcObjectDefinition"):
             return False
         if props.ifc_definition_id not in Data.products:
             Data.load(props.ifc_definition_id)
