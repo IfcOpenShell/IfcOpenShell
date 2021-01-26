@@ -96,6 +96,7 @@ class ExportIFC(bpy.types.Operator):
         settings.logger.info("Starting export")
         ifc_exporter.export()
         settings.logger.info("Export finished in {:.2f} seconds".format(time.time() - start))
+        print("Export finished in {:.2f} seconds".format(time.time() - start))
         if not bpy.context.scene.DocProperties.ifc_files:
             new = bpy.context.scene.DocProperties.ifc_files.add()
             new.name = output_file
@@ -391,15 +392,6 @@ class FetchExternalMaterial(bpy.types.Operator):
             if material.name == identification and material.library:
                 bpy.context.active_object.material_slots[0].material = material
                 return
-
-
-class FetchLibraryInformation(bpy.types.Operator):
-    bl_idname = "bim.fetch_library_information"
-    bl_label = "Fetch Library Information"
-
-    def execute(self, context):
-        # TODO
-        return {"FINISHED"}
 
 
 class FetchObjectPassport(bpy.types.Operator):

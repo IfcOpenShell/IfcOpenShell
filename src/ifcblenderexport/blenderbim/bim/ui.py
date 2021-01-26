@@ -255,32 +255,6 @@ class BIM_PT_text(Panel):
             row.prop(variable, "prop_key")
 
 
-class BIM_PT_library(Panel):
-    bl_label = "IFC BIM Server Library"
-    bl_idname = "BIM_PT_library"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-
-        scene = context.scene
-        bim_properties = scene.BIMProperties
-
-        layout.row().prop(scene.BIMProperties, "has_library")
-
-        layout.label(text="Project Library:")
-        layout.row().prop(scene.BIMLibrary, "location")
-        layout.row().operator("bim.fetch_library_information")
-        layout.row().prop(scene.BIMLibrary, "name")
-        layout.row().prop(scene.BIMLibrary, "version")
-        layout.row().prop(scene.BIMLibrary, "version_date")
-        layout.row().prop(scene.BIMLibrary, "description")
-
-
 class BIM_UL_generic(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:

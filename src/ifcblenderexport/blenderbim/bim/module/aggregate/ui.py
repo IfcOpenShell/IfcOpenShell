@@ -5,6 +5,7 @@ from blenderbim.bim.module.aggregate.data import Data
 class BIM_PT_aggregate(Panel):
     bl_label = "IFC Aggregates"
     bl_idname = "BIM_PT_aggregate"
+    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
