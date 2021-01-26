@@ -1,4 +1,6 @@
 import bpy
+import blenderbim.bim.module.material.add_material as add_material
+import blenderbim.bim.module.material.remove_material as remove_material
 import blenderbim.bim.module.material.assign_material as assign_material
 import blenderbim.bim.module.material.unassign_material as unassign_material
 import blenderbim.bim.module.material.add_constituent as add_constituent
@@ -11,6 +13,34 @@ import blenderbim.bim.module.material.remove_list_item as remove_list_item
 import blenderbim.bim.module.material.edit_assigned_material as edit_assigned_material
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.material.data import Data
+
+
+class AddMaterial(bpy.types.Operator):
+    bl_idname = "bim.add_material"
+    bl_label = "Add Material"
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        obj = bpy.data.materials.get(self.obj) if self.obj else bpy.context.active_object.active_material
+        self.file = IfcStore.get_file()
+        result = add_material.Usecase(self.file, {"Name": obj.name}).execute()
+        obj.BIMObjectProperties.ifc_definition_id = result.id()
+        return {"FINISHED"}
+
+
+class RemoveMaterial(bpy.types.Operator):
+    bl_idname = "bim.remove_material"
+    bl_label = "Remove Material"
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        obj = bpy.data.materials.get(self.obj) if self.obj else bpy.context.active_object.active_material
+        self.file = IfcStore.get_file()
+        result = remove_material.Usecase(
+            self.file, {"material": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)}
+        ).execute()
+        obj.BIMObjectProperties.ifc_definition_id = 0
+        return {"FINISHED"}
 
 
 class AssignMaterial(bpy.types.Operator):

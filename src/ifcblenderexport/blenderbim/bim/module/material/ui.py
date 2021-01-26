@@ -3,6 +3,21 @@ from blenderbim.bim.module.material.data import Data
 from blenderbim.bim.ifc import IfcStore
 
 
+class BIM_PT_material(Panel):
+    bl_label = "IFC Material"
+    bl_idname = "BIM_PT_material"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "material"
+
+    def draw(self, context):
+        row = self.layout.row()
+        if bool(context.active_object.active_material.BIMObjectProperties.ifc_definition_id):
+            row.operator("bim.remove_material", icon="X", text="Remove IFC Material")
+        else:
+            row.operator("bim.add_material", icon="ADD", text="Create IFC Material")
+
+
 class BIM_PT_object_material(Panel):
     bl_label = "IFC Object Material"
     bl_idname = "BIM_PT_object_material"
