@@ -5,6 +5,7 @@ import ifcopenshell.util.schema
 import blenderbim.bim.module.root.create_product as create_product
 import blenderbim.bim.module.root.remove_product as remove_product
 import blenderbim.bim.module.root.reassign_class as reassign_class
+from blenderbim.bim.module.owner.api import create_owner_history
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -104,6 +105,7 @@ class AssignClass(bpy.types.Operator):
                 "ifc_class": self.ifc_class,
                 "predefined_type": self.predefined_type,
                 "name": obj.name,
+                "OwnerHistory": create_owner_history()
             },
         ).execute()
         obj.name = "{}/{}".format(product.is_a(), obj.name)

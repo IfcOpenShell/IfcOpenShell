@@ -8,12 +8,16 @@ class Usecase:
             "ifc_class": "IfcBuildingElementProxy",
             "predefined_type": None,
             "name": None,
+            "OwnerHistory": None,
         }
         for key, value in settings.items():
             self.settings[key] = value
 
     def execute(self):
-        element = self.file.create_entity(self.settings["ifc_class"], **{"GlobalId": ifcopenshell.guid.new()})
+        element = self.file.create_entity(self.settings["ifc_class"], **{
+            "GlobalId": ifcopenshell.guid.new(),
+            "OwnerHistory": self.settings["OwnerHistory"]
+        })
         element.Name = self.settings["name"] or None
         if self.settings["predefined_type"] and hasattr(element, "PredefinedType"):
             try:
