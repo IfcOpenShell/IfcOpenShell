@@ -5,6 +5,7 @@ import ifcopenshell.util.schema
 import blenderbim.bim.module.root.create_product as create_product
 import blenderbim.bim.module.root.remove_product as remove_product
 import blenderbim.bim.module.root.reassign_class as reassign_class
+import blenderbim.bim.module.root.copy_class as copy_class
 from blenderbim.bim.module.owner.api import create_owner_history
 from blenderbim.bim.ifc import IfcStore
 
@@ -202,4 +203,33 @@ class UnlinkObject(bpy.types.Operator):
         for obj in objects:
             if obj.BIMObjectProperties.ifc_definition_id:
                 obj.BIMObjectProperties.ifc_definition_id = 0
+        return {"FINISHED"}
+
+
+class CopyClass(bpy.types.Operator):
+    bl_idname = "bim.copy_class"
+    bl_label = "Copy Class"
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        if self.obj:
+            objects = [bpy.data.objects.get(self.obj)]
+        else:
+            objects = bpy.context.selected_objects
+        for obj in objects:
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            result = copy_class.Usecase(self.file, {
+                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            }).execute()
+            obj.BIMObjectProperties.ifc_definition_id = result.id()
+            if obj.data.users == 1:
+                bpy.ops.bim.add_representation(obj=obj.name)
+            else:
+                obj_data = obj.data.name
+                temporary_mesh = bpy.data.meshes.new("Temporary Mesh")
+                obj.data = temporary_mesh
+                bpy.ops.bim.map_representation(obj=obj.name, obj_data=obj_data)
+                bpy.data.meshes.remove(temporary_mesh)
         return {"FINISHED"}

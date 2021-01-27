@@ -10,12 +10,13 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        self.get_mapping_source()
-
         self.zero = self.file.createIfcCartesianPoint((0.0, 0.0, 0.0))
         self.x_axis = self.file.createIfcDirection((1.0, 0.0, 0.0))
         self.y_axis = self.file.createIfcDirection((0.0, 1.0, 0.0))
         self.z_axis = self.file.createIfcDirection((0.0, 0.0, 1.0))
+
+        self.get_mapping_source()
+
         mapping_target = self.file.createIfcCartesianTransformationOperator3D(
             self.x_axis, self.y_axis, self.zero, 1, self.z_axis
         )

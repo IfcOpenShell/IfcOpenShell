@@ -179,20 +179,23 @@ class MapRepresentation(bpy.types.Operator):
     bl_idname = "bim.map_representation"
     bl_label = "Map Representation"
     obj: bpy.props.StringProperty()
-    target_obj: bpy.props.StringProperty()
+    obj_data: bpy.props.StringProperty()
 
     def execute(self, context):
         objs = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
-        target_obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
-        objs = [o for o in objs if o != target_obj]
+        obj_data = bpy.data.meshes.get(self.obj_data) if self.obj_data else bpy.context.active_object.data
+        objs = [o for o in objs if o.data != obj_data]
         self.file = IfcStore.get_file()
 
         for obj in objs:
             bpy.ops.bim.edit_object_placement(obj=obj.name)
             product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-            target_representation = self.file.by_id(target_obj.data.BIMMeshProperties.ifc_definition_id)
-            obj.data = target_obj.data
+            if obj.data.BIMMeshProperties.ifc_definition_id:
+                old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+            else:
+                old_representation = None
+            target_representation = self.file.by_id(obj_data.BIMMeshProperties.ifc_definition_id)
+            obj.data = obj_data
             result = map_representation.Usecase(
                 self.file,
                 {
@@ -201,7 +204,8 @@ class MapRepresentation(bpy.types.Operator):
                 },
             ).execute()
             assign_representation.Usecase(self.file, {"product": product, "representation": result}).execute()
-            bpy.ops.bim.remove_representation(ifc_definition_id=old_representation.id())
+            if old_representation:
+                bpy.ops.bim.remove_representation(ifc_definition_id=old_representation.id())
             Data.load(obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
