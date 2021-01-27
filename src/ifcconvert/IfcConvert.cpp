@@ -378,6 +378,8 @@ int main(int argc, char** argv) {
 			"Stores name and guid in a separate namespace as opposed to data-name, data-guid")
 		("svg-poly",
 			"Uses the polygonal algorithm for hidden line rendering")
+		("svg-project",
+			"Always enable hidden line rendering instead of only on elevations")
 		("door-arcs", "Draw door openings arcs for IfcDoor elements")
 		("section-height", po::value<double>(&section_height),
 		    "Specifies the cut section height for SVG 2D geometry.")
@@ -965,6 +967,7 @@ int main(int argc, char** argv) {
 		}
 		static_cast<SvgSerializer*>(serializer.get())->setUseNamespace(vmap.count("svg-xmlns") > 0);
 		static_cast<SvgSerializer*>(serializer.get())->setUseHlrPoly(vmap.count("svg-poly") > 0);
+		static_cast<SvgSerializer*>(serializer.get())->setAlwaysProject(vmap.count("svg-project") > 0);
 		if (relative_center_x && relative_center_y) {
 			static_cast<SvgSerializer*>(serializer.get())->setDrawingCenter(*relative_center_x, *relative_center_y);
 		}

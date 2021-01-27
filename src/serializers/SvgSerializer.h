@@ -114,6 +114,12 @@ struct drawing_meta {
 	std::array<std::array<double, 3>, 3> matrix_3;
 };
 
+typedef boost::variant<
+	boost::blank,
+	Handle(HLRBRep_Algo),
+	Handle(HLRBRep_PolyAlgo)
+> hlr_t;
+
 class SvgSerializer : public GeometrySerializer {
 public:
 	typedef std::pair<std::string, std::vector<util::string_buffer> > path_object;
@@ -128,12 +134,13 @@ protected:
 	bool with_section_heights_from_storey_, rescale, print_space_names_, print_space_areas_;
 	bool draw_door_arcs_, is_floor_plan_;
 	bool auto_section_, auto_elevation_;
-	bool use_namespace_, use_hlr_poly_;
+	bool use_namespace_, use_hlr_poly_, always_project_;
 
 	IfcParse::IfcFile* file;
 	IfcUtil::IfcBaseEntity* storey_;
 	std::multimap<drawing_key, path_object, storey_sorter> paths;
 	std::map<drawing_key, drawing_meta> drawing_metadata;
+	std::map<IfcUtil::IfcBaseEntity*, hlr_t> storey_hlr;
 
 	float_item_list xcoords, ycoords, radii;
 	size_t xcoords_begin, ycoords_begin, radii_begin;
@@ -142,10 +149,14 @@ protected:
 	
 	std::list<geometry_data> element_buffer_;
 
-	Handle(HLRBRep_Algo) hlr_brep;
-	Handle(HLRBRep_PolyAlgo) hlr_poly;
+	hlr_t hlr;
+	// Handle(HLRBRep_Algo) hlr_brep;
+	// Handle(HLRBRep_PolyAlgo) hlr_poly;
 
 	std::string namespace_prefix_;
+
+	void draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name);
+
 public:
 	SvgSerializer(const std::string& out_filename, const SerializerSettings& settings)
 		: GeometrySerializer(settings)
@@ -164,6 +175,7 @@ public:
 		, auto_elevation_(false)
 		, use_namespace_(false)
 		, use_hlr_poly_(false)
+		, always_project_(false)
 		, file(0)
 		, storey_(0)
 		, xcoords_begin(0)
@@ -219,6 +231,10 @@ public:
 
 	void setUseHlrPoly(bool b) {
 		use_hlr_poly_ = b;
+	}
+
+	void setAlwaysProject(bool b) {
+		always_project_ = b;
 	}
 
 	void setScale(double s) { scale_ = s; }
