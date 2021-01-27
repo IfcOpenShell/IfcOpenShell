@@ -4,6 +4,7 @@ import ifcopenshell
 import logging
 import blenderbim.bim.module.geometry.edit_object_placement as edit_object_placement
 import blenderbim.bim.module.geometry.add_representation as add_representation
+import blenderbim.bim.module.geometry.map_representation as map_representation
 import blenderbim.bim.module.geometry.assign_styles as assign_styles
 import blenderbim.bim.module.geometry.assign_representation as assign_representation
 import blenderbim.bim.module.geometry.remove_representation as remove_representation
@@ -171,6 +172,37 @@ class RemoveRepresentation(bpy.types.Operator):
             bpy.data.meshes.remove(mesh)
         remove_representation.Usecase(self.file, {"representation": representation}).execute()
         Data.load(obj.BIMObjectProperties.ifc_definition_id)
+        return {"FINISHED"}
+
+
+class MapRepresentation(bpy.types.Operator):
+    bl_idname = "bim.map_representation"
+    bl_label = "Map Representation"
+    obj: bpy.props.StringProperty()
+    target_obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
+        target_obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        objs = [o for o in objs if o != target_obj]
+        self.file = IfcStore.get_file()
+
+        for obj in objs:
+            bpy.ops.bim.edit_object_placement(obj=obj.name)
+            product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+            target_representation = self.file.by_id(target_obj.data.BIMMeshProperties.ifc_definition_id)
+            obj.data = target_obj.data
+            result = map_representation.Usecase(
+                self.file,
+                {
+                    "product": product,
+                    "representation": target_representation,
+                },
+            ).execute()
+            assign_representation.Usecase(self.file, {"product": product, "representation": result}).execute()
+            bpy.ops.bim.remove_representation(ifc_definition_id=old_representation.id())
+            Data.load(obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
 

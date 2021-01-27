@@ -68,6 +68,8 @@ class BIM_PT_mesh(Panel):
         row.operator("bim.get_representation_ifc_parameters")
         row = layout.row()
         row.operator("bim.update_mesh_representation")
+        row = layout.row()
+        row.operator("bim.map_representation")
         for index, ifc_parameter in enumerate(props.ifc_parameters):
             row = layout.row(align=True)
             row.prop(ifc_parameter, "name", text="")
