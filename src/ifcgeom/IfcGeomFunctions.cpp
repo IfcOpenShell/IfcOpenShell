@@ -1157,12 +1157,7 @@ bool IfcGeom::Kernel::convert_wire_to_faces(const TopoDS_Wire& w, TopoDS_Compoun
 	}
 
 	TopTools_ListOfShape results;
-	if (wire_intersections(w, results)) {
-		Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
-	} else {
-		results.Clear();
-		results.Append(w);
-	}
+    results.Append(w);
 
 	TopoDS_Compound C;
 	BRep_Builder B;
