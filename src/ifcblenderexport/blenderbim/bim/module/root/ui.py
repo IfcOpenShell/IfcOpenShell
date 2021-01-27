@@ -34,6 +34,7 @@ class BIM_PT_class(Panel):
                     name += "[{}]".format(data["PredefinedType"])
                 row = self.layout.row(align=True)
                 row.label(text=name)
+                row.operator("bim.copy_class", icon="DUPLICATE", text="").obj = context.active_object.name
                 row.operator("bim.unlink_object", icon="UNLINKED", text="").obj = context.active_object.name
                 row.operator("bim.enable_reassign_class", icon="GREASEPENCIL", text="")
                 row.operator("bim.unassign_class", icon="X", text="").obj = context.active_object.name

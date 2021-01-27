@@ -8,6 +8,7 @@ classes = (
     operator.AssignClass,
     operator.UnassignClass,
     operator.UnlinkObject,
+    operator.CopyClass,
     prop.BIMRootProperties,
     ui.BIM_PT_class,
 )
