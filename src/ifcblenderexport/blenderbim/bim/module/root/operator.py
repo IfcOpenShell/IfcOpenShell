@@ -186,3 +186,20 @@ class UnassignClass(bpy.types.Operator):
             if "/" in obj.name and obj.name[0:3] == "Ifc":
                 obj.name = "/".join(obj.name.split("/")[1:])
         return {"FINISHED"}
+
+
+class UnlinkObject(bpy.types.Operator):
+    bl_idname = "bim.unlink_object"
+    bl_label = "Unlink Object"
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        if self.obj:
+            objects = [bpy.data.objects.get(self.obj)]
+        else:
+            objects = bpy.context.selected_objects
+        for obj in objects:
+            if obj.BIMObjectProperties.ifc_definition_id:
+                obj.BIMObjectProperties.ifc_definition_id = 0
+        return {"FINISHED"}

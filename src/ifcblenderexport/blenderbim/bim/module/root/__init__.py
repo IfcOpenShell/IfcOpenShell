@@ -7,6 +7,7 @@ classes = (
     operator.ReassignClass,
     operator.AssignClass,
     operator.UnassignClass,
+    operator.UnlinkObject,
     prop.BIMRootProperties,
     ui.BIM_PT_class,
 )
