@@ -36,7 +36,7 @@ class Usecase:
         return self.file.create_entity(
             "IfcRepresentationMap",
             **{
-                "MappingOrigin": self.file.createIfcAxis2Placement3D(zero, z_axis, x_axis),
+                "MappingOrigin": self.file.createIfcAxis2Placement3D(self.zero, self.z_axis, self.x_axis),
                 "MappedRepresentation": self.settings["representation"],
             }
         )
