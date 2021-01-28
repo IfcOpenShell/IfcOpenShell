@@ -988,6 +988,41 @@ std::array<std::array<double, 3>, 3> SvgSerializer::resize() {
 }
 
 namespace {
+	template <typename T>
+	TopoDS_Compound occt_join(T t) {
+		BRep_Builder B;
+		TopoDS_Compound C;
+		B.MakeCompound(C);
+		if (!t.IsNull()) {
+			TopoDS_Iterator it(t);
+			for (; it.More(); it.Next()) {
+				B.Add(C, it.Value());
+			}
+		}
+		return C;
+	}
+
+	template <typename T, typename... Ts>
+	TopoDS_Compound occt_join(T t, Ts... tss) {
+		BRep_Builder B;
+		TopoDS_Compound C;
+		B.MakeCompound(C);
+		if (!t.IsNull()) {
+			TopoDS_Iterator it(t);
+			for (; it.More(); it.Next()) {
+				B.Add(C, it.Value());
+			}
+		}
+		auto rest = occt_join(tss...);
+		if (!rest.IsNull()) {
+			TopoDS_Iterator it(rest);
+			for (; it.More(); it.Next()) {
+				B.Add(C, it.Value());
+			}
+		}
+		return C;
+	}
+
 	class hlr_calc {
 	private:
 		const HLRAlgo_Projector& projector_;
@@ -1005,7 +1040,7 @@ namespace {
 			algo->Update();
 			algo->Hide();
 			HLRBRep_HLRToShape hlr_shapes(algo);
-			return hlr_shapes.VCompound();
+			return occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound());
 		}
 		
 		TopoDS_Shape operator()(Handle(HLRBRep_PolyAlgo)& algo) {
@@ -1013,7 +1048,7 @@ namespace {
 			algo->Update();
 			HLRBRep_PolyHLRToShape hlr_shapes;
 			hlr_shapes.Update(algo);
-			return hlr_shapes.VCompound();
+			return occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound());
 		}
 	};
 }
