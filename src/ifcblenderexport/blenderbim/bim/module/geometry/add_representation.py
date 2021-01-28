@@ -1,6 +1,7 @@
 import bpy
 import bmesh
 import ifcopenshell.util.unit
+from mathutils import Vector
 
 
 class Usecase:
@@ -54,7 +55,9 @@ class Usecase:
             del bm
             self.settings["geometry"] = mesh
         else:
-            self.settings["geometry"] = self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+            self.settings["geometry"] = (
+                self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+            )
 
         for modifier in self.boolean_modifiers:
             new = self.settings["blender_object"].modifiers.new("IfcOpeningElement", "BOOLEAN")
@@ -122,6 +125,95 @@ class Usecase:
             return self.create_point_cloud_representation()
         return self.create_mesh_representation()
 
+    def create_curve3d_representation(self):
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "Curve3D",
+            self.create_curves(),
+        )
+
+    def create_curves(self, is_2d=False):
+        if isinstance(self.settings["geometry"], bpy.types.Mesh):
+            if self.file.schema == "IFC2X3":
+                return self.create_curves_from_mesh_ifc2x3(is_2d=is_2d)
+            else:
+                return self.create_curves_from_mesh(is_2d=is_2d)
+        elif isinstance(self.settings["geometry"], bpy.types.Curve):
+            return self.create_curves_from_curve(is_2d=is_2d)
+
+    def create_curves_from_mesh(self, is_2d=False):
+        curves = []
+        points = self.create_cartesian_point_list_from_vertices(self.settings["geometry"].vertices, is_2d=is_2d)
+        edge_loops = []
+        previous_edge = None
+        edge_loop = []
+        for edge in self.settings["geometry"].edges:
+            if (Vector(points.CoordList[edge.vertices[0]]) - Vector(points.CoordList[edge.vertices[1]])).length < 0.001:
+                # Maybe we should warn the user to weld vertices in this scenario?
+                continue
+            elif previous_edge is None:
+                edge_loop = [self.file.createIfcLineIndex((edge.vertices[0] + 1, edge.vertices[1] + 1))]
+            elif edge.vertices[0] == previous_edge.vertices[1]:
+                edge_loop.append(self.file.createIfcLineIndex((edge.vertices[0] + 1, edge.vertices[1] + 1)))
+            else:
+                edge_loops.append(edge_loop)
+                edge_loop = [self.file.createIfcLineIndex((edge.vertices[0] + 1, edge.vertices[1] + 1))]
+            previous_edge = edge
+        edge_loops.append(edge_loop)
+        for edge_loop in edge_loops:
+            curves.append(self.file.createIfcIndexedPolyCurve(points, edge_loop))
+        return curves
+
+    def create_curves_from_mesh_ifc2x3(self, is_2d=False):
+        curves = []
+        points = [
+            self.create_cartesian_point(v.co.x, v.co.y, v.co.z if is_2d else None)
+            for v in self.settings["geometry"].vertices
+        ]
+        coord_list = [p.Coordinates for p in points]
+        edge_loops = []
+        previous_edge = None
+        edge_loop = []
+        for edge in self.settings["geometry"].edges:
+            if (Vector(coord_list[edge.vertices[0]]) - Vector(coord_list[edge.vertices[1]])).length < 0.001:
+                # Maybe we should warn the user to weld vertices in this scenario?
+                continue
+            elif previous_edge is None:
+                edge_loop = [edge.vertices]
+            elif edge.vertices[0] == previous_edge.vertices[1]:
+                edge_loop.append(edge.vertices)
+            else:
+                edge_loops.append(edge_loop)
+                edge_loop = [edge.vertices]
+            previous_edge = edge
+        edge_loops.append(edge_loop)
+        for edge_loop in edge_loops:
+            loop_points = [points[p[0]] for p in edge_loop]
+            loop_points.append(points[edge_loop[-1][1]])
+            curves.append(self.file.createIfcPolyline(loop_points))
+        return curves
+
+    def create_curves_from_curve(self, is_2d=False):
+        results = []
+        for spline in self.settings["geometry"].splines:
+            # TODO: support interpolated curves, not just polylines
+            points = []
+            for point in spline.bezier_points:
+                if is_2d:
+                    points.append(self.create_cartesian_point(point.co.x, point.co.y))
+                else:
+                    points.append(self.create_cartesian_point(point.co.x, point.co.y, point.co.z))
+            for point in spline.points:
+                if is_2d:
+                    points.append(self.create_cartesian_point(point.co.x, point.co.y))
+                else:
+                    points.append(self.create_cartesian_point(point.co.x, point.co.y, point.co.z))
+            if spline.use_cyclic_u:
+                points.append(points[0])
+            results.append(self.file.createIfcPolyline(points))
+        return results
+
     def create_mesh_representation(self):
         if self.file.schema == "IFC2X3" or self.settings["should_force_faceted_brep"]:
             return self.create_faceted_brep()
@@ -183,6 +275,19 @@ class Usecase:
                 for v in self.settings["geometry"].vertices
             ]
         )
+
+    def create_cartesian_point(self, x, y, z=None):
+        x = self.convert_si_to_unit(x)
+        y = self.convert_si_to_unit(y)
+        if z is None:
+            return self.file.createIfcCartesianPoint((x, y))
+        z = self.convert_si_to_unit(z)
+        return self.file.createIfcCartesianPoint((x, y, z))
+
+    def create_cartesian_point_list_from_vertices(self, vertices, is_2d=False):
+        if is_2d:
+            return self.file.createIfcCartesianPointList2D([self.convert_si_to_unit(v.co.xy) for v in vertices])
+        return self.file.createIfcCartesianPointList3D([self.convert_si_to_unit(v.co) for v in vertices])
 
     def convert_si_to_unit(self, co):
         return co / self.settings["unit_scale"]
