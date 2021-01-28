@@ -89,9 +89,10 @@ si_conversions = {
 
 
 def get_prefix(text):
-    for prefix in prefixes.keys():
-        if prefix in text.upper():
-            return prefix
+    if text:
+        for prefix in prefixes.keys():
+            if prefix in text.upper():
+                return prefix
 
 
 def get_prefix_multiplier(text):

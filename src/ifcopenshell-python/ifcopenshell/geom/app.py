@@ -9,7 +9,14 @@ import operator
 import functools
 import multiprocessing
 
-import OCC.AIS
+try:
+    from OCC.Core import  AIS
+
+    USE_OCCT_HANDLE = False
+except ImportError:
+    from OCC import AIS
+
+    USE_OCCT_HANDLE = True
 
 from collections import defaultdict, OrderedDict
 
@@ -426,30 +433,30 @@ class application(QtWidgets.QApplication):
 
         instanceSelected = QtCore.pyqtSignal([object])
 
-        @staticmethod
-        def ais_to_key(ais_handle):
-            def yield_shapes():
-                ais = ais_handle.GetObject()
-                if hasattr(ais, "Shape"):
-                    yield ais.Shape()
-                    return
-                shp = OCC.AIS.Handle_AIS_Shape.DownCast(ais_handle)
-                if not shp.IsNull():
-                    yield shp.Shape()
-                return
-                mult = ais_handle
-                if mult.IsNull():
-                    shp = OCC.AIS.Handle_AIS_Shape.DownCast(ais_handle)
-                    if not shp.IsNull():
-                        yield shp
-                else:
-                    li = mult.GetObject().ConnectedTo()
-                    for i in range(li.Length()):
-                        shp = OCC.AIS.Handle_AIS_Shape.DownCast(li.Value(i + 1))
-                        if not shp.IsNull():
-                            yield shp
+#         @staticmethod
+#         def ais_to_key(ais_handle):
+#             def yield_shapes():
+#                 ais = ais_handle.GetObject()
+#                 if hasattr(ais, "Shape"):
+#                     yield ais.Shape()
+#                     return
+#                 shp = OCC.AIS.Handle_AIS_Shape.DownCast(ais_handle)
+#                 if not shp.IsNull():
+#                     yield shp.Shape()
+#                 return
+#                 mult = ais_handle
+#                 if mult.IsNull():
+#                     shp = OCC.AIS.Handle_AIS_Shape.DownCast(ais_handle)
+#                     if not shp.IsNull():
+#                         yield shp
+#                 else:
+#                     li = mult.GetObject().ConnectedTo()
+#                     for i in range(li.Length()):
+#                         shp = OCC.AIS.Handle_AIS_Shape.DownCast(li.Value(i + 1))
+#                         if not shp.IsNull():
+#                             yield shp
 
-            return tuple(shp.HashCode(1 << 24) for shp in yield_shapes())
+#             return tuple(shp.HashCode(1 << 24) for shp in yield_shapes())
 
         def __init__(self, widget):
             qtViewer3d.__init__(self, widget)
@@ -479,8 +486,9 @@ class application(QtWidgets.QApplication):
             for shape in shapes:
                 ais = display_shape(shape, viewer_handle=v)
                 product = f[shape.data.id]
-
-                ais.GetObject().SetSelectionPriority(self.counter)
+                
+                if USE_OCCT_HANDLE: 
+                    ais.GetObject().SetSelectionPriority(self.counter)
                 self.ais_to_product[self.counter] = product
                 self.product_to_ais[product] = ais
                 self.counter += 1

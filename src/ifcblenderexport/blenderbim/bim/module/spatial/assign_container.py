@@ -15,7 +15,7 @@ class Usecase:
         contained_in_structure = self.settings["product"].ContainedInStructure
         contains_elements = self.settings["relating_structure"].ContainsElements
 
-        if contains_elements and contained_in_structure == contains_elements:
+        if contains_elements and contained_in_structure and contained_in_structure[0] == contains_elements[0]:
             return
 
         if contained_in_structure:
@@ -24,12 +24,12 @@ class Usecase:
             if related_elements:
                 contained_in_structure[0].RelatedElements = related_elements
             else:
-                self.file.remove(contained_in_structure)
+                self.file.remove(contained_in_structure[0])
 
         if contains_elements:
             related_elements = list(contains_elements[0].RelatedElements)
             related_elements.append(self.settings["product"])
-            contains_elements.RelatedElements = related_elements
+            contains_elements[0].RelatedElements = related_elements
         else:
             contains_elements = self.file.create_entity(
                 "IfcRelContainedInSpatialStructure",

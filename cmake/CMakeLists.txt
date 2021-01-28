@@ -143,6 +143,14 @@ IF(WIN32 AND ("$ENV{CONDA_BUILD}" STREQUAL ""))
 	SET(Boost_USE_STATIC_LIBS ON)
 	SET(Boost_USE_STATIC_RUNTIME ON)
 	SET(Boost_USE_MULTITHREADED ON)
+    # Disable Boost's autolinking as the libraries to be linked to are supplied
+    # already by CMake, and wrong libraries would be asked for when code is
+    # compiled with a toolset different from default.
+    if(MSVC)
+        ADD_DEFINITIONS(-DBOOST_ALL_NO_LIB)
+        # Necessary for boost version >= 1.67
+        SET(BCRYPT_LIBRARIES "bcrypt.lib")
+    ENDIF()
 ELSE()
     # Disable Boost's autolinking as the libraries to be linked to are supplied
     # already by CMake, and it's going to conflict if there are multiple, as is
@@ -208,6 +216,10 @@ function(add_debug_variants NAME LIBRARIES POSTFIX)
 endfunction()
 
 if(BUILD_IFCGEOM)
+
+IF(MSVC)
+	add_debug_variants(LIBXML2_LIBRARIES "${LIBXML2_LIBRARIES}" d)
+ENDIF()
 
 # Find Open CASCADE
 IF("${OCC_INCLUDE_DIR}" STREQUAL "")

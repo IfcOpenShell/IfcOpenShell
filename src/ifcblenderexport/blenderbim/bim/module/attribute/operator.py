@@ -1,5 +1,6 @@
 import bpy
 import json
+import ifcopenshell
 import blenderbim.bim.module.attribute.edit_attributes as edit_attributes
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.attribute.data import Data
@@ -8,14 +9,20 @@ from blenderbim.bim.module.attribute.data import Data
 class EnableEditingAttributes(bpy.types.Operator):
     bl_idname = "bim.enable_editing_attributes"
     bl_label = "Enable Editing Attributes"
+    obj: bpy.props.StringProperty()
+    obj_type: bpy.props.StringProperty()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        obj = bpy.context.active_object
-        props = obj.BIMObjectProperties
+        if self.obj_type == "Object":
+            obj = bpy.data.objects.get(self.obj)
+        elif self.obj_type == "Material":
+            obj = bpy.data.materials.get(self.obj)
+        oprops = obj.BIMObjectProperties
+        props = obj.BIMAttributeProperties
         while len(props.attributes) > 0:
             props.attributes.remove(0)
-        for attribute in Data.products[props.ifc_definition_id]:
+        for attribute in Data.products[oprops.ifc_definition_id]:
             new = props.attributes.add()
             if attribute["type"] == "entity":
                 continue
@@ -38,10 +45,15 @@ class EnableEditingAttributes(bpy.types.Operator):
 class DisableEditingAttributes(bpy.types.Operator):
     bl_idname = "bim.disable_editing_attributes"
     bl_label = "Disable Editing Attributes"
+    obj: bpy.props.StringProperty()
+    obj_type: bpy.props.StringProperty()
 
     def execute(self, context):
-        obj = bpy.context.active_object
-        props = obj.BIMObjectProperties
+        if self.obj_type == "Object":
+            obj = bpy.data.objects.get(self.obj)
+        elif self.obj_type == "Material":
+            obj = bpy.data.materials.get(self.obj)
+        props = obj.BIMAttributeProperties
         props.is_editing_attributes = False
         return {"FINISHED"}
 
@@ -49,13 +61,19 @@ class DisableEditingAttributes(bpy.types.Operator):
 class EditAttributes(bpy.types.Operator):
     bl_idname = "bim.edit_attributes"
     bl_label = "Edit Attributes"
+    obj: bpy.props.StringProperty()
+    obj_type: bpy.props.StringProperty()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        obj = bpy.context.active_object
-        props = obj.BIMObjectProperties
+        if self.obj_type == "Object":
+            obj = bpy.data.objects.get(self.obj)
+        elif self.obj_type == "Material":
+            obj = bpy.data.materials.get(self.obj)
+        oprops = obj.BIMObjectProperties
+        props = obj.BIMAttributeProperties
         attributes = {}
-        for attribute in Data.products[props.ifc_definition_id]:
+        for attribute in Data.products[oprops.ifc_definition_id]:
             blender_attribute = props.attributes.get(attribute["name"])
             if not blender_attribute:
                 continue
@@ -76,11 +94,26 @@ class EditAttributes(bpy.types.Operator):
                 attributes[attribute["name"]] = blender_attribute.float_value
             elif attribute["type"] == "enum":
                 attributes[attribute["name"]] = blender_attribute.enum_value
-        usecase = edit_attributes.Usecase(self.file, {
-            "product": self.file.by_id(props.ifc_definition_id),
+        edit_attributes.Usecase(self.file, {
+            "product": self.file.by_id(oprops.ifc_definition_id),
             "attributes": attributes
-        })
-        usecase.execute()
-        Data.load(props.ifc_definition_id)
-        bpy.ops.bim.disable_editing_attributes()
+        }).execute()
+        Data.load(oprops.ifc_definition_id)
+        bpy.ops.bim.disable_editing_attributes(obj=self.obj, obj_type=self.obj_type)
+        return {"FINISHED"}
+
+
+class GenerateGlobalId(bpy.types.Operator):
+    bl_idname = "bim.generate_global_id"
+    bl_label = "Regenerate GlobalId"
+
+    def execute(self, context):
+        index = bpy.context.active_object.BIMAttributeProperties.attributes.find("GlobalId")
+        if index >= 0:
+            global_id = bpy.context.active_object.BIMAttributeProperties.attributes[index]
+        else:
+            global_id = bpy.context.active_object.BIMAttributeProperties.attributes.add()
+        global_id.name = "GlobalId"
+        global_id.data_type = "string"
+        global_id.string_value = ifcopenshell.guid.new()
         return {"FINISHED"}

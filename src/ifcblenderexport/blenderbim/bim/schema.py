@@ -29,6 +29,7 @@ class IfcSchema:
 
         self.property_files = []
         property_paths = self.data_dir.joinpath("pset").glob("*.ifc")
+        # TODO: add IFC2X3 PsetQto template support
         self.psetqto = ifcopenshell.util.pset.PsetQto("IFC4")
         for path in property_paths:
             self.psetqto.templates.append(ifcopenshell.open(path))

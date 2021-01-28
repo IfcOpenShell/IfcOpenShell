@@ -13,6 +13,7 @@ import gpu
 import bgl
 from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertFormat
 from gpu_extras.batch import batch_for_shader
+from . import helper
 
 
 class BaseDecorator():
@@ -21,7 +22,6 @@ class BaseDecorator():
 
     DEF_GLSL = """
         #define PI 3.141592653589793
-        #define COLOR vec4({color[0]}, {color[1]}, {color[2]}, {color[3]})
         #define MAX_POINTS 64
         #define CIRCLE_SEGS 24
     """
@@ -99,63 +99,28 @@ class BaseDecorator():
     """
 
     FRAG_GLSL = """
+    uniform vec4 color;
     out vec4 fragColor;
 
     void main() {
-        fragColor = COLOR;
+        fragColor = color;
     }
     """
 
-    # class var for single handler
-    installed = None
-
-    @classmethod
-    def install(cls, *args, **kwargs):
-        if cls.installed:
-            cls.uninstall()
-        handler = cls(*args, **kwargs)
-        cls.installed = SpaceView3D.draw_handler_add(handler, (), 'WINDOW', 'POST_PIXEL')
-
-    @classmethod
-    def uninstall(cls):
-        try:
-            SpaceView3D.draw_handler_remove(cls.installed, 'WINDOW')
-        except ValueError:
-            pass
-        cls.installed = None
-
-    def __init__(self, props, context):
-        self.context = context
-        self.props = props
-        self.shader = self.create_shader()
-        self.font_id = 0
-        self.font_size = 16
-        self.dpi = context.preferences.system.dpi
-
-    def create_shader(self):
-        defines = self.DEF_GLSL.format(color=self.props.decorations_colour)
+    def __init__(self):
         # NB: libcode param doesn't work
-        return GPUShader(vertexcode=self.VERT_GLSL,
-                         fragcode=self.FRAG_GLSL,
-                         geocode=self.LIB_GLSL + self.GEOM_GLSL,
-                         defines=defines)
+        self.shader = GPUShader(vertexcode=self.VERT_GLSL,
+                                fragcode=self.FRAG_GLSL,
+                                geocode=self.LIB_GLSL + self.GEOM_GLSL,
+                                defines=self.DEF_GLSL)
 
-    def __call__(self):
-        if self.props.active_drawing_index is None or len(self.props.drawings) == 0:
-            return
-
-        for obj in self.get_objects():
-            self.decorate(obj)
-
-    def get_objects(self):
+    def get_objects(self, collection):
         """find relevant objects
         using class.basename
 
         returns: iterable of blender objects
         """
-        drawing = self.props.drawings[self.props.active_drawing_index]
-        collection = bpy.data.collections.get("IfcGroup/" + drawing.name)
-        return filter(lambda o: self.basename in o.name, collection.objects)
+        return filter(lambda o: self.basename in o.name, collection.all_objects)
 
     def get_path_geom(self, obj, topo=True):
         """Parses path geometry into line segments
@@ -223,13 +188,14 @@ class BaseDecorator():
 
         return vertices, indices
 
-    def decorate(self, object):
+    def decorate(self, context, object):
         """perform actuall drawing stuff"""
         raise NotImplementedError()
 
-    def draw_lines(self, obj, vertices, indices, topology=None):
-        region = self.context.region
-        region3d = self.context.region_data
+    def draw_lines(self, context, obj, vertices, indices, topology=None):
+        region = context.region
+        region3d = context.region_data
+        color = context.scene.DocProperties.decorations_colour
 
         fmt = GPUVertFormat()
         fmt.attr_add(id="pos", comp_type='F32', len=3, fetch_mode='FLOAT')
@@ -245,18 +211,20 @@ class BaseDecorator():
 
         batch = GPUBatch(type='LINES', buf=vbo, elem=ibo)
 
-        self.shader.bind()
-        self.shader.uniform_float
-        self.shader.uniform_float("viewMatrix", region3d.perspective_matrix)
-        self.shader.uniform_float("winsize", (region.width, region.height))
-
         bgl.glEnable(bgl.GL_LINE_SMOOTH)
         bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
         bgl.glEnable(bgl.GL_BLEND)
         bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
+
+        self.shader.bind()
+        self.shader.uniform_float
+        self.shader.uniform_float("viewMatrix", region3d.perspective_matrix)
+        self.shader.uniform_float("winsize", (region.width, region.height))
+        self.shader.uniform_float("color", color)
+
         batch.draw(self.shader)
 
-    def draw_label(self, text, pos, dir, gap=4, center=True, vcenter=False):
+    def draw_label(self, context, text, pos, dir, gap=4, center=True, vcenter=False):
         """Draw text label
 
         Args:
@@ -264,15 +232,21 @@ class BaseDecorator():
 
         aligned and centered at segment middle
         """
+        font_id = 0
+        font_size = 16
+        dpi = context.preferences.system.dpi
+
+        color = context.scene.DocProperties.decorations_colour
+
         ang = -Vector((1, 0)).angle_signed(dir)
         cos = math.cos(ang)
         sin = math.sin(ang)
 
-        blf.size(self.font_id, self.font_size, self.dpi)
+        blf.size(font_id, font_size, dpi)
 
         w, h = 0, 0
         if center or vcenter:
-            w, h = blf.dimensions(self.font_id, text)
+            w, h = blf.dimensions(font_id, text)
 
         if center:
             # horizontal centering
@@ -286,18 +260,18 @@ class BaseDecorator():
             # side-shifting
             pos += Vector((-sin, cos)) * gap
 
-        blf.enable(self.font_id, blf.ROTATION)
-        blf.position(self.font_id, pos.x, pos.y, 0)
+        blf.enable(font_id, blf.ROTATION)
+        blf.position(font_id, pos.x, pos.y, 0)
 
-        blf.rotation(self.font_id, ang)
-        blf.color(self.font_id, *self.props.decorations_colour)
-        blf.draw(self.font_id, text)
-        blf.disable(self.font_id, blf.ROTATION)
+        blf.rotation(font_id, ang)
+        blf.color(font_id, *color)
+        blf.draw(font_id, text)
+        blf.disable(font_id, blf.ROTATION)
 
-    def format_value(self, value):
-        unit_system = bpy.context.scene.unit_settings.system
+    def format_value(self, context, value):
+        unit_system = context.scene.unit_settings.system
         if unit_system == 'IMPERIAL':
-            precision = bpy.context.scene.BIMProperties.imperial_precision
+            precision = context.scene.BIMProperties.imperial_precision
             if precision == "NONE":
                 precision = 256
             elif precision == "1":
@@ -318,7 +292,6 @@ class DimensionDecorator(BaseDecorator):
     - puts metric text next to each segment
     """
     basename = "IfcAnnotation/Dimension"
-    installed = None
 
     DEF_GLSL = BaseDecorator.DEF_GLSL + """
         #define ARROW_ANGLE PI / 12.0
@@ -382,14 +355,14 @@ class DimensionDecorator(BaseDecorator):
     }
     """
 
-    def decorate(self, obj):
+    def decorate(self, context, obj):
         verts, idxs, _ = self.get_path_geom(obj, topo=False)
-        self.draw_lines(obj, verts, idxs)
-        self.draw_labels(obj, verts, idxs)
+        self.draw_lines(context, obj, verts, idxs)
+        self.draw_labels(context, obj, verts, idxs)
 
-    def draw_labels(self, obj, vertices, indices):
-        region = self.context.region
-        region3d = self.context.region_data
+    def draw_labels(self, context, obj, vertices, indices):
+        region = context.region
+        region3d = context.region_data
         for i0, i1 in indices:
             v0 = Vector(vertices[i0])
             v1 = Vector(vertices[i1])
@@ -399,8 +372,8 @@ class DimensionDecorator(BaseDecorator):
             if dir.length < 1:
                 continue
             length = (v1 - v0).length
-            text = self.format_value(length)
-            self.draw_label(text, p0 + (dir) * .5, dir)
+            text = self.format_value(context, length)
+            self.draw_label(context, text, p0 + (dir) * .5, dir)
 
 
 class EqualityDecorator(DimensionDecorator):
@@ -410,11 +383,10 @@ class EqualityDecorator(DimensionDecorator):
     - puts 'EQ' label
     """
     basename = "IfcAnnotation/Equal"
-    installed = None
 
-    def draw_labels(self, obj, vertices, indices):
-        region = self.context.region
-        region3d = self.context.region_data
+    def draw_labels(self, context, obj, vertices, indices):
+        region = context.region
+        region3d = context.region_data
         for i0, i1 in indices:
             v0 = Vector(vertices[i0])
             v1 = Vector(vertices[i1])
@@ -423,7 +395,7 @@ class EqualityDecorator(DimensionDecorator):
             dir = p1 - p0
             if dir.length < 1:
                 continue
-            self.draw_label("EQ", p0 + (dir) * .5, dir)
+            self.draw_label(context, "EQ", p0 + (dir) * .5, dir)
 
 
 class LeaderDecorator(BaseDecorator):
@@ -432,7 +404,6 @@ class LeaderDecorator(BaseDecorator):
     - middle points w/out decorations
     """
     basename = "IfcAnnotation/Leader"
-    installed = None
 
     DEF_GLSL = BaseDecorator.DEF_GLSL + """
         #define ARROW_ANGLE PI / 12.0
@@ -489,9 +460,9 @@ class LeaderDecorator(BaseDecorator):
     }
     """
 
-    def decorate(self, obj):
+    def decorate(self, context, obj):
         verts, idxs, topo = self.get_path_geom(obj)
-        self.draw_lines(obj, verts, idxs, topo)
+        self.draw_lines(context, obj, verts, idxs, topo)
 
 
 class StairDecorator(BaseDecorator):
@@ -501,7 +472,6 @@ class StairDecorator(BaseDecorator):
     - middle points w/out decorations
     """
     basename = "IfcAnnotation/Stair"
-    installed = None
 
     DEF_GLSL = BaseDecorator.DEF_GLSL + """
         #define CIRCLE_SIZE 8.0
@@ -575,14 +545,13 @@ class StairDecorator(BaseDecorator):
     }
     """
 
-    def decorate(self, obj):
+    def decorate(self, context, obj):
         verts, idxs, topo = self.get_path_geom(obj)
-        self.draw_lines(obj, verts, idxs, topo)
+        self.draw_lines(context, obj, verts, idxs, topo)
 
 
 class HiddenDecorator(BaseDecorator):
     basename = "IfcAnnotation/Hidden"
-    installed = None
 
     DEF_GLSL = BaseDecorator.DEF_GLSL + """
         #define DASH_SIZE 16.0
@@ -624,6 +593,7 @@ class HiddenDecorator(BaseDecorator):
     """
 
     FRAG_GLSL = """
+    uniform vec4 color;
     in vec2 gl_FragCoord;
     in float dist;
     out vec4 fragColor;
@@ -631,21 +601,20 @@ class HiddenDecorator(BaseDecorator):
     void main() {
         uint bit = uint(fract(dist / DASH_SIZE) * 32);
         if ((DASH_PATTERN & (1U<<bit)) == 0U) discard;
-        fragColor = COLOR;
+        fragColor = color;
     }
     """
 
-    def decorate(self, obj):
+    def decorate(self, context, obj):
         if obj.data.is_editmode:
             verts, idxs = self.get_editmesh_geom(obj)
         else:
             verts, idxs = self.get_mesh_geom(obj)
-        self.draw_lines(obj, verts, idxs)
+        self.draw_lines(context, obj, verts, idxs)
 
 
 class MiscDecorator(HiddenDecorator):
     basename = "IfcAnnotation/Misc"
-    installed = None
 
     FRAG_GLSL = BaseDecorator.FRAG_GLSL
 
@@ -666,16 +635,15 @@ class LevelDecorator(BaseDecorator):
                 continue
             yield [obj.matrix_world @ p.co for p in spline_points]
 
-    def decorate(self, obj):
+    def decorate(self, context, obj):
         verts, idxs, topo = self.get_path_geom(obj)
-        self.draw_lines(obj, verts, idxs, topo)
+        self.draw_lines(context, obj, verts, idxs, topo)
         splines = self.get_splines(obj)
-        self.draw_labels(obj, splines)
+        self.draw_labels(context, obj, splines)
 
 
-class PlanDecorator(LevelDecorator):
+class PlanLevelDecorator(LevelDecorator):
     basename = "IfcAnnotation/Plan Level"
-    installed = None
 
     DEF_GLSL = BaseDecorator.DEF_GLSL + """
         #define CIRCLE_SIZE 8.0
@@ -741,9 +709,9 @@ class PlanDecorator(LevelDecorator):
     }
     """
 
-    def draw_labels(self, obj, splines):
-        region = self.context.region
-        region3d = self.context.region_data
+    def draw_labels(self, context, obj, splines):
+        region = context.region
+        region3d = context.region_data
         for verts in splines:
             v0 = verts[0]
             v1 = verts[1]
@@ -752,13 +720,12 @@ class PlanDecorator(LevelDecorator):
             dir = p1 - p0
             if dir.length < 1:
                 continue
-            text = "RL " + self.format_value(verts[-1].z)
-            self.draw_label(text, p0, dir, gap=8, center=False)
+            text = "RL " + self.format_value(context, verts[-1].z)
+            self.draw_label(context, text, p0, dir, gap=8, center=False)
 
 
-class SectionDecorator(LevelDecorator):
+class SectionLevelDecorator(LevelDecorator):
     basename = "IfcAnnotation/Section Level"
-    installed = None
 
     DEF_GLSL = BaseDecorator.DEF_GLSL + """
         #define CALLOUT_GAP 8.0
@@ -821,9 +788,9 @@ class SectionDecorator(LevelDecorator):
     }
     """
 
-    def draw_labels(self, obj, splines):
-        region = self.context.region
-        region3d = self.context.region_data
+    def draw_labels(self, context, obj, splines):
+        region = context.region
+        region3d = context.region_data
         for verts in splines:
             v0 = verts[0]
             v1 = verts[1]
@@ -832,8 +799,8 @@ class SectionDecorator(LevelDecorator):
             dir = p1 - p0
             if dir.length < 1:
                 continue
-            text = "RL " + self.format_value(verts[-1].z)
-            self.draw_label(text, p0 + dir.normalized() * 16, -dir, gap=16, center=False)
+            text = "RL " + self.format_value(context, verts[-1].z)
+            self.draw_label(context, text, p0 + dir.normalized() * 16, -dir, gap=16, center=False)
 
 
 class BreakDecorator(BaseDecorator):
@@ -843,7 +810,6 @@ class BreakDecorator(BaseDecorator):
     Uses first two vertices in verts list.
     """
     basename = "IfcAnnotation/Break"
-    installed = None
 
     DEF_GLSL = BaseDecorator.DEF_GLSL + """
         #define BREAK_LENGTH 32.0
@@ -898,12 +864,12 @@ class BreakDecorator(BaseDecorator):
     }
     """
 
-    def decorate(self, obj):
+    def decorate(self, context, obj):
         if obj.data.is_editmode:
             verts = self.get_editmesh_geom(obj)
         else:
             verts = self.get_mesh_geom(obj)
-        self.draw_lines(obj, verts, [(0, 1)])
+        self.draw_lines(context, obj, verts, [(0, 1)])
 
     def get_mesh_geom(self, obj):
         # first vertices only
@@ -919,7 +885,6 @@ class BreakDecorator(BaseDecorator):
 
 class GridDecorator(BaseDecorator):
     basename = "IfcGridAxis/"
-    installed = None
 
     DEF_GLSL = BaseDecorator.DEF_GLSL + """
         #define CIRCLE_SIZE 16.0
@@ -988,6 +953,7 @@ class GridDecorator(BaseDecorator):
     """
 
     FRAG_GLSL = """
+    uniform vec4 color;
     in vec2 gl_FragCoord;
     in float dist;
     out vec4 fragColor;
@@ -995,7 +961,7 @@ class GridDecorator(BaseDecorator):
     void main() {
         uint bit = uint(fract(dist / DASH_SIZE) * 32);
         if ((DASH_PATTERN & (1U<<bit)) == 0U) discard;
-        fragColor = COLOR;
+        fragColor = color;
     }
     """
 
@@ -1010,36 +976,169 @@ class GridDecorator(BaseDecorator):
         vertices = [obj.matrix_world @ v.co for v in mesh.edges[0].verts]
         return vertices
 
-    def decorate(self, obj):
+    def decorate(self, context, obj):
         if obj.data.is_editmode:
             verts = self.get_editmesh_geom(obj)
         else:
             verts = self.get_mesh_geom(obj)
-        self.draw_lines(obj, verts, [(0, 1)])
-        self.draw_labels(obj, verts)
+        self.draw_lines(context, obj, verts, [(0, 1)])
+        self.draw_labels(context, obj, verts)
 
-    def draw_labels(self, obj, vertices):
-        region = self.context.region
-        region3d = self.context.region_data
+    def draw_labels(self, context, obj, vertices):
+        region = context.region
+        region3d = context.region_data
         v0 = Vector(vertices[0])
         v1 = Vector(vertices[1])
         p0 = location_3d_to_region_2d(region, region3d, v0)
         p1 = location_3d_to_region_2d(region, region3d, v1)
         dir = Vector((1, 0))
         text = obj.BIMObjectProperties.attributes['AxisTag'].string_value
-        self.draw_label(text, p0, dir, vcenter=True, gap=0)
-        self.draw_label(text, p1, dir, vcenter=True, gap=0)
+        self.draw_label(context, text, p0, dir, vcenter=True, gap=0)
+        self.draw_label(context, text, p1, dir, vcenter=True, gap=0)
 
 
-all_decorators = [
-    DimensionDecorator,
-    EqualityDecorator,
-    GridDecorator,
-    HiddenDecorator,
-    LeaderDecorator,
-    MiscDecorator,
-    PlanDecorator,
-    SectionDecorator,
-    StairDecorator,
-    BreakDecorator
-]
+class SectionViewDecorator(LevelDecorator):
+    basename = "IfcAnnotation/Section"
+
+    DEF_GLSL = BaseDecorator.DEF_GLSL + """
+        #define CIRCLE_SIZE 8.0
+        #define TRIANGLE_L 32.0
+        #define TRIANGLE_W 16.0
+    """
+
+    GEOM_GLSL = """
+    uniform vec2 winsize;
+
+    layout(lines) in;
+    layout(line_strip, max_vertices=MAX_POINTS) out;
+
+    void triangle_head(in vec4 dir, in vec4 side, in float length, in float width, out vec4 head[3]) {
+        vec4 nose = dir * length;
+        vec4 ear = side * width;
+        head[0] = vec4(0);
+        head[1] = nose * .5 + ear;
+        head[2] = nose;
+    }
+
+    void main() {
+        vec4 clip2win = matCLIP2WIN();
+        vec4 win2clip = matWIN2CLIP();
+
+        vec4 p0 = gl_in[0].gl_Position, p1 = gl_in[1].gl_Position;
+
+        vec4 p0w = CLIP2WIN(p0), p1w = CLIP2WIN(p1);
+        vec4 edge = p1w - p0w, dir = normalize(edge);
+        vec4 gap = dir * TRIANGLE_L * .5;
+        vec4 side = vec4(cross(vec3(dir.xy, 0), vec3(0, 0, 1)).xy, 0, 0);
+        vec4 p;
+
+        vec4 head[CIRCLE_SEGS];
+        circle_head(CIRCLE_SIZE, head);
+
+        vec4 head3[3];
+
+        // start edge circle
+        for(int i=0; i<CIRCLE_SEGS; i++) {
+            p = p0w + gap + head[i];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+        }
+        p = p0w + gap + head[0];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+
+        // start edge triangle
+        triangle_head(dir, -side, TRIANGLE_L, TRIANGLE_W, head3);
+        p = p0w + head3[0];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p0w + head3[1];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p0w + head3[2];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+
+        // end edge circle
+        for(int i=0; i<CIRCLE_SEGS; i++) {
+            p = p1w - gap + head[i];
+            gl_Position = WIN2CLIP(p);
+            EmitVertex();
+        }
+        p = p1w - gap + head[0];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+
+        // end edge triangle
+        triangle_head(-dir, -side, TRIANGLE_L, TRIANGLE_W, head3);
+        p = p1w + head3[0];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p1w + head3[1];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        p = p1w + head3[2];
+        gl_Position = WIN2CLIP(p);
+        EmitVertex();
+        EndPrimitive();
+
+        // stem
+        gl_Position = p0;
+        EmitVertex();
+        gl_Position = p1;
+        EmitVertex();
+        EndPrimitive();
+    }
+    """
+
+    def decorate(self, context, obj):
+        verts, _, _ = self.get_path_geom(obj, topo=False)
+        self.draw_lines(context, obj, verts, [(0, 1)])
+
+
+class DecorationsHandler():
+    decorators_classes = [
+        DimensionDecorator,
+        EqualityDecorator,
+        GridDecorator,
+        HiddenDecorator,
+        LeaderDecorator,
+        MiscDecorator,
+        PlanLevelDecorator,
+        SectionLevelDecorator,
+        StairDecorator,
+        BreakDecorator,
+        SectionViewDecorator
+    ]
+
+    installed = None
+
+    @classmethod
+    def install(cls, context):
+        if cls.installed:
+            cls.uninstall()
+        handler = cls()
+        cls.installed = SpaceView3D.draw_handler_add(handler, (context,), 'WINDOW', 'POST_PIXEL')
+
+    @classmethod
+    def uninstall(cls):
+        try:
+            SpaceView3D.draw_handler_remove(cls.installed, 'WINDOW')
+        except ValueError:
+            pass
+        cls.installed = None
+
+    def __init__(self):
+        self.decorators = [cls() for cls in self.decorators_classes]
+
+    def __call__(self, context):
+        collection, _ = helper.get_active_drawing(context.scene)
+        if collection is None:
+            return
+
+        for decorator in self.decorators:
+            for obj in decorator.get_objects(collection):
+                decorator.decorate(context, obj)

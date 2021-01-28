@@ -1,4 +1,7 @@
+import bpy
+import bmesh
 import ifcopenshell.util.unit
+from mathutils import Vector
 
 
 class Usecase:
@@ -7,10 +10,12 @@ class Usecase:
         self.file = file
         self.settings = {
             "context": None,  # IfcGeometricRepresentationContext
+            "blender_object": None,  # This is (currently) a Blender object, hence this depends on Blender now
             "geometry": None,  # This is (currently) a Blender data object, hence this depends on Blender now
             "total_items": 1,  # How many representation items to create
             "unit_scale": None,  # A scale factor to apply for all vectors in case the unit is different
             "should_force_faceted_brep": False,  # If we should force faceted breps for meshes
+            "should_force_triangulation": False,  # If we should force triangulation for meshes
             "is_wireframe": False,  # If the geometry is a wireframe
             "is_curve": False,  # If the geometry is a Blender curve
             "is_point_cloud": False,  # If the geometry is a point cloud
@@ -20,6 +25,7 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
+        self.evaluate_geometry()
         if self.settings["unit_scale"] is None:
             self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         if self.settings["context"].ContextType == "Model":
@@ -27,6 +33,36 @@ class Usecase:
         elif self.settings["context"].ContextType == "Plan":
             return self.create_plan_representation()
         return self.create_variable_representation()
+
+    def evaluate_geometry(self):
+        self.boolean_modifiers = []
+        for modifier in self.settings["blender_object"].modifiers:
+            if not modifier.type == "BOOLEAN":
+                continue
+            modifier_data = {}
+            for name in ["operation", "operand_type", "object", "solver", "use_self"]:
+                modifier_data[name] = getattr(modifier, name)
+            self.boolean_modifiers.append(modifier_data)
+            self.settings["blender_object"].modifiers.remove(modifier)
+
+        if self.settings["should_force_triangulation"]:
+            mesh = self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+            bm = bmesh.new()
+            bm.from_mesh(mesh)
+            bmesh.ops.triangulate(bm, faces=bm.faces)
+            bm.to_mesh(mesh)
+            bm.free()
+            del bm
+            self.settings["geometry"] = mesh
+        else:
+            self.settings["geometry"] = (
+                self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+            )
+
+        for modifier in self.boolean_modifiers:
+            new = self.settings["blender_object"].modifiers.new("IfcOpeningElement", "BOOLEAN")
+            for key, value in modifier.items():
+                setattr(new, key, value)
 
     def create_model_representation(self):
         if self.settings["context"].is_a() == "IfcGeometricRepresentationContext":
@@ -89,6 +125,95 @@ class Usecase:
             return self.create_point_cloud_representation()
         return self.create_mesh_representation()
 
+    def create_curve3d_representation(self):
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "Curve3D",
+            self.create_curves(),
+        )
+
+    def create_curves(self, is_2d=False):
+        if isinstance(self.settings["geometry"], bpy.types.Mesh):
+            if self.file.schema == "IFC2X3":
+                return self.create_curves_from_mesh_ifc2x3(is_2d=is_2d)
+            else:
+                return self.create_curves_from_mesh(is_2d=is_2d)
+        elif isinstance(self.settings["geometry"], bpy.types.Curve):
+            return self.create_curves_from_curve(is_2d=is_2d)
+
+    def create_curves_from_mesh(self, is_2d=False):
+        curves = []
+        points = self.create_cartesian_point_list_from_vertices(self.settings["geometry"].vertices, is_2d=is_2d)
+        edge_loops = []
+        previous_edge = None
+        edge_loop = []
+        for edge in self.settings["geometry"].edges:
+            if (Vector(points.CoordList[edge.vertices[0]]) - Vector(points.CoordList[edge.vertices[1]])).length < 0.001:
+                # Maybe we should warn the user to weld vertices in this scenario?
+                continue
+            elif previous_edge is None:
+                edge_loop = [self.file.createIfcLineIndex((edge.vertices[0] + 1, edge.vertices[1] + 1))]
+            elif edge.vertices[0] == previous_edge.vertices[1]:
+                edge_loop.append(self.file.createIfcLineIndex((edge.vertices[0] + 1, edge.vertices[1] + 1)))
+            else:
+                edge_loops.append(edge_loop)
+                edge_loop = [self.file.createIfcLineIndex((edge.vertices[0] + 1, edge.vertices[1] + 1))]
+            previous_edge = edge
+        edge_loops.append(edge_loop)
+        for edge_loop in edge_loops:
+            curves.append(self.file.createIfcIndexedPolyCurve(points, edge_loop))
+        return curves
+
+    def create_curves_from_mesh_ifc2x3(self, is_2d=False):
+        curves = []
+        points = [
+            self.create_cartesian_point(v.co.x, v.co.y, v.co.z if is_2d else None)
+            for v in self.settings["geometry"].vertices
+        ]
+        coord_list = [p.Coordinates for p in points]
+        edge_loops = []
+        previous_edge = None
+        edge_loop = []
+        for edge in self.settings["geometry"].edges:
+            if (Vector(coord_list[edge.vertices[0]]) - Vector(coord_list[edge.vertices[1]])).length < 0.001:
+                # Maybe we should warn the user to weld vertices in this scenario?
+                continue
+            elif previous_edge is None:
+                edge_loop = [edge.vertices]
+            elif edge.vertices[0] == previous_edge.vertices[1]:
+                edge_loop.append(edge.vertices)
+            else:
+                edge_loops.append(edge_loop)
+                edge_loop = [edge.vertices]
+            previous_edge = edge
+        edge_loops.append(edge_loop)
+        for edge_loop in edge_loops:
+            loop_points = [points[p[0]] for p in edge_loop]
+            loop_points.append(points[edge_loop[-1][1]])
+            curves.append(self.file.createIfcPolyline(loop_points))
+        return curves
+
+    def create_curves_from_curve(self, is_2d=False):
+        results = []
+        for spline in self.settings["geometry"].splines:
+            # TODO: support interpolated curves, not just polylines
+            points = []
+            for point in spline.bezier_points:
+                if is_2d:
+                    points.append(self.create_cartesian_point(point.co.x, point.co.y))
+                else:
+                    points.append(self.create_cartesian_point(point.co.x, point.co.y, point.co.z))
+            for point in spline.points:
+                if is_2d:
+                    points.append(self.create_cartesian_point(point.co.x, point.co.y))
+                else:
+                    points.append(self.create_cartesian_point(point.co.x, point.co.y, point.co.z))
+            if spline.use_cyclic_u:
+                points.append(points[0])
+            results.append(self.file.createIfcPolyline(points))
+        return results
+
     def create_mesh_representation(self):
         if self.file.schema == "IFC2X3" or self.settings["should_force_faceted_brep"]:
             return self.create_faceted_brep()
@@ -119,6 +244,25 @@ class Usecase:
             items,
         )
 
+    def create_polygonal_face_set(self):
+        ifc_raw_items = [None] * self.settings["total_items"]
+        for i, value in enumerate(ifc_raw_items):
+            ifc_raw_items[i] = []
+        for polygon in self.settings["geometry"].polygons:
+            ifc_raw_items[polygon.material_index % self.settings["total_items"]].append(
+                self.file.createIfcIndexedPolygonalFace([v + 1 for v in polygon.vertices])
+            )
+        coordinates = self.file.createIfcCartesianPointList3D(
+            [self.convert_si_to_unit(v.co) for v in self.settings["geometry"].vertices]
+        )
+        items = [self.file.createIfcPolygonalFaceSet(coordinates, None, i) for i in ifc_raw_items if i]
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "Tessellation",
+            items,
+        )
+
     def create_vertices(self, is_2d=False):
         if is_2d:
             for v in self.settings["geometry"].vertices:
@@ -131,6 +275,19 @@ class Usecase:
                 for v in self.settings["geometry"].vertices
             ]
         )
+
+    def create_cartesian_point(self, x, y, z=None):
+        x = self.convert_si_to_unit(x)
+        y = self.convert_si_to_unit(y)
+        if z is None:
+            return self.file.createIfcCartesianPoint((x, y))
+        z = self.convert_si_to_unit(z)
+        return self.file.createIfcCartesianPoint((x, y, z))
+
+    def create_cartesian_point_list_from_vertices(self, vertices, is_2d=False):
+        if is_2d:
+            return self.file.createIfcCartesianPointList2D([self.convert_si_to_unit(v.co.xy) for v in vertices])
+        return self.file.createIfcCartesianPointList3D([self.convert_si_to_unit(v.co) for v in vertices])
 
     def convert_si_to_unit(self, co):
         return co / self.settings["unit_scale"]

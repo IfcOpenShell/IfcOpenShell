@@ -55,6 +55,18 @@ if not %ERRORLEVEL%==0 (
 :: Set up variables depending on the used Visual Studio version
 call vs-cfg.cmd %1
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+
+:: Set up the BuildDepsCache.txt filename
+IF DEFINED VS_TOOLSET (
+    set BUILDDEPTHCACHE=BuildDepsCache-%VS_PLATFORM%-%VS_TOOLSET%.txt
+) ELSE (
+    set BUILDDEPTHCACHE=BuildDepsCache-%VS_PLATFORM%.txt
+)
+
+:: fix for Visual C++ hanging when compiling 32-bit release OCCT up to version 7.4.0
+:: see https://tracker.dev.opencascade.org/view.php?id=31628
+SET COMPILE_WITH_WPO=FALSE
+
 call build-type-cfg.cmd %2
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
@@ -111,6 +123,10 @@ call cecho.cmd 0 13 "* CMake Generator`t= '`"%GENERATOR%`'`t
 echo   - Passed to CMake -G option.
 call cecho.cmd 0 13 "* Target Architecture`t= %TARGET_ARCH%"
 echo   - Whether were doing 32-bit (x86) or 64-bit (x64) build.
+call cecho.cmd 0 13 "* Target Platform`t= %VS_PLATFORM%"
+echo   - Passed to CMake -A option.
+call cecho.cmd 0 13 "* Target Toolset`t= %VS_TOOLSET%"
+echo   - Passed to CMake -T option.
 call cecho.cmd 0 13 "* Dependency Directory`t= %DEPS_DIR%"
 echo   - The directory where %PROJECT_NAME% dependencies are fetched and built.
 call cecho.cmd 0 13 "* Installation Directory = %INSTALL_DIR%"
@@ -146,7 +162,7 @@ set /p do_continue="> "
 if "%do_continue%"=="n" goto :Finish
 
 :: Cache last used CMake generator for other scripts to use
-if defined GEN_SHORTHAND echo GEN_SHORTHAND=%GEN_SHORTHAND%>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+if defined GEN_SHORTHAND echo GEN_SHORTHAND=%GEN_SHORTHAND%>"%~dp0\%BUILDDEPTHCACHE%"
 
 echo.
 set START_TIME=%TIME%
@@ -160,13 +176,13 @@ cd "%DEPS_DIR%"
 :: by modifying this file and using goto.
 :Boost
 :: NOTE Boost < 1.64 doesn't work without tricks if the user has only VS 2017 installed and no earlier versions.
-set BOOST_VERSION=1.67.0
+set BOOST_VERSION=1.74.0
 :: Version string with underscores instead of dots.
 set BOOST_VER=%BOOST_VERSION:.=_%
 :: DEPENDENCY_NAME is used for logging and DEPENDENCY_DIR for saving from some redundant typing
 set DEPENDENCY_NAME=Boost %BOOST_VERSION%
 set DEPENDENCY_DIR=%DEPS_DIR%\boost_%BOOST_VER%
-set BOOST_LIBRARYDIR=%DEPENDENCY_DIR%\stage\%VS_PLATFORM%\lib
+set BOOST_LIBRARYDIR=%DEPENDENCY_DIR%\stage\%GEN_SHORTHAND%\lib
 :: NOTE Also zip download exists, if encountering problems with 7z for some reason.
 set ZIP_EXT=7z
 set BOOST_ZIP=boost_%BOOST_VER%.%ZIP_EXT%
@@ -183,7 +199,7 @@ if not exist "%DEPENDENCY_DIR%\project-config.jam". (
     IF NOT EXIST "%DEPENDENCY_DIR%\boost.css" GOTO :Error
     cd "%DEPENDENCY_DIR%"
     call cecho.cmd 0 13 "Building Boost build script."
-    call bootstrap msvc
+    call bootstrap %BOOST_BOOTSTRAP_VER%
     IF NOT %ERRORLEVEL%==0 GOTO :Error
 )
 
@@ -192,14 +208,10 @@ set BOOST_LIBS=--with-system --with-regex --with-thread --with-program_options -
 cd "%DEPENDENCY_DIR%"
 call cecho.cmd 0 13 "Building %DEPENDENCY_NAME% %BOOST_LIBS% Please be patient, this will take a while."
 IF EXIST "%DEPENDENCY_DIR%\bin.v2\project-cache.jam" del "%DEPS_DIR%\boost\bin.v2\project-cache.jam"
-:: BOOST_VC_VER can be empty (or needs to be) for newer VS versions
-set BOOST_VC_VER=
-if %VS_VER% LSS 2017 (
-    set BOOST_VC_VER=-%VC_VER%.0
-)
 
-call .\b2 toolset=msvc%BOOST_VC_VER% runtime-link=static address-model=%ARCH_BITS% -j%IFCOS_NUM_BUILD_PROCS% ^
-    variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_LIBS% stage --stagedir=stage/vs%VS_VER%-%VS_PLATFORM% 
+call .\b2 toolset=%BOOST_TOOLSET% runtime-link=static address-model=%ARCH_BITS% -j%IFCOS_NUM_BUILD_PROCS% ^
+    variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_WIN_API% %BOOST_LIBS% stage --stagedir=stage/%GEN_SHORTHAND% 
+
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :JSON
@@ -237,10 +249,10 @@ if %IFCOS_USE_OCCT%==FALSE goto :OCE
 set OCCT_VERSION=7.3.0p3
 SET OCCT_VER=V%OCCT_VERSION:.=_%
 
-set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\inc>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
-set OCC_LIBRARY_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\lib>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
-echo OCC_INCLUDE_DIR=%OCC_INCLUDE_DIR%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
-echo OCC_LIBRARY_DIR=%OCC_LIBRARY_DIR%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\inc>>"%~dp0\%BUILDDEPTHCACHE%"
+set OCC_LIBRARY_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\lib>>"%~dp0\%BUILDDEPTHCACHE%"
+echo OCC_INCLUDE_DIR=%OCC_INCLUDE_DIR%>>"%~dp0\%BUILDDEPTHCACHE%"
+echo OCC_LIBRARY_DIR=%OCC_LIBRARY_DIR%>>"%~dp0\%BUILDDEPTHCACHE%"
 
 :: OCCT has many dependencies but FreeType is the only mandatory
 set DEPENDENCY_NAME=FreeType
@@ -280,11 +292,22 @@ cd "%DEPENDENCY_DIR%"
 call :RunCMake -DINSTALL_DIR="%INSTALL_DIR%\opencascade-%OCCT_VERSION%" -DBUILD_LIBRARY_TYPE="Static" -DCMAKE_DEBUG_POSTFIX=d ^
     -DBUILD_MODULE_Draw=0 -D3RDPARTY_FREETYPE_DIR="%INSTALL_DIR%\freetype"
 if not %ERRORLEVEL%==0 goto :Error
+
+:: whole program optimization avoids Visual C++ hanging when compiling 32-bit release OCCT up to version 7.4.0
+IF %ARCH_BITS%==32 (
+	IF %BUILD_CFG%==Release (
+		SET COMPILE_WITH_WPO=TRUE
+	)
+)
+
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\OCCT.sln" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
-:: Use a single lib directory for for release and debug libraries as is done with OCE
+
+SET COMPILE_WITH_WPO=FALSE
+
+:: Use a single lib directory for release and debug libraries as is done with OCE
 if not exist "%OCC_LIBRARY_DIR%". mkdir "%OCC_LIBRARY_DIR%"
 :: NOTE OCCT (at least occt-V7_0_0-9059ca1) directory creation code is hardcoded and doesn't seem handle future VC versions
 set OCCT_VC_VER=%VC_VER%
@@ -303,10 +326,10 @@ del "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\*.bat"
 goto :Python
 
 :OCE
-set OCC_INCLUDE_DIR=%INSTALL_DIR%\oce\include\oce>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
-set OCC_LIBRARY_DIR=%INSTALL_DIR%\oce\Win%ARCH_BITS%\lib>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
-echo OCC_INCLUDE_DIR=%OCC_INCLUDE_DIR%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
-echo OCC_LIBRARY_DIR=%OCC_LIBRARY_DIR%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+set OCC_INCLUDE_DIR=%INSTALL_DIR%\oce\include\oce>>"%~dp0\%BUILDDEPTHCACHE%"
+set OCC_LIBRARY_DIR=%INSTALL_DIR%\oce\Win%ARCH_BITS%\lib>>"%~dp0\%BUILDDEPTHCACHE%"
+echo OCC_INCLUDE_DIR=%OCC_INCLUDE_DIR%>>"%~dp0\%BUILDDEPTHCACHE%"
+echo OCC_LIBRARY_DIR=%OCC_LIBRARY_DIR%>>"%~dp0\%BUILDDEPTHCACHE%"
 
 set DEPENDENCY_NAME=Open CASCADE Community Edition
 set DEPENDENCY_DIR=%DEPS_DIR%\oce
@@ -346,8 +369,8 @@ set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.msi
 :: NOTE/TODO 3.5.0 doesn't use MSI any longer, but exe: set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.exe
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     REM Store Python versions to BuildDepsCache.txt for run-cmake.bat
-    echo PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
-    echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+    echo PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR%>>"%~dp0\%BUILDDEPTHCACHE%"
+    echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\%BUILDDEPTHCACHE%"
 
     cd "%DEPS_DIR%"
     call :DownloadFile https://www.python.org/ftp/python/%PYTHON_VERSION%/%PYTHON_INSTALLER% "%DEPS_DIR%" %PYTHON_INSTALLER%
@@ -502,7 +525,13 @@ pushd %BUILD_DIR%
 :: TODO make deleting cache a parameter for this subroutine? We probably want to delete the 
 :: cache always e.g. when we've had new changes in the repository.
 IF %BUILD_TYPE%==Rebuild IF EXIST CMakeCache.txt. del CMakeCache.txt
-cmake .. -G %GENERATOR% %*
+
+IF DEFINED VS_TOOLSET (
+    cmake .. -G %GENERATOR% -A %VS_PLATFORM% -T %VS_TOOLSET% %*
+) ELSE (
+    cmake .. -G %GENERATOR% -A %VS_PLATFORM% %*
+)
+
 set RET=%ERRORLEVEL%
 popd
 exit /b %RET%
@@ -513,7 +542,13 @@ exit /b %RET%
 :: Params: %1 solutioName, %2 configuration
 :BuildSolution
 call cecho.cmd 0 13 "Building %2 %DEPENDENCY_NAME%. Please be patient, this will take a while."
-%MSBUILD_CMD% %1 /p:configuration=%2;platform=%VS_PLATFORM%
+
+:: whole program optimization avoids Visual C++ hanging when compiling 32-bit release OCCT up to version 7.4.0
+IF %COMPILE_WITH_WPO%==FALSE (
+	%MSBUILD_CMD% %1 /p:configuration=%2;platform=%VS_PLATFORM%
+) ELSE (
+	%MSBUILD_CMD% %1 /p:configuration=%2;platform=%VS_PLATFORM%;WholeProgramOptimization=TRUE
+)
 exit /b %ERRORLEVEL%
 
 :: InstallCMakeProject - Builds the INSTALL project of CMake-based project
@@ -523,7 +558,13 @@ exit /b %ERRORLEVEL%
 :InstallCMakeProject
 pushd %1
 call cecho.cmd 0 13 "Installing %2 %DEPENDENCY_NAME%. Please be patient, this will take a while."
-%INSTALL_CMD% INSTALL.%VCPROJ_FILE_EXT% /p:configuration=%2;platform=%VS_PLATFORM%
+
+:: whole program optimization avoids Visual C++ hanging when compiling 32-bit release OCCT up to version 7.4.0
+IF %COMPILE_WITH_WPO%==FALSE (
+	%INSTALL_CMD% INSTALL.%VCPROJ_FILE_EXT% /p:configuration=%2;platform=%VS_PLATFORM%
+) ELSE (
+	%INSTALL_CMD% INSTALL.%VCPROJ_FILE_EXT% /p:configuration=%2;platform=%VS_PLATFORM%;WholeProgramOptimization=TRUE
+)
 set RET=%ERRORLEVEL%
 popd
 exit /b %RET%
@@ -537,7 +578,7 @@ echo  2. Install Git and make sure 'git' is accessible from PATH.
 echo   - https://git-for-windows.github.io/
 echo  3. Install CMake and make sure 'cmake' is accessible from PATH.
 echo   - http://www.cmake.org/
-echo  4. Visual Studio 2008 or newer (2013 or newer recommended) with C++ toolset.
+echo  4. Visual Studio 2013 or newer with C++ toolset.
 echo   - https://www.visualstudio.com/
 echo  5. Run this batch script with Visual Studio environment variables set.
 echo   - https://msdn.microsoft.com/en-us/library/ms229859(v=vs.110).aspx

@@ -2,9 +2,13 @@ import gettext  # noqa
 from behave import given
 from behave import step
 
-from ifcdata_methods import assert_schema
+import ifcdata_methods as idm
 from utils import IfcFile
 from utils import switch_locale
+
+
+the_lang = "en"
+
 
 @step('The IFC schema "{schema}" must be provided')
 def step_impl(context, schema):
@@ -15,6 +19,7 @@ def step_impl(context, schema):
     except:
         assert False, f"The schema {schema} could not be loaded"
 
+
 @step('The IFC file "{file}" must be provided')
 def step_impl(context, file):
     try:
@@ -22,12 +27,12 @@ def step_impl(context, file):
     except:
         assert False, f"The file {file} could not be loaded"
 
-@given('The IFC file has been provided through an argument')
+
+@given("The IFC file has been provided through an argument")
 def step_impl(context):
-    try:
-        IfcFile.load(context.config.userdata.get("ifcfile"))
-    except:
-        assert False, f"The IFC {context.config.userdata.get('ifcfile')} file could not be loaded"
+    switch_locale(context.localedir, the_lang)
+    idm.provide_ifcfile_by_argument(context)
+
 
 @given('A file path has been provided through an argument')
 def step_impl(context):
@@ -36,10 +41,11 @@ def step_impl(context):
     except:
         assert False, f"The path {context.config.userdata.get('path')} could not be loaded"
 
+
 @step("IFC data must use the {schema} schema")
 def step_impl(context, schema):
-    switch_locale(context.localedir, "en")
-    assert_schema(context, schema)
+    switch_locale(context.localedir, the_lang)
+    idm.has_ifcdata_specific_schema(context, schema)
     
 
 @step('The IFC file "{file}" is exempt from being provided')

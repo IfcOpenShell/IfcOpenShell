@@ -1,6 +1,9 @@
 import bpy
 import json
+import ifcopenshell
+import ifcopenshell.util.element
 from math import degrees, atan2
+from blenderbim.bim.ifc import IfcStore
 
 from .api import Api
 
@@ -70,6 +73,7 @@ class RunAnalysis(bpy.types.Operator):
     bl_label = "Run Analysis"
 
     def execute(self, context):
+        self.file = IfcStore.get_file()
         self.inputs = {
             "floors": [],
             "walls": [],
@@ -94,16 +98,13 @@ class RunAnalysis(bpy.types.Operator):
         return {"FINISHED"}
 
     def get_rotation_angle(self):
-        if (
-            not bpy.context.scene.BIMProperties.has_georeferencing
-            or not bpy.context.scene.MapConversion.x_axis_abscissa
-            or not bpy.context.scene.MapConversion.x_axis_ordinate
-        ):
+        if not self.file.by_type("IfcMapConversion"):
             return 0
+        map_conversion = self.file.by_type("IfcMapConversion")[0]
         rotation = -1 * degrees(
             atan2(
-                float(bpy.context.scene.MapConversion.x_axis_ordinate),
-                float(bpy.context.scene.MapConversion.x_axis_abscissa),
+                float(map_conversion.XAxisOrdinate or 0),
+                float(map_conversion.XAxisAbscissa or 1),
             )
         )
         if rotation < 0:
@@ -164,34 +165,36 @@ class RunAnalysis(bpy.types.Operator):
     def get_covetool_category(self, obj):
         if not hasattr(obj, "data") or not isinstance(obj.data, bpy.types.Mesh):
             return
-        if "IfcSlab" in obj.name:
+        if not obj.BIMObjectProperties.ifc_definition_id:
+            return
+        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        ifc_class = element.is_a()
+        if "IfcSlab" in ifc_class:
             return "floors"
-        elif "IfcRoof" in obj.name:
+        elif "IfcRoof" in ifc_class:
             return "roofs"
-        elif "IfcWall" in obj.name:
-            if self.is_wall_internal(obj):
+        elif "IfcWall" in ifc_class:
+            if self.is_wall_internal(element):
                 return "interior_walls"
             return "walls"
-        elif "IfcWindow" in obj.name:
-            if self.is_window_skylight(obj):
+        elif "IfcWindow" in ifc_class:
+            if self.is_window_skylight(element):
                 return "skylights"
             return "windows"
-        elif "IfcShadingDevice" in obj.name:
+        elif "IfcShadingDevice" in ifc_class:
             return "shading_devices"
 
-    def is_wall_internal(self, obj):
-        pset_wallcommon = obj.BIMObjectProperties.psets.get("Pset_WallCommon")
-        if pset_wallcommon:
-            is_external = pset_wallcommon.properties.get("IsExternal")
-            if is_external:
-                if is_external.string_value == "True":
-                    return False
-                else:
-                    return True
-        predefined_type = obj.BIMObjectProperties.attributes.get("PredefinedType")
-        if predefined_type and predefined_type.string_value in ["MOVABLE", "PARTITIONING", "PLUMBINGWALL"]:
+    def is_wall_internal(self, element):
+        psets = ifcopenshell.util.element.get_psets(element)
+        pset = psets.get("Pset_WallCommon")
+        if pset:
+            is_external = pset.get("IsExternal", None)
+            if is_external is not None:
+                return is_external
+        predefined_type = element.get_info().get("PredefinedType")
+        if predefined_type and predefined_type in ["MOVABLE", "PARTITIONING", "PLUMBINGWALL"]:
             return True
 
-    def is_window_skylight(self, obj):
-        predefined_type = obj.BIMObjectProperties.attributes.get("PredefinedType")
+    def is_window_skylight(self, element):
+        predefined_type = element.get_info().get("PredefinedType")
         return predefined_type and predefined_type.string_value == "SKYLIGHT"

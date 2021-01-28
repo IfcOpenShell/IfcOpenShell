@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
 
 import argparse
+import os
 
 from bimtester import clean
 from bimtester import reports
 from bimtester import run
 
 
-def show_widget(features="", ifcfile=""):
+def show_widget(
+    features="",
+    ifcfile="",
+    get_featurepath_from_ifcpath=False,
+    args=[]
+):
 
     import sys
     from PySide2 import QtWidgets
@@ -18,7 +24,12 @@ def show_widget(features="", ifcfile=""):
     app = QtWidgets.QApplication(sys.argv)
 
     # Create and show the form
-    form = GuiWidgetBimTester(features, ifcfile)
+    form = GuiWidgetBimTester(
+        features,
+        ifcfile,
+        get_featurepath_from_ifcpath,
+        args
+    )
     form.show()
 
     # Run the main Qt loop
@@ -27,14 +38,75 @@ def show_widget(features="", ifcfile=""):
 
 if __name__ == "__main__":
 
+    # TODO make similar to bash commands
+    # use - not _ in named args
+
     parser = argparse.ArgumentParser(
         description="Runs unit tests for BIM data"
+    )
+    parser.add_argument(
+        "-a",
+        "--advanced-arguments",
+        type=str,
+        help="Specify your own arguments to Python's Behave",
+        default=""
+    )
+    parser.add_argument(
+        "-c",
+        "--console",
+        action="store_true",
+        help="Show results in the console"
+    )
+    parser.add_argument(
+        "-d",
+        "--featuresdir",
+        type=str,
+        help=(
+            "Specify a features directory. This should contain "
+            "a directory named 'features' which contains all the "
+            "feature files."
+        ),
+        default=""
+    )
+    parser.add_argument(
+        "-f",
+        "--feature",
+        type=str,
+        help="Specify a feature file to test",
+        default=""
+    )
+    parser.add_argument(
+        "-g",
+        "--gui",
+        action="store_true",
+        help=(
+            "Start the gui. The option t (copyintemprun) "
+            "is triggered automaticly."
+        )
+    )
+    parser.add_argument(
+        "-i",
+        "--ifcfile",
+        type=str,
+        help=(
+            "Specify a ifc file."
+        ),
+        default=""
     )
     parser.add_argument(
         "-p",
         "--purge",
         action="store_true",
         help="Purge tests of deleted elements"
+    )
+    parser.add_argument(
+        "-path",
+        "--path",
+        type=str,
+        help=(
+            "Specify a path to prepend to feature and ifc file"
+        ),
+        default=""
     )
     parser.add_argument(
         "-r",
@@ -49,66 +121,18 @@ if __name__ == "__main__":
         help="Generate a HTML report after running the tests"
     )
     parser.add_argument(
-        "-path",
-        "--path",
-        type=str,
-        help=(
-            "Specify a path to prepend to feature and ifc file"
-        ),
-        default=""
-    )
-    parser.add_argument(
-        "-c",
-        "--console",
-        action="store_true",
-        help="Show results in the console"
-    )
-    parser.add_argument(
-        "-f",
-        "--feature",
-        type=str,
-        help="Specify a feature file to test",
-        default=""
-    )
-    parser.add_argument(
-        "-a",
-        "--advanced-arguments",
-        type=str,
-        help="Specify your own arguments to Python's Behave",
-        default=""
-    )
-    parser.add_argument(
-        "-g",
-        "--gui",
+        "-t",
+        "--copyintemprun",
         action="store_true",
         help=(
-            "Start the gui. The option t (run in temp directory) "
-            "is triggered automaticly."
+            "Copy steps and feature files into a temporary directory "
+            "and run bimtester with them."
         )
-    )
-    parser.add_argument(
-        "featuresdir",
-        type=str,
-        nargs="?",
-        help=(
-            "Specify a features directory. This should contain "
-            " a directory named features which contains all the "
-            "feature files."
-        ),
-        default=""
-    )
-    parser.add_argument(
-        "ifcfile",
-        type=str,
-        nargs="?",
-        help=(
-            "Specify a ifc file."
-        ),
-        default=""
     )
 
     args = vars(parser.parse_args())
-    print(args)
+    from json import dumps
+    print(dumps(args, indent=4))
 
     if args["path"]:
         if args["feature"]:
@@ -121,9 +145,19 @@ if __name__ == "__main__":
     elif args["report"]:
         reports.generate_report()
     elif args["gui"]:
-        show_widget(args["featuresdir"], args["ifcfile"])
+        args["copyintemprun"] = True
+        fea = args["featuresdir"]
+        ifc = args["ifcfile"]
+        if fea != "" and ifc != "":
+            show_widget(fea, ifc, False, args)
+        elif fea == "" and ifc != "":
+            show_widget(fea, ifc, True, args)
+    elif args["copyintemprun"]:
+        run.run_tests(args)
+        # TODO merge with else, but do not forget the tmp dir is not known
     else:
         run.run_tests(args)
         if args["report_after_run"]:
             reports.generate_report()
+
     print("# All tasks are complete :-)")

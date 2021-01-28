@@ -1861,12 +1861,18 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 				std::vector<unsigned>& ids = byref_it->second;
 				ids.erase(std::remove(ids.begin(), ids.end(), id), ids.end());
 			}
+			by_ref_cached_.erase(name);
 		}
 	}
 
 	if (entity->declaration().is(*ifcroot_type_)) {
 		const std::string global_id = *entity->data().getArgument(0);
-		byguid.erase(byguid.find(global_id));
+		auto it = byguid.find(global_id);
+		if (it != byguid.end()) {
+			byguid.erase(it);
+		} else {
+			Logger::Warning("GlobalId on rooted instance not encountered in map");
+		}
 	}
 	
 	byid.erase(byid.find(id));
@@ -1895,6 +1901,16 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 			ty = pt;
 		} else {
 			break;
+		}
+	}
+
+	// This entity_file_map remains obviously flawed, but until we have proper lookup by value, or another mechanism,
+	// to prevent duplicate definitions with usage of add() we have to keep it. This might be a good moment to clear it.
+	for (auto it = entity_file_map.begin(); it != entity_file_map.end();) {
+		if (it->second == entity) {
+			it = entity_file_map.erase(it);
+		} else {
+			++it;
 		}
 	}
 	

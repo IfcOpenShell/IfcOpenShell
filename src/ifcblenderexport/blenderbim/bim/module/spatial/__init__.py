@@ -3,6 +3,9 @@ from . import ui, operator
 
 classes = (
     operator.AssignContainer,
+    operator.RemoveContainer,
+    operator.EnableEditingContainer,
+    operator.DisableEditingContainer,
     ui.BIM_PT_spatial,
 )
 

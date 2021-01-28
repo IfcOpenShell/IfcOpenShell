@@ -1,20 +1,27 @@
 import bpy
-from . import ui, operator
+from . import ui, prop, operator
 
 classes = (
+    operator.EditObjectPlacement,
     operator.AddRepresentation,
+    operator.MapRepresentation,
     operator.SwitchRepresentation,
     operator.RemoveRepresentation,
-    operator.BakeParametricGeometry,
-    operator.UpdateIfcRepresentation,
+    operator.UpdateMeshRepresentation,
+    operator.UpdateParametricRepresentation,
     operator.GetRepresentationIfcParameters,
+    prop.BIMGeometryProperties,
     ui.BIM_PT_representations,
+    ui.BIM_PT_mesh,
+    ui.BIM_PT_workarounds,
 )
 
 
 def register():
-    pass
+    bpy.types.Scene.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMGeometryProperties)
+    bpy.types.OBJECT_PT_transform.append(ui.BIM_PT_transform)
 
 
 def unregister():
-    pass
+    bpy.types.OBJECT_PT_transform.remove(ui.BIM_PT_transform)
+    del bpy.types.Scene.BIMGeometryProperties

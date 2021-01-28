@@ -299,6 +299,27 @@ def parse_diagram_scale(camera):
     return float(numerator) / float(denominator)
 
 
+def get_project_collection(scene):
+    """Get main project collection"""
+
+    colls = [c for c in scene.collection.children if c.name.startswith('IfcProject')]
+    if len(colls) != 1:
+        raise RuntimeError("project collection missing or not unique")
+    return colls[0]
+
+
+def get_active_drawing(scene):
+    """Get active drawing collection and camera"""
+    props = scene.DocProperties
+    if props.active_drawing_index is None or len(props.drawings) == 0:
+        return None, None
+    try:
+        drawing = props.drawings[props.active_drawing_index]
+        return scene.collection.children['Views'].children[f"IfcGroup/{drawing.name}"], drawing.camera
+    except (KeyError, IndexError):
+        raise RuntimeError("missing drawing collection")
+
+
 def ortho_view_frame(camera, margin=0.015):
     """Calculates 2d bounding box of camera view area.
 
@@ -308,7 +329,7 @@ def ortho_view_frame(camera, margin=0.015):
     :type camera: bpy.types.Camera + BIMCameraProperties
     :arg margin: margins, in scene units
     :type margin: float
-    :return: (xmin, xmax, ymin, ymax) in local camera coordinates
+    :return: (xmin, xmax, ymin, ymax, zmin, zmax) in local camera coordinates
     """
     aspect = camera.BIMCameraProperties.raster_y / camera.BIMCameraProperties.raster_x
     size = camera.ortho_scale
@@ -317,7 +338,11 @@ def ortho_view_frame(camera, margin=0.015):
     scale = parse_diagram_scale(camera)
     xmarg = margin * scale
     ymarg = margin * scale * aspect
-    return (-hwidth + xmarg, hwidth - xmarg, -hheight + ymarg, hheight - ymarg)
+    return (-hwidth + xmarg, hwidth - xmarg, -hheight + ymarg, hheight - ymarg, -camera.clip_start, -camera.clip_end)
+
+
+def almost_zero(v):
+    return abs(v) < 1e-5
 
 
 def clip_segment(bounds, segm):
@@ -329,52 +354,58 @@ def clip_segment(bounds, segm):
     """
     # Liang–Barsky algorithm
 
-    def iszero(v):
-        return abs(v) < 1e-10
-
-    xmin, xmax, ymin, ymax = bounds
+    xmin, xmax, ymin, ymax, _, _ = bounds
     p1, p2 = segm
 
+    def clip_side(p, q):
+        if almost_zero(p):  # ~= 0, parallel to the side
+            if q < 0:
+                return None  # outside
+            else:
+                return 0, 1  # inside
+
+        t = q / p  # the intersection point
+
+        if p < 0:  # entering
+            return t, 1
+        else:  # leaving
+            return 0, t
+
     dlt = p2 - p1
-    q_l = p1.x - xmin
-    q_r = xmax - p1.x
-    q_t = p1.y - ymin
-    q_b = ymax - p1.y
 
-    pos = [1]
-    neg = [0]
+    tt = (
+        clip_side(-dlt.x, p1.x - xmin),  # left
+        clip_side(+dlt.x, xmax - p1.x),  # right
+        clip_side(-dlt.y, p1.y - ymin),  # bottom
+        clip_side(+dlt.y, ymax - p1.y),  # top
+    )
 
-    if (iszero(dlt.x) and (q_l < 0 or q_r < 0)) or (iszero(dlt.y) and (q_t < 0 or q_b < 0)):
-        # parallel to a boundary and outside it
+    if None in tt:
         return None
 
-    if not iszero(dlt.x):
-        t_l = q_l / -dlt.x
-        t_r = q_r / dlt.x
-        if t_l < 0:
-            neg.append(t_l)
-            pos.append(t_r)
-        else:
-            neg.append(t_r)
-            pos.append(t_l)
+    t1 = max(0, max(t[0] for t in tt))
+    t2 = min(1, min(t[1] for t in tt))
 
-    if not iszero(dlt.y):
-        t_t = q_t / -dlt.y
-        t_b = q_b / dlt.y
-        if t_t < 0:
-            neg.append(t_t)
-            pos.append(t_b)
-        else:
-            neg.append(t_b)
-            pos.append(t_t)
-
-    t1 = max(neg)
-    t2 = min(pos)
-
-    if t1 > t2:
+    if t1 >= t2:
         return None
 
     p1c = p1 + dlt * t1
     p2c = p1 + dlt * t2
 
     return p1c, p2c
+
+
+def elevate_segment(bounds, segm):
+    """Elevate line xy-perpendicular segment vertically
+
+    :arg bounds: (xmin, xmax, ymin, ymax)
+    :arg segm: 2 vertices of the segment
+    :return: 2 new vertices of segment or None if segment outside the bounding box
+    """
+    _, _, ymin, ymax, zmin, _ = bounds
+    p1, p2 = segm
+    dlt = p2 - p1
+    if not (almost_zero(dlt.x) and almost_zero(dlt.y)):
+        return None
+    x = p1.x
+    return [Vector((x, ymin, zmin)), Vector((x, ymax, zmin))]

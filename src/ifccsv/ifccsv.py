@@ -10,7 +10,7 @@ import lark
 import argparse
 
 
-class IfcAttributeExtractor:
+class IfcAttributeSetter:
     @staticmethod
     def set_element_key(ifc_file, element, key, value):
         if key == "type" and element.is_a() != value:
@@ -22,14 +22,14 @@ class IfcAttributeExtractor:
             return element
         if key[0:3] == "Qto":
             qto, prop = key.split(".", 1)
-            qto = IfcAttributeExtractor.get_element_qto(element, qto_name)
+            qto = IfcAttributeSetter.get_element_qto(element, qto_name)
             if qto:
-                IfcAttributeExtractor.set_qto_property(qto, prop, value)
+                IfcAttributeSetter.set_qto_property(qto, prop, value)
                 return element
         pset_name, prop = key.split(".", 1)
-        pset = IfcAttributeExtractor.get_element_pset(element, pset_name)
+        pset = IfcAttributeSetter.get_element_pset(element, pset_name)
         if pset:
-            IfcAttributeExtractor.set_pset_property(pset, prop, value)
+            IfcAttributeSetter.set_pset_property(pset, prop, value)
             return element
         return element
 
@@ -149,7 +149,7 @@ class IfcCsv:
                 for i, value in enumerate(row):
                     if i == 0:
                         continue  # Skip GlobalId
-                    element = IfcAttributeExtractor.set_element_key(ifc_file, element, headers[i], value)
+                    element = IfcAttributeSetter.set_element_key(ifc_file, element, headers[i], value)
         ifc_file.write(ifc)
 
 

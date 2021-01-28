@@ -3,19 +3,21 @@ from blenderbim.bim.ifc import IfcStore
 
 class Data:
     products = {}
+    representations = {}
 
     @classmethod
     def load(cls, product_id):
         file = IfcStore.get_file()
         if not file:
             return
-        cls.products[product_id] = {"Representations": {}}
+        cls.products[product_id] = []
         product = file.by_id(product_id)
-        if not product.Representation:
+        if not hasattr(product, "Representation") or not product.Representation:
             return
         for representation in product.Representation.Representations:
             c = representation.ContextOfItems
-            cls.products[product_id]["Representations"][int(representation.id())] = {
+            rep_id = int(representation.id())
+            cls.representations[rep_id] = {
                 "RepresentationIdentifier": representation.RepresentationIdentifier,
                 "RepresentationType": representation.RepresentationType,
                 "ContextOfItems": {
@@ -24,3 +26,4 @@ class Data:
                     "TargetView": c.TargetView if c.is_a("IfcGeometricRepresentationSubContext") else "",
                 }
             }
+            cls.products[product_id].append(rep_id)

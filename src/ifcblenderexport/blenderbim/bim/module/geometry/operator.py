@@ -2,8 +2,9 @@ import bpy
 import numpy as np
 import ifcopenshell
 import logging
-import blenderbim.bim.module.geometry.add_object_placement as add_object_placement
+import blenderbim.bim.module.geometry.edit_object_placement as edit_object_placement
 import blenderbim.bim.module.geometry.add_representation as add_representation
+import blenderbim.bim.module.geometry.map_representation as map_representation
 import blenderbim.bim.module.geometry.assign_styles as assign_styles
 import blenderbim.bim.module.geometry.assign_representation as assign_representation
 import blenderbim.bim.module.geometry.remove_representation as remove_representation
@@ -12,53 +13,105 @@ from blenderbim.bim import import_ifc
 from blenderbim.bim.module.geometry.data import Data
 
 
+class EditObjectPlacement(bpy.types.Operator):
+    bl_idname = "bim.edit_object_placement"
+    bl_label = "Edit Object Placement"
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
+        self.file = IfcStore.get_file()
+        # TODO: determine how to deal with this module dependency
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        for obj in objs:
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            matrix = np.array(obj.matrix_world)
+            if props.has_blender_offset and props.blender_offset_type == "OBJECT_PLACEMENT":
+                self.calculate_unit_scale()
+                # TODO: np.array? Why not matrix?
+                matrix = np.array(
+                    ifcopenshell.util.geolocation.local2global(
+                        np.matrix(obj.matrix_world),
+                        float(props.blender_eastings) * self.unit_scale,
+                        float(props.blender_northings) * self.unit_scale,
+                        float(props.blender_orthogonal_height) * self.unit_scale,
+                        float(props.blender_x_axis_abscissa),
+                        float(props.blender_x_axis_ordinate),
+                    )
+                )
+            edit_object_placement.Usecase(
+                self.file,
+                {
+                    "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
+                    "matrix": matrix,
+                },
+            ).execute()
+        return {"FINISHED"}
+
+    def calculate_unit_scale(self):
+        self.unit_scale = 1
+        units = self.file.by_type("IfcUnitAssignment")[0]
+        for unit in units.Units:
+            if not hasattr(unit, "UnitType") or unit.UnitType != "LENGTHUNIT":
+                continue
+            while unit.is_a("IfcConversionBasedUnit"):
+                self.unit_scale *= unit.ConversionFactor.ValueComponent.wrappedValue
+                unit = unit.ConversionFactor.UnitComponent
+            if unit.is_a("IfcSIUnit"):
+                self.unit_scale *= ifcopenshell.util.unit.get_prefix_multiplier(unit.Prefix)
+
+
 class AddRepresentation(bpy.types.Operator):
     bl_idname = "bim.add_representation"
     bl_label = "Add Representation"
+    obj: bpy.props.StringProperty()
+    context_id: bpy.props.IntProperty()
 
     def execute(self, context):
-        obj = bpy.context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
-        self.context_id = bpy.context.scene.BIMProperties.contexts
+        context_id = self.context_id or int(bpy.context.scene.BIMProperties.contexts)
 
-        element = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-        usecase = add_representation.Usecase(
-            self.file,
-            {
-                "context": self.file.by_id(int(self.context_id)),
-                "geometry": obj.data,
-                "total_items": max(1, len(obj.material_slots)),
-            },
-        )
-        result = usecase.execute()
-        if not result:
-            print("Failed to write shape representation")
-            return {"FINISHED"}
+        bpy.ops.bim.edit_object_placement(obj=obj.name)
 
-        usecase = assign_styles.Usecase(
-            self.file,
-            {
-                "shape_representation": result,
-                "styles": [
-                    self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
-                    for s in obj.material_slots
-                    if s.material
-                ],
-            },
-        )
-        usecase.execute()
+        if obj.data:
+            result = add_representation.Usecase(
+                self.file,
+                {
+                    "context": self.file.by_id(context_id),
+                    "blender_object": obj,
+                    "geometry": obj.data,
+                    "total_items": max(1, len(obj.material_slots)),
+                    "should_force_faceted_brep": context.scene.BIMGeometryProperties.should_force_faceted_brep,
+                    "should_force_triangulation": context.scene.BIMGeometryProperties.should_force_triangulation,
+                },
+            ).execute()
+            if not result:
+                print("Failed to write shape representation")
+                return {"FINISHED"}
+            assign_styles.Usecase(
+                self.file,
+                {
+                    "shape_representation": result,
+                    "styles": [
+                        self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
+                        for s in obj.material_slots
+                        if s.material
+                    ],
+                    "should_use_presentation_style_assignment": context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
+                },
+            ).execute()
+            assign_representation.Usecase(
+                self.file,
+                {"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id), "representation": result},
+            ).execute()
 
-        usecase = assign_representation.Usecase(
-            self.file, {"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id), "representation": result}
-        )
-        usecase.execute()
-
-        existing_mesh = obj.data
-        existing_mesh.use_fake_user = True
-        mesh = obj.data.copy()
-        mesh.name = "{}/{}".format(self.context_id, result.id())
-        mesh.BIMMeshProperties.ifc_definition_id = int(result.id())
-        obj.data = mesh
+            existing_mesh = obj.data
+            mesh = obj.data.copy()
+            mesh.name = "{}/{}".format(context_id, result.id())
+            mesh.BIMMeshProperties.ifc_definition_id = int(result.id())
+            obj.data = mesh
         Data.load(obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
@@ -117,66 +170,101 @@ class RemoveRepresentation(bpy.types.Operator):
                     void_mesh = bpy.data.meshes.new("Void")
                 obj.data = void_mesh
             bpy.data.meshes.remove(mesh)
-        usecase = remove_representation.Usecase(self.file, {"representation": representation})
-        result = usecase.execute()
+        remove_representation.Usecase(self.file, {"representation": representation}).execute()
         Data.load(obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
 
-class BakeParametricGeometry(bpy.types.Operator):
-    bl_idname = "bim.bake_parametric_geometry"
-    bl_label = "Bake Parametric Geometry"
+class MapRepresentation(bpy.types.Operator):
+    bl_idname = "bim.map_representation"
+    bl_label = "Map Representation"
+    obj: bpy.props.StringProperty()
+    obj_data: bpy.props.StringProperty()
 
     def execute(self, context):
-        obj = bpy.context.active_object
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
+        obj_data = bpy.data.meshes.get(self.obj_data) if self.obj_data else bpy.context.active_object.data
+        objs = [o for o in objs if o.data != obj_data]
         self.file = IfcStore.get_file()
 
-        usecase = add_object_placement.Usecase(
-            self.file,
-            {
-                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                "matrix": np.array(obj.matrix_world),
-            },
-        )
-        result = usecase.execute()
-
-        element = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-        usecase = add_representation.Usecase(
-            self.file,
-            {
-                "context": element.ContextOfItems,
-                "geometry": obj.data,
-                "total_items": max(1, len(obj.material_slots)),
-            },
-        )
-        result = usecase.execute()
-        if not result:
-            print("Failed to write shape representation")
-            return {"FINISHED"}
-
-        usecase = assign_styles.Usecase(
-            self.file,
-            {
-                "shape_representation": result,
-                "styles": [
-                    self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
-                    for s in obj.material_slots
-                    if s.material
-                ],
-            },
-        )
-        usecase.execute()
-
-        for inverse in self.file.get_inverse(element):
-            ifcopenshell.util.element.replace_attribute(inverse, element, result)
-        obj.data.BIMMeshProperties.ifc_definition_id = int(result.id())
-        Data.load(obj.BIMObjectProperties.ifc_definition_id)
+        for obj in objs:
+            bpy.ops.bim.edit_object_placement(obj=obj.name)
+            product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            if obj.data.BIMMeshProperties.ifc_definition_id:
+                old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+            else:
+                old_representation = None
+            target_representation = self.file.by_id(obj_data.BIMMeshProperties.ifc_definition_id)
+            obj.data = obj_data
+            result = map_representation.Usecase(
+                self.file,
+                {
+                    "product": product,
+                    "representation": target_representation,
+                },
+            ).execute()
+            assign_representation.Usecase(self.file, {"product": product, "representation": result}).execute()
+            if old_representation:
+                bpy.ops.bim.remove_representation(ifc_definition_id=old_representation.id())
+            Data.load(obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
 
-class UpdateIfcRepresentation(bpy.types.Operator):
-    bl_idname = "bim.update_ifc_representation"
-    bl_label = "Update IFC Representation"
+class UpdateMeshRepresentation(bpy.types.Operator):
+    bl_idname = "bim.update_mesh_representation"
+    bl_label = "Update Mesh Representation"
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
+        self.file = IfcStore.get_file()
+
+        for obj in objs:
+            bpy.ops.bim.edit_object_placement(obj=obj.name)
+
+            old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+            new_representation = add_representation.Usecase(
+                self.file,
+                {
+                    "context": old_representation.ContextOfItems,
+                    "blender_object": obj,
+                    "geometry": obj.data,
+                    "total_items": max(1, len(obj.material_slots)),
+                    "should_force_faceted_brep": context.scene.BIMGeometryProperties.should_force_faceted_brep,
+                    "should_force_triangulation": context.scene.BIMGeometryProperties.should_force_triangulation,
+                },
+            ).execute()
+            if not new_representation:
+                print("Failed to write shape representation")
+                return {"FINISHED"}
+
+            assign_styles.Usecase(
+                self.file,
+                {
+                    "shape_representation": new_representation,
+                    "styles": [
+                        self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
+                        for s in obj.material_slots
+                        if s.material
+                    ],
+                    "should_use_presentation_style_assignment": context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
+                },
+            ).execute()
+
+            # TODO: move this into a replace_representation usecase or something
+            for inverse in self.file.get_inverse(old_representation):
+                ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
+
+            obj.data.BIMMeshProperties.ifc_definition_id = int(new_representation.id())
+            obj.data.name = f"{old_representation.ContextOfItems.id()}/{new_representation.id()}"
+            bpy.ops.bim.remove_representation(ifc_definition_id=old_representation.id())
+            Data.load(obj.BIMObjectProperties.ifc_definition_id)
+        return {"FINISHED"}
+
+
+class UpdateParametricRepresentation(bpy.types.Operator):
+    bl_idname = "bim.update_parametric_representation"
+    bl_label = "Update Parametric Representation"
     index: bpy.props.IntProperty()
 
     def execute(self, context):

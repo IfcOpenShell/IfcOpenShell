@@ -4,7 +4,9 @@ from utils import assert_elements
 from utils import IfcFile
 
 
-def no_element_class_ele(context, ifc_class, reason):
+def no_eleclass(
+    context, ifc_class
+):
 
     context.falseelems = []
     context.falseguids = []
@@ -41,7 +43,9 @@ def no_element_class_ele(context, ifc_class, reason):
         assert False, _("Error in falsecount, something went wrong.")
 
 
-def all_element_attribs_have_a_value(context, ifc_class):
+def eleclass_have_class_attributes_with_a_value(
+    context, ifc_class
+):
 
     from ifcopenshell.ifcopenshell_wrapper import schema_by_name
     # schema = schema_by_name("IFC2X3")
@@ -84,7 +88,7 @@ def all_element_attribs_have_a_value(context, ifc_class):
     )
 
 
-def name_has_a_value(context, ifc_class):
+def eleclass_has_name_with_a_value(context, ifc_class):
 
     context.falseelems = []
     context.falseguids = []
@@ -109,7 +113,9 @@ def name_has_a_value(context, ifc_class):
     )
 
 
-def description_has_a_value(context, ifc_class):
+def eleclass_has_description_with_a_value(
+    context, ifc_class
+):
 
     context.falseelems = []
     context.falseguids = []

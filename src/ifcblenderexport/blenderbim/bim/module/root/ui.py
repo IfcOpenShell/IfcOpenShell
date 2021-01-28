@@ -3,6 +3,7 @@ from bpy.types import Panel
 from blenderbim.bim.module.root.data import Data
 from blenderbim.bim.ifc import IfcStore
 
+
 class BIM_PT_class(Panel):
     bl_label = "IFC Class"
     bl_idname = "BIM_PT_class"
@@ -33,20 +34,21 @@ class BIM_PT_class(Panel):
                     name += "[{}]".format(data["PredefinedType"])
                 row = self.layout.row(align=True)
                 row.label(text=name)
+                row.operator("bim.copy_class", icon="DUPLICATE", text="").obj = context.active_object.name
+                row.operator("bim.unlink_object", icon="UNLINKED", text="").obj = context.active_object.name
                 row.operator("bim.enable_reassign_class", icon="GREASEPENCIL", text="")
-                op = row.operator("bim.unassign_class", icon="X", text="")
-                op.object_name = context.active_object.name
+                row.operator("bim.unassign_class", icon="X", text="").obj = context.active_object.name
         else:
             self.draw_class_dropdowns()
             row = self.layout.row(align=True)
             op = row.operator("bim.assign_class")
             op.obj = context.active_object.name
-            op.ifc_class = bpy.context.scene.BIMProperties.ifc_class
-            op.predefined_type = bpy.context.scene.BIMProperties.ifc_predefined_type
-            op.userdefined_type = bpy.context.scene.BIMProperties.ifc_userdefined_type
+            op.ifc_class = bpy.context.scene.BIMRootProperties.ifc_class
+            op.predefined_type = bpy.context.scene.BIMRootProperties.ifc_predefined_type
+            op.userdefined_type = bpy.context.scene.BIMRootProperties.ifc_userdefined_type
 
     def draw_class_dropdowns(self):
-        props = bpy.context.scene.BIMProperties
+        props = bpy.context.scene.BIMRootProperties
         row = self.layout.row()
         row.prop(props, "ifc_product")
         row = self.layout.row()
