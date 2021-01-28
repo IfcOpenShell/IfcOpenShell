@@ -52,18 +52,18 @@ if not (%1)==() (
 )
 
 pushd ..
-set CMAKE_INSTALL_PREFIX=%CD%\installed-vs%VS_VER%-%TARGET_ARCH%
+set CMAKE_INSTALL_PREFIX=%CD%\installed-%GEN_SHORTHAND%
 popd
 
 IF NOT EXIST ..\%BUILD_DIR%. mkdir ..\%BUILD_DIR%
 pushd ..\%BUILD_DIR%
 
 :: tfk: todo remove duplication
-set BOOST_VERSION=1.67.0
+set BOOST_VERSION=1.74.0
 set BOOST_VER=%BOOST_VERSION:.=_%
 
 set BOOST_ROOT=%DEPS_DIR%\boost_%BOOST_VER%
-set BOOST_LIBRARYDIR=%BOOST_ROOT%\stage\vs%VS_VER%-%VS_PLATFORM%\lib
+set BOOST_LIBRARYDIR=%BOOST_ROOT%\stage\%GEN_SHORTHAND%\lib
 if not defined OCC_INCLUDE_DIR set OCC_INCLUDE_DIR=%INSTALL_DIR%\oce\include\oce
 if not defined OCC_LIBRARY_DIR set OCC_LIBRARY_DIR=%INSTALL_DIR%\oce\Win%ARCH_BITS%\lib
 set OPENCOLLADA_INCLUDE_DIR=%INSTALL_DIR%\OpenCOLLADA\include\opencollada
@@ -81,8 +81,10 @@ set JSON_INCLUDE_DIR=%INSTALL_DIR%\json
 
 echo.
 call cecho.cmd 0 10 "Script configuration:"
-echo   Generator = %GENERATOR%
-echo   Arguments = %ARGUMENTS%
+echo   Generator    = %GENERATOR%
+echo   Architecture = %VS_PLATFORM%
+echo   Toolset      = %VS_TOOLSET%
+echo   Arguments    = %ARGUMENTS%
 echo.
 call cecho.cmd 0 10 "Dependency Environment Variables for %PROJECT_NAME%:"
 echo    BOOST_ROOT              = %BOOST_ROOT%
@@ -107,7 +109,13 @@ set CMAKELISTS_DIR=..\cmake
 :: Delete CMakeCache.txt if command-line options were provided for this batch script.
 if not (%1)==() if exist CMakeCache.txt. del /Q CMakeCache.txt
 call cecho.cmd 0 13 "Running CMake for %PROJECT_NAME%."
-cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" %ARGUMENTS%
+
+IF DEFINED VS_TOOLSET (
+	cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -A %VS_PLATFORM% -T %VS_TOOLSET% -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" %ARGUMENTS%
+) ELSE (
+	cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -A %VS_PLATFORM% -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" %ARGUMENTS%
+)
+
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 echo.

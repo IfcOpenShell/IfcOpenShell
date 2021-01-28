@@ -18,4 +18,3 @@ class DiffProperties(PropertyGroup):
     diff_old_file: StringProperty(default="", name="Diff Old IFC File")
     diff_new_file: StringProperty(default="", name="Diff New IFC File")
     diff_relationships: StringProperty(default="", name="Diff Relationships")
-    

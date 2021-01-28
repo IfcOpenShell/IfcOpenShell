@@ -409,6 +409,29 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 	write(data);
 }
 
+namespace {
+	class hlr_writer {
+		const TopoDS_Shape& shape_;
+
+	public:
+		hlr_writer(const TopoDS_Shape& shape) : shape_(shape)
+		{}
+
+		void operator()(boost::blank&) const {
+			throw std::runtime_error("");
+		}
+
+		void operator()(Handle(HLRBRep_Algo)& algo) const {
+			algo->Add(shape_);
+		}
+
+		void operator()(Handle(HLRBRep_PolyAlgo)& algo) const {
+			BRepMesh_IncrementalMesh(shape_, 0.10);
+			algo->Load(shape_);
+		}
+	};
+}
+
 void SvgSerializer::write(const geometry_data& data) {
 	std::vector<section_data> section_heights_storage;
 	const std::vector<section_data>* section_heights_used = &section_heights_storage;
@@ -543,7 +566,7 @@ void SvgSerializer::write(const geometry_data& data) {
 		IfcUtil::IfcBaseEntity* storey = nullptr;
 		std::string drawing_name;
 
-		bool use_hlr = false;
+		bool use_hlr = always_project_;
 
 		// @todo use visitor
 		// horizontal_plan, horizontal_plan_at_element, vertical_section
@@ -556,8 +579,10 @@ void SvgSerializer::write(const geometry_data& data) {
 				range.first = -std::numeric_limits<double>::infinity();
 			}
 			projection_direction = gp::DZ();
+			projection_plane = gp_Pln(gp_Ax3(gp_Pnt(0, 0, cut_z), gp_Dir(0, 0, 1), gp_Dir(1, 0, 0)));
 		} else if (variant.which() == 1) {
 			projection_direction = gp::DZ();
+			projection_plane = gp_Pln(gp_Ax3(gp_Pnt(0, 0, cut_z), gp_Dir(0, 0, 1), gp_Dir(1, 0, 0)));
 		} else if (variant.which() == 2) {
 			const auto& section = boost::get<vertical_section>(variant);
 			projection_direction = section.plane.Axis().Direction();
@@ -568,7 +593,7 @@ void SvgSerializer::write(const geometry_data& data) {
 
 		auto& compound_to_use = is_floor_plan_ ? compound : compound_unmirrored;
 
-		if (use_hlr && (hlr_poly || hlr_brep)) {
+		if (use_hlr) { // && (hlr.which())) {
 
 			// Check if any of the bounding box points is on the correct side of the plane
 			Bnd_Box bb;
@@ -601,12 +626,22 @@ void SvgSerializer::write(const geometry_data& data) {
 			}
 
 			if (any) {
-				if (hlr_brep) {
-					hlr_brep->Add(compound_to_use);
+				if (is_floor_plan_ && storey) {
+					if (storey_hlr.find(storey) == storey_hlr.end()) {
+						if (use_hlr_poly_) {
+							storey_hlr[storey] = new HLRBRep_PolyAlgo;
+						} else {
+							storey_hlr[storey] = new HLRBRep_Algo;
+						}
+					}
+					hlr_writer vis(compound_to_use);
+					boost::apply_visitor(vis, storey_hlr[storey]);
+					// this is tricky, how can we change start_path()? Always include section/projection params?
+					// storey_hlr[]
 				}
-				if (hlr_poly) {
-					BRepMesh_IncrementalMesh(compound_to_use, 0.10);
-					hlr_poly->Load(compound_to_use);
+				else {
+					hlr_writer vis(compound_to_use);
+					boost::apply_visitor(vis, hlr);
 				}
 			}
 		}
@@ -952,6 +987,88 @@ std::array<std::array<double, 3>, 3> SvgSerializer::resize() {
 	return m;
 }
 
+namespace {
+	class hlr_calc {
+	private:
+		const HLRAlgo_Projector& projector_;
+
+	public:
+		hlr_calc(const HLRAlgo_Projector& projector) : projector_(projector)
+		{}
+
+		TopoDS_Shape operator()(boost::blank&) const {
+			throw std::runtime_error("");
+		}
+
+		TopoDS_Shape operator()(Handle(HLRBRep_Algo)& algo) {
+			algo->Projector(projector_);
+			algo->Update();
+			algo->Hide();
+			HLRBRep_HLRToShape hlr_shapes(algo);
+			return hlr_shapes.VCompound();
+		}
+		
+		TopoDS_Shape operator()(Handle(HLRBRep_PolyAlgo)& algo) {
+			algo->Projector(projector_);
+			algo->Update();
+			HLRBRep_PolyHLRToShape hlr_shapes;
+			hlr_shapes.Update(algo);
+			return hlr_shapes.VCompound();
+		}
+	};
+}
+
+void SvgSerializer::draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name) {
+	gp_Trsf trsf;
+	trsf.SetTransformation(pln.Position());
+	HLRAlgo_Projector projector(trsf, false, 1.);
+
+	hlr_calc vis(projector);
+	TopoDS_Shape hlr_compound_unmirrored = boost::apply_visitor(vis, drawing_name.first ? this->storey_hlr[drawing_name.first] : hlr);
+
+	if (!hlr_compound_unmirrored.IsNull()) {
+		// Compound 3D curves for mirroring to work
+		ShapeFix_Edge sfe;
+		TopExp_Explorer exp(hlr_compound_unmirrored, TopAbs_EDGE);
+		for (; exp.More(); exp.Next()) {
+			sfe.FixAddCurve3d(TopoDS::Edge(exp.Current()));
+		}
+
+		// Mirror to match SVG coord system.
+		// @todo this is very wasteful. We better do the Y-mirror in the SVG writing and
+		// not on the TopoDS_Shape input.
+
+		TopoDS_Shape hlr_compound;
+		if (drawing_name.first == nullptr) {
+			gp_Trsf trsf_mirror;
+			trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
+			BRepBuilderAPI_Transform make_transform_mirror(hlr_compound_unmirrored, trsf_mirror, true);
+			make_transform_mirror.Build();
+			hlr_compound = make_transform_mirror.Shape();
+		} else {
+			// In case of building storey-based floor plan the mirroring has already
+			// been taken into account before projection.
+			hlr_compound = hlr_compound_unmirrored;
+		}		
+
+		exp.Init(hlr_compound, TopAbs_EDGE);
+		BRep_Builder B;
+		path_object* po;
+		if (drawing_name.first) {
+			po = &start_path(pln, drawing_name.first, "class=\"projection\"");
+		} else {
+			po = &start_path(pln, drawing_name.second, "class=\"projection\"");
+		}
+		for (; exp.More(); exp.Next()) {
+			TopoDS_Wire w;
+			B.MakeWire(w);
+			B.Add(w, exp.Current());
+			write(*po, w);
+		}
+
+	}
+}
+
 void SvgSerializer::resetScale() {
 	// reset the bounding box, as a subsequent drawing (elevation, section) will be centered, but use the same scale.
 	// this is a separate call now as we first need to read drawing extents for automatically positioning sections and
@@ -963,6 +1080,10 @@ void SvgSerializer::resetScale() {
 }
 
 void SvgSerializer::finalize() {
+	for (auto& p : storey_hlr) {
+		draw_hlr(drawing_metadata[{p.first, ""}].pln_3d, { p.first, "" });
+	}
+
 	auto m = resize();
 
 	// Update the paper space scale matrices
@@ -1032,7 +1153,7 @@ void SvgSerializer::finalize() {
 		is_floor_plan_ = false;
 
 		for (auto& sd : *deferred_section_data_) {
-			bool use_hlr = false;
+			bool use_hlr = true;
 			std::string drawing_name;
 			if (sd.which() == 2) {
 				const auto& section = boost::get<vertical_section>(sd);
@@ -1042,9 +1163,9 @@ void SvgSerializer::finalize() {
 
 			if (use_hlr) {
 				if (use_hlr_poly_) {
-					hlr_poly = new HLRBRep_PolyAlgo;
+					hlr = new HLRBRep_PolyAlgo;
 				} else {
-					hlr_brep = new HLRBRep_Algo;
+					hlr = new HLRBRep_Algo;
 				}
 			}
 
@@ -1055,58 +1176,9 @@ void SvgSerializer::finalize() {
 
 			if (use_hlr) {
 				const auto& section = boost::get<vertical_section>(sd);
-
-				gp_Trsf trsf;
-				trsf.SetTransformation(section.plane.Position());
-				HLRAlgo_Projector projector(trsf, false, 1.);
-			
-				TopoDS_Shape hlr_compound_unmirrored;
+				const auto& ax = section.plane.Position();
 				
-				if (use_hlr_poly_) {
-					hlr_poly->Projector(projector);
-
-					hlr_poly->Update();
-					HLRBRep_PolyHLRToShape hlr_shapes;
-					hlr_shapes.Update(hlr_poly);
-					hlr_compound_unmirrored = hlr_shapes.VCompound();
-				} else {
-					hlr_brep->Projector(projector);
-
-					hlr_brep->Update();
-					hlr_brep->Hide();
-					HLRBRep_HLRToShape hlr_shapes(hlr_brep);
-					hlr_compound_unmirrored = hlr_shapes.VCompound();
-				}
-
-				if (!hlr_compound_unmirrored.IsNull()) {
-					// Compound 3D curves for mirroring to work
-					ShapeFix_Edge sfe;
-					TopExp_Explorer exp(hlr_compound_unmirrored, TopAbs_EDGE);
-					for (; exp.More(); exp.Next()) {
-						sfe.FixAddCurve3d(TopoDS::Edge(exp.Current()));
-					}
-
-					// Mirror to match SVG coord system.
-					// @todo this is very wasteful. We better do the Y-mirror in the SVG writing and
-					// not on the TopoDS_Shape input.
-
-					gp_Trsf trsf_mirror;
-					trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
-					BRepBuilderAPI_Transform make_transform_mirror(hlr_compound_unmirrored, trsf_mirror, true);
-					make_transform_mirror.Build();
-					auto hlr_compound = make_transform_mirror.Shape();
-
-					exp.Init(hlr_compound, TopAbs_EDGE);
-					BRep_Builder B;
-					auto& po = start_path(section.plane, drawing_name, "class=\"projection\"");
-					for (; exp.More(); exp.Next()) {
-						TopoDS_Wire w;
-						B.MakeWire(w);
-						B.Add(w, exp.Current());
-						write(po, w);
-					}
-
-				}
+				draw_hlr(ax, { nullptr, drawing_name });
 			}
 
 			auto m3 = resize();
@@ -1116,8 +1188,8 @@ void SvgSerializer::finalize() {
 
 			resetScale();
 
-			if (hlr_brep) hlr_brep.Nullify();
-			if (hlr_poly) hlr_poly.Nullify();
+			// @todo does this probably call Nullify()
+			hlr = boost::blank();
 		}
 	}
 

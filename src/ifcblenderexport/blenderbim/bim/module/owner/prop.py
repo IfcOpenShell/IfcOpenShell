@@ -22,7 +22,7 @@ def getPersons(self, context):
         if "Id" in person:
             identifier = person["Id"] or ""
         else:
-            identifier = person["Identifier"] or ""
+            identifier = person["Identification"] or ""
         results.append((str(ifc_id), identifier, ""))
     return results
 

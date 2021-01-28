@@ -1,10 +1,12 @@
 from bpy.types import Panel
 from blenderbim.bim.module.aggregate.data import Data
+from blenderbim.bim.ifc import IfcStore
 
 
 class BIM_PT_aggregate(Panel):
-    bl_label = "IFC Aggregation"
+    bl_label = "IFC Aggregates"
     bl_idname = "BIM_PT_aggregate"
+    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
@@ -13,6 +15,8 @@ class BIM_PT_aggregate(Panel):
     def poll(cls, context):
         props = context.active_object.BIMObjectProperties
         if not props.ifc_definition_id:
+            return False
+        if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcObjectDefinition"):
             return False
         if props.ifc_definition_id not in Data.products:
             Data.load(props.ifc_definition_id)
@@ -38,7 +42,7 @@ class BIM_PT_aggregate(Panel):
                 Data.products[props.ifc_definition_id]["type"], Data.products[props.ifc_definition_id]["Name"]
             )
             if name == "None/None":
-                name = "This object is not part of an aggregation"
+                name = "No Aggregate Found"
             row.label(text=name)
             row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")
             row.operator("bim.add_aggregate", icon="ADD", text="")

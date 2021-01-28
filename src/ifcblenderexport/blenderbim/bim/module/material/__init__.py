@@ -2,6 +2,8 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.AddMaterial,
+    operator.RemoveMaterial,
     operator.AssignMaterial,
     operator.UnassignMaterial,
     operator.AddConstituent,
@@ -17,6 +19,7 @@ classes = (
     operator.DisableEditingMaterialSetItem,
     operator.EditMaterialSetItem,
     prop.BIMObjectMaterialProperties,
+    ui.BIM_PT_material,
     ui.BIM_PT_object_material,
 )
 

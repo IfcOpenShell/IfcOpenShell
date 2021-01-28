@@ -3,7 +3,7 @@ from bpy.types import Panel
 
 
 class BIM_PT_qa(Panel):
-    bl_label = "BIMTester Quality Auditing"
+    bl_label = "BIMTester"
     bl_idname = "BIM_PT_qa"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -45,10 +45,6 @@ class BIM_PT_qa(Panel):
             row.prop(bimtester_properties, "qa_reject_element_reason")
             row = layout.row()
             row.operator("bim.reject_element")
-
-            row = layout.row(align=True)
-            row.operator("bim.colour_by_class")
-            row.operator("bim.reset_object_colours")
 
             row = layout.row()
             row.prop(bimtester_properties, "audit_ifc_class")

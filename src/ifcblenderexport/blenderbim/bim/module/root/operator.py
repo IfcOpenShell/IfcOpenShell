@@ -5,6 +5,8 @@ import ifcopenshell.util.schema
 import blenderbim.bim.module.root.create_product as create_product
 import blenderbim.bim.module.root.remove_product as remove_product
 import blenderbim.bim.module.root.reassign_class as reassign_class
+import blenderbim.bim.module.root.copy_class as copy_class
+from blenderbim.bim.module.owner.api import create_owner_history
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -14,6 +16,7 @@ class EnableReassignClass(bpy.types.Operator):
 
     def execute(self, context):
         obj = bpy.context.active_object
+        self.file = IfcStore.get_file()
         ifc_class = obj.name.split("/")[0]
         bpy.context.active_object.BIMObjectProperties.is_reassigning_class = True
         ifc_products = [
@@ -28,11 +31,11 @@ class EnableReassignClass(bpy.types.Operator):
         ]
         for ifc_product in ifc_products:
             if ifcopenshell.util.schema.is_a(IfcStore.get_schema().declaration_by_name(ifc_class), ifc_product):
-                bpy.context.scene.BIMProperties.ifc_product = ifc_product
-        bpy.context.scene.BIMProperties.ifc_class = obj.name.split("/")[0]
-        predefined_type = obj.BIMObjectProperties.attributes.get("PredefinedType")
-        if predefined_type:
-            bpy.context.scene.BIMProperties.ifc_predefined_type = predefined_type.string_value
+                bpy.context.scene.BIMRootProperties.ifc_product = ifc_product
+        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        bpy.context.scene.BIMRootProperties.ifc_class = element.is_a()
+        if hasattr(element, "PredefinedType") and element.PredefinedType:
+            bpy.context.scene.BIMRootProperties.ifc_predefined_type = element.PredefinedType
         return {"FINISHED"}
 
 
@@ -52,14 +55,14 @@ class ReassignClass(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.context.active_object
         self.file = IfcStore.get_file()
-        predefined_type = bpy.context.scene.BIMProperties.ifc_predefined_type
+        predefined_type = bpy.context.scene.BIMRootProperties.ifc_predefined_type
         if predefined_type == "USERDEFINED":
-            predefined_type = bpy.context.scene.BIMProperties.ifc_userdefined_type
+            predefined_type = bpy.context.scene.BIMRootProperties.ifc_userdefined_type
         product = reassign_class.Usecase(
             self.file,
             {
                 "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                "ifc_class": bpy.context.scene.BIMProperties.ifc_class,
+                "ifc_class": bpy.context.scene.BIMRootProperties.ifc_class,
                 "predefined_type": predefined_type,
             },
         ).execute()
@@ -91,10 +94,10 @@ class AssignClass(bpy.types.Operator):
                 for material in obj.data.materials:
                     if not material.BIMMaterialProperties.ifc_style_id:
                         bpy.ops.bim.add_style(material=material.name)
-            self.assign_class(obj)
+            self.assign_class(context, obj)
         return {"FINISHED"}
 
-    def assign_class(self, obj):
+    def assign_class(self, context, obj):
         if obj.BIMObjectProperties.ifc_definition_id:
             return
         product = create_product.Usecase(
@@ -103,6 +106,7 @@ class AssignClass(bpy.types.Operator):
                 "ifc_class": self.ifc_class,
                 "predefined_type": self.predefined_type,
                 "name": obj.name,
+                "OwnerHistory": create_owner_history()
             },
         ).execute()
         obj.name = "{}/{}".format(product.is_a(), obj.name)
@@ -122,6 +126,7 @@ class AssignClass(bpy.types.Operator):
             self.place_in_spatial_collection(obj)
         else:
             self.assign_potential_spatial_container(obj)
+        context.view_layer.objects.active = obj
 
     def place_in_types_collection(self, obj):
         for project in [c for c in bpy.context.view_layer.layer_collection.children if "IfcProject" in c.name]:
@@ -181,4 +186,50 @@ class UnassignClass(bpy.types.Operator):
             obj.BIMObjectProperties.ifc_definition_id = 0
             if "/" in obj.name and obj.name[0:3] == "Ifc":
                 obj.name = "/".join(obj.name.split("/")[1:])
+        return {"FINISHED"}
+
+
+class UnlinkObject(bpy.types.Operator):
+    bl_idname = "bim.unlink_object"
+    bl_label = "Unlink Object"
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        if self.obj:
+            objects = [bpy.data.objects.get(self.obj)]
+        else:
+            objects = bpy.context.selected_objects
+        for obj in objects:
+            if obj.BIMObjectProperties.ifc_definition_id:
+                obj.BIMObjectProperties.ifc_definition_id = 0
+        return {"FINISHED"}
+
+
+class CopyClass(bpy.types.Operator):
+    bl_idname = "bim.copy_class"
+    bl_label = "Copy Class"
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        if self.obj:
+            objects = [bpy.data.objects.get(self.obj)]
+        else:
+            objects = bpy.context.selected_objects
+        for obj in objects:
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            result = copy_class.Usecase(self.file, {
+                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            }).execute()
+            obj.BIMObjectProperties.ifc_definition_id = result.id()
+            if obj.data.users == 1:
+                bpy.ops.bim.add_representation(obj=obj.name)
+            else:
+                obj_data = obj.data.name
+                temporary_mesh = bpy.data.meshes.new("Temporary Mesh")
+                obj.data = temporary_mesh
+                bpy.ops.bim.map_representation(obj=obj.name, obj_data=obj_data)
+                bpy.data.meshes.remove(temporary_mesh)
         return {"FINISHED"}

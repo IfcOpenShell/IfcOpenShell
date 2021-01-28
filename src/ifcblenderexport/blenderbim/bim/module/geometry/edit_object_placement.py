@@ -39,7 +39,11 @@ class Usecase:
                 ifcopenshell.util.element.replace_attribute(
                     inverse, self.settings["product"].ObjectPlacement, placement
                 )
-            self.file.remove(self.settings["product"].ObjectPlacement)
+            old = self.settings["product"].ObjectPlacement
+            old.PlacementRelTo = None
+            self.settings["product"].ObjectPlacement = None
+            if not self.file.get_inverse(old):
+                ifcopenshell.util.element.remove_deep(self.file, old)
         self.settings["product"].ObjectPlacement = placement
 
         for settings in dependent_objects:

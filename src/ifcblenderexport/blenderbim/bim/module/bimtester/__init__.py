@@ -4,10 +4,8 @@ from . import ui, prop, operator
 classes = (
     operator.ExecuteBIMTester,
     operator.BIMTesterPurge,
-    operator.SelectFeaturesDir,    
-    operator.RejectElement,    
-    operator.ColourByClass,    
-    operator.ResetObjectColours,
+    operator.SelectFeaturesDir,
+    operator.RejectElement,
     operator.ApproveClass,
     operator.RejectClass,
     operator.SelectAudited,
@@ -22,4 +20,3 @@ def register():
 
 def unregister():
     del bpy.types.Scene.BimTesterProperties
-
