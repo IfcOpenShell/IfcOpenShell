@@ -8904,8 +8904,8 @@ NOTE: The product representations are defined as representation maps (at the lev
     
     <p>A energy conversion type is used to define the common properties of a
 	energy conversion device that may be applied to many occurrences of that type. 
-An energy conversion device is a building systems device that converts energy from one form into another such 
-as a boiler (i.e., combusting gas to heat water), chiller (i.e., using a refrigeration cycle to cool a 
+An energy conversion device is a building systems device that converts energy from one form into another such 
+as a boiler (i.e., combusting gas to heat water), chiller (i.e., using a refrigeration cycle to cool a 
 liquid), or a cooling coil (i.e., using the phase-change characteristics of a refrigerant to cool air).
 	Energy conversion types (or the instantiable subtypes) may be exchanged 
     without being already assigned to occurrences.</p> 
@@ -8938,7 +8938,7 @@ liquid), or a cooling coil (i.e., using the phase-change characteristics of a re
     
     <p>A flow moving type is used to define the common properties of a
 	flow moving device that may be applied to many occurrences of that type.
-A flow moving device is a device that is used to produce a pressure differential in a distribution system, 
+A flow moving device is a device that is used to produce a pressure differential in a distribution system, 
 such as a pump, fan, compressor, etc. 
 	Flow moving types (or the instantiable subtypes) may be exchanged 
     without being already assigned to occurrences.</p> 
@@ -8971,8 +8971,8 @@ such as a pump, fan, compressor, etc.
     
     <p>A flow controller type is used to define the common properties of a
 	flow controller that may be applied to many occurrences of that type.
-A flow controller is a device that regulates flow within a distribution system, such as a valve in a piping 
-system, modulating damper in an air distribution system, or electrical switch in an electrical distribution 
+A flow controller is a device that regulates flow within a distribution system, such as a valve in a piping 
+system, modulating damper in an air distribution system, or electrical switch in an electrical distribution 
 system. Flow controller types (or the instantiable subtypes) may be exchanged 
     without being already assigned to occurrences.</p> 
 	
@@ -9004,7 +9004,7 @@ system. Flow controller types (or the instantiable subtypes) may be exchanged
     
     <p>A flow segment type is used to define the common properties of a
 	flow segment that may be applied to many occurrences of that type.
-A flow segment is a section of a distribution system, such as a duct, pipe, conduit, etc. that typically has 
+A flow segment is a section of a distribution system, such as a duct, pipe, conduit, etc. that typically has 
 only two ports. 
 	Flow segment types (or the instantiable subtypes) may be exchanged 
     without being already assigned to occurrences.</p> 
@@ -9051,8 +9051,8 @@ only two ports.
     
     <p>A flow fitting type is used to define the common properties of a
 	flow fitting that may be applied to many occurrences of that type.
-A flow fitting is a device that is used to interconnect flow segments or other fittings within a distribution 
-system, such as a tee in a ducted system that branches flow into two directions, a junction box in an 
+A flow fitting is a device that is used to interconnect flow segments or other fittings within a distribution 
+system, such as a tee in a ducted system that branches flow into two directions, a junction box in an 
 electrical distribution system, etc. 
 	Flow fitting types (or the instantiable subtypes) may be exchanged 
     without being already assigned to occurrences.</p> 
@@ -9084,7 +9084,7 @@ HISTORY: New entity in IFC Release 2x2.<br>
 1123;IfcFlowTreatmentDeviceType;"<EPM-HTML>
 <p>The element type <i>IfcFlowTreatmentDeviceType</i> defines a list of commonly shared property set definitions of a flow treatment device and an optional set of product representations. It is used to define a flow treatment device specification (the specific product information that is common to all occurrences of that product type).</p> 
 	     
-<p>A flow treatment device is a device used to change the physical properties of the medium, such as an air, oil 
+<p>A flow treatment device is a device used to change the physical properties of the medium, such as an air, oil 
 or water filter (used to remove particulates from the fluid), or a duct silencer (used to attenuate noise).  Flow treatment types (or the instantiable subtypes) may be exchanged without being already assigned to occurrences.</p> 
 	
 <p>The occurrences of the <i>IfcFlowTreatmentDeviceType</i> are represented by instances of <i>IfcFlowTreatmentDevice</i> or its subtypes.</p> 
@@ -9418,7 +9418,7 @@ HISTORY: New entity in IFC R2x.<br>
 <p>The distribution flow element <i>IfcFlowStorageDevice</i> defines
     the occurrence of a device that participates in a distribution
     system and is used for temporary storage of a fluid
-    such as a liquid or a gas (e.g., tank). Its type is defined by 
+    such as a liquid or a gas (e.g., tank). Its type is defined by 
     <i>IfcFlowStorageDeviceType</i> or its subtypes.</p>
     
 <blockquote>
@@ -17685,8 +17685,8 @@ set for building system occurrences</li>
  
 <p>An inventory is a list of items within an enterprise.</p> 
  
-<p>Various types of inventory can be included. These are identified by the range of values within the inventory type enumeration which includes space, asset, and furniture. User defined inventories can also be defined for lists of particular types of element such as may be required in operating and maintenance instructions. Such inventories should be constrained to contain a list of elements of a restricted type.<br/><br/>There are a number of actors that can be associated with an inventory, each actor having a role. Actors within the scope of the project are indicated using the <a href=""../../ifckernel/lexical/ifcrelassignstoactor.htm"">IfcRelAssignsToActor</a> relationship in which case roles should be defined through the <a href=""../../ifcactorresource/lexical/ifcactorrole.htm"">IfcActorRole</a> class; otherwise principal actors are identified as attributes of the class. In the existence of both, direct attributes take precedence.<br/><br/>There are a number of costs that can be associated with an inventory, each cost having a role. These are specified through the <i>CurrentValue</i> and <i>OriginalValue</i> attributes.</p
-
+<p>Various types of inventory can be included. These are identified by the range of values within the inventory type enumeration which includes space, asset, and furniture. User defined inventories can also be defined for lists of particular types of element such as may be required in operating and maintenance instructions. Such inventories should be constrained to contain a list of elements of a restricted type.<br/><br/>There are a number of actors that can be associated with an inventory, each actor having a role. Actors within the scope of the project are indicated using the <a href=""../../ifckernel/lexical/ifcrelassignstoactor.htm"">IfcRelAssignsToActor</a> relationship in which case roles should be defined through the <a href=""../../ifcactorresource/lexical/ifcactorrole.htm"">IfcActorRole</a> class; otherwise principal actors are identified as attributes of the class. In the existence of both, direct attributes take precedence.<br/><br/>There are a number of costs that can be associated with an inventory, each cost having a role. These are specified through the <i>CurrentValue</i> and <i>OriginalValue</i> attributes.</p
+
 ><blockquote><font color=""#0000ff"" size=""-1"">HISTORY: New entity in IFC2.0.  Modified in IFC2x4 to make all attributes optional and remove Where Rule.<br></font></blockquote> 
  
 <p><b><u>Assignment Use Definition</u></b></p> 
@@ -17704,8 +17704,8 @@ set for building system occurrences</li>
  
 <p>An occupant is a type of actor that defines the form of occupancy of a property.</p> 
  
-<p>The principal purpose of <b>IfcOccupant</b> is to determine the nature of occupancy of a property for a particular actor. All characteristics relating to the actor (name and organization details) are inherited from the <a href=""../../ifckernel/lexical/ifcactor.htm"">IfcActor</a> class.</p
-
+<p>The principal purpose of <b>IfcOccupant</b> is to determine the nature of occupancy of a property for a particular actor. All characteristics relating to the actor (name and organization details) are inherited from the <a href=""../../ifckernel/lexical/ifcactor.htm"">IfcActor</a> class.</p
+
 ><blockquote><font color=""#0000ff"" size=""-1"">HISTORY: New entity in IFC2x<br></font></blockquote> 
  
 <p><b><u>Assignment Use Definition</u></b></p> 
@@ -17749,8 +17749,8 @@ set for building system occurrences</li>
  
 <p>Furniture defines complete furnishings such as a table, desk, chair, or cabinet, which may or may not be permanently attached to a building structure.</p> 
  
-<p>Occurrences of furniture that are built in (where the property <i>Pset_FurnitureTypeCommon.IsBuiltIn</i> is asserted to be TRUE) should have their connection relationship with a building element occurrence defined through the <a href=""../../ifcproductextension/lexical/ifcrelconnectselements.htm"">IfcRelConnectsElements</a> relationship.</p
-
+<p>Occurrences of furniture that are built in (where the property <i>Pset_FurnitureTypeCommon.IsBuiltIn</i> is asserted to be TRUE) should have their connection relationship with a building element occurrence defined through the <a href=""../../ifcproductextension/lexical/ifcrelconnectselements.htm"">IfcRelConnectsElements</a> relationship.</p
+
 ><blockquote><font color=""#0000ff"" size=""-1"">HISTORY: New entity in IFC2x2<br></font></blockquote> 
  
 <p><b><u>Type Use Definition</u></b></p> 

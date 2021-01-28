@@ -83,6 +83,11 @@ def get_material(element):
                 return relationship.RelatingMaterial
 
 
+def get_container(element):
+    if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
+        return element.ContainedInStructure[0].RelatingStructure
+
+
 def replace_attribute(element, old, new):
     for i, attribute in enumerate(element):
         if attribute == old:
@@ -111,6 +116,14 @@ def is_representation_of_context(representation, context, subcontext=None, targe
         )
     elif representation.ContextOfItems.ContextType == context:
         return True
+
+
+def remove_deep(ifc_file, element):
+    subgraph = list(ifc_file.traverse(element))
+    subgraph_set = set(subgraph)
+    for ref in subgraph[::-1]:
+        if ref.id() and len(set(ifc_file.get_inverse(ref)) - subgraph_set) == 0:
+            ifc_file.remove(ref)
 
 
 def get_representation(element, context, subcontext=None, target_view=None):

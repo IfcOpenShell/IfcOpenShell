@@ -149,7 +149,12 @@ class Data:
             enum_items = []
 
             if prop_template.TemplateType == "P_SINGLEVALUE":
-                data_type = str(IfcStore.get_schema().declaration_by_name(prop_template.PrimaryMeasureType or "IfcLabel"))
+                try:
+                    data_type = str(IfcStore.get_schema().declaration_by_name(prop_template.PrimaryMeasureType or "IfcLabel"))
+                except:
+                    # TODO: Occurs if the data type is something that exists in IFC4 and not in IFC2X3. To fully fix
+                    # this we need to generate the IFC2X3 pset template definitions.
+                    continue
             elif prop_template.TemplateType == "P_ENUMERATEDVALUE":
                 data_type = "enum"
                 enum_items = [v.wrappedValue for v in prop_template.Enumerators.EnumerationValues]

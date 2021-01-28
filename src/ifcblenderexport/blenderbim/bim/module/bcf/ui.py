@@ -4,7 +4,7 @@ from . import bcfstore
 from bpy.types import Panel
 
 class BIM_PT_bcf(Panel):
-    bl_label = "BIM Collaboration Format (BCF)"
+    bl_label = "BCF Project"
     bl_idname = "BIM_PT_bcf"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"

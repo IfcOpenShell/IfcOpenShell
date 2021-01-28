@@ -1,6 +1,7 @@
 import bpy
 from bpy.types import Panel
 from blenderbim.bim.module.void.data import Data
+from blenderbim.bim.ifc import IfcStore
 
 
 class BIM_PT_voids(Panel):
@@ -10,6 +11,10 @@ class BIM_PT_voids(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
 
     def draw(self, context):
         props = context.active_object.BIMObjectProperties

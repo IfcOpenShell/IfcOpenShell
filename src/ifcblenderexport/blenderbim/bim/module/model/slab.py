@@ -22,10 +22,7 @@ def add_object(self, context):
     modifier.use_even_offset = True
     modifier.offset = 1
     modifier.thickness = self.depth
-    obj.name = "IfcSlab/Dumb Slab"
-    attribute = obj.BIMObjectProperties.attributes.add()
-    attribute.name = "PredefinedType"
-    attribute.string_value = "FLOOR"
+    obj.name = "Slab"
 
 
 class BIM_OT_add_object(Operator, AddObjectHelper):

@@ -38,10 +38,8 @@ def add_object(self, context):
     modifier = obj.modifiers.new("Wall Width", "SOLIDIFY")
     modifier.use_even_offset = True
     modifier.thickness = self.width
-    obj.name = "IfcWall/Dumb Wall"
-    attribute = obj.BIMObjectProperties.attributes.add()
-    attribute.name = "PredefinedType"
-    attribute.string_value = "STANDARD"
+    obj.name = "Wall"
+    return obj
 
 
 class BIM_OT_add_object(Operator, AddObjectHelper):

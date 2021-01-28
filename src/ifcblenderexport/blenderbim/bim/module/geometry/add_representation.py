@@ -1,3 +1,5 @@
+import bpy
+import bmesh
 import ifcopenshell.util.unit
 
 
@@ -7,10 +9,12 @@ class Usecase:
         self.file = file
         self.settings = {
             "context": None,  # IfcGeometricRepresentationContext
+            "blender_object": None,  # This is (currently) a Blender object, hence this depends on Blender now
             "geometry": None,  # This is (currently) a Blender data object, hence this depends on Blender now
             "total_items": 1,  # How many representation items to create
             "unit_scale": None,  # A scale factor to apply for all vectors in case the unit is different
             "should_force_faceted_brep": False,  # If we should force faceted breps for meshes
+            "should_force_triangulation": False,  # If we should force triangulation for meshes
             "is_wireframe": False,  # If the geometry is a wireframe
             "is_curve": False,  # If the geometry is a Blender curve
             "is_point_cloud": False,  # If the geometry is a point cloud
@@ -20,6 +24,7 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
+        self.evaluate_geometry()
         if self.settings["unit_scale"] is None:
             self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         if self.settings["context"].ContextType == "Model":
@@ -27,6 +32,34 @@ class Usecase:
         elif self.settings["context"].ContextType == "Plan":
             return self.create_plan_representation()
         return self.create_variable_representation()
+
+    def evaluate_geometry(self):
+        self.boolean_modifiers = []
+        for modifier in self.settings["blender_object"].modifiers:
+            if not modifier.type == "BOOLEAN":
+                continue
+            modifier_data = {}
+            for name in ["operation", "operand_type", "object", "solver", "use_self"]:
+                modifier_data[name] = getattr(modifier, name)
+            self.boolean_modifiers.append(modifier_data)
+            self.settings["blender_object"].modifiers.remove(modifier)
+
+        if self.settings["should_force_triangulation"]:
+            mesh = self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+            bm = bmesh.new()
+            bm.from_mesh(mesh)
+            bmesh.ops.triangulate(bm, faces=bm.faces)
+            bm.to_mesh(mesh)
+            bm.free()
+            del bm
+            self.settings["geometry"] = mesh
+        else:
+            self.settings["geometry"] = self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+
+        for modifier in self.boolean_modifiers:
+            new = self.settings["blender_object"].modifiers.new("IfcOpeningElement", "BOOLEAN")
+            for key, value in modifier.items():
+                setattr(new, key, value)
 
     def create_model_representation(self):
         if self.settings["context"].is_a() == "IfcGeometricRepresentationContext":

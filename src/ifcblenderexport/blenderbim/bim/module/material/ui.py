@@ -3,6 +3,21 @@ from blenderbim.bim.module.material.data import Data
 from blenderbim.bim.ifc import IfcStore
 
 
+class BIM_PT_material(Panel):
+    bl_label = "IFC Material"
+    bl_idname = "BIM_PT_material"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "material"
+
+    def draw(self, context):
+        row = self.layout.row()
+        if bool(context.active_object.active_material.BIMObjectProperties.ifc_definition_id):
+            row.operator("bim.remove_material", icon="X", text="Remove IFC Material")
+        else:
+            row.operator("bim.add_material", icon="ADD", text="Create IFC Material")
+
+
 class BIM_PT_object_material(Panel):
     bl_label = "IFC Object Material"
     bl_idname = "BIM_PT_object_material"
@@ -12,7 +27,12 @@ class BIM_PT_object_material(Panel):
 
     @classmethod
     def poll(cls, context):
-        return bool(context.active_object.BIMObjectProperties.ifc_definition_id)
+        props = context.active_object.BIMObjectProperties
+        if not props.ifc_definition_id:
+            return False
+        if not hasattr(IfcStore.get_file().by_id(props.ifc_definition_id), "HasAssociations"):
+            return False
+        return True
 
     def draw(self, context):
         self.file = IfcStore.get_file()
@@ -23,6 +43,11 @@ class BIM_PT_object_material(Panel):
         if self.oprops.ifc_definition_id not in Data.products:
             Data.load(self.oprops.ifc_definition_id)
         self.product_data = Data.products[self.oprops.ifc_definition_id]
+
+        if not Data.materials:
+            row = self.layout.row()
+            row.label(text="No Materials Available")
+            return
 
         if self.product_data:
             if self.product_data["type"] == "IfcMaterialConstituentSet":

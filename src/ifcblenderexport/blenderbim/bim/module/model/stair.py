@@ -28,14 +28,13 @@ def add_object(self, context):
     modifier.relative_offset_displace[0] = 0
     modifier.relative_offset_displace[1] = 1
     modifier.use_constant_offset = True
+    modifier.constant_offset_displace[0] = 0
+    modifier.constant_offset_displace[1] = 0
     modifier.constant_offset_displace[2] = self.height / self.number_of_treads
     modifier.count = self.number_of_treads
     self.riser_height = self.height / self.number_of_treads
     self.length = self.number_of_treads * self.tread_length
-    obj.name = "IfcStairFlight/Dumb Stair"
-    attribute = obj.BIMObjectProperties.attributes.add()
-    attribute.name = "PredefinedType"
-    attribute.string_value = "STRAIGHT"
+    obj.name = "Stair"
 
 
 class BIM_OT_add_object(Operator, AddObjectHelper):

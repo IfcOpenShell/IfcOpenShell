@@ -31,13 +31,11 @@ def getPsetNames(self, context):
 
 def getMaterialPsetNames(self, context):
     global psetnames
-    if "/" in context.active_object.name:
-        ifc_class = "IfcMaterial"
-        if ifc_class not in psetnames:
-            psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
-            psetnames[ifc_class] = [(p.Name, p.Name, "") for p in psets]
-        return psetnames[ifc_class]
-    return []
+    ifc_class = "IfcMaterial"
+    if ifc_class not in psetnames:
+        psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
+        psetnames[ifc_class] = [(p.Name, p.Name, "") for p in psets]
+    return psetnames[ifc_class]
 
 
 def getQtoNames(self, context):

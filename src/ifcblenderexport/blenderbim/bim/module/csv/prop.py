@@ -18,10 +18,14 @@ class CsvProperties(PropertyGroup):
     ifc_selector: StringProperty(default="", name="IFC Selector")
     csv_attributes: CollectionProperty(name="CSV Attributes", type=StrProperty)
     csv_delimiter: EnumProperty(
-        items=[(";", ";", ""), (",", ",", ""), (".", ".", ""), ("CUSTOM", "Custom", ""),],
+        items=[
+            (";", ";", ""),
+            (",", ",", ""),
+            (".", ".", ""),
+            ("CUSTOM", "Custom", ""),
+        ],
         name="IFC CSV Delimiter",
         default=",",
     )
     csv_custom_delimiter: StringProperty(default="", name="Custom Delimiter")
     should_load_from_memory: BoolProperty(default=False, name="Load from Memory")
-    
