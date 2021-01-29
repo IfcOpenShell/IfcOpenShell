@@ -15,9 +15,7 @@ class AssignIfcWall(bpy.types.Operator):
     bl_label = "IfcWall"
 
     def execute(self, context):
-        for obj in context.selected_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcWall")
+        bpy.ops.bim.assign_class(ifc_class="IfcWall")
         return {"FINISHED"}
 
 
@@ -26,9 +24,7 @@ class AssignIfcSlab(bpy.types.Operator):
     bl_label = "IfcSlab"
 
     def execute(self, context):
-        for obj in context.selected_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcSlab")
+        bpy.ops.bim.assign_class(ifc_class="IfcSlab")
         return {"FINISHED"}
 
 
@@ -37,9 +33,7 @@ class AssignIfcStair(bpy.types.Operator):
     bl_label = "IfcStair"
 
     def execute(self, context):
-        for obj in context.selected_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcStair")
+        bpy.ops.bim.assign_class(ifc_class="IfcStair")
         return {"FINISHED"}
 
 
@@ -48,9 +42,7 @@ class AssignIfcDoor(bpy.types.Operator):
     bl_label = "IfcDoor"
 
     def execute(self, context):
-        for obj in context.selected_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcDoor")
+        bpy.ops.bim.assign_class(ifc_class="IfcDoor")
         return {"FINISHED"}
 
 
@@ -59,9 +51,25 @@ class AssignIfcWindow(bpy.types.Operator):
     bl_label = "IfcWindow"
 
     def execute(self, context):
-        for obj in context.selected_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcWindow")
+        bpy.ops.bim.assign_class(ifc_class="IfcWindow")
+        return {"FINISHED"}
+
+
+class AssignIfcColumn(bpy.types.Operator):
+    bl_idname = "bim.assign_ifc_column"
+    bl_label = "IfcColumn"
+
+    def execute(self, context):
+        bpy.ops.bim.assign_class(ifc_class="IfcColumn")
+        return {"FINISHED"}
+
+
+class AssignIfcBeam(bpy.types.Operator):
+    bl_idname = "bim.assign_ifc_beam"
+    bl_label = "IfcBeam"
+
+    def execute(self, context):
+        bpy.ops.bim.assign_class(ifc_class="IfcBeam")
         return {"FINISHED"}
 
 
@@ -123,3 +131,5 @@ class VIEW3D_MT_PIE_bim_class(bpy.types.Menu):
         pie.operator("bim.assign_ifc_stair")
         pie.operator("bim.assign_ifc_door")
         pie.operator("bim.assign_ifc_window")
+        pie.operator("bim.assign_ifc_column")
+        pie.operator("bim.assign_ifc_beam")
