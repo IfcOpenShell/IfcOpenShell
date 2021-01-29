@@ -91,7 +91,7 @@ class Usecase:
 
     def create_plan_representation(self):
         if self.settings["context"].ContextIdentifier == "Annotation":
-            if self.settings["is_text"]:
+            if isinstance(self.settings["geometry"], bpy.types.TextCurve):
                 return self.create_text_representation()
             shape_representation = self.create_geometric_curve_set_representation(is_2d=True)
             shape_representation.RepresentationType = "Annotation2D"
@@ -291,3 +291,12 @@ class Usecase:
 
     def convert_si_to_unit(self, co):
         return co / self.settings["unit_scale"]
+
+    def create_geometric_curve_set_representation(self, is_2d=False):
+        geometric_curve_set = self.file.createIfcGeometricCurveSet(self.create_curves(is_2d=is_2d))
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "GeometricCurveSet",
+            [geometric_curve_set],
+        )

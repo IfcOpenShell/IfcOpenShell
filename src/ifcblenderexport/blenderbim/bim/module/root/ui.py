@@ -58,3 +58,6 @@ class BIM_PT_class(Panel):
         if props.ifc_predefined_type == "USERDEFINED":
             row = self.layout.row()
             row.prop(props, "ifc_userdefined_type")
+        if bpy.context.active_object.data:
+            row = self.layout.row()
+            row.prop(bpy.context.scene.BIMProperties, "contexts")
