@@ -614,10 +614,14 @@ class CutSection(bpy.types.Operator):
             bpy.data.objects[name].hide_set(value)
 
     def does_obj_have_target_view_representation(self, obj, camera):
-        for representation in obj.BIMObjectProperties.representations:
-            element = self.file.by_id(representation.ifc_definition_id)
+        if not obj.BIMObjectProperties.ifc_definition_id:
+            return False
+        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        if not element.Representation:
+            return False
+        for representation in element.Representation.Representations:
             if ifcopenshell.util.element.is_representation_of_context(
-                element, "Plan", "Annotation", camera.data.BIMCameraProperties.target_view
+                representation, "Plan", "Annotation", camera.data.BIMCameraProperties.target_view
             ):
                 return True
 
