@@ -1,6 +1,7 @@
 import bpy
 import numpy as np
 import ifcopenshell
+import ifcopenshell.util.element
 import logging
 import blenderbim.bim.module.geometry.edit_object_placement as edit_object_placement
 import blenderbim.bim.module.geometry.add_representation as add_representation
@@ -11,6 +12,15 @@ import blenderbim.bim.module.geometry.remove_representation as remove_representa
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim import import_ifc
 from blenderbim.bim.module.geometry.data import Data
+from blenderbim.bim.module.context.data import Data as ContextData
+
+
+def get_box_context_id():
+    for context in ContextData.contexts.values():
+        if context["ContextType"] == "Model":
+            for i, subcontext in context["HasSubContexts"].items():
+                if subcontext["ContextIdentifier"] == "Box" and subcontext["TargetView"] == "MODEL_VIEW":
+                    return i
 
 
 class EditObjectPlacement(bpy.types.Operator):
@@ -76,20 +86,35 @@ class AddRepresentation(bpy.types.Operator):
         bpy.ops.bim.edit_object_placement(obj=obj.name)
 
         if obj.data:
-            result = add_representation.Usecase(
-                self.file,
-                {
-                    "context": self.file.by_id(context_id),
-                    "blender_object": obj,
-                    "geometry": obj.data,
-                    "total_items": max(1, len(obj.material_slots)),
-                    "should_force_faceted_brep": context.scene.BIMGeometryProperties.should_force_faceted_brep,
-                    "should_force_triangulation": context.scene.BIMGeometryProperties.should_force_triangulation,
-                },
-            ).execute()
+            product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            context_of_items = self.file.by_id(context_id)
+
+            representation_data = {
+                "context": context_of_items,
+                "blender_object": obj,
+                "geometry": obj.data,
+                "total_items": max(1, len(obj.material_slots)),
+                "should_force_faceted_brep": context.scene.BIMGeometryProperties.should_force_faceted_brep,
+                "should_force_triangulation": context.scene.BIMGeometryProperties.should_force_triangulation,
+            }
+
+            result = add_representation.Usecase(self.file, representation_data).execute()
+
             if not result:
                 print("Failed to write shape representation")
                 return {"FINISHED"}
+
+            box_context_id = get_box_context_id()
+            if (
+                box_context_id
+                and context_of_items.ContextType == "Model"
+                and context_of_items.ContextIdentifier
+                and context_of_items.ContextIdentifier == "Body"
+            ):
+                representation_data["context"] = self.file.by_id(box_context_id)
+                new_box = add_representation.Usecase(self.file, representation_data).execute()
+                assign_representation.Usecase(self.file, {"product": product, "representation": new_box}).execute()
+
             assign_styles.Usecase(
                 self.file,
                 {
@@ -102,10 +127,7 @@ class AddRepresentation(bpy.types.Operator):
                     "should_use_presentation_style_assignment": context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
                 },
             ).execute()
-            assign_representation.Usecase(
-                self.file,
-                {"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id), "representation": result},
-            ).execute()
+            assign_representation.Usecase(self.file, {"product": product, "representation": result}).execute()
 
             existing_mesh = obj.data
             mesh = obj.data.copy()
@@ -216,27 +238,47 @@ class UpdateMeshRepresentation(bpy.types.Operator):
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        if not ContextData.is_loaded:
+            ContextData.load()
+
         objs = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
         self.file = IfcStore.get_file()
 
         for obj in objs:
             bpy.ops.bim.edit_object_placement(obj=obj.name)
 
+            product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
             old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-            new_representation = add_representation.Usecase(
-                self.file,
-                {
-                    "context": old_representation.ContextOfItems,
-                    "blender_object": obj,
-                    "geometry": obj.data,
-                    "total_items": max(1, len(obj.material_slots)),
-                    "should_force_faceted_brep": context.scene.BIMGeometryProperties.should_force_faceted_brep,
-                    "should_force_triangulation": context.scene.BIMGeometryProperties.should_force_triangulation,
-                },
-            ).execute()
+            context_of_items = old_representation.ContextOfItems
+
+            representation_data = {
+                "context": context_of_items,
+                "blender_object": obj,
+                "geometry": obj.data,
+                "total_items": max(1, len(obj.material_slots)),
+                "should_force_faceted_brep": context.scene.BIMGeometryProperties.should_force_faceted_brep,
+                "should_force_triangulation": context.scene.BIMGeometryProperties.should_force_triangulation,
+            }
+
+            new_representation = add_representation.Usecase(self.file, representation_data).execute()
+
             if not new_representation:
                 print("Failed to write shape representation")
                 return {"FINISHED"}
+
+            box_context_id = get_box_context_id()
+            old_box = ifcopenshell.util.element.get_representation(product, "Model", "Box", "MODEL_VIEW")
+            if (
+                box_context_id
+                and old_box
+                and context_of_items.ContextType == "Model"
+                and context_of_items.ContextIdentifier
+                and context_of_items.ContextIdentifier == "Body"
+            ):
+                representation_data["context"] = self.file.by_id(box_context_id)
+                new_box = add_representation.Usecase(self.file, representation_data).execute()
+                for inverse in self.file.get_inverse(old_box):
+                    ifcopenshell.util.element.replace_attribute(inverse, old_box, new_box)
 
             assign_styles.Usecase(
                 self.file,

@@ -377,6 +377,8 @@ class IfcImporter:
         if self.ifc_import_settings.should_clean_mesh and len(self.file.by_type("IfcElement")) < 1000:
             self.clean_mesh()
             self.profile_code("Mesh cleaning")
+        self.set_default_context()
+        self.profile_code("Setting default context")
 
     def auto_set_workarounds(self):
         applications = self.file.by_type("IfcApplication")
@@ -1538,6 +1540,12 @@ class IfcImporter:
         else:
             parent = self.get_local_placement(plc.PlacementRelTo)
         return parent @ self.get_axis2placement(plc.RelativePlacement)
+
+    def set_default_context(self):
+        for subcontext in self.file.by_type("IfcGeometricRepresentationSubContext"):
+            if subcontext.ContextIdentifier == "Body":
+                bpy.context.scene.BIMProperties.contexts = str(subcontext.id())
+                break
 
 
 class IfcImportSettings:

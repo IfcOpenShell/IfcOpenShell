@@ -300,3 +300,18 @@ class Usecase:
             "GeometricCurveSet",
             [geometric_curve_set],
         )
+
+    def create_box_representation(self):
+        obj = self.settings["blender_object"]
+        bounding_box = self.file.createIfcBoundingBox(
+            self.create_cartesian_point(obj.bound_box[0][0], obj.bound_box[0][1], obj.bound_box[0][2]),
+            self.convert_si_to_unit(obj.dimensions[0]),
+            self.convert_si_to_unit(obj.dimensions[1]),
+            self.convert_si_to_unit(obj.dimensions[2]),
+        )
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "BoundingBox",
+            [bounding_box],
+        )
