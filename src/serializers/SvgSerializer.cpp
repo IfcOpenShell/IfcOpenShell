@@ -777,7 +777,7 @@ void SvgSerializer::write(const geometry_data& data) {
 			std::string object_type;
 			auto ot_arg = data.product->get("ObjectType");
 			if (!ot_arg->isNull()) {
-				object_type = *ot_arg;
+				object_type = (std::string) *ot_arg;
 			}
 
 			if (data.product->declaration().is("IfcAnnotation") && // is an Annotation
