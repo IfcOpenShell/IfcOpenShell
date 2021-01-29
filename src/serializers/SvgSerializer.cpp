@@ -418,6 +418,8 @@ namespace {
 		const TopoDS_Shape& shape_;
 
 	public:
+		typedef void result_type;
+
 		hlr_writer(const TopoDS_Shape& shape) : shape_(shape)
 		{}
 
@@ -1117,6 +1119,8 @@ namespace {
 		const HLRAlgo_Projector& projector_;
 
 	public:
+		typedef TopoDS_Shape result_type;
+
 		hlr_calc(const HLRAlgo_Projector& projector) : projector_(projector)
 		{}
 
