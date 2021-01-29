@@ -42,7 +42,6 @@ class BIM_PT_class(Panel):
             self.draw_class_dropdowns()
             row = self.layout.row(align=True)
             op = row.operator("bim.assign_class")
-            op.obj = context.active_object.name
             op.ifc_class = bpy.context.scene.BIMRootProperties.ifc_class
             op.predefined_type = bpy.context.scene.BIMRootProperties.ifc_predefined_type
             op.userdefined_type = bpy.context.scene.BIMRootProperties.ifc_userdefined_type
