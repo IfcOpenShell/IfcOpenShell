@@ -55,8 +55,13 @@
 #include <TopoDS_Wire.hxx>
 
 #include <BRepBuilderAPI_Transform.hxx>
-
+#include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
+#include <BRepBuilderAPI_MakePolygon.hxx>
+
+#include <BRepAlgoAPI_Cut.hxx>
+#include <BRepPrimAPI_MakeHalfSpace.hxx>
+
 #include <GProp_GProps.hxx>
 #include <BRepGProp.hxx>
 #include <BRepTopAdaptor_FClass2d.hxx>
@@ -64,7 +69,6 @@
 #include <Bnd_Box.hxx>
 #include <BRep_Builder.hxx>
 #include <BRepBndLib.hxx>
-#include <BRepBuilderAPI_MakeEdge.hxx>
 
 #include <ShapeFix_Edge.hxx>
 
@@ -609,8 +613,9 @@ void SvgSerializer::write(const geometry_data& data) {
 			double xs[2], ys[2], zs[2];
 			bb.Get(xs[0], ys[0], zs[0], xs[1], ys[1], zs[1]);
 
-			bool any = false;
+			bool any_in_front = false, any_behind = false;
 
+			// See if any of the vertices is in the negative Z-axis of the projection plane
 			for (int i = 0; i < 8; ++i) {
 				gp_Pnt p(xs[(i & 1) == 1], ys[(i & 2) == 2], zs[(i & 4) == 4]);
 				auto d = (p.XYZ() - projection_plane.Location().XYZ()).Dot(projection_plane.Axis().Direction().XYZ());
@@ -621,11 +626,87 @@ void SvgSerializer::write(const geometry_data& data) {
 					state = d < 0. ? -1 : 1;
 				}
 				if (state == -1) {
-					any = true;
+					any_in_front = true;
+				} else if (state == +1) {
+					any_behind = true;
 				}
 			}
 
-			if (any) {
+			// Exclude annotations from HLR
+			if (any_in_front && !data.product->declaration().is("IfcAnnotation")) {
+				
+				TopoDS_Shape* compound_to_hlr = &compound_to_use;
+				TopoDS_Shape subtracted_shape;
+				if (any_in_front && any_behind && data.product->declaration().is("IfcSlab") && is_floor_plan_) {
+					// This is currently ony for slanted roof slabs on floor plans
+					bool should_cut = false;
+					TopExp_Explorer exp(compound_to_use, TopAbs_FACE);
+					for (; exp.More(); exp.Next()) {
+						
+						const TopoDS_Face& face = TopoDS::Face(exp.Current());
+						BRepGProp_Face prop(face);
+						gp_Pnt p;
+						gp_Vec normal_direction;
+						double u0, u1, v0, v1;
+						BRepTools::UVBounds(face, u0, u1, v0, v1);
+						prop.Normal((u0 + u1) / 2., (v0 + v1) / 2., p, normal_direction);
+						const double dx = std::fabs(normal_direction.X());
+						const double dy = std::fabs(normal_direction.Y());
+						const double dz = std::fabs(normal_direction.Z());
+						auto largest = dx > dy ? dx : dy;
+						largest = largest > dz ? largest : dz;
+
+						if (largest < (1. - 1.e-5)) {
+
+							bool any_in_front_face = false, any_behind_face = false;
+
+							TopExp_Explorer exp2(face, TopAbs_VERTEX);
+							for (; exp2.More(); exp2.Next()) {
+								gp_Pnt p = BRep_Tool::Pnt(TopoDS::Vertex(exp2.Current()));
+								auto d = (p.XYZ() - projection_plane.Location().XYZ()).Dot(projection_plane.Axis().Direction().XYZ());
+								int state;
+								if (std::abs(d) < 1.e-5) {
+									state = 0;
+								} else {
+									state = d < 0. ? -1 : 1;
+								}
+								if (state == -1) {
+									any_in_front_face = true;
+								} else if (state == +1) {
+									any_behind_face = true;
+								}
+							}
+
+							should_cut = any_in_front_face && any_behind_face;
+							if (should_cut) {
+								break;
+							}
+						}
+					}
+
+					if (should_cut) {
+						gp_Pnt points[4] = {
+							gp_Pnt(xs[0] - 1., ys[0] - 1., cut_z),
+							gp_Pnt(xs[1] + 1., ys[0] - 1., cut_z),
+							gp_Pnt(xs[1] + 1., ys[1] + 1., cut_z),
+							gp_Pnt(xs[0] - 1., ys[1] + 1., cut_z)
+						};
+						try {
+							BRepBuilderAPI_MakePolygon mp(points[0], points[1], points[2], points[3], true);
+							auto w = mp.Wire();
+							BRepBuilderAPI_MakeFace mf(w);
+							auto f = mf.Face();
+							gp_Pnt ref = projection_plane.Position().Location().XYZ() + projection_plane.Position().Direction().XYZ();
+							BRepPrimAPI_MakeHalfSpace mhs(f, ref);
+							auto s = mhs.Solid();
+							subtracted_shape = BRepAlgoAPI_Cut(compound_to_use, s).Shape();
+							compound_to_hlr = &subtracted_shape;
+						} catch (...) {
+							Logger::Error("Failed to cut element for HLR", data.product);
+						}
+					}
+				}
+
 				if (is_floor_plan_ && storey) {
 					if (storey_hlr.find(storey) == storey_hlr.end()) {
 						if (use_hlr_poly_) {
@@ -634,13 +715,11 @@ void SvgSerializer::write(const geometry_data& data) {
 							storey_hlr[storey] = new HLRBRep_Algo;
 						}
 					}
-					hlr_writer vis(compound_to_use);
+					hlr_writer vis(*compound_to_hlr);
 					boost::apply_visitor(vis, storey_hlr[storey]);
-					// this is tricky, how can we change start_path()? Always include section/projection params?
-					// storey_hlr[]
 				}
 				else {
-					hlr_writer vis(compound_to_use);
+					hlr_writer vis(*compound_to_hlr);
 					boost::apply_visitor(vis, hlr);
 				}
 			}
@@ -693,7 +772,17 @@ void SvgSerializer::write(const geometry_data& data) {
 			auto bbdif = bbmax - bbmin;
 			auto proj = projection_direction ^ bbdif ^ projection_direction;
 
-			if (data.product->declaration().is("IfcAnnotation") && (proj.Magnitude() > 1.e-5) && zmin >= range.first && zmin <= range.second) {
+			std::string object_type;
+			auto ot_arg = data.product->get("ObjectType");
+			if (!ot_arg->isNull()) {
+				object_type = *ot_arg;
+			}
+
+			if (data.product->declaration().is("IfcAnnotation") && // is an Annotation
+				object_type == "Dimension" &&					   // with ObjectType='Dimension'
+				(proj.Magnitude() > 1.e-5) && 					   // when projected onto the view has a length
+				zmin >= range.first && zmin <= range.second)	   // the Z-coords are within the range of the building storey
+			{
 				if (po == nullptr) {
 					if (storey) {
 						po = &start_path(pln, storey, data.svg_name);
