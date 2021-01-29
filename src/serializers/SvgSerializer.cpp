@@ -634,8 +634,8 @@ void SvgSerializer::write(const geometry_data& data) {
 				}
 			}
 
-			// Exclude annotations from HLR
-			if (any_in_front && !data.product->declaration().is("IfcAnnotation")) {
+			// Exclude annotations and spaces from HLR
+			if (any_in_front && !data.product->declaration().is("IfcAnnotation") && !data.product->declaration().is("IfcSpace")) {
 				
 				TopoDS_Shape* compound_to_hlr = &compound_to_use;
 				TopoDS_Shape subtracted_shape;
