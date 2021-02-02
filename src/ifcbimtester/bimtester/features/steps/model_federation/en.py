@@ -1,10 +1,9 @@
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 from behave import step
-
-from utils import assert_number
-from utils import assert_type
-from utils import IfcFile
+from bimtester import util
+from bimtester.ifc import IfcStore
+from bimtester.lang import _
 
 
 def get_decimal_points(value):
@@ -28,17 +27,17 @@ def get_containing_spatial_elements(element):
     return results
 
 
-@step("There is a datum element {guid} as an {ifc_class}")
+@step('There is a datum element "{guid}" as an "{ifc_class}"')
 def step_impl(context, guid, ifc_class):
-    element = IfcFile.by_guid(guid)
-    assert_type(element, ifc_class)
+    element = utils.assert_guid(IfcStore.file, guid)
+    util.assert_type(element, ifc_class)
 
 
 @step(
-    "The element {guid} has a global easting, northing, and elevation of {easting}, {northing}, and {elevation} respectively"
+    'The element "{guid}" has a global easting, northing, and elevation of "{easting}", "{northing}", and "{elevation}" respectively'
 )
 def step_impl(context, guid, easting, northing, elevation):
-    if IfcFile.get().schema == "IFC2X3":
+    if IfcStore.file.schema == "IFC2X3":
         if element.is_a("IfcSite"):
             site = element
         else:
@@ -46,18 +45,18 @@ def step_impl(context, guid, easting, northing, elevation):
             if potential_sites:
                 site = potential_sites[0]
             else:
-                assert False, "The datum element does not belong to a geolocated site"
+                assert False, _("The datum element does not belong to a geolocated site")
         map_conversion = assert_pset(site, "EPset_MapConversion")
     else:
-        map_conversion = IfcFile.get().by_type("IfcMapConversion")
+        map_conversion = IfcStore.file.by_type("IfcMapConversion")
         if map_conversion:
             map_conversion = map_conversion[0].get_info()
         else:
-            assert False, "No map conversion was found in the file"
+            assert False, _("No map conversion was found in the file")
 
-    element = IfcFile.by_guid(guid)
+    element = utils.assert_guid(IfcStore.file, guid)
     if not element.ObjectPlacement:
-        assert False, "The element does not have an object placement: {}".format(element)
+        assert False, _("The element does not have an object placement: {}").format(element)
     m = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
     e, n, h = ifcopenshell.util.geolocation.xyz2enh(
         m[0][3],
@@ -73,24 +72,24 @@ def step_impl(context, guid, easting, northing, elevation):
     element_x = round(e, get_decimal_points(easting))
     element_y = round(n, get_decimal_points(northing))
     element_z = round(h, get_decimal_points(elevation))
-    expected_placement = (assert_number(easting), assert_number(northing), assert_number(elevation))
+    expected_placement = (util.assert_number(easting), util.assert_number(northing), util.assert_number(elevation))
     if (element_x, element_y, element_z) != expected_placement:
-        assert False, "The element {} is meant to have a location of {} but instead we found {}".format(
+        assert False, _("The element {} is meant to have a location of {} but instead we found {}").format(
             element, expected_placement, (element_x, element_y, element_z)
         )
 
 
-@step("The element {guid} has a local X, Y, and Z coordinate of {x}, {y}, and {z} respectively")
+@step('The element "{guid}" has a local X, Y, and Z coordinate of "{x}", "{y}", and "{z}" respectively')
 def step_impl(context, guid, x, y, z):
-    element = IfcFile.by_guid(guid)
+    element = utils.assert_guid(IfcStore.file, guid)
     if not element.ObjectPlacement:
-        assert False, "The element does not have an object placement: {}".format(element)
+        assert False, _("The element does not have an object placement: {}").format(element)
     m = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
     element_x = round(m[0][3], get_decimal_points(x))
     element_y = round(m[1][3], get_decimal_points(y))
     element_z = round(m[2][3], get_decimal_points(z))
-    expected_placement = (assert_number(x), assert_number(y), assert_number(z))
+    expected_placement = (util.assert_number(x), util.assert_number(y), util.assert_number(z))
     if (element_x, element_y, element_z) != expected_placement:
-        assert False, "The element {} is meant to have a location of {} but instead we found {}".format(
+        assert False, _("The element {} is meant to have a location of {} but instead we found {}").format(
             element, expected_placement, (element_x, element_y, element_z)
         )
