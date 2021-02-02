@@ -1,20 +1,16 @@
-import gettext  # noqa
+import gettext
 from behave import given
 from behave import step
 
-import ifcdata_methods as idm
 from utils import IfcFile
-from utils import switch_locale
-
-
-the_lang = "en"
-
+from bimtester.ifc import IfcStore
+from bimtester.lang import _
 
 @step('The IFC schema "{schema}" must be provided')
 def step_impl(context, schema):
     try:
-        if context.config.userdata.get('path'):
-            schema = os.path.join(context.config.userdata.get('path'), schema)
+        if context.config.userdata.get("path"):
+            schema = os.path.join(context.config.userdata.get("path"), schema)
         IfcFile.load_schema(schema)
     except:
         assert False, f"The schema {schema} could not be loaded"
@@ -28,25 +24,11 @@ def step_impl(context, file):
         assert False, f"The file {file} could not be loaded"
 
 
-@given("The IFC file has been provided through an argument")
-def step_impl(context):
-    switch_locale(context.localedir, the_lang)
-    idm.provide_ifcfile_by_argument(context)
-
-
-@given('A file path has been provided through an argument')
-def step_impl(context):
-    try:
-        assert context.config.userdata.get("path")
-    except:
-        assert False, f"The path {context.config.userdata.get('path')} could not be loaded"
-
-
 @step("IFC data must use the {schema} schema")
 def step_impl(context, schema):
-    switch_locale(context.localedir, the_lang)
-    idm.has_ifcdata_specific_schema(context, schema)
-    
+    real_schema = IfcStore.file.schema
+    assert real_schema == schema, _("We expected a schema of {} but instead got {}").format(schema, real_schema)
+
 
 @step('The IFC file "{file}" is exempt from being provided')
 def step_impl(context, file):
@@ -61,41 +43,43 @@ def step_impl(context, reason):
 @step("The IFC file must be exported by application full name {fullname}")
 def step_impl(context, fullname):
 
-    real_fullname = IfcFile.get().by_type("IfcApplication")[0].ApplicationFullName
-    assert  real_fullname == fullname , (
+    real_fullname = IfcStore.file.by_type("IfcApplication")[0].ApplicationFullName
+    assert real_fullname == fullname, (
         "The IFC file was not exported by application full name {} "
-        "instead it was exported by application full name {}"
-        .format(fullname, real_fullname)
+        "instead it was exported by application full name {}".format(fullname, real_fullname)
     )
 
 
 @step("The IFC file must be exported by application identifier {identifier}")
 def step_impl(context, identifier):
 
-    real_identifier = IfcFile.get().by_type("IfcApplication")[0].ApplicationIdentifier
-    assert  real_identifier == identifier , (
-        "The IFC file was not exported by application identifier {} "
-        "instead it was exported by identifier {}"
-        .format(identifier, real_identifier)
+    real_identifier = IfcStore.file.by_type("IfcApplication")[0].ApplicationIdentifier
+    assert (
+        real_identifier == identifier
+    ), "The IFC file was not exported by application identifier {} " "instead it was exported by identifier {}".format(
+        identifier, real_identifier
     )
 
 
 @step("The IFC file must be exported by the application version {version}")
 def step_impl(context, version):
 
-    real_version = IfcFile.get().by_type("IfcApplication")[0].Version
-    assert  real_version == version , (
-        "The IFC file was not exported by application version {} "
-        "instead it was exported by version {}"
-        .format(version, real_version)
+    real_version = IfcStore.file.by_type("IfcApplication")[0].Version
+    assert (
+        real_version == version
+    ), "The IFC file was not exported by application version {} " "instead it was exported by version {}".format(
+        version, real_version
     )
 
 
-@step("IFC data header must have a file description of {header_file_description} such as the new Allplan IFC exporter creates it")
+@step(
+    "IFC data header must have a file description of {header_file_description} such as the new Allplan IFC exporter creates it"
+)
 def step_impl(context, header_file_description):
-    
-    is_header_file_description = IfcFile.get().wrapped_data.header.file_description.description
-    assert  str(is_header_file_description) == header_file_description , (
-        "The file was not exported by the new ifc exporter in Allplan. File description header: {}"
-        .format(is_header_file_description)
+
+    is_header_file_description = IfcStore.file.wrapped_data.header.file_description.description
+    assert (
+        str(is_header_file_description) == header_file_description
+    ), "The file was not exported by the new ifc exporter in Allplan. File description header: {}".format(
+        is_header_file_description
     )
