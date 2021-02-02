@@ -4,16 +4,17 @@
 import ifcopenshell
 import ifcopenshell.util.selector
 import ifcopenshell.util.element
+import ifcopenshell.util.schema
 import csv
 import lark
 import argparse
 
 
-class IfcAttributeExtractor:
+class IfcAttributeSetter:
     @staticmethod
     def set_element_key(ifc_file, element, key, value):
         if key == "type" and element.is_a() != value:
-            return IfcAttributeExtractor.change_ifc_class(ifc_file, element, value)
+            return ifcopenshell.util.schema.reassign_class(ifc_file, element, value)
         if hasattr(element, key):
             setattr(element, key, value)
             return element
@@ -21,34 +22,16 @@ class IfcAttributeExtractor:
             return element
         if key[0:3] == "Qto":
             qto, prop = key.split(".", 1)
-            qto = IfcAttributeExtractor.get_element_qto(element, qto_name)
+            qto = IfcAttributeSetter.get_element_qto(element, qto_name)
             if qto:
-                IfcAttributeExtractor.set_qto_property(qto, prop, value)
+                IfcAttributeSetter.set_qto_property(qto, prop, value)
                 return element
         pset_name, prop = key.split(".", 1)
-        pset = IfcAttributeExtractor.get_element_pset(element, pset_name)
+        pset = IfcAttributeSetter.get_element_pset(element, pset_name)
         if pset:
-            IfcAttributeExtractor.set_pset_property(pset, prop, value)
+            IfcAttributeSetter.set_pset_property(pset, prop, value)
             return element
         return element
-
-    @staticmethod
-    def change_ifc_class(ifc_file, element, new_class):
-        try:
-            new_element = ifc_file.create_entity(new_class)
-        except:
-            print(f"Class of {element} could not be changed to {new_class}")
-            return element
-        new_attributes = [new_element.attribute_name(i) for i, attribute in enumerate(new_element)]
-        for i, attribute in enumerate(element):
-            try:
-                new_element[new_attributes.index(element.attribute_name(i))] = attribute
-            except:
-                continue
-        for inverse in ifc_file.get_inverse(element):
-            ifcopenshell.util.element.replace_attribute(inverse, element, new_element)
-        ifc_file.remove(element)
-        return new_element
 
     @staticmethod
     def get_element_qto(element, name):
@@ -109,6 +92,7 @@ class IfcCsv:
         self.attributes = []
         self.output = ""
         self.selector = None
+        self.delimiter = ";"
 
     def export(self, ifc_file, elements):
         self.ifc_file = ifc_file
@@ -151,7 +135,7 @@ class IfcCsv:
     def Import(self, ifc):
         ifc_file = ifcopenshell.open(ifc)
         with open(self.output, newline="", encoding="utf-8") as f:
-            reader = csv.reader(f)
+            reader = csv.reader(f, delimiter=self.delimiter)
             headers = []
             for row in reader:
                 if not headers:
@@ -165,7 +149,7 @@ class IfcCsv:
                 for i, value in enumerate(row):
                     if i == 0:
                         continue  # Skip GlobalId
-                    element = IfcAttributeExtractor.set_element_key(ifc_file, element, headers[i], value)
+                    element = IfcAttributeSetter.set_element_key(ifc_file, element, headers[i], value)
         ifc_file.write(ifc)
 
 

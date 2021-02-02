@@ -9,6 +9,7 @@ from datetime import datetime
 from xml.dom import minidom
 from xmlschema import XMLSchema
 from contextlib import contextmanager
+from shutil import copyfile
 
 
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -271,7 +272,7 @@ class BcfXml:
             f.write(self.document.toprettyxml(encoding="utf-8"))
 
     def write_header(self, header, root):
-        if not header:
+        if not header or not header.files:
             return
         header_el = self._create_element(root, "Header")
         for f in header.files:
@@ -344,7 +345,7 @@ class BcfXml:
 
     def write_viewpoint(self, viewpoint, topic):
         document = minidom.Document()
-        root = self._create_element(document, "VisualizationInfo", { "Guid": viewpoint.guid })
+        root = self._create_element(document, "VisualizationInfo", {"Guid": viewpoint.guid})
         self.write_viewpoint_components(viewpoint, root)
         self.write_viewpoint_orthogonal_camera(viewpoint, root)
         self.write_viewpoint_perspective_camera(viewpoint, root)
@@ -476,7 +477,10 @@ class BcfXml:
             topic_filepath = os.path.join(self.filepath, topic.guid)
             filepath = os.path.join(topic_filepath, viewpoint.snapshot)
             if not os.path.exists(filepath):
-                pass  # TODO: handle uploading files
+                filename = viewpoint.guid + os.path.splitext(viewpoint.snapshot)[-1]
+                copyfile(viewpoint.snapshot, os.path.join(topic_filepath, filename))
+                viewpoint.snapshot = filename
+        topic.viewpoints[viewpoint.guid] = viewpoint
         self.edit_topic(topic)
 
     def delete_viewpoint(self, guid, topic):
@@ -498,6 +502,75 @@ class BcfXml:
             if os.path.exists(filepath):
                 os.remove(filepath)
         del topic.viewpoints[guid]
+        self.edit_topic(topic)
+
+    def delete_file(self, topic, index):
+        if not topic.header:
+            return
+        f = topic.header.files.pop(index)
+        filepath = os.path.join(self.filepath, topic.guid, f.reference)
+        if not f.is_external and os.path.exists(filepath):
+            os.remove(filepath)
+        self.edit_topic(topic)
+
+    def delete_bim_snippet(self, topic):
+        if not topic.bim_snippet:
+            return
+        if topic.bim_snippet.reference and not topic.bim_snippet.is_external:
+            filepath = os.path.join(self.filepath, topic.guid, topic.bim_snippet.reference)
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        topic.bim_snippet = None
+        self.edit_topic(topic)
+
+    def delete_document_reference(self, topic, index):
+        document_reference = topic.document_references[index]
+        if document_reference.referenced_document and not document_reference.is_external:
+            filepath = os.path.join(self.filepath, topic.guid, document_reference.referenced_document)
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        del topic.document_references[index]
+        self.edit_topic(topic)
+
+    def add_document_reference(self, topic, document_reference):
+        if os.path.exists(document_reference.referenced_document):
+            topic_filepath = os.path.join(self.filepath, topic.guid)
+            filename = os.path.basename(document_reference.referenced_document)
+            copyfile(document_reference.referenced_document, os.path.join(topic_filepath, filename))
+            document_reference.referenced_document = filename
+            document_reference.is_external = False
+        else:
+            document_reference.is_external = True
+        if not document_reference.guid:
+            document_reference.guid = str(uuid.uuid4())
+        topic.document_references.append(document_reference)
+        self.edit_topic(topic)
+
+    def add_bim_snippet(self, topic, bim_snippet):
+        if topic.bim_snippet:
+            self.delete_bim_snippet(topic)
+        if os.path.exists(bim_snippet.reference):
+            topic_filepath = os.path.join(self.filepath, topic.guid)
+            filename = os.path.basename(bim_snippet.reference)
+            copyfile(bim_snippet.reference, os.path.join(topic_filepath, filename))
+            bim_snippet.reference = filename
+            bim_snippet.is_external = False
+        else:
+            bim_snippet.is_external = True
+        topic.bim_snippet = bim_snippet
+        self.edit_topic(topic)
+
+    def add_file(self, topic, header_file):
+        if os.path.exists(header_file.reference):
+            topic_filepath = os.path.join(self.filepath, topic.guid)
+            header_file.filename = os.path.basename(header_file.reference)
+            copyfile(header_file.reference, os.path.join(topic_filepath, header_file.filename))
+            header_file.reference = header_file.filename
+            header_file.is_external = False
+        header_file.date = datetime.utcnow().isoformat()
+        if not topic.header:
+            topic.header = bcf.data.Header()
+        topic.header.files.append(header_file)
         self.edit_topic(topic)
 
     def get_comments(self, guid):

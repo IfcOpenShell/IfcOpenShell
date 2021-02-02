@@ -15,11 +15,8 @@ def add_object(self, context):
     bm.to_mesh(mesh)
     bm.free()
     obj = object_data_add(context, mesh, operator=self)
-    obj.name = "IfcOpening/Dumb Opening"
+    obj.name = "Opening"
     obj.display_type = "WIRE"
-    attribute = obj.BIMObjectProperties.attributes.add()
-    attribute.name = "PredefinedType"
-    attribute.string_value = "OPENING"
 
 
 class BIM_OT_add_object(Operator, AddObjectHelper):

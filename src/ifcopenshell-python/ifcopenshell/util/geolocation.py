@@ -1,4 +1,5 @@
 import math
+import numpy as np
 
 
 def dms2dd(degrees, minutes, seconds, ms=0):
@@ -43,6 +44,54 @@ def enh2xyz(e, n, h, eastings, northings, orthogonal_height, x_axis_abscissa, x_
     y = ((a * n) - (a * northings) + (b * eastings) - (b * e)) / ((a * a) + (b * b))
     z = h - orthogonal_height
     return (x, y, z)
+
+
+def local2global(matrix, eastings, northings, orthogonal_height, x_axis_abscissa, x_axis_ordinate, scale=None):
+    if scale is None:
+        scale = 1.0
+    x = np.array([x_axis_abscissa, x_axis_ordinate, 0])
+    x /= np.linalg.norm(x)
+    y = np.cross(np.array([0, 0, 1]), x)
+    intermediate = (
+        np.matrix(
+            [
+                [x[0], y[0], 0, 0],
+                [x[1], y[1], 0, 0],
+                [x[2], y[2], 1, 0],
+                [0, 0, 0, 1],
+            ]
+        )
+        @ matrix
+    )
+    intermediate[0, 3] = (intermediate[0, 3] * scale) + eastings
+    intermediate[1, 3] = (intermediate[1, 3] * scale) + northings
+    intermediate[2, 3] = (intermediate[2, 3] * scale) + orthogonal_height
+    return intermediate
+
+
+def global2local(matrix, eastings, northings, orthogonal_height, x_axis_abscissa, x_axis_ordinate, scale=None):
+    if scale is None:
+        scale = 1.0
+    x = np.array([x_axis_abscissa, x_axis_ordinate, 0])
+    x /= np.linalg.norm(x)
+    y = np.cross(np.array([0, 0, 1]), x)
+    result = matrix.copy()
+    result[0, 3] = (result[0, 3] - eastings) / scale
+    result[1, 3] = (result[1, 3] - northings) / scale
+    result[2, 3] = (result[2, 3] - orthogonal_height) / scale
+    return (
+        np.linalg.inv(
+            np.matrix(
+                [
+                    [x[0], y[0], 0, 0],
+                    [x[1], y[1], 0, 0],
+                    [x[2], y[2], 1, 0],
+                    [0, 0, 0, 1],
+                ]
+            )
+        )
+        @ result
+    )
 
 
 # Used for converting the X and Y vectors of the X Axis in IFC geolocation
