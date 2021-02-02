@@ -1,38 +1,53 @@
 from behave import step
-
-from utils import assert_attribute
-from utils import IfcFile
+from bimtester import util
 from bimtester.ifc import IfcStore
+from bimtester.lang import _
 
 
-@step("The project must have an identifier of {guid}")
+@step('IFC data must use the "{schema}" schema')
+def step_impl(context, schema):
+    real_schema = IfcStore.file.schema
+    assert real_schema == schema, _("We expected a schema of {} but instead got {}").format(schema, real_schema)
+
+
+@step('The IFC file "{file}" is exempt from being provided')
+def step_impl(context, file):
+    pass
+
+
+@step('No further requirements are specified because "{reason}"')
+def step_impl(context, reason):
+    pass
+
+
+@step('The project must have an identifier of "{guid}"')
 def step_impl(context, guid):
-    assert_attribute(IfcStore.file.by_type("IfcProject")[0], "GlobalId", guid)
+    util.assert_attribute(IfcStore.file.by_type("IfcProject")[0], "GlobalId", guid)
 
 
 @step('The project name, code, or short identifier must be "{value}"')
 def step_impl(context, value):
-    assert_attribute(IfcStore.file.by_type("IfcProject")[0], "Name", value)
+    util.assert_attribute(IfcStore.file.by_type("IfcProject")[0], "Name", value)
 
 
 @step('The project must have a longer form name of "{value}"')
 def step_impl(context, value):
-    assert_attribute(IfcStore.file.by_type("IfcProject")[0], "LongName", value)
+    util.assert_attribute(IfcStore.file.by_type("IfcProject")[0], "LongName", value)
 
 
 @step('The project must be described as "{value}"')
 def step_impl(context, value):
-    assert_attribute(IfcStore.file.by_type("IfcProject")[0], "Description", value)
+    util.assert_attribute(IfcStore.file.by_type("IfcProject")[0], "Description", value)
 
 
 @step('The project must be categorised under "{value}"')
 def step_impl(context, value):
-    assert_attribute(IfcStore.file.by_type("IfcProject")[0], "ObjectType", value)
+    util.assert_attribute(IfcStore.file.by_type("IfcProject")[0], "ObjectType", value)
 
 
 @step('The project must contain information about the "{value}" phase')
 def step_impl(context, value):
-    assert_attribute(IfcStore.file.by_type("IfcProject")[0], "Phase", value)
+    util.assert_attribute(IfcStore.file.by_type("IfcProject")[0], "Phase", value)
 
 
 @step("The project must contain 3D geometry representing the shape of objects")
@@ -56,7 +71,7 @@ def step_impl(context):
 
 
 def get_subcontext(identifier, type, target_view):
-    project = IfcFile.get().by_type("IfcProject")[0]
+    project = IfcStore.file.by_type("IfcProject")[0]
     for rep_context in project.RepresentationContexts:
         for subcontext in rep_context.HasSubContexts:
             if (
@@ -72,5 +87,5 @@ def get_subcontext(identifier, type, target_view):
 
 @step('the project has a {attribute_name} attribute with a value of "{attribute_value}"')
 def step_impl(context, attribute_name, attribute_value):
-    project = IfcFile.get().by_type("IfcProject")[0]
+    project = IfcStore.file.by_type("IfcProject")[0]
     assert getattr(project, attribute_name) == attribute_value

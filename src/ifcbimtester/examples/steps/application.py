@@ -6,39 +6,6 @@ from utils import IfcFile
 from bimtester.ifc import IfcStore
 from bimtester.lang import _
 
-@step('The IFC schema "{schema}" must be provided')
-def step_impl(context, schema):
-    try:
-        if context.config.userdata.get("path"):
-            schema = os.path.join(context.config.userdata.get("path"), schema)
-        IfcFile.load_schema(schema)
-    except:
-        assert False, f"The schema {schema} could not be loaded"
-
-
-@step('The IFC file "{file}" must be provided')
-def step_impl(context, file):
-    try:
-        IfcFile.load(file)
-    except:
-        assert False, f"The file {file} could not be loaded"
-
-
-@step("IFC data must use the {schema} schema")
-def step_impl(context, schema):
-    real_schema = IfcStore.file.schema
-    assert real_schema == schema, _("We expected a schema of {} but instead got {}").format(schema, real_schema)
-
-
-@step('The IFC file "{file}" is exempt from being provided')
-def step_impl(context, file):
-    pass
-
-
-@step("No further requirements are specified because {reason}")
-def step_impl(context, reason):
-    pass
-
 
 @step("The IFC file must be exported by application full name {fullname}")
 def step_impl(context, fullname):
