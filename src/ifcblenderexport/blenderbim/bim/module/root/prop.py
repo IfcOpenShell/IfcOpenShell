@@ -72,7 +72,7 @@ def getIfcClasses(self, context):
     global classes_enum
     file = IfcStore.get_file()
     if len(classes_enum) < 1 and file:
-        declaration = IfcStore.get_schema().declaration_by_name(self.ifc_product)
+        declaration = IfcStore.get_schema().declaration_by_name(context.scene.BIMRootProperties.ifc_product)
 
         def get_classes(declaration):
             results = []
