@@ -2,36 +2,37 @@ from behave import step
 
 from utils import assert_attribute
 from utils import IfcFile
+from bimtester.ifc import IfcStore
 
 
 @step("The project must have an identifier of {guid}")
 def step_impl(context, guid):
-    assert_attribute(IfcFile.get().by_type("IfcProject")[0], "GlobalId", guid)
+    assert_attribute(IfcStore.file.by_type("IfcProject")[0], "GlobalId", guid)
 
 
 @step('The project name, code, or short identifier must be "{value}"')
 def step_impl(context, value):
-    assert_attribute(IfcFile.get().by_type("IfcProject")[0], "Name", value)
+    assert_attribute(IfcStore.file.by_type("IfcProject")[0], "Name", value)
 
 
 @step('The project must have a longer form name of "{value}"')
 def step_impl(context, value):
-    assert_attribute(IfcFile.get().by_type("IfcProject")[0], "LongName", value)
+    assert_attribute(IfcStore.file.by_type("IfcProject")[0], "LongName", value)
 
 
 @step('The project must be described as "{value}"')
 def step_impl(context, value):
-    assert_attribute(IfcFile.get().by_type("IfcProject")[0], "Description", value)
+    assert_attribute(IfcStore.file.by_type("IfcProject")[0], "Description", value)
 
 
 @step('The project must be categorised under "{value}"')
 def step_impl(context, value):
-    assert_attribute(IfcFile.get().by_type("IfcProject")[0], "ObjectType", value)
+    assert_attribute(IfcStore.file.by_type("IfcProject")[0], "ObjectType", value)
 
 
 @step('The project must contain information about the "{value}" phase')
 def step_impl(context, value):
-    assert_attribute(IfcFile.get().by_type("IfcProject")[0], "Phase", value)
+    assert_attribute(IfcStore.file.by_type("IfcProject")[0], "Phase", value)
 
 
 @step("The project must contain 3D geometry representing the shape of objects")

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang={{tr_lang}}>
+<html lang={{_lang}}>
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,8 +32,8 @@
         <h1>{{name}}</h1>
         <p><strong>{{time}} {{file_name}}</strong></p>
         <hr>
-        <span class="{{#is_success}}success{{/is_success}}{{^is_success}}failure{{/is_success}}">{{#is_success}}{{tr_success}}{{/is_success}}{{^is_success}}{{tr_failure}}{{/is_success}}</span>
-        {{tr_tests_passed}}: <strong>{{total_passes}} / {{total_steps}}</strong> ({{pass_rate}}%)
+        <span class="{{#is_success}}success{{/is_success}}{{^is_success}}failure{{/is_success}}">{{#is_success}}{{_success}}{{/is_success}}{{^is_success}}{{_failure}}{{/is_success}}</span>
+        {{_tests_passed}}: <strong>{{total_passes}} / {{total_steps}}</strong> ({{pass_rate}}%)
         <br />
         <p class="description">
             {{#description}}
@@ -46,10 +46,10 @@
     <section>
         <h2>{{name}}</h2>
         <p>
-            <span class="{{#is_success}}success{{/is_success}}{{^is_success}}failure{{/is_success}}">{{#is_success}}{{tr_success}}{{/is_success}}{{^is_success}}{{tr_failure}}{{/is_success}}</span>
-            {{tr_tests_passed}}: <strong>{{total_passes}} / {{total_steps}}</strong> ({{pass_rate}}%)
+            <span class="{{#is_success}}success{{/is_success}}{{^is_success}}failure{{/is_success}}">{{#is_success}}{{_success}}{{/is_success}}{{^is_success}}{{_failure}}{{/is_success}}</span>
+            {{_tests_passed}}: <strong>{{total_passes}} / {{total_steps}}</strong> ({{pass_rate}}%)
             <span class="time">
-            {{tr_duration}}: {{time}}s
+            {{_duration}}: {{time}}s
             </span>
         </p>
         <ol>
@@ -72,7 +72,7 @@
     <hr>
     <footer>
         <p>
-            {{tr_auditing}} <a href="https://blenderbim.org/">BlenderBIM</a> {{tr_and}} <a href="http://ifcopenshell.org/">IfcOpenShell</a>.
+            {{_auditing}} <a href="https://blenderbim.org/">BlenderBIM</a> {{_and}} <a href="http://ifcopenshell.org/">IfcOpenShell</a>.
         </p>
     </footer>
 </body>
