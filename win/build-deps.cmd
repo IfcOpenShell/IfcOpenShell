@@ -58,9 +58,9 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :: Set up the BuildDepsCache.txt filename
 IF DEFINED VS_TOOLSET (
-    set BUILDDEPTHCACHE=BuildDepsCache-%VS_PLATFORM%-%VS_TOOLSET%.txt
+    set BUILD_DEPS_CACHE_PATH=BuildDepsCache-%VS_PLATFORM%-%VS_TOOLSET%.txt
 ) ELSE (
-    set BUILDDEPTHCACHE=BuildDepsCache-%VS_PLATFORM%.txt
+    set BUILD_DEPS_CACHE_PATH=BuildDepsCache-%VS_PLATFORM%.txt
 )
 
 :: fix for Visual C++ hanging when compiling 32-bit release OCCT up to version 7.4.0
@@ -162,7 +162,7 @@ set /p do_continue="> "
 if "%do_continue%"=="n" goto :Finish
 
 :: Cache last used CMake generator for other scripts to use
-if defined GEN_SHORTHAND echo GEN_SHORTHAND=%GEN_SHORTHAND%>"%~dp0\%BUILDDEPTHCACHE%"
+if defined GEN_SHORTHAND echo GEN_SHORTHAND=%GEN_SHORTHAND%>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 
 echo.
 set START_TIME=%TIME%
@@ -249,10 +249,10 @@ if %IFCOS_USE_OCCT%==FALSE goto :OCE
 set OCCT_VERSION=7.3.0p3
 SET OCCT_VER=V%OCCT_VERSION:.=_%
 
-set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\inc>>"%~dp0\%BUILDDEPTHCACHE%"
-set OCC_LIBRARY_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\lib>>"%~dp0\%BUILDDEPTHCACHE%"
-echo OCC_INCLUDE_DIR=%OCC_INCLUDE_DIR%>>"%~dp0\%BUILDDEPTHCACHE%"
-echo OCC_LIBRARY_DIR=%OCC_LIBRARY_DIR%>>"%~dp0\%BUILDDEPTHCACHE%"
+set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\inc>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+set OCC_LIBRARY_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\lib>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+echo OCC_INCLUDE_DIR=%OCC_INCLUDE_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+echo OCC_LIBRARY_DIR=%OCC_LIBRARY_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 
 :: OCCT has many dependencies but FreeType is the only mandatory
 set DEPENDENCY_NAME=FreeType
@@ -326,10 +326,10 @@ del "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\*.bat"
 goto :Python
 
 :OCE
-set OCC_INCLUDE_DIR=%INSTALL_DIR%\oce\include\oce>>"%~dp0\%BUILDDEPTHCACHE%"
-set OCC_LIBRARY_DIR=%INSTALL_DIR%\oce\Win%ARCH_BITS%\lib>>"%~dp0\%BUILDDEPTHCACHE%"
-echo OCC_INCLUDE_DIR=%OCC_INCLUDE_DIR%>>"%~dp0\%BUILDDEPTHCACHE%"
-echo OCC_LIBRARY_DIR=%OCC_LIBRARY_DIR%>>"%~dp0\%BUILDDEPTHCACHE%"
+set OCC_INCLUDE_DIR=%INSTALL_DIR%\oce\include\oce>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+set OCC_LIBRARY_DIR=%INSTALL_DIR%\oce\Win%ARCH_BITS%\lib>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+echo OCC_INCLUDE_DIR=%OCC_INCLUDE_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+echo OCC_LIBRARY_DIR=%OCC_LIBRARY_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 
 set DEPENDENCY_NAME=Open CASCADE Community Edition
 set DEPENDENCY_DIR=%DEPS_DIR%\oce
@@ -369,8 +369,8 @@ set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.msi
 :: NOTE/TODO 3.5.0 doesn't use MSI any longer, but exe: set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.exe
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     REM Store Python versions to BuildDepsCache.txt for run-cmake.bat
-    echo PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR%>>"%~dp0\%BUILDDEPTHCACHE%"
-    echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\%BUILDDEPTHCACHE%"
+    echo PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+    echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 
     cd "%DEPS_DIR%"
     call :DownloadFile https://www.python.org/ftp/python/%PYTHON_VERSION%/%PYTHON_INSTALLER% "%DEPS_DIR%" %PYTHON_INSTALLER%
