@@ -1,5 +1,5 @@
-import bpy
 from bpy.types import Panel
+from blenderbim.bim.ifc import IfcStore
 
 
 class BIM_PT_qa(Panel):
@@ -11,47 +11,48 @@ class BIM_PT_qa(Panel):
     bl_context = "scene"
 
     def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
+        self.layout.use_property_split = True
 
-        scene = context.scene
-        bimtester_properties = bpy.context.scene.BimTesterProperties
+        props = context.scene.BimTesterProperties
 
-        layout.label(text="Gherkin Setup:")
+        if IfcStore.get_file():
+            row = self.layout.row()
+            row.prop(props, "should_load_from_memory")
 
-        row = layout.row(align=True)
-        row.prop(bimtester_properties, "features_dir")
-        row.operator("bim.select_features_dir", icon="FILE_FOLDER", text="")
+        if not IfcStore.get_file() or not props.should_load_from_memory:
+            row = self.layout.row(align=True)
+            row.prop(props, "ifc_file")
+            row.operator("bim.select_bimtester_ifc_file", icon="FILE_FOLDER", text="")
 
-        if bimtester_properties.features_dir:
-            row = layout.row(align=True)
-            row.prop(bimtester_properties, "features_file")
+        row = self.layout.row(align=True)
+        row.prop(props, "feature")
+        row.operator("bim.select_feature", icon="FILE_FOLDER", text="")
 
-            row = layout.row(align=True)
-            row.prop(bimtester_properties, "scenario")
-        else:
-            return
+        has_ifc_file = (IfcStore.get_file() and props.should_load_from_memory) or (
+            props.ifc_file and not props.should_load_from_memory
+        )
 
-        if str(context.scene.BimTesterProperties.features_file) != '': # To handle the error when no .feature file exists in the folder
-            row = layout.row()
-            row.operator("bim.execute_bim_tester")
+        row = self.layout.row(align=True)
+        row.operator("bim.execute_bim_tester")
+        row.operator("bim.bim_tester_purge")
 
-            row = layout.row()
-            row.operator("bim.bim_tester_purge")
+        if props.feature and has_ifc_file:
+            self.layout.label(text="Scenario Authoring:")
 
-            layout.label(text="Quality Auditing:")
+            row = self.layout.row(align=True)
+            row.prop(props, "scenario")
 
-            row = layout.row()
-            row.prop(bimtester_properties, "qa_reject_element_reason")
-            row = layout.row()
+            row = self.layout.row()
+            row.prop(props, "qa_reject_element_reason")
+            row = self.layout.row()
             row.operator("bim.reject_element")
 
-            row = layout.row()
-            row.prop(bimtester_properties, "audit_ifc_class")
+            row = self.layout.row()
+            row.prop(props, "audit_ifc_class")
 
-            row = layout.row(align=True)
+            row = self.layout.row(align=True)
             row.operator("bim.approve_class")
             row.operator("bim.reject_class")
 
-            row = layout.row()
+            row = self.layout.row()
             row.operator("bim.select_audited")
