@@ -831,15 +831,16 @@ bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, const taxonom
 				}
 				auto p = external_edges.insert({ { i0, i1 }, { i, j} });
 				if (!p.second) {
+					// Mark as internal before erasure in external
+					// This is {i,j} at the time the edge use was inserted.
+					internal_edges.insert(p.first->second);
+
 					// not inserted, remove
 					external_edges.erase(p.first);
 
 					// @nb note the difference here in indices, {i0, i1} is point indices in
 					// point_map. i is index in faces_to_extrude, j is segment index in wire.
 					internal_edges.insert({ i, j });
-
-					// This is {i,j} at the time the edge use was inserted.
-					internal_edges.insert(p.first->second);
 				}
 			}
 			i++;
