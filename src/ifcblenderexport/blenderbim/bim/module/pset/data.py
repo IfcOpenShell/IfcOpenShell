@@ -9,6 +9,12 @@ class Data:
     qtos = {}
 
     @classmethod
+    def purge(cls):
+        cls.products = {}
+        cls.psets = {}
+        cls.qtos = {}
+
+    @classmethod
     def load(cls, product_id):
         file = IfcStore.get_file()
         if not file:

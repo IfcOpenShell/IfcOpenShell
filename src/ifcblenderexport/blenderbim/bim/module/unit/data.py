@@ -6,6 +6,11 @@ class Data:
     units = {}
 
     @classmethod
+    def purge(cls):
+        cls.is_loaded = False
+        cls.units = {}
+
+    @classmethod
     def load(cls):
         file = IfcStore.get_file()
         if not file:

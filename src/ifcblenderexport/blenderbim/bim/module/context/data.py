@@ -6,6 +6,11 @@ class Data:
     contexts = {}
 
     @classmethod
+    def purge(cls):
+        cls.is_loaded = False
+        cls.contexts = {}
+
+    @classmethod
     def load(cls):
         file = IfcStore.get_file()
         if not file:

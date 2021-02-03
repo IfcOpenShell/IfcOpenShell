@@ -6,6 +6,11 @@ class Data:
     representations = {}
 
     @classmethod
+    def purge(cls):
+        cls.products = False
+        cls.representations = {}
+
+    @classmethod
     def load(cls, product_id):
         file = IfcStore.get_file()
         if not file:

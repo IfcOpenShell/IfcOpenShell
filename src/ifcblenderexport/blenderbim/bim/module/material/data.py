@@ -16,6 +16,20 @@ class Data:
     _file = None
 
     @classmethod
+    def purge(cls):
+        cls.is_loaded = False
+        cls.materials = {}
+        cls.constituent_sets = {}
+        cls.constituents = {}
+        cls.layer_sets = {}
+        cls.layers = {}
+        cls.profile_sets = {}
+        cls.profiles = {}
+        cls.lists = {}
+        cls.products = {}
+        cls._file = None
+
+    @classmethod
     def load(cls, product_id=None):
         cls._file = IfcStore.get_file()
         if not cls._file:
