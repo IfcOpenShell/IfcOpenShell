@@ -16,7 +16,10 @@ class IfcStore:
         if IfcStore.file is None:
             IfcStore.path = bpy.context.scene.BIMProperties.ifc_file
             if IfcStore.path:
-                IfcStore.file = ifcopenshell.open(IfcStore.path)
+                try:
+                    IfcStore.file = ifcopenshell.open(IfcStore.path)
+                except:
+                    IfcStore.file
         return IfcStore.file
 
     @staticmethod
