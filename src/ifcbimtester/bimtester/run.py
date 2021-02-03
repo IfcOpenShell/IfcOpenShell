@@ -3,8 +3,13 @@ import sys
 import shutil
 import tempfile
 import ifcopenshell
+try:
+    import ifcopenshell.express
+except:
+    pass # They are using an old version of IfcOpenShell. Gracefully degrade for now.
 import behave.formatter.pretty  # Needed for pyinstaller to package it
 from bimtester.ifc import IfcStore
+from distutils.dir_util import copy_tree
 from behave.__main__ import main as behave_main
 
 
@@ -14,7 +19,6 @@ class TestRunner:
         IfcStore.file = ifc if ifc else ifcopenshell.open(ifc_path)
 
         if schema:
-            import ifcopenshell.express
             schema = ifcopenshell.express.parse(path)
             ifcopenshell.register_schema(schema)
 
@@ -29,9 +33,15 @@ class TestRunner:
     def run(self, args):
         tmpdir = tempfile.mkdtemp()
         features_path = os.path.join(tmpdir, "features")
+        steps_path = os.path.join(features_path, "steps")
         report_json = os.path.join(tmpdir, "report.json")
         shutil.copytree(os.path.join(self.base_path, "features"), features_path)
         shutil.copy(args["feature"], features_path)
+        if args["steps"]:
+            if os.path.isfile(args["steps"]):
+                shutil.copy(args["steps"], steps_path)
+            elif os.path.isdir(args["steps"]):
+                copy_tree(args["steps"], steps_path)
         behave_main(self.get_behave_args(args, features_path, report_json))
         return report_json
 

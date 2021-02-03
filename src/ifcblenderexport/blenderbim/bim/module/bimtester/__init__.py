@@ -5,6 +5,7 @@ classes = (
     operator.ExecuteBIMTester,
     operator.BIMTesterPurge,
     operator.SelectFeature,
+    operator.SelectSteps,
     operator.SelectBIMTesterIfcFile,
     operator.RejectElement,
     operator.ApproveClass,
