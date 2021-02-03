@@ -13,8 +13,9 @@ class BIM_PT_project(Panel):
     def draw(self, context):
         self.layout.use_property_decorate = False
         self.layout.use_property_split = True
+        props = context.scene.BIMProperties
         self.file = IfcStore.get_file()
-        if self.file:
+        if self.file or props.ifc_file:
             self.draw_project_ui(context)
         else:
             self.draw_create_project_ui(context)
@@ -22,12 +23,16 @@ class BIM_PT_project(Panel):
     def draw_project_ui(self, context):
         props = context.scene.BIMProperties
         row = self.layout.row(align=True)
-        row.label(text="IFC File", icon="FILE")
+        row.label(text="IFC Filename", icon="FILE")
         row.label(text=os.path.basename(props.ifc_file) or "No File Found")
 
-        row = self.layout.row(align=True)
-        row.label(text="IFC Schema", icon="FILE_CACHE")
-        row.label(text=IfcStore.get_file().schema)
+        if IfcStore.get_file():
+            row = self.layout.row(align=True)
+            row.label(text="IFC Schema", icon="FILE_CACHE")
+            row.label(text=IfcStore.get_file().schema)
+        else:
+            row = self.layout.row(align=True)
+            row.label(text="File Not Loaded", icon="ERROR")
 
         row = self.layout.row(align=True)
         row.prop(props, "ifc_file", text="")
