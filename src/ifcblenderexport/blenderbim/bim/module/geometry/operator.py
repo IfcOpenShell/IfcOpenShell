@@ -13,6 +13,7 @@ from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim import import_ifc
 from blenderbim.bim.module.geometry.data import Data
 from blenderbim.bim.module.context.data import Data as ContextData
+from blenderbim.bim.module.void.data import Data as VoidData
 
 
 def get_box_context_id():
@@ -142,13 +143,14 @@ class SwitchRepresentation(bpy.types.Operator):
     bl_idname = "bim.switch_representation"
     bl_label = "Switch Representation"
     ifc_definition_id: bpy.props.IntProperty()
+    disable_opening_subtractions: bpy.props.BoolProperty()
 
     def execute(self, context):
         self.obj = bpy.context.active_object
 
         self.file = IfcStore.get_file()
-        context_of_items = self.file.by_id(self.ifc_definition_id).ContextOfItems
-        self.mesh_name = "{}/{}".format(context_of_items.id(), self.ifc_definition_id)
+        self.context_of_items = self.file.by_id(self.ifc_definition_id).ContextOfItems
+        self.mesh_name = "{}/{}".format(self.context_of_items.id(), self.ifc_definition_id)
 
         mesh = bpy.data.meshes.get(self.mesh_name)
         if mesh:
@@ -162,8 +164,18 @@ class SwitchRepresentation(bpy.types.Operator):
         ifc_import_settings = import_ifc.IfcImportSettings.factory(bpy.context, IfcStore.path, logger)
         element = self.file.by_id(self.obj.BIMObjectProperties.ifc_definition_id)
         settings = ifcopenshell.geom.settings()
-        settings.set(settings.INCLUDE_CURVES, True)
-        shape = ifcopenshell.geom.create_shape(settings, self.file.by_id(self.ifc_definition_id))
+
+        if self.context_of_items.ContextIdentifier != "Body":
+            settings.set(settings.INCLUDE_CURVES, True)
+
+        if self.disable_opening_subtractions and self.context_of_items.ContextIdentifier == "Body":
+            settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
+            shape = ifcopenshell.geom.create_shape(settings, self.file.by_id(self.ifc_definition_id))
+        else:
+            shape = ifcopenshell.geom.create_shape(
+                settings, self.file.by_id(self.obj.BIMObjectProperties.ifc_definition_id)
+            )
+
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = self.file
         mesh = ifc_importer.create_mesh(element, shape)
@@ -172,6 +184,20 @@ class SwitchRepresentation(bpy.types.Operator):
         self.obj.data.user_remap(mesh)
         material_creator = import_ifc.MaterialCreator(ifc_import_settings, ifc_importer)
         material_creator.create(element, self.obj, mesh)
+
+        if self.disable_opening_subtractions and self.context_of_items.ContextIdentifier == "Body":
+            if self.obj.BIMObjectProperties.ifc_definition_id not in VoidData.products:
+                VoidData.load(self.obj.BIMObjectProperties.ifc_definition_id)
+            for opening_id in VoidData.products[self.obj.BIMObjectProperties.ifc_definition_id]:
+                if opening_id in IfcStore.id_map:
+                    opening = IfcStore.id_map[opening_id]
+                    modifier = self.obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
+                    modifier.operation = "DIFFERENCE"
+                    modifier.object = opening
+        else:
+            for modifier in self.obj.modifiers:
+                if modifier.type == "BOOLEAN" and "IfcOpeningElement" in modifier.name:
+                    self.obj.modifiers.remove(modifier)
 
 
 class RemoveRepresentation(bpy.types.Operator):

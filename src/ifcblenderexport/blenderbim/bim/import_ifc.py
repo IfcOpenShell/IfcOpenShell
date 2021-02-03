@@ -278,7 +278,6 @@ class IfcImporter:
         self.diff = None
         self.file = None
         self.settings = ifcopenshell.geom.settings()
-        self.settings.set(self.settings.DISABLE_OPENING_SUBTRACTIONS, True)
         self.settings.set_deflection_tolerance(self.ifc_import_settings.deflection_tolerance)
         self.settings.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
         if self.ifc_import_settings.should_import_curves:
@@ -347,17 +346,15 @@ class IfcImporter:
         self.process_element_filter()
         self.profile_code("Process element filter")
         # TODO: Deprecate
-        #self.parse_native_elements()
-        #self.profile_code("Parsing native elements")
+        # self.parse_native_elements()
+        # self.profile_code("Parsing native elements")
         self.create_grids()
         self.profile_code("Creating grids")
         # TODO: Deprecate
-        #self.create_native_products()
-        #self.profile_code("Creating native products")
+        # self.create_native_products()
+        # self.profile_code("Creating native products")
         self.create_products()
         self.profile_code("Creating meshified products")
-        self.relate_openings()
-        self.profile_code("Relating openings")
         self.place_objects_in_spatial_tree()
         self.profile_code("Placing objects in spatial tree")
         if self.ifc_import_settings.should_merge_by_class:
@@ -1231,16 +1228,6 @@ class IfcImporter:
                 objects_to_purge.append(obj)
         bpy.ops.object.delete({"selected_objects": objects_to_purge})
 
-    def relate_openings(self):
-        for global_id, opening in self.openings.items():
-            building_element_global_id = self.file.by_guid(global_id).VoidsElements[0].RelatingBuildingElement.GlobalId
-            if building_element_global_id not in self.added_data:
-                continue
-            building_element = self.added_data[building_element_global_id]
-            modifier = building_element.modifiers.new("IfcOpeningElement", "BOOLEAN")
-            modifier.operation = "DIFFERENCE"
-            modifier.object = opening
-
     def place_objects_in_spatial_tree(self):
         for ifc_definition_id, obj in IfcStore.id_map.items():
             self.place_object_in_spatial_tree(self.file.by_id(ifc_definition_id), obj)
@@ -1380,9 +1367,7 @@ class IfcImporter:
                 representation_id = int(re.sub(r"\D", "", representation_id))
             representation = self.file.by_id(representation_id)
             context_id = representation.ContextOfItems.id() if hasattr(representation, "ContextOfItems") else 0
-            mesh = bpy.data.meshes.new(
-                "{}/{}".format(context_id, geometry.id)
-            )
+            mesh = bpy.data.meshes.new("{}/{}".format(context_id, representation_id))
 
             props = bpy.context.scene.BIMGeoreferenceProperties
             if props.has_blender_offset and props.blender_offset_type == "CARTESIAN_POINT":
