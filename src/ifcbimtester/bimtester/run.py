@@ -3,7 +3,6 @@ import sys
 import shutil
 import tempfile
 import ifcopenshell
-import ifcopenshell.express
 import behave.formatter.pretty  # Needed for pyinstaller to package it
 from bimtester.ifc import IfcStore
 from behave.__main__ import main as behave_main
@@ -15,6 +14,7 @@ class TestRunner:
         IfcStore.file = ifc if ifc else ifcopenshell.open(ifc_path)
 
         if schema:
+            import ifcopenshell.express
             schema = ifcopenshell.express.parse(path)
             ifcopenshell.register_schema(schema)
 
