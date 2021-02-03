@@ -7,6 +7,12 @@ class Data:
     fillings = {}
 
     @classmethod
+    def purge(cls):
+        cls.products = {}
+        cls.openings = {}
+        cls.fillings = {}
+
+    @classmethod
     def load(cls, product_id):
         file = IfcStore.get_file()
         if not file:
