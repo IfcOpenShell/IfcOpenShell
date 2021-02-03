@@ -147,6 +147,7 @@ class SwitchRepresentation(bpy.types.Operator):
 
     def execute(self, context):
         self.obj = bpy.context.active_object
+        self.oprops = self.obj.BIMObjectProperties
 
         self.file = IfcStore.get_file()
         self.context_of_items = self.file.by_id(self.ifc_definition_id).ContextOfItems
@@ -162,19 +163,17 @@ class SwitchRepresentation(bpy.types.Operator):
         self.file = IfcStore.get_file()
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = import_ifc.IfcImportSettings.factory(bpy.context, IfcStore.path, logger)
-        element = self.file.by_id(self.obj.BIMObjectProperties.ifc_definition_id)
+        element = self.file.by_id(self.oprops.ifc_definition_id)
         settings = ifcopenshell.geom.settings()
 
-        if self.context_of_items.ContextIdentifier != "Body":
-            settings.set(settings.INCLUDE_CURVES, True)
-
-        if self.disable_opening_subtractions and self.context_of_items.ContextIdentifier == "Body":
-            settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
-            shape = ifcopenshell.geom.create_shape(settings, self.file.by_id(self.ifc_definition_id))
+        if self.context_of_items.ContextIdentifier == "Body":
+            if self.disable_opening_subtractions:
+                shape = ifcopenshell.geom.create_shape(settings, self.file.by_id(self.ifc_definition_id))
+            else:
+                shape = ifcopenshell.geom.create_shape(settings, self.file.by_id(self.oprops.ifc_definition_id))
         else:
-            shape = ifcopenshell.geom.create_shape(
-                settings, self.file.by_id(self.obj.BIMObjectProperties.ifc_definition_id)
-            )
+            settings.set(settings.INCLUDE_CURVES, True)
+            shape = ifcopenshell.geom.create_shape(settings, self.file.by_id(self.ifc_definition_id))
 
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = self.file
@@ -186,9 +185,9 @@ class SwitchRepresentation(bpy.types.Operator):
         material_creator.create(element, self.obj, mesh)
 
         if self.disable_opening_subtractions and self.context_of_items.ContextIdentifier == "Body":
-            if self.obj.BIMObjectProperties.ifc_definition_id not in VoidData.products:
-                VoidData.load(self.obj.BIMObjectProperties.ifc_definition_id)
-            for opening_id in VoidData.products[self.obj.BIMObjectProperties.ifc_definition_id]:
+            if self.oprops.ifc_definition_id not in VoidData.products:
+                VoidData.load(self.oprops.ifc_definition_id)
+            for opening_id in VoidData.products[self.oprops.ifc_definition_id]:
                 if opening_id in IfcStore.id_map:
                     opening = IfcStore.id_map[opening_id]
                     modifier = self.obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
