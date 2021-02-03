@@ -11,7 +11,6 @@ from . import decoration
 import bpy
 from blenderbim.bim.ifc import IfcStore
 from bpy.types import PropertyGroup
-from bpy.app.handlers import persistent
 from bpy.props import (
     PointerProperty,
     StringProperty,
@@ -33,83 +32,6 @@ subcontexts_enum = []
 target_views_enum = []
 sheets_enum = []
 vector_styles_enum = []
-
-
-@persistent
-def clearIfcStore(scene):
-    IfcStore.file = None
-    IfcStore.schema = None
-
-
-@persistent
-def setDefaultProperties(scene):
-    if len(bpy.context.scene.DocProperties.drawing_styles) == 0:
-        drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
-        drawing_style.name = "Technical"
-        drawing_style.render_type = "VIEWPORT"
-        drawing_style.raster_style = json.dumps(
-            {
-                "bpy.data.worlds[0].color": (1, 1, 1),
-                "bpy.context.scene.render.engine": "BLENDER_WORKBENCH",
-                "bpy.context.scene.render.film_transparent": False,
-                "bpy.context.scene.display.shading.show_object_outline": True,
-                "bpy.context.scene.display.shading.show_cavity": False,
-                "bpy.context.scene.display.shading.cavity_type": "BOTH",
-                "bpy.context.scene.display.shading.curvature_ridge_factor": 1,
-                "bpy.context.scene.display.shading.curvature_valley_factor": 1,
-                "bpy.context.scene.view_settings.view_transform": "Standard",
-                "bpy.context.scene.display.shading.light": "FLAT",
-                "bpy.context.scene.display.shading.color_type": "SINGLE",
-                "bpy.context.scene.display.shading.single_color": (1, 1, 1),
-                "bpy.context.scene.display.shading.show_shadows": False,
-                "bpy.context.scene.display.shading.shadow_intensity": 0.5,
-                "bpy.context.scene.display.light_direction": (0.5, 0.5, 0.5),
-                "bpy.context.scene.view_settings.use_curve_mapping": False,
-                "space.overlay.show_wireframes": True,
-                "space.overlay.wireframe_threshold": 0,
-                "space.overlay.show_floor": False,
-                "space.overlay.show_axis_x": False,
-                "space.overlay.show_axis_y": False,
-                "space.overlay.show_axis_z": False,
-                "space.overlay.show_object_origins": False,
-                "space.overlay.show_relationship_lines": False,
-            }
-        )
-        drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
-        drawing_style.name = "Shaded"
-        drawing_style.render_type = "VIEWPORT"
-        drawing_style.raster_style = json.dumps(
-            {
-                "bpy.data.worlds[0].color": (1, 1, 1),
-                "bpy.context.scene.render.engine": "BLENDER_WORKBENCH",
-                "bpy.context.scene.render.film_transparent": False,
-                "bpy.context.scene.display.shading.show_object_outline": True,
-                "bpy.context.scene.display.shading.show_cavity": True,
-                "bpy.context.scene.display.shading.cavity_type": "BOTH",
-                "bpy.context.scene.display.shading.curvature_ridge_factor": 1,
-                "bpy.context.scene.display.shading.curvature_valley_factor": 1,
-                "bpy.context.scene.view_settings.view_transform": "Standard",
-                "bpy.context.scene.display.shading.light": "STUDIO",
-                "bpy.context.scene.display.shading.color_type": "MATERIAL",
-                "bpy.context.scene.display.shading.single_color": (1, 1, 1),
-                "bpy.context.scene.display.shading.show_shadows": True,
-                "bpy.context.scene.display.shading.shadow_intensity": 0.5,
-                "bpy.context.scene.display.light_direction": (0.5, 0.5, 0.5),
-                "bpy.context.scene.view_settings.use_curve_mapping": False,
-                "space.overlay.show_wireframes": True,
-                "space.overlay.wireframe_threshold": 0,
-                "space.overlay.show_floor": False,
-                "space.overlay.show_axis_x": False,
-                "space.overlay.show_axis_y": False,
-                "space.overlay.show_axis_z": False,
-                "space.overlay.show_object_origins": False,
-                "space.overlay.show_relationship_lines": False,
-            }
-        )
-        drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
-        drawing_style.name = "Blender Default"
-        drawing_style.render_type = "DEFAULT"
-        bpy.ops.bim.save_drawing_style(index="2")
 
 
 def getDiagramScales(self, context):
@@ -234,15 +156,6 @@ def toggleDecorations(self, context):
     toggle = self.should_draw_decorations
     if toggle:
         decoration.DecorationsHandler.install(context)
-    else:
-        decoration.DecorationsHandler.uninstall()
-
-
-@persistent
-def toggleDecorationsOnLoad(*args):
-    toggle = bpy.context.scene.DocProperties.should_draw_decorations
-    if toggle:
-        decoration.DecorationsHandler.install(bpy.context)
     else:
         decoration.DecorationsHandler.uninstall()
 
@@ -479,6 +392,8 @@ class BIMProperties(PropertyGroup):
     schema_dir: StringProperty(default=os.path.join(cwd, "schema") + os.path.sep, name="Schema Directory")
     data_dir: StringProperty(default=os.path.join(cwd, "data") + os.path.sep, name="Data Directory")
     ifc_file: StringProperty(name="IFC File")
+    id_map: StringProperty(name="ID Map")
+    guid_map: StringProperty(name="GUID Map")
     export_schema: EnumProperty(items=[("IFC4", "IFC4", ""), ("IFC2X3", "IFC2X3", "")], name="IFC Schema")
     contexts: EnumProperty(items=getContexts, name="Contexts")
     available_contexts: EnumProperty(items=[("Model", "Model", ""), ("Plan", "Plan", "")], name="Available Contexts")

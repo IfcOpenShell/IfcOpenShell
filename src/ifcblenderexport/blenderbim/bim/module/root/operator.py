@@ -66,7 +66,7 @@ class ReassignClass(bpy.types.Operator):
             },
         ).execute()
         obj.name = "{}/{}".format(product.is_a(), "/".join(obj.name.split("/")[1:]))
-        obj.BIMObjectProperties.ifc_definition_id = int(product.id())
+        IfcStore.link_element(product, obj)
         bpy.context.active_object.BIMObjectProperties.is_reassigning_class = False
         return {"FINISHED"}
 
@@ -108,7 +108,7 @@ class AssignClass(bpy.types.Operator):
             },
         ).execute()
         obj.name = "{}/{}".format(product.is_a(), obj.name)
-        obj.BIMObjectProperties.ifc_definition_id = int(product.id())
+        IfcStore.link_element(product, obj)
 
         if obj.data:
             bpy.ops.bim.add_representation(obj=obj.name, context_id=self.context_id)
@@ -176,12 +176,13 @@ class UnassignClass(bpy.types.Operator):
         for obj in objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
+            product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            IfcStore.unlink_element(product, obj)
             usecase = remove_product.Usecase(
                 self.file,
-                {"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)},
+                {"product": product},
             )
             usecase.execute()
-            obj.BIMObjectProperties.ifc_definition_id = 0
             if "/" in obj.name and obj.name[0:3] == "Ifc":
                 obj.name = "/".join(obj.name.split("/")[1:])
         return {"FINISHED"}
@@ -221,7 +222,7 @@ class CopyClass(bpy.types.Operator):
             result = copy_class.Usecase(self.file, {
                 "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
             }).execute()
-            obj.BIMObjectProperties.ifc_definition_id = result.id()
+            IfcStore.link_element(result, obj)
             if obj.data.users == 1:
                 bpy.ops.bim.add_representation(obj=obj.name)
             else:
