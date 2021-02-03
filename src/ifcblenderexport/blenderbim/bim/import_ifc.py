@@ -280,8 +280,6 @@ class IfcImporter:
         self.settings = ifcopenshell.geom.settings()
         self.settings.set_deflection_tolerance(self.ifc_import_settings.deflection_tolerance)
         self.settings.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
-        if self.ifc_import_settings.should_import_curves:
-            self.settings.set(self.settings.INCLUDE_CURVES, True)
         self.settings_native = ifcopenshell.geom.settings()
         self.settings_native.set(self.settings_native.INCLUDE_CURVES, True)
         self.settings_2d = ifcopenshell.geom.settings()
@@ -355,6 +353,8 @@ class IfcImporter:
         # self.profile_code("Creating native products")
         self.create_products()
         self.profile_code("Creating meshified products")
+        self.create_annotation()
+        self.profile_code("Creating annotation")
         self.place_objects_in_spatial_tree()
         self.profile_code("Placing objects in spatial tree")
         if self.ifc_import_settings.should_merge_by_class:
@@ -717,6 +717,36 @@ class IfcImporter:
             if not iterator.next():
                 break
         print("Done creating geometry")
+
+    def create_annotation(self):
+        if self.ifc_import_settings.should_use_cpu_multiprocessing:
+            iterator = ifcopenshell.geom.iterator(
+                self.settings_2d,
+                self.file,
+                multiprocessing.cpu_count(),
+                include=self.file.by_type("IfcAnnotation")
+            )
+        else:
+            iterator = ifcopenshell.geom.iterator(
+                self.settings_2d, self.file, include=self.file.by_type("IfcAnnotation")
+            )
+        valid_file = iterator.initialize()
+        if not valid_file:
+            return False
+        checkpoint = time.time()
+        total = 0
+        while True:
+            total += 1
+            if total % 250 == 0:
+                print("{} elements processed in {:.2f}s ...".format(total, time.time() - checkpoint))
+                checkpoint = time.time()
+            shape = iterator.get()
+            if shape:
+                self.create_product(self.file.by_id(shape.guid), shape)
+            if not iterator.next():
+                break
+        print("Done creating geometry")
+
 
     def create_product(self, element, shape=None):
         if element is None:
@@ -1537,7 +1567,6 @@ class IfcImportSettings:
         self.input_file = None
         self.diff_file = None
         self.should_import_type_representations = False
-        self.should_import_curves = False
         self.should_import_spaces = False
         self.should_auto_set_workarounds = True
         self.should_use_cpu_multiprocessing = True

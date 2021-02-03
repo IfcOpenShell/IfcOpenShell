@@ -112,7 +112,6 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
 
     should_import_type_representations: bpy.props.BoolProperty(name="Import Type Representations", default=False)
-    should_import_curves: bpy.props.BoolProperty(name="Import Curves", default=False)
     should_import_spaces: bpy.props.BoolProperty(name="Import Spaces", default=False)
     should_auto_set_workarounds: bpy.props.BoolProperty(name="Automatically Set Vendor Workarounds", default=True)
     should_use_cpu_multiprocessing: bpy.props.BoolProperty(name="Import with CPU Multiprocessing", default=True)
@@ -140,7 +139,6 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
 
         settings = import_ifc.IfcImportSettings.factory(context, self.filepath, logger)
         settings.should_import_type_representations = self.should_import_type_representations
-        settings.should_import_curves = self.should_import_curves
         settings.should_import_spaces = self.should_import_spaces
         settings.should_auto_set_workarounds = self.should_auto_set_workarounds
         settings.should_use_cpu_multiprocessing = self.should_use_cpu_multiprocessing
