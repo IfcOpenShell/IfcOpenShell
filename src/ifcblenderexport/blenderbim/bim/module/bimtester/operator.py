@@ -29,7 +29,8 @@ class ExecuteBIMTester(bpy.types.Operator):
                 "path": "",
                 "report": report,
                 "schema": "",
-                "lang": "en"
+                "lang": "en",
+                "steps": props.steps
             }
             use_stored_ifc = props.should_load_from_memory and IfcStore.get_file()
             runner = bimtester.run.TestRunner(args["ifc"], ifc=IfcStore.get_file() if use_stored_ifc else None)
@@ -64,6 +65,22 @@ class SelectFeature(bpy.types.Operator):
 
     def execute(self, context):
         bpy.context.scene.BimTesterProperties.feature = self.filepath
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+
+class SelectSteps(bpy.types.Operator):
+    bl_idname = "bim.select_steps"
+    bl_label = "Select Steps"
+    filename_ext = ".py"
+    filter_glob: bpy.props.StringProperty(default="*.py", options={"HIDDEN"})
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        bpy.context.scene.BimTesterProperties.steps = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):

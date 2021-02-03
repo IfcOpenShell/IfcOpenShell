@@ -28,6 +28,10 @@ class BIM_PT_qa(Panel):
         row.prop(props, "feature")
         row.operator("bim.select_feature", icon="FILE_FOLDER", text="")
 
+        row = self.layout.row(align=True)
+        row.prop(props, "steps")
+        row.operator("bim.select_steps", icon="FILE_FOLDER", text="")
+
         has_ifc_file = (IfcStore.get_file() and props.should_load_from_memory) or (
             props.ifc_file and not props.should_load_from_memory
         )

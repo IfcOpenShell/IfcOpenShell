@@ -14,6 +14,7 @@ parser.add_argument("-f", "--feature", type=str, help="Specify a feature file to
 parser.add_argument("-i", "--ifc", type=str, help="Specify a ifc file", required=True)
 parser.add_argument("-p", "--path", type=str, help="Define a path for use in tests")
 parser.add_argument("-r", "--report", type=str, help="Specify an output file for a HTML report")
+parser.add_argument("--steps", type=str, help="Specify custom step definitions")
 parser.add_argument("--schema", type=str, help="Specify an output file for a HTML report")
 parser.add_argument("--lang", type=str, help="Specify a language", default="")
 
