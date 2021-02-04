@@ -316,10 +316,10 @@ class IfcImporter:
         self.profile_code("Load diff")
         self.purge_diff()
         self.profile_code("Purge diffs")
-        self.load_existing_rooted_elements()
-        self.profile_code("Load existing rooted elements")
         self.load_file()
         self.profile_code("Loading file")
+        self.load_existing_rooted_elements()
+        self.profile_code("Load existing rooted elements")
         self.set_ifc_file()
         self.profile_code("Setting file")
         if self.ifc_import_settings.should_auto_set_workarounds:
