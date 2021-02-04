@@ -237,3 +237,13 @@ img.active-flag {
 .onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-switch {
     right: 0px; 
 }
+
+.button-primary {
+    background-color: #b85934 !important;
+    border: 0px !important;
+}
+
+.button-primary:hover {
+    background-color: #e18a42 !important;
+}
+
