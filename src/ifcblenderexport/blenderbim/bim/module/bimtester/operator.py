@@ -28,7 +28,8 @@ class ExecuteBIMTester(bpy.types.Operator):
                 "ifc": props.ifc_file,
                 "path": "",
                 "report": report,
-                "schema": "",
+                "schema_file": "",
+                "schema_name": "",
                 "lang": "en",
                 "steps": props.steps
             }
