@@ -177,7 +177,7 @@ input[type="email"]:focus, input[type="number"]:focus, input[type="search"]:focu
 }
 
 img.flag {
-    width: 30px;
+    width: 24px;
     padding: 2px;
     margin-right: 10px;
     margin-bottom: 20px;
@@ -247,3 +247,25 @@ img.active-flag {
     background-color: #e18a42 !important;
 }
 
+.vendor-icon {
+    vertical-align: middle;
+    margin-right: 10px;
+    margin-top: -1px;
+    padding-bottom: 5px;
+}
+
+.vendor-full {
+    border-bottom: 5px solid #b6cca1;
+}
+
+.vendor-unknown {
+    border-bottom: 5px solid #555;
+}
+
+.vendor-partial {
+    border-bottom: 5px solid #ffd37f;
+}
+
+.vendor-bad {
+    border-bottom: 5px solid #fbb4a8;
+}
