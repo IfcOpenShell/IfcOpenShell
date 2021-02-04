@@ -14,13 +14,9 @@ from behave.__main__ import main as behave_main
 
 
 class TestRunner:
-    def __init__(self, ifc_path, ifc=None, schema=None):
+    def __init__(self, ifc_path, ifc=None):
         IfcStore.path = ifc_path
         IfcStore.file = ifc if ifc else ifcopenshell.open(ifc_path)
-
-        if schema:
-            schema = ifcopenshell.express.parse(path)
-            ifcopenshell.register_schema(schema)
 
         try:
             # PyInstaller creates a temp folder and stores path in _MEIPASS
@@ -31,6 +27,10 @@ class TestRunner:
         self.locale_path = os.path.join(self.base_path, "locale")
 
     def run(self, args):
+        if args["schema_file"]:
+            schema = ifcopenshell.express.parse(args["schema_file"])
+            ifcopenshell.register_schema(args["schema_name"])
+
         tmpdir = tempfile.mkdtemp()
         features_path = os.path.join(tmpdir, "features")
         steps_path = os.path.join(features_path, "steps")
