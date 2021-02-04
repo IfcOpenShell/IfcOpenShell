@@ -21,6 +21,9 @@ class BIM_PT_debug(Panel):
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
         row = layout.row()
+        row.operator("bim.create_all_shapes")
+
+        row = layout.row()
         row.operator("bim.profile_import_ifc")
 
         row = layout.row()
