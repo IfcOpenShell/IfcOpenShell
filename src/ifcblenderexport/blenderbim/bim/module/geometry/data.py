@@ -7,7 +7,7 @@ class Data:
 
     @classmethod
     def purge(cls):
-        cls.products = False
+        cls.products = {}
         cls.representations = {}
 
     @classmethod
