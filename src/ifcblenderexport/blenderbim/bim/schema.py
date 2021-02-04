@@ -10,11 +10,10 @@ cwd = os.path.dirname(os.path.realpath(__file__))
 
 class IfcSchema:
     def __init__(self):
-        self.schema_dir = os.path.join(cwd, "schema")  # TODO: make configurable
-        self.data_dir = os.path.join(cwd, "data")  # TODO: make configurable
+        self.schema_dir = Path(cwd).joinpath("schema")  # TODO: make configurable
+        self.data_dir = Path(cwd).joinpath("data")  # TODO: make configurable
         # TODO: Make it less troublesome
         self.products = [
-            "IfcContext",
             "IfcElement",
             "IfcSpatialElement",
             "IfcGroup",
@@ -29,10 +28,11 @@ class IfcSchema:
         self.elements = {}
 
         self.property_files = []
-        property_paths = Path(os.path.join(self.data_dir, "pset")).glob("*.ifc")
+        property_paths = self.data_dir.joinpath("pset").glob("*.ifc")
+        # TODO: add IFC2X3 PsetQto template support
+        self.psetqto = ifcopenshell.util.pset.PsetQto("IFC4")
         for path in property_paths:
-            ifcopenshell.util.pset.load_property_set_template(path)
-        ifcopenshell.util.pset.load_property_set_template(os.path.join(self.schema_dir, "Pset_IFC4_ADD2.ifc"))
+            self.psetqto.templates.append(ifcopenshell.open(path))
 
         self.classification_files = {}
         self.classifications = {}

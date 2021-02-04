@@ -4,8 +4,7 @@ import ifcsverchok.helper
 from bpy.props import StringProperty, EnumProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
-from blenderbim.bim import schema
-from blenderbim.bim.prop import getIfcClasses, getIfcProducts, refreshClasses, refreshPredefinedTypes
+from blenderbim.bim.module.root.prop import getIfcClasses, getIfcProducts, refreshClasses, refreshPredefinedTypes
 
 
 class SvIfcByType(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):

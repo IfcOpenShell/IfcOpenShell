@@ -678,3 +678,122 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	}
 %}
 
+%{
+	PyObject* get_info_cpp(IfcUtil::IfcBaseClass* v);
+
+	// @todo refactor this to remove duplication with the typemap. 
+	// except this is calls the above function in case of instances.
+	PyObject* convert_cpp_attribute_to_python(IfcUtil::ArgumentType type, Argument& arg) {
+		if (!arg.isNull() && type != IfcUtil::Argument_DERIVED) {
+		try {
+		switch(type) {
+			case IfcUtil::Argument_INT: {
+				int v = arg;
+				return pythonize(v);
+			break; }
+			case IfcUtil::Argument_BOOL: {
+				bool v = arg;
+				return pythonize(v);
+			break; }
+			case IfcUtil::Argument_DOUBLE: {
+				double v = arg;
+				return pythonize(v);
+			break; }
+			case IfcUtil::Argument_ENUMERATION:
+			case IfcUtil::Argument_STRING: {
+				std::string v = arg;
+				return pythonize(v);
+			break; }
+			case IfcUtil::Argument_BINARY: {
+				boost::dynamic_bitset<> v = arg;
+				return pythonize(v);
+			break; }
+			case IfcUtil::Argument_AGGREGATE_OF_INT: {
+				std::vector<int> v = arg;
+				return pythonize_vector(v);
+			break; }
+			case IfcUtil::Argument_AGGREGATE_OF_DOUBLE: {
+				std::vector<double> v = arg;
+				return pythonize_vector(v);
+			break; }
+			case IfcUtil::Argument_AGGREGATE_OF_STRING: {
+				std::vector<std::string> v = arg;
+				return pythonize_vector(v);
+			break; }
+			case IfcUtil::Argument_ENTITY_INSTANCE: {
+				IfcUtil::IfcBaseClass* v = arg;
+				return get_info_cpp(v);
+			break; }
+			case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
+				IfcEntityList::ptr v = arg;
+				auto r = PyTuple_New(v->size());
+				for (unsigned i = 0; i < v->size(); ++i) {
+					PyTuple_SetItem(r, i, get_info_cpp((*v)[i]));
+				}				
+				return r;
+			break; }
+			case IfcUtil::Argument_AGGREGATE_OF_BINARY: {
+				std::vector< boost::dynamic_bitset<> > v = arg;
+				return pythonize_vector(v);
+			break; }
+			case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT: {
+				std::vector< std::vector<int> > v = arg;
+				return pythonize_vector2(v);
+			break; }
+			case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE: {
+				std::vector< std::vector<double> > v = arg;
+				return pythonize_vector2(v);
+			break; }
+			case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE: {
+				IfcEntityListList::ptr vs = arg;
+				auto rs = PyTuple_New(vs->size());
+				for (auto it = vs->begin(); it != vs->end(); ++it) {
+					IfcEntityList::ptr v_i = arg;
+					auto r = PyTuple_New(v_i->size());
+					for (unsigned i = 0; i < v_i->size(); ++i) {
+						PyTuple_SetItem(r, i, get_info_cpp((*v_i)[i]));
+					}
+					PyTuple_SetItem(rs, std::distance(vs->begin(), it), r);
+				}				
+				return rs;
+			break; }
+			case IfcUtil::Argument_EMPTY_AGGREGATE: {
+				return PyTuple_New(0);
+			break; }
+		}
+		} catch(...) {}
+		}
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+%}
+%inline %{
+	PyObject* get_info_cpp(IfcUtil::IfcBaseClass* v) {
+		PyObject *d = PyDict_New();
+		const std::vector<const IfcParse::attribute*> attrs = v->declaration().as_entity()->all_attributes();
+		std::vector<const IfcParse::attribute*>::const_iterator it = attrs.begin();
+		for (; it != attrs.end(); ++it) {
+			const std::string& name_cpp = (*it)->name();
+			auto name_py = pythonize(name_cpp);
+			auto attr_type = IfcUtil::from_parameter_type((*it)->type_of_attribute());
+			auto value_cpp = v->data().getArgument(std::distance(attrs.begin(), it));
+			auto value_py = convert_cpp_attribute_to_python(attr_type, *value_cpp);
+			PyDict_SetItem(d, name_py, value_py);
+		}
+		
+		// @todo type and id can be static?
+		const std::string& type_cpp = "type";
+		auto type_py = pythonize(type_cpp);
+		const std::string& type_v_cpp = v->declaration().name();
+		auto type_v_py = pythonize(type_v_cpp);
+		PyDict_SetItem(d, type_py, type_v_py);
+
+		const std::string& id_cpp = "id";
+		auto id_py = pythonize(id_cpp);
+		auto id_v_py = pythonize(v->data().id());
+		PyDict_SetItem(d, id_py, id_v_py);
+
+		return d;
+	}
+%}
+

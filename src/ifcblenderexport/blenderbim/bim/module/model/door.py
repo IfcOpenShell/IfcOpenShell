@@ -10,60 +10,61 @@ from mathutils import Vector
 def add_object(self, context):
     guid = ifcopenshell.guid.new()
     leaf_width = self.overall_width - 0.045 - 0.045
-    verts = [
-        # Left lining
-        Vector((0, 0, 0)),
-        Vector((0, self.depth, 0)),
-        Vector((0.04, self.depth, 0)),
-        Vector((0.04, self.depth - 0.04, 0)),
-        Vector((0.065, self.depth - 0.04, 0)),
-        Vector((0.065, 0, 0)),
-        # Right lining
-        Vector((self.overall_width, 0, 0)),
-        Vector((self.overall_width, self.depth, 0)),
-        Vector((self.overall_width - 0.04, self.depth, 0)),
-        Vector((self.overall_width - 0.04, self.depth - 0.04, 0)),
-        Vector((self.overall_width - 0.065, self.depth - 0.04, 0)),
-        Vector((self.overall_width - 0.065, 0, 0)),
-        # Door panel
-        Vector((0.045, self.depth, 0)),
-        Vector((0.045, self.depth + leaf_width, 0)),
-        Vector((0.080, self.depth + leaf_width, 0)),
-        Vector((0.080, self.depth, 0)),
-    ]
-    edges = [
-        [0, 1],
-        [1, 2],
-        [2, 3],
-        [3, 4],
-        [4, 5],  # Left lining
-        [6, 7],
-        [7, 8],
-        [8, 9],
-        [9, 10],
-        [10, 11],  # Right lining
-        [12, 13],
-        [13, 14],
-        [14, 15],
-        [15, 12],  # Door panel
-    ]
-    # Door swing
-    for i in range(0, 9):
-        verts.append(
-            Vector(
-                (
-                    0.045 + (leaf_width * math.cos((math.pi / 2) / 8 * i)),
-                    self.depth + (leaf_width * math.sin((math.pi / 2) / 8 * i)),
-                    0,
-                )
-            )
-        )
-        edges.append([16 + i, 17 + i])
-    edges.pop()
-    faces = []
-    mesh = bpy.data.meshes.new(name="Plan/Annotation/PLAN_VIEW/" + guid)
-    mesh.use_fake_user = True
-    mesh.from_pydata(verts, edges, faces)
+    # TODO reimplement 2D. See #1222.
+    #verts = [
+    #    # Left lining
+    #    Vector((0, 0, 0)),
+    #    Vector((0, self.depth, 0)),
+    #    Vector((0.04, self.depth, 0)),
+    #    Vector((0.04, self.depth - 0.04, 0)),
+    #    Vector((0.065, self.depth - 0.04, 0)),
+    #    Vector((0.065, 0, 0)),
+    #    # Right lining
+    #    Vector((self.overall_width, 0, 0)),
+    #    Vector((self.overall_width, self.depth, 0)),
+    #    Vector((self.overall_width - 0.04, self.depth, 0)),
+    #    Vector((self.overall_width - 0.04, self.depth - 0.04, 0)),
+    #    Vector((self.overall_width - 0.065, self.depth - 0.04, 0)),
+    #    Vector((self.overall_width - 0.065, 0, 0)),
+    #    # Door panel
+    #    Vector((0.045, self.depth, 0)),
+    #    Vector((0.045, self.depth + leaf_width, 0)),
+    #    Vector((0.080, self.depth + leaf_width, 0)),
+    #    Vector((0.080, self.depth, 0)),
+    #]
+    #edges = [
+    #    [0, 1],
+    #    [1, 2],
+    #    [2, 3],
+    #    [3, 4],
+    #    [4, 5],  # Left lining
+    #    [6, 7],
+    #    [7, 8],
+    #    [8, 9],
+    #    [9, 10],
+    #    [10, 11],  # Right lining
+    #    [12, 13],
+    #    [13, 14],
+    #    [14, 15],
+    #    [15, 12],  # Door panel
+    #]
+    ## Door swing
+    #for i in range(0, 9):
+    #    verts.append(
+    #        Vector(
+    #            (
+    #                0.045 + (leaf_width * math.cos((math.pi / 2) / 8 * i)),
+    #                self.depth + (leaf_width * math.sin((math.pi / 2) / 8 * i)),
+    #                0,
+    #            )
+    #        )
+    #    )
+    #    edges.append([16 + i, 17 + i])
+    #edges.pop()
+    #faces = []
+    #mesh = bpy.data.meshes.new(name="Plan/Annotation/PLAN_VIEW/" + guid)
+    #mesh.use_fake_user = True
+    #mesh.from_pydata(verts, edges, faces)
 
     # Door lining profile
     verts = [
@@ -96,6 +97,7 @@ def add_object(self, context):
     bpy.ops.object.convert(target="CURVE")
 
     obj2.data.dimensions = "2D"
+    obj2.data.bevel_mode = "OBJECT"
     obj2.data.bevel_object = obj
 
     obj2.rotation_euler[0] = math.pi / 2
@@ -145,27 +147,22 @@ def add_object(self, context):
     obj4.parent = obj2
     obj4.matrix_parent_inverse = obj2.matrix_world.inverted()
     obj4.hide_render = True
-    obj4.name = "IfcOpeningElement/Dumb Door Opening"
-    attribute = obj4.BIMObjectProperties.attributes.add()
-    attribute.name = "PredefinedType"
-    attribute.string_value = "OPENING"
+    obj4.name = "Door Opening"
 
-    obj2.name = "IfcDoor/Dumb Door"
-    attribute = obj2.BIMObjectProperties.attributes.add()
-    attribute.name = "PredefinedType"
-    attribute.string_value = "DOOR"
-    obj2.data.name = "Model/Body/MODEL_VIEW/" + guid
-    obj2.data.use_fake_user = True
+    obj2.name = "Door"
+    #obj2.data.name = "Model/Body/MODEL_VIEW/" + guid
+    #obj2.data.use_fake_user = True
 
-    rep = obj2.BIMObjectProperties.representation_contexts.add()
-    rep.context = "Model"
-    rep.name = "Body"
-    rep.target_view = "MODEL_VIEW"
+    # TODO: reimplement. See #1222.
+    #rep = obj2.BIMObjectProperties.representation_contexts.add()
+    #rep.context = "Model"
+    #rep.name = "Body"
+    #rep.target_view = "MODEL_VIEW"
 
-    rep = obj2.BIMObjectProperties.representation_contexts.add()
-    rep.context = "Plan"
-    rep.name = "Annotation"
-    rep.target_view = "PLAN_VIEW"
+    #rep = obj2.BIMObjectProperties.representation_contexts.add()
+    #rep.context = "Plan"
+    #rep.name = "Annotation"
+    #rep.target_view = "PLAN_VIEW"
 
 
 class BIM_OT_add_object(Operator, AddObjectHelper):

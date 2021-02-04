@@ -4,6 +4,7 @@
 #include <boost/property_tree/ptree.hpp>
 
 #include <map>
+#include <mutex>
 
 namespace pt = boost::property_tree;
 
@@ -112,6 +113,9 @@ void IfcGeom::set_default_style_file(const std::string& json_file) {
 }
 
 const IfcGeom::SurfaceStyle* IfcGeom::get_default_style(const std::string& s) {
+	static std::mutex m;
+	std::lock_guard<std::mutex> lk(m);
+
 	if (!default_materials_initialized) InitDefaultMaterials();
 	std::map<std::string, IfcGeom::SurfaceStyle>::const_iterator it = default_materials.find(s);
 	if (it == default_materials.end()) {

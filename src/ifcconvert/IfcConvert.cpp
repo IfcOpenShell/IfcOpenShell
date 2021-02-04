@@ -370,6 +370,16 @@ int main(int argc, char** argv) {
 			"Element at which vertical cross sections should be created")
 		("elevation-ref", po::value<std::string>(&elevation_ref),
 			"Element at which vertical elevations should be created")
+		("auto-section",
+			"Creates SVG cross section drawings automatically based on model extents")
+		("auto-elevation",
+			"Creates SVG elevation drawings automatically based on model extents")
+		("svg-xmlns",
+			"Stores name and guid in a separate namespace as opposed to data-name, data-guid")
+		("svg-poly",
+			"Uses the polygonal algorithm for hidden line rendering")
+		("svg-project",
+			"Always enable hidden line rendering instead of only on elevations")
 		("door-arcs", "Draw door openings arcs for IfcDoor elements")
 		("section-height", po::value<double>(&section_height),
 		    "Specifies the cut section height for SVG 2D geometry.")
@@ -394,6 +404,7 @@ int main(int argc, char** argv) {
 		("site-local-placement",
 			"Place elements locally in the IfcSite coordinate system, instead of placing "
 			"them in the IFC global coords. Applicable for OBJ and DAE output.")
+		("y-up", "Change the 'up' axis to positive Y, default is Z UP，Applicable for OBJ output.")
 		("building-local-placement",
 			"Similar to --site-local-placement, but placing elements in locally in the parent IfcBuilding coord system")
         ("precision", po::value<short>(&precision)->default_value(SerializerSettings::DEFAULT_PRECISION),
@@ -459,6 +470,7 @@ int main(int argc, char** argv) {
 	const bool use_material_names = vmap.count("use-material-names") != 0;
 	const bool use_element_types = vmap.count("use-element-types") != 0;
 	const bool use_element_hierarchy = vmap.count("use-element-hierarchy") != 0;
+	const bool use_y_up = vmap.count("y-up") != 0;
 	const bool no_normals = vmap.count("no-normals") != 0;
 	const bool center_model = vmap.count("center-model") != 0;
 	const bool center_model_geometry = vmap.count("center-model-geometry") != 0;
@@ -732,6 +744,7 @@ int main(int argc, char** argv) {
 
     settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);
+	settings.set(SerializerSettings::USE_Y_UP, use_y_up);
 	settings.set(SerializerSettings::USE_ELEMENT_STEPIDS, use_element_stepids);
 	settings.set(SerializerSettings::USE_MATERIAL_NAMES, use_material_names);
 	settings.set(SerializerSettings::USE_ELEMENT_TYPES, use_element_types);
@@ -946,6 +959,15 @@ int main(int argc, char** argv) {
 		if (vmap.count("elevation-ref")) {
 			static_cast<SvgSerializer*>(serializer.get())->setElevationRef(elevation_ref);
 		}
+		if (vmap.count("auto-section")) {
+			static_cast<SvgSerializer*>(serializer.get())->setAutoSection(true);
+		}
+		if (vmap.count("auto-elevation")) {
+			static_cast<SvgSerializer*>(serializer.get())->setAutoElevation(true);
+		}
+		static_cast<SvgSerializer*>(serializer.get())->setUseNamespace(vmap.count("svg-xmlns") > 0);
+		static_cast<SvgSerializer*>(serializer.get())->setUseHlrPoly(vmap.count("svg-poly") > 0);
+		static_cast<SvgSerializer*>(serializer.get())->setAlwaysProject(vmap.count("svg-project") > 0);
 		if (relative_center_x && relative_center_y) {
 			static_cast<SvgSerializer*>(serializer.get())->setDrawingCenter(*relative_center_x, *relative_center_y);
 		}

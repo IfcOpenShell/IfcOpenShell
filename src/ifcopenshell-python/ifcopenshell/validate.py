@@ -33,8 +33,8 @@ class json_logger:
     def set_instance(self, instance):
         self.instance = instance
 
-    def log(self, level, message, instance):
-        self.statements.append(log_entry_type(level, message, instance)._asdict())
+    def log(self, level, message, *args, **kwargs):
+        self.statements.append(log_entry_type(level, message % args, kwargs.get('instance'))._asdict())
 
     def __getattr__(self, level):
         return functools.partial(self.log, level, instance=self.instance)
