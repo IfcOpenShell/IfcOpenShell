@@ -1266,7 +1266,15 @@ class IfcImporter:
         if element.is_a("IfcProject"):
             return
         elif element.GlobalId in self.spatial_structure_elements:
-            return
+            if not obj.data:
+                return
+            # Since spatial structure elements are generated as empties, we'll replace it with the representation
+            spatial_obj = self.spatial_structure_elements[element.GlobalId]["blender_obj"]
+            spatial_collection = self.spatial_structure_elements[element.GlobalId]["blender"]
+            spatial_name = spatial_obj.name
+            spatial_collection.objects.link(obj)
+            bpy.data.objects.remove(spatial_obj)
+            obj.name = spatial_name
         elif (
             hasattr(element, "ContainedInStructure")
             and element.ContainedInStructure
