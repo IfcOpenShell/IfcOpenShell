@@ -3,6 +3,7 @@ from . import ui, prop, operator
 
 classes = (
     operator.ProfileImportIFC,
+    operator.CreateAllShapes,
     operator.CreateShapeFromStepId,
     operator.SelectHighPolygonMeshes,
     operator.InspectFromStepId,
