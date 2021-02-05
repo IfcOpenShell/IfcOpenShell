@@ -1826,22 +1826,22 @@ IFC2x3 CHANGE&nbsp; The <i>IfcBoxAlignment</i> has been added.
 5293;IfcGloballyUniqueId;"<epm-html>
 
 <p>An <i>IfcGloballyUniqueId</i> holds an encoded string identifier that is used to uniquely identify an IFC object. An <i>IfcGloballyUniqueId</i> is a Globally Unique Identifier (GUID) which is an auto-generated 128-bit number. Since this identifier is required for all IFC object instances, it is desirable to compress it to reduce overhead. The encoding of the base 64 character set is shown below:
-	</p>
-    <blockquote>
-		<p><font FACE=""Courier New"" size=""-1"">        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;6
-		<br />&nbsp;0123456789012345678901234567890123456789012345678901234567890123<br />
-		""0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$"";
-        </font></p>
-    </blockquote>
+	</p>
+    <blockquote>
+		<p><font FACE=""Courier New"" size=""-1"">        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;6
+		<br />&nbsp;0123456789012345678901234567890123456789012345678901234567890123<br />
+		""0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$"";
+        </font></p>
+    </blockquote>
 
 <p>The resulting string is a fixed 22 character length string to be exchanged within the IFC exchange file structure.</p>
 	
 <p>Refer to the BuildingSMART website (<a href=""http://www.buildingsmart-tech.org"">www.buildingsmart-tech.org</a>) for more information and sample encoding algorithms.</p>
 
-<blockquote class=""history"">
-HISTORY&nbsp; New type in IFC R1.5.1.
-</blockquote>
-
+<blockquote class=""history"">
+HISTORY&nbsp; New type in IFC R1.5.1.
+</blockquote>
+
 </epm-html>"
 5463;IfcDimensionCount;"<EPM-HTML> 
 

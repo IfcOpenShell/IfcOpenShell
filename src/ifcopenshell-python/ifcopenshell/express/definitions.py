@@ -24,45 +24,47 @@ import codegen
 
 from collections import defaultdict
 
+
 class Definitions(codegen.Base):
     def __init__(self, mapping):
-        
+
         schema_name = mapping.schema.name
         self.schema_name = schema_name_title = schema_name.capitalize()
-                    
-        statements = ['']
-        
+
+        statements = [""]
+
         def write_entity(schema_name, name, type):
-            
+
             attribute_names = list(map(lambda t: (t.name, t.optional), type.attributes))
             for attr, is_optional in attribute_names:
                 statements.append("#define SCHEMA_%(name)s_HAS_%(attr)s" % locals())
                 if is_optional:
                     statements.append("#define SCHEMA_%(name)s_%(attr)s_IS_OPTIONAL" % locals())
-            inverse_attribute_names = list(map(operator.attrgetter('name'), type.inverse))
+            inverse_attribute_names = list(map(operator.attrgetter("name"), type.inverse))
             for attr in inverse_attribute_names:
                 statements.append("#define SCHEMA_%(name)s_HAS_%(attr)s" % locals())
-            
+
         def write(name):
             statements.append("#define SCHEMA_HAS_%(name)s" % locals())
             fn = None
             if mapping.schema.is_entity(name):
                 fn = write_entity
-                
+
             if fn is not None:
                 decl = mapping.schema[name]
                 if isinstance(decl, nodes.TypeDeclaration):
                     decl = decl.type.type
                 fn(schema_name, name, decl) is not False
-        
+
         for name in mapping.schema:
             write(name)
-            
+
         self.str = "\n".join(statements) + "\n"
-        
-        self.file_name = '%s-definitions.h' % self.schema_name
+
+        self.file_name = "%s-definitions.h" % self.schema_name
 
     def __repr__(self):
         return self.str
+
 
 Generator = Definitions

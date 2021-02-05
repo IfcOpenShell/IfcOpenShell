@@ -9,12 +9,20 @@ import operator
 import functools
 import multiprocessing
 
-import OCC.AIS
+try:
+    from OCC.Core import  AIS
+
+    USE_OCCT_HANDLE = False
+except ImportError:
+    from OCC import AIS
+
+    USE_OCCT_HANDLE = True
 
 from collections import defaultdict, OrderedDict
+
 try:  # python 3.3+
     from collections.abc import Iterable
-except ModuleNotFoundError: # python 2
+except ModuleNotFoundError:  # python 2
     from collections import Iterable
 
 try:
@@ -23,7 +31,7 @@ except NameError:
     # Python 3
     QString = str
 
-os.environ['QT_API'] = 'pyqt5'
+os.environ["QT_API"] = "pyqt5"
 try:
     from pyqode.qt import QtCore
 except BaseException:
@@ -59,11 +67,13 @@ from .. import version as ifcopenshell_version
 if ifcopenshell_version < "0.6":
     # not yet ported
     from .. import get_supertype
-    
+
+
 class geometry_creation_signals(QtCore.QObject):
-    completed = QtCore.pyqtSignal('PyQt_PyObject')
-    progress = QtCore.pyqtSignal('PyQt_PyObject')
-    
+    completed = QtCore.pyqtSignal("PyQt_PyObject")
+    progress = QtCore.pyqtSignal("PyQt_PyObject")
+
+
 class geometry_creation_thread(QtCore.QThread):
     def __init__(self, signals, settings, f):
         QtCore.QThread.__init__(self)
@@ -82,25 +92,27 @@ class geometry_creation_thread(QtCore.QThread):
         if not it.initialize():
             self.signals.completed.emit([])
             return
-            
+
         def _():
 
             old_progress = -1
             while True:
                 shape = it.get()
-                
+
                 if shape:
                     yield shape
-                
+
                 if not it.next():
                     break
 
         self.signals.completed.emit((it, self.f, list(_())))
 
+
 class configuration(object):
     def __init__(self):
         try:
             import ConfigParser
+
             Cfg = ConfigParser.RawConfigParser
         except BaseException:
             import configparser
@@ -122,7 +134,11 @@ class configuration(object):
         if not os.path.exists(conf_file):
             config = Cfg()
             config.add_section("snippets")
-            config.set("snippets", "print all wall ids", self.config_encode("""
+            config.set(
+                "snippets",
+                "print all wall ids",
+                self.config_encode(
+                    """
 ###########################################################################
 # A simple script that iterates over all walls in the current model       #
 # and prints their Globally unique IDs (GUIDS) to the console window      #
@@ -130,9 +146,15 @@ class configuration(object):
 
 for wall in model.by_type("IfcWall"):
     print ("wall with global id: "+str(wall.GlobalId))
-""".lstrip()))
+""".lstrip()
+                ),
+            )
 
-            config.set("snippets", "print properties of current selection", self.config_encode("""
+            config.set(
+                "snippets",
+                "print properties of current selection",
+                self.config_encode(
+                    """
 ###########################################################################
 # A simple script that iterates over all IfcPropertySets of the currently #
 # selected object and prints them to the console                          #
@@ -143,12 +165,17 @@ if selection:
     #get the IfcProduct that is stored in the global variable 'selection'
     obj = selection
     for relDefinesByProperties in obj.IsDefinedBy:
+        if not relDefinesByProperties.is_a("IfcRelDefinesByProperties"):
+            continue
          print("[{0}]".format(relDefinesByProperties.RelatingPropertyDefinition.Name))
-         for prop in relDefinesByProperties.RelatingPropertyDefinition.HasProperties:
-             print ("{:<20} :{}".format(prop.Name,prop.NominalValue.wrappedValue))
+         if relDefinesByProperties.RelatingPropertyDefinition.is_a("IfcPropertySet"):
+             for prop in relDefinesByProperties.RelatingPropertyDefinition.HasProperties:
+                 print ("{:<20} :{}".format(prop.Name,prop.NominalValue.wrappedValue))
          print ("\\n")
-""".lstrip()))
-            with open(conf_file, 'w') as configfile:
+""".lstrip()
+                ),
+            )
+            with open(conf_file, "w") as configfile:
                 config.write(configfile)
 
         self.config = Cfg()
@@ -191,7 +218,7 @@ class application(QtWidgets.QApplication):
             action = menu.exec_(self.mapToGlobal(event.pos()))
             index = self.selectionModel().currentIndex()
             inst = index.data(QtCore.Qt.UserRole)
-            if hasattr(inst, 'toPyObject'):
+            if hasattr(inst, "toPyObject"):
                 inst = inst
             if action in visibility:
                 self.instanceVisibilityChanged.emit(inst, visibility.index(action))
@@ -200,7 +227,7 @@ class application(QtWidgets.QApplication):
 
         def clicked_(self, index):
             inst = index.data(QtCore.Qt.UserRole)
-            if hasattr(inst, 'toPyObject'):
+            if hasattr(inst, "toPyObject"):
                 inst = inst
             if inst:
                 self.instanceSelected.emit(inst)
@@ -209,14 +236,15 @@ class application(QtWidgets.QApplication):
             itm = self.product_to_item.get(product)
             if itm is None:
                 return
-            self.selectionModel().setCurrentIndex(itm,
-                                                  QtCore.QItemSelectionModel.SelectCurrent | QtCore.QItemSelectionModel.Rows)
+            self.selectionModel().setCurrentIndex(
+                itm, QtCore.QItemSelectionModel.SelectCurrent | QtCore.QItemSelectionModel.Rows
+            )
 
     class decomposition_treeview(abstract_treeview):
 
         """Treeview with typical IFC decomposition relationships"""
 
-        ATTRIBUTES = ['Entity', 'GlobalId', 'Name']
+        ATTRIBUTES = ["Entity", "GlobalId", "Name"]
 
         def parent(self, instance):
             if instance.is_a("IfcOpeningElement"):
@@ -247,10 +275,10 @@ class application(QtWidgets.QApplication):
                     if (parent is None or parent in items) and product not in items:
                         sl = []
                         for attr in ATTRS:
-                            if attr == 'Entity':
+                            if attr == "Entity":
                                 sl.append(product.is_a())
                             else:
-                                sl.append(getattr(product, attr) or '')
+                                sl.append(getattr(product, attr) or "")
                         itm = items[product] = QtWidgets.QTreeWidgetItem(items.get(parent, self), sl)
                         itm.setData(0, QtCore.Qt.UserRole, product)
                         self.children[parent].append(product)
@@ -262,13 +290,14 @@ class application(QtWidgets.QApplication):
 
         """Treeview with typical IFC decomposition relationships"""
 
-        ATTRIBUTES = ['Name']
+        ATTRIBUTES = ["Name"]
 
         def load_file(self, f, **kwargs):
             products = list(f.by_type("IfcProduct"))
             types = set(map(lambda i: i.is_a(), products))
             items = {}
             for t in types:
+
                 def add(t):
                     s = get_supertype(t)
                     if s:
@@ -284,7 +313,7 @@ class application(QtWidgets.QApplication):
 
             for p in products:
                 t = QString(p.is_a())
-                itm = items[p] = QtWidgets.QTreeWidgetItem(items.get(t, self), [p.Name or '<no name>'])
+                itm = items[p] = QtWidgets.QTreeWidgetItem(items.get(t, self), [p.Name or "<no name>"])
                 itm.setData(0, QtCore.Qt.UserRole, t)
                 self.children[t].append(p)
 
@@ -293,7 +322,6 @@ class application(QtWidgets.QApplication):
             self.expandAll()
 
     class property_table(QtWidgets.QWidget):
-
         def __init__(self):
             QtWidgets.QWidget.__init__(self)
             self.layout = QtWidgets.QVBoxLayout(self)
@@ -338,7 +366,7 @@ class application(QtWidgets.QApplication):
                             value_str = value_str.wrappedValue
 
                         if isinstance(value_str, unicode):
-                            value_str = value_str.encode('utf-8')
+                            value_str = value_str.encode("utf-8")
                         else:
                             value_str = str(value_str)
 
@@ -392,6 +420,7 @@ class application(QtWidgets.QApplication):
                                 propsets.append(process_pset(propset))
                 except Exception as e:
                     import traceback
+
                     print("failed to load properties: {}".format(e))
                     traceback.print_exc()
 
@@ -404,30 +433,30 @@ class application(QtWidgets.QApplication):
 
         instanceSelected = QtCore.pyqtSignal([object])
 
-        @staticmethod
-        def ais_to_key(ais_handle):
-            def yield_shapes():
-                ais = ais_handle.GetObject()
-                if hasattr(ais, 'Shape'):
-                    yield ais.Shape()
-                    return
-                shp = OCC.AIS.Handle_AIS_Shape.DownCast(ais_handle)
-                if not shp.IsNull():
-                    yield shp.Shape()
-                return
-                mult = ais_handle
-                if mult.IsNull():
-                    shp = OCC.AIS.Handle_AIS_Shape.DownCast(ais_handle)
-                    if not shp.IsNull():
-                        yield shp
-                else:
-                    li = mult.GetObject().ConnectedTo()
-                    for i in range(li.Length()):
-                        shp = OCC.AIS.Handle_AIS_Shape.DownCast(li.Value(i + 1))
-                        if not shp.IsNull():
-                            yield shp
+#         @staticmethod
+#         def ais_to_key(ais_handle):
+#             def yield_shapes():
+#                 ais = ais_handle.GetObject()
+#                 if hasattr(ais, "Shape"):
+#                     yield ais.Shape()
+#                     return
+#                 shp = OCC.AIS.Handle_AIS_Shape.DownCast(ais_handle)
+#                 if not shp.IsNull():
+#                     yield shp.Shape()
+#                 return
+#                 mult = ais_handle
+#                 if mult.IsNull():
+#                     shp = OCC.AIS.Handle_AIS_Shape.DownCast(ais_handle)
+#                     if not shp.IsNull():
+#                         yield shp
+#                 else:
+#                     li = mult.GetObject().ConnectedTo()
+#                     for i in range(li.Length()):
+#                         shp = OCC.AIS.Handle_AIS_Shape.DownCast(li.Value(i + 1))
+#                         if not shp.IsNull():
+#                             yield shp
 
-            return tuple(shp.HashCode(1 << 24) for shp in yield_shapes())
+#             return tuple(shp.HashCode(1 << 24) for shp in yield_shapes())
 
         def __init__(self, widget):
             qtViewer3d.__init__(self, widget)
@@ -444,7 +473,7 @@ class application(QtWidgets.QApplication):
         def finished(self, file_shapes):
             it, f, shapes = file_shapes
             v = self._display
-            
+
             t = {0: time.time()}
 
             def update(dt=None):
@@ -453,29 +482,30 @@ class application(QtWidgets.QApplication):
                     v.FitAll()
                     v.Repaint()
                     t[0] = t1
-            
+
             for shape in shapes:
                 ais = display_shape(shape, viewer_handle=v)
                 product = f[shape.data.id]
                 
-                ais.GetObject().SetSelectionPriority(self.counter)
+                if USE_OCCT_HANDLE: 
+                    ais.GetObject().SetSelectionPriority(self.counter)
                 self.ais_to_product[self.counter] = product
                 self.product_to_ais[product] = ais
                 self.counter += 1
-                
+
                 QtWidgets.QApplication.processEvents()
-                
-                if product.is_a() in {'IfcSpace', 'IfcOpeningElement'}:
+
+                if product.is_a() in {"IfcSpace", "IfcOpeningElement"}:
                     v.Context.Erase(ais, True)
-                    
-                update(1.)
-                
+
+                update(1.0)
+
             update()
-                    
+
             self.thread = None
-        
+
         def load_file(self, f, setting=None):
-        
+
             if self.thread is not None:
                 return
 
@@ -483,10 +513,10 @@ class application(QtWidgets.QApplication):
                 setting = settings()
                 setting.set(setting.INCLUDE_CURVES, True)
                 setting.set(setting.USE_PYTHON_OPENCASCADE, True)
-                                        
+
             self.signals = geometry_creation_signals()
             thread = self.thread = geometry_creation_thread(self.signals, setting, f)
-            self.window.window_closed.connect(lambda *args: thread.terminate())            
+            self.window.window_closed.connect(lambda *args: thread.terminate())
             self.signals.completed.connect(self.finished)
             self.thread.start()
 
@@ -509,23 +539,31 @@ class application(QtWidgets.QApplication):
         def toggle_visibility(self, product_or_products, flag):
             v = self._display.Context
             if flag:
+
                 def visibility(ais, last):
                     v.Erase(ais, last)
+
             else:
+
                 def visibility(ais, last):
                     v.Display(ais, last)
+
             self.toggle(product_or_products, visibility)
 
         def toggle_wireframe(self, product_or_products, flag):
             v = self._display.Context
             if flag:
+
                 def wireframe(ais, last):
                     if v.IsDisplayed(ais):
                         v.SetDisplayMode(ais, 0, last)
+
             else:
+
                 def wireframe(ais, last):
                     if v.IsDisplayed(ais):
                         v.SetDisplayMode(ais, 1, last)
+
             self.toggle(product_or_products, wireframe)
 
         def HandleSelection(self, X, Y):
@@ -588,12 +626,12 @@ class application(QtWidgets.QApplication):
         self.window.resize(800, 600)
         splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
         splitter.addWidget(self.tabs)
-        self.tabs.addTab(self.tree, 'Decomposition')
-        self.tabs.addTab(self.tree2, 'Types')
+        self.tabs.addTab(self.tree, "Decomposition")
+        self.tabs.addTab(self.tree2, "Types")
         self.tabs.addTab(self.propview, "Properties")
         splitter2 = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         splitter2.addWidget(self.canvas)
-        self.editor = code_edit(self.canvas, configuration().options('snippets'))
+        self.editor = code_edit(self.canvas, configuration().options("snippets"))
         splitter2.addWidget(self.editor)
         splitter.addWidget(splitter2)
         splitter.setSizes([200, 600])
@@ -603,9 +641,9 @@ class application(QtWidgets.QApplication):
         self.components = [self.tree, self.tree2, self.canvas, self.propview, self.editor]
         self.files = {}
 
-        self.window.add_menu_item('File', '&Open', self.browse, shortcut='CTRL+O')
-        self.window.add_menu_item('File', '&Close', self.clear, shortcut='CTRL+W')
-        self.window.add_menu_item('File', '&Exit', self.window.close, shortcut='ALT+F4')
+        self.window.add_menu_item("File", "&Open", self.browse, shortcut="CTRL+O")
+        self.window.add_menu_item("File", "&Close", self.clear, shortcut="CTRL+W")
+        self.window.add_menu_item("File", "&Exit", self.window.close, shortcut="ALT+F4")
 
         self.tree.instanceSelected.connect(self.makeSelectionHandler(self.tree))
         self.tree2.instanceSelected.connect(self.makeSelectionHandler(self.tree2))
@@ -629,8 +667,9 @@ class application(QtWidgets.QApplication):
         sys.exit(self.exec_())
 
     def browse(self):
-        filename = QtWidgets.QFileDialog.getOpenFileName(self.window, 'Open file', ".",
-                                                     "Industry Foundation Classes (*.ifc)")[0]
+        filename = QtWidgets.QFileDialog.getOpenFileName(
+            self.window, "Open file", ".", "Industry Foundation Classes (*.ifc)"
+        )[0]
         self.load(filename)
 
     def clear(self):

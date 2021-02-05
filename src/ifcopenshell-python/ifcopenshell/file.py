@@ -51,6 +51,7 @@ class file(object):
         print(products[0] == ifc_file[122] == ifc_file['2XQ$n5SLP5MBLyL442paFx'])
         >>> True
     """
+
     def __init__(self, f=None, schema=None):
         if f is not None:
             self.wrapped_data = f
@@ -82,14 +83,13 @@ class file(object):
         e = entity_instance((self.schema, type))
         self.wrapped_data.add(e.wrapped_data)
         e.wrapped_data.this.disown()
-        attrs = list(enumerate(args)) + \
-            [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
+        attrs = list(enumerate(args)) + [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
         for idx, arg in attrs:
             e[idx] = arg
         return e
 
     def __getattr__(self, attr):
-        if attr[0:6] == 'create':
+        if attr[0:6] == "create":
             return functools.partial(self.create_entity, attr[6:])
         else:
             return getattr(self.wrapped_data, attr)

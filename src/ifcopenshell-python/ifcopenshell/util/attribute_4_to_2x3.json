@@ -1,0 +1,251 @@
+{
+    "IfcPerformanceHistory": {
+        "Identification": "LifeCyclePhase"
+    },
+    "IfcProcedure": {
+        "Identification": "ProcedureID",
+        "LongDescription": "ProcedureType",
+        "PredefinedType": "UserDefinedProcedureType"
+    },
+    "IfcTask": {
+        "Identification": "TaskId",
+        "LongDescription": "Status",
+        "Status": "WorkMethod",
+        "WorkMethod": "IsMilestone",
+        "IsMilestone": "Priority"
+    },
+    "IfcWorkPlan": {
+        "Identification": "Identifier",
+        "PredefinedType": "WorkControlType"
+    },
+    "IfcWorkSchedule": {
+        "Identification": "Identifier",
+        "PredefinedType": "WorkControlType"
+    },
+    "IfcSpace": {
+        "PredefinedType": "InteriorOrExteriorSpace"
+    },
+    "IfcTransportElement": {
+        "PredefinedType": "OperationType"
+    },
+    "IfcBuildingElementProxy": {
+        "PredefinedType": "CompositionType"
+    },
+    "IfcRamp": {
+        "PredefinedType": "ShapeType"
+    },
+    "IfcRelCoversSpaces": {
+        "RelatingSpace": "RelatedSpace"
+    },
+    "IfcRoof": {
+        "PredefinedType": "ShapeType"
+    },
+    "IfcStair": {
+        "PredefinedType": "ShapeType"
+    },
+    "IfcAsset": {
+        "Identification": "AssetID"
+    },
+    "IfcInventory": {
+        "PredefinedType": "InventoryType"
+    },
+    "IfcActionRequest": {
+        "Identification": "RequestID"
+    },
+    "IfcCostSchedule": {
+        "Identification": "SubmittedBy",
+        "PredefinedType": "PreparedBy",
+        "Status": "SubmittedOn",
+        "SubmittedOn": "Status",
+        "UpdateDate": "TargetUsers"
+    },
+    "IfcPermit": {
+        "Identification": "PermitID"
+    },
+    "IfcProjectOrder": {
+        "Identification": "ID"
+    },
+    "IfcConstructionEquipmentResource": {
+        "Identification": "ResourceIdentifier",
+        "LongDescription": "ResourceGroup",
+        "Usage": "ResourceConsumption",
+        "BaseCosts": "BaseQuantity"
+    },
+    "IfcConstructionMaterialResource": {
+        "Identification": "ResourceIdentifier",
+        "LongDescription": "ResourceGroup",
+        "Usage": "ResourceConsumption",
+        "BaseCosts": "BaseQuantity",
+        "BaseQuantity": "Suppliers",
+        "PredefinedType": "UsageRatio"
+    },
+    "IfcConstructionProductResource": {
+        "Identification": "ResourceIdentifier",
+        "LongDescription": "ResourceGroup",
+        "Usage": "ResourceConsumption",
+        "BaseCosts": "BaseQuantity"
+    },
+    "IfcCrewResource": {
+        "Identification": "ResourceIdentifier",
+        "LongDescription": "ResourceGroup",
+        "Usage": "ResourceConsumption",
+        "BaseCosts": "BaseQuantity"
+    },
+    "IfcLaborResource": {
+        "Identification": "ResourceIdentifier",
+        "LongDescription": "ResourceGroup",
+        "Usage": "ResourceConsumption",
+        "BaseCosts": "BaseQuantity",
+        "BaseQuantity": "SkillSet"
+    },
+    "IfcSubContractResource": {
+        "Identification": "ResourceIdentifier",
+        "LongDescription": "ResourceGroup",
+        "Usage": "ResourceConsumption",
+        "BaseCosts": "BaseQuantity",
+        "BaseQuantity": "SubContractor",
+        "PredefinedType": "JobDescription"
+    },
+    "IfcStructuralLinearAction": {
+        "ProjectedOrTrue": "CausedBy",
+        "PredefinedType": "ProjectedOrTrue"
+    },
+    "IfcStructuralPlanarAction": {
+        "ProjectedOrTrue": "CausedBy",
+        "PredefinedType": "ProjectedOrTrue"
+    },
+    "IfcReinforcingBar": {
+        "PredefinedType": "BarRole"
+    },
+    "IfcOrganization": {
+        "Identification": "Id"
+    },
+    "IfcPerson": {
+        "Identification": "Id"
+    },
+    "IfcApproval": {
+        "Identifier": "Description",
+        "Name": "ApprovalDateTime",
+        "Description": "ApprovalStatus",
+        "TimeOfApproval": "ApprovalLevel",
+        "Status": "ApprovalQualifier",
+        "Level": "Name",
+        "Qualifier": "Identifier"
+    },
+    "IfcApprovalRelationship": {
+        "Name": "RelatedApproval",
+        "Description": "RelatingApproval",
+        "RelatingApproval": "Description",
+        "RelatedApprovals": "Name"
+    },
+    "IfcObjective": {
+        "LogicalAggregator": "ResultValues"
+    },
+    "IfcCostValue": {
+        "Category": "CostType"
+    },
+    "IfcCurrencyRelationship": {
+        "Name": "RelatingMonetaryUnit",
+        "Description": "RelatedMonetaryUnit",
+        "RelatingMonetaryUnit": "ExchangeRate",
+        "RelatedMonetaryUnit": "RateDateTime",
+        "ExchangeRate": "RateSource"
+    },
+    "IfcClassificationReference": {
+        "Identification": "ItemReference"
+    },
+    "IfcDocumentInformation": {
+        "Identification": "DocumentId",
+        "Location": "DocumentReferences"
+    },
+    "IfcDocumentInformationRelationship": {
+        "Name": "RelatingDocument",
+        "Description": "RelatedDocuments",
+        "RelatingDocument": "RelationshipType"
+    },
+    "IfcDocumentReference": {
+        "Identification": "ItemReference"
+    },
+    "IfcLibraryInformation": {
+        "Location": "LibraryReference"
+    },
+    "IfcLibraryReference": {
+        "Identification": "ItemReference"
+    },
+    "IfcMaterialProperties": {
+        "Name": "Material"
+    },
+    "IfcBlobTexture": {
+        "Mode": "TextureType",
+        "Parameter": "RasterFormat",
+        "RasterFormat": "RasterCode"
+    },
+    "IfcExternallyDefinedHatchStyle": {
+        "Identification": "ItemReference"
+    },
+    "IfcExternallyDefinedSurfaceStyle": {
+        "Identification": "ItemReference"
+    },
+    "IfcExternallyDefinedTextFont": {
+        "Identification": "ItemReference"
+    },
+    "IfcImageTexture": {
+        "Mode": "TextureType",
+        "Parameter": "UrlReference"
+    },
+    "IfcPixelTexture": {
+        "Mode": "TextureType",
+        "Parameter": "Width",
+        "Width": "Height",
+        "Height": "ColourComponents",
+        "ColourComponents": "Pixel"
+    },
+    "IfcTextureCoordinateGenerator": {
+        "Maps": "Mode",
+        "Mode": "Parameter"
+    },
+    "IfcTextureMap": {
+        "Maps": "TextureMaps"
+    },
+    "IfcAsymmetricIShapeProfileDef": {
+        "BottomFlangeWidth": "OverallWidth",
+        "BottomFlangeThickness": "FlangeThickness",
+        "BottomFlangeFilletRadius": "FilletRadius",
+        "BottomFlangeEdgeRadius": "CentreOfGravityInY"
+    },
+    "IfcProfileProperties": {
+        "Name": "ProfileName",
+        "Description": "ProfileDefinition"
+    },
+    "IfcPropertyDependencyRelationship": {
+        "Name": "DependingProperty",
+        "Description": "DependantProperty",
+        "DependingProperty": "Name",
+        "DependantProperty": "Description"
+    },
+    "IfcBoundaryEdgeCondition": {
+        "TranslationalStiffnessByLengthX": "LinearStiffnessByLengthX",
+        "TranslationalStiffnessByLengthY": "LinearStiffnessByLengthY",
+        "TranslationalStiffnessByLengthZ": "LinearStiffnessByLengthZ"
+    },
+    "IfcBoundaryFaceCondition": {
+        "TranslationalStiffnessByAreaX": "LinearStiffnessByAreaX",
+        "TranslationalStiffnessByAreaY": "LinearStiffnessByAreaY",
+        "TranslationalStiffnessByAreaZ": "LinearStiffnessByAreaZ"
+    },
+    "IfcBoundaryNodeCondition": {
+        "TranslationalStiffnessX": "LinearStiffnessX",
+        "TranslationalStiffnessY": "LinearStiffnessY",
+        "TranslationalStiffnessZ": "LinearStiffnessZ"
+    },
+    "IfcBoundaryNodeConditionWarping": {
+        "TranslationalStiffnessX": "LinearStiffnessX",
+        "TranslationalStiffnessY": "LinearStiffnessY",
+        "TranslationalStiffnessZ": "LinearStiffnessZ"
+    },
+    "IfcStructuralLoadTemperature": {
+        "DeltaTConstant": "DeltaT_Constant",
+        "DeltaTY": "DeltaT_Y",
+        "DeltaTZ": "DeltaT_Z"
+    }
+}

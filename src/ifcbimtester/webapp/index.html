@@ -1,0 +1,233 @@
+<!doctype html>
+<html class="no-js" lang="">
+
+<head>
+  <meta charset="utf-8">
+  <title>BIMTester Requirements Generator</title>
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="manifest" href="site.webmanifest">
+  <link rel="apple-touch-icon" href="icon.png">
+  <!-- Place favicon.ico in the root directory -->
+
+  <link rel="stylesheet" href="normalize.css">
+  <link rel="stylesheet" href="skeleton.css">
+  <link rel="stylesheet" href="main.css">
+
+  <meta name="theme-color" content="#fafafa">
+</head>
+
+<body>
+    <!--[if IE]>
+    <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience and security.</p>
+    <![endif]-->
+
+    <header{{#has_seamless_header}} class="seamless"{{/has_seamless_header}}>
+        <h1>
+            BIMTester Requirements Generator
+            <span style="font-size: 0.5em; font-style: italic;">
+                Because your BIM actually sucks but you don't know it yet.
+            </span>
+        </h1>
+    </header>
+    <div class="row">
+        <section class="eight columns">
+            <div class="tcenter">
+                <img src="images/gb.svg" class="flag active-flag" title="English">
+                <img src="images/de.svg" class="flag" title="German">
+                <img src="images/it.svg" class="flag" title="Italian">
+                <img src="images/fr.svg" class="flag" title="French">
+                <img src="images/nl.svg" class="flag" title="Dutch">
+            </div>
+            <select name="micromvd">
+                <option>Project setup</option>
+            </select>
+            <p class="tcenter">
+                In order to ensure quality of the digital built environment<br />
+                As a responsible digital citizen<br />
+                We expect compliant OpenBIM deliverables<br />
+            </p>
+            <div class="tcenter" style="margin-bottom: 20px;">
+                <h2 style="border-bottom: 0px; display: inline; padding-right: 20px;">
+                    Import
+                </h2>
+                <img class="vendor-icon vendor-full" src="images/archicad.png" width="24px">
+                <img class="vendor-icon vendor-full" src="images/blenderbim.png" width="24px">
+                <img class="vendor-icon vendor-partial" src="images/freecad.png" width="24px">
+                <img class="vendor-icon vendor-bad" src="images/revit.png" width="24px">
+                <img class="vendor-icon vendor-unknown" src="images/tekla.png" width="24px">
+
+                <h2 style="border-bottom: 0px; display: inline; padding-right: 20px; padding-left: 20px;">
+                    Export
+                </h2>
+                <img class="vendor-icon vendor-partial" src="images/archicad.png" width="24px">
+                <img class="vendor-icon vendor-full" src="images/blenderbim.png" width="24px">
+                <img class="vendor-icon vendor-partial" src="images/freecad.png" width="24px">
+                <img class="vendor-icon vendor-full" src="images/revit.png" width="24px">
+                <img class="vendor-icon vendor-unknown" src="images/tekla.png" width="24px">
+
+                <span style="color: #999; display: block;">Need help meeting these requirements with a vendor? <a href="#">Read more</a></span>
+            </div>
+            <h2>
+                Scenario: Receiving a file
+            </h2>
+            <ol>
+                <li>
+                    <details>
+                        <summary>The data must use the "<code contenteditable>{schema}</code>" schema</summary>
+                        <strong>
+                            Example: <span>The data must use the "IFC4" schema</span>
+                        </strong>
+                        <p>
+                            BIM data may be structured using a particular version of IFC, known as the "schema" version.
+                            Newer versions add lots of capabilities like extra parameters, new data relationships, and
+                            improved data classification. The version you choose will affect what data can be stored,
+                            and which programs have support for reading and writing that version. At the moment, you are
+                            likely to specify either "IFC2X3" or "IFC4".
+                        </p>
+                        <div style="padding-bottom: 20px;">
+                            <div class="onoffswitch">
+                                <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="myonoffswitch1" tabindex="0" checked>
+                                <label class="onoffswitch-label" for="myonoffswitch1">
+                                    <span class="onoffswitch-inner"></span>
+                                    <span class="onoffswitch-switch"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </details>
+                </li>
+            </ol>
+            <h2>
+                Scenario: Exempt files
+            </h2>
+            <ol>
+                <li>
+                    <details>
+                        <summary>The IFC file "<code contenteditable>{file}</code>" is exempt from being provided</summary>
+                        <strong>
+                            Example: <span>The IFC file "PROJECT.ifc" is exempt from being provided</span>
+                        </strong>
+                        <p>
+                            Sometimes, projects may create BIM data that is purely temporary, or as a workaround that is
+                            needed as part of their workflow, but not required from a contractual perspective. In this
+                            case, it is advisable for the requirements to explicitly exclude these BIM files so that the
+                            client knows what is included in the scope of requirements. Simply specify the name of the
+                            file that you know is not required as a deliverable.
+                        </p>
+                        <div style="padding-bottom: 20px;">
+                            <div class="onoffswitch">
+                                <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="myonoffswitch2" tabindex="0" checked>
+                                <label class="onoffswitch-label" for="myonoffswitch2">
+                                    <span class="onoffswitch-inner"></span>
+                                    <span class="onoffswitch-switch"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </details>
+                </li>
+                <li>
+                    <details>
+                        <summary>
+                            No further requirements are specified because "<code contenteditable>{reason}</code>"
+                        </summary>
+                        <strong>
+                            Example: <span>No further requirements are specified because "it will be superseded in a future project phase"</span>
+                        </strong>
+                        <p>
+                            The recipient may not necessarily wish to specify more BIM requirements to audit. Scenarios
+                            when this is the case may be when the recipient does not have processes in place to use the
+                            BIM data or does not know how to use the BIM data, or when the BIM data is temporary or
+                            irrelevant for any reason. In this scenario, it may be useful to specify the reason why no
+                            further audits will take place. This is the contractual equivalent to "this page is
+                            intentionally left blank".
+                        </p>
+                        <div style="padding-bottom: 20px;">
+                            <div class="onoffswitch">
+                                <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="myonoffswitch3" tabindex="0" checked>
+                                <label class="onoffswitch-label" for="myonoffswitch3">
+                                    <span class="onoffswitch-inner"></span>
+                                    <span class="onoffswitch-switch"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </details>
+                </li>
+            </ol>
+            <h2>
+                Scenario: Project metadata is organised and correct
+            </h2>
+            <ol>
+                <li>The project must have an identifier of "<code contenteditable>{guid}</code>"</li>
+                <li>The project name, code, or short identifier must be "<code contenteditable>{name}</code>"</li>
+                <li>The project must have a longer form name of "<code contenteditable>{long_name}</code>"</li>
+                <li>The project must be described as "<code contenteditable>{description}</code>"</li>
+                <li>The project must be categorised under "<code contenteditable>{object_type}</code>"</li>
+                <li>The project must contain information about the "<code contenteditable>{phase}</code>" phase</li>
+            </ol>
+            <h2>
+                Scenario: Project geometry is stored
+            </h2>
+            <ol>
+                <li>The project must contain 3D geometry representing the shape of objects</li>
+            </ol>
+        </section>
+        <aside class="four columns">
+            <p>
+                BIMTester is an <strong>open source</strong>, <strong>transparent</strong>,
+                <strong>standards-based</strong> auditing system for IFC-based projects, using well-established best
+                practices from the software industry. Requirements can be automatically checked and customised using 100%
+                free software that puts you in control of your OpenBIM data.
+            </p>
+            <h3>
+                Step 1
+            </h3>
+            <p>
+                Select a requirements template from the dropdown list.
+            </p>
+            <h3>
+                Step 2
+            </h3>
+            <p>
+                Fill out the requirements by editing the highlighted words line by line. Click on a line to toggle whether the requirement is needed for your project.
+            </p>
+            <h3>
+                Step 3
+            </h3>
+            <p>
+                Download the requirements file and include it in contracts.
+            </p>
+            <p>
+                <a href="#" class="button button-primary">Download Requirements</a>
+                &nbsp;&nbsp;&nbsp;
+                <a href="#" class="button">Run an automatic Audit</a>
+            </p>
+            <h4>
+                More resources
+            </h4>
+            <ul>
+                <li>Want to write your own requirements? <a href="#">Read more</a>
+                <li>Are you a poweruser or developer? Learn the ropes. <a href="#">Read more</a>
+                <li>Need more help? Engage with the OSArch community. <a href="#">Read more</a>
+            </ul>
+        </aside>
+    </div>
+    <footer>
+        <p>
+            BIMTester is built with &hearts; on the awesome <a href="http://www.ifcopenshell.org/">IfcOpenShell</a> project by <a href="https://blenderbim.org/community.html">amazing volunteers</a>. You can be one too!
+        </p>
+    </footer>
+    <!--
+    <script src="js/vendor/modernizr-3.8.0.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <script>window.jQuery || document.write('<script src="js/vendor/jquery-3.4.1.min.js"><\/script>')</script>
+    <script src="js/plugins.js"></script>
+    <script>
+    window.ga = function () { ga.q.push(arguments) }; ga.q = []; ga.l = +new Date;
+    ga('create', 'UA-XXXXX-Y', 'auto'); ga('set','transport','beacon'); ga('send', 'pageview')
+    </script>
+    <script src="https://www.google-analytics.com/analytics.js" async></script>
+    -->
+    <script src="main.js"></script>
+</body>
+</html>

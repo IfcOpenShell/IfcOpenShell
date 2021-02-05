@@ -3,7 +3,8 @@ from sverchok.data_structure import zip_long_repeat
 
 ifc_files = {}
 
-class SvIfcCore():
+
+class SvIfcCore:
     def process(self):
         sv_inputs_nested = []
         for name in self.sv_input_names:

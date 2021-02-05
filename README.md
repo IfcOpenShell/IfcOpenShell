@@ -7,7 +7,7 @@ For more information, see
 * [http://ifcopenshell.org](http://ifcopenshell.org)  
 * [http://academy.ifcopenshell.org](http://academy.ifcopenshell.org)
 
-[![Build Status](https://api.travis-ci.org/IfcOpenShell/IfcOpenShell.png)](https://api.travis-ci.org/IfcOpenShell/IfcOpenShell)
+[![Build Status](https://travis-ci.org/IfcOpenShell/IfcOpenShell.svg?branch=v0.6.0)](https://travis-ci.org/IfcOpenShell/IfcOpenShell)
 
 Prerequisites
 -------------

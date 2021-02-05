@@ -1,10 +1,11 @@
 import xml.sax, json, copy, pathlib
 from bs4 import BeautifulSoup
 import sys
+
 sys.setrecursionlimit(100)
 
-class IfcElementHandler(xml.sax.ContentHandler):
 
+class IfcElementHandler(xml.sax.ContentHandler):
     def __init__(self):
         self.elements = {}
         self.current_element_name = None
@@ -13,90 +14,87 @@ class IfcElementHandler(xml.sax.ContentHandler):
         self.attribute_stack = []
 
     def startElement(self, name, attrs):
-        if name == 'xs:element'  and 'substitutionGroup' in attrs:
-            self.elements[attrs['name']] = {
-                'description': self.get_description(attrs['name']),
-                'is_abstract': True if 'abstract' in attrs else False,
-                'parent': attrs['substitutionGroup'][len('ifc:'):],
-                'attributes': []
+        if name == "xs:element" and "substitutionGroup" in attrs:
+            self.elements[attrs["name"]] = {
+                "description": self.get_description(attrs["name"]),
+                "is_abstract": True if "abstract" in attrs else False,
+                "parent": attrs["substitutionGroup"][len("ifc:") :],
+                "attributes": [],
             }
-            self.current_element_name = attrs['name']
-        elif name == 'xs:simpleType' \
-            and 'name' in attrs \
-            and 'Enum' in attrs['name']:
-            self.current_enum_name = attrs['name']
+            self.current_element_name = attrs["name"]
+        elif name == "xs:simpleType" and "name" in attrs and "Enum" in attrs["name"]:
+            self.current_enum_name = attrs["name"]
             self.enums[self.current_enum_name] = []
-        elif name == 'xs:enumeration' and self.current_enum_name:
-            self.enums[self.current_enum_name].append(attrs['value'].upper())
-        elif name == 'xs:attribute' \
-            and self.current_element_name \
-            and 'name' in attrs \
-            and 'type' in attrs:
-            self.elements[self.current_element_name]['attributes'].append({
-                'name': attrs['name'],
-                'type': attrs['type'].replace('ifc:', ''),
-            })
+        elif name == "xs:enumeration" and self.current_enum_name:
+            self.enums[self.current_enum_name].append(attrs["value"].upper())
+        elif name == "xs:attribute" and self.current_element_name and "name" in attrs and "type" in attrs:
+            self.elements[self.current_element_name]["attributes"].append(
+                {
+                    "name": attrs["name"],
+                    "type": attrs["type"].replace("ifc:", ""),
+                }
+            )
 
     def endDocument(self):
         elements = {}
 
         for name, data in self.elements.items():
-            for index, attribute in enumerate(data['attributes']):
-                data['attributes'][index] = self.resolve_enums(attribute)
+            for index, attribute in enumerate(data["attributes"]):
+                data["attributes"][index] = self.resolve_enums(attribute)
 
         for name, data in self.elements.items():
-            if data['is_abstract']:
+            if data["is_abstract"]:
                 continue
             if self.is_an_ifcproduct(data):
                 self.attribute_stack = []
                 self.get_parent_attributes(data)
                 elements[name] = copy.deepcopy(data)
-                elements[name]['attributes'] = copy.deepcopy(self.attribute_stack)
+                elements[name]["attributes"] = copy.deepcopy(self.attribute_stack)
 
         self.elements = elements
 
     def get_description(self, name):
         try:
-            filenames = pathlib.Path(
-                'io_export_ifc/schema/ifc4-add2-tc1/ifc4-add2-tc1/html/schema/').glob(
-                '**/{}.htm'.format(name.lower()))
+            filenames = pathlib.Path("io_export_ifc/schema/ifc4-add2-tc1/ifc4-add2-tc1/html/schema/").glob(
+                "**/{}.htm".format(name.lower())
+            )
             for filename in filenames:
-                with open(filename, 'r') as file:
-                    soup = BeautifulSoup(file, 'html.parser')
-                    for detail in soup.find_all('details'):
-                        if detail.summary.string == 'Entity definition' \
-                            and detail.p:
-                            return str(detail.p.text.replace('\n', ' '))
+                with open(filename, "r") as file:
+                    soup = BeautifulSoup(file, "html.parser")
+                    for detail in soup.find_all("details"):
+                        if detail.summary.string == "Entity definition" and detail.p:
+                            return str(detail.p.text.replace("\n", " "))
             return None
         except:
             return None
-            #print('Failed to get description for {}'.format(name))
+            # print('Failed to get description for {}'.format(name))
         return None
 
     def resolve_enums(self, attribute):
-        if attribute['type'] in self.enums:
-            attribute['is_enum'] = True
-            attribute['enum_values'] = self.enums[attribute['type']]
+        if attribute["type"] in self.enums:
+            attribute["is_enum"] = True
+            attribute["enum_values"] = self.enums[attribute["type"]]
             return attribute
-        attribute['is_enum'] = False
-        attribute['enum_values'] = []
+        attribute["is_enum"] = False
+        attribute["enum_values"] = []
         return attribute
 
     def get_parent_attributes(self, data):
-        self.attribute_stack.extend(data['attributes'])
-        if data['parent'] != 'IfcProduct': # For now, we treat attributes above IfcProduct in a special way
-            self.get_parent_attributes(self.elements[data['parent']])
+        self.attribute_stack.extend(data["attributes"])
+        if data["parent"] != "IfcProduct":  # For now, we treat attributes above IfcProduct in a special way
+            self.get_parent_attributes(self.elements[data["parent"]])
 
     def is_an_ifcproduct(self, data):
-        if data['parent'] == 'IfcProduct':
+        if data["parent"] == "IfcProduct":
             return True
         else:
             for name, parent_data in self.elements.items():
-                if name == data['parent']:
+                if name == data["parent"]:
                     return self.is_an_ifcproduct(parent_data)
         return False
 
-xsd_path = 'io_export_ifc/schema/IFC4.xsd'
+
+xsd_path = "io_export_ifc/schema/IFC4.xsd"
 handler = IfcElementHandler()
 parser = xml.sax.make_parser()
 parser.setContentHandler(handler)

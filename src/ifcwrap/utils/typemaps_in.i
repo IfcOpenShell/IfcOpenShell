@@ -25,7 +25,13 @@
 		}
 		$1 = python_sequence_as_vector<template_type>($input);
 	}
+	%typemap(typecheck,precedence=SWIG_TYPECHECK_INTEGER) std::vector<template_type> {
+		$1 = check_aggregate_of_type($input, get_python_type<template_type>()) ? 1 : 0;
+	}
 
+	%typemap(typecheck,precedence=SWIG_TYPECHECK_INTEGER) const std::vector<template_type>& {
+		$1 = check_aggregate_of_type($input, get_python_type<template_type>()) ? 1 : 0;
+	}
 	%typemap(arginit) const std::vector<template_type>& {
 		$1 = new std::vector<template_type>();
 	}

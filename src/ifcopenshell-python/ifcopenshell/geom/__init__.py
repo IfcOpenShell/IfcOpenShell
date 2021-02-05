@@ -21,15 +21,18 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+
 def _has_occ():
     try:
         import OCC.Core.BRepTools
+
         return True
     except ImportError:
         pass
 
     try:
         import OCC.BRepTools
+
         return True
     except ImportError:
         pass
@@ -41,5 +44,5 @@ has_occ = _has_occ()
 
 if has_occ:
     from . import occ_utils as utils
-    
+
 from .main import *

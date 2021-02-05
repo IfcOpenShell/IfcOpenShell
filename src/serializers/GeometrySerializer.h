@@ -53,8 +53,11 @@ public:
         /// Use step ids for naming elements.
 		/// Applicable for OBJ, DAE, and SVG output.
 		USE_ELEMENT_STEPIDS = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 6),
+		/// Use Y UP .
+		/// Applicable for OBJ output.
+		USE_Y_UP = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 7),
 		/// Number of different setting flags.
-        NUM_SETTINGS = 6
+        NUM_SETTINGS = 7
     };
 
     SerializerSettings()

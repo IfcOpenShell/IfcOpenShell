@@ -14,6 +14,7 @@
 #include <TColStd_Array2OfReal.hxx>
 #include <TColStd_Array1OfInteger.hxx>
 #include <Geom_BezierCurve.hxx>
+#include <Geom_TrimmedCurve.hxx>
 
 #include "IfcGeom.h"
 
@@ -93,7 +94,11 @@ namespace {
 
 template <>
 int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool advanced) {
-	if (c->DynamicType() == STANDARD_TYPE(Geom_Line)) {
+	if (c->DynamicType() == STANDARD_TYPE(Geom_TrimmedCurve)) {
+		Handle_Geom_TrimmedCurve trim = Handle_Geom_TrimmedCurve::DownCast(c);
+		const Handle_Geom_Curve basis = trim->BasisCurve();
+		return convert_to_ifc(basis, curve, advanced);
+	} else if (c->DynamicType() == STANDARD_TYPE(Geom_Line)) {
 		IfcSchema::IfcDirection* d;
 		IfcSchema::IfcCartesianPoint* p;
 
@@ -428,6 +433,21 @@ int convert_to_ifc(const TopoDS_Edge& e, IfcSchema::IfcEdge*& edge, bool advance
 	}
 }
 
+namespace {
+	bool is_polygonal(const Handle_Geom_Curve& crv) {
+		if (crv->DynamicType() == STANDARD_TYPE(Geom_Line)) {
+			return true;
+		} else if (crv->DynamicType() == STANDARD_TYPE(Geom_TrimmedCurve)) {
+			return is_polygonal(Handle_Geom_TrimmedCurve::DownCast(crv)->BasisCurve());
+		} else if (crv->DynamicType() == STANDARD_TYPE(Geom_BSplineCurve)) {
+			auto bspl = Handle_Geom_BSplineCurve::DownCast(crv);
+			return bspl->NbPoles() == 2 && bspl->Degree() == 1;
+		} else {
+			return false;
+		}
+	}
+}
+
 template <>
 int convert_to_ifc(const TopoDS_Wire& wire, IfcSchema::IfcLoop*& loop, bool advanced) {
 	bool polygonal = true;
@@ -437,7 +457,7 @@ int convert_to_ifc(const TopoDS_Wire& wire, IfcSchema::IfcLoop*& loop, bool adva
 		if (crv.IsNull()) {
 			continue;
 		}
-		if (crv->DynamicType() != STANDARD_TYPE(Geom_Line)) {
+		if (!is_polygonal(crv)) {
 			polygonal = false;
 			break;
 		}

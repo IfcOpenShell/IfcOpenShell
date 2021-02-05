@@ -4116,9 +4116,9 @@ HISTORY: New Enumeration in IFC Release 2.0.
     The <i>IfcCoolingTowerTypeEnum</i> contains the following:</p>
 	<ul> 
 		<li><b>NATURALDRAFT</b>: Air flow is produced naturally.</li>
-		<li><b>MECHANICALINDUCEDDRAFT</b>: Air flow is produced by a mechanical device, typically one or more fans, located on 
+		<li><b>MECHANICALINDUCEDDRAFT</b>: Air flow is produced by a mechanical device, typically one or more fans, located on 
 the air outlet side of the cooling tower.</li>
-		<li><b>MECHANICALFORCEDDRAFT</b>: Air flow is produced by a mechanical device, typically one or more fans, located on 
+		<li><b>MECHANICALFORCEDDRAFT</b>: Air flow is produced by a mechanical device, typically one or more fans, located on 
 the inlet air side of the cooling tower.</li>
 		<li><b>USERDEFINED</b>:  User-defined cooling tower type.</li>
 		<li><b>NOTDEFINED</b>:  Undefined cooling tower type.</li>
@@ -5033,12 +5033,12 @@ IFC2x4 CHANGE: Extended to include LOGICALXOR, LOGICALNOTAND and LOGICALNOTOR.
 		</tr> 
 		<tr> 
 		  <td>LOGICALAND</td> 
-		  <td>Defines a relationship between operands whereby the result is true if all operands are true, i.e. false if at least 
+		  <td>Defines a relationship between operands whereby the result is true if all operands are true, i.e. false if at least 
 one operand is false.</td> 
 		</tr> 
 		<tr> 
 		  <td>LOGICALOR</td> 
-		  <td>Defines a relationship between operands whereby the result is true if at least one operand is true, i.e false if 
+		  <td>Defines a relationship between operands whereby the result is true if at least one operand is true, i.e false if 
 all operands are false.</td> 
 		</tr>  
 		<tr> 
@@ -5047,19 +5047,19 @@ all operands are false.</td>
 		</tr>  
 		<tr> 
 		  <td>LOGICALNOTAND</td> 
-		  <td>Defines a relationship between operands whereby the result is true if at least one operand is false, i.e false if 
+		  <td>Defines a relationship between operands whereby the result is true if at least one operand is false, i.e false if 
 all operands are true.</td> 
 		</tr>  
 		<tr> 
 		  <td>LOGICALNOTOR</td> 
-		  <td>Defines a relationship between operands whereby the result is true if all operands are false, i.e false if at least 
+		  <td>Defines a relationship between operands whereby the result is true if all operands are false, i.e false if at least 
 one operand is true.</td> 
 		</tr> 
 	 </table> 
 
 	 <h3>Use Definition</h3> 
 
-	 <p>The <I>IfcLogicalOperatorEnum</I>, when applied in a case of three operands, A, B and C, evaluates for each operator as 
+	 <p>The <I>IfcLogicalOperatorEnum</I>, when applied in a case of three operands, A, B and C, evaluates for each operator as 
 follows:
   </p> 
 
@@ -5843,22 +5843,22 @@ IFC2x3 CHANGE&nbsp; This concept was initially introduced in IFC 2.0 as <i>IfcMo
 </epm-html>"
 5269;IfcChangeActionEnum;"<epm-html>
 
-<p><i>IfcChangeActionEnum</i> identifies the type of change that might have occurred to the object during the last session (for example, added, modified, deleted). This information is required in a partial model exchange scenario so that an application or model server will know how an object might have been affected by the previous application. Valid enumerations are:</p>
+<p><i>IfcChangeActionEnum</i> identifies the type of change that might have occurred to the object during the last session (for example, added, modified, deleted). This information is required in a partial model exchange scenario so that an application or model server will know how an object might have been affected by the previous application. Valid enumerations are:</p>
 
-<ul>
-<li>NOCHANGE: Object has not been modified.</li>
-<li>MODIFIED: A modification to the object has been made by the user and application defined by the LastModifyingUser and LastModifyingApplication respectively.</li>
-<li>ADDED: The object has been created by the user and application defined by the OwningUser and OwningApplication respectively.</li>
-<li>DELETED: The object has been deleted by the user and application defined by the LastModifyingUser and LastModifyingApplication respectively.</li>
+<ul>
+<li>NOCHANGE: Object has not been modified.</li>
+<li>MODIFIED: A modification to the object has been made by the user and application defined by the LastModifyingUser and LastModifyingApplication respectively.</li>
+<li>ADDED: The object has been created by the user and application defined by the OwningUser and OwningApplication respectively.</li>
+<li>DELETED: The object has been deleted by the user and application defined by the LastModifyingUser and LastModifyingApplication respectively.</li>
 <li>NOTDEFINED: The change action is not known or has not been defined.</li>
-</ul>
-
-<p>Consider Application A will create an IFC dataset that it wants to publish to others for modification and have the ability to subsequently merge these changes back into the original model. Before publication, it may want to set the <i>IfcChangeActionEnum</i> to NOCHANGE to establish a baseline so that other application changes can be easily identified. Application B then receives this IFC dataset and adds a new object and sets <i>IfcChangeActionEnum</i> to ADDED with Application B defined as the OwningApplication. Application B then modifies an existing object and (re)defines the LastModifiedDate to the time of the modification, LastModifyingUser to the <i>IfcPersonAndOrganization</i> making the change, and sets the LastModifyingApplication to Application B. When Application A receives this modified dataset, it can determine which objects have been added and modified by Application B and either merge or reject these changes as necessary. Consequently, the intent is that an application only modifies the value of <i>IfcChangeActionEnum</i> when it does something to the object, with the further intent that a model server is responsible for clearing the <i>IfcChangeActionEnum</i> back to NOCHANGE when it is ready to be republished.</p>
-
-<blockquote class=""history"">
+</ul>
+
+<p>Consider Application A will create an IFC dataset that it wants to publish to others for modification and have the ability to subsequently merge these changes back into the original model. Before publication, it may want to set the <i>IfcChangeActionEnum</i> to NOCHANGE to establish a baseline so that other application changes can be easily identified. Application B then receives this IFC dataset and adds a new object and sets <i>IfcChangeActionEnum</i> to ADDED with Application B defined as the OwningApplication. Application B then modifies an existing object and (re)defines the LastModifiedDate to the time of the modification, LastModifyingUser to the <i>IfcPersonAndOrganization</i> making the change, and sets the LastModifyingApplication to Application B. When Application A receives this modified dataset, it can determine which objects have been added and modified by Application B and either merge or reject these changes as necessary. Consequently, the intent is that an application only modifies the value of <i>IfcChangeActionEnum</i> when it does something to the object, with the further intent that a model server is responsible for clearing the <i>IfcChangeActionEnum</i> back to NOCHANGE when it is ready to be republished.</p>
+
+<blockquote class=""history"">
 HISTORY: New enumeration in IFC R2.0. Modified in IFC2x4.
-</blockquote>
-
+</blockquote>
+
 </epm-html>"
 5452;IfcBooleanOperator;"<EPM-HTML> 
 <p><u>Definition from ISO/CD 10303-42:1992</u>: This type defines the three Boolean operators used in the definition of CSG solids.</p>
