@@ -22,7 +22,7 @@ exhale_args = {
     # These arguments are required
     "containmentFolder":     "./rst_files",
     "rootFileName":          "library_root.rst",
-    "rootFileTitle":         "IfcOpenShell",
+    "rootFileTitle":         "IfcOpenShell C++",
     "doxygenStripFromPath":  "..",
     # Suggested optional arguments
     "createTreeView":        True,
