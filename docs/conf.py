@@ -7,9 +7,9 @@ extensions = [
     'sphinx.ext.intersphinx'
 ]
 
-project = u'IfcOpenShell'
-copyright = u'2020, IfcOpenShell'
-author = u'Johan Luttun'
+project = 'IfcOpenShell'
+copyright = '2020, IfcOpenShell'
+author = ''
 
 # Setup the breathe extension
 breathe_projects = {
