@@ -1003,6 +1003,12 @@ namespace IfcGeom {
 				? +1.0
 				: -1.0
 			);
+			kernel.setValue(IfcGeom::Kernel::GV_NO_WIRE_INTERSECTION_CHECK,
+							settings.get(IteratorSettings::NO_WIRE_INTERSECTION_CHECK)
+							? +1.0
+							: -1.0
+			);
+
 			kernel.setValue(IfcGeom::Kernel::GV_DISABLE_BOOLEAN_RESULT,
 				settings.get(IteratorSettings::DISABLE_BOOLEAN_RESULT)
 				? +1.0

@@ -54,7 +54,8 @@ namespace IfcGeom {
 			// Whether to process shapes of type Face or higher (1) Wire or lower (-1) or all (0)
 			GV_DIMENSIONALITY,
             GV_LAYERSET_FIRST,
-			GV_DISABLE_BOOLEAN_RESULT
+			GV_DISABLE_BOOLEAN_RESULT,
+			GV_NO_WIRE_INTERSECTION_CHECK
 		};
 
 		Kernel(IfcParse::IfcFile* file_ = 0);
