@@ -1157,7 +1157,12 @@ bool IfcGeom::Kernel::convert_wire_to_faces(const TopoDS_Wire& w, TopoDS_Compoun
 	}
 
 	TopTools_ListOfShape results;
-    results.Append(w);
+	if (getValue(GV_NO_WIRE_INTERSECTION_CHECK) < 0. && wire_intersections(w, results)) {
+		Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
+	} else {
+		results.Clear();
+		results.Append(w);
+	}
 
 	TopoDS_Compound C;
 	BRep_Builder B;
@@ -1410,6 +1415,9 @@ void IfcGeom::Kernel::setValue(GeomValue var, double value) {
 	case GV_DISABLE_BOOLEAN_RESULT:
 		disable_boolean_result = value;
 		break;
+	case GV_NO_WIRE_INTERSECTION_CHECK:
+		no_wire_intersection_check = value;
+		break;
 	default:
 		throw std::runtime_error("Invalid setting");
 	}
@@ -1439,6 +1447,8 @@ double IfcGeom::Kernel::getValue(GeomValue var) const {
 		return layerset_first;
 	case GV_DISABLE_BOOLEAN_RESULT:
 		return disable_boolean_result;
+	case GV_NO_WIRE_INTERSECTION_CHECK:
+		return no_wire_intersection_check;
 	}
 	throw std::runtime_error("Invalid setting");
 }
