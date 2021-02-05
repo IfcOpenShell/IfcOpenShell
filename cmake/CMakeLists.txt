@@ -40,6 +40,7 @@ OPTION(BUILD_IFCPYTHON "Build IfcPython." ON)
 OPTION(BUILD_EXAMPLES "Build example applications." ON)
 OPTION(BUILD_GEOMSERVER "Build IfcGeomServer executable." ON)
 OPTION(BUILD_CONVERT "Build IfcConvert executable." ON)
+OPTION(HDF5_SUPPORT "Enable HDF5 support (requires HDF5, zlib)" ON)
 OPTION(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
 OPTION(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
 OPTION(BUILD_SHARED_LIBS "Build IfcParse and IfcGeom as shared libs (SO/DLL)." OFF)
@@ -112,6 +113,8 @@ UNIFY_ENVVARS_AND_CACHE(LIBXML2_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(LIBXML2_LIBRARIES)
 UNIFY_ENVVARS_AND_CACHE(PCRE_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(PYTHON_EXECUTABLE)
+UNIFY_ENVVARS_AND_CACHE(HDF5_INCLUDE_DIR)
+UNIFY_ENVVARS_AND_CACHE(HDF5_LIBRARY_DIR)
 
 if (GLTF_SUPPORT AND BUILD_CONVERT)
 UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
@@ -376,6 +379,33 @@ IF(COLLADA_SUPPORT AND BUILD_CONVERT)
 	ENDIF()
 ENDIF()
 
+if(HDF5_SUPPORT)
+    IF("${HDF5_INCLUDE_DIR}" STREQUAL "")
+		MESSAGE(STATUS "No HDF5 include directory specified")
+	ElSE()
+		SET(HDF5_INCLUDE_DIR "${HDF5_INCLUDE_DIR}" CACHE FILEPATH "HDF5 header files")
+	ENDIF()
+
+    IF("${HDF5_LIBRARY_DIR}" STREQUAL "")
+		MESSAGE(STATUS "No HDF5 library directory specified")
+	ElSE()
+		SET(HDF5_LIBRARY_DIR "${HDF5_LIBRARY_DIR}" CACHE FILEPATH "HDF5 library files")
+	ENDIF()
+
+    IF(WIN32)
+        # An additional lib- prefix is added by HDF5 to denote static libraries
+        SET(HDF5_LIBRARIES 
+            "${HDF5_LIBRARY_DIR}/libhdf5_cpp"
+            "${HDF5_LIBRARY_DIR}/libhdf5"
+            "${HDF5_LIBRARY_DIR}/libzlib")
+    ELSE()
+        SET(HDF5_LIBRARIES 
+            "${HDF5_LIBRARY_DIR}/hdf5_cpp"
+            "${HDF5_LIBRARY_DIR}/hdf5"
+            zlib)
+    ENDIF()
+endif()
+
 IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_BUILD_TYPE "Release")
 ENDIF()
@@ -459,7 +489,7 @@ if (IFCCONVERT_DOUBLE_PRECISION)
 endif()
 
 INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
-	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR}
+	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIR}
 )
 
 function(files_for_ifc_version IFC_VERSION RESULT_NAME)
