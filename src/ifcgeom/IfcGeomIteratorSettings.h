@@ -94,8 +94,11 @@ namespace IfcGeom
 			EDGE_ARROWS = 1 << 19,
 			/// Disables the evaluation of IfcBooleanResult and simply returns FirstOperand
 			DISABLE_BOOLEAN_RESULT = 1 << 20,
+			// Disables wire intersection checks
+			NO_WIRE_INTERSECTION_CHECK = 1 << 21,
+
 			/// Number of different setting flags.
-			NUM_SETTINGS = 20
+			NUM_SETTINGS = 21,
         };
         /// Used to store logical OR combination of setting flags.
         typedef unsigned SettingField;
