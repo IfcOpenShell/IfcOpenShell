@@ -27,7 +27,7 @@ if os.path.isfile(index_path) and not os.path.isfile(conf_path):
 	os.remove(index_path) 
 
 if not (os.path.isfile(conf_path) and os.path.isfile(index_path)):
-	subprocess.run(["sphinx-quickstart", "-q", "-p", "IfcOpenShell", "-a", "Johan Luttun"])
+	subprocess.run(["sphinx-quickstart", "-q", "-p", "IfcOpenShell"])
 
 conf_copy = ["./conf_to_copy.py", "./conf.py"]
 index_copy = ["./index_to_copy.rst", "./index.rst"]
@@ -42,7 +42,7 @@ if platform == "linux" or platform == "linux2":
 		subprocess.run(["make", "html"])
 		subprocess.run(["cd", "../../../docs"])
 		
-	subprocess.run(["sudo", "mv" "../src/ifcblenderexport/docs/_build", "./output"])
+	subprocess.run(["mv" "../src/ifcblenderexport/docs/_build", "./output"])
 	
 		
 elif platform == "win32" or platform == "win64":
