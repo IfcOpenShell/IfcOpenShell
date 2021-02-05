@@ -62,10 +62,6 @@ pushd ..\%BUILD_DIR%
 set BOOST_VERSION=1.67.0
 set BOOST_VER=%BOOST_VERSION:.=_%
 
-
-
-echo %OCC_INCLUDE_DIR%
-
 set BOOST_ROOT=%DEPS_DIR%\boost_%BOOST_VER%
 set BOOST_LIBRARYDIR=%BOOST_ROOT%\stage\vs%VS_VER%-%VS_PLATFORM%\lib
 if not defined OCC_INCLUDE_DIR set OCC_INCLUDE_DIR=%INSTALL_DIR%\oce\include\oce

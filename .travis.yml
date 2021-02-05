@@ -4,13 +4,6 @@ os: linux
 dist: bionic
 sudo: required
 
-env :
-  global:
-    - secure: "bpsPWbUZx/sezmxo0QmSbszpnXDTzZgiZd/rStryT1/xzgm52Qe7ZonVO8v3Wv0VVZDrQSwUzsZR9sHnu17bkO09S604lBlUPxdWuIXGqCnoHRca4szQTpQ9wvN8QM+PNsuZYrpZ1ixO7/EGyvs56zxqoYxhp4GoC5lRuUzcP0zGLYu5x9kbFLWgeDb+IE7xHZrWUH2D8Y8Zd1nJqESgC9eeAYwMpzfhznSzGG0cNbZg1FBJAgaW7XdZGFyF+/wHNmGzK606os6i9Ca6bJEiEmfN5WoWZVdg3xALX/ibk8EdAUY6gacTvEABim/1YDYdFUxmA6S4tKNjZ65XphkaIDsThCMsj1zLnuUKKnqTjkDzZ2BdzDLqFCXdpqNCmuU6m36VlHMg6SS15RSqy9rYeKXJwgJiC9QgUxEoEkq5Een97hFKx6bw55YX2hvhIUdEqwOERBHCDYIt/KPZ6kdM/rY1OgCmHOBBUZWXMftrk/l59s/0DKTH9kn7uYPpB7eereC5F+UxqdMahcOW0UWpA0rtg8ffEQiRdCzfxbWpilhW4dPq6o5FnVEiQkxl4W6GVBX/+HnUzCjnR9I0yHaRhUgoiXvrcmfHihOypH5r72uhlx4DysOqYsp9+R1l7FNBguuPHkZI0afZ4BY+Hh9/OvwN+2oN4/qovD2MQ4ysDWc="
-    - secure: "LL1DN6nrTFVxbIH54HLpaZfHnabxV4jStB2+XRp0nvBB/XaeceBRe6MgsfOzYSjCkT3Qz0+rIoQzUk6KIWdAAfc56fr5b4ke266zQasvjrr5XUZcKpiGT+nPjf11X2hlVbWF/6upQGwIhMkKUOuXw7JauH2Cg9aaD0Pdd0VkXh5ljlynUu3HaXvBufTt0BTEAJqqP1DNKdZdMJ9se2+nvPH7xbLBYnr+jMAZFuQUMtpw7L9dAdW5al5ORaSYs5ZVz1pvWNzDSva3FXzWsDqfEx6X+twrDa0ha8pfyHLbN8PVqmVZkowyJtjq5Q+l0T0UrettzHG0XDkHKi94YaQUOIgMTqw7NglmfVbpS7z42FrbhLpHvku7FA+cH/lVIKSr+ir8COEWKOkpstnc58UfvpcGZBrwEmTS3EU6iTGtlPwbpeNyQcF2CxkJYS6rCW5mTHI2n79ZaSMn15tyJT8cQZ7Lnw3eUoRe0mtEDuaDzGHmwlVnFe0PrUGJYWoa9ay29S951AHzQ5Y/Jz3zG1p34tEs9hkEoZfexwIS/YJRYNO3XFyPM7AR8cbjsTecmipkKa9xUNCJT8P4bJvh6aIqMbXo9eQvq5ymXlEFIt1tBvlhk/SO3R3Fs9/2e+6C0fTE0O91jYLgrvzIiWDwLMA9PyeMZC+pJaB9K05feG7j7Ak="
-
-
-
 before_install:
   - "sudo add-apt-repository -y ppa:freecad-community/ppa"
   - sudo apt-get update -qq
@@ -21,10 +14,8 @@ install:
     sudo apt-get install -y \
     libocct-data-exchange-dev libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev \
     libboost-system-dev libboost-program-options-dev libboost-regex-dev libboost-thread-dev libboost-date-time-dev libboost-iostreams-dev libboost-filesystem-dev \
-    build-essential cmake python2.7 libpython2.7-dev swig zlib1g liblzma5 opencollada-dev wget apt-transport-https python3 python3-pip python3-setuptools doxygen python3-sphinx 
-  - sudo mkdir -p /usr/include/json/nlohmann/ 
-  - python3 -m pip install exhale
-  - sudo apt-get install python3-sphinx 
+    build-essential cmake python2.7 libpython2.7-dev swig zlib1g liblzma5 opencollada-dev wget apt-transport-https
+  - sudo mkdir -p /usr/include/json/nlohmann/
   - sudo wget https://github.com/nlohmann/json/releases/download/v3.6.1/json.hpp -O /usr/include/json/nlohmann/json.hpp
   # - sudo sh -c 'curl https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -'
   # - sudo sh -c 'curl https://storage.googleapis.com/download.dartlang.org/linux/debian/dart_stable.list > /etc/apt/sources.list.d/dart_stable.list'
@@ -34,15 +25,11 @@ install:
 
 script:
   - pwd
-  - cd src/ifcblenderexport/docs
-  - make html
-  - ls -al
-  - cd ../../..
   - cd cmake
   - mkdir build
   - cd build
   - |
-    travis_wait cmake \
+    cmake \
     -DOCC_INCLUDE_DIR=/usr/include/opencascade \
     -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
     -DPYTHON_LIBRARY=/usr/lib/python2.7/config-x86_64-linux-gnu/libpython2.7.so \
@@ -52,47 +39,28 @@ script:
     -DLIBXML2_LIBRARIES="/usr/lib/x86_64-linux-gnu/libxml2.so;/lib/x86_64-linux-gnu/libz.so.1;/lib/x86_64-linux-gnu/liblzma.so.5;/usr/lib/x86_64-linux-gnu/libicuuc.so.60;/usr/lib/x86_64-linux-gnu/libicudata.so.60" \
     -DGLTF_SUPPORT=On \
     -DJSON_INCLUDE_DIR=/usr/include/json \
-    -DBUILD_DOCUMENTATION=On \
     ..
-  - travis_wait 40 sudo make -j4 install
+  - sudo make -j2 install
     
-  # - cd ../../test
-  # - /usr/bin/python2.7 tests.py
+  - cd ../../test
+  - /usr/bin/python2.7 tests.py
 
-  # - cd input
+  - cd input
   
-  # - /usr/local/bin/IfcConvert -yv acad2010_walls.ifc acad2010_walls.glb
-  # # - gltf_validator acad2010_walls.glb
+  - /usr/local/bin/IfcConvert -yv acad2010_walls.ifc acad2010_walls.glb
+  # - gltf_validator acad2010_walls.glb
   
-  # - /usr/bin/python2.7 -c "from __future__ import print_function; from io import open; import ifcopenshell; f = ifcopenshell.open('encoding.ifc'); assert list(map(ord, f[1][0])) == [39, 97, 39, 32, 49, 109, 179, 32, 8804, 32, 53, 109, 179, 32, 8805, 32, 49, 48, 109, 179]"
+  - /usr/bin/python2.7 -c "from __future__ import print_function; from io import open; import ifcopenshell; f = ifcopenshell.open('encoding.ifc'); assert list(map(ord, f[1][0])) == [39, 97, 39, 32, 49, 109, 179, 32, 8804, 32, 53, 109, 179, 32, 8805, 32, 49, 48, 109, 179]"
   
-  # - |
-    # (for i in *.ifc; do \
-    # echo $i | tee -a log; \
-    # timeout 1m /usr/local/bin/IfcConvert -yv "$i" "$i.dae" --validate >> log 2>&1; \
-    # echo $i $? >> statuses; \
-    # done) || true
-  # - echo Failed
-  # - grep -v 0$ statuses
-  # - grep -v 0$ statuses | wc -l
-  # - echo Succeeded
-  # - grep 0$ statuses
-  # - grep 0$ statuses | wc -l
-after_success:
-  - pwds
-  - cd ../../docs
-  - sudo mv ../src/ifcblenderexport/docs/_build ./output
-  - ls -al ./output
-  - pwd
-  - ls -al
-  - MESSAGE=$(git log --oneline -1)
-  - git clone https://johltn:$GITHUB_PASSWORD@github.com/IfcOpenShell/docs
-  - cd docs
-  - sudo rm -r *
-  - sudo touch .nojekyll
-  - sudo mv ../output/* .
-  - git config user.email "${GITHUB_EMAIL}"
-  - git config user.name "IfcOpenBot"
-  - git add .
-  - git commit -m "${MESSAGE}"
-  - travis_wait git push
+  - |
+    (for i in *.ifc; do \
+    echo $i | tee -a log; \
+    timeout 1m /usr/local/bin/IfcConvert -yv "$i" "$i.dae" --validate >> log 2>&1; \
+    echo $i $? >> statuses; \
+    done) || true
+  - echo Failed
+  - grep -v 0$ statuses
+  - grep -v 0$ statuses | wc -l
+  - echo Succeeded
+  - grep 0$ statuses
+  - grep 0$ statuses | wc -l
