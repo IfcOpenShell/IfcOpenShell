@@ -172,6 +172,33 @@ echo.
 
 cd "%DEPS_DIR%"
 
+:HDF5
+set HDF5_VERSION=1.8.19
+set HDF5_VERSION_MAJOR=1.8
+set HDF5_CMAKE_ZIP=CMake-hdf5-%HDF5_VERSION%.zip
+set HDF5_INSTALL_ZIP_NAME=HDF5-%HDF5_VERSION%-win%ARCH_BITS%
+if "%ARCH_BITS%"==64. set ARCH_BITS_64=64
+
+call :DownloadFile http://support.hdfgroup.org/ftp/HDF5/releases/hdf5-%HDF5_VERSION_MAJOR%/hdf5-%HDF5_VERSION%/src/CMake-hdf5-%HDF5_VERSION%.zip "%DEPS_DIR%" %HDF5_CMAKE_ZIP%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :ExtractArchive %HDF5_CMAKE_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\CMake-hdf5-%HDF5_VERSION%"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+pushd "%DEPS_DIR%\CMake-hdf5-%HDF5_VERSION%"
+copy /y "%~dp0patches\HDF5config.cmake" HDF5config.cmake
+copy /y "%~dp0patches\hdf5-src-CMakeLists.txt" hdf5-%HDF5_VERSION%\CMakeLists.txt
+REM This will build ZLIB initially linking against dynamic runtime
+ctest -S HDF5config.cmake,BUILD_GENERATOR=VS%VS_VER%%ARCH_BITS_64% -C %BUILD_CFG% -V -O hdf5.log
+call :ExtractArchive %HDF5_INSTALL_ZIP_NAME%.zip "%INSTALL_DIR%" "%INSTALL_DIR%\%HDF5_INSTALL_ZIP_NAME%"
+pushd build\ZLIB-prefix\src\ZLIB
+copy /y "%~dp0patches\hdf5-zlib-CMakeLists.txt" CMakeLists.txt
+pushd ..\ZLIB-build
+cmake ..\ZLIB "-DCMAKE_INSTALL_PREFIX=%INSTALL_DIR%\%HDF5_INSTALL_ZIP_NAME%"
+cmake --build . --config %BUILD_CFG% --target INSTALL
+popd
+popd
+echo HDF5_VERSION=%HDF5_VERSION%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+popd
+
 :: Note all of the dependencies have appropriate label so that user can easily skip something if wanted
 :: by modifying this file and using goto.
 :Boost
