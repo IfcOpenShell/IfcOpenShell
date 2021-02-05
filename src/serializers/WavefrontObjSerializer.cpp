@@ -88,6 +88,7 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<real_t>* 
 {
     obj_stream << "g " << object_id(o) << "\n";
 	obj_stream << "s 1" << "\n";
+	const bool isyup = settings().get(SerializerSettings::USE_Y_UP);
 
     const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
 
@@ -96,7 +97,12 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<real_t>* 
         const real_t x = *(it++);
         const real_t y = *(it++);
         const real_t z = *(it++);
-		obj_stream << "v " << x << " " << y << " " << z << "\n";
+		
+		if (isyup) {
+			obj_stream << "v " << x << " " << z << " " << -y << "\n";
+		} else {
+			obj_stream << "v " << x << " " << y << " " << z << "\n";
+		}
 	}
 
     for ( std::vector<real_t>::const_iterator it = mesh.normals().begin(); it != mesh.normals().end(); ) {

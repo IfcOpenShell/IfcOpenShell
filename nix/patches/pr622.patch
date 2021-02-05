@@ -1,0 +1,22 @@
+From a0deb4ce8b43cf3c8b8c0a4225c6be5296446dbd Mon Sep 17 00:00:00 2001
+From: Adam Eri <adam.eri@blackmirror.media>
+Date: Tue, 3 Sep 2019 23:30:20 +0200
+Subject: [PATCH] Resolves compile error on macOS
+
+Resolves "no member named 'isnan' in namespace 'std'" on macOS
+---
+ GeneratedSaxParser/src/GeneratedSaxParserUtils.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/GeneratedSaxParser/src/GeneratedSaxParserUtils.cpp b/GeneratedSaxParser/src/GeneratedSaxParserUtils.cpp
+index 1f9a3eef..dd6f5c59 100644
+--- a/GeneratedSaxParser/src/GeneratedSaxParserUtils.cpp
++++ b/GeneratedSaxParser/src/GeneratedSaxParserUtils.cpp
+@@ -10,6 +10,7 @@
+ 
+ #include "GeneratedSaxParserUtils.h"
+ #include <math.h>
++#include <cmath>
+ #include <memory>
+ #include <string.h>
+ #include <limits>

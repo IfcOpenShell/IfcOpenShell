@@ -18,36 +18,36 @@ of the shell scripts before using them. Note that contrary to MSVC, with MSYS al
 built or used as static libraries. Currently Release build is used for all libraries.
 
 ### MSVC
-Execute `build-deps.cmd` to fetch, build and install the dependencies. The batch file will print the requirements for
-a successful execution. The script allows a few user-configurable build options which are listed in the usage
-instructions. Either edit the script file or set these values before running the script.
+Launch the proper Visual Studio command prompt, cd to the 'win' directory inside the IfcOpenShell directory and execute `build-deps.cmd` to fetch, build and install the dependencies. The batch file will print the requirements for a successful execution. The script allows a few user-configurable build options which are listed below.
 
-`build-deps.cmd` expects a CMake generator as `%1` and a build configuration type (`RelWithDebInfo`, `Release`,
-`MinSizeRel`, or `Debug`, defaults to `RelWithDebInfo`) as `%2`. If the generator is not provided, the generator is
-deduced from the MSVC environment variables. User-friendly VS generator shorthands are supported, e.g.
-`vs2013-x86` or `vs2015-x64`, and these are converted to the appropriate CMake ones by the scripts. A build type
-(`Build`, `Rebuild`, or `Clean`, defaults to `Build`) can be provided as `%3`. See `vs-cfg.cmd` if you wish to change
-the defaults. The batch file will create `deps\` and `deps-vs<VERSION>-<ARCHITECTURE>-installed\` directories to the
-project root. Debug and release builds of the dependencies can co-exist by simply running
+`build-deps.cmd` expects a CMake generator as `%1` and a build configuration type (`RelWithDebInfo`, `Release`, `MinSizeRel`, or `Debug`, defaults to `RelWithDebInfo`) as `%2`. If the generator is not provided, the generator is deduced from the MSVC environment variables.
+
+User-friendly CMake Visual Studio generator shorthands are supported. They are converted to the appropriate CMake generators and options. Shorthands are indeed the preferable way to specify the generator, since they allow a more accurate platform and toolset configuration. Here are some examples:
+```
+"vs2013"             => cmake -G "Visual Studio 12 2013" -A Win32
+"vs2013-x86"         => cmake -G "Visual Studio 12 2013" -A Win32
+"vs2015-x64"         => cmake -G "Visual Studio 14 2015" -A x64
+"vs2017-ARM64"       => cmake -G "Visual Studio 15 2017" -A ARM64
+"vs2019-x86-v141_xp" => cmake -G "Visual Studio 16 2019" -A Win32 -T v141_xp
+```
+Of course not all Visual C++ compilers support any platform or toolset, refer to the Visual Studio and CMake documentation for this. If you do not specify a toolset, the compiler will use the default toolset for the version, i.e. vs2019 will use the v142 toolset.
+
+A build type (`Build`, `Rebuild`, or `Clean`, defaults to `Build`) can be provided as `%3`.
+
+See `vs-cfg.cmd` if you wish to change the defaults. The batch file will create `deps\` and `deps-vs<VERSION>-<PLATFORM>[-<TOOLSET>]-installed\` directories to the project root. Debug and release builds of the dependencies can co-exist by simply running:
 ```
 > build-deps.cmd <GENERATOR> Debug
 > build-deps.cmd <GENERATOR> <Release|RelWithDebInfo|MinSizeRel>
 ```
 
-After the dependencies are build, execute `run-cmake.bat`. The batch file expects a CMake generator as `%1` and the
-rest of possible parameters are passed as is. If a generator is not provided, the generator is read from the
-BuildDepsCache file, or tried to be deduced from the location of `cl.exe`. If passing build options for the script,
-the generator must be always passed as the first option:
+After the dependencies are build, execute `run-cmake.bat`. The batch file expects a CMake generator as `%1`, that is interpreted just like the `build-deps.cmd` script, and the rest of possible parameters are passed as is. If a generator is not provided, the generator is read from the BuildDepsCache file, or tried to be deduced from the location of `cl.exe`. If passing build options for the script, the generator must be always passed as the first option:
 ```
 > run-cmake.bat vs2015-x64 -DUSE_IFC4=1 -DBUILD_IFCPYTHON=0
 ```
 
-**If you wish to use any library from a custom location, modify the paths in `run-cmake.bat` accordingly**. The batch
-script will create a folder of form `build-vs<VERSION>-<ARCHITECTURE>\` which will contain the solution and project
-files for MSVC.
+**If you wish to use any library from a custom location, modify the paths in `run-cmake.bat` accordingly**. The batch script will create a folder of form `build-vs<VERSION>-<PLATFORM>[-<TOOLSET>]\` which will contain the solution and project files for MSVC.
 
-Note that building IfcOpenShell as 64-bit is recommended as many of real life IFC files has been observed to take
-easily more than 2 GBs of RAM while converting.
+Note that building IfcOpenShell as 64-bit is recommended as many of real life IFC files has been observed to take easily more than 2 GBs of RAM while converting.
 
 After this, one can build the project using the `IfcOpenShell.sln` file in the build folder. Build the `INSTALL` project
 if wanted. Convenience batch files `build-ifcopenshell.bat` and `install-ifcopenshell.bat` can also be used. The batch

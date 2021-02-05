@@ -100,13 +100,7 @@
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
 namespace {
-	// Returns the other vertex of an edge
-	TopoDS_Vertex other(const TopoDS_Edge& e, const TopoDS_Vertex& v) {
-		TopoDS_Vertex a, b;
-		TopExp::Vertices(e, a, b);
-		return v.IsSame(b) ? a : b;
-	}
-
+	// Returns the first edge of a wire
 	TopoDS_Edge first_edge(const TopoDS_Wire& w) {
 		TopoDS_Vertex v1, v2;
 		TopExp::Vertices(w, v1, v2);
@@ -389,14 +383,24 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 		// ParentCurve: The *bounded curve* which defines the geometry of the segment. 
 		// At least let's exclude IfcLine as an infinite linear segment
 		// definitely does not make any sense.
-		if (curve->as<IfcSchema::IfcLine>()) {
-			Logger::Warning("IfcLine not allowed as ParentCurve of segment", *it);
-			continue;
-		}
-
 		TopoDS_Wire segment;
 
-		if (!convert_wire(curve, segment)) {
+		if (curve->as<IfcSchema::IfcLine>()) {
+			Logger::Notice("Infinite IfcLine used as ParentCurve of segment, treating as a segment", *it);
+			Handle_Geom_Curve handle;
+			convert_curve(curve, handle);
+			double u0 = 0.0;
+			double u1 = curve->as<IfcSchema::IfcLine>()->Dir()->Magnitude() * getValue(GV_LENGTH_UNIT);
+			if (u1 < getValue(GV_PRECISION)) {
+				Logger::Warning("Segment length below tolerance", *it);
+			}
+			BRepBuilderAPI_MakeEdge me(handle, u0, u1);
+			if (me.IsDone()) {
+				BRep_Builder B;
+				B.MakeWire(segment);
+				B.Add(segment, me.Edge());
+			}
+		} else if (!convert_wire(curve, segment)) {
 			const bool failed_on_purpose = curve->as<IfcSchema::IfcPolyline>() && !segment.IsNull();
 			Logger::Message(failed_on_purpose ? Logger::LOG_WARNING : Logger::LOG_ERROR, "Failed to convert curve:", curve);
 			continue;
@@ -775,7 +779,7 @@ namespace {
 		BRepBuilderAPI_MakeEdge me(crv, v1, v2);
 		if (!me.IsDone()) {
 			const double eps2 = eps * eps;
-			if (me.Error() == BRepLib_PointProjectionFailed) {
+			if (me.Error() == BRepBuilderAPI_PointProjectionFailed) {
 				GeomAdaptor_Curve GAC(crv);
 				const gp_Pnt* ps[2] = { &p1, &p2 };
 				for (int i = 0; i < 2; ++i) {

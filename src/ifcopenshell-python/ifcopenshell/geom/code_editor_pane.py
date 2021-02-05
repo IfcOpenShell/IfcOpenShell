@@ -70,7 +70,7 @@ class code_edit(QtWidgets.QWidget):
         sys.stderr = sys.__stderr__
 
     def select(self, product):
-        self.c = self.Console({'model': self.model, 'viewer': self.viewer, 'selection': product})
+        self.c = self.Console({"model": self.model, "viewer": self.viewer, "selection": product})
 
     def __init__(self, viewer, snippets=None):
         self.model = None
@@ -92,8 +92,7 @@ class code_edit(QtWidgets.QWidget):
             editor.backend.start(server.__file__)
             editor.panels.append(panels.FoldingPanel())
             editor.panels.append(panels.LineNumberPanel())
-            editor.panels.append(panels.SearchAndReplacePanel(),
-                                 panels.SearchAndReplacePanel.Position.BOTTOM)
+            editor.panels.append(panels.SearchAndReplacePanel(), panels.SearchAndReplacePanel.Position.BOTTOM)
             editor.panels.append(panels.EncodingPanel(), api.Panel.Position.TOP)
             editor.add_separator()
             editor.panels.append(pypanels.QuickDocPanel(), api.Panel.Position.BOTTOM)
@@ -116,7 +115,7 @@ class code_edit(QtWidgets.QWidget):
             editor.modes.append(pymodes.PyIndenterMode())
             editor.show()
         else:
-            editor.setStyleSheet('font-size: 10pt; font-family: Consolas, Courier;')
+            editor.setStyleSheet("font-size: 10pt; font-family: Consolas, Courier;")
 
         self.editor = editor
         self.snippets = snippets
@@ -131,7 +130,7 @@ class code_edit(QtWidgets.QWidget):
         self.layout.addWidget(self.editor)
         self.output = QtWidgets.QTextEdit()
         self.output.setReadOnly(True)
-        self.output.setStyleSheet('font-size: 10pt; font-family: Consolas, Courier; background-color: #444;')
+        self.output.setStyleSheet("font-size: 10pt; font-family: Consolas, Courier; background-color: #444;")
         self.layout.addWidget(self.output)
 
     def replace_snippet(self, number=None):
@@ -145,5 +144,5 @@ class code_edit(QtWidgets.QWidget):
         output = []
         sys.stdout = StdoutRedirector(self.output)
         self.model = f
-        self.c = self.Console({'model': self.model, 'selection': None, 'viewer': self.viewer})
+        self.c = self.Console({"model": self.model, "selection": None, "viewer": self.viewer})
         sys.stdout = sys.__stdout__

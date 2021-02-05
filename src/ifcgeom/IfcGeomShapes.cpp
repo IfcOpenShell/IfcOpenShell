@@ -91,6 +91,7 @@
 #include <BRepAlgoAPI_Fuse.hxx>
 #include <BRepAlgoAPI_Common.hxx>
 
+#include <ShapeFix_Edge.hxx>
 #include <ShapeFix_Shape.hxx>
 #include <ShapeFix_ShapeTolerance.hxx>
 #include <ShapeFix_Solid.hxx>
@@ -103,6 +104,8 @@
 #include <Standard_Version.hxx>
 
 #include <TopTools_ListIteratorOfListOfShape.hxx>
+
+#include <ShapeAnalysis_Surface.hxx>
 
 #include "../ifcgeom/IfcGeom.h"
 
@@ -604,6 +607,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		return false;
 	}
 
+	if (getValue(GV_DISABLE_BOOLEAN_RESULT) > 0.0) {
+		shape = s1;
+		return true;
+	}
+
 	const double first_operand_volume = shape_volume(s1);
 	if (first_operand_volume <= ALMOST_ZERO) {
 		Logger::Message(Logger::LOG_WARNING, "Empty solid for:", l->FirstOperand());
@@ -695,6 +703,18 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 			shape = s1;
 		}
 		// NB: After issuing error the first operand is returned!
+		return true;
+	} else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_UNION && !valid_result) {
+		BRep_Builder B;
+		TopoDS_Compound C;
+		B.MakeCompound(C);
+		B.Add(C, s1);
+		TopTools_ListIteratorOfListOfShape it(second_operand_shapes);
+		for (; it.More(); it.Next()) {
+			B.Add(C, it.Value());
+		}
+		Logger::Message(Logger::LOG_ERROR, "Failed to process union, creating compound:", l);
+		shape = C;
 		return true;
 	} else {
 		return valid_result;
@@ -1007,11 +1027,22 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRectangularTrimmedSurface* l, 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l, TopoDS_Shape& shape) {
 	gp_Trsf directrix;
 	TopoDS_Shape face;
+	TopoDS_Face surface_face;
 	TopoDS_Wire wire, section;
 
-	if (!l->ReferenceSurface()->declaration().is(IfcSchema::IfcPlane::Class())) {
-		Logger::Message(Logger::LOG_WARNING, "Reference surface not supported", l->ReferenceSurface());
-		return false;
+	const bool is_plane = l->ReferenceSurface()->declaration().is(IfcSchema::IfcPlane::Class());
+
+	if (!is_plane) {
+		TopoDS_Shape surface_shell;
+		if (!convert_shape(l->ReferenceSurface(), surface_shell)) {
+			Logger::Error("Failed to convert reference surface", l);
+			return false;
+		}
+		if (count(surface_shell, TopAbs_FACE) != 1) {
+			Logger::Error("Non-continuous reference surface", l);
+			return false;
+		}
+		surface_face = TopoDS::Face(TopExp_Explorer(surface_shell, TopAbs_FACE).Current());
 	}
 	
 	gp_Trsf trsf;
@@ -1031,25 +1062,28 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 	gp_Pln pln;
 	gp_Pnt directrix_origin;
 	gp_Vec directrix_tangent;
-	bool directrix_on_plane = true;
-	IfcGeom::Kernel::convert((IfcSchema::IfcPlane*) l->ReferenceSurface(), pln);
+	bool directrix_on_plane = is_plane;
 
-	// As per Informal propositions 2: The Directrix shall lie on the ReferenceSurface.
-	// This is not always the case with the test files in the repository. I am not sure
-	// how to deal with this and whether my interpretation of the propositions is
-	// correct. However, if it has been asserted that the vertices of the directrix do
-	// not conform to the ReferenceSurface, the ReferenceSurface is ignored.
-	{ 
-		for (TopExp_Explorer exp(wire, TopAbs_VERTEX); exp.More(); exp.Next()) {
-			if (pln.Distance(BRep_Tool::Pnt(TopoDS::Vertex(exp.Current()))) > ALMOST_ZERO) {
-				directrix_on_plane = false;
-				Logger::Message(Logger::LOG_WARNING, "The Directrix does not lie on the ReferenceSurface", l);
-				break;
+	if (is_plane) {
+		IfcGeom::Kernel::convert((IfcSchema::IfcPlane*) l->ReferenceSurface(), pln);
+
+		// As per Informal propositions 2: The Directrix shall lie on the ReferenceSurface.
+		// This is not always the case with the test files in the repository. I am not sure
+		// how to deal with this and whether my interpretation of the propositions is
+		// correct. However, if it has been asserted that the vertices of the directrix do
+		// not conform to the ReferenceSurface, the ReferenceSurface is ignored.
+		{
+			for (TopExp_Explorer exp(wire, TopAbs_VERTEX); exp.More(); exp.Next()) {
+				if (pln.Distance(BRep_Tool::Pnt(TopoDS::Vertex(exp.Current()))) > ALMOST_ZERO) {
+					directrix_on_plane = false;
+					Logger::Message(Logger::LOG_WARNING, "The Directrix does not lie on the ReferenceSurface", l);
+					break;
+				}
 			}
 		}
 	}
 
-	{ 
+	{
 		TopExp_Explorer exp(wire, TopAbs_EDGE);
 		TopoDS_Edge edge = TopoDS::Edge(exp.Current());
 		double u0, u1;
@@ -1057,12 +1091,28 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 		crv->D1(u0, directrix_origin, directrix_tangent);
 	}
 
-	if (pln.Axis().Direction().IsNormal(directrix_tangent, Precision::Approximation()) && directrix_on_plane) {
+	if (is_plane && pln.Axis().Direction().IsNormal(directrix_tangent, Precision::Approximation()) && directrix_on_plane) {
 		directrix.SetTransformation(gp_Ax3(directrix_origin, directrix_tangent, pln.Axis().Direction()), gp::XOY());
+	} else if (!is_plane) {
+		ShapeAnalysis_Surface sas(BRep_Tool::Surface(surface_face));
+		auto pnt2d = sas.ValueOfUV(directrix_origin, getValue(GV_PRECISION) * 10.);
+		BRepGProp_Face prop(surface_face);
+		gp_Pnt _;
+		gp_Vec surface_normal;
+		prop.Normal(pnt2d.X(), pnt2d.Y(), _, surface_normal);
+		directrix.SetTransformation(gp_Ax3(directrix_origin, directrix_tangent, surface_normal), gp::XOY());
 	} else {
 		directrix.SetTransformation(gp_Ax3(directrix_origin, directrix_tangent), gp::XOY());
 	}
 	face = BRepBuilderAPI_Transform(face, directrix);
+
+	if (!is_plane) {
+		TopExp_Explorer exp(wire, TopAbs_EDGE);
+		for (; exp.More(); exp.Next()) {
+			ShapeFix_Edge sfe;
+			sfe.FixAddPCurve(TopoDS::Edge(exp.Current()), surface_face, false, getValue(GV_PRECISION));
+		}
+	}
 
 	// NB: Note that StartParam and EndParam param are ignored and the assumption is
 	// made that the parametric range over which to be swept matches the IfcCurve in
@@ -1076,6 +1126,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 	builder.SetTransitionMode(BRepBuilderAPI_RightCorner);
 	if (directrix_on_plane) {
 		builder.SetMode(pln.Axis().Direction());
+	} else if (!is_plane) {
+		builder.SetMode(surface_face);
 	}
 	builder.Build();
 	builder.MakeSolid();
@@ -1233,9 +1285,6 @@ namespace {
 	void process_sweep_as_pipe(const TopoDS_Wire& wire, const TopoDS_Wire& section, TopoDS_Shape& result, bool force_transformed=false) {
 		// This tolerance is fairly high due to the linear edge substitution for small (or large radii) conical curves.
 		const bool is_continuous = wire_is_c1_continuous(wire, 1.e-2);
-		static int i = 0;
-		std::string fn = "pipe-wire-" + boost::lexical_cast<std::string>(i++) + ".brep";
-		BRepTools::Write(wire, fn.c_str());
 		BRepOffsetAPI_MakePipeShell builder(wire);
 		builder.Add(section);
 		builder.SetTransitionMode(is_continuous || force_transformed ? BRepBuilderAPI_Transformed : BRepBuilderAPI_RightCorner);
@@ -1290,26 +1339,6 @@ namespace {
 		}
 	}
 
-	void segment_tiny_edges(const TopoDS_Wire& wire, std::vector<TopoDS_Wire>& wires, double eps) {
-		std::vector<TopoDS_Edge> sorted_edges;
-		sort_edges(wire, sorted_edges);
-
-		bool segment_next = true;
-
-		BRep_Builder B;
-		
-		for (const auto& e : sorted_edges) {
-			GProp_GProps prop;
-			BRepGProp::LinearProperties(e, prop);
-			const double l = prop.Mass();
-			if (l < eps || segment_next) {
-				wires.emplace_back();
-				B.MakeWire(wires.back());
-				segment_next = l < eps;
-			}
-			B.Add(wires.back(), e);
-		}
-	}
 
 	// #939: a closed loop causes failed triangulation in 7.3 and artefacts
 	// in 7.4 so we break up a closed wire into two equal parts.
@@ -1323,12 +1352,11 @@ namespace {
 		}
 
 		BRep_Builder B;
-		double u, v;
 
 		wires.emplace_back();
 		B.MakeWire(wires.back());
 
-		for (int i = 0; i < sorted_edges.size(); ++i) {
+		for (size_t i = 0; i < sorted_edges.size(); ++i) {
 			if (i == sorted_edges.size() / 2) {
 				wires.emplace_back();
 				B.MakeWire(wires.back());
@@ -1706,7 +1734,7 @@ namespace {
 		}
 		k.remove_duplicate_points_from_loop(polygon, true);
 
-		if (polygon.Size() < 3) {
+		if (polygon.Length() < 3) {
 			return false;
 		}
 
@@ -1825,7 +1853,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
         }
     }
 
-    if (faces.Size() == 0) return false;
+    if (faces.IsEmpty()) return false;
 
     return create_solid_from_faces(faces, shape);
 }
