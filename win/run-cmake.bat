@@ -73,7 +73,7 @@ if not (%1)==() (
 )
 
 pushd ..
-set CMAKE_INSTALL_PREFIX=%CD%\installed-%GEN_SHORTHAND%
+set CMAKE_INSTALL_PREFIX=%CD%\_installed-%GEN_SHORTHAND%
 popd
 
 IF NOT EXIST ..\%BUILD_DIR%. mkdir ..\%BUILD_DIR%
