@@ -34,15 +34,4 @@ exhale_args = {
 
 }
 
-
-
-# html_theme = 'sphinx_rtd_theme'
-
-# # Tell sphinx what the primary language being documented is.
-# primary_domain = 'cpp'
-
-# # Tell sphinx what the pygments highlight language should be.
-# highlight_language = 'cpp'
-
-
-
+cpp_id_attributes = ['IFC_PARSE_API', 'IFC_GEOM_API']
