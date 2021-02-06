@@ -1,8 +1,8 @@
 import bpy
 from bpy.types import Operator
 from bpy.props import FloatProperty, BoolProperty
-from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from mathutils import Vector
+from blenderbim.bim.ifc import IfcStore
 
 
 def add_object(self, context):
@@ -25,7 +25,8 @@ def add_object(self, context):
 
     mesh = bpy.data.meshes.new(name="Dumb Wall")
     mesh.from_pydata(verts, edges, faces)
-    obj = object_data_add(context, mesh, operator=self)
+    obj = bpy.data.objects.new("Wall", mesh)
+    context.view_layer.active_layer_collection.collection.objects.link(obj)
     if not self.use_plane:
         modifier = obj.modifiers.new("Wall Height", "SCREW")
         modifier.angle = 0
@@ -39,13 +40,14 @@ def add_object(self, context):
     modifier.use_even_offset = True
     modifier.thickness = self.width
     obj.name = "Wall"
+    if IfcStore.get_file():
+        bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcWall")
     return obj
 
 
-class BIM_OT_add_object(Operator, AddObjectHelper):
+class BIM_OT_add_object(Operator):
     bl_idname = "mesh.add_wall"
     bl_label = "Dumb Wall"
-    bl_options = {"REGISTER", "UNDO"}
 
     height: FloatProperty(name="Height", default=3)
     length: FloatProperty(name="Length", default=1)
