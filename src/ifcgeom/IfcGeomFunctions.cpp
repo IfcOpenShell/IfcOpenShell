@@ -1157,7 +1157,7 @@ bool IfcGeom::Kernel::convert_wire_to_faces(const TopoDS_Wire& w, TopoDS_Compoun
 	}
 
 	TopTools_ListOfShape results;
-	if (getValue(GV_NO_WIRE_INTERSECTION_CHECK) < 0. && wire_intersections(w, results)) {
+	if (wire_intersections(w, results)) {
 		Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
 	} else {
 		results.Clear();
@@ -3799,6 +3799,11 @@ namespace {
 }
 
 bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListOfShape& wires) {
+
+	if (getValue(GV_NO_WIRE_INTERSECTION_CHECK) > 0.) {
+		return false;
+	}
+
 	if (!wire.Closed()) {
 		wires.Append(wire);
 		return false;
