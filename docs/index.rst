@@ -7,4 +7,4 @@ IfcOpenShell
    rst_files/library_root
 
 
-`ifcopenshell-python documentation <_build/html/index.html>`_
+* `ifcopenshell-python documentation <python/html/index.html>`_
