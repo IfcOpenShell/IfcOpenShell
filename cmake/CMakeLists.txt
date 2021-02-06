@@ -175,6 +175,7 @@ if(USE_MMAP)
 endif()
 
 if (IFCXML_SUPPORT)
+    find_package(LibXml2 REQUIRED)
     add_definitions(-DWITH_IFCXML)
 endif()
 
