@@ -1,19 +1,16 @@
 import bpy
+import blenderbim.bim.module.grid.create_grid_axis as create_grid_axis
 from bpy.types import Operator
 from bpy.props import FloatProperty, IntProperty
-from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from mathutils import Vector
+from blenderbim.bim.ifc import IfcStore
 
 
 def add_object(self, context):
-    obj = object_data_add(context, None, operator=self)
-    obj.name = "IfcGrid/Grid"
-    name = obj.name.split("/")[1]
+    obj = bpy.data.objects.new("Grid", None)
+    obj.name = "Grid"
 
-    default_collection = obj.users_collection[0]
-    default_collection.objects.unlink(obj)
-
-    collection = bpy.data.collections.new("IfcGrid/" + name)
+    collection = bpy.data.collections.new(obj.name)
     has_site_collection = False
     for child in bpy.context.view_layer.layer_collection.children:
         if "IfcProject/" not in child.name:
@@ -28,6 +25,13 @@ def add_object(self, context):
         bpy.context.view_layer.active_layer_collection.collection.children.link(collection)
     collection.objects.link(obj)
 
+    self.file = IfcStore.get_file()
+    if self.file:
+        bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcGrid")
+        grid = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        if has_site_collection:
+            bpy.ops.bim.assign_container(relating_structure=grandchild.name, related_element=obj.name)
+
     axes_collection = bpy.data.collections.new("UAxes")
     collection.children.link(axes_collection)
     for i in range(0, self.total_u):
@@ -39,14 +43,16 @@ def add_object(self, context):
         faces = []
         mesh = bpy.data.meshes.new(name="Grid Axis")
         mesh.from_pydata(verts, edges, faces)
-        obj = object_data_add(context, mesh, operator=self)
         tag = chr(ord("A") + i)
-        obj.name = "IfcGridAxis/" + tag
-        default_collection.objects.unlink(obj)
+        obj = bpy.data.objects.new(f"IfcGridAxis/{tag}", mesh)
+
         axes_collection.objects.link(obj)
-        attribute = obj.BIMObjectProperties.attributes.add()
-        attribute.name = "AxisTag"
-        attribute.string_value = tag
+
+        if self.file:
+            result = create_grid_axis.Usecase(
+                self.file, {"AxisTag": tag, "AxisCurve": obj, "UVWAxes": "UAxes", "Grid": grid}
+            ).execute()
+            obj.BIMObjectProperties.ifc_definition_id = result.id()
 
     axes_collection = bpy.data.collections.new("VAxes")
     collection.children.link(axes_collection)
@@ -59,17 +65,19 @@ def add_object(self, context):
         faces = []
         mesh = bpy.data.meshes.new(name="Grid Axis")
         mesh.from_pydata(verts, edges, faces)
-        obj = object_data_add(context, mesh, operator=self)
         tag = str(i + 1).zfill(2)
-        obj.name = "IfcGridAxis/" + tag
-        default_collection.objects.unlink(obj)
+        obj = bpy.data.objects.new(f"IfcGridAxis/{tag}", mesh)
+
         axes_collection.objects.link(obj)
-        attribute = obj.BIMObjectProperties.attributes.add()
-        attribute.name = "AxisTag"
-        attribute.string_value = tag
+
+        if IfcStore.get_file():
+            result = create_grid_axis.Usecase(
+                self.file, {"AxisTag": tag, "AxisCurve": obj, "UVWAxes": "VAxes", "Grid": grid}
+            ).execute()
+            obj.BIMObjectProperties.ifc_definition_id = result.id()
 
 
-class BIM_OT_add_object(Operator, AddObjectHelper):
+class BIM_OT_add_object(Operator):
     bl_idname = "mesh.add_grid"
     bl_label = "Grid"
     bl_options = {"REGISTER", "UNDO"}

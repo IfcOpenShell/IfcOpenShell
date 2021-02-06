@@ -33,12 +33,14 @@ class IfcStore:
     @staticmethod
     def link_element(element, obj):
         IfcStore.id_map[element.id()] = obj
-        IfcStore.guid_map[element.GlobalId] = obj
+        if hasattr(element, "GlobalId"):
+            IfcStore.guid_map[element.GlobalId] = obj
         obj.BIMObjectProperties.ifc_definition_id = element.id()
 
     @staticmethod
     def unlink_element(element, obj=None):
         del IfcStore.id_map[element.id()]
-        del IfcStore.guid_map[element.GlobalId]
+        if hasattr(element, "GlobalId"):
+            del IfcStore.guid_map[element.GlobalId]
         if obj:
             obj.BIMObjectProperties.ifc_definition_id = 0
