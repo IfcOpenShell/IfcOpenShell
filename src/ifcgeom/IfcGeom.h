@@ -225,6 +225,7 @@ private:
 	double dimensionality;
 	double layerset_first;
 	double no_wire_intersection_check;
+	double precision_factor;
 
 	// For stopping PlacementRelTo recursion in convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf)
 	const IfcParse::declaration* placement_rel_to;
@@ -258,6 +259,7 @@ public:
 		, layerset_first(-1.)
 		, disable_boolean_result(-1.)
 		, no_wire_intersection_check(-1)
+		, precision_factor(10.)
 	{}
 
 	MAKE_TYPE_NAME(Kernel)(const MAKE_TYPE_NAME(Kernel)& other)

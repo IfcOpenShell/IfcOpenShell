@@ -340,7 +340,8 @@ int main(int argc, char** argv) {
             "Specifies a material file that describes the material object types will have"
             "if an object does not have any specified material in the IFC file.")
 		("validate", "Checks whether geometrical output conforms to the included explicit quantities.")
-		("no-wire-intersection-check", "Skip wire intersection check");
+		("no-wire-intersection-check", "Skip wire intersection check")
+		("strict-tolerance", "Use strict tolerance for detecting wire intersections");
 
     std::string bounds;
 #ifdef HAVE_ICU
@@ -483,6 +484,7 @@ int main(int argc, char** argv) {
 	const bool validate = vmap.count("validate") != 0;
 	const bool edge_arrows = vmap.count("edge-arrows") != 0;
 	const bool no_wire_intersection_check = vmap.count("no-wire-intersection-check") != 0;
+	const bool strict_tolerance = vmap.count("strict-tolerance") != 0;
 
     if (!quiet || vmap.count("version")) {
 		print_version();
@@ -744,6 +746,7 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::BUILDING_LOCAL_PLACEMENT, building_local_placement);
 	settings.set(IfcGeom::IteratorSettings::VALIDATE_QUANTITIES, validate);
 	settings.set(IfcGeom::IteratorSettings::NO_WIRE_INTERSECTION_CHECK, no_wire_intersection_check);
+	settings.set(IfcGeom::IteratorSettings::STRICT_TOLERANCE, strict_tolerance);
 
     settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);

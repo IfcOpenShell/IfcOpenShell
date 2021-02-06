@@ -1418,6 +1418,9 @@ void IfcGeom::Kernel::setValue(GeomValue var, double value) {
 	case GV_NO_WIRE_INTERSECTION_CHECK:
 		no_wire_intersection_check = value;
 		break;
+	case GV_PRECISION_FACTOR:
+		precision_factor = value;
+		break;
 	default:
 		throw std::runtime_error("Invalid setting");
 	}
@@ -1449,6 +1452,8 @@ double IfcGeom::Kernel::getValue(GeomValue var) const {
 		return disable_boolean_result;
 	case GV_NO_WIRE_INTERSECTION_CHECK:
 		return no_wire_intersection_check;
+	case GV_PRECISION_FACTOR:
+		return precision_factor;
 	}
 	throw std::runtime_error("Invalid setting");
 }
