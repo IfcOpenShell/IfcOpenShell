@@ -96,9 +96,10 @@ namespace IfcGeom
 			DISABLE_BOOLEAN_RESULT = 1 << 20,
 			// Disables wire intersection checks
 			NO_WIRE_INTERSECTION_CHECK = 1 << 21,
-
+			// Sets kernel precision factor to 1
+			STRICT_TOLERANCE = 1 << 22,
 			/// Number of different setting flags.
-			NUM_SETTINGS = 21,
+			NUM_SETTINGS = 22,
         };
         /// Used to store logical OR combination of setting flags.
         typedef unsigned SettingField;
