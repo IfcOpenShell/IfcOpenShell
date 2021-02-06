@@ -10,6 +10,7 @@ from . import annotation
 from . import helper
 from mathutils import Vector
 from mathutils import geometry
+from blenderbim.bim.ifc import IfcStore
 
 try:
     from OCC.Core import BRep, BRepTools, TopExp, TopAbs
@@ -140,11 +141,7 @@ class SvgWriter:
                 line["marker-start"] = "url(#grid-marker)"
                 line["marker-end"] = "url(#grid-marker)"
                 line["stroke-dasharray"] = "12.5, 3, 3, 3"
-                axis_tag = grid_obj.BIMObjectProperties.attributes.get("AxisTag")
-                if axis_tag:
-                    axis_tag = axis_tag.string_value
-                else:
-                    axis_tag = grid_obj.name.split("/")[1]
+                axis_tag = IfcStore.get_file().by_id(grid_obj.BIMObjectProperties.ifc_definition_id).AxisTag
                 self.svg.add(
                     self.svg.text(
                         axis_tag,
