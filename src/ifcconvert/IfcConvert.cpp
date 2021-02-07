@@ -341,7 +341,10 @@ int main(int argc, char** argv) {
             "if an object does not have any specified material in the IFC file.")
 		("validate", "Checks whether geometrical output conforms to the included explicit quantities.")
 		("no-wire-intersection-check", "Skip wire intersection check")
-		("strict-tolerance", "Use strict tolerance for detecting wire intersections");
+		("strict-tolerance", "Use exact tolerance from model. Default is a 10 "
+							 "times increase for more permissive edge curves and fewer artifacts after "
+							 "boolean operations at the expense of geometric detail "
+							 "due to vertex collapsing and wire intersection fuzziness.");
 
     std::string bounds;
 #ifdef HAVE_ICU
