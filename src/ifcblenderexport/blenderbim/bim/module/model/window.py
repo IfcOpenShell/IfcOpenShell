@@ -154,6 +154,7 @@ def add_object(self, context):
     if IfcStore.get_file():
         bpy.ops.bim.assign_class(obj=obj2.name, ifc_class="IfcWindow")
     obj2.name = "Window"
+    obj2.location = context.scene.cursor.location
     #obj2.data.name = "Model/Body/MODEL_VIEW/" + guid
     #obj2.data.use_fake_user = True
 

@@ -26,6 +26,7 @@ def add_object(self, context):
     context.view_layer.active_layer_collection.collection.objects.link(obj)
     if IfcStore.get_file():
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcSlab")
+    obj.location = context.scene.cursor.location
 
 
 class BIM_OT_add_object(Operator):
