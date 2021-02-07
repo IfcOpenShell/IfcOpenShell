@@ -316,10 +316,10 @@ class IfcImporter:
         self.profile_code("Load diff")
         self.purge_diff()
         self.profile_code("Purge diffs")
-        self.load_existing_rooted_elements()
-        self.profile_code("Load existing rooted elements")
         self.load_file()
         self.profile_code("Loading file")
+        self.load_existing_rooted_elements()
+        self.profile_code("Load existing rooted elements")
         self.set_ifc_file()
         self.profile_code("Setting file")
         if self.ifc_import_settings.should_auto_set_workarounds:
@@ -335,8 +335,6 @@ class IfcImporter:
         self.profile_code("Create project")
         self.create_spatial_hierarchy()
         self.profile_code("Create spatial hierarchy")
-        self.create_type_products()
-        self.profile_code("Create type products")
         self.create_aggregates()
         self.profile_code("Create aggregates")
         self.create_openings_collection()
@@ -347,14 +345,16 @@ class IfcImporter:
         # self.parse_native_elements()
         # self.profile_code("Parsing native elements")
         self.create_grids()
-        self.profile_code("Creating grids")
+        self.profile_code("Create grids")
         # TODO: Deprecate
         # self.create_native_products()
-        # self.profile_code("Creating native products")
+        # self.profile_code("Create native products")
         self.create_products()
-        self.profile_code("Creating meshified products")
+        self.profile_code("Create products")
+        self.create_type_products()
+        self.profile_code("Create type products")
         self.create_annotation()
-        self.profile_code("Creating annotation")
+        self.profile_code("Create annotation")
         self.place_objects_in_spatial_tree()
         self.profile_code("Placing objects in spatial tree")
         if self.ifc_import_settings.should_merge_by_class:
@@ -633,16 +633,17 @@ class IfcImporter:
             return
         representation_map = self.get_type_product_body_representation_map(element)
         mesh = None
-        if self.ifc_import_settings.should_import_type_representations and representation_map:
-            try:
-                shape = ifcopenshell.geom.create_shape(self.settings, representation_map.MappedRepresentation)
-                mesh_name = f"mesh-{shape.id}"
-                mesh = self.meshes.get(mesh_name)
-                if mesh is None:
+        if representation_map:
+            representation = representation_map.MappedRepresentation
+            mesh_name = "{}/{}".format(representation.ContextOfItems.id(), representation.id())
+            mesh = self.meshes.get(mesh_name)
+            if mesh is None:
+                try:
+                    shape = ifcopenshell.geom.create_shape(self.settings, representation_map.MappedRepresentation)
                     mesh = self.create_mesh(element, shape)
                     self.meshes[mesh_name] = mesh
-            except:
-                self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
+                except:
+                    self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
         obj = bpy.data.objects.new(self.get_name(element), mesh)
         obj.BIMObjectProperties.ifc_definition_id = element.id()
         self.material_creator.create(element, obj, mesh)
@@ -761,8 +762,7 @@ class IfcImporter:
         self.ifc_import_settings.logger.info("Creating object %s", element)
 
         if shape:
-            # TODO: make names more meaningful
-            mesh_name = f"mesh-{shape.geometry.id}"
+            mesh_name = self.get_mesh_name(shape.geometry)
             mesh = self.meshes.get(mesh_name)
             if mesh is None:
                 if element.GlobalId in self.native_elements:
@@ -1388,6 +1388,16 @@ class IfcImporter:
             ):
                 return representation.Items[0].MappingTarget
 
+    def get_mesh_name(self, geometry):
+        representation_id = geometry.id
+        if "-" in representation_id:
+            representation_id = int(re.sub(r"\D", "", representation_id.split("-")[0]))
+        else:
+            representation_id = int(re.sub(r"\D", "", representation_id))
+        representation = self.file.by_id(representation_id)
+        context_id = representation.ContextOfItems.id() if hasattr(representation, "ContextOfItems") else 0
+        return "{}/{}".format(context_id, representation_id)
+
     def create_mesh(self, element, shape, is_curve=False):
         try:
             if hasattr(shape, "geometry"):
@@ -1398,14 +1408,7 @@ class IfcImporter:
             if is_curve:
                 return self.create_curve(geometry)
 
-            representation_id = geometry.id
-            if "-" in representation_id:
-                representation_id = int(re.sub(r"\D", "", representation_id.split("-")[0]))
-            else:
-                representation_id = int(re.sub(r"\D", "", representation_id))
-            representation = self.file.by_id(representation_id)
-            context_id = representation.ContextOfItems.id() if hasattr(representation, "ContextOfItems") else 0
-            mesh = bpy.data.meshes.new("{}/{}".format(context_id, representation_id))
+            mesh = bpy.data.meshes.new(self.get_mesh_name(geometry))
 
             props = bpy.context.scene.BIMGeoreferenceProperties
             if props.has_blender_offset and props.blender_offset_type == "CARTESIAN_POINT":
@@ -1574,7 +1577,6 @@ class IfcImportSettings:
         self.logger = None
         self.input_file = None
         self.diff_file = None
-        self.should_import_type_representations = False
         self.should_import_spaces = False
         self.should_auto_set_workarounds = True
         self.should_use_cpu_multiprocessing = True

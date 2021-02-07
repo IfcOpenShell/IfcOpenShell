@@ -41,7 +41,7 @@ class BIM_PT_representations(Panel):
             op = row.operator("bim.switch_representation", icon="OUTLINER_DATA_MESH", text="")
             op.ifc_definition_id = ifc_definition_id
             op.disable_opening_subtractions = False
-            row.operator("bim.remove_representation", icon="X", text="").ifc_definition_id = ifc_definition_id
+            row.operator("bim.remove_representation", icon="X", text="").representation_id = ifc_definition_id
 
 
 class BIM_PT_mesh(Panel):

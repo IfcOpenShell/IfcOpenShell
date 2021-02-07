@@ -3,8 +3,8 @@ import math
 import ifcopenshell
 from bpy.types import Operator
 from bpy.props import FloatProperty
-from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from mathutils import Vector
+from blenderbim.bim.ifc import IfcStore
 
 
 def add_object(self, context):
@@ -64,7 +64,11 @@ def add_object(self, context):
     faces = [[0, 1, 2, 3]]
     mesh = bpy.data.meshes.new(name="Dumb Window Profile")
     mesh.from_pydata(verts, edges, faces)
-    obj = object_data_add(context, mesh, operator=self)
+    obj = bpy.data.objects.new("Window Profile", mesh)
+
+    context.view_layer.active_layer_collection.collection.objects.link(obj)
+    bpy.context.view_layer.objects.active = obj
+    obj.select_set(True)
     bpy.ops.object.convert(target="CURVE")
 
     # Window lining sweep
@@ -78,7 +82,11 @@ def add_object(self, context):
     faces = []
     mesh = bpy.data.meshes.new(name="Dumb Window")
     mesh.from_pydata(verts, edges, faces)
-    obj2 = object_data_add(context, mesh, operator=self)
+    obj2 = bpy.data.objects.new("Window", mesh)
+
+    context.view_layer.active_layer_collection.collection.objects.link(obj2)
+    bpy.context.view_layer.objects.active = obj2
+    obj2.select_set(True)
     bpy.ops.object.convert(target="CURVE")
     obj2.data.splines[0].use_cyclic_u = True
 
@@ -102,10 +110,14 @@ def add_object(self, context):
     faces = [[0, 1, 2, 3]]
     mesh = bpy.data.meshes.new(name="Dumb Window Panel")
     mesh.from_pydata(verts, edges, faces)
-    obj3 = object_data_add(context, mesh, operator=self)
+    obj3 = bpy.data.objects.new("Window Panel", mesh)
     modifier = obj3.modifiers.new("Panel Height", "SOLIDIFY")
     modifier.offset = 1
     modifier.thickness = self.overall_height - 0.08
+
+    context.view_layer.active_layer_collection.collection.objects.link(obj3)
+    bpy.context.view_layer.objects.active = obj3
+    obj3.select_set(True)
     bpy.ops.object.convert(target="MESH")
 
     ctx = bpy.context.copy()
@@ -124,10 +136,14 @@ def add_object(self, context):
     faces = [[0, 1, 2, 3]]
     mesh = bpy.data.meshes.new(name="Dumb Window Opening")
     mesh.from_pydata(verts, edges, faces)
-    obj4 = object_data_add(context, mesh, operator=self)
+    obj4 = bpy.data.objects.new("Window Opening", mesh)
     modifier = obj4.modifiers.new("Panel Height", "SOLIDIFY")
     modifier.offset = -1
     modifier.thickness = self.overall_height
+
+    context.view_layer.active_layer_collection.collection.objects.link(obj4)
+    bpy.context.view_layer.objects.active = obj4
+    obj4.select_set(True)
     bpy.ops.object.convert(target="MESH")
     obj4.display_type = "WIRE"
     obj4.parent = obj2
@@ -135,7 +151,10 @@ def add_object(self, context):
     obj4.hide_render = True
     obj4.name = "Window Opening"
 
+    if IfcStore.get_file():
+        bpy.ops.bim.assign_class(obj=obj2.name, ifc_class="IfcWindow")
     obj2.name = "Window"
+    obj2.location = context.scene.cursor.location
     #obj2.data.name = "Model/Body/MODEL_VIEW/" + guid
     #obj2.data.use_fake_user = True
 
@@ -150,10 +169,9 @@ def add_object(self, context):
     #rep.target_view = "PLAN_VIEW"
 
 
-class BIM_OT_add_object(Operator, AddObjectHelper):
+class BIM_OT_add_object(Operator):
     bl_idname = "mesh.add_window"
     bl_label = "Dumb Window"
-    bl_options = {"REGISTER", "UNDO"}
 
     overall_width: FloatProperty(name="Overall Width", default=0.7)
     overall_height: FloatProperty(name="Overall Height", default=1)
