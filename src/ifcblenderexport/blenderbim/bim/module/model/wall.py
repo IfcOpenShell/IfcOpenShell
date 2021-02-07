@@ -42,6 +42,7 @@ def add_object(self, context):
     obj.name = "Wall"
     if IfcStore.get_file():
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcWall")
+    obj.location = context.scene.cursor.location
     return obj
 
 
