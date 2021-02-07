@@ -636,7 +636,7 @@ class IfcImporter:
         if self.ifc_import_settings.should_import_type_representations and representation_map:
             try:
                 shape = ifcopenshell.geom.create_shape(self.settings, representation_map.MappedRepresentation)
-                mesh_name = f"mesh-{shape.id}"
+                mesh_name = self.get_mesh_name(shape)
                 mesh = self.meshes.get(mesh_name)
                 if mesh is None:
                     mesh = self.create_mesh(element, shape)
@@ -761,8 +761,7 @@ class IfcImporter:
         self.ifc_import_settings.logger.info("Creating object %s", element)
 
         if shape:
-            # TODO: make names more meaningful
-            mesh_name = f"mesh-{shape.geometry.id}"
+            mesh_name = self.get_mesh_name(shape.geometry)
             mesh = self.meshes.get(mesh_name)
             if mesh is None:
                 if element.GlobalId in self.native_elements:
@@ -1388,6 +1387,16 @@ class IfcImporter:
             ):
                 return representation.Items[0].MappingTarget
 
+    def get_mesh_name(self, geometry):
+        representation_id = geometry.id
+        if "-" in representation_id:
+            representation_id = int(re.sub(r"\D", "", representation_id.split("-")[0]))
+        else:
+            representation_id = int(re.sub(r"\D", "", representation_id))
+        representation = self.file.by_id(representation_id)
+        context_id = representation.ContextOfItems.id() if hasattr(representation, "ContextOfItems") else 0
+        return "{}/{}".format(context_id, representation_id)
+
     def create_mesh(self, element, shape, is_curve=False):
         try:
             if hasattr(shape, "geometry"):
@@ -1398,14 +1407,7 @@ class IfcImporter:
             if is_curve:
                 return self.create_curve(geometry)
 
-            representation_id = geometry.id
-            if "-" in representation_id:
-                representation_id = int(re.sub(r"\D", "", representation_id.split("-")[0]))
-            else:
-                representation_id = int(re.sub(r"\D", "", representation_id))
-            representation = self.file.by_id(representation_id)
-            context_id = representation.ContextOfItems.id() if hasattr(representation, "ContextOfItems") else 0
-            mesh = bpy.data.meshes.new("{}/{}".format(context_id, representation_id))
+            mesh = bpy.data.meshes.new(self.get_mesh_name(geometry))
 
             props = bpy.context.scene.BIMGeoreferenceProperties
             if props.has_blender_offset and props.blender_offset_type == "CARTESIAN_POINT":
