@@ -26,7 +26,7 @@ class Usecase:
                     self.file.remove(inverse)
                 else:
                     assigned_items.remove(element)
-                    inverse.AssignedItems == list(assigned_items)
+                    inverse.AssignedItems = list(assigned_items)
             elif inverse.is_a("IfcProductRepresentation"):
                 representations = set(inverse.Representations)
                 if len(representations) == 1:
