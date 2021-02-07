@@ -249,16 +249,10 @@ class MapRepresentation(bpy.types.Operator):
         for obj in objs:
             bpy.ops.bim.edit_object_placement(obj=obj.name)
             product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            if obj.data.BIMMeshProperties.ifc_definition_id:
-                old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-            else:
-                old_representation = None
             target_representation = self.file.by_id(obj_data.BIMMeshProperties.ifc_definition_id)
             obj.data = obj_data
             result = map_representation.Usecase(self.file, {"representation": target_representation}).execute()
             assign_representation.Usecase(self.file, {"product": product, "representation": result}).execute()
-            if old_representation:
-                bpy.ops.bim.remove_representation(ifc_definition_id=old_representation.id())
             Data.load(obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
