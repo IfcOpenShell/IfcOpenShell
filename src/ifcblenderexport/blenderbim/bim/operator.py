@@ -63,6 +63,7 @@ class ExportIFC(bpy.types.Operator):
     bl_idname = "export_ifc.bim"
     bl_label = "Export IFC"
     filename_ext = ".ifc"
+    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcjson", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     json_version: bpy.props.EnumProperty(items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version")
     json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
