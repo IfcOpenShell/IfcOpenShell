@@ -342,7 +342,6 @@ int main(int argc, char** argv) {
 		("validate", "Checks whether geometrical output conforms to the included explicit quantities.")
 		("no-wire-intersection-check", "Skip wire intersection check.")
 		("no-wire-intersection-tolerance", "Set wire intersection tolerance to 0.")
-
 		("strict-tolerance", "Use exact tolerance from model. Default is a 10 "
 						 "times increase for more permissive edge curves and fewer artifacts after "
 						 "boolean operations at the expense of geometric detail "
