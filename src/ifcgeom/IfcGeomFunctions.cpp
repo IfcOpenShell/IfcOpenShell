@@ -1421,6 +1421,9 @@ void IfcGeom::Kernel::setValue(GeomValue var, double value) {
 	case GV_PRECISION_FACTOR:
 		precision_factor = value;
 		break;
+	case GV_NO_WIRE_INTERSECTION_TOLERANCE:
+		no_wire_intersection_tolerance = value;
+		break;
 	default:
 		throw std::runtime_error("Invalid setting");
 	}
@@ -1454,6 +1457,8 @@ double IfcGeom::Kernel::getValue(GeomValue var) const {
 		return no_wire_intersection_check;
 	case GV_PRECISION_FACTOR:
 		return precision_factor;
+	case GV_NO_WIRE_INTERSECTION_TOLERANCE:
+		return no_wire_intersection_tolerance;
 	}
 	throw std::runtime_error("Invalid setting");
 }
@@ -3851,11 +3856,14 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 	// TopoDS_Face face = BRepBuilderAPI_MakeFace(wire, true).Face();
 	// ShapeAnalysis_Wire saw(wd, face, getValue(GV_PRECISION));
 	
-	const double eps = faceset_helper_
-		// eps is added to both ends of the parametric domain, so 3. is chosen to be on the safe side here.
-		? (faceset_helper_->epsilon() / 3.)
-		// @todo re-evaluate 2. here for the reasons above:
-		: (std::min)(min_edge_length(wire) / 2., getValue(GV_PRECISION) * 10.);
+	double eps = 0;
+	if (getValue(GV_NO_WIRE_INTERSECTION_TOLERANCE) < 0.) {
+		eps = faceset_helper_
+			  // eps is added to both ends of the parametric domain, so 3. is chosen to be on the safe side here.
+			  ? (faceset_helper_->epsilon() / 3.)
+			  // @todo re-evaluate 2. here for the reasons above:
+			  : (std::min)(min_edge_length(wire) / 2., getValue(GV_PRECISION) * 10.);
+	}
 
 	for (int i = 2; i < n; ++i) {
 

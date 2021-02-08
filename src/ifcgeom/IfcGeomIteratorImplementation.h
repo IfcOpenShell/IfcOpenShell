@@ -1008,6 +1008,11 @@ namespace IfcGeom {
 							? +1.0
 							: -1.0
 			);
+			kernel.setValue(IfcGeom::Kernel::GV_NO_WIRE_INTERSECTION_TOLERANCE,
+							settings.get(IteratorSettings::NO_WIRE_INTERSECTION_TOLERANCE)
+							? +1.0
+							: -1.0
+			);
 			kernel.setValue(IfcGeom::Kernel::GV_PRECISION_FACTOR,
 							settings.get(IteratorSettings::STRICT_TOLERANCE)
 							? 1.0
