@@ -340,11 +340,13 @@ int main(int argc, char** argv) {
             "Specifies a material file that describes the material object types will have"
             "if an object does not have any specified material in the IFC file.")
 		("validate", "Checks whether geometrical output conforms to the included explicit quantities.")
-		("no-wire-intersection-check", "Skip wire intersection check")
+		("no-wire-intersection-check", "Skip wire intersection check.")
+		("no-wire-intersection-tolerance", "Set wire intersection tolerance to 0.")
+
 		("strict-tolerance", "Use exact tolerance from model. Default is a 10 "
-							 "times increase for more permissive edge curves and fewer artifacts after "
-							 "boolean operations at the expense of geometric detail "
-							 "due to vertex collapsing and wire intersection fuzziness.");
+						 "times increase for more permissive edge curves and fewer artifacts after "
+						 "boolean operations at the expense of geometric detail "
+						 "due to vertex collapsing and wire intersection fuzziness.");
 
     std::string bounds;
 #ifdef HAVE_ICU
@@ -487,6 +489,7 @@ int main(int argc, char** argv) {
 	const bool validate = vmap.count("validate") != 0;
 	const bool edge_arrows = vmap.count("edge-arrows") != 0;
 	const bool no_wire_intersection_check = vmap.count("no-wire-intersection-check") != 0;
+	const bool no_wire_intersection_tolerance = vmap.count("no-wire-intersection-tolerance") != 0;
 	const bool strict_tolerance = vmap.count("strict-tolerance") != 0;
 
     if (!quiet || vmap.count("version")) {
@@ -749,6 +752,7 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::BUILDING_LOCAL_PLACEMENT, building_local_placement);
 	settings.set(IfcGeom::IteratorSettings::VALIDATE_QUANTITIES, validate);
 	settings.set(IfcGeom::IteratorSettings::NO_WIRE_INTERSECTION_CHECK, no_wire_intersection_check);
+	settings.set(IfcGeom::IteratorSettings::NO_WIRE_INTERSECTION_TOLERANCE, no_wire_intersection_tolerance);
 	settings.set(IfcGeom::IteratorSettings::STRICT_TOLERANCE, strict_tolerance);
 
     settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
