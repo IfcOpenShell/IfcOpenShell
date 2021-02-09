@@ -23,6 +23,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)  # not necessary, but encouraged
 
 project (IfcOpenShell VERSION 0.6.0)
 
+# use extra version to make pre-release using eg semver 
+set( EXTRA_VERSION "-alpha.1")
+
 foreach(max_year RANGE 2014 2030)
 set(max_sdk "$ENV{ADSK_3DSMAX_SDK_${max_year}}")
 if (NOT "${max_sdk}" STREQUAL "")
