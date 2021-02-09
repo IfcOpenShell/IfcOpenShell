@@ -54,7 +54,7 @@ OPTION(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only ins
 
 # TODO QtViewer is deprecated ATM as it uses the 0.4 API
 # OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer (requires Qt 4 framework)." OFF)
-
+include(GNUInstallDirs)
 if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND (NOT BUILD_IFCGEOM))
     message(STATUS "'IfcGeom' is required with current outputs")
     set(BUILD_IFCGEOM ON)
@@ -65,7 +65,7 @@ IF(NOT BINDIR)
     set(BINDIR bin)
 ENDIF()
 IF(NOT IS_ABSOLUTE ${BINDIR})
-    set(BINDIR ${CMAKE_INSTALL_PREFIX}/${BINDIR})
+    set(BINDIR ${CMAKE_INSTALL_BINDIR})
 ENDIF()
 MESSAGE(STATUS "BINDIR: ${BINDIR}")
 
@@ -73,7 +73,7 @@ IF(NOT INCLUDEDIR)
     set(INCLUDEDIR include)
 ENDIF()
 IF(NOT IS_ABSOLUTE ${INCLUDEDIR})
-    set(INCLUDEDIR ${CMAKE_INSTALL_PREFIX}/${INCLUDEDIR})
+    set(INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR})
 ENDIF()
 MESSAGE(STATUS "INCLUDEDIR: ${INCLUDEDIR}")
 
@@ -81,11 +81,11 @@ IF(NOT LIBDIR)
     set(LIBDIR lib)
 ENDIF()
 IF(NOT IS_ABSOLUTE ${LIBDIR})
-    set(LIBDIR ${CMAKE_INSTALL_PREFIX}/${LIBDIR})
+    set(LIBDIR ${CMAKE_INSTALL_LIBDIR})
 ENDIF()
 MESSAGE(STATUS "LIBDIR: ${LIBDIR}")
 
-set(IFCOPENSHELL_LIBARY_DIR "") # for *nix rpaths
+set(IFCOPENSHELL_LIBRARY_DIR "") # for *nix rpaths
 
 if (BUILD_SHARED_LIBS)
     add_definitions(-DIFC_SHARED_BUILD)
@@ -95,7 +95,7 @@ if (BUILD_SHARED_LIBS)
         # There will be couple hundreds of these so suppress them away, https://msdn.microsoft.com/en-us/library/esew7y1w.aspx
         add_definitions(-wd4251)
     endif()
-    set(IFCOPENSHELL_LIBARY_DIR "${LIBDIR}")
+    set(IFCOPENSHELL_LIBRARY_DIR "${LIBDIR}")
 endif()
 
 # Create cache entries if absent for environment variables
@@ -625,7 +625,7 @@ if ((NOT WIN32) AND BUILD_SHARED_LIBS)
     # Only set RPATHs when building shared libraries (i.e. IfcParse and
     # IfcGeom are dynamically linked). Not necessarily a perfect solution
     # but probably a good indication of whether RPATHs are necessary.
-    SET_INSTALL_RPATHS(IfcConvert "${IFCOPENSHELL_LIBARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${OPENCOLLADA_LIBRARY_DIR}")
+    SET_INSTALL_RPATHS(IfcConvert "${IFCOPENSHELL_LIBRARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${OPENCOLLADA_LIBRARY_DIR}")
 endif()
 
 INSTALL(TARGETS IfcConvert
@@ -646,7 +646,7 @@ ADD_EXECUTABLE(IfcGeomServer ${SOURCE_FILES})
 TARGET_LINK_LIBRARIES(IfcGeomServer ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES})
 
 if ((NOT WIN32) AND BUILD_SHARED_LIBS)
-    SET_INSTALL_RPATHS(IfcGeomServer "${IFCOPENSHELL_LIBARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS}")
+    SET_INSTALL_RPATHS(IfcGeomServer "${IFCOPENSHELL_LIBRARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS}")
 endif()
 
 INSTALL(TARGETS IfcGeomServer
