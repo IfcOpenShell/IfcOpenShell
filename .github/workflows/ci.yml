@@ -20,16 +20,15 @@ jobs:
     needs: activate
     steps:
     - uses: actions/checkout@v2
-#    - name: python
-#      run: |
-#        python3 mo.py -i data/ifc_files/3pieces_1zone-with-materials-with-sensors.ifc -o data/ifc_files/3pieces_1zone-with-materials-with-sensors
-#        cat toto.mo
-    - name: Update ubuntu
+
+    - 
+      name: Update ubuntu
       run: |
         sudo apt update
         sudo apt-get install git cmake gcc g++ libboost1.67-all-dev python3-all-dev swig libpcre3-dev libxml2-dev
         sudo apt-get install liboce-foundation-dev liboce-modeling-dev liboce-ocaf-dev liboce-visualization-dev liboce-ocaf-lite-dev
-    - name: Build ibat
+    - 
+      name: Build ifcopenshell
       run: |
         mkdir build && cd build
         cmake \
@@ -48,7 +47,8 @@ jobs:
          ../cmake
         make -j10
         make install
-    - name: Package
+    - 
+      name: Package
       run: |
         make package
       working-directory: build
@@ -58,7 +58,7 @@ jobs:
         # Artifact name
         name: ifcos-artifacts
         # Directory containing files to upload
-        path: build/assets/ifcos-*
+        path: build/assets/Ifc*
 
   deliver:
     runs-on: ubuntu-20.04
