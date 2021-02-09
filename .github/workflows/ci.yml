@@ -32,10 +32,10 @@ jobs:
       run: |
         mkdir build && cd build
         cmake \
-         -DCMAKE_INSTALL_PREFIX=./install/ \
+         -DCMAKE_INSTALL_PREFIX=$PWD/install/ \
          -DCMAKE_BUILD_TYPE=Release \
-         -DCMAKE_PREFIX_PATH=./install/ \
-         -DCMAKE_SYSTEM_PREFIX_PATH=./install/ \
+         -DCMAKE_PREFIX_PATH=/usr \
+         -DCMAKE_SYSTEM_PREFIX_PATH=/usr \
          -DOCC_INCLUDE_DIR=/usr/include/oce \
          -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
          -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3 \
