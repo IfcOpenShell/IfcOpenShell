@@ -16,7 +16,7 @@ jobs:
     - run: echo ok go
 
   build:
-    runs-on: self-hosted
+    runs-on: ubuntu-20.04
     needs: activate
     steps:
     - uses: actions/checkout@v2
