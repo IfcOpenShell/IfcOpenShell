@@ -79,7 +79,7 @@ IF(PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "")
             OUTPUT_VARIABLE python_package_dir
         )
     ENDIF()
-    set(python_package_dir ${CMAKE_INSTALL_LIBDIR}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages/)
+    set(python_package_dir ${CMAKE_INSTALL_LIBDIR}/python${PYTHON_VERSION_MAJOR}/dist-packages/)
     IF("${python_package_dir}" STREQUAL "")
         MESSAGE(WARNING "Unable to locate Python site-package directory, unals /ble to install the Python wrapper")
     ELSE()
