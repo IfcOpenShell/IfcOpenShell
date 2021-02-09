@@ -69,7 +69,8 @@ jobs:
           body: |
             Changes to this release
               - add github actions support #1306
-              - <more changes here>
+              - add boost depends to ifcopenshell deb packaging
+              - <add more changes here>
             See more details in the documentation
 #          body_path: build/CHANGELOG.md
       - name: Upload TGZ
