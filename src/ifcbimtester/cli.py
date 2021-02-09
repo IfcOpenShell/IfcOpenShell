@@ -22,7 +22,7 @@ parser.add_argument("--lang", type=str, help="Specify a language e.g. en/de/fr/i
 args = vars(parser.parse_args())
 
 if args["action"] == "run":
-    report_json = bimtester.run.TestRunner(args["ifc"]).run(args)
+    report_json = bimtester.run.TestRunner(args["ifc"], args["schema_file"]).run(args)
     if args["report"]:
         bimtester.reports.ReportGenerator().generate(report_json, args["report"])
 elif args["action"] == "purge":
