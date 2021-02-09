@@ -869,21 +869,38 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresenta
 	if ( !elements->size() ) return false;
 	bool part_succes = false;
 	const IfcGeom::SurfaceStyle* parent_style = get_style(l);
-	for ( IfcEntityList::it it = elements->begin(); it != elements->end(); ++ it ) {
+	for (IfcEntityList::it it = elements->begin(); it != elements->end(); ++it) {
 		IfcSchema::IfcGeometricSetSelect* element = *it;
 		TopoDS_Shape s;
-		if (convert_shape(element, s)) {
-			part_succes = true;
-			const IfcGeom::SurfaceStyle* style = 0;
-			if (element->declaration().is(IfcSchema::IfcPoint::Class())) {
-				style = get_style((IfcSchema::IfcPoint*) element);
-			} else if (element->declaration().is(IfcSchema::IfcCurve::Class())) {
-				style = get_style((IfcSchema::IfcCurve*) element);
-			} else if (element->declaration().is(IfcSchema::IfcSurface::Class())) {
-				style = get_style((IfcSchema::IfcSurface*) element);
+		if (shape_type(element) == ST_SHAPELIST) {
+			IfcRepresentationShapeItems items;
+			if (!(convert_shapes(element, items) && flatten_shape_list(items, s, false))) {
+				continue;
 			}
-			shapes.push_back(IfcRepresentationShapeItem(l->data().id(), s, style ? style : parent_style));
+		} else if (shape_type(element) == ST_SHAPE) {
+			if (!convert_shape(element, s)) {
+				continue;
+			}
+		} else if (shape_type(element) == ST_WIRE) {
+			TopoDS_Wire w;
+			if (!convert_wire(element, w)) {
+				continue;
+			}
+			s = w;
 		}
+
+		part_succes = true;
+		const IfcGeom::SurfaceStyle* style = 0;
+		if (element->declaration().is(IfcSchema::IfcPoint::Class())) {
+			style = get_style((IfcSchema::IfcPoint*) element);
+		}
+		else if (element->declaration().is(IfcSchema::IfcCurve::Class())) {
+			style = get_style((IfcSchema::IfcCurve*) element);
+		}
+		else if (element->declaration().is(IfcSchema::IfcSurface::Class())) {
+			style = get_style((IfcSchema::IfcSurface*) element);
+		}
+		shapes.push_back(IfcRepresentationShapeItem(l->data().id(), s, style ? style : parent_style));
 	}
 	return part_succes;
 }
