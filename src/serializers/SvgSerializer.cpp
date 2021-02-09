@@ -788,73 +788,92 @@ void SvgSerializer::write(const geometry_data& data) {
 			auto ot_arg = data.product->get("ObjectType");
 			if (!ot_arg->isNull()) {
 				object_type = (std::string) *ot_arg;
+				object_type.erase(std::remove_if(object_type.begin(), object_type.end(), [](char c) { return !std::isalnum(c); }), object_type.end());
 			}
 
 			if (data.product->declaration().is("IfcAnnotation") && // is an Annotation
-				object_type == "Dimension" &&					   // with ObjectType='Dimension'
 				(proj.Magnitude() > 1.e-5) && 					   // when projected onto the view has a length
 				zmin >= range.first && zmin <= range.second)	   // the Z-coords are within the range of the building storey
 			{
+				auto svg_name = data.svg_name;
+
+				if (object_type.size()) {
+					// postfix the object_type for CSS matching
+					boost::replace_all(svg_name, "class=\"IfcAnnotation\"", "class=\"IfcAnnotation " + object_type + "\"");
+				}
+
 				if (po == nullptr) {
 					if (storey) {
-						po = &start_path(pln, storey, data.svg_name);
+						po = &start_path(pln, storey, svg_name);
 					} else {
-						po = &start_path(pln, drawing_name, data.svg_name);
+						po = &start_path(pln, drawing_name, svg_name);
 					}
 				}
 
-				TopExp_Explorer exp(subshape, TopAbs_EDGE, TopAbs_FACE);
-				for (; exp.More(); exp.Next()) {
-					const auto& e = TopoDS::Edge(exp.Current());
-					TopoDS_Vertex v0, v1;
-					TopExp::Vertices(e, v0, v1);
-					gp_Pnt p0 = BRep_Tool::Pnt(v0);
-					gp_Pnt p1 = BRep_Tool::Pnt(v1);
-					// @todo should we take the average parameter value instead?
-					gp_XYZ center = (p0.XYZ() + p1.XYZ()) / 2.;
-					BRep_Builder B;
-					TopoDS_Wire W;
-					B.MakeWire(W);
-					B.Add(W, e);
-					write(*po, W);
+				if (object_type == "Dimension") {
 
+					TopExp_Explorer exp(subshape, TopAbs_EDGE, TopAbs_FACE);
+					for (; exp.More(); exp.Next()) {
+						const auto& e = TopoDS::Edge(exp.Current());
+						TopoDS_Vertex v0, v1;
+						TopExp::Vertices(e, v0, v1);
+						gp_Pnt p0 = BRep_Tool::Pnt(v0);
+						gp_Pnt p1 = BRep_Tool::Pnt(v1);
+						BRep_Builder B;
+						TopoDS_Wire W;
+						B.MakeWire(W);
+						B.Add(W, e);
+						write(*po, W);
 
+						// @todo should we take the average parameter value instead?
+						gp_XYZ center = (p0.XYZ() + p1.XYZ()) / 2.;
 
-
-					util::string_buffer path;
-					// dominant-baseline="central" is not well supported in IE.
-					// so we add a 0.35 offset to the dy of the tspans
-					path.add("            <text class=\"IfcAnnotation\" text-anchor=\"middle\" x=\"");
-					xcoords.push_back(path.add(center.X()));
-					path.add("\" y=\"");
-					ycoords.push_back(path.add(center.Y()));
-					path.add("\">");
-					std::vector<std::string> labels{};
-
-					GProp_GProps prop;
-					BRepGProp::LinearProperties(e, prop);
-					const double area = prop.Mass();
-					std::stringstream ss;
-					ss << std::setprecision(2) << std::fixed << std::showpoint << area;
-					labels.push_back(ss.str() + "m");
-
-					for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
-						const auto& l = *lit;
-						double dy = labels.begin() == lit
-							? 0.35 - (labels.size() - 1.) / 2.
-							: 1.0; // <- dy is relative to the previous text element, so
-								   //    always 1 for successive spans.
-						path.add("<tspan x=\"");
+						util::string_buffer path;
+						// dominant-baseline="central" is not well supported in IE.
+						// so we add a 0.35 offset to the dy of the tspans
+						path.add("            <text class=\"IfcAnnotation\" text-anchor=\"middle\" x=\"");
 						xcoords.push_back(path.add(center.X()));
-						path.add("\" dy=\"");
-						path.add(boost::lexical_cast<std::string>(dy));
-						path.add("em\">");
-						path.add(l);
-						path.add("</tspan>");
+						path.add("\" y=\"");
+						ycoords.push_back(path.add(center.Y()));
+						path.add("\">");
+						std::vector<std::string> labels{};
+
+						GProp_GProps prop;
+						BRepGProp::LinearProperties(e, prop);
+						const double area = prop.Mass();
+						std::stringstream ss;
+						ss << std::setprecision(2) << std::fixed << std::showpoint << area;
+						labels.push_back(ss.str() + "m");
+
+						for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
+							const auto& l = *lit;
+							double dy = labels.begin() == lit
+								? 0.35 - (labels.size() - 1.) / 2.
+								: 1.0; // <- dy is relative to the previous text element, so
+									   //    always 1 for successive spans.
+							path.add("<tspan x=\"");
+							xcoords.push_back(path.add(center.X()));
+							path.add("\" dy=\"");
+							path.add(boost::lexical_cast<std::string>(dy));
+							path.add("em\">");
+							path.add(l);
+							path.add("</tspan>");
+						}
+						path.add("</text>");
+						po->second.push_back(path);
 					}
-					path.add("</text>");
-					po->second.push_back(path);
+					
+				} else if (object_type == "Symbol") {
+
+					TopExp_Explorer exp(subshape, TopAbs_WIRE, TopAbs_FACE);
+					for (; exp.More(); exp.Next()) {
+						const auto& W = TopoDS::Wire(exp.Current());
+						write(*po, W);
+					}
+					
 				}
+
+				// We're finished processing IfcAnnotation instances
 				continue;
 			}
 
@@ -1396,7 +1415,7 @@ void SvgSerializer::writeHeader() {
 		"        .IfcSpace path {\n"
 		"            fill-opacity: .2;\n"
 		"        }\n"
-		"        .IfcAnnotation path {\n"
+		"        .dimension path {\n"
 		"            marker-end: url(#arrowend);\n"
 		"            marker-start: url(#arrowstart);\n"
 		"        }\n";
