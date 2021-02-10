@@ -36,6 +36,7 @@ OPTION(IFCXML_SUPPORT "Build IfcParse with ifcXML support (requires libxml2)." O
 OPTION(ENABLE_BUILD_OPTIMIZATIONS "Enable certain compiler and linker optimizations on RelWithDebInfo and Release builds." OFF)
 OPTION(IFCCONVERT_DOUBLE_PRECISION "IfcConvert: Use double precision floating-point numbers." ON)
 OPTION(BUILD_IFCGEOM "Build IfcGeom." ON)
+OPTION(BUILD_DOCUMENTATION "Build IfcOpenShell Documentation." OFF)
 OPTION(BUILD_IFCPYTHON "Build IfcPython." ON)
 OPTION(BUILD_EXAMPLES "Build example applications." ON)
 OPTION(BUILD_GEOMSERVER "Build IfcGeomServer executable." ON)
@@ -684,6 +685,12 @@ INSTALL(TARGETS IfcGeomServer
 )
 
 endif()
+
+# Documentation	
+IF(BUILD_DOCUMENTATION)
+	set(CMAKE_MODULE_PATH "../docs/cmake")
+	ADD_SUBDIRECTORY(../docs docs)
+ENDIF()
 
 IF(BUILD_IFCPYTHON)
 	ADD_SUBDIRECTORY(../src/ifcwrap ifcwrap)

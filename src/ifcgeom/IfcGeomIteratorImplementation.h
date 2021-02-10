@@ -350,7 +350,7 @@ namespace IfcGeom {
 
 			if (any_precision_encountered) {
 				// Some arbitrary factor that has proven to work better for the models in the set of test files.
-				lowest_precision_encountered *= 10.;
+				lowest_precision_encountered *= kernel.getValue(IfcGeom::Kernel::GV_PRECISION_FACTOR);
 
 				lowest_precision_encountered *= unit_magnitude;
 				if (lowest_precision_encountered < 1.e-7) {
@@ -1003,6 +1003,22 @@ namespace IfcGeom {
 				? +1.0
 				: -1.0
 			);
+			kernel.setValue(IfcGeom::Kernel::GV_NO_WIRE_INTERSECTION_CHECK,
+							settings.get(IteratorSettings::NO_WIRE_INTERSECTION_CHECK)
+							? +1.0
+							: -1.0
+			);
+			kernel.setValue(IfcGeom::Kernel::GV_NO_WIRE_INTERSECTION_TOLERANCE,
+							settings.get(IteratorSettings::NO_WIRE_INTERSECTION_TOLERANCE)
+							? +1.0
+							: -1.0
+			);
+			kernel.setValue(IfcGeom::Kernel::GV_PRECISION_FACTOR,
+							settings.get(IteratorSettings::STRICT_TOLERANCE)
+							? 1.0
+							: 10.0
+			);
+
 			kernel.setValue(IfcGeom::Kernel::GV_DISABLE_BOOLEAN_RESULT,
 				settings.get(IteratorSettings::DISABLE_BOOLEAN_RESULT)
 				? +1.0

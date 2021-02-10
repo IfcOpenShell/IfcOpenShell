@@ -63,6 +63,7 @@ class ExportIFC(bpy.types.Operator):
     bl_idname = "export_ifc.bim"
     bl_label = "Export IFC"
     filename_ext = ".ifc"
+    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcjson", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     json_version: bpy.props.EnumProperty(items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version")
     json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
@@ -111,7 +112,6 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
 
-    should_import_type_representations: bpy.props.BoolProperty(name="Import Type Representations", default=False)
     should_import_spaces: bpy.props.BoolProperty(name="Import Spaces", default=False)
     should_auto_set_workarounds: bpy.props.BoolProperty(name="Automatically Set Vendor Workarounds", default=True)
     should_use_cpu_multiprocessing: bpy.props.BoolProperty(name="Import with CPU Multiprocessing", default=True)
@@ -138,7 +138,6 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         )
 
         settings = import_ifc.IfcImportSettings.factory(context, self.filepath, logger)
-        settings.should_import_type_representations = self.should_import_type_representations
         settings.should_import_spaces = self.should_import_spaces
         settings.should_auto_set_workarounds = self.should_auto_set_workarounds
         settings.should_use_cpu_multiprocessing = self.should_use_cpu_multiprocessing
