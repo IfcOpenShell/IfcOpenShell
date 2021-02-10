@@ -741,15 +741,15 @@ set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
 
 set(CPACK_GENERATOR "TGZ;DEB")
 set(CPACK_SOURCE_GENERATOR "TGZ")
-message(STATUS "boost ${BOOST_COMPONENTS}")
+
 FOREACH(COMPONENT IN ITEMS ${BOOST_COMPONENTS})
     string(REPLACE "_" "-" COMP ${COMPONENT})
     set(BOOST_DEPS "${BOOST_DEPS}, libboost-${COMP}1.67.0")
 endforeach(COMPONENT)
-message(STATUS "deps ${BOOST_DEPS}")
+
 set(CPACK_DEBIAN_PACKAGE_NAME "${PROJECT_NAME}")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_CONTACT}")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxml2, liboce-foundation11, liboce-modeling11, liboce-ocaf11, liboce-visualization11, liboce-ocaf-lite11, libpython3.8 ${BOOST_DEPS}")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3, libxml2, liboce-foundation11, liboce-modeling11, liboce-ocaf11, liboce-visualization11, liboce-ocaf-lite11, libpython3.8 ${BOOST_DEPS}")
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION_SUMMARY "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}")
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "${CPACK_PACKAGE_DESCRIPTION}")
 set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
