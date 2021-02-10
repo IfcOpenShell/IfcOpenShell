@@ -3,8 +3,8 @@ import math
 import ifcopenshell
 from bpy.types import Operator
 from bpy.props import FloatProperty
-from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from mathutils import Vector
+from blenderbim.bim.ifc import IfcStore
 
 
 def add_object(self, context):
@@ -79,7 +79,11 @@ def add_object(self, context):
     faces = [[0, 1, 2, 3, 4, 5]]
     mesh = bpy.data.meshes.new(name="Dumb Door Profile")
     mesh.from_pydata(verts, edges, faces)
-    obj = object_data_add(context, mesh, operator=self)
+    obj = bpy.data.objects.new("Door Profile", mesh)
+
+    context.view_layer.active_layer_collection.collection.objects.link(obj)
+    bpy.context.view_layer.objects.active = obj
+    obj.select_set(True)
     bpy.ops.object.convert(target="CURVE")
 
     # Door lining sweep
@@ -93,7 +97,11 @@ def add_object(self, context):
     faces = []
     mesh = bpy.data.meshes.new(name="Dumb Door")
     mesh.from_pydata(verts, edges, faces)
-    obj2 = object_data_add(context, mesh, operator=self)
+    obj2 = bpy.data.objects.new("Door", mesh)
+
+    context.view_layer.active_layer_collection.collection.objects.link(obj2)
+    bpy.context.view_layer.objects.active = obj2
+    obj2.select_set(True)
     bpy.ops.object.convert(target="CURVE")
 
     obj2.data.dimensions = "2D"
@@ -116,10 +124,14 @@ def add_object(self, context):
     faces = [[0, 1, 2, 3]]
     mesh = bpy.data.meshes.new(name="Dumb Door Panel")
     mesh.from_pydata(verts, edges, faces)
-    obj3 = object_data_add(context, mesh, operator=self)
+    obj3 = bpy.data.objects.new("Door Panel", mesh)
     modifier = obj3.modifiers.new("Panel Height", "SOLIDIFY")
     modifier.offset = 1
     modifier.thickness = self.overall_height - 0.045
+
+    context.view_layer.active_layer_collection.collection.objects.link(obj3)
+    bpy.context.view_layer.objects.active = obj3
+    obj3.select_set(True)
     bpy.ops.object.convert(target="MESH")
 
     ctx = bpy.context.copy()
@@ -138,11 +150,16 @@ def add_object(self, context):
     faces = [[0, 1, 2, 3]]
     mesh = bpy.data.meshes.new(name="Dumb Door Opening")
     mesh.from_pydata(verts, edges, faces)
-    obj4 = object_data_add(context, mesh, operator=self)
+    obj4 = bpy.data.objects.new("Door Opening", mesh)
     modifier = obj4.modifiers.new("Panel Height", "SOLIDIFY")
     modifier.offset = -1
     modifier.thickness = self.overall_height + 0.1
+
+    context.view_layer.active_layer_collection.collection.objects.link(obj4)
+    bpy.context.view_layer.objects.active = obj4
+    obj4.select_set(True)
     bpy.ops.object.convert(target="MESH")
+
     obj4.display_type = "WIRE"
     obj4.parent = obj2
     obj4.matrix_parent_inverse = obj2.matrix_world.inverted()
@@ -150,6 +167,11 @@ def add_object(self, context):
     obj4.name = "Door Opening"
 
     obj2.name = "Door"
+
+    if IfcStore.get_file():
+        bpy.ops.bim.assign_class(obj=obj2.name, ifc_class="IfcDoor")
+
+    obj2.location = context.scene.cursor.location
     #obj2.data.name = "Model/Body/MODEL_VIEW/" + guid
     #obj2.data.use_fake_user = True
 
@@ -165,10 +187,9 @@ def add_object(self, context):
     #rep.target_view = "PLAN_VIEW"
 
 
-class BIM_OT_add_object(Operator, AddObjectHelper):
+class BIM_OT_add_object(Operator):
     bl_idname = "mesh.add_door"
     bl_label = "Dumb Door"
-    bl_options = {"REGISTER", "UNDO"}
 
     overall_width: FloatProperty(name="Overall Width", default=0.85)
     overall_height: FloatProperty(name="Overall Height", default=2.1)

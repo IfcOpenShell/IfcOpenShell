@@ -8,6 +8,7 @@ import blenderbim.bim.module.geometry.add_representation as add_representation
 import blenderbim.bim.module.geometry.map_representation as map_representation
 import blenderbim.bim.module.geometry.assign_styles as assign_styles
 import blenderbim.bim.module.geometry.assign_representation as assign_representation
+import blenderbim.bim.module.geometry.unassign_representation as unassign_representation
 import blenderbim.bim.module.geometry.remove_representation as remove_representation
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim import import_ifc
@@ -202,13 +203,21 @@ class SwitchRepresentation(bpy.types.Operator):
 class RemoveRepresentation(bpy.types.Operator):
     bl_idname = "bim.remove_representation"
     bl_label = "Remove Representation"
-    ifc_definition_id: bpy.props.IntProperty()
+    obj: bpy.props.StringProperty()  # TODO
+    representation_id: bpy.props.IntProperty()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        representation = self.file.by_id(self.ifc_definition_id)
+        representation = self.file.by_id(self.representation_id)
         obj = bpy.context.active_object
-        mesh = bpy.data.meshes.get("{}/{}".format(representation.ContextOfItems.id(), representation.id()))
+        product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        if representation.RepresentationType == "MappedRepresentation":
+            mesh_name = "{}/{}".format(
+                representation.ContextOfItems.id(), representation.Items[0].MappingSource.MappedRepresentation.id()
+            )
+        else:
+            mesh_name = "{}/{}".format(representation.ContextOfItems.id(), representation.id())
+        mesh = bpy.data.meshes.get(mesh_name)
         if mesh:
             if obj.data == mesh:
                 # TODO we can do better than this
@@ -216,9 +225,12 @@ class RemoveRepresentation(bpy.types.Operator):
                 if not void_mesh:
                     void_mesh = bpy.data.meshes.new("Void")
                 obj.data = void_mesh
-            bpy.data.meshes.remove(mesh)
+            if representation.RepresentationType != "MappedRepresentation":
+                bpy.data.meshes.remove(mesh)
+        product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        unassign_representation.Usecase(self.file, {"product": product, "representation": representation}).execute()
         remove_representation.Usecase(self.file, {"representation": representation}).execute()
-        Data.load(obj.BIMObjectProperties.ifc_definition_id)
+        Data.load(product.id())
         return {"FINISHED"}
 
 
@@ -237,22 +249,10 @@ class MapRepresentation(bpy.types.Operator):
         for obj in objs:
             bpy.ops.bim.edit_object_placement(obj=obj.name)
             product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            if obj.data.BIMMeshProperties.ifc_definition_id:
-                old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-            else:
-                old_representation = None
             target_representation = self.file.by_id(obj_data.BIMMeshProperties.ifc_definition_id)
             obj.data = obj_data
-            result = map_representation.Usecase(
-                self.file,
-                {
-                    "product": product,
-                    "representation": target_representation,
-                },
-            ).execute()
+            result = map_representation.Usecase(self.file, {"representation": target_representation}).execute()
             assign_representation.Usecase(self.file, {"product": product, "representation": result}).execute()
-            if old_representation:
-                bpy.ops.bim.remove_representation(ifc_definition_id=old_representation.id())
             Data.load(obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 

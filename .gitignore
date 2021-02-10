@@ -12,6 +12,13 @@ __pycache__
 .vscode
 # PyCharm files
 .idea
+
+# Docs
+/docs/output
+/docs/rst_files
+/docs/doxygen
+/src/ifcblenderexport/docs/_build
+
 # gettext binary translation files
 *.mo
 # Vim

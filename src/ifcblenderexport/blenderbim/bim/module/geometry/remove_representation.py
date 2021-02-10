@@ -1,5 +1,6 @@
 import ifcopenshell.util.element
 
+
 class Usecase:
     def __init__(self, file, settings=None):
         self.file = file
@@ -8,6 +9,20 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
+        if self.settings["representation"].RepresentationType == "MappedRepresentation":
+            return self.remove_mapped_representation_portion_only()
+        return self.remove_entire_representation_tree()
+
+    def remove_mapped_representation_portion_only(self):
+        dummy_context = self.file.create_entity("IfcRepresentationContext")
+        dummy_representation_map = self.file.createIfcRepresentationMap()
+        self.settings["representation"].ContextOfItems = dummy_context
+        for item in self.settings["representation"].Items:
+            item.MappingSource = dummy_representation_map
+        ifcopenshell.util.element.remove_deep(self.file, self.settings["representation"])
+        self.file.remove(self.settings["representation"])
+
+    def remove_entire_representation_tree(self):
         dummy_context = self.file.create_entity("IfcRepresentationContext")
         for subelement in self.file.traverse(self.settings["representation"]):
             if subelement.is_a("IfcRepresentationItem") and subelement.StyledByItem:
@@ -26,11 +41,4 @@ class Usecase:
                     self.file.remove(inverse)
                 else:
                     assigned_items.remove(element)
-                    inverse.AssignedItems == list(assigned_items)
-            elif inverse.is_a("IfcProductRepresentation"):
-                representations = set(inverse.Representations)
-                if len(representations) == 1:
-                    self.file.remove(inverse)
-                else:
-                    representations.remove(element)
-                    inverse.Representations = list(representations)
+                    inverse.AssignedItems = list(assigned_items)
