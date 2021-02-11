@@ -10,6 +10,12 @@ def step_impl(context, schema):
     assert real_schema == schema, _("We expected a schema of {} but instead got {}").format(schema, real_schema)
 
 
+@step("The IFC file must be valid")
+def step_impl(context):
+    errors = util.validate(IfcStore.file)
+    assert not errors, "Errors occured:\n{}".format("\n".join(errors))
+
+
 @step('The IFC file "{file}" is exempt from being provided')
 def step_impl(context, file):
     pass

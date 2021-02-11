@@ -3,10 +3,11 @@ import sys
 import shutil
 import tempfile
 import ifcopenshell
+
 try:
     import ifcopenshell.express
 except:
-    pass # They are using an old version of IfcOpenShell. Gracefully degrade for now.
+    pass  # They are using an old version of IfcOpenShell. Gracefully degrade for now.
 import behave.formatter.pretty  # Needed for pyinstaller to package it
 from bimtester.ifc import IfcStore
 from distutils.dir_util import copy_tree
@@ -14,8 +15,14 @@ from behave.__main__ import main as behave_main
 
 
 class TestRunner:
-    def __init__(self, ifc_path, ifc=None):
+    def __init__(self, ifc_path, schema_path=None, ifc=None):
         IfcStore.path = ifc_path
+
+        # can't load the IFC file if the schema is not loaded before
+        if schema_path:
+            schema = ifcopenshell.express.parse(schema_path)
+            ifcopenshell.register_schema(schema)
+
         IfcStore.file = ifc if ifc else ifcopenshell.open(ifc_path)
 
         try:
@@ -27,10 +34,6 @@ class TestRunner:
         self.locale_path = os.path.join(self.base_path, "locale")
 
     def run(self, args):
-        if args["schema_file"]:
-            schema = ifcopenshell.express.parse(args["schema_file"])
-            ifcopenshell.register_schema(args["schema_name"])
-
         tmpdir = tempfile.mkdtemp()
         features_path = os.path.join(tmpdir, "features")
         steps_path = os.path.join(features_path, "steps")
