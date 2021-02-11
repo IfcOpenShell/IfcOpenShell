@@ -2,6 +2,9 @@
 /deps*/
 /build*/
 /install*/
+/_build-vs2017-x64
+/_deps
+/_deps-vs2017-x64-installed
 /win/BuildDepsCache*.txt
 # IfcExpressParser residue
 /src/ifcexpressparser/express_parser.py
