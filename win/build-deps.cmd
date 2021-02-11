@@ -236,7 +236,7 @@ cd "%DEPENDENCY_DIR%"
 call cecho.cmd 0 13 "Building %DEPENDENCY_NAME% %BOOST_LIBS% Please be patient, this will take a while."
 IF EXIST "%DEPENDENCY_DIR%\bin.v2\project-cache.jam" del "%DEPS_DIR%\boost\bin.v2\project-cache.jam"
 
-call .\b2 toolset=%BOOST_TOOLSET% runtime-link=static address-model=%ARCH_BITS% -j%IFCOS_NUM_BUILD_PROCS% ^
+call .\b2 toolset=%BOOST_TOOLSET% runtime-link=shared address-model=%ARCH_BITS% -j%IFCOS_NUM_BUILD_PROCS% ^
     variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_WIN_API% %BOOST_LIBS% stage --stagedir=stage/%GEN_SHORTHAND% 
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -262,7 +262,7 @@ IF NOT %ERRORLEVEL%==0 git apply --reject --whitespace=fix "%~dp0patches\OpenCOL
 :: uncomment to following line in order to delete the CMakeCache.txt always if experiencing problems.
 REM IF EXIST "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt". del "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt"
 :: NOTE Enforce that the embedded LibXml2 and PCRE are used as there might be problems with arbitrary versions of the libraries.
-call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\OpenCOLLADA" -DUSE_STATIC_MSVC_RUNTIME=1 -DCMAKE_DEBUG_POSTFIX=d ^
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\OpenCOLLADA" -DUSE_STATIC_MSVC_RUNTIME=0 -DCMAKE_DEBUG_POSTFIX=d ^
                -DLIBXML2_LIBRARIES="" -DLIBXML2_INCLUDE_DIR="" -DPCRE_INCLUDE_DIR="" -DPCRE_LIBRARIES=""
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 REM IF NOT EXIST "%DEPS_DIR%\OpenCOLLADA\%BUILD_DIR%\lib\%DEBUG_OR_RELEASE%\OpenCOLLADASaxFrameworkLoader.lib".
@@ -309,7 +309,7 @@ if not %ERRORLEVEL%==0 goto :Error
 findstr IfcOpenShell "%DEPENDENCY_DIR%\CMakeLists.txt">NUL
 if not %ERRORLEVEL%==0 (
     pushd "%DEPENDENCY_DIR%"
-    git apply --ignore-whitespace ""%~dp0patches\%OCCT_VER%.patch"
+    git reset --hard --ignore-whitespace ""%~dp0patches\%OCCT_VER%.patch"
     popd
 )
 findstr IfcOpenShell "%DEPENDENCY_DIR%\CMakeLists.txt">NUL
@@ -371,7 +371,7 @@ cd "%DEPENDENCY_DIR%"
 :: NOTE Specify OCE_NO_LIBRARY_VERSION as rc.exe can fail due to long filenames and huge command-line parameter
 :: input (more than 32,000 characters). Could maybe try using subst for the build dir to overcome this.
 call :RunCMake  -DOCE_BUILD_SHARED_LIB=0 -DOCE_INSTALL_PREFIX="%INSTALL_DIR%\oce" -DOCE_TESTING=0 ^
-                -DOCE_NO_LIBRARY_VERSION=1 -DOCE_USE_STATIC_MSVC_RUNTIME=1
+                -DOCE_NO_LIBRARY_VERSION=1 -DOCE_USE_STATIC_MSVC_RUNTIME=0
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\OCE.sln" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
