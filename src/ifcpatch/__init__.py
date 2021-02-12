@@ -30,7 +30,7 @@ def execute(args, is_library=None):
         ifc_file.write(args["output"])
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description="Patches IFC files to fix badly formatted data")
     parser.add_argument("-i", "--input", type=str, required=True, help="The IFC file to patch")
     parser.add_argument("-o", "--output", type=str, help="The output file to save the patched IFC")
@@ -42,3 +42,7 @@ if __name__ == "__main__":
     execute(args)
 
     print("# All tasks are complete :-)")
+
+
+if __name__ == "__main__":
+    main()
