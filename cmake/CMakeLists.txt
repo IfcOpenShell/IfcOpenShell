@@ -117,7 +117,6 @@ UNIFY_ENVVARS_AND_CACHE(PYTHON_EXECUTABLE)
 UNIFY_ENVVARS_AND_CACHE(HDF5_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(HDF5_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(BOOST_ROOT)
-UNIFY_ENVVARS_AND_CACHE(BOOST_INCLUDE)
 UNIFY_ENVVARS_AND_CACHE(BOOST_LIBRARYDIR)
 
 if (GLTF_SUPPORT AND BUILD_CONVERT)
@@ -391,9 +390,7 @@ if(HDF5_SUPPORT)
 	ElSE()
 		SET(HDF5_INCLUDE_DIR "${HDF5_INCLUDE_DIR}" CACHE FILEPATH "HDF5 header files")
 	ENDIF()
-	MESSAGE(STATUS "---------------------------------------------------------------------------------------------------------------------------")
 	
-	MESSAGE(STATUS HDF5_INCLUDE_DIR "${HDF5_INCLUDE_DIR}")
     IF("${HDF5_LIBRARY_DIR}" STREQUAL "")
 		MESSAGE(STATUS "No HDF5 library directory specified")
 	ElSE()
@@ -403,8 +400,6 @@ if(HDF5_SUPPORT)
 	
 	MESSAGE(STATUS HDF5_INCLUDE_DIR "${HDF5_INCLUDE_DIR}")
     IF(WIN32)
-		MESSAGE(STATUS "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
-		MESSAGE(STATUS HDF5_LIBRARY_DIR_DIR "${HDF5_LIBRARY_DIR}")
         # An additional lib- prefix is added by HDF5 to denote static libraries
         SET(HDF5_LIBRARIES 
             "${HDF5_LIBRARY_DIR}/libhdf5_cpp.lib"
@@ -413,7 +408,6 @@ if(HDF5_SUPPORT)
 			"${HDF5_LIBRARY_DIR}/libsz.lib"
 			"${HDF5_LIBRARY_DIR}/libaec.lib")
     ELSE()
-		MESSAGE(STATUS "NOT WIN 32 :)")
         SET(HDF5_LIBRARIES 
             "${HDF5_LIBRARY_DIR}/hdf5_cpp.lib"
             "${HDF5_LIBRARY_DIR}/hdf5.lib"
