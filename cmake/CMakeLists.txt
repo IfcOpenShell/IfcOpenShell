@@ -644,7 +644,7 @@ set(SERIALIZERS_S_FILES ${SERIALIZERS_S_H_FILES} ${SERIALIZERS_S_CPP_FILES})
 foreach(s ${SCHEMA_VERSIONS})
 	add_library(Serializers_ifc${s} STATIC ${SERIALIZERS_S_FILES})
 	set_target_properties(Serializers_ifc${s} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${s} ${CONVERT_PRECISION}")
-	TARGET_LINK_LIBRARIES(Serializers_ifc${s} IfcGeom ${OPENCASCADE_LIBRARIES})
+	TARGET_LINK_LIBRARIES(Serializers_ifc${s} IfcGeom ${OPENCASCADE_LIBRARIES} ${HDF5_LIBRARIES})
 endforeach()
 
 add_library(Serializers ${SERIALIZERS_FILES})
