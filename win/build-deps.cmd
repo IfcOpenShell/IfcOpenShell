@@ -184,20 +184,11 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive %HDF5_CMAKE_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\CMake-hdf5-%HDF5_VERSION%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 pushd "%DEPS_DIR%\CMake-hdf5-%HDF5_VERSION%"
-copy /y "%~dp0patches\HDF5config.cmake" HDF5config.cmake
-copy /y "%~dp0patches\hdf5-src-CMakeLists.txt" hdf5-%HDF5_VERSION%\CMakeLists.txt
-REM This will build ZLIB initially linking against dynamic runtime
 ctest -S HDF5config.cmake,BUILD_GENERATOR=VS%VS_VER%%ARCH_BITS_64% -C %BUILD_CFG% -V -O hdf5.log
 call :ExtractArchive %HDF5_INSTALL_ZIP_NAME%.zip "%INSTALL_DIR%" "%INSTALL_DIR%\%HDF5_INSTALL_ZIP_NAME%"
-pushd build\ZLIB-prefix\src\ZLIB
-copy /y "%~dp0patches\hdf5-zlib-CMakeLists.txt" CMakeLists.txt
-pushd ..\ZLIB-build
-cmake ..\ZLIB "-DCMAKE_INSTALL_PREFIX=%INSTALL_DIR%\%HDF5_INSTALL_ZIP_NAME%"
-cmake --build . --config %BUILD_CFG% --target INSTALL
+echo HDF5_VERSION=%HDF5_VERSION%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 popd
-popd
-echo HDF5_VERSION=%HDF5_VERSION%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
-popd
+goto :Successful
 
 :: Note all of the dependencies have appropriate label so that user can easily skip something if wanted
 :: by modifying this file and using goto.
