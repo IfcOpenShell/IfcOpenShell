@@ -28,6 +28,7 @@
 
 #include "../serializers/ColladaSerializer.h"
 #include "../serializers/GltfSerializer.h"
+#include "../serializers/HdfSerializer.h"
 #include "../serializers/IgesSerializer.h"
 #include "../serializers/StepSerializer.h"
 #include "../serializers/WavefrontObjSerializer.h"
@@ -637,6 +638,7 @@ int main(int argc, char** argv) {
 		STP = IfcUtil::path::from_utf8(".stp"),
 		IGS = IfcUtil::path::from_utf8(".igs"),
 		SVG = IfcUtil::path::from_utf8(".svg"),
+		HDF = IfcUtil::path::from_utf8(".hdf"),
 		XML = IfcUtil::path::from_utf8(".xml"),
 		IFC = IfcUtil::path::from_utf8(".ifc");
 
@@ -794,7 +796,13 @@ int main(int argc, char** argv) {
 	} else if (output_extension == SVG) {
 		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 		serializer = boost::make_shared<SvgSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
-	} else {
+	}
+	else if (output_extension == HDF) {
+		const path_t mtl_filename = change_extension(output_filename, MTL);
+		serializer = boost::make_shared<HdfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(mtl_filename), settings);
+	}
+	
+	else {
         cerr_ << "[Error] Unknown output filename extension '" << output_extension << "'\n";
 		write_log(!quiet);
 		print_usage();
