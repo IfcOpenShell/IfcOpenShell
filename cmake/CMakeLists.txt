@@ -391,23 +391,35 @@ if(HDF5_SUPPORT)
 	ElSE()
 		SET(HDF5_INCLUDE_DIR "${HDF5_INCLUDE_DIR}" CACHE FILEPATH "HDF5 header files")
 	ENDIF()
-
+	MESSAGE(STATUS "---------------------------------------------------------------------------------------------------------------------------")
+	
+	MESSAGE(STATUS HDF5_INCLUDE_DIR "${HDF5_INCLUDE_DIR}")
     IF("${HDF5_LIBRARY_DIR}" STREQUAL "")
 		MESSAGE(STATUS "No HDF5 library directory specified")
 	ElSE()
 		SET(HDF5_LIBRARY_DIR "${HDF5_LIBRARY_DIR}" CACHE FILEPATH "HDF5 library files")
 	ENDIF()
-
+	
+	
+	MESSAGE(STATUS HDF5_INCLUDE_DIR "${HDF5_INCLUDE_DIR}")
     IF(WIN32)
+		MESSAGE(STATUS "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+		MESSAGE(STATUS HDF5_LIBRARY_DIR_DIR "${HDF5_LIBRARY_DIR}")
         # An additional lib- prefix is added by HDF5 to denote static libraries
         SET(HDF5_LIBRARIES 
-            "${HDF5_LIBRARY_DIR}/libhdf5_cpp"
-            "${HDF5_LIBRARY_DIR}/libhdf5"
-            "${HDF5_LIBRARY_DIR}/libzlib")
+            "${HDF5_LIBRARY_DIR}/libhdf5_cpp.lib"
+            "${HDF5_LIBRARY_DIR}/libhdf5.lib"
+            "${HDF5_LIBRARY_DIR}/libzlib.lib"
+			"${HDF5_LIBRARY_DIR}/libsz.lib"
+			"${HDF5_LIBRARY_DIR}/libaec.lib")
     ELSE()
+		MESSAGE(STATUS "NOT WIN 32 :)")
         SET(HDF5_LIBRARIES 
-            "${HDF5_LIBRARY_DIR}/hdf5_cpp"
-            "${HDF5_LIBRARY_DIR}/hdf5"
+            "${HDF5_LIBRARY_DIR}/hdf5_cpp.lib"
+            "${HDF5_LIBRARY_DIR}/hdf5.lib"
+			"${HDF5_LIBRARY_DIR}/libzlib.lib"
+			"${HDF5_LIBRARY_DIR}/libsz.lib"
+			"${HDF5_LIBRARY_DIR}/libaec.lib"
             zlib)
     ENDIF()
 endif()
@@ -653,7 +665,7 @@ set(IFCCONVERT_FILES ${IFCCONVERT_CPP_FILES} ${IFCCONVERT_H_FILES})
 ADD_EXECUTABLE(IfcConvert ${IFCCONVERT_FILES})
 set_target_properties(IfcConvert PROPERTIES COMPILE_FLAGS "${CONVERT_PRECISION}")
 
-TARGET_LINK_LIBRARIES(IfcConvert ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES})
+TARGET_LINK_LIBRARIES(IfcConvert ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${HDF5_LIBRARIES})
 
 if ((NOT WIN32) AND BUILD_SHARED_LIBS)
     # Only set RPATHs when building shared libraries (i.e. IfcParse and
