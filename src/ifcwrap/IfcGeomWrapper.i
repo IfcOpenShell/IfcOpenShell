@@ -269,6 +269,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
         id = property(id)
         brep_data = property(brep_data)
         surface_styles = property(surface_styles)
+        surface_style_ids = property(surface_style_ids)
 	%}
 };
 

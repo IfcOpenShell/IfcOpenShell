@@ -36,21 +36,28 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 {
 	TopoDS_Compound compound = brep.as_compound();
 	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = brep.begin(); it != brep.end(); ++ it) {
+		int sid = -1;
+		
 		if (it->hasStyle() && it->Style().Diffuse()) {
 			const IfcGeom::SurfaceStyle::ColorComponent& clr = *it->Style().Diffuse();
 			surface_styles_.push_back(clr.R());
 			surface_styles_.push_back(clr.G());
 			surface_styles_.push_back(clr.B());
+
+			sid = it->Style().Id().get_value_or(-1);
 		} else {
 			surface_styles_.push_back(-1.);
 			surface_styles_.push_back(-1.);
 			surface_styles_.push_back(-1.);
 		}
+
 		if (it->hasStyle() && it->Style().Transparency()) {
 			surface_styles_.push_back(1. - *it->Style().Transparency());
 		} else {
 			surface_styles_.push_back(1.);
 		}
+
+		surface_style_ids_.push_back(sid);
 	}
 	std::stringstream sstream;
 	BRepTools::Write(compound,sstream);
