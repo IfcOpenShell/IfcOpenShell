@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.prop import StrProperty
 from blenderbim.bim.module.root.prop import getIfcClasses
 from bpy.types import PropertyGroup
