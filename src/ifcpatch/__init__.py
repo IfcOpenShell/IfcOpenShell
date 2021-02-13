@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# This can be packaged with `pyinstaller --onefile --clean --icon=icon.ico ifcpatch.py`
+# This can be packaged into one executable with ./make.py
 
 import ifcopenshell
 import logging
