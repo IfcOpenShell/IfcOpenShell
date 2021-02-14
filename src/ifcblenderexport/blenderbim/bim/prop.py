@@ -34,6 +34,21 @@ sheets_enum = []
 vector_styles_enum = []
 
 
+def updateIfcFile(self, context):
+    if context.scene.BIMProperties.ifc_file:
+        IfcStore.file = None
+        IfcStore.schema = None
+        # Purge data cache
+        from blenderbim.bim import modules
+        for module in modules.values():
+            if not module:
+                continue
+            try:
+                getattr(getattr(module, 'data'), 'Data').purge()
+            except AttributeError:
+                pass
+
+
 def getDiagramScales(self, context):
     global diagram_scales_enum
     if (
@@ -391,7 +406,7 @@ class BIMTextProperties(PropertyGroup):
 class BIMProperties(PropertyGroup):
     schema_dir: StringProperty(default=os.path.join(cwd, "schema") + os.path.sep, name="Schema Directory")
     data_dir: StringProperty(default=os.path.join(cwd, "data") + os.path.sep, name="Data Directory")
-    ifc_file: StringProperty(name="IFC File")
+    ifc_file: StringProperty(name="IFC File", update=updateIfcFile)
     id_map: StringProperty(name="ID Map")
     guid_map: StringProperty(name="GUID Map")
     export_schema: EnumProperty(items=[("IFC4", "IFC4", ""), ("IFC2X3", "IFC2X3", "")], name="IFC Schema")

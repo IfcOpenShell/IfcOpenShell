@@ -12,6 +12,7 @@ class AssignType(bpy.types.Operator):
     bl_label = "Assign Type"
     relating_type: bpy.props.IntProperty()
     related_object: bpy.props.StringProperty()
+    should_map_representations: bpy.props.BoolProperty()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
@@ -27,6 +28,10 @@ class AssignType(bpy.types.Operator):
             },
         ).execute()
         Data.load(oprops.ifc_definition_id)
+
+        if self.should_map_representations:
+            bpy.ops.bim.map_representations(product_id=oprops.ifc_definition_id, type_product_id=relating_type)
+
         bpy.ops.bim.disable_editing_type(obj=related_object.name)
         return {"FINISHED"}
 
@@ -82,13 +87,13 @@ class SelectSimilarType(bpy.types.Operator):
         product = self.file.by_id(oprops.ifc_definition_id)
         declaration = IfcStore.get_schema().declaration_by_name(product.is_a())
         if ifcopenshell.util.schema.is_a(declaration, "IfcElementType"):
-            related_objects = get_related_objects.Usecase(self.file, {
-                "relating_type": self.file.by_id(oprops.ifc_definition_id)
-            }).execute()
+            related_objects = get_related_objects.Usecase(
+                self.file, {"relating_type": self.file.by_id(oprops.ifc_definition_id)}
+            ).execute()
         else:
-            related_objects = get_related_objects.Usecase(self.file, {
-                "related_object": self.file.by_id(oprops.ifc_definition_id)
-            }).execute()
+            related_objects = get_related_objects.Usecase(
+                self.file, {"related_object": self.file.by_id(oprops.ifc_definition_id)}
+            ).execute()
         for obj in bpy.context.visible_objects:
             if obj.BIMObjectProperties.ifc_definition_id in related_objects:
                 obj.select_set(True)

@@ -2,6 +2,7 @@ import bpy
 import numpy as np
 import ifcopenshell
 import ifcopenshell.util.schema
+import ifcopenshell.util.element
 import blenderbim.bim.module.root.create_product as create_product
 import blenderbim.bim.module.root.remove_product as remove_product
 import blenderbim.bim.module.root.reassign_class as reassign_class
@@ -219,16 +220,14 @@ class CopyClass(bpy.types.Operator):
         for obj in objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
-            result = copy_class.Usecase(self.file, {
-                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            }).execute()
+            result = copy_class.Usecase(
+                self.file, {"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)}
+            ).execute()
             IfcStore.link_element(result, obj)
             if obj.data.users == 1:
                 bpy.ops.bim.add_representation(obj=obj.name)
             else:
-                obj_data = obj.data.name
-                temporary_mesh = bpy.data.meshes.new("Temporary Mesh")
-                obj.data = temporary_mesh
-                bpy.ops.bim.map_representation(obj=obj.name, obj_data=obj_data)
-                bpy.data.meshes.remove(temporary_mesh)
+                bpy.ops.bim.map_representations(
+                    product_id=result.id(), type_product_id=ifcopenshell.util.element.get_type(result).id()
+                )
         return {"FINISHED"}
