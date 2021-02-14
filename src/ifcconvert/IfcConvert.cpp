@@ -410,7 +410,7 @@ int main(int argc, char** argv) {
 		("site-local-placement",
 			"Place elements locally in the IfcSite coordinate system, instead of placing "
 			"them in the IFC global coords. Applicable for OBJ and DAE output.")
-		("y-up", "Change the 'up' axis to positive Y, default is Z UP，Applicable for OBJ output.")
+		("y-up", "Change the 'up' axis to positive Y, default is Z UP, Applicable for OBJ output.")
 		("building-local-placement",
 			"Similar to --site-local-placement, but placing elements in locally in the parent IfcBuilding coord system")
         ("precision", po::value<short>(&precision)->default_value(SerializerSettings::DEFAULT_PRECISION),
