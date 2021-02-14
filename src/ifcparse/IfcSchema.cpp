@@ -81,6 +81,7 @@ void IfcParse::register_schema(schema_definition* s) {
 #include "../ifcparse/Ifc4x1.h"
 #include "../ifcparse/Ifc4x2.h"
 #include "../ifcparse/Ifc4x3_rc1.h"
+#include "../ifcparse/Ifc4x3_rc2.h"
 
 const IfcParse::schema_definition* IfcParse::schema_by_name(const std::string& name) {
 	// TODO: initialize automatically somehow
@@ -89,6 +90,7 @@ const IfcParse::schema_definition* IfcParse::schema_by_name(const std::string& n
 	Ifc4x1::get_schema();
 	Ifc4x2::get_schema();
 	Ifc4x3_rc1::get_schema();
+	Ifc4x3_rc2::get_schema();
 
 	std::map<std::string, const IfcParse::schema_definition*>::const_iterator it = schemas.find(name);
 	if (it == schemas.end()) {
