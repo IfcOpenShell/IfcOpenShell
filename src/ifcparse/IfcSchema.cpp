@@ -92,7 +92,7 @@ const IfcParse::schema_definition* IfcParse::schema_by_name(const std::string& n
 	Ifc4x3_rc1::get_schema();
 	Ifc4x3_rc2::get_schema();
 
-	std::map<std::string, const IfcParse::schema_definition*>::const_iterator it = schemas.find(name);
+	std::map<std::string, const IfcParse::schema_definition*>::const_iterator it = schemas.find(boost::to_upper_copy(name));
 	if (it == schemas.end()) {
 		throw IfcParse::IfcException("No schema named " + name);
 	}
