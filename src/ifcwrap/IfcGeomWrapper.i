@@ -482,6 +482,8 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 			return helper_fn_create_shape<Ifc4x2>(settings, instance, representation);
 		} else if (schema_name == "IFC4X3_RC1") {
 			return helper_fn_create_shape<Ifc4x3_rc1>(settings, instance, representation);
+		} else if (schema_name == "IFC4X3_RC2") {
+			return helper_fn_create_shape<Ifc4x3_rc2>(settings, instance, representation);
 		} else {
 			throw IfcParse::IfcException("No geometry support for " + schema_name);
 		}
