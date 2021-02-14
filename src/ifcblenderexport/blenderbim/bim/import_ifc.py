@@ -21,6 +21,7 @@ import numpy as np
 from pathlib import Path
 from itertools import cycle
 from datetime import datetime
+from blenderbim.bim.module.context.data import Data as ContextData
 from blenderbim.bim.ifc import IfcStore
 from . import schema
 
@@ -284,7 +285,6 @@ class IfcImporter:
         self.settings_native.set(self.settings_native.INCLUDE_CURVES, True)
         self.settings_2d = ifcopenshell.geom.settings()
         self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
-        self.existing_elements = {}
         self.include_elements = []
         self.exclude_elements = []
         self.project = None
@@ -297,6 +297,7 @@ class IfcImporter:
         self.mesh_shapes = {}
         self.time = 0
         self.unit_scale = 1
+        self.added_data = {}
         self.native_elements = {}
         self.native_data = {}
         self.aggregates = {}
@@ -318,8 +319,6 @@ class IfcImporter:
         self.profile_code("Purge diffs")
         self.load_file()
         self.profile_code("Loading file")
-        self.load_existing_rooted_elements()
-        self.profile_code("Load existing rooted elements")
         self.set_ifc_file()
         self.profile_code("Setting file")
         if self.ifc_import_settings.should_auto_set_workarounds:
@@ -628,9 +627,6 @@ class IfcImporter:
 
     def create_type_product(self, element):
         self.ifc_import_settings.logger.info("Creating object %s", element)
-        if element.GlobalId in self.existing_elements:
-            self.type_products[element.GlobalId] = self.existing_elements[element.GlobalId]
-            return
         representation_map = self.get_type_product_body_representation_map(element)
         mesh = None
         if representation_map:
@@ -645,7 +641,7 @@ class IfcImporter:
                 except:
                     self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
         obj = bpy.data.objects.new(self.get_name(element), mesh)
-        IfcStore.link_element(element, obj)
+        self.link_element(element, obj)
         self.material_creator.create(element, obj, mesh)
         self.type_products[element.GlobalId] = obj
 
@@ -755,9 +751,6 @@ class IfcImporter:
         if not self.ifc_import_settings.should_import_spaces and element.is_a("IfcSpace"):
             return
 
-        if element.GlobalId in self.existing_elements:
-            return self.existing_elements[element.GlobalId]
-
         self.ifc_import_settings.logger.info("Creating object %s", element)
 
         if shape:
@@ -777,7 +770,7 @@ class IfcImporter:
             mesh = None
 
         obj = bpy.data.objects.new(self.get_name(element), mesh)
-        IfcStore.link_element(element, obj)
+        self.link_element(element, obj)
 
         if shape:
             m = shape.transformation.matrix.data
@@ -1020,7 +1013,7 @@ class IfcImporter:
 
     def merge_by_class(self):
         merge_set = {}
-        for obj in IfcStore.id_map.values():
+        for obj in self.added_data.values():
             if "/" not in obj.name or "IfcRelAggregates" in obj.users_collection[0].name:
                 continue
             merge_set.setdefault(obj.name.split("/")[0], []).append(obj)
@@ -1028,7 +1021,7 @@ class IfcImporter:
 
     def merge_by_material(self):
         merge_set = {}
-        for obj in IfcStore.id_map.values():
+        for obj in self.added_data.values():
             if "/" not in obj.name or "IfcRelAggregates" in obj.users_collection[0].name:
                 continue
             if not obj.material_slots:
@@ -1054,7 +1047,7 @@ class IfcImporter:
             cleaned_material["material"] = bpy.data.materials.new("Merged Material")
             cleaned_material["material"].diffuse_color = cleaned_material["diffuse_color"]
 
-        for obj in IfcStore.id_map.values():
+        for obj in self.added_data.values():
             if not hasattr(obj, "material_slots") or not obj.material_slots:
                 continue
             for slot in obj.material_slots:
@@ -1078,7 +1071,7 @@ class IfcImporter:
     def clean_mesh(self):
         obj = None
         last_obj = None
-        for obj in IfcStore.id_map.values():
+        for obj in self.added_data.values():
             if obj.type == "MESH":
                 obj.select_set(True)
                 last_obj = obj
@@ -1096,12 +1089,6 @@ class IfcImporter:
         if not element.is_a("IfcOpeningElement"):
             return
         self.openings[element.GlobalId] = obj
-
-    def load_existing_rooted_elements(self):
-        # TODO: consider how this impacts file reloading, for now we assume you only ever load the same file again
-        for obj in bpy.data.objects:
-            if hasattr(obj, "BIMObjectProperties") and obj.BIMObjectProperties.ifc_definition_id:
-                self.existing_elements[self.file.by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId] = obj
 
     def load_diff(self):
         if not self.ifc_import_settings.diff_file:
@@ -1173,9 +1160,6 @@ class IfcImporter:
 
     def create_project(self):
         self.project = {"ifc": self.file.by_type("IfcProject")[0]}
-        if self.project["ifc"].GlobalId in self.existing_elements:
-            self.project["blender"] = self.existing_elements[self.project["ifc"].GlobalId].users_collection[0]
-            return
         self.project["blender"] = bpy.data.collections.new("IfcProject/{}".format(self.project["ifc"].Name))
         obj = self.create_product(self.project["ifc"])
         if obj:
@@ -1191,17 +1175,13 @@ class IfcImporter:
             if element.is_a("IfcSpace"):
                 continue
             global_id = element.GlobalId
-            if global_id in self.existing_elements:
-                collection = self.existing_elements[global_id].users_collection[0]
-                self.spatial_structure_elements[global_id] = {"blender": collection}
-            else:
-                collection = bpy.data.collections.new(self.get_name(element))
-                self.spatial_structure_elements[global_id] = {"blender": collection}
-                parent.children.link(collection)
-                obj = self.create_product(element)
-                if obj:
-                    self.spatial_structure_elements[global_id]["blender_obj"] = obj
-                    collection.objects.link(obj)
+            collection = bpy.data.collections.new(self.get_name(element))
+            self.spatial_structure_elements[global_id] = {"blender": collection}
+            parent.children.link(collection)
+            obj = self.create_product(element)
+            if obj:
+                self.spatial_structure_elements[global_id]["blender_obj"] = obj
+                collection.objects.link(obj)
             if element.IsDecomposedBy:
                 for rel_aggregate in element.IsDecomposedBy:
                     self.add_related_objects(collection, rel_aggregate.RelatedObjects)
@@ -1227,7 +1207,7 @@ class IfcImporter:
         element = rel_aggregate.RelatingObject
 
         obj = bpy.data.objects.new("{}/{}".format(element.is_a(), element.Name), None)
-        IfcStore.link_element(element, obj)
+        self.link_element(element, obj)
         self.place_object_in_spatial_tree(element, obj)
 
         collection = bpy.data.collections.new(obj.name)
@@ -1258,8 +1238,8 @@ class IfcImporter:
         bpy.ops.object.delete({"selected_objects": objects_to_purge})
 
     def place_objects_in_spatial_tree(self):
-        for ifc_definition_id, obj in IfcStore.id_map.items():
-            self.place_object_in_spatial_tree(self.file.by_id(ifc_definition_id), obj)
+        for global_id, obj in self.added_data.items():
+            self.place_object_in_spatial_tree(self.file.by_guid(global_id), obj)
 
     def place_object_in_spatial_tree(self, element, obj):
         if element.is_a("IfcProject"):
@@ -1567,10 +1547,15 @@ class IfcImporter:
         return parent @ self.get_axis2placement(plc.RelativePlacement)
 
     def set_default_context(self):
+        ContextData.load()
         for subcontext in self.file.by_type("IfcGeometricRepresentationSubContext"):
             if subcontext.ContextIdentifier == "Body":
                 bpy.context.scene.BIMProperties.contexts = str(subcontext.id())
                 break
+
+    def link_element(self, element, obj):
+        self.added_data[element.GlobalId] = obj
+        IfcStore.link_element(element, obj)
 
 
 class IfcImportSettings:
