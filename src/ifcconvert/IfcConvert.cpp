@@ -1024,6 +1024,8 @@ int main(int argc, char** argv) {
 	size_t num_created = 0;
 	
 	do {
+
+		
         IfcGeom::Element<real_t> *geom_object = context_iterator.get();
 
 		if (is_tesselated)
