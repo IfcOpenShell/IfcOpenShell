@@ -20,7 +20,7 @@
 
 #include "HdfSerializer.h"
 
-#include "H5Cpp.h"
+
 
 #include "../ifcgeom_schema_agnostic/IfcGeomRenderStyles.h"
 
@@ -29,15 +29,28 @@
 #include <boost/lexical_cast.hpp>
 #include <iomanip>
 
+
+const H5std_string  FILE_NAME("output_file.hdf5");
+
+
 HdfSerializer::HdfSerializer(const std::string& obj_filename, const std::string& mtl_filename, const SerializerSettings& settings)
 	: GeometrySerializer(settings)
 	, mtl_filename(mtl_filename)
 	, obj_stream(IfcUtil::path::from_utf8(obj_filename).c_str())
 	, mtl_stream(IfcUtil::path::from_utf8(mtl_filename).c_str())
 	, vcount_total(1)
+	
+	
+
 {
 	obj_stream << std::setprecision(settings.precision);
 	mtl_stream << std::setprecision(settings.precision);
+	
+	file = H5::H5File(FILE_NAME, H5F_ACC_TRUNC);
+	
+	
+	
+
 }
 
 bool HdfSerializer::ready() {
@@ -89,8 +102,32 @@ void HdfSerializer::writeMaterial(const IfcGeom::Material& style)
 void HdfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o)
 {
 
-	int a; 
-	H5::H5File ff; 
+
+	const H5std_string  DATASET_NAME("IntArray");
+	const int   NX = 5;                    // dataset dimensions
+	const int   NY = 6;
+	const int   RANK = 2;
+
+	int i, j;
+	int data[NX][NY];          // buffer for data to write
+	for (j = 0; j < NX; j++)
+	{
+		for (i = 0; i < NY; i++)
+			data[j][i] = i + j;
+	}
+
+
+	H5::Group group = file.createGroup("/Data");
+
+	hsize_t     dimsf[2];              // dataset dimensions
+	dimsf[0] = NX;
+	dimsf[1] = NY;
+	H5::DataSpace dataspace(RANK, dimsf);
+
+	H5::IntType datatype(H5::PredType::NATIVE_INT);
+	datatype.setOrder(H5T_ORDER_LE);
+	H5::DataSet dataset = group.createDataSet(DATASET_NAME, datatype, dataspace);
+	dataset.write(data, H5::PredType::NATIVE_INT);
 
 
     obj_stream << "g " << object_id(o) << "\n";

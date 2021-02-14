@@ -24,6 +24,8 @@
 #include <string>
 #include <fstream>
 
+#include "H5Cpp.h"
+
 #include "../serializers/GeometrySerializer.h"
 
 // http://people.sc.fsu.edu/~jburkardt/txt/obj_format.txt
@@ -34,6 +36,9 @@ private:
 	std::ofstream mtl_stream;
 	unsigned int vcount_total;
 	std::set<std::string> materials;
+	H5::H5File file;
+
+	
 public:
 	HdfSerializer(const std::string& obj_filename, const std::string& mtl_filename, const SerializerSettings& settings);
 	virtual ~HdfSerializer() {}
