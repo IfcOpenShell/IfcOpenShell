@@ -35,7 +35,8 @@ class BIM_PT_type(Panel):
             row.prop(props, "relating_type_class", text="")
             if props.relating_type:
                 row.prop(props, "relating_type", text="")
-                row.operator("bim.assign_type", icon="CHECKMARK", text="")
+                op = row.operator("bim.assign_type", icon="CHECKMARK", text="")
+                op.should_map_representations = props.should_map_representations
             else:
                 row.prop(props, "blank_relating_type", text="")
             row.operator("bim.disable_editing_type", icon="X", text="")

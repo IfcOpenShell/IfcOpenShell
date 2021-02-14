@@ -203,15 +203,16 @@ class SwitchRepresentation(bpy.types.Operator):
 class RemoveRepresentation(bpy.types.Operator):
     bl_idname = "bim.remove_representation"
     bl_label = "Remove Representation"
-    obj: bpy.props.StringProperty()  # TODO
+    obj: bpy.props.StringProperty()
     representation_id: bpy.props.IntProperty()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
         representation = self.file.by_id(self.representation_id)
-        obj = bpy.context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-        if representation.RepresentationType == "MappedRepresentation":
+        is_mapped_representation = representation.RepresentationType == "MappedRepresentation"
+        if is_mapped_representation:
             mesh_name = "{}/{}".format(
                 representation.ContextOfItems.id(), representation.Items[0].MappingSource.MappedRepresentation.id()
             )
@@ -225,12 +226,40 @@ class RemoveRepresentation(bpy.types.Operator):
                 if not void_mesh:
                     void_mesh = bpy.data.meshes.new("Void")
                 obj.data = void_mesh
-            if representation.RepresentationType != "MappedRepresentation":
+            if not is_mapped_representation:
                 bpy.data.meshes.remove(mesh)
         product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         unassign_representation.Usecase(self.file, {"product": product, "representation": representation}).execute()
-        remove_representation.Usecase(self.file, {"representation": representation}).execute()
+        if not is_mapped_representation:
+            remove_representation.Usecase(self.file, {"representation": representation}).execute()
         Data.load(product.id())
+        return {"FINISHED"}
+
+
+class MapRepresentations(bpy.types.Operator):
+    bl_idname = "bim.map_representations"
+    bl_label = "Map Representations"
+    product_id: bpy.props.IntProperty()
+    type_product_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        related_object = IfcStore.id_map[self.product_id]
+
+        if self.product_id not in Data.products:
+            Data.load(self.product_id)
+
+        for representation_id in Data.products[self.product_id]:
+            bpy.ops.bim.remove_representation(obj=related_object.name, representation_id=representation_id)
+
+        if self.type_product_id not in Data.products:
+            Data.load(self.type_product_id)
+
+        for representation_id in Data.products[self.type_product_id]:
+            bpy.ops.bim.map_representation(
+                obj=related_object.name,
+                representation_id=representation_id,
+                obj_data=IfcStore.id_map[self.type_product_id].data.name,
+            )
         return {"FINISHED"}
 
 
@@ -238,20 +267,23 @@ class MapRepresentation(bpy.types.Operator):
     bl_idname = "bim.map_representation"
     bl_label = "Map Representation"
     obj: bpy.props.StringProperty()
+    representation_id: bpy.props.IntProperty()
     obj_data: bpy.props.StringProperty()
 
     def execute(self, context):
         objs = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
-        obj_data = bpy.data.meshes.get(self.obj_data) if self.obj_data else bpy.context.active_object.data
-        objs = [o for o in objs if o.data != obj_data]
+        obj_data = bpy.data.meshes.get(self.obj_data) if self.obj_data else None
+
         self.file = IfcStore.get_file()
 
         for obj in objs:
             bpy.ops.bim.edit_object_placement(obj=obj.name)
             product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            target_representation = self.file.by_id(obj_data.BIMMeshProperties.ifc_definition_id)
-            obj.data = obj_data
-            result = map_representation.Usecase(self.file, {"representation": target_representation}).execute()
+            if obj_data:
+                obj.data = obj_data
+            result = map_representation.Usecase(
+                self.file, {"representation": self.file.by_id(self.representation_id)}
+            ).execute()
             assign_representation.Usecase(self.file, {"product": product, "representation": result}).execute()
             Data.load(obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
