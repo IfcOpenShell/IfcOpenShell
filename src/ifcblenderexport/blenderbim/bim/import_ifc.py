@@ -645,9 +645,8 @@ class IfcImporter:
                 except:
                     self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
         obj = bpy.data.objects.new(self.get_name(element), mesh)
-        obj.BIMObjectProperties.ifc_definition_id = element.id()
+        IfcStore.link_element(element, obj)
         self.material_creator.create(element, obj, mesh)
-        self.type_collection.objects.link(obj)
         self.type_products[element.GlobalId] = obj
 
     def get_type_product_body_representation_map(self, element):
@@ -1265,6 +1264,8 @@ class IfcImporter:
     def place_object_in_spatial_tree(self, element, obj):
         if element.is_a("IfcProject"):
             return
+        elif element.is_a("IfcTypeObject"):
+            self.type_collection.objects.link(obj)
         elif element.GlobalId in self.spatial_structure_elements:
             if not obj.data:
                 return
