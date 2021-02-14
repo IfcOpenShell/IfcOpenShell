@@ -52,7 +52,7 @@ simple_type_python_mapping = {
 }
 
 
-def assert_valid_inverse(attr, val):
+def assert_valid_inverse(attr, val, schema):
     b1, b2 = attr.bound1(), attr.bound2()
     invalid = len(val) < b1 or (b2 != -1 and len(val) > b2)
     if invalid:
@@ -60,7 +60,7 @@ def assert_valid_inverse(attr, val):
     return True
 
 
-def assert_valid(attr, val):
+def assert_valid(attr, val, schema):
     if isinstance(attr, attribute):
         attr_type = attr.type_of_attribute()
     else:
@@ -81,13 +81,15 @@ def assert_valid(attr, val):
     elif isinstance(attr_type, (entity_type, type_declaration)):
         invalid = not isinstance(val, ifcopenshell.entity_instance) or not val.is_a(attr_type.name())
     elif isinstance(attr_type, select_type):
-        invalid = not any(try_valid(x, val) for x in attr_type.select_list())
+        if isinstance(schema.declaration_by_name(val.is_a()), enumeration_type):
+            val = val.wrappedValue
+        invalid = not any(try_valid(x, val, schema) for x in attr_type.select_list())
     elif isinstance(attr_type, enumeration_type):
         invalid = val not in attr_type.enumeration_items()
     elif isinstance(attr_type, aggregation_type):
         b1, b2 = attr_type.bound1(), attr_type.bound2()
         ty = attr_type.type_of_element()
-        invalid = len(val) < b1 or (b2 != -1 and len(val) > b2) or not all(assert_valid(ty, v) for v in val)
+        invalid = len(val) < b1 or (b2 != -1 and len(val) > b2) or not all(assert_valid(ty, v, schema) for v in val)
     else:
         raise NotImplementedError("Not impl %s %s" % (type(attr_type), attr_type))
 
@@ -97,9 +99,9 @@ def assert_valid(attr, val):
     return True
 
 
-def try_valid(attr, val):
+def try_valid(attr, val, schema):
     try:
-        return assert_valid(attr, val)
+        return assert_valid(attr, val, schema)
     except ValidationError as e:
         return False
 
@@ -127,7 +129,7 @@ def validate(f, logger):
             if val is not None:
                 attr_type = attr.type_of_attribute()
                 try:
-                    assert_valid(attr, val)
+                    assert_valid(attr, val, schema)
                 except ValidationError as e:
                     if hasattr(logger, "set_instance"):
                         logger.error(str(e))
@@ -137,7 +139,7 @@ def validate(f, logger):
         for attr in entity.all_inverse_attributes():
             val = getattr(inst, attr.name())
             try:
-                assert_valid_inverse(attr, val)
+                assert_valid_inverse(attr, val, schema)
             except ValidationError as e:
                 if hasattr(logger, "set_instance"):
                     logger.error(str(e))
