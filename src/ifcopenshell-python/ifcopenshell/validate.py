@@ -75,15 +75,22 @@ def assert_valid(attr, val, schema):
 
     while isinstance(attr_type, type_wrappers):
         attr_type = attr_type.declared_type()
+        
+    invalid = False
 
     if isinstance(attr_type, simple_type):
         invalid = type(val) != simple_type_python_mapping[attr_type.declared_type()]
     elif isinstance(attr_type, (entity_type, type_declaration)):
         invalid = not isinstance(val, ifcopenshell.entity_instance) or not val.is_a(attr_type.name())
     elif isinstance(attr_type, select_type):
+        val_to_use = val
         if isinstance(schema.declaration_by_name(val.is_a()), enumeration_type):
-            val = val.wrappedValue
-        invalid = not any(try_valid(x, val, schema) for x in attr_type.select_list())
+            if isinstance(val, ifcopenshell.entity_instance):
+                val_to_use = val.wrappedValue
+            else:
+                invalid = True
+        if not invalid:
+            invalid = not any(try_valid(x, val_to_use, schema) for x in attr_type.select_list())
     elif isinstance(attr_type, enumeration_type):
         invalid = val not in attr_type.enumeration_items()
     elif isinstance(attr_type, aggregation_type):
