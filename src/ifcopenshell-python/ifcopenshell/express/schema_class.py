@@ -25,7 +25,10 @@ import templates
 
 from collections import defaultdict
 
-import ifcopenshell.ifcopenshell_wrapper as w
+try:
+    import ifcopenshell.ifcopenshell_wrapper as w
+except:
+    pass
 
 
 class LateBoundSchemaInstantiator:
