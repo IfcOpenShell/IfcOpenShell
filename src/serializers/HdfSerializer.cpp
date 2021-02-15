@@ -49,8 +49,6 @@ HdfSerializer::HdfSerializer(const std::string& obj_filename, const std::string&
 }
 
 
-
-
 bool HdfSerializer::ready() {
 	return obj_stream.is_open() && mtl_stream.is_open();
 }
@@ -133,7 +131,8 @@ void HdfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o){
 		dimsf[0] = vcountt;
 		dimsf[1] = 3;
 		H5::DataSpace dataspace(RANK, dimsf);
-		H5::IntType datatype(H5::PredType::NATIVE_INT);
+		//H5::IntType datatype(H5::PredType::NATIVE_INT);
+		H5::FloatType datatype(H5::PredType::NATIVE_DOUBLE);
 		datatype.setOrder(H5T_ORDER_LE);
 		dataset = meshGroup.createDataSet(DATASET_NAME_POSITIONS, datatype, dataspace);
 
