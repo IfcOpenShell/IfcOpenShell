@@ -37,8 +37,10 @@ private:
 	unsigned int vcount_total;
 	std::set<std::string> materials;
 	H5::H5File file;
-
+	std::set<std::string> guids;
+	std::vector<double> data_container;
 	
+
 public:
 	HdfSerializer(const std::string& obj_filename, const std::string& mtl_filename, const SerializerSettings& settings);
 	virtual ~HdfSerializer() {}
