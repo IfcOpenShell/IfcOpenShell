@@ -30,7 +30,7 @@
 #include <iomanip>
 
 
-const H5std_string  FILE_NAME("output_file2.hdf5");
+const H5std_string  FILE_NAME("output_file.h5");
 
 
 HdfSerializer::HdfSerializer(const std::string& obj_filename, const std::string& mtl_filename, const SerializerSettings& settings)
@@ -40,8 +40,6 @@ HdfSerializer::HdfSerializer(const std::string& obj_filename, const std::string&
 	, mtl_stream(IfcUtil::path::from_utf8(mtl_filename).c_str())
 	, vcount_total(1)
 	, file(FILE_NAME, H5F_ACC_TRUNC)
-
-
 
 
 {
@@ -101,8 +99,6 @@ void HdfSerializer::writeMaterial(const IfcGeom::Material& style)
 
 
 
-
-
 void HdfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o){
 
 	std::string guid = o->guid();
@@ -156,21 +152,6 @@ void HdfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o){
 
 		dataset.write(data_container.data(), H5::PredType::NATIVE_DOUBLE);
 		data_container.clear();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 	}
 
