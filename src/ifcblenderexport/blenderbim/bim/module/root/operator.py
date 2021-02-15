@@ -2,11 +2,11 @@ import bpy
 import numpy as np
 import ifcopenshell
 import ifcopenshell.util.schema
+import ifcopenshell.util.element
 import blenderbim.bim.module.root.create_product as create_product
 import blenderbim.bim.module.root.remove_product as remove_product
 import blenderbim.bim.module.root.reassign_class as reassign_class
 import blenderbim.bim.module.root.copy_class as copy_class
-from blenderbim.bim.module.owner.api import create_owner_history
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -67,7 +67,7 @@ class ReassignClass(bpy.types.Operator):
             },
         ).execute()
         obj.name = "{}/{}".format(product.is_a(), "/".join(obj.name.split("/")[1:]))
-        obj.BIMObjectProperties.ifc_definition_id = int(product.id())
+        IfcStore.link_element(product, obj)
         bpy.context.active_object.BIMObjectProperties.is_reassigning_class = False
         return {"FINISHED"}
 
@@ -106,11 +106,10 @@ class AssignClass(bpy.types.Operator):
                 "ifc_class": self.ifc_class,
                 "predefined_type": self.predefined_type,
                 "name": obj.name,
-                "OwnerHistory": create_owner_history()
             },
         ).execute()
         obj.name = "{}/{}".format(product.is_a(), obj.name)
-        obj.BIMObjectProperties.ifc_definition_id = int(product.id())
+        IfcStore.link_element(product, obj)
 
         if obj.data:
             bpy.ops.bim.add_representation(obj=obj.name, context_id=self.context_id)
@@ -178,12 +177,13 @@ class UnassignClass(bpy.types.Operator):
         for obj in objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
+            product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            IfcStore.unlink_element(product, obj)
             usecase = remove_product.Usecase(
                 self.file,
-                {"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)},
+                {"product": product},
             )
             usecase.execute()
-            obj.BIMObjectProperties.ifc_definition_id = 0
             if "/" in obj.name and obj.name[0:3] == "Ifc":
                 obj.name = "/".join(obj.name.split("/")[1:])
         return {"FINISHED"}
@@ -220,16 +220,14 @@ class CopyClass(bpy.types.Operator):
         for obj in objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
-            result = copy_class.Usecase(self.file, {
-                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            }).execute()
-            obj.BIMObjectProperties.ifc_definition_id = result.id()
+            result = copy_class.Usecase(
+                self.file, {"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)}
+            ).execute()
+            IfcStore.link_element(result, obj)
             if obj.data.users == 1:
                 bpy.ops.bim.add_representation(obj=obj.name)
             else:
-                obj_data = obj.data.name
-                temporary_mesh = bpy.data.meshes.new("Temporary Mesh")
-                obj.data = temporary_mesh
-                bpy.ops.bim.map_representation(obj=obj.name, obj_data=obj_data)
-                bpy.data.meshes.remove(temporary_mesh)
+                bpy.ops.bim.map_representations(
+                    product_id=result.id(), type_product_id=ifcopenshell.util.element.get_type(result).id()
+                )
         return {"FINISHED"}

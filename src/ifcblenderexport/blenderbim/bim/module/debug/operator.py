@@ -21,6 +21,33 @@ class ProfileImportIFC(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class CreateAllShapes(bpy.types.Operator):
+    bl_idname = "bim.create_all_shapes"
+    bl_label = "Create All Shapes"
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        elements = self.file.by_type("IfcElement") + self.file.by_type("IfcSpace")
+        total = len(elements)
+        settings = ifcopenshell.geom.settings()
+        failures = []
+        excludes = () # For the developer to debug with
+        for i, element in enumerate(elements):
+            if element.GlobalId in excludes:
+                continue
+            print(f'{i}/{total}:', element)
+            try:
+                shape = ifcopenshell.geom.create_shape(settings, element)
+                print("Success", len(shape.geometry.verts), len(shape.geometry.edges), len(shape.geometry.faces))
+            except:
+                failures.append(element)
+                print('***** FAILURE *****')
+        print('Failures:')
+        for failure in failures:
+            print(failure)
+        return {"FINISHED"}
+
+
 class CreateShapeFromStepId(bpy.types.Operator):
     bl_idname = "bim.create_shape_from_step_id"
     bl_label = "Create Shape From STEP ID"

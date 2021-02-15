@@ -53,6 +53,7 @@ extern void init_KernelImplementation_Ifc4(IfcGeom::impl::KernelFactoryImplement
 extern void init_KernelImplementation_Ifc4x1(IfcGeom::impl::KernelFactoryImplementation*);
 extern void init_KernelImplementation_Ifc4x2(IfcGeom::impl::KernelFactoryImplementation*);
 extern void init_KernelImplementation_Ifc4x3_rc1(IfcGeom::impl::KernelFactoryImplementation*);
+extern void init_KernelImplementation_Ifc4x3_rc2(IfcGeom::impl::KernelFactoryImplementation*);
 
 IfcGeom::impl::KernelFactoryImplementation::KernelFactoryImplementation() {
 	init_KernelImplementation_Ifc2x3(this);
@@ -60,6 +61,7 @@ IfcGeom::impl::KernelFactoryImplementation::KernelFactoryImplementation() {
 	init_KernelImplementation_Ifc4x1(this);
 	init_KernelImplementation_Ifc4x2(this);
 	init_KernelImplementation_Ifc4x3_rc1(this);
+	init_KernelImplementation_Ifc4x3_rc2(this);
 }
 
 void IfcGeom::impl::KernelFactoryImplementation::bind(const std::string& schema_name, IfcGeom::impl::kernel_fn fn) {
@@ -162,6 +164,14 @@ namespace {
 		return nullptr;
 	}
 
+	IfcUtil::IfcBaseEntity* get_RelatingObject(Ifc4x3_rc2::IfcRelDecomposes* decompose) {
+		Ifc4x3_rc2::IfcRelAggregates* aggr = decompose->as<Ifc4x3_rc2::IfcRelAggregates>();
+		if (aggr != nullptr) {
+			return aggr->RelatingObject();
+		}
+		return nullptr;
+	}
+
 	IfcUtil::IfcBaseEntity* get_RelatingObject(Ifc2x3::IfcRelDecomposes* decompose) {
 		return decompose->RelatingObject();
 	}
@@ -171,6 +181,7 @@ namespace {
 	CREATE_GET_DECOMPOSING_ENTITY(Ifc4x1);
 	CREATE_GET_DECOMPOSING_ENTITY(Ifc4x2);
 	CREATE_GET_DECOMPOSING_ENTITY(Ifc4x3_rc1);
+	CREATE_GET_DECOMPOSING_ENTITY(Ifc4x3_rc2);
 }
 
 IfcUtil::IfcBaseEntity* IfcGeom::Kernel::get_decomposing_entity(IfcUtil::IfcBaseEntity* inst, bool include_openings) {
@@ -184,6 +195,8 @@ IfcUtil::IfcBaseEntity* IfcGeom::Kernel::get_decomposing_entity(IfcUtil::IfcBase
 		return get_decomposing_entity_impl(inst->as<Ifc4x2::IfcProduct>(), include_openings);
 	} else if (inst->as<Ifc4x3_rc1::IfcProduct>()) {
 		return get_decomposing_entity_impl(inst->as<Ifc4x3_rc1::IfcProduct>(), include_openings);
+	} else if (inst->as<Ifc4x3_rc2::IfcProduct>()) {
+		return get_decomposing_entity_impl(inst->as<Ifc4x3_rc2::IfcProduct>(), include_openings);
 	} else if (inst->declaration().name() == "IfcProject") {
 		return nullptr;
 	} else {
@@ -220,6 +233,8 @@ std::map<std::string, IfcUtil::IfcBaseEntity*> IfcGeom::Kernel::get_layers(IfcUt
 		return get_layers_impl<Ifc4x2>(inst->as<Ifc4x2::IfcProduct>());
 	} else if (inst->as<Ifc4x3_rc1::IfcProduct>()) {
 		return get_layers_impl<Ifc4x3_rc1>(inst->as<Ifc4x3_rc1::IfcProduct>());
+	} else if (inst->as<Ifc4x3_rc2::IfcProduct>()) {
+		return get_layers_impl<Ifc4x3_rc2>(inst->as<Ifc4x3_rc2::IfcProduct>());
 	} else {
 		throw IfcParse::IfcException("Unexpected entity " + inst->declaration().name());
 	}

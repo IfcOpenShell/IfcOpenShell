@@ -13,6 +13,16 @@ class Data:
     library_references = {}
 
     @classmethod
+    def purge(cls):
+        cls.is_loaded = False
+        cls.products = {}
+        cls.classifications = {}
+        cls.references = {}
+        cls.library_file = None
+        cls.library_classifications = {}
+        cls.library_references = {}
+
+    @classmethod
     def load(cls, product_id=None):
         cls._file = IfcStore.get_file()
         if not cls._file:

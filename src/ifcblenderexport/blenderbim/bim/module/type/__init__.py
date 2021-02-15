@@ -1,5 +1,5 @@
 import bpy
-from . import ui, operator
+from . import ui, prop, operator
 
 classes = (
     operator.AssignType,
@@ -7,13 +7,14 @@ classes = (
     operator.EnableEditingType,
     operator.DisableEditingType,
     operator.SelectSimilarType,
+    prop.BIMTypeProperties,
     ui.BIM_PT_type,
 )
 
 
 def register():
-    pass
+    bpy.types.Object.BIMTypeProperties = bpy.props.PointerProperty(type=prop.BIMTypeProperties)
 
 
 def unregister():
-    pass
+    del bpy.types.Object.BIMTypeProperties

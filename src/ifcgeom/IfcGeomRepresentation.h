@@ -87,9 +87,11 @@ namespace IfcGeom {
 			std::string id_;
 			std::string brep_data_;
 			std::vector<double> surface_styles_;
+			std::vector<int> surface_style_ids_;
 		public:
 			const std::string& brep_data() const { return brep_data_; }
 			const std::vector<double>& surface_styles() const { return surface_styles_; }
+			const std::vector<int>& surface_style_ids() const { return surface_style_ids_; }
 			Serialization(const BRep& brep);
 			virtual ~Serialization() {}
 			const std::string& id() const { return id_; }
@@ -117,6 +119,7 @@ namespace IfcGeom {
             std::vector<P> uvs_;
 			std::vector<int> _material_ids;
 			std::vector<Material> _materials;
+			size_t weld_offset_;
 			VertexKeyMap welds;
 
 		public:
@@ -130,10 +133,15 @@ namespace IfcGeom {
 			const std::vector<Material>& materials() const { return _materials; }
 
 			Triangulation(const BRep& shape_model)
-					: Representation(shape_model.settings())
-					, id_(shape_model.id())
+				: Representation(shape_model.settings())
+				, id_(shape_model.id())
+				, weld_offset_(0)
 			{
 				for ( IfcGeom::IfcRepresentationShapeItems::const_iterator iit = shape_model.begin(); iit != shape_model.end(); ++ iit ) {
+					
+					// Don't weld vertices that belong to different items to prevent non-manifold situations.
+					weld_offset_ += welds.size();
+					welds.clear();
 
 					int surface_style_id = -1;
 					if (iit->hasStyle()) {
@@ -386,7 +394,7 @@ namespace IfcGeom {
 					const VertexKey key = std::make_pair(material_index, std::make_pair(X, std::make_pair(Y, Z)));
 					typename VertexKeyMap::const_iterator it = welds.find(key);
 					if ( it != welds.end() ) return it->second;
-					i = (int) welds.size();
+					i = (int) welds.size() + weld_offset_;
 					welds[key] = i;
 				}
 				_verts.push_back(X);

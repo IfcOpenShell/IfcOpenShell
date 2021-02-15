@@ -1,7 +1,28 @@
 import bpy
+import time
 import addon_utils
 import blenderbim.bim.module.owner.create_owner_history as create_owner_history_usecase
+import blenderbim.bim.module.owner.update_owner_history as update_owner_history_usecase
 from blenderbim.bim.ifc import IfcStore
+
+
+def update_owner_history(element, change_action=None):
+    if not element.OwnerHistory:
+        element.OwnerHistory = create_owner_history()
+        return
+    file = IfcStore.get_file()
+    return update_owner_history_usecase.Usecase(
+        file,
+        {
+            "element": element,
+            "person": file.by_id(int(bpy.context.scene.BIMOwnerProperties.user_person)),
+            "organisation": file.by_id(int(bpy.context.scene.BIMOwnerProperties.user_organisation)),
+            "ApplicationIdentifier": "BlenderBIM",
+            "ApplicationFullName": "BlenderBIM Add-on",
+            "Version": get_application_version(),
+            "ChangeAction": change_action or "MODIFIED",
+        },
+    ).execute()
 
 
 def create_owner_history(change_action=None):

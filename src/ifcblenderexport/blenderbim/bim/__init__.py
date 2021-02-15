@@ -6,7 +6,7 @@ bpy = sys.modules.get("bpy")
 if bpy is not None:
     import bpy
     import importlib
-    from . import ui, prop, operator
+    from . import handler, ui, prop, operator
 
     modules = {
         "project": None,
@@ -155,15 +155,16 @@ if bpy is not None:
         self.layout.operator(operator.ImportIFC.bl_idname, text="Industry Foundation Classes (.ifc/.ifczip/.ifcxml)")
 
     def on_register(scene):
-        prop.setDefaultProperties(scene)
+        handler.setDefaultProperties(scene)
         bpy.app.handlers.depsgraph_update_post.remove(on_register)
 
     def register():
         for cls in classes:
             bpy.utils.register_class(cls)
         bpy.app.handlers.depsgraph_update_post.append(on_register)
-        bpy.app.handlers.load_post.append(prop.setDefaultProperties)
-        bpy.app.handlers.load_post.append(prop.clearIfcStore)
+        bpy.app.handlers.load_post.append(handler.setDefaultProperties)
+        bpy.app.handlers.load_post.append(handler.loadIfcStore)
+        bpy.app.handlers.save_pre.append(handler.storeIdMap)
         bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
         bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
         bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
@@ -181,13 +182,14 @@ if bpy is not None:
             module.register()
 
         bpy.app.handlers.depsgraph_update_pre.append(operator.depsgraph_update_pre_handler)
-        bpy.app.handlers.load_post.append(prop.toggleDecorationsOnLoad)
+        bpy.app.handlers.load_post.append(handler.toggleDecorationsOnLoad)
 
     def unregister():
         for cls in reversed(classes):
             bpy.utils.unregister_class(cls)
-        bpy.app.handlers.load_post.remove(prop.setDefaultProperties)
-        bpy.app.handlers.load_post.remove(prop.clearIfcStore)
+        bpy.app.handlers.load_post.remove(handler.setDefaultProperties)
+        bpy.app.handlers.load_post.remove(handler.loadIfcStore)
+        bpy.app.handlers.save_pre.remove(handler.storeIdMap)
         bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
         bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
         del bpy.types.Scene.BIMProperties
@@ -205,3 +207,4 @@ if bpy is not None:
             module.unregister()
 
         bpy.app.handlers.depsgraph_update_pre.remove(operator.depsgraph_update_pre_handler)
+        bpy.app.handlers.load_post.remove(handler.toggleDecorationsOnLoad)

@@ -1,4 +1,6 @@
 import ifcopenshell
+from blenderbim.bim.module.owner.api import create_owner_history
+from blenderbim.bim.module.owner.api import update_owner_history
 
 
 class Usecase:
@@ -30,6 +32,7 @@ class Usecase:
             related_objects.remove(self.settings["product"])
             if related_objects:
                 decomposes.RelatedObjects = related_objects
+                update_owner_history(decomposes)
             else:
                 self.file.remove(decomposes)
 
@@ -37,12 +40,13 @@ class Usecase:
             related_objects = list(is_decomposed_by.RelatedObjects)
             related_objects.append(self.settings["product"])
             is_decomposed_by.RelatedObjects = related_objects
+            update_owner_history(is_decomposed_by)
         else:
             is_decomposed_by = self.file.create_entity(
                 "IfcRelAggregates",
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
-                    # TODO "OwnerHistory": None
+                    "OwnerHistory": create_owner_history(),
                     "RelatedObjects": [self.settings["product"]],
                     "RelatingObject": self.settings["relating_object"],
                 }
