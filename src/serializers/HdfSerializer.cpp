@@ -106,18 +106,29 @@ void HdfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o){
 
 	H5::Group elementGroup;
 	H5::Group meshGroup;
-	H5::DataSet dataset;
+	H5::DataSet positionsDataset;
+	H5::DataSet normalsDataset;
+	H5::DataSet indicesDataset;
+
 
 	const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
-	const int vcountt = (int)mesh.verts().size() / 3;
+	const int vcount = (int)mesh.verts().size() / 3;
+	const int fcount = (int)mesh.faces().size() / 3;
+
+
+	if (guid == "2OBrcmyk58NupXoVOHUvr4") {
+		Logger::Status("Found");
+	}
 
 	if (std::find(guids.begin(), guids.end(), guid) != guids.end())
 	{
 		elementGroup = file.openGroup(guid);
 		meshGroup = elementGroup.openGroup("Triangle Mesh");
-		dataset = meshGroup.openDataSet("Positions");
+		positionsDataset = meshGroup.openDataSet("Positions");
+
 
 	} else {
+
 		guids.insert(guid);
 		elementGroup = file.createGroup(guid);
 		meshGroup = elementGroup.createGroup("Triangle Mesh");
@@ -128,29 +139,64 @@ void HdfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o){
 
 		const int   RANK = 2;
 		hsize_t     dimsf[2];             
-		dimsf[0] = vcountt;
+		dimsf[0] = vcount;
 		dimsf[1] = 3;
 		H5::DataSpace dataspace(RANK, dimsf);
-		//H5::IntType datatype(H5::PredType::NATIVE_INT);
+
+		hsize_t     dimsfaces[2];
+		dimsfaces[0] = fcount;
+		dimsfaces[1] = 3;
+		H5::DataSpace face_dataspace(RANK, dimsfaces);
+
+		H5::IntType Intdatatype(H5::PredType::NATIVE_INT);
 		H5::FloatType datatype(H5::PredType::NATIVE_DOUBLE);
 		datatype.setOrder(H5T_ORDER_LE);
-		dataset = meshGroup.createDataSet(DATASET_NAME_POSITIONS, datatype, dataspace);
+
+		positionsDataset = meshGroup.createDataSet(DATASET_NAME_POSITIONS, datatype, dataspace);
+		normalsDataset = meshGroup.createDataSet(DATASET_NAME_NORMALS, Intdatatype, dataspace);
+		indicesDataset = meshGroup.createDataSet(DATASET_NAME_INDICES, Intdatatype, face_dataspace);
+
 
 		for (std::vector<real_t>::const_iterator it = mesh.verts().begin(); it != mesh.verts().end(); ) {
 			const real_t x = *(it++);
 			const real_t y = *(it++);
 			const real_t z = *(it++);
-			data_container.push_back(x);
-			data_container.push_back(y);
-			data_container.push_back(z);
+			double_data_container.push_back(x);
+			double_data_container.push_back(y);
+			double_data_container.push_back(z);
 
 		}
 
-			//data_container.clear();
-			//data_container.push_back(3.4);
+		positionsDataset.write(double_data_container.data(), H5::PredType::NATIVE_DOUBLE);
+		double_data_container.clear();
 
-		dataset.write(data_container.data(), H5::PredType::NATIVE_DOUBLE);
-		data_container.clear();
+
+		for (std::vector<real_t>::const_iterator it = mesh.normals().begin(); it != mesh.normals().end(); ) {
+			const real_t x = *(it++);
+			const real_t y = *(it++);
+			const real_t z = *(it++);
+			int_data_container.push_back((int)x);
+			int_data_container.push_back((int)y);
+			int_data_container.push_back((int)z);
+
+		}
+		normalsDataset.write(int_data_container.data(), H5::PredType::NATIVE_INT);
+		int_data_container.clear();
+
+
+
+		for (std::vector<int>::const_iterator it = mesh.faces().begin(); it != mesh.faces().end(); ) {
+			const real_t x = *(it++);
+			const real_t y = *(it++);
+			const real_t z = *(it++);
+			int_data_container.push_back(x);
+			int_data_container.push_back(y);
+			int_data_container.push_back(z);
+
+		}
+
+		indicesDataset.write(int_data_container.data(), H5::PredType::NATIVE_INT);
+		int_data_container.clear();
 
 	}
 
