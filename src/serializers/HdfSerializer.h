@@ -38,7 +38,8 @@ private:
 	std::set<std::string> materials;
 	H5::H5File file;
 	std::set<std::string> guids;
-	std::vector<double> data_container;
+	std::vector<double> double_data_container;
+	std::vector<int> int_data_container;
 	
 
 public:
