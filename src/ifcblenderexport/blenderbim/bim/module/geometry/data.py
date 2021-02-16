@@ -24,7 +24,7 @@ class Data:
             else:
                 representations = []
         elif product.is_a("IfcTypeProduct"):
-            representations = [rm.MappedRepresentation for rm in product.RepresentationMaps]
+            representations = [rm.MappedRepresentation for rm in product.RepresentationMaps or []]
         for representation in representations:
             c = representation.ContextOfItems
             rep_id = int(representation.id())

@@ -230,8 +230,7 @@ class RemoveRepresentation(bpy.types.Operator):
                 bpy.data.meshes.remove(mesh)
         product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         unassign_representation.Usecase(self.file, {"product": product, "representation": representation}).execute()
-        if not is_mapped_representation:
-            remove_representation.Usecase(self.file, {"representation": representation}).execute()
+        remove_representation.Usecase(self.file, {"representation": representation}).execute()
         Data.load(product.id())
         return {"FINISHED"}
 
