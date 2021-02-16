@@ -1419,7 +1419,7 @@ void SvgSerializer::writeHeader() {
 		"        .IfcSpace path {\n"
 		"            fill-opacity: .2;\n"
 		"        }\n"
-		"        .dimension path {\n"
+		"        .Dimension path {\n"
 		"            marker-end: url(#arrowend);\n"
 		"            marker-start: url(#arrowstart);\n"
 		"        }\n";
