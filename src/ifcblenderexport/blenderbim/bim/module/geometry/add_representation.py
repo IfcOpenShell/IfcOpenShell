@@ -12,6 +12,7 @@ class Usecase:
             "context": None,  # IfcGeometricRepresentationContext
             "blender_object": None,  # This is (currently) a Blender object, hence this depends on Blender now
             "geometry": None,  # This is (currently) a Blender data object, hence this depends on Blender now
+            "coordinate_offset": None,  # Optionally apply a vector offset to all coordinates
             "total_items": 1,  # How many representation items to create
             "unit_scale": None,  # A scale factor to apply for all vectors in case the unit is different
             "should_force_faceted_brep": False,  # If we should force faceted breps for meshes
@@ -290,6 +291,8 @@ class Usecase:
         return self.file.createIfcCartesianPointList3D([self.convert_si_to_unit(v.co) for v in vertices])
 
     def convert_si_to_unit(self, co):
+        if self.settings["coordinate_offset"]:
+            return (co / self.settings["unit_scale"]) + self.settings["coordinate_offset"]
         return co / self.settings["unit_scale"]
 
     def create_geometric_curve_set_representation(self, is_2d=False):
