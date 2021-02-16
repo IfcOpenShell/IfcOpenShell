@@ -17,6 +17,8 @@ class Usecase:
 
     def unassign_product_representation(self, product, representation):
         representations = list(product.Representation.Representations or [])
+        if representation not in representations:
+            return
         representations.remove(representation)
         if not representations:
             self.file.remove(product.Representation)

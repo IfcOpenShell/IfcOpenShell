@@ -15,6 +15,7 @@ from blenderbim.bim import import_ifc
 from blenderbim.bim.module.geometry.data import Data
 from blenderbim.bim.module.context.data import Data as ContextData
 from blenderbim.bim.module.void.data import Data as VoidData
+from mathutils import Vector
 
 
 def get_box_context_id():
@@ -91,10 +92,22 @@ class AddRepresentation(bpy.types.Operator):
             product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
             context_of_items = self.file.by_id(context_id)
 
+            gprop = context.scene.BIMGeoreferenceProperties
+            coordinate_offset = None
+            if gprop.has_blender_offset and gprop.blender_offset_type == "CARTESIAN_POINT":
+                coordinate_offset = Vector(
+                    (
+                        float(gprop.blender_eastings),
+                        float(gprop.blender_northings),
+                        float(gprop.blender_orthogonal_height),
+                    )
+                )
+
             representation_data = {
                 "context": context_of_items,
                 "blender_object": obj,
                 "geometry": obj.data,
+                "coordinate_offset": coordinate_offset,
                 "total_items": max(1, len(obj.material_slots)),
                 "should_force_faceted_brep": context.scene.BIMGeometryProperties.should_force_faceted_brep,
                 "should_force_triangulation": context.scene.BIMGeometryProperties.should_force_triangulation,
@@ -307,10 +320,22 @@ class UpdateMeshRepresentation(bpy.types.Operator):
             old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
             context_of_items = old_representation.ContextOfItems
 
+            gprop = context.scene.BIMGeoreferenceProperties
+            coordinate_offset = None
+            if gprop.has_blender_offset and gprop.blender_offset_type == "CARTESIAN_POINT":
+                coordinate_offset = Vector(
+                    (
+                        float(gprop.blender_eastings),
+                        float(gprop.blender_northings),
+                        float(gprop.blender_orthogonal_height),
+                    )
+                )
+
             representation_data = {
                 "context": context_of_items,
                 "blender_object": obj,
                 "geometry": obj.data,
+                "coordinate_offset": coordinate_offset,
                 "total_items": max(1, len(obj.material_slots)),
                 "should_force_faceted_brep": context.scene.BIMGeometryProperties.should_force_faceted_brep,
                 "should_force_triangulation": context.scene.BIMGeometryProperties.should_force_triangulation,
@@ -355,7 +380,7 @@ class UpdateMeshRepresentation(bpy.types.Operator):
 
             obj.data.BIMMeshProperties.ifc_definition_id = int(new_representation.id())
             obj.data.name = f"{old_representation.ContextOfItems.id()}/{new_representation.id()}"
-            bpy.ops.bim.remove_representation(ifc_definition_id=old_representation.id())
+            bpy.ops.bim.remove_representation(representation_id=old_representation.id())
             Data.load(obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
