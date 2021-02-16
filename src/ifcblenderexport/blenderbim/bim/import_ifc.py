@@ -530,7 +530,6 @@ class IfcImporter:
             for i, point in enumerate(point_list.CoordList):
                 if len(point) == 3 and self.is_point_far_away(point):
                     return point[0]
-                    # offset_point = (point[0], point[1], point[2])
 
         for point in self.file.by_type("IfcCartesianPoint"):
             elements_checked += 1
@@ -542,17 +541,6 @@ class IfcImporter:
     def apply_blender_offset_to_matrix(self, matrix):
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset and props.blender_offset_type == "OBJECT_PLACEMENT":
-            test = mathutils.Matrix(
-                ifcopenshell.util.geolocation.global2local(
-                    matrix,
-                    float(props.blender_eastings) * self.unit_scale,
-                    float(props.blender_northings) * self.unit_scale,
-                    float(props.blender_orthogonal_height) * self.unit_scale,
-                    float(props.blender_x_axis_abscissa),
-                    float(props.blender_x_axis_ordinate),
-                ).tolist()
-            )
-
             return mathutils.Matrix(
                 ifcopenshell.util.geolocation.global2local(
                     matrix,
@@ -1396,9 +1384,9 @@ class IfcImporter:
                 ordinate_index = 0
                 verts = [None] * len(geometry.verts)
                 offset_point = (
-                    float(props.blender_eastings),
-                    float(props.blender_northings),
-                    float(props.blender_orthogonal_height),
+                    float(props.blender_eastings) * self.unit_scale,
+                    float(props.blender_northings) * self.unit_scale,
+                    float(props.blender_orthogonal_height) * self.unit_scale,
                 )
                 for i, vert in enumerate(geometry.verts):
                     if ordinate_index > 2:
