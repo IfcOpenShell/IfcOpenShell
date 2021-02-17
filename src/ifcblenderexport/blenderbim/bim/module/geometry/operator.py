@@ -410,15 +410,14 @@ class GetRepresentationIfcParameters(bpy.types.Operator):
         props = obj.data.BIMMeshProperties
         elements = IfcStore.get_file().traverse(IfcStore.get_file().by_id(props.ifc_definition_id))
         for element in elements:
-            if not element.is_a("IfcRepresentationItem"):
-                continue
-            for i in range(0, len(element)):
-                if element.attribute_type(i) == "DOUBLE":
-                    new = props.ifc_parameters.add()
-                    new.name = "{}/{}".format(element.is_a(), element.attribute_name(i))
-                    new.step_id = element.id()
-                    new.type = element.attribute_type(i)
-                    new.index = i
-                    if element[i]:
-                        new.value = element[i]
+            if element.is_a("IfcRepresentationItem") or element.is_a("IfcParameterizedProfileDef"):
+                for i in range(0, len(element)):
+                    if element.attribute_type(i) == "DOUBLE":
+                        new = props.ifc_parameters.add()
+                        new.name = "{}/{}".format(element.is_a(), element.attribute_name(i))
+                        new.step_id = element.id()
+                        new.type = element.attribute_type(i)
+                        new.index = i
+                        if element[i]:
+                            new.value = element[i]
         return {"FINISHED"}
