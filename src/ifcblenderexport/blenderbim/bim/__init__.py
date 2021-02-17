@@ -23,6 +23,7 @@ if bpy is not None:
         "aggregate": None,
         "geometry": None,
         "cobie": None,
+        "sequence": None,
         "material": None,
         "style": None,
         "layer": None,
