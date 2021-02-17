@@ -32,6 +32,7 @@ class P6ToIfc:
             self.wbs[activity.find("pr:WBSObjectId", ns).text]["activities"].append(
                 {
                     "Name": activity.find("pr:Name", ns).text,
+                    "Identification": activity.find("pr:Id", ns).text,
                     "StartDate": activity.find("pr:StartDate", ns).text,
                     "FinishDate": activity.find("pr:FinishDate", ns).text,
                     "ifc": None,
@@ -43,7 +44,7 @@ class P6ToIfc:
 
     def create_ifc(self):
         self.file = ifcopenshell.file(schema="IFC4")
-        #self.file = ifcopenshell.file(schema="IFC2X3")
+        # self.file = ifcopenshell.file(schema="IFC2X3")
         self.root = self.file.create_entity(
             "IfcTask", **{"GlobalId": ifcopenshell.guid.new(), "Name": self.project["Name"]}
         )
@@ -89,16 +90,24 @@ class P6ToIfc:
                 is_milestone = activity["StartDate"] == activity["FinishDate"]
                 activity["ifc"] = self.file.create_entity(
                     "IfcTask",
-                    **{"GlobalId": ifcopenshell.guid.new(), "Name": activity["Name"], "IsMilestone": is_milestone}
+                    **{
+                        "GlobalId": ifcopenshell.guid.new(),
+                        "Name": activity["Name"],
+                        "Identification": activity["Identification"],
+                        "IsMilestone": is_milestone,
+                    }
                 )
 
                 if self.file.schema == "IFC2X3":
                     # Invalid, but reading the IFC2X3 docs gives me a headache
-                    self.file.create_entity("IfcRelAssignsTasks", **{
-                        "GlobalId": ifcopenshell.guid.new(),
-                        "RelatedObjects": [activity["ifc"]],
-                        "TimeForTask": activity["TimeForTask"]
-                    })
+                    self.file.create_entity(
+                        "IfcRelAssignsTasks",
+                        **{
+                            "GlobalId": ifcopenshell.guid.new(),
+                            "RelatedObjects": [activity["ifc"]],
+                            "TimeForTask": activity["TimeForTask"],
+                        }
+                    )
                 else:
                     activity["ifc"].TaskTime = activity["TaskTime"]
 
