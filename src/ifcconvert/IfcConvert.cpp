@@ -625,8 +625,15 @@ int main(int argc, char** argv) {
 	);
 
     path_t output_temp_filename = output_filename + IfcUtil::path::from_utf8(TEMP_FILE_EXTENSION);
+	
+	std::vector<std::wstring> tokens;
+	split(tokens, output_filename, boost::is_any_of("."));
+	std::vector<std::wstring>::iterator tok_iter;
+	std::wstring ext = *(tokens.end() - 1);
+	std::wstring dot;
+	dot = '.';	
+	path_t output_extension = dot + ext;
 
-	path_t output_extension = output_filename.substr(output_filename.size()-4);
 	boost::to_lower(output_extension);
 
 	IfcParse::IfcFile* ifc_file = 0;
@@ -638,7 +645,7 @@ int main(int argc, char** argv) {
 		STP = IfcUtil::path::from_utf8(".stp"),
 		IGS = IfcUtil::path::from_utf8(".igs"),
 		SVG = IfcUtil::path::from_utf8(".svg"),
-		HDF = IfcUtil::path::from_utf8(".hdf"),
+		HDF = IfcUtil::path::from_utf8(".h5"),
 		XML = IfcUtil::path::from_utf8(".xml"),
 		IFC = IfcUtil::path::from_utf8(".ifc");
 
@@ -799,7 +806,7 @@ int main(int argc, char** argv) {
 	}
 	else if (output_extension == HDF) {
 		const path_t mtl_filename = change_extension(output_filename, MTL);
-		serializer = boost::make_shared<HdfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(mtl_filename), settings);
+		serializer = boost::make_shared<HdfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(output_filename), settings);
 	}
 	
 	else {
