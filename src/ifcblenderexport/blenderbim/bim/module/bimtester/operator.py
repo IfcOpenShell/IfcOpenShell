@@ -3,9 +3,14 @@ import bpy
 import tempfile
 import webbrowser
 import ifcopenshell
-import bimtester
-import bimtester.run
-import bimtester.reports
+
+try:
+    import bimtester
+    import bimtester.run
+    import bimtester.reports
+except:
+    print("Failed to load BIMTester. Try disabling other add-ons, in particular Blender-OSM. See bug #1318.")
+
 from pathlib import Path
 from itertools import cycle
 from blenderbim.bim.ifc import IfcStore
@@ -31,7 +36,7 @@ class ExecuteBIMTester(bpy.types.Operator):
                 "schema_file": "",
                 "schema_name": "",
                 "lang": "en",
-                "steps": props.steps
+                "steps": props.steps,
             }
             use_stored_ifc = props.should_load_from_memory and IfcStore.get_file()
             runner = bimtester.run.TestRunner(args["ifc"], ifc=IfcStore.get_file() if use_stored_ifc else None)
