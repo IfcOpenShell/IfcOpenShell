@@ -111,6 +111,7 @@ void HdfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o) {
 	const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
 	const int vcount = (int)mesh.verts().size() / 3;
 	const int fcount = (int)mesh.faces().size() / 3;
+	const bool isyup = settings().get(SerializerSettings::USE_Y_UP);
 
 
 	if (fcount > 0) {
@@ -139,10 +140,20 @@ void HdfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o) {
 			const real_t x = *(it++);
 			const real_t y = *(it++);
 			const real_t z = *(it++);
-			double_data_container.push_back(x);
-			double_data_container.push_back(y);
-			double_data_container.push_back(z);
 
+			if (isyup) {
+				double_data_container.push_back(x);
+				double_data_container.push_back(z);
+				double_data_container.push_back(-y);
+
+			} else {
+				double_data_container.push_back(x);
+				double_data_container.push_back(y);
+				double_data_container.push_back(z);
+
+			}
+
+		
 		}
 		positionsDataset.write(double_data_container.data(), mtype2);
 		double_data_container.clear();
