@@ -93,7 +93,6 @@ void HdfSerializer::writeHeader() {
 }
 
 
-
 void HdfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o) {
 
 	std::string guid = o->guid();

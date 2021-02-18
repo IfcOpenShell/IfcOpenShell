@@ -1031,9 +1031,15 @@ int main(int argc, char** argv) {
 	size_t num_created = 0;
 	
 	do {
-
 		
         IfcGeom::Element<real_t> *geom_object = context_iterator.get();
+
+		IfcGeom::Element<real_t> *open_object = context_iterator.get_native();
+		IfcGeom::BRepElement<real_t>*elem = static_cast<IfcGeom::BRepElement<real_t>*>(open_object);
+		const IfcGeom::Representation::BRep& brepmesh = elem->geometry();
+		const IfcGeom::Representation::Serialization *serialization = new IfcGeom::Representation::Serialization(brepmesh);
+		std::string dat = serialization->brep_data();
+
 
 		if (is_tesselated)
 		{
