@@ -30,16 +30,14 @@
 #include <iomanip>
 
 
-//const H5std_string  FILE_NAME("output_file.h5");
-
 
 HdfSerializer::HdfSerializer(const std::string& obj_filename, const std::string& mtl_filename, const SerializerSettings& settings)
 	: GeometrySerializer(settings)
 	, mtl_filename(obj_filename)
 
-	 
+
 {
-	
+
 	guids = {};
 }
 
@@ -56,35 +54,9 @@ void HdfSerializer::writeHeader() {
 
 }
 
-//void HdfSerializer::writeMaterial(const IfcGeom::Material& style)
-//{
-//	std::string material_name = (settings().get(SerializerSettings::USE_MATERIAL_NAMES)
-//		? style.original_name() : style.name());
-//	IfcUtil::sanitate_material_name(material_name);
-//	mtl_stream << "newmtl " << material_name << "\n";
-//
-//	if (style.hasDiffuse()) {
-//		const double* diffuse = style.diffuse();
-//		mtl_stream << "Kd " << diffuse[0] << " " << diffuse[1] << " " << diffuse[2] << "\n";
-//	}
-//	if (style.hasSpecular()) {
-//		const double* specular = style.specular();
-//		mtl_stream << "Ks " << specular[0] << " " << specular[1] << " " << specular[2] << "\n";
-//	}
-//	if (style.hasSpecularity()) {
-//		mtl_stream << "Ns " << style.specularity() << "\n";
-//	}
-//	if (style.hasTransparency()) {
-//		const double transparency = 1.0 - style.transparency();
-//		if (transparency < 1) {
-//			mtl_stream << "d " << transparency << "\n";
-//		}
-//	}
-//}
-//
 
 
-void HdfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o){
+void HdfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o) {
 
 	std::string guid = o->guid();
 	//Logger::Status(guid);
@@ -103,13 +75,7 @@ void HdfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o){
 	const int fcount = (int)mesh.faces().size() / 3;
 
 
-	if (std::find(guids.begin(), guids.end(), guid) != guids.end())
-	{
-		elementGroup = file.openGroup(guid);
-		meshGroup = elementGroup.openGroup("Triangle Mesh");
-		positionsDataset = meshGroup.openDataSet("Positions");
-
-	} else {
+	if (fcount > 0) {
 
 		guids.insert(guid);
 		elementGroup = file.createGroup(guid);
@@ -120,7 +86,7 @@ void HdfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o){
 		H5std_string  DATASET_NAME_INDICES("Indices");
 
 		const int   RANK = 2;
-		hsize_t     dimsf[2];             
+		hsize_t     dimsf[2];
 		dimsf[0] = vcount;
 		dimsf[1] = 1;
 		H5::DataSpace dataspace(RANK, dimsf);
@@ -184,7 +150,7 @@ void HdfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o){
 
 		}
 
-		
+
 		indicesDataset.write(int_data_container.data(), mtype1);
 
 		int_data_container.clear();
@@ -217,6 +183,6 @@ void HdfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o){
 		double_data_container.clear();
 
 
-	}
 
+	}
 }
