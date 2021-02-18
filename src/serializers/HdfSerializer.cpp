@@ -113,12 +113,18 @@ void HdfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o) {
 	const int fcount = (int)mesh.faces().size() / 3;
 	const bool isyup = settings().get(SerializerSettings::USE_Y_UP);
 
+	std::string value = o->type();
 
 	if (fcount > 0) {
 
 		guids.insert(guid);
 		elementGroup = file.createGroup(guid);
 		meshGroup = elementGroup.createGroup("Triangle Mesh");
+		H5::StrType str_type(0, H5T_VARIABLE);
+		H5:: DataSpace attrdspace(H5S_SCALAR);
+		H5::Attribute att = elementGroup.createAttribute("IFC entity type", str_type, attrdspace);
+		att.write(str_type, value);
+
 
 		const int   RANK = 2;
 		hsize_t     dimsf[2];
