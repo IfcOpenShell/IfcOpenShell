@@ -40,6 +40,12 @@ private:
 	std::set<std::string> guids;
 	std::vector<double> double_data_container;
 	std::vector<int> int_data_container;
+	const H5std_string  DATASET_NAME_POSITIONS;
+	const H5std_string  DATASET_NAME_NORMALS;
+	const H5std_string  DATASET_NAME_INDICES;
+	H5::CompType mtype1;
+	H5::CompType mtype2;
+	H5::CompType mtype3;
 
 	
 public:
