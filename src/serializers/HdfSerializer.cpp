@@ -93,7 +93,7 @@ void HdfSerializer::writeHeader() {
 }
 
 
-void HdfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o) {
+void HdfSerializer::write(const IfcGeom::BRepElement<real_t>* o) {
 
 	std::string guid = o->guid();
 	//Logger::Status(guid);
@@ -101,13 +101,25 @@ void HdfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o) {
 	//Logger::Status("\n");
 
 	H5::Group elementGroup;
+
 	H5::Group meshGroup;
 	H5::DataSet positionsDataset;
 	H5::DataSet normalsDataset;
 	H5::DataSet indicesDataset;
 
+	H5::Group OCCTGroup;
 
-	const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
+	//const IfcGeom::BRepElement<real_t>*elem = static_cast<IfcGeom::BRepElement<real_t>*>(o);
+
+	
+	const IfcGeom::Representation::BRep& brepmesh = o->geometry();
+	const IfcGeom::Representation::Serialization *serialization = new IfcGeom::Representation::Serialization(brepmesh);
+	std::string brep_data = serialization->brep_data();
+
+	/*Logger::Status(brep_data);*/
+
+	const IfcGeom::TriangulationElement<real_t>*triangular_element = new IfcGeom::TriangulationElement<real_t>(*o);
+	const IfcGeom::Representation::Triangulation<real_t>& mesh = triangular_element->geometry();
 	const int vcount = (int)mesh.verts().size() / 3;
 	const int fcount = (int)mesh.faces().size() / 3;
 	const bool isyup = settings().get(SerializerSettings::USE_Y_UP);

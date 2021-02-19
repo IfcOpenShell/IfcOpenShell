@@ -806,6 +806,7 @@ int main(int argc, char** argv) {
 	}
 	else if (output_extension == HDF) {
 		const path_t mtl_filename = change_extension(output_filename, MTL);
+		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 		serializer = boost::make_shared<HdfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(output_filename), settings);
 	}
 	
@@ -1033,13 +1034,6 @@ int main(int argc, char** argv) {
 	do {
 		
         IfcGeom::Element<real_t> *geom_object = context_iterator.get();
-
-		IfcGeom::Element<real_t> *open_object = context_iterator.get_native();
-		IfcGeom::BRepElement<real_t>*elem = static_cast<IfcGeom::BRepElement<real_t>*>(open_object);
-		const IfcGeom::Representation::BRep& brepmesh = elem->geometry();
-		const IfcGeom::Representation::Serialization *serialization = new IfcGeom::Representation::Serialization(brepmesh);
-		std::string dat = serialization->brep_data();
-
 
 		if (is_tesselated)
 		{
