@@ -526,7 +526,7 @@ pushd %BUILD_DIR%
 :: cache always e.g. when we've had new changes in the repository.
 IF %BUILD_TYPE%==Rebuild IF EXIST CMakeCache.txt. del CMakeCache.txt
 
-IF NOT "%VS_TOOLSET_HOST%"="" (
+IF NOT "%VS_TOOLSET_HOST%"=="" (
     cmake .. -G %GENERATOR% -A %VS_PLATFORM% -T %VS_TOOLSET_HOST% %*
 ) ELSE (
     cmake .. -G %GENERATOR% -A %VS_PLATFORM% %*
