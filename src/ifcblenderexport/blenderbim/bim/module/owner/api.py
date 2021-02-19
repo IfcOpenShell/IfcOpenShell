@@ -27,6 +27,15 @@ def update_owner_history(element, change_action=None):
 
 def create_owner_history(change_action=None):
     file = IfcStore.get_file()
+
+    if (
+        not bpy.context.scene.BIMOwnerProperties.user_person
+        or not bpy.context.scene.BIMOwnerProperties.user_organisation
+    ):
+        if file.schema == "IFC2X3":
+            assert False, "A person and organisation is required in IFC2X3."
+        return None
+
     return create_owner_history_usecase.Usecase(
         file,
         {
