@@ -37,9 +37,9 @@ typedef struct s2_t {
 	double a, b, c;
 } s2_t;
 
-HdfSerializer::HdfSerializer(const std::string& obj_filename, const std::string& mtl_filename, const SerializerSettings& settings)
+HdfSerializer::HdfSerializer(const std::string& hdf_filename, const SerializerSettings& settings)
 	: GeometrySerializer(settings)
-	, mtl_filename(obj_filename)
+	, hdf_filename(hdf_filename)
 	, DATASET_NAME_POSITIONS("Positions")
 	, DATASET_NAME_NORMALS("Normals")
 	, DATASET_NAME_INDICES("Indices")
@@ -88,7 +88,7 @@ bool HdfSerializer::ready() {
 }
 
 void HdfSerializer::writeHeader() {
-	const H5std_string  FILE_NAME(mtl_filename);
+	const H5std_string  FILE_NAME(hdf_filename);
 	file = H5::H5File(FILE_NAME, H5F_ACC_TRUNC);
 
 }
@@ -110,16 +110,10 @@ void HdfSerializer::write(const IfcGeom::BRepElement<real_t>* o) {
 
 	H5::Group OCCTGroup;
 	H5::DataSet OCCTDataset;
-
-
-	//const IfcGeom::BRepElement<real_t>*elem = static_cast<IfcGeom::BRepElement<real_t>*>(o);
-
 	
 	const IfcGeom::Representation::BRep& brepmesh = o->geometry();
 	const IfcGeom::Representation::Serialization *serialization = new IfcGeom::Representation::Serialization(brepmesh);
 	std::string brep_data = serialization->brep_data();
-
-	/*Logger::Status(brep_data);*/
 
 	const IfcGeom::TriangulationElement<real_t>*triangular_element = new IfcGeom::TriangulationElement<real_t>(*o);
 	const IfcGeom::Representation::Triangulation<real_t>& mesh = triangular_element->geometry();

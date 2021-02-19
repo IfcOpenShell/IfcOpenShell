@@ -31,11 +31,8 @@
 // http://people.sc.fsu.edu/~jburkardt/txt/obj_format.txt
 class HdfSerializer : public GeometrySerializer {
 private:
-	const std::string mtl_filename;
-	std::ofstream obj_stream;
-	std::ofstream mtl_stream;
+	const std::string hdf_filename;
 	unsigned int vcount_total;
-	std::set<std::string> materials;
 	H5::H5File file;
 	std::set<std::string> guids;
 	std::vector<double> double_data_container;
@@ -50,11 +47,10 @@ private:
 
 	
 public:
-	HdfSerializer(const std::string& obj_filename, const std::string& mtl_filename, const SerializerSettings& settings);
+	HdfSerializer(const std::string& hdf_filename, const SerializerSettings& settings);
 	virtual ~HdfSerializer() {}
 	bool ready();
 	void writeHeader();
-	void writeMaterial(const IfcGeom::Material& style);
 	void write(const IfcGeom::BRepElement<real_t>* o);
 	void write(const IfcGeom::TriangulationElement<real_t>* /*o*/) {}
 	void finalize() {}

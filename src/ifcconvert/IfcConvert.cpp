@@ -807,7 +807,7 @@ int main(int argc, char** argv) {
 	else if (output_extension == HDF) {
 		const path_t mtl_filename = change_extension(output_filename, MTL);
 		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
-		serializer = boost::make_shared<HdfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(output_filename), settings);
+		serializer = boost::make_shared<HdfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
 	}
 	
 	else {
