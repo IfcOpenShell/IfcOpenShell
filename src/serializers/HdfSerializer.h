@@ -43,6 +43,7 @@ private:
 	const H5std_string  DATASET_NAME_POSITIONS;
 	const H5std_string  DATASET_NAME_NORMALS;
 	const H5std_string  DATASET_NAME_INDICES;
+	const H5std_string  DATASET_NAME_OCCT;
 	H5::CompType mtype1;
 	H5::CompType mtype2;
 	H5::CompType mtype3;
