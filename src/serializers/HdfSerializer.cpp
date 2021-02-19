@@ -82,8 +82,7 @@ HdfSerializer::HdfSerializer(const std::string& hdf_filename, const SerializerSe
 
 
 bool HdfSerializer::ready() {
-
-	//return obj_stream.is_open() && mtl_stream.is_open();
+	//todo: check whether the file exists
 	return true;
 }
 
@@ -97,9 +96,6 @@ void HdfSerializer::writeHeader() {
 void HdfSerializer::write(const IfcGeom::BRepElement<real_t>* o) {
 
 	std::string guid = o->guid();
-	//Logger::Status(guid);
-	//Logger::Status(o->context());
-	//Logger::Status("\n");
 
 	H5::Group elementGroup;
 
@@ -135,7 +131,6 @@ void HdfSerializer::write(const IfcGeom::BRepElement<real_t>* o) {
 		H5:: DataSpace attrdspace(H5S_SCALAR);
 		H5::Attribute att = elementGroup.createAttribute("IFC entity type", str_type, attrdspace);
 		att.write(str_type, value);
-
 
 		const int   RANK = 2;
 		hsize_t     dimsf[2];
