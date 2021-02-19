@@ -16,6 +16,40 @@ from bpy.props import (
 
 applicable_types_enum = []
 relating_types_enum = []
+type_classes_enum = []
+available_types_enum = []
+
+
+def getIfcTypes(self, context):
+    global type_classes_enum
+    file = IfcStore.get_file()
+    if len(type_classes_enum) < 1 and file:
+        declaration = IfcStore.get_schema().declaration_by_name("IfcElementType")
+
+        def get_classes(declaration):
+            results = []
+            if not declaration.is_abstract():
+                results.append(declaration.name())
+            for subtype in declaration.subtypes():
+                results.extend(get_classes(subtype))
+            return results
+
+        classes = get_classes(declaration)
+        type_classes_enum.extend([(c, c, "") for c in sorted(classes)])
+    return type_classes_enum
+
+
+def getAvailableTypes(self, context):
+    global available_types_enum
+    if len(available_types_enum) < 1:
+        elements = IfcStore.get_file().by_type(self.ifc_class)
+        available_types_enum.extend((str(e.id()), e.Name, "") for e in elements)
+    return available_types_enum
+
+
+def updateTypeInstanceIfcClass(self, context):
+    global available_types_enum
+    available_types_enum.clear()
 
 
 def getApplicableTypes(self, context):
@@ -48,4 +82,3 @@ class BIMTypeProperties(PropertyGroup):
     relating_type: EnumProperty(items=getRelatingTypes, name="Relating Type")
     # This is purely a UX thing
     blank_relating_type: EnumProperty(items=[("None", "No Types Found", "")], name="Relating Type")
-    should_map_representations: BoolProperty(name="Should Map Representations")
