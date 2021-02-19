@@ -43,6 +43,7 @@ HdfSerializer::HdfSerializer(const std::string& obj_filename, const std::string&
 	, DATASET_NAME_POSITIONS("Positions")
 	, DATASET_NAME_NORMALS("Normals")
 	, DATASET_NAME_INDICES("Indices")
+	, DATASET_NAME_OCCT("OCCT Text")
 	, mtype1(sizeof(s1_t))
 	, mtype2(sizeof(s2_t))
 	, mtype3(sizeof(s1_t))
@@ -108,6 +109,8 @@ void HdfSerializer::write(const IfcGeom::BRepElement<real_t>* o) {
 	H5::DataSet indicesDataset;
 
 	H5::Group OCCTGroup;
+	H5::DataSet OCCTDataset;
+
 
 	//const IfcGeom::BRepElement<real_t>*elem = static_cast<IfcGeom::BRepElement<real_t>*>(o);
 
@@ -131,6 +134,9 @@ void HdfSerializer::write(const IfcGeom::BRepElement<real_t>* o) {
 		guids.insert(guid);
 		elementGroup = file.createGroup(guid);
 		meshGroup = elementGroup.createGroup("Triangle Mesh");
+
+		OCCTGroup = elementGroup.createGroup("OCCT Data");
+
 		H5::StrType str_type(0, H5T_VARIABLE);
 		H5:: DataSpace attrdspace(H5S_SCALAR);
 		H5::Attribute att = elementGroup.createAttribute("IFC entity type", str_type, attrdspace);
@@ -148,6 +154,13 @@ void HdfSerializer::write(const IfcGeom::BRepElement<real_t>* o) {
 		dimsfaces[1] = 1;
 		H5::DataSpace face_dataspace(RANK, dimsfaces);
 
+		const int RANK_OCCT = 1;
+		hsize_t     dimsocct[2];
+		dimsocct[0] = 1;
+		dimsfaces[1] = 1;
+		H5::DataSpace occt_dataspace(RANK_OCCT, dimsocct);
+		OCCTDataset = OCCTGroup.createDataSet(DATASET_NAME_OCCT, str_type, occt_dataspace);
+		OCCTDataset.write(brep_data, str_type);
 
 		indicesDataset = meshGroup.createDataSet(DATASET_NAME_INDICES, mtype1, face_dataspace);
 		positionsDataset = meshGroup.createDataSet(DATASET_NAME_POSITIONS, mtype2, dataspace);
