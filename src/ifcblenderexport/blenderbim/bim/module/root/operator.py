@@ -231,10 +231,11 @@ class CopyClass(bpy.types.Operator):
                 self.file, {"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)}
             ).execute()
             IfcStore.link_element(result, obj)
-            if obj.data and obj.data.users == 1:
-                bpy.ops.bim.add_representation(obj=obj.name)
-            else:
+            relating_type = ifcopenshell.util.element.get_type(result)
+            if relating_type and relating_type.RepresentationMaps:
                 bpy.ops.bim.map_representations(
                     product_id=result.id(), type_product_id=ifcopenshell.util.element.get_type(result).id()
                 )
+            else:
+                bpy.ops.bim.add_representation(obj=obj.name)
         return {"FINISHED"}
