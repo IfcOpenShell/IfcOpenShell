@@ -28,14 +28,6 @@
 #include <iomanip>
 
 
-typedef struct s1_t {
-	int  a, b, c;
-} s1_t;
-
-
-typedef struct s2_t {
-	double a, b, c;
-} s2_t;
 
 HdfSerializer::HdfSerializer(const std::string& hdf_filename, const SerializerSettings& settings)
 	: GeometrySerializer(settings)
@@ -44,40 +36,9 @@ HdfSerializer::HdfSerializer(const std::string& hdf_filename, const SerializerSe
 	, DATASET_NAME_NORMALS("Normals")
 	, DATASET_NAME_INDICES("Indices")
 	, DATASET_NAME_OCCT("OCCT Text")
-	, mtype1(sizeof(s1_t))
-	, mtype2(sizeof(s2_t))
-	, mtype3(sizeof(s1_t))
-
 
 {
 	guids = {};
-
-	H5::IntType Intdatatype(H5::PredType::NATIVE_INT);
-	H5::FloatType datatype(H5::PredType::NATIVE_DOUBLE);
-	datatype.setOrder(H5T_ORDER_LE);
-	Intdatatype.setOrder(H5T_ORDER_LE);
-
-	const H5std_string MEMBER1("V1");
-	const H5std_string MEMBER2("V2");
-	const H5std_string MEMBER3("V3");
-	mtype1.insertMember(MEMBER1, HOFFSET(s1_t, a), H5::PredType::NATIVE_INT);
-	mtype1.insertMember(MEMBER2, HOFFSET(s1_t, c), H5::PredType::NATIVE_INT);
-	mtype1.insertMember(MEMBER3, HOFFSET(s1_t, b), H5::PredType::NATIVE_INT);
-
-	const H5std_string POS1("X");
-	const H5std_string POS2("Y");
-	const H5std_string POS3("Z");
-	mtype2.insertMember(POS1, HOFFSET(s2_t, a), datatype);
-	mtype2.insertMember(POS2, HOFFSET(s2_t, b), datatype);
-	mtype2.insertMember(POS3, HOFFSET(s2_t, c), datatype);
-
-	const H5std_string NOR1("X");
-	const H5std_string NOR2("Y");
-	const H5std_string NOR3("Z");
-	mtype3.insertMember(NOR1, HOFFSET(s1_t, a), Intdatatype);
-	mtype3.insertMember(NOR2, HOFFSET(s1_t, b), Intdatatype);
-	mtype3.insertMember(NOR3, HOFFSET(s1_t, c), Intdatatype);
-
 }
 
 
@@ -123,8 +84,8 @@ void HdfSerializer::write(const IfcGeom::BRepElement<real_t>* o) {
 
 		guids.insert(guid);
 		elementGroup = file.createGroup(guid);
-		meshGroup = elementGroup.createGroup("Triangle Mesh");
 
+		meshGroup = elementGroup.createGroup("Triangle Mesh");
 		OCCTGroup = elementGroup.createGroup("OCCT Data");
 
 		H5::StrType str_type(0, H5T_VARIABLE);
@@ -135,12 +96,12 @@ void HdfSerializer::write(const IfcGeom::BRepElement<real_t>* o) {
 		const int   RANK = 2;
 		hsize_t     dimsf[2];
 		dimsf[0] = vcount;
-		dimsf[1] = 1;
+		dimsf[1] = 3;
 		H5::DataSpace dataspace(RANK, dimsf);
 
 		hsize_t     dimsfaces[2];
 		dimsfaces[0] = fcount;
-		dimsfaces[1] = 1;
+		dimsfaces[1] = 3;
 		H5::DataSpace face_dataspace(RANK, dimsfaces);
 
 		const int RANK_OCCT = 1;
@@ -151,57 +112,14 @@ void HdfSerializer::write(const IfcGeom::BRepElement<real_t>* o) {
 		OCCTDataset = OCCTGroup.createDataSet(DATASET_NAME_OCCT, str_type, occt_dataspace);
 		OCCTDataset.write(brep_data, str_type);
 
-		indicesDataset = meshGroup.createDataSet(DATASET_NAME_INDICES, mtype1, face_dataspace);
-		positionsDataset = meshGroup.createDataSet(DATASET_NAME_POSITIONS, mtype2, dataspace);
-		normalsDataset = meshGroup.createDataSet(DATASET_NAME_NORMALS, mtype3, dataspace);
+		indicesDataset = meshGroup.createDataSet(DATASET_NAME_INDICES, H5::PredType::NATIVE_INT, face_dataspace);
+		positionsDataset = meshGroup.createDataSet(DATASET_NAME_POSITIONS, H5::PredType::NATIVE_DOUBLE, dataspace);
+		normalsDataset = meshGroup.createDataSet(DATASET_NAME_NORMALS, H5::PredType::NATIVE_DOUBLE, dataspace);
 
-		for (std::vector<real_t>::const_iterator it = mesh.verts().begin(); it != mesh.verts().end(); ) {
-			const real_t x = *(it++);
-			const real_t y = *(it++);
-			const real_t z = *(it++);
-
-			if (isyup) {
-				double_data_container.push_back(x);
-				double_data_container.push_back(z);
-				double_data_container.push_back(-y);
-
-			} else {
-				double_data_container.push_back(x);
-				double_data_container.push_back(y);
-				double_data_container.push_back(z);
-
-			}
-
+		positionsDataset.write(mesh.verts().data(), H5::PredType::NATIVE_DOUBLE);
+		normalsDataset.write(mesh.normals().data(), H5::PredType::NATIVE_DOUBLE);
+		indicesDataset.write(mesh.faces().data(), H5::PredType::NATIVE_INT);
 		
-		}
-		positionsDataset.write(double_data_container.data(), mtype2);
-		double_data_container.clear();
-
-
-		for (std::vector<real_t>::const_iterator it = mesh.normals().begin(); it != mesh.normals().end(); ) {
-			const real_t x = *(it++);
-			const real_t y = *(it++);
-			const real_t z = *(it++);
-			int_data_container.push_back((int)x);
-			int_data_container.push_back((int)y);
-			int_data_container.push_back((int)z);
-
-		}
-		normalsDataset.write(int_data_container.data(), mtype3);
-		int_data_container.clear();
-
-
-		for (std::vector<int>::const_iterator it = mesh.faces().begin(); it != mesh.faces().end(); ) {
-			const real_t x = *(it++);
-			const real_t y = *(it++);
-			const real_t z = *(it++);
-			int_data_container.push_back(x);
-			int_data_container.push_back(y);
-			int_data_container.push_back(z);
-
-		}
-		indicesDataset.write(int_data_container.data(), mtype1);
-		int_data_container.clear();
 
 
 	
