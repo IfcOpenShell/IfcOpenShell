@@ -165,6 +165,7 @@ if bpy is not None:
         bpy.app.handlers.depsgraph_update_post.append(on_register)
         bpy.app.handlers.load_post.append(handler.setDefaultProperties)
         bpy.app.handlers.load_post.append(handler.loadIfcStore)
+        bpy.app.handlers.save_pre.append(handler.ensureIfcExported)
         bpy.app.handlers.save_pre.append(handler.storeIdMap)
         bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
         bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
@@ -191,6 +192,7 @@ if bpy is not None:
         bpy.app.handlers.load_post.remove(handler.setDefaultProperties)
         bpy.app.handlers.load_post.remove(handler.loadIfcStore)
         bpy.app.handlers.save_pre.remove(handler.storeIdMap)
+        bpy.app.handlers.save_pre.remove(handler.ensureIfcExported)
         bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
         bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
         del bpy.types.Scene.BIMProperties

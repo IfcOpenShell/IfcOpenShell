@@ -10,20 +10,32 @@ def loadIfcStore(scene):
     IfcStore.file = None
     IfcStore.schema = None
     props = bpy.context.scene.BIMProperties
-    IfcStore.id_map = {int(k): bpy.data.objects.get(v) for k, v in json.loads(props.id_map).items()} if props.id_map else {}
+    IfcStore.id_map = (
+        {int(k): bpy.data.objects.get(v) for k, v in json.loads(props.id_map).items()} if props.id_map else {}
+    )
     IfcStore.guid_map = (
         {k: bpy.data.objects.get(v) for k, v in json.loads(props.guid_map).items()} if props.id_map else {}
     )
 
     # Purge data cache
     from blenderbim.bim import modules
+
     for module in modules.values():
         if not module:
             continue
         try:
-            getattr(getattr(module, 'data'), 'Data').purge()
+            getattr(getattr(module, "data"), "Data").purge()
         except AttributeError:
             pass
+
+
+@persistent
+def ensureIfcExported(scene):
+    print('ensuring')
+    if IfcStore.get_file() and not bpy.context.scene.BIMProperties.ifc_file:
+        # The invocation pops up a file select window.
+        # This is non-blocking, therefore the Blend file is saved before we export.
+        bpy.ops.export_ifc.bim("INVOKE_DEFAULT", should_force_resave=True)
 
 
 @persistent
