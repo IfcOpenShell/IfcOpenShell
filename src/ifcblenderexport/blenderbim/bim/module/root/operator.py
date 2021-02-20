@@ -181,13 +181,11 @@ class UnassignClass(bpy.types.Operator):
             product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
             self.remove_representations(obj, product)
             IfcStore.unlink_element(product, obj)
-            usecase = remove_product.Usecase(
-                self.file,
-                {"product": product},
-            )
-            usecase.execute()
+            remove_product.Usecase(self.file, {"product": product}).execute()
             if "/" in obj.name and obj.name[0:3] == "Ifc":
                 obj.name = "/".join(obj.name.split("/")[1:])
+            if obj.data and obj.data.name == "Void":
+                bpy.data.objects.remove(obj)
         return {"FINISHED"}
 
     def remove_representations(self, obj, product):
