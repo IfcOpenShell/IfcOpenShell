@@ -627,11 +627,11 @@ int main(int argc, char** argv) {
 
     path_t output_temp_filename = output_filename + IfcUtil::path::from_utf8(TEMP_FILE_EXTENSION);
 	
-	std::vector<std::wstring> tokens;
+	std::vector<path_t> tokens;
 	split(tokens, output_filename, boost::is_any_of("."));
-	std::vector<std::wstring>::iterator tok_iter;
-	std::wstring ext = *(tokens.end() - 1);
-	std::wstring dot;
+	std::vector<path_t>::iterator tok_iter;
+	path_t ext = *(tokens.end() - 1);
+	path_t dot;
 	dot = '.';	
 	path_t output_extension = dot + ext;
 
@@ -806,7 +806,6 @@ int main(int argc, char** argv) {
 		serializer = boost::make_shared<SvgSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
 	}
 	else if (output_extension == HDF) {
-		const path_t mtl_filename = change_extension(output_filename, MTL);
 		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 		serializer = boost::make_shared<HdfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
 	}

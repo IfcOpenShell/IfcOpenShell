@@ -28,22 +28,17 @@
 
 #include "../serializers/GeometrySerializer.h"
 
-// http://people.sc.fsu.edu/~jburkardt/txt/obj_format.txt
+
 class HdfSerializer : public GeometrySerializer {
 private:
 	const std::string hdf_filename;
 	unsigned int vcount_total;
 	H5::H5File file;
 	std::set<std::string> guids;
-	std::vector<double> double_data_container;
-	std::vector<int> int_data_container;
 	const H5std_string  DATASET_NAME_POSITIONS;
 	const H5std_string  DATASET_NAME_NORMALS;
 	const H5std_string  DATASET_NAME_INDICES;
 	const H5std_string  DATASET_NAME_OCCT;
-	H5::CompType mtype1;
-	H5::CompType mtype2;
-	H5::CompType mtype3;
 
 	
 public:

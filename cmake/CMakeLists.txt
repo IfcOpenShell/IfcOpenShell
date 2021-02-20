@@ -409,11 +409,11 @@ if(HDF5_SUPPORT)
 			"${HDF5_LIBRARY_DIR}/libaec.lib")
     ELSE()
         SET(HDF5_LIBRARIES 
-            "${HDF5_LIBRARY_DIR}/hdf5_cpp.lib"
-            "${HDF5_LIBRARY_DIR}/hdf5.lib"
-			"${HDF5_LIBRARY_DIR}/libzlib.lib"
-			"${HDF5_LIBRARY_DIR}/libsz.lib"
-			"${HDF5_LIBRARY_DIR}/libaec.lib"
+            "${HDF5_LIBRARY_DIR}/hdf5_cpp.a"
+            "${HDF5_LIBRARY_DIR}/hdf5.a"
+			"${HDF5_LIBRARY_DIR}/libzlib.a"
+			"${HDF5_LIBRARY_DIR}/libsz.a"
+			"${HDF5_LIBRARY_DIR}/libaec.a"
             zlib)
     ENDIF()
 endif()
