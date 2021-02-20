@@ -10,6 +10,7 @@ import blenderbim.bim.module.geometry.assign_styles as assign_styles
 import blenderbim.bim.module.geometry.assign_representation as assign_representation
 import blenderbim.bim.module.geometry.unassign_representation as unassign_representation
 import blenderbim.bim.module.geometry.remove_representation as remove_representation
+import blenderbim.bim.module.grid.create_axis_curve as create_axis_curve
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim import import_ifc
 from blenderbim.bim.module.geometry.data import Data
@@ -317,6 +318,11 @@ class UpdateMeshRepresentation(bpy.types.Operator):
             bpy.ops.bim.edit_object_placement(obj=obj.name)
 
             product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+
+            if product.is_a("IfcGridAxis"):
+                create_axis_curve.Usecase(self.file, {"AxisCurve": obj, "grid_axis": product}).execute()
+                continue
+
             old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
             context_of_items = old_representation.ContextOfItems
 

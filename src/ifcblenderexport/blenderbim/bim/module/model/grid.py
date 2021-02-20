@@ -1,5 +1,6 @@
 import bpy
 import blenderbim.bim.module.grid.create_grid_axis as create_grid_axis
+import blenderbim.bim.module.grid.create_axis_curve as create_axis_curve
 from bpy.types import Operator
 from bpy.props import FloatProperty, IntProperty
 from mathutils import Vector
@@ -52,6 +53,7 @@ def add_object(self, context):
             result = create_grid_axis.Usecase(
                 self.file, {"AxisTag": tag, "AxisCurve": obj, "UVWAxes": "UAxes", "Grid": grid}
             ).execute()
+            create_axis_curve.Usecase(self.file, {"AxisCurve": obj, "grid_axis": result}).execute()
             obj.BIMObjectProperties.ifc_definition_id = result.id()
 
     axes_collection = bpy.data.collections.new("VAxes")
@@ -74,6 +76,7 @@ def add_object(self, context):
             result = create_grid_axis.Usecase(
                 self.file, {"AxisTag": tag, "AxisCurve": obj, "UVWAxes": "VAxes", "Grid": grid}
             ).execute()
+            create_axis_curve.Usecase(self.file, {"AxisCurve": obj, "grid_axis": result}).execute()
             obj.BIMObjectProperties.ifc_definition_id = result.id()
 
 
