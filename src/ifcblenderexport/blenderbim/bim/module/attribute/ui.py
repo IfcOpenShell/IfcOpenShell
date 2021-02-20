@@ -50,6 +50,12 @@ def draw_ui(context, layout, obj_type):
         op = row.operator("bim.enable_editing_attributes", icon="GREASEPENCIL", text="Edit")
         op.obj_type = obj_type
         op.obj = obj.name
+
+        if "GlobalId" not in [a["name"] for a in Data.products[oprops.ifc_definition_id]]:
+            row = layout.row(align=True)
+            row.label(text="STEP ID")
+            row.label(text=str(oprops.ifc_definition_id))
+
         for attribute in Data.products[oprops.ifc_definition_id]:
             if attribute["value"] is None or attribute["type"] == "entity":
                 continue
