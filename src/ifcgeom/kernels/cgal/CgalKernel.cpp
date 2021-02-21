@@ -1079,6 +1079,8 @@ CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_cube(const Ker
 bool CgalKernel::thin_solid(const CGAL::Nef_polyhedron_3<Kernel_>& a, CGAL::Nef_polyhedron_3<Kernel_>& result) {
 	// @todo this should be possible as a minkowski sum of facet & cube. rather than a set of boolean ops.
 
+	auto precision_cube_ = precision_cube();
+
 	auto a_nonconst = a;
 	auto ax = CGAL::minkowski_sum_3(a_nonconst, precision_cube_);
 	auto x = ax - a;
@@ -1135,6 +1137,8 @@ bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_ref
 		Logger::Message(Logger::LOG_ERROR, "Could not convert geometry to Nef:", log_reference);
 		return false;
 	}
+
+	auto precision_cube_ = precision_cube();
 
 	if (dilate) {
 		try {

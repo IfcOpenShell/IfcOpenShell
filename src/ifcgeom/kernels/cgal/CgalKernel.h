@@ -70,10 +70,15 @@ namespace kernels {
 	private:
 		double precision_;
 		size_t circle_segments_;
-		CGAL::Nef_polyhedron_3<Kernel_> precision_cube_;
+		// CGAL::Nef_polyhedron_3<Kernel_> precision_cube_;
 
 		bool preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_reference, const cgal_shape_t& shape_const, CGAL::Nef_polyhedron_3<Kernel_>& result, bool dilate);
 		bool thin_solid(const CGAL::Nef_polyhedron_3<Kernel_>& a, CGAL::Nef_polyhedron_3<Kernel_>& result);
+
+		CGAL::Nef_polyhedron_3<Kernel_> create_precision_cube_() const {
+			auto cc = utils::create_cube(precision_);
+			return CGAL::Nef_polyhedron_3<Kernel_>(cc);
+		}
 	public:
 
 		CgalKernel()
@@ -82,8 +87,7 @@ namespace kernels {
 			, precision_(1.e-5)
 			, circle_segments_(16)
 		{
-			auto cc = utils::create_cube(precision_);
-			precision_cube_ = CGAL::Nef_polyhedron_3<Kernel_>(cc);
+			
 		}
 
 		void remove_duplicate_points_from_loop(cgal_wire_t& polygon);
@@ -102,7 +106,7 @@ namespace kernels {
 		virtual bool convert_impl(const taxonomy::extrusion*, ifcopenshell::geometry::ConversionResults&);
 		virtual bool convert_impl(const taxonomy::boolean_result*, ifcopenshell::geometry::ConversionResults&);
 
-		const CGAL::Nef_polyhedron_3<Kernel_>& precision_cube() const { return precision_cube_; }
+		CGAL::Nef_polyhedron_3<Kernel_> precision_cube() const { return create_precision_cube_(); }
 	};
 
 }
