@@ -346,7 +346,7 @@ struct collection : public geom_item {
 
 	collection() {}
 	collection(const collection& other) {
-		std::transform(other.children.begin(), other.children.end(), std::back_inserter(children), std::mem_fun(&item::clone));
+		std::transform(other.children.begin(), other.children.end(), std::back_inserter(children), std::mem_fn(&item::clone));
 	}
 
 	template <typename T>
