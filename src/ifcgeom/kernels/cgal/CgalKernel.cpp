@@ -603,8 +603,10 @@ namespace {
 
 namespace {
 	void face_to_poly_with_holes(const cgal_face_t& face, CGAL::Polygon_with_holes_2<Kernel_>& pwh, CGAL::Aff_transformation_3<Kernel_>& place) {
-		static Kernel_::Vector_3 Z(0, 0, 1);
-		static Kernel_::Vector_3 X(1, 0, 0);
+		// static 
+		Kernel_::Vector_3 Z(0, 0, 1);
+		// static 
+		Kernel_::Vector_3 X(1, 0, 0);
 
 		auto refz = newell(face.outer);
 		refz /= std::sqrt(CGAL::to_double(refz.squared_length()));
@@ -1613,7 +1615,8 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 				if (!convert(face, f)) {
 					return false;
 				}
-				static taxonomy::direction3 z(0, 0, 1);
+				// static 
+				taxonomy::direction3 z(0, 0, 1);
 				cgal_shape_t poly;
 				process_extrusion(f, z, 200, poly);
 				for (auto& v : vertices(poly)) {
