@@ -29,7 +29,7 @@ from collections import namedtuple
 
 try:  # python 3.3+
     from collections.abc import Iterable
-except ModuleNotFoundError:  # python 2
+except ImportError:  # python 2
     from collections import Iterable
 
 try:
