@@ -498,8 +498,6 @@ class BIMObjectProperties(PropertyGroup):
     global_ids: CollectionProperty(name="GlobalIds", type=GlobalId)
     relating_object: PointerProperty(name="Aggregate", type=bpy.types.Object)
     is_editing_aggregate: BoolProperty(name="Is Editing Aggregate")
-    is_editing_container: BoolProperty(name="Is Editing Container")
-    relating_structure: PointerProperty(name="Spatial Container", type=bpy.types.Object)
     psets: CollectionProperty(name="Psets", type=PsetQto)
     qtos: CollectionProperty(name="Qtos", type=PsetQto)
     has_boundary_condition: BoolProperty(name="Has Boundary Condition")
