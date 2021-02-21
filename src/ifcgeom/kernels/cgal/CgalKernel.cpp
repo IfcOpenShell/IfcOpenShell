@@ -836,7 +836,6 @@ bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, const taxonom
 					// Mark as internal before erasure in external
 					// This is {i,j} at the time the edge use was inserted.
 					internal_edges.insert(p.first->second);
-
 					// not inserted, remove
 					external_edges.erase(p.first);
 
