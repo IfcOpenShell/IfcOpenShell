@@ -31,7 +31,11 @@ def add_object(self, context):
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcGrid")
         grid = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         if has_site_collection:
-            bpy.ops.bim.assign_container(relating_structure=grandchild.name, related_element=obj.name)
+            site_obj = bpy.data.objects.get(grandchild.name)
+            if site_obj and site_obj.BIMObjectProperties.ifc_definition_id:
+                bpy.ops.bim.assign_container(
+                    relating_structure=site_obj.BIMObjectProperties.ifc_definition_id, related_element=obj.name
+                )
 
     axes_collection = bpy.data.collections.new("UAxes")
     collection.children.link(axes_collection)

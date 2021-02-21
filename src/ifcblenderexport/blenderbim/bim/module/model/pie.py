@@ -98,13 +98,13 @@ class PieUpdateContainer(bpy.types.Operator):
         for obj in context.selected_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
-            relating_structure = None
             for collection in obj.users_collection:
-                relating_structure_obj = bpy.data.objects.get(collection.name)
-                if not relating_structure_obj or not relating_structure_obj.BIMObjectProperties.ifc_definition_id:
-                    continue
-                relating_structure = relating_structure_obj
-            bpy.ops.bim.assign_container(relating_structure=relating_structure.name, related_element=obj.name)
+                spatial_obj = bpy.data.objects.get(collection.name)
+                if spatial_obj and spatial_obj.BIMObjectProperties.ifc_definition_id:
+                    bpy.ops.bim.assign_container(
+                        relating_structure=spatial_obj.BIMObjectProperties.ifc_definition_id, related_element=obj.name
+                    )
+                    break
         return {"FINISHED"}
 
 

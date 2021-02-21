@@ -160,8 +160,12 @@ class AssignClass(bpy.types.Operator):
         for collection in obj.users_collection:
             if "Ifc" not in collection.name or collection.name == obj.name:
                 continue
-            bpy.ops.bim.assign_container(relating_structure=collection.name, related_element=obj.name)
-            break
+            spatial_obj = bpy.data.objects.get(collection.name)
+            if spatial_obj and spatial_obj.BIMObjectProperties.ifc_definition_id:
+                bpy.ops.bim.assign_container(
+                    relating_structure=spatial_obj.BIMObjectProperties.ifc_definition_id, related_element=obj.name
+                )
+                break
 
 
 class UnassignClass(bpy.types.Operator):
