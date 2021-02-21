@@ -182,6 +182,7 @@ class UnassignClass(bpy.types.Operator):
             self.remove_representations(obj, product)
             IfcStore.unlink_element(product, obj)
             remove_product.Usecase(self.file, {"product": product}).execute()
+            # TODO: remove object placement
             if "/" in obj.name and obj.name[0:3] == "Ifc":
                 obj.name = "/".join(obj.name.split("/")[1:])
             if obj.data and obj.data.name == "Void":
