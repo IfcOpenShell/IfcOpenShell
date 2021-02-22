@@ -136,11 +136,9 @@ class EditGeoreferencing(bpy.types.Operator):
         if not props.is_map_unit_null:
             map_unit = props.map_unit_si if props.map_unit_type == "IfcSIUnit" else props.map_unit_imperial
 
-        edit_georeferencing.Usecase(self.file, {
-            "map_conversion": map_conversion,
-            "projected_crs": projected_crs,
-            "map_unit": map_unit
-        }).execute()
+        edit_georeferencing.Usecase(
+            self.file, {"map_conversion": map_conversion, "projected_crs": projected_crs, "map_unit": map_unit}
+        ).execute()
         Data.load()
         bpy.ops.bim.disable_editing_georeferencing()
         return {"FINISHED"}
@@ -154,7 +152,7 @@ class SetNorthOffset(bpy.types.Operator):
         context.scene.sun_pos_properties.north_offset = -radians(
             ifcopenshell.util.geolocation.xy2angle(
                 context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisAbscissa").float_value,
-                context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisOrdinate").float_value
+                context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisOrdinate").float_value,
             )
         )
         return {"FINISHED"}
@@ -286,6 +284,28 @@ class ConvertGlobalToLocal(bpy.types.Operator):
         props.coordinate_output = ",".join([str(r) for r in results])
 
         scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
-        bpy.context.scene.cursor.location = (results[0] * scale, results[1] * scale, results[2] * scale)
+        bpy.context.scene.cursor.location = [o * scale for o in results]
         return {"FINISHED"}
 
+
+class GetCursorLocation(bpy.types.Operator):
+    bl_idname = "bim.get_cursor_location"
+    bl_label = "Get Cursor Location"
+
+    def execute(self, context):
+        props = context.scene.BIMGeoreferenceProperties
+        scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
+        project_coordinates = [o / scale for o in bpy.context.scene.cursor.location]
+        props.coordinate_input = ",".join([str(o) for o in project_coordinates])
+        return {"FINISHED"}
+
+
+class SetCursorLocation(bpy.types.Operator):
+    bl_idname = "bim.set_cursor_location"
+    bl_label = "Set Cursor Location"
+
+    def execute(self, context):
+        props = context.scene.BIMGeoreferenceProperties
+        scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
+        bpy.context.scene.cursor.location = [float(co) * scale for co in props.coordinate_output.split(",")]
+        return {"FINISHED"}

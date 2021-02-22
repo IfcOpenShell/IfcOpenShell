@@ -11,6 +11,8 @@ classes = (
     operator.AddGeoreferencing,
     operator.ConvertLocalToGlobal,
     operator.ConvertGlobalToLocal,
+    operator.GetCursorLocation,
+    operator.SetCursorLocation,
     prop.BIMGeoreferenceProperties,
     ui.BIM_PT_gis,
     ui.BIM_PT_gis_utilities,
