@@ -84,9 +84,6 @@ class SelectHighPolygonMeshes(bpy.types.Operator):
             except:
                 # If it is not in the view layer
                 pass
-            relating_type = obj.BIMObjectProperties.relating_type
-            if relating_type:
-                relating_type.select_set(True)
         return {"FINISHED"}
 
 
