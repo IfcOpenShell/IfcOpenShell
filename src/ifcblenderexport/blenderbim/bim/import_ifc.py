@@ -1107,15 +1107,7 @@ class IfcImporter:
         IfcStore.path = "self.ifc_import_settings.input_file"
 
     def calculate_unit_scale(self):
-        units = self.file.by_type("IfcUnitAssignment")[0]
-        for unit in units.Units:
-            if not hasattr(unit, "UnitType") or unit.UnitType != "LENGTHUNIT":
-                continue
-            while unit.is_a("IfcConversionBasedUnit"):
-                self.unit_scale *= unit.ConversionFactor.ValueComponent.wrappedValue
-                unit = unit.ConversionFactor.UnitComponent
-            if unit.is_a("IfcSIUnit"):
-                self.unit_scale *= ifcopenshell.util.unit.get_prefix_multiplier(unit.Prefix)
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
 
     def set_units(self):
         units = self.file.by_type("IfcUnitAssignment")[0]

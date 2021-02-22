@@ -200,17 +200,42 @@ class ConvertLocalToGlobal(bpy.types.Operator):
             Data.load()
         props = context.scene.BIMGeoreferenceProperties
         x, y, z = [float(co) for co in props.coordinate_input.split(",")]
-        results = ifcopenshell.util.geolocation.xyz2enh(
-            x,
-            y,
-            z,
-            Data.map_conversion["Eastings"],
-            Data.map_conversion["Northings"],
-            Data.map_conversion["OrthogonalHeight"],
-            Data.map_conversion.get("XAxisAbscissa", 1.0),
-            Data.map_conversion.get("XAxisOrdinate", 0.0),
-            Data.map_conversion.get("Scale", 1.0),
-        )
+
+        if props.has_blender_offset and props.blender_offset_type == "CARTESIAN_POINT":
+            x -= float(props.blender_eastings)
+            y -= float(props.blender_northings)
+            z -= float(props.blender_orthogonal_height)
+        elif props.has_blender_offset and props.blender_offset_type == "OBJECT_PLACEMENT":
+            results = ifcopenshell.util.geolocation.xyz2enh(
+                x,
+                y,
+                z,
+                float(props.blender_eastings),
+                float(props.blender_northings),
+                float(props.blender_orthogonal_height),
+                float(props.blender_x_axis_abscissa),
+                float(props.blender_x_axis_ordinate),
+                1.0,
+            )
+            x, y, z = results
+
+        # TODO: what if the project CRS units and the project units are different?
+
+        if Data.map_conversion:
+            results = ifcopenshell.util.geolocation.xyz2enh(
+                x,
+                y,
+                z,
+                Data.map_conversion["Eastings"],
+                Data.map_conversion["Northings"],
+                Data.map_conversion["OrthogonalHeight"],
+                Data.map_conversion.get("XAxisAbscissa", 1.0),
+                Data.map_conversion.get("XAxisOrdinate", 0.0),
+                Data.map_conversion.get("Scale", 1.0),
+            )
+        else:
+            results = (x, y, z)
+
         props.coordinate_output = ",".join([str(r) for r in results])
         bpy.context.scene.cursor.location = results
         return {"FINISHED"}
@@ -225,17 +250,39 @@ class ConvertGlobalToLocal(bpy.types.Operator):
             Data.load()
         props = context.scene.BIMGeoreferenceProperties
         x, y, z = [float(co) for co in props.coordinate_input.split(",")]
-        results = ifcopenshell.util.geolocation.enh2xyz(
-            x,
-            y,
-            z,
-            Data.map_conversion["Eastings"],
-            Data.map_conversion["Northings"],
-            Data.map_conversion["OrthogonalHeight"],
-            Data.map_conversion.get("XAxisAbscissa", 1.0),
-            Data.map_conversion.get("XAxisOrdinate", 0.0),
-            Data.map_conversion.get("Scale", 1.0),
-        )
+
+        if Data.map_conversion:
+            results = ifcopenshell.util.geolocation.enh2xyz(
+                x,
+                y,
+                z,
+                Data.map_conversion["Eastings"],
+                Data.map_conversion["Northings"],
+                Data.map_conversion["OrthogonalHeight"],
+                Data.map_conversion.get("XAxisAbscissa", 1.0),
+                Data.map_conversion.get("XAxisOrdinate", 0.0),
+                Data.map_conversion.get("Scale", 1.0),
+            )
+        else:
+            results = (x, y, z)
+
+        if props.has_blender_offset and props.blender_offset_type == "CARTESIAN_POINT":
+            results[0] += float(props.blender_eastings)
+            results[1] += float(props.blender_northings)
+            results[2] += float(props.blender_orthogonal_height)
+        elif props.has_blender_offset and props.blender_offset_type == "OBJECT_PLACEMENT":
+            results = ifcopenshell.util.geolocation.enh2xyz(
+                results[0],
+                results[1],
+                results[2],
+                float(props.blender_eastings),
+                float(props.blender_northings),
+                float(props.blender_orthogonal_height),
+                float(props.blender_x_axis_abscissa),
+                float(props.blender_x_axis_ordinate),
+                1.0,
+            )
+
         props.coordinate_output = ",".join([str(r) for r in results])
         bpy.context.scene.cursor.location = results
         return {"FINISHED"}
