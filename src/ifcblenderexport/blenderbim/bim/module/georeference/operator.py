@@ -284,6 +284,8 @@ class ConvertGlobalToLocal(bpy.types.Operator):
             )
 
         props.coordinate_output = ",".join([str(r) for r in results])
-        bpy.context.scene.cursor.location = results
+
+        scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
+        bpy.context.scene.cursor.location = (results[0] * scale, results[1] * scale, results[2] * scale)
         return {"FINISHED"}
 
