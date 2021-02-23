@@ -3,6 +3,7 @@ import json
 import blenderbim.bim.decoration as decoration
 from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.attribute.data import Data as AttributeData
 
 
 def mode_callback(obj, data):
@@ -17,6 +18,17 @@ def mode_callback(obj, data):
     representation = IfcStore.get_file().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
     if representation.RepresentationType == "Tessellation" or representation.RepresentationType == "Brep":
         bpy.ops.bim.update_mesh_representation(obj=obj.name)
+
+
+def name_callback(obj, data):
+    # Blender material names are up to 63 UTF-8 bytes
+    if not obj.BIMObjectProperties.ifc_definition_id or "/" not in obj.name or len(bytes(obj.name, "utf-8")) >= 63:
+        return
+    element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+    if not element.is_a("IfcRoot"):
+        return
+    element.Name = "/".join(obj.name.split("/")[1:])
+    AttributeData.load(obj.BIMObjectProperties.ifc_definition_id)
 
 
 def subscribe_to(object, data_path, callback):
