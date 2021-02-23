@@ -5,6 +5,36 @@ from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
 
 
+def mode_callback(obj, data):
+    if (
+        obj.mode != "OBJECT"
+        or not obj.data
+        or not isinstance(obj.data, bpy.types.Mesh)
+        or not obj.data.BIMMeshProperties.ifc_definition_id
+        or not bpy.context.scene.BIMGeometryProperties.should_auto_update_mesh_representations
+    ):
+        return
+    representation = IfcStore.get_file().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+    if representation.RepresentationType == "Tessellation" or representation.RepresentationType == "Brep":
+        bpy.ops.bim.update_mesh_representation(obj=obj.name)
+
+
+def subscribe_to(object, data_path, callback):
+    subscribe_to = object.path_resolve(data_path, False)
+    bpy.msgbus.subscribe_rna(
+        key=subscribe_to,
+        owner=object,
+        args=(
+            object,
+            data_path,
+        ),
+        notify=callback,
+        options={
+            "PERSISTENT",
+        },
+    )
+
+
 @persistent
 def loadIfcStore(scene):
     IfcStore.file = None
@@ -31,7 +61,6 @@ def loadIfcStore(scene):
 
 @persistent
 def ensureIfcExported(scene):
-    print('ensuring')
     if IfcStore.get_file() and not bpy.context.scene.BIMProperties.ifc_file:
         # The invocation pops up a file select window.
         # This is non-blocking, therefore the Blend file is saved before we export.

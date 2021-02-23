@@ -1,5 +1,6 @@
 import bpy
 import ifcopenshell
+import blenderbim.bim.handler
 
 
 class IfcStore:
@@ -36,6 +37,7 @@ class IfcStore:
         if hasattr(element, "GlobalId"):
             IfcStore.guid_map[element.GlobalId] = obj
         obj.BIMObjectProperties.ifc_definition_id = element.id()
+        blenderbim.bim.handler.subscribe_to(obj, "mode", blenderbim.bim.handler.mode_callback)
 
     @staticmethod
     def unlink_element(element, obj=None):
