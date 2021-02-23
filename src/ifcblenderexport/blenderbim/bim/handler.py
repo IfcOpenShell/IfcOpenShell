@@ -69,8 +69,21 @@ def ensureIfcExported(scene):
 
 @persistent
 def storeIdMap(scene):
-    bpy.context.scene.BIMProperties.id_map = json.dumps({k: v.name for k, v in IfcStore.id_map.items()})
-    bpy.context.scene.BIMProperties.guid_map = json.dumps({k: v.name for k, v in IfcStore.guid_map.items()})
+    try:
+        bpy.context.scene.BIMProperties.id_map = json.dumps({k: v.name for k, v in IfcStore.id_map.items()})
+        bpy.context.scene.BIMProperties.guid_map = json.dumps({k: v.name for k, v in IfcStore.guid_map.items()})
+    except:
+        # Regenerate maps. Is there a better solution for this? It seems fragile.
+        file = IfcStore.get_file()
+        IfcStore.id_map = {
+            o.ifc_definition_id: o.name for o in bpy.data.objects if o.BIMObjectProperties.ifc_definition_id
+        }
+        IfcStore.guid_map = {
+            file.by_id(i).GlobalId: n for i, n in IfcStore.id_map.items() if file.by_id(i).is_a("IfcRoot")
+        }
+        # Then attempt to store it again
+        bpy.context.scene.BIMProperties.id_map = json.dumps({k: v.name for k, v in IfcStore.id_map.items()})
+        bpy.context.scene.BIMProperties.guid_map = json.dumps({k: v.name for k, v in IfcStore.guid_map.items()})
 
 
 @persistent
