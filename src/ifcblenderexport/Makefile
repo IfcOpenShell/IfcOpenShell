@@ -98,7 +98,7 @@ endif
 	# Provides IFCCSV functionality
 	cp -r dist/working/IfcOpenShell-0.6.0/src/ifccsv/* dist/blenderbim/libs/site/packages/
 	# Provides IFCPatch functionality
-	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcpatch dist/blenderbim/libs/site/packages/
+	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcpatch/ifcpatch dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Provides Mustache templating in construction documentation

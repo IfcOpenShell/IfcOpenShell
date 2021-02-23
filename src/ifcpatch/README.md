@@ -49,8 +49,8 @@ optional arguments:
 Exactly how it is run depends on the recipe. A recipe may require zero or more
 arguments which are specific to the recipe. Here's an example which runs the
 `ExtractElements` recipe, which, as the same suggests, extracts out elements.
-This recipe expects one argument, which is a [filtering
-query](https://wiki.osarch.org/index.php?title=IfcOpenShell_code_examples#IFC_Query_Syntax).
+This recipe expects one argument, which uses the [IFC Query
+syntax](https://wiki.osarch.org/index.php?title=IfcOpenShell_code_examples#IFC_Query_Syntax).
 In this example, we'll extract out all `IfcWall` elements.
 
 ```
@@ -65,6 +65,7 @@ ifcpatch.execute({
     "input": "input.ifc",
     "output": "output.ifc",
     "recipe": "ExtractElements",
+    "log": "ifcpatch.log",
     "arguments": [".IfcWall"],
 })
 ```
