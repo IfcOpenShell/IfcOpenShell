@@ -14,7 +14,7 @@ from bpy.props import (
 
 
 class BIMGeometryProperties(PropertyGroup):
-    should_auto_update_mesh_representations: BoolProperty(name="Should Auto Update Representations", default=True)
+    should_auto_update_mesh_representations: BoolProperty(name="Should Auto Update Representations", default=False)
     # Revit workaround
     should_use_presentation_style_assignment: BoolProperty(name="Force Presentation Style Assignment", default=False)
     # RIB iTwo, DESITE BIM workaround
