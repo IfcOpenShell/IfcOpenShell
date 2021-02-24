@@ -1104,7 +1104,8 @@ class IfcImporter:
 
     def set_ifc_file(self):
         bpy.context.scene.BIMProperties.ifc_file = self.ifc_import_settings.input_file
-        IfcStore.path = "self.ifc_import_settings.input_file"
+        IfcStore.file = self.file
+        IfcStore.path = self.ifc_import_settings.input_file
 
     def calculate_unit_scale(self):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
@@ -1527,7 +1528,6 @@ class IfcImporter:
         return parent @ self.get_axis2placement(plc.RelativePlacement)
 
     def set_default_context(self):
-        ContextData.load()
         for subcontext in self.file.by_type("IfcGeometricRepresentationSubContext"):
             if subcontext.ContextIdentifier == "Body":
                 bpy.context.scene.BIMProperties.contexts = str(subcontext.id())
