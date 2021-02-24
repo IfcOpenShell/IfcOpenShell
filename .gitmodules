@@ -5,3 +5,6 @@
 [submodule "src/ifcopenshell-python/ifcopenshell/mvd"]
 	path = src/ifcopenshell-python/ifcopenshell/mvd
 	url = https://github.com/opensourceBIM/python-mvdxml/
+[submodule "src/ifcpythonparser"]
+	path = src/ifcpythonparser
+	url = https://github.com/johltn/ifc-python-parser
