@@ -2,14 +2,19 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.AddPropertySetTemplate,
-    operator.RemovePropertySetTemplate,
-    operator.EditPropertySetTemplate,
-    operator.SavePropertySetTemplate,
-    operator.AddPropertyTemplate,
-    operator.RemovePropertyTemplate,
-    prop.PropertySetTemplate,
-    prop.PropertyTemplate,
+    operator.SavePsetTemplateFile,
+    operator.AddPsetTemplate,
+    operator.EditPsetTemplate,
+    operator.RemovePsetTemplate,
+    operator.AddPropTemplate,
+    operator.EditPropTemplate,
+    operator.RemovePropTemplate,
+    operator.EnableEditingPsetTemplate,
+    operator.DisableEditingPsetTemplate,
+    operator.EnableEditingPropTemplate,
+    operator.DisableEditingPropTemplate,
+    prop.PsetTemplate,
+    prop.PropTemplate,
     prop.BIMPsetTemplateProperties,
     ui.BIM_PT_pset_template,
 )
