@@ -175,6 +175,8 @@ class Data:
                 data_type = "string"
             elif "<real>" in data_type:
                 data_type = "float"
+            elif "<number>" in data_type:
+                data_type = "integer"
             elif "<integer>" in data_type:
                 data_type = "integer"
             elif "<boolean>" in data_type:
