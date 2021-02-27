@@ -253,14 +253,21 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* l, T
 
 		result = sewer.SewedShape();
 
+		// @todo ugly hack
+
+		// The reason for this distinction is that at this point of the loop we're not sure anymore
+		// whether this was constructed from an inner or outer bound. So rather than iterating over
+		// wires of `face1` and `face2` we should iterate over the faces and then properly check with
+		// BRepTools::OuterBound().
+		// Currently this distinction happens based on profile type which is not robust and probably
+		// not complete.
 		if (shell.IsNull()) {
 			shell = result;
 		} else if (l->SweptArea()->declaration().is(IfcSchema::IfcCircleHollowProfileDef::Class()) ||
-			l->SweptArea()->declaration().is(IfcSchema::IfcRectangleHollowProfileDef::Class()))
+			l->SweptArea()->declaration().is(IfcSchema::IfcRectangleHollowProfileDef::Class()) ||
+			l->SweptArea()->declaration().is(IfcSchema::IfcArbitraryProfileDefWithVoids::Class()))
 		{
-			/// @todo a bit of of a hack, should be sufficient
 			shell = BRepAlgoAPI_Cut(shell, result).Shape();
-			break;
 		} else {
 			if (compound.IsNull()) {
 				compound_builder.MakeCompound(compound);
