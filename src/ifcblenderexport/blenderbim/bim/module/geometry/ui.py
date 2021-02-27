@@ -80,6 +80,11 @@ class BIM_PT_mesh(Panel):
 
         row = layout.row()
         row.operator("bim.update_mesh_representation")
+
+        row = layout.row()
+        op = row.operator("bim.update_mesh_representation", text="Convert Mesh to Rectangular Extrusion")
+        op.ifc_representation_type = "IfcExtrudedAreaSolid/IfcRectangleProfileDef"
+
         row = layout.row()
         row.operator("bim.get_representation_ifc_parameters")
         for index, ifc_parameter in enumerate(props.ifc_parameters):

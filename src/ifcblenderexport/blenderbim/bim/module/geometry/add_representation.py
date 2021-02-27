@@ -2,6 +2,7 @@ import bpy
 import bmesh
 import ifcopenshell.util.unit
 from mathutils import Vector
+from blenderbim.bim.module.geometry.helper import Helper
 
 
 class Usecase:
@@ -20,6 +21,7 @@ class Usecase:
             "is_wireframe": False,  # If the geometry is a wireframe
             "is_curve": False,  # If the geometry is a Blender curve
             "is_point_cloud": False,  # If the geometry is a point cloud
+            "is_rectangular_extrusion": False,
         }
         self.ifc_vertices = []
         for key, value in settings.items():
@@ -124,6 +126,8 @@ class Usecase:
             return self.create_curve_representation()
         elif self.settings["is_point_cloud"]:
             return self.create_point_cloud_representation()
+        elif self.settings["is_rectangular_extrusion"]:
+            return self.create_rectangular_extrusion_representation()
         return self.create_mesh_representation()
 
     def create_curve3d_representation(self):
@@ -214,6 +218,18 @@ class Usecase:
                 points.append(points[0])
             results.append(self.file.createIfcPolyline(points))
         return results
+
+    def create_rectangular_extrusion_representation(self):
+        helper = Helper(self.file)
+        indices = helper.auto_detect_rectangle_profile_extruded_area_solid(self.settings["geometry"])
+        profile_def = helper.create_rectangle_profile_def(self.settings["blender_object"], indices["profile"])
+        item = helper.create_extruded_area_solid(self.settings["blender_object"], indices["extrusion"], profile_def)
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "SweptSolid",
+            [item],
+        )
 
     def create_mesh_representation(self):
         if self.file.schema == "IFC2X3" or self.settings["should_force_faceted_brep"]:
