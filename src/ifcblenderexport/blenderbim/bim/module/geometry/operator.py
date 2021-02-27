@@ -19,11 +19,11 @@ from blenderbim.bim.module.void.data import Data as VoidData
 from mathutils import Vector
 
 
-def get_box_context_id():
+def get_context_id(context_type, context_identifier, target_view):
     for context in ContextData.contexts.values():
-        if context["ContextType"] == "Model":
+        if context["ContextType"] == context_type:
             for i, subcontext in context["HasSubContexts"].items():
-                if subcontext["ContextIdentifier"] == "Box" and subcontext["TargetView"] == "MODEL_VIEW":
+                if subcontext["ContextIdentifier"] == context_identifier and subcontext["TargetView"] == target_view:
                     return i
 
 
@@ -120,7 +120,7 @@ class AddRepresentation(bpy.types.Operator):
                 print("Failed to write shape representation")
                 return {"FINISHED"}
 
-            box_context_id = get_box_context_id()
+            box_context_id = get_context_id("Model", "Box", "MODEL_VIEW")
             if (
                 box_context_id
                 and context_of_items.ContextType == "Model"
@@ -306,6 +306,7 @@ class UpdateMeshRepresentation(bpy.types.Operator):
     bl_idname = "bim.update_mesh_representation"
     bl_label = "Update Mesh Representation"
     obj: bpy.props.StringProperty()
+    ifc_representation_type: bpy.props.StringProperty()
 
     def execute(self, context):
         if not ContextData.is_loaded:
@@ -315,80 +316,80 @@ class UpdateMeshRepresentation(bpy.types.Operator):
         self.file = IfcStore.get_file()
 
         for obj in objs:
-            bpy.ops.bim.edit_object_placement(obj=obj.name)
-
-            product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-
-            if product.is_a("IfcGridAxis"):
-                create_axis_curve.Usecase(self.file, {"AxisCurve": obj, "grid_axis": product}).execute()
-                continue
-
-            old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-            context_of_items = old_representation.ContextOfItems
-
-            gprop = context.scene.BIMGeoreferenceProperties
-            coordinate_offset = None
-            if gprop.has_blender_offset and gprop.blender_offset_type == "CARTESIAN_POINT":
-                coordinate_offset = Vector(
-                    (
-                        float(gprop.blender_eastings),
-                        float(gprop.blender_northings),
-                        float(gprop.blender_orthogonal_height),
-                    )
-                )
-
-            representation_data = {
-                "context": context_of_items,
-                "blender_object": obj,
-                "geometry": obj.data,
-                "coordinate_offset": coordinate_offset,
-                "total_items": max(1, len(obj.material_slots)),
-                "should_force_faceted_brep": context.scene.BIMGeometryProperties.should_force_faceted_brep,
-                "should_force_triangulation": context.scene.BIMGeometryProperties.should_force_triangulation,
-            }
-
-            new_representation = add_representation.Usecase(self.file, representation_data).execute()
-
-            if not new_representation:
-                print("Failed to write shape representation")
-                return {"FINISHED"}
-
-            box_context_id = get_box_context_id()
-            old_box = ifcopenshell.util.element.get_representation(product, "Model", "Box", "MODEL_VIEW")
-            if (
-                box_context_id
-                and old_box
-                and context_of_items.ContextType == "Model"
-                and context_of_items.ContextIdentifier
-                and context_of_items.ContextIdentifier == "Body"
-            ):
-                representation_data["context"] = self.file.by_id(box_context_id)
-                new_box = add_representation.Usecase(self.file, representation_data).execute()
-                for inverse in self.file.get_inverse(old_box):
-                    ifcopenshell.util.element.replace_attribute(inverse, old_box, new_box)
-
-            assign_styles.Usecase(
-                self.file,
-                {
-                    "shape_representation": new_representation,
-                    "styles": [
-                        self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
-                        for s in obj.material_slots
-                        if s.material
-                    ],
-                    "should_use_presentation_style_assignment": context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
-                },
-            ).execute()
-
-            # TODO: move this into a replace_representation usecase or something
-            for inverse in self.file.get_inverse(old_representation):
-                ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
-
-            obj.data.BIMMeshProperties.ifc_definition_id = int(new_representation.id())
-            obj.data.name = f"{old_representation.ContextOfItems.id()}/{new_representation.id()}"
-            bpy.ops.bim.remove_representation(representation_id=old_representation.id())
-            Data.load(obj.BIMObjectProperties.ifc_definition_id)
+            self.update_obj_mesh_representation(context, obj)
         return {"FINISHED"}
+
+    def update_obj_mesh_representation(self, context, obj):
+        product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+
+        if product.is_a("IfcGridAxis"):
+            create_axis_curve.Usecase(self.file, {"AxisCurve": obj, "grid_axis": product}).execute()
+            return
+
+        bpy.ops.bim.edit_object_placement(obj=obj.name)
+
+        old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        context_of_items = old_representation.ContextOfItems
+
+        gprop = context.scene.BIMGeoreferenceProperties
+        coordinate_offset = None
+        if gprop.has_blender_offset and gprop.blender_offset_type == "CARTESIAN_POINT":
+            coordinate_offset = Vector(
+                (
+                    float(gprop.blender_eastings),
+                    float(gprop.blender_northings),
+                    float(gprop.blender_orthogonal_height),
+                )
+            )
+
+        representation_data = {
+            "context": context_of_items,
+            "blender_object": obj,
+            "geometry": obj.data,
+            "coordinate_offset": coordinate_offset,
+            "total_items": max(1, len(obj.material_slots)),
+            "should_force_faceted_brep": context.scene.BIMGeometryProperties.should_force_faceted_brep,
+            "should_force_triangulation": context.scene.BIMGeometryProperties.should_force_triangulation,
+            "is_rectangular_extrusion": self.ifc_representation_type == "IfcExtrudedAreaSolid/IfcRectangleProfileDef"
+        }
+
+        new_representation = add_representation.Usecase(self.file, representation_data).execute()
+
+        box_context_id = get_context_id("Model", "Box", "MODEL_VIEW")
+        old_box = ifcopenshell.util.element.get_representation(product, "Model", "Box", "MODEL_VIEW")
+        if (
+            box_context_id
+            and old_box
+            and context_of_items.ContextType == "Model"
+            and context_of_items.ContextIdentifier
+            and context_of_items.ContextIdentifier == "Body"
+        ):
+            representation_data["context"] = self.file.by_id(box_context_id)
+            new_box = add_representation.Usecase(self.file, representation_data).execute()
+            for inverse in self.file.get_inverse(old_box):
+                ifcopenshell.util.element.replace_attribute(inverse, old_box, new_box)
+
+        assign_styles.Usecase(
+            self.file,
+            {
+                "shape_representation": new_representation,
+                "styles": [
+                    self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
+                    for s in obj.material_slots
+                    if s.material
+                ],
+                "should_use_presentation_style_assignment": context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
+            },
+        ).execute()
+
+        # TODO: move this into a replace_representation usecase or something
+        for inverse in self.file.get_inverse(old_representation):
+            ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
+
+        obj.data.BIMMeshProperties.ifc_definition_id = int(new_representation.id())
+        obj.data.name = f"{old_representation.ContextOfItems.id()}/{new_representation.id()}"
+        bpy.ops.bim.remove_representation(representation_id=old_representation.id())
+        Data.load(obj.BIMObjectProperties.ifc_definition_id)
 
 
 class UpdateParametricRepresentation(bpy.types.Operator):
