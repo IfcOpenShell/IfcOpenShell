@@ -8,6 +8,22 @@ class exception(Exception): pass
 
 def error(msg):
     raise exception(msg)
+    
+    
+class facet_evaluation:
+    """
+    The evaluation of a facet with data from IFC. Converts to bool and has a human readable string format.
+    """
+    
+    def __init__(self, success, str):
+        self.success = success
+        self.str = str
+    
+    def __bool__(self):
+        return self.success
+        
+    def __str__(self):
+        return self.str
 
 
 class meta_facet(type):
@@ -40,24 +56,40 @@ class facet(metaclass=meta_facet):
             return restriction(elems[0])
         else:
             return v.firstChild.nodeValue.strip()
+        
+    def __iter__(self):
+        for k in self.parameters:
+            yield k, getattr(self, k)
+            
+    def __str__(self):
+        return self.message % dict(list(self))
 
 
 class entity(facet):
     """
     The IDS entity facet currently *with* inheritance
     """
+    
+    parameters = ["name"]
+    message = "an entity name '%(name)s'"
 
     def __call__(self, inst, logger):
         logger.debug("Testing %s == %s", inst.is_a(), self.name)
         # @nb with inheritance
         # return inst.is_a() == self.name
-        return inst.is_a(self.name)
-
+        return facet_evaluation(
+            inst.is_a(self.name),
+            self.message % {'name':inst.is_a()}
+        )
+        
 
 class classification(facet):
     """
     The IDS classification facet by traversing the HasAssociations inverse attribute
     """
+    
+    parameters = ["system", "value"]
+    message = "a classification reference to '%(value)s' from '%(system)s'"
 
     def __call__(self, inst, logger):
         refs = []
@@ -66,7 +98,12 @@ class classification(facet):
                 cref = association.RelatingClassification
                 refs.append((cref.ReferencedSource, cref.Name))
 
-        return (self.system, self.value) in refs
+        return facet_evaluation(
+            (self.system, self.value) in refs,
+            # @todo
+            ''
+        )
+        
 
 
 class property(facet):
@@ -74,11 +111,33 @@ class property(facet):
     The IDS property facet implenented using `ifcopenshell.util.element`
     """
 
+    parameters = ["property", "propertyset", "value"]
+    message = "a property '%(property)s' in '%(propertyset)s' with value '%(value)s'"
+
     def __call__(self, inst, logger):
         props = ifcopenshell.util.element.get_psets(inst)
-        val = props.get(self.propertyset, {}).get(self.property)
+        pset = props.get(self.propertyset)
+        val = pset.get(self.property) if pset else None
         logger.debug("Testing %s == %s", val, self.value)
-        return val == self.value
+        
+        di = {
+            'property': self.property,
+            'propertyset': self.propertyset,
+            'value': val
+        }
+        
+        if val is not None:
+            msg = self.message % di
+        else:
+            if pset:
+                msg = "a set '%(propertyset)s', but no property '%(property)'" % di
+            else:
+                msg = "no set '%(propertyset)s'" % di
+            
+        return facet_evaluation(
+            val == self.value,
+            msg
+        )
 
 
 class boolean_logic:
@@ -90,7 +149,15 @@ class boolean_logic:
         self.terms = terms
 
     def __call__(self, *args):
-        return self.fold(t(*args) for t in self.terms)
+        eval = [t(*args) for t in self.terms]
+        join = [" and ", " or "][self.fold == any]
+        return facet_evaluation(
+            self.fold(eval),
+            join.join(map(str, eval))
+        )
+        
+    def __str__(self):
+        return [" and ", " or "][self.fold == any].join(map(str, self.terms))
 
 
 class boolean_and(boolean_logic):
@@ -117,7 +184,7 @@ class restriction:
         return other in self.options
 
     def __repr__(self):
-        return "|".join(self.options)
+        return " or ".join(self.options)
 
 
 class specification:
@@ -144,10 +211,14 @@ class specification:
 
     def __call__(self, inst, logger):
         if self.applicabiliy(inst, logger):
-            if self.requirements(inst, logger):
-                logger.info("%s is compliant", inst)
+            valid = self.requirements(inst, logger)
+            if valid:
+                logger.info(str(self) + "\n%s has" % inst + " " + str(valid) + " so is compliant")
             else:
-                logger.error("%s not compliant", inst)
+                logger.error(str(self) + "\n%s has" % inst + " " + str(valid) + " so is not compliant")
+                
+    def __str__(self):
+        return "Given an instance with %(applicabiliy)s\nWe expect %(requirements)s" % self.__dict__
 
 
 class ids:
@@ -167,8 +238,8 @@ class ids:
         ]
 
     def validate(self, ifc_file, logger):
-        for elem in ifc_file.by_type("IfcObject"):
-            for spec in self.specifications:
+        for spec in self.specifications:
+            for elem in ifc_file.by_type("IfcObject"):
                 spec(elem, logger)
 
 
