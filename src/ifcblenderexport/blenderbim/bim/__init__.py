@@ -41,6 +41,7 @@ if bpy is not None:
         "diff": None,
         "patch": None,
         "covetool": None,
+        "augin": None,
         "debug": None,
     }
 
