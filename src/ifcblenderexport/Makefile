@@ -231,6 +231,34 @@ endif
 	cd dist/working/defusedxml-0.6.0/ && cp -r defusedxml ../../blenderbim/libs/site/packages/
 	rm -rf dist/working
 
+	# Required by augin
+	mkdir dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/76/b4/b7baffbda025efd5dc8fcd8d2e953e3aa939c236a484084fa8f4c3588ee9/boto3-1.17.17.tar.gz
+	cd dist/working && tar -xzvf boto3*
+	cd dist/working/boto3-1.17.17/ && cp -r boto3 ../../blenderbim/libs/site/packages/
+	rm -rf dist/working
+
+	# Required by boto3
+	mkdir dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/7f/2e/e02fdfd0f0377c4e44e61de27b05d5cfe93575770661ef9ded80ed90fa88/botocore-1.20.17.tar.gz
+	cd dist/working && tar -xzvf botocore*
+	cd dist/working/botocore-1.20.17/ && cp -r botocore ../../blenderbim/libs/site/packages/
+	rm -rf dist/working
+
+	# Required by boto3
+	mkdir dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/3c/56/3f325b1eef9791759784aa5046a8f6a1aff8f7c898a2e34506771d3b99d8/jmespath-0.10.0.tar.gz
+	cd dist/working && tar -xzvf jmespath*
+	cd dist/working/jmespath-0.10.0/ && cp -r jmespath ../../blenderbim/libs/site/packages/
+	rm -rf dist/working
+
+	# Required by boto3
+	mkdir dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/08/e1/3ee2096ebaeeb8c186d20ed16c8faf4a503913e5c9a0e14cd6b8ffc405a3/s3transfer-0.3.4.tar.gz
+	cd dist/working && tar -xzvf s3transfer*
+	cd dist/working/s3transfer-0.3.4/ && cp -r s3transfer ../../blenderbim/libs/site/packages/
+	rm -rf dist/working
+
 	# Provides IFCJSON functionality
 	mkdir dist/working
 	cd dist/working && wget https://github.com/IFCJSON-Team/IFC2JSON_python/archive/master.zip
