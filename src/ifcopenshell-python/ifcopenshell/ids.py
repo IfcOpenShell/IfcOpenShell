@@ -4,24 +4,26 @@ import ifcopenshell.util.element
 from xml.dom.minidom import parse
 
 
-class exception(Exception): pass
+class exception(Exception):
+    pass
+
 
 def error(msg):
     raise exception(msg)
-    
-    
+
+
 class facet_evaluation:
     """
     The evaluation of a facet with data from IFC. Converts to bool and has a human readable string format.
     """
-    
+
     def __init__(self, success, str):
         self.success = success
         self.str = str
-    
+
     def __bool__(self):
         return self.success
-        
+
     def __str__(self):
         return self.str
 
@@ -56,11 +58,11 @@ class facet(metaclass=meta_facet):
             return restriction(elems[0])
         else:
             return v.firstChild.nodeValue.strip()
-        
+
     def __iter__(self):
         for k in self.parameters:
             yield k, getattr(self, k)
-            
+
     def __str__(self):
         return self.message % dict(list(self))
 
@@ -69,7 +71,7 @@ class entity(facet):
     """
     The IDS entity facet currently *with* inheritance
     """
-    
+
     parameters = ["name"]
     message = "an entity name '%(name)s'"
 
@@ -77,17 +79,14 @@ class entity(facet):
         logger.debug("Testing %s == %s", inst.is_a(), self.name)
         # @nb with inheritance
         # return inst.is_a() == self.name
-        return facet_evaluation(
-            inst.is_a(self.name),
-            self.message % {'name':inst.is_a()}
-        )
-        
+        return facet_evaluation(inst.is_a(self.name), self.message % {"name": inst.is_a()})
+
 
 class classification(facet):
     """
     The IDS classification facet by traversing the HasAssociations inverse attribute
     """
-    
+
     parameters = ["system", "value"]
     message = "a classification reference to '%(value)s' from '%(system)s'"
 
@@ -101,9 +100,8 @@ class classification(facet):
         return facet_evaluation(
             (self.system, self.value) in refs,
             # @todo
-            ''
+            "",
         )
-        
 
 
 class property(facet):
@@ -119,13 +117,13 @@ class property(facet):
         pset = props.get(self.propertyset)
         val = pset.get(self.property) if pset else None
         logger.debug("Testing %s == %s", val, self.value)
-        
+
         di = {
-            'property': self.property,
-            'propertyset': self.propertyset,
-            'value': val
+            "property": self.property,
+            "propertyset": self.propertyset,
+            "value": val,
         }
-        
+
         if val is not None:
             msg = self.message % di
         else:
@@ -133,11 +131,8 @@ class property(facet):
                 msg = "a set '%(propertyset)s', but no property '%(property)'" % di
             else:
                 msg = "no set '%(propertyset)s'" % di
-            
-        return facet_evaluation(
-            val == self.value,
-            msg
-        )
+
+        return facet_evaluation(val == self.value, msg)
 
 
 class boolean_logic:
@@ -151,11 +146,8 @@ class boolean_logic:
     def __call__(self, *args):
         eval = [t(*args) for t in self.terms]
         join = [" and ", " or "][self.fold == any]
-        return facet_evaluation(
-            self.fold(eval),
-            join.join(map(str, eval))
-        )
-        
+        return facet_evaluation(self.fold(eval), join.join(map(str, eval)))
+
     def __str__(self):
         return [" and ", " or "][self.fold == any].join(map(str, self.terms))
 
@@ -200,14 +192,12 @@ class specification:
             return [cls(n) for cls, n in zip(classes, children)]
 
         phrases = [n for n in node.childNodes if n.nodeType == n.ELEMENT_NODE]
-        
+
         len(phrases) == 2 or error("expected two child nodes for <specification>")
         phrases[0].tagName == "applicability" or error("expected <applicability>")
         phrases[1].tagName == "requirements" or error("expected <requirements>")
-        
-        self.applicabiliy, self.requirements = (
-            boolean_and(parse_rules(phrase)) for phrase in phrases
-        )
+
+        self.applicabiliy, self.requirements = (boolean_and(parse_rules(phrase)) for phrase in phrases)
 
     def __call__(self, inst, logger):
         if self.applicabiliy(inst, logger):
@@ -216,7 +206,7 @@ class specification:
                 logger.info(str(self) + "\n%s has" % inst + " " + str(valid) + " so is compliant")
             else:
                 logger.error(str(self) + "\n%s has" % inst + " " + str(valid) + " so is not compliant")
-                
+
     def __str__(self):
         return "Given an instance with %(applicabiliy)s\nWe expect %(requirements)s" % self.__dict__
 
@@ -232,9 +222,7 @@ class ids:
         ids.tagName == "ids" or error("expected <ids>")
 
         self.specifications = [
-            specification(n)
-            for n in ids.childNodes
-            if n.nodeType == n.ELEMENT_NODE and n.tagName == "specification"
+            specification(n) for n in ids.childNodes if n.nodeType == n.ELEMENT_NODE and n.tagName == "specification"
         ]
 
     def validate(self, ifc_file, logger):
@@ -249,7 +237,7 @@ if __name__ == "__main__":
     import ifcopenshell
 
     logger = logging.getLogger("IDS")
-    logging.basicConfig(level=logging.INFO, format='%(message)s')
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
 
     ids_file = ids(sys.argv[1])
     ifc_file = ifcopenshell.open(sys.argv[2])
