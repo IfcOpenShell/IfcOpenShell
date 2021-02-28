@@ -80,6 +80,19 @@ class BIM_PT_mesh(Panel):
 
         row = layout.row()
         row.operator("bim.update_mesh_representation")
+
+        row = layout.row()
+        op = row.operator("bim.update_mesh_representation", text="Update Mesh As Rectangle Extrusion")
+        op.ifc_representation_class = "IfcExtrudedAreaSolid/IfcRectangleProfileDef"
+
+        row = layout.row()
+        op = row.operator("bim.update_mesh_representation", text="Update Mesh As Circle Extrusion")
+        op.ifc_representation_class = "IfcExtrudedAreaSolid/IfcCircleProfileDef"
+
+        row = layout.row()
+        op = row.operator("bim.update_mesh_representation", text="Update Mesh As Arbitrary Extrusion")
+        op.ifc_representation_class = "IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef"
+
         row = layout.row()
         row.operator("bim.get_representation_ifc_parameters")
         for index, ifc_parameter in enumerate(props.ifc_parameters):

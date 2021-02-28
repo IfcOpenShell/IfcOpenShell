@@ -2,6 +2,7 @@ import bpy
 import bmesh
 import ifcopenshell.util.unit
 from mathutils import Vector
+from blenderbim.bim.module.geometry.helper import Helper
 
 
 class Usecase:
@@ -20,6 +21,11 @@ class Usecase:
             "is_wireframe": False,  # If the geometry is a wireframe
             "is_curve": False,  # If the geometry is a Blender curve
             "is_point_cloud": False,  # If the geometry is a point cloud
+            #  Possible IFC representation classes:
+            #  IfcExtrudedAreaSolid/IfcRectangleProfileDef
+            #  IfcExtrudedAreaSolid/IfcCircleProfileDef
+            #  IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef
+            "ifc_representation_class": None,  # Whether to cast a mesh into a particular class
         }
         self.ifc_vertices = []
         for key, value in settings.items():
@@ -124,6 +130,12 @@ class Usecase:
             return self.create_curve_representation()
         elif self.settings["is_point_cloud"]:
             return self.create_point_cloud_representation()
+        elif self.settings["ifc_representation_class"] == "IfcExtrudedAreaSolid/IfcRectangleProfileDef":
+            return self.create_rectangle_extrusion_representation()
+        elif self.settings["ifc_representation_class"] == "IfcExtrudedAreaSolid/IfcCircleProfileDef":
+            return self.create_circle_extrusion_representation()
+        elif self.settings["ifc_representation_class"] == "IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef":
+            return self.create_arbitrary_extrusion_representation()
         return self.create_mesh_representation()
 
     def create_curve3d_representation(self):
@@ -214,6 +226,42 @@ class Usecase:
                 points.append(points[0])
             results.append(self.file.createIfcPolyline(points))
         return results
+
+    def create_rectangle_extrusion_representation(self):
+        helper = Helper(self.file)
+        indices = helper.auto_detect_rectangle_profile_extruded_area_solid(self.settings["geometry"])
+        profile_def = helper.create_rectangle_profile_def(self.settings["geometry"], indices["profile"])
+        item = helper.create_extruded_area_solid(self.settings["geometry"], indices["extrusion"], profile_def)
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "SweptSolid",
+            [item],
+        )
+
+    def create_circle_extrusion_representation(self):
+        helper = Helper(self.file)
+        indices = helper.auto_detect_circle_profile_extruded_area_solid(self.settings["geometry"])
+        profile_def = helper.create_circle_profile_def(self.settings["geometry"], indices["profile"])
+        item = helper.create_extruded_area_solid(self.settings["geometry"], indices["extrusion"], profile_def)
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "SweptSolid",
+            [item],
+        )
+
+    def create_arbitrary_extrusion_representation(self):
+        helper = Helper(self.file)
+        indices = helper.auto_detect_arbitrary_closed_profile_extruded_area_solid(self.settings["geometry"])
+        profile_def = helper.create_arbitrary_closed_profile_def(self.settings["geometry"], indices["profile"])
+        item = helper.create_extruded_area_solid(self.settings["geometry"], indices["extrusion"], profile_def)
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "SweptSolid",
+            [item],
+        )
 
     def create_mesh_representation(self):
         if self.file.schema == "IFC2X3" or self.settings["should_force_faceted_brep"]:
