@@ -64,9 +64,9 @@ class BIMTesterPurge(bpy.types.Operator):
 
 class SelectFeature(bpy.types.Operator):
     bl_idname = "bim.select_feature"
-    bl_label = "Select Feature"
+    bl_label = "Select Feature / IDS"
     filename_ext = ".feature"
-    filter_glob: bpy.props.StringProperty(default="*.feature", options={"HIDDEN"})
+    filter_glob: bpy.props.StringProperty(default="*.feature;*.xml", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
