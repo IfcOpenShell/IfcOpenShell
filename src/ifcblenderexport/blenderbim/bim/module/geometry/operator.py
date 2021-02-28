@@ -306,7 +306,7 @@ class UpdateMeshRepresentation(bpy.types.Operator):
     bl_idname = "bim.update_mesh_representation"
     bl_label = "Update Mesh Representation"
     obj: bpy.props.StringProperty()
-    ifc_representation_type: bpy.props.StringProperty()
+    ifc_representation_class: bpy.props.StringProperty()
 
     def execute(self, context):
         if not ContextData.is_loaded:
@@ -350,10 +350,27 @@ class UpdateMeshRepresentation(bpy.types.Operator):
             "total_items": max(1, len(obj.material_slots)),
             "should_force_faceted_brep": context.scene.BIMGeometryProperties.should_force_faceted_brep,
             "should_force_triangulation": context.scene.BIMGeometryProperties.should_force_triangulation,
-            "is_rectangular_extrusion": self.ifc_representation_type == "IfcExtrudedAreaSolid/IfcRectangleProfileDef"
+            "ifc_representation_class": self.ifc_representation_class
         }
 
         new_representation = add_representation.Usecase(self.file, representation_data).execute()
+
+        #if product.is_a("IfcWall"):
+        #    # Generate axis representation
+        #    axis_context_id = get_context_id("Model", "Axis", "MODEL_VIEW")
+        #    old_axis = ifcopenshell.util.element.get_representation(product, "Model", "Axis", "MODEL_VIEW")
+        #    if (
+        #        axis_context_id
+        #        and old_axis
+        #        and context_of_items.ContextType == "Model"
+        #        and context_of_items.ContextIdentifier
+        #        and context_of_items.ContextIdentifier == "Body"
+        #    ):
+        #        has_axis_generator = False
+        #        if has_axis_generator:
+        #            # TODO, just pseudocode for now
+        #            representation_data["geometry"] = axis_generator_function_call
+        #        pass
 
         box_context_id = get_context_id("Model", "Box", "MODEL_VIEW")
         old_box = ifcopenshell.util.element.get_representation(product, "Model", "Box", "MODEL_VIEW")
