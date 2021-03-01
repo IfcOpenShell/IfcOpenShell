@@ -6,7 +6,7 @@ bpy = sys.modules.get("bpy")
 if bpy is not None:
     import bpy
     import importlib
-    from . import handler, ui, prop, operator
+    from . import handler, ui, prop, operator, gizmos
 
     modules = {
         "project": None,
@@ -145,6 +145,11 @@ if bpy is not None:
         ui.BIM_UL_drawinglist,
         ui.BIM_UL_topics,
         ui.BIM_ADDON_preferences,
+        gizmos.UglyDotGizmo,
+        gizmos.DotGizmo,
+        gizmos.DimensionLabelGizmo,
+        gizmos.ExtrusionGuidesGizmo,
+        gizmos.ExtrusionWidget
     ]
 
     for module in modules.values():
