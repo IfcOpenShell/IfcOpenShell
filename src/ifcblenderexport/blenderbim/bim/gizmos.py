@@ -339,7 +339,7 @@ class ExtrusionWidget(types.GizmoGroup):
     bl_label = "Extrusion Gizmos"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'WINDOW'
-    bl_options = {'3D', 'PERSISTENT'}
+    bl_options = {'3D', 'PERSISTENT', 'SHOW_MODAL_ALL'}
 
     # FIXME: use proper scale from ifc value to blender units
 
