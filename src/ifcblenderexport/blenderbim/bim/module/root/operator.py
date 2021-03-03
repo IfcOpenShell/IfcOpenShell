@@ -52,24 +52,26 @@ class DisableReassignClass(bpy.types.Operator):
 class ReassignClass(bpy.types.Operator):
     bl_idname = "bim.reassign_class"
     bl_label = "Reassign IFC Class"
+    obj: bpy.props.StringProperty()
 
     def execute(self, context):
-        obj = bpy.context.active_object
+        objects = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
         self.file = IfcStore.get_file()
         predefined_type = bpy.context.scene.BIMRootProperties.ifc_predefined_type
         if predefined_type == "USERDEFINED":
             predefined_type = bpy.context.scene.BIMRootProperties.ifc_userdefined_type
-        product = reassign_class.Usecase(
-            self.file,
-            {
-                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                "ifc_class": bpy.context.scene.BIMRootProperties.ifc_class,
-                "predefined_type": predefined_type,
-            },
-        ).execute()
-        obj.name = "{}/{}".format(product.is_a(), "/".join(obj.name.split("/")[1:]))
-        IfcStore.link_element(product, obj)
-        bpy.context.active_object.BIMObjectProperties.is_reassigning_class = False
+        for obj in objects:
+            product = reassign_class.Usecase(
+                self.file,
+                {
+                    "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
+                    "ifc_class": bpy.context.scene.BIMRootProperties.ifc_class,
+                    "predefined_type": predefined_type,
+                },
+            ).execute()
+            obj.name = "{}/{}".format(product.is_a(), "/".join(obj.name.split("/")[1:]))
+            IfcStore.link_element(product, obj)
+            obj.BIMObjectProperties.is_reassigning_class = False
         return {"FINISHED"}
 
 
