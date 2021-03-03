@@ -39,7 +39,9 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
         else:
             has_props_displayed = False
             for prop in pset["Properties"]:
-                if prop["value"] is None or prop["value"] == "":
+                if context.preferences.addons["blenderbim"].preferences.should_hide_empty_props and (
+                    prop["value"] is None or prop["value"] == ""
+                ):
                     continue
                 has_props_displayed = True
                 row = box.row(align=True)
@@ -177,7 +179,7 @@ class BIM_PT_material_psets(Panel):
         if not props.ifc_definition_id:
             return False
         if IfcStore.get_file().schema == "IFC2X3":
-            return False # We don't support material psets in IFC2X3 because they suck
+            return False  # We don't support material psets in IFC2X3 because they suck
         if props.ifc_definition_id not in Data.products:
             Data.load(props.ifc_definition_id)
         if not Data.products[props.ifc_definition_id]:

@@ -2,7 +2,7 @@ import os
 import bpy
 from . import ifc
 from bpy.types import Panel
-from bpy.props import StringProperty
+from bpy.props import StringProperty, BoolProperty
 
 
 class BIM_PT_drawings(Panel):
@@ -292,6 +292,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     )
     svg_command: StringProperty(name="SVG Command", description="E.g. [['firefox-bin', path]]")
     pdf_command: StringProperty(name="PDF Command", description="E.g. [['firefox-bin', path]]")
+    should_hide_empty_props: BoolProperty(name="Should Hide Empty Properties", default=True)
 
     def draw(self, context):
         layout = self.layout
@@ -309,6 +310,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(self, "svg_command")
         row = layout.row()
         row.prop(self, "pdf_command")
+        row = layout.row()
+        row.prop(self, "should_hide_empty_props")
 
 
 class BIM_PT_annotation_utilities(Panel):
