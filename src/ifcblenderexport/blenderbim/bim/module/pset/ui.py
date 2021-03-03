@@ -37,13 +37,19 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
             for prop in pset["Properties"]:
                 draw_psetqto_editable_ui(box, props, prop)
         else:
+            has_props_displayed = False
             for prop in pset["Properties"]:
                 if prop["value"] is None or prop["value"] == "":
                     continue
+                has_props_displayed = True
                 row = box.row(align=True)
                 row.scale_y = 0.8
                 row.label(text=prop["Name"])
                 row.label(text=str(prop["value"]))
+            if not has_props_displayed:
+                row = box.row()
+                row.scale_y = 0.8
+                row.label(text="No Properties Set")
 
 
 def draw_psetqto_editable_ui(box, props, prop):
