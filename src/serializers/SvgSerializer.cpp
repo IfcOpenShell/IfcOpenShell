@@ -335,6 +335,8 @@ namespace {
 		return boost::none;
 	}
 
+	typedef std::pair<std::array<double, 3>, std::array<double, 3>> box_t;
+
 	boost::optional<TopoDS_Edge> edge_from_compound(TopoDS_Shape& compound) {
 		TopoDS_Iterator it(compound);
 		if (it.More()) {
@@ -352,6 +354,69 @@ namespace {
 			}
 		}
 		return boost::none;
+	}
+
+	class almost {
+	private:
+		double v_, eps_;
+	public:
+		almost(double v, double eps = 1.e-7)
+			: v_(v)
+			, eps_(eps)
+		{}
+
+		bool operator==(double other) const {
+			return std::fabs(other - v_) < eps_;
+		}
+
+		bool operator!=(double other) const {
+			return !(*this == other);
+		}
+	};
+
+	boost::optional<box_t> box_from_compound(TopoDS_Shape& compound) {
+		TopExp_Explorer exp(compound, TopAbs_SHELL);
+		TopoDS_Shell shell;
+		if (exp.More()) {
+			shell = TopoDS::Shell(exp.Current());
+			exp.Next();
+			if (exp.More()) {
+				return boost::none;
+			}
+		}
+		else {
+			return boost::none;
+		}
+
+		if (IfcGeom::Kernel::count(shell, TopAbs_FACE) != 6) {
+			return boost::none;
+		}
+
+		TopoDS_Iterator it(shell);
+		for (; it.More(); it.Next()) {
+			const auto& face = TopoDS::Face(it.Value());
+			auto surf = BRep_Tool::Surface(face);
+			if (surf->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
+				return boost::none;
+			}
+			auto pln = Handle(Geom_Plane)::DownCast(surf);
+			auto dz = std::abs(pln->Position().Direction().Z());
+			if (almost(0.) != dz && almost(1.) != dz) {
+				return boost::none;
+			}
+			auto dy = std::abs(pln->Position().Direction().Y());
+			if (almost(0.) != dy && almost(1.) != dy) {
+				return boost::none;
+			}
+		}
+
+		Bnd_Box b;
+		BRepBndLib::Add(compound, b, false);
+
+		double x0, y0, z0, x1, y1, z1;
+		b.Get(x0, y0, z0, x1, y1, z1);
+
+		return box_t{ {{x0, y0, z0}}, {{x1, y1, z1}} };
 	}
 }
 
@@ -375,6 +440,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 		auto compound_unmirrored = make_transform_global.Shape();
 
 		auto e = edge_from_compound(compound_unmirrored);
+		boost::optional<gp_Pln> pln;
 		if (e) {
 			TopoDS_Edge global_edge = TopoDS::Edge(e->Moved(trsf));
 			double u0, u1;
@@ -384,30 +450,36 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 				gp_Vec V;
 				crv->D1((u0 + u1) / 2., P, V);
 				auto N = V.Crossed(gp::DZ());
-				gp_Pln pln(gp_Ax3(P, N, V));
-				
-				// Move pln to have projection of origin at plane center.
-				// This is necessary to have Poly and BRep HLR at the same position
-				// (Poly) is wrong otherwise.
-				Extrema_ExtPElS ext;
-				ext.Perform(gp::Origin(), pln, 1.e-5);
-				pln.SetLocation(ext.Point(1).Value());
-
-				if (!deferred_section_data_) {
-					deferred_section_data_.emplace();
-				}
-				std::string name = brep_obj->name();
-				if (name.empty()) {
-					name = boost::lexical_cast<std::string>(brep_obj->id());
-				}
-				if (is_section) {
-					deferred_section_data_->push_back(vertical_section{ pln , "Section " + name, false });
-				}
-				if (is_elevation) {
-					deferred_section_data_->push_back(vertical_section{ pln , "Elevation " + name, true });
-				}
+				pln = gp_Pln(gp_Ax3(P, N, V));
 			}
 		}
+		else if (box_from_compound(compound_local)) {
+			pln = gp_Pln().Transformed(trsf);
+		}
+
+		if (pln) {
+			// Move pln to have projection of origin at plane center.
+			// This is necessary to have Poly and BRep HLR at the same position
+			// (Poly) is wrong otherwise.
+			Extrema_ExtPElS ext;
+			ext.Perform(gp::Origin(), *pln, 1.e-5);
+			pln->SetLocation(ext.Point(1).Value());
+
+			if (!deferred_section_data_) {
+				deferred_section_data_.emplace();
+			}
+			std::string name = brep_obj->name();
+			if (name.empty()) {
+				name = boost::lexical_cast<std::string>(brep_obj->id());
+			}
+			if (is_section) {
+				deferred_section_data_->push_back(vertical_section{ *pln , "Section " + name, false });
+			}
+			if (is_elevation) {
+				deferred_section_data_->push_back(vertical_section{ *pln , "Elevation " + name, true });
+			}
+		}
+
 		return;
 	}
 
