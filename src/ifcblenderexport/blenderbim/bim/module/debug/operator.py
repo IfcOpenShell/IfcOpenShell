@@ -13,8 +13,11 @@ class ProfileImportIFC(bpy.types.Operator):
         import cProfile
         import pstats
 
+        # For Windows
+        filepath = bpy.context.scene.BIMProperties.ifc_file.replace('\\', '\\\\')
+
         cProfile.run(
-            f"import bpy; bpy.ops.import_ifc.bim(filepath='{bpy.context.scene.BIMProperties.ifc_file}')", "blender.prof"
+            f"import bpy; bpy.ops.import_ifc.bim(filepath='{filepath}')", "blender.prof"
         )
         p = pstats.Stats("blender.prof")
         p.sort_stats("cumulative").print_stats(50)
