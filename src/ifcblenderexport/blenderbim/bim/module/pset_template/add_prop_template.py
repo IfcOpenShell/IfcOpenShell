@@ -16,7 +16,7 @@ class Usecase:
             "TemplateType": "P_SINGLEVALUE",
             "AccessState": "READWRITE"
         })
-        has_property_templates = list(self.settings["pset_template"].HasPropertyTemplates) or []
+        has_property_templates = list(self.settings["pset_template"].HasPropertyTemplates or [])
         has_property_templates.append(prop_template)
         self.settings["pset_template"].HasPropertyTemplates = has_property_templates
         return prop_template
