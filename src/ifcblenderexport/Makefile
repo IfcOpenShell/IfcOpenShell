@@ -34,6 +34,12 @@ endif
 	cd dist/working && mv occ_utils.py ../blenderbim/libs/site/packages/ifcopenshell/geom/occ_utils.py
 	rm -rf dist/working
 
+	# Provides IfcConvert for construction documentation
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.6.0-517b819-$(PLATFORM)64.zip
+	cd dist/working && unzip IfcConvert*
+	cp -r dist/working/IfcConvert dist/blenderbim/libs/
+	rm -rf dist/working
+
 	# Provides Python OCC functionality for cutting IFC geometry for construction documentation
 	mkdir dist/working
 	cd dist/working && wget $(PYTHONOCC_URL)
