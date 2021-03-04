@@ -1,5 +1,6 @@
 import bpy
 from blenderbim.bim.prop import Attribute
+from blenderbim.bim.module.pset.data import Data
 import blenderbim.bim.schema
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -20,12 +21,16 @@ qtonames = {}
 
 def getPsetNames(self, context):
     global psetnames
-    if "/" in context.active_object.name:
-        ifc_class = context.active_object.name.split("/")[0]
+    obj = context.active_object
+    if "/" in obj.name:
+        ifc_class = obj.name.split("/")[0]
         if ifc_class not in psetnames:
             psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
             psetnames[ifc_class] = [(p.Name, p.Name, "") for p in psets]
-        return psetnames[ifc_class]
+        assigned_names = [
+            Data.psets[p]["Name"] for p in Data.products[obj.BIMObjectProperties.ifc_definition_id]["psets"]
+        ]
+        return [p for p in psetnames[ifc_class] if p[0] not in assigned_names]
     return []
 
 
