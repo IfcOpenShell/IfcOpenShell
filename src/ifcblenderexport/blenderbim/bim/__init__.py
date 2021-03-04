@@ -16,6 +16,7 @@ if bpy is not None:
         "unit": None,
         "georeference": None,
         "context": None,
+        "drawing": None,
         "attribute": None,
         "type": None,
         "spatial": None,
@@ -88,7 +89,6 @@ if bpy is not None:
         operator.RemoveVariable,
         operator.PropagateTextData,
         operator.SetOverrideColour,
-        operator.AddDrawing,
         operator.RemoveDrawing,
         operator.AddDrawingStyle,
         operator.RemoveDrawingStyle,
@@ -182,6 +182,7 @@ if bpy is not None:
         bpy.types.Collection.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties) # Check if we need this
         bpy.types.Material.BIMMaterialProperties = bpy.props.PointerProperty(type=prop.BIMMaterialProperties)
         bpy.types.Mesh.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
+        bpy.types.Camera.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
         bpy.types.Camera.BIMCameraProperties = bpy.props.PointerProperty(type=prop.BIMCameraProperties)
         bpy.types.TextCurve.BIMTextProperties = bpy.props.PointerProperty(type=prop.BIMTextProperties)
         bpy.types.SCENE_PT_unit.append(ui.ifc_units)
@@ -208,6 +209,7 @@ if bpy is not None:
         del bpy.types.Collection.BIMObjectProperties # Check if we need this
         del bpy.types.Material.BIMMaterialProperties
         del bpy.types.Mesh.BIMMeshProperties
+        del bpy.types.Camera.BIMMeshProperties
         del bpy.types.Camera.BIMCameraProperties
         del bpy.types.TextCurve.BIMTextProperties
         bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
