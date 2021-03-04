@@ -1432,35 +1432,6 @@ class ActivateDrawingStyle(bpy.types.Operator):
                 return space
 
 
-class AddDrawing(bpy.types.Operator):
-    bl_idname = "bim.add_drawing"
-    bl_label = "Add Drawing"
-
-    def execute(self, context):
-        new = bpy.context.scene.DocProperties.drawings.add()
-        new.name = "DRAWING {}".format(len(bpy.context.scene.DocProperties.drawings))
-        if not bpy.data.collections.get("Views"):
-            bpy.context.scene.collection.children.link(bpy.data.collections.new("Views"))
-        views_collection = bpy.data.collections.get("Views")
-        view_collection = bpy.data.collections.new("IfcGroup/" + new.name)
-        views_collection.children.link(view_collection)
-        camera = bpy.data.objects.new("IfcGroup/" + new.name, bpy.data.cameras.new("IfcGroup/" + new.name))
-        camera.location = (0, 0, 1.7)  # The view shall be 1.7m above the origin
-        camera.data.type = "ORTHO"
-        camera.data.ortho_scale = 50  # The default of 6m is too small
-        if bpy.context.scene.unit_settings.system == "IMPERIAL":
-            camera.data.BIMCameraProperties.diagram_scale = '1/8"=1\'-0"|1/96'
-        else:
-            camera.data.BIMCameraProperties.diagram_scale = "1:100|1/100"
-        bpy.context.scene.camera = camera
-        view_collection.objects.link(camera)
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].region_3d.view_perspective = "CAMERA"
-        new.camera = camera
-        bpy.ops.bim.activate_drawing_style()
-        return {"FINISHED"}
-
-
 class RemoveDrawing(bpy.types.Operator):
     bl_idname = "bim.remove_drawing"
     bl_label = "Remove Drawing"
