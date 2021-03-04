@@ -40,11 +40,12 @@ def updateIfcFile(self, context):
         IfcStore.schema = None
         # Purge data cache
         from blenderbim.bim import modules
+
         for module in modules.values():
             if not module:
                 continue
             try:
-                getattr(getattr(module, 'data'), 'Data').purge()
+                getattr(getattr(module, "data"), "Data").purge()
             except AttributeError:
                 pass
 
@@ -267,17 +268,42 @@ class Variable(PropertyGroup):
     prop_key: StringProperty(name="Property Key")
 
 
+def updateAttributeStringValue(self, context):
+    updateAttributeValue(self, self.string_value)
+
+
+def updateAttributeBoolValue(self, context):
+    updateAttributeValue(self, self.bool_value)
+
+
+def updateAttributeIntValue(self, context):
+    updateAttributeValue(self, self.int_value)
+
+
+def updateAttributeFloatValue(self, context):
+    updateAttributeValue(self, self.float_value)
+
+
+def updateAttributeEnumValue(self, context):
+    updateAttributeValue(self, self.enum_value)
+
+
+def updateAttributeValue(self, value):
+    if value:
+        self.is_null = False
+
+
 class Attribute(PropertyGroup):
     name: StringProperty(name="Name")
     data_type: StringProperty(name="Data Type")
-    string_value: StringProperty(name="Value")
-    bool_value: BoolProperty(name="Value")
-    int_value: IntProperty(name="Value")
-    float_value: FloatProperty(name="Value")
+    string_value: StringProperty(name="Value", update=updateAttributeStringValue)
+    bool_value: BoolProperty(name="Value", update=updateAttributeBoolValue)
+    int_value: IntProperty(name="Value", update=updateAttributeIntValue)
+    float_value: FloatProperty(name="Value", update=updateAttributeFloatValue)
     is_null: BoolProperty(name="Is Null")
     is_optional: BoolProperty(name="Is Optional")
     enum_items: StringProperty(name="Value")
-    enum_value: EnumProperty(items=getAttributeEnumValues, name="Value")
+    enum_value: EnumProperty(items=getAttributeEnumValues, name="Value", update=updateAttributeEnumValue)
 
 
 class Drawing(PropertyGroup):
