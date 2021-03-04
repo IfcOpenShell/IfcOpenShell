@@ -267,6 +267,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* l, T
 			l->SweptArea()->declaration().is(IfcSchema::IfcRectangleHollowProfileDef::Class()) ||
 			l->SweptArea()->declaration().is(IfcSchema::IfcArbitraryProfileDefWithVoids::Class()))
 		{
+			// @todo properly check for failure and all.
 			shell = BRepAlgoAPI_Cut(shell, result).Shape();
 		} else {
 			if (compound.IsNull()) {
