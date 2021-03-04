@@ -477,6 +477,9 @@ class IfcImporter:
         return products
 
     def calculate_model_offset(self):
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        if props.has_blender_offset:
+            return
         project = self.file.by_type("IfcProject")[0]
         site = self.find_decomposed_ifc_class(project, "IfcSite")
         if site and self.is_element_far_away(site[0]):
