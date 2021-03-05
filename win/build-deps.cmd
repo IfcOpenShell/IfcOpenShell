@@ -177,8 +177,7 @@ set HDF5_VERSION=1.8.22
 set HDF5_VERSION_MAJOR=1.8
 set HDF5_CMAKE_ZIP=CMake-hdf5-%HDF5_VERSION%.zip
 set HDF5_INSTALL_ZIP_NAME=HDF5-%HDF5_VERSION%-win%ARCH_BITS%
-if "%ARCH_BITS%"==64. set ARCH_BITS_64=64
-
+if "%ARCH_BITS%"=="64" set ARCH_BITS_64=64
 call :DownloadFile http://support.hdfgroup.org/ftp/HDF5/releases/hdf5-%HDF5_VERSION_MAJOR%/hdf5-%HDF5_VERSION%/src/CMake-hdf5-%HDF5_VERSION%.zip "%DEPS_DIR%" %HDF5_CMAKE_ZIP%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive %HDF5_CMAKE_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\CMake-hdf5-%HDF5_VERSION%"
@@ -304,7 +303,7 @@ if not %ERRORLEVEL%==0 goto :Error
 findstr IfcOpenShell "%DEPENDENCY_DIR%\CMakeLists.txt">NUL
 if not %ERRORLEVEL%==0 (
     pushd "%DEPENDENCY_DIR%"
-    git reset --hard --ignore-whitespace ""%~dp0patches\%OCCT_VER%.patch"
+    git apply --ignore-whitespace ""%~dp0patches\%OCCT_VER%.patch"
     popd
 )
 findstr IfcOpenShell "%DEPENDENCY_DIR%\CMakeLists.txt">NUL
