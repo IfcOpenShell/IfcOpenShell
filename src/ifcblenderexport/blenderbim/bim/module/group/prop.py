@@ -13,13 +13,14 @@ from bpy.props import (
 )
 
 
-class Task(PropertyGroup):
+class Group(PropertyGroup):
     name: StringProperty(name="Name")
-    identification: StringProperty(name="Identification")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
-class BIMTaskProperties(PropertyGroup):
+class BIMGroupProperties(PropertyGroup):
+    group_attributes: CollectionProperty(name="Group Attributes", type=Attribute)
     is_editing: BoolProperty(name="Is Editing", default=False)
-    tasks: CollectionProperty(name="Tasks", type=Task)
-    active_task_index: IntProperty(name="Active Task Index")
+    groups: CollectionProperty(name="Groups", type=Group)
+    active_group_index: IntProperty(name="Active Group Index")
+    active_group_id: IntProperty(name="Active Group Id")
