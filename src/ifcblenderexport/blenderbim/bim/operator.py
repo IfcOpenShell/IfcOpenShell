@@ -124,7 +124,6 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
     should_clean_mesh: bpy.props.BoolProperty(name="Import and Clean Mesh", default=True)
     deflection_tolerance: bpy.props.FloatProperty(name="Import Deflection Tolerance", default=0.001)
     angular_tolerance: bpy.props.FloatProperty(name="Import Angular Tolerance", default=0.5)
-    should_allow_non_element_aggregates: bpy.props.BoolProperty(name="Import Non-Element Aggregates", default=False)
     should_offset_model: bpy.props.BoolProperty(name="Import and Offset Model", default=False)
     model_offset_coordinates: bpy.props.StringProperty(name="Model Offset Coordinates", default="0,0,0")
     ifc_import_filter: bpy.props.EnumProperty(
@@ -150,7 +149,6 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         settings.should_clean_mesh = self.should_clean_mesh
         settings.deflection_tolerance = self.deflection_tolerance
         settings.angular_tolerance = self.angular_tolerance
-        settings.should_allow_non_element_aggregates = self.should_allow_non_element_aggregates
         settings.should_offset_model = self.should_offset_model
         settings.model_offset_coordinates = (
             [float(o) for o in self.model_offset_coordinates.split(",")]
