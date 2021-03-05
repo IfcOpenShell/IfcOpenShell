@@ -535,6 +535,13 @@ class IfcImporter:
                     return point[0]
 
         for point in self.file.by_type("IfcCartesianPoint"):
+            is_used_in_placement = False
+            for inverse in self.file.get_inverse(point):
+                if inverse.is_a("IfcAxis2Placement3D"):
+                    is_used_in_placement = True
+                    break
+            if is_used_in_placement:
+                continue
             elements_checked += 1
             if elements_checked > element_checking_threshold:
                 return
