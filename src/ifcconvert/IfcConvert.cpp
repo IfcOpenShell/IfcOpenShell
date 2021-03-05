@@ -380,6 +380,8 @@ int main(int argc, char** argv) {
 			"Creates SVG cross section drawings automatically based on model extents")
 		("auto-elevation",
 			"Creates SVG elevation drawings automatically based on model extents")
+		("draw-storey-heights",
+			"Draws a horizontal line at the height of building storeys in vertical drawings")
 		("svg-xmlns",
 			"Stores name and guid in a separate namespace as opposed to data-name, data-guid")
 		("svg-poly",
@@ -949,6 +951,9 @@ int main(int argc, char** argv) {
 		if (vmap.count("print-space-areas") != 0) {
 			static_cast<SvgSerializer*>(serializer.get())->setPrintSpaceAreas(true);
 		}
+		if (vmap.count("draw-storey-heights") != 0) {
+			static_cast<SvgSerializer*>(serializer.get())->setDrawStoreyHeights(true);
+		}		
 		if (bounding_width.is_initialized() && bounding_height.is_initialized()) {
 			static_cast<SvgSerializer*>(serializer.get())->setBoundingRectangle(bounding_width.get(), bounding_height.get());
 		}

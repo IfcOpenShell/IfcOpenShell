@@ -78,6 +78,8 @@
 
 #include "../ifcparse/IfcGlobalId.h"
 
+#include <boost/format.hpp>
+
 #include "SvgSerializer.h"
 
 const double PI2 = M_PI * 2.;
@@ -486,6 +488,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 	auto p = storey_elevation_from_element(brep_obj);
 	IfcUtil::IfcBaseEntity* storey = p ? p->first : nullptr;
 	double elev = p ? p->second : std::numeric_limits<double>::quiet_NaN();
+	// @todo is it correct to call nameElement() here with a single storey (what if this element spans multiple?)
 	geometry_data data{ compound_local, trsf, brep_obj->product(), storey, elev, brep_obj->name(), nameElement(storey, brep_obj) };
 
 	if (auto_section_ || auto_elevation_ || section_ref_ || elevation_ref_) {
@@ -539,6 +542,10 @@ void SvgSerializer::write(const geometry_data& data) {
 	make_transform_global.Build();
 	// (When determinant < 0, copy is implied and the input is not mutated.)
 	auto compound_unmirrored = make_transform_global.Shape();
+
+	if (is_floor_plan_) {
+		BRepBndLib::Add(compound_unmirrored, bnd_);
+	}
 
 	// SVG has a coordinate system with the origin in the *upper*-left corner
 	// therefore we mirror the shape along the XZ-plane.	
@@ -863,9 +870,10 @@ void SvgSerializer::write(const geometry_data& data) {
 				object_type.erase(std::remove_if(object_type.begin(), object_type.end(), [](char c) { return !std::isalnum(c); }), object_type.end());
 			}
 
-			if (data.product->declaration().is("IfcAnnotation") && // is an Annotation
-				(proj.Magnitude() > 1.e-5) && 					   // when projected onto the view has a length
-				zmin >= range.first && zmin <= range.second)	   // the Z-coords are within the range of the building storey
+			if (data.product->declaration().is("IfcAnnotation") &&     // is an Annotation
+				(proj.Magnitude() > 1.e-5) && 					       // when projected onto the view has a length
+				zmin >= range.first && zmin < (range.second - 1.e-5))  // the Z-coords are within the range of the building storey,
+				                                                       // this excludes the upper bound with a small tolerance
 			{
 				auto svg_name = data.svg_name;
 
@@ -1016,6 +1024,63 @@ void SvgSerializer::write(const geometry_data& data) {
 
 				}
 				write(*po, wire);
+
+				if (data.product->declaration().is("IfcBuildingStorey") && draw_storey_heights_ && wires->Length() == 1 && IfcGeom::Kernel::count(wire, TopAbs_EDGE) == 1) {
+					
+					std::string elev_str;
+
+					const double lu = file->getUnit("LENGTHUNIT").second;
+					auto a = data.product->get("Elevation");
+					if (!a->isNull()) {
+						double elev = *a;
+						elev *= lu;
+						if (almost(1.) == lu) {
+							// m
+							elev_str = boost::str(boost::format("%.3f") % elev);
+						}
+						else {
+							elev_str = boost::str(boost::format("%d") % ((int) elev));
+						}
+					}
+
+					std::vector<std::string> labels{ data.ifc_name, elev_str };
+					util::string_buffer path;
+
+					TopExp_Explorer exp(wire, TopAbs_EDGE);
+					auto edge = TopoDS::Edge(exp.Current());
+					TopoDS_Vertex v0, v1;
+					TopExp::Vertices(edge, v0, v1);
+					gp_Pnt p0 = BRep_Tool::Pnt(v0);
+					gp_Pnt p1 = BRep_Tool::Pnt(v1);
+
+					if (p0.X() > p1.X()) {
+						std::swap(p0, p1);
+					}
+
+					// dominant-baseline="central" is not well supported in IE.
+					// so we add a 0.35 offset to the dy of the tspans
+					path.add("            <text text-anchor=\"end\" x=\"");
+					xcoords.push_back(path.add(p1.X()));
+					path.add("\" y=\"");
+					ycoords.push_back(path.add(p1.Y()));
+					path.add("\">");
+					for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
+						const auto& l = *lit;
+						double dy = labels.begin() == lit
+							? 0.35 - (labels.size() - 1.) / 2.
+							: 1.0; // <- dy is relative to the previous text element, so
+								   //    always 1 for successive spans.
+						path.add("<tspan x=\"");
+						xcoords.push_back(path.add(p1.X()));
+						path.add("\" dy=\"");
+						path.add(boost::lexical_cast<std::string>(dy));
+						path.add("em\">");
+						path.add(l);
+						path.add("</tspan>");
+					}
+					path.add("</text>");
+					po->second.push_back(path);
+				}
 			}
 		}
 
@@ -1383,11 +1448,13 @@ void SvgSerializer::finalize() {
 
 		for (auto& sd : *deferred_section_data_) {
 			bool use_hlr = true;
+			const gp_Pln* pln = nullptr;
 			std::string drawing_name;
 			if (sd.which() == 2) {
 				const auto& section = boost::get<vertical_section>(sd);
 				use_hlr = section.with_projection;
 				drawing_name = section.name;
+				pln = &section.plane;
 			}
 
 			if (use_hlr) {
@@ -1408,6 +1475,45 @@ void SvgSerializer::finalize() {
 				const auto& ax = section.plane.Position();
 				
 				draw_hlr(ax, { nullptr, drawing_name });
+			}
+
+			if (draw_storey_heights_ && pln && std::abs(pln->Position().Direction().Z()) < 1.e-5) {
+				auto storeys = this->file->instances_by_type("IfcBuildingStorey");
+				if (storeys) {
+					const double lu = file->getUnit("LENGTHUNIT").second;
+					for (auto& s : *storeys) {
+						auto storey = (IfcUtil::IfcBaseEntity*) s;
+						auto a = storey->get("Elevation");
+						if (!a->isNull()) {
+							double elev = *a;
+							elev *= lu;
+							auto svg_name = nameElement(storey);
+							auto po = &start_path(*pln, drawing_name, svg_name);
+
+							gp_Pln elev_pln(gp_Ax3(gp_Pnt(0, 0, elev), gp::DZ(), pln->Position().XDirection()));
+							auto ref_y = pln->Position().YDirection().XYZ().Dot(pln->Position().Location().XYZ());
+
+							double x0, y0, z0, x1, y1, z1;
+							bnd_.Get(x0, y0, z0, x1, y1, z1);
+
+							// negate Y, see auto_elevation
+							BRepBuilderAPI_MakeFace mf(elev_pln, x0 - 1., x1 + 1., -(y1 + 1.), -(y0 - 1.));
+							gp_Trsf trsf;
+							TopoDS_Compound C;
+							BRep_Builder B;
+							B.MakeCompound(C);
+							B.Add(C, mf.Face());
+							std::string name;
+							auto a2 = storey->get("Name");
+							if (!a2->isNull()) {
+								name = *a2;
+							}
+							write(geometry_data{
+								C,trsf,storey,storey,elev,name,nameElement(storey)
+								});
+						}
+					}
+				}
 			}
 
 			auto m3 = resize();
