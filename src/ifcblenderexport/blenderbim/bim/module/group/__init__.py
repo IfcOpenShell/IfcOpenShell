@@ -7,6 +7,8 @@ classes = (
     operator.AddGroup,
     operator.EditGroup,
     operator.RemoveGroup,
+    operator.AssignGroup,
+    operator.UnassignGroup,
     operator.EnableEditingGroup,
     operator.DisableEditingGroup,
     prop.Group,
