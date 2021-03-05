@@ -321,9 +321,6 @@ class IfcImporter:
         self.profile_code("Loading file")
         self.set_ifc_file()
         self.profile_code("Setting file")
-        if self.ifc_import_settings.should_auto_set_workarounds:
-            self.auto_set_workarounds()
-            self.profile_code("Set vendor worksarounds")
         self.calculate_unit_scale()
         self.profile_code("Calculate unit scale")
         self.calculate_model_offset()
@@ -374,13 +371,6 @@ class IfcImporter:
             self.profile_code("Mesh cleaning")
         self.set_default_context()
         self.profile_code("Setting default context")
-
-    def auto_set_workarounds(self):
-        applications = self.file.by_type("IfcApplication")
-        if not applications:
-            return
-        if "prostructures" in applications[0].ApplicationFullName.lower():
-            self.ifc_import_settings.should_allow_non_element_aggregates = True
 
     def is_element_far_away(self, element):
         try:
@@ -1178,19 +1168,7 @@ class IfcImporter:
                     self.add_related_objects(collection, rel_aggregate.RelatedObjects)
 
     def create_aggregates(self):
-        if self.ifc_import_settings.should_allow_non_element_aggregates:
-            if self.file.schema == "IFC2X3":
-                rel_aggregates = [
-                    a
-                    for a in self.file.by_type("IfcRelAggregates")
-                    if not a.RelatingObject.is_a("IfcSpatialStructureElement")
-                ]
-            else:
-                rel_aggregates = [
-                    a for a in self.file.by_type("IfcRelAggregates") if not a.RelatingObject.is_a("IfcSpatialElement")
-                ]
-        else:
-            rel_aggregates = [a for a in self.file.by_type("IfcRelAggregates") if a.RelatingObject.is_a("IfcElement")]
+        rel_aggregates = [a for a in self.file.by_type("IfcRelAggregates") if a.RelatingObject.is_a("IfcElement")]
         for rel_aggregate in rel_aggregates:
             self.create_aggregate(rel_aggregate)
 
@@ -1572,7 +1550,6 @@ class IfcImportSettings:
         self.should_clean_mesh = True
         self.deflection_tolerance = 0.001
         self.angular_tolerance = 0.5
-        self.should_allow_non_element_aggregates = False
         self.should_offset_model = False
         self.model_offset_coordinates = (0, 0, 0)
         self.ifc_import_filter = "NONE"
