@@ -16,7 +16,7 @@ class Data:
         cls.layers = {}
 
     @classmethod
-    def load(cls, item_id=None):
+    def load(cls):
         cls._file = IfcStore.get_file()
         if not cls._file:
             return

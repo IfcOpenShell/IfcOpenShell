@@ -2,6 +2,8 @@ import bpy
 import blenderbim.bim.module.group.add_group as add_group
 import blenderbim.bim.module.group.edit_group as edit_group
 import blenderbim.bim.module.group.remove_group as remove_group
+import blenderbim.bim.module.group.assign_group as assign_group
+import blenderbim.bim.module.group.unassign_group as unassign_group
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.group.data import Data
 
@@ -110,4 +112,38 @@ class DisableEditingGroup(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.BIMGroupProperties.active_group_id = 0
+        return {"FINISHED"}
+
+
+class AssignGroup(bpy.types.Operator):
+    bl_idname = "bim.assign_group"
+    bl_label = "Assign Group"
+    product: bpy.props.StringProperty()
+    group: bpy.props.IntProperty()
+
+    def execute(self, context):
+        product = bpy.data.objects.get(self.product) if self.product else context.active_object
+        self.file = IfcStore.get_file()
+        assign_group.Usecase(self.file, {
+            "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
+            "group": self.file.by_id(self.group)
+        }).execute()
+        Data.load()
+        return {"FINISHED"}
+
+
+class UnassignGroup(bpy.types.Operator):
+    bl_idname = "bim.unassign_group"
+    bl_label = "Unassign Group"
+    product: bpy.props.StringProperty()
+    group: bpy.props.IntProperty()
+
+    def execute(self, context):
+        product = bpy.data.objects.get(self.product) if self.product else context.active_object
+        self.file = IfcStore.get_file()
+        unassign_group.Usecase(self.file, {
+            "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
+            "group": self.file.by_id(self.group)
+        }).execute()
+        Data.load()
         return {"FINISHED"}

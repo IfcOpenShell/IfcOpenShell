@@ -56,17 +56,17 @@ class BIM_UL_groups(UIList):
             row = layout.row(align=True)
             row.label(text=item.name)
 
-            #if context.active_object and isinstance(context.active_object.data, Mesh):
-            #    mprops = context.active_object.data.BIMMeshProperties
-            #    if (
-            #        mprops.ifc_definition_id in Data.items
-            #        and item.ifc_definition_id in Data.items[mprops.ifc_definition_id]
-            #    ):
-            #        op = row.operator("bim.unassign_presentation_layer", text="", icon="KEYFRAME_HLT", emboss=False)
-            #        op.layer = item.ifc_definition_id
-            #    else:
-            #        op = row.operator("bim.assign_presentation_layer", text="", icon="KEYFRAME", emboss=False)
-            #        op.layer = item.ifc_definition_id
+            if context.active_object:
+                oprops = context.active_object.BIMObjectProperties
+                if (
+                    oprops.ifc_definition_id in Data.products
+                    and item.ifc_definition_id in Data.products[oprops.ifc_definition_id]
+                ):
+                    op = row.operator("bim.unassign_group", text="", icon="KEYFRAME_HLT", emboss=False)
+                    op.group = item.ifc_definition_id
+                else:
+                    op = row.operator("bim.assign_group", text="", icon="KEYFRAME", emboss=False)
+                    op.group = item.ifc_definition_id
 
             if context.scene.BIMGroupProperties.active_group_id == item.ifc_definition_id:
                 row.operator("bim.edit_group", text="", icon="CHECKMARK")
