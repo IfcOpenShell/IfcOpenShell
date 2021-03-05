@@ -51,22 +51,33 @@ class BIM_PT_object_material(Panel):
 
         if self.product_data:
             if self.product_data["type"] == "IfcMaterialConstituentSet":
-                self.material_set_data = Data.constituent_sets[self.product_data["id"]]
+                self.material_set_id = self.product_data["id"]
+                self.material_set_data = Data.constituent_sets[self.material_set_id]
                 self.set_items = self.material_set_data["MaterialConstituents"]
                 self.set_data = Data.constituents
                 self.set_item_name = "constituent"
             elif self.product_data["type"] == "IfcMaterialLayerSet":
-                self.material_set_data = Data.layer_sets[self.product_data["id"]]
+                self.material_set_id = self.product_data["id"]
+                self.material_set_data = Data.layer_sets[self.material_set_id]
+                self.set_items = self.material_set_data["MaterialLayers"]
+                self.set_data = Data.layers
+                self.set_item_name = "layer"
+            elif self.product_data["type"] == "IfcMaterialLayerSetUsage":
+                self.material_set_usage = Data.layer_set_usages[self.product_data["id"]]
+                self.material_set_id = self.material_set_usage["ForLayerSet"]
+                self.material_set_data = Data.layer_sets[self.material_set_id]
                 self.set_items = self.material_set_data["MaterialLayers"]
                 self.set_data = Data.layers
                 self.set_item_name = "layer"
             elif self.product_data["type"] == "IfcMaterialProfileSet":
-                self.material_set_data = Data.profile_sets[self.product_data["id"]]
+                self.material_set_id = self.product_data["id"]
+                self.material_set_data = Data.profile_sets[self.material_set_id]
                 self.set_items = self.material_set_data["MaterialProfiles"]
                 self.set_data = Data.profiles
                 self.set_item_name = "profile"
             elif self.product_data["type"] == "IfcMaterialList":
-                self.material_set_data = Data.lists[self.product_data["id"]]
+                self.material_set_id = self.product_data["id"]
+                self.material_set_data = Data.lists[self.material_set_id]
                 self.set_items = self.material_set_data["Materials"]
                 self.set_item_name = "list_item"
             return self.draw_material_ui()
@@ -82,7 +93,8 @@ class BIM_PT_object_material(Panel):
         row.label(text=self.product_data["type"])
 
         if self.props.is_editing:
-            row.operator("bim.edit_assigned_material", icon="CHECKMARK", text="")
+            op = row.operator("bim.edit_assigned_material", icon="CHECKMARK", text="")
+            op.material_set = self.material_set_id
             row.operator("bim.disable_editing_assigned_material", icon="X", text="")
         else:
             row.operator("bim.enable_editing_assigned_material", icon="GREASEPENCIL", text="")
@@ -122,7 +134,7 @@ class BIM_PT_object_material(Panel):
         row.prop(self.props, "material", text="")
 
         op = row.operator(f"bim.add_{self.set_item_name}", icon="ADD", text="")
-        setattr(op, f"{self.set_item_name}_set", self.product_data["id"])
+        setattr(op, f"{self.set_item_name}_set", self.material_set_id)
 
         total_items = len(self.set_items)
         for index, set_item_id in enumerate(self.set_items):
@@ -175,11 +187,17 @@ class BIM_PT_object_material(Panel):
             op.material_set_item = set_item_id
         op = row.operator(f"bim.remove_{self.set_item_name}", icon="X", text="")
         if self.product_data["type"] == "IfcMaterialList":
-            setattr(op, "list_item_set", self.product_data["id"])
+            setattr(op, "list_item_set", self.material_set_id)
         setattr(op, self.set_item_name, item["id"])
 
     def draw_read_only_set_ui(self):
-        name_attr = "LayerSetName" if self.product_data["type"] == "IfcMaterialLayerSet" else "Name"
+        if (
+            self.product_data["type"] == "IfcMaterialLayerSetUsage"
+            or self.product_data["type"] == "IfcMaterialLayerSet"
+        ):
+            name_attr = "LayerSetName"
+        else:
+            name_attr = "Name"
         row = self.layout.row(align=True)
         row.label(text=name_attr)
         row.label(text=self.material_set_data.get(name_attr, "Unnamed"))

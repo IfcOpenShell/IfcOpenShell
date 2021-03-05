@@ -206,10 +206,15 @@ class EnableEditingAssignedMaterial(bpy.types.Operator):
             props.material = str(product_data["id"])
             return {"FINISHED"}
 
+        material_set_class = product_data["type"]
         if product_data["type"] == "IfcMaterialConstituentSet":
             material_set_data = Data.constituent_sets[product_data["id"]]
         elif product_data["type"] == "IfcMaterialLayerSet":
             material_set_data = Data.layer_sets[product_data["id"]]
+        elif product_data["type"] == "IfcMaterialLayerSetUsage":
+            layer_set_usage = Data.layer_set_usages[product_data["id"]]
+            material_set_data = Data.layer_sets[layer_set_usage["ForLayerSet"]]
+            material_set_class = "IfcMaterialLayerSet"
         elif product_data["type"] == "IfcMaterialProfileSet":
             material_set_data = Data.profile_sets[product_data["id"]]
         elif product_data["type"] == "IfcMaterialList":
@@ -220,7 +225,7 @@ class EnableEditingAssignedMaterial(bpy.types.Operator):
         while len(props.material_set_attributes) > 0:
             props.material_set_attributes.remove(0)
 
-        for attribute in IfcStore.get_schema().declaration_by_name(product_data["type"]).all_attributes():
+        for attribute in IfcStore.get_schema().declaration_by_name(material_set_class).all_attributes():
             if "<string>" not in str(attribute.type_of_attribute):
                 continue
             if attribute.name() in material_set_data:
@@ -254,8 +259,7 @@ class EditAssignedMaterial(bpy.types.Operator):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         props = obj.BIMObjectMaterialProperties
         product_data = Data.products[obj.BIMObjectProperties.ifc_definition_id]
-        material_set_id = self.material_set or product_data["id"]
-        material_set = self.file.by_id(material_set_id)
+        material_set = self.file.by_id(self.material_set)
 
         if product_data["type"] == "IfcMaterial":
             bpy.ops.bim.unassign_material(obj=obj.name)
@@ -301,7 +305,7 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
 
         if product_data["type"] == "IfcMaterialConstituentSet":
             material_set_item_data = Data.constituents[self.material_set_item]
-        elif product_data["type"] == "IfcMaterialLayerSet":
+        elif product_data["type"] == "IfcMaterialLayerSet" or product_data["type"] == "IfcMaterialLayerSetUsage":
             material_set_item_data = Data.layers[self.material_set_item]
         elif product_data["type"] == "IfcMaterialProfileSet":
             material_set_item_data = Data.profiles[self.material_set_item]
@@ -382,7 +386,7 @@ class EditMaterialSetItem(bpy.types.Operator):
                 },
             ).execute()
             Data.load_constituents()
-        elif product_data["type"] == "IfcMaterialLayerSet":
+        elif product_data["type"] == "IfcMaterialLayerSet" or product_data["type"] == "IfcMaterialLayerSetUsage":
             edit_layer.Usecase(
                 self.file,
                 {
