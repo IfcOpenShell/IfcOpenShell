@@ -1,16 +1,35 @@
 VERSION:=`date '+%y%m%d'`
+PYVERSION:=py37
+
 ifeq ($(PLATFORM), win)
+ifeq ($(PYVERSION), py37)
 PYTHONOCC_URL:=https://anaconda.org/DLR-SC/pythonocc-core/0.17.3/download/win-64/pythonocc-core-0.17.3-py37he980bc4_10.tar.bz2
+endif
+ifeq ($(PYVERSION), py39)
+PYTHONOCC_URL:=https://anaconda.org/conda-forge/pythonocc-core/7.4.1/download/win-64/pythonocc-core-7.4.1-py39h3d1c7c5_0.tar.bz2
+endif
 OCE_URL:=https://anaconda.org/DLR-SC/oce/0.17.2/download/win-64/oce-0.17.2-he980bc4_14.tar.bz2
 TBB_URL:=https://anaconda.org/DLR-SC/tbb/2019.5/download/win-64/tbb-2019.5-he980bc4_0.tar.bz2
 endif
+
 ifeq ($(PLATFORM), macos)
+ifeq ($(PYVERSION), py37)
 PYTHONOCC_URL:=https://anaconda.org/DLR-SC/pythonocc-core/0.17.3/download/osx-64/pythonocc-core-0.17.3-py37h04f5b5a_10.tar.bz2
+endif
+ifeq ($(PYVERSION), py39)
+PYTHONOCC_URL:=https://anaconda.org/conda-forge/pythonocc-core/7.4.1/download/osx-64/pythonocc-core-7.4.1-py39h4d29fe3_0.tar.bz2
+endif
 OCE_URL:=https://anaconda.org/DLR-SC/oce/0.17.2/download/osx-64/oce-0.17.2-h04f5b5a_12.tar.bz2
 TBB_URL:=https://anaconda.org/DLR-SC/tbb/4.3.6/download/osx-64/tbb-4.3.6-0.tar.bz2
 endif
+
 ifeq ($(PLATFORM), linux)
+ifeq ($(PYVERSION), py37)
 PYTHONOCC_URL:=https://anaconda.org/DLR-SC/pythonocc-core/0.17.3/download/linux-64/pythonocc-core-0.17.3-py37h6bb024c_10.tar.bz2
+endif
+ifeq ($(PYVERSION), py39)
+PYTHONOCC_URL:=https://anaconda.org/conda-forge/pythonocc-core/7.4.1/download/linux-64/pythonocc-core-7.4.1-py39h465cb30_0.tar.bz2
+endif
 OCE_URL:=https://anaconda.org/DLR-SC/oce/0.17.2/download/linux-64/oce-0.17.2-h6bb024c_14.tar.bz2
 TBB_URL:=https://anaconda.org/DLR-SC/tbb/4.3.6/download/linux-64/tbb-4.3.6-0.tar.bz2
 endif
@@ -26,15 +45,22 @@ endif
 	cp -r blenderbim/* dist/blenderbim/
 
 	# Provides IfcOpenShell Python functionality
+ifeq ($(PYVERSION), py37)
 	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-37-v0.6.0-517b819-$(PLATFORM)64.zip
+endif
+ifeq ($(PYVERSION), py39)
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-39-v0.6.0-517b819-$(PLATFORM)64.zip
+endif
 	cd dist/working && unzip ifcblender*
 	cp -r dist/working/io_import_scene_ifc/ifcopenshell dist/blenderbim/libs/site/packages/
+
 	# See bug #812
 	cd dist/working && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcblenderexport/occ_utils.py
 	cd dist/working && mv occ_utils.py ../blenderbim/libs/site/packages/ifcopenshell/geom/occ_utils.py
 	rm -rf dist/working
 
 	# Provides IfcConvert for construction documentation
+	mkdir dist/working
 	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.6.0-517b819-$(PLATFORM)64.zip
 	cd dist/working && unzip IfcConvert*
 	cp -r dist/working/IfcConvert dist/blenderbim/libs/
@@ -47,7 +73,12 @@ endif
 ifeq ($(PLATFORM), win)
 	cd dist/working && cp -r Lib/site-packages/OCC ../blenderbim/libs/site/packages/
 else
+ifeq ($(PYVERSION), py37)
 	cd dist/working && cp -r lib/python3.7/site-packages/OCC ../blenderbim/libs/site/packages/
+endif
+ifeq ($(PYVERSION), py39)
+	cd dist/working && cp -r lib/python3.9/site-packages/OCC ../blenderbim/libs/site/packages/
+endif
 endif
 	rm -rf dist/working
 
