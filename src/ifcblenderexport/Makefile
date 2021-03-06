@@ -4,34 +4,40 @@ PYVERSION:=py37
 ifeq ($(PLATFORM), win)
 ifeq ($(PYVERSION), py37)
 PYTHONOCC_URL:=https://anaconda.org/DLR-SC/pythonocc-core/0.17.3/download/win-64/pythonocc-core-0.17.3-py37he980bc4_10.tar.bz2
+OCE_URL:=https://anaconda.org/DLR-SC/oce/0.17.2/download/win-64/oce-0.17.2-he980bc4_14.tar.bz2
+TBB_URL:=https://anaconda.org/DLR-SC/tbb/2019.5/download/win-64/tbb-2019.5-he980bc4_0.tar.bz2
 endif
 ifeq ($(PYVERSION), py39)
 PYTHONOCC_URL:=https://anaconda.org/conda-forge/pythonocc-core/7.4.1/download/win-64/pythonocc-core-7.4.1-py39h3d1c7c5_0.tar.bz2
+OCE_URL:=https://anaconda.org/conda-forge/occt/7.4.0/download/win-64/occt-7.4.0-h823b557_3.tar.bz2
+TBB_URL:=https://anaconda.org/conda-forge/tbb/2020.2/download/win-64/tbb-2020.2-h2d74725_4.tar.bz2
 endif
-OCE_URL:=https://anaconda.org/DLR-SC/oce/0.17.2/download/win-64/oce-0.17.2-he980bc4_14.tar.bz2
-TBB_URL:=https://anaconda.org/DLR-SC/tbb/2019.5/download/win-64/tbb-2019.5-he980bc4_0.tar.bz2
 endif
 
 ifeq ($(PLATFORM), macos)
 ifeq ($(PYVERSION), py37)
 PYTHONOCC_URL:=https://anaconda.org/DLR-SC/pythonocc-core/0.17.3/download/osx-64/pythonocc-core-0.17.3-py37h04f5b5a_10.tar.bz2
+OCE_URL:=https://anaconda.org/DLR-SC/oce/0.17.2/download/osx-64/oce-0.17.2-h04f5b5a_12.tar.bz2
+TBB_URL:=https://anaconda.org/DLR-SC/tbb/4.3.6/download/osx-64/tbb-4.3.6-0.tar.bz2
 endif
 ifeq ($(PYVERSION), py39)
 PYTHONOCC_URL:=https://anaconda.org/conda-forge/pythonocc-core/7.4.1/download/osx-64/pythonocc-core-7.4.1-py39h4d29fe3_0.tar.bz2
+OCE_URL:=https://anaconda.org/conda-forge/occt/7.4.0/download/osx-64/occt-7.4.0-hb9b6dc7_3.tar.bz2
+TBB_URL:=https://anaconda.org/conda-forge/tbb/2020.2/download/osx-64/tbb-2020.2-h940c156_4.tar.bz2
 endif
-OCE_URL:=https://anaconda.org/DLR-SC/oce/0.17.2/download/osx-64/oce-0.17.2-h04f5b5a_12.tar.bz2
-TBB_URL:=https://anaconda.org/DLR-SC/tbb/4.3.6/download/osx-64/tbb-4.3.6-0.tar.bz2
 endif
 
 ifeq ($(PLATFORM), linux)
 ifeq ($(PYVERSION), py37)
 PYTHONOCC_URL:=https://anaconda.org/DLR-SC/pythonocc-core/0.17.3/download/linux-64/pythonocc-core-0.17.3-py37h6bb024c_10.tar.bz2
+OCE_URL:=https://anaconda.org/DLR-SC/oce/0.17.2/download/linux-64/oce-0.17.2-h6bb024c_14.tar.bz2
+TBB_URL:=https://anaconda.org/DLR-SC/tbb/4.3.6/download/linux-64/tbb-4.3.6-0.tar.bz2
 endif
 ifeq ($(PYVERSION), py39)
 PYTHONOCC_URL:=https://anaconda.org/conda-forge/pythonocc-core/7.4.1/download/linux-64/pythonocc-core-7.4.1-py39h465cb30_0.tar.bz2
+OCE_URL:=https://anaconda.org/conda-forge/occt/7.4.0/download/linux-64/occt-7.4.0-h9121d39_3.tar.bz2
+TBB_URL:=https://anaconda.org/conda-forge/tbb/2020.2/download/linux-64/tbb-2020.2-h4bd325d_4.tar.bz2
 endif
-OCE_URL:=https://anaconda.org/DLR-SC/oce/0.17.2/download/linux-64/oce-0.17.2-h6bb024c_14.tar.bz2
-TBB_URL:=https://anaconda.org/DLR-SC/tbb/4.3.6/download/linux-64/tbb-4.3.6-0.tar.bz2
 endif
 
 .PHONY: dist
@@ -63,7 +69,11 @@ endif
 	mkdir dist/working
 	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.6.0-517b819-$(PLATFORM)64.zip
 	cd dist/working && unzip IfcConvert*
+ifeq ($(PLATFORM), win)
+	cp -r dist/working/IfcConvert.exe dist/blenderbim/libs/
+else
 	cp -r dist/working/IfcConvert dist/blenderbim/libs/
+endif
 	rm -rf dist/working
 
 	# Provides Python OCC functionality for cutting IFC geometry for construction documentation
