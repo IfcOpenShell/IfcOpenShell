@@ -95,9 +95,14 @@ endif
 	# Required by Python OCC
 	mkdir dist/working
 	cd dist/working && wget $(OCE_URL)
-	cd dist/working && tar -xjvf oce*
+	cd dist/working && tar -xjvf oc*
 ifeq ($(PLATFORM), win)
+ifeq ($(PYVERSION), py37)
 	cd dist/working && cp -r Library/bin/* ../blenderbim/libs/site/packages/OCC/
+endif
+ifeq ($(PYVERSION), py39)
+	cd dist/working && cp -r Library/bin/* ../blenderbim/libs/site/packages/OCC/Core/
+endif
 else
 	# Unix Conda builds of PythonOCC expect OCE libs to have a RPATH of ../../../
 	cd dist/working && cp -r lib/* ../blenderbim/libs/
@@ -112,7 +117,12 @@ endif
 	cd dist/working && wget $(TBB_URL)
 	cd dist/working && tar -xjvf tbb*
 ifeq ($(PLATFORM), win)
+ifeq ($(PYVERSION), py37)
 	cd dist/working && cp -r Library/bin/* ../blenderbim/libs/site/packages/OCC/
+endif
+ifeq ($(PYVERSION), py39)
+	cd dist/working && cp -r Library/bin/* ../blenderbim/libs/site/packages/OCC/Core/
+endif
 else
 	cd dist/working && cp -r lib/* ../blenderbim/libs/
 endif
@@ -314,7 +324,7 @@ endif
 	rm -rf dist/working
 
 	cd dist/blenderbim && sed -i "s/999999/$(VERSION)/" __init__.py
-	cd dist && zip -r blender28-bim-$(VERSION)-$(PLATFORM).zip ./*
+	cd dist && zip -r blender28-bim-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ./*
 	rm -rf dist/blenderbim
 
 .PHONY: clean
