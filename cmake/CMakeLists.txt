@@ -227,21 +227,24 @@ IF(MSVC)
 	add_debug_variants(LIBXML2_LIBRARIES "${LIBXML2_LIBRARIES}" d)
 ENDIF()
 
-# Find Open CASCADE
+# Open CASCADE headers
 IF("${OCC_INCLUDE_DIR}" STREQUAL "")
-	SET(OCC_INCLUDE_DIR "/usr/include/oce/" CACHE FILEPATH "Open CASCADE header files")
-	MESSAGE(STATUS "Looking for Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
-	MESSAGE(STATUS "Use OCC_INCLUDE_DIR to specify another directory")
+        FIND_PATH(OCC_INCLUDE_DIR Standard_Version.hxx
+                 [PATHS
+                        /usr/include/occt
+                        /usr/include/oce
+                        /usr/include/opencascade
+                 ]
+                 REQUIRED
+        )
+        IF(OCC_INCLUDE_DIR)
+                MESSAGE(STATUS "Found Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
+        ELSE()
+                MESSAGE(FATAL_ERROR "Unable to find Open CASCADE include directory, specify OCC_INCLUDE_DIR manually.")
+        ENDIF()
 ELSE()
-	SET(OCC_INCLUDE_DIR ${OCC_INCLUDE_DIR} CACHE FILEPATH "Open CASCADE header files")
-	MESSAGE(STATUS "Looking for Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
-ENDIF()
-
-FIND_FILE(gp_Pnt_hxx "gp_Pnt.hxx" ${OCC_INCLUDE_DIR})
-IF(gp_Pnt_hxx)
-	MESSAGE(STATUS "Header files found")
-ELSE()
-	MESSAGE(FATAL_ERROR "Unable to find header files, aborting")
+        SET(OCC_INCLUDE_DIR ${OCC_INCLUDE_DIR} CACHE FILEPATH "Open CASCADE header files")
+        MESSAGE(STATUS "Looking for Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
 ENDIF()
 
 SET(OPENCASCADE_LIBRARY_NAMES
