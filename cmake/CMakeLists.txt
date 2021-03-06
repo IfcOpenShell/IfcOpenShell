@@ -220,48 +220,57 @@ endfunction()
 if(BUILD_IFCGEOM)
 
 IF(MSVC)
-	add_debug_variants(LIBXML2_LIBRARIES "${LIBXML2_LIBRARIES}" d)
+    add_debug_variants(LIBXML2_LIBRARIES "${LIBXML2_LIBRARIES}" d)
 ENDIF()
 
-# Open CASCADE headers
+# Open CASCADE
 IF("${OCC_INCLUDE_DIR}" STREQUAL "")
-        FIND_PATH(OCC_INCLUDE_DIR Standard_Version.hxx
-                 [PATHS
-                        /usr/include/occt
-                        /usr/include/oce
-                        /usr/include/opencascade
-                 ]
-                 REQUIRED
-        )
-        IF(OCC_INCLUDE_DIR)
-                MESSAGE(STATUS "Found Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
-        ELSE()
-                MESSAGE(FATAL_ERROR "Unable to find Open CASCADE include directory, specify OCC_INCLUDE_DIR manually.")
-        ENDIF()
+    FIND_PATH(OCC_INCLUDE_DIR Standard_Version.hxx
+        [PATHS
+            /usr/include/occt
+            /usr/include/oce
+            /usr/include/opencascade
+        ]
+        REQUIRED
+    )
+    IF(OCC_INCLUDE_DIR)
+        MESSAGE(STATUS "Found Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
+    ELSE()
+        MESSAGE(FATAL_ERROR "Unable to find Open CASCADE include directory, specify OCC_INCLUDE_DIR manually.")
+    ENDIF()
 ELSE()
-        SET(OCC_INCLUDE_DIR ${OCC_INCLUDE_DIR} CACHE FILEPATH "Open CASCADE header files")
-        MESSAGE(STATUS "Looking for Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
+    SET(OCC_INCLUDE_DIR ${OCC_INCLUDE_DIR} CACHE FILEPATH "Open CASCADE header files")
+    MESSAGE(STATUS "Looking for Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
 ENDIF()
 
 SET(OPENCASCADE_LIBRARY_NAMES
-	TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO
-	TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES TKOffset TKHLR
+    TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO
+    TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES TKOffset TKHLR
 )
 
 IF("${OCC_LIBRARY_DIR}" STREQUAL "")
-	SET(OCC_LIBRARY_DIR "/usr/lib/" CACHE FILEPATH "Open CASCADE library files")
-	MESSAGE(STATUS "Looking for Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
-	MESSAGE(STATUS "Use OCC_LIBRARY_DIR to specify another directory")
+    find_library(OCC_LIBRARY TKernel
+        [PATHS
+            /usr/lib
+        ]
+        REQUIRED
+    )
+    IF(OCC_LIBRARY)
+	GET_FILENAME_COMPONENT(OCC_LIBRARY_DIR ${OCC_LIBRARY} PATH)
+        MESSAGE(STATUS "Found Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
+    ELSE()
+        MESSAGE(FATAL_ERROR "Unable find Open CASCADE library directory, specify OCC_LIBRARY_DIR manually.")
+    ENDIF()
 ELSE()
-	SET(OCC_LIBRARY_DIR ${OCC_LIBRARY_DIR} CACHE FILEPATH "Open CASCADE library files")
-	MESSAGE(STATUS "Looking for Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
+    SET(OCC_LIBRARY_DIR ${OCC_LIBRARY_DIR} CACHE FILEPATH "Open CASCADE library files")
+    MESSAGE(STATUS "Looking for Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
 ENDIF()
 
 FIND_LIBRARY(libTKernel NAMES TKernel TKerneld PATHS ${OCC_LIBRARY_DIR} NO_DEFAULT_PATH)
 IF(libTKernel)
-	MESSAGE(STATUS "Library files found")
+    MESSAGE(STATUS "Required Open Cascade Library files found")
 ELSE()
-	MESSAGE(FATAL_ERROR "Unable to find library files, aborting")
+    MESSAGE(FATAL_ERROR "Unable to find Open Cascade library files, aborting")
 ENDIF()
 
 # Use the found libTKernel as a template for all other OCC libraries
