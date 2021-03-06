@@ -448,6 +448,7 @@ class BIMProperties(PropertyGroup):
         default="SQUARE_METRE",
         items=[
             ("MILLI/SQUARE_METRE", "Square Millimetre", ""),
+            ("DECI/SQUARE_METRE", "Square Decimetre", ""),
             ("CENTI/SQUARE_METRE", "Square Centimetre", ""),
             ("SQUARE_METRE", "Square Metre", ""),
             ("KILO/SQUARE_METRE", "Square Kilometre", ""),
@@ -462,6 +463,7 @@ class BIMProperties(PropertyGroup):
         default="CUBIC_METRE",
         items=[
             ("MILLI/CUBIC_METRE", "Cubic Millimetre", ""),
+            ("DECI/CUBIC_METRE", "Cubic Decimetre", ""),
             ("CENTI/CUBIC_METRE", "Cubic Centimetre", ""),
             ("CUBIC_METRE", "Cubic Metre", ""),
             ("KILO/CUBIC_METRE", "Cubic Kilometre", ""),
