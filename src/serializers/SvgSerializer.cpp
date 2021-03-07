@@ -1033,7 +1033,10 @@ void SvgSerializer::write(const geometry_data& data) {
 					auto a = data.product->get("Elevation");
 					if (!a->isNull()) {
 						double elev = *a;
-						elev *= lu;
+						
+						// @nb we don't actually factor in the length unit.
+						// elev *= lu;
+						
 						if (almost(1.) == lu) {
 							// m
 							elev_str = boost::str(boost::format("%.3f") % elev);
@@ -1490,14 +1493,14 @@ void SvgSerializer::finalize() {
 							auto svg_name = nameElement(storey);
 							auto po = &start_path(*pln, drawing_name, svg_name);
 
-							gp_Pln elev_pln(gp_Ax3(gp_Pnt(0, 0, elev), gp::DZ(), pln->Position().XDirection()));
-							auto ref_y = pln->Position().YDirection().XYZ().Dot(pln->Position().Location().XYZ());
+							gp_Pln elev_pln(gp_Ax3(gp_Pnt(0, 0, elev), gp::DZ(), gp::DX()));
+							//, pln->Position().XDirection()));
+							// auto ref_y = pln->Position().YDirection().XYZ().Dot(pln->Position().Location().XYZ());
 
 							double x0, y0, z0, x1, y1, z1;
 							bnd_.Get(x0, y0, z0, x1, y1, z1);
 
-							// negate Y, see auto_elevation
-							BRepBuilderAPI_MakeFace mf(elev_pln, x0 - 1., x1 + 1., -(y1 + 1.), -(y0 - 1.));
+							BRepBuilderAPI_MakeFace mf(elev_pln, x0 - 1., x1 + 1., y0 - 1., y1 + 1.);
 							gp_Trsf trsf;
 							TopoDS_Compound C;
 							BRep_Builder B;
