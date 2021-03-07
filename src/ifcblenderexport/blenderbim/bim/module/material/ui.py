@@ -53,32 +53,32 @@ class BIM_PT_object_material(Panel):
             if self.product_data["type"] == "IfcMaterialConstituentSet":
                 self.material_set_id = self.product_data["id"]
                 self.material_set_data = Data.constituent_sets[self.material_set_id]
-                self.set_items = self.material_set_data["MaterialConstituents"]
+                self.set_items = self.material_set_data["MaterialConstituents"] or []
                 self.set_data = Data.constituents
                 self.set_item_name = "constituent"
             elif self.product_data["type"] == "IfcMaterialLayerSet":
                 self.material_set_id = self.product_data["id"]
                 self.material_set_data = Data.layer_sets[self.material_set_id]
-                self.set_items = self.material_set_data["MaterialLayers"]
+                self.set_items = self.material_set_data["MaterialLayers"] or []
                 self.set_data = Data.layers
                 self.set_item_name = "layer"
             elif self.product_data["type"] == "IfcMaterialLayerSetUsage":
                 self.material_set_usage = Data.layer_set_usages[self.product_data["id"]]
                 self.material_set_id = self.material_set_usage["ForLayerSet"]
                 self.material_set_data = Data.layer_sets[self.material_set_id]
-                self.set_items = self.material_set_data["MaterialLayers"]
+                self.set_items = self.material_set_data["MaterialLayers"] or []
                 self.set_data = Data.layers
                 self.set_item_name = "layer"
             elif self.product_data["type"] == "IfcMaterialProfileSet":
                 self.material_set_id = self.product_data["id"]
                 self.material_set_data = Data.profile_sets[self.material_set_id]
-                self.set_items = self.material_set_data["MaterialProfiles"]
+                self.set_items = self.material_set_data["MaterialProfiles"] or []
                 self.set_data = Data.profiles
                 self.set_item_name = "profile"
             elif self.product_data["type"] == "IfcMaterialList":
                 self.material_set_id = self.product_data["id"]
                 self.material_set_data = Data.lists[self.material_set_id]
-                self.set_items = self.material_set_data["Materials"]
+                self.set_items = self.material_set_data["Materials"] or []
                 self.set_item_name = "list_item"
             return self.draw_material_ui()
 
@@ -175,7 +175,7 @@ class BIM_PT_object_material(Panel):
         else:
             item = self.set_data[set_item_id]
             row = self.layout.row(align=True)
-            row.label(text=item.get("Name", "Unnamed"), icon="ALIGN_CENTER")
+            row.label(text=item.get("Name", "Unnamed") or "Unnamed", icon="ALIGN_CENTER")
             row.label(text=Data.materials[item["Material"]]["Name"], icon="MATERIAL")
 
         if not is_first:
@@ -200,7 +200,7 @@ class BIM_PT_object_material(Panel):
             name_attr = "Name"
         row = self.layout.row(align=True)
         row.label(text=name_attr)
-        row.label(text=self.material_set_data.get(name_attr, "Unnamed"))
+        row.label(text=self.material_set_data.get(name_attr, "Unnamed") or "Unnamed")
         if hasattr(self.material_set_data, "Description") and self.material_set_data["Description"]:
             row = self.layout.row(align=True)
             row.label(text="Description")
@@ -214,5 +214,5 @@ class BIM_PT_object_material(Panel):
             else:
                 item = self.set_data[item_id]
                 row = self.layout.row(align=True)
-                row.label(text=item.get("Name", "Unnamed"), icon="ALIGN_CENTER")
+                row.label(text=item.get("Name", "Unnamed") or "Unnamed", icon="ALIGN_CENTER")
                 row.label(text=Data.materials[item["Material"]]["Name"], icon="MATERIAL")

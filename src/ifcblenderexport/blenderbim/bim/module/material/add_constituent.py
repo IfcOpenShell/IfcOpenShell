@@ -9,7 +9,7 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        constituents = list(self.settings["constituent_set"].MaterialConstituents)
+        constituents = list(self.settings["constituent_set"].MaterialConstituents or [])
         constituent = self.file.create_entity("IfcMaterialConstituent", **{"Material": self.settings["material"]})
         constituents.append(constituent)
         self.settings["constituent_set"].MaterialConstituents = constituents

@@ -63,6 +63,7 @@ class AssignMaterial(bpy.types.Operator):
                 "material": self.file.by_id(int(obj.BIMObjectMaterialProperties.material)),
             },
         ).execute()
+        Data.load()
         Data.load(obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
