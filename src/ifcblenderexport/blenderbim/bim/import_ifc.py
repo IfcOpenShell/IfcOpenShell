@@ -1178,7 +1178,8 @@ class IfcImporter:
         obj = bpy.data.objects.new("{}/{}".format(element.is_a(), element.Name), None)
         self.link_element(element, obj)
 
-        container_collection = self.get_aggregate_collection(element)
+        container = self.get_aggregate_spatial_container(element)
+        container_collection = self.spatial_structure_elements[container.GlobalId]["blender"]
 
         collection = bpy.data.collections.new(obj.name)
         container_collection.children.link(collection)
@@ -1187,15 +1188,14 @@ class IfcImporter:
         self.aggregates[element.GlobalId] = obj
         self.aggregate_collections[rel_aggregate.id()] = collection
 
-    def get_aggregate_collection(self, element):
+    def get_aggregate_spatial_container(self, element):
         if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
             container = element.ContainedInStructure[0].RelatingStructure
         elif hasattr(element, "Decomposes") and element.Decomposes:
-            container = element.Decomposes[0].RelatingObject
-
+            return self.get_aggregate_spatial_container(element.Decomposes[0].RelatingObject)
         if container.is_a("IfcSpace"):
-            return self.get_aggregate_collection(container)
-        return self.spatial_structure_elements[container.GlobalId]["blender"]
+            return self.get_aggregate_spatial_container(container)
+        return container
 
     def create_openings_collection(self):
         self.opening_collection = bpy.data.collections.new("IfcOpeningElements")
