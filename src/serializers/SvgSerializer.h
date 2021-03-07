@@ -152,8 +152,6 @@ protected:
 	std::list<geometry_data> element_buffer_;
 
 	hlr_t hlr;
-	// Handle(HLRBRep_Algo) hlr_brep;
-	// Handle(HLRBRep_PolyAlgo) hlr_poly;
 
 	std::string namespace_prefix_;
 
