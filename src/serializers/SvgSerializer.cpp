@@ -1506,7 +1506,7 @@ void SvgSerializer::finalize() {
 							std::string name;
 							auto a2 = storey->get("Name");
 							if (!a2->isNull()) {
-								name = *a2;
+								name = (std::string) *a2;
 							}
 							write(geometry_data{
 								C,trsf,storey,storey,elev,name,nameElement(storey)
