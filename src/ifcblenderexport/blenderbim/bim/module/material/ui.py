@@ -12,7 +12,7 @@ class BIM_PT_material(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return IfcStore.get_file() and context.active_object and context.active_object.active_material
 
     def draw(self, context):
         row = self.layout.row()
@@ -185,15 +185,15 @@ class BIM_PT_object_material(Panel):
             row.label(text=Data.materials[item["Material"]]["Name"], icon="MATERIAL")
 
         if not is_first:
-            op = row.operator(f"bim.reorder_{self.set_item_name}", icon="TRIA_UP", text="")
+            op = row.operator(f"bim.reorder_material_set_item", icon="TRIA_UP", text="")
             op.old_index = index
             op.new_index = index - 1
-            setattr(op, f"{self.set_item_name}_set", self.material_set_id)
+            setattr(op, "material_set", self.material_set_id)
         if not is_last:
-            op = row.operator(f"bim.reorder_{self.set_item_name}", icon="TRIA_DOWN", text="")
+            op = row.operator(f"bim.reorder_material_set_item", icon="TRIA_DOWN", text="")
             op.old_index = index
             op.new_index = index + 1
-            setattr(op, f"{self.set_item_name}_set", self.material_set_id)
+            setattr(op, "material_set", self.material_set_id)
         if not self.props.active_material_set_item_id and self.product_data["type"] != "IfcMaterialList":
             op = row.operator("bim.enable_editing_material_set_item", icon="GREASEPENCIL", text="")
             op.material_set_item = set_item_id

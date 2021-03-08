@@ -13,7 +13,6 @@ class Usecase:
             self.assign_ifc_material()
         elif self.settings["type"] == "IfcMaterialConstituentSet":
             material_set = self.file.create_entity(self.settings["type"])
-            material_set.MaterialConstituents = [self.settings["material"]]
             self.create_material_association(material_set)
         elif self.settings["type"] == "IfcMaterialLayerSet":
             material_set = self.file.create_entity(self.settings["type"])
@@ -24,7 +23,6 @@ class Usecase:
             self.create_material_association(material_set_usage)
         elif self.settings["type"] == "IfcMaterialProfileSet":
             material_set = self.file.create_entity(self.settings["type"])
-            material_set.MaterialProfiles = [self.settings["material"]]
             self.create_material_association(material_set)
         elif self.settings["type"] == "IfcMaterialList":
             material_set = self.file.create_entity(self.settings["type"])

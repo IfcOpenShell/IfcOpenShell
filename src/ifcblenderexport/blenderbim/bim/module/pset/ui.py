@@ -175,6 +175,8 @@ class BIM_PT_material_psets(Panel):
     def poll(cls, context):
         if not context.active_object:
             return False
+        if not context.active_object.active_material:
+            return False
         props = context.active_object.active_material.BIMObjectProperties
         if not props.ifc_definition_id:
             return False

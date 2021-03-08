@@ -8,7 +8,7 @@ import blenderbim.bim.module.material.remove_constituent as remove_constituent
 import blenderbim.bim.module.material.add_layer as add_layer
 import blenderbim.bim.module.material.edit_layer as edit_layer
 import blenderbim.bim.module.material.remove_layer as remove_layer
-import blenderbim.bim.module.material.reorder_layer as reorder_layer
+import blenderbim.bim.module.material.reorder_set_item as reorder_set_item
 import blenderbim.bim.module.material.add_list_item as add_list_item
 import blenderbim.bim.module.material.remove_list_item as remove_list_item
 import blenderbim.bim.module.material.edit_assigned_material as edit_assigned_material
@@ -138,26 +138,34 @@ class AddLayer(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ReorderLayer(bpy.types.Operator):
-    bl_idname = "bim.reorder_layer"
-    bl_label = "Reorder Layer"
+class ReorderMaterialSetItem(bpy.types.Operator):
+    bl_idname = "bim.reorder_material_set_item"
+    bl_label = "Reorder Material Set Item"
     obj: bpy.props.StringProperty()
     old_index: bpy.props.IntProperty()
     new_index: bpy.props.IntProperty()
-    layer_set: bpy.props.IntProperty()
+    material_set: bpy.props.IntProperty()
 
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
-        reorder_layer.Usecase(
+        material_set = self.file.by_id(self.material_set)
+        reorder_set_item.Usecase(
             self.file,
             {
-                "layer_set": self.file.by_id(self.layer_set),
+                "material_set": material_set,
                 "old_index": self.old_index,
                 "new_index": self.new_index,
             },
         ).execute()
-        Data.load_layers()
+        if material_set.is_a("IfcMaterialConstituentSet"):
+            Data.load_constituents()
+        elif material_set.is_a("IfcMaterialLayerSet"):
+            Data.load_layers()
+        elif material_set.is_a("IfcMaterialProfileSet"):
+            Data.load_profiles()
+        elif material_set.is_a("IfcMaterialList"):
+            Data.load_lists()
         return {"FINISHED"}
 
 
