@@ -10,6 +10,10 @@ class BIM_PT_material(Panel):
     bl_region_type = "WINDOW"
     bl_context = "material"
 
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
     def draw(self, context):
         row = self.layout.row()
         if bool(context.active_object.active_material.BIMObjectProperties.ifc_definition_id):
