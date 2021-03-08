@@ -239,6 +239,9 @@ endif
 	cd dist/working && unzip python_fcl*
 	cp -r dist/working/fcl dist/blenderbim/libs/site/packages/
 
+	# Cleanup after python_fcl
+	rm -rf dist/working
+
 	# Required by BIMTester
 	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/c8/4b/d0a8c23b6c8985e5544ea96d27105a273ea22051317f850c2cdbf2029fe4/behave-1.2.6.tar.gz
