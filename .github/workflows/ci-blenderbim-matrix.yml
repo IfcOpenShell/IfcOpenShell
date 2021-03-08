@@ -10,7 +10,6 @@ env:
   major: 0
   minor: 0
   name: blenderbim
-  pyver: py37
 
 jobs:
   activate:
@@ -23,11 +22,12 @@ jobs:
       run: echo ok go
 
   build:
-    name: ${{ matrix.config.name }}
+    name: ${{ matrix.config.name }}-${{ matrix.pyver }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
+        pyver: [py37, py39]
         config:
           - {
             name: "Windows Build",
@@ -53,15 +53,15 @@ jobs:
         run: echo "::set-output name=date::$(date +'%y%m%d')"
       - name: Compile
         run: |
-          cp -r src/ifcblenderexport src/ifcblenderexport_${{ matrix.config.short_name }} &&
-          cd src/ifcblenderexport_${{ matrix.config.short_name }} &&
-          make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ env.pyver }}
+          cp -r src/ifcblenderexport src/ifcblenderexport_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
+          cd src/ifcblenderexport_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
+          make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }}
       - name: Upload Zip file to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: src/ifcblenderexport_${{ matrix.config.short_name }}/dist/blender28-bim-${{steps.date.outputs.date}}-${{ env.pyver }}-${{ matrix.config.short_name }}.zip
-          asset_name: blender28-bim-${{steps.date.outputs.date}}-${{ env.pyver }}-${{ matrix.config.short_name }}.zip
+          file: src/ifcblenderexport_${{ matrix.config.short_name }}_${{ matrix.pyver }}/dist/blender28-bim-${{steps.date.outputs.date}}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
+          asset_name: blender28-bim-${{steps.date.outputs.date}}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
           tag: "blenderbim-${{steps.date.outputs.date}}"
           overwrite: true
           body: "Package release blenderbim-${{steps.date.outputs.date}}"
