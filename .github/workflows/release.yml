@@ -36,6 +36,7 @@ jobs:
            -DCMAKE_BUILD_TYPE=Release \
            -DCMAKE_PREFIX_PATH=/usr \
            -DCMAKE_SYSTEM_PREFIX_PATH=/usr \
+           -DBUILD_PACKAGE=On \
            -DOCC_INCLUDE_DIR=/usr/include/oce \
            -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
            -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3 \
