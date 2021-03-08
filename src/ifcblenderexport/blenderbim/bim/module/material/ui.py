@@ -145,7 +145,9 @@ class BIM_PT_object_material(Panel):
             if self.props.active_material_set_item_id == set_item_id:
                 self.draw_editable_set_item_ui(set_item_id)
             else:
-                self.draw_read_only_set_item_ui(set_item_id, is_first=index == 0, is_last=index == total_items - 1)
+                self.draw_read_only_set_item_ui(
+                    set_item_id, index, is_first=index == 0, is_last=index == total_items - 1
+                )
 
     def draw_editable_set_item_ui(self, set_item_id):
         item = self.set_data[set_item_id]
@@ -170,7 +172,7 @@ class BIM_PT_object_material(Panel):
                 row.prop(attribute, "bool_value", text=attribute.name)
             row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
-    def draw_read_only_set_item_ui(self, set_item_id, is_first=False, is_last=False):
+    def draw_read_only_set_item_ui(self, set_item_id, index, is_first=False, is_last=False):
         if self.product_data["type"] == "IfcMaterialList":
             item = Data.materials[set_item_id]
             row = self.layout.row(align=True)
@@ -183,9 +185,15 @@ class BIM_PT_object_material(Panel):
             row.label(text=Data.materials[item["Material"]]["Name"], icon="MATERIAL")
 
         if not is_first:
-            row.operator("bim.edit_attributes", icon="TRIA_UP", text="")
+            op = row.operator(f"bim.reorder_{self.set_item_name}", icon="TRIA_UP", text="")
+            op.old_index = index
+            op.new_index = index - 1
+            setattr(op, f"{self.set_item_name}_set", self.material_set_id)
         if not is_last:
-            row.operator("bim.edit_attributes", icon="TRIA_DOWN", text="")
+            op = row.operator(f"bim.reorder_{self.set_item_name}", icon="TRIA_DOWN", text="")
+            op.old_index = index
+            op.new_index = index + 1
+            setattr(op, f"{self.set_item_name}_set", self.material_set_id)
         if not self.props.active_material_set_item_id and self.product_data["type"] != "IfcMaterialList":
             op = row.operator("bim.enable_editing_material_set_item", icon="GREASEPENCIL", text="")
             op.material_set_item = set_item_id
