@@ -13,8 +13,15 @@ class BIM_PT_debug(Panel):
     def draw(self, context):
         layout = self.layout
 
-        scene = context.scene
-        props = scene.BIMDebugProperties
+        props = context.scene.BIMDebugProperties
+
+        row = self.layout.row(align=True)
+        row.prop(context.scene.BIMProperties, "ifc_file", text="")
+        row.operator("bim.validate_ifc_file", icon="CHECKMARK", text="")
+        row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
+
+        row = layout.row()
+        row.operator("bim.create_all_shapes")
 
         row = layout.row()
         row.operator("bim.profile_import_ifc")

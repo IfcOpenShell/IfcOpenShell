@@ -13,11 +13,41 @@ class ProfileImportIFC(bpy.types.Operator):
         import cProfile
         import pstats
 
+        # For Windows
+        filepath = bpy.context.scene.BIMProperties.ifc_file.replace('\\', '\\\\')
+
         cProfile.run(
-            f"import bpy; bpy.ops.import_ifc.bim(filepath='{bpy.context.scene.BIMProperties.ifc_file}')", "blender.prof"
+            f"import bpy; bpy.ops.import_ifc.bim(filepath='{filepath}')", "blender.prof"
         )
         p = pstats.Stats("blender.prof")
         p.sort_stats("cumulative").print_stats(50)
+        return {"FINISHED"}
+
+
+class CreateAllShapes(bpy.types.Operator):
+    bl_idname = "bim.create_all_shapes"
+    bl_label = "Create All Shapes"
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        elements = self.file.by_type("IfcElement") + self.file.by_type("IfcSpace")
+        total = len(elements)
+        settings = ifcopenshell.geom.settings()
+        failures = []
+        excludes = () # For the developer to debug with
+        for i, element in enumerate(elements):
+            if element.GlobalId in excludes:
+                continue
+            print(f'{i}/{total}:', element)
+            try:
+                shape = ifcopenshell.geom.create_shape(settings, element)
+                print("Success", len(shape.geometry.verts), len(shape.geometry.edges), len(shape.geometry.faces))
+            except:
+                failures.append(element)
+                print('***** FAILURE *****')
+        print('Failures:')
+        for failure in failures:
+            print(failure)
         return {"FINISHED"}
 
 
@@ -57,9 +87,6 @@ class SelectHighPolygonMeshes(bpy.types.Operator):
             except:
                 # If it is not in the view layer
                 pass
-            relating_type = obj.BIMObjectProperties.relating_type
-            if relating_type:
-                relating_type.select_set(True)
         return {"FINISHED"}
 
 

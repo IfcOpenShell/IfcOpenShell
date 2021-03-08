@@ -21,7 +21,7 @@ FIND_PACKAGE(SWIG)
 IF(NOT SWIG_FOUND)
 	MESSAGE(FATAL_ERROR "BUILD_IFCPYTHON enabled, but unable to find SWIG. Disable BUILD_IFCPYTHON or fix SWIG paths to proceed.")
 ENDIF()
-
+include(GNUInstallDirs)
 INCLUDE(${SWIG_USE_FILE})
 
 IF(NOT "$ENV{PYTHON_INCLUDE_DIR}" STREQUAL "")
@@ -79,7 +79,9 @@ IF(PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "")
             OUTPUT_VARIABLE python_package_dir
         )
     ENDIF()
-
+    if (BUILD_PACKAGE)
+        set(python_package_dir ${CMAKE_INSTALL_LIBDIR}/python${PYTHON_VERSION_MAJOR}/dist-packages/)
+    endif()
     IF("${python_package_dir}" STREQUAL "")
         MESSAGE(WARNING "Unable to locate Python site-package directory, unable to install the Python wrapper")
     ELSE()

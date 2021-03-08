@@ -38,8 +38,10 @@ class BIM_PT_representations(Panel):
             row.label(text=representation["ContextOfItems"]["ContextIdentifier"])
             row.label(text=representation["ContextOfItems"]["TargetView"])
             row.label(text=representation["RepresentationType"])
-            row.operator("bim.switch_representation", icon="OUTLINER_DATA_MESH", text="").ifc_definition_id = ifc_definition_id
-            row.operator("bim.remove_representation", icon="X", text="").ifc_definition_id = ifc_definition_id
+            op = row.operator("bim.switch_representation", icon="OUTLINER_DATA_MESH", text="")
+            op.ifc_definition_id = ifc_definition_id
+            op.disable_opening_subtractions = False
+            row.operator("bim.remove_representation", icon="X", text="").representation_id = ifc_definition_id
 
 
 class BIM_PT_mesh(Panel):
@@ -64,12 +66,35 @@ class BIM_PT_mesh(Panel):
         layout = self.layout
         props = context.active_object.data.BIMMeshProperties
 
-        row = layout.row()
-        row.operator("bim.get_representation_ifc_parameters")
+        sprops = context.scene.BIMGeometryProperties
+        row = self.layout.row()
+        row.prop(sprops, "should_auto_update_mesh_representations")
+
+        row = layout.row(align=True)
+        op = row.operator("bim.switch_representation", text="Bake Voids", icon="SELECT_SUBTRACT")
+        op.ifc_definition_id = props.ifc_definition_id
+        op.disable_opening_subtractions = False
+        op = row.operator("bim.switch_representation", text="Dynamic Voids", icon="SELECT_INTERSECT")
+        op.ifc_definition_id = props.ifc_definition_id
+        op.disable_opening_subtractions = True
+
         row = layout.row()
         row.operator("bim.update_mesh_representation")
+
         row = layout.row()
-        row.operator("bim.map_representation")
+        op = row.operator("bim.update_mesh_representation", text="Update Mesh As Rectangle Extrusion")
+        op.ifc_representation_class = "IfcExtrudedAreaSolid/IfcRectangleProfileDef"
+
+        row = layout.row()
+        op = row.operator("bim.update_mesh_representation", text="Update Mesh As Circle Extrusion")
+        op.ifc_representation_class = "IfcExtrudedAreaSolid/IfcCircleProfileDef"
+
+        row = layout.row()
+        op = row.operator("bim.update_mesh_representation", text="Update Mesh As Arbitrary Extrusion")
+        op.ifc_representation_class = "IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef"
+
+        row = layout.row()
+        row.operator("bim.get_representation_ifc_parameters")
         for index, ifc_parameter in enumerate(props.ifc_parameters):
             row = layout.row(align=True)
             row.prop(ifc_parameter, "name", text="")

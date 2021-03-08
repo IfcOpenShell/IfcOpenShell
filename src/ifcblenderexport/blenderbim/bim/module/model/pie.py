@@ -98,13 +98,13 @@ class PieUpdateContainer(bpy.types.Operator):
         for obj in context.selected_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
-            relating_structure = None
             for collection in obj.users_collection:
-                relating_structure_obj = bpy.data.objects.get(collection.name)
-                if not relating_structure_obj or not relating_structure_obj.BIMObjectProperties.ifc_definition_id:
-                    continue
-                relating_structure = relating_structure_obj
-            bpy.ops.bim.assign_container(relating_structure=relating_structure.name, related_element=obj.name)
+                spatial_obj = bpy.data.objects.get(collection.name)
+                if spatial_obj and spatial_obj.BIMObjectProperties.ifc_definition_id:
+                    bpy.ops.bim.assign_container(
+                        relating_structure=spatial_obj.BIMObjectProperties.ifc_definition_id, related_element=obj.name
+                    )
+                    break
         return {"FINISHED"}
 
 
@@ -115,7 +115,6 @@ class VIEW3D_MT_PIE_bim(bpy.types.Menu):
         pie = self.layout.menu_pie()
         pie.operator("bim.edit_object_placement")
         pie.operator("bim.update_mesh_representation")
-        pie.operator("bim.map_representation")
         pie.operator("bim.pie_add_opening")
         pie.operator("bim.pie_update_container")
         pie.operator("bim.open_pie_class", text="Assign IFC Class")

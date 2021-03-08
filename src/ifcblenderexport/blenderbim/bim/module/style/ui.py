@@ -1,4 +1,5 @@
 from bpy.types import Panel
+from blenderbim.bim.ifc import IfcStore
 
 
 class BIM_PT_style(Panel):
@@ -10,7 +11,11 @@ class BIM_PT_style(Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.active_object is not None and context.active_object.active_material is not None
+        return (
+            IfcStore.get_file()
+            and context.active_object is not None
+            and context.active_object.active_material is not None
+        )
 
     def draw(self, context):
         props = context.active_object.active_material.BIMMaterialProperties

@@ -9,6 +9,14 @@ class Data:
     roles = {}
 
     @classmethod
+    def purge(cls):
+        cls.is_loaded = False
+        cls.people = {}
+        cls.organisations = {}
+        cls.addresses = {}
+        cls.roles = {}
+
+    @classmethod
     def load(cls):
         file = IfcStore.get_file()
         if not file:

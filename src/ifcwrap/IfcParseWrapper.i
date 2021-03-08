@@ -68,6 +68,9 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		}
 	} else if (inst->declaration().as_type_declaration() && i == 0) {
 		pt = inst->declaration().as_type_declaration()->declared_type();
+	} else if (inst->declaration().as_enumeration_type() && i == 0) {
+		// Enumeration is always from string in Python
+		return IfcUtil::Argument_STRING;
 	}
 
 	if (pt == 0) {

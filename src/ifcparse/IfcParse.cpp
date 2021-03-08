@@ -1326,7 +1326,6 @@ IfcFile::IfcFile(IfcParse::IfcSpfStream* s) {
 
 IfcFile::IfcFile(const IfcParse::schema_definition* schema)
 	: parsing_complete_(true)
-	, good_(true)
 	, schema_(schema)
 	, ifcroot_type_(schema_->declaration_by_name("IfcRoot"))
 	, MaxId(0)
@@ -1341,8 +1340,6 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 	// number parsing. See comment above on line 41.
 	init_locale();
 
-	good_ = false;
-
 	parsing_complete_ = false;
 	MaxId = 0;
 	tokens = 0;
@@ -1353,24 +1350,30 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 	
 	stream = s;
 	if (!stream->valid) {
+		good_ = file_open_status::READ_ERROR;
 		return;
 	}
 
 	tokens = new IfcSpfLexer(stream, this);
-	_header.file(this);
-	_header.tryRead();
-
+	
 	std::vector<std::string> schemas;
-	try {
-		schemas = _header.file_schema().schema_identifiers();
-	} catch (...) {
-		// Purposely empty catch block
+
+	_header.file(this);
+	if (_header.tryRead()) {
+		try {
+			schemas = _header.file_schema().schema_identifiers();
+		} catch (...) {
+			// Purposely empty catch block
+		}
+	} else {
+		good_ = file_open_status::NO_HEADER;
 	}
 
 	if (schemas.size() == 1) {
 		try {
 			schema_ = IfcParse::schema_by_name(schemas.front());
 		} catch (const IfcParse::IfcException& e) {
+			good_ = file_open_status::UNSUPPORTED_SCHEMA;
 			Logger::Error(e);
 		}
 	}
@@ -1380,8 +1383,6 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 			+ boost::algorithm::join(schemas, ", ") + ")");
 		return;
 	}
-
-	good_ = true;
 
 	ifcroot_type_ = schema_->declaration_by_name("IfcRoot");
 

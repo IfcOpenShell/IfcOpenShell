@@ -78,6 +78,8 @@
 
 #include "../ifcparse/IfcGlobalId.h"
 
+#include <boost/format.hpp>
+
 #include "SvgSerializer.h"
 
 const double PI2 = M_PI * 2.;
@@ -176,6 +178,8 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
                     path.add(center.X());
                     path.add(" ");
                     path.add(center.Y());
+					// @todo isn't there a ")" missing here?
+					// @todo also X, Y are not added to {x,y}coords vector
 
                     // Bounding box:
                     // More important to have all geometry in bounding box than to be minimal
@@ -335,6 +339,8 @@ namespace {
 		return boost::none;
 	}
 
+	typedef std::pair<std::array<double, 3>, std::array<double, 3>> box_t;
+
 	boost::optional<TopoDS_Edge> edge_from_compound(TopoDS_Shape& compound) {
 		TopoDS_Iterator it(compound);
 		if (it.More()) {
@@ -352,6 +358,69 @@ namespace {
 			}
 		}
 		return boost::none;
+	}
+
+	class almost {
+	private:
+		double v_, eps_;
+	public:
+		almost(double v, double eps = 1.e-7)
+			: v_(v)
+			, eps_(eps)
+		{}
+
+		bool operator==(double other) const {
+			return std::fabs(other - v_) < eps_;
+		}
+
+		bool operator!=(double other) const {
+			return !(*this == other);
+		}
+	};
+
+	boost::optional<box_t> box_from_compound(TopoDS_Shape& compound) {
+		TopExp_Explorer exp(compound, TopAbs_SHELL);
+		TopoDS_Shell shell;
+		if (exp.More()) {
+			shell = TopoDS::Shell(exp.Current());
+			exp.Next();
+			if (exp.More()) {
+				return boost::none;
+			}
+		}
+		else {
+			return boost::none;
+		}
+
+		if (IfcGeom::Kernel::count(shell, TopAbs_FACE) != 6) {
+			return boost::none;
+		}
+
+		TopoDS_Iterator it(shell);
+		for (; it.More(); it.Next()) {
+			const auto& face = TopoDS::Face(it.Value());
+			auto surf = BRep_Tool::Surface(face);
+			if (surf->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
+				return boost::none;
+			}
+			auto pln = Handle(Geom_Plane)::DownCast(surf);
+			auto dz = std::abs(pln->Position().Direction().Z());
+			if (almost(0.) != dz && almost(1.) != dz) {
+				return boost::none;
+			}
+			auto dy = std::abs(pln->Position().Direction().Y());
+			if (almost(0.) != dy && almost(1.) != dy) {
+				return boost::none;
+			}
+		}
+
+		Bnd_Box b;
+		BRepBndLib::Add(compound, b, false);
+
+		double x0, y0, z0, x1, y1, z1;
+		b.Get(x0, y0, z0, x1, y1, z1);
+
+		return box_t{ {{x0, y0, z0}}, {{x1, y1, z1}} };
 	}
 }
 
@@ -375,6 +444,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 		auto compound_unmirrored = make_transform_global.Shape();
 
 		auto e = edge_from_compound(compound_unmirrored);
+		boost::optional<gp_Pln> pln;
 		if (e) {
 			TopoDS_Edge global_edge = TopoDS::Edge(e->Moved(trsf));
 			double u0, u1;
@@ -384,36 +454,43 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 				gp_Vec V;
 				crv->D1((u0 + u1) / 2., P, V);
 				auto N = V.Crossed(gp::DZ());
-				gp_Pln pln(gp_Ax3(P, N, V));
-				
-				// Move pln to have projection of origin at plane center.
-				// This is necessary to have Poly and BRep HLR at the same position
-				// (Poly) is wrong otherwise.
-				Extrema_ExtPElS ext;
-				ext.Perform(gp::Origin(), pln, 1.e-5);
-				pln.SetLocation(ext.Point(1).Value());
-
-				if (!deferred_section_data_) {
-					deferred_section_data_.emplace();
-				}
-				std::string name = brep_obj->name();
-				if (name.empty()) {
-					name = boost::lexical_cast<std::string>(brep_obj->id());
-				}
-				if (is_section) {
-					deferred_section_data_->push_back(vertical_section{ pln , "Section " + name, false });
-				}
-				if (is_elevation) {
-					deferred_section_data_->push_back(vertical_section{ pln , "Elevation " + name, true });
-				}
+				pln = gp_Pln(gp_Ax3(P, N, V));
 			}
 		}
+		else if (box_from_compound(compound_local)) {
+			pln = gp_Pln().Transformed(trsf);
+		}
+
+		if (pln) {
+			// Move pln to have projection of origin at plane center.
+			// This is necessary to have Poly and BRep HLR at the same position
+			// (Poly) is wrong otherwise.
+			Extrema_ExtPElS ext;
+			ext.Perform(gp::Origin(), *pln, 1.e-5);
+			pln->SetLocation(ext.Point(1).Value());
+
+			if (!deferred_section_data_) {
+				deferred_section_data_.emplace();
+			}
+			std::string name = brep_obj->name();
+			if (name.empty()) {
+				name = boost::lexical_cast<std::string>(brep_obj->id());
+			}
+			if (is_section) {
+				deferred_section_data_->push_back(vertical_section{ *pln , "Section " + name, false });
+			}
+			if (is_elevation) {
+				deferred_section_data_->push_back(vertical_section{ *pln , "Elevation " + name, true });
+			}
+		}
+
 		return;
 	}
 
 	auto p = storey_elevation_from_element(brep_obj);
 	IfcUtil::IfcBaseEntity* storey = p ? p->first : nullptr;
 	double elev = p ? p->second : std::numeric_limits<double>::quiet_NaN();
+	// @todo is it correct to call nameElement() here with a single storey (what if this element spans multiple?)
 	geometry_data data{ compound_local, trsf, brep_obj->product(), storey, elev, brep_obj->name(), nameElement(storey, brep_obj) };
 
 	if (auto_section_ || auto_elevation_ || section_ref_ || elevation_ref_) {
@@ -467,6 +544,10 @@ void SvgSerializer::write(const geometry_data& data) {
 	make_transform_global.Build();
 	// (When determinant < 0, copy is implied and the input is not mutated.)
 	auto compound_unmirrored = make_transform_global.Shape();
+
+	if (is_floor_plan_) {
+		BRepBndLib::Add(compound_unmirrored, bnd_);
+	}
 
 	// SVG has a coordinate system with the origin in the *upper*-left corner
 	// therefore we mirror the shape along the XZ-plane.	
@@ -788,73 +869,108 @@ void SvgSerializer::write(const geometry_data& data) {
 			auto ot_arg = data.product->get("ObjectType");
 			if (!ot_arg->isNull()) {
 				object_type = (std::string) *ot_arg;
+				object_type.erase(std::remove_if(object_type.begin(), object_type.end(), [](char c) { return !std::isalnum(c); }), object_type.end());
 			}
 
-			if (data.product->declaration().is("IfcAnnotation") && // is an Annotation
-				object_type == "Dimension" &&					   // with ObjectType='Dimension'
-				(proj.Magnitude() > 1.e-5) && 					   // when projected onto the view has a length
-				zmin >= range.first && zmin <= range.second)	   // the Z-coords are within the range of the building storey
+			if (data.product->declaration().is("IfcAnnotation") &&     // is an Annotation
+				(proj.Magnitude() > 1.e-5) && 					       // when projected onto the view has a length
+				zmin >= range.first && zmin < (range.second - 1.e-5))  // the Z-coords are within the range of the building storey,
+				                                                       // this excludes the upper bound with a small tolerance
 			{
+				auto svg_name = data.svg_name;
+
+				if (object_type.size()) {
+					// postfix the object_type for CSS matching
+					boost::replace_all(svg_name, "class=\"IfcAnnotation\"", "class=\"IfcAnnotation " + object_type + "\"");
+				}
+
 				if (po == nullptr) {
 					if (storey) {
-						po = &start_path(pln, storey, data.svg_name);
+						po = &start_path(pln, storey, svg_name);
 					} else {
-						po = &start_path(pln, drawing_name, data.svg_name);
+						po = &start_path(pln, drawing_name, svg_name);
 					}
 				}
 
-				TopExp_Explorer exp(subshape, TopAbs_EDGE, TopAbs_FACE);
-				for (; exp.More(); exp.Next()) {
-					const auto& e = TopoDS::Edge(exp.Current());
-					TopoDS_Vertex v0, v1;
-					TopExp::Vertices(e, v0, v1);
-					gp_Pnt p0 = BRep_Tool::Pnt(v0);
-					gp_Pnt p1 = BRep_Tool::Pnt(v1);
-					// @todo should we take the average parameter value instead?
-					gp_XYZ center = (p0.XYZ() + p1.XYZ()) / 2.;
-					BRep_Builder B;
-					TopoDS_Wire W;
-					B.MakeWire(W);
-					B.Add(W, e);
-					write(*po, W);
+				if (object_type == "Dimension") {
 
+					TopExp_Explorer exp(subshape, TopAbs_EDGE, TopAbs_FACE);
+					for (; exp.More(); exp.Next()) {
+						const auto& e = TopoDS::Edge(exp.Current());
+						TopoDS_Vertex v0, v1;
+						TopExp::Vertices(e, v0, v1);
+						gp_Pnt p0 = BRep_Tool::Pnt(v0);
+						gp_Pnt p1 = BRep_Tool::Pnt(v1);
+						BRep_Builder B;
+						TopoDS_Wire W;
+						B.MakeWire(W);
+						B.Add(W, e);
+						write(*po, W);
 
+						// @todo should we take the average parameter value instead?
+						gp_XYZ center = (p0.XYZ() + p1.XYZ()) / 2.;
+						double z_rotation = gp_Dir(p0.XYZ() - p1.XYZ()).AngleWithRef(gp_Dir(1., 0., 0.), gp_Dir(0., 0., 1.));
+						z_rotation *= 180. / M_PI;
+						if (z_rotation < -88) {
+							z_rotation += 180;
+						}
+						if (z_rotation > +90) {
+							z_rotation -= 180;
+						}
 
-
-					util::string_buffer path;
-					// dominant-baseline="central" is not well supported in IE.
-					// so we add a 0.35 offset to the dy of the tspans
-					path.add("            <text class=\"IfcAnnotation\" text-anchor=\"middle\" x=\"");
-					xcoords.push_back(path.add(center.X()));
-					path.add("\" y=\"");
-					ycoords.push_back(path.add(center.Y()));
-					path.add("\">");
-					std::vector<std::string> labels{};
-
-					GProp_GProps prop;
-					BRepGProp::LinearProperties(e, prop);
-					const double area = prop.Mass();
-					std::stringstream ss;
-					ss << std::setprecision(2) << std::fixed << std::showpoint << area;
-					labels.push_back(ss.str() + "m");
-
-					for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
-						const auto& l = *lit;
-						double dy = labels.begin() == lit
-							? 0.35 - (labels.size() - 1.) / 2.
-							: 1.0; // <- dy is relative to the previous text element, so
-								   //    always 1 for successive spans.
-						path.add("<tspan x=\"");
+						util::string_buffer path;
+						// dominant-baseline="central" is not well supported in IE.
+						// so we add a 0.35 offset to the dy of the tspans
+						path.add("            <text class=\"IfcAnnotation\" text-anchor=\"middle\" x=\"");
 						xcoords.push_back(path.add(center.X()));
-						path.add("\" dy=\"");
-						path.add(boost::lexical_cast<std::string>(dy));
-						path.add("em\">");
-						path.add(l);
-						path.add("</tspan>");
+						path.add("\" y=\"");
+						ycoords.push_back(path.add(center.Y()));
+						path.add("\" transform=\"rotate(");
+						path.add(z_rotation);
+						path.add(" ");
+						xcoords.push_back(path.add(center.X()));
+						path.add(" ");
+						ycoords.push_back(path.add(center.Y()));
+						path.add(" translate(0 -8))\">");
+
+						std::vector<std::string> labels{};
+
+						GProp_GProps prop;
+						BRepGProp::LinearProperties(e, prop);
+						const double area = prop.Mass();
+						std::stringstream ss;
+						ss << std::setprecision(2) << std::fixed << std::showpoint << area;
+						labels.push_back(ss.str() + "m");
+
+						for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
+							const auto& l = *lit;
+							double dy = labels.begin() == lit
+								? 0.35 - (labels.size() - 1.) / 2.
+								: 1.0; // <- dy is relative to the previous text element, so
+									   //    always 1 for successive spans.
+							path.add("<tspan x=\"");
+							xcoords.push_back(path.add(center.X()));
+							path.add("\" dy=\"");
+							path.add(boost::lexical_cast<std::string>(dy));
+							path.add("em\">");
+							path.add(l);
+							path.add("</tspan>");
+						}
+						path.add("</text>");
+						po->second.push_back(path);
 					}
-					path.add("</text>");
-					po->second.push_back(path);
+					
+				} else if (object_type == "Symbol") {
+
+					TopExp_Explorer exp(subshape, TopAbs_WIRE, TopAbs_FACE);
+					for (; exp.More(); exp.Next()) {
+						const auto& W = TopoDS::Wire(exp.Current());
+						write(*po, W);
+					}
+					
 				}
+
+				// We're finished processing IfcAnnotation instances
 				continue;
 			}
 
@@ -925,6 +1041,66 @@ void SvgSerializer::write(const geometry_data& data) {
 
 				}
 				write(*po, wire);
+
+				if (data.product->declaration().is("IfcBuildingStorey") && draw_storey_heights_ && wires->Length() == 1 && IfcGeom::Kernel::count(wire, TopAbs_EDGE) == 1) {
+					
+					std::string elev_str;
+
+					const double lu = file->getUnit("LENGTHUNIT").second;
+					auto a = data.product->get("Elevation");
+					if (!a->isNull()) {
+						double elev = *a;
+						
+						// @nb we don't actually factor in the length unit.
+						// elev *= lu;
+						
+						if (almost(1.) == lu) {
+							// m
+							elev_str = boost::str(boost::format("%.3f") % elev);
+						}
+						else {
+							elev_str = boost::str(boost::format("%d") % ((int) elev));
+						}
+					}
+
+					std::vector<std::string> labels{ data.ifc_name, elev_str };
+					util::string_buffer path;
+
+					TopExp_Explorer exp(wire, TopAbs_EDGE);
+					auto edge = TopoDS::Edge(exp.Current());
+					TopoDS_Vertex v0, v1;
+					TopExp::Vertices(edge, v0, v1);
+					gp_Pnt p0 = BRep_Tool::Pnt(v0);
+					gp_Pnt p1 = BRep_Tool::Pnt(v1);
+
+					if (p0.X() > p1.X()) {
+						std::swap(p0, p1);
+					}
+
+					// dominant-baseline="central" is not well supported in IE.
+					// so we add a 0.35 offset to the dy of the tspans
+					path.add("            <text text-anchor=\"end\" x=\"");
+					xcoords.push_back(path.add(p1.X()));
+					path.add("\" y=\"");
+					ycoords.push_back(path.add(p1.Y()));
+					path.add("\">");
+					for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
+						const auto& l = *lit;
+						double dy = labels.begin() == lit
+							? 0.35 - (labels.size() - 1.) / 2.
+							: 1.0; // <- dy is relative to the previous text element, so
+								   //    always 1 for successive spans.
+						path.add("<tspan x=\"");
+						xcoords.push_back(path.add(p1.X()));
+						path.add("\" dy=\"");
+						path.add(boost::lexical_cast<std::string>(dy));
+						path.add("em\">");
+						path.add(l);
+						path.add("</tspan>");
+					}
+					path.add("</text>");
+					po->second.push_back(path);
+				}
 			}
 		}
 
@@ -1292,11 +1468,13 @@ void SvgSerializer::finalize() {
 
 		for (auto& sd : *deferred_section_data_) {
 			bool use_hlr = true;
+			const gp_Pln* pln = nullptr;
 			std::string drawing_name;
 			if (sd.which() == 2) {
 				const auto& section = boost::get<vertical_section>(sd);
 				use_hlr = section.with_projection;
 				drawing_name = section.name;
+				pln = &section.plane;
 			}
 
 			if (use_hlr) {
@@ -1317,6 +1495,45 @@ void SvgSerializer::finalize() {
 				const auto& ax = section.plane.Position();
 				
 				draw_hlr(ax, { nullptr, drawing_name });
+			}
+
+			if (draw_storey_heights_ && pln && std::abs(pln->Position().Direction().Z()) < 1.e-5) {
+				auto storeys = this->file->instances_by_type("IfcBuildingStorey");
+				if (storeys) {
+					const double lu = file->getUnit("LENGTHUNIT").second;
+					for (auto& s : *storeys) {
+						auto storey = (IfcUtil::IfcBaseEntity*) s;
+						auto a = storey->get("Elevation");
+						if (!a->isNull()) {
+							double elev = *a;
+							elev *= lu;
+							auto svg_name = nameElement(storey);
+							auto po = &start_path(*pln, drawing_name, svg_name);
+
+							gp_Pln elev_pln(gp_Ax3(gp_Pnt(0, 0, elev), gp::DZ(), gp::DX()));
+							//, pln->Position().XDirection()));
+							// auto ref_y = pln->Position().YDirection().XYZ().Dot(pln->Position().Location().XYZ());
+
+							double x0, y0, z0, x1, y1, z1;
+							bnd_.Get(x0, y0, z0, x1, y1, z1);
+
+							BRepBuilderAPI_MakeFace mf(elev_pln, x0 - 1., x1 + 1., y0 - 1., y1 + 1.);
+							gp_Trsf trsf;
+							TopoDS_Compound C;
+							BRep_Builder B;
+							B.MakeCompound(C);
+							B.Add(C, mf.Face());
+							std::string name;
+							auto a2 = storey->get("Name");
+							if (!a2->isNull()) {
+								name = (std::string) *a2;
+							}
+							write(geometry_data{
+								C,trsf,storey,storey,elev,name,nameElement(storey)
+								});
+						}
+					}
+				}
 			}
 
 			auto m3 = resize();
@@ -1390,13 +1607,17 @@ void SvgSerializer::writeHeader() {
 		"            stroke: #222222;\n"
 		"            fill: #444444;\n"
 		"        }\n"
-		"        .IfcDoor path {\n"
+		"        .IfcDoor path,\n"
+		"        .Symbol path {\n"
 		"            fill: none;\n"
+		"        }\n"
+		"        .Symbol path {\n"
+		"            stroke-width: 0.5px;\n"
 		"        }\n"
 		"        .IfcSpace path {\n"
 		"            fill-opacity: .2;\n"
 		"        }\n"
-		"        .IfcAnnotation path {\n"
+		"        .Dimension path {\n"
 		"            marker-end: url(#arrowend);\n"
 		"            marker-start: url(#arrowstart);\n"
 		"        }\n";

@@ -2,6 +2,7 @@ import bpy
 import bmesh
 import ifcopenshell.util.unit
 from mathutils import Vector
+from blenderbim.bim.module.geometry.helper import Helper
 
 
 class Usecase:
@@ -12,6 +13,7 @@ class Usecase:
             "context": None,  # IfcGeometricRepresentationContext
             "blender_object": None,  # This is (currently) a Blender object, hence this depends on Blender now
             "geometry": None,  # This is (currently) a Blender data object, hence this depends on Blender now
+            "coordinate_offset": None,  # Optionally apply a vector offset to all coordinates
             "total_items": 1,  # How many representation items to create
             "unit_scale": None,  # A scale factor to apply for all vectors in case the unit is different
             "should_force_faceted_brep": False,  # If we should force faceted breps for meshes
@@ -19,13 +21,19 @@ class Usecase:
             "is_wireframe": False,  # If the geometry is a wireframe
             "is_curve": False,  # If the geometry is a Blender curve
             "is_point_cloud": False,  # If the geometry is a point cloud
+            #  Possible IFC representation classes:
+            #  IfcExtrudedAreaSolid/IfcRectangleProfileDef
+            #  IfcExtrudedAreaSolid/IfcCircleProfileDef
+            #  IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef
+            "ifc_representation_class": None,  # Whether to cast a mesh into a particular class
         }
         self.ifc_vertices = []
         for key, value in settings.items():
             self.settings[key] = value
 
     def execute(self):
-        self.evaluate_geometry()
+        if isinstance(self.settings["geometry"], bpy.types.Mesh):
+            self.evaluate_geometry()
         if self.settings["unit_scale"] is None:
             self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         if self.settings["context"].ContextType == "Model":
@@ -123,7 +131,51 @@ class Usecase:
             return self.create_curve_representation()
         elif self.settings["is_point_cloud"]:
             return self.create_point_cloud_representation()
+        elif isinstance(self.settings["geometry"], bpy.types.Camera):
+            return self.create_camera_block_representation()
+        elif self.settings["ifc_representation_class"] == "IfcExtrudedAreaSolid/IfcRectangleProfileDef":
+            return self.create_rectangle_extrusion_representation()
+        elif self.settings["ifc_representation_class"] == "IfcExtrudedAreaSolid/IfcCircleProfileDef":
+            return self.create_circle_extrusion_representation()
+        elif self.settings["ifc_representation_class"] == "IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef":
+            return self.create_arbitrary_extrusion_representation()
         return self.create_mesh_representation()
+
+    def create_camera_block_representation(self):
+        raster_x = self.settings["geometry"].BIMCameraProperties.raster_x
+        raster_y = self.settings["geometry"].BIMCameraProperties.raster_y
+
+        if self.is_camera_landscape():
+            width = self.settings["geometry"].ortho_scale
+            height = width / raster_x * raster_y
+        else:
+            height = self.settings["geometry"].ortho_scale
+            width = height / raster_y * raster_x
+
+        block = self.file.create_entity(
+            "IfcBlock",
+            **{
+                "Position": self.file.createIfcAxis2Placement3D(
+                    self.create_cartesian_point(-width / 2, -height / 2, -self.settings["geometry"].clip_end)
+                ),
+                "XLength": self.convert_si_to_unit(width),
+                "YLength": self.convert_si_to_unit(height),
+                "ZLength": self.convert_si_to_unit(self.settings["geometry"].clip_end),
+            }
+        )
+
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "CSG",
+            [self.file.createIfcCsgSolid(block)],
+        )
+
+    def is_camera_landscape(self):
+        return (
+            self.settings["geometry"].BIMCameraProperties.raster_x
+            > self.settings["geometry"].BIMCameraProperties.raster_y
+        )
 
     def create_curve3d_representation(self):
         return self.file.createIfcShapeRepresentation(
@@ -214,6 +266,42 @@ class Usecase:
             results.append(self.file.createIfcPolyline(points))
         return results
 
+    def create_rectangle_extrusion_representation(self):
+        helper = Helper(self.file)
+        indices = helper.auto_detect_rectangle_profile_extruded_area_solid(self.settings["geometry"])
+        profile_def = helper.create_rectangle_profile_def(self.settings["geometry"], indices["profile"])
+        item = helper.create_extruded_area_solid(self.settings["geometry"], indices["extrusion"], profile_def)
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "SweptSolid",
+            [item],
+        )
+
+    def create_circle_extrusion_representation(self):
+        helper = Helper(self.file)
+        indices = helper.auto_detect_circle_profile_extruded_area_solid(self.settings["geometry"])
+        profile_def = helper.create_circle_profile_def(self.settings["geometry"], indices["profile"])
+        item = helper.create_extruded_area_solid(self.settings["geometry"], indices["extrusion"], profile_def)
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "SweptSolid",
+            [item],
+        )
+
+    def create_arbitrary_extrusion_representation(self):
+        helper = Helper(self.file)
+        indices = helper.auto_detect_arbitrary_closed_profile_extruded_area_solid(self.settings["geometry"])
+        profile_def = helper.create_arbitrary_closed_profile_def(self.settings["geometry"], indices["profile"])
+        item = helper.create_extruded_area_solid(self.settings["geometry"], indices["extrusion"], profile_def)
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "SweptSolid",
+            [item],
+        )
+
     def create_mesh_representation(self):
         if self.file.schema == "IFC2X3" or self.settings["should_force_faceted_brep"]:
             return self.create_faceted_brep()
@@ -290,6 +378,8 @@ class Usecase:
         return self.file.createIfcCartesianPointList3D([self.convert_si_to_unit(v.co) for v in vertices])
 
     def convert_si_to_unit(self, co):
+        if self.settings["coordinate_offset"]:
+            return (co / self.settings["unit_scale"]) + self.settings["coordinate_offset"]
         return co / self.settings["unit_scale"]
 
     def create_geometric_curve_set_representation(self, is_2d=False):

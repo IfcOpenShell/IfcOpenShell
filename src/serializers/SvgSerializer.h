@@ -32,6 +32,7 @@
 #include <HLRBRep_PolyAlgo.hxx>
 #include <HLRAlgo_Projector.hxx>
 #include <gp_Pln.hxx>
+#include <Bnd_Box.hxx>
 
 #include <sstream>
 #include <string>
@@ -132,6 +133,7 @@ protected:
 	boost::optional<double> scale_, calculated_scale_, center_x_, center_y_;
 
 	bool with_section_heights_from_storey_, rescale, print_space_names_, print_space_areas_;
+	bool draw_storey_heights_;
 	bool draw_door_arcs_, is_floor_plan_;
 	bool auto_section_, auto_elevation_;
 	bool use_namespace_, use_hlr_poly_, always_project_;
@@ -150,10 +152,12 @@ protected:
 	std::list<geometry_data> element_buffer_;
 
 	hlr_t hlr;
-	// Handle(HLRBRep_Algo) hlr_brep;
-	// Handle(HLRBRep_PolyAlgo) hlr_poly;
 
 	std::string namespace_prefix_;
+
+	// Used for drawing the storey elevation heights
+	// @todo maybe better to rely on a screen-space bounding box
+	Bnd_Box bnd_;
 
 	void draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name);
 
@@ -204,6 +208,7 @@ public:
 	void setSectionHeightsFromStoreys(double offset=1.);
 	void setPrintSpaceNames(bool b) { print_space_names_ = b; }
 	void setPrintSpaceAreas(bool b) { print_space_areas_ = b; }
+	void setDrawStoreyHeights(bool b) { draw_storey_heights_ = b; }
 	void setDrawDoorArcs(bool b) { draw_door_arcs_ = b; }
 
 	std::array<std::array<double, 3>, 3> resize();

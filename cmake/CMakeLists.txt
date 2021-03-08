@@ -21,7 +21,10 @@ cmake_minimum_required(VERSION 3.1.3)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)  # not necessary, but encouraged
 
-project (IfcOpenShell)
+project (IfcOpenShell VERSION 0.6.0)
+
+# use extra version to make pre-release using eg semver 
+set( EXTRA_VERSION "-alpha.3")
 
 foreach(max_year RANGE 2014 2030)
 set(max_sdk "$ENV{ADSK_3DSMAX_SDK_${max_year}}")
@@ -35,7 +38,9 @@ OPTION(COLLADA_SUPPORT "Build IfcConvert with COLLADA support (requires OpenCOLL
 OPTION(IFCXML_SUPPORT "Build IfcParse with ifcXML support (requires libxml2)." ON)
 OPTION(ENABLE_BUILD_OPTIMIZATIONS "Enable certain compiler and linker optimizations on RelWithDebInfo and Release builds." OFF)
 OPTION(IFCCONVERT_DOUBLE_PRECISION "IfcConvert: Use double precision floating-point numbers." ON)
+OPTION(BUILD_PACKAGE "" OFF)
 OPTION(BUILD_IFCGEOM "Build IfcGeom." ON)
+OPTION(BUILD_DOCUMENTATION "Build IfcOpenShell Documentation." OFF)
 OPTION(BUILD_IFCPYTHON "Build IfcPython." ON)
 OPTION(BUILD_EXAMPLES "Build example applications." ON)
 OPTION(BUILD_GEOMSERVER "Build IfcGeomServer executable." ON)
@@ -53,7 +58,7 @@ OPTION(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only ins
 
 # TODO QtViewer is deprecated ATM as it uses the 0.4 API
 # OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer (requires Qt 4 framework)." OFF)
-
+include(GNUInstallDirs)
 if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND (NOT BUILD_IFCGEOM))
     message(STATUS "'IfcGeom' is required with current outputs")
     set(BUILD_IFCGEOM ON)
@@ -64,7 +69,7 @@ IF(NOT BINDIR)
     set(BINDIR bin)
 ENDIF()
 IF(NOT IS_ABSOLUTE ${BINDIR})
-    set(BINDIR ${CMAKE_INSTALL_PREFIX}/${BINDIR})
+    set(BINDIR ${CMAKE_INSTALL_BINDIR})
 ENDIF()
 MESSAGE(STATUS "BINDIR: ${BINDIR}")
 
@@ -72,7 +77,7 @@ IF(NOT INCLUDEDIR)
     set(INCLUDEDIR include)
 ENDIF()
 IF(NOT IS_ABSOLUTE ${INCLUDEDIR})
-    set(INCLUDEDIR ${CMAKE_INSTALL_PREFIX}/${INCLUDEDIR})
+    set(INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR})
 ENDIF()
 MESSAGE(STATUS "INCLUDEDIR: ${INCLUDEDIR}")
 
@@ -80,11 +85,11 @@ IF(NOT LIBDIR)
     set(LIBDIR lib)
 ENDIF()
 IF(NOT IS_ABSOLUTE ${LIBDIR})
-    set(LIBDIR ${CMAKE_INSTALL_PREFIX}/${LIBDIR})
+    set(LIBDIR ${CMAKE_INSTALL_LIBDIR})
 ENDIF()
 MESSAGE(STATUS "LIBDIR: ${LIBDIR}")
 
-set(IFCOPENSHELL_LIBARY_DIR "") # for *nix rpaths
+set(IFCOPENSHELL_LIBRARY_DIR "") # for *nix rpaths
 
 if (BUILD_SHARED_LIBS)
     add_definitions(-DIFC_SHARED_BUILD)
@@ -94,7 +99,7 @@ if (BUILD_SHARED_LIBS)
         # There will be couple hundreds of these so suppress them away, https://msdn.microsoft.com/en-us/library/esew7y1w.aspx
         add_definitions(-wd4251)
     endif()
-    set(IFCOPENSHELL_LIBARY_DIR "${LIBDIR}")
+    set(IFCOPENSHELL_LIBRARY_DIR "${LIBDIR}")
 endif()
 
 # Create cache entries if absent for environment variables
@@ -174,6 +179,7 @@ if(USE_MMAP)
 endif()
 
 if (IFCXML_SUPPORT)
+    find_package(LibXml2 REQUIRED)
     add_definitions(-DWITH_IFCXML)
 endif()
 
@@ -218,45 +224,57 @@ endfunction()
 if(BUILD_IFCGEOM)
 
 IF(MSVC)
-	add_debug_variants(LIBXML2_LIBRARIES "${LIBXML2_LIBRARIES}" d)
+    add_debug_variants(LIBXML2_LIBRARIES "${LIBXML2_LIBRARIES}" d)
 ENDIF()
 
-# Find Open CASCADE
+# Open CASCADE
 IF("${OCC_INCLUDE_DIR}" STREQUAL "")
-	SET(OCC_INCLUDE_DIR "/usr/include/oce/" CACHE FILEPATH "Open CASCADE header files")
-	MESSAGE(STATUS "Looking for Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
-	MESSAGE(STATUS "Use OCC_INCLUDE_DIR to specify another directory")
+    FIND_PATH(OCC_INCLUDE_DIR Standard_Version.hxx
+        [PATHS
+            /usr/include/occt
+            /usr/include/oce
+            /usr/include/opencascade
+        ]
+        REQUIRED
+    )
+    IF(OCC_INCLUDE_DIR)
+        MESSAGE(STATUS "Found Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
+    ELSE()
+        MESSAGE(FATAL_ERROR "Unable to find Open CASCADE include directory, specify OCC_INCLUDE_DIR manually.")
+    ENDIF()
 ELSE()
-	SET(OCC_INCLUDE_DIR ${OCC_INCLUDE_DIR} CACHE FILEPATH "Open CASCADE header files")
-	MESSAGE(STATUS "Looking for Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
-ENDIF()
-
-FIND_FILE(gp_Pnt_hxx "gp_Pnt.hxx" ${OCC_INCLUDE_DIR})
-IF(gp_Pnt_hxx)
-	MESSAGE(STATUS "Header files found")
-ELSE()
-	MESSAGE(FATAL_ERROR "Unable to find header files, aborting")
+    SET(OCC_INCLUDE_DIR ${OCC_INCLUDE_DIR} CACHE FILEPATH "Open CASCADE header files")
+    MESSAGE(STATUS "Looking for Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
 ENDIF()
 
 SET(OPENCASCADE_LIBRARY_NAMES
-	TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO
-	TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES TKOffset TKHLR
+    TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO
+    TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES TKOffset TKHLR
 )
 
 IF("${OCC_LIBRARY_DIR}" STREQUAL "")
-	SET(OCC_LIBRARY_DIR "/usr/lib/" CACHE FILEPATH "Open CASCADE library files")
-	MESSAGE(STATUS "Looking for Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
-	MESSAGE(STATUS "Use OCC_LIBRARY_DIR to specify another directory")
+    find_library(OCC_LIBRARY TKernel
+        [PATHS
+            /usr/lib
+        ]
+        REQUIRED
+    )
+    IF(OCC_LIBRARY)
+	GET_FILENAME_COMPONENT(OCC_LIBRARY_DIR ${OCC_LIBRARY} PATH)
+        MESSAGE(STATUS "Found Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
+    ELSE()
+        MESSAGE(FATAL_ERROR "Unable find Open CASCADE library directory, specify OCC_LIBRARY_DIR manually.")
+    ENDIF()
 ELSE()
-	SET(OCC_LIBRARY_DIR ${OCC_LIBRARY_DIR} CACHE FILEPATH "Open CASCADE library files")
-	MESSAGE(STATUS "Looking for Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
+    SET(OCC_LIBRARY_DIR ${OCC_LIBRARY_DIR} CACHE FILEPATH "Open CASCADE library files")
+    MESSAGE(STATUS "Looking for Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
 ENDIF()
 
 FIND_LIBRARY(libTKernel NAMES TKernel TKerneld PATHS ${OCC_LIBRARY_DIR} NO_DEFAULT_PATH)
 IF(libTKernel)
-	MESSAGE(STATUS "Library files found")
+    MESSAGE(STATUS "Required Open Cascade Library files found")
 ELSE()
-	MESSAGE(FATAL_ERROR "Unable to find library files, aborting")
+    MESSAGE(FATAL_ERROR "Unable to find Open Cascade library files, aborting")
 ENDIF()
 
 # Use the found libTKernel as a template for all other OCC libraries
@@ -472,7 +490,7 @@ function(files_for_ifc_version IFC_VERSION RESULT_NAME)
     )
 endfunction()
 
-set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_rc1")
+set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_rc1" "4x3_rc2")
 
 if(COMPILE_SCHEMA)
 	# @todo, this appears to be untested at the moment
@@ -623,7 +641,7 @@ if ((NOT WIN32) AND BUILD_SHARED_LIBS)
     # Only set RPATHs when building shared libraries (i.e. IfcParse and
     # IfcGeom are dynamically linked). Not necessarily a perfect solution
     # but probably a good indication of whether RPATHs are necessary.
-    SET_INSTALL_RPATHS(IfcConvert "${IFCOPENSHELL_LIBARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${OPENCOLLADA_LIBRARY_DIR}")
+    SET_INSTALL_RPATHS(IfcConvert "${IFCOPENSHELL_LIBRARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${OPENCOLLADA_LIBRARY_DIR}")
 endif()
 
 INSTALL(TARGETS IfcConvert
@@ -644,7 +662,7 @@ ADD_EXECUTABLE(IfcGeomServer ${SOURCE_FILES})
 TARGET_LINK_LIBRARIES(IfcGeomServer ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES})
 
 if ((NOT WIN32) AND BUILD_SHARED_LIBS)
-    SET_INSTALL_RPATHS(IfcGeomServer "${IFCOPENSHELL_LIBARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS}")
+    SET_INSTALL_RPATHS(IfcGeomServer "${IFCOPENSHELL_LIBRARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS}")
 endif()
 
 INSTALL(TARGETS IfcGeomServer
@@ -654,6 +672,12 @@ INSTALL(TARGETS IfcGeomServer
 )
 
 endif()
+
+# Documentation	
+IF(BUILD_DOCUMENTATION)
+	set(CMAKE_MODULE_PATH "../docs/cmake")
+	ADD_SUBDIRECTORY(../docs docs)
+ENDIF()
 
 IF(BUILD_IFCPYTHON)
 	ADD_SUBDIRECTORY(../src/ifcwrap ifcwrap)
@@ -709,3 +733,43 @@ INSTALL(FILES  ${SERIALIZERS_S_FILES}
 	DESTINATION ${INCLUDEDIR}/serializers/schema_dependent
 )
 endif()
+
+
+list(APPEND CPACK_SOURCE_IGNORE_FILES
+  .git
+  .gitignore
+  )
+
+set(CPACK_PACKAGE_NAME "${PROJECT_NAME}-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}${EXTRA_VERSION}")
+set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}${EXTRA_VERSION}")
+SET(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}${EXTRA_VERSION}-${CMAKE_SYSTEM_NAME}")
+set(CPACK_PACKAGE_DIRECTORY "${PROJECT_BINARY_DIR}/assets")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "IfcOpenShell")
+set(CPACK_PACKAGE_DESCRIPTION "IfcOpenShell.")
+set(CPACK_PACKAGE_VENDOR "Cemosis")
+set(CPACK_PACKAGE_CONTACT "Christophe Prud'homme <christophe.prudhomme@cemosis.fr>")
+set(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
+set(CPACK_PACKAGE_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
+set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
+
+
+set(CPACK_GENERATOR "TGZ;DEB")
+set(CPACK_SOURCE_GENERATOR "TGZ")
+
+FOREACH(COMPONENT IN ITEMS ${BOOST_COMPONENTS})
+    string(REPLACE "_" "-" COMP ${COMPONENT})
+    set(BOOST_DEPS "${BOOST_DEPS}, libboost-${COMP}1.67.0")
+endforeach(COMPONENT)
+
+set(CPACK_DEBIAN_PACKAGE_NAME "${PROJECT_NAME}")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_CONTACT}")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3, libxml2, liboce-foundation11, liboce-modeling11, liboce-ocaf11, liboce-visualization11, liboce-ocaf-lite11, libpython3.8 ${BOOST_DEPS}")
+set(CPACK_DEBIAN_PACKAGE_DESCRIPTION_SUMMARY "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}")
+set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "${CPACK_PACKAGE_DESCRIPTION}")
+set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+set(CPACK_DEBIAN_PACKAGE_SECTION "science")
+set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}${EXTRA_VERSION}")
+set(CPACK_DEBIAN_ARCHITECTURE "${CMAKE_SYSTEM_PROCESSOR}")
+#set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_SOURCE_DIR}/cmake/debian/postinst")
+
+include(CPack)

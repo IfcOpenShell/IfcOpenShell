@@ -136,11 +136,9 @@ class EditGeoreferencing(bpy.types.Operator):
         if not props.is_map_unit_null:
             map_unit = props.map_unit_si if props.map_unit_type == "IfcSIUnit" else props.map_unit_imperial
 
-        edit_georeferencing.Usecase(self.file, {
-            "map_conversion": map_conversion,
-            "projected_crs": projected_crs,
-            "map_unit": map_unit
-        }).execute()
+        edit_georeferencing.Usecase(
+            self.file, {"map_conversion": map_conversion, "projected_crs": projected_crs, "map_unit": map_unit}
+        ).execute()
         Data.load()
         bpy.ops.bim.disable_editing_georeferencing()
         return {"FINISHED"}
@@ -154,7 +152,7 @@ class SetNorthOffset(bpy.types.Operator):
         context.scene.sun_pos_properties.north_offset = -radians(
             ifcopenshell.util.geolocation.xy2angle(
                 context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisAbscissa").float_value,
-                context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisOrdinate").float_value
+                context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisOrdinate").float_value,
             )
         )
         return {"FINISHED"}
@@ -200,17 +198,42 @@ class ConvertLocalToGlobal(bpy.types.Operator):
             Data.load()
         props = context.scene.BIMGeoreferenceProperties
         x, y, z = [float(co) for co in props.coordinate_input.split(",")]
-        results = ifcopenshell.util.geolocation.xyz2enh(
-            x,
-            y,
-            z,
-            Data.map_conversion["Eastings"],
-            Data.map_conversion["Northings"],
-            Data.map_conversion["OrthogonalHeight"],
-            Data.map_conversion.get("XAxisAbscissa", 1.0),
-            Data.map_conversion.get("XAxisOrdinate", 0.0),
-            Data.map_conversion.get("Scale", 1.0),
-        )
+
+        if props.has_blender_offset and props.blender_offset_type == "CARTESIAN_POINT":
+            x -= float(props.blender_eastings)
+            y -= float(props.blender_northings)
+            z -= float(props.blender_orthogonal_height)
+        elif props.has_blender_offset and props.blender_offset_type == "OBJECT_PLACEMENT":
+            results = ifcopenshell.util.geolocation.xyz2enh(
+                x,
+                y,
+                z,
+                float(props.blender_eastings),
+                float(props.blender_northings),
+                float(props.blender_orthogonal_height),
+                float(props.blender_x_axis_abscissa),
+                float(props.blender_x_axis_ordinate),
+                1.0,
+            )
+            x, y, z = results
+
+        # TODO: what if the project CRS units and the project units are different?
+
+        if Data.map_conversion:
+            results = ifcopenshell.util.geolocation.xyz2enh(
+                x,
+                y,
+                z,
+                Data.map_conversion["Eastings"],
+                Data.map_conversion["Northings"],
+                Data.map_conversion["OrthogonalHeight"],
+                Data.map_conversion.get("XAxisAbscissa", 1.0),
+                Data.map_conversion.get("XAxisOrdinate", 0.0),
+                Data.map_conversion.get("Scale", 1.0),
+            )
+        else:
+            results = (x, y, z)
+
         props.coordinate_output = ",".join([str(r) for r in results])
         bpy.context.scene.cursor.location = results
         return {"FINISHED"}
@@ -225,18 +248,64 @@ class ConvertGlobalToLocal(bpy.types.Operator):
             Data.load()
         props = context.scene.BIMGeoreferenceProperties
         x, y, z = [float(co) for co in props.coordinate_input.split(",")]
-        results = ifcopenshell.util.geolocation.enh2xyz(
-            x,
-            y,
-            z,
-            Data.map_conversion["Eastings"],
-            Data.map_conversion["Northings"],
-            Data.map_conversion["OrthogonalHeight"],
-            Data.map_conversion.get("XAxisAbscissa", 1.0),
-            Data.map_conversion.get("XAxisOrdinate", 0.0),
-            Data.map_conversion.get("Scale", 1.0),
-        )
+
+        if Data.map_conversion:
+            results = ifcopenshell.util.geolocation.enh2xyz(
+                x,
+                y,
+                z,
+                Data.map_conversion["Eastings"],
+                Data.map_conversion["Northings"],
+                Data.map_conversion["OrthogonalHeight"],
+                Data.map_conversion.get("XAxisAbscissa", 1.0),
+                Data.map_conversion.get("XAxisOrdinate", 0.0),
+                Data.map_conversion.get("Scale", 1.0),
+            )
+        else:
+            results = (x, y, z)
+
+        if props.has_blender_offset and props.blender_offset_type == "CARTESIAN_POINT":
+            results[0] += float(props.blender_eastings)
+            results[1] += float(props.blender_northings)
+            results[2] += float(props.blender_orthogonal_height)
+        elif props.has_blender_offset and props.blender_offset_type == "OBJECT_PLACEMENT":
+            results = ifcopenshell.util.geolocation.enh2xyz(
+                results[0],
+                results[1],
+                results[2],
+                float(props.blender_eastings),
+                float(props.blender_northings),
+                float(props.blender_orthogonal_height),
+                float(props.blender_x_axis_abscissa),
+                float(props.blender_x_axis_ordinate),
+                1.0,
+            )
+
         props.coordinate_output = ",".join([str(r) for r in results])
-        bpy.context.scene.cursor.location = results
+
+        scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
+        bpy.context.scene.cursor.location = [o * scale for o in results]
         return {"FINISHED"}
 
+
+class GetCursorLocation(bpy.types.Operator):
+    bl_idname = "bim.get_cursor_location"
+    bl_label = "Get Cursor Location"
+
+    def execute(self, context):
+        props = context.scene.BIMGeoreferenceProperties
+        scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
+        project_coordinates = [o / scale for o in bpy.context.scene.cursor.location]
+        props.coordinate_input = ",".join([str(o) for o in project_coordinates])
+        return {"FINISHED"}
+
+
+class SetCursorLocation(bpy.types.Operator):
+    bl_idname = "bim.set_cursor_location"
+    bl_label = "Set Cursor Location"
+
+    def execute(self, context):
+        props = context.scene.BIMGeoreferenceProperties
+        scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
+        bpy.context.scene.cursor.location = [float(co) * scale for co in props.coordinate_output.split(",")]
+        return {"FINISHED"}

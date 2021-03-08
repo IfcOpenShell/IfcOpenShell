@@ -6,6 +6,11 @@ class Data:
     contexts = {}
 
     @classmethod
+    def purge(cls):
+        cls.is_loaded = False
+        cls.contexts = {}
+
+    @classmethod
     def load(cls):
         file = IfcStore.get_file()
         if not file:
@@ -13,10 +18,7 @@ class Data:
         cls.contexts = {}
         for context in file.by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             subcontexts = {}
-            # See bug #1224 for why we don't use HasSubContexts
-            for subcontext in file.by_type("IfcGeometricRepresentationSubContext"):
-                if subcontext.ParentContext != context:
-                    continue
+            for subcontext in context.HasSubContexts:
                 subcontexts[int(subcontext.id())] = {
                     "ContextType": subcontext.ContextType,
                     "ContextIdentifier": subcontext.ContextIdentifier,
