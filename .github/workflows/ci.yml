@@ -9,7 +9,7 @@ jobs:
   activate:
     runs-on: ubuntu-latest
     if: |
-      github.repository == 'feelpp/IfcOpenShell' &&
+      github.repository == 'IfcOpenShell/IfcOpenShell' &&
       !startsWith(github.event.head_commit.message, 'Release ') &&
       !contains(github.event.head_commit.message, 'ci skip')
     steps:
@@ -94,7 +94,7 @@ jobs:
       uses: docker/build-push-action@v2
       with: 
         context: artifacts
-        repository: feelpp/ifcopenshell
-        tags: ghcr.io/feelpp/ifcopenshell:latest
+        repository: IfcOpenShell/ifcopenshell
+        tags: ghcr.io/IfcOpenShell/ifcopenshell:latest
         file: ./Dockerfile
         push: true
