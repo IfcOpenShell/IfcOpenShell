@@ -9,7 +9,7 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        layers = list(self.settings["layer_set"].MaterialLayers)
+        layers = list(self.settings["layer_set"].MaterialLayers or [])
         layer = self.file.create_entity("IfcMaterialLayer", **{
             "Material": self.settings["material"],
             "LayerThickness": 0.

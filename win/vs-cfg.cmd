@@ -54,10 +54,10 @@ if not "!GEN_SHORTHAND!"=="" if !GEN_SHORTHAND!==!GENERATOR! goto :GeneratorShor
 
 set "VS_PLATFORM=Win32"
 :: use the command prompt target platform, at least initially
-if "%VSCMD_ARG_TGT_ARCH%"==x86	set "VS_PLATFORM=Win32"
-if "%VSCMD_ARG_TGT_ARCH%"==x64	set "VS_PLATFORM=x64"
-if "%VSCMD_ARG_TGT_ARCH%"==arm	set "VS_PLATFORM=ARM"
-if "%VSCMD_ARG_TGT_ARCH%"==arm64	set "VS_PLATFORM=ARM64"
+if "%VSCMD_ARG_TGT_ARCH%"=="x86" set "VS_PLATFORM=Win32"
+if "%VSCMD_ARG_TGT_ARCH%"=="x64" set "VS_PLATFORM=x64"
+if "%VSCMD_ARG_TGT_ARCH%"=="arm" set "VS_PLATFORM=ARM"
+if "%VSCMD_ARG_TGT_ARCH%"=="arm64" set "VS_PLATFORM=ARM64"
 
 :: "echo if" trick from http://stackoverflow.com/a/8758579
 echo(!GEN_SHORTHAND! | findstr /c:"-x86"     >nul && ( set "VS_PLATFORM=Win32" )

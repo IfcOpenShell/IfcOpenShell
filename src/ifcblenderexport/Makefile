@@ -1,18 +1,43 @@
 VERSION:=`date '+%y%m%d'`
+PYVERSION:=py37
+
 ifeq ($(PLATFORM), win)
+ifeq ($(PYVERSION), py37)
 PYTHONOCC_URL:=https://anaconda.org/DLR-SC/pythonocc-core/0.17.3/download/win-64/pythonocc-core-0.17.3-py37he980bc4_10.tar.bz2
 OCE_URL:=https://anaconda.org/DLR-SC/oce/0.17.2/download/win-64/oce-0.17.2-he980bc4_14.tar.bz2
 TBB_URL:=https://anaconda.org/DLR-SC/tbb/2019.5/download/win-64/tbb-2019.5-he980bc4_0.tar.bz2
 endif
+ifeq ($(PYVERSION), py39)
+PYTHONOCC_URL:=https://anaconda.org/conda-forge/pythonocc-core/7.4.1/download/win-64/pythonocc-core-7.4.1-py39h3d1c7c5_0.tar.bz2
+OCE_URL:=https://anaconda.org/conda-forge/occt/7.4.0/download/win-64/occt-7.4.0-h823b557_3.tar.bz2
+TBB_URL:=https://anaconda.org/conda-forge/tbb/2020.2/download/win-64/tbb-2020.2-h2d74725_4.tar.bz2
+endif
+endif
+
 ifeq ($(PLATFORM), macos)
+ifeq ($(PYVERSION), py37)
 PYTHONOCC_URL:=https://anaconda.org/DLR-SC/pythonocc-core/0.17.3/download/osx-64/pythonocc-core-0.17.3-py37h04f5b5a_10.tar.bz2
 OCE_URL:=https://anaconda.org/DLR-SC/oce/0.17.2/download/osx-64/oce-0.17.2-h04f5b5a_12.tar.bz2
 TBB_URL:=https://anaconda.org/DLR-SC/tbb/4.3.6/download/osx-64/tbb-4.3.6-0.tar.bz2
 endif
+ifeq ($(PYVERSION), py39)
+PYTHONOCC_URL:=https://anaconda.org/conda-forge/pythonocc-core/7.4.1/download/osx-64/pythonocc-core-7.4.1-py39h4d29fe3_0.tar.bz2
+OCE_URL:=https://anaconda.org/conda-forge/occt/7.4.0/download/osx-64/occt-7.4.0-hb9b6dc7_3.tar.bz2
+TBB_URL:=https://anaconda.org/conda-forge/tbb/2020.2/download/osx-64/tbb-2020.2-h940c156_4.tar.bz2
+endif
+endif
+
 ifeq ($(PLATFORM), linux)
+ifeq ($(PYVERSION), py37)
 PYTHONOCC_URL:=https://anaconda.org/DLR-SC/pythonocc-core/0.17.3/download/linux-64/pythonocc-core-0.17.3-py37h6bb024c_10.tar.bz2
 OCE_URL:=https://anaconda.org/DLR-SC/oce/0.17.2/download/linux-64/oce-0.17.2-h6bb024c_14.tar.bz2
 TBB_URL:=https://anaconda.org/DLR-SC/tbb/4.3.6/download/linux-64/tbb-4.3.6-0.tar.bz2
+endif
+ifeq ($(PYVERSION), py39)
+PYTHONOCC_URL:=https://anaconda.org/conda-forge/pythonocc-core/7.4.1/download/linux-64/pythonocc-core-7.4.1-py39h465cb30_0.tar.bz2
+OCE_URL:=https://anaconda.org/conda-forge/occt/7.4.0/download/linux-64/occt-7.4.0-h9121d39_3.tar.bz2
+TBB_URL:=https://anaconda.org/conda-forge/tbb/2020.2/download/linux-64/tbb-2020.2-h4bd325d_4.tar.bz2
+endif
 endif
 
 .PHONY: dist
@@ -26,12 +51,29 @@ endif
 	cp -r blenderbim/* dist/blenderbim/
 
 	# Provides IfcOpenShell Python functionality
+ifeq ($(PYVERSION), py37)
 	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-37-v0.6.0-517b819-$(PLATFORM)64.zip
+endif
+ifeq ($(PYVERSION), py39)
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-39-v0.6.0-517b819-$(PLATFORM)64.zip
+endif
 	cd dist/working && unzip ifcblender*
 	cp -r dist/working/io_import_scene_ifc/ifcopenshell dist/blenderbim/libs/site/packages/
+
 	# See bug #812
 	cd dist/working && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcblenderexport/occ_utils.py
 	cd dist/working && mv occ_utils.py ../blenderbim/libs/site/packages/ifcopenshell/geom/occ_utils.py
+	rm -rf dist/working
+
+	# Provides IfcConvert for construction documentation
+	mkdir dist/working
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.6.0-517b819-$(PLATFORM)64.zip
+	cd dist/working && unzip IfcConvert*
+ifeq ($(PLATFORM), win)
+	cp -r dist/working/IfcConvert.exe dist/blenderbim/libs/
+else
+	cp -r dist/working/IfcConvert dist/blenderbim/libs/
+endif
 	rm -rf dist/working
 
 	# Provides Python OCC functionality for cutting IFC geometry for construction documentation
@@ -41,16 +83,26 @@ endif
 ifeq ($(PLATFORM), win)
 	cd dist/working && cp -r Lib/site-packages/OCC ../blenderbim/libs/site/packages/
 else
+ifeq ($(PYVERSION), py37)
 	cd dist/working && cp -r lib/python3.7/site-packages/OCC ../blenderbim/libs/site/packages/
+endif
+ifeq ($(PYVERSION), py39)
+	cd dist/working && cp -r lib/python3.9/site-packages/OCC ../blenderbim/libs/site/packages/
+endif
 endif
 	rm -rf dist/working
 
 	# Required by Python OCC
 	mkdir dist/working
 	cd dist/working && wget $(OCE_URL)
-	cd dist/working && tar -xjvf oce*
+	cd dist/working && tar -xjvf oc*
 ifeq ($(PLATFORM), win)
+ifeq ($(PYVERSION), py37)
 	cd dist/working && cp -r Library/bin/* ../blenderbim/libs/site/packages/OCC/
+endif
+ifeq ($(PYVERSION), py39)
+	cd dist/working && cp -r Library/bin/* ../blenderbim/libs/site/packages/OCC/Core/
+endif
 else
 	# Unix Conda builds of PythonOCC expect OCE libs to have a RPATH of ../../../
 	cd dist/working && cp -r lib/* ../blenderbim/libs/
@@ -65,7 +117,12 @@ endif
 	cd dist/working && wget $(TBB_URL)
 	cd dist/working && tar -xjvf tbb*
 ifeq ($(PLATFORM), win)
+ifeq ($(PYVERSION), py37)
 	cd dist/working && cp -r Library/bin/* ../blenderbim/libs/site/packages/OCC/
+endif
+ifeq ($(PYVERSION), py39)
+	cd dist/working && cp -r Library/bin/* ../blenderbim/libs/site/packages/OCC/Core/
+endif
 else
 	cd dist/working && cp -r lib/* ../blenderbim/libs/
 endif
@@ -172,22 +229,15 @@ endif
 	rm -rf dist/working
 
 	# Required by IFCClash
+	mkdir dist/working
 ifeq ($(PLATFORM), linux)
-	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/0c/fa/00d85f893b02289e2942849d97f8818dde8e2111182e825fb3a735677791/python_fcl-0.0.12-cp37-cp37m-manylinux1_x86_64.whl
-	cd dist/working && unzip python_fcl*
-	cp -r dist/working/fcl dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
 endif
-
-	# Required by IFCClash
 ifeq ($(PLATFORM), win)
-	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/19/e6/6e9f33fb59e8f27c0e1592bd26e644bc92b85c942b072b2d3854105d5887/python_fcl_win32-0.0.12.post3-py3-none-win_amd64.whl
+endif
 	cd dist/working && unzip python_fcl*
 	cp -r dist/working/fcl dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-endif
 
 	# Required by BIMTester
 	mkdir dist/working
@@ -267,7 +317,7 @@ endif
 	rm -rf dist/working
 
 	cd dist/blenderbim && sed -i "s/999999/$(VERSION)/" __init__.py
-	cd dist && zip -r blender28-bim-$(VERSION)-$(PLATFORM).zip ./*
+	cd dist && zip -r blender28-bim-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ./*
 	rm -rf dist/blenderbim
 
 .PHONY: clean

@@ -84,7 +84,12 @@ class SelectAttribute(bpy.types.Operator):
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            if does_keyword_exist(pattern, getattr(element, attribute_name, None)):
+            if context.scene.BIMSearchProperties.should_ignorecase:
+                data = element.get_info()
+                value = next((v for k, v in data.items() if k.lower() == attribute_name.lower()), None)
+            else:
+                value = getattr(element, attribute_name, None)
+            if does_keyword_exist(pattern, value):
                 obj.select_set(True)
         return {"FINISHED"}
 
@@ -104,8 +109,13 @@ class SelectPset(bpy.types.Operator):
                 continue
             element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
             psets = ifcopenshell.util.element.get_psets(element)
-            props = psets.get(search_pset_name, {})
-            if does_keyword_exist(pattern, props.get(search_prop_name, None)):
+            if context.scene.BIMSearchProperties.should_ignorecase:
+                props = next((v for k, v in psets.items() if k.lower() == search_pset_name.lower()), {})
+                value = str(next((v for k, v in props.items() if k.lower() == search_prop_name.lower()), None))
+            else:
+                props = psets.get(search_pset_name, {})
+                value = props.get(search_prop_name, None)
+            if does_keyword_exist(pattern, value):
                 obj.select_set(True)
         return {"FINISHED"}
 
@@ -123,7 +133,11 @@ class ColourByAttribute(bpy.types.Operator):
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            value = getattr(element, attribute_name, None)
+            if context.scene.BIMSearchProperties.should_ignorecase:
+                data = element.get_info()
+                value = next((v for k, v in data.items() if k.lower() == attribute_name.lower()), None)
+            else:
+                value = getattr(element, attribute_name, None)
             if value not in values:
                 values[value] = next(colours)
             obj.color = values[value]
@@ -147,8 +161,12 @@ class ColourByPset(bpy.types.Operator):
                 continue
             element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
             psets = ifcopenshell.util.element.get_psets(element)
-            props = psets.get(search_pset_name, {})
-            value = str(props.get(search_prop_name, None))
+            if context.scene.BIMSearchProperties.should_ignorecase:
+                props = next((v for k, v in psets.items() if k.lower() == search_pset_name.lower()), {})
+                value = str(next((v for k, v in props.items() if k.lower() == search_prop_name.lower()), None))
+            else:
+                props = psets.get(search_pset_name, {})
+                value = str(props.get(search_prop_name, None))
             if value not in values:
                 values[value] = next(colours)
             obj.color = values[value]

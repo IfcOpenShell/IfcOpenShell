@@ -32,7 +32,8 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        self.evaluate_geometry()
+        if isinstance(self.settings["geometry"], bpy.types.Mesh):
+            self.evaluate_geometry()
         if self.settings["unit_scale"] is None:
             self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         if self.settings["context"].ContextType == "Model":
@@ -130,6 +131,8 @@ class Usecase:
             return self.create_curve_representation()
         elif self.settings["is_point_cloud"]:
             return self.create_point_cloud_representation()
+        elif isinstance(self.settings["geometry"], bpy.types.Camera):
+            return self.create_camera_block_representation()
         elif self.settings["ifc_representation_class"] == "IfcExtrudedAreaSolid/IfcRectangleProfileDef":
             return self.create_rectangle_extrusion_representation()
         elif self.settings["ifc_representation_class"] == "IfcExtrudedAreaSolid/IfcCircleProfileDef":
@@ -137,6 +140,42 @@ class Usecase:
         elif self.settings["ifc_representation_class"] == "IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef":
             return self.create_arbitrary_extrusion_representation()
         return self.create_mesh_representation()
+
+    def create_camera_block_representation(self):
+        raster_x = self.settings["geometry"].BIMCameraProperties.raster_x
+        raster_y = self.settings["geometry"].BIMCameraProperties.raster_y
+
+        if self.is_camera_landscape():
+            width = self.settings["geometry"].ortho_scale
+            height = width / raster_x * raster_y
+        else:
+            height = self.settings["geometry"].ortho_scale
+            width = height / raster_y * raster_x
+
+        block = self.file.create_entity(
+            "IfcBlock",
+            **{
+                "Position": self.file.createIfcAxis2Placement3D(
+                    self.create_cartesian_point(-width / 2, -height / 2, -self.settings["geometry"].clip_end)
+                ),
+                "XLength": self.convert_si_to_unit(width),
+                "YLength": self.convert_si_to_unit(height),
+                "ZLength": self.convert_si_to_unit(self.settings["geometry"].clip_end),
+            }
+        )
+
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "CSG",
+            [self.file.createIfcCsgSolid(block)],
+        )
+
+    def is_camera_landscape(self):
+        return (
+            self.settings["geometry"].BIMCameraProperties.raster_x
+            > self.settings["geometry"].BIMCameraProperties.raster_y
+        )
 
     def create_curve3d_representation(self):
         return self.file.createIfcShapeRepresentation(

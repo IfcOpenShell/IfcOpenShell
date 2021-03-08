@@ -321,9 +321,6 @@ class IfcImporter:
         self.profile_code("Loading file")
         self.set_ifc_file()
         self.profile_code("Setting file")
-        if self.ifc_import_settings.should_auto_set_workarounds:
-            self.auto_set_workarounds()
-            self.profile_code("Set vendor worksarounds")
         self.calculate_unit_scale()
         self.profile_code("Calculate unit scale")
         self.calculate_model_offset()
@@ -374,13 +371,6 @@ class IfcImporter:
             self.profile_code("Mesh cleaning")
         self.set_default_context()
         self.profile_code("Setting default context")
-
-    def auto_set_workarounds(self):
-        applications = self.file.by_type("IfcApplication")
-        if not applications:
-            return
-        if "prostructures" in applications[0].ApplicationFullName.lower():
-            self.ifc_import_settings.should_allow_non_element_aggregates = True
 
     def is_element_far_away(self, element):
         try:
@@ -535,6 +525,13 @@ class IfcImporter:
                     return point[0]
 
         for point in self.file.by_type("IfcCartesianPoint"):
+            is_used_in_placement = False
+            for inverse in self.file.get_inverse(point):
+                if inverse.is_a("IfcAxis2Placement3D"):
+                    is_used_in_placement = True
+                    break
+            if is_used_in_placement:
+                continue
             elements_checked += 1
             if elements_checked > element_checking_threshold:
                 return
@@ -1171,19 +1168,7 @@ class IfcImporter:
                     self.add_related_objects(collection, rel_aggregate.RelatedObjects)
 
     def create_aggregates(self):
-        if self.ifc_import_settings.should_allow_non_element_aggregates:
-            if self.file.schema == "IFC2X3":
-                rel_aggregates = [
-                    a
-                    for a in self.file.by_type("IfcRelAggregates")
-                    if not a.RelatingObject.is_a("IfcSpatialStructureElement")
-                ]
-            else:
-                rel_aggregates = [
-                    a for a in self.file.by_type("IfcRelAggregates") if not a.RelatingObject.is_a("IfcSpatialElement")
-                ]
-        else:
-            rel_aggregates = [a for a in self.file.by_type("IfcRelAggregates") if a.RelatingObject.is_a("IfcElement")]
+        rel_aggregates = [a for a in self.file.by_type("IfcRelAggregates") if a.RelatingObject.is_a("IfcElement")]
         for rel_aggregate in rel_aggregates:
             self.create_aggregate(rel_aggregate)
 
@@ -1193,7 +1178,8 @@ class IfcImporter:
         obj = bpy.data.objects.new("{}/{}".format(element.is_a(), element.Name), None)
         self.link_element(element, obj)
 
-        container_collection = self.get_aggregate_collection(element)
+        container = self.get_aggregate_spatial_container(element)
+        container_collection = self.spatial_structure_elements[container.GlobalId]["blender"]
 
         collection = bpy.data.collections.new(obj.name)
         container_collection.children.link(collection)
@@ -1202,15 +1188,14 @@ class IfcImporter:
         self.aggregates[element.GlobalId] = obj
         self.aggregate_collections[rel_aggregate.id()] = collection
 
-    def get_aggregate_collection(self, element):
+    def get_aggregate_spatial_container(self, element):
         if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
             container = element.ContainedInStructure[0].RelatingStructure
         elif hasattr(element, "Decomposes") and element.Decomposes:
-            container = element.Decomposes[0].RelatingObject
-
+            return self.get_aggregate_spatial_container(element.Decomposes[0].RelatingObject)
         if container.is_a("IfcSpace"):
-            return self.get_aggregate_collection(container)
-        return self.spatial_structure_elements[container.GlobalId]["blender"]
+            return self.get_aggregate_spatial_container(container)
+        return container
 
     def create_openings_collection(self):
         self.opening_collection = bpy.data.collections.new("IfcOpeningElements")
@@ -1565,7 +1550,6 @@ class IfcImportSettings:
         self.should_clean_mesh = True
         self.deflection_tolerance = 0.001
         self.angular_tolerance = 0.5
-        self.should_allow_non_element_aggregates = False
         self.should_offset_model = False
         self.model_offset_coordinates = (0, 0, 0)
         self.ifc_import_filter = "NONE"
