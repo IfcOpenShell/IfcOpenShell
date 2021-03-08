@@ -15,8 +15,8 @@ jobs:
   activate:
     runs-on: ubuntu-latest
     if: |
-      github.repository == 'krande/IfcOpenShell' &&
-      !contains(github.event.head_commit.message, '[skip ci]')
+      github.repository == 'IfcOpenShell/IfcOpenShell' &&
+      contains(github.event.head_commit.message, '[Release]')
     steps:
     - name: Set env
       run: echo ok go
