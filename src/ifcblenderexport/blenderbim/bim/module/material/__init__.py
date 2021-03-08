@@ -10,6 +10,7 @@ classes = (
     operator.RemoveConstituent,
     operator.AddLayer,
     operator.RemoveLayer,
+    operator.ReorderLayer,
     operator.AddListItem,
     operator.RemoveListItem,
     operator.EnableEditingAssignedMaterial,
