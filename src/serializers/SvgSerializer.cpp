@@ -178,6 +178,8 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
                     path.add(center.X());
                     path.add(" ");
                     path.add(center.Y());
+					// @todo isn't there a ")" missing here?
+					// @todo also X, Y are not added to {x,y}coords vector
 
                     // Bounding box:
                     // More important to have all geometry in bounding box than to be minimal
@@ -907,6 +909,14 @@ void SvgSerializer::write(const geometry_data& data) {
 
 						// @todo should we take the average parameter value instead?
 						gp_XYZ center = (p0.XYZ() + p1.XYZ()) / 2.;
+						double z_rotation = gp_Dir(p0.XYZ() - p1.XYZ()).AngleWithRef(gp_Dir(1., 0., 0.), gp_Dir(0., 0., 1.));
+						z_rotation *= 180. / M_PI;
+						if (z_rotation < -88) {
+							z_rotation += 180;
+						}
+						if (z_rotation > +90) {
+							z_rotation -= 180;
+						}
 
 						util::string_buffer path;
 						// dominant-baseline="central" is not well supported in IE.
@@ -915,7 +925,14 @@ void SvgSerializer::write(const geometry_data& data) {
 						xcoords.push_back(path.add(center.X()));
 						path.add("\" y=\"");
 						ycoords.push_back(path.add(center.Y()));
-						path.add("\">");
+						path.add("\" transform=\"rotate(");
+						path.add(z_rotation);
+						path.add(" ");
+						xcoords.push_back(path.add(center.X()));
+						path.add(" ");
+						ycoords.push_back(path.add(center.Y()));
+						path.add(" translate(0 -8))\">");
+
 						std::vector<std::string> labels{};
 
 						GProp_GProps prop;
