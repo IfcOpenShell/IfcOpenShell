@@ -3,19 +3,20 @@ name: Publish-blenderbim-multiplatform
 on:
   push:
     paths:
-      - 'src/ifcblenderexport/blenderbim/*'
+      - 'src/ifcblenderexport/*'
       - '.github/workflows/ci-blenderbim-matrix.yml'
 
 env:
   major: 0
   minor: 0
   name: blenderbim
+  pyver: py37
 
 jobs:
   activate:
     runs-on: ubuntu-latest
     if: |
-      github.repository == 'IfcOpenShell/IfcOpenShell' &&
+      github.repository == 'krande/IfcOpenShell' &&
       !contains(github.event.head_commit.message, '[skip ci]')
     steps:
     - name: Set env
@@ -54,13 +55,13 @@ jobs:
         run: |
           cp -r src/ifcblenderexport src/ifcblenderexport_${{ matrix.config.short_name }} &&
           cd src/ifcblenderexport_${{ matrix.config.short_name }} &&
-          make dist PLATFORM=${{ matrix.config.short_name }}
+          make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ env.pyver }}
       - name: Upload Zip file to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: src/ifcblenderexport_${{ matrix.config.short_name }}/dist/blender28-bim-${{steps.date.outputs.date}}-${{ matrix.config.short_name }}.zip
-          asset_name: blender28-bim-${{steps.date.outputs.date}}-${{ matrix.config.short_name }}.zip
+          file: src/ifcblenderexport_${{ matrix.config.short_name }}/dist/blender28-bim-${{steps.date.outputs.date}}-${{ env.pyver }}-${{ matrix.config.short_name }}.zip
+          asset_name: blender28-bim-${{steps.date.outputs.date}}-${{ env.pyver }}-${{ matrix.config.short_name }}.zip
           tag: "blenderbim-${{steps.date.outputs.date}}"
           overwrite: true
           body: "Package release blenderbim-${{steps.date.outputs.date}}"
