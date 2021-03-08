@@ -7,7 +7,7 @@ on:
 
 jobs:
   activate:
-    if: github.repository == 'feelpp/IfcOpenShell'
+    if: github.repository == 'IfcOpenShell/IfcOpenShell'
     runs-on: ubuntu-latest
     steps:
     - run: echo ok go
