@@ -13,8 +13,8 @@ RUN apt-get update \
     software-properties-common ;\
     rm -rf /var/lib/apt/lists/*
 
-RUN useradd --user-group --create-home --shell /bin/bash feelpp ;\
-    echo "feelpp ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+RUN useradd --user-group --create-home --shell /bin/bash IfcOpenShell ;\
+    echo "IfcOpenShell ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 
 ENV DEBIAN_FRONTEND=noninteractive        
@@ -28,10 +28,10 @@ RUN echo "deb http://archive.ubuntu.com/ubuntu focal-proposed main restricted" |
                     libboost-regex1.67.0 libboost-thread1.67.0 libboost-date-time1.67.0; \
     rm -rf /var/lib/apt/lists/* ; 
 
-COPY . /home/feelpp/
-RUN ls -lrtR /home/feelpp
+COPY . /home/IfcOpenShell/
+RUN ls -lrtR /home/IfcOpenShell
 
-RUN dpkg -i /home/feelpp/*.deb 
+RUN dpkg -i /home/IfcOpenShell/*.deb 
 
-USER feelpp
+USER IfcOpenShell
 
