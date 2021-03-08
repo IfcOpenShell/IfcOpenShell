@@ -229,18 +229,20 @@ endif
 	rm -rf dist/working
 
 	# Required by IFCClash
-	mkdir dist/working
 ifeq ($(PLATFORM), linux)
+	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/0c/fa/00d85f893b02289e2942849d97f8818dde8e2111182e825fb3a735677791/python_fcl-0.0.12-cp37-cp37m-manylinux1_x86_64.whl
-endif
-ifeq ($(PLATFORM), win)
-	cd dist/working && wget https://files.pythonhosted.org/packages/19/e6/6e9f33fb59e8f27c0e1592bd26e644bc92b85c942b072b2d3854105d5887/python_fcl_win32-0.0.12.post3-py3-none-win_amd64.whl
-endif
 	cd dist/working && unzip python_fcl*
 	cp -r dist/working/fcl dist/blenderbim/libs/site/packages/
-
-	# Cleanup after python_fcl
 	rm -rf dist/working
+endif
+ifeq ($(PLATFORM), win)
+	mkdir dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/19/e6/6e9f33fb59e8f27c0e1592bd26e644bc92b85c942b072b2d3854105d5887/python_fcl_win32-0.0.12.post3-py3-none-win_amd64.whl
+	cd dist/working && unzip python_fcl*
+	cp -r dist/working/fcl dist/blenderbim/libs/site/packages/
+	rm -rf dist/working
+endif
 
 	# Required by BIMTester
 	mkdir dist/working
