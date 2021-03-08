@@ -46,7 +46,7 @@ jobs:
          -DLIBXML2_INCLUDE_DIR=/usr/include/libxml2 \
          -DLIBXML2_LIBRARIES=/usr/lib/x86_64-linux-gnu/libxml2.so \
          ../cmake
-        make -j10
+        make -j`nproc`
         make install
     - 
       name: Package
