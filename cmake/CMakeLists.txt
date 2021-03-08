@@ -38,6 +38,7 @@ OPTION(COLLADA_SUPPORT "Build IfcConvert with COLLADA support (requires OpenCOLL
 OPTION(IFCXML_SUPPORT "Build IfcParse with ifcXML support (requires libxml2)." ON)
 OPTION(ENABLE_BUILD_OPTIMIZATIONS "Enable certain compiler and linker optimizations on RelWithDebInfo and Release builds." OFF)
 OPTION(IFCCONVERT_DOUBLE_PRECISION "IfcConvert: Use double precision floating-point numbers." ON)
+OPTION(BUILD_PACKAGE "" OFF)
 OPTION(BUILD_IFCGEOM "Build IfcGeom." ON)
 OPTION(BUILD_DOCUMENTATION "Build IfcOpenShell Documentation." OFF)
 OPTION(BUILD_IFCPYTHON "Build IfcPython." ON)

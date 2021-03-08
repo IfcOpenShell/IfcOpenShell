@@ -79,9 +79,11 @@ IF(PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "")
             OUTPUT_VARIABLE python_package_dir
         )
     ENDIF()
-    set(python_package_dir ${CMAKE_INSTALL_LIBDIR}/python${PYTHON_VERSION_MAJOR}/dist-packages/)
+    if (BUILD_PACKAGE)
+        set(python_package_dir ${CMAKE_INSTALL_LIBDIR}/python${PYTHON_VERSION_MAJOR}/dist-packages/)
+    endif()
     IF("${python_package_dir}" STREQUAL "")
-        MESSAGE(WARNING "Unable to locate Python site-package directory, unals /ble to install the Python wrapper")
+        MESSAGE(WARNING "Unable to locate Python site-package directory, unable to install the Python wrapper")
     ELSE()
         FILE(GLOB_RECURSE sourcefiles 
             "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/*"
