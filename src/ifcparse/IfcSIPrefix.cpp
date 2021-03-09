@@ -34,7 +34,7 @@ double IfcParse::IfcSIPrefixToValue(const std::string& v) {
 	else if ( v == "MEGA"  ) return 1.e6;
 	else if ( v == "KILO"  ) return 1.e3;
 	else if ( v == "HECTO" ) return 1.e2;
-	else if ( v == "DECA"  ) return 1.;
+	else if ( v == "DECA"  ) return 1.e1;
 	else if ( v == "DECI"  ) return 1.e-1;
 	else if ( v == "CENTI" ) return 1.e-2;
 	else if ( v == "MILLI" ) return 1.e-3;
