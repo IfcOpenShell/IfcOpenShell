@@ -931,7 +931,7 @@ void SvgSerializer::write(const geometry_data& data) {
 						xcoords.push_back(path.add(center.X()));
 						path.add(" ");
 						ycoords.push_back(path.add(center.Y()));
-						path.add(" translate(0 -8))\">");
+						path.add(") translate(0 -8)\">");
 
 						std::vector<std::string> labels{};
 
