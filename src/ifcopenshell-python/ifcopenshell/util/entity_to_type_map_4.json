@@ -89,6 +89,9 @@
     "IfcDistributionChamberElement": [
         "IFCDISTRIBUTIONCHAMBERELEMENTTYPE"
     ],
+    "IfcDoor": [
+        "IFCDOORTYPE"
+    ],
     "IfcDuctFitting": [
         "IFCDUCTFITTINGTYPE"
     ],
@@ -302,11 +305,17 @@
     "IfcWasteTerminal": [
         "IFCWASTETERMINALTYPE"
     ],
+    "IfcWindow": [
+        "IFCWINDOWTYPE"
+    ],
     "IfcBeamStandardCase": [
         "IFCBEAMTYPE"
     ],
     "IfcColumnStandardCase": [
         "IFCCOLUMNTYPE"
+    ],
+    "IfcDoorStandardCase": [
+        "IFCDOORTYPE"
     ],
     "IfcMemberStandardCase": [
         "IFCMEMBERTYPE"
@@ -325,5 +334,8 @@
     ],
     "IfcWallStandardCase": [
         "IFCWALLTYPE"
+    ],
+    "IfcWindowStandardCase": [
+        "IFCWINDOWTYPE"
     ]
 }
