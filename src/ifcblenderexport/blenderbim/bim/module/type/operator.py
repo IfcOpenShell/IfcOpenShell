@@ -18,21 +18,22 @@ class AssignType(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        related_object = bpy.data.objects.get(self.related_object) if self.related_object else bpy.context.active_object
-        oprops = related_object.BIMObjectProperties
-        props = related_object.BIMTypeProperties
-        relating_type = self.relating_type or int(props.relating_type)
-        assign_type.Usecase(
-            self.file,
-            {
-                "related_object": self.file.by_id(oprops.ifc_definition_id),
-                "relating_type": self.file.by_id(relating_type),
-            },
-        ).execute()
-        Data.load(oprops.ifc_definition_id)
-
-        if self.file.by_id(relating_type).RepresentationMaps:
-            bpy.ops.bim.map_representations(product_id=oprops.ifc_definition_id, type_product_id=relating_type)
+        relating_type = self.relating_type or int(context.active_object.BIMTypeProperties.relating_type)
+        related_objects = (
+            [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
+        )
+        for related_object in related_objects:
+            oprops = related_object.BIMObjectProperties
+            assign_type.Usecase(
+                self.file,
+                {
+                    "related_object": self.file.by_id(oprops.ifc_definition_id),
+                    "relating_type": self.file.by_id(relating_type),
+                },
+            ).execute()
+            Data.load(oprops.ifc_definition_id)
+            if self.file.by_id(relating_type).RepresentationMaps:
+                bpy.ops.bim.map_representations(product_id=oprops.ifc_definition_id, type_product_id=relating_type)
 
         bpy.ops.bim.disable_editing_type(obj=related_object.name)
         return {"FINISHED"}
@@ -45,15 +46,18 @@ class UnassignType(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        related_object = bpy.data.objects.get(self.related_object) if self.related_object else bpy.context.active_object
-        oprops = related_object.BIMObjectProperties
-        unassign_type.Usecase(
-            self.file,
-            {
-                "related_object": self.file.by_id(oprops.ifc_definition_id),
-            },
-        ).execute()
-        Data.load(oprops.ifc_definition_id)
+        related_objects = (
+            [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
+        )
+        for related_object in related_objects:
+            oprops = related_object.BIMObjectProperties
+            unassign_type.Usecase(
+                self.file,
+                {
+                    "related_object": self.file.by_id(oprops.ifc_definition_id),
+                },
+            ).execute()
+            Data.load(oprops.ifc_definition_id)
         return {"FINISHED"}
 
 
