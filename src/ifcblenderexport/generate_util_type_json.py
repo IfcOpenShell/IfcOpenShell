@@ -20,7 +20,7 @@ with open(filepath) as fp:
             entity = line[len("ENTITY ") : -1]
         elif "END_ENTITY" in line:
             is_in_where_rule = False
-        elif entity and "CorrectTypeAssigned" in line:
+        elif entity and ("CorrectTypeAssigned" in line or "CorrectStyleAssigned" in line):
             is_in_where_rule = True
         elif entity and is_in_where_rule and "IN TYPEOF" in line and "RelatingType" in line:
             type_class = line.split("'")[1].split(".")[1]
