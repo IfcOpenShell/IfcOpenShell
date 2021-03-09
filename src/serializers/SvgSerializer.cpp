@@ -1508,7 +1508,6 @@ void SvgSerializer::finalize() {
 							double elev = *a;
 							elev *= lu;
 							auto svg_name = nameElement(storey);
-							auto po = &start_path(*pln, drawing_name, svg_name);
 
 							gp_Pln elev_pln(gp_Ax3(gp_Pnt(0, 0, elev), gp::DZ(), gp::DX()));
 							//, pln->Position().XDirection()));
@@ -1530,7 +1529,7 @@ void SvgSerializer::finalize() {
 							}
 							write(geometry_data{
 								C,trsf,storey,storey,elev,name,nameElement(storey)
-								});
+							});
 						}
 					}
 				}
