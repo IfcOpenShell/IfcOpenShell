@@ -631,6 +631,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Sh
 	bool doFillet2 = doFillet1;
 	double x2 = x1, dy2 = dy1, f2 = f1;
 
+	// @todo in IFC4 a IfcAsymmetricIShapeProfileDef is not a subtype anymore of IfcIShapeProfileDef!
 	if (l->declaration().is(IfcSchema::IfcAsymmetricIShapeProfileDef::Class())) {
 		IfcSchema::IfcAsymmetricIShapeProfileDef* assym = (IfcSchema::IfcAsymmetricIShapeProfileDef*) l;
 		x2 = assym->TopFlangeWidth() / 2. * getValue(GV_LENGTH_UNIT);
