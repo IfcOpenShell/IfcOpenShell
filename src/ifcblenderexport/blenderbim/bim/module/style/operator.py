@@ -3,8 +3,6 @@ import blenderbim.bim.module.style.add_style as add_style
 import blenderbim.bim.module.style.edit_style as edit_style
 from blenderbim.bim.ifc import IfcStore
 
-# from blenderbim.bim.module.spatial.data import Data
-
 
 def get_colour_settings(material):
     transparency = material.diffuse_color[3]
@@ -47,4 +45,18 @@ class AddStyle(bpy.types.Operator):
         settings["external_definition"] = None # TODO: Implement. See #1222
         style = add_style.Usecase(self.file, settings).execute()
         material.BIMMaterialProperties.ifc_style_id = int(style.id())
+        return {"FINISHED"}
+
+
+class UnlinkStyle(bpy.types.Operator):
+    bl_idname = "bim.unlink_style"
+    bl_label = "Unlink Style"
+    material: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        material = bpy.data.materials.get(self.material)
+        material.BIMMaterialProperties.ifc_style_id = 0
+        if "Ifc" in material.name and "/" in material.name:
+            material.name = "/".join(material.name.split("/")[1:])
         return {"FINISHED"}

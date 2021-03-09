@@ -19,8 +19,10 @@ class BIM_PT_style(Panel):
 
     def draw(self, context):
         props = context.active_object.active_material.BIMMaterialProperties
-        row = self.layout.row()
+        row = self.layout.row(align=True)
         if props.ifc_style_id:
             row.operator("bim.edit_style", icon="GREASEPENCIL")
+            op = row.operator("bim.unlink_style", icon="UNLINKED", text="")
+            op.material = context.active_object.active_material.name
         else:
             row.operator("bim.add_style", icon="ADD")
