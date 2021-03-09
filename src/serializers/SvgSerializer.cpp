@@ -1022,7 +1022,12 @@ void SvgSerializer::write(const geometry_data& data) {
 			gp_Pnt prev;
 
 			for (int i = 1; i <= wires->Length(); ++i) {
-				const TopoDS_Wire& wire = TopoDS::Wire(wires->Value(i));
+				
+				// @nb not const, because in case of storey annotations we might
+				// generate a new wire with fixed length
+
+				TopoDS_Wire wire = TopoDS::Wire(wires->Value(i));
+
 				if (wire.Closed() && (print_space_names_ || print_space_areas_) && data.product->declaration().is("IfcSpace")) {
 					// we explicitly specify the surface here, to later on
 					// simplify the projection from {x,y,z} to {u, v} because
@@ -1040,9 +1045,8 @@ void SvgSerializer::write(const geometry_data& data) {
 					}
 
 				}
-				write(*po, wire);
-
-				if (data.product->declaration().is("IfcBuildingStorey") && draw_storey_heights_ && wires->Length() == 1 && IfcGeom::Kernel::count(wire, TopAbs_EDGE) == 1) {
+				
+				if (data.product->declaration().is("IfcBuildingStorey") && storey_height_display_ != SH_NONE && wires->Length() == 1 && IfcGeom::Kernel::count(wire, TopAbs_EDGE) == 1) {
 					
 					std::string elev_str;
 
@@ -1077,12 +1081,31 @@ void SvgSerializer::write(const geometry_data& data) {
 						std::swap(p0, p1);
 					}
 
+					// @todo these settings are getting out of hand, how can we
+					// streamline this?
+					std::string anchor;
+					gp_Pnt* anchor_pt;
+					if (storey_height_display_ == SH_FULL) {
+						anchor = "end";
+						anchor_pt = &p1;
+					} else {
+						anchor = "start";
+						anchor_pt = &p0;
+
+						auto d = (p1.XYZ() - p0.XYZ());
+						d.Normalize();
+						d *= 3;
+						gp_Pnt p1x(p0.XYZ() + d);
+
+						wire = BRepBuilderAPI_MakePolygon(p0, p1x).Wire();
+					}
+
 					// dominant-baseline="central" is not well supported in IE.
 					// so we add a 0.35 offset to the dy of the tspans
-					path.add("            <text text-anchor=\"end\" x=\"");
-					xcoords.push_back(path.add(p1.X()));
+					path.add("            <text text-anchor=\"" + anchor + "\" x=\"");
+					xcoords.push_back(path.add(anchor_pt->X()));
 					path.add("\" y=\"");
-					ycoords.push_back(path.add(p1.Y()));
+					ycoords.push_back(path.add(anchor_pt->Y()));
 					path.add("\">");
 					for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
 						const auto& l = *lit;
@@ -1091,7 +1114,7 @@ void SvgSerializer::write(const geometry_data& data) {
 							: 1.0; // <- dy is relative to the previous text element, so
 								   //    always 1 for successive spans.
 						path.add("<tspan x=\"");
-						xcoords.push_back(path.add(p1.X()));
+						xcoords.push_back(path.add(anchor_pt->X()));
 						path.add("\" dy=\"");
 						path.add(boost::lexical_cast<std::string>(dy));
 						path.add("em\">");
@@ -1101,6 +1124,8 @@ void SvgSerializer::write(const geometry_data& data) {
 					path.add("</text>");
 					po->second.push_back(path);
 				}
+
+				write(*po, wire);
 			}
 		}
 
@@ -1497,7 +1522,7 @@ void SvgSerializer::finalize() {
 				draw_hlr(ax, { nullptr, drawing_name });
 			}
 
-			if (draw_storey_heights_ && pln && std::abs(pln->Position().Direction().Z()) < 1.e-5) {
+			if (storey_height_display_ != SH_NONE && pln && std::abs(pln->Position().Direction().Z()) < 1.e-5) {
 				auto storeys = this->file->instances_by_type("IfcBuildingStorey");
 				if (storeys) {
 					const double lu = file->getUnit("LENGTHUNIT").second;

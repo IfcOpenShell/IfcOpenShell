@@ -125,6 +125,9 @@ class SvgSerializer : public GeometrySerializer {
 public:
 	typedef std::pair<std::string, std::vector<util::string_buffer> > path_object;
 	typedef std::vector< boost::shared_ptr<util::string_buffer::float_item> > float_item_list;
+	enum storey_height_display_types {
+		SH_NONE, SH_FULL, SH_LEFT
+	};
 protected:
 	std::ofstream svg_file;
 	double xmin, ymin, xmax, ymax, width, height;
@@ -133,7 +136,7 @@ protected:
 	boost::optional<double> scale_, calculated_scale_, center_x_, center_y_;
 
 	bool with_section_heights_from_storey_, rescale, print_space_names_, print_space_areas_;
-	bool draw_storey_heights_;
+	storey_height_display_types storey_height_display_;
 	bool draw_door_arcs_, is_floor_plan_;
 	bool auto_section_, auto_elevation_;
 	bool use_namespace_, use_hlr_poly_, always_project_;
@@ -208,7 +211,7 @@ public:
 	void setSectionHeightsFromStoreys(double offset=1.);
 	void setPrintSpaceNames(bool b) { print_space_names_ = b; }
 	void setPrintSpaceAreas(bool b) { print_space_areas_ = b; }
-	void setDrawStoreyHeights(bool b) { draw_storey_heights_ = b; }
+	void setDrawStoreyHeights(storey_height_display_types sh) { storey_height_display_ = sh; }
 	void setDrawDoorArcs(bool b) { draw_door_arcs_ = b; }
 
 	std::array<std::array<double, 3>, 3> resize();
