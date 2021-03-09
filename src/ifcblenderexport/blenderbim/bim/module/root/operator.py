@@ -215,6 +215,8 @@ class UnlinkObject(bpy.types.Operator):
         for obj in objects:
             if obj.BIMObjectProperties.ifc_definition_id:
                 obj.BIMObjectProperties.ifc_definition_id = 0
+            if "Ifc" in obj.name and "/" in obj.name:
+                obj.name = "/".join(obj.name.split("/")[1:])
         return {"FINISHED"}
 
 

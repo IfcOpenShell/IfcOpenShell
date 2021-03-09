@@ -19,7 +19,12 @@ class BIM_PT_class(Panel):
         props = context.active_object.BIMObjectProperties
         if props.ifc_definition_id:
             if props.ifc_definition_id not in Data.products:
-                Data.load(props.ifc_definition_id)
+                try:
+                    Data.load(props.ifc_definition_id)
+                except:
+                    row = self.layout.row(align=True)
+                    row.label(text="IFC Element Not Found")
+                    row.operator("bim.unlink_object", icon="UNLINKED", text="")
             if props.is_reassigning_class:
                 row = self.layout.row(align=True)
                 row.operator("bim.reassign_class", icon="CHECKMARK")
@@ -35,7 +40,7 @@ class BIM_PT_class(Panel):
                 row = self.layout.row(align=True)
                 row.label(text=name)
                 row.operator("bim.copy_class", icon="DUPLICATE", text="").obj = context.active_object.name
-                row.operator("bim.unlink_object", icon="UNLINKED", text="").obj = context.active_object.name
+                row.operator("bim.unlink_object", icon="UNLINKED", text="")
                 row.operator("bim.enable_reassign_class", icon="GREASEPENCIL", text="")
                 row.operator("bim.unassign_class", icon="X", text="").obj = context.active_object.name
         else:
