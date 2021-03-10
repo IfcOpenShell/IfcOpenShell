@@ -326,6 +326,8 @@ class SvgWriter:
         # We have to decide whether this should come from Blender or from IFC.
         # For the moment, for convenience of experimenting with ideas, it comes
         # from Blender. In the future, it should probably come from IFC.
+        if not isinstance(obj.data, bpy.types.Mesh):
+            return
         classes.extend(self.get_attribute_classes(obj))
         if len(obj.data.polygons) == 0:
             self.draw_edge_annotation(obj, classes)
@@ -350,12 +352,8 @@ class SvgWriter:
         for slot in obj.material_slots:
             if slot.material:
                 classes.append("material-{}".format(re.sub("[^0-9a-zA-Z]+", "", slot.material.name)))
-        result = obj.BIMObjectProperties.attributes.get("GlobalId")
-        if not result:
-            result = obj.BIMObjectProperties.attributes.add()
-            result.name = "GlobalId"
-            result.string_value = ifcopenshell.guid.new()
-        classes.append("globalid-{}".format(result.string_value))
+        global_id = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId
+        classes.append("globalid-{}".format(global_id))
         for attribute in self.ifc_cutter.attributes:
             result = self.get_obj_value(obj, attribute)
             if result:

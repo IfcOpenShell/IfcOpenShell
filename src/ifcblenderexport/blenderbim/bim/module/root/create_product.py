@@ -19,10 +19,13 @@ class Usecase:
             "OwnerHistory": create_owner_history()
         })
         element.Name = self.settings["name"] or None
-        if self.settings["predefined_type"] and hasattr(element, "PredefinedType"):
-            try:
-                element.PredefinedType = self.settings["predefined_type"]
-            except:
-                element.PredefinedType = "USERDEFINED"
+        if self.settings["predefined_type"]:
+            if hasattr(element, "PredefinedType"):
+                try:
+                    element.PredefinedType = self.settings["predefined_type"]
+                except:
+                    element.PredefinedType = "USERDEFINED"
+                    element.ObjectType = self.settings["predefined_type"]
+            elif hasattr(element, "ObjectType"):
                 element.ObjectType = self.settings["predefined_type"]
         return element
