@@ -447,6 +447,8 @@ class BIMProperties(PropertyGroup):
     area_unit: EnumProperty(
         default="SQUARE_METRE",
         items=[
+            ("NANO/SQUARE_METRE", "Square Nanometre", ""),
+            ("MICRO/SQUARE_METRE", "Square Micrometre", ""),
             ("MILLI/SQUARE_METRE", "Square Millimetre", ""),
             ("DECI/SQUARE_METRE", "Square Decimetre", ""),
             ("CENTI/SQUARE_METRE", "Square Centimetre", ""),
@@ -462,6 +464,8 @@ class BIMProperties(PropertyGroup):
     volume_unit: EnumProperty(
         default="CUBIC_METRE",
         items=[
+            ("NANO/CUBIC_METRE", "Cubic Nanometre", ""),
+            ("MICRO/CUBIC_METRE", "Cubic Micrometre", ""),
             ("MILLI/CUBIC_METRE", "Cubic Millimetre", ""),
             ("DECI/CUBIC_METRE", "Cubic Decimetre", ""),
             ("CENTI/CUBIC_METRE", "Cubic Centimetre", ""),
