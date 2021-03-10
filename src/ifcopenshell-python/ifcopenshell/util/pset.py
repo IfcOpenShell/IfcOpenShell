@@ -16,7 +16,7 @@ class PsetQto:
         self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema)
         if not templates:
             folder_path = pathlib.Path(__file__).parent.absolute()
-            path = folder_path.joinpath("schema", self.templates_path[schema])
+            path = str(folder_path.joinpath("schema", self.templates_path[schema]))
             templates = [ifcopenshell.open(path)]
         self.templates = templates
 
