@@ -138,7 +138,6 @@ if bpy is not None:
         ui.BIM_PT_drawings,
         ui.BIM_PT_schedules,
         ui.BIM_PT_sheets,
-        ui.BIM_PT_camera,
         ui.BIM_PT_text,
         ui.BIM_PT_annotation_utilities,
         ui.BIM_PT_misc_utilities,

@@ -1,8 +1,10 @@
 import bpy
-from . import operator
+from . import ui, operator
 
 classes = (
     operator.AddDrawing,
+    operator.CreateDrawing,
+    ui.BIM_PT_camera,
 )
 
 
