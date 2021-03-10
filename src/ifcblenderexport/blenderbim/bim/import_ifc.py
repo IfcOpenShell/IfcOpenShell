@@ -705,12 +705,18 @@ class IfcImporter:
         print("Done creating geometry")
 
     def create_annotation(self):
+        self.create_curve_products(self.file.by_type("IfcAnnotation"))
+
+    def create_structural_elements(self):
+        self.create_curve_products(self.file.by_type("IfcStructuralCurveMember"))
+
+    def create_curve_products(self, products):
         if self.ifc_import_settings.should_use_cpu_multiprocessing:
             iterator = ifcopenshell.geom.iterator(
                 self.settings_2d,
                 self.file,
                 multiprocessing.cpu_count(),
-                include=self.file.by_type("IfcAnnotation")
+                include=products
             )
         else:
             iterator = ifcopenshell.geom.iterator(
@@ -732,10 +738,6 @@ class IfcImporter:
             if not iterator.next():
                 break
         print("Done creating geometry")
-
-    def create_structural_elements(self):
-        for element in self.file.by_type("IfcStructuralCurveMember"):
-            pass # TODO
 
     def create_product(self, element, shape=None):
         if element is None:
