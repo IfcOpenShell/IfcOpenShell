@@ -26,6 +26,7 @@ if bpy is not None:
         "cobie": None,
         "sequence": None,
         "group": None,
+        "structural": None,
         "material": None,
         "style": None,
         "layer": None,
