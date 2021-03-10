@@ -85,12 +85,12 @@ class AddRepresentation(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
-        context_id = self.context_id or int(bpy.context.scene.BIMProperties.contexts)
 
         bpy.ops.bim.edit_object_placement(obj=obj.name)
 
         if obj.data:
             product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            context_id = self.context_id or int(bpy.context.scene.BIMProperties.contexts)
             context_of_items = self.file.by_id(context_id)
 
             gprop = context.scene.BIMGeoreferenceProperties

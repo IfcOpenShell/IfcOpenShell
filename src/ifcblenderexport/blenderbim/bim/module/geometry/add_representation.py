@@ -405,3 +405,30 @@ class Usecase:
             "BoundingBox",
             [bounding_box],
         )
+
+    def create_structural_reference_representation(self):
+        if self.settings["blender_object"].type == "EMPTY":
+            return self.file.createIfcTopologyRepresentation(
+                self.settings["context"],
+                self.settings["context"].ContextIdentifier,
+                "Vertex",
+                [self.create_vertex_point(Vector((0, 0, 0)))],
+            )
+        return self.file.createIfcTopologyRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "Edge",
+            [self.create_edge()],
+        )
+
+    def create_vertex_point(self, point):
+        return self.file.createIfcVertexPoint(self.create_cartesian_point(point.x, point.y, point.z))
+
+    def create_edge(self):
+        if hasattr(self.settings["geometry"], "splines"):
+            points = self.get_spline_points(self.settings["geometry"].splines[0])
+        else:
+            points = self.settings["geometry"].vertices
+        if not points:
+            return
+        return self.file.createIfcEdge(self.create_vertex_point(points[0].co), self.create_vertex_point(points[1].co))

@@ -114,8 +114,7 @@ class AssignClass(bpy.types.Operator):
         obj.name = "{}/{}".format(product.is_a(), obj.name)
         IfcStore.link_element(product, obj)
 
-        if obj.data:
-            bpy.ops.bim.add_representation(obj=obj.name, context_id=self.context_id)
+        bpy.ops.bim.add_representation(obj=obj.name, context_id=self.context_id)
 
         if product.is_a("IfcElementType"):
             self.place_in_types_collection(obj)
