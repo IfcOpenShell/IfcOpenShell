@@ -351,6 +351,8 @@ class IfcImporter:
         self.profile_code("Create type products")
         self.create_annotation()
         self.profile_code("Create annotation")
+        self.create_structural_elements()
+        self.profile_code("Create structural elements")
         self.place_objects_in_spatial_tree()
         self.profile_code("Placing objects in spatial tree")
         if self.ifc_import_settings.should_merge_by_class:
@@ -731,6 +733,9 @@ class IfcImporter:
                 break
         print("Done creating geometry")
 
+    def create_structural_elements(self):
+        for element in self.file.by_type("IfcStructuralCurveMember"):
+            pass # TODO
 
     def create_product(self, element, shape=None):
         if element is None:
