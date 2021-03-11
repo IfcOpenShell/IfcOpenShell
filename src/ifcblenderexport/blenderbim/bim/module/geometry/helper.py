@@ -18,7 +18,7 @@ class Helper:
     def auto_detect_rectangle_profile_extruded_area_solid(self, mesh):
         bm = bmesh.new()
         bm.from_mesh(mesh)
-        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 5, verts=bm.verts, edges=bm.edges)
+        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
 
         bm.faces.ensure_lookup_table()
         face = None
@@ -41,7 +41,7 @@ class Helper:
     def auto_detect_circle_profile_extruded_area_solid(self, mesh):
         bm = bmesh.new()
         bm.from_mesh(mesh)
-        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 5, verts=bm.verts, edges=bm.edges)
+        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
 
         bm.faces.ensure_lookup_table()
         potential_faces = []
@@ -68,7 +68,7 @@ class Helper:
     def auto_detect_arbitrary_closed_profile_extruded_area_solid(self, mesh):
         bm = bmesh.new()
         bm.from_mesh(mesh)
-        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 5, verts=bm.verts, edges=bm.edges)
+        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
 
         bm.faces.ensure_lookup_table()
         potential_faces = []
@@ -93,13 +93,119 @@ class Helper:
 
         return {"profile": profile, "extrusion": extrusion}
 
+    # An arbitrary closed profile with voids is similar to one without voids.
+    # We start the same way with any ngon (no tri), but instead of being the entire
+    # profile, it is only one of the possible faces that make up the end of our
+    # extrusion. Then we find all faces with the same normal. This creates a set
+    # of faces that define the end of our extrusion.  From this set of faces, we
+    # need to then extract the outer loop and inner loops. First, all loops are
+    # detected from the faces. Any edge that is not shared between other faces
+    # in the set must be part of either an inner or outer loop. This gives us a
+    # set of edges. Then, connected edges (i.e. sharing a vertex) are joined to
+    # form distinct loops.  Finally, the outer loop is distinguished by being
+    # the loop with the greatest area.
+    def auto_detect_arbitrary_profile_with_voids_extruded_area_solid(self, mesh):
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
+
+        bm.faces.ensure_lookup_table()
+        potential_faces = []
+        for face in bm.faces:
+            total_verts = len(face.verts)
+            if total_verts > 4:
+                potential_faces.append(face)
+
+        for face in potential_faces:
+            if face.normal.z < -0.1:
+                break
+
+        end_faces = []
+        end_face_normal = face.normal
+        for face in bm.faces:
+            if (face.normal - end_face_normal).length < 0.001:
+                end_faces.append(face)
+
+        loop_edges = set()
+        for face in end_faces:
+            potential_edges = set(face.edges)
+            for face2 in end_faces:
+                if face == face2:
+                    continue
+                potential_edges -= set(face2.edges)
+            loop_edges |= potential_edges
+
+        # Create loops from edges
+        loops = []
+        while loop_edges:
+            edge = loop_edges.pop()
+            loop = [edge]
+            has_found_connected_edge = True
+            while has_found_connected_edge:
+                has_found_connected_edge = False
+                for edge in loop_edges.copy():
+                    edge_verts = set(edge.verts)
+                    if edge_verts & set(loop[0].verts):
+                        loop.insert(0, edge)
+                        loop_edges.remove(edge)
+                        has_found_connected_edge = True
+                    elif edge_verts & set(loop[-1].verts):
+                        loop.append(edge)
+                        loop_edges.remove(edge)
+                        has_found_connected_edge = True
+            loops.append(loop)
+
+        # Determine outer loop
+        max_area = 0
+        outer_loop = None
+        inner_loops = []
+
+        for loop in loops:
+            loop_vertices = []
+            total_edges = len(loop)
+            for i, edge in enumerate(loop):
+                if i + 1 == total_edges and edge.verts[0] in loop[i - 1].verts:
+                    loop_vertices.append(edge.verts[0])
+                elif i + 1 == total_edges and edge.verts[1] in loop[i - 1].verts:
+                    loop_vertices.append(edge.verts[1])
+                elif edge.verts[0] in loop[i + 1].verts:
+                    loop_vertices.append(edge.verts[1])
+                elif edge.verts[1] in loop[i + 1].verts:
+                    loop_vertices.append(edge.verts[0])
+
+            loop_bm = bmesh.new()
+            for vert in loop_vertices:
+                loop_bm.verts.new(vert.co)
+            face = loop_bm.faces.new(loop_bm.verts)
+
+            loop_vertex_indices = [v.index for v in loop_vertices]
+            face_area = face.calc_area()
+            if face_area > max_area:
+                max_area = face_area
+                outer_loop = loop_vertex_indices
+            inner_loops.append(loop_vertex_indices)
+            loop_bm.free()
+
+        inner_loops.remove(outer_loop)
+
+        extrusion = self.detect_extrusion_edge(bm, end_faces[0])
+
+        bm.to_mesh(mesh)
+        mesh.update()
+        bm.free()
+
+        return {"profile": outer_loop, "inner_curves": inner_loops, "extrusion": extrusion}
+
+    # An extrusion edge is an edge that shares a single vertex with a profile
+    # face and is not parallel to the face.
     def detect_extrusion_edge(self, bm, profile_face):
         bm.edges.ensure_lookup_table()
         extrusion = None
         face_verts_set = set(profile_face.verts)
         for edge in bm.edges:
+            edge_vector = edge.verts[1].co - edge.verts[0].co
             unshared_verts = set(edge.verts) - face_verts_set
-            if len(unshared_verts) == 1:
+            if len(unshared_verts) == 1 and not (edge_vector.angle(profile_face.normal) - pi / 2 < 0.001):
                 if unshared_verts.pop() == edge.verts[1]:
                     return [edge.verts[0].index, edge.verts[1].index]
                 return [edge.verts[1].index, edge.verts[0].index]
@@ -123,6 +229,15 @@ class Helper:
         curve = self.file.createIfcArbitraryClosedProfileDef("AREA", None, outer_curve)
         return {"curve_ucs": curve_ucs, "curve": curve}
 
+    def create_arbitrary_profile_def_with_voids(self, mesh, profile_indices, inner_curve_indices):
+        curve_ucs = self.get_curve_profile_coordinate_system(mesh, profile_indices)
+        outer_curve = self.create_polyline_from_loop(mesh, profile_indices, curve_ucs)
+        inner_curves = [
+            self.create_polyline_from_loop(mesh, curve_indices, curve_ucs) for curve_indices in inner_curve_indices
+        ]
+        curve = self.file.createIfcArbitraryProfileDefWithVoids("AREA", None, outer_curve, inner_curves)
+        return {"curve_ucs": curve_ucs, "curve": curve}
+
     def create_rectangle_profile_def(self, mesh, profile_indices):
         curve_ucs = self.get_curve_profile_coordinate_system(mesh, profile_indices)
         xdim = self.convert_si_to_unit(
@@ -137,7 +252,13 @@ class Helper:
     def create_circle_profile_def(self, mesh, profile_indices):
         curve_ucs = self.get_curve_profile_coordinate_system(mesh, profile_indices)
         radius = self.convert_si_to_unit(
-            abs((mesh.vertices[profile_indices[0]].co - mesh.vertices[profile_indices[int(len(profile_indices) / 2)]].co).length) / 2
+            abs(
+                (
+                    mesh.vertices[profile_indices[0]].co
+                    - mesh.vertices[profile_indices[int(len(profile_indices) / 2)]].co
+                ).length
+            )
+            / 2
         )
         center = Vector((0, 0))
         position = self.create_ifc_axis_2_placement_2d(center, Vector((1, 0)))

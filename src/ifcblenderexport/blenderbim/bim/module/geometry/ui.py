@@ -94,6 +94,10 @@ class BIM_PT_mesh(Panel):
         op.ifc_representation_class = "IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef"
 
         row = layout.row()
+        op = row.operator("bim.update_mesh_representation", text="Update Mesh As Arbitrary Extrusion With Voids")
+        op.ifc_representation_class = "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
+
+        row = layout.row()
         row.operator("bim.get_representation_ifc_parameters")
         for index, ifc_parameter in enumerate(props.ifc_parameters):
             row = layout.row(align=True)
