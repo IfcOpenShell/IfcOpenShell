@@ -25,6 +25,7 @@ class Usecase:
             #  IfcExtrudedAreaSolid/IfcRectangleProfileDef
             #  IfcExtrudedAreaSolid/IfcCircleProfileDef
             #  IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef
+            #  IfcExtrudedAreaSolid/IfcArbitraryProfileDef
             "ifc_representation_class": None,  # Whether to cast a mesh into a particular class
         }
         self.ifc_vertices = []
@@ -139,6 +140,8 @@ class Usecase:
             return self.create_circle_extrusion_representation()
         elif self.settings["ifc_representation_class"] == "IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef":
             return self.create_arbitrary_extrusion_representation()
+        elif self.settings["ifc_representation_class"] == "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids":
+            return self.create_arbitrary_void_extrusion_representation()
         return self.create_mesh_representation()
 
     def create_camera_block_representation(self):
@@ -294,6 +297,20 @@ class Usecase:
         helper = Helper(self.file)
         indices = helper.auto_detect_arbitrary_closed_profile_extruded_area_solid(self.settings["geometry"])
         profile_def = helper.create_arbitrary_closed_profile_def(self.settings["geometry"], indices["profile"])
+        item = helper.create_extruded_area_solid(self.settings["geometry"], indices["extrusion"], profile_def)
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "SweptSolid",
+            [item],
+        )
+
+    def create_arbitrary_void_extrusion_representation(self):
+        helper = Helper(self.file)
+        indices = helper.auto_detect_arbitrary_profile_with_voids_extruded_area_solid(self.settings["geometry"])
+        profile_def = helper.create_arbitrary_profile_def_with_voids(
+            self.settings["geometry"], indices["profile"], indices["inner_curves"]
+        )
         item = helper.create_extruded_area_solid(self.settings["geometry"], indices["extrusion"], profile_def)
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
