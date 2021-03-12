@@ -246,7 +246,10 @@ class Helper:
         ydim = self.convert_si_to_unit(
             (mesh.vertices[profile_indices[1]].co - mesh.vertices[profile_indices[2]].co).length
         )
-        curve = self.file.createIfcRectangleProfileDef("AREA", None, None, xdim, ydim)
+        position = None
+        if self.file.schema == "IFC2X3":
+            position = self.file.createIfcAxis2Placement2D(self.file.createIfcCartesianPoint([0.0, 0.0, 0.0]))
+        curve = self.file.createIfcRectangleProfileDef("AREA", None, position, xdim, ydim)
         return {"curve_ucs": curve_ucs, "curve": curve}
 
     def create_circle_profile_def(self, mesh, profile_indices):
