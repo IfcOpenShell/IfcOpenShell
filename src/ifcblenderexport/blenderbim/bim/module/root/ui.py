@@ -42,7 +42,10 @@ class BIM_PT_class(Panel):
                 row.operator("bim.copy_class", icon="DUPLICATE", text="").obj = context.active_object.name
                 row.operator("bim.unlink_object", icon="UNLINKED", text="")
                 row.operator("bim.enable_reassign_class", icon="GREASEPENCIL", text="")
-                row.operator("bim.unassign_class", icon="X", text="").obj = context.active_object.name
+                if context.selected_objects:
+                    row.operator("bim.unassign_class", icon="X", text="")
+                else:
+                    row.operator("bim.unassign_class", icon="X", text="").obj = context.active_object.name
         else:
             self.draw_class_dropdowns()
             row = self.layout.row(align=True)
