@@ -75,7 +75,7 @@ ch.setLevel(logging.INFO)
 logger.addHandler(ch)
 
 PROJECT_NAME="IfcOpenShell"
-PYTHON_VERSIONS=["2.7.16", "3.2.6", "3.3.6", "3.4.6", "3.5.3", "3.6.2", "3.7.3", "3.8.6", "3.9.1"]
+PYTHON_VERSIONS=["2.7.16", "3.5.3", "3.6.2", "3.7.3", "3.8.6", "3.9.1"]
 JSON_VERSION="v3.6.1"
 OCE_VERSION="0.18"
 # OCCT_VERSION="7.1.0"
@@ -154,13 +154,6 @@ if get_os() == "Darwin":
     # C++11 features used in OCCT 7+ need a more recent stdlib
     TOOLSET = "10.9" if USE_OCCT else "10.6"
 
-# python 3.4 doesn't seem to build anymore on recent versions of clang
-if get_os() == "Darwin":
-    try:
-        PYTHON_VERSIONS.remove("3.4.6")
-    except ValueError as e:
-        pass
-   
 try:
     IFCOS_NUM_BUILD_PROCS = os.environ["IFCOS_NUM_BUILD_PROCS"]
 except KeyError:
