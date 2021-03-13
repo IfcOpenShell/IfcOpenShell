@@ -49,15 +49,11 @@
 #          $ brew install git bison autoconf automake freetype libffi cmake   #
 #                                                                             #
 ###############################################################################
-
-from __future__ import print_function
-
 import logging
 import os
 import sys
 import subprocess as sp
 import shutil
-import time
 import tarfile
 import multiprocessing
 
@@ -773,7 +769,7 @@ if "IfcOpenShell-Python" in targets:
         run([make, "-j%s" % (IFCOS_NUM_BUILD_PROCS,), "_ifcopenshell_wrapper"], cwd=python_dir)
         run([make, "install/local"], cwd=os.path.join(python_dir, "ifcwrap"))
 
-        module_dir = os.path.dirname(run([PYTHON_EXECUTABLE, "-c", "from __future__ import print_function; import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"]))
+        module_dir = os.path.dirname(run([PYTHON_EXECUTABLE, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"]))
 
         if get_os() != "Darwin":
             # TODO: This symbol name depends on the Python version?
