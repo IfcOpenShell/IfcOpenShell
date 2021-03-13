@@ -75,7 +75,7 @@ ch.setLevel(logging.INFO)
 logger.addHandler(ch)
 
 PROJECT_NAME="IfcOpenShell"
-PYTHON_VERSIONS=["2.7.16", "3.5.3", "3.6.2", "3.7.3", "3.8.6", "3.9.1"]
+PYTHON_VERSIONS=["2.7.18", "3.5.5", "3.6.13", "3.7.10", "3.8.8", "3.9.2"]
 JSON_VERSION="v3.6.1"
 OCE_VERSION="0.18"
 # OCCT_VERSION="7.1.0"
