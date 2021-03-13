@@ -121,6 +121,8 @@ class InspectFromStepId(bpy.types.Operator):
             bpy.context.scene.BIMDebugProperties.attributes.remove(0)
         while len(bpy.context.scene.BIMDebugProperties.inverse_attributes) > 0:
             bpy.context.scene.BIMDebugProperties.inverse_attributes.remove(0)
+        while len(bpy.context.scene.BIMDebugProperties.inverse_references) > 0:
+            bpy.context.scene.BIMDebugProperties.inverse_references.remove(0)
         for key, value in element.get_info().items():
             self.add_attribute(bpy.context.scene.BIMDebugProperties.attributes, key, value)
         for key in dir(element):
@@ -132,6 +134,10 @@ class InspectFromStepId(bpy.types.Operator):
             ):
                 continue
             self.add_attribute(bpy.context.scene.BIMDebugProperties.inverse_attributes, key, getattr(element, key))
+        for inverse in self.file.get_inverse(element):
+            new = bpy.context.scene.BIMDebugProperties.inverse_references.add()
+            new.string_value = str(inverse)
+            new.int_value = inverse.id()
         return {"FINISHED"}
 
     def add_attribute(self, prop, key, value):

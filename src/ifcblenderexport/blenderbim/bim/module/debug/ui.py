@@ -69,3 +69,14 @@ class BIM_PT_debug(Panel):
                 row.operator(
                     "bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text=""
                 ).step_id = attribute.int_value
+
+        if props.inverse_references:
+            layout.label(text="Inverse references:")
+
+        for index, attribute in enumerate(props.inverse_references):
+            row = layout.row(align=True)
+            row.prop(attribute, "string_value", text="")
+            if attribute.int_value:
+                row.operator(
+                    "bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text=""
+                ).step_id = attribute.int_value
