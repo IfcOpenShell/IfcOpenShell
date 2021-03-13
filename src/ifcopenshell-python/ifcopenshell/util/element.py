@@ -126,6 +126,13 @@ def remove_deep(ifc_file, element):
             ifc_file.remove(ref)
 
 
+def remove_deep_batched(ifc_file, element):
+    # @todo maybe some sort of try-finally mechanism.
+    ifc_file.batch()
+    remove_deep(ifc_file, element)
+    ifc_file.unbatch()
+
+
 def get_representation(element, context, subcontext=None, target_view=None):
     if element.is_a("IfcProduct") and element.Representation:
         for r in element.Representation.Representations:

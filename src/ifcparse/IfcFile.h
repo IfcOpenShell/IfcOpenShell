@@ -131,6 +131,11 @@ private:
 	void initialize_(IfcParse::IfcSpfStream* f);
 
 	void build_inverses_(IfcUtil::IfcBaseClass*);
+
+	std::set<int> batch_deletion_ids_;
+	bool batch_mode_ = false;
+	void process_deletion_();
+
 public:
 	IfcParse::IfcSpfLexer* tokens;
 	IfcParse::IfcSpfStream* stream;
@@ -225,6 +230,9 @@ public:
 
 	IfcUtil::IfcBaseClass* addEntity(IfcUtil::IfcBaseClass* entity);
 	void addEntities(IfcEntityList::ptr es);
+
+	void batch() { batch_mode_ = true; }
+	void unbatch() { process_deletion_(); batch_mode_ = false; 	}
 
 	/// Removes entity instance from file and unsets references.
 	///
