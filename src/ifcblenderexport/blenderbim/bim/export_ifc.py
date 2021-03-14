@@ -40,6 +40,8 @@ class IfcExporter:
                 jsonData = ifcjson.IFC2JSON5a(self.file, self.ifc_export_settings.json_compact).spf2Json()
                 with open(self.ifc_export_settings.output_file, "w") as outfile:
                     json.dump(jsonData, outfile, indent=None if self.ifc_export_settings.json_compact else 4)
+        if bpy.context.scene.BIMProjectProperties.is_authoring:
+            bpy.ops.wm.save_mainfile()
 
     def set_header(self):
         # TODO: add all metadata, pending bug #747
