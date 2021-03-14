@@ -6,7 +6,6 @@ import ifcopenshell.util.selector
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
 import csv
-import lark
 import argparse
 
 
