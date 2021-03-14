@@ -95,6 +95,6 @@ jobs:
       with: 
         context: artifacts
         repository: aecgeeks/ifcopenshell
-        tags: ifcopenshell:latest
+        tags: aecgeeks/ifcopenshell:latest
         file: ./Dockerfile
         push: true
