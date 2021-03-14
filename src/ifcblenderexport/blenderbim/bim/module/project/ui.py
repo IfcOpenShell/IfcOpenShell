@@ -22,11 +22,13 @@ class BIM_PT_project(Panel):
 
     def draw_project_ui(self, context):
         props = context.scene.BIMProperties
+        pprops = context.scene.BIMProjectProperties
         row = self.layout.row(align=True)
         row.label(text="IFC Filename", icon="FILE")
         row.label(text=os.path.basename(props.ifc_file) or "No File Found")
 
         if IfcStore.get_file():
+            row.prop(pprops, "is_authoring", icon="GREASEPENCIL", text="")
             row = self.layout.row(align=True)
             row.label(text="IFC Schema", icon="FILE_CACHE")
             row.label(text=IfcStore.get_file().schema)
