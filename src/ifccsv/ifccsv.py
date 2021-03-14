@@ -21,7 +21,7 @@ class IfcAttributeSetter:
         if "." not in key:
             return element
         if key[0:3] == "Qto":
-            qto, prop = key.split(".", 1)
+            qto_name, prop = key.split(".", 1)
             qto = IfcAttributeSetter.get_element_qto(element, qto_name)
             if qto:
                 IfcAttributeSetter.set_qto_property(qto, prop, value)
