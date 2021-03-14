@@ -21,11 +21,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - 
-      name: Install dependencies
+    - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt-get install \
+        sudo apt-get install --no-install-recommends \
         git cmake gcc g++ libboost1.67-all-dev python3-all-dev swig libpcre3-dev libxml2-dev \
         liboce-foundation-dev liboce-modeling-dev liboce-ocaf-dev liboce-visualization-dev liboce-ocaf-lite-dev
 
