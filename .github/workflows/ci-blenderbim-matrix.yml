@@ -3,7 +3,7 @@ name: Publish-blenderbim-multiplatform
 on:
   push:
     paths:
-      - 'src/ifcblenderexport/*'
+      - 'src/ifcblenderexport/**'
       - '.github/workflows/ci-blenderbim-matrix.yml'
 
 env:
