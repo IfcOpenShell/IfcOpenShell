@@ -699,7 +699,11 @@ class IfcImporter:
                 checkpoint = time.time()
             shape = iterator.get()
             if shape:
-                self.create_product(self.file.by_id(shape.guid), shape)
+                if shape.context != "Body" and shape.guid in IfcStore.guid_map:
+                    # We only load a single context, and we prioritise the Body context. See #1290.
+                    pass
+                else:
+                    self.create_product(self.file.by_id(shape.guid), shape)
             if not iterator.next():
                 break
         print("Done creating geometry")
