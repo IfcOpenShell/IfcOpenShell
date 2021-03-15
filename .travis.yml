@@ -1,5 +1,6 @@
 language: cpp
 compiler: gcc
+cache: ccache
 os: linux
 dist: bionic
 sudo: required
@@ -23,6 +24,9 @@ install:
   # - export PATH=$PATH:/usr/lib/dart/bin:$HOME/.pub-cache/bin
   # - git clone https://github.com/KhronosGroup/glTF-Validator && pushd glTF-Validator && pub get && pub global activate --source path ./ && popd
 
+before_script:
+  - if [ $TRAVIS_OS_NAME == "linux" ]; then ccache -z; fi
+
 script:
   - pwd
   - cd cmake
@@ -30,6 +34,8 @@ script:
   - cd build
   - |
     cmake \
+    -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+    -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
     -DOCC_INCLUDE_DIR=/usr/include/opencascade \
     -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
     -DPYTHON_LIBRARY=/usr/lib/python2.7/config-x86_64-linux-gnu/libpython2.7.so \
@@ -64,3 +70,6 @@ script:
   - echo Succeeded
   - grep 0$ statuses
   - grep 0$ statuses | wc -l
+
+after_script:
+  - if [ $TRAVIS_OS_NAME == "linux" ]; then ccache -s; fi
