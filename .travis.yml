@@ -46,7 +46,7 @@ script:
     -DGLTF_SUPPORT=On \
     -DJSON_INCLUDE_DIR=/usr/include/json \
     ..
-  - sudo make -j2 install
+  - sudo make -j$(nproc) install
     
   - cd ../../test
   - /usr/bin/python2.7 tests.py
