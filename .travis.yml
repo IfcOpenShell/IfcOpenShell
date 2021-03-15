@@ -29,9 +29,7 @@ before_script:
 
 script:
   - pwd
-  - cd cmake
-  - mkdir build
-  - cd build
+  - mkdir build && cd build
   - |
     cmake \
     -DCMAKE_C_COMPILER_LAUNCHER=ccache \
@@ -45,10 +43,11 @@ script:
     -DLIBXML2_LIBRARIES="/usr/lib/x86_64-linux-gnu/libxml2.so;/lib/x86_64-linux-gnu/libz.so.1;/lib/x86_64-linux-gnu/liblzma.so.5;/usr/lib/x86_64-linux-gnu/libicuuc.so.60;/usr/lib/x86_64-linux-gnu/libicudata.so.60" \
     -DGLTF_SUPPORT=On \
     -DJSON_INCLUDE_DIR=/usr/include/json \
-    ..
+    ../cmake
+
   - sudo make -j$(nproc) install
     
-  - cd ../../test
+  - cd ../test
   - /usr/bin/python2.7 tests.py
 
   - cd input
