@@ -1293,7 +1293,9 @@ class IfcImporter:
         elif element.is_a("IfcOpeningElement"):
             self.opening_collection.objects.link(obj)
         else:
-            self.ifc_import_settings.logger.warning("Warning: this object is outside the spatial hierarchy %s", element)
+            # Avoid watrning for structural analysis entities
+            if "Structural" not in element.is_a(): # TODO test with the list of structural analysis entities
+                self.ifc_import_settings.logger.warning("Warning: this object is outside the spatial hierarchy %s", element)
             bpy.context.scene.collection.objects.link(obj)
 
     def cast_edge_case_attribute(self, ifc_class, key, value):
