@@ -713,6 +713,8 @@ class IfcImporter:
 
     def create_structural_elements(self):
         self.create_curve_products(self.file.by_type("IfcStructuralCurveMember"))
+        self.create_curve_products(self.file.by_type("IfcStructuralCurveConnection"))
+        # self.create_curve_products(self.file.by_type("IfcStructuralPointConnection"))
 
     def create_curve_products(self, products):
         if self.ifc_import_settings.should_use_cpu_multiprocessing:
@@ -724,7 +726,7 @@ class IfcImporter:
             )
         else:
             iterator = ifcopenshell.geom.iterator(
-                self.settings_2d, self.file, include=self.file.by_type("IfcAnnotation")
+                self.settings_2d, self.file, include=products
             )
         valid_file = iterator.initialize()
         if not valid_file:
