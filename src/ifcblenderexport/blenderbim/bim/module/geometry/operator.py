@@ -38,12 +38,12 @@ class EditObjectPlacement(bpy.types.Operator):
         self.file = IfcStore.get_file()
         # TODO: determine how to deal with this module dependency
         props = bpy.context.scene.BIMGeoreferenceProperties
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         for obj in objs:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             matrix = np.array(obj.matrix_world)
             if props.has_blender_offset and props.blender_offset_type == "OBJECT_PLACEMENT":
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
                 # TODO: np.array? Why not matrix?
                 matrix = np.array(
                     ifcopenshell.util.geolocation.local2global(
@@ -306,6 +306,7 @@ class UpdateMeshRepresentation(bpy.types.Operator):
 
         for obj in objs:
             self.update_obj_mesh_representation(context, obj)
+            IfcStore.edited_objs.discard(obj.name)
         return {"FINISHED"}
 
     def update_obj_mesh_representation(self, context, obj):

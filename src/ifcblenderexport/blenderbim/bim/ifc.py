@@ -9,6 +9,7 @@ class IfcStore:
     schema = None
     id_map = {}
     guid_map = {}
+    edited_objs = set()
     pset_template_path = ""
     pset_template_file = None
 
