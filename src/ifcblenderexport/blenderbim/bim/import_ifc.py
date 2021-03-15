@@ -714,7 +714,26 @@ class IfcImporter:
     def create_structural_elements(self):
         self.create_curve_products(self.file.by_type("IfcStructuralCurveMember"))
         self.create_curve_products(self.file.by_type("IfcStructuralCurveConnection"))
-        # self.create_curve_products(self.file.by_type("IfcStructuralPointConnection"))
+        self.create_structural_point_connections()
+
+    def create_structural_point_connections(self):
+        for product in self.file.by_type("IfcStructuralPointConnection"):
+            placement_matrix = ifcopenshell.util.placement.get_local_placement(product.ObjectPlacement)
+            vertex = None
+            for subelement in self.file.traverse(product):
+                if subelement.is_a("IfcVertex") and subelement.VertexGeometry.is_a("IfcCartesianPoint"):
+                    vertex = list(subelement.VertexGeometry.Coordinates)
+                    break
+            if not vertex:
+                continue # TODO implement non cartesian point vertexes
+            placement_matrix[0, 3] += vertex[0] * self.unit_scale
+            placement_matrix[1, 3] += vertex[1] * self.unit_scale
+            placement_matrix[2, 3] += vertex[2] * self.unit_scale
+            obj = bpy.data.objects.new("{}/{}".format(product.is_a(), product.Name), None)
+            obj.matrix_world = mathutils.Matrix(placement_matrix.tolist())
+            obj.empty_display_type = "SPHERE"
+            obj.empty_display_size = 0.1
+            self.link_element(product, obj)
 
     def create_curve_products(self, products):
         if self.ifc_import_settings.should_use_cpu_multiprocessing:
@@ -1293,7 +1312,7 @@ class IfcImporter:
         elif element.is_a("IfcOpeningElement"):
             self.opening_collection.objects.link(obj)
         else:
-            # Avoid watrning for structural analysis entities
+            # Avoid warning for structural analysis entities
             if "Structural" not in element.is_a(): # TODO test with the list of structural analysis entities
                 self.ifc_import_settings.logger.warning("Warning: this object is outside the spatial hierarchy %s", element)
             bpy.context.scene.collection.objects.link(obj)
