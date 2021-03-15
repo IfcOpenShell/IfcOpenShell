@@ -13,4 +13,4 @@ from bpy.props import (
 
 
 class BIMProjectProperties(PropertyGroup):
-    is_authoring: BoolProperty(name="Enable Authoring Mode")
+    is_authoring: BoolProperty(name="Enable Authoring Mode", default=True)
