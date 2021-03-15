@@ -1,6 +1,7 @@
 import bpy
 import numpy as np
 import ifcopenshell
+import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import logging
 import blenderbim.bim.module.geometry.edit_object_placement as edit_object_placement
@@ -37,19 +38,19 @@ class EditObjectPlacement(bpy.types.Operator):
         self.file = IfcStore.get_file()
         # TODO: determine how to deal with this module dependency
         props = bpy.context.scene.BIMGeoreferenceProperties
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         for obj in objs:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             matrix = np.array(obj.matrix_world)
             if props.has_blender_offset and props.blender_offset_type == "OBJECT_PLACEMENT":
-                self.calculate_unit_scale()
                 # TODO: np.array? Why not matrix?
                 matrix = np.array(
                     ifcopenshell.util.geolocation.local2global(
                         np.matrix(obj.matrix_world),
-                        float(props.blender_eastings) * self.unit_scale,
-                        float(props.blender_northings) * self.unit_scale,
-                        float(props.blender_orthogonal_height) * self.unit_scale,
+                        float(props.blender_eastings) * unit_scale,
+                        float(props.blender_northings) * unit_scale,
+                        float(props.blender_orthogonal_height) * unit_scale,
                         float(props.blender_x_axis_abscissa),
                         float(props.blender_x_axis_ordinate),
                     )
@@ -62,18 +63,6 @@ class EditObjectPlacement(bpy.types.Operator):
                 },
             ).execute()
         return {"FINISHED"}
-
-    def calculate_unit_scale(self):
-        self.unit_scale = 1
-        units = self.file.by_type("IfcUnitAssignment")[0]
-        for unit in units.Units:
-            if not hasattr(unit, "UnitType") or unit.UnitType != "LENGTHUNIT":
-                continue
-            while unit.is_a("IfcConversionBasedUnit"):
-                self.unit_scale *= unit.ConversionFactor.ValueComponent.wrappedValue
-                unit = unit.ConversionFactor.UnitComponent
-            if unit.is_a("IfcSIUnit"):
-                self.unit_scale *= ifcopenshell.util.unit.get_prefix_multiplier(unit.Prefix)
 
 
 class AddRepresentation(bpy.types.Operator):
