@@ -20,6 +20,7 @@ class IfcExporter:
         self.set_header()
         if bpy.context.scene.BIMProjectProperties.is_authoring:
             self.sync_object_placements()
+            self.sync_edited_objects()
         extension = self.ifc_export_settings.output_file.split(".")[-1]
         if extension == "ifczip":
             with tempfile.TemporaryDirectory() as unzipped_path:
@@ -45,7 +46,8 @@ class IfcExporter:
                 with open(self.ifc_export_settings.output_file, "w") as outfile:
                     json.dump(jsonData, outfile, indent=None if self.ifc_export_settings.json_compact else 4)
         if bpy.context.scene.BIMProjectProperties.is_authoring:
-            bpy.ops.wm.save_mainfile()
+            if bpy.data.filepath:
+                bpy.ops.wm.save_mainfile()
 
     def set_header(self):
         # TODO: add all metadata, pending bug #747
@@ -79,6 +81,16 @@ class IfcExporter:
                 self.sync_object_placement(obj)
             except:
                 pass
+
+    def sync_edited_objects(self):
+        for obj_name in IfcStore.edited_objs.copy():
+            obj = bpy.data.objects.get(obj_name)
+            if not obj:
+                continue
+            representation = IfcStore.get_file().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+            if representation.RepresentationType == "Tessellation" or representation.RepresentationType == "Brep":
+                bpy.ops.bim.update_mesh_representation(obj=obj.name)
+        IfcStore.edited_objs.clear()
 
     def sync_object_placement(self, obj):
         blender_matrix = np.matrix(obj.matrix_world)

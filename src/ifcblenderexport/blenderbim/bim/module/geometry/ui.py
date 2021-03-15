@@ -66,10 +66,6 @@ class BIM_PT_mesh(Panel):
         layout = self.layout
         props = context.active_object.data.BIMMeshProperties
 
-        sprops = context.scene.BIMGeometryProperties
-        row = self.layout.row()
-        row.prop(sprops, "should_auto_update_mesh_representations")
-
         row = layout.row(align=True)
         op = row.operator("bim.switch_representation", text="Bake Voids", icon="SELECT_SUBTRACT")
         op.ifc_definition_id = props.ifc_definition_id
