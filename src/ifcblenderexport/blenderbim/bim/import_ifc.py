@@ -301,7 +301,6 @@ class IfcImporter:
         self.native_elements = {}
         self.native_data = {}
         self.aggregates = {}
-        self.aggregate_collections = {}
 
         self.material_creator = MaterialCreator(ifc_import_settings, self)
 
@@ -333,6 +332,8 @@ class IfcImporter:
         self.profile_code("Create spatial hierarchy")
         self.create_aggregates()
         self.profile_code("Create aggregates")
+        self.create_aggregate_tree()
+        self.profile_code("Create aggregate tree")
         self.create_openings_collection()
         self.profile_code("Create opening collection")
         self.process_element_filter()
@@ -1212,29 +1213,32 @@ class IfcImporter:
         for rel_aggregate in rel_aggregates:
             self.create_aggregate(rel_aggregate)
 
+    def create_aggregate_tree(self):
+        for aggregate in self.aggregates.values():
+            if aggregate["container"].is_a("IfcSpatialStructureElement"):
+                self.spatial_structure_elements[aggregate["container"].GlobalId]["blender"].children.link(aggregate["blender"])
+            else:
+                self.aggregates[aggregate["container"].GlobalId]["blender"].children.link(aggregate["blender"])
+
     def create_aggregate(self, rel_aggregate):
         element = rel_aggregate.RelatingObject
-
         obj = bpy.data.objects.new("{}/{}".format(element.is_a(), element.Name), None)
         self.link_element(element, obj)
-
-        container = self.get_aggregate_spatial_container(element)
-        container_collection = self.spatial_structure_elements[container.GlobalId]["blender"]
-
         collection = bpy.data.collections.new(obj.name)
-        container_collection.children.link(collection)
         collection.objects.link(obj)
+        self.aggregates[element.GlobalId] = {
+            "blender": collection,
+            "blender_obj": obj,
+            "container": self.get_aggregate_container(element)
+        }
 
-        self.aggregates[element.GlobalId] = obj
-        self.aggregate_collections[rel_aggregate.id()] = collection
-
-    def get_aggregate_spatial_container(self, element):
+    def get_aggregate_container(self, element):
         if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
             container = element.ContainedInStructure[0].RelatingStructure
         elif hasattr(element, "Decomposes") and element.Decomposes:
-            return self.get_aggregate_spatial_container(element.Decomposes[0].RelatingObject)
+            container = element.Decomposes[0].RelatingObject
         if container.is_a("IfcSpace"):
-            return self.get_aggregate_spatial_container(container)
+            return self.get_aggregate_container(container)
         return container
 
     def create_openings_collection(self):
@@ -1265,6 +1269,8 @@ class IfcImporter:
             return
         elif element.is_a("IfcTypeObject"):
             self.type_collection.objects.link(obj)
+        elif element.GlobalId in self.aggregates:
+            return
         elif element.GlobalId in self.spatial_structure_elements:
             if not obj.data:
                 return
@@ -1312,7 +1318,7 @@ class IfcImporter:
                 if not collection:
                     return self.place_object_in_spatial_tree(element.Decomposes[0].RelatingObject, obj)
             else:
-                collection = self.aggregate_collections[element.Decomposes[0].id()]
+                collection = self.aggregates[element.Decomposes[0].RelatingObject.GlobalId]["blender"]
             if collection:
                 collection.objects.link(obj)
             else:
