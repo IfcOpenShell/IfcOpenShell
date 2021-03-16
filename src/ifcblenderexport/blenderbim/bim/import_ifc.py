@@ -712,6 +712,14 @@ class IfcImporter:
         self.create_curve_products(self.file.by_type("IfcAnnotation"))
 
     def create_structural_elements(self):
+        # Create structural collections
+        self.structural_member_collection = bpy.data.collections.new("Members")
+        self.structural_connection_collection = bpy.data.collections.new("Connections")
+        self.structural_collection = bpy.data.collections.new("StructuralEntities")
+        self.structural_collection.children.link(self.structural_member_collection)
+        self.structural_collection.children.link(self.structural_connection_collection)
+        self.project["blender"].children.link(self.structural_collection)
+
         self.create_curve_products(self.file.by_type("IfcStructuralCurveMember"))
         self.create_curve_products(self.file.by_type("IfcStructuralCurveConnection"))
         self.create_structural_point_connections()
@@ -1311,10 +1319,12 @@ class IfcImporter:
                 self.ifc_import_settings.logger.error("An element could not be placed in the spatial tree %s", element)
         elif element.is_a("IfcOpeningElement"):
             self.opening_collection.objects.link(obj)
+        elif element.is_a("IfcStructuralMember"):
+            self.structural_member_collection.objects.link(obj)
+        elif element.is_a("IfcStructuralConnection"):
+            self.structural_connection_collection.objects.link(obj)
         else:
-            # Avoid warning for structural analysis entities
-            if "Structural" not in element.is_a(): # TODO test with the list of structural analysis entities
-                self.ifc_import_settings.logger.warning("Warning: this object is outside the spatial hierarchy %s", element)
+            self.ifc_import_settings.logger.warning("Warning: this object is outside the spatial hierarchy %s", element)
             bpy.context.scene.collection.objects.link(obj)
 
     def cast_edge_case_attribute(self, ifc_class, key, value):
