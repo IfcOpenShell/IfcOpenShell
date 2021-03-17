@@ -285,8 +285,9 @@ class IfcImporter:
         self.settings_native.set(self.settings_native.INCLUDE_CURVES, True)
         self.settings_2d = ifcopenshell.geom.settings()
         self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
-        self.include_elements = []
-        self.exclude_elements = []
+        self.filter_mode = "BLACKLIST"
+        self.include_elements = set()
+        self.exclude_elements = set()
         self.project = None
         self.spatial_structure_elements = {}
         self.elements = {}
@@ -298,7 +299,7 @@ class IfcImporter:
         self.time = 0
         self.unit_scale = 1
         self.added_data = {}
-        self.native_elements = {}
+        self.native_elements = set()
         self.native_data = {}
         self.aggregates = {}
 
@@ -338,14 +339,12 @@ class IfcImporter:
         self.profile_code("Create opening collection")
         self.process_element_filter()
         self.profile_code("Process element filter")
-        # TODO: Deprecate
-        # self.parse_native_elements()
-        # self.profile_code("Parsing native elements")
+        self.parse_native_elements()
+        self.profile_code("Parsing native elements")
         self.create_grids()
         self.profile_code("Create grids")
-        # TODO: Deprecate
-        # self.create_native_products()
-        # self.profile_code("Create native products")
+        self.create_native_products()
+        self.profile_code("Create native products")
         self.create_products()
         self.profile_code("Create products")
         self.create_type_products()
@@ -394,71 +393,35 @@ class IfcImporter:
     def process_element_filter(self):
         if not self.ifc_import_settings.ifc_selector:
             return
-        self.include_elements = []
         selector = ifcopenshell.util.selector.Selector()
         elements = selector.parse(self.file, self.ifc_import_settings.ifc_selector)
         if self.ifc_import_settings.ifc_import_filter == "WHITELIST":
-            self.include_elements = elements
+            self.filter_mode = "WHITELIST"
+            self.include_elements = set(elements)
         elif self.ifc_import_settings.ifc_import_filter == "BLACKLIST":
-            self.exclude_elements = elements
+            self.exclude_elements = set(elements)
+            self.filter_mode = "BLACKLIST"
 
     def parse_native_elements(self):
-        self.parse_native_swept_disk_solid()
-        self.parse_native_extruded_area_solid()
-        self.parse_native_faceted_brep()
-        if self.include_elements:
-            include_global_ids = [e.GlobalId for e in self.include_elements]
-            filtered_native_elements = {}
-            for global_id in self.native_elements.keys():
-                if global_id in include_global_ids:
-                    filtered_native_elements[global_id] = self.native_elements[global_id]
-            self.native_elements = filtered_native_elements
-        elif self.exclude_elements:
-            exclude_global_ids = [e.GlobalId for e in self.exclude_elements]
-            filtered_native_elements = {}
-            for global_id in self.native_elements.keys():
-                if global_id not in exclude_global_ids:
-                    filtered_native_elements[global_id] = self.native_elements[global_id]
-            self.native_elements = filtered_native_elements
+        if self.filter_mode == "WHITELIST":
+            for element in self.include_elements:
+                if self.is_native(element):
+                    self.native_elements[element.GlobalId] = element
+            self.include_elements -= self.native_elements
+        elif self.filter_mode == "BLACKLIST":
+            for element in set(self.file.by_type("IfcElement")) - self.exclude_elements:
+                if self.is_native(element):
+                    self.native_elements.add(element)
+            self.exclude_elements |= self.native_elements
 
-    def parse_native_swept_disk_solid(self):
-        for element in self.file.by_type("IfcSweptDiskSolid"):
-            if [e for e in self.file.get_inverse(element) if e.is_a("IfcBooleanResult")]:
-                continue
-            self.swap_out_with_dummy_geometry(element)
-
-    def parse_native_extruded_area_solid(self):
-        for element in self.file.by_type("IfcExtrudedAreaSolid"):
-            if element.SweptArea.is_a() not in [
-                "IfcArbitraryClosedProfileDef",
-                "IfcRectangleProfileDef",
-                "IfcCircleProfileDef",
-            ]:
-                continue
-            if [e for e in self.file.get_inverse(element) if e.is_a("IfcBooleanResult")]:
-                continue
-            self.swap_out_with_dummy_geometry(element)
-
-    def parse_native_faceted_brep(self):
-        for element in self.file.by_type("IfcFacetedBrep"):
-            if [e for e in self.file.get_inverse(element) if e.is_a("IfcBooleanResult")]:
-                continue
-            self.swap_out_with_dummy_geometry(element)
-
-    def swap_out_with_dummy_geometry(self, element):
-        dummy_geometry = self.get_dummy_geometry()
-        inverse_elements = self.file.get_inverse(element)
-        for inverse_element in inverse_elements:
-            if inverse_element.is_a("IfcShapeRepresentation"):
-                inverse_element.RepresentationType = "Curve"
-                for product in self.get_products_from_shape_representation(inverse_element):
-                    self.native_elements.setdefault(product.GlobalId, {})[dummy_geometry.id()] = element
-            ifcopenshell.util.element.replace_attribute(inverse_element, element, dummy_geometry)
-
-    def get_dummy_geometry(self):
-        point = self.file.createIfcCartesianPoint((0.0, 0.0, 0.0))
-        direction = self.file.createIfcVector(self.file.createIfcDirection((0.0, 0.0, 1.0)), 1000.0)
-        return self.file.createIfcLine(point, direction)
+    def is_native(self, element):
+        if not element.Representation or not element.Representation.Representations:
+            return
+        for representation in self.get_body_representations(element.Representation.Representations):
+            # Single swept disk solids (e.g. rebar) are better natively represented as beveled curves
+            if len(representation["raw"].Items) == 1 and representation["raw"].Items[0].is_a("IfcSweptDiskSolid"):
+                self.native_data[element.GlobalId] = {"type": "IfcSweptDiskSolid"}
+                return True
 
     def get_products_from_shape_representation(self, element):
         products = [pr.ShapeOfProduct[0] for pr in element.OfProductRepresentation]
@@ -649,30 +612,14 @@ class IfcImporter:
                 return representation_map
 
     def create_native_products(self):
-        if not self.native_elements:
-            return
-        # TODO: the iterator is kind of useless here, rewrite this
-        iterator = ifcopenshell.geom.iterator(
-            self.settings_native,
-            self.file,
-            multiprocessing.cpu_count(),
-            include=[self.file.by_guid(guid) for guid in self.native_elements.keys()] or None,
-        )
-        valid_file = iterator.initialize()
         total = 0
         checkpoint = time.time()
-        if not valid_file:
-            return False
-        while True:
+        for element in self.native_elements:
             total += 1
             if total % 250 == 0:
                 print("{} elements processed in {:.2f}s ...".format(total, time.time() - checkpoint))
                 checkpoint = time.time()
-            shape = iterator.get()
-            if shape:
-                self.create_product(self.file.by_id(shape.guid), shape)
-            if not iterator.next():
-                break
+            self.create_product(element, mesh=self.create_native_mesh(element))
         print("Done creating geometry")
 
     def create_products(self):
@@ -734,7 +681,7 @@ class IfcImporter:
                     vertex = list(subelement.VertexGeometry.Coordinates)
                     break
             if not vertex:
-                continue # TODO implement non cartesian point vertexes
+                continue  # TODO implement non cartesian point vertexes
             placement_matrix[0, 3] += vertex[0] * self.unit_scale
             placement_matrix[1, 3] += vertex[1] * self.unit_scale
             placement_matrix[2, 3] += vertex[2] * self.unit_scale
@@ -747,15 +694,10 @@ class IfcImporter:
     def create_curve_products(self, products):
         if self.ifc_import_settings.should_use_cpu_multiprocessing:
             iterator = ifcopenshell.geom.iterator(
-                self.settings_2d,
-                self.file,
-                multiprocessing.cpu_count(),
-                include=products
+                self.settings_2d, self.file, multiprocessing.cpu_count(), include=products
             )
         else:
-            iterator = ifcopenshell.geom.iterator(
-                self.settings_2d, self.file, include=products
-            )
+            iterator = ifcopenshell.geom.iterator(self.settings_2d, self.file, include=products)
         valid_file = iterator.initialize()
         if not valid_file:
             return False
@@ -773,7 +715,7 @@ class IfcImporter:
                 break
         print("Done creating geometry")
 
-    def create_product(self, element, shape=None):
+    def create_product(self, element, shape=None, mesh=None):
         if element is None:
             return
 
@@ -782,18 +724,17 @@ class IfcImporter:
 
         self.ifc_import_settings.logger.info("Creating object %s", element)
 
-        if shape:
+        if mesh:
+            pass
+        elif shape:
             mesh_name = self.get_mesh_name(shape.geometry)
             mesh = self.meshes.get(mesh_name)
             if mesh is None:
-                if element.GlobalId in self.native_elements:
-                    mesh = self.create_native_mesh(element, shape)
-                if mesh is None:
-                    mesh = self.create_mesh(element, shape)
-                    if "-" in shape.geometry.id:
-                        mesh.BIMMeshProperties.ifc_definition_id = int(shape.geometry.id.split("-")[0])
-                    else:
-                        mesh.BIMMeshProperties.ifc_definition_id = int(shape.geometry.id)
+                mesh = self.create_mesh(element, shape)
+                if "-" in shape.geometry.id:
+                    mesh.BIMMeshProperties.ifc_definition_id = int(shape.geometry.id.split("-")[0])
+                else:
+                    mesh.BIMMeshProperties.ifc_definition_id = int(shape.geometry.id)
                 self.meshes[mesh_name] = mesh
         else:
             mesh = None
@@ -818,9 +759,8 @@ class IfcImporter:
             obj.display_type = "WIRE"
         return obj
 
-    def create_native_mesh(self, element, shape):
+    def create_native_mesh(self, element):
         # TODO This should be split off into its own module for run-time native mesh conversion
-        data = self.native_elements[element.GlobalId]
         materials = []
         items = []
         for representation in self.get_body_representations(element.Representation.Representations):
@@ -830,8 +770,6 @@ class IfcImporter:
                     # Magic string NULLMAT represents no material, unless this has a better approach
                     material_name = "NULLMAT"
                 materials.append(material_name)
-                if item.id() in data:
-                    item = data[item.id()]
                 if item.is_a() == "IfcExtrudedAreaSolid":
                     native = self.create_native_extruded_area_solid(item, element)
                     if native:
@@ -1216,7 +1154,9 @@ class IfcImporter:
     def create_aggregate_tree(self):
         for aggregate in self.aggregates.values():
             if aggregate["container"].is_a("IfcSpatialStructureElement"):
-                self.spatial_structure_elements[aggregate["container"].GlobalId]["blender"].children.link(aggregate["blender"])
+                self.spatial_structure_elements[aggregate["container"].GlobalId]["blender"].children.link(
+                    aggregate["blender"]
+                )
             else:
                 self.aggregates[aggregate["container"].GlobalId]["blender"].children.link(aggregate["blender"])
 
@@ -1229,7 +1169,7 @@ class IfcImporter:
         self.aggregates[element.GlobalId] = {
             "blender": collection,
             "blender_obj": obj,
-            "container": self.get_aggregate_container(element)
+            "container": self.get_aggregate_container(element),
         }
 
     def get_aggregate_container(self, element):
@@ -1468,6 +1408,7 @@ class IfcImporter:
 
             ios_materials = []
             for mat in geometry.materials:
+                # See bug #866
                 if mat.original_name():
                     ios_materials.append(mat.original_name())
                 else:
