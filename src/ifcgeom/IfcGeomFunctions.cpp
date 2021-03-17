@@ -2789,7 +2789,6 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 				Vs1.Cross(Vs2);
 
 				if (Vs1.IsNormal(Vc, 1.e-5)) {
-					int a = 1;
 					Logger::Warning("Connected walls are parallel");
 					parallel = true;
 				} else if (w < axis_u1 || w > axis_u2) {
