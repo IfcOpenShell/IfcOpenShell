@@ -3,6 +3,78 @@ from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.structural.data import Data
 
 
+class BIM_PT_structural_connections(Panel):
+    bl_label = "IFC Structural Connections"
+    bl_idname = "BIM_PT_structural_connections"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            return False
+        props = context.active_object.BIMObjectProperties
+        if not props.ifc_definition_id:
+            return False
+        if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcStructuralConnection"):
+            return False
+        return True
+
+    def draw(self, context):
+        self.oprops = context.active_object.BIMObjectProperties
+        self.props = context.active_object.BIMStructuralProperties
+        if self.oprops.ifc_definition_id not in Data.connections:
+            Data.load(self.oprops.ifc_definition_id)
+
+        self.data = Data.connections[self.oprops.ifc_definition_id]
+
+        row = self.layout.row(align=True)
+        if self.data and self.props.is_editing_connection:
+            row.label(text=self.data["type"], icon="CON_TRACKTO")
+            row.operator("bim.edit_structural_boundary_condition", text="", icon="CHECKMARK")
+            row.operator("bim.disable_editing_structural_boundary_condition", text="", icon="X")
+        elif self.data and not self.props.is_editing_connection:
+            row.label(text=self.data["type"], icon="CON_TRACKTO")
+            row.operator("bim.enable_editing_structural_boundary_condition", text="", icon="GREASEPENCIL")
+            row.operator("bim.remove_structural_boundary_condition", text="", icon="X")
+        else:
+            row.label(text="No Connection Found", icon="CON_TRACKTO")
+            row.operator("bim.add_structural_boundary_condition", text="", icon="ADD")
+
+        if self.props.is_editing_connection:
+            self.draw_editable_ui(context)
+        else:
+            self.draw_read_only_ui(context)
+
+    def draw_editable_ui(self, context):
+        for attribute in self.props.connection_attributes:
+            if attribute.data_type == "string":
+                row = self.layout.row()
+                row.prop(attribute, "string_value", text=attribute["name"])
+            else:
+                row = self.layout.row(align=True)
+                row.prop(attribute, "enum_value", text=attribute["name"])
+                if attribute.enum_value == "IfcBoolean":
+                    row.prop(attribute, "bool_value", text="")
+                else:
+                    row.prop(attribute, "float_value", text="")
+            if attribute.is_optional:
+                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+
+    def draw_read_only_ui(self, context):
+        for key, value in self.data.items():
+            if key == "id" or key == "type" or value == None:
+                continue
+            row = self.layout.row(align=True)
+            row.label(text=key)
+            if isinstance(value, bool):
+                row.label(text="", icon="CHECKBOX_HLT" if value else "CHECKBOX_DEHLT")
+            else:
+                row.label(text=str(value))
+
+
 class BIM_PT_structural(Panel):
     bl_label = "IFC Structural Analysis Models"
     bl_idname = "BIM_PT_structural"
