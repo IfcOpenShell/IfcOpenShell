@@ -10,12 +10,21 @@ class Data:
     def purge(cls):
         cls.is_loaded = False
         cls.products = {}
+        cls.connections = {}
         cls.structural_analysis_models = {}
 
     @classmethod
-    def load(cls):
+    def load(cls, product_id=None):
+        if product_id:
+            cls.connections = {}
+            return cls.load_structural_connection(product_id)
         cls.products = {}
         cls.structural_analysis_models = {}
+        cls.load_structural_analysis_models()
+        cls.is_loaded = True
+
+    @classmethod
+    def load_structural_analysis_models(cls):
         for model in IfcStore.get_file().by_type("IfcStructuralAnalysisModel"):
             if model.IsGroupedBy:
                 for rel in model.IsGroupedBy:
@@ -36,4 +45,16 @@ class Data:
             data["HasResults"] = has_results
 
             cls.structural_analysis_models[model.id()] = data
-        cls.is_loaded=True
+
+    @classmethod
+    def load_structural_connection(cls, product_id):
+        connection = IfcStore.get_file().by_id(product_id)
+        if connection.AppliedCondition:
+            data = connection.AppliedCondition.get_info()
+            for key, value in data.items():
+                if not value or key in ["Name", "type", "id"]:
+                    continue
+                data[key] = value.wrappedValue
+        else:
+            data = {}
+        cls.connections[connection.id()] = data
