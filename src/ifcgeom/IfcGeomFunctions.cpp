@@ -774,7 +774,7 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 				convert_shapes(*it2,opening_shapes);
 			}
 
-			const unsigned int current_size = (const unsigned int) opening_shapes.size();
+			const unsigned int current_size = opening_shapes.size();
 			for ( unsigned int i = last_size; i < current_size; ++ i ) {
 				opening_shapes[i].prepend(opening_trsf);
 			}
