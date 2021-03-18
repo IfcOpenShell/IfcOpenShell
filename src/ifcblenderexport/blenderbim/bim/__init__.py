@@ -183,6 +183,7 @@ if bpy is not None:
         bpy.types.Collection.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties) # Check if we need this
         bpy.types.Material.BIMMaterialProperties = bpy.props.PointerProperty(type=prop.BIMMaterialProperties)
         bpy.types.Mesh.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
+        bpy.types.Curve.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
         bpy.types.Camera.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
         bpy.types.Camera.BIMCameraProperties = bpy.props.PointerProperty(type=prop.BIMCameraProperties)
         bpy.types.TextCurve.BIMTextProperties = bpy.props.PointerProperty(type=prop.BIMTextProperties)
@@ -210,6 +211,7 @@ if bpy is not None:
         del bpy.types.Collection.BIMObjectProperties # Check if we need this
         del bpy.types.Material.BIMMaterialProperties
         del bpy.types.Mesh.BIMMeshProperties
+        del bpy.types.Curve.BIMMeshProperties
         del bpy.types.Camera.BIMMeshProperties
         del bpy.types.Camera.BIMCameraProperties
         del bpy.types.TextCurve.BIMTextProperties
