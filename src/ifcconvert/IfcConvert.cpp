@@ -355,6 +355,9 @@ int main(int argc, char** argv) {
 	double section_height;
 	std::string svg_scale, svg_center;
 	std::string section_ref, elevation_ref;
+	// "none", "full" or "left"
+	std::string storey_height_display;
+	SvgSerializer::storey_height_display_types svg_storey_height_display = SvgSerializer::SH_NONE;
 
     po::options_description serializer_options("Serialization options");
     serializer_options.add_options()
@@ -380,6 +383,9 @@ int main(int argc, char** argv) {
 			"Creates SVG cross section drawings automatically based on model extents")
 		("auto-elevation",
 			"Creates SVG elevation drawings automatically based on model extents")
+		("draw-storey-heights",
+			po::value<std::string>(&storey_height_display)->default_value("none")->implicit_value("full"),
+			"Draws a horizontal line at the height of building storeys in vertical drawings")
 		("svg-xmlns",
 			"Stores name and guid in a separate namespace as opposed to data-name, data-guid")
 		("svg-poly",
@@ -506,6 +512,22 @@ int main(int argc, char** argv) {
         print_usage();
         return EXIT_FAILURE;
     }
+
+	if (vmap.count("draw-storey-heights")) {
+		boost::to_lower(storey_height_display);
+
+		if (storey_height_display == "none") {
+			svg_storey_height_display = SvgSerializer::SH_NONE;
+		} else if (storey_height_display == "full") {
+			svg_storey_height_display = SvgSerializer::SH_FULL;
+		} else if (storey_height_display == "left") {
+			svg_storey_height_display = SvgSerializer::SH_LEFT;
+		} else {
+			cerr_ << "[Error] --draw-storey-heights should be none|full|left" << std::endl;
+			print_usage();
+			return EXIT_FAILURE;
+		}
+	}
     
 	if (vmap.count("log-format") == 1) {
 		boost::to_lower(log_format);
@@ -949,6 +971,9 @@ int main(int argc, char** argv) {
 		if (vmap.count("print-space-areas") != 0) {
 			static_cast<SvgSerializer*>(serializer.get())->setPrintSpaceAreas(true);
 		}
+		if (vmap.count("draw-storey-heights") != 0) {
+			static_cast<SvgSerializer*>(serializer.get())->setDrawStoreyHeights(svg_storey_height_display);
+		}		
 		if (bounding_width.is_initialized() && bounding_height.is_initialized()) {
 			static_cast<SvgSerializer*>(serializer.get())->setBoundingRectangle(bounding_width.get(), bounding_height.get());
 		}

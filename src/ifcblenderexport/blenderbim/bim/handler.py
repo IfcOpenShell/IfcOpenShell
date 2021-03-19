@@ -3,6 +3,48 @@ import json
 import blenderbim.bim.decoration as decoration
 from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.attribute.data import Data as AttributeData
+
+
+def mode_callback(obj, data):
+    if (
+        obj.mode != "OBJECT"
+        or not obj.data
+        or not isinstance(obj.data, bpy.types.Mesh)
+        or not obj.data.BIMMeshProperties.ifc_definition_id
+        or not bpy.context.scene.BIMProjectProperties.is_authoring
+    ):
+        return
+    representation = IfcStore.get_file().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+    if representation.RepresentationType == "Tessellation" or representation.RepresentationType == "Brep":
+        IfcStore.edited_objs.add(obj.name)
+
+
+def name_callback(obj, data):
+    # Blender material names are up to 63 UTF-8 bytes
+    if not obj.BIMObjectProperties.ifc_definition_id or "/" not in obj.name or len(bytes(obj.name, "utf-8")) >= 63:
+        return
+    element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+    if not element.is_a("IfcRoot"):
+        return
+    element.Name = "/".join(obj.name.split("/")[1:])
+    AttributeData.load(obj.BIMObjectProperties.ifc_definition_id)
+
+
+def subscribe_to(object, data_path, callback):
+    subscribe_to = object.path_resolve(data_path, False)
+    bpy.msgbus.subscribe_rna(
+        key=subscribe_to,
+        owner=object,
+        args=(
+            object,
+            data_path,
+        ),
+        notify=callback,
+        options={
+            "PERSISTENT",
+        },
+    )
 
 
 @persistent
@@ -10,26 +52,50 @@ def loadIfcStore(scene):
     IfcStore.file = None
     IfcStore.schema = None
     props = bpy.context.scene.BIMProperties
-    IfcStore.id_map = {int(k): bpy.data.objects.get(v) for k, v in json.loads(props.id_map).items()} if props.id_map else {}
+    IfcStore.id_map = (
+        {int(k): bpy.data.objects.get(v) for k, v in json.loads(props.id_map).items()} if props.id_map else {}
+    )
     IfcStore.guid_map = (
         {k: bpy.data.objects.get(v) for k, v in json.loads(props.guid_map).items()} if props.id_map else {}
     )
 
     # Purge data cache
     from blenderbim.bim import modules
+
     for module in modules.values():
         if not module:
             continue
         try:
-            getattr(getattr(module, 'data'), 'Data').purge()
+            getattr(getattr(module, "data"), "Data").purge()
         except AttributeError:
             pass
 
 
 @persistent
+def ensureIfcExported(scene):
+    if IfcStore.get_file() and not bpy.context.scene.BIMProperties.ifc_file:
+        # The invocation pops up a file select window.
+        # This is non-blocking, therefore the Blend file is saved before we export.
+        bpy.ops.export_ifc.bim("INVOKE_DEFAULT", should_force_resave=True)
+
+
+@persistent
 def storeIdMap(scene):
-    bpy.context.scene.BIMProperties.id_map = json.dumps({k: v.name for k, v in IfcStore.id_map.items()})
-    bpy.context.scene.BIMProperties.guid_map = json.dumps({k: v.name for k, v in IfcStore.guid_map.items()})
+    try:
+        bpy.context.scene.BIMProperties.id_map = json.dumps({k: v.name for k, v in IfcStore.id_map.items()})
+        bpy.context.scene.BIMProperties.guid_map = json.dumps({k: v.name for k, v in IfcStore.guid_map.items()})
+    except:
+        # Regenerate maps. Is there a better solution for this? It seems fragile.
+        file = IfcStore.get_file()
+        IfcStore.id_map = {
+            o.ifc_definition_id: o.name for o in bpy.data.objects if o.BIMObjectProperties.ifc_definition_id
+        }
+        IfcStore.guid_map = {
+            file.by_id(i).GlobalId: n for i, n in IfcStore.id_map.items() if file.by_id(i).is_a("IfcRoot")
+        }
+        # Then attempt to store it again
+        bpy.context.scene.BIMProperties.id_map = json.dumps({k: v.name for k, v in IfcStore.id_map.items()})
+        bpy.context.scene.BIMProperties.guid_map = json.dumps({k: v.name for k, v in IfcStore.guid_map.items()})
 
 
 @persistent

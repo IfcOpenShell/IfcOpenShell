@@ -209,7 +209,7 @@ cd "%DEPENDENCY_DIR%"
 call cecho.cmd 0 13 "Building %DEPENDENCY_NAME% %BOOST_LIBS% Please be patient, this will take a while."
 IF EXIST "%DEPENDENCY_DIR%\bin.v2\project-cache.jam" del "%DEPS_DIR%\boost\bin.v2\project-cache.jam"
 
-call .\b2 toolset=%BOOST_TOOLSET% runtime-link=static address-model=%ARCH_BITS% -j%IFCOS_NUM_BUILD_PROCS% ^
+call .\b2 toolset=%BOOST_TOOLSET% runtime-link=static address-model=%ARCH_BITS% --abbreviate-paths -j%IFCOS_NUM_BUILD_PROCS% ^
     variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_WIN_API% %BOOST_LIBS% stage --stagedir=stage/%GEN_SHORTHAND% 
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -526,8 +526,8 @@ pushd %BUILD_DIR%
 :: cache always e.g. when we've had new changes in the repository.
 IF %BUILD_TYPE%==Rebuild IF EXIST CMakeCache.txt. del CMakeCache.txt
 
-IF DEFINED VS_TOOLSET (
-    cmake .. -G %GENERATOR% -A %VS_PLATFORM% -T %VS_TOOLSET% %*
+IF NOT "%VS_TOOLSET_HOST%"=="" (
+    cmake .. -G %GENERATOR% -A %VS_PLATFORM% -T %VS_TOOLSET_HOST% %*
 ) ELSE (
     cmake .. -G %GENERATOR% -A %VS_PLATFORM% %*
 )

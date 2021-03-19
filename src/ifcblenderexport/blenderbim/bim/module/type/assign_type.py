@@ -33,7 +33,7 @@ class Usecase:
             if related_objects:
                 is_typed_by[0].RelatedObjects = related_objects
             else:
-                self.file.remove(is_typed_by)
+                self.file.remove(is_typed_by[0])
 
         if types:
             related_objects = list(types[0].RelatedObjects)

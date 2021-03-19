@@ -19,3 +19,4 @@ class BIMDebugProperties(PropertyGroup):
     step_id_breadcrumb: CollectionProperty(name="STEP ID Breadcrumb", type=StrProperty)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     inverse_attributes: CollectionProperty(name="Inverse Attributes", type=Attribute)
+    inverse_references: CollectionProperty(name="Inverse References", type=Attribute)

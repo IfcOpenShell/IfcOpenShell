@@ -19,7 +19,12 @@ class BIM_PT_class(Panel):
         props = context.active_object.BIMObjectProperties
         if props.ifc_definition_id:
             if props.ifc_definition_id not in Data.products:
-                Data.load(props.ifc_definition_id)
+                try:
+                    Data.load(props.ifc_definition_id)
+                except:
+                    row = self.layout.row(align=True)
+                    row.label(text="IFC Element Not Found")
+                    row.operator("bim.unlink_object", icon="UNLINKED", text="")
             if props.is_reassigning_class:
                 row = self.layout.row(align=True)
                 row.operator("bim.reassign_class", icon="CHECKMARK")
@@ -35,9 +40,12 @@ class BIM_PT_class(Panel):
                 row = self.layout.row(align=True)
                 row.label(text=name)
                 row.operator("bim.copy_class", icon="DUPLICATE", text="").obj = context.active_object.name
-                row.operator("bim.unlink_object", icon="UNLINKED", text="").obj = context.active_object.name
+                row.operator("bim.unlink_object", icon="UNLINKED", text="")
                 row.operator("bim.enable_reassign_class", icon="GREASEPENCIL", text="")
-                row.operator("bim.unassign_class", icon="X", text="").obj = context.active_object.name
+                if context.selected_objects:
+                    row.operator("bim.unassign_class", icon="X", text="")
+                else:
+                    row.operator("bim.unassign_class", icon="X", text="").obj = context.active_object.name
         else:
             self.draw_class_dropdowns()
             row = self.layout.row(align=True)
@@ -58,6 +66,5 @@ class BIM_PT_class(Panel):
         if props.ifc_predefined_type == "USERDEFINED":
             row = self.layout.row()
             row.prop(props, "ifc_userdefined_type")
-        if bpy.context.active_object.data:
-            row = self.layout.row()
-            row.prop(bpy.context.scene.BIMProperties, "contexts")
+        row = self.layout.row()
+        row.prop(bpy.context.scene.BIMProperties, "contexts")

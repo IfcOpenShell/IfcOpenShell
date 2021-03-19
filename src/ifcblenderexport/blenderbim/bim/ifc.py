@@ -1,5 +1,6 @@
 import bpy
 import ifcopenshell
+import blenderbim.bim.handler
 
 
 class IfcStore:
@@ -8,6 +9,7 @@ class IfcStore:
     schema = None
     id_map = {}
     guid_map = {}
+    edited_objs = set()
     pset_template_path = ""
     pset_template_file = None
 
@@ -36,6 +38,8 @@ class IfcStore:
         if hasattr(element, "GlobalId"):
             IfcStore.guid_map[element.GlobalId] = obj
         obj.BIMObjectProperties.ifc_definition_id = element.id()
+        blenderbim.bim.handler.subscribe_to(obj, "mode", blenderbim.bim.handler.mode_callback)
+        blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)
 
     @staticmethod
     def unlink_element(element, obj=None):

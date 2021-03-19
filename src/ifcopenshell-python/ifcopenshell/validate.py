@@ -114,6 +114,21 @@ def try_valid(attr, val, schema):
 
 
 def validate(f, logger):
+    """
+    For an IFC population model `f` validate whether the entity attribute values are correctly supplied. As this
+    is a function that is applied after a file has been parsed, certain types of errors in syntax, duplicate
+    numeric identifiers or invalidate entity names are not caught by this function. Some of these might have been
+    logged and can be retrieved by calling `ifcopenshell.get_log()`. A verification of the type, entity and global
+    WHERE rules is also not implemented.
+    
+    For every entity instance in the model, it is checked that the entity is not abstract that every attribute value
+    is of the correct type and that the inverse attributes are of the correct cardinality.
+    
+    Express simple types are checked for their valuation type. For select types it is asserted that the value conforms
+    to one of the leaves. For enumerations it is checked that the value is indeed on of the items. For aggregations it
+    is checked that the elements and the cardinality conforms. Type declarations (IfcInteger which is an integer) are
+    unpacked until one of the above cases is reached.
+    """
     schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema)
     for inst in f:
         if hasattr(logger, "set_instance"):

@@ -336,7 +336,7 @@ def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
     `None`."""
     if not os.path.exists(target_dir):
         logger.info("cloning '%s' into '%s'" % (clone_url, target_dir))
-        run([git, "clone", clone_url, target_dir])
+        run([git, "clone", "--recursive", clone_url, target_dir])
     else:
         logger.info("directory '%s' already cloned. Pulling latest changes." % (target_dir,))
 

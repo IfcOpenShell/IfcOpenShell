@@ -4,6 +4,7 @@ from . import ui, operator
 classes = (
     operator.AddStyle,
     operator.EditStyle,
+    operator.UnlinkStyle,
     ui.BIM_PT_style,
 )
 

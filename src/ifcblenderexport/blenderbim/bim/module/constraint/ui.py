@@ -42,7 +42,6 @@ class BIM_PT_constraints(Panel):
 
         if self.props.active_constraint_id:
             self.draw_editable_ui(context)
-        return
 
     def draw_editable_ui(self, context):
         for attribute in self.props.constraint_attributes:

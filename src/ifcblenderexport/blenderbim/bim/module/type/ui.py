@@ -35,14 +35,10 @@ class BIM_PT_type(Panel):
             row.prop(props, "relating_type_class", text="")
             if props.relating_type:
                 row.prop(props, "relating_type", text="")
-                op = row.operator("bim.assign_type", icon="CHECKMARK", text="")
-                op.should_map_representations = props.should_map_representations
+                row.operator("bim.assign_type", icon="CHECKMARK", text="")
             else:
                 row.prop(props, "blank_relating_type", text="")
             row.operator("bim.disable_editing_type", icon="X", text="")
-
-            row = self.layout.row(align=True)
-            row.prop(props, "should_map_representations")
         else:
             row = self.layout.row(align=True)
             name = "{}/{}".format(
@@ -57,3 +53,7 @@ class BIM_PT_type(Panel):
             row.operator("bim.enable_editing_type", icon="GREASEPENCIL", text="")
             if name != "None/None":
                 row.operator("bim.unassign_type", icon="X", text="")
+
+
+def add_object_button(self, context):
+    self.layout.operator("bim.add_type_instance", icon="PLUGIN")

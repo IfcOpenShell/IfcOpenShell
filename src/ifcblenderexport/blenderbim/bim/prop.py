@@ -40,11 +40,12 @@ def updateIfcFile(self, context):
         IfcStore.schema = None
         # Purge data cache
         from blenderbim.bim import modules
+
         for module in modules.values():
             if not module:
                 continue
             try:
-                getattr(getattr(module, 'data'), 'Data').purge()
+                getattr(getattr(module, "data"), "Data").purge()
             except AttributeError:
                 pass
 
@@ -117,28 +118,6 @@ def updateDrawingName(self, context):
     self.camera.name = "IfcGroup/{}".format(self.name)
     self.camera.users_collection[0].name = self.camera.name
     self.name = self.camera.name.split("/")[1]
-
-
-def getBoundaryConditionClasses(self, context):
-    return [
-        (c, c, "")
-        for c in [
-            "IfcBoundaryEdgeCondition",
-            "IfcBoundaryFaceCondition",
-            "IfcBoundaryNodeCondition",
-            "IfcBoundaryNodeConditionWarping",
-        ]
-    ]
-
-
-def refreshBoundaryConditionAttributes(self, context):
-    while len(context.active_object.BIMObjectProperties.boundary_condition.attributes) > 0:
-        context.active_object.BIMObjectProperties.boundary_condition.attributes.remove(0)
-    for attribute in schema.ifc.elements[context.active_object.BIMObjectProperties.boundary_condition.name][
-        "complex_attributes"
-    ]:
-        new_attribute = context.active_object.BIMObjectProperties.boundary_condition.attributes.add()
-        new_attribute.name = attribute["name"]
 
 
 def refreshActiveDrawingIndex(self, context):
@@ -267,17 +246,42 @@ class Variable(PropertyGroup):
     prop_key: StringProperty(name="Property Key")
 
 
+def updateAttributeStringValue(self, context):
+    updateAttributeValue(self, self.string_value)
+
+
+def updateAttributeBoolValue(self, context):
+    updateAttributeValue(self, self.bool_value)
+
+
+def updateAttributeIntValue(self, context):
+    updateAttributeValue(self, self.int_value)
+
+
+def updateAttributeFloatValue(self, context):
+    updateAttributeValue(self, self.float_value)
+
+
+def updateAttributeEnumValue(self, context):
+    updateAttributeValue(self, self.enum_value)
+
+
+def updateAttributeValue(self, value):
+    if value:
+        self.is_null = False
+
+
 class Attribute(PropertyGroup):
     name: StringProperty(name="Name")
     data_type: StringProperty(name="Data Type")
-    string_value: StringProperty(name="Value")
-    bool_value: BoolProperty(name="Value")
-    int_value: IntProperty(name="Value")
-    float_value: FloatProperty(name="Value")
+    string_value: StringProperty(name="Value", update=updateAttributeStringValue)
+    bool_value: BoolProperty(name="Value", update=updateAttributeBoolValue)
+    int_value: IntProperty(name="Value", update=updateAttributeIntValue)
+    float_value: FloatProperty(name="Value", update=updateAttributeFloatValue)
     is_null: BoolProperty(name="Is Null")
     is_optional: BoolProperty(name="Is Optional")
     enum_items: StringProperty(name="Value")
-    enum_value: EnumProperty(items=getAttributeEnumValues, name="Value")
+    enum_value: EnumProperty(items=getAttributeEnumValues, name="Value", update=updateAttributeEnumValue)
 
 
 class Drawing(PropertyGroup):
@@ -421,7 +425,10 @@ class BIMProperties(PropertyGroup):
     area_unit: EnumProperty(
         default="SQUARE_METRE",
         items=[
+            ("NANO/SQUARE_METRE", "Square Nanometre", ""),
+            ("MICRO/SQUARE_METRE", "Square Micrometre", ""),
             ("MILLI/SQUARE_METRE", "Square Millimetre", ""),
+            ("DECI/SQUARE_METRE", "Square Decimetre", ""),
             ("CENTI/SQUARE_METRE", "Square Centimetre", ""),
             ("SQUARE_METRE", "Square Metre", ""),
             ("KILO/SQUARE_METRE", "Square Kilometre", ""),
@@ -435,7 +442,10 @@ class BIMProperties(PropertyGroup):
     volume_unit: EnumProperty(
         default="CUBIC_METRE",
         items=[
+            ("NANO/CUBIC_METRE", "Cubic Nanometre", ""),
+            ("MICRO/CUBIC_METRE", "Cubic Micrometre", ""),
             ("MILLI/CUBIC_METRE", "Cubic Millimetre", ""),
+            ("DECI/CUBIC_METRE", "Cubic Decimetre", ""),
             ("CENTI/CUBIC_METRE", "Cubic Centimetre", ""),
             ("CUBIC_METRE", "Cubic Metre", ""),
             ("KILO/CUBIC_METRE", "Cubic Kilometre", ""),
@@ -485,26 +495,14 @@ class GlobalId(PropertyGroup):
     name: StringProperty(name="Name")
 
 
-class BoundaryCondition(PropertyGroup):
-    name: EnumProperty(
-        items=getBoundaryConditionClasses, name="Boundary Type", update=refreshBoundaryConditionAttributes
-    )
-    attributes: CollectionProperty(name="Attributes", type=Attribute)
-
-
 class BIMObjectProperties(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_reassigning_class: BoolProperty(name="Is Reassigning Class")
     global_ids: CollectionProperty(name="GlobalIds", type=GlobalId)
     relating_object: PointerProperty(name="Aggregate", type=bpy.types.Object)
     is_editing_aggregate: BoolProperty(name="Is Editing Aggregate")
-    is_editing_container: BoolProperty(name="Is Editing Container")
-    relating_structure: PointerProperty(name="Spatial Container", type=bpy.types.Object)
     psets: CollectionProperty(name="Psets", type=PsetQto)
     qtos: CollectionProperty(name="Qtos", type=PsetQto)
-    has_boundary_condition: BoolProperty(name="Has Boundary Condition")
-    boundary_condition: PointerProperty(name="Boundary Condition", type=BoundaryCondition)
-    structural_member_connection: PointerProperty(name="Structural Member Connection", type=bpy.types.Object)
 
 
 class BIMMaterialProperties(PropertyGroup):

@@ -20,7 +20,6 @@ class Usecase:
         for item in self.settings["representation"].Items:
             item.MappingSource = dummy_representation_map
         ifcopenshell.util.element.remove_deep(self.file, self.settings["representation"])
-        self.file.remove(self.settings["representation"])
 
     def remove_entire_representation_tree(self):
         dummy_context = self.file.create_entity("IfcRepresentationContext")
