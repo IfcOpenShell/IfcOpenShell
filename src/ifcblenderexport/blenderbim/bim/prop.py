@@ -120,28 +120,6 @@ def updateDrawingName(self, context):
     self.name = self.camera.name.split("/")[1]
 
 
-def getBoundaryConditionClasses(self, context):
-    return [
-        (c, c, "")
-        for c in [
-            "IfcBoundaryEdgeCondition",
-            "IfcBoundaryFaceCondition",
-            "IfcBoundaryNodeCondition",
-            "IfcBoundaryNodeConditionWarping",
-        ]
-    ]
-
-
-def refreshBoundaryConditionAttributes(self, context):
-    while len(context.active_object.BIMObjectProperties.boundary_condition.attributes) > 0:
-        context.active_object.BIMObjectProperties.boundary_condition.attributes.remove(0)
-    for attribute in schema.ifc.elements[context.active_object.BIMObjectProperties.boundary_condition.name][
-        "complex_attributes"
-    ]:
-        new_attribute = context.active_object.BIMObjectProperties.boundary_condition.attributes.add()
-        new_attribute.name = attribute["name"]
-
-
 def refreshActiveDrawingIndex(self, context):
     bpy.ops.bim.activate_view(drawing_index=context.scene.DocProperties.active_drawing_index)
 
@@ -517,13 +495,6 @@ class GlobalId(PropertyGroup):
     name: StringProperty(name="Name")
 
 
-class BoundaryCondition(PropertyGroup):
-    name: EnumProperty(
-        items=getBoundaryConditionClasses, name="Boundary Type", update=refreshBoundaryConditionAttributes
-    )
-    attributes: CollectionProperty(name="Attributes", type=Attribute)
-
-
 class BIMObjectProperties(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_reassigning_class: BoolProperty(name="Is Reassigning Class")
@@ -532,9 +503,6 @@ class BIMObjectProperties(PropertyGroup):
     is_editing_aggregate: BoolProperty(name="Is Editing Aggregate")
     psets: CollectionProperty(name="Psets", type=PsetQto)
     qtos: CollectionProperty(name="Qtos", type=PsetQto)
-    has_boundary_condition: BoolProperty(name="Has Boundary Condition")
-    boundary_condition: PointerProperty(name="Boundary Condition", type=BoundaryCondition)
-    structural_member_connection: PointerProperty(name="Structural Member Connection", type=bpy.types.Object)
 
 
 class BIMMaterialProperties(PropertyGroup):
