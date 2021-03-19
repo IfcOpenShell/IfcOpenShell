@@ -11,4 +11,4 @@ class Usecase:
         if len(self.file.get_inverse(self.settings["connection"].AppliedCondition)) > 1:
             self.settings["connection"].AppliedCondition = None
         else:
-            self.file.remove(settings["connection"].AppliedCondition)
+            self.file.remove(self.settings["connection"].AppliedCondition)

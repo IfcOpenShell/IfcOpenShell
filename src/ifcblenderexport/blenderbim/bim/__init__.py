@@ -124,7 +124,6 @@ if bpy is not None:
         prop.BIMProperties,
         prop.DocProperties,
         prop.IfcParameter,
-        prop.BoundaryCondition,
         prop.PsetQto,
         prop.GlobalId,
         prop.RepresentationItem,
