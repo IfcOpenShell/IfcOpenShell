@@ -466,6 +466,10 @@ ElSE()
     else()
         add_definitions(-Wno-maybe-uninitialized)
     endif()
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 9.0)
+        # OpenCascade spews a lot of deprecated-copy warnings
+        add_definitions(-Wno-deprecated-copy)
+    endif()
     # -fPIC is not relevant on Windows and creates pointless warnings
     if (UNIX)
         add_definitions(-fPIC)
