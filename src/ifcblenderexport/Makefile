@@ -148,8 +148,8 @@ endif
 	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcclash/* dist/blenderbim/libs/site/packages/
 	# Provides BIMTester functionality
 	cd dist/working && python -m venv env
-	cd dist/working && source env/bin/activate && pip install pybabel
-	cd dist/working && source env/bin/activate && cd ./IfcOpenShell-0.6.0/src/ifcbimtester/bimtester/locale && pybabel compile -d .
+	cd dist/working && . env/bin/activate && pip install pybabel
+	cd dist/working && . env/bin/activate && cd ./IfcOpenShell-0.6.0/src/ifcbimtester/bimtester/locale && pybabel compile -d .
 	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcbimtester/bimtester dist/blenderbim/libs/site/packages/
 	# Provides IFCCOBie functionality
 	cp -r dist/working/IfcOpenShell-0.6.0/src/ifccobie/* dist/blenderbim/libs/site/packages/
