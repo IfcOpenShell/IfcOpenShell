@@ -249,6 +249,11 @@ endif
 	cd dist/working && wget https://files.pythonhosted.org/packages/c8/4b/d0a8c23b6c8985e5544ea96d27105a273ea22051317f850c2cdbf2029fe4/behave-1.2.6.tar.gz
 	cd dist/working && tar -xzvf behave*
 	cd dist/working/behave-1.2.6/ && cp -r behave ../../blenderbim/libs/site/packages/
+	# See bug #1294
+	cd dist/working/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/patch/model_core.patch
+	cd dist/working/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/patch/runner_util.patch
+	cd dist/working/ && patch ../../blenderbim/libs/site/packages/behave/model_core.py < model_core.patch
+	cd dist/working/ && patch ../../blenderbim/libs/site/packages/behave/runner_util.py < runner_util.patch
 	rm -rf dist/working
 
 	# Required by behave
