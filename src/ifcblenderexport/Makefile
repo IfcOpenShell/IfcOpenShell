@@ -149,6 +149,7 @@ endif
 	# Provides BIMTester functionality
 	cd dist/working && python -m venv env
 	cd dist/working && . env/bin/activate && pip install pybabel
+	cd dist/working && . env/bin/activate && pip install babel
 	cd dist/working && . env/bin/activate && ./env/bin/pybabel compile -d ./IfcOpenShell-0.6.0/src/ifcbimtester/bimtester/locale/
 	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcbimtester/bimtester dist/blenderbim/libs/site/packages/
 	# Provides IFCCOBie functionality
