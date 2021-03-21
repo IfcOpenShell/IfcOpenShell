@@ -252,8 +252,8 @@ endif
 	# See bug #1294
 	cd dist/working/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/patch/model_core.patch
 	cd dist/working/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/patch/runner_util.patch
-	cd dist/working/ && patch ../../blenderbim/libs/site/packages/behave/model_core.py < model_core.patch
-	cd dist/working/ && patch ../../blenderbim/libs/site/packages/behave/runner_util.py < runner_util.patch
+	cd dist/working/ && patch ../blenderbim/libs/site/packages/behave/model_core.py < model_core.patch
+	cd dist/working/ && patch ../blenderbim/libs/site/packages/behave/runner_util.py < runner_util.patch
 	rm -rf dist/working
 
 	# Required by behave
