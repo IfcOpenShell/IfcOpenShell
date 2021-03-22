@@ -91,7 +91,7 @@ class IfcCsv:
         self.attributes = []
         self.output = ""
         self.selector = None
-        self.delimiter = ";"
+        self.delimiter = ","
 
     def export(self, ifc_file, elements):
         self.ifc_file = ifc_file
@@ -112,7 +112,7 @@ class IfcCsv:
             self.results.append(result)
 
         with open(self.output, "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
+            writer = csv.writer(f, delimiter=self.delimiter)
             header = ["GlobalId"]
             header.extend(self.attributes)
             writer.writerow(header)

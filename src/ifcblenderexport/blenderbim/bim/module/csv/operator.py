@@ -80,6 +80,10 @@ class ImportIfcCsv(bpy.types.Operator):
 
         ifc_csv = ifccsv.IfcCsv()
         ifc_csv.output = self.filepath
+        if props.csv_delimiter == "CUSTOM":
+            ifc_csv.delimiter = props.csv_custom_delimiter
+        else:
+            ifc_csv.delimiter = props.csv_delimiter
         ifc_csv.Import(context.scene.CsvProperties.csv_ifc_file)
         return {"FINISHED"}
 
