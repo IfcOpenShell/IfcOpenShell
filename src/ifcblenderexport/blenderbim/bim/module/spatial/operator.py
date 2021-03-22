@@ -93,7 +93,7 @@ class DisableEditingContainer(bpy.types.Operator):
 
 class RemoveContainer(bpy.types.Operator):
     bl_idname = "bim.remove_container"
-    bl_label = "Remvoe Container"
+    bl_label = "Remove Container"
     obj: bpy.props.StringProperty()
 
     def execute(self, context):

@@ -167,7 +167,7 @@
 #ifdef _MSC_VER
 #pragma message("warning: You are linking against Open CASCADE version " OCC_VERSION_COMPLETE ". Version 6.9.0 introduces various improvements with relation to boolean operations. You are advised to upgrade.")
 #else
-#warning "You are linking against linking against an older version of Open CASCADE. Version 6.9.0 introduces various improvements with relation to boolean operations. You are advised to upgrade."
+#warning "You are linking against an older version of Open CASCADE. Version 6.9.0 introduces various improvements with relation to boolean operations. You are advised to upgrade."
 #endif
 #endif
 
@@ -774,7 +774,7 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 				convert_shapes(*it2,opening_shapes);
 			}
 
-			const unsigned int current_size = (const unsigned int) opening_shapes.size();
+			const unsigned int current_size = opening_shapes.size();
 			for ( unsigned int i = last_size; i < current_size; ++ i ) {
 				opening_shapes[i].prepend(opening_trsf);
 			}
@@ -2789,7 +2789,6 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 				Vs1.Cross(Vs2);
 
 				if (Vs1.IsNormal(Vc, 1.e-5)) {
-					int a = 1;
 					Logger::Warning("Connected walls are parallel");
 					parallel = true;
 				} else if (w < axis_u1 || w > axis_u2) {
