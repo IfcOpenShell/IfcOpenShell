@@ -15,7 +15,10 @@ from blenderbim.bim.ifc import IfcStore
 try:
     from OCC.Core import BRep, BRepTools, TopExp, TopAbs
 except ImportError:
-    from OCC import BRep, BRepTools, TopExp, TopAbs
+    try:
+        from OCC import BRep, BRepTools, TopExp, TopAbs
+    except ImportError:
+        print("[WARNING] BlenderBIM: OCC not found - svgwriter is disabled")
 
 
 class External(svgwrite.container.Group):

@@ -38,36 +38,40 @@ try:
     )
     from OCC.Core.TopoDS import topods
 except ImportError:
-    from OCC import (
-        gp,
-        Geom,
-        Bnd,
-        BRepBndLib,
-        BRep,
-        BRepPrimAPI,
-        BRepAlgoAPI,
-        BRepBuilderAPI,
-        TopOpeBRepTool,
-        TopOpeBRepBuild,
-        ShapeExtend,
-        GProp,
-        BRepGProp,
-        GC,
-        ShapeAnalysis,
-        TopTools,
-        TopExp,
-        TopAbs,
-        HLRAlgo,
-        HLRBRep,
-        TopLoc,
-        Bnd,
-        BRepBndLib,
-        BRepTools,
-        TopoDS,
-        GeomLProp,
-        IntCurvesFace,
-    )
-    from OCC.TopoDS import topods
+    try:
+        from OCC import (
+            gp,
+            Geom,
+            Bnd,
+            BRepBndLib,
+            BRep,
+            BRepPrimAPI,
+            BRepAlgoAPI,
+            BRepBuilderAPI,
+            TopOpeBRepTool,
+            TopOpeBRepBuild,
+            ShapeExtend,
+            GProp,
+            BRepGProp,
+            GC,
+            ShapeAnalysis,
+            TopTools,
+            TopExp,
+            TopAbs,
+            HLRAlgo,
+            HLRBRep,
+            TopLoc,
+            Bnd,
+            BRepBndLib,
+            BRepTools,
+            TopoDS,
+            GeomLProp,
+            IntCurvesFace,
+        )
+        from OCC.TopoDS import topods
+    except ImportError:
+        print("[WARNING] BlenderBIM: OCC not found - cut-ifc is disabled")
+
 
 import ifcopenshell
 import ifcopenshell.geom
