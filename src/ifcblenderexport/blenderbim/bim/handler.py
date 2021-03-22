@@ -46,6 +46,17 @@ def subscribe_to(object, data_path, callback):
         },
     )
 
+def purge_module_data():
+    from blenderbim.bim import modules
+
+    for module in modules.values():
+        if not module:
+            continue
+        try:
+            getattr(getattr(module, "data"), "Data").purge()
+        except AttributeError:
+            pass
+
 
 @persistent
 def loadIfcStore(scene):
@@ -58,17 +69,7 @@ def loadIfcStore(scene):
     IfcStore.guid_map = (
         {k: bpy.data.objects.get(v) for k, v in json.loads(props.guid_map).items()} if props.id_map else {}
     )
-
-    # Purge data cache
-    from blenderbim.bim import modules
-
-    for module in modules.values():
-        if not module:
-            continue
-        try:
-            getattr(getattr(module, "data"), "Data").purge()
-        except AttributeError:
-            pass
+    purge_module_data()
 
 
 @persistent
