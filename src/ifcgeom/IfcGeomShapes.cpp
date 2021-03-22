@@ -1338,6 +1338,7 @@ namespace {
 	void sort_edges(const TopoDS_Wire& wire, std::vector<TopoDS_Edge>& sorted_edges) {
 		TopTools_IndexedDataMapOfShapeListOfShape map;
 		TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, map);
+		auto num_edges = IfcGeom::Kernel::count(wire, TopAbs_EDGE);
 
 		TopoDS_Vertex v0, v1;
 		// @todo this creates the ancestor map twice
@@ -1347,7 +1348,9 @@ namespace {
 
 		// @todo this probably still does not work on a closed wire consisting of one (circular) edge.
 		
-		while (!v0.IsSame(v1) || ignore_first_equality_because_closed) {
+		while (sorted_edges.size() < num_edges && 
+			(!v0.IsSame(v1) || ignore_first_equality_because_closed)) 
+		{
 			ignore_first_equality_because_closed = false;
 			if (!map.Contains(v0)) {
 				throw std::runtime_error("Disconnected vertex");
