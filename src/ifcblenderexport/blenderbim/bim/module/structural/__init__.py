@@ -21,6 +21,7 @@ classes = (
     prop.BIMObjectStructuralProperties,
     ui.BIM_PT_structural_analysis_models,
     ui.BIM_PT_structural_boundary_conditions,
+    ui.BIM_PT_connected_structural_members,
     ui.BIM_UL_structural_analysis_models,
 )
 
