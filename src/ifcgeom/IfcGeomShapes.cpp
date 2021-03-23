@@ -1371,11 +1371,11 @@ namespace {
 			for (; it.More(); it.Next()) {
 				const TopoDS_Edge& e = TopoDS::Edge(it.Value());
 				TopExp::Vertices(e, ve0, ve1, true);
-				if (ve0.IsSame(v0) && seen.find(e.TShape().get()) == seen.end()) {
+				if (ve0.IsSame(v0) && seen.find(&*e.TShape()) == seen.end()) {
 					sorted_edges.push_back(e);
 					v0 = ve1;
 					added = true;
-					seen.insert(e.TShape().get());
+					seen.insert(&*e.TShape());
 					break;
 				}
 			}
