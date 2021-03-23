@@ -1338,6 +1338,15 @@ namespace {
 	void sort_edges(const TopoDS_Wire& wire, std::vector<TopoDS_Edge>& sorted_edges) {
 		TopTools_IndexedDataMapOfShapeListOfShape map;
 		TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, map);
+
+		for (int i = 1; i <= map.Extent(); ++i) {
+			if (map.FindFromIndex(i).Extent() > 2) {
+				Logger::Warning("Self-intersecting Directrix");
+			}
+		}
+
+		std::set<TopoDS_TShape*> seen;
+
 		auto num_edges = IfcGeom::Kernel::count(wire, TopAbs_EDGE);
 
 		TopoDS_Vertex v0, v1;
@@ -1362,10 +1371,11 @@ namespace {
 			for (; it.More(); it.Next()) {
 				const TopoDS_Edge& e = TopoDS::Edge(it.Value());
 				TopExp::Vertices(e, ve0, ve1, true);
-				if (ve0.IsSame(v0)) {
+				if (ve0.IsSame(v0) && seen.find(e.TShape().get()) == seen.end()) {
 					sorted_edges.push_back(e);
 					v0 = ve1;
 					added = true;
+					seen.insert(e.TShape().get());
 					break;
 				}
 			}
