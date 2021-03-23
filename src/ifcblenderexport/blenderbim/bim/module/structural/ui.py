@@ -3,9 +3,9 @@ from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.structural.data import Data
 
 
-class BIM_PT_structural_connections(Panel):
-    bl_label = "IFC Structural Connections"
-    bl_idname = "BIM_PT_structural_connections"
+class BIM_PT_structural_boundary_conditions(Panel):
+    bl_label = "IFC Structural Boundary Conditions"
+    bl_idname = "BIM_PT_structural_boundary_conditions"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -25,25 +25,25 @@ class BIM_PT_structural_connections(Panel):
     def draw(self, context):
         self.oprops = context.active_object.BIMObjectProperties
         self.props = context.active_object.BIMStructuralProperties
-        if self.oprops.ifc_definition_id not in Data.connections:
+        if self.oprops.ifc_definition_id not in Data.boundary_conditions:
             Data.load(self.oprops.ifc_definition_id)
 
-        self.data = Data.connections[self.oprops.ifc_definition_id]
+        self.data = Data.boundary_conditions[self.oprops.ifc_definition_id]
 
         row = self.layout.row(align=True)
-        if self.data and self.props.is_editing_connection:
+        if self.data and self.props.is_editing_boundary_condition:
             row.label(text=self.data["type"], icon="CON_TRACKTO")
             row.operator("bim.edit_structural_boundary_condition", text="", icon="CHECKMARK")
             row.operator("bim.disable_editing_structural_boundary_condition", text="", icon="X")
-        elif self.data and not self.props.is_editing_connection:
+        elif self.data and not self.props.is_editing_boundary_condition:
             row.label(text=self.data["type"], icon="CON_TRACKTO")
             row.operator("bim.enable_editing_structural_boundary_condition", text="", icon="GREASEPENCIL")
             row.operator("bim.remove_structural_boundary_condition", text="", icon="X")
         else:
-            row.label(text="No Connection Found", icon="CON_TRACKTO")
+            row.label(text="No Boundary Condition Found", icon="CON_TRACKTO")
             row.operator("bim.add_structural_boundary_condition", text="", icon="ADD")
 
-        if self.props.is_editing_connection:
+        if self.props.is_editing_boundary_condition:
             self.draw_editable_ui(context)
         else:
             self.draw_read_only_ui(context)
@@ -75,9 +75,9 @@ class BIM_PT_structural_connections(Panel):
                 row.label(text=str(value))
 
 
-class BIM_PT_structural(Panel):
+class BIM_PT_structural_analysis_models(Panel):
     bl_label = "IFC Structural Analysis Models"
-    bl_idname = "BIM_PT_structural"
+    bl_idname = "BIM_PT_structural_analysis_models"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"

@@ -4,7 +4,7 @@ from blenderbim.bim.module.owner.api import update_owner_history
 
 
 class Usecase:
-    def __init__(self, file, settings=None):
+    def __init__(self, file, settings={}):
         self.file = file
         self.settings = {
             "product": None,

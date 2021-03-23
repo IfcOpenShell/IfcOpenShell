@@ -4,19 +4,20 @@ from blenderbim.bim.ifc import IfcStore
 class Data:
     is_loaded = False
     products = {}
+    boundary_conditions = {}
     structural_analysis_models = {}
 
     @classmethod
     def purge(cls):
         cls.is_loaded = False
         cls.products = {}
-        cls.connections = {}
+        cls.boundary_conditions = {}
         cls.structural_analysis_models = {}
 
     @classmethod
     def load(cls, product_id=None):
         if product_id:
-            cls.connections = {}
+            cls.boundary_conditions = {}
             return cls.load_structural_connection(product_id)
         cls.products = {}
         cls.structural_analysis_models = {}
@@ -57,4 +58,4 @@ class Data:
                 data[key] = value.wrappedValue
         else:
             data = {}
-        cls.connections[connection.id()] = data
+        cls.boundary_conditions[connection.id()] = data

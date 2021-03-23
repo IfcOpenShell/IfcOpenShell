@@ -19,8 +19,8 @@ classes = (
     prop.StructuralAnalysisModel,
     prop.BIMStructuralProperties,
     prop.BIMObjectStructuralProperties,
-    ui.BIM_PT_structural,
-    ui.BIM_PT_structural_connections,
+    ui.BIM_PT_structural_analysis_models,
+    ui.BIM_PT_structural_boundary_conditions,
     ui.BIM_UL_structural_analysis_models,
 )
 

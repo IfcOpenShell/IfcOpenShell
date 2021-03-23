@@ -46,15 +46,15 @@ class EnableEditingStructuralBoundaryCondition(bpy.types.Operator):
         obj = context.active_object
         oprops = obj.BIMObjectProperties
         props = obj.BIMStructuralProperties
-        while len(props.connection_attributes) > 0:
-            props.connection_attributes.remove(0)
+        while len(props.boundary_condition_attributes) > 0:
+            props.boundary_condition_attributes.remove(0)
 
-        data = Data.connections[oprops.ifc_definition_id]
+        data = Data.boundary_conditions[oprops.ifc_definition_id]
 
         for attribute in IfcStore.get_schema().declaration_by_name(data["type"]).all_attributes():
             value = data[attribute.name()]
             data_type = str(attribute.type_of_attribute)
-            new = props.connection_attributes.add()
+            new = props.boundary_condition_attributes.add()
             new.name = attribute.name()
             new.is_null = value is None
             new.is_optional = attribute.optional()
@@ -73,7 +73,7 @@ class EnableEditingStructuralBoundaryCondition(bpy.types.Operator):
                 new.string_value = "" if new.is_null else data[attribute.name()]
                 new.data_type = "string"
 
-        props.is_editing_connection = True
+        props.is_editing_boundary_condition = True
         return {"FINISHED"}
 
 
@@ -91,7 +91,7 @@ class EditStructuralBoundaryCondition(bpy.types.Operator):
         condition = connection.AppliedCondition
 
         attributes = {}
-        for attribute in props.connection_attributes:
+        for attribute in props.boundary_condition_attributes:
             if attribute.is_null:
                 attributes[attribute.name] = {"value": None, "type": "null"}
             elif attribute.data_type == "string":
@@ -112,7 +112,7 @@ class DisableEditingStructuralBoundaryCondition(bpy.types.Operator):
     bl_label = "Disable Editing Structural Boundary Condition"
 
     def execute(self, context):
-        context.active_object.BIMStructuralProperties.is_editing_connection = False
+        context.active_object.BIMStructuralProperties.is_editing_boundary_condition = False
         return {"FINISHED"}
 
 
