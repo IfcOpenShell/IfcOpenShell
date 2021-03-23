@@ -75,6 +75,56 @@ class BIM_PT_structural_boundary_conditions(Panel):
                 row.label(text=str(value))
 
 
+class BIM_PT_connected_structural_members(Panel):
+    bl_label = "IFC Connected Structural Members"
+    bl_idname = "BIM_PT_connected_structural_members"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            return False
+        props = context.active_object.BIMObjectProperties
+        if not props.ifc_definition_id:
+            return False
+        if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcStructuralConnection"):
+            return False
+        return True
+
+    def draw(self, context):
+        self.oprops = context.active_object.BIMObjectProperties
+        self.props = context.active_object.BIMStructuralProperties
+        if self.oprops.ifc_definition_id not in Data.connected_structural_members:
+            Data.load(self.oprops.ifc_definition_id)
+
+        self.data = Data.connected_structural_members[self.oprops.ifc_definition_id]
+
+        for member in self.data:
+            row = self.layout.row(align=True)
+            row.label(text=str(member))
+
+        # row = self.layout.row(align=True)
+        # if self.data and self.props.is_editing_boundary_condition:
+        #     row.label(text=self.data["type"], icon="CON_TRACKTO")
+        #     row.operator("bim.edit_structural_boundary_condition", text="", icon="CHECKMARK")
+        #     row.operator("bim.disable_editing_structural_boundary_condition", text="", icon="X")
+        # elif self.data and not self.props.is_editing_boundary_condition:
+        #     row.label(text=self.data["type"], icon="CON_TRACKTO")
+        #     row.operator("bim.enable_editing_structural_boundary_condition", text="", icon="GREASEPENCIL")
+        #     row.operator("bim.remove_structural_boundary_condition", text="", icon="X")
+        # else:
+        #     row.label(text="No Boundary Condition Found", icon="CON_TRACKTO")
+        #     row.operator("bim.add_structural_boundary_condition", text="", icon="ADD")
+
+        # if self.props.is_editing_boundary_condition:
+        #     self.draw_editable_ui(context)
+        # else:
+        #     self.draw_read_only_ui(context)
+
+
 class BIM_PT_structural_analysis_models(Panel):
     bl_label = "IFC Structural Analysis Models"
     bl_idname = "BIM_PT_structural_analysis_models"

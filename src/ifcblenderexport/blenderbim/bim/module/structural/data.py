@@ -12,6 +12,7 @@ class Data:
         cls.is_loaded = False
         cls.products = {}
         cls.boundary_conditions = {}
+        cls.connected_structural_members = {}
         cls.structural_analysis_models = {}
 
     @classmethod
@@ -59,3 +60,9 @@ class Data:
         else:
             data = {}
         cls.boundary_conditions[connection.id()] = data
+
+        cls.connected_structural_members[connection.id()] = [
+            rel.RelatingStructuralMember.id()
+            for rel in connection.ConnectsStructuralMembers or []
+        ]
+
