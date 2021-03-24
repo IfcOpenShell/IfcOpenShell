@@ -1,6 +1,6 @@
 import bpy
 from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.module.spatial.data import Data
+from ifcopenshell.api.spatial.data import Data
 from blenderbim.bim.ifc import IfcStore
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -16,7 +16,7 @@ from bpy.props import (
 
 
 def getSpatialContainers(self, context, parent_id=None):
-    Data.load()
+    Data.load(IfcStore.get_file())
     self.file = IfcStore.get_file()
     props = context.scene.BIMSpatialProperties
     while len(props.spatial_elements) > 0:

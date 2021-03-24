@@ -1,6 +1,6 @@
 import bpy
 from blenderbim.bim.prop import Attribute
-from blenderbim.bim.module.pset.data import Data
+from ifcopenshell.api.pset.data import Data
 import blenderbim.bim.schema
 from bpy.types import PropertyGroup
 from bpy.props import (

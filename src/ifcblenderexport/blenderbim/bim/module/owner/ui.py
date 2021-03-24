@@ -1,6 +1,6 @@
 import bpy
 from bpy.types import Panel
-from blenderbim.bim.module.owner.data import Data
+from ifcopenshell.api.owner.data import Data
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -106,7 +106,7 @@ class BIM_PT_people(Panel):
 
     def draw(self, context):
         if not Data.is_loaded:
-            Data.load()
+            Data.load(IfcStore.get_file())
 
         self.file = IfcStore.get_file()
         self.layout.use_property_split = True
@@ -166,7 +166,7 @@ class BIM_PT_organisations(Panel):
 
     def draw(self, context):
         if not Data.is_loaded:
-            Data.load()
+            Data.load(IfcStore.get_file())
 
         self.file = IfcStore.get_file()
         self.layout.use_property_split = True
@@ -215,7 +215,7 @@ class BIM_PT_owner(Panel):
 
     def draw(self, context):
         if not Data.is_loaded:
-            Data.load()
+            Data.load(IfcStore.get_file())
 
         self.layout.use_property_split = True
         self.layout.use_property_decorate = False

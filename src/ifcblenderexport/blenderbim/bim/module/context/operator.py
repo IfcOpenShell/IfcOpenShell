@@ -1,8 +1,8 @@
 import bpy
-import blenderbim.bim.module.context.add_context as add_context
-import blenderbim.bim.module.context.remove_context as remove_context
+import ifcopenshell.api.context.add_context as add_context
+import ifcopenshell.api.context.remove_context as remove_context
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.context.data import Data
+from ifcopenshell.api.context.data import Data
 
 
 class AddSubcontext(bpy.types.Operator):
@@ -22,7 +22,7 @@ class AddSubcontext(bpy.types.Operator):
                 "target_view": self.target_view or bpy.context.scene.BIMProperties.available_target_views,
             },
         ).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
@@ -35,5 +35,5 @@ class RemoveSubcontext(bpy.types.Operator):
         self.file = IfcStore.get_file()
         usecase = remove_context.Usecase(self.file, {"context": self.file.by_id(self.ifc_definition_id)})
         usecase.execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}

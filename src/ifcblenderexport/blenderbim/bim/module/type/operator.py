@@ -1,11 +1,11 @@
 import bpy
 import ifcopenshell.util.schema
 import ifcopenshell.util.type
-import blenderbim.bim.module.type.assign_type as assign_type
-import blenderbim.bim.module.type.unassign_type as unassign_type
-import blenderbim.bim.module.type.get_related_objects as get_related_objects
+import ifcopenshell.api.type.assign_type as assign_type
+import ifcopenshell.api.type.unassign_type as unassign_type
+import ifcopenshell.api.type.get_related_objects as get_related_objects
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.type.data import Data
+from ifcopenshell.api.type.data import Data
 from blenderbim.bim.module.type.prop import getIfcTypes, getAvailableTypes, updateTypeInstanceIfcClass
 from mathutils import Vector
 
@@ -31,7 +31,7 @@ class AssignType(bpy.types.Operator):
                     "relating_type": self.file.by_id(relating_type),
                 },
             ).execute()
-            Data.load(oprops.ifc_definition_id)
+            Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
             if self.file.by_id(relating_type).RepresentationMaps:
                 bpy.ops.bim.map_representations(product_id=oprops.ifc_definition_id, type_product_id=relating_type)
 
@@ -57,7 +57,7 @@ class UnassignType(bpy.types.Operator):
                     "related_object": self.file.by_id(oprops.ifc_definition_id),
                 },
             ).execute()
-            Data.load(oprops.ifc_definition_id)
+            Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         return {"FINISHED"}
 
 

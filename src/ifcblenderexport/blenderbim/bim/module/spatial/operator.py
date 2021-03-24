@@ -1,8 +1,8 @@
 import bpy
-import blenderbim.bim.module.spatial.assign_container as assign_container
-import blenderbim.bim.module.spatial.remove_container as remove_container
+import ifcopenshell.api.spatial.assign_container as assign_container
+import ifcopenshell.api.spatial.remove_container as remove_container
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.spatial.data import Data
+from ifcopenshell.api.spatial.data import Data
 from blenderbim.bim.module.spatial.prop import getSpatialContainers
 
 
@@ -32,7 +32,7 @@ class AssignContainer(bpy.types.Operator):
             },
         ).execute()
         bpy.ops.bim.edit_object_placement(obj=related_element.name)
-        Data.load(oprops.ifc_definition_id)
+        Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         bpy.ops.bim.disable_editing_container(obj=related_element.name)
 
         aggregate_collection = bpy.data.collections.get(related_element.name)
@@ -101,7 +101,7 @@ class RemoveContainer(bpy.types.Operator):
         oprops = obj.BIMObjectProperties
         self.file = IfcStore.get_file()
         remove_container.Usecase(self.file, {"product": self.file.by_id(oprops.ifc_definition_id)}).execute()
-        Data.load(oprops.ifc_definition_id)
+        Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
 
         aggregate_collection = bpy.data.collections.get(obj.name)
         if aggregate_collection:

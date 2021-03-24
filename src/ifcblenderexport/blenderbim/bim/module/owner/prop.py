@@ -1,6 +1,6 @@
 import bpy
 from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.module.owner.data import Data
+from ifcopenshell.api.owner.data import Data
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -16,7 +16,7 @@ from bpy.props import (
 
 def getPersons(self, context):
     if not Data.is_loaded:
-        Data.load()
+        Data.load(IfcStore.get_file())
     results = []
     for ifc_id, person in Data.people.items():
         if "Id" in person:
@@ -29,7 +29,7 @@ def getPersons(self, context):
 
 def getOrganisations(self, context):
     if not Data.is_loaded:
-        Data.load()
+        Data.load(IfcStore.get_file())
     results = []
     for ifc_id, organisation in Data.organisations.items():
         results.append((str(ifc_id), organisation["Name"], ""))

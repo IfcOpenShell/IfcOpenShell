@@ -3,11 +3,11 @@ import numpy as np
 import ifcopenshell
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
-import blenderbim.bim.module.root.create_product as create_product
-import blenderbim.bim.module.root.remove_product as remove_product
-import blenderbim.bim.module.root.reassign_class as reassign_class
-import blenderbim.bim.module.root.copy_class as copy_class
-from blenderbim.bim.module.geometry.data import Data as GeometryData
+import ifcopenshell.api.root.create_product as create_product
+import ifcopenshell.api.root.remove_product as remove_product
+import ifcopenshell.api.root.reassign_class as reassign_class
+import ifcopenshell.api.root.copy_class as copy_class
+from ifcopenshell.api.geometry.data import Data as GeometryData
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -184,20 +184,13 @@ class UnassignClass(bpy.types.Operator):
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            self.remove_representations(obj, product)
             IfcStore.unlink_element(product, obj)
             remove_product.Usecase(self.file, {"product": product}).execute()
-            # TODO: remove object placement
             if "/" in obj.name and obj.name[0:3] == "Ifc":
                 obj.name = "/".join(obj.name.split("/")[1:])
             if obj.data and obj.data.name == "Void":
                 bpy.data.objects.remove(obj)
         return {"FINISHED"}
-
-    def remove_representations(self, obj, product):
-        GeometryData.load(product.id())
-        for representation_id in GeometryData.products[product.id()]:
-            bpy.ops.bim.remove_representation(obj=obj.name, representation_id=representation_id)
 
 
 class UnlinkObject(bpy.types.Operator):

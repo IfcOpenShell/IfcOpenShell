@@ -1,6 +1,6 @@
 import bpy
 from bpy.types import Panel
-from blenderbim.bim.module.void.data import Data
+from ifcopenshell.api.void.data import Data
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -19,7 +19,7 @@ class BIM_PT_voids(Panel):
     def draw(self, context):
         props = context.active_object.BIMObjectProperties
         if props.ifc_definition_id not in Data.products:
-            Data.load(props.ifc_definition_id)
+            Data.load(IfcStore.get_file(), props.ifc_definition_id)
 
         row = self.layout.row(align=True)
         if len(context.selected_objects) == 2:

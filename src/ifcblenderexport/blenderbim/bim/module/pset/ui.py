@@ -1,5 +1,5 @@
 from bpy.types import Panel
-from blenderbim.bim.module.pset.data import Data
+from ifcopenshell.api.pset.data import Data
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -100,7 +100,7 @@ class BIM_PT_object_psets(Panel):
         if not props.ifc_definition_id:
             return False
         if props.ifc_definition_id not in Data.products:
-            Data.load(props.ifc_definition_id)
+            Data.load(IfcStore.get_file(), props.ifc_definition_id)
         if not Data.products[props.ifc_definition_id]:
             return False
         return True
@@ -111,7 +111,7 @@ class BIM_PT_object_psets(Panel):
         if not oprops.ifc_definition_id:
             return
         if oprops.ifc_definition_id not in Data.products:
-            Data.load(oprops.ifc_definition_id)
+            Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         row = self.layout.row(align=True)
         row.prop(props, "pset_name", text="")
         op = row.operator("bim.add_pset", icon="ADD", text="")
@@ -143,7 +143,7 @@ class BIM_PT_object_qtos(Panel):
         if not props.ifc_definition_id:
             return False
         if props.ifc_definition_id not in Data.products:
-            Data.load(props.ifc_definition_id)
+            Data.load(IfcStore.get_file(), props.ifc_definition_id)
         if not Data.products[props.ifc_definition_id]:
             return False
         return True
@@ -154,7 +154,7 @@ class BIM_PT_object_qtos(Panel):
         if not oprops.ifc_definition_id:
             return
         if oprops.ifc_definition_id not in Data.products:
-            Data.load(oprops.ifc_definition_id)
+            Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         row = self.layout.row(align=True)
         row.prop(props, "qto_name", text="")
         row.operator("bim.add_qto", icon="ADD", text="")
@@ -183,7 +183,7 @@ class BIM_PT_material_psets(Panel):
         if IfcStore.get_file().schema == "IFC2X3":
             return False  # We don't support material psets in IFC2X3 because they suck
         if props.ifc_definition_id not in Data.products:
-            Data.load(props.ifc_definition_id)
+            Data.load(IfcStore.get_file(), props.ifc_definition_id)
         if not Data.products[props.ifc_definition_id]:
             return False
         return True
@@ -194,7 +194,7 @@ class BIM_PT_material_psets(Panel):
         if not oprops.ifc_definition_id:
             return
         if oprops.ifc_definition_id not in Data.products:
-            Data.load(oprops.ifc_definition_id)
+            Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         row = self.layout.row(align=True)
         row.prop(props, "material_pset_name", text="")
         op = row.operator("bim.add_pset", icon="ADD", text="")

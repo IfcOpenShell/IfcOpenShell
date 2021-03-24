@@ -1,6 +1,6 @@
 import bpy
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.sequence.data import Data
+from ifcopenshell.api.sequence.data import Data
 
 
 class LoadTasks(bpy.types.Operator):

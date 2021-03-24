@@ -1,13 +1,13 @@
 import bpy
 import json
-import blenderbim.bim.module.classification.add_classification as add_classification
-import blenderbim.bim.module.classification.remove_classification as remove_classification
-import blenderbim.bim.module.classification.edit_classification as edit_classification
-import blenderbim.bim.module.classification.add_reference as add_reference
-import blenderbim.bim.module.classification.remove_reference as remove_reference
-import blenderbim.bim.module.classification.edit_reference as edit_reference
+import ifcopenshell.api.classification.add_classification as add_classification
+import ifcopenshell.api.classification.remove_classification as remove_classification
+import ifcopenshell.api.classification.edit_classification as edit_classification
+import ifcopenshell.api.classification.add_reference as add_reference
+import ifcopenshell.api.classification.remove_reference as remove_reference
+import ifcopenshell.api.classification.edit_reference as edit_reference
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.classification.data import Data
+from ifcopenshell.api.classification.data import Data
 from blenderbim.bim.module.classification.prop import getClassifications, getReferences
 
 
@@ -37,7 +37,7 @@ class AddClassification(bpy.types.Operator):
         add_classification.Usecase(
             IfcStore.get_file(), {"classification": Data.library_file.by_id(int(props.available_classifications))}
         ).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
@@ -81,7 +81,7 @@ class RemoveClassification(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         remove_classification.Usecase(self.file, {"classification": self.file.by_id(self.classification)}).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
@@ -103,7 +103,7 @@ class EditClassification(bpy.types.Operator):
         edit_classification.Usecase(
             self.file, {"classification": self.file.by_id(props.active_classification_id), "attributes": attributes}
         ).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_classification()
         return {"FINISHED"}
 
@@ -159,8 +159,8 @@ class RemoveClassificationReference(bpy.types.Operator):
                 "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
             },
         ).execute()
-        Data.load(obj.BIMObjectProperties.ifc_definition_id)
-        Data.load()
+        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
@@ -182,7 +182,7 @@ class EditClassificationReference(bpy.types.Operator):
         edit_reference.Usecase(
             self.file, {"reference": self.file.by_id(props.active_reference_id), "attributes": attributes}
         ).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_classification_reference()
         return {"FINISHED"}
 
@@ -214,8 +214,8 @@ class AddClassificationReference(bpy.types.Operator):
                 "classification": classification
             },
         ).execute()
-        Data.load(obj.BIMObjectProperties.ifc_definition_id)
-        Data.load()
+        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 

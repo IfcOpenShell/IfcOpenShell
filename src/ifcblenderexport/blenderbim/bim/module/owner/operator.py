@@ -1,19 +1,19 @@
 import bpy
 import json
-import blenderbim.bim.module.owner.add_person as add_person
-import blenderbim.bim.module.owner.edit_person as edit_person
-import blenderbim.bim.module.owner.remove_person as remove_person
-import blenderbim.bim.module.owner.add_organisation as add_organisation
-import blenderbim.bim.module.owner.edit_organisation as edit_organisation
-import blenderbim.bim.module.owner.remove_organisation as remove_organisation
-import blenderbim.bim.module.owner.add_role as add_role
-import blenderbim.bim.module.owner.edit_role as edit_role
-import blenderbim.bim.module.owner.remove_role as remove_role
-import blenderbim.bim.module.owner.add_address as add_address
-import blenderbim.bim.module.owner.edit_address as edit_address
-import blenderbim.bim.module.owner.remove_address as remove_address
+import ifcopenshell.api.owner.add_person as add_person
+import ifcopenshell.api.owner.edit_person as edit_person
+import ifcopenshell.api.owner.remove_person as remove_person
+import ifcopenshell.api.owner.add_organisation as add_organisation
+import ifcopenshell.api.owner.edit_organisation as edit_organisation
+import ifcopenshell.api.owner.remove_organisation as remove_organisation
+import ifcopenshell.api.owner.add_role as add_role
+import ifcopenshell.api.owner.edit_role as edit_role
+import ifcopenshell.api.owner.remove_role as remove_role
+import ifcopenshell.api.owner.add_address as add_address
+import ifcopenshell.api.owner.edit_address as edit_address
+import ifcopenshell.api.owner.remove_address as remove_address
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.owner.data import Data
+from ifcopenshell.api.owner.data import Data
 
 
 class EnableEditingPerson(bpy.types.Operator):
@@ -51,7 +51,7 @@ class AddPerson(bpy.types.Operator):
 
     def execute(self, context):
         add_person.Usecase(IfcStore.get_file()).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
@@ -76,7 +76,7 @@ class EditPerson(bpy.types.Operator):
         edit_person.Usecase(
             self.file, {"person": self.file.by_id(props.active_person_id), "attributes": attributes}
         ).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_person()
         return {"FINISHED"}
 
@@ -89,7 +89,7 @@ class RemovePerson(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         remove_person.Usecase(self.file, {"person": self.file.by_id(self.person_id)}).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
@@ -126,7 +126,7 @@ class AddRole(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         add_role.Usecase(self.file, {"assigned_object": self.file.by_id(self.assigned_object_id)}).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
@@ -145,7 +145,7 @@ class EditRole(bpy.types.Operator):
         edit_role.Usecase(
             self.file, {"role": self.file.by_id(props.active_role_id), "attributes": attributes}
         ).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_role()
         return {"FINISHED"}
 
@@ -158,7 +158,7 @@ class RemoveRole(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         remove_role.Usecase(self.file, {"role": self.file.by_id(self.role_id)}).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
@@ -173,7 +173,7 @@ class AddAddress(bpy.types.Operator):
         add_address.Usecase(
             self.file, {"assigned_object": self.file.by_id(self.assigned_object_id), "ifc_class": self.ifc_class}
         ).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
@@ -267,7 +267,7 @@ class EditAddress(bpy.types.Operator):
                 "Country": props.address.country or None,
             })
         edit_address.Usecase(self.file, {"address": address, "attributes": attributes}).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_address()
         return {"FINISHED"}
 
@@ -280,7 +280,7 @@ class RemoveAddress(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         remove_address.Usecase(self.file, {"address": self.file.by_id(self.address_id)}).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
@@ -316,7 +316,7 @@ class AddOrganisation(bpy.types.Operator):
 
     def execute(self, context):
         add_organisation.Usecase(IfcStore.get_file()).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
@@ -338,7 +338,7 @@ class EditOrganisation(bpy.types.Operator):
         edit_organisation.Usecase(
             self.file, {"organisation": self.file.by_id(props.active_organisation_id), "attributes": attributes}
         ).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_organisation()
         return {"FINISHED"}
 
@@ -351,5 +351,5 @@ class RemoveOrganisation(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         remove_organisation.Usecase(self.file, {"organisation": self.file.by_id(self.organisation_id)}).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}

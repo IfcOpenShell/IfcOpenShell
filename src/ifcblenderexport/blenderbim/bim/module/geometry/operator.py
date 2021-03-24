@@ -4,19 +4,19 @@ import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import logging
-import blenderbim.bim.module.geometry.edit_object_placement as edit_object_placement
-import blenderbim.bim.module.geometry.add_representation as add_representation
-import blenderbim.bim.module.geometry.map_representation as map_representation
-import blenderbim.bim.module.geometry.assign_styles as assign_styles
-import blenderbim.bim.module.geometry.assign_representation as assign_representation
-import blenderbim.bim.module.geometry.unassign_representation as unassign_representation
-import blenderbim.bim.module.geometry.remove_representation as remove_representation
-import blenderbim.bim.module.grid.create_axis_curve as create_axis_curve
+import ifcopenshell.api.geometry.edit_object_placement as edit_object_placement
+import ifcopenshell.api.geometry.add_representation as add_representation
+import ifcopenshell.api.geometry.map_representation as map_representation
+import ifcopenshell.api.geometry.assign_styles as assign_styles
+import ifcopenshell.api.geometry.assign_representation as assign_representation
+import ifcopenshell.api.geometry.unassign_representation as unassign_representation
+import ifcopenshell.api.geometry.remove_representation as remove_representation
+import ifcopenshell.api.grid.create_axis_curve as create_axis_curve
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim import import_ifc
-from blenderbim.bim.module.geometry.data import Data
-from blenderbim.bim.module.context.data import Data as ContextData
-from blenderbim.bim.module.void.data import Data as VoidData
+from ifcopenshell.api.geometry.data import Data
+from ifcopenshell.api.context.data import Data as ContextData
+from ifcopenshell.api.void.data import Data as VoidData
 from mathutils import Vector
 
 
@@ -139,7 +139,7 @@ class AddRepresentation(bpy.types.Operator):
             mesh.name = "{}/{}".format(context_id, result.id())
             mesh.BIMMeshProperties.ifc_definition_id = int(result.id())
             obj.data = mesh
-        Data.load(obj.BIMObjectProperties.ifc_definition_id)
+        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
 
@@ -190,7 +190,7 @@ class SwitchRepresentation(bpy.types.Operator):
 
         if self.disable_opening_subtractions and self.context_of_items.ContextIdentifier == "Body":
             if self.oprops.ifc_definition_id not in VoidData.products:
-                VoidData.load(self.oprops.ifc_definition_id)
+                VoidData.load(IfcStore.get_file(), self.oprops.ifc_definition_id)
             for opening_id in VoidData.products[self.oprops.ifc_definition_id]:
                 if opening_id in IfcStore.id_map:
                     opening = IfcStore.id_map[opening_id]
@@ -213,7 +213,6 @@ class RemoveRepresentation(bpy.types.Operator):
         self.file = IfcStore.get_file()
         representation = self.file.by_id(self.representation_id)
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
-        product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         is_mapped_representation = representation.RepresentationType == "MappedRepresentation"
         if is_mapped_representation:
             mesh_name = "{}/{}".format(
@@ -234,7 +233,7 @@ class RemoveRepresentation(bpy.types.Operator):
         product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         unassign_representation.Usecase(self.file, {"product": product, "representation": representation}).execute()
         remove_representation.Usecase(self.file, {"representation": representation}).execute()
-        Data.load(product.id())
+        Data.load(IfcStore.get_file(), product.id())
         return {"FINISHED"}
 
 
@@ -248,13 +247,13 @@ class MapRepresentations(bpy.types.Operator):
         related_object = IfcStore.id_map[self.product_id]
 
         if self.product_id not in Data.products:
-            Data.load(self.product_id)
+            Data.load(IfcStore.get_file(), self.product_id)
 
         for representation_id in Data.products[self.product_id]:
             bpy.ops.bim.remove_representation(obj=related_object.name, representation_id=representation_id)
 
         if self.type_product_id not in Data.products:
-            Data.load(self.type_product_id)
+            Data.load(IfcStore.get_file(), self.type_product_id)
 
         for representation_id in Data.products[self.type_product_id]:
             bpy.ops.bim.map_representation(
@@ -287,7 +286,7 @@ class MapRepresentation(bpy.types.Operator):
                 self.file, {"representation": self.file.by_id(self.representation_id)}
             ).execute()
             assign_representation.Usecase(self.file, {"product": product, "representation": result}).execute()
-            Data.load(obj.BIMObjectProperties.ifc_definition_id)
+            Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
 
@@ -299,7 +298,7 @@ class UpdateMeshRepresentation(bpy.types.Operator):
 
     def execute(self, context):
         if not ContextData.is_loaded:
-            ContextData.load()
+            ContextData.load(IfcStore.get_file())
 
         objs = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
         self.file = IfcStore.get_file()
@@ -396,7 +395,7 @@ class UpdateMeshRepresentation(bpy.types.Operator):
         obj.data.BIMMeshProperties.ifc_definition_id = int(new_representation.id())
         obj.data.name = f"{old_representation.ContextOfItems.id()}/{new_representation.id()}"
         bpy.ops.bim.remove_representation(representation_id=old_representation.id())
-        Data.load(obj.BIMObjectProperties.ifc_definition_id)
+        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
 
 
 class UpdateParametricRepresentation(bpy.types.Operator):

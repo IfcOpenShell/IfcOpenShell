@@ -1,6 +1,6 @@
 from bpy.types import Panel, UIList, Mesh
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.layer.data import Data
+from ifcopenshell.api.layer.data import Data
 
 
 class BIM_PT_layers(Panel):
@@ -17,7 +17,7 @@ class BIM_PT_layers(Panel):
 
     def draw(self, context):
         if not Data.is_loaded:
-            Data.load()
+            Data.load(IfcStore.get_file())
 
         self.props = context.scene.BIMLayerProperties
 

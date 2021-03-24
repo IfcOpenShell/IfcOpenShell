@@ -3,11 +3,11 @@ import json
 import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.attribute
-import blenderbim.bim.module.georeference.add_georeferencing as add_georeferencing
-import blenderbim.bim.module.georeference.edit_georeferencing as edit_georeferencing
-import blenderbim.bim.module.georeference.remove_georeferencing as remove_georeferencing
+import ifcopenshell.api.georeference.add_georeferencing as add_georeferencing
+import ifcopenshell.api.georeference.edit_georeferencing as edit_georeferencing
+import ifcopenshell.api.georeference.remove_georeferencing as remove_georeferencing
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.georeference.data import Data
+from ifcopenshell.api.georeference.data import Data
 from math import radians, degrees, atan, tan, cos, sin
 
 
@@ -134,7 +134,7 @@ class EditGeoreferencing(bpy.types.Operator):
         edit_georeferencing.Usecase(
             self.file, {"map_conversion": map_conversion, "projected_crs": projected_crs, "map_unit": map_unit}
         ).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_georeferencing()
         return {"FINISHED"}
 
@@ -170,7 +170,7 @@ class RemoveGeoreferencing(bpy.types.Operator):
 
     def execute(self, context):
         remove_georeferencing.Usecase(IfcStore.get_file()).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
@@ -180,7 +180,7 @@ class AddGeoreferencing(bpy.types.Operator):
 
     def execute(self, context):
         add_georeferencing.Usecase(IfcStore.get_file()).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
@@ -190,7 +190,7 @@ class ConvertLocalToGlobal(bpy.types.Operator):
 
     def execute(self, context):
         if not Data.is_loaded:
-            Data.load()
+            Data.load(IfcStore.get_file())
         props = context.scene.BIMGeoreferenceProperties
         x, y, z = [float(co) for co in props.coordinate_input.split(",")]
 
@@ -240,7 +240,7 @@ class ConvertGlobalToLocal(bpy.types.Operator):
 
     def execute(self, context):
         if not Data.is_loaded:
-            Data.load()
+            Data.load(IfcStore.get_file())
         props = context.scene.BIMGeoreferenceProperties
         x, y, z = [float(co) for co in props.coordinate_input.split(",")]
 

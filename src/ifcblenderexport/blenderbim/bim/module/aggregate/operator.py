@@ -1,7 +1,7 @@
 import bpy
-import blenderbim.bim.module.aggregate.assign_object as assign_object
+import ifcopenshell.api.aggregate.assign_object as assign_object
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.aggregate.data import Data
+from ifcopenshell.api.aggregate.data import Data
 
 
 class AssignObject(bpy.types.Operator):
@@ -26,7 +26,7 @@ class AssignObject(bpy.types.Operator):
             },
         ).execute()
         bpy.ops.bim.edit_object_placement(obj=related_object.name)
-        Data.load(props.ifc_definition_id)
+        Data.load(IfcStore.get_file(), props.ifc_definition_id)
         bpy.ops.bim.disable_editing_aggregate(obj=related_object.name)
 
         spatial_collection = bpy.data.collections.get(related_object.name)

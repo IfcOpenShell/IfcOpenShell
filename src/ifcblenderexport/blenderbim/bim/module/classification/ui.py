@@ -1,6 +1,6 @@
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.classification.data import Data
+from ifcopenshell.api.classification.data import Data
 
 
 class BIM_PT_classifications(Panel):
@@ -17,7 +17,7 @@ class BIM_PT_classifications(Panel):
 
     def draw(self, context):
         if not Data.is_loaded:
-            Data.load()
+            Data.load(IfcStore.get_file())
 
         self.props = context.scene.BIMClassificationProperties
 
@@ -79,9 +79,9 @@ class BIM_PT_classification_references(Panel):
         self.props = obj.BIMClassificationReferenceProperties
         self.file = IfcStore.get_file()
         if not Data.is_loaded:
-            Data.load()
+            Data.load(IfcStore.get_file())
         if self.oprops.ifc_definition_id not in Data.products:
-            Data.load(self.oprops.ifc_definition_id)
+            Data.load(IfcStore.get_file(), self.oprops.ifc_definition_id)
 
         self.draw_add_ui()
 

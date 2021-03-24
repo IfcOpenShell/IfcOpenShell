@@ -1,5 +1,6 @@
 from bpy.types import Panel
-from blenderbim.bim.module.type.data import Data
+from blenderbim.bim.ifc import IfcStore
+from ifcopenshell.api.type.data import Data
 
 
 class BIM_PT_type(Panel):
@@ -15,7 +16,7 @@ class BIM_PT_type(Panel):
         if not props.ifc_definition_id:
             return False
         if props.ifc_definition_id not in Data.products:
-            Data.load(props.ifc_definition_id)
+            Data.load(IfcStore.get_file(), props.ifc_definition_id)
         if not Data.products[props.ifc_definition_id]:
             return False
         return True
@@ -27,7 +28,7 @@ class BIM_PT_type(Panel):
         if not oprops.ifc_definition_id:
             return
         if oprops.ifc_definition_id not in Data.products:
-            Data.load(oprops.ifc_definition_id)
+            Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
 
         if props.is_editing_type:
             row = self.layout.row(align=True)

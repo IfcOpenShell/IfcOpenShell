@@ -1,5 +1,6 @@
 from bpy.types import Panel
-from blenderbim.bim.module.attribute.data import Data
+from blenderbim.bim.ifc import IfcStore
+from ifcopenshell.api.attribute.data import Data
 
 
 def draw_ui(context, layout, obj_type):
@@ -7,7 +8,7 @@ def draw_ui(context, layout, obj_type):
     oprops = obj.BIMObjectProperties
     props = obj.BIMAttributeProperties
     if oprops.ifc_definition_id not in Data.products:
-        Data.load(oprops.ifc_definition_id)
+        Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
 
     if props.is_editing_attributes:
         row = layout.row(align=True)

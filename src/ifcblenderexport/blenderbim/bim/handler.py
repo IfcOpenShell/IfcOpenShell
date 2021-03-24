@@ -3,7 +3,7 @@ import json
 import blenderbim.bim.decoration as decoration
 from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.attribute.data import Data as AttributeData
+from ifcopenshell.api.attribute.data import Data as AttributeData
 
 
 def mode_callback(obj, data):
@@ -28,7 +28,7 @@ def name_callback(obj, data):
     if not element.is_a("IfcRoot"):
         return
     element.Name = "/".join(obj.name.split("/")[1:])
-    AttributeData.load(obj.BIMObjectProperties.ifc_definition_id)
+    AttributeData.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
 
 
 def subscribe_to(object, data_path, callback):

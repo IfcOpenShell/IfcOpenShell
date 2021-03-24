@@ -1,6 +1,6 @@
 import bpy
 from bpy.types import Panel
-from blenderbim.bim.module.root.data import Data
+from ifcopenshell.api.root.data import Data
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -20,7 +20,7 @@ class BIM_PT_class(Panel):
         if props.ifc_definition_id:
             if props.ifc_definition_id not in Data.products:
                 try:
-                    Data.load(props.ifc_definition_id)
+                    Data.load(IfcStore.get_file(), props.ifc_definition_id)
                 except:
                     row = self.layout.row(align=True)
                     row.label(text="IFC Element Not Found")

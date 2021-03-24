@@ -163,10 +163,10 @@ def getMaterialPsetNames(self, context):
 
 
 def getContexts(self, context):
-    from blenderbim.bim.module.context.data import Data
+    from ifcopenshell.api.context.data import Data
 
     if not Data.is_loaded:
-        Data.load()
+        Data.load(IfcStore.get_file())
     results = []
     for ifc_id, context in Data.contexts.items():
         results.append((str(ifc_id), context["ContextType"], ""))
