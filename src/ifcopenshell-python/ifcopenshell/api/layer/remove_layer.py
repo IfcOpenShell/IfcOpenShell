@@ -1,5 +1,5 @@
 class Usecase:
-    def __init__(self, file, settings=None):
+    def __init__(self, file, settings={}):
         self.file = file
         self.settings = {"layer": None}
         for key, value in settings.items():

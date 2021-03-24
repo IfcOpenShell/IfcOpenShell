@@ -3,7 +3,7 @@ from ifcopenshell.api.owner.api import create_owner_history
 
 
 class Usecase:
-    def __init__(self, file, settings=None):
+    def __init__(self, file, settings={}):
         self.file = file
         self.settings = {
             "ifc_class": "IfcBuildingElementProxy",
