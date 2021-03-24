@@ -1,4 +1,5 @@
 import bpy
+import ifcopenshell.util.attribute
 import blenderbim.bim.module.material.add_material as add_material
 import blenderbim.bim.module.material.remove_material as remove_material
 import blenderbim.bim.module.material.assign_material as assign_material
@@ -351,25 +352,22 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
             props.material_set_item_attributes.remove(0)
 
         for attribute in IfcStore.get_schema().declaration_by_name(material_set_item.is_a()).all_attributes():
-            data_type = str(attribute.type_of_attribute)
-            if "<entity" in data_type:
+            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            if data_type == "entity":
                 continue
             if attribute.name() in material_set_item_data:
                 new = props.material_set_item_attributes.add()
                 new.name = attribute.name()
                 new.is_null = material_set_item_data[attribute.name()] is None
-                if "<string>" in data_type:
+                new.data_type = data_type
+                if data_type == "string":
                     new.string_value = "" if new.is_null else material_set_item_data[attribute.name()]
-                    new.data_type = "string"
-                elif "<real>" in data_type:
+                elif data_type == "float":
                     new.float_value = 0.0 if new.is_null else material_set_item_data[attribute.name()]
-                    new.data_type = "float"
-                elif "<integer>" in data_type:
+                elif data_type == "integer":
                     new.int_value = 0 if new.is_null else material_set_item_data[attribute.name()]
-                    new.data_type = "integer"
-                elif "<boolean>" in data_type or "<logical>" in data_type:
+                elif data_type == "boolean":
                     new.bool_value = False if new.is_null else material_set_item_data[attribute.name()]
-                    new.data_type = "boolean"
         return {"FINISHED"}
 
 

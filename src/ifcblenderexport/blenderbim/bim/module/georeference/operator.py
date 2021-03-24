@@ -2,6 +2,7 @@ import bpy
 import json
 import ifcopenshell
 import ifcopenshell.util.unit
+import ifcopenshell.util.attribute
 import blenderbim.bim.module.georeference.add_georeferencing as add_georeferencing
 import blenderbim.bim.module.georeference.edit_georeferencing as edit_georeferencing
 import blenderbim.bim.module.georeference.remove_georeferencing as remove_georeferencing
@@ -22,49 +23,43 @@ class EnableEditingGeoreferencing(bpy.types.Operator):
             props.map_conversion.remove(0)
 
         for attribute in IfcStore.get_schema().declaration_by_name("IfcMapConversion").all_attributes():
-            data_type = str(attribute.type_of_attribute)
-            if "<entity" in data_type:
+            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            if data_type == "entity":
                 continue
             new = props.map_conversion.add()
             new.name = attribute.name()
             new.is_null = Data.map_conversion[attribute.name()] is None
             new.is_optional = attribute.optional()
-            if "<string>" in data_type:
+            new.data_type = data_type
+            if data_type == "string":
                 new.string_value = "" if new.is_null else Data.map_conversion[attribute.name()]
-                new.data_type = "string"
-            elif "<real>" in data_type:
+            elif data_type == "float":
                 new.float_value = 0.0 if new.is_null else Data.map_conversion[attribute.name()]
-                new.data_type = "float"
-            elif "<integer>" in data_type:
+            elif data_type == "integer":
                 new.int_value = 0 if new.is_null else Data.map_conversion[attribute.name()]
-                new.data_type = "integer"
-            elif "<boolean>" in data_type or "<logical>" in data_type:
+            elif data_type == "boolean":
                 new.bool_value = False if new.is_null else Data.map_conversion[attribute.name()]
-                new.data_type = "boolean"
 
         while len(props.projected_crs) > 0:
             props.projected_crs.remove(0)
 
         for attribute in IfcStore.get_schema().declaration_by_name("IfcProjectedCRS").all_attributes():
-            data_type = str(attribute.type_of_attribute)
-            if "<entity" in data_type:
+            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            if data_type == "entity":
                 continue
             new = props.projected_crs.add()
             new.name = attribute.name()
             new.is_null = Data.projected_crs[attribute.name()] is None
             new.is_optional = attribute.optional()
-            if "<string>" in data_type:
+            new.data_type = data_type
+            if data_type == "string":
                 new.string_value = "" if new.is_null else Data.projected_crs[attribute.name()]
-                new.data_type = "string"
-            elif "<real>" in data_type:
+            elif data_type == "float":
                 new.float_value = 0.0 if new.is_null else Data.projected_crs[attribute.name()]
-                new.data_type = "float"
-            elif "<integer>" in data_type:
+            elif data_type == "integer":
                 new.int_value = 0 if new.is_null else Data.projected_crs[attribute.name()]
-                new.data_type = "integer"
-            elif "<boolean>" in data_type or "<logical>" in data_type:
+            elif data_type == "boolean":
                 new.bool_value = False if new.is_null else Data.projected_crs[attribute.name()]
-                new.data_type = "boolean"
 
         props.is_map_unit_null = Data.projected_crs["MapUnit"] is None
         if not props.is_map_unit_null:
@@ -100,8 +95,8 @@ class EditGeoreferencing(bpy.types.Operator):
 
         map_conversion = {}
         for attribute in IfcStore.get_schema().declaration_by_name("IfcMapConversion").all_attributes():
-            data_type = str(attribute.type_of_attribute)
-            if "<entity" in data_type:
+            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            if data_type == "entity":
                 continue
             blender_attribute = props.map_conversion.get(attribute.name())
             if blender_attribute.is_null:
@@ -117,8 +112,8 @@ class EditGeoreferencing(bpy.types.Operator):
 
         projected_crs = {}
         for attribute in IfcStore.get_schema().declaration_by_name("IfcProjectedCRS").all_attributes():
-            data_type = str(attribute.type_of_attribute)
-            if "<entity" in data_type:
+            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            if data_type == "entity":
                 continue
             blender_attribute = props.projected_crs.get(attribute.name())
             if blender_attribute.is_null:

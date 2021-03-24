@@ -1,5 +1,6 @@
 import bpy
 import json
+import ifcopenshell.util.attribute
 import blenderbim.bim.module.constraint.add_objective as add_objective
 import blenderbim.bim.module.constraint.edit_objective as edit_objective
 import blenderbim.bim.module.constraint.remove_constraint as remove_constraint
@@ -50,19 +51,18 @@ class EnableEditingConstraint(bpy.types.Operator):
             data = Data.objectives[self.constraint]
 
         for attribute in IfcStore.get_schema().declaration_by_name(props.is_editing).all_attributes():
-            data_type = str(attribute.type_of_attribute)
-            if "<entity" in data_type:
+            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            if data_type == "entity":
                 continue
             new = props.constraint_attributes.add()
             new.name = attribute.name()
             new.is_null = data[attribute.name()] is None
             new.is_optional = attribute.optional()
-            if "<string>" in data_type:
+            new.data_type = data_type
+            if data_type == "string":
                 new.string_value = "" if new.is_null else data[attribute.name()]
-                new.data_type = "string"
-            elif "<enumeration" in data_type:
-                new.enum_items = json.dumps(attribute.type_of_attribute().declared_type().enumeration_items())
-                new.data_type = "enum"
+            elif data_type == "enum":
+                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
                 if data[attribute.name()]:
                     new.enum_value = data[attribute.name()]
         props.active_constraint_id = self.constraint

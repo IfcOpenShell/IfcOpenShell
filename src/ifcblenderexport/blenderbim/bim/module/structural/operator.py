@@ -53,13 +53,13 @@ class EnableEditingStructuralBoundaryCondition(bpy.types.Operator):
 
         for attribute in IfcStore.get_schema().declaration_by_name(data["type"]).all_attributes():
             value = data[attribute.name()]
-            data_type = str(attribute.type_of_attribute)
+            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
             new = props.boundary_condition_attributes.add()
             new.name = attribute.name()
             new.is_null = value is None
             new.is_optional = attribute.optional()
-            if "<select" in data_type:
-                enum_items = [s.name() for s in attribute.type_of_attribute().declared_type().select_list()]
+            if data_type == "select":
+                enum_items = [s.name() for s in ifcopenshell.get_select_items(attribute)]
                 new.enum_items = json.dumps(enum_items)
             if isinstance(value, bool):
                 new.bool_value = False if new.is_null else data[attribute.name()]
@@ -69,9 +69,8 @@ class EnableEditingStructuralBoundaryCondition(bpy.types.Operator):
                 new.float_value = 0.0 if new.is_null else data[attribute.name()]
                 new.data_type = "float"
                 new.enum_value = [i for i in enum_items if i != "IfcBoolean"][0]
-            elif "<string>" in data_type:
+            elif data_type == "string":
                 new.string_value = "" if new.is_null else data[attribute.name()]
-                new.data_type = "string"
 
         props.is_editing_boundary_condition = True
         return {"FINISHED"}
