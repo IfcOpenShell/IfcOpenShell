@@ -2,7 +2,7 @@ import ifcopenshell.util.unit
 
 
 class Usecase():
-    def __init__(self, file, settings=None):
+    def __init__(self, file, settings={}):
         self.file = file
         self.settings = {
             "length": {

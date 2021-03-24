@@ -2,7 +2,7 @@ import ifcopenshell
 
 
 class Usecase:
-    def __init__(self, file, settings=None):
+    def __init__(self, file, settings={}):
         self.file = file
         self.settings = {"constituent": None}
         for key, value in settings.items():

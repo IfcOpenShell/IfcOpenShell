@@ -2,7 +2,7 @@ import ifcopenshell.util.schema
 
 
 class Usecase:
-    def __init__(self, file, settings=None):
+    def __init__(self, file, settings={}):
         self.file = file
         self.settings = {"reference": None, "product": None}
         for key, value in settings.items():

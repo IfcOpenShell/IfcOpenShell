@@ -1,5 +1,5 @@
 class Usecase:
-    def __init__(self, file, settings=None):
+    def __init__(self, file, settings={}):
         self.file = file
         self.settings = {"material_set": None, "old_index": 0, "new_index": 0}
         for key, value in settings.items():
