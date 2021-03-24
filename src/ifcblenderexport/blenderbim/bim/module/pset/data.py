@@ -179,7 +179,7 @@ class Data:
                 data_type = "integer"
             elif "<integer>" in data_type:
                 data_type = "integer"
-            elif "<boolean>" in data_type:
+            elif "<boolean>" in data_type or "<logical>" in data_type:
                 data_type = "boolean"
             elif "<enumeration" in data_type:
                 data_type = "enum"
