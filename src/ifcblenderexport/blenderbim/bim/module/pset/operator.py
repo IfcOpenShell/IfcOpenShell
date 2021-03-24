@@ -1,13 +1,13 @@
 import bpy
 import json
 import ifcopenshell.util.unit
-import blenderbim.bim.module.pset.add_pset as add_pset
-import blenderbim.bim.module.pset.edit_pset as edit_pset
-import blenderbim.bim.module.pset.remove_pset as remove_pset
-import blenderbim.bim.module.pset.add_qto as add_qto
-import blenderbim.bim.module.pset.edit_qto as edit_qto
+import ifcopenshell.api.pset.add_pset as add_pset
+import ifcopenshell.api.pset.edit_pset as edit_pset
+import ifcopenshell.api.pset.remove_pset as remove_pset
+import ifcopenshell.api.pset.add_qto as add_qto
+import ifcopenshell.api.pset.edit_qto as edit_qto
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.pset.data import Data
+from ifcopenshell.api.pset.data import Data
 from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
 
 
@@ -137,7 +137,7 @@ class EditPset(bpy.types.Operator):
                     "Properties": properties,
                 },
             ).execute()
-        Data.load(oprops.ifc_definition_id)
+        Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         bpy.ops.bim.disable_pset_editing(obj=self.obj, obj_type=self.obj_type)
         return {"FINISHED"}
 
@@ -163,7 +163,7 @@ class RemovePset(bpy.types.Operator):
                 "pset": self.file.by_id(self.pset_id),
             },
         ).execute()
-        Data.load(props.ifc_definition_id)
+        Data.load(IfcStore.get_file(), props.ifc_definition_id)
         return {"FINISHED"}
 
 
@@ -197,7 +197,7 @@ class AddPset(bpy.types.Operator):
                 "Name": pset_name,
             },
         ).execute()
-        Data.load(oprops.ifc_definition_id)
+        Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         return {"FINISHED"}
 
 
@@ -217,7 +217,7 @@ class AddQto(bpy.types.Operator):
                 "Name": props.qto_name,
             },
         ).execute()
-        Data.load(oprops.ifc_definition_id)
+        Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         return {"FINISHED"}
 
 

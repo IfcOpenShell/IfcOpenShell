@@ -1,12 +1,12 @@
 import bpy
 import ifcopenshell.util.attribute
-import blenderbim.bim.module.group.add_group as add_group
-import blenderbim.bim.module.group.edit_group as edit_group
-import blenderbim.bim.module.group.remove_group as remove_group
-import blenderbim.bim.module.group.assign_group as assign_group
-import blenderbim.bim.module.group.unassign_group as unassign_group
+import ifcopenshell.api.group.add_group as add_group
+import ifcopenshell.api.group.edit_group as edit_group
+import ifcopenshell.api.group.remove_group as remove_group
+import ifcopenshell.api.group.assign_group as assign_group
+import ifcopenshell.api.group.unassign_group as unassign_group
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.group.data import Data
+from ifcopenshell.api.group.data import Data
 
 
 class LoadGroups(bpy.types.Operator):
@@ -41,7 +41,7 @@ class AddGroup(bpy.types.Operator):
 
     def execute(self, context):
         result = add_group.Usecase(IfcStore.get_file()).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         bpy.ops.bim.load_groups()
         bpy.ops.bim.enable_editing_group(group=result.id())
         return {"FINISHED"}
@@ -63,7 +63,7 @@ class EditGroup(bpy.types.Operator):
         edit_group.Usecase(
             self.file, {"group": self.file.by_id(props.active_group_id), "attributes": attributes}
         ).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         bpy.ops.bim.load_groups()
         return {"FINISHED"}
 
@@ -77,7 +77,7 @@ class RemoveGroup(bpy.types.Operator):
         props = context.scene.BIMGroupProperties
         self.file = IfcStore.get_file()
         remove_group.Usecase(self.file, {"group": self.file.by_id(self.group)}).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         bpy.ops.bim.load_groups()
         return {"FINISHED"}
 
@@ -129,7 +129,7 @@ class AssignGroup(bpy.types.Operator):
             "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
             "group": self.file.by_id(self.group)
         }).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
@@ -146,5 +146,5 @@ class UnassignGroup(bpy.types.Operator):
             "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
             "group": self.file.by_id(self.group)
         }).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}

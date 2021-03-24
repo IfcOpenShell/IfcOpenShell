@@ -7,6 +7,7 @@ import zipfile
 import tempfile
 import ifcopenshell
 import ifcopenshell.util.placement
+import ifcopenshell.api.root.remove_product as remove_product
 from blenderbim.bim.ifc import IfcStore
 import addon_utils
 

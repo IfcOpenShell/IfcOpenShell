@@ -1,7 +1,7 @@
 import bpy
-import blenderbim.bim.module.unit.assign_unit as assign_unit
+import ifcopenshell.api.unit.assign_unit as assign_unit
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.unit.data import Data
+from ifcopenshell.api.unit.data import Data
 
 
 class AssignUnit(bpy.types.Operator):
@@ -10,7 +10,7 @@ class AssignUnit(bpy.types.Operator):
 
     def execute(self, context):
         assign_unit.Usecase(IfcStore.get_file(), self.get_units()).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
     def get_units(self):

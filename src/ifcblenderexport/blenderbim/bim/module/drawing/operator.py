@@ -5,8 +5,8 @@ import subprocess
 import webbrowser
 from blenderbim.bim.operator import open_with_user_command
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.group.data import Data as GroupData
-from blenderbim.bim.module.pset.data import Data as PsetData
+from ifcopenshell.api.group.data import Data as GroupData
+from ifcopenshell.api.pset.data import Data as PsetData
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 

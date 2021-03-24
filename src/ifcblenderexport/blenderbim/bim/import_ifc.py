@@ -21,7 +21,6 @@ import numpy as np
 from pathlib import Path
 from itertools import cycle
 from datetime import datetime
-from blenderbim.bim.module.context.data import Data as ContextData
 from blenderbim.bim.ifc import IfcStore
 from . import schema
 

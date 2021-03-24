@@ -1,6 +1,7 @@
 import bpy
 from bpy.types import Panel
-from blenderbim.bim.module.pset_template.data import Data
+from blenderbim.bim.ifc import IfcStore
+from ifcopenshell.api.pset_template.data import Data
 
 
 class BIM_PT_pset_template(Panel):
@@ -37,7 +38,7 @@ class BIM_PT_pset_template(Panel):
         # row.operator("bim.save_pset_template", text="", icon="EXPORT")
 
         if not Data.is_loaded and props.pset_template_files:
-            Data.load()
+            Data.load(IfcStore.get_file())
 
         if not Data.pset_templates:
             return

@@ -1,6 +1,6 @@
 import bpy
 from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.module.classification.data import Data
+from ifcopenshell.api.classification.data import Data
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

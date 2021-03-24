@@ -1,9 +1,9 @@
 import bpy
 import json
 import ifcopenshell
-import blenderbim.bim.module.attribute.edit_attributes as edit_attributes
+import ifcopenshell.api.attribute.edit_attributes as edit_attributes
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.attribute.data import Data
+from ifcopenshell.api.attribute.data import Data
 
 
 class EnableEditingAttributes(bpy.types.Operator):
@@ -105,7 +105,7 @@ class EditAttributes(bpy.types.Operator):
             if collection:
                 collection.name = new_name
             obj.name = new_name
-        Data.load(oprops.ifc_definition_id)
+        Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         bpy.ops.bim.disable_editing_attributes(obj=obj.name, obj_type=self.obj_type)
         return {"FINISHED"}
 

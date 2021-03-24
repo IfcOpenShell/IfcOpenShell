@@ -1,13 +1,13 @@
 import bpy
 import ifcopenshell
-import blenderbim.bim.module.pset_template.add_pset_template as add_pset_template
-import blenderbim.bim.module.pset_template.edit_pset_template as edit_pset_template
-import blenderbim.bim.module.pset_template.remove_pset_template as remove_pset_template
-import blenderbim.bim.module.pset_template.add_prop_template as add_prop_template
-import blenderbim.bim.module.pset_template.edit_prop_template as edit_prop_template
-import blenderbim.bim.module.pset_template.remove_prop_template as remove_prop_template
+import ifcopenshell.api.pset_template.add_pset_template as add_pset_template
+import ifcopenshell.api.pset_template.edit_pset_template as edit_pset_template
+import ifcopenshell.api.pset_template.remove_pset_template as remove_pset_template
+import ifcopenshell.api.pset_template.add_prop_template as add_prop_template
+import ifcopenshell.api.pset_template.edit_prop_template as edit_prop_template
+import ifcopenshell.api.pset_template.remove_prop_template as remove_prop_template
 from blenderbim.bim.module.pset_template.prop import updatePsetTemplateFiles, updatePsetTemplates
-from blenderbim.bim.module.pset_template.data import Data
+from ifcopenshell.api.pset_template.data import Data
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -18,7 +18,7 @@ class AddPsetTemplate(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMPsetTemplateProperties
         add_pset_template.Usecase(IfcStore.pset_template_file).execute()
-        Data.load()
+        Data.load(IfcStore.pset_template_file)
         updatePsetTemplates(self, context)
         return {"FINISHED"}
 
@@ -34,7 +34,7 @@ class RemovePsetTemplate(bpy.types.Operator):
         remove_pset_template.Usecase(IfcStore.pset_template_file, {
             "pset_template": IfcStore.pset_template_file.by_id(int(props.pset_templates))
         }).execute()
-        Data.load()
+        Data.load(IfcStore.pset_template_file)
         updatePsetTemplates(self, context)
         return {"FINISHED"}
 
@@ -105,7 +105,7 @@ class EditPsetTemplate(bpy.types.Operator):
                 "ApplicableEntity": props.active_pset_template.applicable_entity,
             }
         }).execute()
-        Data.load()
+        Data.load(IfcStore.pset_template_file)
         updatePsetTemplates(self, context)
         bpy.ops.bim.disable_editing_pset_template()
         return {"FINISHED"}
@@ -130,7 +130,7 @@ class AddPropTemplate(bpy.types.Operator):
         add_prop_template.Usecase(IfcStore.pset_template_file, {
             "pset_template": IfcStore.pset_template_file.by_id(pset_template_id)
         }).execute()
-        Data.load()
+        Data.load(IfcStore.pset_template_file)
         return {"FINISHED"}
 
 
@@ -144,7 +144,7 @@ class RemovePropTemplate(bpy.types.Operator):
         remove_prop_template.Usecase(IfcStore.pset_template_file, {
             "prop_template": IfcStore.pset_template_file.by_id(self.prop_template)
         }).execute()
-        Data.load()
+        Data.load(IfcStore.pset_template_file)
         return {"FINISHED"}
 
 
@@ -162,6 +162,6 @@ class EditPropTemplate(bpy.types.Operator):
                 "PrimaryMeasureType": props.active_prop_template.primary_measure_type,
             }
         }).execute()
-        Data.load()
+        Data.load(IfcStore.pset_template_file)
         bpy.ops.bim.disable_editing_prop_template()
         return {"FINISHED"}

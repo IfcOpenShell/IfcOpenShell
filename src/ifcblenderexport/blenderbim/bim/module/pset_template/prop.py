@@ -14,7 +14,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from blenderbim.bim.module.pset_template.data import Data
+from ifcopenshell.api.pset_template.data import Data
 
 
 psettemplatefiles_enum = []
@@ -58,7 +58,7 @@ def getPsetTemplates(self, context):
             IfcStore.pset_template_file = ifcopenshell.open(IfcStore.pset_template_path)
         templates = IfcStore.pset_template_file.by_type("IfcPropertySetTemplate")
         psettemplates_enum.extend([(str(t.id()), t.Name, "") for t in templates])
-        Data.load()
+        Data.load(IfcStore.get_file())
     return psettemplates_enum
 
 

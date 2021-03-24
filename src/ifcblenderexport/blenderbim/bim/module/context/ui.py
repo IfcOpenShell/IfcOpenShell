@@ -1,5 +1,5 @@
 from bpy.types import Panel
-from blenderbim.bim.module.context.data import Data
+from ifcopenshell.api.context.data import Data
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -17,7 +17,7 @@ class BIM_PT_context(Panel):
 
     def draw(self, context):
         if not Data.is_loaded:
-            Data.load()
+            Data.load(IfcStore.get_file())
 
         props = context.scene.BIMProperties
 

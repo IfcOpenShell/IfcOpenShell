@@ -1,15 +1,15 @@
 import bpy
 import json
 import ifcopenshell.util.attribute
-import blenderbim.bim.module.document.add_information as add_information
-import blenderbim.bim.module.document.add_reference as add_reference
-import blenderbim.bim.module.document.edit_information as edit_information
-import blenderbim.bim.module.document.edit_reference as edit_reference
-import blenderbim.bim.module.document.remove_document as remove_document
-import blenderbim.bim.module.document.assign_document as assign_document
-import blenderbim.bim.module.document.unassign_document as unassign_document
+import ifcopenshell.api.document.add_information as add_information
+import ifcopenshell.api.document.add_reference as add_reference
+import ifcopenshell.api.document.edit_information as edit_information
+import ifcopenshell.api.document.edit_reference as edit_reference
+import ifcopenshell.api.document.remove_document as remove_document
+import ifcopenshell.api.document.assign_document as assign_document
+import ifcopenshell.api.document.unassign_document as unassign_document
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.document.data import Data
+from ifcopenshell.api.document.data import Data
 
 
 class LoadInformation(bpy.types.Operator):
@@ -117,7 +117,7 @@ class AddInformation(bpy.types.Operator):
 
     def execute(self, context):
         result = add_information.Usecase(IfcStore.get_file()).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         bpy.ops.bim.load_information()
         bpy.ops.bim.enable_editing_document(document=result.id())
         return {"FINISHED"}
@@ -129,7 +129,7 @@ class AddDocumentReference(bpy.types.Operator):
 
     def execute(self, context):
         result = add_reference.Usecase(IfcStore.get_file()).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         bpy.ops.bim.load_document_references()
         bpy.ops.bim.enable_editing_document(document=result.id())
         return {"FINISHED"}
@@ -153,7 +153,7 @@ class EditInformation(bpy.types.Operator):
         edit_information.Usecase(
             self.file, {"information": self.file.by_id(props.active_document_id), "attributes": attributes}
         ).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         bpy.ops.bim.load_information()
         return {"FINISHED"}
 
@@ -174,7 +174,7 @@ class EditDocumentReference(bpy.types.Operator):
         edit_reference.Usecase(
             self.file, {"reference": self.file.by_id(props.active_document_id), "attributes": attributes}
         ).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         bpy.ops.bim.load_document_references()
         return {"FINISHED"}
 
@@ -188,7 +188,7 @@ class RemoveDocument(bpy.types.Operator):
         props = context.scene.BIMDocumentProperties
         self.file = IfcStore.get_file()
         remove_document.Usecase(self.file, {"document": self.file.by_id(self.document)}).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         if props.is_editing == "information":
             bpy.ops.bim.load_information()
         elif props.is_editing == "reference":
@@ -237,7 +237,7 @@ class AssignDocument(bpy.types.Operator):
             "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
             "document": self.file.by_id(self.document)
         }).execute()
-        Data.load(obj.BIMObjectProperties.ifc_definition_id)
+        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
 
@@ -254,5 +254,5 @@ class UnassignDocument(bpy.types.Operator):
             "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
             "document": self.file.by_id(self.document)
         }).execute()
-        Data.load(obj.BIMObjectProperties.ifc_definition_id)
+        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}

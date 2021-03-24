@@ -1,11 +1,11 @@
 import bpy
 import logging
 import ifcopenshell
-import blenderbim.bim.module.project.create_file as create_file
+import ifcopenshell.api.project.create_file as create_file
 import bpy
 from blenderbim.bim.ifc import IfcStore
 
-# from blenderbim.bim.module.project.data import Data
+# from ifcopenshell.api.project.data import Data
 
 
 class CreateProject(bpy.types.Operator):

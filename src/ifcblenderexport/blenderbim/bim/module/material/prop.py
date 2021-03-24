@@ -1,6 +1,6 @@
 import bpy
 import blenderbim.bim.schema # refactor
-from blenderbim.bim.module.material.data import Data
+from ifcopenshell.api.material.data import Data
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup

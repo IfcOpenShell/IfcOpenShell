@@ -1,6 +1,6 @@
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.document.data import Data
+from ifcopenshell.api.document.data import Data
 
 
 class BIM_PT_documents(Panel):
@@ -17,7 +17,7 @@ class BIM_PT_documents(Panel):
 
     def draw(self, context):
         if not Data.is_loaded:
-            Data.load()
+            Data.load(IfcStore.get_file())
 
         self.props = context.scene.BIMDocumentProperties
 
@@ -77,9 +77,9 @@ class BIM_PT_object_documents(Panel):
         self.props = obj.BIMObjectDocumentProperties
         self.file = IfcStore.get_file()
         if not Data.is_loaded:
-            Data.load()
+            Data.load(IfcStore.get_file())
         if self.oprops.ifc_definition_id not in Data.products:
-            Data.load(self.oprops.ifc_definition_id)
+            Data.load(IfcStore.get_file(), self.oprops.ifc_definition_id)
 
         self.draw_add_ui()
 

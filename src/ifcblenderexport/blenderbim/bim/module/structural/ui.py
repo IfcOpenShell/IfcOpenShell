@@ -1,6 +1,6 @@
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.structural.data import Data
+from ifcopenshell.api.structural.data import Data
 
 
 class BIM_PT_structural_boundary_conditions(Panel):
@@ -26,7 +26,7 @@ class BIM_PT_structural_boundary_conditions(Panel):
         self.oprops = context.active_object.BIMObjectProperties
         self.props = context.active_object.BIMStructuralProperties
         if self.oprops.ifc_definition_id not in Data.boundary_conditions:
-            Data.load(self.oprops.ifc_definition_id)
+            Data.load(IfcStore.get_file(), self.oprops.ifc_definition_id)
 
         self.data = Data.boundary_conditions[self.oprops.ifc_definition_id]
 
@@ -98,7 +98,7 @@ class BIM_PT_connected_structural_members(Panel):
         self.oprops = context.active_object.BIMObjectProperties
         self.props = context.active_object.BIMStructuralProperties
         if self.oprops.ifc_definition_id not in Data.connected_structural_members:
-            Data.load(self.oprops.ifc_definition_id)
+            Data.load(IfcStore.get_file(), self.oprops.ifc_definition_id)
 
         self.data = Data.connected_structural_members[self.oprops.ifc_definition_id]
 
@@ -139,7 +139,7 @@ class BIM_PT_structural_analysis_models(Panel):
 
     def draw(self, context):
         if not Data.is_loaded:
-            Data.load()
+            Data.load(IfcStore.get_file())
         self.props = context.scene.BIMStructuralProperties
 
         row = self.layout.row(align=True)

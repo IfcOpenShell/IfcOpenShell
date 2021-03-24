@@ -1,5 +1,5 @@
 from bpy.types import Panel
-from blenderbim.bim.module.georeference.data import Data
+from ifcopenshell.api.georeference.data import Data
 from blenderbim.bim.ifc import IfcStore
 
 class BIM_PT_gis(Panel):
@@ -17,7 +17,7 @@ class BIM_PT_gis(Panel):
     def draw(self, context):
         props = context.scene.BIMGeoreferenceProperties
         if not Data.is_loaded:
-            Data.load()
+            Data.load(IfcStore.get_file())
 
         if props.is_editing:
             return self.draw_editable_ui(context)

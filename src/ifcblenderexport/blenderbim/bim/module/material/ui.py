@@ -1,5 +1,5 @@
 from bpy.types import Panel
-from blenderbim.bim.module.material.data import Data
+from ifcopenshell.api.material.data import Data
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -43,9 +43,9 @@ class BIM_PT_object_material(Panel):
         self.oprops = context.active_object.BIMObjectProperties
         self.props = context.active_object.BIMObjectMaterialProperties
         if not Data.is_loaded:
-            Data.load()
+            Data.load(IfcStore.get_file())
         if self.oprops.ifc_definition_id not in Data.products:
-            Data.load(self.oprops.ifc_definition_id)
+            Data.load(IfcStore.get_file(), self.oprops.ifc_definition_id)
         self.product_data = Data.products[self.oprops.ifc_definition_id]
 
         if not Data.materials:

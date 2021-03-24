@@ -1,6 +1,6 @@
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.constraint.data import Data
+from ifcopenshell.api.constraint.data import Data
 
 
 class BIM_PT_constraints(Panel):
@@ -17,7 +17,7 @@ class BIM_PT_constraints(Panel):
 
     def draw(self, context):
         if not Data.is_loaded:
-            Data.load()
+            Data.load(IfcStore.get_file())
 
         self.props = context.scene.BIMConstraintProperties
 
@@ -73,9 +73,9 @@ class BIM_PT_object_constraints(Panel):
         self.props = obj.BIMObjectConstraintProperties
         self.file = IfcStore.get_file()
         if not Data.is_loaded:
-            Data.load()
+            Data.load(IfcStore.get_file())
         if self.oprops.ifc_definition_id not in Data.products:
-            Data.load(self.oprops.ifc_definition_id)
+            Data.load(IfcStore.get_file(), self.oprops.ifc_definition_id)
 
         self.draw_add_ui()
 

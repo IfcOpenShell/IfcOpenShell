@@ -1,15 +1,15 @@
 import bpy
 import json
-import blenderbim.bim.module.structural.add_structural_boundary_condition as add_structural_boundary_condition
-import blenderbim.bim.module.structural.edit_structural_boundary_condition as edit_structural_boundary_condition
-import blenderbim.bim.module.structural.remove_structural_boundary_condition as remove_structural_boundary_condition
-import blenderbim.bim.module.structural.add_structural_analysis_model as add_structural_analysis_model
-import blenderbim.bim.module.structural.edit_structural_analysis_model as edit_structural_analysis_model
-import blenderbim.bim.module.structural.remove_structural_analysis_model as remove_structural_analysis_model
-import blenderbim.bim.module.structural.assign_structural_analysis_model as assign_structural_analysis_model
-import blenderbim.bim.module.structural.unassign_structural_analysis_model as unassign_structural_analysis_model
+import ifcopenshell.api.structural.add_structural_boundary_condition as add_structural_boundary_condition
+import ifcopenshell.api.structural.edit_structural_boundary_condition as edit_structural_boundary_condition
+import ifcopenshell.api.structural.remove_structural_boundary_condition as remove_structural_boundary_condition
+import ifcopenshell.api.structural.add_structural_analysis_model as add_structural_analysis_model
+import ifcopenshell.api.structural.edit_structural_analysis_model as edit_structural_analysis_model
+import ifcopenshell.api.structural.remove_structural_analysis_model as remove_structural_analysis_model
+import ifcopenshell.api.structural.assign_structural_analysis_model as assign_structural_analysis_model
+import ifcopenshell.api.structural.unassign_structural_analysis_model as unassign_structural_analysis_model
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.structural.data import Data
+from ifcopenshell.api.structural.data import Data
 
 
 class AddStructuralBoundaryCondition(bpy.types.Operator):
@@ -21,7 +21,7 @@ class AddStructuralBoundaryCondition(bpy.types.Operator):
         file = IfcStore.get_file()
         connection = file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         add_structural_boundary_condition.Usecase(file, {"connection": connection}).execute()
-        Data.load(connection.id())
+        Data.load(IfcStore.get_file(), connection.id())
         return {"FINISHED"}
 
 
@@ -34,7 +34,7 @@ class RemoveStructuralBoundaryCondition(bpy.types.Operator):
         file = IfcStore.get_file()
         connection = file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         remove_structural_boundary_condition.Usecase(file, {"connection": connection}).execute()
-        Data.load(connection.id())
+        Data.load(IfcStore.get_file(), connection.id())
         return {"FINISHED"}
 
 
@@ -101,7 +101,7 @@ class EditStructuralBoundaryCondition(bpy.types.Operator):
                 attributes[attribute.name] = {"value": attribute.float_value, "type": attribute.enum_value}
 
         edit_structural_boundary_condition.Usecase(file, {"condition": condition, "attributes": attributes}).execute()
-        Data.load(connection.id())
+        Data.load(IfcStore.get_file(), connection.id())
         bpy.ops.bim.disable_editing_structural_boundary_condition()
         return {"FINISHED"}
 
@@ -147,7 +147,7 @@ class AddStructuralAnalysisModel(bpy.types.Operator):
 
     def execute(self, context):
         result = add_structural_analysis_model.Usecase(IfcStore.get_file()).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         bpy.ops.bim.load_structural_analysis_models()
         bpy.ops.bim.enable_editing_structural_analysis_model(structural_analysis_model=result.id())
         return {"FINISHED"}
@@ -172,7 +172,7 @@ class EditStructuralAnalysisModel(bpy.types.Operator):
         edit_structural_analysis_model.Usecase(
             self.file, {"structural_analysis_model": self.file.by_id(props.active_structural_analysis_model_id), "attributes": attributes}
         ).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         bpy.ops.bim.load_structural_analysis_models()
         return {"FINISHED"}
 
@@ -186,7 +186,7 @@ class RemoveStructuralAnalysisModel(bpy.types.Operator):
         props = context.scene.BIMStructuralProperties
         self.file = IfcStore.get_file()
         remove_structural_analysis_model.Usecase(self.file, {"structural_analysis_model": self.file.by_id(self.structural_analysis_model)}).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         bpy.ops.bim.load_structural_analysis_models()
         return {"FINISHED"}
 
@@ -245,7 +245,7 @@ class AssignStructuralAnalysisModel(bpy.types.Operator):
             "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
             "structural_analysis_model": self.file.by_id(self.structural_analysis_model)
         }).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
@@ -262,5 +262,5 @@ class UnassignStructuralAnalysisModel(bpy.types.Operator):
             "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
             "structural_analysis_model": self.file.by_id(self.structural_analysis_model)
         }).execute()
-        Data.load()
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}

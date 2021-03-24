@@ -1,20 +1,20 @@
 import bpy
 import ifcopenshell.util.attribute
-import blenderbim.bim.module.material.add_material as add_material
-import blenderbim.bim.module.material.remove_material as remove_material
-import blenderbim.bim.module.material.assign_material as assign_material
-import blenderbim.bim.module.material.unassign_material as unassign_material
-import blenderbim.bim.module.material.add_constituent as add_constituent
-import blenderbim.bim.module.material.remove_constituent as remove_constituent
-import blenderbim.bim.module.material.add_layer as add_layer
-import blenderbim.bim.module.material.edit_layer as edit_layer
-import blenderbim.bim.module.material.remove_layer as remove_layer
-import blenderbim.bim.module.material.reorder_set_item as reorder_set_item
-import blenderbim.bim.module.material.add_list_item as add_list_item
-import blenderbim.bim.module.material.remove_list_item as remove_list_item
-import blenderbim.bim.module.material.edit_assigned_material as edit_assigned_material
+import ifcopenshell.api.material.add_material as add_material
+import ifcopenshell.api.material.remove_material as remove_material
+import ifcopenshell.api.material.assign_material as assign_material
+import ifcopenshell.api.material.unassign_material as unassign_material
+import ifcopenshell.api.material.add_constituent as add_constituent
+import ifcopenshell.api.material.remove_constituent as remove_constituent
+import ifcopenshell.api.material.add_layer as add_layer
+import ifcopenshell.api.material.edit_layer as edit_layer
+import ifcopenshell.api.material.remove_layer as remove_layer
+import ifcopenshell.api.material.reorder_set_item as reorder_set_item
+import ifcopenshell.api.material.add_list_item as add_list_item
+import ifcopenshell.api.material.remove_list_item as remove_list_item
+import ifcopenshell.api.material.edit_assigned_material as edit_assigned_material
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.material.data import Data
+from ifcopenshell.api.material.data import Data
 
 
 class AddMaterial(bpy.types.Operator):
@@ -27,7 +27,7 @@ class AddMaterial(bpy.types.Operator):
         self.file = IfcStore.get_file()
         result = add_material.Usecase(self.file, {"Name": obj.name}).execute()
         obj.BIMObjectProperties.ifc_definition_id = result.id()
-        Data.load()
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
@@ -43,7 +43,7 @@ class RemoveMaterial(bpy.types.Operator):
             self.file, {"material": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)}
         ).execute()
         obj.BIMObjectProperties.ifc_definition_id = 0
-        Data.load()
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
@@ -65,8 +65,8 @@ class AssignMaterial(bpy.types.Operator):
                 "material": self.file.by_id(int(obj.BIMObjectMaterialProperties.material)),
             },
         ).execute()
-        Data.load()
-        Data.load(obj.BIMObjectProperties.ifc_definition_id)
+        Data.load(IfcStore.get_file())
+        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
 
@@ -81,7 +81,7 @@ class UnassignMaterial(bpy.types.Operator):
         unassign_material.Usecase(
             self.file, {"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)}
         ).execute()
-        Data.load(obj.BIMObjectProperties.ifc_definition_id)
+        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
 
@@ -298,7 +298,7 @@ class EditAssignedMaterial(bpy.types.Operator):
         if product_data["type"] == "IfcMaterial":
             bpy.ops.bim.unassign_material(obj=obj.name)
             bpy.ops.bim.assign_material(obj=obj.name, material_type="IfcMaterial")
-            Data.load(obj.BIMObjectProperties.ifc_definition_id)
+            Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
             bpy.ops.bim.disable_editing_assigned_material(obj=obj.name)
             return {"FINISHED"}
 
@@ -312,7 +312,7 @@ class EditAssignedMaterial(bpy.types.Operator):
                 "attributes": attributes,
             },
         ).execute()
-        Data.load(obj.BIMObjectProperties.ifc_definition_id)
+        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
         if material_set.is_a("IfcMaterialConstituentSet"):
             Data.load_constituents()
         elif material_set.is_a("IfcMaterialLayerSet"):

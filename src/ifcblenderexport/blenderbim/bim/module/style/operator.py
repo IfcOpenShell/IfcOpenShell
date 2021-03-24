@@ -1,6 +1,6 @@
 import bpy
-import blenderbim.bim.module.style.add_style as add_style
-import blenderbim.bim.module.style.edit_style as edit_style
+import ifcopenshell.api.style.add_style as add_style
+import ifcopenshell.api.style.edit_style as edit_style
 from blenderbim.bim.ifc import IfcStore
 
 

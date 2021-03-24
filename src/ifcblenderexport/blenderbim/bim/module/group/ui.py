@@ -1,6 +1,6 @@
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.group.data import Data
+from ifcopenshell.api.group.data import Data
 
 
 class BIM_PT_groups(Panel):
@@ -17,7 +17,7 @@ class BIM_PT_groups(Panel):
 
     def draw(self, context):
         if not Data.is_loaded:
-            Data.load()
+            Data.load(IfcStore.get_file())
         self.props = context.scene.BIMGroupProperties
 
         row = self.layout.row(align=True)

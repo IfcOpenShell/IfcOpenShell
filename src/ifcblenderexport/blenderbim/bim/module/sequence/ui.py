@@ -1,6 +1,6 @@
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.sequence.data import Data
+from ifcopenshell.api.sequence.data import Data
 
 
 class BIM_PT_tasks(Panel):
@@ -17,7 +17,7 @@ class BIM_PT_tasks(Panel):
 
     def draw(self, context):
         if not Data.is_loaded:
-            Data.load()
+            Data.load(IfcStore.get_file())
         self.props = context.scene.BIMTaskProperties
 
         row = self.layout.row(align=True)

@@ -1,6 +1,6 @@
 import bpy
 from bpy.types import Panel
-from blenderbim.bim.module.geometry.data import Data
+from ifcopenshell.api.geometry.data import Data
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -21,7 +21,7 @@ class BIM_PT_representations(Panel):
         props = context.active_object.BIMObjectProperties
 
         if props.ifc_definition_id not in Data.products:
-            Data.load(props.ifc_definition_id)
+            Data.load(IfcStore.get_file(), props.ifc_definition_id)
 
         representations = Data.products[props.ifc_definition_id]
         if not representations:
