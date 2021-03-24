@@ -1,5 +1,6 @@
 import ifcopenshell
-import blenderbim.bim.schema # TODO: refactor elsewhere
+import ifcopenshell.util.attribute
+import blenderbim.bim.schema  # TODO: refactor elsewhere
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -31,7 +32,7 @@ class Data:
     @classmethod
     def add_type_product_psets(cls, product, product_id):
         if not hasattr(product, "HasPropertySets") or not product.HasPropertySets:
-            return # TODO
+            return  # TODO
         for definition in product.HasPropertySets:
             if definition.is_a("IfcPropertySet"):
                 cls.add_pset(definition, product_id)
@@ -60,17 +61,17 @@ class Data:
         new_pset = {
             "Name": pset.Name,
             "is_expanded": True,
-            "Properties": cls.get_properties_from_template(pset.Name) or []
+            "Properties": cls.get_properties_from_template(pset.Name) or [],
         }
         cls.products[product_id]["psets"].add(int(pset.id()))
         cls.psets[int(pset.id())] = new_pset
         try:
             if hasattr(pset, "HasProperties"):
                 props = pset.HasProperties
-            elif hasattr(pset, "Properties"): # For IfcMaterialProperties
+            elif hasattr(pset, "Properties"):  # For IfcMaterialProperties
                 props = pset.Properties
         except:
-            return # I've seen ArchiCAD produce invalid IFCs with empty data
+            return  # I've seen ArchiCAD produce invalid IFCs with empty data
         # Invalid IFC, but some vendors like Solidworks do this so we accomodate it
         if not props:
             return
@@ -107,20 +108,22 @@ class Data:
                     else:
                         data_type = "string"
                         value = str(value)
-                    new_pset["Properties"].append({
-                        "Name": prop.Name,
-                        "value": value,
-                        "type": data_type,
-                        "enum_items": [],
-                        "is_null": prop.NominalValue.wrappedValue is None
-                    })
+                    new_pset["Properties"].append(
+                        {
+                            "Name": prop.Name,
+                            "value": value,
+                            "type": data_type,
+                            "enum_items": [],
+                            "is_null": prop.NominalValue.wrappedValue is None,
+                        }
+                    )
 
     @classmethod
     def add_qto(cls, qto, product_id):
         new_qto = {
             "Name": qto.Name,
             "is_expanded": True,
-            "Properties": cls.get_properties_from_template(qto.Name) or []
+            "Properties": cls.get_properties_from_template(qto.Name) or [],
         }
         cls.products[product_id]["qtos"].add(int(qto.id()))
         cls.qtos[int(qto.id())] = new_qto
@@ -135,13 +138,15 @@ class Data:
                         has_existing_prop = True
                         break
                 if not has_existing_prop:
-                    new_qto["Properties"].append({
-                        "Name": prop.Name,
-                        "value": float(value),
-                        "type": "float",
-                        "enum_items": [],
-                        "is_null": value is None
-                    })
+                    new_qto["Properties"].append(
+                        {
+                            "Name": prop.Name,
+                            "value": float(value),
+                            "type": "float",
+                            "enum_items": [],
+                            "is_null": value is None,
+                        }
+                    )
 
     @classmethod
     def get_properties_from_template(cls, name):
@@ -151,12 +156,14 @@ class Data:
         properties = []
         for prop_template in template.HasPropertyTemplates:
             if not prop_template.is_a("IfcSimplePropertyTemplate"):
-                continue # Other types not yet supported
+                continue  # Other types not yet supported
             enum_items = []
 
             if prop_template.TemplateType == "P_SINGLEVALUE":
                 try:
-                    data_type = str(IfcStore.get_schema().declaration_by_name(prop_template.PrimaryMeasureType or "IfcLabel"))
+                    data_type = ifcopenshell.util.attribute.get_primitive_type(
+                        IfcStore.get_schema().declaration_by_name(prop_template.PrimaryMeasureType or "IfcLabel")
+                    )
                 except:
                     # TODO: Occurs if the data type is something that exists in IFC4 and not in IFC2X3. To fully fix
                     # this we need to generate the IFC2X3 pset template definitions.
@@ -169,26 +176,15 @@ class Data:
             elif prop_template.TemplateType == "Q_COUNT":
                 data_type = "integer"
             else:
-                continue # Other types not yet supported
+                continue  # Other types not yet supported
 
-            if "<string>" in data_type:
-                data_type = "string"
-            elif "<real>" in data_type:
-                data_type = "float"
-            elif "<number>" in data_type:
-                data_type = "integer"
-            elif "<integer>" in data_type:
-                data_type = "integer"
-            elif "<boolean>" in data_type or "<logical>" in data_type:
-                data_type = "boolean"
-            elif "<enumeration" in data_type:
-                data_type = "enum"
-                enum_items = attribute.type_of_attribute().declared_type().enumeration_items()
-            properties.append({
-                "Name": prop_template.Name,
-                "value": None,
-                "type": data_type,
-                "enum_items": enum_items,
-                "is_null": True
-            })
+            properties.append(
+                {
+                    "Name": prop_template.Name,
+                    "value": None,
+                    "type": data_type,
+                    "enum_items": enum_items,
+                    "is_null": True,
+                }
+            )
         return properties

@@ -1,4 +1,5 @@
 import bpy
+import ifcopenshell.util.attribute
 import blenderbim.bim.module.group.add_group as add_group
 import blenderbim.bim.module.group.edit_group as edit_group
 import blenderbim.bim.module.group.remove_group as remove_group
@@ -94,8 +95,8 @@ class EnableEditingGroup(bpy.types.Operator):
         data = Data.groups[self.group]
 
         for attribute in IfcStore.get_schema().declaration_by_name("IfcGroup").all_attributes():
-            data_type = str(attribute.type_of_attribute)
-            if "<entity" in data_type:
+            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            if data_type == "entity":
                 continue
             new = props.group_attributes.add()
             new.name = attribute.name()
