@@ -11,6 +11,8 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
+        self.settings["person"] = ifcopenshell.api.owner.settings.get_person()
+        self.settings["organisation"] = ifcopenshell.api.owner.settings.get_organisation()
         if self.file.schema != "IFC2X3":
             if not self.settings["person"] or not self.settings["organisation"]:
                 return
@@ -22,7 +24,7 @@ class Usecase:
                 "OwningUser": user,
                 "OwningApplication": application,
                 "State": "READWRITE",
-                "ChangeAction": self.settings["ChangeAction"] or "ADDED",
+                "ChangeAction": "ADDED",
                 "LastModifiedDate": int(time.time()),
                 "LastModifyingUser": user,
                 "LastModifyingApplication": application,

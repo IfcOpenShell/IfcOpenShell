@@ -1,5 +1,6 @@
 import bpy
 from blenderbim.bim.prop import StrProperty, Attribute
+from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.owner.data import Data
 from bpy.types import PropertyGroup
 from bpy.props import (
