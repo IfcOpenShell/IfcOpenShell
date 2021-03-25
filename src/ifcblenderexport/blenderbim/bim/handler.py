@@ -1,6 +1,8 @@
 import bpy
 import json
+import addon_utils
 import blenderbim.bim.decoration as decoration
+import ifcopenshell.api.owner.settings
 from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.attribute.data import Data as AttributeData
@@ -46,14 +48,13 @@ def subscribe_to(object, data_path, callback):
         },
     )
 
+
 def purge_module_data():
     from blenderbim.bim import modules
 
-    for module in modules.values():
-        if not module:
-            continue
+    for name in modules.keys():
         try:
-            getattr(getattr(module, "data"), "Data").purge()
+            getattr(getattr(getattr(ifcopenshell.api, name), "data"), "Data").purge()
         except AttributeError:
             pass
 
@@ -101,6 +102,28 @@ def storeIdMap(scene):
 
 @persistent
 def setDefaultProperties(scene):
+    ifcopenshell.api.owner.settings.get_person = (
+        lambda: IfcStore.get_file().by_id(int(bpy.context.scene.BIMOwnerProperties.user_person))
+        if bpy.context.scene.BIMOwnerProperties.user_person
+        else None
+    )
+    ifcopenshell.api.owner.settings.get_organisation = (
+        lambda: IfcStore.get_file().by_id(int(bpy.context.scene.BIMOwnerProperties.user_organisation))
+        if bpy.context.scene.BIMOwnerProperties.user_organisation
+        else None
+    )
+    ifcopenshell.api.owner.settings.settings["ApplicationIdentifier"] = "BlenderBIM"
+    ifcopenshell.api.owner.settings.settings["ApplicationFullName"] = "BlenderBIM Add-on"
+    ifcopenshell.api.owner.settings.settings["Version"] = ".".join(
+        [
+            str(x)
+            for x in [
+                addon.bl_info.get("version", (-1, -1, -1))
+                for addon in addon_utils.modules()
+                if addon.bl_info["name"] == "BlenderBIM"
+            ][0]
+        ]
+    )
     if len(bpy.context.scene.DocProperties.drawing_styles) == 0:
         drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
         drawing_style.name = "Technical"

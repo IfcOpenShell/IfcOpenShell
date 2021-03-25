@@ -11,9 +11,11 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
+        self.settings["person"] = ifcopenshell.api.owner.settings.get_person()
+        self.settings["organisation"] = ifcopenshell.api.owner.settings.get_organisation()
         if not self.settings["element"].OwnerHistory:
             self.settings["element"].OwnerHistory = create_owner_history.Usecase(self.file, self.settings).execute()
-            return
+            return self.settings["element"].OwnerHistory
         if len(self.file.get_inverse(self.settings["element"].OwnerHistory)) > 1:
             old_history = self.settings["element"].OwnerHistory
             self.settings["element"].OwnerHistory = self.file.create_entity("IfcOwnerHistory")
@@ -21,11 +23,11 @@ class Usecase:
                 self.settings["element"].OwnerHistory[i] = attribute
         user = self.get_user()
         application = self.get_application()
-        self.settings["element"].OwnerHistory.ChangeAction = self.settings["ChangeAction"]
+        self.settings["element"].OwnerHistory.ChangeAction = "MODIFIED"
         self.settings["element"].OwnerHistory.LastModifiedDate = int(time.time())
         self.settings["element"].OwnerHistory.LastModifyingUser = user
         self.settings["element"].OwnerHistory.LastModifyingApplication = application
-        return self.settings["OwnerHistory"]
+        return self.settings["element"].OwnerHistory
 
     def get_user(self):
         for element in self.file.by_type("IfcPersonAndOrganization"):

@@ -9,6 +9,7 @@ from . import ifc
 from . import annotation
 from . import decoration
 import bpy
+from blenderbim.bim.handler import purge_module_data
 from blenderbim.bim.ifc import IfcStore
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -38,16 +39,7 @@ def updateIfcFile(self, context):
     if context.scene.BIMProperties.ifc_file:
         IfcStore.file = None
         IfcStore.schema = None
-        # Purge data cache
-        from blenderbim.bim import modules
-
-        for module in modules.values():
-            if not module:
-                continue
-            try:
-                getattr(getattr(module, "data"), "Data").purge()
-            except AttributeError:
-                pass
+        purge_module_data()
 
 
 def getDiagramScales(self, context):
