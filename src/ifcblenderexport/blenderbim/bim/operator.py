@@ -63,9 +63,11 @@ class ExportIFC(bpy.types.Operator):
     bl_idname = "export_ifc.bim"
     bl_label = "Export IFC"
     filename_ext = ".ifc"
+    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcjson", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     json_version: bpy.props.EnumProperty(items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version")
     json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
+    should_force_resave: bpy.props.BoolProperty(name="Resave .blend", default=False)
 
     def invoke(self, context, event):
         if not self.filepath:
@@ -102,6 +104,8 @@ class ExportIFC(bpy.types.Operator):
             new.name = output_file
         if not bpy.context.scene.BIMProperties.ifc_file:
             bpy.context.scene.BIMProperties.ifc_file = output_file
+        if self.should_force_resave:
+            bpy.ops.wm.save_as_mainfile(filepath=bpy.data.filepath)
         return {"FINISHED"}
 
 
@@ -111,8 +115,6 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
 
-    should_import_type_representations: bpy.props.BoolProperty(name="Import Type Representations", default=False)
-    should_import_curves: bpy.props.BoolProperty(name="Import Curves", default=False)
     should_import_spaces: bpy.props.BoolProperty(name="Import Spaces", default=False)
     should_auto_set_workarounds: bpy.props.BoolProperty(name="Automatically Set Vendor Workarounds", default=True)
     should_use_cpu_multiprocessing: bpy.props.BoolProperty(name="Import with CPU Multiprocessing", default=True)
@@ -122,7 +124,6 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
     should_clean_mesh: bpy.props.BoolProperty(name="Import and Clean Mesh", default=True)
     deflection_tolerance: bpy.props.FloatProperty(name="Import Deflection Tolerance", default=0.001)
     angular_tolerance: bpy.props.FloatProperty(name="Import Angular Tolerance", default=0.5)
-    should_allow_non_element_aggregates: bpy.props.BoolProperty(name="Import Non-Element Aggregates", default=False)
     should_offset_model: bpy.props.BoolProperty(name="Import and Offset Model", default=False)
     model_offset_coordinates: bpy.props.StringProperty(name="Model Offset Coordinates", default="0,0,0")
     ifc_import_filter: bpy.props.EnumProperty(
@@ -139,8 +140,6 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         )
 
         settings = import_ifc.IfcImportSettings.factory(context, self.filepath, logger)
-        settings.should_import_type_representations = self.should_import_type_representations
-        settings.should_import_curves = self.should_import_curves
         settings.should_import_spaces = self.should_import_spaces
         settings.should_auto_set_workarounds = self.should_auto_set_workarounds
         settings.should_use_cpu_multiprocessing = self.should_use_cpu_multiprocessing
@@ -150,7 +149,6 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         settings.should_clean_mesh = self.should_clean_mesh
         settings.deflection_tolerance = self.deflection_tolerance
         settings.angular_tolerance = self.angular_tolerance
-        settings.should_allow_non_element_aggregates = self.should_allow_non_element_aggregates
         settings.should_offset_model = self.should_offset_model
         settings.model_offset_coordinates = (
             [float(o) for o in self.model_offset_coordinates.split(",")]
@@ -614,10 +612,14 @@ class CutSection(bpy.types.Operator):
             bpy.data.objects[name].hide_set(value)
 
     def does_obj_have_target_view_representation(self, obj, camera):
-        for representation in obj.BIMObjectProperties.representations:
-            element = self.file.by_id(representation.ifc_definition_id)
+        if not obj.BIMObjectProperties.ifc_definition_id:
+            return False
+        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        if not element.Representation:
+            return False
+        for representation in element.Representation.Representations:
             if ifcopenshell.util.element.is_representation_of_context(
-                element, "Plan", "Annotation", camera.data.BIMCameraProperties.target_view
+                representation, "Plan", "Annotation", camera.data.BIMCameraProperties.target_view
             ):
                 return True
 
@@ -1426,35 +1428,6 @@ class ActivateDrawingStyle(bpy.types.Operator):
                 if space.type != "VIEW_3D":
                     continue
                 return space
-
-
-class AddDrawing(bpy.types.Operator):
-    bl_idname = "bim.add_drawing"
-    bl_label = "Add Drawing"
-
-    def execute(self, context):
-        new = bpy.context.scene.DocProperties.drawings.add()
-        new.name = "DRAWING {}".format(len(bpy.context.scene.DocProperties.drawings))
-        if not bpy.data.collections.get("Views"):
-            bpy.context.scene.collection.children.link(bpy.data.collections.new("Views"))
-        views_collection = bpy.data.collections.get("Views")
-        view_collection = bpy.data.collections.new("IfcGroup/" + new.name)
-        views_collection.children.link(view_collection)
-        camera = bpy.data.objects.new("IfcGroup/" + new.name, bpy.data.cameras.new("IfcGroup/" + new.name))
-        camera.location = (0, 0, 1.7)  # The view shall be 1.7m above the origin
-        camera.data.type = "ORTHO"
-        camera.data.ortho_scale = 50  # The default of 6m is too small
-        if bpy.context.scene.unit_settings.system == "IMPERIAL":
-            camera.data.BIMCameraProperties.diagram_scale = '1/8"=1\'-0"|1/96'
-        else:
-            camera.data.BIMCameraProperties.diagram_scale = "1:100|1/100"
-        bpy.context.scene.camera = camera
-        view_collection.objects.link(camera)
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].region_3d.view_perspective = "CAMERA"
-        new.camera = camera
-        bpy.ops.bim.activate_drawing_style()
-        return {"FINISHED"}
 
 
 class RemoveDrawing(bpy.types.Operator):

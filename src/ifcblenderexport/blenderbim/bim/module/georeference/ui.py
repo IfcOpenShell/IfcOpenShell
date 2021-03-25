@@ -143,10 +143,12 @@ class BIM_PT_gis_utilities(Panel):
     def draw(self, context):
         props = context.scene.BIMGeoreferenceProperties
 
-        row = self.layout.row()
+        row = self.layout.row(align=True)
         row.prop(props, "coordinate_input", text="Input")
-        row = self.layout.row()
+        row.operator("bim.get_cursor_location", text="", icon="TRACKER")
+        row = self.layout.row(align=True)
         row.prop(props, "coordinate_output", text="Output")
+        row.operator("bim.set_cursor_location", text="", icon="TRACKER")
 
         row = self.layout.row(align=True)
         row.operator("bim.convert_local_to_global", text="Local to Global")

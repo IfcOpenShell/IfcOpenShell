@@ -37,13 +37,21 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
             for prop in pset["Properties"]:
                 draw_psetqto_editable_ui(box, props, prop)
         else:
+            has_props_displayed = False
             for prop in pset["Properties"]:
-                if prop["value"] is None or prop["value"] == "":
+                if context.preferences.addons["blenderbim"].preferences.should_hide_empty_props and (
+                    prop["value"] is None or prop["value"] == ""
+                ):
                     continue
+                has_props_displayed = True
                 row = box.row(align=True)
                 row.scale_y = 0.8
                 row.label(text=prop["Name"])
                 row.label(text=str(prop["value"]))
+            if not has_props_displayed:
+                row = box.row()
+                row.scale_y = 0.8
+                row.label(text="No Properties Set")
 
 
 def draw_psetqto_editable_ui(box, props, prop):
@@ -167,11 +175,13 @@ class BIM_PT_material_psets(Panel):
     def poll(cls, context):
         if not context.active_object:
             return False
+        if not context.active_object.active_material:
+            return False
         props = context.active_object.active_material.BIMObjectProperties
         if not props.ifc_definition_id:
             return False
         if IfcStore.get_file().schema == "IFC2X3":
-            return False # We don't support material psets in IFC2X3 because they suck
+            return False  # We don't support material psets in IFC2X3 because they suck
         if props.ifc_definition_id not in Data.products:
             Data.load(props.ifc_definition_id)
         if not Data.products[props.ifc_definition_id]:

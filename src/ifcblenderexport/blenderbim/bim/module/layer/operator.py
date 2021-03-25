@@ -1,5 +1,6 @@
 import bpy
 import json
+import ifcopenshell.util.attribute
 import blenderbim.bim.module.layer.add_layer as add_layer
 import blenderbim.bim.module.layer.edit_layer as edit_layer
 import blenderbim.bim.module.layer.remove_layer as remove_layer
@@ -49,8 +50,8 @@ class EnableEditingLayer(bpy.types.Operator):
         data = Data.layers[self.layer]
 
         for attribute in IfcStore.get_schema().declaration_by_name("IfcPresentationLayerAssignment").all_attributes():
-            data_type = str(attribute.type_of_attribute)
-            if "<entity" in data_type:
+            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            if data_type == "entity":
                 continue
             new = props.layer_attributes.add()
             new.name = attribute.name()

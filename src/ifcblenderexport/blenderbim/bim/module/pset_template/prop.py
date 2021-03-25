@@ -14,16 +14,22 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from blenderbim.bim.module.pset_template.data import Data
 
 
 psettemplatefiles_enum = []
-propertysettemplates_enum = []
+psettemplates_enum = []
 
 
-def refreshPropertySetTemplates(self, context):
-    global propertysettemplates_enum
-    propertysettemplates_enum.clear()
-    getPropertySetTemplates(self, context)
+def updatePsetTemplateFiles(self, context):
+    global psettemplates_enum
+    IfcStore.pset_template_path = os.path.join(
+        context.scene.BIMProperties.data_dir,
+        "pset",
+        context.scene.BIMPsetTemplateProperties.pset_template_files + ".ifc",
+    )
+    IfcStore.pset_template_file = ifcopenshell.open(IfcStore.pset_template_path)
+    updatePsetTemplates(self, context)
 
 
 def getPsetTemplateFiles(self, context):
@@ -34,19 +40,29 @@ def getPsetTemplateFiles(self, context):
     return psettemplatefiles_enum
 
 
-def getPropertySetTemplates(self, context):
-    global propertysettemplates_enum
-    if len(propertysettemplates_enum) < 1:
-        IfcStore.pset_template_path = os.path.join(
-            context.scene.BIMProperties.data_dir, "pset", context.scene.BIMPsetTemplateProperties.pset_template_files + ".ifc"
-        )
-        IfcStore.pset_template_file = ifcopenshell.open(IfcStore.pset_template_path)
+def updatePsetTemplates(self, context):
+    global psettemplates_enum
+    psettemplates_enum.clear()
+    getPsetTemplates(self, context)
+
+
+def getPsetTemplates(self, context):
+    global psettemplates_enum
+    if len(psettemplates_enum) < 1:
+        if not IfcStore.pset_template_file:
+            IfcStore.pset_template_path = os.path.join(
+                context.scene.BIMProperties.data_dir,
+                "pset",
+                context.scene.BIMPsetTemplateProperties.pset_template_files + ".ifc",
+            )
+            IfcStore.pset_template_file = ifcopenshell.open(IfcStore.pset_template_path)
         templates = IfcStore.pset_template_file.by_type("IfcPropertySetTemplate")
-        propertysettemplates_enum.extend([(t.GlobalId, t.Name, "") for t in templates])
-    return propertysettemplates_enum
+        psettemplates_enum.extend([(str(t.id()), t.Name, "") for t in templates])
+        Data.load()
+    return psettemplates_enum
 
 
-class PropertySetTemplate(PropertyGroup):
+class PsetTemplate(PropertyGroup):
     global_id: StringProperty(name="Global ID")
     name: StringProperty(name="Name")
     description: StringProperty(name="Description")
@@ -98,7 +114,7 @@ class PropertySetTemplate(PropertyGroup):
     applicable_entity: StringProperty(name="Applicable Entity")
 
 
-class PropertyTemplate(PropertyGroup):
+class PropTemplate(PropertyGroup):
     global_id: StringProperty(name="Global ID")
     name: StringProperty(name="Name")
     description: StringProperty(name="Description")
@@ -222,8 +238,10 @@ class PropertyTemplate(PropertyGroup):
 
 class BIMPsetTemplateProperties(PropertyGroup):
     pset_template_files: EnumProperty(
-        items=getPsetTemplateFiles, name="Pset Template Files", update=refreshPropertySetTemplates
+        items=getPsetTemplateFiles, name="Pset Template Files", update=updatePsetTemplateFiles
     )
-    property_set_templates: EnumProperty(items=getPropertySetTemplates, name="Pset Template Files")
-    active_property_set_template: PointerProperty(type=PropertySetTemplate)
-    property_templates: CollectionProperty(name="Property Templates", type=PropertyTemplate)
+    pset_templates: EnumProperty(items=getPsetTemplates, name="Pset Template Files")
+    active_pset_template_id: IntProperty(name="Active Pset Template Id")
+    active_prop_template_id: IntProperty(name="Active Prop Template Id")
+    active_pset_template: PointerProperty(type=PsetTemplate)
+    active_prop_template: PointerProperty(type=PropTemplate)

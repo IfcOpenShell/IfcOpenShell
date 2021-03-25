@@ -25,24 +25,45 @@ set PROJECT_NAME=IfcOpenShell
 setlocal EnableDelayedExpansion
 set IFCOS_PAUSE_ON_ERROR=
 
-:: Read cached variables from the most recently modified BuildDepsCache.txt.
-for /f "tokens=*" %%f in ('dir BuildDepsCache-*.txt /o:-n /t:a /b') do (
-    for /f "delims== tokens=1,2" %%G in (%%f) do set %%G=%%H
-)
-
 set GENERATOR=%1
+
+:: If no GENERATOR was provided, read cached variables from any BuildDepsCache-XXX.txt
+:: found in this directory; note that if more than one is present, the result could be wrong!
 if (%1)==() (
+	for /f "tokens=*" %%f in ('dir BuildDepsCache-*.txt /o:-n /t:a /b') do (
+		for /f "delims== tokens=1,2" %%G in (%%f) do set %%G=%%H
+	)
+
     if not defined GEN_SHORTHAND (
         echo BuildDepsCache file does not exist and/or GEN_SHORTHAND missing from it. Run build-deps.cmd to create it.
         set IFCOS_PAUSE_ON_ERROR=pause
         goto :Error
     )
-    set GENERATOR=%GEN_SHORTHAND%
+    set GENERATOR=!GEN_SHORTHAND!
     echo Generator not passed, but GEN_SHORTHAND=!GENERATOR! read from BuildDepsCache
     echo.
 )
+
 call vs-cfg.cmd %GENERATOR%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+
+:: If cached variables are still undefined,
+:: read them from the specific BuildDepsCache-XXX.txt.
+set "_test=0"
+if not defined OCC_INCLUDE_DIR set _test=1
+if not defined OCC_LIBRARY_DIR set _test=1
+if %_test% EQU 1 (
+	IF DEFINED VS_TOOLSET (
+		set "BUILD_DEPS_CACHE_PATH=BuildDepsCache-%VS_PLATFORM%-%VS_TOOLSET%.txt"
+	) ELSE (
+		set "BUILD_DEPS_CACHE_PATH=BuildDepsCache-%VS_PLATFORM%.txt"
+	)
+
+	for /f "tokens=*" %%f in ('dir !BUILD_DEPS_CACHE_PATH! /o:-n /t:a /b') do (
+		for /f "delims== tokens=1,2" %%G in (%%f) do set %%G=%%H
+	)
+)
+
 :: As CMake options are typically of format -DSOMETHING:BOOL=ON or -DSOMETHING=1, i.e. they contain an equal sign,
 :: they will mess up the batch file argument parsing if the arguments are passed on by splitting them %2 %3 %4 %5
 :: %6 %7 %8 %9. Work around that, http://scripts.dragon-it.co.uk/scripts.nsf/docs/batch-search-replace-substitute
@@ -52,7 +73,7 @@ if not (%1)==() (
 )
 
 pushd ..
-set CMAKE_INSTALL_PREFIX=%CD%\installed-%GEN_SHORTHAND%
+set CMAKE_INSTALL_PREFIX=%CD%\_installed-%GEN_SHORTHAND%
 popd
 
 IF NOT EXIST ..\%BUILD_DIR%. mkdir ..\%BUILD_DIR%
@@ -110,10 +131,10 @@ set CMAKELISTS_DIR=..\cmake
 if not (%1)==() if exist CMakeCache.txt. del /Q CMakeCache.txt
 call cecho.cmd 0 13 "Running CMake for %PROJECT_NAME%."
 
-IF DEFINED VS_TOOLSET (
-	cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -A %VS_PLATFORM% -T %VS_TOOLSET% -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" %ARGUMENTS%
+IF NOT "%VS_TOOLSET_HOST%"=="" (
+	cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -A %VS_PLATFORM% -T %VS_TOOLSET_HOST% -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" -DBoost_NO_BOOST_CMAKE=On %ARGUMENTS%
 ) ELSE (
-	cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -A %VS_PLATFORM% -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" %ARGUMENTS%
+	cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -A %VS_PLATFORM% -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" -DBoost_NO_BOOST_CMAKE=On %ARGUMENTS%
 )
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error

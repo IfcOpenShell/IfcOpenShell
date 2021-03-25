@@ -1,10 +1,16 @@
-import bpy
-import ifcopenshell
-import bimtester
-import bimtester.run
-import bimtester.reports
 import os
+import bpy
+import tempfile
 import webbrowser
+import ifcopenshell
+
+try:
+    import bimtester
+    import bimtester.run
+    import bimtester.reports
+except:
+    print("Failed to load BIMTester. Try disabling other add-ons, in particular Blender-OSM. See bug #1318.")
+
 from pathlib import Path
 from itertools import cycle
 from blenderbim.bim.ifc import IfcStore
@@ -15,33 +21,28 @@ class ExecuteBIMTester(bpy.types.Operator):
     bl_label = "Execute BIMTester"
 
     def execute(self, context):
+        props = context.scene.BimTesterProperties
 
-        filename = os.path.join(
-            bpy.context.scene.BimTesterProperties.features_dir,
-            bpy.context.scene.BimTesterProperties.features_file + ".feature",
-        )
-        cwd = os.getcwd()
-        os.chdir(bpy.context.scene.BimTesterProperties.features_dir)
-        bimtester.run.run_tests({
-            "advanced_arguments": "",
-            "console": False,
-            "featuresdir": "",
-            "feature": filename,
-            "gui": False,
-            "ifcfile": "",
-            "purge": False,
-            "path": "",
-        })
-        bimtester.reports.generate_report()
-        webbrowser.open(
-            "file://"
-            + os.path.join(
-                bpy.context.scene.BimTesterProperties.features_dir,
-                "report",
-                bpy.context.scene.BimTesterProperties.features_file + ".feature.html",
-            )
-        )
-        os.chdir(cwd)
+        with tempfile.TemporaryDirectory() as dirpath:
+            report = os.path.join(dirpath, "{}.html".format(props.feature))
+            args = {
+                "action": "run",
+                "advanced_arguments": "",
+                "console": False,
+                "feature": props.feature,
+                "ifc": props.ifc_file,
+                "path": "",
+                "report": report,
+                "schema_file": "",
+                "schema_name": "",
+                "lang": "en",
+                "steps": props.steps,
+            }
+            use_stored_ifc = props.should_load_from_memory and IfcStore.get_file()
+            runner = bimtester.run.TestRunner(args["ifc"], ifc=IfcStore.get_file() if use_stored_ifc else None)
+            report_json = runner.run(args)
+            bimtester.reports.ReportGenerator().generate(report_json, args["report"])
+            webbrowser.open("file://" + report)
         return {"FINISHED"}
 
 
@@ -50,7 +51,6 @@ class BIMTesterPurge(bpy.types.Operator):
     bl_label = "Purge Tests"
 
     def execute(self, context):
-
         filename = os.path.join(
             bpy.context.scene.BimTesterProperties.features_dir,
             bpy.context.scene.BimTesterProperties.features_file + ".feature",
@@ -62,15 +62,47 @@ class BIMTesterPurge(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SelectFeaturesDir(bpy.types.Operator):
-    bl_idname = "bim.select_features_dir"
-    bl_label = "Select Features Directory"
+class SelectFeature(bpy.types.Operator):
+    bl_idname = "bim.select_feature"
+    bl_label = "Select Feature / IDS"
+    filename_ext = ".feature"
+    filter_glob: bpy.props.StringProperty(default="*.feature;*.xml", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        bpy.context.scene.BimTesterProperties.features_dir = (
-            os.path.dirname(os.path.abspath(self.filepath)) if "." in self.filepath else self.filepath
-        )
+        bpy.context.scene.BimTesterProperties.feature = self.filepath
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+
+class SelectSteps(bpy.types.Operator):
+    bl_idname = "bim.select_steps"
+    bl_label = "Select Steps"
+    filename_ext = ".py"
+    filter_glob: bpy.props.StringProperty(default="*.py", options={"HIDDEN"})
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        bpy.context.scene.BimTesterProperties.steps = self.filepath
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+
+class SelectBIMTesterIfcFile(bpy.types.Operator):
+    bl_idname = "bim.select_bimtester_ifc_file"
+    bl_label = "Select BIMTester IFC File"
+    filename_ext = ".ifc"
+    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        context.scene.BimTesterProperties.ifc_file = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):

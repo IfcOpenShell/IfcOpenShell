@@ -351,22 +351,18 @@ ptree* descend(IfcSchema::IfcObjectDefinition* product, ptree& tree, IfcUtil::If
 	return &child;
 }
 
-
-
-
-	// Format IfcProperty instances and insert into the DOM. IfcComplexProperties are flattened out.
-	void format_properties(IfcSchema::IfcProperty::list::ptr properties, ptree& node) {
-		for (IfcSchema::IfcProperty::list::it it = properties->begin(); it != properties->end(); ++it) {
-			IfcSchema::IfcProperty* p = *it;
-			if (p->declaration().is(IfcSchema::IfcComplexProperty::Class())) {
-				IfcSchema::IfcComplexProperty* complex = (IfcSchema::IfcComplexProperty*) p;
-				format_properties(complex->HasProperties(), node);
-			}
-			else {
-				format_entity_instance(p, node);
-			}
+// Format IfcProperty instances and insert into the DOM. IfcComplexProperties are flattened out.
+void format_properties(IfcSchema::IfcProperty::list::ptr properties, ptree& node) {
+	for (IfcSchema::IfcProperty::list::it it = properties->begin(); it != properties->end(); ++it) {
+		IfcSchema::IfcProperty* p = *it;
+		if (p->declaration().is(IfcSchema::IfcComplexProperty::Class())) {
+			IfcSchema::IfcComplexProperty* complex = (IfcSchema::IfcComplexProperty*) p;
+			format_properties(complex->HasProperties(), node);
+		} else {
+			format_entity_instance(p, node);
 		}
 	}
+}
 
 // Format IfcElementQuantity instances and insert into the DOM.
 void format_quantities(IfcSchema::IfcPhysicalQuantity::list::ptr quantities, ptree& node) {

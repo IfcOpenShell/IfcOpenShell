@@ -6,15 +6,26 @@ class Data:
     representations = {}
 
     @classmethod
+    def purge(cls):
+        cls.products = {}
+        cls.representations = {}
+
+    @classmethod
     def load(cls, product_id):
         file = IfcStore.get_file()
         if not file:
             return
         cls.products[product_id] = []
         product = file.by_id(product_id)
-        if not hasattr(product, "Representation") or not product.Representation:
-            return
-        for representation in product.Representation.Representations:
+        representations = []
+        if product.is_a("IfcProduct"):
+            if product.Representation:
+                representations = product.Representation.Representations
+            else:
+                representations = []
+        elif product.is_a("IfcTypeProduct"):
+            representations = [rm.MappedRepresentation for rm in product.RepresentationMaps or []]
+        for representation in representations:
             c = representation.ContextOfItems
             rep_id = int(representation.id())
             cls.representations[rep_id] = {

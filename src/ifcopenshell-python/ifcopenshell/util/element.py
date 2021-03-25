@@ -45,7 +45,7 @@ def get_properties(properties):
     results = {}
     for prop in properties:
         if prop.is_a("IfcPropertySingleValue"):
-            results[prop.Name] = prop.NominalValue.wrappedValue
+            results[prop.Name] = prop.NominalValue.wrappedValue if prop.NominalValue else None
         elif prop.is_a("IfcComplexProperty"):
             data = prop.get_info()
             data["properties"] = get_properties(prop.HasProperties)
@@ -124,6 +124,13 @@ def remove_deep(ifc_file, element):
     for ref in subgraph[::-1]:
         if ref.id() and len(set(ifc_file.get_inverse(ref)) - subgraph_set) == 0:
             ifc_file.remove(ref)
+
+
+def remove_deep_batched(ifc_file, element):
+    # @todo maybe some sort of try-finally mechanism.
+    ifc_file.batch()
+    remove_deep(ifc_file, element)
+    ifc_file.unbatch()
 
 
 def get_representation(element, context, subcontext=None, target_view=None):

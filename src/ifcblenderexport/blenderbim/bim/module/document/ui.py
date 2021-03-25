@@ -41,12 +41,7 @@ class BIM_PT_documents(Panel):
 
         if self.props.is_editing:
             self.layout.template_list(
-                "BIM_UL_documents",
-                "",
-                self.props,
-                "documents",
-                self.props,
-                "active_document_index",
+                "BIM_UL_documents", "", self.props, "documents", self.props, "active_document_index"
             )
 
         if self.props.active_document_id:

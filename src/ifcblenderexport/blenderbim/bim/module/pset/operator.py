@@ -51,7 +51,7 @@ class EnablePsetEditing(bpy.types.Operator):
             elif prop["type"] == "integer":
                 new.int_value = prop["value"] or 0
             elif prop["type"] == "float":
-                new.float_value = prop["value"] or 0.
+                new.float_value = prop["value"] or 0.0
             elif prop["type"] == "boolean":
                 new.bool_value = prop["value"] or False
             elif prop["type"] == "enum":
@@ -84,6 +84,8 @@ class EditPset(bpy.types.Operator):
     bl_label = "Edit Pset"
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
+    pset_id: bpy.props.IntProperty()
+    properties: bpy.props.StringProperty()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
@@ -94,35 +96,47 @@ class EditPset(bpy.types.Operator):
         oprops = obj.BIMObjectProperties
         props = obj.PsetProperties
         properties = {}
-        data = Data.psets if props.active_pset_id in Data.psets else Data.qtos
-        for prop in data[props.active_pset_id]["Properties"]:
-            blender_prop = props.properties.get(prop["Name"])
-            if not blender_prop:
-                continue
-            if blender_prop.is_null:
-                properties[prop["Name"]] = None
-            elif prop["type"] == "string":
-                properties[prop["Name"]] = blender_prop.string_value
-            elif prop["type"] == "boolean":
-                properties[prop["Name"]] = blender_prop.bool_value
-            elif prop["type"] == "integer":
-                properties[prop["Name"]] = blender_prop.int_value
-            elif prop["type"] == "float":
-                properties[prop["Name"]] = blender_prop.float_value
-            elif prop["type"] == "enum":
-                properties[prop["Name"]] = blender_prop.enum_value
-        if props.active_pset_id in Data.psets:
-            edit_pset.Usecase(self.file, {
-                "pset": self.file.by_id(props.active_pset_id),
-                "Name": props.active_pset_name,
-                "Properties": properties
-            }).execute()
+
+        pset_id = self.pset_id or props.active_pset_id
+        if self.properties:
+            properties = json.loads(self.properties)
         else:
-            edit_qto.Usecase(self.file, {
-                "qto": self.file.by_id(props.active_pset_id),
-                "Name": props.active_pset_name,
-                "Properties": properties
-            }).execute()
+            data = Data.psets if pset_id in Data.psets else Data.qtos
+            for prop in data[pset_id]["Properties"]:
+                blender_prop = props.properties.get(prop["Name"])
+                if not blender_prop:
+                    continue
+                if blender_prop.is_null:
+                    properties[prop["Name"]] = None
+                elif prop["type"] == "string":
+                    properties[prop["Name"]] = blender_prop.string_value
+                elif prop["type"] == "boolean":
+                    properties[prop["Name"]] = blender_prop.bool_value
+                elif prop["type"] == "integer":
+                    properties[prop["Name"]] = blender_prop.int_value
+                elif prop["type"] == "float":
+                    properties[prop["Name"]] = blender_prop.float_value
+                elif prop["type"] == "enum":
+                    properties[prop["Name"]] = blender_prop.enum_value
+
+        if pset_id in Data.psets:
+            edit_pset.Usecase(
+                self.file,
+                {
+                    "pset": self.file.by_id(pset_id),
+                    "Name": props.active_pset_name,
+                    "Properties": properties,
+                },
+            ).execute()
+        else:
+            edit_qto.Usecase(
+                self.file,
+                {
+                    "qto": self.file.by_id(pset_id),
+                    "Name": props.active_pset_name,
+                    "Properties": properties,
+                },
+            ).execute()
         Data.load(oprops.ifc_definition_id)
         bpy.ops.bim.disable_pset_editing(obj=self.obj, obj_type=self.obj_type)
         return {"FINISHED"}
@@ -142,10 +156,13 @@ class RemovePset(bpy.types.Operator):
         elif self.obj_type == "Material":
             obj = bpy.data.materials.get(self.obj)
         props = obj.BIMObjectProperties
-        remove_pset.Usecase(self.file, {
-            "product": self.file.by_id(props.ifc_definition_id),
-            "pset": self.file.by_id(self.pset_id),
-        }).execute()
+        remove_pset.Usecase(
+            self.file,
+            {
+                "product": self.file.by_id(props.ifc_definition_id),
+                "pset": self.file.by_id(self.pset_id),
+            },
+        ).execute()
         Data.load(props.ifc_definition_id)
         return {"FINISHED"}
 
@@ -155,6 +172,7 @@ class AddPset(bpy.types.Operator):
     bl_label = "Add Pset"
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
+    pset_name: bpy.props.StringProperty()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
@@ -164,10 +182,21 @@ class AddPset(bpy.types.Operator):
             obj = bpy.data.materials.get(self.obj)
         oprops = obj.BIMObjectProperties
         props = obj.PsetProperties
-        add_pset.Usecase(self.file, {
-            "product": self.file.by_id(oprops.ifc_definition_id),
-            "Name": props.pset_name if self.obj_type == "Object" else props.material_pset_name,
-        }).execute()
+
+        if self.pset_name:
+            pset_name = self.pset_name
+        elif self.obj_type == "Object":
+            pset_name = props.pset_name
+        elif self.obj_type == "Material":
+            pset_name = props.material_pset_name
+
+        add_pset.Usecase(
+            self.file,
+            {
+                "product": self.file.by_id(oprops.ifc_definition_id),
+                "Name": pset_name,
+            },
+        ).execute()
         Data.load(oprops.ifc_definition_id)
         return {"FINISHED"}
 
@@ -181,10 +210,13 @@ class AddQto(bpy.types.Operator):
         obj = bpy.context.active_object
         oprops = obj.BIMObjectProperties
         props = obj.PsetProperties
-        add_qto.Usecase(self.file, {
-            "product": self.file.by_id(oprops.ifc_definition_id),
-            "Name": props.qto_name,
-        }).execute()
+        add_qto.Usecase(
+            self.file,
+            {
+                "product": self.file.by_id(oprops.ifc_definition_id),
+                "Name": props.qto_name,
+            },
+        ).execute()
         Data.load(oprops.ifc_definition_id)
         return {"FINISHED"}
 

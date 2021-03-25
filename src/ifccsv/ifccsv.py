@@ -6,7 +6,6 @@ import ifcopenshell.util.selector
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
 import csv
-import lark
 import argparse
 
 
@@ -21,7 +20,7 @@ class IfcAttributeSetter:
         if "." not in key:
             return element
         if key[0:3] == "Qto":
-            qto, prop = key.split(".", 1)
+            qto_name, prop = key.split(".", 1)
             qto = IfcAttributeSetter.get_element_qto(element, qto_name)
             if qto:
                 IfcAttributeSetter.set_qto_property(qto, prop, value)
@@ -92,7 +91,7 @@ class IfcCsv:
         self.attributes = []
         self.output = ""
         self.selector = None
-        self.delimiter = ";"
+        self.delimiter = ","
 
     def export(self, ifc_file, elements):
         self.ifc_file = ifc_file
@@ -113,7 +112,7 @@ class IfcCsv:
             self.results.append(result)
 
         with open(self.output, "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
+            writer = csv.writer(f, delimiter=self.delimiter)
             header = ["GlobalId"]
             header.extend(self.attributes)
             writer.writerow(header)
@@ -132,8 +131,7 @@ class IfcCsv:
                 results.update([p.Name for p in element.Quantities])
         return ["{}.{}".format(pset_qto_name, n) for n in results]
 
-    def Import(self, ifc):
-        ifc_file = ifcopenshell.open(ifc)
+    def Import(self, ifc_file):
         with open(self.output, newline="", encoding="utf-8") as f:
             reader = csv.reader(f, delimiter=self.delimiter)
             headers = []
@@ -150,7 +148,6 @@ class IfcCsv:
                     if i == 0:
                         continue  # Skip GlobalId
                     element = IfcAttributeSetter.set_element_key(ifc_file, element, headers[i], value)
-        ifc_file.write(ifc)
 
 
 if __name__ == "__main__":
@@ -175,4 +172,6 @@ if __name__ == "__main__":
     elif getattr(args, "import"):
         ifc_csv = IfcCsv()
         ifc_csv.output = args.csv
-        ifc_csv.Import(args.ifc)
+        ifc_file = ifcopenshell.open(args.ifc)
+        ifc_csv.Import(ifc_file)
+        ifc_file.write(args.ifc)

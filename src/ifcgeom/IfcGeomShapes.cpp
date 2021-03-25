@@ -253,14 +253,22 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* l, T
 
 		result = sewer.SewedShape();
 
+		// @todo ugly hack
+
+		// The reason for this distinction is that at this point of the loop we're not sure anymore
+		// whether this was constructed from an inner or outer bound. So rather than iterating over
+		// wires of `face1` and `face2` we should iterate over the faces and then properly check with
+		// BRepTools::OuterBound().
+		// Currently this distinction happens based on profile type which is not robust and probably
+		// not complete.
 		if (shell.IsNull()) {
 			shell = result;
 		} else if (l->SweptArea()->declaration().is(IfcSchema::IfcCircleHollowProfileDef::Class()) ||
-			l->SweptArea()->declaration().is(IfcSchema::IfcRectangleHollowProfileDef::Class()))
+			l->SweptArea()->declaration().is(IfcSchema::IfcRectangleHollowProfileDef::Class()) ||
+			l->SweptArea()->declaration().is(IfcSchema::IfcArbitraryProfileDefWithVoids::Class()))
 		{
-			/// @todo a bit of of a hack, should be sufficient
+			// @todo properly check for failure and all.
 			shell = BRepAlgoAPI_Cut(shell, result).Shape();
-			break;
 		} else {
 			if (compound.IsNull()) {
 				compound_builder.MakeCompound(compound);
@@ -865,25 +873,50 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRepresentation* l, IfcRepresen
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresentationShapeItems& shapes) {
+	// @nb the selection is partly duplicated from convert_curves() but it's needed as a
+	// geometric set by it's static class definition does not inform us of the type of elements.
+	// @todo handle this better so that this doesn't log an error.
+	const bool include_curves = getValue(GV_DIMENSIONALITY) != +1;
+	const bool include_solids_and_surfaces = getValue(GV_DIMENSIONALITY) != -1;
+
 	IfcEntityList::ptr elements = l->Elements();
 	if ( !elements->size() ) return false;
 	bool part_succes = false;
 	const IfcGeom::SurfaceStyle* parent_style = get_style(l);
-	for ( IfcEntityList::it it = elements->begin(); it != elements->end(); ++ it ) {
+	for (IfcEntityList::it it = elements->begin(); it != elements->end(); ++it) {
 		IfcSchema::IfcGeometricSetSelect* element = *it;
 		TopoDS_Shape s;
-		if (convert_shape(element, s)) {
-			part_succes = true;
-			const IfcGeom::SurfaceStyle* style = 0;
-			if (element->declaration().is(IfcSchema::IfcPoint::Class())) {
-				style = get_style((IfcSchema::IfcPoint*) element);
-			} else if (element->declaration().is(IfcSchema::IfcCurve::Class())) {
-				style = get_style((IfcSchema::IfcCurve*) element);
-			} else if (element->declaration().is(IfcSchema::IfcSurface::Class())) {
-				style = get_style((IfcSchema::IfcSurface*) element);
+		if (shape_type(element) == ST_SHAPELIST) {
+			IfcRepresentationShapeItems items;
+			if (!(convert_shapes(element, items) && flatten_shape_list(items, s, false))) {
+				continue;
 			}
-			shapes.push_back(IfcRepresentationShapeItem(l->data().id(), s, style ? style : parent_style));
+		} else if (shape_type(element) == ST_SHAPE && include_solids_and_surfaces) {
+			if (!convert_shape(element, s)) {
+				continue;
+			}
+		} else if (shape_type(element) == ST_WIRE && include_curves) {
+			TopoDS_Wire w;
+			if (!convert_wire(element, w)) {
+				continue;
+			}
+			s = w;
+		} else {
+			continue;
 		}
+
+		part_succes = true;
+		const IfcGeom::SurfaceStyle* style = 0;
+		if (element->declaration().is(IfcSchema::IfcPoint::Class())) {
+			style = get_style((IfcSchema::IfcPoint*) element);
+		}
+		else if (element->declaration().is(IfcSchema::IfcCurve::Class())) {
+			style = get_style((IfcSchema::IfcCurve*) element);
+		}
+		else if (element->declaration().is(IfcSchema::IfcSurface::Class())) {
+			style = get_style((IfcSchema::IfcSurface*) element);
+		}
+		shapes.push_back(IfcRepresentationShapeItem(l->data().id(), s, style ? style : parent_style));
 	}
 	return part_succes;
 }
@@ -1306,6 +1339,16 @@ namespace {
 		TopTools_IndexedDataMapOfShapeListOfShape map;
 		TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, map);
 
+		for (int i = 1; i <= map.Extent(); ++i) {
+			if (map.FindFromIndex(i).Extent() > 2) {
+				Logger::Warning("Self-intersecting Directrix");
+			}
+		}
+
+		std::set<TopoDS_TShape*> seen;
+
+		auto num_edges = IfcGeom::Kernel::count(wire, TopAbs_EDGE);
+
 		TopoDS_Vertex v0, v1;
 		// @todo this creates the ancestor map twice
 		TopExp::Vertices(wire, v0, v1);
@@ -1314,7 +1357,9 @@ namespace {
 
 		// @todo this probably still does not work on a closed wire consisting of one (circular) edge.
 		
-		while (!v0.IsSame(v1) || ignore_first_equality_because_closed) {
+		while (sorted_edges.size() < num_edges && 
+			(!v0.IsSame(v1) || ignore_first_equality_because_closed)) 
+		{
 			ignore_first_equality_because_closed = false;
 			if (!map.Contains(v0)) {
 				throw std::runtime_error("Disconnected vertex");
@@ -1326,10 +1371,11 @@ namespace {
 			for (; it.More(); it.Next()) {
 				const TopoDS_Edge& e = TopoDS::Edge(it.Value());
 				TopExp::Vertices(e, ve0, ve1, true);
-				if (ve0.IsSame(v0)) {
+				if (ve0.IsSame(v0) && seen.find(&*e.TShape()) == seen.end()) {
 					sorted_edges.push_back(e);
 					v0 = ve1;
 					added = true;
+					seen.insert(&*e.TShape());
 					break;
 				}
 			}

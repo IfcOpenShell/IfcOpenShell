@@ -21,17 +21,13 @@ class BIM_PT_layers(Panel):
 
         self.props = context.scene.BIMLayerProperties
 
-        if Data.layers:
-            row = self.layout.row(align=True)
-            row.label(text="{} Layers Found".format(len(Data.layers.keys())))
-            if self.props.is_editing:
-                row.operator("bim.add_presentation_layer", text="", icon="ADD")
-                row.operator("bim.disable_layer_editing_ui", text="", icon="X")
-            else:
-                row.operator("bim.load_layers", text="", icon="IMPORT")
+        row = self.layout.row(align=True)
+        row.label(text="{} Layers Found".format(len(Data.layers.keys())))
+        if self.props.is_editing:
+            row.operator("bim.add_presentation_layer", text="", icon="ADD")
+            row.operator("bim.disable_layer_editing_ui", text="", icon="X")
         else:
-            row = self.layout.row(align=True)
-            row.label(text="No Layers")
+            row.operator("bim.load_layers", text="", icon="GREASEPENCIL")
 
         if self.props.is_editing:
             self.layout.template_list(

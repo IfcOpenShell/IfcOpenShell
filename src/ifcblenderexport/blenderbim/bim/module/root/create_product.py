@@ -1,4 +1,5 @@
 import ifcopenshell
+from blenderbim.bim.module.owner.api import create_owner_history
 
 
 class Usecase:
@@ -8,7 +9,6 @@ class Usecase:
             "ifc_class": "IfcBuildingElementProxy",
             "predefined_type": None,
             "name": None,
-            "OwnerHistory": None,
         }
         for key, value in settings.items():
             self.settings[key] = value
@@ -16,13 +16,16 @@ class Usecase:
     def execute(self):
         element = self.file.create_entity(self.settings["ifc_class"], **{
             "GlobalId": ifcopenshell.guid.new(),
-            "OwnerHistory": self.settings["OwnerHistory"]
+            "OwnerHistory": create_owner_history()
         })
         element.Name = self.settings["name"] or None
-        if self.settings["predefined_type"] and hasattr(element, "PredefinedType"):
-            try:
-                element.PredefinedType = self.settings["predefined_type"]
-            except:
-                element.PredefinedType = "USERDEFINED"
+        if self.settings["predefined_type"]:
+            if hasattr(element, "PredefinedType"):
+                try:
+                    element.PredefinedType = self.settings["predefined_type"]
+                except:
+                    element.PredefinedType = "USERDEFINED"
+                    element.ObjectType = self.settings["predefined_type"]
+            elif hasattr(element, "ObjectType"):
                 element.ObjectType = self.settings["predefined_type"]
         return element

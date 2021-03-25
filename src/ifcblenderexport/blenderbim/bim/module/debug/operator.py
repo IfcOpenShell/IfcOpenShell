@@ -13,11 +13,41 @@ class ProfileImportIFC(bpy.types.Operator):
         import cProfile
         import pstats
 
+        # For Windows
+        filepath = bpy.context.scene.BIMProperties.ifc_file.replace('\\', '\\\\')
+
         cProfile.run(
-            f"import bpy; bpy.ops.import_ifc.bim(filepath='{bpy.context.scene.BIMProperties.ifc_file}')", "blender.prof"
+            f"import bpy; bpy.ops.import_ifc.bim(filepath='{filepath}')", "blender.prof"
         )
         p = pstats.Stats("blender.prof")
         p.sort_stats("cumulative").print_stats(50)
+        return {"FINISHED"}
+
+
+class CreateAllShapes(bpy.types.Operator):
+    bl_idname = "bim.create_all_shapes"
+    bl_label = "Create All Shapes"
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        elements = self.file.by_type("IfcElement") + self.file.by_type("IfcSpace")
+        total = len(elements)
+        settings = ifcopenshell.geom.settings()
+        failures = []
+        excludes = () # For the developer to debug with
+        for i, element in enumerate(elements):
+            if element.GlobalId in excludes:
+                continue
+            print(f'{i}/{total}:', element)
+            try:
+                shape = ifcopenshell.geom.create_shape(settings, element)
+                print("Success", len(shape.geometry.verts), len(shape.geometry.edges), len(shape.geometry.faces))
+            except:
+                failures.append(element)
+                print('***** FAILURE *****')
+        print('Failures:')
+        for failure in failures:
+            print(failure)
         return {"FINISHED"}
 
 
@@ -57,9 +87,6 @@ class SelectHighPolygonMeshes(bpy.types.Operator):
             except:
                 # If it is not in the view layer
                 pass
-            relating_type = obj.BIMObjectProperties.relating_type
-            if relating_type:
-                relating_type.select_set(True)
         return {"FINISHED"}
 
 
@@ -94,6 +121,8 @@ class InspectFromStepId(bpy.types.Operator):
             bpy.context.scene.BIMDebugProperties.attributes.remove(0)
         while len(bpy.context.scene.BIMDebugProperties.inverse_attributes) > 0:
             bpy.context.scene.BIMDebugProperties.inverse_attributes.remove(0)
+        while len(bpy.context.scene.BIMDebugProperties.inverse_references) > 0:
+            bpy.context.scene.BIMDebugProperties.inverse_references.remove(0)
         for key, value in element.get_info().items():
             self.add_attribute(bpy.context.scene.BIMDebugProperties.attributes, key, value)
         for key in dir(element):
@@ -105,6 +134,10 @@ class InspectFromStepId(bpy.types.Operator):
             ):
                 continue
             self.add_attribute(bpy.context.scene.BIMDebugProperties.inverse_attributes, key, getattr(element, key))
+        for inverse in self.file.get_inverse(element):
+            new = bpy.context.scene.BIMDebugProperties.inverse_references.add()
+            new.string_value = str(inverse)
+            new.int_value = inverse.id()
         return {"FINISHED"}
 
     def add_attribute(self, prop, key, value):

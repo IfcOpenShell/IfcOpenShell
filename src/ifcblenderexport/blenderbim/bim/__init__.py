@@ -6,7 +6,7 @@ bpy = sys.modules.get("bpy")
 if bpy is not None:
     import bpy
     import importlib
-    from . import ui, prop, operator
+    from . import handler, ui, prop, operator, gizmos
 
     modules = {
         "project": None,
@@ -16,6 +16,7 @@ if bpy is not None:
         "unit": None,
         "georeference": None,
         "context": None,
+        "drawing": None,
         "attribute": None,
         "type": None,
         "spatial": None,
@@ -23,6 +24,9 @@ if bpy is not None:
         "aggregate": None,
         "geometry": None,
         "cobie": None,
+        "sequence": None,
+        "group": None,
+        "structural": None,
         "material": None,
         "style": None,
         "layer": None,
@@ -40,6 +44,7 @@ if bpy is not None:
         "diff": None,
         "patch": None,
         "covetool": None,
+        "augin": None,
         "debug": None,
     }
 
@@ -86,7 +91,6 @@ if bpy is not None:
         operator.RemoveVariable,
         operator.PropagateTextData,
         operator.SetOverrideColour,
-        operator.AddDrawing,
         operator.RemoveDrawing,
         operator.AddDrawingStyle,
         operator.RemoveDrawingStyle,
@@ -120,7 +124,6 @@ if bpy is not None:
         prop.BIMProperties,
         prop.DocProperties,
         prop.IfcParameter,
-        prop.BoundaryCondition,
         prop.PsetQto,
         prop.GlobalId,
         prop.RepresentationItem,
@@ -135,7 +138,6 @@ if bpy is not None:
         ui.BIM_PT_drawings,
         ui.BIM_PT_schedules,
         ui.BIM_PT_sheets,
-        ui.BIM_PT_camera,
         ui.BIM_PT_text,
         ui.BIM_PT_annotation_utilities,
         ui.BIM_PT_misc_utilities,
@@ -143,6 +145,11 @@ if bpy is not None:
         ui.BIM_UL_drawinglist,
         ui.BIM_UL_topics,
         ui.BIM_ADDON_preferences,
+        gizmos.UglyDotGizmo,
+        gizmos.DotGizmo,
+        gizmos.DimensionLabelGizmo,
+        gizmos.ExtrusionGuidesGizmo,
+        gizmos.ExtrusionWidget
     ]
 
     for module in modules.values():
@@ -155,15 +162,17 @@ if bpy is not None:
         self.layout.operator(operator.ImportIFC.bl_idname, text="Industry Foundation Classes (.ifc/.ifczip/.ifcxml)")
 
     def on_register(scene):
-        prop.setDefaultProperties(scene)
+        handler.setDefaultProperties(scene)
         bpy.app.handlers.depsgraph_update_post.remove(on_register)
 
     def register():
         for cls in classes:
             bpy.utils.register_class(cls)
         bpy.app.handlers.depsgraph_update_post.append(on_register)
-        bpy.app.handlers.load_post.append(prop.setDefaultProperties)
-        bpy.app.handlers.load_post.append(prop.clearIfcStore)
+        bpy.app.handlers.load_post.append(handler.setDefaultProperties)
+        bpy.app.handlers.load_post.append(handler.loadIfcStore)
+        bpy.app.handlers.save_pre.append(handler.ensureIfcExported)
+        bpy.app.handlers.save_pre.append(handler.storeIdMap)
         bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
         bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
         bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
@@ -173,6 +182,8 @@ if bpy is not None:
         bpy.types.Collection.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties) # Check if we need this
         bpy.types.Material.BIMMaterialProperties = bpy.props.PointerProperty(type=prop.BIMMaterialProperties)
         bpy.types.Mesh.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
+        bpy.types.Curve.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
+        bpy.types.Camera.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
         bpy.types.Camera.BIMCameraProperties = bpy.props.PointerProperty(type=prop.BIMCameraProperties)
         bpy.types.TextCurve.BIMTextProperties = bpy.props.PointerProperty(type=prop.BIMTextProperties)
         bpy.types.SCENE_PT_unit.append(ui.ifc_units)
@@ -181,13 +192,15 @@ if bpy is not None:
             module.register()
 
         bpy.app.handlers.depsgraph_update_pre.append(operator.depsgraph_update_pre_handler)
-        bpy.app.handlers.load_post.append(prop.toggleDecorationsOnLoad)
+        bpy.app.handlers.load_post.append(handler.toggleDecorationsOnLoad)
 
     def unregister():
         for cls in reversed(classes):
             bpy.utils.unregister_class(cls)
-        bpy.app.handlers.load_post.remove(prop.setDefaultProperties)
-        bpy.app.handlers.load_post.remove(prop.clearIfcStore)
+        bpy.app.handlers.load_post.remove(handler.setDefaultProperties)
+        bpy.app.handlers.load_post.remove(handler.loadIfcStore)
+        bpy.app.handlers.save_pre.remove(handler.storeIdMap)
+        bpy.app.handlers.save_pre.remove(handler.ensureIfcExported)
         bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
         bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
         del bpy.types.Scene.BIMProperties
@@ -197,6 +210,8 @@ if bpy is not None:
         del bpy.types.Collection.BIMObjectProperties # Check if we need this
         del bpy.types.Material.BIMMaterialProperties
         del bpy.types.Mesh.BIMMeshProperties
+        del bpy.types.Curve.BIMMeshProperties
+        del bpy.types.Camera.BIMMeshProperties
         del bpy.types.Camera.BIMCameraProperties
         del bpy.types.TextCurve.BIMTextProperties
         bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
@@ -205,3 +220,4 @@ if bpy is not None:
             module.unregister()
 
         bpy.app.handlers.depsgraph_update_pre.remove(operator.depsgraph_update_pre_handler)
+        bpy.app.handlers.load_post.remove(handler.toggleDecorationsOnLoad)

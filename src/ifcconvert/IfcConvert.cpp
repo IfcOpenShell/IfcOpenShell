@@ -339,7 +339,13 @@ int main(int argc, char** argv) {
         ("default-material-file", new po::typed_value<path_t, char_t>(&default_material_filename),
             "Specifies a material file that describes the material object types will have"
             "if an object does not have any specified material in the IFC file.")
-		("validate", "Checks whether geometrical output conforms to the included explicit quantities.");
+		("validate", "Checks whether geometrical output conforms to the included explicit quantities.")
+		("no-wire-intersection-check", "Skip wire intersection check.")
+		("no-wire-intersection-tolerance", "Set wire intersection tolerance to 0.")
+		("strict-tolerance", "Use exact tolerance from model. Default is a 10 "
+						 "times increase for more permissive edge curves and fewer artifacts after "
+						 "boolean operations at the expense of geometric detail "
+						 "due to vertex collapsing and wire intersection fuzziness.");
 
     std::string bounds;
 #ifdef HAVE_ICU
@@ -349,6 +355,9 @@ int main(int argc, char** argv) {
 	double section_height;
 	std::string svg_scale, svg_center;
 	std::string section_ref, elevation_ref;
+	// "none", "full" or "left"
+	std::string storey_height_display;
+	SvgSerializer::storey_height_display_types svg_storey_height_display = SvgSerializer::SH_NONE;
 
     po::options_description serializer_options("Serialization options");
     serializer_options.add_options()
@@ -374,6 +383,9 @@ int main(int argc, char** argv) {
 			"Creates SVG cross section drawings automatically based on model extents")
 		("auto-elevation",
 			"Creates SVG elevation drawings automatically based on model extents")
+		("draw-storey-heights",
+			po::value<std::string>(&storey_height_display)->default_value("none")->implicit_value("full"),
+			"Draws a horizontal line at the height of building storeys in vertical drawings")
 		("svg-xmlns",
 			"Stores name and guid in a separate namespace as opposed to data-name, data-guid")
 		("svg-poly",
@@ -482,6 +494,9 @@ int main(int argc, char** argv) {
 	const bool generate_uvs = vmap.count("generate-uvs") != 0;
 	const bool validate = vmap.count("validate") != 0;
 	const bool edge_arrows = vmap.count("edge-arrows") != 0;
+	const bool no_wire_intersection_check = vmap.count("no-wire-intersection-check") != 0;
+	const bool no_wire_intersection_tolerance = vmap.count("no-wire-intersection-tolerance") != 0;
+	const bool strict_tolerance = vmap.count("strict-tolerance") != 0;
 
     if (!quiet || vmap.count("version")) {
 		print_version();
@@ -498,6 +513,22 @@ int main(int argc, char** argv) {
         print_usage();
         return EXIT_FAILURE;
     }
+
+	if (vmap.count("draw-storey-heights")) {
+		boost::to_lower(storey_height_display);
+
+		if (storey_height_display == "none") {
+			svg_storey_height_display = SvgSerializer::SH_NONE;
+		} else if (storey_height_display == "full") {
+			svg_storey_height_display = SvgSerializer::SH_FULL;
+		} else if (storey_height_display == "left") {
+			svg_storey_height_display = SvgSerializer::SH_LEFT;
+		} else {
+			cerr_ << "[Error] --draw-storey-heights should be none|full|left" << std::endl;
+			print_usage();
+			return EXIT_FAILURE;
+		}
+	}
     
 	if (vmap.count("log-format") == 1) {
 		boost::to_lower(log_format);
@@ -742,6 +773,9 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::SITE_LOCAL_PLACEMENT, site_local_placement);
 	settings.set(IfcGeom::IteratorSettings::BUILDING_LOCAL_PLACEMENT, building_local_placement);
 	settings.set(IfcGeom::IteratorSettings::VALIDATE_QUANTITIES, validate);
+	settings.set(IfcGeom::IteratorSettings::NO_WIRE_INTERSECTION_CHECK, no_wire_intersection_check);
+	settings.set(IfcGeom::IteratorSettings::NO_WIRE_INTERSECTION_TOLERANCE, no_wire_intersection_tolerance);
+	settings.set(IfcGeom::IteratorSettings::STRICT_TOLERANCE, strict_tolerance);
 
     settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);
@@ -939,6 +973,9 @@ int main(int argc, char** argv) {
 		if (vmap.count("print-space-areas") != 0) {
 			static_cast<SvgSerializer*>(serializer.get())->setPrintSpaceAreas(true);
 		}
+		if (vmap.count("draw-storey-heights") != 0) {
+			static_cast<SvgSerializer*>(serializer.get())->setDrawStoreyHeights(svg_storey_height_display);
+		}		
 		if (bounding_width.is_initialized() && bounding_height.is_initialized()) {
 			static_cast<SvgSerializer*>(serializer.get())->setBoundingRectangle(bounding_width.get(), bounding_height.get());
 		}

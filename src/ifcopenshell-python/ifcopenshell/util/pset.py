@@ -16,17 +16,18 @@ class PsetQto:
         self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema)
         if not templates:
             folder_path = pathlib.Path(__file__).parent.absolute()
-            path = folder_path.joinpath("schema", self.templates_path[schema])
+            path = str(folder_path.joinpath("schema", self.templates_path[schema]))
             templates = [ifcopenshell.open(path)]
         self.templates = templates
 
     @lru_cache()
     def get_applicable(
         self, ifc_class="", predefined_type="", pset_only=False, qto_only=False
-    ) -> Generator[entity_instance, entity_instance, None]:
+    ) -> List[entity_instance]:
         any_class = not ifc_class
         if not any_class:
             entity = self.schema.declaration_by_name(ifc_class)
+        result = []
         for template in self.templates:
             for prop_set in template.by_type("IfcPropertySetTemplate"):
                 if pset_only:
@@ -36,8 +37,10 @@ class PsetQto:
                     if not prop_set.Name.startswith("Qto_"):
                         continue
                 if any_class or self.is_applicable(entity, prop_set.ApplicableEntity or "IfcRoot", predefined_type):
-                    yield prop_set
+                    result.append(prop_set)
+        return result
 
+    @lru_cache()
     def get_applicable_names(self, ifc_class: str, predefined_type="", pset_only=False, qto_only=False) -> List[str]:
         """Return names instead of objects for other use eg. enum"""
         return [prop_set.Name for prop_set in self.get_applicable(ifc_class, predefined_type, pset_only, qto_only)]

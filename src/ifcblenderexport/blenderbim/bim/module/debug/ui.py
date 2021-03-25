@@ -13,8 +13,15 @@ class BIM_PT_debug(Panel):
     def draw(self, context):
         layout = self.layout
 
-        scene = context.scene
-        props = scene.BIMDebugProperties
+        props = context.scene.BIMDebugProperties
+
+        row = self.layout.row(align=True)
+        row.prop(context.scene.BIMProperties, "ifc_file", text="")
+        row.operator("bim.validate_ifc_file", icon="CHECKMARK", text="")
+        row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
+
+        row = layout.row()
+        row.operator("bim.create_all_shapes")
 
         row = layout.row()
         row.operator("bim.profile_import_ifc")
@@ -57,6 +64,17 @@ class BIM_PT_debug(Panel):
         for index, attribute in enumerate(props.inverse_attributes):
             row = layout.row(align=True)
             row.prop(attribute, "name", text="")
+            row.prop(attribute, "string_value", text="")
+            if attribute.int_value:
+                row.operator(
+                    "bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text=""
+                ).step_id = attribute.int_value
+
+        if props.inverse_references:
+            layout.label(text="Inverse references:")
+
+        for index, attribute in enumerate(props.inverse_references):
+            row = layout.row(align=True)
             row.prop(attribute, "string_value", text="")
             if attribute.int_value:
                 row.operator(

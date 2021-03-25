@@ -17,6 +17,8 @@ classes = (
     pie.AssignIfcStair,
     pie.AssignIfcDoor,
     pie.AssignIfcWindow,
+    pie.AssignIfcColumn,
+    pie.AssignIfcBeam,
     pie.VIEW3D_MT_PIE_bim,
     pie.VIEW3D_MT_PIE_bim_class,
 )

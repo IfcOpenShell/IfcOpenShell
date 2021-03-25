@@ -140,11 +140,19 @@ select = """%(documentation)s
 typedef IfcUtil::IfcBaseClass %(name)s;
 """
 
-enumeration = """struct %(name)s {
+enumeration = """class IFC_PARSE_API %(name)s : public IfcUtil::IfcBaseType {
 %(documentation)s
-typedef enum {%(values)s} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {%(values)s} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    %(name)s (IfcEntityInstanceData* e);
+    %(name)s (Value v);
+    %(name)s (const std::string& v);
+    operator Value() const;
 };
 """
 
@@ -160,6 +168,25 @@ public:
 """
 
 enumeration_function = """
+const IfcParse::enumeration_type& %(schema_name)s::%(name)s::declaration() const { return *%(schema_name_upper)s_%(name)s_type; }
+const IfcParse::enumeration_type& %(schema_name)s::%(name)s::Class() { return *%(schema_name_upper)s_%(name)s_type; }
+
+%(schema_name)s::%(name)s::%(name)s(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+%(schema_name)s::%(name)s::%(name)s(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+%(schema_name)s::%(name)s::%(name)s(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* %(schema_name)s::%(name)s::ToString(Value v) {
     if ( v < 0 || v >= %(max_id)d ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { %(values)s };

@@ -1,16 +1,17 @@
 import bpy
-from . import ui, operator
+from . import ui, prop, operator
 
 classes = (
     operator.CreateProject,
     operator.ValidateIfcFile,
+    prop.BIMProjectProperties,
     ui.BIM_PT_project,
 )
 
 
 def register():
-    pass
+    bpy.types.Scene.BIMProjectProperties = bpy.props.PointerProperty(type=prop.BIMProjectProperties)
 
 
 def unregister():
-    pass
+    del bpy.types.Scene.BIMProjectProperties

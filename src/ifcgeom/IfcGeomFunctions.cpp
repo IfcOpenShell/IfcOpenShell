@@ -167,7 +167,7 @@
 #ifdef _MSC_VER
 #pragma message("warning: You are linking against Open CASCADE version " OCC_VERSION_COMPLETE ". Version 6.9.0 introduces various improvements with relation to boolean operations. You are advised to upgrade.")
 #else
-#warning "You are linking against linking against an older version of Open CASCADE. Version 6.9.0 introduces various improvements with relation to boolean operations. You are advised to upgrade."
+#warning "You are linking against an older version of Open CASCADE. Version 6.9.0 introduces various improvements with relation to boolean operations. You are advised to upgrade."
 #endif
 #endif
 
@@ -774,7 +774,7 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 				convert_shapes(*it2,opening_shapes);
 			}
 
-			const unsigned int current_size = (const unsigned int) opening_shapes.size();
+			const unsigned int current_size = opening_shapes.size();
 			for ( unsigned int i = last_size; i < current_size; ++ i ) {
 				opening_shapes[i].prepend(opening_trsf);
 			}
@@ -1415,6 +1415,15 @@ void IfcGeom::Kernel::setValue(GeomValue var, double value) {
 	case GV_DISABLE_BOOLEAN_RESULT:
 		disable_boolean_result = value;
 		break;
+	case GV_NO_WIRE_INTERSECTION_CHECK:
+		no_wire_intersection_check = value;
+		break;
+	case GV_PRECISION_FACTOR:
+		precision_factor = value;
+		break;
+	case GV_NO_WIRE_INTERSECTION_TOLERANCE:
+		no_wire_intersection_tolerance = value;
+		break;
 	default:
 		throw std::runtime_error("Invalid setting");
 	}
@@ -1444,6 +1453,12 @@ double IfcGeom::Kernel::getValue(GeomValue var) const {
 		return layerset_first;
 	case GV_DISABLE_BOOLEAN_RESULT:
 		return disable_boolean_result;
+	case GV_NO_WIRE_INTERSECTION_CHECK:
+		return no_wire_intersection_check;
+	case GV_PRECISION_FACTOR:
+		return precision_factor;
+	case GV_NO_WIRE_INTERSECTION_TOLERANCE:
+		return no_wire_intersection_tolerance;
 	}
 	throw std::runtime_error("Invalid setting");
 }
@@ -2585,6 +2600,8 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 		}
 	}
 
+	const double total_thickness = std::accumulate(thicknesses.begin(), thicknesses.end(), 0.);
+
 	gp_Pnt own_axis_start, own_axis_end;
 	find_wall_end_points(wall, own_axis_start, own_axis_end);
 
@@ -2645,6 +2662,16 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 		const double d = a.Distance(b);
 	}
 	*/
+
+	const double length_required = endpoint_connections.size() * total_thickness;
+	// @todo this is not precisely the distance in case of curved walls. Also, it's safer
+	// to first reproject the body onto the axis to get the precise curve parametrization
+	// range. It's only a safeguard though, so can probably be approximated.
+	const double axis_length = own_axis_start.Distance(own_axis_end);
+	if (length_required > axis_length) {
+		Logger::Warning("The wall axis is not long enough to accomodate the fold points");
+		return false;
+	}
 
 	for (endpoint_connections_t::const_iterator it = endpoint_connections.begin(); it != endpoint_connections.end(); ++it) {
 		IfcSchema::IfcConnectionTypeEnum::Value connection_type = it->first.first;
@@ -2731,8 +2758,6 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 		
 		double layer_offset = 0;
 
-		const double total_thickness = std::accumulate(thicknesses.begin(), thicknesses.end(), 0.);
-		
 		std::vector<double>::const_iterator thickness = thicknesses.begin();
 		result_t::iterator result_vector = result.begin() + 1;
 
@@ -2763,7 +2788,7 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 				surface->D1(u, v, Ps, Vs1, Vs2);
 				Vs1.Cross(Vs2);
 
-				if (Vs1.IsParallel(Vc, 1.e-5)) {
+				if (Vs1.IsNormal(Vc, 1.e-5)) {
 					Logger::Warning("Connected walls are parallel");
 					parallel = true;
 				} else if (w < axis_u1 || w > axis_u2) {
@@ -3794,6 +3819,11 @@ namespace {
 }
 
 bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListOfShape& wires) {
+
+	if (getValue(GV_NO_WIRE_INTERSECTION_CHECK) > 0.) {
+		return false;
+	}
+
 	if (!wire.Closed()) {
 		wires.Append(wire);
 		return false;
@@ -3836,11 +3866,14 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 	// TopoDS_Face face = BRepBuilderAPI_MakeFace(wire, true).Face();
 	// ShapeAnalysis_Wire saw(wd, face, getValue(GV_PRECISION));
 	
-	const double eps = faceset_helper_
-		// eps is added to both ends of the parametric domain, so 3. is chosen to be on the safe side here.
-		? (faceset_helper_->epsilon() / 3.)
-		// @todo re-evaluate 2. here for the reasons above:
-		: (std::min)(min_edge_length(wire) / 2., getValue(GV_PRECISION) * 10.);
+	double eps = 0;
+	if (getValue(GV_NO_WIRE_INTERSECTION_TOLERANCE) < 0.) {
+		eps = faceset_helper_
+			  // eps is added to both ends of the parametric domain, so 3. is chosen to be on the safe side here.
+			  ? (faceset_helper_->epsilon() / 3.)
+			  // @todo re-evaluate 2. here for the reasons above:
+			  : (std::min)(min_edge_length(wire) / 2., getValue(GV_PRECISION) * 10.);
+	}
 
 	for (int i = 2; i < n; ++i) {
 

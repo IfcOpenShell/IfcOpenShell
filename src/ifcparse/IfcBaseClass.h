@@ -104,7 +104,7 @@ namespace IfcUtil {
 		IfcBaseType() : IfcBaseClass() {}
 		IfcBaseType(IfcEntityInstanceData* d) : IfcBaseClass(d) {}
 
-		virtual const IfcParse::type_declaration& declaration() const = 0;
+		virtual const IfcParse::declaration& declaration() const = 0;
 	};
 
 }

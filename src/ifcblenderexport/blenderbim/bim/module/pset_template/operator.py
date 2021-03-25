@@ -1,127 +1,167 @@
 import bpy
 import ifcopenshell
-from blenderbim.bim.module.pset_template.prop import refreshPropertySetTemplates
+import blenderbim.bim.module.pset_template.add_pset_template as add_pset_template
+import blenderbim.bim.module.pset_template.edit_pset_template as edit_pset_template
+import blenderbim.bim.module.pset_template.remove_pset_template as remove_pset_template
+import blenderbim.bim.module.pset_template.add_prop_template as add_prop_template
+import blenderbim.bim.module.pset_template.edit_prop_template as edit_prop_template
+import blenderbim.bim.module.pset_template.remove_prop_template as remove_prop_template
+from blenderbim.bim.module.pset_template.prop import updatePsetTemplateFiles, updatePsetTemplates
+from blenderbim.bim.module.pset_template.data import Data
 from blenderbim.bim.ifc import IfcStore
 
 
-class AddPropertySetTemplate(bpy.types.Operator):
-    bl_idname = "bim.add_property_set_template"
-    bl_label = "Add Property Set Template"
+class AddPsetTemplate(bpy.types.Operator):
+    bl_idname = "bim.add_pset_template"
+    bl_label = "Add Pset Template"
 
     def execute(self, context):
         props = context.scene.BIMPsetTemplateProperties
-        props.active_property_set_template.global_id = ""
-        props.active_property_set_template.name = "New_Pset"
-        props.active_property_set_template.description = ""
-        props.active_property_set_template.template_type = "PSET_TYPEDRIVENONLY"
-        props.active_property_set_template.applicable_entity = "IfcTypeObject"
-        while len(props.property_templates) > 0:
-            props.property_templates.remove(0)
+        add_pset_template.Usecase(IfcStore.pset_template_file).execute()
+        Data.load()
+        updatePsetTemplates(self, context)
         return {"FINISHED"}
 
 
-class RemovePropertySetTemplate(bpy.types.Operator):
-    bl_idname = "bim.remove_property_set_template"
-    bl_label = "Remove Property Set Template"
+class RemovePsetTemplate(bpy.types.Operator):
+    bl_idname = "bim.remove_pset_template"
+    bl_label = "Remove Pset Template"
 
     def execute(self, context):
         props = context.scene.BIMPsetTemplateProperties
-        template = IfcStore.pset_template_file.by_guid(props.property_set_templates)
-        IfcStore.pset_template_file.remove(template)
+        if props.active_pset_template_id == int(props.pset_templates):
+            bpy.ops.bim.disable_editing_pset_template()
+        remove_pset_template.Usecase(IfcStore.pset_template_file, {
+            "pset_template": IfcStore.pset_template_file.by_id(int(props.pset_templates))
+        }).execute()
+        Data.load()
+        updatePsetTemplates(self, context)
+        return {"FINISHED"}
+
+
+class EnableEditingPsetTemplate(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_pset_template"
+    bl_label = "Enable Editing Pset Template"
+
+    def execute(self, context):
+        props = context.scene.BIMPsetTemplateProperties
+        props.active_pset_template_id = int(props.pset_templates)
+        template = Data.pset_templates[props.active_pset_template_id]
+        props.active_pset_template.global_id = template["GlobalId"]
+        props.active_pset_template.name = template["Name"] or ""
+        props.active_pset_template.description = template["Description"] or ""
+        props.active_pset_template.template_type = template["TemplateType"]
+        props.active_pset_template.applicable_entity = template["ApplicableEntity"] or ""
+        return {"FINISHED"}
+
+
+class DisableEditingPsetTemplate(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_pset_template"
+    bl_label = "Disable Editing Pset Template"
+
+    def execute(self, context):
+        props = context.scene.BIMPsetTemplateProperties
+        props.active_pset_template_id = 0
+        return {"FINISHED"}
+
+
+class EnableEditingPropTemplate(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_prop_template"
+    bl_label = "Enable Editing Prop Template"
+    prop_template: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMPsetTemplateProperties
+        props.active_prop_template_id = self.prop_template
+        template = Data.prop_templates[props.active_prop_template_id]
+        props.active_prop_template.name = template["Name"] or ""
+        props.active_prop_template.description = template["Description"] or ""
+        props.active_prop_template.primary_measure_type = template["PrimaryMeasureType"]
+        return {"FINISHED"}
+
+
+class DisableEditingPropTemplate(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_prop_template"
+    bl_label = "Disable Editing Prop Template"
+
+    def execute(self, context):
+        props = context.scene.BIMPsetTemplateProperties
+        props.active_prop_template_id = 0
+        return {"FINISHED"}
+
+
+class EditPsetTemplate(bpy.types.Operator):
+    bl_idname = "bim.edit_pset_template"
+    bl_label = "Edit Pset Template"
+
+    def execute(self, context):
+        props = context.scene.BIMPsetTemplateProperties
+        edit_pset_template.Usecase(IfcStore.pset_template_file, {
+            "pset_template": IfcStore.pset_template_file.by_id(props.active_pset_template_id),
+            "attributes": {
+                "Name": props.active_pset_template.name,
+                "Description": props.active_pset_template.description,
+                "TemplateType": props.active_pset_template.template_type,
+                "ApplicableEntity": props.active_pset_template.applicable_entity,
+            }
+        }).execute()
+        Data.load()
+        updatePsetTemplates(self, context)
+        bpy.ops.bim.disable_editing_pset_template()
+        return {"FINISHED"}
+
+
+class SavePsetTemplateFile(bpy.types.Operator):
+    bl_idname = "bim.save_pset_template_file"
+    bl_label = "Save Pset Template File"
+
+    def execute(self, context):
         IfcStore.pset_template_file.write(IfcStore.pset_template_path)
-        refreshPropertySetTemplates(self, context)
         return {"FINISHED"}
 
 
-class EditPropertySetTemplate(bpy.types.Operator):
-    bl_idname = "bim.edit_property_set_template"
-    bl_label = "Edit Property Set Template"
+class AddPropTemplate(bpy.types.Operator):
+    bl_idname = "bim.add_prop_template"
+    bl_label = "Add Prop Template"
 
     def execute(self, context):
         props = context.scene.BIMPsetTemplateProperties
-        template = IfcStore.pset_template_file.by_guid(props.property_set_templates)
-        props.active_property_set_template.global_id = template.GlobalId
-        props.active_property_set_template.name = template.Name
-        props.active_property_set_template.description = template.Description
-        props.active_property_set_template.template_type = template.TemplateType
-        props.active_property_set_template.applicable_entity = template.ApplicableEntity
-
-        while len(props.property_templates) > 0:
-            props.property_templates.remove(0)
-
-        if template.HasPropertyTemplates:
-            for property_template in template.HasPropertyTemplates:
-                if not property_template.is_a("IfcSimplePropertyTemplate"):
-                    continue
-                new = props.property_templates.add()
-                new.global_id = property_template.GlobalId
-                new.name = property_template.Name
-                new.description = property_template.Description
-                new.primary_measure_type = property_template.PrimaryMeasureType
+        pset_template_id = props.active_pset_template_id or int(props.pset_templates)
+        add_prop_template.Usecase(IfcStore.pset_template_file, {
+            "pset_template": IfcStore.pset_template_file.by_id(pset_template_id)
+        }).execute()
+        Data.load()
         return {"FINISHED"}
 
 
-class SavePropertySetTemplate(bpy.types.Operator):
-    bl_idname = "bim.save_property_set_template"
-    bl_label = "Save Property Set Template"
+class RemovePropTemplate(bpy.types.Operator):
+    bl_idname = "bim.remove_prop_template"
+    bl_label = "Remove Prop Template"
+    prop_template: bpy.props.IntProperty()
 
     def execute(self, context):
         props = context.scene.BIMPsetTemplateProperties
-        blender_property_set_template = props.active_property_set_template
-        if blender_property_set_template.global_id:
-            template = IfcStore.pset_template_file.by_guid(blender_property_set_template.global_id)
-        else:
-            template = IfcStore.pset_template_file.createIfcPropertySetTemplate()
-            template.GlobalId = ifcopenshell.guid.new()
-        template.Name = blender_property_set_template.name
-        template.Description = blender_property_set_template.description
-        template.TemplateType = blender_property_set_template.template_type
-        template.ApplicableEntity = blender_property_set_template.applicable_entity
-
-        saved_global_ids = []
-
-        for blender_property_template in props.property_templates:
-            if blender_property_template.global_id:
-                property_template = IfcStore.pset_template_file.by_guid(blender_property_template.global_id)
-            else:
-                property_template = IfcStore.pset_template_file.createIfcSimplePropertyTemplate()
-                property_template.GlobalId = ifcopenshell.guid.new()
-                if template.HasPropertyTemplates:
-                    has_property_templates = list(template.HasPropertyTemplates)
-                else:
-                    has_property_templates = []
-                has_property_templates.append(property_template)
-                template.HasPropertyTemplates = has_property_templates
-            property_template.Name = blender_property_template.name
-            property_template.Description = blender_property_template.description
-            property_template.PrimaryMeasureType = blender_property_template.primary_measure_type
-            property_template.TemplateType = "P_SINGLEVALUE"
-            property_template.AccessState = "READWRITE"
-            saved_global_ids.append(property_template.GlobalId)
-
-        for element in template.HasPropertyTemplates:
-            if element.GlobalId not in saved_global_ids:
-                IfcStore.pset_template_file.remove(element)
-
-        IfcStore.pset_template_file.write(IfcStore.pset_template_path)
-        refreshPropertySetTemplates(self, context)
+        remove_prop_template.Usecase(IfcStore.pset_template_file, {
+            "prop_template": IfcStore.pset_template_file.by_id(self.prop_template)
+        }).execute()
+        Data.load()
         return {"FINISHED"}
 
 
-class AddPropertyTemplate(bpy.types.Operator):
-    bl_idname = "bim.add_property_template"
-    bl_label = "Add Property Template"
+class EditPropTemplate(bpy.types.Operator):
+    bl_idname = "bim.edit_prop_template"
+    bl_label = "Edit Prop Template"
 
     def execute(self, context):
-        context.scene.BIMPsetTemplateProperties.property_templates.add()
-        return {"FINISHED"}
-
-
-class RemovePropertyTemplate(bpy.types.Operator):
-    bl_idname = "bim.remove_property_template"
-    bl_label = "Remove Property Template"
-    index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        bpy.context.scene.BIMPsetTemplateProperties.property_templates.remove(self.index)
+        props = context.scene.BIMPsetTemplateProperties
+        edit_prop_template.Usecase(IfcStore.pset_template_file, {
+            "prop_template": IfcStore.pset_template_file.by_id(props.active_prop_template_id),
+            "attributes": {
+                "Name": props.active_prop_template.name,
+                "Description": props.active_prop_template.description,
+                "PrimaryMeasureType": props.active_prop_template.primary_measure_type,
+            }
+        }).execute()
+        Data.load()
+        bpy.ops.bim.disable_editing_prop_template()
         return {"FINISHED"}
