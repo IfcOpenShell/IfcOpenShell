@@ -49,7 +49,7 @@ class BIM_PT_structural_boundary_conditions(Panel):
             self.draw_read_only_ui(context)
 
     def draw_editable_ui(self, context):
-        for attribute in self.props.connection_attributes:
+        for attribute in self.props.boundary_condition_attributes:
             if attribute.data_type == "string":
                 row = self.layout.row()
                 row.prop(attribute, "string_value", text=attribute["name"])
