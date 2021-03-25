@@ -1,4 +1,6 @@
 import ifcopenshell
+import ifcopenshell.api.owner.create_owner_history as create_owner_history
+import ifcopenshell.api.owner.update_owner_history as update_owner_history
 
 
 class Usecase:
@@ -32,6 +34,7 @@ class Usecase:
             related_objects.remove(self.settings["related_object"])
             if related_objects:
                 is_typed_by[0].RelatedObjects = related_objects
+                update_owner_history.Usecase(self.file, {"element": is_typed_by[0]}).execute()
             else:
                 self.file.remove(is_typed_by[0])
 
@@ -39,12 +42,13 @@ class Usecase:
             related_objects = list(types[0].RelatedObjects)
             related_objects.append(self.settings["related_object"])
             types[0].RelatedObjects = related_objects
+            update_owner_history.Usecase(self.file, {"element": types[0]}).execute()
         else:
             types = self.file.create_entity(
                 "IfcRelDefinesByType",
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
-                    # TODO "OwnerHistory": None
+                    "OwnerHistory": create_owner_history.Usecase(self.file).execute(),
                     "RelatedObjects": [self.settings["related_object"]],
                     "RelatingType": self.settings["relating_type"],
                 }

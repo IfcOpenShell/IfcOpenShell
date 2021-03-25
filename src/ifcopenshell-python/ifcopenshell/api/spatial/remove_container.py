@@ -1,4 +1,5 @@
 import ifcopenshell
+import ifcopenshell.api.owner.update_owner_history as update_owner_history
 
 
 class Usecase:
@@ -16,5 +17,6 @@ class Usecase:
             related_elements.remove(self.settings["product"])
             if related_elements:
                 contained_in_structure[0].RelatedElements = related_elements
+                update_owner_history.Usecase(self.file, {"element": contained_in_structure[0]}).execute()
             else:
                 self.file.remove(contained_in_structure)

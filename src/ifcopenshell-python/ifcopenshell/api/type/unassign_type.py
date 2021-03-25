@@ -1,4 +1,5 @@
 import ifcopenshell
+import ifcopenshell.api.owner.update_owner_history as update_owner_history
 
 
 class Usecase:
@@ -27,5 +28,6 @@ class Usecase:
             related_objects.remove(self.settings["related_object"])
             if related_objects:
                 is_typed_by.RelatedObjects = related_objects
+                update_owner_history.Usecase(self.file, {"element": is_typed_by}).execute()
             else:
                 self.file.remove(is_typed_by)

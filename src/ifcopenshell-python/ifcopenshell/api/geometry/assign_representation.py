@@ -1,3 +1,6 @@
+import ifcopenshell.api.owner.update_owner_history as update_owner_history
+
+
 class Usecase:
     def __init__(self, file, settings={}):
         self.file = file
@@ -32,3 +35,4 @@ class Usecase:
                 )
             )
             self.settings["product"].RepresentationMaps = maps
+        update_owner_history.Usecase(self.file, {"element": self.settings["product"]}).execute()
