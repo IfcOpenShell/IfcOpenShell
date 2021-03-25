@@ -1,4 +1,5 @@
 import ifcopenshell
+import ifcopenshell.api.owner.create_owner_history as create_owner_history
 
 
 class Usecase:
@@ -11,6 +12,7 @@ class Usecase:
     def execute(self):
         self.file.create_entity("IfcRelVoidsElement", **{
             "GlobalId": ifcopenshell.guid.new(),
+            "OwnerHistory": create_owner_history.Usecase(self.file).execute(),
             "RelatingBuildingElement": self.settings["element"],
             "RelatedOpeningElement": self.settings["opening"]
         })
