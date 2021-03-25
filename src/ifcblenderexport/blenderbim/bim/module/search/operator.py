@@ -41,15 +41,17 @@ def does_keyword_exist(pattern, string):
 class SelectGlobalId(bpy.types.Operator):
     bl_idname = "bim.select_global_id"
     bl_label = "Select GlobalId"
+    global_id: bpy.props.StringProperty()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
         props = context.scene.BIMSearchProperties
+        global_id = self.global_id or props.global_id
         for obj in context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            if element.GlobalId == props.global_id:
+            if element.GlobalId == global_id:
                 obj.select_set(True)
                 break
         return {"FINISHED"}

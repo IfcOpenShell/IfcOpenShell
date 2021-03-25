@@ -53,6 +53,9 @@ class BIM_PT_debug(Panel):
             row = layout.row(align=True)
             row.prop(attribute, "name", text="")
             row.prop(attribute, "string_value", text="")
+            if attribute.name == "GlobalId":
+                op = row.operator("bim.select_global_id", icon="RESTRICT_SELECT_OFF", text="")
+                op.global_id = attribute.string_value
             if attribute.int_value:
                 row.operator(
                     "bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text=""
