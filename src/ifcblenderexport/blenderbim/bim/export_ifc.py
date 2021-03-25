@@ -20,7 +20,7 @@ class IfcExporter:
         self.file = IfcStore.get_file()
         self.set_header()
         if bpy.context.scene.BIMProjectProperties.is_authoring:
-            self.sync_object_placements()
+            self.sync_object_placements_and_deletions()
             self.sync_edited_objects()
         extension = self.ifc_export_settings.output_file.split(".")[-1]
         if extension == "ifczip":
@@ -75,13 +75,22 @@ class IfcExporter:
         # else:
         #    self.file.wrapped_data.header.file_name.authorization = "Nobody"
 
-    def sync_object_placements(self):
+    def sync_object_placements_and_deletions(self):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
-        for obj in bpy.data.objects:
+        to_delete = []
+
+        for guid, obj in IfcStore.guid_map.items():
             try:
                 self.sync_object_placement(obj)
             except:
                 pass
+            if self.should_delete(guid, obj):
+                to_delete.append(guid)
+
+        for guid in to_delete:
+            product = self.file.by_id(guid)
+            IfcStore.unlink_element(product)
+            remove_product.Usecase(self.file, {"product": product}).execute()
 
     def sync_edited_objects(self):
         for obj_name in IfcStore.edited_objs.copy():
@@ -114,6 +123,14 @@ class IfcExporter:
             )
         if not np.allclose(ifc_matrix, blender_matrix, atol=0.0001):
             bpy.ops.bim.edit_object_placement(obj=obj.name)
+
+    def should_delete(self, guid, obj):
+        try:
+            # This will throw an exception if the Blender object no longer exists
+            foo = obj.name
+            return False
+        except:
+            return True
 
     def get_application_name(self):
         return "BlenderBIM"
