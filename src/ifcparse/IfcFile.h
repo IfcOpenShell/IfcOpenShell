@@ -33,6 +33,36 @@
 
 namespace IfcParse {
 
+class IFC_PARSE_API file_open_status {
+public:
+	enum file_open_enum {
+		SUCCESS,
+		READ_ERROR,
+		NO_HEADER,
+		UNSUPPORTED_SCHEMA
+	};
+
+private:
+	file_open_enum error_;
+
+public:
+	file_open_status(file_open_enum error)
+		: error_(error)
+	{}
+
+	operator file_open_enum() const {
+		return error_;
+	}
+
+	file_open_enum value() const {
+		return error_;
+	}
+
+	operator bool() const {
+		return error_ == SUCCESS;
+	}
+};
+
 /// This class provides several static convenience functions and variables
 /// and provide access to the entities in an IFC file
 class IFC_PARSE_API IfcFile {
@@ -78,7 +108,8 @@ public:
 private:
 	typedef std::map<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*> entity_entity_map_t;
 
-	bool parsing_complete_, good_;
+	bool parsing_complete_;
+	file_open_status good_ = file_open_status::SUCCESS;
 
 	const IfcParse::schema_definition* schema_;
 	const IfcParse::declaration* ifcroot_type_;
@@ -100,6 +131,11 @@ private:
 	void initialize_(IfcParse::IfcSpfStream* f);
 
 	void build_inverses_(IfcUtil::IfcBaseClass*);
+
+	std::set<int> batch_deletion_ids_;
+	bool batch_mode_ = false;
+	void process_deletion_();
+
 public:
 	IfcParse::IfcSpfLexer* tokens;
 	IfcParse::IfcSpfStream* stream;
@@ -116,7 +152,7 @@ public:
 
 	virtual ~IfcFile();
 
-	bool good() const { return good_; }
+	file_open_status good() const { return good_; }
 	
 	/// Returns the first entity in the file, this probably is the entity
 	/// with the lowest id (EXPRESS ENTITY_INSTANCE_NAME)
@@ -194,6 +230,9 @@ public:
 
 	IfcUtil::IfcBaseClass* addEntity(IfcUtil::IfcBaseClass* entity);
 	void addEntities(IfcEntityList::ptr es);
+
+	void batch() { batch_mode_ = true; }
+	void unbatch() { process_deletion_(); batch_mode_ = false; 	}
 
 	/// Removes entity instance from file and unsets references.
 	///

@@ -224,6 +224,9 @@ private:
 	double modelling_precision;
 	double dimensionality;
 	double layerset_first;
+	double no_wire_intersection_check;
+	double no_wire_intersection_tolerance;
+	double precision_factor;
 
 	// For stopping PlacementRelTo recursion in convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf)
 	const IfcParse::declaration* placement_rel_to;
@@ -252,9 +255,12 @@ public:
 		, ifc_planeangle_unit(-1.0)
 		, modelling_precision(0.00001)
 		, dimensionality(1.)
+		, layerset_first(-1.)
+		, no_wire_intersection_check(-1)
+		, no_wire_intersection_tolerance(-1)
+		, precision_factor(10.)
 		, placement_rel_to(nullptr)
 		, faceset_helper_(nullptr)
-		, layerset_first(-1.)
 		, disable_boolean_result(-1.)
 	{}
 
@@ -266,10 +272,10 @@ public:
 		, ifc_planeangle_unit(other.ifc_planeangle_unit)
 		, modelling_precision(other.modelling_precision)
 		, dimensionality(other.dimensionality)
-		, placement_rel_to(other.placement_rel_to)
 		// @nb faceset_helper_ always initialized to 0
-		, faceset_helper_(nullptr)
 		, layerset_first(other.layerset_first)
+		, placement_rel_to(other.placement_rel_to)
+		, faceset_helper_(nullptr)
 		, disable_boolean_result(other.disable_boolean_result)
 
 		, offset(other.offset)

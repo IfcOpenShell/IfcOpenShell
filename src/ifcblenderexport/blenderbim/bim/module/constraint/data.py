@@ -10,6 +10,12 @@ class Data:
     objectives = {}
 
     @classmethod
+    def purge(cls):
+        cls.is_loaded = False
+        cls.products = {}
+        cls.objectives = {}
+
+    @classmethod
     def load(cls, product_id=None):
         cls._file = IfcStore.get_file()
         if not cls._file:
@@ -28,7 +34,7 @@ class Data:
         for association in product.HasAssociations:
             if association.is_a("IfcRelAssociatesConstraint"):
                 if not association.RelatingConstraint.is_a("IfcObjective"):
-                    continue # not yet implemented
+                    continue  # not yet implemented
                 cls.products[product_id].append(association.RelatingConstraint.id())
 
     @classmethod

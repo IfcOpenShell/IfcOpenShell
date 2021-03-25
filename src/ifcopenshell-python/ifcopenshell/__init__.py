@@ -54,16 +54,36 @@ from . import guid
 from .file import file
 from .entity_instance import entity_instance
 
+READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
+NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
+UNSUPPORTED_SCHEMA = ifcopenshell_wrapper.file_open_status.UNSUPPORTED_SCHEMA
+
+
+class Error(Exception):
+    pass
+
+
+class SchemaError(Error):
+    pass
+
 
 def open(fn):
     f = ifcopenshell_wrapper.open(os.path.abspath(fn))
     if f.good():
         return file(f)
     else:
-        raise IOError("Unable to open file for reading")
+        exc, msg = {
+            READ_ERROR: (IOError, "Unable to open file for reading"),
+            NO_HEADER: (Error, "Unable to parse IFC SPF header"),
+            UNSUPPORTED_SCHEMA: (
+                SchemaError,
+                "Unsupported schema: %s" % ",".join(f.header.file_schema.schema_identifiers),
+            ),
+        }[f.good().value()]
+        raise exc(msg)
 
 
-def create_entity(type, schema='IFC4', *args, **kwargs):
+def create_entity(type, schema="IFC4", *args, **kwargs):
     e = entity_instance((schema, type))
     attrs = list(enumerate(args)) + [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
     for idx, arg in attrs:

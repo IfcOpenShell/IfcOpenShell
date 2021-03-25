@@ -7,6 +7,7 @@ import json
 import webbrowser
 import tempfile
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.handler import purge_module_data
 
 
 class AddCsvAttribute(bpy.types.Operator):
@@ -78,9 +79,19 @@ class ImportIfcCsv(bpy.types.Operator):
     def execute(self, context):
         import ifccsv
 
+        props = context.scene.CsvProperties
+        if props.should_load_from_memory:
+            ifc_file = IfcStore.get_file()
+        else:
+            ifc_file = ifcopenshell.open(props.csv_ifc_file)
         ifc_csv = ifccsv.IfcCsv()
         ifc_csv.output = self.filepath
-        ifc_csv.Import(context.scene.CsvProperties.csv_ifc_file)
+        if props.csv_delimiter == "CUSTOM":
+            ifc_csv.delimiter = props.csv_custom_delimiter
+        else:
+            ifc_csv.delimiter = props.csv_delimiter
+        ifc_csv.Import(ifc_file)
+        purge_module_data()
         return {"FINISHED"}
 
 

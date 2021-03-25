@@ -45,3 +45,8 @@ def datetime2ifc(dt, ifc_type):
         return dt.date().isoformat()
     elif ifc_type == "IfcTime":
         return dt.time().isoformat()
+    elif ifc_type == "IfcCalendarDate":
+        return {"DayComponent": dt.day, "MonthComponent": dt.month, "YearComponent": dt.year}
+    elif ifc_type == "IfcLocalTime":
+        # TODO implement timezones
+        return {"HourComponent": dt.hour, "MinuteComponent": dt.minute, "SecondComponent": dt.second}

@@ -4,7 +4,9 @@ from . import ui, prop, operator
 classes = (
     operator.ExecuteBIMTester,
     operator.BIMTesterPurge,
-    operator.SelectFeaturesDir,
+    operator.SelectFeature,
+    operator.SelectSteps,
+    operator.SelectBIMTesterIfcFile,
     operator.RejectElement,
     operator.ApproveClass,
     operator.RejectClass,

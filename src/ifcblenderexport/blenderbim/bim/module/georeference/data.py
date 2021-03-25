@@ -7,6 +7,12 @@ class Data:
     projected_crs = {}
 
     @classmethod
+    def purge(cls):
+        cls.is_loaded = False
+        cls.map_conversion = {}
+        cls.projected_crs = {}
+
+    @classmethod
     def load(cls):
         file = IfcStore.get_file()
         if not file:

@@ -70,7 +70,10 @@
 	}
 }
 
-%module ifcopenshell_wrapper %{
+// Include headers for the typemaps to function. This set of includes,
+// can probably be reduced, but for now it's identical to the includes
+// of the module definition below.
+%{
 	#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 	#include "../ifcgeom_schema_agnostic/Serialization.h"
 	#include "../ifcgeom/IfcGeomTree.h"
@@ -80,6 +83,7 @@
 	#include "../ifcparse/Ifc4x1.h"
 	#include "../ifcparse/Ifc4x2.h"
 	#include "../ifcparse/Ifc4x3_rc1.h"
+	#include "../ifcparse/Ifc4x3_rc2.h"
 	#include "../ifcparse/IfcBaseClass.h"
 	#include "../ifcparse/IfcFile.h"
 	#include "../ifcparse/IfcSchema.h"
@@ -96,6 +100,25 @@
 %include "utils/typemaps_in.i"
 
 %include "utils/typemaps_out.i"
+
+%module ifcopenshell_wrapper %{
+	#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
+	#include "../ifcgeom_schema_agnostic/Serialization.h"
+	#include "../ifcgeom/IfcGeomTree.h"
+	
+	#include "../ifcparse/Ifc2x3.h"
+	#include "../ifcparse/Ifc4.h"
+	#include "../ifcparse/Ifc4x1.h"
+	#include "../ifcparse/Ifc4x2.h"
+	#include "../ifcparse/Ifc4x3_rc1.h"
+	#include "../ifcparse/Ifc4x3_rc2.h"
+	#include "../ifcparse/IfcBaseClass.h"
+	#include "../ifcparse/IfcFile.h"
+	#include "../ifcparse/IfcSchema.h"
+	#include "../ifcparse/utils.h"
+
+	#include <BRepTools_ShapeSet.hxx>
+%}
 
 %include "IfcGeomWrapper.i"
 %include "IfcParseWrapper.i"

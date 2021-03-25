@@ -24,6 +24,7 @@
 #include "../ifcparse/Ifc4x1.h"
 #include "../ifcparse/Ifc4x2.h"
 #include "../ifcparse/Ifc4x3_rc1.h"
+#include "../ifcparse/Ifc4x3_rc2.h"
 
 double IfcParse::IfcSIPrefixToValue(const std::string& v) {
 	if      ( v == "EXA"   ) return 1.e18;
@@ -33,7 +34,7 @@ double IfcParse::IfcSIPrefixToValue(const std::string& v) {
 	else if ( v == "MEGA"  ) return 1.e6;
 	else if ( v == "KILO"  ) return 1.e3;
 	else if ( v == "HECTO" ) return 1.e2;
-	else if ( v == "DECA"  ) return 1.;
+	else if ( v == "DECA"  ) return 1.e1;
 	else if ( v == "DECI"  ) return 1.e-1;
 	else if ( v == "CENTI" ) return 1.e-2;
 	else if ( v == "MILLI" ) return 1.e-3;
@@ -79,10 +80,12 @@ template double IfcParse::get_SI_equivalent<Ifc4>(Ifc4::IfcNamedUnit* named_unit
 template double IfcParse::get_SI_equivalent<Ifc4x1>(Ifc4x1::IfcNamedUnit* named_unit);
 template double IfcParse::get_SI_equivalent<Ifc4x2>(Ifc4x2::IfcNamedUnit* named_unit);
 template double IfcParse::get_SI_equivalent<Ifc4x3_rc1>(Ifc4x3_rc1::IfcNamedUnit* named_unit);
+template double IfcParse::get_SI_equivalent<Ifc4x3_rc2>(Ifc4x3_rc2::IfcNamedUnit* named_unit);
 #else
 template double IfcParse::get_SI_equivalent<Ifc2x3>(typename Ifc2x3::IfcNamedUnit* named_unit);
 template double IfcParse::get_SI_equivalent<Ifc4>(typename Ifc4::IfcNamedUnit* named_unit);
 template double IfcParse::get_SI_equivalent<Ifc4x1>(typename Ifc4x1::IfcNamedUnit* named_unit);
 template double IfcParse::get_SI_equivalent<Ifc4x2>(typename Ifc4x2::IfcNamedUnit* named_unit);
 template double IfcParse::get_SI_equivalent<Ifc4x3_rc1>(typename Ifc4x3_rc1::IfcNamedUnit* named_unit);
+template double IfcParse::get_SI_equivalent<Ifc4x3_rc2>(typename Ifc4x3_rc2::IfcNamedUnit* named_unit);
 #endif

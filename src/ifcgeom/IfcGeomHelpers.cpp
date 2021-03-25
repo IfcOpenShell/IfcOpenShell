@@ -169,7 +169,13 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcAxis2Placement3D* l, gp_Trsf& 
 	gp_Dir axis(0, 0, 1);
 	gp_Dir refDirection;
 
-	IfcGeom::Kernel::convert(l->Location(), o);
+	if (!l->Location()->declaration().is("IfcCartesianPoint")) {
+		// only applicable to 4x3 rc2
+		Logger::Error("Not implemented", l->Location());
+		return false;
+	}
+
+	IfcGeom::Kernel::convert((const IfcSchema::IfcCartesianPoint*) l->Location(), o);
 	const bool hasAxis = l->hasAxis();
 	const bool hasRef = l->hasRefDirection();
 
@@ -207,7 +213,14 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcAxis2Placement3D* l, gp_Trsf& 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcAxis1Placement* l, gp_Ax1& ax) {
 	IN_CACHE(IfcAxis1Placement,l,gp_Ax1,ax)
 	gp_Pnt o;gp_Dir axis = gp_Dir(0,0,1);
-	IfcGeom::Kernel::convert(l->Location(),o);
+
+	if (!l->Location()->declaration().is("IfcCartesianPoint")) {
+		// only applicable to 4x3 rc2
+		Logger::Error("Not implemented", l->Location());
+		return false;
+	}
+
+	IfcGeom::Kernel::convert((const IfcSchema::IfcCartesianPoint*) l->Location(),o);
 	if ( l->hasAxis() ) IfcGeom::Kernel::convert(l->Axis(), axis);
 	ax = gp_Ax1(o, axis);
 	CACHE(IfcAxis1Placement,l,ax)
@@ -356,7 +369,14 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPlane* pln, gp_Pln& plane) {
 	IN_CACHE(IfcPlane,pln,gp_Pln,plane)
 	IfcSchema::IfcAxis2Placement3D* l = pln->Position();
 	gp_Pnt o;gp_Dir axis = gp_Dir(0,0,1);gp_Dir refDirection;
-	IfcGeom::Kernel::convert(l->Location(),o);
+
+	if (!l->Location()->declaration().is("IfcCartesianPoint")) {
+		// only applicable to 4x3 rc2
+		Logger::Error("Not implemented", l->Location());
+		return false;
+	}
+
+	IfcGeom::Kernel::convert((const IfcSchema::IfcCartesianPoint*) l->Location(),o);
 	bool hasRef = l->hasRefDirection();
 	if ( l->hasAxis() ) IfcGeom::Kernel::convert(l->Axis(),axis);
 	if ( hasRef ) IfcGeom::Kernel::convert(l->RefDirection(),refDirection);
@@ -371,7 +391,14 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPlane* pln, gp_Pln& plane) {
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcAxis2Placement2D* l, gp_Trsf2d& trsf) {
 	IN_CACHE(IfcAxis2Placement2D,l,gp_Trsf2d,trsf)
 	gp_Pnt P; gp_Dir V (1,0,0);
-	IfcGeom::Kernel::convert(l->Location(),P);
+
+	if (!l->Location()->declaration().is("IfcCartesianPoint")) {
+		// only applicable to 4x3 rc2
+		Logger::Error("Not implemented", l->Location());
+		return false;
+	}
+
+	IfcGeom::Kernel::convert((const IfcSchema::IfcCartesianPoint*) l->Location(),P);
 	if ( l->hasRefDirection() )
 		IfcGeom::Kernel::convert(l->RefDirection(),V);
 

@@ -34,11 +34,12 @@ def getMaterialTypes(self, context):
             "IfcMaterial",
             "IfcMaterialConstituentSet",
             "IfcMaterialLayerSet",
+            "IfcMaterialLayerSetUsage",
             "IfcMaterialProfileSet",
             "IfcMaterialList",
         ]
         if IfcStore.get_file().schema == "IFC2X3":
-            material_types = ["IfcMaterial", "IfcMaterialLayerSet", "IfcMaterialList"]
+            material_types = ["IfcMaterial", "IfcMaterialLayerSet", "IfcMaterialLayerSetUsage", "IfcMaterialList"]
         materialtypes_enum.clear()
         materialtypes_enum = [(m, m, "") for m in material_types]
     return materialtypes_enum

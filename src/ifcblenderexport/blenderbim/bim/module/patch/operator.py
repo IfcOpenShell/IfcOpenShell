@@ -45,7 +45,7 @@ class ExecuteIfcPatch(bpy.types.Operator):
                 "input": context.scene.BIMPatchProperties.ifc_patch_input,
                 "output": context.scene.BIMPatchProperties.ifc_patch_output,
                 "recipe": context.scene.BIMPatchProperties.ifc_patch_recipes,
-                "arguments": json.loads(context.scene.BIMPatchProperties.ifc_patch_args),
+                "arguments": json.loads(context.scene.BIMPatchProperties.ifc_patch_args or "[]"),
                 "log": context.scene.BIMProperties.data_dir + "process.log",
             }
         )

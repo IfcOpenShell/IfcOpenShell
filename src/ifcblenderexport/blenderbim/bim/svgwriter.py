@@ -10,6 +10,7 @@ from . import annotation
 from . import helper
 from mathutils import Vector
 from mathutils import geometry
+from blenderbim.bim.ifc import IfcStore
 
 try:
     from OCC.Core import BRep, BRepTools, TopExp, TopAbs
@@ -140,11 +141,7 @@ class SvgWriter:
                 line["marker-start"] = "url(#grid-marker)"
                 line["marker-end"] = "url(#grid-marker)"
                 line["stroke-dasharray"] = "12.5, 3, 3, 3"
-                axis_tag = grid_obj.BIMObjectProperties.attributes.get("AxisTag")
-                if axis_tag:
-                    axis_tag = axis_tag.string_value
-                else:
-                    axis_tag = grid_obj.name.split("/")[1]
+                axis_tag = IfcStore.get_file().by_id(grid_obj.BIMObjectProperties.ifc_definition_id).AxisTag
                 self.svg.add(
                     self.svg.text(
                         axis_tag,
@@ -329,6 +326,8 @@ class SvgWriter:
         # We have to decide whether this should come from Blender or from IFC.
         # For the moment, for convenience of experimenting with ideas, it comes
         # from Blender. In the future, it should probably come from IFC.
+        if not isinstance(obj.data, bpy.types.Mesh):
+            return
         classes.extend(self.get_attribute_classes(obj))
         if len(obj.data.polygons) == 0:
             self.draw_edge_annotation(obj, classes)
@@ -353,12 +352,8 @@ class SvgWriter:
         for slot in obj.material_slots:
             if slot.material:
                 classes.append("material-{}".format(re.sub("[^0-9a-zA-Z]+", "", slot.material.name)))
-        result = obj.BIMObjectProperties.attributes.get("GlobalId")
-        if not result:
-            result = obj.BIMObjectProperties.attributes.add()
-            result.name = "GlobalId"
-            result.string_value = ifcopenshell.guid.new()
-        classes.append("globalid-{}".format(result.string_value))
+        global_id = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId
+        classes.append("globalid-{}".format(global_id))
         for attribute in self.ifc_cutter.attributes:
             result = self.get_obj_value(obj, attribute)
             if result:
