@@ -1,23 +1,19 @@
 import time
 import ifcopenshell
+import ifcopenshell.api.owner.create_owner_history as create_owner_history
 
 
 class Usecase:
     def __init__(self, file, settings={}):
         self.file = file
-        self.settings = {
-            "OwnerHistory": None,
-            "person": None,
-            "organisation": None,
-            "ApplicationIdentifier": "",
-            "ApplicationFullName": "",
-            "Version": "",
-            "ChangeAction": "NOTDEFINED",
-        }
+        self.settings = ifcopenshell.api.owner.settings.settings
         for key, value in settings.items():
             self.settings[key] = value
 
     def execute(self):
+        if not self.settings["element"].OwnerHistory:
+            self.settings["element"].OwnerHistory = create_owner_history.Usecase(self.file, self.settings).execute()
+            return
         if len(self.file.get_inverse(self.settings["element"].OwnerHistory)) > 1:
             old_history = self.settings["element"].OwnerHistory
             self.settings["element"].OwnerHistory = self.file.create_entity("IfcOwnerHistory")

@@ -1,5 +1,5 @@
 import ifcopenshell
-from ifcopenshell.api.owner.api import create_owner_history
+import ifcopenshell.api.owner.create_owner_history as create_owner_history
 
 
 class Usecase:
@@ -12,7 +12,7 @@ class Usecase:
     def execute(self):
         return self.file.create_entity("IfcStructuralAnalysisModel", **{
             "GlobalId": ifcopenshell.guid.new(),
-            "OwnerHistory": create_owner_history(),
+            "OwnerHistory": create_owner_history.Usecase(self.file).execute(),
             "Name": "Unnamed",
             "PredefinedType": "LOADING_3D"
         })

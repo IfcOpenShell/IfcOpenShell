@@ -1,4 +1,4 @@
-from ifcopenshell.api.owner.api import update_owner_history
+import ifcopenshell.api.owner.update_owner_history as update_owner_history
 
 
 class Usecase():
@@ -15,4 +15,4 @@ class Usecase():
         for name, value in self.settings["attributes"].items():
             setattr(self.settings["product"], name, value)
         if hasattr(self.settings["product"], "OwnerHistory"):
-            update_owner_history(self.settings["product"])
+            update_owner_history.Usecase(self.file, {"element": self.settings["product"]}).execute()
