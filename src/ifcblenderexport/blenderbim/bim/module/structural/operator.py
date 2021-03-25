@@ -1,5 +1,6 @@
 import bpy
 import json
+import ifcopenshell
 import ifcopenshell.api.structural.add_structural_boundary_condition as add_structural_boundary_condition
 import ifcopenshell.api.structural.edit_structural_boundary_condition as edit_structural_boundary_condition
 import ifcopenshell.api.structural.remove_structural_boundary_condition as remove_structural_boundary_condition
@@ -59,7 +60,7 @@ class EnableEditingStructuralBoundaryCondition(bpy.types.Operator):
             new.is_null = value is None
             new.is_optional = attribute.optional()
             if data_type == "select":
-                enum_items = [s.name() for s in ifcopenshell.get_select_items(attribute)]
+                enum_items = [s.name() for s in ifcopenshell.util.attribute.get_select_items(attribute)]
                 new.enum_items = json.dumps(enum_items)
             if isinstance(value, bool):
                 new.bool_value = False if new.is_null else data[attribute.name()]
@@ -71,6 +72,7 @@ class EnableEditingStructuralBoundaryCondition(bpy.types.Operator):
                 new.enum_value = [i for i in enum_items if i != "IfcBoolean"][0]
             elif data_type == "string":
                 new.string_value = "" if new.is_null else data[attribute.name()]
+                new.data_type = "string"
 
         props.is_editing_boundary_condition = True
         return {"FINISHED"}
