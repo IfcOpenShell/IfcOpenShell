@@ -1,22 +1,19 @@
 import time
 import ifcopenshell
+import ifcopenshell.api.owner.settings
 
 
 class Usecase:
     def __init__(self, file, settings={}):
         self.file = file
-        self.settings = {
-            "person": None,
-            "organisation": None,
-            "ApplicationIdentifier": "",
-            "ApplicationFullName": "",
-            "Version": "",
-            "ChangeAction": "NOTDEFINED",
-        }
+        self.settings = ifcopenshell.api.owner.settings.settings
         for key, value in settings.items():
             self.settings[key] = value
 
     def execute(self):
+        if self.file.schema != "IFC2X3":
+            if not self.settings["person"] or not self.settings["organisation"]:
+                return
         user = self.get_user()
         application = self.get_application()
         return self.file.create_entity(
@@ -25,7 +22,7 @@ class Usecase:
                 "OwningUser": user,
                 "OwningApplication": application,
                 "State": "READWRITE",
-                "ChangeAction": self.settings["ChangeAction"],
+                "ChangeAction": self.settings["ChangeAction"] or "ADDED",
                 "LastModifiedDate": int(time.time()),
                 "LastModifyingUser": user,
                 "LastModifyingApplication": application,

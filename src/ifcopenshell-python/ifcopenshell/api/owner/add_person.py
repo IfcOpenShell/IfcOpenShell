@@ -1,6 +1,13 @@
 class Usecase:
-    def __init__(self, file):
+    def __init__(self, file, settings={}):
         self.file = file
+        self.settings = {
+            "Identification": "HSeldon",
+            "FamilyName": "Seldon",
+            "GivenName": "Hari",
+        }
+        for key, value in settings.items():
+            self.settings[key] = value
 
     def execute(self):
-        self.file.createIfcPerson("HSeldon", "Seldon", "Hari")
+        return self.file.create_entity("IfcPerson", **self.settings)
