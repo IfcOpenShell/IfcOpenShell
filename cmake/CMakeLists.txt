@@ -466,7 +466,7 @@ ElSE()
     else()
         add_definitions(-Wno-maybe-uninitialized)
     endif()
-    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 9.0)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 9.0 OR CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 9.0))
         # OpenCascade spews a lot of deprecated-copy warnings
         add_definitions(-Wno-deprecated-copy)
     endif()
