@@ -73,7 +73,7 @@ how to use Git, you can also stay up to date like so:
     $ git checkout v0.6.0
 
 Then, just copy the files from the source code's
-``src/ifcblenderexport/blenderbim/`` folder and replace the files in your
+``src/blenderbim/blenderbim/`` folder and replace the files in your
 Blender add-on's ``blenderbim/`` folder.
 
 Restart Blender for the changes to take effect. In ``Edit > Preferences >
