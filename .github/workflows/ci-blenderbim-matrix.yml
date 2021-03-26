@@ -63,4 +63,4 @@ jobs:
           asset_name: blender28-bim-${{steps.date.outputs.date}}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
           tag: "blenderbim-${{steps.date.outputs.date}}"
           overwrite: true
-          body: "Package release blenderbim-${{steps.date.outputs.date}}"
+          body: "Daily developer testing build blenderbim-${{steps.date.outputs.date}}"
