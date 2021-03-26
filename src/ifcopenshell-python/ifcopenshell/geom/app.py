@@ -615,7 +615,7 @@ class application(QtWidgets.QApplication):
 
         return handler
 
-    def __init__(self, settings={}):
+    def __init__(self, settings=None):
         QtWidgets.QApplication.__init__(self, sys.argv)
         self.window = application.window()
         self.tree = application.decomposition_treeview()
