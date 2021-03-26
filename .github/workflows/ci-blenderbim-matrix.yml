@@ -3,7 +3,7 @@ name: Publish-blenderbim-multiplatform
 on:
   push:
     paths:
-      - 'src/ifcblenderexport/**'
+      - 'src/blenderbim/**'
       - '.github/workflows/ci-blenderbim-matrix.yml'
 
 env:
@@ -52,14 +52,14 @@ jobs:
         run: echo "::set-output name=date::$(date +'%y%m%d')"
       - name: Compile
         run: |
-          cp -r src/ifcblenderexport src/ifcblenderexport_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
-          cd src/ifcblenderexport_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
+          cp -r src/blenderbim src/blenderbim_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
+          cd src/blenderbim_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
           make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }}
       - name: Upload Zip file to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: src/ifcblenderexport_${{ matrix.config.short_name }}_${{ matrix.pyver }}/dist/blender28-bim-${{steps.date.outputs.date}}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
+          file: src/blenderbim_${{ matrix.config.short_name }}_${{ matrix.pyver }}/dist/blender28-bim-${{steps.date.outputs.date}}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
           asset_name: blender28-bim-${{steps.date.outputs.date}}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
           tag: "blenderbim-${{steps.date.outputs.date}}"
           overwrite: true
