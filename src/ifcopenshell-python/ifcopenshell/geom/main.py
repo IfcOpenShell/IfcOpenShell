@@ -124,7 +124,7 @@ class iterator(_iterator):
 
 
 class tree(ifcopenshell_wrapper.tree):
-    def __init__(self, file=None, settings={}):
+    def __init__(self, file=None, settings=None):
         args = [self]
         if file is not None:
             args.append(file.wrapped_data)
