@@ -1,7 +1,7 @@
 import bpy
 import json
 import ifcopenshell
-import ifcopenshell.api.attribute.edit_attributes as edit_attributes
+import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.attribute.data import Data
 
@@ -33,7 +33,7 @@ class EnableEditingAttributes(bpy.types.Operator):
             elif attribute["type"] == "integer":
                 new.int_value = attribute["value"] or 0
             elif attribute["type"] == "float":
-                new.float_value = attribute["value"] or 0.
+                new.float_value = attribute["value"] or 0.0
             elif attribute["type"] == "enum":
                 new.enum_items = json.dumps(attribute["enum_items"])
                 if attribute["value"]:
@@ -95,10 +95,9 @@ class EditAttributes(bpy.types.Operator):
             elif attribute["type"] == "enum":
                 attributes[attribute["name"]] = blender_attribute.enum_value
         product = self.file.by_id(oprops.ifc_definition_id)
-        edit_attributes.Usecase(self.file, {
-            "product": product,
-            "attributes": attributes
-        }).execute()
+        ifcopenshell.api.run(
+            "attribute.edit_attributes", self.file, **{"product": product, "attributes": attributes}
+        )
         if "Name" in attributes:
             new_name = "{}/{}".format(product.is_a(), product.Name or "Unnamed")
             collection = bpy.data.collections.get(obj.name)

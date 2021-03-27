@@ -1,4 +1,4 @@
-import ifcopenshell.api.owner.update_owner_history as update_owner_history
+import ifcopenshell.api
 
 
 class Usecase:
@@ -35,4 +35,4 @@ class Usecase:
                 )
             )
             self.settings["product"].RepresentationMaps = maps
-        update_owner_history.Usecase(self.file, {"element": self.settings["product"]}).execute()
+        ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": self.settings["product"]})

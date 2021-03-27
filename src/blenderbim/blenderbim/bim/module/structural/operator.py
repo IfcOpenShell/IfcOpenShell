@@ -1,14 +1,7 @@
 import bpy
 import json
 import ifcopenshell
-import ifcopenshell.api.structural.add_structural_boundary_condition as add_structural_boundary_condition
-import ifcopenshell.api.structural.edit_structural_boundary_condition as edit_structural_boundary_condition
-import ifcopenshell.api.structural.remove_structural_boundary_condition as remove_structural_boundary_condition
-import ifcopenshell.api.structural.add_structural_analysis_model as add_structural_analysis_model
-import ifcopenshell.api.structural.edit_structural_analysis_model as edit_structural_analysis_model
-import ifcopenshell.api.structural.remove_structural_analysis_model as remove_structural_analysis_model
-import ifcopenshell.api.structural.assign_structural_analysis_model as assign_structural_analysis_model
-import ifcopenshell.api.structural.unassign_structural_analysis_model as unassign_structural_analysis_model
+import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.structural.data import Data
 
@@ -21,7 +14,7 @@ class AddStructuralBoundaryCondition(bpy.types.Operator):
         obj = context.active_object
         file = IfcStore.get_file()
         connection = file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-        add_structural_boundary_condition.Usecase(file, {"connection": connection}).execute()
+        ifcopenshell.api.run("structural.add_structural_boundary_condition", file, **{"connection": connection})
         Data.load(IfcStore.get_file(), connection.id())
         return {"FINISHED"}
 
@@ -34,7 +27,7 @@ class RemoveStructuralBoundaryCondition(bpy.types.Operator):
         obj = context.active_object
         file = IfcStore.get_file()
         connection = file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-        remove_structural_boundary_condition.Usecase(file, {"connection": connection}).execute()
+        ifcopenshell.api.run("structural.remove_structural_boundary_condition", file, **{"connection": connection})
         Data.load(IfcStore.get_file(), connection.id())
         return {"FINISHED"}
 
@@ -102,7 +95,9 @@ class EditStructuralBoundaryCondition(bpy.types.Operator):
             else:
                 attributes[attribute.name] = {"value": attribute.float_value, "type": attribute.enum_value}
 
-        edit_structural_boundary_condition.Usecase(file, {"condition": condition, "attributes": attributes}).execute()
+        ifcopenshell.api.run(
+            "structural.edit_structural_boundary_condition", file, **{"condition": condition, "attributes": attributes}
+        )
         Data.load(IfcStore.get_file(), connection.id())
         bpy.ops.bim.disable_editing_structural_boundary_condition()
         return {"FINISHED"}
@@ -148,7 +143,7 @@ class AddStructuralAnalysisModel(bpy.types.Operator):
     bl_label = "Add Structural Analysis Model"
 
     def execute(self, context):
-        result = add_structural_analysis_model.Usecase(IfcStore.get_file()).execute()
+        result = ifcopenshell.api.run("structural.add_structural_analysis_model", IfcStore.get_file())
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_structural_analysis_models()
         bpy.ops.bim.enable_editing_structural_analysis_model(structural_analysis_model=result.id())
@@ -171,9 +166,14 @@ class EditStructuralAnalysisModel(bpy.types.Operator):
                 elif attribute.data_type == "enum":
                     attributes[attribute.name] = attribute.enum_value
         self.file = IfcStore.get_file()
-        edit_structural_analysis_model.Usecase(
-            self.file, {"structural_analysis_model": self.file.by_id(props.active_structural_analysis_model_id), "attributes": attributes}
-        ).execute()
+        ifcopenshell.api.run(
+            "structural.edit_structural_analysis_model",
+            self.file,
+            **{
+                "structural_analysis_model": self.file.by_id(props.active_structural_analysis_model_id),
+                "attributes": attributes,
+            }
+        )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_structural_analysis_models()
         return {"FINISHED"}
@@ -187,7 +187,11 @@ class RemoveStructuralAnalysisModel(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMStructuralProperties
         self.file = IfcStore.get_file()
-        remove_structural_analysis_model.Usecase(self.file, {"structural_analysis_model": self.file.by_id(self.structural_analysis_model)}).execute()
+        ifcopenshell.api.run(
+            "structural.remove_structural_analysis_model",
+            self.file,
+            **{"structural_analysis_model": self.file.by_id(self.structural_analysis_model)}
+        )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_structural_analysis_models()
         return {"FINISHED"}
@@ -243,10 +247,14 @@ class AssignStructuralAnalysisModel(bpy.types.Operator):
     def execute(self, context):
         product = bpy.data.objects.get(self.product) if self.product else context.active_object
         self.file = IfcStore.get_file()
-        assign_structural_analysis_model.Usecase(self.file, {
-            "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
-            "structural_analysis_model": self.file.by_id(self.structural_analysis_model)
-        }).execute()
+        ifcopenshell.api.run(
+            "structural.assign_structural_analysis_model",
+            self.file,
+            **{
+                "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
+                "structural_analysis_model": self.file.by_id(self.structural_analysis_model),
+            }
+        )
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
@@ -260,9 +268,13 @@ class UnassignStructuralAnalysisModel(bpy.types.Operator):
     def execute(self, context):
         product = bpy.data.objects.get(self.product) if self.product else context.active_object
         self.file = IfcStore.get_file()
-        unassign_structural_analysis_model.Usecase(self.file, {
-            "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
-            "structural_analysis_model": self.file.by_id(self.structural_analysis_model)
-        }).execute()
+        ifcopenshell.api.run(
+            "structural.unassign_structural_analysis_model",
+            self.file,
+            **{
+                "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
+                "structural_analysis_model": self.file.by_id(self.structural_analysis_model),
+            }
+        )
         Data.load(IfcStore.get_file())
         return {"FINISHED"}

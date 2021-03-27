@@ -1,12 +1,9 @@
 import bpy
 import numpy as np
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
-import ifcopenshell.api.root.create_product as create_product
-import ifcopenshell.api.root.remove_product as remove_product
-import ifcopenshell.api.root.reassign_class as reassign_class
-import ifcopenshell.api.root.copy_class as copy_class
 from ifcopenshell.api.geometry.data import Data as GeometryData
 from blenderbim.bim.ifc import IfcStore
 
@@ -61,14 +58,15 @@ class ReassignClass(bpy.types.Operator):
         if predefined_type == "USERDEFINED":
             predefined_type = bpy.context.scene.BIMRootProperties.ifc_userdefined_type
         for obj in objects:
-            product = reassign_class.Usecase(
+            product = ifcopenshell.api.run(
+                "root.reassign_class",
                 self.file,
-                {
+                **{
                     "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
                     "ifc_class": bpy.context.scene.BIMRootProperties.ifc_class,
                     "predefined_type": predefined_type,
                 },
-            ).execute()
+            )
             obj.name = "{}/{}".format(product.is_a(), "/".join(obj.name.split("/")[1:]))
             IfcStore.link_element(product, obj)
             obj.BIMObjectProperties.is_reassigning_class = False
@@ -103,14 +101,15 @@ class AssignClass(bpy.types.Operator):
     def assign_class(self, context, obj):
         if obj.BIMObjectProperties.ifc_definition_id:
             return
-        product = create_product.Usecase(
+        product = ifcopenshell.api.run(
+            "root.create_entity",
             self.file,
-            {
+            **{
                 "ifc_class": self.ifc_class,
                 "predefined_type": self.predefined_type,
                 "name": obj.name,
             },
-        ).execute()
+        )
         obj.name = "{}/{}".format(product.is_a(), obj.name)
         IfcStore.link_element(product, obj)
 
@@ -185,7 +184,7 @@ class UnassignClass(bpy.types.Operator):
                 continue
             product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
             IfcStore.unlink_element(product, obj)
-            remove_product.Usecase(self.file, {"product": product}).execute()
+            ifcopenshell.api.run("root.remove_product", self.file, **{"product": product})
             if "/" in obj.name and obj.name[0:3] == "Ifc":
                 obj.name = "/".join(obj.name.split("/")[1:])
             if obj.data and obj.data.name == "Void":
@@ -226,9 +225,9 @@ class CopyClass(bpy.types.Operator):
         for obj in objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
-            result = copy_class.Usecase(
-                self.file, {"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)}
-            ).execute()
+            result = ifcopenshell.api.run(
+                "root.copy_class", self.file, **{"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)}
+            )
             IfcStore.link_element(result, obj)
             relating_type = ifcopenshell.util.element.get_type(result)
             if relating_type and relating_type.RepresentationMaps:

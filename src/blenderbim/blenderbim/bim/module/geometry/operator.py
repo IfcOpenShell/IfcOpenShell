@@ -4,14 +4,7 @@ import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import logging
-import ifcopenshell.api.geometry.edit_object_placement as edit_object_placement
-import ifcopenshell.api.geometry.add_representation as add_representation
-import ifcopenshell.api.geometry.map_representation as map_representation
-import ifcopenshell.api.geometry.assign_styles as assign_styles
-import ifcopenshell.api.geometry.assign_representation as assign_representation
-import ifcopenshell.api.geometry.unassign_representation as unassign_representation
-import ifcopenshell.api.geometry.remove_representation as remove_representation
-import ifcopenshell.api.grid.create_axis_curve as create_axis_curve
+import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim import import_ifc
 from ifcopenshell.api.geometry.data import Data
@@ -55,13 +48,14 @@ class EditObjectPlacement(bpy.types.Operator):
                         float(props.blender_x_axis_ordinate),
                     )
                 )
-            edit_object_placement.Usecase(
+            ifcopenshell.api.run(
+                "geometry.edit_object_placement",
                 self.file,
-                {
+                **{
                     "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
                     "matrix": matrix,
                 },
-            ).execute()
+            )
         return {"FINISHED"}
 
 
@@ -103,7 +97,7 @@ class AddRepresentation(bpy.types.Operator):
                 "should_force_triangulation": context.scene.BIMGeometryProperties.should_force_triangulation,
             }
 
-            result = add_representation.Usecase(self.file, representation_data).execute()
+            result = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
 
             if not result:
                 print("Failed to write shape representation")
@@ -117,12 +111,15 @@ class AddRepresentation(bpy.types.Operator):
                 and context_of_items.ContextIdentifier == "Body"
             ):
                 representation_data["context"] = self.file.by_id(box_context_id)
-                new_box = add_representation.Usecase(self.file, representation_data).execute()
-                assign_representation.Usecase(self.file, {"product": product, "representation": new_box}).execute()
+                new_box = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
+                ifcopenshell.api.run(
+                    "geometry.assign_representation", self.file, **{"product": product, "representation": new_box}
+                )
 
-            assign_styles.Usecase(
+            ifcopenshell.api.run(
+                "geometry.assign_styles",
                 self.file,
-                {
+                **{
                     "shape_representation": result,
                     "styles": [
                         self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
@@ -131,8 +128,10 @@ class AddRepresentation(bpy.types.Operator):
                     ],
                     "should_use_presentation_style_assignment": context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
                 },
-            ).execute()
-            assign_representation.Usecase(self.file, {"product": product, "representation": result}).execute()
+            )
+            ifcopenshell.api.run(
+                "geometry.assign_representation", self.file, **{"product": product, "representation": result}
+            )
 
             existing_mesh = obj.data
             mesh = obj.data.copy()
@@ -231,8 +230,10 @@ class RemoveRepresentation(bpy.types.Operator):
             if not is_mapped_representation:
                 bpy.data.meshes.remove(mesh)
         product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-        unassign_representation.Usecase(self.file, {"product": product, "representation": representation}).execute()
-        remove_representation.Usecase(self.file, {"representation": representation}).execute()
+        ifcopenshell.api.run(
+            "geometry.unassign_representation", self.file, **{"product": product, "representation": representation}
+        )
+        ifcopenshell.api.run("geometry.remove_representation", self.file, **{"representation": representation})
         Data.load(IfcStore.get_file(), product.id())
         return {"FINISHED"}
 
@@ -282,10 +283,12 @@ class MapRepresentation(bpy.types.Operator):
             product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
             if obj_data:
                 obj.data = obj_data
-            result = map_representation.Usecase(
-                self.file, {"representation": self.file.by_id(self.representation_id)}
-            ).execute()
-            assign_representation.Usecase(self.file, {"product": product, "representation": result}).execute()
+            result = ifcopenshell.api.run(
+                "geometry.map_representation", self.file, **{"representation": self.file.by_id(self.representation_id)}
+            )
+            ifcopenshell.api.run(
+                "geometry.assign_representation", self.file, **{"product": product, "representation": result}
+            )
             Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
@@ -312,7 +315,7 @@ class UpdateMeshRepresentation(bpy.types.Operator):
         product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
 
         if product.is_a("IfcGridAxis"):
-            create_axis_curve.Usecase(self.file, {"AxisCurve": obj, "grid_axis": product}).execute()
+            ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"AxisCurve": obj, "grid_axis": product})
             return
 
         bpy.ops.bim.edit_object_placement(obj=obj.name)
@@ -339,12 +342,12 @@ class UpdateMeshRepresentation(bpy.types.Operator):
             "total_items": max(1, len(obj.material_slots)),
             "should_force_faceted_brep": context.scene.BIMGeometryProperties.should_force_faceted_brep,
             "should_force_triangulation": context.scene.BIMGeometryProperties.should_force_triangulation,
-            "ifc_representation_class": self.ifc_representation_class
+            "ifc_representation_class": self.ifc_representation_class,
         }
 
-        new_representation = add_representation.Usecase(self.file, representation_data).execute()
+        new_representation = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
 
-        #if product.is_a("IfcWall"):
+        # if product.is_a("IfcWall"):
         #    # Generate axis representation
         #    axis_context_id = get_context_id("Model", "Axis", "MODEL_VIEW")
         #    old_axis = ifcopenshell.util.element.get_representation(product, "Model", "Axis", "MODEL_VIEW")
@@ -371,13 +374,14 @@ class UpdateMeshRepresentation(bpy.types.Operator):
             and context_of_items.ContextIdentifier == "Body"
         ):
             representation_data["context"] = self.file.by_id(box_context_id)
-            new_box = add_representation.Usecase(self.file, representation_data).execute()
+            new_box = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
             for inverse in self.file.get_inverse(old_box):
                 ifcopenshell.util.element.replace_attribute(inverse, old_box, new_box)
 
-        assign_styles.Usecase(
+        ifcopenshell.api.run(
+            "geometry.assign_styles",
             self.file,
-            {
+            **{
                 "shape_representation": new_representation,
                 "styles": [
                     self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
@@ -386,7 +390,7 @@ class UpdateMeshRepresentation(bpy.types.Operator):
                 ],
                 "should_use_presentation_style_assignment": context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
             },
-        ).execute()
+        )
 
         # TODO: move this into a replace_representation usecase or something
         for inverse in self.file.get_inverse(old_representation):

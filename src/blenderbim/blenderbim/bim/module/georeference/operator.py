@@ -3,9 +3,7 @@ import json
 import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.attribute
-import ifcopenshell.api.georeference.add_georeferencing as add_georeferencing
-import ifcopenshell.api.georeference.edit_georeferencing as edit_georeferencing
-import ifcopenshell.api.georeference.remove_georeferencing as remove_georeferencing
+import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.georeference.data import Data
 from math import radians, degrees, atan, tan, cos, sin
@@ -131,9 +129,11 @@ class EditGeoreferencing(bpy.types.Operator):
         if not props.is_map_unit_null:
             map_unit = props.map_unit_si if props.map_unit_type == "IfcSIUnit" else props.map_unit_imperial
 
-        edit_georeferencing.Usecase(
-            self.file, {"map_conversion": map_conversion, "projected_crs": projected_crs, "map_unit": map_unit}
-        ).execute()
+        ifcopenshell.api.run(
+            "georeference.edit_georeferencing",
+            self.file,
+            **{"map_conversion": map_conversion, "projected_crs": projected_crs, "map_unit": map_unit}
+        )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_georeferencing()
         return {"FINISHED"}
@@ -169,7 +169,7 @@ class RemoveGeoreferencing(bpy.types.Operator):
     bl_label = "Remove Georeferencing"
 
     def execute(self, context):
-        remove_georeferencing.Usecase(IfcStore.get_file()).execute()
+        ifcopenshell.api.run("georeference.remove_georeferencing", IfcStore.get_file())
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
@@ -179,7 +179,7 @@ class AddGeoreferencing(bpy.types.Operator):
     bl_label = "Add Georeferencing"
 
     def execute(self, context):
-        add_georeferencing.Usecase(IfcStore.get_file()).execute()
+        ifcopenshell.api.run("georeference.add_georeferencing", IfcStore.get_file())
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
 

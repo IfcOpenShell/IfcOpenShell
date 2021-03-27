@@ -1,17 +1,6 @@
 import bpy
 import json
-import ifcopenshell.api.owner.add_person as add_person
-import ifcopenshell.api.owner.edit_person as edit_person
-import ifcopenshell.api.owner.remove_person as remove_person
-import ifcopenshell.api.owner.add_organisation as add_organisation
-import ifcopenshell.api.owner.edit_organisation as edit_organisation
-import ifcopenshell.api.owner.remove_organisation as remove_organisation
-import ifcopenshell.api.owner.add_role as add_role
-import ifcopenshell.api.owner.edit_role as edit_role
-import ifcopenshell.api.owner.remove_role as remove_role
-import ifcopenshell.api.owner.add_address as add_address
-import ifcopenshell.api.owner.edit_address as edit_address
-import ifcopenshell.api.owner.remove_address as remove_address
+import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.owner.data import Data
 
@@ -50,7 +39,7 @@ class AddPerson(bpy.types.Operator):
     bl_label = "Add Person"
 
     def execute(self, context):
-        add_person.Usecase(IfcStore.get_file()).execute()
+        ifcopenshell.api.run("owner.add_person", IfcStore.get_file())
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
@@ -73,9 +62,11 @@ class EditPerson(bpy.types.Operator):
         if self.file.schema == "IFC2X3":
             attributes["Id"] = attributes["Identification"]
             del attributes["Identification"]
-        edit_person.Usecase(
-            self.file, {"person": self.file.by_id(props.active_person_id), "attributes": attributes}
-        ).execute()
+        ifcopenshell.api.run(
+            "owner.edit_person",
+            self.file,
+            **{"person": self.file.by_id(props.active_person_id), "attributes": attributes}
+        )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_person()
         return {"FINISHED"}
@@ -88,7 +79,7 @@ class RemovePerson(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        remove_person.Usecase(self.file, {"person": self.file.by_id(self.person_id)}).execute()
+        ifcopenshell.api.run("owner.remove_person", self.file, **{"person": self.file.by_id(self.person_id)})
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
@@ -125,7 +116,9 @@ class AddRole(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        add_role.Usecase(self.file, {"assigned_object": self.file.by_id(self.assigned_object_id)}).execute()
+        ifcopenshell.api.run(
+            "owner.add_role", self.file, **{"assigned_object": self.file.by_id(self.assigned_object_id)}
+        )
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
@@ -142,9 +135,9 @@ class EditRole(bpy.types.Operator):
             "UserDefinedRole": props.role.user_defined_role if props.role.name == "USERDEFINED" else None,
             "Description": props.role.description or None,
         }
-        edit_role.Usecase(
-            self.file, {"role": self.file.by_id(props.active_role_id), "attributes": attributes}
-        ).execute()
+        ifcopenshell.api.run(
+            "owner.edit_role", self.file, **{"role": self.file.by_id(props.active_role_id), "attributes": attributes}
+        )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_role()
         return {"FINISHED"}
@@ -157,7 +150,7 @@ class RemoveRole(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        remove_role.Usecase(self.file, {"role": self.file.by_id(self.role_id)}).execute()
+        ifcopenshell.api.run("owner.remove_role", self.file, **{"role": self.file.by_id(self.role_id)})
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
@@ -170,9 +163,11 @@ class AddAddress(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        add_address.Usecase(
-            self.file, {"assigned_object": self.file.by_id(self.assigned_object_id), "ifc_class": self.ifc_class}
-        ).execute()
+        ifcopenshell.api.run(
+            "owner.add_address",
+            self.file,
+            **{"assigned_object": self.file.by_id(self.assigned_object_id), "ifc_class": self.ifc_class}
+        )
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
@@ -257,16 +252,18 @@ class EditAddress(bpy.types.Operator):
             if self.file.schema == "IFC2X3":
                 del attributes["MessagingIDs"]
         elif address.is_a("IfcPostalAddress"):
-            attributes.update({
-                "InternalLocation": props.address.internal_location or None,
-                "AddressLines": json.loads(props.address.address_lines) if props.address.address_lines else None,
-                "PostalBox": props.address.postal_box or None,
-                "Town": props.address.town or None,
-                "Region": props.address.region or None,
-                "PostalCode": props.address.postal_code or None,
-                "Country": props.address.country or None,
-            })
-        edit_address.Usecase(self.file, {"address": address, "attributes": attributes}).execute()
+            attributes.update(
+                {
+                    "InternalLocation": props.address.internal_location or None,
+                    "AddressLines": json.loads(props.address.address_lines) if props.address.address_lines else None,
+                    "PostalBox": props.address.postal_box or None,
+                    "Town": props.address.town or None,
+                    "Region": props.address.region or None,
+                    "PostalCode": props.address.postal_code or None,
+                    "Country": props.address.country or None,
+                }
+            )
+        ifcopenshell.api.run("owner.edit_address", self.file, **{"address": address, "attributes": attributes})
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_address()
         return {"FINISHED"}
@@ -279,7 +276,7 @@ class RemoveAddress(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        remove_address.Usecase(self.file, {"address": self.file.by_id(self.address_id)}).execute()
+        ifcopenshell.api.run("owner.remove_address", self.file, **{"address": self.file.by_id(self.address_id)})
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
@@ -315,7 +312,7 @@ class AddOrganisation(bpy.types.Operator):
     bl_label = "Add Organisation"
 
     def execute(self, context):
-        add_organisation.Usecase(IfcStore.get_file()).execute()
+        ifcopenshell.api.run("owner.add_organisation", IfcStore.get_file())
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
@@ -335,9 +332,11 @@ class EditOrganisation(bpy.types.Operator):
         if self.file.schema == "IFC2X3":
             attributes["Id"] = attributes["Identification"]
             del attributes["Identification"]
-        edit_organisation.Usecase(
-            self.file, {"organisation": self.file.by_id(props.active_organisation_id), "attributes": attributes}
-        ).execute()
+        ifcopenshell.api.run(
+            "owner.edit_organisation",
+            self.file,
+            **{"organisation": self.file.by_id(props.active_organisation_id), "attributes": attributes}
+        )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_organisation()
         return {"FINISHED"}
@@ -350,6 +349,8 @@ class RemoveOrganisation(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        remove_organisation.Usecase(self.file, {"organisation": self.file.by_id(self.organisation_id)}).execute()
+        ifcopenshell.api.run(
+            "owner.remove_organisation", self.file, **{"organisation": self.file.by_id(self.organisation_id)}
+        )
         Data.load(IfcStore.get_file())
         return {"FINISHED"}

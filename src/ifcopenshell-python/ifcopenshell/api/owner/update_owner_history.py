@@ -1,6 +1,6 @@
 import time
 import ifcopenshell
-import ifcopenshell.api.owner.create_owner_history as create_owner_history
+import ifcopenshell.api
 
 
 class Usecase:
@@ -14,7 +14,9 @@ class Usecase:
         self.settings["person"] = ifcopenshell.api.owner.settings.get_person()
         self.settings["organisation"] = ifcopenshell.api.owner.settings.get_organisation()
         if not self.settings["element"].OwnerHistory:
-            self.settings["element"].OwnerHistory = create_owner_history.Usecase(self.file, self.settings).execute()
+            self.settings["element"].OwnerHistory = ifcopenshell.api.run(
+                "owner.create_owner_history", self.file, **self.settings
+            )
             return self.settings["element"].OwnerHistory
         if len(self.file.get_inverse(self.settings["element"].OwnerHistory)) > 1:
             old_history = self.settings["element"].OwnerHistory

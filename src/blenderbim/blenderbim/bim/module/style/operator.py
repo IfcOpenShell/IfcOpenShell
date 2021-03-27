@@ -1,6 +1,5 @@
 import bpy
-import ifcopenshell.api.style.add_style as add_style
-import ifcopenshell.api.style.edit_style as edit_style
+import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -28,7 +27,7 @@ class EditStyle(bpy.types.Operator):
         material = bpy.data.objects.get(self.material) if self.material else bpy.context.active_object.active_material
         settings = get_colour_settings(material)
         settings["style"] = self.file.by_id(material.BIMMaterialProperties.ifc_style_id)
-        edit_style.Usecase(self.file, settings).execute()
+        ifcopenshell.api.run("style.edit_style", self.file, **settings)
         return {"FINISHED"}
 
 
@@ -43,7 +42,7 @@ class AddStyle(bpy.types.Operator):
         settings = get_colour_settings(material)
         settings["Name"] = material.name
         settings["external_definition"] = None # TODO: Implement. See #1222
-        style = add_style.Usecase(self.file, settings).execute()
+        style = ifcopenshell.api.run("style.add_style", self.file, **settings)
         material.BIMMaterialProperties.ifc_style_id = int(style.id())
         return {"FINISHED"}
 

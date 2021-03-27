@@ -1,9 +1,7 @@
 import bpy
 import ifcopenshell.util.schema
 import ifcopenshell.util.type
-import ifcopenshell.api.type.assign_type as assign_type
-import ifcopenshell.api.type.unassign_type as unassign_type
-import ifcopenshell.api.type.get_related_objects as get_related_objects
+import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.type.data import Data
 from blenderbim.bim.module.type.prop import getIfcTypes, getAvailableTypes, updateTypeInstanceIfcClass
@@ -24,13 +22,14 @@ class AssignType(bpy.types.Operator):
         )
         for related_object in related_objects:
             oprops = related_object.BIMObjectProperties
-            assign_type.Usecase(
+            ifcopenshell.api.run(
+                "type.assign_type",
                 self.file,
-                {
+                **{
                     "related_object": self.file.by_id(oprops.ifc_definition_id),
                     "relating_type": self.file.by_id(relating_type),
                 },
-            ).execute()
+            )
             Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
             if self.file.by_id(relating_type).RepresentationMaps:
                 bpy.ops.bim.map_representations(product_id=oprops.ifc_definition_id, type_product_id=relating_type)
@@ -51,12 +50,13 @@ class UnassignType(bpy.types.Operator):
         )
         for related_object in related_objects:
             oprops = related_object.BIMObjectProperties
-            unassign_type.Usecase(
+            ifcopenshell.api.run(
+                "type.unassign_type",
                 self.file,
-                {
+                **{
                     "related_object": self.file.by_id(oprops.ifc_definition_id),
                 },
-            ).execute()
+            )
             Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         return {"FINISHED"}
 
@@ -93,13 +93,13 @@ class SelectSimilarType(bpy.types.Operator):
         product = self.file.by_id(oprops.ifc_definition_id)
         declaration = IfcStore.get_schema().declaration_by_name(product.is_a())
         if ifcopenshell.util.schema.is_a(declaration, "IfcElementType"):
-            related_objects = get_related_objects.Usecase(
-                self.file, {"relating_type": self.file.by_id(oprops.ifc_definition_id)}
-            ).execute()
+            related_objects = ifcopenshell.api.run(
+                "type.get_related_objects", self.file, **{"relating_type": self.file.by_id(oprops.ifc_definition_id)}
+            )
         else:
-            related_objects = get_related_objects.Usecase(
-                self.file, {"related_object": self.file.by_id(oprops.ifc_definition_id)}
-            ).execute()
+            related_objects = ifcopenshell.api.run(
+                "type.get_related_objects", self.file, **{"related_object": self.file.by_id(oprops.ifc_definition_id)}
+            )
         for obj in bpy.context.visible_objects:
             if obj.BIMObjectProperties.ifc_definition_id in related_objects:
                 obj.select_set(True)

@@ -1,5 +1,5 @@
 import bpy
-import ifcopenshell.api.aggregate.assign_object as assign_object
+import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.aggregate.data import Data
 
@@ -18,13 +18,14 @@ class AssignObject(bpy.types.Operator):
         if not relating_object or not relating_object.BIMObjectProperties.ifc_definition_id:
             return {"FINISHED"}
         product = self.file.by_id(props.ifc_definition_id)
-        assign_object.Usecase(
+        ifcopenshell.api.run(
+            "aggregate.assign_object",
             self.file,
-            {
+            **{
                 "product": product,
                 "relating_object": self.file.by_id(relating_object.BIMObjectProperties.ifc_definition_id),
             },
-        ).execute()
+        )
         bpy.ops.bim.edit_object_placement(obj=related_object.name)
         Data.load(IfcStore.get_file(), props.ifc_definition_id)
         bpy.ops.bim.disable_editing_aggregate(obj=related_object.name)

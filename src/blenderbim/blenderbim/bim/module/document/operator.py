@@ -1,13 +1,7 @@
 import bpy
 import json
+import ifcopenshell.api
 import ifcopenshell.util.attribute
-import ifcopenshell.api.document.add_information as add_information
-import ifcopenshell.api.document.add_reference as add_reference
-import ifcopenshell.api.document.edit_information as edit_information
-import ifcopenshell.api.document.edit_reference as edit_reference
-import ifcopenshell.api.document.remove_document as remove_document
-import ifcopenshell.api.document.assign_document as assign_document
-import ifcopenshell.api.document.unassign_document as unassign_document
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.document.data import Data
 
@@ -116,7 +110,7 @@ class AddInformation(bpy.types.Operator):
     bl_label = "Add Information"
 
     def execute(self, context):
-        result = add_information.Usecase(IfcStore.get_file()).execute()
+        result = ifcopenshell.api.run("document.add_information", IfcStore.get_file())
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_information()
         bpy.ops.bim.enable_editing_document(document=result.id())
@@ -128,7 +122,7 @@ class AddDocumentReference(bpy.types.Operator):
     bl_label = "Add Document Reference"
 
     def execute(self, context):
-        result = add_reference.Usecase(IfcStore.get_file()).execute()
+        result = ifcopenshell.api.run("document.add_reference", IfcStore.get_file())
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_document_references()
         bpy.ops.bim.enable_editing_document(document=result.id())
@@ -150,9 +144,11 @@ class EditInformation(bpy.types.Operator):
             else:
                 attributes[attribute.name] = attribute.string_value
         self.file = IfcStore.get_file()
-        edit_information.Usecase(
-            self.file, {"information": self.file.by_id(props.active_document_id), "attributes": attributes}
-        ).execute()
+        ifcopenshell.api.run(
+            "document.edit_information",
+            self.file,
+            **{"information": self.file.by_id(props.active_document_id), "attributes": attributes}
+        )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_information()
         return {"FINISHED"}
@@ -171,9 +167,11 @@ class EditDocumentReference(bpy.types.Operator):
             else:
                 attributes[attribute.name] = attribute.string_value
         self.file = IfcStore.get_file()
-        edit_reference.Usecase(
-            self.file, {"reference": self.file.by_id(props.active_document_id), "attributes": attributes}
-        ).execute()
+        ifcopenshell.api.run(
+            "document.edit_reference",
+            self.file,
+            **{"reference": self.file.by_id(props.active_document_id), "attributes": attributes}
+        )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_document_references()
         return {"FINISHED"}
@@ -187,7 +185,7 @@ class RemoveDocument(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMDocumentProperties
         self.file = IfcStore.get_file()
-        remove_document.Usecase(self.file, {"document": self.file.by_id(self.document)}).execute()
+        ifcopenshell.api.run("document.remove_document", self.file, **{"document": self.file.by_id(self.document)})
         Data.load(IfcStore.get_file())
         if props.is_editing == "information":
             bpy.ops.bim.load_information()
@@ -233,10 +231,14 @@ class AssignDocument(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
-        assign_document.Usecase(self.file, {
-            "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-            "document": self.file.by_id(self.document)
-        }).execute()
+        ifcopenshell.api.run(
+            "document.assign_document",
+            self.file,
+            **{
+                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
+                "document": self.file.by_id(self.document),
+            }
+        )
         Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
@@ -250,9 +252,13 @@ class UnassignDocument(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
-        unassign_document.Usecase(self.file, {
-            "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-            "document": self.file.by_id(self.document)
-        }).execute()
+        ifcopenshell.api.run(
+            "document.unassign_document",
+            self.file,
+            **{
+                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
+                "document": self.file.by_id(self.document),
+            }
+        )
         Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}

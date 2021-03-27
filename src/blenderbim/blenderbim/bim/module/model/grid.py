@@ -1,6 +1,5 @@
 import bpy
-import ifcopenshell.api.grid.create_grid_axis as create_grid_axis
-import ifcopenshell.api.grid.create_axis_curve as create_axis_curve
+import ifcopenshell.api
 from bpy.types import Operator
 from bpy.props import FloatProperty, IntProperty
 from mathutils import Vector
@@ -54,10 +53,12 @@ def add_object(self, context):
         axes_collection.objects.link(obj)
 
         if self.file:
-            result = create_grid_axis.Usecase(
-                self.file, {"AxisTag": tag, "AxisCurve": obj, "UVWAxes": "UAxes", "Grid": grid}
-            ).execute()
-            create_axis_curve.Usecase(self.file, {"AxisCurve": obj, "grid_axis": result}).execute()
+            result = ifcopenshell.api.run(
+                "grid.create_grid_axis",
+                self.file,
+                **{"AxisTag": tag, "AxisCurve": obj, "UVWAxes": "UAxes", "Grid": grid},
+            )
+            ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"AxisCurve": obj, "grid_axis": result})
             obj.BIMObjectProperties.ifc_definition_id = result.id()
 
     axes_collection = bpy.data.collections.new("VAxes")
@@ -77,10 +78,12 @@ def add_object(self, context):
         axes_collection.objects.link(obj)
 
         if IfcStore.get_file():
-            result = create_grid_axis.Usecase(
-                self.file, {"AxisTag": tag, "AxisCurve": obj, "UVWAxes": "VAxes", "Grid": grid}
-            ).execute()
-            create_axis_curve.Usecase(self.file, {"AxisCurve": obj, "grid_axis": result}).execute()
+            result = ifcopenshell.api.run(
+                "grid.create_grid_axis",
+                self.file,
+                **{"AxisTag": tag, "AxisCurve": obj, "UVWAxes": "VAxes", "Grid": grid},
+            )
+            ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"AxisCurve": obj, "grid_axis": result})
             obj.BIMObjectProperties.ifc_definition_id = result.id()
 
 
