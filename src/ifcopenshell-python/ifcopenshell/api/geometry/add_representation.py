@@ -6,7 +6,7 @@ from blenderbim.bim.module.geometry.helper import Helper
 
 
 class Usecase:
-    def __init__(self, file, settings={}):
+    def __init__(self, file, **settings):
         # TODO: This usecase currently depends on Blender's data model
         self.file = file
         self.settings = {

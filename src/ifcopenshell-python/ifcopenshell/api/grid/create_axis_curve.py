@@ -5,7 +5,7 @@ from mathutils import Matrix  # For now, we depend on Blender
 
 
 class Usecase:
-    def __init__(self, file, settings={}):
+    def __init__(self, file, **settings):
         self.file = file
         self.settings = {
             "AxisCurve": None,  # A Blender object

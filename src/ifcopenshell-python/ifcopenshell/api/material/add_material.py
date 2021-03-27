@@ -2,7 +2,7 @@ import ifcopenshell
 
 
 class Usecase:
-    def __init__(self, file, settings={}):
+    def __init__(self, file, **settings):
         self.file = file
         self.settings = {"Name": "Unnamed"}
         for key, value in settings.items():

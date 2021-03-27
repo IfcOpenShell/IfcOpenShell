@@ -4,7 +4,7 @@ import ifcopenshell.api.owner.settings
 
 
 class Usecase:
-    def __init__(self, file, settings={}):
+    def __init__(self, file, **settings):
         self.file = file
         self.settings = ifcopenshell.api.owner.settings.settings
         for key, value in settings.items():

@@ -3,7 +3,7 @@ import ifcopenshell.api.owner.update_owner_history as update_owner_history
 
 
 class Usecase:
-    def __init__(self, file, settings={}):
+    def __init__(self, file, **settings):
         self.file = file
         self.settings = {
             "related_object": None
