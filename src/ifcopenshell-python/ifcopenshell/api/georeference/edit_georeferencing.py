@@ -2,7 +2,7 @@ import ifcopenshell.util.unit
 
 
 class Usecase:
-    def __init__(self, file, settings={}):
+    def __init__(self, file, **settings):
         self.file = file
         self.settings = {
             "map_conversion": {},

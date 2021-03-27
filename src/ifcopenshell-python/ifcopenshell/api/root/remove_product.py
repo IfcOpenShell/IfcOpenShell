@@ -3,7 +3,7 @@ import ifcopenshell.api.geometry.remove_representation as remove_representation
 
 
 class Usecase:
-    def __init__(self, file, settings={}):
+    def __init__(self, file, **settings):
         self.file = file
         self.settings = {"product": None}
         for key, value in settings.items():

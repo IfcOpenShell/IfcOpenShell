@@ -2,7 +2,7 @@ import blenderbim.bim.schema  # TODO: refactor
 
 
 class Usecase:
-    def __init__(self, file, settings={}):
+    def __init__(self, file, **settings):
         self.file = file
         self.settings = {"product": None, "pset": None}
         for key, value in settings.items():

@@ -3,7 +3,7 @@ import ifcopenshell
 
 
 class Usecase:
-    def __init__(self, settings={}):
+    def __init__(self, **settings):
         self.settings = {"version": "IFC4"}
         for key, value in settings.items():
             self.settings[key] = value

@@ -3,7 +3,7 @@ import ifcopenshell.api.owner.create_owner_history as create_owner_history
 
 
 class Usecase:
-    def __init__(self, file, settings={}):
+    def __init__(self, file, **settings):
         self.file = file
         self.settings = {"opening": None, "element": None}
         for key, value in settings.items():
