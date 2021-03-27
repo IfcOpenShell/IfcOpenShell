@@ -1,7 +1,7 @@
 import numpy as np
+import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
-import ifcopenshell.api.owner.update_owner_history as update_owner_history
 
 
 class Usecase:
@@ -47,7 +47,7 @@ class Usecase:
                 ifcopenshell.util.element.remove_deep(self.file, old)
         self.settings["product"].ObjectPlacement = placement
 
-        update_owner_history.Usecase(self.file, {"element": self.settings["product"]}).execute()
+        ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": self.settings["product"]})
 
         for settings in dependent_objects:
             self.settings = settings

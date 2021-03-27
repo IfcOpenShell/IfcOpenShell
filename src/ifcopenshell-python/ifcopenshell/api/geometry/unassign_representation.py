@@ -1,4 +1,4 @@
-import ifcopenshell.api.geometry.remove_representation as remove_representation
+import ifcopenshell.api
 import ifcopenshell.util.element
 
 
@@ -53,4 +53,4 @@ class Usecase:
         for item in mapped_representations:
             self.unassign_product_representation(item["product"], item["representation"])
         for representation in just_representations:
-            remove_representation.Usecase(self.file, {"representation": representation}).execute()
+            ifcopenshell.api.run("owner.remove_representation", self.file, **{"representation": representation})

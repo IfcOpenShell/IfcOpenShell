@@ -1,11 +1,7 @@
 import bpy
 import json
+import ifcopenshell.api
 import ifcopenshell.util.attribute
-import ifcopenshell.api.constraint.add_objective as add_objective
-import ifcopenshell.api.constraint.edit_objective as edit_objective
-import ifcopenshell.api.constraint.remove_constraint as remove_constraint
-import ifcopenshell.api.constraint.assign_constraint as assign_constraint
-import ifcopenshell.api.constraint.unassign_constraint as unassign_constraint
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.constraint.data import Data
 
@@ -83,7 +79,7 @@ class AddObjective(bpy.types.Operator):
     bl_label = "Add Objective"
 
     def execute(self, context):
-        result = add_objective.Usecase(IfcStore.get_file()).execute()
+        result = ifcopenshell.api.run("constraint.add_objective", IfcStore.get_file())
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_objectives()
         bpy.ops.bim.enable_editing_constraint(constraint=result.id())
@@ -105,9 +101,11 @@ class EditObjective(bpy.types.Operator):
             else:
                 attributes[attribute.name] = attribute.string_value
         self.file = IfcStore.get_file()
-        edit_objective.Usecase(
-            self.file, {"objective": self.file.by_id(props.active_constraint_id), "attributes": attributes}
-        ).execute()
+        ifcopenshell.api.run(
+            "constraint.edit_objective",
+            self.file,
+            **{"objective": self.file.by_id(props.active_constraint_id), "attributes": attributes}
+        )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_objectives()
         return {"FINISHED"}
@@ -121,7 +119,9 @@ class RemoveConstraint(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMConstraintProperties
         self.file = IfcStore.get_file()
-        remove_constraint.Usecase(self.file, {"constraint": self.file.by_id(self.constraint)}).execute()
+        ifcopenshell.api.run(
+            "constraint.remove_constraint", self.file, **{"constraint": self.file.by_id(self.constraint)}
+        )
         Data.load(IfcStore.get_file())
         if props.is_editing == "IfcObjective":
             bpy.ops.bim.load_objectives()
@@ -163,10 +163,14 @@ class AssignConstraint(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
-        assign_constraint.Usecase(self.file, {
-            "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-            "constraint": self.file.by_id(self.constraint)
-        }).execute()
+        ifcopenshell.api.run(
+            "constraint.assign_constraint",
+            self.file,
+            **{
+                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
+                "constraint": self.file.by_id(self.constraint),
+            }
+        )
         Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
@@ -180,9 +184,13 @@ class UnassignConstraint(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
-        unassign_constraint.Usecase(self.file, {
-            "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-            "constraint": self.file.by_id(self.constraint)
-        }).execute()
+        ifcopenshell.api.run(
+            "constraint.unassign_constraint",
+            self.file,
+            **{
+                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
+                "constraint": self.file.by_id(self.constraint),
+            }
+        )
         Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}

@@ -1,7 +1,7 @@
 import bpy
 import logging
 import ifcopenshell
-import ifcopenshell.api.project.create_file as create_file
+import ifcopenshell.api
 import bpy
 from blenderbim.bim.ifc import IfcStore
 
@@ -17,7 +17,9 @@ class CreateProject(bpy.types.Operator):
         if self.file:
             return {"FINISHED"}
 
-        IfcStore.file = create_file.Usecase({"version": bpy.context.scene.BIMProperties.export_schema}).execute()
+        IfcStore.file = ifcopenshell.api.run(
+            "project.create_file", **{"version": bpy.context.scene.BIMProperties.export_schema}
+        )
         self.file = IfcStore.get_file()
 
         bpy.ops.bim.add_person()

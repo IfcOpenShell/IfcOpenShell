@@ -1,5 +1,5 @@
 import ifcopenshell
-import ifcopenshell.api.owner.update_owner_history as update_owner_history
+import ifcopenshell.api
 
 
 class Usecase:
@@ -20,6 +20,6 @@ class Usecase:
         related_objects.remove(self.settings["product"])
         if len(related_objects):
             rel.RelatedObjects = list(related_objects)
-            update_owner_history.Usecase(self.file, {"element": rel}).execute()
+            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
         else:
             self.file.remove(rel)

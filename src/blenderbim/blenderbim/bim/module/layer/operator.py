@@ -1,11 +1,7 @@
 import bpy
 import json
 import ifcopenshell.util.attribute
-import ifcopenshell.api.layer.add_layer as add_layer
-import ifcopenshell.api.layer.edit_layer as edit_layer
-import ifcopenshell.api.layer.remove_layer as remove_layer
-import ifcopenshell.api.layer.assign_layer as assign_layer
-import ifcopenshell.api.layer.unassign_layer as unassign_layer
+import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.layer.data import Data
 
@@ -76,7 +72,7 @@ class AddPresentationLayer(bpy.types.Operator):
     bl_label = "Add Layer"
 
     def execute(self, context):
-        result = add_layer.Usecase(IfcStore.get_file()).execute()
+        result = ifcopenshell.api.run("layer.add_layer", IfcStore.get_file())
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_layers()
         bpy.ops.bim.enable_editing_layer(layer=result.id())
@@ -96,9 +92,9 @@ class EditPresentationLayer(bpy.types.Operator):
             else:
                 attributes[attribute.name] = attribute.string_value
         self.file = IfcStore.get_file()
-        edit_layer.Usecase(
-            self.file, {"layer": self.file.by_id(props.active_layer_id), "attributes": attributes}
-        ).execute()
+        ifcopenshell.api.run(
+            "layer.edit_layer", self.file, **{"layer": self.file.by_id(props.active_layer_id), "attributes": attributes}
+        )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_layers()
         return {"FINISHED"}
@@ -112,7 +108,7 @@ class RemovePresentationLayer(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMLayerProperties
         self.file = IfcStore.get_file()
-        remove_layer.Usecase(self.file, {"layer": self.file.by_id(self.layer)}).execute()
+        ifcopenshell.api.run("layer.remove_layer", self.file, **{"layer": self.file.by_id(self.layer)})
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_layers()
         return {"FINISHED"}
@@ -127,10 +123,11 @@ class AssignPresentationLayer(bpy.types.Operator):
     def execute(self, context):
         item = bpy.data.meshes.get(self.item) if self.item else context.active_object.data
         self.file = IfcStore.get_file()
-        assign_layer.Usecase(self.file, {
-            "item": self.file.by_id(item.BIMMeshProperties.ifc_definition_id),
-            "layer": self.file.by_id(self.layer)
-        }).execute()
+        ifcopenshell.api.run(
+            "layer.assign_layer",
+            self.file,
+            **{"item": self.file.by_id(item.BIMMeshProperties.ifc_definition_id), "layer": self.file.by_id(self.layer)}
+        )
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
@@ -144,9 +141,10 @@ class UnassignPresentationLayer(bpy.types.Operator):
     def execute(self, context):
         item = bpy.data.meshes.get(self.item) if self.item else context.active_object.data
         self.file = IfcStore.get_file()
-        unassign_layer.Usecase(self.file, {
-            "item": self.file.by_id(item.BIMMeshProperties.ifc_definition_id),
-            "layer": self.file.by_id(self.layer)
-        }).execute()
+        ifcopenshell.api.run(
+            "layer.unassign_layer",
+            self.file,
+            **{"item": self.file.by_id(item.BIMMeshProperties.ifc_definition_id), "layer": self.file.by_id(self.layer)}
+        )
         Data.load(IfcStore.get_file())
         return {"FINISHED"}

@@ -1,11 +1,6 @@
 import bpy
 import json
-import ifcopenshell.api.classification.add_classification as add_classification
-import ifcopenshell.api.classification.remove_classification as remove_classification
-import ifcopenshell.api.classification.edit_classification as edit_classification
-import ifcopenshell.api.classification.add_reference as add_reference
-import ifcopenshell.api.classification.remove_reference as remove_reference
-import ifcopenshell.api.classification.edit_reference as edit_reference
+import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.classification.data import Data
 from blenderbim.bim.module.classification.prop import getClassifications, getReferences
@@ -34,9 +29,11 @@ class AddClassification(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMClassificationProperties
-        add_classification.Usecase(
-            IfcStore.get_file(), {"classification": Data.library_file.by_id(int(props.available_classifications))}
-        ).execute()
+        ifcopenshell.api.run(
+            "classification.add_classification",
+            IfcStore.get_file(),
+            **{"classification": Data.library_file.by_id(int(props.available_classifications))},
+        )
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
@@ -80,7 +77,11 @@ class RemoveClassification(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        remove_classification.Usecase(self.file, {"classification": self.file.by_id(self.classification)}).execute()
+        ifcopenshell.api.run(
+            "classification.remove_classification",
+            self.file,
+            **{"classification": self.file.by_id(self.classification)},
+        )
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
@@ -100,9 +101,11 @@ class EditClassification(bpy.types.Operator):
             else:
                 attributes[attribute.name] = attribute.string_value
         self.file = IfcStore.get_file()
-        edit_classification.Usecase(
-            self.file, {"classification": self.file.by_id(props.active_classification_id), "attributes": attributes}
-        ).execute()
+        ifcopenshell.api.run(
+            "classification.edit_classification",
+            self.file,
+            **{"classification": self.file.by_id(props.active_classification_id), "attributes": attributes},
+        )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_classification()
         return {"FINISHED"}
@@ -152,13 +155,14 @@ class RemoveClassificationReference(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
-        remove_reference.Usecase(
+        ifcopenshell.api.run(
+            "classification.remove_reference",
             self.file,
-            {
+            **{
                 "reference": self.file.by_id(self.reference),
                 "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
             },
-        ).execute()
+        )
         Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
@@ -179,9 +183,11 @@ class EditClassificationReference(bpy.types.Operator):
             else:
                 attributes[attribute.name] = attribute.string_value
         self.file = IfcStore.get_file()
-        edit_reference.Usecase(
-            self.file, {"reference": self.file.by_id(props.active_reference_id), "attributes": attributes}
-        ).execute()
+        ifcopenshell.api.run(
+            "classification.edit_reference",
+            self.file,
+            **{"reference": self.file.by_id(props.active_reference_id), "attributes": attributes},
+        )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_classification_reference()
         return {"FINISHED"}
@@ -206,14 +212,15 @@ class AddClassificationReference(bpy.types.Operator):
                 classification = self.file.by_id(classification_id)
                 break
 
-        add_reference.Usecase(
+        ifcopenshell.api.run(
+            "classification.add_reference",
             self.file,
-            {
+            **{
                 "reference": Data.library_file.by_id(self.reference),
                 "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                "classification": classification
+                "classification": classification,
             },
-        ).execute()
+        )
         Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
         Data.load(IfcStore.get_file())
         return {"FINISHED"}

@@ -1,5 +1,5 @@
 import ifcopenshell
-import ifcopenshell.api.owner.create_owner_history as create_owner_history
+import ifcopenshell.api
 
 
 class Usecase:
@@ -16,7 +16,7 @@ class Usecase:
     def execute(self):
         element = self.file.create_entity(self.settings["ifc_class"], **{
             "GlobalId": ifcopenshell.guid.new(),
-            "OwnerHistory": create_owner_history.Usecase(self.file).execute()
+            "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file)
         })
         element.Name = self.settings["name"] or None
         if self.settings["predefined_type"]:

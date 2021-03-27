@@ -7,7 +7,7 @@ import zipfile
 import tempfile
 import ifcopenshell
 import ifcopenshell.util.placement
-import ifcopenshell.api.root.remove_product as remove_product
+import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
 import addon_utils
 
@@ -90,7 +90,7 @@ class IfcExporter:
         for guid in to_delete:
             product = self.file.by_id(guid)
             IfcStore.unlink_element(product)
-            remove_product.Usecase(self.file, {"product": product}).execute()
+            ifcopenshell.api.run("remove_product", self.file, **{"product": product})
 
     def sync_edited_objects(self):
         for obj_name in IfcStore.edited_objs.copy():

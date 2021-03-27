@@ -1,6 +1,5 @@
 import ifcopenshell
-import ifcopenshell.api.owner.create_owner_history as create_owner_history
-import ifcopenshell.api.owner.update_owner_history as update_owner_history
+import ifcopenshell.api
 
 
 class Usecase:
@@ -32,7 +31,7 @@ class Usecase:
             related_objects.remove(self.settings["product"])
             if related_objects:
                 decomposes.RelatedObjects = related_objects
-                update_owner_history.Usecase(self.file, {"element": decomposes}).execute()
+                ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": decomposes})
             else:
                 self.file.remove(decomposes)
 
@@ -40,13 +39,13 @@ class Usecase:
             related_objects = list(is_decomposed_by.RelatedObjects)
             related_objects.append(self.settings["product"])
             is_decomposed_by.RelatedObjects = related_objects
-            update_owner_history.Usecase(self.file, {"element": is_decomposed_by}).execute()
+            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": is_decomposed_by})
         else:
             is_decomposed_by = self.file.create_entity(
                 "IfcRelAggregates",
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": create_owner_history.Usecase(self.file).execute(),
+                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
                     "RelatedObjects": [self.settings["product"]],
                     "RelatingObject": self.settings["relating_object"],
                 }

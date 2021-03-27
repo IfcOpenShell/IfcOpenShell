@@ -1,6 +1,5 @@
 import bpy
-import ifcopenshell.api.spatial.assign_container as assign_container
-import ifcopenshell.api.spatial.remove_container as remove_container
+import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.spatial.data import Data
 from blenderbim.bim.module.spatial.prop import getSpatialContainers
@@ -24,13 +23,14 @@ class AssignContainer(bpy.types.Operator):
             self.relating_structure or sprops.spatial_elements[sprops.active_spatial_element_index].ifc_definition_id
         )
 
-        assign_container.Usecase(
+        ifcopenshell.api.run(
+            "spatial.assign_container",
             self.file,
-            {
+            **{
                 "product": self.file.by_id(oprops.ifc_definition_id),
                 "relating_structure": self.file.by_id(relating_structure),
             },
-        ).execute()
+        )
         bpy.ops.bim.edit_object_placement(obj=related_element.name)
         Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         bpy.ops.bim.disable_editing_container(obj=related_element.name)
@@ -100,7 +100,9 @@ class RemoveContainer(bpy.types.Operator):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         oprops = obj.BIMObjectProperties
         self.file = IfcStore.get_file()
-        remove_container.Usecase(self.file, {"product": self.file.by_id(oprops.ifc_definition_id)}).execute()
+        ifcopenshell.api.run(
+            "spatial.remove_container", self.file, **{"product": self.file.by_id(oprops.ifc_definition_id)}
+        )
         Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
 
         aggregate_collection = bpy.data.collections.get(obj.name)

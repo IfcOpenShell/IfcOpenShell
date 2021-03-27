@@ -1,6 +1,5 @@
 import ifcopenshell
-import ifcopenshell.api.owner.create_owner_history as create_owner_history
-import ifcopenshell.api.owner.update_owner_history as update_owner_history
+import ifcopenshell.api
 
 
 class Usecase:
@@ -25,7 +24,7 @@ class Usecase:
             related_elements.remove(self.settings["product"])
             if related_elements:
                 contained_in_structure[0].RelatedElements = related_elements
-                update_owner_history.Usecase(self.file, {"element": contained_in_structure[0]}).execute()
+                ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": contained_in_structure[0]})
             else:
                 self.file.remove(contained_in_structure[0])
 
@@ -33,13 +32,13 @@ class Usecase:
             related_elements = list(contains_elements[0].RelatedElements)
             related_elements.append(self.settings["product"])
             contains_elements[0].RelatedElements = related_elements
-            update_owner_history.Usecase(self.file, {"element": contains_elements[0]}).execute()
+            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": contains_elements[0]})
         else:
             contains_elements = self.file.create_entity(
                 "IfcRelContainedInSpatialStructure",
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": create_owner_history.Usecase(self.file).execute(),
+                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
                     "RelatedElements": [self.settings["product"]],
                     "RelatingStructure": self.settings["relating_structure"],
                 }

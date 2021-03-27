@@ -1,8 +1,5 @@
 import bpy
-import ifcopenshell.api.void.add_opening as add_opening
-import ifcopenshell.api.void.remove_opening as remove_opening
-import ifcopenshell.api.void.add_filling as add_filling
-import ifcopenshell.api.void.remove_filling as remove_filling
+import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.void.data import Data
 from ifcopenshell.api.context.data import Data as ContextData
@@ -33,13 +30,14 @@ class AddOpening(bpy.types.Operator):
 
         self.file = IfcStore.get_file()
         element_id = obj.BIMObjectProperties.ifc_definition_id
-        add_opening.Usecase(
+        ifcopenshell.api.run(
+            "void.add_opening",
             self.file,
-            {
+            **{
                 "opening": self.file.by_id(opening.BIMObjectProperties.ifc_definition_id),
                 "element": self.file.by_id(element_id),
             },
-        ).execute()
+        )
         Data.load(IfcStore.get_file(), element_id)
 
         has_modifier = False
@@ -75,7 +73,7 @@ class RemoveOpening(bpy.types.Operator):
                 obj.modifiers.remove(modifier)
                 break
 
-        remove_opening.Usecase(self.file, {"opening": self.file.by_id(self.opening_id)}).execute()
+        ifcopenshell.api.run("void.remove_opening", self.file, **{"opening": self.file.by_id(self.opening_id)})
         Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
@@ -91,13 +89,14 @@ class AddFilling(bpy.types.Operator):
         opening = bpy.data.objects.get(self.opening) if self.opening else context.scene.VoidProperties.desired_opening
         self.file = IfcStore.get_file()
         element_id = obj.BIMObjectProperties.ifc_definition_id
-        add_filling.Usecase(
+        ifcopenshell.api.run(
+            "void.add_filling",
             self.file,
-            {
+            **{
                 "opening": self.file.by_id(opening.BIMObjectProperties.ifc_definition_id),
                 "element": self.file.by_id(element_id),
             },
-        ).execute()
+        )
         Data.load(IfcStore.get_file(), element_id)
         return {"FINISHED"}
 
@@ -110,8 +109,8 @@ class RemoveFilling(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
-        remove_filling.Usecase(
-            self.file, {"element": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)}
-        ).execute()
+        ifcopenshell.api.run(
+            "void.remove_filling", self.file, **{"element": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)}
+        )
         Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
