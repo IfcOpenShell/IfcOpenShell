@@ -12,10 +12,13 @@ from mathutils import Vector
 from mathutils import geometry
 from blenderbim.bim.ifc import IfcStore
 
-try:
-    from OCC.Core import BRep, BRepTools, TopExp, TopAbs
-except ImportError:
-    from OCC import BRep, BRepTools, TopExp, TopAbs
+
+def load_occ():
+    # Don't import until we really need to, as a temporary step before we can purge OCC
+    try:
+        from OCC.Core import BRep, BRepTools, TopExp, TopAbs
+    except ImportError:
+        from OCC import BRep, BRepTools, TopExp, TopAbs
 
 
 class External(svgwrite.container.Group):
@@ -599,6 +602,7 @@ class SvgWriter:
             self.draw_polygon(polygon, "cut")
 
     def draw_polyline(self, element, position):
+        load_occ()
         classes = self.get_classes(element["raw"], position)
         exp = BRepTools.BRepTools_WireExplorer(element["geometry"])
         points = []
@@ -609,6 +613,7 @@ class SvgWriter:
         self.svg.add(self.svg.polyline(points=points, class_=" ".join(classes)))
 
     def draw_line(self, element, position):
+        load_occ()
         classes = self.get_classes(element["raw"], position)
         exp = TopExp.TopExp_Explorer(element["geometry"], TopAbs.TopAbs_VERTEX)
         points = []
