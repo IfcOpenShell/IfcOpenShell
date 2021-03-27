@@ -6,68 +6,71 @@ import numpy
 import pickle
 import multiprocessing
 
-try:
-    from OCC.Core import (
-        gp,
-        Geom,
-        Bnd,
-        BRepBndLib,
-        BRep,
-        BRepPrimAPI,
-        BRepAlgoAPI,
-        BRepBuilderAPI,
-        TopOpeBRepTool,
-        TopOpeBRepBuild,
-        ShapeExtend,
-        GProp,
-        BRepGProp,
-        GC,
-        ShapeAnalysis,
-        TopTools,
-        TopExp,
-        TopAbs,
-        HLRAlgo,
-        HLRBRep,
-        TopLoc,
-        Bnd,
-        BRepBndLib,
-        BRepTools,
-        TopoDS,
-        GeomLProp,
-        IntCurvesFace,
-    )
-    from OCC.Core.TopoDS import topods
-except ImportError:
-    from OCC import (
-        gp,
-        Geom,
-        Bnd,
-        BRepBndLib,
-        BRep,
-        BRepPrimAPI,
-        BRepAlgoAPI,
-        BRepBuilderAPI,
-        TopOpeBRepTool,
-        TopOpeBRepBuild,
-        ShapeExtend,
-        GProp,
-        BRepGProp,
-        GC,
-        ShapeAnalysis,
-        TopTools,
-        TopExp,
-        TopAbs,
-        HLRAlgo,
-        HLRBRep,
-        TopLoc,
-        Bnd,
-        BRepBndLib,
-        BRepTools,
-        TopoDS,
-        GeomLProp,
-        IntCurvesFace,
-    )
-    from OCC.TopoDS import topods
+
+def load_occ():
+    # Don't import until we really need to, as a temporary step before we can purge OCC
+    try:
+        from OCC.Core import (
+            gp,
+            Geom,
+            Bnd,
+            BRepBndLib,
+            BRep,
+            BRepPrimAPI,
+            BRepAlgoAPI,
+            BRepBuilderAPI,
+            TopOpeBRepTool,
+            TopOpeBRepBuild,
+            ShapeExtend,
+            GProp,
+            BRepGProp,
+            GC,
+            ShapeAnalysis,
+            TopTools,
+            TopExp,
+            TopAbs,
+            HLRAlgo,
+            HLRBRep,
+            TopLoc,
+            Bnd,
+            BRepBndLib,
+            BRepTools,
+            TopoDS,
+            GeomLProp,
+            IntCurvesFace,
+        )
+        from OCC.Core.TopoDS import topods
+    except ImportError:
+        from OCC import (
+            gp,
+            Geom,
+            Bnd,
+            BRepBndLib,
+            BRep,
+            BRepPrimAPI,
+            BRepAlgoAPI,
+            BRepBuilderAPI,
+            TopOpeBRepTool,
+            TopOpeBRepBuild,
+            ShapeExtend,
+            GProp,
+            BRepGProp,
+            GC,
+            ShapeAnalysis,
+            TopTools,
+            TopExp,
+            TopAbs,
+            HLRAlgo,
+            HLRBRep,
+            TopLoc,
+            Bnd,
+            BRepBndLib,
+            BRepTools,
+            TopoDS,
+            GeomLProp,
+            IntCurvesFace,
+        )
+        from OCC.TopoDS import topods
 
 import ifcopenshell
 import ifcopenshell.geom
@@ -79,6 +82,7 @@ this_file = os.path.join(cwd, "cut_ifc.py")
 
 
 def get_booleaned_edges(shape):
+    load_occ()
     edges = []
     exp = TopExp.TopExp_Explorer(shape, TopAbs.TopAbs_EDGE)
     while exp.More():
@@ -88,6 +92,7 @@ def get_booleaned_edges(shape):
 
 
 def connect_edges_into_wires(unconnected_edges):
+    load_occ()
     edges = TopTools.TopTools_HSequenceOfShape()
     edges_handle = TopTools.Handle_TopTools_HSequenceOfShape(edges)
     wires = TopTools.TopTools_HSequenceOfShape()
@@ -101,6 +106,7 @@ def connect_edges_into_wires(unconnected_edges):
 
 
 def do_cut(process_data):
+    load_occ()
     global_id, shape, section, trsf_data = process_data
 
     axis = gp.gp_Ax2(
@@ -320,6 +326,7 @@ class IfcCutter:
         return False
 
     def create_section_box(self):
+        load_occ()
         top_left_corner = gp.gp_Pnt(
             self.section_box["top_left_corner"][0],
             self.section_box["top_left_corner"][1],
@@ -350,6 +357,7 @@ class IfcCutter:
         self.transformation.SetDisplacement(source, destination)
 
     def get_bbox(self, shape):
+        load_occ()
         bbox = Bnd.Bnd_Box()
         BRepBndLib.brepbndlib_Add(shape, bbox)
         return bbox
@@ -361,6 +369,7 @@ class IfcCutter:
         return zpos, zmax
 
     def get_booleaned_edges(self, shape):
+        load_occ()
         edges = []
         exp = TopExp.TopExp_Explorer(shape, TopAbs.TopAbs_EDGE)
         while exp.More():
@@ -377,6 +386,7 @@ class IfcCutter:
 
     def get_annotation(self):
         import mathutils
+        load_occ()
 
         self.annotation_objs = []
         settings_2d = ifcopenshell.geom.settings()
