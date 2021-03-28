@@ -386,6 +386,8 @@ int main(int argc, char** argv) {
 		("draw-storey-heights",
 			po::value<std::string>(&storey_height_display)->default_value("none")->implicit_value("full"),
 			"Draws a horizontal line at the height of building storeys in vertical drawings")
+		("storey-height-line-length", po::value<double>(), 
+			"Length of the line when --draw-storey-heights=left")
 		("svg-xmlns",
 			"Stores name and guid in a separate namespace as opposed to data-name, data-guid")
 		("svg-poly",
@@ -1007,6 +1009,11 @@ int main(int argc, char** argv) {
 		static_cast<SvgSerializer*>(serializer.get())->setAlwaysProject(vmap.count("svg-project") > 0);
 		if (relative_center_x && relative_center_y) {
 			static_cast<SvgSerializer*>(serializer.get())->setDrawingCenter(*relative_center_x, *relative_center_y);
+		}
+		if (vmap.count("storey-height-line-length")) {
+			static_cast<SvgSerializer*>(serializer.get())->setStoreyHeightLineLength(
+				vmap["storey-height-line-length"].as<double>()
+			);
 		}
 	}
 
