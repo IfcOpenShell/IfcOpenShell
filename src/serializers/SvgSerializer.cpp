@@ -1345,7 +1345,11 @@ void SvgSerializer::write(const geometry_data& data) {
 				xcoords.push_back(path.add(center_point->X()));
 				path.add("\" y=\"");
 				ycoords.push_back(path.add(center_point->Y()));
-				path.add("\">");
+				path.add("\"");
+				if (space_name_transform_) {
+					path.add(" transform=\"" + *space_name_transform_ + "\"");
+				}
+				path.add(">");
 				for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
 					const auto& l = *lit;
 					double dy = labels.begin() == lit

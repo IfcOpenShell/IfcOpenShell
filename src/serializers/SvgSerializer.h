@@ -139,6 +139,7 @@ protected:
 	boost::optional<double> scale_, calculated_scale_, center_x_, center_y_, scale_backup_;
 	boost::optional<double> storey_height_line_length_;
 	boost::optional<std::pair<double, double>> size_, size_backup_;
+	boost::optional<std::string> space_name_transform_;
 
 	bool with_section_heights_from_storey_, print_space_names_, print_space_areas_;
 	storey_height_display_types storey_height_display_;
@@ -218,6 +219,7 @@ public:
 	void setDrawStoreyHeights(storey_height_display_types sh) { storey_height_display_ = sh; }
 	void setDrawDoorArcs(bool b) { draw_door_arcs_ = b; }
 	void setStoreyHeightLineLength(double d) { storey_height_line_length_ = d; }
+	void setSpaceNameTransform(const std::string& v) { space_name_transform_ = v; }
 
 	std::array<std::array<double, 3>, 3> resize();
 	void resetScale();
