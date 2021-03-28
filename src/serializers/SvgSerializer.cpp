@@ -79,6 +79,7 @@
 #include "../ifcparse/IfcGlobalId.h"
 
 #include <boost/format.hpp>
+#include <boost/tokenizer.hpp>
 
 #include "SvgSerializer.h"
 
@@ -422,6 +423,36 @@ namespace {
 
 		return box_t{ {{x0, y0, z0}}, {{x1, y1, z1}} };
 	}
+
+	struct string_property {
+		std::string pset_name, prop_name, value;
+	};
+
+	template <typename It>
+	void enumerate_string_properties(IfcUtil::IfcBaseEntity* product, It output_it) {
+		auto rels = product->get_inverse("IsDefinedBy");
+		for (auto& rel : *rels) {
+			if (rel->declaration().is("IfcRelDefinesByProperties")) {
+				auto pset = (IfcUtil::IfcBaseEntity*) (IfcUtil::IfcBaseClass*) *((IfcUtil::IfcBaseEntity*) rel)->get("RelatingPropertyDefinition");
+				std::string pset_name;
+				if (!pset->get("Name")->isNull()) {
+					pset_name = *pset->get("Name");
+				}
+				IfcEntityList::ptr props = *pset->get("HasProperties");
+				for (auto& prop : *props) {
+					if (prop->declaration().is("IfcPropertySingleValue")) {
+						std::string name = *((IfcUtil::IfcBaseEntity*) prop)->get("Name");
+						IfcUtil::IfcBaseClass* v = *((IfcUtil::IfcBaseEntity*) prop)->get("NominalValue");
+						auto value = v->data().getArgument(0);
+						if (value->type() == IfcUtil::Argument_STRING) {
+							std::string v_str = *value;
+							*output_it++ = string_property{ pset_name, name, v_str };
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
@@ -443,6 +474,9 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 		// (When determinant < 0, copy is implied and the input is not mutated.)
 		auto compound_unmirrored = make_transform_global.Shape();
 
+		boost::optional<double> scale;
+		boost::optional<std::pair<double, double>> size;
+
 		auto e = edge_from_compound(compound_unmirrored);
 		boost::optional<gp_Pln> pln;
 		if (e) {
@@ -457,8 +491,39 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 				pln = gp_Pln(gp_Ax3(P, N, V));
 			}
 		}
-		else if (box_from_compound(compound_local)) {
+		else if (boost::optional<box_t> b = box_from_compound(compound_local)) {
 			pln = gp_Pln().Transformed(trsf);
+			size = std::make_pair(
+				b->second[0] - b->first[0],
+				b->second[1] - b->first[1]
+			);
+		}
+
+		std::vector<string_property> props;
+		enumerate_string_properties(brep_obj->product(), std::back_inserter(props));
+		std::map<std::string, std::string> prop_map;
+		for (auto& p : props) {
+			prop_map[p.pset_name + "." + p.prop_name] = p.value;
+		}
+		auto pit = prop_map.find("EPset_Drawing.Scale");
+		if (pit != prop_map.end()) {
+			typedef boost::tokenizer<boost::char_separator<char>> tokenizer;
+			tokenizer tok{ pit->second };
+			auto tokit = tok.begin();
+			std::string num, denum;
+			if (tokit != tok.end()) {
+				num = *tokit++;
+			}
+			tokit++;
+			if (tokit != tok.end()) {
+				denum = *tokit++;
+			}
+			if (num.size() && denum.size()) {
+				try {
+					scale = (float) boost::lexical_cast<int>(num) / boost::lexical_cast<int>(denum);
+				}
+				catch (boost::bad_lexical_cast&) {}
+			}
 		}
 
 		if (pln) {
@@ -477,10 +542,10 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 				name = boost::lexical_cast<std::string>(brep_obj->id());
 			}
 			if (is_section) {
-				deferred_section_data_->push_back(vertical_section{ *pln , "Section " + name, false });
+				deferred_section_data_->push_back(vertical_section{ *pln , "Section " + name, false, scale, size });
 			}
 			if (is_elevation) {
-				deferred_section_data_->push_back(vertical_section{ *pln , "Elevation " + name, true });
+				deferred_section_data_->push_back(vertical_section{ *pln , "Elevation " + name, true, scale, size });
 			}
 		}
 
@@ -1233,16 +1298,14 @@ void SvgSerializer::write(const geometry_data& data) {
 }
 
 void SvgSerializer::setBoundingRectangle(double width, double height) {
-	this->width = width;
-	this->height = height;
-	this->rescale = true;
+	size_ = std::make_pair(width, height);
 }
 
 std::array<std::array<double, 3>, 3> SvgSerializer::resize() {
 	// identity matrix;
 	std::array<std::array<double, 3>, 3> m = {{ {{1,0,0}},{{0,1,0}},{{0,0,1}} }};
 
-	if (rescale) {
+	if (size_) {
 		// Scale the resulting image to a bounding rectangle specified by command line arguments
 		const double dx = xmax - xmin;
 		const double dy = ymax - ymin;
@@ -1250,19 +1313,19 @@ std::array<std::array<double, 3>, 3> SvgSerializer::resize() {
 		double sc, cx, cy;
 		if (scale_) {
 			sc = (*scale_) * 1000;
-			cx = (xmax + xmin) / 2. * sc - width * center_x_.get_value_or(0.5);
-			cy = (ymax + ymin) / 2. * sc - height * center_y_.get_value_or(0.5);
+			cx = (xmax + xmin) / 2. * sc - size_->first * center_x_.get_value_or(0.5);
+			cy = (ymax + ymin) / 2. * sc - size_->second * center_y_.get_value_or(0.5);
 		}
 		else {
 			if (calculated_scale_) {
 				sc = *calculated_scale_;
 			}
 			else {
-				if (dx / width > dy / height) {
-					sc = width / dx;
+				if (dx / size_->first > dy / size_->second) {
+					sc = size_->first / dx;
 				}
 				else {
-					sc = height / dy;
+					sc = size_->second / dy;
 				}
 				calculated_scale_ = sc;
 			}
@@ -1609,11 +1672,11 @@ void SvgSerializer::writeHeader() {
 	if (use_namespace_) {
 		svg_file << " xmlns:ifc=\"http://www.ifcopenshell.org/ns\"";
 	}
-	if (scale_) {
+	if (scale_ && size_) {
 		svg_file << 
-			" width=\"" << width << "mm\""
-			" height=\"" << height << "mm\"" << 
-			" viewBox=\"0 0 " << width << " " << height << "\"";
+			" width=\"" << size_->first << "mm\""
+			" height=\"" << size_->second << "mm\"" <<
+			" viewBox=\"0 0 " << size_->first << " " << size_->second << "\"";
 	}
 		
 	svg_file << ">\n"

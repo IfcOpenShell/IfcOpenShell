@@ -97,6 +97,8 @@ struct vertical_section {
 	gp_Pln plane;
 	std::string name;
 	bool with_projection;
+	boost::optional<double> scale;
+	boost::optional<std::pair<double, double>> size;
 };
 
 typedef boost::variant<horizontal_plan, horizontal_plan_at_element, vertical_section> section_data;
@@ -130,12 +132,13 @@ public:
 	};
 protected:
 	std::ofstream svg_file;
-	double xmin, ymin, xmax, ymax, width, height;
+	double xmin, ymin, xmax, ymax;
 	boost::optional<std::vector<section_data>> section_data_;
 	boost::optional<std::vector<section_data>> deferred_section_data_;
-	boost::optional<double> scale_, calculated_scale_, center_x_, center_y_;
+	boost::optional<double> scale_, calculated_scale_, center_x_, center_y_, scale_backup_;
+	boost::optional<std::pair<double, double>> size_, size_backup_;
 
-	bool with_section_heights_from_storey_, rescale, print_space_names_, print_space_areas_;
+	bool with_section_heights_from_storey_, print_space_names_, print_space_areas_;
 	storey_height_display_types storey_height_display_;
 	bool draw_door_arcs_, is_floor_plan_;
 	bool auto_section_, auto_elevation_;
@@ -173,7 +176,6 @@ public:
 		, xmax(-std::numeric_limits<double>::infinity())
 		, ymax(-std::numeric_limits<double>::infinity())
 		, with_section_heights_from_storey_(false)
-		, rescale(false)
 		, print_space_names_(false)
 		, print_space_areas_(false)
 		, draw_door_arcs_(false)
