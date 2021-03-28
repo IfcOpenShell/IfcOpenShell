@@ -1236,7 +1236,8 @@ void SvgSerializer::write(const geometry_data& data) {
 
 						auto d = (p1.XYZ() - p0.XYZ());
 						d.Normalize();
-						d *= 3;
+						const double shll = storey_height_line_length_.get_value_or(2.);
+						d *= shll;
 						gp_Pnt p1x(p0.XYZ() + d);
 
 						wire = BRepBuilderAPI_MakePolygon(p0, p1x).Wire();
@@ -1681,7 +1682,9 @@ void SvgSerializer::finalize() {
 							double x0, y0, z0, x1, y1, z1;
 							bnd_.Get(x0, y0, z0, x1, y1, z1);
 
-							BRepBuilderAPI_MakeFace mf(elev_pln, x0 - 1., x1 + 1., y0 - 1., y1 + 1.);
+							const double shll = storey_height_line_length_.get_value_or(2.);
+
+							BRepBuilderAPI_MakeFace mf(elev_pln, x0 - shll, x1 + shll, y0 - shll, y1 + shll);
 							gp_Trsf trsf;
 							TopoDS_Compound C;
 							BRep_Builder B;
