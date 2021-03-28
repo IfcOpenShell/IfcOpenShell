@@ -105,6 +105,7 @@ typedef boost::variant<horizontal_plan, horizontal_plan_at_element, vertical_sec
 
 struct geometry_data {
 	TopoDS_Shape compound_local;
+	std::vector<boost::optional<std::vector<double>>> dash_arrays;
 	gp_Trsf trsf;
 	IfcUtil::IfcBaseEntity* product;
 	IfcUtil::IfcBaseEntity* storey;
@@ -200,7 +201,7 @@ public:
     bool ready();
     void write(const IfcGeom::TriangulationElement<real_t>* /*o*/) {}
     void write(const IfcGeom::BRepElement<real_t>* o);
-    void write(path_object& p, const TopoDS_Wire& wire);
+    void write(path_object& p, const TopoDS_Wire& wire, boost::optional<std::vector<double>> dash_array=boost::none);
 	void write(const geometry_data& data);
     path_object& start_path(const gp_Pln& p, IfcUtil::IfcBaseEntity* storey, const std::string& id);
 	path_object& start_path(const gp_Pln& p, const std::string& drawing_name, const std::string& id);
