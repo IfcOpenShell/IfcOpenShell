@@ -89,7 +89,7 @@ bool SvgSerializer::ready() {
 	return true;
 }
 
-void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
+void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire, boost::optional<std::vector<double>> dash_array) {
 	/* ShapeFix_Wire fix;
 	Handle(ShapeExtend_WireData) data = new ShapeExtend_WireData;
 	for (TopExp_Explorer edges(result, TopAbs_EDGE); edges.More(); edges.Next()) {
@@ -302,7 +302,22 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
 		first = false;
 	}
 
-	path.add("\"/>\n");
+	path.add("\"");
+
+	if (dash_array) {
+		path.add(" stroke-dasharray=\"");
+		bool first = true;
+		for (auto& d : *dash_array) {
+			if (!first) {
+				path.add(" ");
+			}
+			first = false;
+			radii.push_back(path.add(d));
+		}
+		path.add("\"");
+	}
+
+	path.add("/>\n");
 	p.second.push_back(path);
 }
 
@@ -455,6 +470,38 @@ namespace {
 	}
 }
 
+namespace {
+	boost::optional<std::string> get_curve_style_name(IfcUtil::IfcBaseEntity* item) {
+		auto refs = item->get_inverse("StyledByItem");
+		for (auto& ref : *refs) {
+			if (ref->declaration().is("IfcStyledItem")) {
+				IfcEntityList::ptr styles = *((IfcUtil::IfcBaseEntity*)ref)->get("Styles");
+				for (auto& s_ : *styles) {
+					auto s = (IfcUtil::IfcBaseEntity*) s_;
+					std::vector<IfcUtil::IfcBaseEntity*> pss;
+					if (s->declaration().is("IfcPresentationStyleAssignment")) {
+						IfcEntityList::ptr pstyles = *s->get("Styles");
+						for (auto& ssss : *pstyles) {
+							pss.push_back((IfcUtil::IfcBaseEntity*) ssss);
+						}
+					} else {
+						pss.push_back(s);
+					}
+					for (auto& ps : pss) {
+						if (ps->declaration().is("IfcCurveStyle")) {
+							auto arg = ps->get("Name");
+							if (!arg->isNull()) {
+								return (std::string) *arg;
+							}
+						}
+					}
+				}
+			}
+		}
+		return boost::none;
+	}
+}
+
 void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 
 	boost::optional<std::string> object_type;
@@ -462,7 +509,36 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 		object_type = static_cast<std::string>(*brep_obj->product()->get("ObjectType"));
 	}
 
+	std::vector<boost::optional<std::vector<double>>> dash_arrays;
+
 	TopoDS_Shape compound_local = brep_obj->geometry().as_compound();
+	for (auto& x : brep_obj->geometry()) {
+		dash_arrays.emplace_back();
+
+		auto item = (IfcUtil::IfcBaseEntity*) this->file->instance_by_id(x.ItemId());
+		auto curve_style_name = get_curve_style_name(item);
+		
+		if (curve_style_name && 
+			(boost::starts_with(*curve_style_name, "LINE_") ||
+			 boost::starts_with(*curve_style_name, "DASH_")))
+		{
+			std::vector<std::string> tokens;
+			boost::split(tokens, *curve_style_name, boost::is_any_of("_"));
+			if (tokens.size() > 1) {
+				dash_arrays.back().emplace();
+				for (auto& tok : tokens) {
+					double d;
+					try {
+						d = boost::lexical_cast<double>(tok);
+					} catch (boost::bad_lexical_cast&) {
+						continue;
+					}
+					dash_arrays.back()->push_back(d / 1000.);
+				}
+			}
+		}
+	}
+
 	const gp_Trsf& trsf = brep_obj->transformation().data();
 
 	const bool is_section = (section_ref_ && object_type && *section_ref_ == *object_type);
@@ -556,7 +632,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 	IfcUtil::IfcBaseEntity* storey = p ? p->first : nullptr;
 	double elev = p ? p->second : std::numeric_limits<double>::quiet_NaN();
 	// @todo is it correct to call nameElement() here with a single storey (what if this element spans multiple?)
-	geometry_data data{ compound_local, trsf, brep_obj->product(), storey, elev, brep_obj->name(), nameElement(storey, brep_obj) };
+	geometry_data data{ compound_local, dash_arrays, trsf, brep_obj->product(), storey, elev, brep_obj->name(), nameElement(storey, brep_obj) };
 
 	if (auto_section_ || auto_elevation_ || section_ref_ || elevation_ref_) {
 		element_buffer_.push_back(data);
@@ -884,13 +960,14 @@ void SvgSerializer::write(const geometry_data& data) {
 		}
 
 		TopoDS_Iterator it(compound_to_use);
+		auto dash_it = data.dash_arrays.begin();
 
 		TopoDS_Face largest_closed_wire_face;
 		double largest_closed_wire_area = 0.;
 		path_object* po = nullptr;
 
 		// Iterate over components of compound to have better chance of matching section edges to closed wires
-		for (; it.More(); it.Next()) {
+		for (; it.More(); it.Next(), ++dash_it) {
 
 			const TopoDS_Shape& subshape = it.Value();
 
@@ -1030,7 +1107,7 @@ void SvgSerializer::write(const geometry_data& data) {
 					TopExp_Explorer exp(subshape, TopAbs_WIRE, TopAbs_FACE);
 					for (; exp.More(); exp.Next()) {
 						const auto& W = TopoDS::Wire(exp.Current());
-						write(*po, W);
+						write(*po, W, *dash_it);
 					}
 					
 				}
@@ -1616,7 +1693,7 @@ void SvgSerializer::finalize() {
 								name = (std::string) *a2;
 							}
 							write(geometry_data{
-								C,trsf,storey,storey,elev,name,nameElement(storey)
+								C,{boost::none},trsf,storey,storey,elev,name,nameElement(storey)
 							});
 						}
 					}
