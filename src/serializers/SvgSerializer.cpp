@@ -436,7 +436,7 @@ namespace {
 				auto pset = (IfcUtil::IfcBaseEntity*) (IfcUtil::IfcBaseClass*) *((IfcUtil::IfcBaseEntity*) rel)->get("RelatingPropertyDefinition");
 				std::string pset_name;
 				if (!pset->get("Name")->isNull()) {
-					pset_name = *pset->get("Name");
+					pset_name = (std::string) *pset->get("Name");
 				}
 				IfcEntityList::ptr props = *pset->get("HasProperties");
 				for (auto& prop : *props) {
