@@ -428,6 +428,8 @@ int main(int argc, char** argv) {
             " and any other value means that 6 or 7 decimals are used.")
 		("print-space-names", "Prints IfcSpace LongName and Name in the geometry output. Applicable for SVG output")
 		("print-space-areas", "Prints calculated IfcSpace areas in square meters. Applicable for SVG output")
+		("space-name-transform", po::value<std::string>(),
+			"Additional transform to the space labels in SVG")
 		("edge-arrows", "Adds arrow heads to edge segments to signify edge direction")
 		;
 
@@ -1015,6 +1017,11 @@ int main(int argc, char** argv) {
 				vmap["storey-height-line-length"].as<double>()
 			);
 		}
+		if (vmap.count("space-name-transform")) {
+			static_cast<SvgSerializer*>(serializer.get())->setSpaceNameTransform(
+				vmap["space-name-transform"].as<std::string>()
+			);
+		}		
 	}
 
     if (convert_back_units) {
