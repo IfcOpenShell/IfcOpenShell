@@ -6,6 +6,30 @@ from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.structural.data import Data
 
 
+class AddStructuralMemberConnection(bpy.types.Operator):
+    bl_idname = "bim.add_structural_member_connection"
+    bl_label = "Add Structural Member Connection"
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+
+class EnableEditingStructuralConnectionCondition(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_structural_connection_condition"
+    bl_label = "Enable Editing Structural Connection Condition"
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+
+class RemoveStructuralConnectionCondition(bpy.types.Operator):
+    bl_idname = "bim.remove_structural_connection_condition"
+    bl_label = "Remove Structural Connection Condition"
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+
 class AddStructuralBoundaryCondition(bpy.types.Operator):
     bl_idname = "bim.add_structural_boundary_condition"
     bl_label = "Add Structural Boundary Condition"
