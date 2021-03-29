@@ -102,27 +102,20 @@ class BIM_PT_connected_structural_members(Panel):
 
         self.data = Data.connected_structural_members[self.oprops.ifc_definition_id]
 
-        for member in self.data:
+        row = self.layout.row(align=True)
+        row.label(text=f"{len(self.data.keys())} Connected Structural Members Found", icon="CON_TRACKTO")
+        row.operator("bim.add_structural_member_connection", text="", icon="ADD")
+
+        for _,rel in self.data.items():
             row = self.layout.row(align=True)
-            row.label(text=str(member))
-
-        # row = self.layout.row(align=True)
-        # if self.data and self.props.is_editing_boundary_condition:
-        #     row.label(text=self.data["type"], icon="CON_TRACKTO")
-        #     row.operator("bim.edit_structural_boundary_condition", text="", icon="CHECKMARK")
-        #     row.operator("bim.disable_editing_structural_boundary_condition", text="", icon="X")
-        # elif self.data and not self.props.is_editing_boundary_condition:
-        #     row.label(text=self.data["type"], icon="CON_TRACKTO")
-        #     row.operator("bim.enable_editing_structural_boundary_condition", text="", icon="GREASEPENCIL")
-        #     row.operator("bim.remove_structural_boundary_condition", text="", icon="X")
-        # else:
-        #     row.label(text="No Boundary Condition Found", icon="CON_TRACKTO")
-        #     row.operator("bim.add_structural_boundary_condition", text="", icon="ADD")
-
-        # if self.props.is_editing_boundary_condition:
-        #     self.draw_editable_ui(context)
-        # else:
-        #     self.draw_read_only_ui(context)
+            if self.props.is_editing_connection_conditions:
+                row.label(text=str(rel["RelatingStructuralMember"]))
+                # row.operator("bim.edit_structural_member_connection", text="", icon="CHECKMARK")
+                # row.operator("bim.disable_editing_structural_member_connection", text="", icon="X")
+            else:
+                row.label(text=f"To Member #{rel['RelatingStructuralMember']}")
+                row.operator("bim.enable_editing_structural_connection_condition", text="", icon="GREASEPENCIL")
+                row.operator("bim.remove_structural_connection_condition", text="", icon="X")
 
 
 class BIM_PT_structural_analysis_models(Panel):
