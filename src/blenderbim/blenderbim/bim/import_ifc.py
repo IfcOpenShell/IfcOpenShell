@@ -419,7 +419,7 @@ class IfcImporter:
         representations = self.get_transformed_body_representations(element.Representation.Representations)
 
         # Single swept disk solids (e.g. rebar) are better natively represented as beveled curves
-        if [r for r in representations if self.is_native_swept_disk_solid(r)]:
+        if self.is_native_swept_disk_solid(representations):
             self.native_data[element.GlobalId] = {
                 "representations": representations,
                 "representation": self.get_body_representation(element.Representation.Representations),
@@ -428,19 +428,26 @@ class IfcImporter:
             return True
         # FacetedBreps (without voids) are meshes. See #841.
         # Commented out as seems currently too slow.
-        # if [r for r in representations if self.is_native_faceted_brep(r)]:
-        #    self.native_data[element.GlobalId] = {
-        #        "representations": representations,
-        #        "representation": self.get_body_representation(element.Representation.Representations),
-        #        "type": "IfcFacetedBrep",
-        #    }
-        #    return True
+        # if self.is_native_faceted_brep(representations):
+        #     self.native_data[element.GlobalId] = {
+        #         "representations": representations,
+        #         "representation": self.get_body_representation(element.Representation.Representations),
+        #         "type": "IfcFacetedBrep",
+        #     }
+        #     return True
 
-    def is_native_swept_disk_solid(self, representation):
-        return len(representation["raw"].Items) == 1 and representation["raw"].Items[0].is_a("IfcSweptDiskSolid")
+    def is_native_swept_disk_solid(self, representations):
+        for representation in representations:
+            if len(representation["raw"].Items) > 1 or not representation["raw"].Items[0].is_a("IfcSweptDiskSolid"):
+                return False
+        return True
 
-    def is_native_faceted_brep(self, representation):
-        return bool([i for i in representation["raw"].Items if i.is_a() == "IfcFacetedBrep"])
+    def is_native_faceted_brep(self, representations):
+        for representation in representations:
+            for i in representation["raw"].Items:
+                if i.is_a() != "IfcFacetedBrep":
+                    return False
+        return True
 
     def get_products_from_shape_representation(self, element):
         products = [pr.ShapeOfProduct[0] for pr in element.OfProductRepresentation]
@@ -633,6 +640,7 @@ class IfcImporter:
     def create_native_products(self):
         total = 0
         checkpoint = time.time()
+        bm = bmesh.new()
         for element in self.native_elements:
             total += 1
             if total % 250 == 0:
@@ -640,6 +648,8 @@ class IfcImporter:
                 checkpoint = time.time()
             native_data = self.native_data[element.GlobalId]
             representation = native_data["representation"]
+            if not representation:
+                continue
             context_id = representation.ContextOfItems.id() if hasattr(representation, "ContextOfItems") else 0
             mesh_name = f"{context_id}/{representation.id()}"
             mesh = self.meshes.get(mesh_name)
@@ -649,16 +659,17 @@ class IfcImporter:
                 elif native_data["type"] == "IfcFacetedBrep":
                     mesh = self.create_native_faceted_brep(element, mesh_name)
                 mesh.BIMMeshProperties.ifc_definition_id = representation.id()
+                mesh.name = mesh_name
                 self.meshes[mesh_name] = mesh
             self.create_product(element, mesh=mesh)
             if native_data["type"] == "IfcFacetedBrep":
                 # The current implementation doesn't reuse vertices, so we weld it after assigning materials.
                 # This welding isn't true to the representation, but is easy and seems inexpensive.
-                bm = bmesh.new()
                 bm.from_mesh(mesh)
                 bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.001)
                 bm.to_mesh(mesh)
-                bm.free()
+                bm.clear()
+        bm.free()
 
         print("Done creating geometry")
 
@@ -842,7 +853,7 @@ class IfcImporter:
                         points = outer_bound[0].copy()
                         [points.extend(p) for p in inner_bounds]
                         tessellated_polygons = mathutils.geometry.tessellate_polygon(outer_bound + inner_bounds)
-                        tessellated_faces = [[{"Coordinates": points[pi]} for pi in t] for t in tessellated_polygons]
+                        tessellated_faces = [({"Coordinates": points[pi]} for pi in t) for t in tessellated_polygons]
                     else:
                         tessellated_faces = [face["Bounds"][0]["Bound"]["Polygon"]]
 
@@ -854,7 +865,7 @@ class IfcImporter:
                         for point in tessellated_face:
                             co.extend(
                                 representation["matrix"]
-                                @ mathutils.Vector([c * self.unit_scale for c in point["Coordinates"]])
+                                @ mathutils.Vector((c * self.unit_scale for c in point["Coordinates"]))
                             )
                             total_verts += 1
                             loop_count += 1
