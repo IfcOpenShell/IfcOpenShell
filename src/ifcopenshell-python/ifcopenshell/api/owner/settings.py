@@ -1,13 +1,10 @@
-def get_person():
+def get_person(ifc):
     pass
 
 
-def get_organisation():
+def get_organisation(ifc):
     pass
 
 
-settings = {
-    "ApplicationIdentifier": "",
-    "ApplicationFullName": "",
-    "Version": "",
-}
+def get_application(ifc):
+    pass

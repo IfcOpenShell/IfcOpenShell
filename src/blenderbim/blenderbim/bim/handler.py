@@ -100,21 +100,24 @@ def storeIdMap(scene):
         bpy.context.scene.BIMProperties.guid_map = json.dumps({k: v.name for k, v in IfcStore.guid_map.items()})
 
 
-@persistent
-def setDefaultProperties(scene):
-    ifcopenshell.api.owner.settings.get_person = (
-        lambda: IfcStore.get_file().by_id(int(bpy.context.scene.BIMOwnerProperties.user_person))
-        if bpy.context.scene.BIMOwnerProperties.user_person
-        else None
+def get_application(ifc):
+    version = get_application_version()
+    for element in ifc.by_type("IfcApplication"):
+        if element.ApplicationIdentifier == "BlenderBIM" and element.Version == version:
+            return element
+    return ifc.create_entity(
+        "IfcApplication",
+        **{
+            "ApplicationDeveloper": create_application_organisation(ifc),
+            "Version": get_application_version(),
+            "ApplicationFullName": "BlenderBIM Add-on",
+            "ApplicationIdentifier": "BlenderBIM",
+        },
     )
-    ifcopenshell.api.owner.settings.get_organisation = (
-        lambda: IfcStore.get_file().by_id(int(bpy.context.scene.BIMOwnerProperties.user_organisation))
-        if bpy.context.scene.BIMOwnerProperties.user_organisation
-        else None
-    )
-    ifcopenshell.api.owner.settings.settings["ApplicationIdentifier"] = "BlenderBIM"
-    ifcopenshell.api.owner.settings.settings["ApplicationFullName"] = "BlenderBIM Add-on"
-    ifcopenshell.api.owner.settings.settings["Version"] = ".".join(
+
+
+def get_application_version():
+    return ".".join(
         [
             str(x)
             for x in [
@@ -124,6 +127,61 @@ def setDefaultProperties(scene):
             ][0]
         ]
     )
+
+
+def create_application_organisation(ifc):
+    return ifc.create_entity(
+        "IfcOrganization",
+        **{
+            "Name": "IfcOpenShell",
+            "Description": "IfcOpenShell is an open source (LGPL) software library that helps users and software developers to work with the IFC file format.",
+            "Roles": [ifc.create_entity("IfcActorRole", **{"Role": "USERDEFINED", "UserDefinedRole": "CONTRIBUTOR"})],
+            "Addresses": [
+                ifc.create_entity(
+                    "IfcTelecomAddress",
+                    **{
+                        "Purpose": "USERDEFINED",
+                        "UserDefinedPurpose": "WEBPAGE",
+                        "Description": "The main webpage of the software collection.",
+                        "WWWHomePageURL": "https://ifcopenshell.org",
+                    },
+                ),
+                ifc.create_entity(
+                    "IfcTelecomAddress",
+                    **{
+                        "Purpose": "USERDEFINED",
+                        "UserDefinedPurpose": "WEBPAGE",
+                        "Description": "The BlenderBIM Add-on webpage of the software collection.",
+                        "WWWHomePageURL": "https://blenderbim.org",
+                    },
+                ),
+                ifc.create_entity(
+                    "IfcTelecomAddress",
+                    **{
+                        "Purpose": "USERDEFINED",
+                        "UserDefinedPurpose": "REPOSITORY",
+                        "Description": "The source code repository of the software collection.",
+                        "WWWHomePageURL": "https://github.com/IfcOpenShell/IfcOpenShell.git",
+                    },
+                ),
+            ],
+        },
+    )
+
+
+@persistent
+def setDefaultProperties(scene):
+    ifcopenshell.api.owner.settings.get_person = (
+        lambda ifc : ifc.by_id(int(bpy.context.scene.BIMOwnerProperties.user_person))
+        if bpy.context.scene.BIMOwnerProperties.user_person
+        else None
+    )
+    ifcopenshell.api.owner.settings.get_organisation = (
+        lambda ifc : ifc.by_id(int(bpy.context.scene.BIMOwnerProperties.user_organisation))
+        if bpy.context.scene.BIMOwnerProperties.user_organisation
+        else None
+    )
+    ifcopenshell.api.owner.settings.get_application = get_application
     if len(bpy.context.scene.DocProperties.drawing_styles) == 0:
         drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
         drawing_style.name = "Technical"
