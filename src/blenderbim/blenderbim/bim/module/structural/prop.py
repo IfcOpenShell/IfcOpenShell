@@ -30,5 +30,5 @@ class BIMStructuralProperties(PropertyGroup):
 
 class BIMObjectStructuralProperties(PropertyGroup):
     boundary_condition_attributes: CollectionProperty(name="Boundary Condition Attributes", type=Attribute)
-    is_editing_boundary_condition: BoolProperty(name="Is Editing Boundary Condition", default=False)
-    is_editing_connection_conditions: BoolProperty(name="Is Editing Connection Conditions", default=False)
+    active_boundary_condition: IntProperty(name="Active Boundary Condition")
+    active_connects_structural_member: IntProperty(name="Active Connects Structural Member")
