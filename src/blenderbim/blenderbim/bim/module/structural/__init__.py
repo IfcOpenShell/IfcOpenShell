@@ -18,6 +18,7 @@ classes = (
     operator.DisableEditingStructuralBoundaryCondition,
     operator.AddStructuralMemberConnection,
     operator.EnableEditingStructuralConnectionCondition,
+    operator.DisableEditingStructuralConnectionCondition,
     operator.RemoveStructuralConnectionCondition,
     prop.StructuralAnalysisModel,
     prop.BIMStructuralProperties,

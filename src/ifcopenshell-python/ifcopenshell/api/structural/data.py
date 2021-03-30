@@ -3,8 +3,9 @@ class Data:
     products = {}
     structural_analysis_models = {}
     boundary_conditions = {}
-    connected_structural_members = {}
-    connection_conditions = {}
+    members = {}
+    connections = {}
+    connects_structural_members = {}
 
     @classmethod
     def purge(cls):
@@ -12,8 +13,9 @@ class Data:
         cls.products = {}
         cls.structural_analysis_models = {}
         cls.boundary_conditions = {}
-        cls.connected_structural_members = {}
-        cls.connection_conditions = {}
+        cls.members = {}
+        cls.connections = {}
+        cls.connects_structural_members = {}
 
     @classmethod
     def load(cls, file, product_id=None):
@@ -55,48 +57,45 @@ class Data:
 
     @classmethod
     def load_structural_connection(cls, product_id):
+        cls.connections = {}
         cls.boundary_conditions = {}
-        cls.connected_structural_members = {}
-        # cls.connection_conditions = {}
+        cls.connects_structural_members = {}
 
         connection = cls._file.by_id(product_id)
+        connection_data = {"AppliedCondition": None, "ConnectsStructuralMembers": []}
+
         if connection.AppliedCondition:
-            data = connection.AppliedCondition.get_info()
-            for key, value in data.items():
-                if not value or key in ["Name", "type", "id"]:
-                    continue
-                data[key] = value.wrappedValue
-        else:
-            data = {}
-        cls.boundary_conditions[connection.id()] = data
+            cls.load_boundary_condition(connection.AppliedCondition)
+            connection_data["AppliedCondition"] = connection.AppliedCondition.id()
 
-        cls.connected_structural_members[connection.id()] = {}
         for rel in connection.ConnectsStructuralMembers or []:
-            data = rel.get_info()
-            del data["OwnerHistory"]
-            data["RelatingStructuralMember"] = rel.RelatingStructuralMember.id()
-            data["RelatedStructuralConnection"] = rel.RelatedStructuralConnection.id()
-            del data["ConditionCoordinateSystem"] # TODO: consider orientation
-            del data["AppliedCondition"] # delete and parse below
-            if rel.is_a("IfcRelConnectsWithEccentricity"):
-                data["ConnectionConstraint"] = rel.ConnectionConstraint # TODO
+            cls.load_connects_structural_member(rel)
+            connection_data["ConnectsStructuralMembers"].append(rel.id())
 
-            cls.connected_structural_members[connection.id()][rel.id()] = data
+        cls.connections[connection.id()] = connection_data
 
-            if rel.AppliedCondition:
-                data = rel.AppliedCondition.get_info()
-                for key, value in data.items():
-                    if not value or key in ["Name", "type", "id"]:
-                        continue
-                    data[key] = value.wrappedValue
-            else:
-                data = {}
-            cls.connection_conditions[rel.id()] = data
-        
-        print(cls.connected_structural_members)
-        print(cls.connection_conditions)
+    @classmethod
+    def load_boundary_condition(cls, boundary_condition):
+        data = boundary_condition.get_info()
+        for key, value in data.items():
+            if not value or key in ["Name", "type", "id"]:
+                continue
+            data[key] = value.wrappedValue
+        cls.boundary_conditions[boundary_condition.id()] = data
 
-        # cls.connected_structural_members[connection.id()] = [
-        #     rel.id()
-        #     for rel in connection.ConnectsStructuralMembers or []
-        # ]
+    @classmethod
+    def load_connects_structural_member(cls, rel):
+        rel_data = rel.get_info()
+        del rel_data["OwnerHistory"]
+        rel_data["RelatingStructuralMember"] = rel.RelatingStructuralMember.id()
+        rel_data["RelatedStructuralConnection"] = rel.RelatedStructuralConnection.id()
+        del rel_data["ConditionCoordinateSystem"]  # TODO: consider orientation
+
+        if rel.is_a("IfcRelConnectsWithEccentricity"):
+            rel_data["ConnectionConstraint"] = rel.ConnectionConstraint  # TODO
+
+        if rel.AppliedCondition:
+            cls.load_boundary_condition(rel.AppliedCondition)
+            rel_data["AppliedCondition"] = rel.AppliedCondition.id()
+
+        cls.connects_structural_members[rel.id()] = rel_data

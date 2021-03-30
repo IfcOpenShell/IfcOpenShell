@@ -17,8 +17,28 @@ class AddStructuralMemberConnection(bpy.types.Operator):
 class EnableEditingStructuralConnectionCondition(bpy.types.Operator):
     bl_idname = "bim.enable_editing_structural_connection_condition"
     bl_label = "Enable Editing Structural Connection Condition"
+    connects_structural_member: bpy.props.IntProperty()
 
     def execute(self, context):
+        obj = bpy.context.active_object
+        oprops = obj.BIMObjectProperties
+        props = obj.BIMStructuralProperties
+        applied_condition_id = Data.connects_structural_members[self.connects_structural_member]["AppliedCondition"]
+        if applied_condition_id:
+            bpy.ops.bim.enable_editing_structural_boundary_condition(boundary_condition=applied_condition_id)
+
+        props.active_connects_structural_member = self.connects_structural_member
+        return {"FINISHED"}
+
+
+class DisableEditingStructuralConnectionCondition(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_structural_connection_condition"
+    bl_label = "Disable Editing Structural Connection Condition"
+
+    def execute(self, context):
+        obj = bpy.context.active_object
+        props = obj.BIMStructuralProperties
+        props.active_connects_structural_member = 0
         return {"FINISHED"}
 
 
@@ -33,13 +53,16 @@ class RemoveStructuralConnectionCondition(bpy.types.Operator):
 class AddStructuralBoundaryCondition(bpy.types.Operator):
     bl_idname = "bim.add_structural_boundary_condition"
     bl_label = "Add Structural Boundary Condition"
+    connection: bpy.props.IntProperty()
 
     def execute(self, context):
-        obj = context.active_object
         file = IfcStore.get_file()
-        connection = file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        connection = file.by_id(self.connection)
         ifcopenshell.api.run("structural.add_structural_boundary_condition", file, **{"connection": connection})
-        Data.load(IfcStore.get_file(), connection.id())
+        if connection.is_a("IfcRelConnectsStructuralMember"):
+            Data.load(IfcStore.get_file(), connection.RelatedStructuralConnection.id())
+        else:
+            Data.load(IfcStore.get_file(), connection.id())
         return {"FINISHED"}
 
 
@@ -59,15 +82,15 @@ class RemoveStructuralBoundaryCondition(bpy.types.Operator):
 class EnableEditingStructuralBoundaryCondition(bpy.types.Operator):
     bl_idname = "bim.enable_editing_structural_boundary_condition"
     bl_label = "Enable Editing Structural Boundary Condition"
+    boundary_condition: bpy.props.IntProperty()
 
     def execute(self, context):
         obj = context.active_object
-        oprops = obj.BIMObjectProperties
         props = obj.BIMStructuralProperties
         while len(props.boundary_condition_attributes) > 0:
             props.boundary_condition_attributes.remove(0)
 
-        data = Data.boundary_conditions[oprops.ifc_definition_id]
+        data = Data.boundary_conditions[self.boundary_condition]
 
         for attribute in IfcStore.get_schema().declaration_by_name(data["type"]).all_attributes():
             value = data[attribute.name()]
@@ -91,21 +114,21 @@ class EnableEditingStructuralBoundaryCondition(bpy.types.Operator):
                 new.string_value = "" if new.is_null else data[attribute.name()]
                 new.data_type = "string"
 
-        props.is_editing_boundary_condition = True
+        props.active_boundary_condition = self.boundary_condition
         return {"FINISHED"}
 
 
 class EditStructuralBoundaryCondition(bpy.types.Operator):
     bl_idname = "bim.edit_structural_boundary_condition"
     bl_label = "Edit Structural Boundary Condition"
+    connection: bpy.props.IntProperty()
 
     def execute(self, context):
         obj = context.active_object
-        oprops = obj.BIMObjectProperties
         props = obj.BIMStructuralProperties
 
         file = IfcStore.get_file()
-        connection = file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        connection = file.by_id(self.connection)
         condition = connection.AppliedCondition
 
         attributes = {}
@@ -122,7 +145,10 @@ class EditStructuralBoundaryCondition(bpy.types.Operator):
         ifcopenshell.api.run(
             "structural.edit_structural_boundary_condition", file, **{"condition": condition, "attributes": attributes}
         )
-        Data.load(IfcStore.get_file(), connection.id())
+        if connection.is_a("IfcRelConnectsStructuralMember"):
+            Data.load(IfcStore.get_file(), connection.RelatedStructuralConnection.id())
+        else:
+            Data.load(IfcStore.get_file(), connection.id())
         bpy.ops.bim.disable_editing_structural_boundary_condition()
         return {"FINISHED"}
 
@@ -132,7 +158,7 @@ class DisableEditingStructuralBoundaryCondition(bpy.types.Operator):
     bl_label = "Disable Editing Structural Boundary Condition"
 
     def execute(self, context):
-        context.active_object.BIMStructuralProperties.is_editing_boundary_condition = False
+        context.active_object.BIMStructuralProperties.active_boundary_condition = 0
         return {"FINISHED"}
 
 
