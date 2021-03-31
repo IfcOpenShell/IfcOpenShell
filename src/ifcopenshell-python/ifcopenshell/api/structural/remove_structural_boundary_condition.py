@@ -8,7 +8,6 @@ class Usecase:
     def execute(self):
         if not self.settings["connection"].AppliedCondition:
             return
-        if len(self.file.get_inverse(self.settings["connection"].AppliedCondition)) > 1:
-            self.settings["connection"].AppliedCondition = None
-        else:
+        if len(self.file.get_inverse(self.settings["connection"].AppliedCondition)) == 1:
             self.file.remove(self.settings["connection"].AppliedCondition)
+        self.settings["connection"].AppliedCondition = None
