@@ -1,6 +1,30 @@
 import bpy
+import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.sequence.data import Data
+
+
+class AddWorkPlan(bpy.types.Operator):
+    bl_idname = "bim.add_work_plan"
+    bl_label = "Add Work Plan"
+
+    def execute(self, context):
+        ifcopenshell.api.run("sequence.add_work_plan", IfcStore.get_file())
+        Data.load(IfcStore.get_file())
+        return {"FINISHED"}
+
+
+class RemoveWorkPlan(bpy.types.Operator):
+    bl_idname = "bim.remove_work_plan"
+    bl_label = "Remove Work Plan"
+    work_plan: bpy.props.IntProperty()
+
+    def execute(self, context):
+        ifcopenshell.api.run(
+            "sequence.remove_work_plan", IfcStore.get_file(), work_plan=IfcStore.get_file().by_id(self.work_plan)
+        )
+        Data.load(IfcStore.get_file())
+        return {"FINISHED"}
 
 
 class LoadTasks(bpy.types.Operator):
