@@ -2,9 +2,8 @@ class Data:
     is_loaded = False
     products = {}
     structural_analysis_models = {}
-    boundary_conditions = {}
-    members = {}
     connections = {}
+    boundary_conditions = {}
     connects_structural_members = {}
 
     @classmethod
@@ -12,9 +11,8 @@ class Data:
         cls.is_loaded = False
         cls.products = {}
         cls.structural_analysis_models = {}
-        cls.boundary_conditions = {}
-        cls.members = {}
         cls.connections = {}
+        cls.boundary_conditions = {}
         cls.connects_structural_members = {}
 
     @classmethod

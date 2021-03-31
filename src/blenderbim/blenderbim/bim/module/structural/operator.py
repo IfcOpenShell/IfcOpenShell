@@ -24,9 +24,6 @@ class EnableEditingStructuralConnectionCondition(bpy.types.Operator):
         oprops = obj.BIMObjectProperties
         props = obj.BIMStructuralProperties
         applied_condition_id = Data.connects_structural_members[self.connects_structural_member]["AppliedCondition"]
-        if applied_condition_id:
-            bpy.ops.bim.enable_editing_structural_boundary_condition(boundary_condition=applied_condition_id)
-
         props.active_connects_structural_member = self.connects_structural_member
         return {"FINISHED"}
 
@@ -45,8 +42,15 @@ class DisableEditingStructuralConnectionCondition(bpy.types.Operator):
 class RemoveStructuralConnectionCondition(bpy.types.Operator):
     bl_idname = "bim.remove_structural_connection_condition"
     bl_label = "Remove Structural Connection Condition"
+    connects_structural_member: bpy.props.IntProperty()
 
     def execute(self, context):
+        file = IfcStore.get_file()
+        relation = file.by_id(self.connects_structural_member)
+        connection = relation.RelatedStructuralConnection
+        ifcopenshell.api.run("structural.remove_structural_connection_condition", file, **{"relation": relation})
+
+        Data.load(IfcStore.get_file(), connection.id())
         return {"FINISHED"}
 
 
@@ -68,14 +72,17 @@ class AddStructuralBoundaryCondition(bpy.types.Operator):
 
 class RemoveStructuralBoundaryCondition(bpy.types.Operator):
     bl_idname = "bim.remove_structural_boundary_condition"
-    bl_label = "Enable Editing Structural Boundary Condition"
+    bl_label = "Remove Structural Boundary Condition"
+    connection: bpy.props.IntProperty()
 
     def execute(self, context):
-        obj = context.active_object
         file = IfcStore.get_file()
-        connection = file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        connection = file.by_id(self.connection)
         ifcopenshell.api.run("structural.remove_structural_boundary_condition", file, **{"connection": connection})
-        Data.load(IfcStore.get_file(), connection.id())
+        if connection.is_a("IfcRelConnectsStructuralMember"):
+            Data.load(IfcStore.get_file(), connection.RelatedStructuralConnection.id())
+        else:
+            Data.load(IfcStore.get_file(), connection.id())
         return {"FINISHED"}
 
 

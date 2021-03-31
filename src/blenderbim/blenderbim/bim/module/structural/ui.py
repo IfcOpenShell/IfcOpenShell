@@ -17,12 +17,12 @@ def draw_boundary_condition_ui(layout, boundary_condition_id, connection_id, pro
         row.operator("bim.disable_editing_structural_boundary_condition", text="", icon="X")
     elif props.active_boundary_condition and props.active_boundary_condition != boundary_condition_id:
         row.label(text=data["type"], icon="CON_TRACKTO")
-        row.operator("bim.remove_structural_boundary_condition", text="", icon="X")
+        row.operator("bim.remove_structural_boundary_condition", text="", icon="X").connection = connection_id
     else:
         row.label(text=data["type"], icon="CON_TRACKTO")
         op = row.operator("bim.enable_editing_structural_boundary_condition", text="", icon="GREASEPENCIL")
         op.boundary_condition = data["id"]
-        row.operator("bim.remove_structural_boundary_condition", text="", icon="X")
+        row.operator("bim.remove_structural_boundary_condition", text="", icon="X").connection = connection_id
 
     if props.active_boundary_condition and props.active_boundary_condition == boundary_condition_id:
         draw_boundary_condition_editable_ui(layout, props)
@@ -124,14 +124,16 @@ class BIM_PT_connected_structural_members(Panel):
             row.label(text=f"To Member #{rel['RelatingStructuralMember']}")
             if self.props.active_connects_structural_member and self.props.active_connects_structural_member == rel_id:
                 row.operator("bim.disable_editing_structural_connection_condition", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_structural_connection_condition", text="", icon="X")
+                row.enabled = self.props.active_boundary_condition != rel["AppliedCondition"]
                 self.draw_editable_ui(context, self.layout, rel)
             elif self.props.active_connects_structural_member:
-                row.operator("bim.remove_structural_connection_condition", text="", icon="X")
+                op = row.operator("bim.remove_structural_connection_condition", text="", icon="X")
+                op.connects_structural_member = rel_id
             else:
                 op = row.operator("bim.enable_editing_structural_connection_condition", text="", icon="GREASEPENCIL")
                 op.connects_structural_member = rel_id
-                row.operator("bim.remove_structural_connection_condition", text="", icon="X")
+                op = row.operator("bim.remove_structural_connection_condition", text="", icon="X")
+                op.connects_structural_member = rel_id
 
     def draw_editable_ui(self, context, layout, data):
         box = layout.box()
