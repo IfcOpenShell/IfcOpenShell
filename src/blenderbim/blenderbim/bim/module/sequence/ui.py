@@ -3,6 +3,32 @@ from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.sequence.data import Data
 
 
+class BIM_PT_work_plans(Panel):
+    bl_label = "IFC Work Plans"
+    bl_idname = "BIM_PT_work_plans"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
+    def draw(self, context):
+        if not Data.is_loaded:
+            Data.load(IfcStore.get_file())
+
+        row = self.layout.row()
+        row.operator("bim.add_work_plan", icon="ADD")
+
+        for work_plan_id, work_plan in Data.work_plans.items():
+            row = self.layout.row(align=True)
+            row.label(text=work_plan["Name"] or "Unnamed", icon="TEXT")
+            row.operator("bim.add_work_plan", text="", icon="GREASEPENCIL")
+            row.operator("bim.remove_work_plan", text="", icon="X").work_plan = work_plan_id
+
+
 class BIM_PT_tasks(Panel):
     bl_label = "IFC Tasks"
     bl_idname = "BIM_PT_tasks"
