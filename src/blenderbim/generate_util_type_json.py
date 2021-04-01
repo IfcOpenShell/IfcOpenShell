@@ -24,6 +24,10 @@ with open(filepath) as fp:
             is_in_where_rule = True
         elif entity and is_in_where_rule and "IN TYPEOF" in line and "RelatingType" in line:
             type_class = line.split("'")[1].split(".")[1]
+            if type_class == "IFCTRANFORMERTYPE":
+                # Fix typo in schema
+                type_class = "IFCTRANSFORMERTYPE"
+            type_class = schema4.declaration_by_name(type_class).name()
             entity_to_type_map.setdefault(entity, []).append(type_class)
         line = fp.readline()
 
