@@ -424,12 +424,12 @@ class Usecase:
         )
 
     def create_structural_reference_representation(self):
-        if self.settings["blender_object"].type == "EMPTY":
+        if len(self.settings["geometry"].vertices) == 1:
             return self.file.createIfcTopologyRepresentation(
                 self.settings["context"],
                 self.settings["context"].ContextIdentifier,
                 "Vertex",
-                [self.create_vertex_point(Vector((0, 0, 0)))],
+                [self.create_vertex_point(self.settings["geometry"].vertices[0].co)],
             )
         return self.file.createIfcTopologyRepresentation(
             self.settings["context"],

@@ -196,7 +196,7 @@ class LoadStructuralAnalysisModels(bpy.types.Operator):
         for ifc_definition_id, structural_analysis_model in Data.structural_analysis_models.items():
             new = props.structural_analysis_models.add()
             new.ifc_definition_id = ifc_definition_id
-            new.name = structural_analysis_model["Name"]
+            new.name = structural_analysis_model["Name"] or "Unnamed"
         props.is_editing = True
         bpy.ops.bim.disable_editing_structural_analysis_model()
         return {"FINISHED"}

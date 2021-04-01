@@ -725,21 +725,27 @@ class IfcImporter:
 
     def create_structural_point_connections(self):
         for product in self.file.by_type("IfcStructuralPointConnection"):
+            # TODO: make this based off ifcopenshell. See #1409
             placement_matrix = ifcopenshell.util.placement.get_local_placement(product.ObjectPlacement)
             vertex = None
-            for subelement in self.file.traverse(product):
+            context = None
+            representation = None
+            for subelement in self.file.traverse(product.Representation):
                 if subelement.is_a("IfcVertex") and subelement.VertexGeometry.is_a("IfcCartesianPoint"):
                     vertex = list(subelement.VertexGeometry.Coordinates)
-                    break
-            if not vertex:
+                elif subelement.is_a("IfcGeometricRepresentationContext"):
+                    context = subelement
+                elif subelement.is_a("IfcTopologyRepresentation"):
+                    representation = subelement
+            if not vertex or not context or not representation:
                 continue  # TODO implement non cartesian point vertexes
-            placement_matrix[0, 3] += vertex[0] * self.unit_scale
-            placement_matrix[1, 3] += vertex[1] * self.unit_scale
-            placement_matrix[2, 3] += vertex[2] * self.unit_scale
-            obj = bpy.data.objects.new("{}/{}".format(product.is_a(), product.Name), None)
+
+            mesh_name = f"{context.id()}/{representation.id()}"
+            mesh = bpy.data.meshes.new(mesh_name)
+            mesh.from_pydata([mathutils.Vector(vertex) * self.unit_scale], [], [])
+
+            obj = bpy.data.objects.new("{}/{}".format(product.is_a(), product.Name), mesh)
             obj.matrix_world = mathutils.Matrix(placement_matrix.tolist())
-            obj.empty_display_type = "SPHERE"
-            obj.empty_display_size = 0.1
             self.link_element(product, obj)
 
     def create_curve_products(self, products):
