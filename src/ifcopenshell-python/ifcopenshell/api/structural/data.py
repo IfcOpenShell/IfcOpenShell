@@ -49,7 +49,7 @@ class Data:
                 has_results.append(result_group.id())
             data["HasResults"] = has_results
 
-            data["SharedPlacement"] = model.SharedPlacement.id()
+            data["SharedPlacement"] = model.SharedPlacement.id() if model.SharedPlacement else None
 
             cls.structural_analysis_models[model.id()] = data
 

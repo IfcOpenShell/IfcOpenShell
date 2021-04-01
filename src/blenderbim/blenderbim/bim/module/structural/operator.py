@@ -11,6 +11,22 @@ class AddStructuralMemberConnection(bpy.types.Operator):
     bl_label = "Add Structural Member Connection"
 
     def execute(self, context):
+        obj = bpy.context.active_object
+        oprops = obj.BIMObjectProperties
+        props = obj.BIMStructuralProperties
+        file = IfcStore.get_file()
+        related_structural_connection = file.by_id(oprops.ifc_definition_id)
+        relating_structural_member = file.by_id(props.relating_structural_member.BIMObjectProperties.ifc_definition_id)
+        if not relating_structural_member.is_a("IfcStructuralMember"):
+            return {"FINISHED"}
+        ifcopenshell.api.run(
+            "structural.add_structural_member_connection",
+            file,
+            relating_structural_member=relating_structural_member,
+            related_structural_connection=related_structural_connection,
+        )
+        props.relating_structural_member = None
+        Data.load(IfcStore.get_file(), related_structural_connection.id())
         return {"FINISHED"}
 
 
