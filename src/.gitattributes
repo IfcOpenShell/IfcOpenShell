@@ -1,0 +1,64 @@
+# ****************************************************************************
+# line endings
+
+# to suppress line ending changes in github, add ?w=1 at link end of a diff
+
+# for more information see
+# FreeCAD source code src/Mod/.gitattributes
+# FreeCAD forum topic https://forum.freecadweb.org/viewtopic.php?f=17&t=41117
+# FreeCAD pull request https://github.com/FreeCAD/FreeCAD/pull/2752
+
+
+# get all used file types
+
+# in a directory in a bash use
+# find . -type f -name '*.*' | sed 's|.*\.||' | sort -u
+
+# search for a specific file ending
+# find . -type f -name '*.ico' 
+
+
+# normalize the line endings of the following files
+*.cpp text
+*.css text
+*.csv text
+*.feature text
+*.gitattributes text
+*.gitignore text
+*.gitkeep
+*.h text
+*.html text
+*.ifc text
+*.json text
+*.md text
+*.po text
+*.pot text
+*.py text
+*.txt text
+
+
+# files not normalized ATM
+# bat
+# bnf
+# blend
+# i
+# ico
+# mo
+# mpass
+# png
+# pth
+# pyc
+# rst
+# svg
+# ttf
+# xsd
+
+
+# line endings of all directories will be normalized
+# to exclude a directory from being normalized add it here
+# example: to exclude dirctory ifcbimtester use the following line without #
+# ifcbimtester/** -text
+
+
+# use git to manually correct the file endings
+# git add --renormalize .
