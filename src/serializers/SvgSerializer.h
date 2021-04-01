@@ -97,12 +97,15 @@ struct vertical_section {
 	gp_Pln plane;
 	std::string name;
 	bool with_projection;
+	boost::optional<double> scale;
+	boost::optional<std::pair<double, double>> size;
 };
 
 typedef boost::variant<horizontal_plan, horizontal_plan_at_element, vertical_section> section_data;
 
 struct geometry_data {
 	TopoDS_Shape compound_local;
+	std::vector<boost::optional<std::vector<double>>> dash_arrays;
 	gp_Trsf trsf;
 	IfcUtil::IfcBaseEntity* product;
 	IfcUtil::IfcBaseEntity* storey;
@@ -130,12 +133,15 @@ public:
 	};
 protected:
 	std::ofstream svg_file;
-	double xmin, ymin, xmax, ymax, width, height;
+	double xmin, ymin, xmax, ymax;
 	boost::optional<std::vector<section_data>> section_data_;
 	boost::optional<std::vector<section_data>> deferred_section_data_;
-	boost::optional<double> scale_, calculated_scale_, center_x_, center_y_;
+	boost::optional<double> scale_, calculated_scale_, center_x_, center_y_, scale_backup_;
+	boost::optional<double> storey_height_line_length_;
+	boost::optional<std::pair<double, double>> size_, size_backup_;
+	boost::optional<std::string> space_name_transform_;
 
-	bool with_section_heights_from_storey_, rescale, print_space_names_, print_space_areas_;
+	bool with_section_heights_from_storey_, print_space_names_, print_space_areas_;
 	storey_height_display_types storey_height_display_;
 	bool draw_door_arcs_, is_floor_plan_;
 	bool auto_section_, auto_elevation_;
@@ -173,7 +179,6 @@ public:
 		, xmax(-std::numeric_limits<double>::infinity())
 		, ymax(-std::numeric_limits<double>::infinity())
 		, with_section_heights_from_storey_(false)
-		, rescale(false)
 		, print_space_names_(false)
 		, print_space_areas_(false)
 		, draw_door_arcs_(false)
@@ -198,7 +203,7 @@ public:
     bool ready();
     void write(const IfcGeom::TriangulationElement<real_t>* /*o*/) {}
     void write(const IfcGeom::BRepElement<real_t>* o);
-    void write(path_object& p, const TopoDS_Wire& wire);
+    void write(path_object& p, const TopoDS_Wire& wire, boost::optional<std::vector<double>> dash_array=boost::none);
 	void write(const geometry_data& data);
     path_object& start_path(const gp_Pln& p, IfcUtil::IfcBaseEntity* storey, const std::string& id);
 	path_object& start_path(const gp_Pln& p, const std::string& drawing_name, const std::string& id);
@@ -213,6 +218,8 @@ public:
 	void setPrintSpaceAreas(bool b) { print_space_areas_ = b; }
 	void setDrawStoreyHeights(storey_height_display_types sh) { storey_height_display_ = sh; }
 	void setDrawDoorArcs(bool b) { draw_door_arcs_ = b; }
+	void setStoreyHeightLineLength(double d) { storey_height_line_length_ = d; }
+	void setSpaceNameTransform(const std::string& v) { space_name_transform_ = v; }
 
 	std::array<std::array<double, 3>, 3> resize();
 	void resetScale();
