@@ -115,13 +115,13 @@ class BIM_PT_connected_structural_members(Panel):
         rel_ids = Data.connections[self.oprops.ifc_definition_id]["ConnectsStructuralMembers"]
 
         row = self.layout.row(align=True)
-        row.label(text=f"{len(rel_ids)} Connected Structural Members", icon="CON_TRACKTO")
+        row.prop(self.props, "relating_structural_member", text="", icon="CON_TRACKTO")
         row.operator("bim.add_structural_member_connection", text="", icon="ADD")
 
         for rel_id in rel_ids:
             rel = Data.connects_structural_members[rel_id]
             row = self.layout.row(align=True)
-            row.label(text=f"To Member #{rel['RelatingStructuralMember']}")
+            row.label(text=f"To Member #{IfcStore.get_file().by_id(rel['RelatingStructuralMember']).Name}")
             if self.props.active_connects_structural_member and self.props.active_connects_structural_member == rel_id:
                 row.operator("bim.disable_editing_structural_connection_condition", text="", icon="CHECKMARK")
                 row.enabled = self.props.active_boundary_condition != rel["AppliedCondition"]

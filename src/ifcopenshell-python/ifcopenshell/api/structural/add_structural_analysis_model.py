@@ -10,9 +10,6 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        return self.file.create_entity("IfcStructuralAnalysisModel", **{
-            "GlobalId": ifcopenshell.guid.new(),
-            "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-            "Name": "Unnamed",
-            "PredefinedType": "LOADING_3D"
-        })
+        return ifcopenshell.api.run(
+            "root.create_entity", self.file, ifc_class="IfcStructuralAnalysisModel", predefined_type="LOADING_3D"
+        )

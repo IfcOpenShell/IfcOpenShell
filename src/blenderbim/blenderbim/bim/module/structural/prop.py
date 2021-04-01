@@ -32,3 +32,4 @@ class BIMObjectStructuralProperties(PropertyGroup):
     boundary_condition_attributes: CollectionProperty(name="Boundary Condition Attributes", type=Attribute)
     active_boundary_condition: IntProperty(name="Active Boundary Condition")
     active_connects_structural_member: IntProperty(name="Active Connects Structural Member")
+    relating_structural_member: PointerProperty(name="Relating Structural Member", type=bpy.types.Object)
