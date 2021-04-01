@@ -4,6 +4,7 @@ import ifcopenshell
 import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.structural.data import Data
+from ifcopenshell.api.context.data import Data as ContextData
 
 
 class AddStructuralMemberConnection(bpy.types.Operator):
@@ -217,6 +218,17 @@ class AddStructuralAnalysisModel(bpy.types.Operator):
 
     def execute(self, context):
         result = ifcopenshell.api.run("structural.add_structural_analysis_model", IfcStore.get_file())
+
+        has_context = False
+        ContextData.load(IfcStore.get_file())
+        for context in ContextData.contexts.values():
+            if context["ContextType"] == "Model":
+                for subcontext in context["HasSubContexts"].values():
+                    if subcontext["ContextIdentifier"] == "Reference" and subcontext["TargetView"] == "GRAPH_VIEW":
+                        has_context = True
+        if not has_context:
+            bpy.ops.bim.add_subcontext(context="Model", subcontext="Reference", target_view="GRAPH_VIEW")
+
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_structural_analysis_models()
         bpy.ops.bim.enable_editing_structural_analysis_model(structural_analysis_model=result.id())
