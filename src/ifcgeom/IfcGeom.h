@@ -507,10 +507,15 @@ public:
 
 	virtual bool convert_placement(IfcUtil::IfcBaseClass* item, gp_Trsf& trsf) {
 		if (item->as<IfcSchema::IfcObjectPlacement>()) {
-			return convert(item->as<IfcSchema::IfcObjectPlacement>(), trsf);
-		} else {
-			return false;
+			try {
+				return convert(item->as<IfcSchema::IfcObjectPlacement>(), trsf);
+			} catch (std::exception& e) { 
+				Logger::Error(e, item); 
+			} catch (...) { 
+				Logger::Error("Failed processing placement", item); 
+			}
 		}
+		return false;
 	}
 
 };
