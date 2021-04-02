@@ -1060,6 +1060,11 @@ void SvgSerializer::write(const geometry_data& data) {
 							z_rotation -= 180;
 						}
 
+						std::string text_offset = "8";
+						if (scale_) {
+							text_offset = "1";
+						}
+
 						util::string_buffer path;
 						// dominant-baseline="central" is not well supported in IE.
 						// so we add a 0.35 offset to the dy of the tspans
@@ -1073,7 +1078,7 @@ void SvgSerializer::write(const geometry_data& data) {
 						xcoords.push_back(path.add(center.X()));
 						path.add(" ");
 						ycoords.push_back(path.add(center.Y()));
-						path.add(") translate(0 -8)\">");
+						path.add(") translate(0 -" + text_offset + ")\">");
 
 						std::vector<std::string> labels{};
 
