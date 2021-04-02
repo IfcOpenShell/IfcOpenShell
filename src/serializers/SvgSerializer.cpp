@@ -181,6 +181,7 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire, boost::option
                     path.add(center.Y());
 					// @todo isn't there a ")" missing here?
 					// @todo also X, Y are not added to {x,y}coords vector
+					// @todo also z_rotation is in radians, should be in degrees
 
                     // Bounding box:
                     // More important to have all geometry in bounding box than to be minimal
