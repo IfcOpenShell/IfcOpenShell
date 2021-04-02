@@ -220,6 +220,7 @@ public:
 	void setDrawDoorArcs(bool b) { draw_door_arcs_ = b; }
 	void setStoreyHeightLineLength(double d) { storey_height_line_length_ = d; }
 	void setSpaceNameTransform(const std::string& v) { space_name_transform_ = v; }
+	void addTextAnnotations(const drawing_key& k);
 
 	std::array<std::array<double, 3>, 3> resize();
 	void resetScale();
