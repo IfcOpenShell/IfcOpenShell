@@ -69,6 +69,11 @@ class EnableEditingGeoreferencing(bpy.types.Operator):
             elif data_type == "boolean":
                 new.bool_value = False if new.is_null else Data.map_conversion[attribute.name()]
 
+        props.has_true_north = bool(Data.true_north)
+        if Data.true_north:
+            props.true_north_abscissa = str(Data.true_north[0])
+            props.true_north_ordinate = str(Data.true_north[1])
+
         props.is_editing = True
         return {"FINISHED"}
 
@@ -129,19 +134,31 @@ class EditGeoreferencing(bpy.types.Operator):
             elif blender_attribute.data_type == "boolean":
                 map_conversion[attribute.name()] = blender_attribute.bool_value
 
+        true_north = None
+        if props.has_true_north:
+            try:
+                true_north = [float(props.true_north_abscissa), float(props.true_north_ordinate)]
+            except:
+                pass
+
         ifcopenshell.api.run(
             "georeference.edit_georeferencing",
             self.file,
-            **{"map_conversion": map_conversion, "projected_crs": projected_crs, "map_unit": map_unit}
+            **{
+                "map_conversion": map_conversion,
+                "projected_crs": projected_crs,
+                "map_unit": map_unit,
+                "true_north": true_north,
+            }
         )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_georeferencing()
         return {"FINISHED"}
 
 
-class SetNorthOffset(bpy.types.Operator):
-    bl_idname = "bim.set_north_offset"
-    bl_label = "Set North Offset"
+class SetBlenderGridNorth(bpy.types.Operator):
+    bl_idname = "bim.set_blender_grid_north"
+    bl_label = "Set Blender Grid North"
 
     def execute(self, context):
         context.scene.sun_pos_properties.north_offset = -radians(
@@ -153,14 +170,39 @@ class SetNorthOffset(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class GetNorthOffset(bpy.types.Operator):
-    bl_idname = "bim.get_north_offset"
-    bl_label = "Get North Offset"
+class SetIfcGridNorth(bpy.types.Operator):
+    bl_idname = "bim.set_ifc_grid_north"
+    bl_label = "Set IFC Grid North"
 
     def execute(self, context):
         x_angle = -context.scene.sun_pos_properties.north_offset
         context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisAbscissa").float_value = cos(x_angle)
         context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisOrdinate").float_value = sin(x_angle)
+        return {"FINISHED"}
+
+
+class SetBlenderTrueNorth(bpy.types.Operator):
+    bl_idname = "bim.set_blender_true_north"
+    bl_label = "Set Blender True North"
+
+    def execute(self, context):
+        context.scene.sun_pos_properties.north_offset = -radians(
+            ifcopenshell.util.geolocation.yaxis2angle(
+                float(context.scene.BIMGeoreferenceProperties.true_north_abscissa),
+                float(context.scene.BIMGeoreferenceProperties.true_north_ordinate),
+            )
+        )
+        return {"FINISHED"}
+
+
+class SetIfcTrueNorth(bpy.types.Operator):
+    bl_idname = "bim.set_ifc_true_north"
+    bl_label = "Set IFC True North"
+
+    def execute(self, context):
+        y_angle = -context.scene.sun_pos_properties.north_offset + radians(90)
+        context.scene.BIMGeoreferenceProperties.true_north_abscissa = str(cos(y_angle))
+        context.scene.BIMGeoreferenceProperties.true_north_ordinate = str(sin(y_angle))
         return {"FINISHED"}
 
 
