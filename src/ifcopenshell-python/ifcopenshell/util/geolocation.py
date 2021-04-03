@@ -94,6 +94,16 @@ def global2local(matrix, eastings, northings, orthogonal_height, x_axis_abscissa
     )
 
 
-# Used for converting the X and Y vectors of the X Axis in IFC geolocation
-def xy2angle(x, y):
+# Used for converting the X and Y vectors of the X Axis in IFC grid north geolocation
+def xaxis2angle(x, y):
     return math.degrees(math.atan2(y, x))
+
+
+# Used for converting the X and Y vectors of the Y Axis in IFC true north geolocation
+def yaxis2angle(x, y):
+    angle = math.degrees(math.atan2(y, x)) - 90
+    if angle < -180:
+        angle += 360
+    elif angle > 180:
+        angle -= 360
+    return angle

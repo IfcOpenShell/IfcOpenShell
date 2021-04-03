@@ -145,7 +145,7 @@ class SetNorthOffset(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.sun_pos_properties.north_offset = -radians(
-            ifcopenshell.util.geolocation.xy2angle(
+            ifcopenshell.util.geolocation.xaxis2angle(
                 context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisAbscissa").float_value,
                 context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisOrdinate").float_value,
             )
