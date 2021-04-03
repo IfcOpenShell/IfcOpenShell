@@ -46,3 +46,6 @@ class BIMGeoreferenceProperties(PropertyGroup):
     blender_orthogonal_height: StringProperty(name="Blender Orthogonal Height", default="0")
     blender_x_axis_abscissa: StringProperty(name="Blender X Axis Abscissa", default="1")
     blender_x_axis_ordinate: StringProperty(name="Blender X Axis Ordinate", default="0")
+    has_true_north: BoolProperty(name="Has True North", default=True)
+    true_north_abscissa: StringProperty(name="True North Abscissa")
+    true_north_ordinate: StringProperty(name="True North Ordinate")

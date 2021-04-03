@@ -7,6 +7,7 @@ class Usecase:
         self.settings = {
             "map_conversion": {},
             "projected_crs": {},
+            "true_north": [],
             "map_unit": "",
         }
         for key, value in settings.items():
@@ -21,6 +22,7 @@ class Usecase:
             setattr(projected_crs, name, value)
         self.remove_existing_map_unit(projected_crs)
         self.set_map_unit(projected_crs)
+        self.set_true_north()
 
     def remove_existing_map_unit(self, projected_crs):
         if projected_crs.MapUnit and len(self.file.get_inverse(projected_crs.MapUnit)) == 1:
@@ -50,3 +52,20 @@ class Usecase:
             self.settings["map_unit"],
             self.file.createIfcMeasureWithUnit(value_component, si_unit),
         )
+
+    def set_true_north(self):
+        if self.settings["true_north"] == []:
+            return
+        for context in self.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False):
+            if context.TrueNorth:
+                if len(self.file.get_inverse(context.TrueNorth)) != 1:
+                    context.TrueNorth = self.file.create_entity("IfcDirection")
+            else:
+                context.TrueNorth = self.file.create_entity("IfcDirection")
+            direction = context.TrueNorth
+            if self.settings["true_north"] is None:
+                context.TrueNorth = self.settings["true_north"]
+            elif context.CoordinateSpaceDimension == 2:
+                direction.DirectionRatios = self.settings["true_north"][0:2]
+            else:
+                direction.DirectionRatios = self.settings["true_north"][0:2] + [0.0]
