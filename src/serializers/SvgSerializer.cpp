@@ -1586,103 +1586,106 @@ void SvgSerializer::addTextAnnotations(const drawing_key& k) {
 	}
 
 	auto annotations = file->instances_by_type("IfcAnnotation");
-	for (auto& ann_ : *annotations) {
-		auto ann = (IfcUtil::IfcBaseEntity*) ann_;
+	if (annotations) {
+		for (auto& ann_ : *annotations) {
+			auto ann = (IfcUtil::IfcBaseEntity*) ann_;
 
-		auto ot = ann->get("ObjectType");
-		auto nm = ann->get("Name");
-		auto ds = ann->get("Description");
-		auto pl = ann->get("ObjectPlacement");
+			auto ot = ann->get("ObjectType");
+			auto nm = ann->get("Name");
+			auto ds = ann->get("Description");
+			auto pl = ann->get("ObjectPlacement");
 
-		if (!ot->isNull() && !nm->isNull() && !ds->isNull() && !pl->isNull()) {
-			auto object_type = (std::string) *ot;
-			auto name = (std::string) *nm;
-			auto desc = (std::string) *ds;
+			if (!ot->isNull() && !nm->isNull() && !ds->isNull() && !pl->isNull()) {
+				auto object_type = (std::string) *ot;
+				auto name = (std::string) *nm;
+				auto desc = (std::string) *ds;
 
-			if (object_type == "Text") {
-				IfcGeom::Kernel kernel(file);
-				gp_Trsf trsf;
-				if (kernel.convert_placement(*pl, trsf)) {
-				
-					auto v = trsf.TranslationPart();
-					if (k.first) {
-						v.ChangeCoord(1) *= -1.;
-						trsf.SetTranslationPart(v);
-					}
+				if (object_type == "Text") {
+					IfcGeom::Kernel kernel(file);
+					gp_Trsf trsf;
+					if (kernel.convert_placement(*pl, trsf)) {
 
-					if (!range || (v.Z() >= range->first && v.Z() < range->second)) {
+						auto v = trsf.TranslationPart();
+						if (k.first) {
+							v.ChangeCoord(1) *= -1.;
+							trsf.SetTranslationPart(v);
+						}
 
-						if (meta.pln_3d.Position().Direction().Dot(gp_Dir(trsf.HVectorialPart().Column(3))) > 0.99) {
-							auto svg_name = nameElement(ann);
-							path_object* po;
-							if (k.first) {
-								po = &start_path(meta.pln_3d, k.first, svg_name);
-							} else {
-								po = &start_path(meta.pln_3d, k.second, svg_name);
-							}
+						if (!range || (v.Z() >= range->first && v.Z() < range->second)) {
 
-							if (object_type.size()) {
-								// postfix the object_type for CSS matching
-								boost::replace_all(svg_name, "class=\"IfcAnnotation\"", "class=\"IfcAnnotation " + object_type + "\"");
-							}
-
-							boost::optional<double> font_size;
-							std::vector<std::string> tokens;
-							boost::split(tokens, name, boost::is_any_of("_"));
-							if (tokens.size() == 2) {
-								try {
-									font_size = boost::lexical_cast<double>(tokens.back());
+							if (meta.pln_3d.Position().Direction().Dot(gp_Dir(trsf.HVectorialPart().Column(3))) > 0.99) {
+								auto svg_name = nameElement(ann);
+								path_object* po;
+								if (k.first) {
+									po = &start_path(meta.pln_3d, k.first, svg_name);
 								}
-								catch (...) {}
-							}
+								else {
+									po = &start_path(meta.pln_3d, k.second, svg_name);
+								}
 
-							// @todo column or row?
-							double z_rotation = gp_Dir(trsf.HVectorialPart().Column(1)).AngleWithRef(gp_Dir(1., 0., 0.), gp_Dir(0., 0., 1.));
-							z_rotation *= 180. / M_PI;
+								if (object_type.size()) {
+									// postfix the object_type for CSS matching
+									boost::replace_all(svg_name, "class=\"IfcAnnotation\"", "class=\"IfcAnnotation " + object_type + "\"");
+								}
 
-							util::string_buffer path;
-							// dominant-baseline="central" is not well supported in IE.
-							// so we add a 0.35 offset to the dy of the tspans
-							path.add("            <text text-anchor=\"left\" x=\"");
-							xcoords.push_back(path.add(v.X()));
-							path.add("\" y=\"");
-							ycoords.push_back(path.add(v.Y()));
+								boost::optional<double> font_size;
+								std::vector<std::string> tokens;
+								boost::split(tokens, name, boost::is_any_of("_"));
+								if (tokens.size() == 2) {
+									try {
+										font_size = boost::lexical_cast<double>(tokens.back());
+									}
+									catch (...) {}
+								}
 
-							path.add("\" transform=\"rotate(");
-							path.add(z_rotation);
-							path.add(" ");
-							xcoords.push_back(path.add(v.X()));
-							path.add(" ");
-							ycoords.push_back(path.add(v.Y()));
-							path.add(")\"");
+								// @todo column or row?
+								double z_rotation = gp_Dir(trsf.HVectorialPart().Column(1)).AngleWithRef(gp_Dir(1., 0., 0.), gp_Dir(0., 0., 1.));
+								z_rotation *= 180. / M_PI;
 
-							if (font_size) {
-								path.add(" font-size=\"");
-								path.add(*font_size);
-								path.add("\"");
-							}
-							path.add(">");
-
-							std::vector<std::string> labels{ desc };
-
-							for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
-								const auto& l = *lit;
-								double dy = labels.begin() == lit
-									? 0.0  // align bottom
-									: 1.0; // <- dy is relative to the previous text element, so
-										   //    always 1 for successive spans.
-								path.add("<tspan x=\"");
+								util::string_buffer path;
+								// dominant-baseline="central" is not well supported in IE.
+								// so we add a 0.35 offset to the dy of the tspans
+								path.add("            <text text-anchor=\"left\" x=\"");
 								xcoords.push_back(path.add(v.X()));
-								path.add("\" dy=\"");
-								path.add(boost::lexical_cast<std::string>(dy));
-								path.add("em\">");
-								path.add(l);
-								path.add("</tspan>");
+								path.add("\" y=\"");
+								ycoords.push_back(path.add(v.Y()));
+
+								path.add("\" transform=\"rotate(");
+								path.add(z_rotation);
+								path.add(" ");
+								xcoords.push_back(path.add(v.X()));
+								path.add(" ");
+								ycoords.push_back(path.add(v.Y()));
+								path.add(")\"");
+
+								if (font_size) {
+									path.add(" font-size=\"");
+									path.add(*font_size);
+									path.add("\"");
+								}
+								path.add(">");
+
+								std::vector<std::string> labels{ desc };
+
+								for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
+									const auto& l = *lit;
+									double dy = labels.begin() == lit
+										? 0.0  // align bottom
+										: 1.0; // <- dy is relative to the previous text element, so
+											   //    always 1 for successive spans.
+									path.add("<tspan x=\"");
+									xcoords.push_back(path.add(v.X()));
+									path.add("\" dy=\"");
+									path.add(boost::lexical_cast<std::string>(dy));
+									path.add("em\">");
+									path.add(l);
+									path.add("</tspan>");
+								}
+
+								path.add("</text>");
+
+								po->second.push_back(path);
 							}
-
-							path.add("</text>");
-
-							po->second.push_back(path);
 						}
 					}
 				}
