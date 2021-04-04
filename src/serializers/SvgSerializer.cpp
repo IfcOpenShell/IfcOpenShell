@@ -1314,7 +1314,7 @@ void SvgSerializer::write(const geometry_data& data) {
 						// Sample some points on the line and assure it's inside.
 						bool all_inside = true;
 						for (int i = 5; i < 95; ++i) {
-							gp_Pnt p3d((pa.XYZ() + pb.XYZ()) * i / 100.);
+							gp_Pnt p3d((pa.XYZ() + (pb.XYZ() - pa.XYZ()) * i / 100.));
 							gp_Pnt2d p2d(p3d.X(), p3d.Y());
 
 							if (fcls.Perform(p2d) != TopAbs_IN) {
