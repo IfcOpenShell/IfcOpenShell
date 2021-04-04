@@ -1308,15 +1308,28 @@ void SvgSerializer::write(const geometry_data& data) {
 						10 * ((pa.X() - pb.X()) * (pa.X() - pb.X())) +
 						1 * ((pa.Y() - pb.Y()) * (pa.Y() - pb.Y()))
 					);
-					if (d > furthest_points_distance) {
-						gp_Pnt p3d((pa.XYZ() + pb.XYZ()) / 2.);
-						gp_Pnt2d p2d(p3d.X(), p3d.Y());
 
-						if (fcls.Perform(p2d) == TopAbs_IN) {
+					if (d > furthest_points_distance) {
+						
+						// Sample some points on the line and assure it's inside.
+						bool all_inside = true;
+						for (int i = 5; i < 95; ++i) {
+							gp_Pnt p3d((pa.XYZ() + pb.XYZ()) * i / 100.);
+							gp_Pnt2d p2d(p3d.X(), p3d.Y());
+
+							if (fcls.Perform(p2d) != TopAbs_IN) {
+								all_inside = false;
+							}
+						}
+
+						if (all_inside) {
+							gp_Pnt p3d((pa.XYZ() + pb.XYZ()) * 0.5);
+							gp_Pnt2d p2d(p3d.X(), p3d.Y());
 							furthest_points = { &pa, &pb };
 							furthest_points_distance = d;
 							center_point = p3d;
 						}
+
 					}
 				}
 			}
