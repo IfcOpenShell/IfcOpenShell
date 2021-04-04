@@ -142,7 +142,7 @@ endif
 	cd dist/working && unzip v0.6.0.zip
 	# IfcOpenBot sometimes lags behind, so we hotfix the Python utilities
 	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcopenshell-python/ifcopenshell/util/* dist/blenderbim/libs/site/packages/ifcopenshell/util/
-	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcopenshell-python/ifcopenshell/api dist/blenderbim/libs/site/packages/ifcopenshell/api
+	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcopenshell-python/ifcopenshell/api/* dist/blenderbim/libs/site/packages/ifcopenshell/api/
 	# Provides bcf functionality
 	cp -r dist/working/IfcOpenShell-0.6.0/src/bcf/bcf dist/blenderbim/libs/site/packages/
 	# Provides IFCClash functionality
