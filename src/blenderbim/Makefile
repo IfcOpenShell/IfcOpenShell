@@ -52,10 +52,10 @@ endif
 
 	# Provides IfcOpenShell Python functionality
 ifeq ($(PYVERSION), py37)
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-37-v0.6.0-517b819-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-37-v0.6.0-ff7219b-$(PLATFORM)64.zip
 endif
 ifeq ($(PYVERSION), py39)
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-39-v0.6.0-517b819-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-39-v0.6.0-ff7219b-$(PLATFORM)64.zip
 endif
 	cd dist/working && unzip ifcblender*
 	cp -r dist/working/io_import_scene_ifc/ifcopenshell dist/blenderbim/libs/site/packages/
