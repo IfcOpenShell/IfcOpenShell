@@ -138,27 +138,23 @@ class BIM_PT_gis(Panel):
             row.operator("bim.enable_editing_georeferencing", icon="GREASEPENCIL", text="")
             row.operator("bim.remove_georeferencing", icon="X", text="")
 
-            for key, value in Data.projected_crs.items():
-                if key == "id" or key == "type" or not value:
-                    continue
-                if key == "MapUnit":
-                    unit_value = value.get("Prefix", "") or ""
-                    unit_value += value["Name"]
-                    value = unit_value
-                row = self.layout.row(align=True)
-                row.label(text=key)
-                row.label(text=str(value))
-
-            if not Data.projected_crs["Name"]:
-                row = self.layout.row(align=True)
-                row.label(text="Undefined CRS")
+        for key, value in Data.projected_crs.items():
+            if key == "id" or key == "type" or not value:
+                continue
+            if key == "MapUnit":
+                unit_value = value.get("Prefix", "") or ""
+                unit_value += value["Name"]
+                value = unit_value
+            row = self.layout.row(align=True)
+            row.label(text=key)
+            row.label(text=str(value))
 
         if Data.map_conversion:
             row = self.layout.row(align=True)
             row.label(text="Map Conversion", icon="GRID")
 
         for key, value in Data.map_conversion.items():
-            if key == "id" or key == "type" or key == "SourceCRS" or key == "TargetCRS" or not value:
+            if key == "id" or key == "type" or key == "SourceCRS" or key == "TargetCRS" or value is None:
                 continue
             row = self.layout.row(align=True)
             row.label(text=key)

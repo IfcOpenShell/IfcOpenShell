@@ -53,21 +53,16 @@ class EnableEditingGeoreferencing(bpy.types.Operator):
 
         for attribute in IfcStore.get_schema().declaration_by_name("IfcMapConversion").all_attributes():
             data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
+            if data_type == "entity" or data_type == "select":
                 continue
+            print(attribute.name(), data_type)
             new = props.map_conversion.add()
             new.name = attribute.name()
             new.is_null = Data.map_conversion[attribute.name()] is None
             new.is_optional = attribute.optional()
-            new.data_type = data_type
-            if data_type == "string":
-                new.string_value = "" if new.is_null else Data.map_conversion[attribute.name()]
-            elif data_type == "float":
-                new.float_value = 0.0 if new.is_null else Data.map_conversion[attribute.name()]
-            elif data_type == "integer":
-                new.int_value = 0 if new.is_null else Data.map_conversion[attribute.name()]
-            elif data_type == "boolean":
-                new.bool_value = False if new.is_null else Data.map_conversion[attribute.name()]
+            # Enforce a string data type to prevent data loss in singpe-precision Blender props
+            new.data_type = "string"
+            new.string_value = "" if new.is_null else str(Data.map_conversion[attribute.name()])
 
         props.has_true_north = bool(Data.true_north)
         if Data.true_north:
@@ -120,19 +115,14 @@ class EditGeoreferencing(bpy.types.Operator):
         map_conversion = {}
         for attribute in IfcStore.get_schema().declaration_by_name("IfcMapConversion").all_attributes():
             data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
+            if data_type == "entity" or data_type == "select":
                 continue
             blender_attribute = props.map_conversion.get(attribute.name())
             if blender_attribute.is_null:
                 map_conversion[attribute.name()] = None
             elif blender_attribute.data_type == "string":
-                map_conversion[attribute.name()] = blender_attribute.string_value
-            elif blender_attribute.data_type == "float":
-                map_conversion[attribute.name()] = blender_attribute.float_value
-            elif blender_attribute.data_type == "integer":
-                map_conversion[attribute.name()] = blender_attribute.int_value
-            elif blender_attribute.data_type == "boolean":
-                map_conversion[attribute.name()] = blender_attribute.bool_value
+                # We store our floats as string to prevent single precision data loss
+                map_conversion[attribute.name()] = float(blender_attribute.string_value)
 
         true_north = None
         if props.has_true_north:
@@ -163,8 +153,8 @@ class SetBlenderGridNorth(bpy.types.Operator):
     def execute(self, context):
         context.scene.sun_pos_properties.north_offset = -radians(
             ifcopenshell.util.geolocation.xaxis2angle(
-                context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisAbscissa").float_value,
-                context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisOrdinate").float_value,
+                float(context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisAbscissa").string_value),
+                float(context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisOrdinate").string_value),
             )
         )
         return {"FINISHED"}
@@ -176,8 +166,8 @@ class SetIfcGridNorth(bpy.types.Operator):
 
     def execute(self, context):
         x_angle = -context.scene.sun_pos_properties.north_offset
-        context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisAbscissa").float_value = cos(x_angle)
-        context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisOrdinate").float_value = sin(x_angle)
+        context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisAbscissa").string_value = str(cos(x_angle))
+        context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisOrdinate").string_value = str(sin(x_angle))
         return {"FINISHED"}
 
 
