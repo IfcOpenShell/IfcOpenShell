@@ -62,6 +62,66 @@ class BIM_UL_work_plans(UIList):
                 op = row.operator("bim.enable_editing_work_plan", text="", icon="GREASEPENCIL")
                 op.work_plan = item.ifc_definition_id
                 row.operator("bim.remove_work_plan", text="", icon="X").work_plan = item.ifc_definition_id
+
+
+class BIM_PT_work_schedules(Panel):
+    bl_label = "IFC Work Schedules"
+    bl_idname = "BIM_PT_work_schedules"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
+    def draw(self, context):
+        if not Data.is_loaded:
+            Data.load(IfcStore.get_file())
+        self.props = context.scene.BIMWorkScheduleProperties
+        row = self.layout.row(align=True)
+        row.label(text="{} Work Schedules Found".format(len(Data.work_schedules)), icon="TEXT")
+        if self.props.is_editing:
+            row.operator("bim.add_work_schedule", text="", icon="ADD")
+            row.operator("bim.disable_work_schedule_editing_ui", text="", icon="CHECKMARK")
+        else:
+            row.operator("bim.load_work_schedules", text="", icon="GREASEPENCIL")
+
+        if self.props.is_editing:
+            self.layout.template_list(
+                "BIM_UL_work_schedules",
+                "",
+                self.props,
+                "work_schedules",
+                self.props,
+                "active_work_schedule_index",
+            )
+
+        if self.props.active_work_schedule_id:
+            self.draw_editable_ui(context)
+
+    def draw_editable_ui(self, context):
+        for attribute in self.props.work_schedule_attributes:
+            row = self.layout.row(align=True)
+            row.prop(attribute, "string_value", text=attribute.name)
+            if attribute.is_optional:
+                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+
+class BIM_UL_work_schedules(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            row.label(text=item.name)
+            if context.scene.BIMWorkScheduleProperties.active_work_schedule_id == item.ifc_definition_id:
+                row.operator("bim.edit_work_schedule", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_work_schedule", text="", icon="X")
+            elif context.scene.BIMWorkScheduleProperties.active_work_schedule_id:
+                row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = item.ifc_definition_id
+            else:
+                op = row.operator("bim.enable_editing_work_schedule", text="", icon="GREASEPENCIL")
+                op.work_schedule = item.ifc_definition_id
+                row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = item.ifc_definition_id
             row = self.layout.row(align=True)
             row.label(text=work_plan["Name"] or "Unnamed", icon="TEXT")
             row.operator("bim.add_work_plan", text="", icon="GREASEPENCIL")
