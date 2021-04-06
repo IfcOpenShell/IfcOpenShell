@@ -14,18 +14,30 @@ class Data:
 
     @classmethod
     def load(cls, file):
+        cls._file = file
+        if not cls._file:
+            return
+        cls.load_work_plans()
+        cls.load_work_schedules()
+        cls.load_tasks()
+        cls.is_loaded=True
+
+    @classmethod
+    def load_work_plans(cls):
         cls.work_plans = {}
-        cls.tasks = {}
-        for work_plan in file.by_type("IfcWorkPlan"):
+        for work_plan in cls._file.by_type("IfcWorkPlan"):
             data = work_plan.get_info()
             del data["OwnerHistory"]
             if data["Creators"]:
                 data["Creators"] = [p.id() for p in data["Creators"]]
-            data["CreationDate"] = ifcopenshell.util.date.ifc2datetime(data["CreationDate"])
-            data["StartTime"] = ifcopenshell.util.date.ifc2datetime(data["StartTime"])
+            data["CreationDate"] = ifcopenshell.util.date.ifc2datetime(data["CreationDate"]).isoformat()
+            data["StartTime"] = ifcopenshell.util.date.ifc2datetime(data["StartTime"]).isoformat()
             if data["FinishTime"]:
-                data["FinishTime"] = ifcopenshell.util.date.ifc2datetime(data["FinishTime"])
+                data["FinishTime"] = ifcopenshell.util.date.ifc2datetime(data["FinishTime"]).isoformat()
             cls.work_plans[work_plan.id()] = data
-        for task in file.by_type("IfcTask"):
+
+    @classmethod
+    def load_tasks(cls):
+        cls.tasks = {}
+        for task in cls._file.by_type("IfcTask"):
             cls.tasks[task.id()] = {"Name": task.Name, "Identification": task.Identification or ""}
-        cls.is_loaded=True
