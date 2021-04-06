@@ -50,3 +50,4 @@ class Usecase:
                     "RelatingObject": self.settings["relating_object"],
                 }
             )
+        return is_decomposed_by
