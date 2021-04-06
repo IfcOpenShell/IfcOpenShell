@@ -18,11 +18,50 @@ class BIM_PT_work_plans(Panel):
     def draw(self, context):
         if not Data.is_loaded:
             Data.load(IfcStore.get_file())
+        self.props = context.scene.BIMWorkPlanProperties
+        row = self.layout.row(align=True)
+        row.label(text="{} Work Plans Found".format(len(Data.work_plans)), icon="TEXT")
+        if self.props.is_editing:
+            row.operator("bim.add_work_plan", text="", icon="ADD")
+            row.operator("bim.disable_work_plan_editing_ui", text="", icon="CHECKMARK")
+        else:
+            row.operator("bim.load_work_plans", text="", icon="GREASEPENCIL")
 
-        row = self.layout.row()
-        row.operator("bim.add_work_plan", icon="ADD")
+        if self.props.is_editing:
+            self.layout.template_list(
+                "BIM_UL_work_plans",
+                "",
+                self.props,
+                "work_plans",
+                self.props,
+                "active_work_plan_index",
+            )
 
-        for work_plan_id, work_plan in Data.work_plans.items():
+        if self.props.active_work_plan_id:
+            self.draw_editable_ui(context)
+
+    def draw_editable_ui(self, context):
+        for attribute in self.props.work_plan_attributes:
+            row = self.layout.row(align=True)
+            row.prop(attribute, "string_value", text=attribute.name)
+            if attribute.is_optional:
+                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+
+
+class BIM_UL_work_plans(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            row.label(text=item.name)
+            if context.scene.BIMWorkPlanProperties.active_work_plan_id == item.ifc_definition_id:
+                row.operator("bim.edit_work_plan", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_work_plan", text="", icon="X")
+            elif context.scene.BIMWorkPlanProperties.active_work_plan_id:
+                row.operator("bim.remove_work_plan", text="", icon="X").work_plan = item.ifc_definition_id
+            else:
+                op = row.operator("bim.enable_editing_work_plan", text="", icon="GREASEPENCIL")
+                op.work_plan = item.ifc_definition_id
+                row.operator("bim.remove_work_plan", text="", icon="X").work_plan = item.ifc_definition_id
             row = self.layout.row(align=True)
             row.label(text=work_plan["Name"] or "Unnamed", icon="TEXT")
             row.operator("bim.add_work_plan", text="", icon="GREASEPENCIL")

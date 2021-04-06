@@ -171,7 +171,7 @@ def step_impl(context, number):
         return check_ifc2x3_geolocation("EPset_MapConversion", "Height", number)
     abscissa = check_ifc4_geolocation("IfcMapConversion", "XAxisAbscissa", should_assert=False)
     ordinate = check_ifc4_geolocation("IfcMapConversion", "XAxisOrdinate", should_assert=False)
-    actual_value = round(ifcopenshell.util.geolocation.xy2angle(abscissa, ordinate), 3)
+    actual_value = round(ifcopenshell.util.geolocation.xaxis2angle(abscissa, ordinate), 3)
     value = round(number, 3)
     assert actual_value == value, _('We expected a value of "{}" but instead got "{}"').format(value, actual_value)
 
