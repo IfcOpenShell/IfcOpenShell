@@ -49,3 +49,16 @@ class BIMWorkScheduleProperties(PropertyGroup):
     work_schedules: CollectionProperty(name="Work Schedules", type=WorkSchedule)
     active_work_schedule_index: IntProperty(name="Active Work Schedules Index")
     active_work_schedule_id: IntProperty(name="Active Work Schedules Id")
+
+
+class WorkCalendar(PropertyGroup):
+    name: StringProperty(name="Name")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+
+class BIMWorkCalendarProperties(PropertyGroup):
+    work_calendar_attributes: CollectionProperty(name="Work Calendar Attributes", type=Attribute)
+    is_editing: BoolProperty(name="Is Editing", default=False)
+    work_calendars: CollectionProperty(name="Work Calendar", type=WorkCalendar)
+    active_work_calendar_index: IntProperty(name="Active Work Calendar Index")
+    active_work_calendar_id: IntProperty(name="Active Work Calendar Id")
