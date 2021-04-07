@@ -36,9 +36,9 @@ class Usecase:
                 self.file.remove(decomposes)
 
         if is_decomposed_by:
-            related_objects = list(is_decomposed_by.RelatedObjects)
-            related_objects.append(self.settings["product"])
-            is_decomposed_by.RelatedObjects = related_objects
+            related_objects = set(is_decomposed_by.RelatedObjects)
+            related_objects.add(self.settings["product"])
+            is_decomposed_by.RelatedObjects = list(related_objects)
             ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": is_decomposed_by})
         else:
             is_decomposed_by = self.file.create_entity(
