@@ -115,6 +115,43 @@ class RemoveConstituent(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AddProfile(bpy.types.Operator):
+    bl_idname = "bim.add_profile"
+    bl_label = "Add Profile"
+    obj: bpy.props.StringProperty()
+    profile_set: bpy.props.IntProperty()
+
+    def execute(self, context):
+        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "material.add_profile",
+            self.file,
+            **{
+                "profile_set": self.file.by_id(self.profile_set),
+                "material": self.file.by_id(int(obj.BIMObjectMaterialProperties.material)),
+            },
+        )
+        Data.load_profiles()
+        return {"FINISHED"}
+
+
+class RemoveProfile(bpy.types.Operator):
+    bl_idname = "bim.remove_profile"
+    bl_label = "Remove Profile"
+    obj: bpy.props.StringProperty()
+    profile: bpy.props.IntProperty()
+
+    def execute(self, context):
+        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "material.remove_profile", self.file, **{"profile": self.file.by_id(self.profile)}
+        )
+        Data.load_profiles()
+        return {"FINISHED"}
+
+
 class AddLayer(bpy.types.Operator):
     bl_idname = "bim.add_layer"
     bl_label = "Add Layer"

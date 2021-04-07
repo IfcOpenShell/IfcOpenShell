@@ -14,5 +14,5 @@ class Usecase:
         elif self.settings["type"] == "ExceptionTimes":
             exception_times = list(self.settings["work_calendar"].ExceptionTimes or [])
             exception_times.append(work_time)
-            self.settings["work_calendar"].WorkingTimes = exception_times
+            self.settings["work_calendar"].ExceptionTimes = exception_times
         return work_time
