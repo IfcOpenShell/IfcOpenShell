@@ -43,7 +43,10 @@ class BIM_PT_work_plans(Panel):
     def draw_editable_ui(self, context):
         for attribute in self.props.work_plan_attributes:
             row = self.layout.row(align=True)
-            row.prop(attribute, "string_value", text=attribute.name)
+            if attribute.data_type == "string":
+                row.prop(attribute, "string_value", text=attribute.name)
+            elif attribute.data_type == "enum":
+                row.prop(attribute, "enum_value", text=attribute.name)
             if attribute.is_optional:
                 row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
@@ -104,9 +107,13 @@ class BIM_PT_work_schedules(Panel):
     def draw_editable_ui(self, context):
         for attribute in self.props.work_schedule_attributes:
             row = self.layout.row(align=True)
-            row.prop(attribute, "string_value", text=attribute.name)
+            if attribute.data_type == "string":
+                row.prop(attribute, "string_value", text=attribute.name)
+            elif attribute.data_type == "enum":
+                row.prop(attribute, "enum_value", text=attribute.name)
             if attribute.is_optional:
                 row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+
 
 class BIM_UL_work_schedules(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
@@ -122,6 +129,7 @@ class BIM_UL_work_schedules(UIList):
                 op = row.operator("bim.enable_editing_work_schedule", text="", icon="GREASEPENCIL")
                 op.work_schedule = item.ifc_definition_id
                 row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = item.ifc_definition_id
+
 
 class BIM_PT_work_calendars(Panel):
     bl_label = "IFC Work Calendars"
@@ -163,9 +171,13 @@ class BIM_PT_work_calendars(Panel):
     def draw_editable_ui(self, context):
         for attribute in self.props.work_calendar_attributes:
             row = self.layout.row(align=True)
-            row.prop(attribute, "string_value", text=attribute.name)
+            if attribute.data_type == "string":
+                row.prop(attribute, "string_value", text=attribute.name)
+            elif attribute.data_type == "enum":
+                row.prop(attribute, "enum_value", text=attribute.name)
             if attribute.is_optional:
                 row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+
 
 class BIM_UL_work_calendars(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):

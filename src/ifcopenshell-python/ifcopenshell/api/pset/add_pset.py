@@ -27,7 +27,7 @@ class Usecase:
             pset = self.file.create_entity(
                 "IfcPropertySet", **{"GlobalId": ifcopenshell.guid.new(), "Name": self.settings["Name"]}
             )
-            has_property_sets = list(self.settings["product"].HasPropertySets)
+            has_property_sets = list(self.settings["product"].HasPropertySets or [])
             has_property_sets.append(pset)
             self.settings["product"].HasPropertySets = has_property_sets
         elif self.settings["product"].is_a("IfcMaterialDefinition"):

@@ -1,5 +1,6 @@
 import ifcopenshell.util.date
 
+
 class Data:
     is_loaded = False
     work_plans = {}
@@ -23,7 +24,7 @@ class Data:
         cls.load_work_schedules()
         cls.load_work_calendars()
         cls.load_tasks()
-        cls.is_loaded=True
+        cls.is_loaded = True
 
     @classmethod
     def load_work_plans(cls):
@@ -33,10 +34,10 @@ class Data:
             del data["OwnerHistory"]
             if data["Creators"]:
                 data["Creators"] = [p.id() for p in data["Creators"]]
-            data["CreationDate"] = ifcopenshell.util.date.ifc2datetime(data["CreationDate"]).isoformat()
-            data["StartTime"] = ifcopenshell.util.date.ifc2datetime(data["StartTime"]).isoformat()
+            data["CreationDate"] = ifcopenshell.util.date.ifc2datetime(data["CreationDate"])
+            data["StartTime"] = ifcopenshell.util.date.ifc2datetime(data["StartTime"])
             if data["FinishTime"]:
-                data["FinishTime"] = ifcopenshell.util.date.ifc2datetime(data["FinishTime"]).isoformat()
+                data["FinishTime"] = ifcopenshell.util.date.ifc2datetime(data["FinishTime"])
             cls.work_plans[work_plan.id()] = data
 
     @classmethod
@@ -47,35 +48,19 @@ class Data:
             del data["OwnerHistory"]
             if data["Creators"]:
                 data["Creators"] = [p.id() for p in data["Creators"]]
-            data["CreationDate"] = ifcopenshell.util.date.ifc2datetime(data["CreationDate"]).isoformat()
-            data["StartTime"] = ifcopenshell.util.date.ifc2datetime(data["StartTime"]).isoformat()
+            data["CreationDate"] = ifcopenshell.util.date.ifc2datetime(data["CreationDate"])
+            data["StartTime"] = ifcopenshell.util.date.ifc2datetime(data["StartTime"])
             if data["FinishTime"]:
-                data["FinishTime"] = ifcopenshell.util.date.ifc2datetime(data["FinishTime"]).isoformat()
+                data["FinishTime"] = ifcopenshell.util.date.ifc2datetime(data["FinishTime"])
             cls.work_schedules[work_schedule.id()] = data
 
     @classmethod
     def load_work_calendars(cls):
         for work_calendar in cls._file.by_type("IfcWorkCalendar"):
             data = work_calendar.get_info()
-            del data["OwnerHistory"]     
-            ##### HOW DO WE NEST ENTITIES SUCH AS WORKTIME? ####       
-            ##### HOW TO ALLOW DISPLAY OF TIME? AND DATES? ####   
+            del data["OwnerHistory"]
             del data["WorkingTimes"]
             del data["ExceptionTimes"]
-            # if data["WorkingTimes"]:
-            #     for worktime in data["WorkingTimes"]:
-            #         worktime_data = {}
-            #         if worktime.Start:                   
-            #             worktime_data["start"] = ifcopenshell.util.date.ifc2datetime(worktime.Start).isoformat()
-            #         if worktime.Start:
-            #             worktime_data["finish"] = ifcopenshell.util.date.ifc2datetime(worktime.Start).isoformat()
-            #         worktime = worktime_data
-            # if data["ExceptionTimes"]:
-            #     for exceptiontime in data["ExceptionTimes"]:
-            #         exceptiontime_data = {}
-            #         exceptiontime_data["start"] = ifcopenshell.util.date.ifc2datetime(exceptiontime.Finish).isoformat()
-            #         exceptiontime_data["finish"] = ifcopenshell.util.date.ifc2datetime(exceptiontime.Finish).isoformat()
-            #         exceptiontime = exceptiontime_data
             cls.work_calendars[work_calendar.id()] = data
 
     @classmethod

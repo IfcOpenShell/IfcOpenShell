@@ -7,8 +7,10 @@ class Usecase:
 
     def execute(self):
         # TODO: do a deep purge
-        if self.settings["work_schedule"].HasContext:
-            rel_declares = self.settings["work_schedule"].HasContext[0]
-            if len(rel_declares.RelatedDefinitions) == 1:
-                self.file.remove(rel_declares)
+        ifcopenshell.api.run(
+            "project.unassign_declaration",
+            self.file,
+            definition=self.settings["work_schedule"],
+            relating_context=self.file.by_type("IfcContext")[0],
+        )
         self.file.remove(self.settings["work_schedule"])
