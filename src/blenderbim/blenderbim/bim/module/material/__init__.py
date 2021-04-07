@@ -8,6 +8,8 @@ classes = (
     operator.UnassignMaterial,
     operator.AddConstituent,
     operator.RemoveConstituent,
+    operator.AddProfile,
+    operator.RemoveProfile,
     operator.AddLayer,
     operator.RemoveLayer,
     operator.ReorderMaterialSetItem,
