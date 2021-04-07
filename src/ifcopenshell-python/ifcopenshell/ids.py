@@ -197,10 +197,10 @@ class specification:
         phrases[0].tagName == "applicability" or error("expected <applicability>")
         phrases[1].tagName == "requirements" or error("expected <requirements>")
 
-        self.applicabiliy, self.requirements = (boolean_and(parse_rules(phrase)) for phrase in phrases)
+        self.applicability, self.requirements = (boolean_and(parse_rules(phrase)) for phrase in phrases)
 
     def __call__(self, inst, logger):
-        if self.applicabiliy(inst, logger):
+        if self.applicability(inst, logger):
             valid = self.requirements(inst, logger)
             if valid:
                 logger.info(str(self) + "\n%s has" % inst + " " + str(valid) + " so is compliant")
@@ -208,7 +208,7 @@ class specification:
                 logger.error(str(self) + "\n%s has" % inst + " " + str(valid) + " so is not compliant")
 
     def __str__(self):
-        return "Given an instance with %(applicabiliy)s\nWe expect %(requirements)s" % self.__dict__
+        return "Given an instance with %(applicability)s\nWe expect %(requirements)s" % self.__dict__
 
 
 class ids:
