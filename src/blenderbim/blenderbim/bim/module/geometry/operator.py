@@ -398,7 +398,7 @@ class UpdateMeshRepresentation(bpy.types.Operator):
 
         obj.data.BIMMeshProperties.ifc_definition_id = int(new_representation.id())
         obj.data.name = f"{old_representation.ContextOfItems.id()}/{new_representation.id()}"
-        bpy.ops.bim.remove_representation(representation_id=old_representation.id())
+        bpy.ops.bim.remove_representation(representation_id=old_representation.id(), obj=obj.name)
         Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
 
 
