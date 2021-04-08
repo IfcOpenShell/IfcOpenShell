@@ -1,8 +1,36 @@
 import bpy
+import json
 import ifcopenshell.api
 import ifcopenshell.util.attribute
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.material.data import Data
+from ifcopenshell.api.profile.data import Data as ProfileData
+
+
+class AssignParameterizedProfile(bpy.types.Operator):
+    bl_idname = "bim.assign_parameterized_profile"
+    bl_label = "Assign Parameterized Profile"
+    ifc_class: bpy.props.StringProperty()
+    material_profile: bpy.props.IntProperty()
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        self.file = IfcStore.get_file()
+        profile = ifcopenshell.api.run(
+            "profile.add_parameterized_profile",
+            self.file,
+            **{"ifc_class": self.ifc_class},
+        )
+        ifcopenshell.api.run(
+            "material.assign_profile",
+            self.file,
+            **{"material_profile": self.file.by_id(self.material_profile), "profile": profile}
+        )
+        Data.load_profiles()
+        ProfileData.load(self.file)
+        bpy.ops.bim.enable_editing_material_set_item(obj=obj.name, material_set_item=self.material_profile)
+        return {"FINISHED"}
 
 
 class AddMaterial(bpy.types.Operator):
@@ -370,8 +398,8 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
-        props = obj.BIMObjectMaterialProperties
-        props.active_material_set_item_id = self.material_set_item
+        self.props = obj.BIMObjectMaterialProperties
+        self.props.active_material_set_item_id = self.material_set_item
         product_data = Data.products[obj.BIMObjectProperties.ifc_definition_id]
         material_set_item = self.file.by_id(self.material_set_item)
 
@@ -384,17 +412,24 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
         else:
             material_set_item_data = {}
 
-        props.material_set_item_material = str(material_set_item_data["Material"])
+        self.props.material_set_item_material = str(material_set_item_data["Material"])
 
-        while len(props.material_set_item_attributes) > 0:
-            props.material_set_item_attributes.remove(0)
+        self.load_set_item_attributes(material_set_item, material_set_item_data)
+        if material_set_item.is_a("IfcMaterialProfile"):
+            self.load_profile_attributes(material_set_item, material_set_item_data)
+
+        return {"FINISHED"}
+
+    def load_set_item_attributes(self, material_set_item, material_set_item_data):
+        while len(self.props.material_set_item_attributes) > 0:
+            self.props.material_set_item_attributes.remove(0)
 
         for attribute in IfcStore.get_schema().declaration_by_name(material_set_item.is_a()).all_attributes():
             data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
             if data_type == "entity":
                 continue
             if attribute.name() in material_set_item_data:
-                new = props.material_set_item_attributes.add()
+                new = self.props.material_set_item_attributes.add()
                 new.name = attribute.name()
                 new.is_null = material_set_item_data[attribute.name()] is None
                 new.data_type = data_type
@@ -406,7 +441,45 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
                     new.int_value = 0 if new.is_null else material_set_item_data[attribute.name()]
                 elif data_type == "boolean":
                     new.bool_value = False if new.is_null else material_set_item_data[attribute.name()]
-        return {"FINISHED"}
+
+    def load_profile_attributes(self, material_set_item, material_set_item_data):
+        while len(self.props.material_set_item_profile_attributes) > 0:
+            self.props.material_set_item_profile_attributes.remove(0)
+
+        if not material_set_item_data["Profile"]:
+            return
+
+        profile = self.file.by_id(material_set_item_data["Profile"])
+        profile_data = ProfileData.profiles[material_set_item_data["Profile"]]
+
+        for attribute in IfcStore.get_schema().declaration_by_name(profile.is_a()).all_attributes():
+            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            if data_type == "entity":
+                continue
+            if attribute.name() in profile_data:
+                new = self.props.material_set_item_profile_attributes.add()
+                new.name = attribute.name()
+                new.is_null = profile_data[attribute.name()] is None
+                new.is_optional = attribute.optional()
+                new.data_type = data_type
+                if data_type == "string":
+                    new.string_value = "" if new.is_null else profile_data[attribute.name()]
+                elif data_type == "float":
+                    new.float_value = 0.0 if new.is_null else profile_data[attribute.name()]
+                elif data_type == "integer":
+                    new.int_value = 0 if new.is_null else profile_data[attribute.name()]
+                elif data_type == "boolean":
+                    new.bool_value = False if new.is_null else profile_data[attribute.name()]
+                elif data_type == "enum":
+                    new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
+                    if profile_data[attribute.name()]:
+                        new.enum_value = profile_data[attribute.name()]
+
+                # Force null to be false if the attribute is mandatory because when we first assign a profile, all of
+                # its fields are null (which is illegal).
+                # TODO: find a better solution.
+                if not new.is_optional:
+                    new.is_null = False
 
 
 class DisableEditingMaterialSetItem(bpy.types.Operator):
@@ -468,16 +541,31 @@ class EditMaterialSetItem(bpy.types.Operator):
             )
             Data.load_layers()
         elif product_data["type"] == "IfcMaterialProfileSet":
+            profile_attributes = {}
+            for attribute in props.material_set_item_profile_attributes:
+                if attribute.data_type == "string":
+                    value = attribute.string_value
+                elif attribute.data_type == "float":
+                    value = attribute.float_value
+                elif attribute.data_type == "integer":
+                    value = attribute.int_value
+                elif attribute.data_type == "boolean":
+                    value = attribute.bool_value
+                elif attribute.data_type == "enum":
+                    value = attribute.enum_value
+                profile_attributes[attribute.name] = None if attribute.is_null else value
             ifcopenshell.api.run(
                 "material.edit_profile",
                 self.file,
                 **{
                     "profile": self.file.by_id(self.material_set_item),
                     "attributes": attributes,
+                    "profile_attributes": profile_attributes,
                     "material": self.file.by_id(int(obj.BIMObjectMaterialProperties.material_set_item_material)),
                 },
             )
             Data.load_profiles()
+            ProfileData.load(self.file)
         else:
             pass
 
