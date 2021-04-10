@@ -1,16 +1,20 @@
 import bpy
-from . import ui, operator
+from . import ui, prop, operator
 
 classes = (
     operator.AddCostSchedule,
     operator.RemoveCostSchedule,
+    operator.EditCostSchedule,
+    operator.EnableEditingCostSchedule,
+    operator.DisableEditingCostSchedule,
+    prop.BIMCostProperties,
     ui.BIM_PT_cost_schedules,
 )
 
 
 def register():
-    pass
+    bpy.types.Scene.BIMCostProperties = bpy.props.PointerProperty(type=prop.BIMCostProperties)
 
 
 def unregister():
-    pass
+    del bpy.types.Scene.BIMCostProperties
