@@ -36,11 +36,11 @@ class EnableEditingCostSchedule(bpy.types.Operator):
     cost_schedule: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = context.scene.BIMCostProperties
-        props.active_cost_schedule_id = self.cost_schedule
+        self.props = context.scene.BIMCostProperties
+        self.props.active_cost_schedule_id = self.cost_schedule
 
-        while len(props.cost_schedule_attributes) > 0:
-            props.cost_schedule_attributes.remove(0)
+        while len(self.props.cost_schedule_attributes) > 0:
+            self.props.cost_schedule_attributes.remove(0)
 
         data = Data.cost_schedules[self.cost_schedule]
 
@@ -48,7 +48,7 @@ class EnableEditingCostSchedule(bpy.types.Operator):
             data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
             if data_type == "entity":
                 continue
-            new = props.cost_schedule_attributes.add()
+            new = self.props.cost_schedule_attributes.add()
             new.name = attribute.name()
             new.is_null = data[attribute.name()] is None
             new.is_optional = attribute.optional()
@@ -61,7 +61,25 @@ class EnableEditingCostSchedule(bpy.types.Operator):
                 new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
                 if data[attribute.name()]:
                     new.enum_value = data[attribute.name()]
+
+        while len(self.props.cost_items) > 0:
+            self.props.cost_items.remove(0)
+
+        for related_object_id in Data.cost_schedules[self.cost_schedule]["RelatedObjects"]:
+            self.create_new_cost_item_li(related_object_id, 0)
         return {"FINISHED"}
+
+    def create_new_cost_item_li(self, related_object_id, level_index):
+        cost_item = Data.cost_items[related_object_id]
+        new = self.props.cost_items.add()
+        new.name = cost_item["Name"] or "Unnamed"
+        new.ifc_definition_id = related_object_id
+        new.is_expanded = False
+        new.level_index = level_index
+        if cost_item["RelatedObjects"]:
+            new.has_children = True
+            for related_object_id in cost_item["RelatedObjects"]:
+                self.create_new_cost_item_li(related_object_id, level_index + 1)
 
 
 class DisableEditingCostSchedule(bpy.types.Operator):
@@ -97,4 +115,22 @@ class EditCostSchedule(bpy.types.Operator):
         )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_cost_schedule()
+        return {"FINISHED"}
+
+
+class AddCostItem(bpy.types.Operator):
+    bl_idname = "bim.add_cost_item"
+    bl_label = "Add Cost Item"
+    cost_schedule: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMCostProperties
+        self.file = IfcStore.get_file()
+        if len(props.cost_items):
+            data = {"cost_item": self.file.by_id(props.cost_items[props.active_cost_item_index].ifc_definition_id)}
+        else:
+            data = {"cost_schedule": self.file.by_id(self.cost_schedule)}
+        ifcopenshell.api.run("cost.add_cost_item", self.file, **data)
+        Data.load(self.file)
+        bpy.ops.bim.enable_editing_cost_schedule(cost_schedule = self.cost_schedule)
         return {"FINISHED"}

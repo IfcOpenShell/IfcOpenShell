@@ -7,8 +7,11 @@ classes = (
     operator.EditCostSchedule,
     operator.EnableEditingCostSchedule,
     operator.DisableEditingCostSchedule,
+    operator.AddCostItem,
+    prop.CostItem,
     prop.BIMCostProperties,
     ui.BIM_PT_cost_schedules,
+    ui.BIM_UL_cost_items,
 )
 
 
