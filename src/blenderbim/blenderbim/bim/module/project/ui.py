@@ -63,3 +63,6 @@ class BIM_PT_project(Panel):
         row.prop(props, "volume_unit", text="Volume Unit")
         row = self.layout.row()
         row.operator("bim.create_project")
+        if props.export_schema != "IFC2X3":
+            row = self.layout.row()
+            row.operator("bim.create_project_library")
