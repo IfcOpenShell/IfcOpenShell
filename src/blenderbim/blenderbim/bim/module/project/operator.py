@@ -53,6 +53,30 @@ class CreateProject(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class CreateProjectLibrary(bpy.types.Operator):
+    bl_idname = "bim.create_project_library"
+    bl_label = "Create Project Library"
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        if self.file:
+            return {"FINISHED"}
+
+        IfcStore.file = ifcopenshell.api.run(
+            "project.create_file", **{"version": bpy.context.scene.BIMProperties.export_schema}
+        )
+        self.file = IfcStore.get_file()
+
+        if self.file.schema == "IFC2X3":
+            bpy.ops.bim.add_person()
+            bpy.ops.bim.add_organisation()
+
+        project_library = bpy.data.objects.new("My Project Library", None)
+        bpy.ops.bim.assign_class(obj=project_library.name, ifc_class="IfcProjectLibrary")
+        bpy.ops.bim.assign_unit()
+        return {"FINISHED"}
+
+
 class ValidateIfcFile(bpy.types.Operator):
     bl_idname = "bim.validate_ifc_file"
     bl_label = "Validate IFC File"
