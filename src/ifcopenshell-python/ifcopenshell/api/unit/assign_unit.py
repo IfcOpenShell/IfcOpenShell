@@ -33,7 +33,10 @@ class Usecase():
             # TODO: handle unit rewriting, which is complicated
         else:
             unit_assignment = self.file.createIfcUnitAssignment([u["ifc"] for u in self.settings.values()])
-            self.file.by_type("IfcProject")[0].UnitsInContext = unit_assignment
+            if self.file.schema == "IFC2X3":
+                self.file.by_type("IfcProject")[0].UnitsInContext = unit_assignment
+            else:
+                self.file.by_type("IfcContext")[0].UnitsInContext = unit_assignment
         return unit_assignment
 
     def create_metric_unit(self, unit_type, data):

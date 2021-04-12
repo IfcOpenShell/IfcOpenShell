@@ -1,5 +1,6 @@
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.placement
 
 
 class Usecase:
@@ -42,4 +43,12 @@ class Usecase:
                     "RelatedElements": [self.settings["product"]],
                     "RelatingStructure": self.settings["relating_structure"],
                 }
+            )
+
+        if getattr(self.settings["product"], "ObjectPlacement", None):
+            ifcopenshell.api.run(
+                "geometry.edit_object_placement",
+                self.file,
+                product=self.settings["product"],
+                matrix=ifcopenshell.util.placement.get_local_placement(self.settings["product"].ObjectPlacement),
             )

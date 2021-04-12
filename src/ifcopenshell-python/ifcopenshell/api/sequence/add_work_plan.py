@@ -25,18 +25,7 @@ class Usecase:
         work_plan.StartTime = ifcopenshell.util.date.datetime2ifc(self.settings["start_time"], "IfcDateTime")
 
         context = self.file.by_type("IfcContext")[0]
-        if context.Declares:
-            rel_declares = context.Declares[0]
-            ifcopenshell.api.run("owner.update_owner_history", self.file, element=rel_declares)
-        else:
-            rel_declares = self.file.create_entity("IfcRelDeclares", **{
-                "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                "RelatingContext": context
-            })
-
-        related_definitions = list(rel_declares.RelatedDefinitions or [])
-        related_definitions.append(work_plan)
-        rel_declares.RelatedDefinitions = related_definitions
-
+        ifcopenshell.api.run(
+            "project.assign_declaration", self.file, definition=work_plan, relating_context=context
+        )
         return work_plan

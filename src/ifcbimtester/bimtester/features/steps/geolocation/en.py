@@ -1,6 +1,8 @@
 import math
+import numpy as np
 import ifcopenshell
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
 import ifcopenshell.util.geolocation
 from behave import step
 from bimtester import util
@@ -171,7 +173,7 @@ def step_impl(context, number):
         return check_ifc2x3_geolocation("EPset_MapConversion", "Height", number)
     abscissa = check_ifc4_geolocation("IfcMapConversion", "XAxisAbscissa", should_assert=False)
     ordinate = check_ifc4_geolocation("IfcMapConversion", "XAxisOrdinate", should_assert=False)
-    actual_value = round(ifcopenshell.util.geolocation.xy2angle(abscissa, ordinate), 3)
+    actual_value = round(ifcopenshell.util.geolocation.xaxis2angle(abscissa, ordinate), 3)
     value = round(number, 3)
     assert actual_value == value, _('We expected a value of "{}" but instead got "{}"').format(value, actual_value)
 
@@ -184,6 +186,26 @@ def step_impl(context, number):
             util.assert_pset(site, "EPset_MapConversion", "Scale", number)
         return
     check_ifc4_geolocation("IfcMapConversion", "Scale", number)
+
+
+@step(u'The model must be rotated clockwise by "{number}" for true north to point up')
+def step_impl(context, number):
+    number = util.assert_number(number)
+    project = IfcStore.file.by_type("IfcProject")[0]
+    for c in project.RepresentationContexts:
+        if c.TrueNorth:
+            actual_value = round(
+                ifcopenshell.util.geolocation.yaxis2angle(
+                    c.TrueNorth.DirectionRatios[0], c.TrueNorth.DirectionRatios[1]
+                ),
+                3,
+            )
+            value = round(number, 3)
+            assert actual_value == value, _('We expected a value of "{}" but instead got "{}"').format(
+                value, actual_value
+            )
+            return
+    assert False, _("True north is not defined in the file")
 
 
 @step(u'The site "{guid}" has a longitude of "{number}"')
@@ -212,3 +234,14 @@ def step_impl(context, guid, number):
     site = util.assert_guid(IfcStore.file, guid)
     util.assert_type(site, "IfcSite")
     util.assert_attribute(site, "RefElevation", number)
+
+
+@step(u'The site "{guid}" must be coincident with the project origin')
+def step_impl(context, guid):
+    site = util.assert_guid(IfcStore.file, guid)
+    util.assert_type(site, "IfcSite")
+    if not site.ObjectPlacement:
+        assert False, _("The site has no object placement")
+    site_placement = ifcopenshell.util.placement.get_local_placement(site.ObjectPlacement)[:,3][0:3]
+    origin = np.array([0, 0, 0])
+    assert np.allclose(origin, site_placement), _('The site location is at "{}" instead of "{}"')
