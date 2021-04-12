@@ -12,37 +12,40 @@ class AssignObject(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        related_object = bpy.data.objects.get(self.related_object) if self.related_object else bpy.context.active_object
-        props = related_object.BIMObjectProperties
-        relating_object = bpy.data.objects.get(self.relating_object) if self.relating_object else props.relating_object
+        related_objects = (
+            [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
+        )
+        relating_object = bpy.data.objects.get(self.relating_object)
         if not relating_object or not relating_object.BIMObjectProperties.ifc_definition_id:
             return {"FINISHED"}
-        product = self.file.by_id(props.ifc_definition_id)
-        ifcopenshell.api.run(
-            "aggregate.assign_object",
-            self.file,
-            **{
-                "product": product,
-                "relating_object": self.file.by_id(relating_object.BIMObjectProperties.ifc_definition_id),
-            },
-        )
-        bpy.ops.bim.edit_object_placement(obj=related_object.name)
-        Data.load(IfcStore.get_file(), props.ifc_definition_id)
-        bpy.ops.bim.disable_editing_aggregate(obj=related_object.name)
+        for related_object in related_objects:
+            oprops = related_object.BIMObjectProperties
+            product = self.file.by_id(oprops.ifc_definition_id)
+            ifcopenshell.api.run(
+                "aggregate.assign_object",
+                self.file,
+                **{
+                    "product": product,
+                    "relating_object": self.file.by_id(relating_object.BIMObjectProperties.ifc_definition_id),
+                },
+            )
+            bpy.ops.bim.edit_object_placement(obj=related_object.name)
+            Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
+            bpy.ops.bim.disable_editing_aggregate(obj=related_object.name)
 
-        spatial_collection = bpy.data.collections.get(related_object.name)
-        relating_collection = bpy.data.collections.get(relating_object.name)
-        if spatial_collection:
-            self.remove_collection(bpy.context.scene.collection, spatial_collection)
-            for collection in bpy.data.collections:
-                if collection == relating_collection:
-                    collection.children.link(spatial_collection)
-                    continue
-                self.remove_collection(collection, spatial_collection)
-        else:
-            for collection in related_object.users_collection:
-                collection.objects.unlink(related_object)
-            relating_collection.objects.link(related_object)
+            spatial_collection = bpy.data.collections.get(related_object.name)
+            relating_collection = bpy.data.collections.get(relating_object.name)
+            if spatial_collection:
+                self.remove_collection(bpy.context.scene.collection, spatial_collection)
+                for collection in bpy.data.collections:
+                    if collection == relating_collection:
+                        collection.children.link(spatial_collection)
+                        continue
+                    self.remove_collection(collection, spatial_collection)
+            else:
+                for collection in related_object.users_collection:
+                    collection.objects.unlink(related_object)
+                relating_collection.objects.link(related_object)
         return {"FINISHED"}
 
     def remove_collection(self, parent, child):
