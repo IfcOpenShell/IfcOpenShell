@@ -414,7 +414,11 @@ class IfcImporter:
             self.exclude_elements |= self.native_elements
 
     def is_native(self, element):
-        if not element.Representation or not element.Representation.Representations or element.HasOpenings:
+        if (
+            not element.Representation
+            or not element.Representation.Representations
+            or getattr(element, "HasOpenings", None)
+        ):
             return
         representations = self.get_transformed_body_representations(element.Representation.Representations)
 

@@ -1,3 +1,6 @@
+import ifcopenshell
+import ezdxf
+
 class Dxf2Ifc:
     def execute(self):
         self.create_ifc_file()
@@ -14,7 +17,7 @@ class Dxf2Ifc:
                             [
                                 self.file.createIfcFaceOuterBound(
                                     self.file.createIfcPolyLoop(
-                                        [self.file.createIfcCartesianPoint((v.dxf.location)) for v in face[0:3]]
+                                        [self.file.createIfcCartesianPoint((face[index].dxf.location)) for index in range(len(face) -1)]
                                     ),
                                     True,
                                 )

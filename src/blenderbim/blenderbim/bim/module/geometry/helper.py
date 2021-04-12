@@ -205,7 +205,8 @@ class Helper:
         for edge in bm.edges:
             edge_vector = edge.verts[1].co - edge.verts[0].co
             unshared_verts = set(edge.verts) - face_verts_set
-            if len(unshared_verts) == 1 and not (edge_vector.angle(profile_face.normal) - pi / 2 < 0.001):
+            angle_to_normal = edge_vector.angle(profile_face.normal)
+            if len(unshared_verts) == 1 and (angle_to_normal < 0.001 or angle_to_normal - pi < 0.001):
                 if unshared_verts.pop() == edge.verts[1]:
                     return [edge.verts[0].index, edge.verts[1].index]
                 return [edge.verts[1].index, edge.verts[0].index]

@@ -25,6 +25,7 @@ if bpy is not None:
         "geometry": None,
         "cobie": None,
         "sequence": None,
+        "cost": None,
         "group": None,
         "structural": None,
         "material": None,

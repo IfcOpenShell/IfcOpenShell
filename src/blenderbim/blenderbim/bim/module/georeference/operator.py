@@ -17,27 +17,6 @@ class EnableEditingGeoreferencing(bpy.types.Operator):
         self.file = IfcStore.get_file()
         props = context.scene.BIMGeoreferenceProperties
 
-        while len(props.map_conversion) > 0:
-            props.map_conversion.remove(0)
-
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcMapConversion").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
-                continue
-            new = props.map_conversion.add()
-            new.name = attribute.name()
-            new.is_null = Data.map_conversion[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            new.data_type = data_type
-            if data_type == "string":
-                new.string_value = "" if new.is_null else Data.map_conversion[attribute.name()]
-            elif data_type == "float":
-                new.float_value = 0.0 if new.is_null else Data.map_conversion[attribute.name()]
-            elif data_type == "integer":
-                new.int_value = 0 if new.is_null else Data.map_conversion[attribute.name()]
-            elif data_type == "boolean":
-                new.bool_value = False if new.is_null else Data.map_conversion[attribute.name()]
-
         while len(props.projected_crs) > 0:
             props.projected_crs.remove(0)
 
@@ -69,6 +48,27 @@ class EnableEditingGeoreferencing(bpy.types.Operator):
             elif props.map_unit_type == "IfcConversionBasedUnit":
                 props.map_unit_imperial = Data.projected_crs["MapUnit"]["Name"]
 
+        while len(props.map_conversion) > 0:
+            props.map_conversion.remove(0)
+
+        for attribute in IfcStore.get_schema().declaration_by_name("IfcMapConversion").all_attributes():
+            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            if data_type == "entity" or data_type == "select":
+                continue
+            print(attribute.name(), data_type)
+            new = props.map_conversion.add()
+            new.name = attribute.name()
+            new.is_null = Data.map_conversion[attribute.name()] is None
+            new.is_optional = attribute.optional()
+            # Enforce a string data type to prevent data loss in singpe-precision Blender props
+            new.data_type = "string"
+            new.string_value = "" if new.is_null else str(Data.map_conversion[attribute.name()])
+
+        props.has_true_north = bool(Data.true_north)
+        if Data.true_north:
+            props.true_north_abscissa = str(Data.true_north[0])
+            props.true_north_ordinate = str(Data.true_north[1])
+
         props.is_editing = True
         return {"FINISHED"}
 
@@ -91,23 +91,6 @@ class EditGeoreferencing(bpy.types.Operator):
         self.file = IfcStore.get_file()
         props = context.scene.BIMGeoreferenceProperties
 
-        map_conversion = {}
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcMapConversion").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
-                continue
-            blender_attribute = props.map_conversion.get(attribute.name())
-            if blender_attribute.is_null:
-                map_conversion[attribute.name()] = None
-            elif blender_attribute.data_type == "string":
-                map_conversion[attribute.name()] = blender_attribute.string_value
-            elif blender_attribute.data_type == "float":
-                map_conversion[attribute.name()] = blender_attribute.float_value
-            elif blender_attribute.data_type == "integer":
-                map_conversion[attribute.name()] = blender_attribute.int_value
-            elif blender_attribute.data_type == "boolean":
-                map_conversion[attribute.name()] = blender_attribute.bool_value
-
         projected_crs = {}
         for attribute in IfcStore.get_schema().declaration_by_name("IfcProjectedCRS").all_attributes():
             data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
@@ -129,38 +112,87 @@ class EditGeoreferencing(bpy.types.Operator):
         if not props.is_map_unit_null:
             map_unit = props.map_unit_si if props.map_unit_type == "IfcSIUnit" else props.map_unit_imperial
 
+        map_conversion = {}
+        for attribute in IfcStore.get_schema().declaration_by_name("IfcMapConversion").all_attributes():
+            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            if data_type == "entity" or data_type == "select":
+                continue
+            blender_attribute = props.map_conversion.get(attribute.name())
+            if blender_attribute.is_null:
+                map_conversion[attribute.name()] = None
+            elif blender_attribute.data_type == "string":
+                # We store our floats as string to prevent single precision data loss
+                map_conversion[attribute.name()] = float(blender_attribute.string_value)
+
+        true_north = None
+        if props.has_true_north:
+            try:
+                true_north = [float(props.true_north_abscissa), float(props.true_north_ordinate)]
+            except:
+                pass
+
         ifcopenshell.api.run(
             "georeference.edit_georeferencing",
             self.file,
-            **{"map_conversion": map_conversion, "projected_crs": projected_crs, "map_unit": map_unit}
+            **{
+                "map_conversion": map_conversion,
+                "projected_crs": projected_crs,
+                "map_unit": map_unit,
+                "true_north": true_north,
+            }
         )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_georeferencing()
         return {"FINISHED"}
 
 
-class SetNorthOffset(bpy.types.Operator):
-    bl_idname = "bim.set_north_offset"
-    bl_label = "Set North Offset"
+class SetBlenderGridNorth(bpy.types.Operator):
+    bl_idname = "bim.set_blender_grid_north"
+    bl_label = "Set Blender Grid North"
 
     def execute(self, context):
         context.scene.sun_pos_properties.north_offset = -radians(
-            ifcopenshell.util.geolocation.xy2angle(
-                context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisAbscissa").float_value,
-                context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisOrdinate").float_value,
+            ifcopenshell.util.geolocation.xaxis2angle(
+                float(context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisAbscissa").string_value),
+                float(context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisOrdinate").string_value),
             )
         )
         return {"FINISHED"}
 
 
-class GetNorthOffset(bpy.types.Operator):
-    bl_idname = "bim.get_north_offset"
-    bl_label = "Get North Offset"
+class SetIfcGridNorth(bpy.types.Operator):
+    bl_idname = "bim.set_ifc_grid_north"
+    bl_label = "Set IFC Grid North"
 
     def execute(self, context):
         x_angle = -context.scene.sun_pos_properties.north_offset
-        context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisAbscissa").float_value = cos(x_angle)
-        context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisOrdinate").float_value = sin(x_angle)
+        context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisAbscissa").string_value = str(cos(x_angle))
+        context.scene.BIMGeoreferenceProperties.map_conversion.get("XAxisOrdinate").string_value = str(sin(x_angle))
+        return {"FINISHED"}
+
+
+class SetBlenderTrueNorth(bpy.types.Operator):
+    bl_idname = "bim.set_blender_true_north"
+    bl_label = "Set Blender True North"
+
+    def execute(self, context):
+        context.scene.sun_pos_properties.north_offset = -radians(
+            ifcopenshell.util.geolocation.yaxis2angle(
+                float(context.scene.BIMGeoreferenceProperties.true_north_abscissa),
+                float(context.scene.BIMGeoreferenceProperties.true_north_ordinate),
+            )
+        )
+        return {"FINISHED"}
+
+
+class SetIfcTrueNorth(bpy.types.Operator):
+    bl_idname = "bim.set_ifc_true_north"
+    bl_label = "Set IFC True North"
+
+    def execute(self, context):
+        y_angle = -context.scene.sun_pos_properties.north_offset + radians(90)
+        context.scene.BIMGeoreferenceProperties.true_north_abscissa = str(cos(y_angle))
+        context.scene.BIMGeoreferenceProperties.true_north_ordinate = str(sin(y_angle))
         return {"FINISHED"}
 
 

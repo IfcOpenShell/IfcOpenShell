@@ -90,7 +90,7 @@ class IfcExporter:
         for guid in to_delete:
             product = self.file.by_id(guid)
             IfcStore.unlink_element(product)
-            ifcopenshell.api.run("remove_product", self.file, **{"product": product})
+            ifcopenshell.api.run("root.remove_product", self.file, **{"product": product})
 
     def sync_edited_objects(self):
         for obj_name in IfcStore.edited_objs.copy():

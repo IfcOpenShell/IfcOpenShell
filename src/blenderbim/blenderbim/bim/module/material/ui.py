@@ -1,5 +1,6 @@
 from bpy.types import Panel
 from ifcopenshell.api.material.data import Data
+from ifcopenshell.api.profile.data import Data as ProfileData
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -46,6 +47,8 @@ class BIM_PT_object_material(Panel):
             Data.load(IfcStore.get_file())
         if self.oprops.ifc_definition_id not in Data.products:
             Data.load(IfcStore.get_file(), self.oprops.ifc_definition_id)
+        if not ProfileData.is_loaded:
+            ProfileData.load(self.file)
         self.product_data = Data.products[self.oprops.ifc_definition_id]
 
         if not Data.materials:
@@ -171,6 +174,39 @@ class BIM_PT_object_material(Panel):
             elif attribute.data_type == "boolean":
                 row.prop(attribute, "bool_value", text=attribute.name)
             row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+
+        if self.set_item_name == "profile":
+            self.draw_assign_profile_ui(box, item)
+            self.draw_editable_profile_ui(box, item)
+
+    def draw_assign_profile_ui(self, layout, item):
+        row = layout.row(align=True)
+        row.prop(self.props, "profile_classes", text="")
+        if self.props.profile_classes == "IfcParameterizedProfileDef":
+            row.prop(self.props, "parameterized_profile_classes", text="")
+            op = row.operator("bim.assign_parameterized_profile", icon="GREASEPENCIL" if item["Profile"] else "ADD", text="")
+            op.ifc_class = self.props.parameterized_profile_classes
+            op.material_profile = item["id"]
+        else:
+            # TODO: support non parametric profiles by showing a list of named profiles to select from, or an
+            # eyedropper to pick profile geometry from the scene
+            row.operator("bim.disable_editing_material_set_item", icon="X", text="")
+
+    def draw_editable_profile_ui(self, layout, item):
+        for attribute in self.props.material_set_item_profile_attributes:
+            row = layout.row(align=True)
+            if attribute.data_type == "string":
+                row.prop(attribute, "string_value", text=attribute.name)
+            elif attribute.data_type == "integer":
+                row.prop(attribute, "int_value", text=attribute.name)
+            elif attribute.data_type == "float":
+                row.prop(attribute, "float_value", text=attribute.name)
+            elif attribute.data_type == "boolean":
+                row.prop(attribute, "bool_value", text=attribute.name)
+            elif attribute.data_type == "enum":
+                row.prop(attribute, "enum_value", text=attribute.name)
+            if attribute.is_optional:
+                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
     def draw_read_only_set_item_ui(self, set_item_id, index, is_first=False, is_last=False):
         if self.product_data["type"] == "IfcMaterialList":

@@ -47,7 +47,7 @@ class EnableEditingLayer(bpy.types.Operator):
 
         for attribute in IfcStore.get_schema().declaration_by_name("IfcPresentationLayerAssignment").all_attributes():
             data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
+            if data_type == "entity" or data_type == "select":
                 continue
             new = props.layer_attributes.add()
             new.name = attribute.name()
