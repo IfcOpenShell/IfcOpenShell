@@ -2,6 +2,8 @@ import bpy
 import json
 import ifcopenshell
 import ifcopenshell.api
+from math import degrees
+from mathutils import Vector, Matrix
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.structural.data import Data
 from ifcopenshell.api.context.data import Data as ContextData
@@ -362,4 +364,75 @@ class UnassignStructuralAnalysisModel(bpy.types.Operator):
             }
         )
         Data.load(IfcStore.get_file())
+        return {"FINISHED"}
+
+
+class EnableEditingStructuralMemberAxis(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_structural_member_axis"
+    bl_label = "Enable Editing Structural Member Axis"
+
+    def execute(self, context):
+        obj = bpy.context.active_object
+        oprops = obj.BIMObjectProperties
+        props = obj.BIMStructuralProperties
+
+        self.file = IfcStore.get_file()
+        member = self.file.by_id(oprops.ifc_definition_id)
+        z_axis = Vector(member.Axis.DirectionRatios).normalized() @ obj.matrix_world if member.Axis else None
+        x_axis = (obj.data.vertices[1].co - obj.data.vertices[0].co).normalized()
+        location = obj.data.vertices[0].co
+        empty = bpy.data.objects.new("Member Axis", None)
+        empty.empty_display_type = "ARROWS"
+        if z_axis:
+            y_axis = (z_axis.cross(x_axis)).normalized()
+            empty.matrix_world = Matrix((
+                (x_axis[0], y_axis[0], z_axis[0], location[0]),
+                (x_axis[1], y_axis[1], z_axis[1], location[1]),
+                (x_axis[2], y_axis[2], z_axis[2], location[2]),
+                (0, 0, 0, 1),
+            ))
+        else:
+            empty.location = location
+            empty.rotation_mode = "QUATERNION"
+            empty.rotation_quaternion = x_axis.to_track_quat("X", "Z")
+
+        props.axis_angle = degrees(empty.rotation_euler[0])
+        props.axis_empty = empty
+        context.scene.collection.objects.link(empty)
+
+        props.is_editing_axis = True
+        return {"FINISHED"}
+
+
+class DisableEditingStructuralMemberAxis(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_structural_member_axis"
+    bl_label = "Disable Editing Structural Member Axis"
+
+    def execute(self, context):
+        obj = bpy.context.active_object
+        props = obj.BIMStructuralProperties
+        props.is_editing_axis = False
+        if props.axis_empty:
+            bpy.data.objects.remove(props.axis_empty)
+        return {"FINISHED"}
+
+
+class EditStructuralMemberAxis(bpy.types.Operator):
+    bl_idname = "bim.edit_structural_member_axis"
+    bl_label = "Edit Structural Member Axis"
+
+    def execute(self, context):
+        obj = bpy.context.active_object
+        oprops = obj.BIMObjectProperties
+        props = obj.BIMStructuralProperties
+        relative_matrix = props.axis_empty.matrix_world @ obj.matrix_world.inverted()
+        z_axis = relative_matrix.col[2][0:3]
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "structural.edit_structural_member_axis",
+            self.file,
+            structural_member=self.file.by_id(oprops.ifc_definition_id),
+            axis=z_axis,
+        )
+        bpy.ops.bim.disable_editing_structural_member_axis()
         return {"FINISHED"}

@@ -34,7 +34,8 @@ class BIM_PT_aggregate(Panel):
         if props.is_editing_aggregate:
             row = self.layout.row(align=True)
             row.prop(props, "relating_object", text="")
-            row.operator("bim.assign_object", icon="CHECKMARK", text="").relating_object = props.relating_object.name
+            if props.relating_object:
+                row.operator("bim.assign_object", icon="CHECKMARK", text="").relating_object = props.relating_object.name
             row.operator("bim.disable_editing_aggregate", icon="X", text="")
         else:
             row = self.layout.row(align=True)
