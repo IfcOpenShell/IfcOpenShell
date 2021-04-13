@@ -101,7 +101,7 @@ Note: where `make -j` is written, add a number roughly equal to the amount of CP
     $ make -j
     $ sudo make install
 
-**2c)** or obtain and compile OCCT from http://www.opencascade.org/getocc/download/loadocc/
+**2c)** or obtain and compile OCCT from https://dev.opencascade.org/release
 
 **3)** For building IfcConvert with COLLADA (.dae) support (on by default), OpenCOLLADA is needed:
 
