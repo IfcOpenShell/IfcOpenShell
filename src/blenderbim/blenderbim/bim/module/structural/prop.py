@@ -1,4 +1,5 @@
 import bpy
+from math import radians
 from blenderbim.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -11,6 +12,19 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+
+
+def updateAxisAngle(self, context):
+    if not self.axis_empty:
+        return
+    obj = context.active_object
+    empty = self.axis_empty
+    x_axis = obj.data.vertices[1].co - obj.data.vertices[0].co
+    empty.location = obj.data.vertices[0].co
+    empty.rotation_mode = "QUATERNION"
+    empty.rotation_quaternion = x_axis.to_track_quat("X", "Z")
+    empty.rotation_mode = "XYZ"
+    empty.rotation_euler[0] = radians(self.axis_angle)
 
 
 class StructuralAnalysisModel(PropertyGroup):
@@ -33,3 +47,6 @@ class BIMObjectStructuralProperties(PropertyGroup):
     active_boundary_condition: IntProperty(name="Active Boundary Condition")
     active_connects_structural_member: IntProperty(name="Active Connects Structural Member")
     relating_structural_member: PointerProperty(name="Relating Structural Member", type=bpy.types.Object)
+    is_editing_axis: BoolProperty(name="Is Editing Axis", default=False)
+    axis_angle: FloatProperty(name="Axis Angle", update=updateAxisAngle)
+    axis_empty: PointerProperty(name="Axis Empty", type=bpy.types.Object)

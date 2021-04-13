@@ -141,6 +141,44 @@ class BIM_PT_connected_structural_members(Panel):
         draw_boundary_condition_ui(box, data["AppliedCondition"], data["id"], self.props)
 
 
+class BIM_PT_structural_member(Panel):
+    bl_label = "IFC Structural Member"
+    bl_idname = "BIM_PT_structural_member"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            return False
+        props = context.active_object.BIMObjectProperties
+        if not props.ifc_definition_id:
+            return False
+        if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcStructuralMember"):
+            return False
+        return True
+
+    def draw(self, context):
+        self.oprops = context.active_object.BIMObjectProperties
+        self.props = context.active_object.BIMStructuralProperties
+        self.file = IfcStore.get_file()
+
+        if self.file.by_id(self.oprops.ifc_definition_id).is_a("IfcStructuralCurveMember"):
+            if self.props.is_editing_axis:
+                row = self.layout.row(align=True)
+                row.prop(self.props, "axis_angle")
+                row.operator("bim.edit_structural_member_axis", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_structural_member_axis", text="", icon="CANCEL")
+            else:
+                row = self.layout.row()
+                row.operator("bim.enable_editing_structural_member_axis", text="Edit Axis", icon="GREASEPENCIL")
+        else:
+            row = self.layout.row()
+            row.label(text="TODO")
+
+
 class BIM_PT_structural_analysis_models(Panel):
     bl_label = "IFC Structural Analysis Models"
     bl_idname = "BIM_PT_structural_analysis_models"
