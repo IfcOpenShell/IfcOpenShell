@@ -19,8 +19,8 @@ Prerequisites
 Dependencies
 -------------
 * [Boost](http://www.boost.org/)
-* [Open Cascade](http://opencascade.org) - *optional*, but required for building IfcGeom
-  ([official](http://www.opencascade.org/getocc/download/loadocc/), "OCCT", or [community edition](https://github.com/tpaviot/oce), "OCE")  
+* [Open Cascade](https://dev.opencascade.org/) - *optional*, but required for building IfcGeom
+  ([official](https://dev.opencascade.org/release), "OCCT", or [community edition](https://github.com/tpaviot/oce), "OCE")  
   For converting IFC representation items into BRep solids and tesselated meshes
 * [OpenCOLLADA](https://github.com/khronosGroup/OpenCOLLADA/) - *optional*  
   For IfcConvert to be able to write tessellated Collada (.dae) files
