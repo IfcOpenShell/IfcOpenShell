@@ -2,6 +2,7 @@ import bpy
 import json
 import ifcopenshell.api
 import ifcopenshell.util.attribute
+from blenderbim.bim.module.material.prop import purge as material_prop_purge
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.material.data import Data
 from ifcopenshell.api.profile.data import Data as ProfileData
@@ -44,6 +45,7 @@ class AddMaterial(bpy.types.Operator):
         result = ifcopenshell.api.run("material.add_material", self.file, **{"Name": obj.name})
         obj.BIMObjectProperties.ifc_definition_id = result.id()
         Data.load(IfcStore.get_file())
+        material_prop_purge()
         return {"FINISHED"}
 
 
