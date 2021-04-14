@@ -21,6 +21,13 @@ psettemplatefiles_enum = []
 psettemplates_enum = []
 
 
+def purge():
+    global psettemplatefiles_enum
+    global psettemplates_enum
+    psettemplatefiles_enum = []
+    psettemplates_enum = []
+
+
 def updatePsetTemplateFiles(self, context):
     global psettemplates_enum
     IfcStore.pset_template_path = os.path.join(

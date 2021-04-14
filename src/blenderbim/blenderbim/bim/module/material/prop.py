@@ -21,6 +21,17 @@ profileclasses_enum = []
 parameterizedprofileclasses_enum = []
 
 
+def purge():
+    global materials_enum
+    global materialtypes_enum
+    global profileclasses_enum
+    global parameterizedprofileclasses_enum
+    materials_enum = []
+    materialtypes_enum = []
+    profileclasses_enum = []
+    parameterizedprofileclasses_enum = []
+
+
 def getProfileClasses(self, context):
     global profileclasses_enum
     if len(profileclasses_enum) == 0 and IfcStore.get_schema():

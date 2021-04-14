@@ -20,6 +20,17 @@ type_classes_enum = []
 available_types_enum = []
 
 
+def purge():
+    global applicable_types_enum
+    global relating_types_enum
+    global type_classes_enum
+    global available_types_enum
+    applicable_types_enum = []
+    relating_types_enum = []
+    type_classes_enum = []
+    available_types_enum = []
+
+
 def getIfcTypes(self, context):
     global type_classes_enum
     file = IfcStore.get_file()
