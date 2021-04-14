@@ -52,9 +52,14 @@ def subscribe_to(object, data_path, callback):
 def purge_module_data():
     from blenderbim.bim import modules
 
-    for name in modules.keys():
+    for name, value in modules.items():
         try:
             getattr(getattr(getattr(ifcopenshell.api, name), "data"), "Data").purge()
+        except AttributeError:
+            pass
+
+        try:
+            getattr(value, "prop").purge()
         except AttributeError:
             pass
 
