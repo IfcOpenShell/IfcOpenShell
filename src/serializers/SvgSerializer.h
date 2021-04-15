@@ -145,7 +145,7 @@ protected:
 	storey_height_display_types storey_height_display_;
 	bool draw_door_arcs_, is_floor_plan_;
 	bool auto_section_, auto_elevation_;
-	bool use_namespace_, use_hlr_poly_, always_project_;
+	bool use_namespace_, use_hlr_poly_, always_project_, polygonal_;
 
 	IfcParse::IfcFile* file;
 	IfcUtil::IfcBaseEntity* storey_;
@@ -188,6 +188,7 @@ public:
 		, use_namespace_(false)
 		, use_hlr_poly_(false)
 		, always_project_(false)
+		, polygonal_(false)
 		, file(0)
 		, storey_(0)
 		, xcoords_begin(0)
@@ -247,6 +248,10 @@ public:
 
 	void setUseHlrPoly(bool b) {
 		use_hlr_poly_ = b;
+	}
+
+	void setPolygonal(bool b) {
+		polygonal_ = b;
 	}
 
 	void setAlwaysProject(bool b) {

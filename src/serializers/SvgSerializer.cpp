@@ -135,7 +135,7 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire, boost::option
 		// TODO: ALMOST_THE_SAME utilities in separate header
 		bool closed = fabs((u1 + PI2) - u2) < 1.e-9;
 
-        if (conical && closed) {
+        if (!polygonal_ && (conical && closed)) {
             if (first) {
                 if (ty == STANDARD_TYPE(Geom_Circle)) {
                     Handle(Geom_Circle) circle = Handle(Geom_Circle)::DownCast(curve);
@@ -222,7 +222,7 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire, boost::option
 		growBoundingBox(p2.X(), p2.Y());
 
 
-		if (ty == STANDARD_TYPE(Geom_Circle) || ty == STANDARD_TYPE(Geom_Ellipse)) {
+		if (!polygonal_ && (ty == STANDARD_TYPE(Geom_Circle) || ty == STANDARD_TYPE(Geom_Ellipse))) {
 			Handle(Geom_Conic) conic = Handle(Geom_Conic)::DownCast(curve);
 			const bool mirrored = conic->Position().Axis().Direction().Z() < 0;
 					
