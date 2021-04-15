@@ -70,6 +70,7 @@ def getMaterialTypes(self, context):
             "IfcMaterialLayerSet",
             "IfcMaterialLayerSetUsage",
             "IfcMaterialProfileSet",
+            "IfcMaterialProfileSetUsage",
             "IfcMaterialList",
         ]
         if IfcStore.get_file().schema == "IFC2X3":
