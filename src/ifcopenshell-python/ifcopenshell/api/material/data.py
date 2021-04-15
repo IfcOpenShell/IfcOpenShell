@@ -6,8 +6,10 @@ class Data:
     materials = {}
     constituent_sets = {}
     constituents = {}
+    layer_sets_usages = {}
     layer_sets = {}
     layers = {}
+    profile_set_usages = {}
     profile_sets = {}
     profiles = {}
     lists = {}
@@ -23,6 +25,7 @@ class Data:
         cls.layer_set_usages = {}
         cls.layer_sets = {}
         cls.layers = {}
+        cls.profile_set_usages = {}
         cls.profile_sets = {}
         cls.profiles = {}
         cls.lists = {}
@@ -41,6 +44,7 @@ class Data:
         cls.load_layers()
         cls.load_layer_usages()
         cls.load_profiles()
+        cls.load_profile_usages()
         cls.load_lists()
         cls.is_loaded = True
 
@@ -67,6 +71,11 @@ class Data:
     def load_layer_usages(cls):
         cls.layer_set_usages = {}
         cls.load_element("IfcMaterialLayerSetUsage", cls.layer_set_usages)
+
+    @classmethod
+    def load_profile_usages(cls):
+        cls.profile_set_usages = {}
+        cls.load_element("IfcMaterialProfileSetUsage", cls.profile_set_usages)
 
     @classmethod
     def load_profiles(cls):
@@ -109,6 +118,4 @@ class Data:
     @classmethod
     def load_association(cls, association, product_id):
         material_select = association.RelatingMaterial
-        if material_select.is_a("IfcMaterialProfileSetUsage"):  # TODO: implement usages
-            material_select = material_select.ForProfileSet
         cls.products[product_id] = {"type": material_select.is_a(), "id": material_select.id()}
