@@ -231,6 +231,7 @@ class EnableEditingWorkSchedule(bpy.types.Operator):
                 if data[attribute.name()]:
                     new.enum_value = data[attribute.name()]
         props.active_work_schedule_id = self.work_schedule
+        bpy.ops.bim.load_tasks(work_schedule=self.work_schedule)
         return {"FINISHED"}
 
 
@@ -364,17 +365,18 @@ class DisableEditingWorkCalendar(bpy.types.Operator):
 class LoadTasks(bpy.types.Operator):
     bl_idname = "bim.load_tasks"
     bl_label = "Load Tasks"
+    work_schedule: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = context.scene.BIMTaskProperties
+        props = context.scene.BIMWorkScheduleProperties
         while len(props.tasks) > 0:
             props.tasks.remove(0)
-        for ifc_definition_id, task in Data.tasks.items():
+        for ifc_definition_id in Data.work_schedules[self.work_schedule]["RelatedObjects"]:
+            task = Data.tasks[ifc_definition_id]
             new = props.tasks.add()
             new.ifc_definition_id = ifc_definition_id
-            new.name = task["Name"]
+            new.name = task["Name"] or "Unnamed"
             new.identification = task["Identification"]
-        props.is_editing = True
         return {"FINISHED"}
 
 
@@ -384,4 +386,19 @@ class DisableTaskEditingUI(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.BIMTaskProperties.is_editing = False
+        return {"FINISHED"}
+
+
+class AddTask(bpy.types.Operator):
+    bl_idname = "bim.add_task"
+    bl_label = "Add Task"
+    work_schedule: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        task = ifcopenshell.api.run("sequence.add_task", self.file)
+        control = self.file.by_id(self.work_schedule)
+        ifcopenshell.api.run("control.assign_control", self.file, related_object=task, relating_control=control)
+        Data.load(self.file)
+        bpy.ops.bim.enable_editing_work_schedule(work_schedule = self.work_schedule)
         return {"FINISHED"}

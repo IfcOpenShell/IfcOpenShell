@@ -52,6 +52,11 @@ class Data:
             data["StartTime"] = ifcopenshell.util.date.ifc2datetime(data["StartTime"])
             if data["FinishTime"]:
                 data["FinishTime"] = ifcopenshell.util.date.ifc2datetime(data["FinishTime"])
+            data["RelatedObjects"] = []
+            for rel in work_schedule.Controls:
+                for obj in rel.RelatedObjects:
+                    if obj.is_a("IfcTask"):
+                        data["RelatedObjects"].append(obj.id())
             cls.work_schedules[work_schedule.id()] = data
 
     @classmethod
