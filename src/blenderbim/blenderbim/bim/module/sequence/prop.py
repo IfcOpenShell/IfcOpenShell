@@ -19,12 +19,6 @@ class Task(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
-class BIMTaskProperties(PropertyGroup):
-    is_editing: BoolProperty(name="Is Editing", default=False)
-    tasks: CollectionProperty(name="Tasks", type=Task)
-    active_task_index: IntProperty(name="Active Task Index")
-
-
 class WorkPlan(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
@@ -49,6 +43,8 @@ class BIMWorkScheduleProperties(PropertyGroup):
     work_schedules: CollectionProperty(name="Work Schedules", type=WorkSchedule)
     active_work_schedule_index: IntProperty(name="Active Work Schedules Index")
     active_work_schedule_id: IntProperty(name="Active Work Schedules Id")
+    tasks: CollectionProperty(name="Tasks", type=Task)
+    active_task_index: IntProperty(name="Active Task Index")
 
 
 class WorkCalendar(PropertyGroup):

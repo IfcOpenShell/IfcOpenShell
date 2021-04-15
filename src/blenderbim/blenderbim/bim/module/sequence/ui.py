@@ -114,6 +114,22 @@ class BIM_PT_work_schedules(Panel):
             if attribute.is_optional:
                 row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
+        self.draw_task_ui(context)
+
+    def draw_task_ui(self, context):
+        row = self.layout.row(align=True)
+        row.label(text="{} Tasks Found".format(len(Data.tasks)), icon="ACTION")
+        row.operator("bim.add_task", text="", icon="ADD").work_schedule = self.props.active_work_schedule_id
+
+        self.layout.template_list(
+            "BIM_UL_tasks",
+            "",
+            self.props,
+            "tasks",
+            self.props,
+            "active_task_index",
+        )
+
 
 class BIM_UL_work_schedules(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
@@ -193,47 +209,6 @@ class BIM_UL_work_calendars(UIList):
                 op = row.operator("bim.enable_editing_work_calendar", text="", icon="GREASEPENCIL")
                 op.work_calendar = item.ifc_definition_id
                 row.operator("bim.remove_work_calendar", text="", icon="X").work_calendar = item.ifc_definition_id
-
-
-class BIM_PT_tasks(Panel):
-    bl_label = "IFC Tasks"
-    bl_idname = "BIM_PT_tasks"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    @classmethod
-    def poll(cls, context):
-        return IfcStore.get_file()
-
-    def draw(self, context):
-        if not Data.is_loaded:
-            Data.load(IfcStore.get_file())
-        self.props = context.scene.BIMTaskProperties
-
-        row = self.layout.row(align=True)
-        row.label(text="{} Tasks Found".format(len(Data.tasks)), icon="ACTION")
-        if self.props.is_editing:
-            row.operator("bim.disable_task_editing_ui", text="", icon="CHECKMARK")
-        else:
-            row.operator("bim.load_tasks", text="", icon="GREASEPENCIL")
-
-        if self.props.is_editing:
-            self.layout.template_list(
-                "BIM_UL_tasks",
-                "",
-                self.props,
-                "tasks",
-                self.props,
-                "active_task_index",
-            )
-
-        if self.props.active_task_index:
-            self.draw_editable_ui(context)
-
-    def draw_editable_ui(self, context):
-        pass
 
 
 class BIM_UL_tasks(UIList):

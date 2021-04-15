@@ -4,7 +4,14 @@ import ifcopenshell.api
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
-        self.settings = {"name": None, "predefined_type": "NOTDEFINED", "is_milestone":False, "identification": "none", "predecessor_to":None, "successor_from":None}
+        self.settings = {
+            "name": None,
+            "predefined_type": "NOTDEFINED",
+            "is_milestone": False,
+            "identification": "none",
+            "predecessor_to": None,
+            "successor_from": None,
+        }
         for key, value in settings.items():
             self.settings[key] = value
 
