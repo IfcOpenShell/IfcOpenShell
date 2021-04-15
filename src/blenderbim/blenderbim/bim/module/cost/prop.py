@@ -26,3 +26,4 @@ class BIMCostProperties(PropertyGroup):
     active_cost_schedule_id: IntProperty(name="Active Cost Schedule Id")
     cost_items: CollectionProperty(name="Work Calendar", type=CostItem)
     active_cost_item_index: IntProperty(name="Active Cost Item Index")
+    contracted_cost_items: StringProperty(name="Contracted Cost Items", default="[]")

@@ -8,6 +8,8 @@ classes = (
     operator.EnableEditingCostSchedule,
     operator.DisableEditingCostSchedule,
     operator.AddCostItem,
+    operator.ExpandCostItem,
+    operator.ContractCostItem,
     prop.CostItem,
     prop.BIMCostProperties,
     ui.BIM_PT_cost_schedules,
