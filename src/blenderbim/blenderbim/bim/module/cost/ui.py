@@ -72,9 +72,10 @@ class BIM_UL_cost_items(UIList):
                 row.label(text="", icon="BLANK1")
             if item.has_children:
                 if item.is_expanded:
-                    row.operator("bim.edit_work_calendar", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN")
+                    op = row.operator("bim.contract_cost_item", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN")
                 else:
-                    row.operator("bim.edit_work_calendar", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT")
+                    op = row.operator("bim.expand_cost_item", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT")
+                op.cost_item = item.ifc_definition_id
             else:
                 row.label(text="", icon="DOT")
             row.label(text=item.name)
