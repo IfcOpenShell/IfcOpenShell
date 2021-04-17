@@ -67,7 +67,6 @@ class ExportIFC(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     json_version: bpy.props.EnumProperty(items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version")
     json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
-    should_force_resave: bpy.props.BoolProperty(name="Resave .blend", default=False)
 
     def invoke(self, context, event):
         if not self.filepath:
@@ -104,8 +103,8 @@ class ExportIFC(bpy.types.Operator):
             new.name = output_file
         if not bpy.context.scene.BIMProperties.ifc_file:
             bpy.context.scene.BIMProperties.ifc_file = output_file
-        if self.should_force_resave:
-            bpy.ops.wm.save_as_mainfile(filepath=bpy.data.filepath)
+        if bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath:
+            bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
         return {"FINISHED"}
 
 
