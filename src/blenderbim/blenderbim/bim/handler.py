@@ -81,9 +81,7 @@ def loadIfcStore(scene):
 @persistent
 def ensureIfcExported(scene):
     if IfcStore.get_file() and not bpy.context.scene.BIMProperties.ifc_file:
-        # The invocation pops up a file select window.
-        # This is non-blocking, therefore the Blend file is saved before we export.
-        bpy.ops.export_ifc.bim("INVOKE_DEFAULT", should_force_resave=True)
+        bpy.ops.export_ifc.bim("INVOKE_DEFAULT")
 
 
 @persistent
