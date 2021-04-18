@@ -80,31 +80,33 @@ class BIM_PT_work_schedules(Panel):
         return IfcStore.get_file()
 
     def draw(self, context):
+        self.props = context.scene.BIMWorkScheduleProperties
+
         if not Data.is_loaded:
             Data.load(IfcStore.get_file())
-        self.props = context.scene.BIMWorkScheduleProperties
+
         row = self.layout.row(align=True)
         row.label(text="{} Work Schedules Found".format(len(Data.work_schedules)), icon="TEXT")
-        if self.props.is_editing:
-            row.operator("bim.add_work_schedule", text="", icon="ADD")
-            row.operator("bim.disable_work_schedule_editing_ui", text="", icon="CHECKMARK")
-        else:
-            row.operator("bim.load_work_schedules", text="", icon="GREASEPENCIL")
+        row = self.layout.row()
+        row.operator("bim.add_work_schedule", icon="ADD")
 
-        if self.props.is_editing:
-            self.layout.template_list(
-                "BIM_UL_work_schedules",
-                "",
-                self.props,
-                "work_schedules",
-                self.props,
-                "active_work_schedule_index",
-            )
+        for work_schedule_id, work_schedule in Data.work_schedules.items():
+            row = self.layout.row(align=True)
+            row.label(text=work_schedule["Name"] or "Unnamed", icon="LINENUMBERS_ON")
 
-        if self.props.active_work_schedule_id:
-            self.draw_editable_ui(context)
+            if self.props.active_work_schedule_id and self.props.active_work_schedule_id == work_schedule_id:
+                row.operator("bim.edit_work_schedule", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_work_schedule", text="", icon="X")
+            elif self.props.active_work_schedule_id:
+                row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = work_schedule_id
+            else:
+                row.operator("bim.enable_editing_work_schedule", text="", icon="GREASEPENCIL").work_schedule = work_schedule_id
+                row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = work_schedule_id
 
-    def draw_editable_ui(self, context):
+            if self.props.active_work_schedule_id == work_schedule_id:
+                self.draw_editable_work_schedule_ui(work_schedule_id, work_schedule)
+
+    def draw_editable_work_schedule_ui(self, work_schedule_id, work_schedule):
         for attribute in self.props.work_schedule_attributes:
             row = self.layout.row(align=True)
             if attribute.data_type == "string":
@@ -114,13 +116,9 @@ class BIM_PT_work_schedules(Panel):
             if attribute.is_optional:
                 row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
-        self.draw_task_ui(context)
-
-    def draw_task_ui(self, context):
         row = self.layout.row(align=True)
-        row.label(text="{} Tasks Found".format(len(Data.tasks)), icon="ACTION")
-        row.operator("bim.add_task", text="", icon="ADD").work_schedule = self.props.active_work_schedule_id
-
+        row.label(text="X Summary Tasks")
+        row.operator("bim.add_summary_task", text="", icon="ADD").work_schedule = work_schedule_id
         self.layout.template_list(
             "BIM_UL_tasks",
             "",
@@ -130,21 +128,23 @@ class BIM_PT_work_schedules(Panel):
             "active_task_index",
         )
 
-
-class BIM_UL_work_schedules(UIList):
+class BIM_UL_tasks(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            row.label(text=item.name)
-            if context.scene.BIMWorkScheduleProperties.active_work_schedule_id == item.ifc_definition_id:
-                row.operator("bim.edit_work_schedule", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_work_schedule", text="", icon="X")
-            elif context.scene.BIMWorkScheduleProperties.active_work_schedule_id:
-                row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = item.ifc_definition_id
+            for i in range(0, item.level_index):
+                row.label(text="", icon="BLANK1")
+            if item.has_children:
+                if item.is_expanded:
+                    row.operator("bim.contract_task", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN").task = item.ifc_definition_id
+                else:
+                    row.operator("bim.expand_task", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT").task = item.ifc_definition_id
             else:
-                op = row.operator("bim.enable_editing_work_schedule", text="", icon="GREASEPENCIL")
-                op.work_schedule = item.ifc_definition_id
-                row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = item.ifc_definition_id
+                row.label(text="", icon="DOT")
+            row.label(text=item.name)
+            op = row.operator("bim.add_task", text="", icon="ADD")
+            op.task = item.ifc_definition_id
+            row.operator("bim.remove_task", text="", icon="X").task = item.ifc_definition_id
 
 
 class BIM_PT_work_calendars(Panel):
@@ -209,12 +209,3 @@ class BIM_UL_work_calendars(UIList):
                 op = row.operator("bim.enable_editing_work_calendar", text="", icon="GREASEPENCIL")
                 op.work_calendar = item.ifc_definition_id
                 row.operator("bim.remove_work_calendar", text="", icon="X").work_calendar = item.ifc_definition_id
-
-
-class BIM_UL_tasks(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        if item:
-            row = layout.row(align=True)
-            if item.identification:
-                layout.label(text=item.identification)
-            layout.label(text=item.name)

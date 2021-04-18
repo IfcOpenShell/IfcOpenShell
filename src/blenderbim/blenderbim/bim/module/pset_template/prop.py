@@ -65,7 +65,7 @@ def getPsetTemplates(self, context):
             IfcStore.pset_template_file = ifcopenshell.open(IfcStore.pset_template_path)
         templates = IfcStore.pset_template_file.by_type("IfcPropertySetTemplate")
         psettemplates_enum.extend([(str(t.id()), t.Name, "") for t in templates])
-        Data.load(IfcStore.get_file())
+        Data.load(IfcStore.pset_template_file)
     return psettemplates_enum
 
 

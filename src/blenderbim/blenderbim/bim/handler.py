@@ -9,17 +9,18 @@ from ifcopenshell.api.attribute.data import Data as AttributeData
 
 
 def mode_callback(obj, data):
-    if (
-        obj.mode != "OBJECT"
-        or not obj.data
-        or not isinstance(obj.data, bpy.types.Mesh)
-        or not obj.data.BIMMeshProperties.ifc_definition_id
-        or not bpy.context.scene.BIMProjectProperties.is_authoring
-    ):
-        return
-    representation = IfcStore.get_file().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-    if representation.RepresentationType == "Tessellation" or representation.RepresentationType == "Brep":
-        IfcStore.edited_objs.add(obj.name)
+    for obj in bpy.context.selected_objects:
+        if (
+            obj.mode != "OBJECT"
+            or not obj.data
+            or not isinstance(obj.data, bpy.types.Mesh)
+            or not obj.data.BIMMeshProperties.ifc_definition_id
+            or not bpy.context.scene.BIMProjectProperties.is_authoring
+        ):
+            return
+        representation = IfcStore.get_file().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        if representation.RepresentationType == "Tessellation" or representation.RepresentationType == "Brep":
+            IfcStore.edited_objs.add(obj.name)
 
 
 def name_callback(obj, data):
@@ -81,9 +82,7 @@ def loadIfcStore(scene):
 @persistent
 def ensureIfcExported(scene):
     if IfcStore.get_file() and not bpy.context.scene.BIMProperties.ifc_file:
-        # The invocation pops up a file select window.
-        # This is non-blocking, therefore the Blend file is saved before we export.
-        bpy.ops.export_ifc.bim("INVOKE_DEFAULT", should_force_resave=True)
+        bpy.ops.export_ifc.bim("INVOKE_DEFAULT")
 
 
 @persistent
