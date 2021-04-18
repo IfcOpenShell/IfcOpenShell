@@ -17,7 +17,9 @@ class Task(PropertyGroup):
     name: StringProperty(name="Name")
     identification: StringProperty(name="Identification")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
-
+    has_children: BoolProperty(name="Has Children")
+    is_expanded: BoolProperty(name="Is Expanded")
+    level_index: IntProperty(name="Level Index")
 
 class WorkPlan(PropertyGroup):
     name: StringProperty(name="Name")
@@ -32,19 +34,15 @@ class BIMWorkPlanProperties(PropertyGroup):
     active_work_plan_id: IntProperty(name="Active Work Plan Id")
 
 
-class WorkSchedule(PropertyGroup):
-    name: StringProperty(name="Name")
-    ifc_definition_id: IntProperty(name="IFC Definition ID")
-
-
 class BIMWorkScheduleProperties(PropertyGroup):
     work_schedule_attributes: CollectionProperty(name="Work Schedule Attributes", type=Attribute)
     is_editing: BoolProperty(name="Is Editing", default=False)
-    work_schedules: CollectionProperty(name="Work Schedules", type=WorkSchedule)
     active_work_schedule_index: IntProperty(name="Active Work Schedules Index")
     active_work_schedule_id: IntProperty(name="Active Work Schedules Id")
     tasks: CollectionProperty(name="Tasks", type=Task)
     active_task_index: IntProperty(name="Active Task Index")
+    contracted_tasks: StringProperty(name="Contracted Task Items", default="[]")
+
 
 
 class WorkCalendar(PropertyGroup):

@@ -123,23 +123,6 @@ class DisableEditingWorkPlan(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class LoadWorkSchedules(bpy.types.Operator):
-    bl_idname = "bim.load_work_schedules"
-    bl_label = "Load Work Schedules"
-
-    def execute(self, context):
-        props = context.scene.BIMWorkScheduleProperties
-        while len(props.work_schedules) > 0:
-            props.work_schedules.remove(0)
-        for ifc_definition_id, work_schedule in Data.work_schedules.items():
-            new = props.work_schedules.add()
-            new.ifc_definition_id = ifc_definition_id
-            new.name = work_schedule["Name"] or "Unnamed"
-        props.is_editing = True
-        bpy.ops.bim.disable_editing_work_schedule()
-        return {"FINISHED"}
-
-
 class DisableWorkScheduleEditingUI(bpy.types.Operator):
     bl_idname = "bim.disable_work_schedule_editing_ui"
     bl_label = "Disable WorkSchedule Editing UI"
@@ -156,7 +139,6 @@ class AddWorkSchedule(bpy.types.Operator):
     def execute(self, context):
         ifcopenshell.api.run("sequence.add_work_schedule", IfcStore.get_file())
         Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_work_schedules()
         return {"FINISHED"}
 
 
@@ -182,7 +164,7 @@ class EditWorkSchedule(bpy.types.Operator):
             **{"work_schedule": self.file.by_id(props.active_work_schedule_id), "attributes": attributes}
         )
         Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_work_schedules()
+        bpy.ops.bim.disable_editing_work_schedule()
         return {"FINISHED"}
 
 
@@ -194,10 +176,11 @@ class RemoveWorkSchedule(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
-            "sequence.remove_work_schedule", self.file, **{"work_schedule": self.file.by_id(self.work_schedule)}
+            "sequence.remove_work_schedule",
+            self.file,
+            work_schedule= self.file.by_id(self.work_schedule)
         )
         Data.load(self.file)
-        bpy.ops.bim.load_work_schedules()
         return {"FINISHED"}
 
 
@@ -207,9 +190,10 @@ class EnableEditingWorkSchedule(bpy.types.Operator):
     work_schedule: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = context.scene.BIMWorkScheduleProperties
-        while len(props.work_schedule_attributes) > 0:
-            props.work_schedule_attributes.remove(0)
+        self.props = context.scene.BIMWorkScheduleProperties
+        self.props.active_work_schedule_id = self.work_schedule
+        while len(self.props.work_schedule_attributes) > 0:
+            self.props.work_schedule_attributes.remove(0)
 
         data = Data.work_schedules[self.work_schedule]
 
@@ -217,7 +201,7 @@ class EnableEditingWorkSchedule(bpy.types.Operator):
             data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
             if data_type == "entity":
                 continue
-            new = props.work_schedule_attributes.add()
+            new = self.props.work_schedule_attributes.add()
             new.name = attribute.name()
             new.is_null = data[attribute.name()] is None
             new.is_optional = attribute.optional()
@@ -230,9 +214,29 @@ class EnableEditingWorkSchedule(bpy.types.Operator):
                 new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
                 if data[attribute.name()]:
                     new.enum_value = data[attribute.name()]
-        props.active_work_schedule_id = self.work_schedule
-        bpy.ops.bim.load_tasks(work_schedule=self.work_schedule)
+        self.props.active_work_schedule_id = self.work_schedule
+
+        while len(self.props.tasks) > 0:
+            self.props.tasks.remove(0)
+
+        self.contracted_tasks = json.loads(self.props.contracted_tasks)
+        for related_object_id in Data.work_schedules[self.work_schedule]["RelatedObjects"]:
+            self.create_new_task_li(related_object_id, 0)
         return {"FINISHED"}
+
+    def create_new_task_li(self, related_object_id, level_index):
+        task = Data.tasks[related_object_id]
+        new = self.props.tasks.add()
+        new.name = task["Name"] or "Unnamed"
+        new.ifc_definition_id = related_object_id
+        new.is_expanded = related_object_id not in self.contracted_tasks
+        new.level_index = level_index
+        if task["RelatedObjects"]:
+            new.has_children = True
+            if new.is_expanded:
+                for related_object_id in task["RelatedObjects"]:
+                    self.create_new_task_li(related_object_id, level_index + 1)
+        # return {"FINISHED"}
 
 
 class DisableEditingWorkSchedule(bpy.types.Operator):
@@ -392,13 +396,80 @@ class DisableTaskEditingUI(bpy.types.Operator):
 class AddTask(bpy.types.Operator):
     bl_idname = "bim.add_task"
     bl_label = "Add Task"
+    task: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMWorkScheduleProperties
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run("sequence.add_task", self.file, **{
+        "parent_task": self.file.by_id(self.task)
+        })
+        Data.load(self.file)
+        bpy.ops.bim.enable_editing_work_schedule(work_schedule = props.active_work_schedule_id)
+        return {"FINISHED"}
+
+
+class AddSummaryTask(bpy.types.Operator):
+    bl_idname = "bim.add_summary_task"
+    bl_label = "Add Task"
     work_schedule: bpy.props.IntProperty()
 
     def execute(self, context):
+        props = context.scene.BIMWorkScheduleProperties
         self.file = IfcStore.get_file()
-        task = ifcopenshell.api.run("sequence.add_task", self.file)
-        control = self.file.by_id(self.work_schedule)
-        ifcopenshell.api.run("control.assign_control", self.file, related_object=task, relating_control=control)
+        ifcopenshell.api.run("sequence.add_task", self.file, **{
+        "work_schedule": self.file.by_id(self.work_schedule)
+        })
         Data.load(self.file)
-        bpy.ops.bim.enable_editing_work_schedule(work_schedule = self.work_schedule)
+        bpy.ops.bim.enable_editing_work_schedule(work_schedule = props.active_work_schedule_id)
+        return {"FINISHED"}
+
+
+class ExpandTask(bpy.types.Operator):
+    bl_idname = "bim.expand_task"
+    bl_label = "Expand Task"
+    task: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMWorkScheduleProperties
+        self.file = IfcStore.get_file()
+        contracted_tasks = json.loads(props.contracted_tasks)
+        contracted_tasks.remove(self.task)
+        props.contracted_tasks = json.dumps(contracted_tasks)
+        Data.load(self.file)
+        bpy.ops.bim.enable_editing_work_schedule(work_schedule = props.active_work_schedule_id)
+        return {"FINISHED"}
+
+
+class ContractTask(bpy.types.Operator):
+    bl_idname = "bim.contract_task"
+    bl_label = "Contract Task"
+    task: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMWorkScheduleProperties
+        self.file = IfcStore.get_file()
+        contracted_tasks = json.loads(props.contracted_tasks)
+        contracted_tasks.append(self.task)
+        props.contracted_tasks = json.dumps(contracted_tasks)
+        Data.load(self.file)
+        bpy.ops.bim.enable_editing_work_schedule(work_schedule = props.active_work_schedule_id)
+        return {"FINISHED"}
+
+
+class RemoveTask(bpy.types.Operator):
+    bl_idname = "bim.remove_task"
+    bl_label = "Remove Task"
+    task: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMWorkScheduleProperties
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "sequence.remove_task",
+            self.file,
+            task=IfcStore.get_file().by_id(self.task),
+        )
+        Data.load(self.file)
+        bpy.ops.bim.enable_editing_work_schedule(work_schedule = props.active_work_schedule_id)
         return {"FINISHED"}
