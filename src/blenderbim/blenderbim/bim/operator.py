@@ -69,6 +69,9 @@ class ExportIFC(bpy.types.Operator):
     json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
 
     def invoke(self, context, event):
+        if bpy.context.scene.BIMProperties.ifc_file:
+            self.filepath = bpy.context.scene.BIMProperties.ifc_file
+            return self.execute(context)
         if not self.filepath:
             self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".ifc")
         WindowManager = context.window_manager
