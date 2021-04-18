@@ -39,7 +39,8 @@ class AssignObject(bpy.types.Operator):
                 self.remove_collection(bpy.context.scene.collection, spatial_collection)
                 for collection in bpy.data.collections:
                     if collection == relating_collection:
-                        collection.children.link(spatial_collection)
+                        if not collection.children.get(spatial_collection.name):
+                            collection.children.link(spatial_collection)
                         continue
                     self.remove_collection(collection, spatial_collection)
             else:

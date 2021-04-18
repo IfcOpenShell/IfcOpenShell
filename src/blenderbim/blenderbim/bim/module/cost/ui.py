@@ -51,9 +51,8 @@ class BIM_PT_cost_schedules(Panel):
                 row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
         row = self.layout.row(align=True)
-        row.label(text="X Cost Items")
-        row.operator("bim.add_cost_item", text="", icon="ADD").cost_schedule = cost_schedule_id
-
+        row.label(text="X Summary Cost Items")
+        row.operator("bim.add_summary_cost_item", text="", icon="ADD").cost_schedule = cost_schedule_id
         self.layout.template_list(
             "BIM_UL_cost_items",
             "",
@@ -72,10 +71,12 @@ class BIM_UL_cost_items(UIList):
                 row.label(text="", icon="BLANK1")
             if item.has_children:
                 if item.is_expanded:
-                    op = row.operator("bim.contract_cost_item", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN")
+                    row.operator("bim.contract_cost_item", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN").cost_item = item.ifc_definition_id
                 else:
-                    op = row.operator("bim.expand_cost_item", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT")
-                op.cost_item = item.ifc_definition_id
+                    row.operator("bim.expand_cost_item", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT").cost_item = item.ifc_definition_id
             else:
                 row.label(text="", icon="DOT")
             row.label(text=item.name)
+            row.operator("bim.add_cost_item", text="", icon="ADD").cost_item = item.ifc_definition_id
+            op = row.operator("bim.remove_cost_item", text="", icon="X")
+            op.cost_item = item.ifc_definition_id

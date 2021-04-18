@@ -61,6 +61,7 @@ class Data:
 
     @classmethod
     def load_work_calendars(cls):
+        cls.work_calendars = {}
         for work_calendar in cls._file.by_type("IfcWorkCalendar"):
             data = work_calendar.get_info()
             del data["OwnerHistory"]
@@ -72,4 +73,9 @@ class Data:
     def load_tasks(cls):
         cls.tasks = {}
         for task in cls._file.by_type("IfcTask"):
-            cls.tasks[task.id()] = {"Name": task.Name, "Identification": task.Identification or ""}
+            data = task.get_info()
+            del data["OwnerHistory"]
+            data["RelatedObjects"] = []
+            for rel in task.IsNestedBy:
+                [data["RelatedObjects"].append(o.id()) for o in rel.RelatedObjects if o.is_a("IfcTask")]
+            cls.tasks[task.id()] = data

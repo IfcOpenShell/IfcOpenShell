@@ -318,6 +318,10 @@ class EnableEditingAssignedMaterial(bpy.types.Operator):
             material_set_class = "IfcMaterialLayerSet"
         elif product_data["type"] == "IfcMaterialProfileSet":
             material_set_data = Data.profile_sets[product_data["id"]]
+        elif product_data["type"] == "IfcMaterialProfileSetUsage":
+            profile_set_usage = Data.profile_set_usages[product_data["id"]]
+            material_set_data = Data.profile_sets[profile_set_usage["ForProfileSet"]]
+            material_set_class = "IfcMaterialProfileSet"
         elif product_data["type"] == "IfcMaterialList":
             material_set_data = Data.lists[product_data["id"]]
         else:
@@ -409,7 +413,7 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
             material_set_item_data = Data.constituents[self.material_set_item]
         elif product_data["type"] == "IfcMaterialLayerSet" or product_data["type"] == "IfcMaterialLayerSetUsage":
             material_set_item_data = Data.layers[self.material_set_item]
-        elif product_data["type"] == "IfcMaterialProfileSet":
+        elif product_data["type"] == "IfcMaterialProfileSet" or product_data["type"] == "IfcMaterialProfileSetUsage":
             material_set_item_data = Data.profiles[self.material_set_item]
         else:
             material_set_item_data = {}
@@ -542,7 +546,7 @@ class EditMaterialSetItem(bpy.types.Operator):
                 },
             )
             Data.load_layers()
-        elif product_data["type"] == "IfcMaterialProfileSet":
+        elif product_data["type"] == "IfcMaterialProfileSet" or product_data["type"] == "IfcMaterialProfileSetUsage":
             profile_attributes = {}
             for attribute in props.material_set_item_profile_attributes:
                 if attribute.data_type == "string":

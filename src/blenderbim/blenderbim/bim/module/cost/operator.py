@@ -120,21 +120,34 @@ class EditCostSchedule(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AddCostItem(bpy.types.Operator):
-    bl_idname = "bim.add_cost_item"
+class AddSummaryCostItem(bpy.types.Operator):
+    bl_idname = "bim.add_summary_cost_item"
     bl_label = "Add Cost Item"
     cost_schedule: bpy.props.IntProperty()
 
     def execute(self, context):
         props = context.scene.BIMCostProperties
         self.file = IfcStore.get_file()
-        if len(props.cost_items):
-            data = {"cost_item": self.file.by_id(props.cost_items[props.active_cost_item_index].ifc_definition_id)}
-        else:
-            data = {"cost_schedule": self.file.by_id(self.cost_schedule)}
-        ifcopenshell.api.run("cost.add_cost_item", self.file, **data)
+        ifcopenshell.api.run("cost.add_cost_item", self.file, **{
+        "cost_schedule": self.file.by_id(self.cost_schedule)
+        })
         Data.load(self.file)
         bpy.ops.bim.enable_editing_cost_schedule(cost_schedule = self.cost_schedule)
+        return {"FINISHED"}
+
+
+class AddCostItem(bpy.types.Operator):
+    bl_idname = "bim.add_cost_item"
+    bl_label = "Add Cost Item"
+    cost_item: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMCostProperties
+        self.file = IfcStore.get_file()
+        data = {"cost_item": self.file.by_id(self.cost_item)}
+        ifcopenshell.api.run("cost.add_cost_item", self.file, **data)
+        Data.load(self.file)
+        bpy.ops.bim.enable_editing_cost_schedule(cost_schedule = props.active_cost_schedule_id)
         return {"FINISHED"}
 
 
@@ -145,9 +158,11 @@ class ExpandCostItem(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMCostProperties
+        self.file = IfcStore.get_file()
         contracted_cost_items = json.loads(props.contracted_cost_items)
         contracted_cost_items.remove(self.cost_item)
         props.contracted_cost_items = json.dumps(contracted_cost_items)
+        Data.load(self.file)
         bpy.ops.bim.enable_editing_cost_schedule(cost_schedule = props.active_cost_schedule_id)
         return {"FINISHED"}
 
@@ -159,8 +174,31 @@ class ContractCostItem(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMCostProperties
+        self.file = IfcStore.get_file()
         contracted_cost_items = json.loads(props.contracted_cost_items)
         contracted_cost_items.append(self.cost_item)
         props.contracted_cost_items = json.dumps(contracted_cost_items)
+        Data.load(self.file)
+        bpy.ops.bim.enable_editing_cost_schedule(cost_schedule = props.active_cost_schedule_id)
+        return {"FINISHED"}
+
+
+class RemoveCostItem(bpy.types.Operator):
+    bl_idname = "bim.remove_cost_item"
+    bl_label = "Remove Cost item"
+    cost_item: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMCostProperties
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "cost.remove_cost_item",
+            self.file,
+            cost_item=IfcStore.get_file().by_id(self.cost_item),
+        )
+        Data.load(self.file)
+        # contracted_cost_items = json.loads(props.contracted_cost_items)
+        # contracted_cost_items.remove(props.active_cost_item_index)
+        # props.contracted_cost_items = json.dumps(contracted_cost_items)
         bpy.ops.bim.enable_editing_cost_schedule(cost_schedule = props.active_cost_schedule_id)
         return {"FINISHED"}

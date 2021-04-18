@@ -35,10 +35,8 @@ class BIM_PT_pset_template(Panel):
             row.operator("bim.enable_editing_pset_template", text="", icon="GREASEPENCIL")
             row.operator("bim.remove_pset_template", text="", icon="X")
 
-        # row.operator("bim.save_pset_template", text="", icon="EXPORT")
-
         if not Data.is_loaded and props.pset_template_files:
-            Data.load(IfcStore.get_file())
+            Data.load(IfcStore.pset_template_file)
 
         if not Data.pset_templates:
             return
