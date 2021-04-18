@@ -603,13 +603,36 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 			}
 		}
 
+		if (!emit_building_storeys_ && scale && size) {
+			scale_ = scale;
+			size_ = std::make_pair(
+				// The header writes values in mm
+				size->first * 1000 * *scale_,
+				size->second * 1000 * *scale_
+			);
+		}
+
 		if (pln) {
 			// Move pln to have projection of origin at plane center.
 			// This is necessary to have Poly and BRep HLR at the same position
 			// (Poly) is wrong otherwise.
 			Extrema_ExtPElS ext;
 			ext.Perform(gp::Origin(), *pln, 1.e-5);
+			auto P0 = pln->Location();
 			pln->SetLocation(ext.Point(1).Value());
+
+			if (!emit_building_storeys_ && scale && size) {
+				auto P1 = pln->Location();
+				gp_Vec v(P1.XYZ() - P0.XYZ());
+				gp_Trsf pi;
+				pi.SetTransformation(pln->Position());
+				pi.Invert();
+				v.Transform(pi);				
+				offset_2d_ = std::make_pair(
+					(-size->first / 2. - v.X()) * 1000 * *scale_,
+					(-size->second / 2. + v.Y()) * 1000 * *scale_
+				);
+			}
 
 			if (!deferred_section_data_) {
 				deferred_section_data_.emplace();
@@ -639,7 +662,9 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 		element_buffer_.push_back(data);
 	}
 
-	write(data);
+	if (emit_building_storeys_) {
+		write(data);
+	}
 }
 
 namespace {
@@ -1408,16 +1433,22 @@ std::array<std::array<double, 3>, 3> SvgSerializer::resize() {
 
 	if (size_) {
 		// Scale the resulting image to a bounding rectangle specified by command line arguments
+		// or specified by IfcAnnotation[ObjectType=DRAWING]
 		const double dx = xmax - xmin;
 		const double dy = ymax - ymin;
 
 		double sc, cx, cy;
-		if (scale_) {
+		if (offset_2d_ && scale_) {
+			// offset_2d is the offset in plane u,v coordinates as we want to keep the 
+			// plane coordinates used for HLR close to the model origin.
+			sc = (*scale_) * 1000;
+			cx = offset_2d_->first;
+			cy = offset_2d_->second;
+		} else if (scale_) {
 			sc = (*scale_) * 1000;
 			cx = (xmax + xmin) / 2. * sc - size_->first * center_x_.get_value_or(0.5);
 			cy = (ymax + ymin) / 2. * sc - size_->second * center_y_.get_value_or(0.5);
-		}
-		else {
+		} else {
 			if (calculated_scale_) {
 				sc = *calculated_scale_;
 			}
@@ -1708,6 +1739,8 @@ void SvgSerializer::addTextAnnotations(const drawing_key& k) {
 }
 
 void SvgSerializer::finalize() {
+	doWriteHeader();
+
 	for (auto& p : drawing_metadata) {
 		addTextAnnotations(p.first);
 	}
@@ -1900,6 +1933,11 @@ void SvgSerializer::finalize() {
 }
 
 void SvgSerializer::writeHeader() {
+	// This doesn't do anything anymore because there is now the option that an
+	// IfcAnnotation[ObjectType=DRAWING] defines the SVG viewBox and dimensions
+}
+
+void SvgSerializer::doWriteHeader() {
 	svg_file << "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"";
 	if (use_namespace_) {
 		svg_file << " xmlns:ifc=\"http://www.ifcopenshell.org/ns\"";
