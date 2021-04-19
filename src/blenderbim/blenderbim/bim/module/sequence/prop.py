@@ -1,4 +1,7 @@
 import bpy
+import ifcopenshell.api
+from blenderbim.bim.ifc import IfcStore
+from ifcopenshell.api.sequence.data import Data
 from blenderbim.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -13,9 +16,41 @@ from bpy.props import (
 )
 
 
+def updateTaskName(self, context):
+    if self.name == "Unnamed":
+        return
+    self.file = IfcStore.get_file()
+    props = context.scene.BIMWorkScheduleProperties
+    ifcopenshell.api.run(
+        "sequence.edit_task",
+        self.file,
+        **{"task": self.file.by_id(self.ifc_definition_id), "attributes": {"Name": self.name}}
+    )
+    Data.load(IfcStore.get_file())
+    if props.active_task_id == self.ifc_definition_id:
+        attribute = context.scene.BIMWorkScheduleProperties.task_attributes.get("Name")
+        attribute.string_value = self.name
+
+
+def updateTaskIdentification(self, context):
+    if self.identification == "X":
+        return
+    self.file = IfcStore.get_file()
+    props = context.scene.BIMWorkScheduleProperties
+    ifcopenshell.api.run(
+        "sequence.edit_task",
+        self.file,
+        **{"task": self.file.by_id(self.ifc_definition_id), "attributes": {"Identification": self.identification}}
+    )
+    Data.load(IfcStore.get_file())
+    if props.active_task_id == self.ifc_definition_id:
+        attribute = context.scene.BIMWorkScheduleProperties.task_attributes.get("Identification")
+        attribute.string_value = self.identification
+
+
 class Task(PropertyGroup):
-    name: StringProperty(name="Name")
-    identification: StringProperty(name="Identification")
+    name: StringProperty(name="Name", update=updateTaskName)
+    identification: StringProperty(name="Identification", update=updateTaskIdentification)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     has_children: BoolProperty(name="Has Children")
     is_expanded: BoolProperty(name="Is Expanded")
@@ -42,6 +77,8 @@ class BIMWorkScheduleProperties(PropertyGroup):
     active_work_schedule_id: IntProperty(name="Active Work Schedules Id")
     tasks: CollectionProperty(name="Tasks", type=Task)
     active_task_index: IntProperty(name="Active Task Index")
+    active_task_id: IntProperty(name="Active Task Id")
+    task_attributes: CollectionProperty(name="Task Attributes", type=Attribute)
     contracted_tasks: StringProperty(name="Contracted Task Items", default="[]")
 
 
