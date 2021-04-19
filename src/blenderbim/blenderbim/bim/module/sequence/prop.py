@@ -21,6 +21,7 @@ class Task(PropertyGroup):
     is_expanded: BoolProperty(name="Is Expanded")
     level_index: IntProperty(name="Level Index")
 
+
 class WorkPlan(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
@@ -42,7 +43,6 @@ class BIMWorkScheduleProperties(PropertyGroup):
     tasks: CollectionProperty(name="Tasks", type=Task)
     active_task_index: IntProperty(name="Active Task Index")
     contracted_tasks: StringProperty(name="Contracted Task Items", default="[]")
-
 
 
 class WorkCalendar(PropertyGroup):
