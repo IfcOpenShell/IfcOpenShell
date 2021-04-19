@@ -546,3 +546,75 @@ class EditTask(bpy.types.Operator):
         bpy.ops.bim.disable_editing_task()
         bpy.ops.bim.enable_editing_tasks(work_schedule=props.active_work_schedule_id)
         return {"FINISHED"}
+
+
+class AssignPredecessor(bpy.types.Operator):
+    bl_idname = "bim.assign_predecessor"
+    bl_label = "Assign Predecessor"
+    task: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMWorkScheduleProperties
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "sequence.assign_sequence",
+            self.file,
+            relating_process=IfcStore.get_file().by_id(self.task),
+            related_process=IfcStore.get_file().by_id(props.active_task_id),
+        )
+        Data.load(self.file)
+        return {"FINISHED"}
+
+
+class AssignSuccessor(bpy.types.Operator):
+    bl_idname = "bim.assign_successor"
+    bl_label = "Assign Successor"
+    task: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMWorkScheduleProperties
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "sequence.assign_sequence",
+            self.file,
+            relating_process=IfcStore.get_file().by_id(props.active_task_id),
+            related_process=IfcStore.get_file().by_id(self.task),
+        )
+        Data.load(self.file)
+        return {"FINISHED"}
+
+
+class UnassignPredecessor(bpy.types.Operator):
+    bl_idname = "bim.unassign_predecessor"
+    bl_label = "Unassign Predecessor"
+    task: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMWorkScheduleProperties
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "sequence.unassign_sequence",
+            self.file,
+            relating_process=IfcStore.get_file().by_id(self.task),
+            related_process=IfcStore.get_file().by_id(props.active_task_id),
+        )
+        Data.load(self.file)
+        return {"FINISHED"}
+
+
+class UnassignSuccessor(bpy.types.Operator):
+    bl_idname = "bim.unassign_successor"
+    bl_label = "Unassign Successor"
+    task: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMWorkScheduleProperties
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "sequence.unassign_sequence",
+            self.file,
+            relating_process=IfcStore.get_file().by_id(props.active_task_id),
+            related_process=IfcStore.get_file().by_id(self.task),
+        )
+        Data.load(self.file)
+        return {"FINISHED"}

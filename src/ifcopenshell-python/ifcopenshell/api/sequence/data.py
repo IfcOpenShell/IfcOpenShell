@@ -76,6 +76,10 @@ class Data:
             data = task.get_info()
             del data["OwnerHistory"]
             data["RelatedObjects"] = []
+            data["IsPredecessorTo"] = []
+            data["IsSuccessorFrom"] = []
             for rel in task.IsNestedBy:
                 [data["RelatedObjects"].append(o.id()) for o in rel.RelatedObjects if o.is_a("IfcTask")]
+            [data["IsPredecessorTo"].append(rel.RelatedProcess.id()) for rel in task.IsPredecessorTo or []]
+            [data["IsSuccessorFrom"].append(rel.RelatingProcess.id()) for rel in task.IsSuccessorFrom or []]
             cls.tasks[task.id()] = data

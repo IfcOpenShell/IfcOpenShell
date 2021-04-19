@@ -153,6 +153,7 @@ class BIM_PT_work_schedules(Panel):
 class BIM_UL_tasks(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
+            props = context.scene.BIMWorkScheduleProperties
             row = layout.row(align=True)
             for i in range(0, item.level_index):
                 row.label(text="", icon="BLANK1")
@@ -169,10 +170,20 @@ class BIM_UL_tasks(UIList):
                 row.label(text="", icon="DOT")
             row.prop(item, "identification", emboss=False, text="")
             row.prop(item, "name", emboss=False, text="")
-            if context.scene.BIMWorkScheduleProperties.active_task_id == item.ifc_definition_id:
+            if props.active_task_id == item.ifc_definition_id:
                 row.operator("bim.edit_task", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_task", text="", icon="CANCEL")
-            if context.scene.BIMWorkScheduleProperties.active_task_id:
+            elif props.active_task_id:
+                if props.active_task_id in Data.tasks[item.ifc_definition_id]["IsPredecessorTo"]:
+                    row.operator("bim.unassign_predecessor", text="", icon="BACK", emboss=False).task = item.ifc_definition_id
+                else:
+                    row.operator("bim.assign_predecessor", text="", icon="TRACKING_BACKWARDS", emboss=False).task = item.ifc_definition_id
+
+                if props.active_task_id in Data.tasks[item.ifc_definition_id]["IsSuccessorFrom"]:
+                    row.operator("bim.unassign_successor", text="", icon="FORWARD", emboss=False).task = item.ifc_definition_id
+                else:
+                    row.operator("bim.assign_successor", text="", icon="TRACKING_FORWARDS", emboss=False).task = item.ifc_definition_id
+
                 row.operator("bim.add_task", text="", icon="ADD").task = item.ifc_definition_id
                 row.operator("bim.remove_task", text="", icon="X").task = item.ifc_definition_id
             else:
