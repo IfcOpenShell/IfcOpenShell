@@ -88,6 +88,11 @@ def get_container(element):
         return element.ContainedInStructure[0].RelatingStructure
 
 
+def get_aggregate(element):
+    if hasattr(element, "Decomposes") and element.Decomposes:
+        return element.Decomposes[0].RelatingObject
+
+
 def replace_attribute(element, old, new):
     for i, attribute in enumerate(element):
         if attribute == old:
