@@ -72,7 +72,7 @@ class BIMWorkPlanProperties(PropertyGroup):
 
 class BIMWorkScheduleProperties(PropertyGroup):
     work_schedule_attributes: CollectionProperty(name="Work Schedule Attributes", type=Attribute)
-    is_editing: BoolProperty(name="Is Editing", default=False)
+    is_editing: StringProperty(name="Is Editing")
     active_work_schedule_index: IntProperty(name="Active Work Schedules Index")
     active_work_schedule_id: IntProperty(name="Active Work Schedules Id")
     tasks: CollectionProperty(name="Tasks", type=Task)

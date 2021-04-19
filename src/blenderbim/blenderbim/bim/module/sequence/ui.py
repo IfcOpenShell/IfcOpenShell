@@ -85,30 +85,35 @@ class BIM_PT_work_schedules(Panel):
         if not Data.is_loaded:
             Data.load(IfcStore.get_file())
 
-        row = self.layout.row(align=True)
-        row.label(text="{} Work Schedules Found".format(len(Data.work_schedules)), icon="TEXT")
         row = self.layout.row()
         row.operator("bim.add_work_schedule", icon="ADD")
 
         for work_schedule_id, work_schedule in Data.work_schedules.items():
-            row = self.layout.row(align=True)
-            row.label(text=work_schedule["Name"] or "Unnamed", icon="LINENUMBERS_ON")
+            self.draw_work_schedule_ui(work_schedule_id, work_schedule)
 
-            if self.props.active_work_schedule_id and self.props.active_work_schedule_id == work_schedule_id:
+    def draw_work_schedule_ui(self, work_schedule_id, work_schedule):
+        row = self.layout.row(align=True)
+        row.label(text=work_schedule["Name"] or "Unnamed", icon="TEXT")
+
+        if self.props.active_work_schedule_id and self.props.active_work_schedule_id == work_schedule_id:
+            if self.props.is_editing == "WORK_SCHEDULE":
                 row.operator("bim.edit_work_schedule", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_work_schedule", text="", icon="X")
-            elif self.props.active_work_schedule_id:
-                row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = work_schedule_id
-            else:
-                row.operator(
-                    "bim.enable_editing_work_schedule", text="", icon="GREASEPENCIL"
-                ).work_schedule = work_schedule_id
-                row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = work_schedule_id
+            row.operator("bim.disable_editing_work_schedule", text="", icon="CANCEL")
+        elif self.props.active_work_schedule_id:
+            row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = work_schedule_id
+        else:
+            row.operator("bim.enable_editing_tasks", text="", icon="ACTION").work_schedule = work_schedule_id
+            op = row.operator("bim.enable_editing_work_schedule", text="", icon="GREASEPENCIL")
+            op.work_schedule = work_schedule_id
+            row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = work_schedule_id
 
-            if self.props.active_work_schedule_id == work_schedule_id:
-                self.draw_editable_work_schedule_ui(work_schedule_id, work_schedule)
+        if self.props.active_work_schedule_id == work_schedule_id:
+            if self.props.is_editing == "WORK_SCHEDULE":
+                self.draw_editable_work_schedule_ui()
+            elif self.props.is_editing == "TASKS":
+                self.draw_editable_task_ui(work_schedule_id)
 
-    def draw_editable_work_schedule_ui(self, work_schedule_id, work_schedule):
+    def draw_editable_work_schedule_ui(self):
         for attribute in self.props.work_schedule_attributes:
             row = self.layout.row(align=True)
             if attribute.data_type == "string":
@@ -118,6 +123,7 @@ class BIM_PT_work_schedules(Panel):
             if attribute.is_optional:
                 row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
+    def draw_editable_task_ui(self, work_schedule_id):
         row = self.layout.row(align=True)
         row.label(text="X Summary Tasks")
         row.operator("bim.add_summary_task", text="", icon="ADD").work_schedule = work_schedule_id
@@ -130,21 +136,18 @@ class BIM_PT_work_schedules(Panel):
             "active_task_index",
         )
         if self.props.active_task_id:
-            self.draw_editable_task_ui()
-
-    def draw_editable_task_ui(self):
-        for attribute in self.props.task_attributes:
-            row = self.layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "boolean":
-                row.prop(attribute, "bool_value", text=attribute.name)
-            elif attribute.data_type == "integer":
-                row.prop(attribute, "int_value", text=attribute.name)
-            elif attribute.data_type == "enum":
-                row.prop(attribute, "enum_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+            for attribute in self.props.task_attributes:
+                row = self.layout.row(align=True)
+                if attribute.data_type == "string":
+                    row.prop(attribute, "string_value", text=attribute.name)
+                elif attribute.data_type == "boolean":
+                    row.prop(attribute, "bool_value", text=attribute.name)
+                elif attribute.data_type == "integer":
+                    row.prop(attribute, "int_value", text=attribute.name)
+                elif attribute.data_type == "enum":
+                    row.prop(attribute, "enum_value", text=attribute.name)
+                if attribute.is_optional:
+                    row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
 
 class BIM_UL_tasks(UIList):
