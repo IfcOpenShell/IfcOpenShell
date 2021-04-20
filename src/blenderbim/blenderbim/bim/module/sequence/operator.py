@@ -2,7 +2,7 @@ import bpy
 import json
 import ifcopenshell.api
 from datetime import datetime
-from dateutil.parser import parse
+from dateutil import parser
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.sequence.data import Data
 
@@ -587,9 +587,12 @@ class EditTaskTime(bpy.types.Operator):
                 continue
             if "Start" in key or "Finish" in key or key == "StatusTime":
                 try:
-                    attributes[key] = parse(value)
+                    attributes[key] = parser.isoparse(value)
                 except:
-                    attributes[key] = None
+                    try:
+                        attributes[key] = parser.parse(value, dayfirst=True, fuzzy=True)
+                    except:
+                        attributes[key] = None
         return attributes
 
 

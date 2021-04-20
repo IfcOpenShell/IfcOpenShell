@@ -3,7 +3,7 @@ import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.sequence.data import Data
 from blenderbim.bim.prop import StrProperty, Attribute
-from dateutil.parser import parse
+from dateutil import parser
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -68,14 +68,17 @@ def updateTaskTimeDateTime(self, context, startfinish):
 
     if startfinish_value == "-":
         return
+
     self.file = IfcStore.get_file()
-    props = context.scene.BIMWorkScheduleProperties
 
     try:
-        startfinish_datetime = parse(startfinish_value)
+        startfinish_datetime = parser.isoparse(startfinish_value)
     except:
-        setattr(self, startfinish, "-")
-        return
+        try:
+            startfinish_datetime = parser.parse(startfinish_value, dayfirst=True, fuzzy=True)
+        except:
+            setattr(self, startfinish, "-")
+            return
 
     task = self.file.by_id(self.ifc_definition_id)
     if task.TaskTime:
@@ -85,6 +88,9 @@ def updateTaskTimeDateTime(self, context, startfinish):
         Data.load(IfcStore.get_file())
 
     if Data.task_times[task_time.id()][startfinish_key] == startfinish_datetime:
+        canonical_startfinish_value = canonicalise_time(startfinish_datetime)
+        if startfinish_value != canonical_startfinish_value:
+            setattr(self, startfinish, canonical_startfinish_value)
         return
 
     ifcopenshell.api.run(
@@ -130,6 +136,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
     active_task_index: IntProperty(name="Active Task Index")
     active_task_id: IntProperty(name="Active Task Id")
     task_attributes: CollectionProperty(name="Task Attributes", type=Attribute)
+    should_show_times: BoolProperty(name="Should Show Times", default=False)
     active_task_time_id: IntProperty(name="Active Task Id")
     task_time_attributes: CollectionProperty(name="Task Time Attributes", type=Attribute)
     contracted_tasks: StringProperty(name="Contracted Task Items", default="[]")
