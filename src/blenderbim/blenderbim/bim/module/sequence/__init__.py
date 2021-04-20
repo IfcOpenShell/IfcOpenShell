@@ -39,6 +39,7 @@ classes = (
     operator.EnableEditingTaskTime,
     operator.DisableEditingTaskTime,
     operator.EditTaskTime,
+    operator.AssignProduct,
     prop.WorkPlan,
     prop.BIMWorkPlanProperties,
     prop.Task,

@@ -293,3 +293,8 @@ class BIM_UL_tasks(UIList):
                 row.operator("bim.enable_editing_task", text="", icon="GREASEPENCIL").task = item.ifc_definition_id
                 row.operator("bim.add_task", text="", icon="ADD").task = item.ifc_definition_id
                 row.operator("bim.remove_task", text="", icon="X").task = item.ifc_definition_id
+            if context.selected_objects:
+                obj = context.selected_objects[0]
+                pass
+            row = layout.row(align=True)
+            row.operator("bim.assign_product", text="ADD", icon="OUTLINER_COLLECTION").task = item.ifc_definition_id

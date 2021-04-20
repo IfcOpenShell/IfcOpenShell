@@ -628,6 +628,7 @@ class EnableEditingTask(bpy.types.Operator):
                 if data[attribute.name()]:
                     new.enum_value = data[attribute.name()]
         props.active_task_id = self.task
+        props.should_show_times = True
         return {"FINISHED"}
 
 
@@ -739,5 +740,25 @@ class UnassignSuccessor(bpy.types.Operator):
             relating_process=self.file.by_id(props.active_task_id),
             related_process=self.file.by_id(self.task),
         )
+        Data.load(self.file)
+        return {"FINISHED"}
+
+
+class AssignProduct(bpy.types.Operator):
+    bl_idname = "bim.assign_product"
+    bl_label = "Assign Product"
+    task: bpy.props.IntProperty()
+
+    def execute(self, context):
+        obj = bpy.context.active_object.BIMObjectProperties.ifc_definition_id
+        props = context.scene.BIMWorkScheduleProperties
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "sequence.assign_product",
+            self.file,
+            relating_product = self.file.by_id(obj),
+            related_process = self.file.by_id(self.task),
+        )
+        props.has_assignment = True
         Data.load(self.file)
         return {"FINISHED"}
