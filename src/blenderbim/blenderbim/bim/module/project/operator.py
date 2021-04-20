@@ -88,3 +88,86 @@ class ValidateIfcFile(bpy.types.Operator):
         logger.setLevel(logging.DEBUG)
         ifcopenshell.validate.validate(IfcStore.get_file(), logger)
         return {"FINISHED"}
+
+
+class SelectLibraryFile(bpy.types.Operator):
+    bl_idname = "bim.select_library_file"
+    bl_label = "Select Library File"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
+
+    def execute(self, context):
+        IfcStore.library_path = self.filepath
+        IfcStore.library_file = ifcopenshell.open(self.filepath)
+        bpy.ops.bim.refresh_library()
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+
+class RefreshLibrary(bpy.types.Operator):
+    bl_idname = "bim.refresh_library"
+    bl_label = "Refresh Library"
+
+    def execute(self, context):
+        self.props = context.scene.BIMProjectProperties
+
+        while len(self.props.library_elements) > 0:
+            self.props.library_elements.remove(0)
+
+        while len(self.props.library_breadcrumb) > 0:
+            self.props.library_breadcrumb.remove(0)
+
+        self.props.active_library_element = ""
+
+        types = IfcStore.library_file.wrapped_data.types_with_super()
+        if "IfcTypeProduct" in types:
+            new = self.props.library_elements.add()
+            new.name = "IfcTypeProduct"
+        return {"FINISHED"}
+
+
+class ChangeLibraryElement(bpy.types.Operator):
+    bl_idname = "bim.change_library_element"
+    bl_label = "Change Library Element"
+    element_name: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMProjectProperties
+        ifc_classes = set()
+        self.props.active_library_element = self.element_name
+        crumb = self.props.library_breadcrumb.add()
+        crumb.name = self.element_name
+        elements = IfcStore.library_file.by_type(self.element_name)
+        [ifc_classes.add(e.is_a()) for e in elements]
+        while len(self.props.library_elements) > 0:
+            self.props.library_elements.remove(0)
+        if len(ifc_classes) == 1:
+            for element in elements:
+                new = self.props.library_elements.add()
+                new.name = element.Name or "Unnamed"
+                new.ifc_definition_id = element.id()
+        else:
+            for ifc_class in ifc_classes:
+                new = self.props.library_elements.add()
+                new.name = ifc_class
+        return {"FINISHED"}
+
+
+class RewindLibrary(bpy.types.Operator):
+    bl_idname = "bim.rewind_library"
+    bl_label = "Rewind Library"
+
+    def execute(self, context):
+        self.props = context.scene.BIMProjectProperties
+        total_breadcrumbs = len(self.props.library_breadcrumb)
+        if total_breadcrumbs < 2:
+            bpy.ops.bim.refresh_library()
+            return {"FINISHED"}
+        element_name = self.props.library_breadcrumb[total_breadcrumbs - 2].name
+        self.props.library_breadcrumb.remove(total_breadcrumbs - 1)
+        self.props.library_breadcrumb.remove(total_breadcrumbs - 2)
+        bpy.ops.bim.change_library_element(element_name = element_name)
+        return {"FINISHED"}
