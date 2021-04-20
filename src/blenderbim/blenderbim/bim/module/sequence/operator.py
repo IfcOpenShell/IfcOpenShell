@@ -1,6 +1,8 @@
 import bpy
 import json
 import ifcopenshell.api
+from datetime import datetime
+from dateutil.parser import parse
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.sequence.data import Data
 
@@ -232,6 +234,16 @@ class EnableEditingTasks(bpy.types.Operator):
         new.ifc_definition_id = related_object_id
         new.name = task["Name"] or "Unnamed"
         new.identification = task["Identification"] or "X"
+        if task["TaskTime"]:
+            task_time = Data.task_times[task["TaskTime"]]
+            new.start = self.canonicalise_time(task_time["ScheduleStart"])
+            new.finish = self.canonicalise_time(task_time["ScheduleFinish"])
+            # TODO: duration
+            new.duration = "-"
+        else:
+            new.start = "-"
+            new.finish = "-"
+            new.duration = "-"
         new.is_expanded = related_object_id not in self.contracted_tasks
         new.level_index = level_index
         if task["RelatedObjects"]:
@@ -239,6 +251,11 @@ class EnableEditingTasks(bpy.types.Operator):
             if new.is_expanded:
                 for related_object_id in task["RelatedObjects"]:
                     self.create_new_task_li(related_object_id, level_index + 1)
+
+    def canonicalise_time(self, time):
+        if not time:
+            return "-"
+        return time.strftime("%d/%m/%y")
 
 
 class DisableEditingWorkSchedule(bpy.types.Operator):
@@ -481,16 +498,12 @@ class EnableEditingTaskTime(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMWorkScheduleProperties
         self.file = IfcStore.get_file()
+
+        task_time_id = Data.tasks[self.task]["TaskTime"] or self.add_task_time().id()
+
         while len(props.task_time_attributes) > 0:
             props.task_time_attributes.remove(0)
 
-        if self.file.by_id(self.task).TaskTime:
-            task_time_id = self.file.by_id(self.task).TaskTime.id()
-        else:
-            task_time = ifcopenshell.api.run("sequence.add_task_time", self.file)
-            self.file.by_id(self.task).TaskTime = task_time
-            task_time_id = task_time.id()
-        Data.load(self.file)
         data = Data.task_times[task_time_id]
 
         for attribute in IfcStore.get_schema().declaration_by_name("IfcTaskTime").all_attributes():
@@ -503,17 +516,81 @@ class EnableEditingTaskTime(bpy.types.Operator):
             new.is_optional = attribute.optional()
             new.data_type = data_type
             if data_type == "string":
-                new.string_value = "" if new.is_null else data[attribute.name()]
+                if isinstance(data[attribute.name()], datetime):
+                    new.string_value = "" if new.is_null else data[attribute.name()].isoformat()
+                else:
+                    new.string_value = "" if new.is_null else data[attribute.name()]
             elif data_type == "boolean":
                 new.bool_value = False if new.is_null else data[attribute.name()]
-            elif data_type == "integer":
-                new.int_value = 0 if new.is_null else data[attribute.name()]
+            elif data_type == "float":
+                new.float_value = 0.0 if new.is_null else data[attribute.name()]
             elif data_type == "enum":
                 new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
                 if data[attribute.name()]:
                     new.enum_value = data[attribute.name()]
-        props.active_task_time_id = IfcStore.get_file().by_id(self.task).TaskTime.id()
+        props.active_task_time_id = task_time_id
+        props.active_task_id = self.task
         return {"FINISHED"}
+
+    def add_task_time(self):
+        task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=self.file.by_id(self.task))
+        Data.load(IfcStore.get_file())
+        return task_time
+
+
+class DisableEditingTaskTime(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_task_time"
+    bl_label = "Disable Editing Task Time"
+
+    def execute(self, context):
+        context.scene.BIMWorkScheduleProperties.active_task_time_id = 0
+        bpy.ops.bim.disable_editing_task()
+        return {"FINISHED"}
+
+
+class EditTaskTime(bpy.types.Operator):
+    bl_idname = "bim.edit_task_time"
+    bl_label = "Edit Task Time"
+
+    def execute(self, context):
+        props = context.scene.BIMWorkScheduleProperties
+        attributes = {}
+        for attribute in props.task_time_attributes:
+            if attribute.is_null:
+                attributes[attribute.name] = None
+            else:
+                if attribute.data_type == "string":
+                    attributes[attribute.name] = attribute.string_value
+                elif attribute.data_type == "boolean":
+                    attributes[attribute.name] = attribute.bool_value
+                elif attribute.data_type == "float":
+                    attributes[attribute.name] = attribute.float_value
+                elif attribute.data_type == "enum":
+                    attributes[attribute.name] = attribute.enum_value
+
+        attributes = self.convert_strings_to_date_times(attributes)
+
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "sequence.edit_task_time",
+            self.file,
+            **{"task_time": self.file.by_id(props.active_task_time_id), "attributes": attributes}
+        )
+        Data.load(IfcStore.get_file())
+        bpy.ops.bim.disable_editing_task_time()
+        bpy.ops.bim.enable_editing_tasks(work_schedule=props.active_work_schedule_id)
+        return {"FINISHED"}
+
+    def convert_strings_to_date_times(self, attributes):
+        for key, value in attributes.items():
+            if not value:
+                continue
+            if "Start" in key or "Finish" in key or key == "StatusTime":
+                try:
+                    attributes[key] = parse(value)
+                except:
+                    attributes[key] = None
+        return attributes
 
 
 class EnableEditingTask(bpy.types.Operator):
@@ -548,15 +625,6 @@ class EnableEditingTask(bpy.types.Operator):
                 if data[attribute.name()]:
                     new.enum_value = data[attribute.name()]
         props.active_task_id = self.task
-        return {"FINISHED"}
-
-
-class DisableEditingTaskTime(bpy.types.Operator):
-    bl_idname = "bim.disable_editing_task_time"
-    bl_label = "Disable Editing Task Time"
-
-    def execute(self, context):
-        context.scene.BIMWorkScheduleProperties.active_task_time_id = 0
         return {"FINISHED"}
 
 
@@ -667,23 +735,6 @@ class UnassignSuccessor(bpy.types.Operator):
             self.file,
             relating_process=self.file.by_id(props.active_task_id),
             related_process=self.file.by_id(self.task),
-        )
-        Data.load(self.file)
-        return {"FINISHED"}
-
-
-class AddTaskTime(bpy.types.Operator):
-    bl_idname = "bim.add_task_time"
-    bl_label = "Add Task Time"
-    task: bpy.props.IntProperty()
-
-    def execute(self, context):
-        props = context.scene.BIMWorkScheduleProperties
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.add_task_time",
-            self.file,
-            task = self.file.by_id(self.task),
         )
         Data.load(self.file)
         return {"FINISHED"}
