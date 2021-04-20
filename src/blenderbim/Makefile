@@ -177,6 +177,13 @@ endif
 	cp -r dist/working/svgwrite-1.3.1/svgwrite dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
+	# Provides fuzzy date parsing for construction sequencing
+	mkdir dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/be/ed/5bbc91f03fa4c839c4c7360375da77f9659af5f7086b7a7bdda65771c8e0/python-dateutil-2.8.1.tar.gz
+	cd dist/working && tar -xzvf python-dateutil*
+	cp -r dist/working/python-dateutil-2.8.1/dateutil dist/blenderbim/libs/site/packages/
+	rm -rf dist/working
+
 	# Required by IFCDiff
 	mkdir dist/working
 	cd dist/working && wget https://github.com/Moult/deepdiff/archive/master.zip
