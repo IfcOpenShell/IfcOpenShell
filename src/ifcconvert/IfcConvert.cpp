@@ -396,6 +396,7 @@ int main(int argc, char** argv) {
 			"Approximate every curve as polygonal in SVG output")
 		("svg-project",
 			"Always enable hidden line rendering instead of only on elevations")
+		("svg-without-storeys", "Don't emit drawings for building storeys")
 		("door-arcs", "Draw door openings arcs for IfcDoor elements")
 		("section-height", po::value<double>(&section_height),
 		    "Specifies the cut section height for SVG 2D geometry.")
@@ -1012,6 +1013,7 @@ int main(int argc, char** argv) {
 		static_cast<SvgSerializer*>(serializer.get())->setUseHlrPoly(vmap.count("svg-poly") > 0);
 		static_cast<SvgSerializer*>(serializer.get())->setPolygonal(vmap.count("svg-write-poly") > 0);
 		static_cast<SvgSerializer*>(serializer.get())->setAlwaysProject(vmap.count("svg-project") > 0);
+		static_cast<SvgSerializer*>(serializer.get())->setWithoutStoreys(vmap.count("svg-without-storeys") > 0);
 		if (relative_center_x && relative_center_y) {
 			static_cast<SvgSerializer*>(serializer.get())->setDrawingCenter(*relative_center_x, *relative_center_y);
 		}

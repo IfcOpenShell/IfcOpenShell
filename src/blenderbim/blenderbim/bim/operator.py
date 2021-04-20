@@ -69,6 +69,9 @@ class ExportIFC(bpy.types.Operator):
     json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
 
     def invoke(self, context, event):
+        if bpy.context.scene.BIMProperties.ifc_file:
+            self.filepath = bpy.context.scene.BIMProperties.ifc_file
+            return self.execute(context)
         if not self.filepath:
             self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".ifc")
         WindowManager = context.window_manager
@@ -321,6 +324,7 @@ class SelectIfcFile(bpy.types.Operator):
     bl_idname = "bim.select_ifc_file"
     bl_label = "Select IFC File"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
 
     def execute(self, context):
         bpy.context.scene.BIMProperties.ifc_file = self.filepath
