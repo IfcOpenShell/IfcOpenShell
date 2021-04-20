@@ -98,6 +98,9 @@ class BIM_PT_work_schedules(Panel):
         if self.props.active_work_schedule_id and self.props.active_work_schedule_id == work_schedule_id:
             if self.props.is_editing == "WORK_SCHEDULE":
                 row.operator("bim.edit_work_schedule", text="", icon="CHECKMARK")
+            elif self.props.is_editing == "TASKS":
+                row.prop(self.props, "should_show_times", text="", icon="TIME")
+                row.operator("bim.add_summary_task", text="", icon="ADD").work_schedule = work_schedule_id
             row.operator("bim.disable_editing_work_schedule", text="", icon="CANCEL")
         elif self.props.active_work_schedule_id:
             row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = work_schedule_id
@@ -124,9 +127,6 @@ class BIM_PT_work_schedules(Panel):
                 row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
     def draw_editable_task_ui(self, work_schedule_id):
-        row = self.layout.row(align=True)
-        row.label(text="X Summary Tasks")
-        row.operator("bim.add_summary_task", text="", icon="ADD").work_schedule = work_schedule_id
         self.layout.template_list(
             "BIM_UL_tasks",
             "",
@@ -256,9 +256,10 @@ class BIM_UL_tasks(UIList):
             row.prop(item, "identification", emboss=False, text="")
             row.prop(item, "name", emboss=False, text="")
 
-            row.prop(item, "start", emboss=False, text="")
-            row.prop(item, "finish", emboss=False, text="")
-            row.prop(item, "duration", emboss=False, text="")
+            if props.should_show_times:
+                row.prop(item, "start", emboss=False, text="")
+                row.prop(item, "finish", emboss=False, text="")
+                row.prop(item, "duration", emboss=False, text="")
 
             if props.active_task_id == item.ifc_definition_id:
                 if props.active_task_time_id:
@@ -289,6 +290,6 @@ class BIM_UL_tasks(UIList):
                 row.operator("bim.remove_task", text="", icon="X").task = item.ifc_definition_id
             else:
                 row.operator("bim.enable_editing_task_time", text="", icon="TIME").task = item.ifc_definition_id
-                row.operator("bim.add_task", text="", icon="ADD").task = item.ifc_definition_id
                 row.operator("bim.enable_editing_task", text="", icon="GREASEPENCIL").task = item.ifc_definition_id
+                row.operator("bim.add_task", text="", icon="ADD").task = item.ifc_definition_id
                 row.operator("bim.remove_task", text="", icon="X").task = item.ifc_definition_id
