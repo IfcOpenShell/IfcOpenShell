@@ -5,8 +5,6 @@ import ifcopenshell.api
 import bpy
 from blenderbim.bim.ifc import IfcStore
 
-# from ifcopenshell.api.project.data import Data
-
 
 class CreateProject(bpy.types.Operator):
     bl_idname = "bim.create_project"
@@ -149,6 +147,10 @@ class ChangeLibraryElement(bpy.types.Operator):
                 new = self.props.library_elements.add()
                 new.name = element.Name or "Unnamed"
                 new.ifc_definition_id = element.id()
+                if IfcStore.library_file.schema == "IFC2X3" or not IfcStore.library_file.by_type("IfcProjectLibrary"):
+                    new.is_declared = False
+                elif element.HasContext and element.HasContext[0].RelatingContext.is_a("IfcProjectLibrary"):
+                    new.is_declared = True
         else:
             for ifc_class in ifc_classes:
                 new = self.props.library_elements.add()
@@ -169,5 +171,52 @@ class RewindLibrary(bpy.types.Operator):
         element_name = self.props.library_breadcrumb[total_breadcrumbs - 2].name
         self.props.library_breadcrumb.remove(total_breadcrumbs - 1)
         self.props.library_breadcrumb.remove(total_breadcrumbs - 2)
+        bpy.ops.bim.change_library_element(element_name=element_name)
+        return {"FINISHED"}
+
+
+class AssignLibraryDeclaration(bpy.types.Operator):
+    bl_idname = "bim.assign_library_declaration"
+    bl_label = "Assign Library Declaration"
+    definition: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMProjectProperties
+        ifcopenshell.api.run(
+            "project.assign_declaration",
+            IfcStore.library_file,
+            definition=IfcStore.library_file.by_id(self.definition),
+            relating_context=IfcStore.library_file.by_type("IfcProjectLibrary")[0],
+        )
+        element_name = self.props.active_library_element
+        bpy.ops.bim.rewind_library()
         bpy.ops.bim.change_library_element(element_name = element_name)
+        return {"FINISHED"}
+
+
+class UnassignLibraryDeclaration(bpy.types.Operator):
+    bl_idname = "bim.unassign_library_declaration"
+    bl_label = "Unassign Library Declaration"
+    definition: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMProjectProperties
+        ifcopenshell.api.run(
+            "project.unassign_declaration",
+            IfcStore.library_file,
+            definition=IfcStore.library_file.by_id(self.definition),
+            relating_context=IfcStore.library_file.by_type("IfcProjectLibrary")[0],
+        )
+        element_name = self.props.active_library_element
+        bpy.ops.bim.rewind_library()
+        bpy.ops.bim.change_library_element(element_name = element_name)
+        return {"FINISHED"}
+
+
+class SaveLibraryFile(bpy.types.Operator):
+    bl_idname = "bim.save_library_file"
+    bl_label = "Save Library File"
+
+    def execute(self, context):
+        IfcStore.library_file.write(IfcStore.library_path)
         return {"FINISHED"}

@@ -81,6 +81,9 @@ class BIM_PT_project_library(Panel):
         self.props = context.scene.BIMProjectProperties
         row = self.layout.row(align=True)
         row.label(text=IfcStore.library_path or "No Library Loaded", icon="ASSET_MANAGER")
+        if IfcStore.library_file:
+            row.label(text=IfcStore.library_file.schema)
+            row.operator("bim.save_library_file", text="", icon="EXPORT")
         row.operator("bim.select_library_file", icon="FILE_FOLDER", text="")
         if IfcStore.library_file:
             self.draw_library_ul()
@@ -113,3 +116,15 @@ class BIM_UL_library(UIList):
                 op = row.operator("bim.change_library_element", text="", icon="DISCLOSURE_TRI_RIGHT", emboss=False)
                 op.element_name = item.name
             row.label(text=item.name)
+            if (
+                not item.ifc_definition_id
+                or IfcStore.library_file.schema == "IFC2X3"
+                or not IfcStore.library_file.by_type("IfcProjectLibrary")
+            ):
+                return
+            if item.is_declared:
+                op = row.operator("bim.unassign_library_declaration", text="", icon="KEYFRAME_HLT", emboss=False)
+                op.definition = item.ifc_definition_id
+            else:
+                op = row.operator("bim.assign_library_declaration", text="", icon="KEYFRAME", emboss=False)
+                op.definition = item.ifc_definition_id

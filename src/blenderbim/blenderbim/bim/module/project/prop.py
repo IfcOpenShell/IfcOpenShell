@@ -16,6 +16,7 @@ from bpy.props import (
 class LibraryElement(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+    is_declared: BoolProperty(name="Is Declared", default=False)
 
 
 class BIMProjectProperties(PropertyGroup):
