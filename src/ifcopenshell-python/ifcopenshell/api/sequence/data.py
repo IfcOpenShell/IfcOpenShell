@@ -15,6 +15,7 @@ class Data:
         cls.work_schedules = {}
         cls.work_calendars = {}
         cls.tasks = {}
+        cls.task_times = {}
 
     @classmethod
     def load(cls, file):
@@ -81,10 +82,7 @@ class Data:
             data["IsPredecessorTo"] = []
             data["IsSuccessorFrom"] = []
             if task.TaskTime:
-                data["TaskTime"] = task.TaskTime
-                data["ScheduleStart"] = task.TaskTime.ScheduleStart
-                data["ScheduleFinish"] = task.TaskTime.ScheduleFinish
-                data["ScheduleDuration"] = task.TaskTime.ScheduleDuration
+                data["TaskTime"] = data["TaskTime"].id()
             for rel in task.IsNestedBy:
                 [data["RelatedObjects"].append(o.id()) for o in rel.RelatedObjects if o.is_a("IfcTask")]
             [data["IsPredecessorTo"].append(rel.RelatedProcess.id()) for rel in task.IsPredecessorTo or []]
@@ -96,11 +94,10 @@ class Data:
         cls.task_times = {}
         for task_time in cls._file.by_type("IfcTaskTime"):
             data = task_time.get_info()
-            data["ScheduleStart"] = ifcopenshell.util.date.ifc2datetime(data["ScheduleStart"])
-            data["ScheduleFinish"] = ifcopenshell.util.date.ifc2datetime(data["ScheduleFinish"])
-            data["EarlyStart"] = ifcopenshell.util.date.ifc2datetime(data["EarlyStart"])
-            data["EarlyFinish"] = ifcopenshell.util.date.ifc2datetime(data["EarlyFinish"])
-            data["LateStart"] = ifcopenshell.util.date.ifc2datetime(data["LateStart"])
-            data["LateFinish"] = ifcopenshell.util.date.ifc2datetime(data["LateFinish"])
-            data["EarlyFinish"] = ifcopenshell.util.date.ifc2datetime(data["EarlyFinish"])
+            for key, value in data.items():
+                if not value:
+                    continue
+                if "Start" in key or "Finish" in key or key == "StatusTime":
+                    data[key] = ifcopenshell.util.date.ifc2datetime(value)
+                # TODO parse duration
             cls.task_times[task_time.id()] = data

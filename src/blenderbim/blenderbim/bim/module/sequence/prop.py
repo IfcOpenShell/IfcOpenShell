@@ -3,6 +3,7 @@ import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.sequence.data import Data
 from blenderbim.bim.prop import StrProperty, Attribute
+from dateutil.parser import parse
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -47,20 +48,53 @@ def updateTaskIdentification(self, context):
         attribute = context.scene.BIMWorkScheduleProperties.task_attributes.get("Identification")
         attribute.string_value = self.identification
 
-def updateTaskTimeScheduleStart(self, context):
-    if self.schedule_start == "X":
+
+def updateTaskTimeStart(self, context):
+    updateTaskTimeDateTime(self, context, "start")
+
+
+def updateTaskTimeFinish(self, context):
+    updateTaskTimeDateTime(self, context, "finish")
+
+
+def updateTaskTimeDateTime(self, context, startfinish):
+    def canonicalise_time(time):
+        if not time:
+            return "-"
+        return time.strftime("%d/%m/%y")
+
+    startfinish_key = "Schedule" + startfinish.capitalize()
+    startfinish_value = getattr(self, startfinish)
+
+    if startfinish_value == "-":
         return
     self.file = IfcStore.get_file()
     props = context.scene.BIMWorkScheduleProperties
+
+    try:
+        startfinish_datetime = parse(startfinish_value)
+    except:
+        setattr(self, startfinish, "-")
+        return
+
+    task = self.file.by_id(self.ifc_definition_id)
+    if task.TaskTime:
+        task_time = task.TaskTime
+    else:
+        task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=task)
+        Data.load(IfcStore.get_file())
+
+    if Data.task_times[task_time.id()][startfinish_key] == startfinish_datetime:
+        return
+
     ifcopenshell.api.run(
         "sequence.edit_task_time",
         self.file,
-        **{"task": self.file.by_id(self.ifc_definition_id), "attributes": {"ScheduleStart": self.schedule_start}}
+        **{"task_time": task_time, "attributes": {startfinish_key: startfinish_datetime}}
     )
     Data.load(IfcStore.get_file())
-    if props.active_task_id == self.ifc_definition_id:
-        attribute = context.scene.BIMWorkScheduleProperties.task_attributes.get("ScheduleStart")
-        attribute.string_value = self.schedule_start
+    setattr(self, startfinish, canonicalise_time(startfinish_datetime))
+
 
 class Task(PropertyGroup):
     name: StringProperty(name="Name", update=updateTaskName)
@@ -69,9 +103,10 @@ class Task(PropertyGroup):
     has_children: BoolProperty(name="Has Children")
     is_expanded: BoolProperty(name="Is Expanded")
     level_index: IntProperty(name="Level Index")
-    schedule_duration: StringProperty(name="Duration")
-    schedule_start: StringProperty(name="Schedule Start ", update=updateTaskTimeScheduleStart)
-    schedule_finish: StringProperty(name="Schedule Finish ")
+    duration: StringProperty(name="Duration")
+    start: StringProperty(name="Start", update=updateTaskTimeStart)
+    finish: StringProperty(name="Finish", update=updateTaskTimeFinish)
+
 
 class WorkPlan(PropertyGroup):
     name: StringProperty(name="Name")
