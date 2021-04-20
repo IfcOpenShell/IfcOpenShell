@@ -170,6 +170,10 @@ class BIM_UL_tasks(UIList):
                 row.label(text="", icon="DOT")
             row.prop(item, "identification", emboss=False, text="")
             row.prop(item, "name", emboss=False, text="")
+            row.prop(item, "schedule_start", emboss=False, text="Start Time")
+            row.prop(item, "schedule_finish", emboss=False, text="Finish Time")
+            row.prop(item, "schedule_duration", emboss=False, text="Duration")
+
             if props.active_task_id == item.ifc_definition_id:
                 row.operator("bim.edit_task", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_task", text="", icon="CANCEL")
@@ -187,6 +191,7 @@ class BIM_UL_tasks(UIList):
                 row.operator("bim.add_task", text="", icon="ADD").task = item.ifc_definition_id
                 row.operator("bim.remove_task", text="", icon="X").task = item.ifc_definition_id
             else:
+                row.operator("bim.enable_editing_task_time", text="", icon="TIME").task = item.ifc_definition_id
                 row.operator("bim.add_task", text="", icon="ADD").task = item.ifc_definition_id
                 row.operator("bim.enable_editing_task", text="", icon="GREASEPENCIL").task = item.ifc_definition_id
                 row.operator("bim.remove_task", text="", icon="X").task = item.ifc_definition_id

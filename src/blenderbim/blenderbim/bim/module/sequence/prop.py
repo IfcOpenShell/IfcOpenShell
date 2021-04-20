@@ -47,6 +47,20 @@ def updateTaskIdentification(self, context):
         attribute = context.scene.BIMWorkScheduleProperties.task_attributes.get("Identification")
         attribute.string_value = self.identification
 
+def updateTaskTimeScheduleStart(self, context):
+    if self.schedule_start == "X":
+        return
+    self.file = IfcStore.get_file()
+    props = context.scene.BIMWorkScheduleProperties
+    ifcopenshell.api.run(
+        "sequence.edit_task_time",
+        self.file,
+        **{"task": self.file.by_id(self.ifc_definition_id), "attributes": {"ScheduleStart": self.schedule_start}}
+    )
+    Data.load(IfcStore.get_file())
+    if props.active_task_id == self.ifc_definition_id:
+        attribute = context.scene.BIMWorkScheduleProperties.task_attributes.get("ScheduleStart")
+        attribute.string_value = self.schedule_start
 
 class Task(PropertyGroup):
     name: StringProperty(name="Name", update=updateTaskName)
@@ -55,7 +69,9 @@ class Task(PropertyGroup):
     has_children: BoolProperty(name="Has Children")
     is_expanded: BoolProperty(name="Is Expanded")
     level_index: IntProperty(name="Level Index")
-
+    schedule_duration: StringProperty(name="Duration")
+    schedule_start: StringProperty(name="Schedule Start ", update=updateTaskTimeScheduleStart)
+    schedule_finish: StringProperty(name="Schedule Finish ")
 
 class WorkPlan(PropertyGroup):
     name: StringProperty(name="Name")
@@ -79,6 +95,8 @@ class BIMWorkScheduleProperties(PropertyGroup):
     active_task_index: IntProperty(name="Active Task Index")
     active_task_id: IntProperty(name="Active Task Id")
     task_attributes: CollectionProperty(name="Task Attributes", type=Attribute)
+    active_task_time_id: IntProperty(name="Active Task Id")
+    task_time_attributes: CollectionProperty(name="Task Time Attributes", type=Attribute)
     contracted_tasks: StringProperty(name="Contracted Task Items", default="[]")
 
 
