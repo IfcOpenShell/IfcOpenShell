@@ -12,6 +12,8 @@ class IfcStore:
     edited_objs = set()
     pset_template_path = ""
     pset_template_file = None
+    library_path = ""
+    library_file = None
 
     @staticmethod
     def get_file():
