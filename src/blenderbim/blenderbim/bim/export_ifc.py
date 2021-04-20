@@ -129,7 +129,10 @@ class IfcExporter:
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         element_collection = bpy.data.collections.get(obj.name)
 
-        if element.is_a("IfcProject"):
+        if self.file.schema == "IFC2X3":
+            if element.is_a("IfcProject"):
+                return
+        elif element.is_a("IfcContext"):
             return
 
         if (element.is_a("IfcElement") and element_collection) or element.is_a("IfcSpatialStructureElement"):
