@@ -80,9 +80,9 @@ class IfcExporter:
         for guid, obj in IfcStore.guid_map.items():
             try:
                 self.sync_object_placement(obj)
-            except:
-                pass
-            self.sync_object_container(guid, obj)
+                self.sync_object_container(guid, obj)
+            except ReferenceError:
+                pass  # The object is likely deleted
             if self.should_delete(obj):
                 to_delete.append(guid)
 
@@ -105,9 +105,10 @@ class IfcExporter:
 
     def sync_object_placement(self, obj):
         blender_matrix = np.matrix(obj.matrix_world)
-        ifc_matrix = ifcopenshell.util.placement.get_local_placement(
-            self.file.by_id(obj.BIMObjectProperties.ifc_definition_id).ObjectPlacement
-        )
+        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        if not hasattr(element, "ObjectPlacement"):
+            return
+        ifc_matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
         ifc_matrix[0][3] *= self.unit_scale
         ifc_matrix[1][3] *= self.unit_scale
         ifc_matrix[2][3] *= self.unit_scale
