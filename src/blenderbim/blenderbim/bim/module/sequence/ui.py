@@ -261,6 +261,16 @@ class BIM_UL_tasks(UIList):
                 row.prop(item, "finish", emboss=False, text="")
                 row.prop(item, "duration", emboss=False, text="")
 
+            if context.active_object:
+                oprops = context.active_object.BIMObjectProperties
+                row = layout.row(align=True)
+                if oprops.ifc_definition_id in Data.tasks[item.ifc_definition_id]["RelatingProducts"]:
+                    op = row.operator("bim.unassign_product", text="", icon="KEYFRAME_HLT", emboss=False)
+                    op.task = item.ifc_definition_id
+                else:
+                    op = row.operator("bim.assign_product", text="", icon="KEYFRAME", emboss=False)
+                    op.task = item.ifc_definition_id
+
             if props.active_task_id == item.ifc_definition_id:
                 if props.active_task_time_id:
                     row.operator("bim.edit_task_time", text="", icon="CHECKMARK")
@@ -293,5 +303,3 @@ class BIM_UL_tasks(UIList):
                 row.operator("bim.enable_editing_task", text="", icon="GREASEPENCIL").task = item.ifc_definition_id
                 row.operator("bim.add_task", text="", icon="ADD").task = item.ifc_definition_id
                 row.operator("bim.remove_task", text="", icon="X").task = item.ifc_definition_id
-            row = layout.row(align=True)
-            row.operator("bim.assign_product", text="ADD", icon="OUTLINER_COLLECTION").task = item.ifc_definition_id
