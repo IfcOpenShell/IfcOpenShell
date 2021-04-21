@@ -12,6 +12,6 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        assigned_items = set(self.settings["layer"].AssignedItems) or set()
+        assigned_items = set(self.settings["layer"].AssignedItems or [])
         assigned_items.add(self.settings["item"])
         self.settings["layer"].AssignedItems = list(assigned_items)
