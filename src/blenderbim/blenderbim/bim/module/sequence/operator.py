@@ -628,7 +628,6 @@ class EnableEditingTask(bpy.types.Operator):
                 if data[attribute.name()]:
                     new.enum_value = data[attribute.name()]
         props.active_task_id = self.task
-        props.should_show_times = True
         return {"FINISHED"}
 
 
@@ -662,9 +661,7 @@ class EditTask(bpy.types.Operator):
                     attributes[attribute.name] = attribute.enum_value
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
-            "sequence.edit_task",
-            self.file,
-            **{"task": self.file.by_id(props.active_task_id), "attributes": attributes}
+            "sequence.edit_task", self.file, **{"task": self.file.by_id(props.active_task_id), "attributes": attributes}
         )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_task()
@@ -748,17 +745,19 @@ class AssignProduct(bpy.types.Operator):
     bl_idname = "bim.assign_product"
     bl_label = "Assign Product"
     task: bpy.props.IntProperty()
+    related_product: bpy.props.StringProperty()
 
     def execute(self, context):
-        obj = bpy.context.active_object.BIMObjectProperties.ifc_definition_id
-        props = context.scene.BIMWorkScheduleProperties
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.assign_product",
-            self.file,
-            relating_product = self.file.by_id(obj),
-            related_process = self.file.by_id(self.task),
+        related_products = (
+            [bpy.data.objects.get(self.related_product)] if self.related_product else bpy.context.selected_objects
         )
-        props.has_assignment = True
+        for related_product in related_products:
+            self.file = IfcStore.get_file()
+            ifcopenshell.api.run(
+                "sequence.assign_product",
+                self.file,
+                relating_product=self.file.by_id(related_product.BIMObjectProperties.ifc_definition_id),
+                related_object=self.file.by_id(self.task),
+            )
         Data.load(self.file)
         return {"FINISHED"}

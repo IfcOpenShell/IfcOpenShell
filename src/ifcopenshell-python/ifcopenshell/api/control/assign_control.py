@@ -13,27 +13,18 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        has_assignments = None
         if self.settings["related_object"].HasAssignments:
-            for assignement in self.settings["related_object"].HasAssignments:
-                if assignement.is_a("IfclRelAssignsToControl"):
-                    has_assignments = assignement
+            for assignment in self.settings["related_object"].HasAssignments:
+                if (
+                    assignment.is_a("IfclRelAssignsToControl")
+                    and assignment.RelatingControl == self.settings["relating_control"]
+                ):
+                    return
 
         controls = None
-        for rel in self.settings["relating_control"].Controls:
-            if rel.is_a("IfcRelAssignsToControl"):
-                controls = rel
-                break
-        if has_assignments and has_assignments == controls:
-            return
-        if has_assignments:
-            related_objects = list(has_assignments.RelatedObjects)
-            related_objects.remove(self.settings["related_object"])
-            if related_objects:
-                has_assignments.RelatedObjects = related_objects
-                ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": has_assignments})
-            else:
-                self.file.remove(has_assignments)
+        if self.settings["relating_control"].Controls:
+            controls = self.settings["relating_control"].Controls[0]
+
         if controls:
             related_objects = list(controls.RelatedObjects)
             related_objects.append(self.settings["related_object"])

@@ -6,7 +6,7 @@ class Usecase:
     def __init__(self, file, **settings):
         self.file = file
         self.settings = {
-            "object": None,
+            "related_object": None,
             "relating_object": None,
         }
         for key, value in settings.items():
@@ -14,8 +14,8 @@ class Usecase:
 
     def execute(self):
         nests = None
-        if self.settings["object"].Nests:
-            nests = self.settings["object"].Nests[0]
+        if self.settings["related_object"].Nests:
+            nests = self.settings["related_object"].Nests[0]
 
         is_nested_by = None
         for rel in self.settings["relating_object"].IsNestedBy:
@@ -28,7 +28,7 @@ class Usecase:
 
         if nests:
             related_objects = list(nests.RelatedObjects)
-            related_objects.remove(self.settings["object"])
+            related_objects.remove(self.settings["related_object"])
             if related_objects:
                 nests.RelatedObjects = related_objects
                 ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": nests})
@@ -37,7 +37,7 @@ class Usecase:
 
         if is_nested_by:
             related_objects = list(is_nested_by.RelatedObjects)
-            related_objects.append(self.settings["object"])
+            related_objects.append(self.settings["related_object"])
             is_nested_by.RelatedObjects = related_objects
             ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": is_nested_by})
         else:
@@ -46,7 +46,7 @@ class Usecase:
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
                     "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                    "RelatedObjects": [self.settings["object"]],
+                    "RelatedObjects": [self.settings["related_object"]],
                     "RelatingObject": self.settings["relating_object"],
                 }
             )
