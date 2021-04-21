@@ -188,7 +188,7 @@ endif
 	mkdir dist/working
 	cd dist/working && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
 	cd dist/working && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
-	cd dist/working && mv jsgantt* dist/blenderbim/bim/data/gantt/
+	cp dist/working/jsgantt* dist/blenderbim/bim/data/gantt/
 	rm -rf dist/working
 
 	# Required by IFCDiff
