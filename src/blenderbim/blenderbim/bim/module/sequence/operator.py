@@ -761,3 +761,25 @@ class AssignProduct(bpy.types.Operator):
             )
         Data.load(self.file)
         return {"FINISHED"}
+
+
+class UnassignProduct(bpy.types.Operator):
+    bl_idname = "bim.unassign_product"
+    bl_label = "Unassign Product"
+    task: bpy.props.IntProperty()
+    related_product: bpy.props.StringProperty()
+
+    def execute(self, context):
+        related_products = (
+            [bpy.data.objects.get(self.related_product)] if self.related_product else bpy.context.selected_objects
+        )
+        for related_product in related_products:
+            self.file = IfcStore.get_file()
+            ifcopenshell.api.run(
+                "sequence.unassign_product",
+                self.file,
+                relating_product=self.file.by_id(related_product.BIMObjectProperties.ifc_definition_id),
+                related_object=self.file.by_id(self.task),
+            )
+        Data.load(self.file)
+        return {"FINISHED"}

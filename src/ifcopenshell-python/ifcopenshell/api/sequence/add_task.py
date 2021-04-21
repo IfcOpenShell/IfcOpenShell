@@ -1,6 +1,7 @@
 import ifcopenshell.api
 import ifcopenshell
 
+
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
@@ -16,9 +17,9 @@ class Usecase:
             "root.create_entity",
             self.file,
             ifc_class="IfcTask",
-            name= None,
-            predefined_type= "NOTDEFINED",
-            identification= "none",
+            name=None,
+            predefined_type="NOTDEFINED",
+            identification="none",
         )
         task.IsMilestone = False
         if self.settings["work_schedule"]:
@@ -33,6 +34,6 @@ class Usecase:
             )
         elif self.settings["parent_task"]:
             ifcopenshell.api.run(
-                "nest.assign_object", self.file, object=task, relating_object=self.settings["parent_task"]
+                "nest.assign_object", self.file, related_object=task, relating_object=self.settings["parent_task"]
             )
         return task
