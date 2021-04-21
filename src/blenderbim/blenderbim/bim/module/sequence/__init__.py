@@ -41,6 +41,7 @@ classes = (
     operator.EditTaskTime,
     operator.AssignProduct,
     operator.UnassignProduct,
+    operator.GenerateGanttChart,
     prop.WorkPlan,
     prop.BIMWorkPlanProperties,
     prop.Task,

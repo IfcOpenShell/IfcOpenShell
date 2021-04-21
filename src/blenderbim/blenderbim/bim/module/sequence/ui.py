@@ -100,6 +100,7 @@ class BIM_PT_work_schedules(Panel):
                 row.operator("bim.edit_work_schedule", text="", icon="CHECKMARK")
             elif self.props.is_editing == "TASKS":
                 row.prop(self.props, "should_show_times", text="", icon="TIME")
+                row.operator("bim.generate_gantt_chart", text="", icon="NLA").work_schedule = work_schedule_id
                 row.operator("bim.add_summary_task", text="", icon="ADD").work_schedule = work_schedule_id
             row.operator("bim.disable_editing_work_schedule", text="", icon="CANCEL")
         elif self.props.active_work_schedule_id:

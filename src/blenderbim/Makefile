@@ -184,6 +184,13 @@ endif
 	cp -r dist/working/python-dateutil-2.8.1/dateutil dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
+	# Provides jsgantt-improved supports for web-based construction sequencing gantt charts
+	mkdir dist/working
+	cd dist/working && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
+	cd dist/working && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
+	cd dist/working && mv jsgantt* dist/blenderbim/bim/data/gantt/
+	rm -rf dist/working
+
 	# Required by IFCDiff
 	mkdir dist/working
 	cd dist/working && wget https://github.com/Moult/deepdiff/archive/master.zip

@@ -1,5 +1,8 @@
+import os
 import bpy
 import json
+import pystache
+import webbrowser
 import ifcopenshell.api
 from datetime import datetime
 from dateutil import parser
@@ -783,3 +786,42 @@ class UnassignProduct(bpy.types.Operator):
             )
         Data.load(self.file)
         return {"FINISHED"}
+
+
+class GenerateGanttChart(bpy.types.Operator):
+    bl_idname = "bim.generate_gantt_chart"
+    bl_label = "Generate Gantt Chart"
+    work_schedule: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        self.json = []
+        for task_id in Data.work_schedules[self.work_schedule]["RelatedObjects"]:
+            self.create_new_task_json(task_id)
+        with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"), "w") as f:
+            with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.mustache"), "r") as t:
+                f.write(pystache.render(t.read(), {"json_data": json.dumps(self.json)}))
+        webbrowser.open("file://" + os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"))
+        return {"FINISHED"}
+
+    def create_new_task_json(self, task_id):
+        task = self.file.by_id(task_id)
+        self.json.append(
+            {
+                "pID": task.id(),
+                "pName": task.Name,
+                "pStart": task.TaskTime.ScheduleStart if task.TaskTime else "",
+                "pEnd": task.TaskTime.ScheduleFinish if task.TaskTime else "",
+                "pPlanStart": task.TaskTime.ScheduleStart if task.TaskTime else "",
+                "pPlanEnd": task.TaskTime.ScheduleFinish if task.TaskTime else "",
+                "pClass": "ggroupblack",
+                "pMile": 1 if task.IsMilestone else 0,
+                "pComp": 0,
+                "pGroup": 1,
+                "pParent": task.Nests[0].RelatingObject.id() if task.Nests else 0,
+                "pOpen": 1,
+                "pCost": 1,
+            }
+        )
+        for task_id in Data.tasks[task_id]["RelatedObjects"]:
+            self.create_new_task_json(task_id)
