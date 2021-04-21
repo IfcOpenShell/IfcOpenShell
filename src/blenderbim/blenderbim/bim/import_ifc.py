@@ -1000,6 +1000,7 @@ class IfcImporter:
         bpy.ops.mesh.tris_convert_to_quads(context_override)
         bpy.ops.mesh.normals_make_consistent(context_override)
         bpy.ops.object.editmode_toggle(context_override)
+        IfcStore.edited_objs.clear()
 
     def add_opening_relation(self, element, obj):
         if not element.is_a("IfcOpeningElement"):
