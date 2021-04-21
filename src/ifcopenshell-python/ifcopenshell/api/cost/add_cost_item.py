@@ -23,6 +23,6 @@ class Usecase:
             )
         elif self.settings["cost_item"]:
             ifcopenshell.api.run(
-                "nest.assign_object", self.file, object=cost_item, relating_object=self.settings["cost_item"]
+                "nest.assign_object", self.file, related_object=cost_item, relating_object=self.settings["cost_item"]
             )
         return cost_item

@@ -71,6 +71,7 @@ class BIM_PT_project(Panel):
 class BIM_PT_project_library(Panel):
     bl_label = "IFC Project Library"
     bl_idname = "BIM_PT_project_library"
+    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -117,14 +118,16 @@ class BIM_UL_library(UIList):
                 op.element_name = item.name
             row.label(text=item.name)
             if (
-                not item.ifc_definition_id
-                or IfcStore.library_file.schema == "IFC2X3"
-                or not IfcStore.library_file.by_type("IfcProjectLibrary")
+                item.ifc_definition_id
+                and IfcStore.library_file.schema != "IFC2X3"
+                and IfcStore.library_file.by_type("IfcProjectLibrary")
             ):
-                return
-            if item.is_declared:
-                op = row.operator("bim.unassign_library_declaration", text="", icon="KEYFRAME_HLT", emboss=False)
-                op.definition = item.ifc_definition_id
-            else:
-                op = row.operator("bim.assign_library_declaration", text="", icon="KEYFRAME", emboss=False)
+                if item.is_declared:
+                    op = row.operator("bim.unassign_library_declaration", text="", icon="KEYFRAME_HLT", emboss=False)
+                    op.definition = item.ifc_definition_id
+                else:
+                    op = row.operator("bim.assign_library_declaration", text="", icon="KEYFRAME", emboss=False)
+                    op.definition = item.ifc_definition_id
+            if item.ifc_definition_id:
+                op = row.operator("bim.append_library_element", text="", icon="APPEND_BLEND")
                 op.definition = item.ifc_definition_id

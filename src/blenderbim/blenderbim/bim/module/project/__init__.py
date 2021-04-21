@@ -12,6 +12,7 @@ classes = (
     operator.AssignLibraryDeclaration,
     operator.UnassignLibraryDeclaration,
     operator.SaveLibraryFile,
+    operator.AppendLibraryElement,
     prop.LibraryElement,
     prop.BIMProjectProperties,
     ui.BIM_PT_project,

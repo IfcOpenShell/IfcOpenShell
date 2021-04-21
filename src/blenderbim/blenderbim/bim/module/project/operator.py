@@ -4,6 +4,7 @@ import ifcopenshell
 import ifcopenshell.api
 import bpy
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim import import_ifc
 
 
 class CreateProject(bpy.types.Operator):
@@ -220,3 +221,37 @@ class SaveLibraryFile(bpy.types.Operator):
     def execute(self, context):
         IfcStore.library_file.write(IfcStore.library_path)
         return {"FINISHED"}
+
+
+class AppendLibraryElement(bpy.types.Operator):
+    bl_idname = "bim.append_library_element"
+    bl_label = "Append Library Element"
+    definition: bpy.props.IntProperty()
+
+    def execute(self, context):
+        element = ifcopenshell.api.run(
+            "project.append_asset",
+            IfcStore.get_file(),
+            element=IfcStore.library_file.by_id(self.definition),
+        )
+        self.import_type_from_ifc(element)
+        return {"FINISHED"}
+
+    def import_type_from_ifc(self, element):
+        self.file = IfcStore.get_file()
+        logger = logging.getLogger("ImportIFC")
+        ifc_import_settings = import_ifc.IfcImportSettings.factory(bpy.context, IfcStore.path, logger)
+
+        type_collection = bpy.data.collections.get("Types")
+        if not type_collection:
+            type_collection = bpy.data.collections.new("Types")
+            for collection in bpy.data.collections:
+                if "IfcProject/" in collection.name:
+                    collection.children.link(type_collection)
+                    break
+
+        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = self.file
+        ifc_importer.type_collection = type_collection
+        ifc_importer.create_type_product(element)
+        ifc_importer.place_objects_in_spatial_tree()
