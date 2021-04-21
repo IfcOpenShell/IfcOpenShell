@@ -11,7 +11,7 @@ from ifcopenshell.api.attribute.data import Data as AttributeData
 def mode_callback(obj, data):
     for obj in bpy.context.selected_objects:
         if (
-            obj.mode != "OBJECT"
+            obj.mode != "EDIT"
             or not obj.data
             or not isinstance(obj.data, bpy.types.Mesh)
             or not obj.data.BIMMeshProperties.ifc_definition_id
