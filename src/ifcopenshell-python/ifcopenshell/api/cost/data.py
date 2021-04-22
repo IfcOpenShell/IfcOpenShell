@@ -38,7 +38,10 @@ class Data:
             del data["CostValues"]
             del data["CostQuantities"]
             data["RelatedObjects"] = []
+            data["Controls"] = []
             for rel in cost_item.IsNestedBy:
                 [data["RelatedObjects"].append(o.id()) for o in rel.RelatedObjects if o.is_a("IfcCostItem")]
+            for rel in cost_item.Controls:
+                [data["Controls"].append(o.id()) for o in rel.RelatedObjects or []]
             cls.cost_items[cost_item.id()] = data
         cls.is_loaded=True

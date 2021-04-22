@@ -25,11 +25,11 @@ def updateTaskName(self, context):
     ifcopenshell.api.run(
         "sequence.edit_task",
         self.file,
-        **{"task": self.file.by_id(self.ifc_definition_id), "attributes": {"Name": self.name}}
+        **{"task": self.file.by_id(self.ifc_definition_id), "attributes": {"Name": self.name}},
     )
     Data.load(IfcStore.get_file())
     if props.active_task_id == self.ifc_definition_id:
-        attribute = context.scene.BIMWorkScheduleProperties.task_attributes.get("Name")
+        attribute = props.task_attributes.get("Name")
         attribute.string_value = self.name
 
 
@@ -41,7 +41,7 @@ def updateTaskIdentification(self, context):
     ifcopenshell.api.run(
         "sequence.edit_task",
         self.file,
-        **{"task": self.file.by_id(self.ifc_definition_id), "attributes": {"Identification": self.identification}}
+        **{"task": self.file.by_id(self.ifc_definition_id), "attributes": {"Identification": self.identification}},
     )
     Data.load(IfcStore.get_file())
     if props.active_task_id == self.ifc_definition_id:
@@ -96,7 +96,7 @@ def updateTaskTimeDateTime(self, context, startfinish):
     ifcopenshell.api.run(
         "sequence.edit_task_time",
         self.file,
-        **{"task_time": task_time, "attributes": {startfinish_key: startfinish_datetime}}
+        **{"task_time": task_time, "attributes": {startfinish_key: startfinish_datetime}},
     )
     Data.load(IfcStore.get_file())
     setattr(self, startfinish, canonicalise_time(startfinish_datetime))
