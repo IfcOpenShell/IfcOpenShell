@@ -6,8 +6,8 @@ class Usecase:
     def __init__(self, file, **settings):
         self.file = file
         self.settings = {
-            "related_object": None,
             "relating_control": None,
+            "related_object": None,
         }
         for key, value in settings.items():
             self.settings[key] = value
@@ -38,6 +38,6 @@ class Usecase:
                     "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
                     "RelatedObjects": [self.settings["related_object"]],
                     "RelatingControl": self.settings["relating_control"],
-                }
+                },
             )
         return controls

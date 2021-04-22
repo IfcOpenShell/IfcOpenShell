@@ -15,7 +15,6 @@ classes = (
     operator.EnableEditingWorkSchedule,
     operator.EnableEditingTasks,
     operator.DisableEditingWorkSchedule,
-    operator.LoadTasks,
     operator.DisableTaskEditingUI,
     operator.LoadWorkCalendars,
     operator.DisableWorkCalendarEditingUI,
@@ -56,10 +55,12 @@ classes = (
     ui.BIM_UL_tasks,
 )
 
+
 def register():
     bpy.types.Scene.BIMWorkPlanProperties = bpy.props.PointerProperty(type=prop.BIMWorkPlanProperties)
     bpy.types.Scene.BIMWorkScheduleProperties = bpy.props.PointerProperty(type=prop.BIMWorkScheduleProperties)
     bpy.types.Scene.BIMWorkCalendarProperties = bpy.props.PointerProperty(type=prop.BIMWorkCalendarProperties)
+
 
 def unregister():
     del bpy.types.Scene.BIMWorkPlanProperties

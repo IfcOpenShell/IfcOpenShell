@@ -66,7 +66,7 @@ class EditWorkPlan(bpy.types.Operator):
         ifcopenshell.api.run(
             "sequence.edit_work_plan",
             self.file,
-            **{"work_plan": self.file.by_id(props.active_work_plan_id), "attributes": attributes}
+            **{"work_plan": self.file.by_id(props.active_work_plan_id), "attributes": attributes},
         )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_work_plans()
@@ -157,7 +157,7 @@ class EditWorkSchedule(bpy.types.Operator):
         ifcopenshell.api.run(
             "sequence.edit_work_schedule",
             self.file,
-            **{"work_schedule": self.file.by_id(props.active_work_schedule_id), "attributes": attributes}
+            **{"work_schedule": self.file.by_id(props.active_work_schedule_id), "attributes": attributes},
         )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_work_schedule()
@@ -236,7 +236,7 @@ class EnableEditingTasks(bpy.types.Operator):
         new = self.props.tasks.add()
         new.ifc_definition_id = related_object_id
         new.name = task["Name"] or "Unnamed"
-        new.identification = task["Identification"] or "X"
+        new.identification = task["Identification"] or "XXX"
         if task["TaskTime"]:
             task_time = Data.task_times[task["TaskTime"]]
             new.start = self.canonicalise_time(task_time["ScheduleStart"])
@@ -254,6 +254,7 @@ class EnableEditingTasks(bpy.types.Operator):
             if new.is_expanded:
                 for related_object_id in task["RelatedObjects"]:
                     self.create_new_task_li(related_object_id, level_index + 1)
+        return {"FINISHED"}
 
     def canonicalise_time(self, time):
         if not time:
@@ -267,142 +268,6 @@ class DisableEditingWorkSchedule(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.BIMWorkScheduleProperties.active_work_schedule_id = 0
-        return {"FINISHED"}
-
-
-class LoadWorkCalendars(bpy.types.Operator):
-    bl_idname = "bim.load_work_calendars"
-    bl_label = "Load Work Calendars"
-
-    def execute(self, context):
-        props = context.scene.BIMWorkCalendarProperties
-        while len(props.work_calendars) > 0:
-            props.work_calendars.remove(0)
-        for ifc_definition_id, work_calendar in Data.work_calendars.items():
-            new = props.work_calendars.add()
-            new.ifc_definition_id = ifc_definition_id
-            new.name = work_calendar["Name"] or "Unnamed"
-        props.is_editing = True
-        bpy.ops.bim.disable_editing_work_calendar()
-        return {"FINISHED"}
-
-
-class DisableWorkCalendarEditingUI(bpy.types.Operator):
-    bl_idname = "bim.disable_work_calendar_editing_ui"
-    bl_label = "Disable WorkCalendar Editing UI"
-
-    def execute(self, context):
-        context.scene.BIMWorkCalendarProperties.is_editing = False
-        return {"FINISHED"}
-
-
-class AddWorkCalendar(bpy.types.Operator):
-    bl_idname = "bim.add_work_calendar"
-    bl_label = "Add Work Calendar"
-
-    def execute(self, context):
-        ifcopenshell.api.run("sequence.add_work_calendar", IfcStore.get_file())
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_work_calendars()
-        return {"FINISHED"}
-
-
-class EditWorkCalendar(bpy.types.Operator):
-    bl_idname = "bim.edit_work_calendar"
-    bl_label = "Edit Work Calendar"
-
-    def execute(self, context):
-        props = context.scene.BIMWorkCalendarProperties
-        attributes = {}
-        for attribute in props.work_calendar_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                if attribute.data_type == "string":
-                    attributes[attribute.name] = attribute.string_value
-                elif attribute.data_type == "enum":
-                    attributes[attribute.name] = attribute.enum_value
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.edit_work_calendar",
-            self.file,
-            **{"work_calendar": self.file.by_id(props.active_work_calendar_id), "attributes": attributes}
-        )
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_work_calendars()
-        return {"FINISHED"}
-
-
-class RemoveWorkCalendar(bpy.types.Operator):
-    bl_idname = "bim.remove_work_calendar"
-    bl_label = "Remove Work Plan"
-    work_calendar: bpy.props.IntProperty()
-
-    def execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.remove_work_calendar", self.file, **{"work_calendar": self.file.by_id(self.work_calendar)}
-        )
-        Data.load(self.file)
-        bpy.ops.bim.load_work_calendars()
-        return {"FINISHED"}
-
-
-class EnableEditingWorkCalendar(bpy.types.Operator):
-    bl_idname = "bim.enable_editing_work_calendar"
-    bl_label = "Enable Editing Work Plan"
-    work_calendar: bpy.props.IntProperty()
-
-    def execute(self, context):
-        props = context.scene.BIMWorkCalendarProperties
-        while len(props.work_calendar_attributes) > 0:
-            props.work_calendar_attributes.remove(0)
-
-        data = Data.work_calendars[self.work_calendar]
-
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcWorkCalendar").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
-                continue
-            new = props.work_calendar_attributes.add()
-            new.name = attribute.name()
-            new.is_null = data[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            new.data_type = data_type
-            if data_type == "string":
-                new.string_value = "" if new.is_null else data[attribute.name()]
-            elif data_type == "enum":
-                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
-                if data[attribute.name()]:
-                    new.enum_value = data[attribute.name()]
-        props.active_work_calendar_id = self.work_calendar
-        return {"FINISHED"}
-
-
-class DisableEditingWorkCalendar(bpy.types.Operator):
-    bl_idname = "bim.disable_editing_work_calendar"
-    bl_label = "Disable Editing Work Calendar"
-
-    def execute(self, context):
-        context.scene.BIMWorkCalendarProperties.active_work_calendar_id = 0
-        return {"FINISHED"}
-
-
-class LoadTasks(bpy.types.Operator):
-    bl_idname = "bim.load_tasks"
-    bl_label = "Load Tasks"
-    work_schedule: bpy.props.IntProperty()
-
-    def execute(self, context):
-        props = context.scene.BIMWorkScheduleProperties
-        while len(props.tasks) > 0:
-            props.tasks.remove(0)
-        for ifc_definition_id in Data.work_schedules[self.work_schedule]["RelatedObjects"]:
-            task = Data.tasks[ifc_definition_id]
-            new = props.tasks.add()
-            new.ifc_definition_id = ifc_definition_id
-            new.name = task["Name"] or "Unnamed"
-            new.identification = task["Identification"]
         return {"FINISHED"}
 
 
@@ -577,7 +442,7 @@ class EditTaskTime(bpy.types.Operator):
         ifcopenshell.api.run(
             "sequence.edit_task_time",
             self.file,
-            **{"task_time": self.file.by_id(props.active_task_time_id), "attributes": attributes}
+            **{"task_time": self.file.by_id(props.active_task_time_id), "attributes": attributes},
         )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_task_time()
@@ -825,3 +690,121 @@ class GenerateGanttChart(bpy.types.Operator):
         )
         for task_id in Data.tasks[task_id]["RelatedObjects"]:
             self.create_new_task_json(task_id)
+
+
+class LoadWorkCalendars(bpy.types.Operator):
+    bl_idname = "bim.load_work_calendars"
+    bl_label = "Load Work Calendars"
+
+    def execute(self, context):
+        props = context.scene.BIMWorkCalendarProperties
+        while len(props.work_calendars) > 0:
+            props.work_calendars.remove(0)
+        for ifc_definition_id, work_calendar in Data.work_calendars.items():
+            new = props.work_calendars.add()
+            new.ifc_definition_id = ifc_definition_id
+            new.name = work_calendar["Name"] or "Unnamed"
+        props.is_editing = True
+        bpy.ops.bim.disable_editing_work_calendar()
+        return {"FINISHED"}
+
+
+class DisableWorkCalendarEditingUI(bpy.types.Operator):
+    bl_idname = "bim.disable_work_calendar_editing_ui"
+    bl_label = "Disable WorkCalendar Editing UI"
+
+    def execute(self, context):
+        context.scene.BIMWorkCalendarProperties.is_editing = False
+        return {"FINISHED"}
+
+
+class AddWorkCalendar(bpy.types.Operator):
+    bl_idname = "bim.add_work_calendar"
+    bl_label = "Add Work Calendar"
+
+    def execute(self, context):
+        ifcopenshell.api.run("sequence.add_work_calendar", IfcStore.get_file())
+        Data.load(IfcStore.get_file())
+        bpy.ops.bim.load_work_calendars()
+        return {"FINISHED"}
+
+
+class EditWorkCalendar(bpy.types.Operator):
+    bl_idname = "bim.edit_work_calendar"
+    bl_label = "Edit Work Calendar"
+
+    def execute(self, context):
+        props = context.scene.BIMWorkCalendarProperties
+        attributes = {}
+        for attribute in props.work_calendar_attributes:
+            if attribute.is_null:
+                attributes[attribute.name] = None
+            else:
+                if attribute.data_type == "string":
+                    attributes[attribute.name] = attribute.string_value
+                elif attribute.data_type == "enum":
+                    attributes[attribute.name] = attribute.enum_value
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "sequence.edit_work_calendar",
+            self.file,
+            **{"work_calendar": self.file.by_id(props.active_work_calendar_id), "attributes": attributes},
+        )
+        Data.load(IfcStore.get_file())
+        bpy.ops.bim.load_work_calendars()
+        return {"FINISHED"}
+
+
+class RemoveWorkCalendar(bpy.types.Operator):
+    bl_idname = "bim.remove_work_calendar"
+    bl_label = "Remove Work Plan"
+    work_calendar: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "sequence.remove_work_calendar", self.file, **{"work_calendar": self.file.by_id(self.work_calendar)}
+        )
+        Data.load(self.file)
+        bpy.ops.bim.load_work_calendars()
+        return {"FINISHED"}
+
+
+class EnableEditingWorkCalendar(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_work_calendar"
+    bl_label = "Enable Editing Work Plan"
+    work_calendar: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMWorkCalendarProperties
+        while len(props.work_calendar_attributes) > 0:
+            props.work_calendar_attributes.remove(0)
+
+        data = Data.work_calendars[self.work_calendar]
+
+        for attribute in IfcStore.get_schema().declaration_by_name("IfcWorkCalendar").all_attributes():
+            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            if data_type == "entity":
+                continue
+            new = props.work_calendar_attributes.add()
+            new.name = attribute.name()
+            new.is_null = data[attribute.name()] is None
+            new.is_optional = attribute.optional()
+            new.data_type = data_type
+            if data_type == "string":
+                new.string_value = "" if new.is_null else data[attribute.name()]
+            elif data_type == "enum":
+                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
+                if data[attribute.name()]:
+                    new.enum_value = data[attribute.name()]
+        props.active_work_calendar_id = self.work_calendar
+        return {"FINISHED"}
+
+
+class DisableEditingWorkCalendar(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_work_calendar"
+    bl_label = "Disable Editing Work Calendar"
+
+    def execute(self, context):
+        context.scene.BIMWorkCalendarProperties.active_work_calendar_id = 0
+        return {"FINISHED"}
