@@ -1,12 +1,14 @@
 import os
 import bpy
 import json
+import time
 import pystache
 import webbrowser
 import ifcopenshell.api
 from datetime import datetime
 from dateutil import parser
 from blenderbim.bim.ifc import IfcStore
+from bpy_extras.io_utils import ImportHelper
 from ifcopenshell.api.sequence.data import Data
 
 
@@ -807,4 +809,24 @@ class DisableEditingWorkCalendar(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.BIMWorkCalendarProperties.active_work_calendar_id = 0
+        return {"FINISHED"}
+
+
+class ImportP6(bpy.types.Operator, ImportHelper):
+    bl_idname = "import_p6.bim"
+    bl_label = "Import P6"
+    filename_ext = ".xml"
+    filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
+
+    def execute(self, context):
+        from ifcp6.p62ifc import P62Ifc
+        self.file = IfcStore.get_file()
+        start = time.time()
+        p62ifc = P62Ifc()
+        p62ifc.xml = self.filepath
+        p62ifc.file = self.file
+        p62ifc.work_plan = self.file.by_type("IfcWorkPlan")[0]
+        p62ifc.execute()
+        Data.load(IfcStore.get_file())
+        print("Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
