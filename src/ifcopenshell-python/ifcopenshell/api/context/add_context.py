@@ -21,7 +21,12 @@ class Usecase:
                 context = self.file.createIfcGeometricRepresentationContext(None, "Plan", 2, 1.0e-05, self.origin)
             else:
                 context = self.file.createIfcGeometricRepresentationContext(None, "Model", 3, 1.0e-05, self.origin)
-            project = self.file.by_type("IfcProject")[0]
+
+            if self.file.schema == "IFC2X3":
+                project = self.file.by_type("IfcProject")[0]
+            else:
+                project = self.file.by_type("IfcContext")[0]
+
             if project.RepresentationContexts:
                 contexts = list(project.RepresentationContexts)
             else:

@@ -19,6 +19,13 @@ psetnames = {}
 qtonames = {}
 
 
+def purge():
+    global psetnames
+    global qtonames
+    psetnames = {}
+    qtonames = {}
+
+
 def getPsetNames(self, context):
     global psetnames
     obj = context.active_object

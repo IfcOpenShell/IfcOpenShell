@@ -104,17 +104,26 @@ class AddRepresentation(bpy.types.Operator):
                 return {"FINISHED"}
 
             box_context_id = get_context_id("Model", "Box", "MODEL_VIEW")
+            old_box = ifcopenshell.util.element.get_representation(product, "Model", "Box", "MODEL_VIEW")
             if (
                 box_context_id
                 and context_of_items.ContextType == "Model"
                 and context_of_items.ContextIdentifier
                 and context_of_items.ContextIdentifier == "Body"
             ):
+                if old_box:
+                    bpy.ops.bim.remove_representation(representation_id=old_box.id(), obj=obj.name)
                 representation_data["context"] = self.file.by_id(box_context_id)
                 new_box = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
                 ifcopenshell.api.run(
                     "geometry.assign_representation", self.file, **{"product": product, "representation": new_box}
                 )
+
+            [
+                bpy.ops.bim.add_style(material=s.material.name)
+                for s in obj.material_slots
+                if not s.material.BIMMaterialProperties.ifc_style_id
+            ]
 
             ifcopenshell.api.run(
                 "geometry.assign_styles",

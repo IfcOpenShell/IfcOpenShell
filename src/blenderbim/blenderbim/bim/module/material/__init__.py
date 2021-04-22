@@ -10,6 +10,7 @@ classes = (
     operator.RemoveConstituent,
     operator.AddProfile,
     operator.RemoveProfile,
+    operator.AssignParameterizedProfile,
     operator.AddLayer,
     operator.RemoveLayer,
     operator.ReorderMaterialSetItem,
