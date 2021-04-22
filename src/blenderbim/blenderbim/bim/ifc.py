@@ -16,6 +16,19 @@ class IfcStore:
     library_file = None
 
     @staticmethod
+    def purge():
+        IfcStore.path = ""
+        IfcStore.file = None
+        IfcStore.schema = None
+        IfcStore.id_map = {}
+        IfcStore.guid_map = {}
+        IfcStore.edited_objs = set()
+        IfcStore.pset_template_path = ""
+        IfcStore.pset_template_file = None
+        IfcStore.library_path = ""
+        IfcStore.library_file = None
+
+    @staticmethod
     def get_file():
         if IfcStore.file is None:
             IfcStore.path = bpy.context.scene.BIMProperties.ifc_file
