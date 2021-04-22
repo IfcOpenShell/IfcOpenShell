@@ -42,10 +42,12 @@ classes = (
     operator.UnassignProduct,
     operator.GenerateGanttChart,
     operator.ImportP6,
+    operator.LoadTaskProperties,
     prop.WorkPlan,
     prop.BIMWorkPlanProperties,
     prop.Task,
     prop.BIMWorkScheduleProperties,
+    prop.BIMTaskTreeProperties,
     prop.WorkCalendar,
     prop.BIMWorkCalendarProperties,
     ui.BIM_PT_work_plans,
@@ -64,6 +66,7 @@ def menu_func_import(self, context):
 def register():
     bpy.types.Scene.BIMWorkPlanProperties = bpy.props.PointerProperty(type=prop.BIMWorkPlanProperties)
     bpy.types.Scene.BIMWorkScheduleProperties = bpy.props.PointerProperty(type=prop.BIMWorkScheduleProperties)
+    bpy.types.Scene.BIMTaskTreeProperties = bpy.props.PointerProperty(type=prop.BIMTaskTreeProperties)
     bpy.types.Scene.BIMWorkCalendarProperties = bpy.props.PointerProperty(type=prop.BIMWorkCalendarProperties)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
 
@@ -71,5 +74,6 @@ def register():
 def unregister():
     del bpy.types.Scene.BIMWorkPlanProperties
     del bpy.types.Scene.BIMWorkScheduleProperties
+    del bpy.types.Scene.BIMTaskTreeProperties
     del bpy.types.Scene.BIMWorkCalendarProperties
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
