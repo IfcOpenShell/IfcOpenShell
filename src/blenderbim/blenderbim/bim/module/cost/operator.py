@@ -228,7 +228,7 @@ class EnableEditingCostItem(bpy.types.Operator):
 
         for attribute in IfcStore.get_schema().declaration_by_name("IfcCostItem").all_attributes():
             data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
+            if data_type == "entity" or isinstance(data_type, tuple):
                 continue
             new = props.cost_item_attributes.add()
             new.name = attribute.name()
@@ -237,10 +237,6 @@ class EnableEditingCostItem(bpy.types.Operator):
             new.data_type = data_type
             if data_type == "string":
                 new.string_value = "" if new.is_null else data[attribute.name()]
-            elif data_type == "boolean":
-                new.bool_value = False if new.is_null else data[attribute.name()]
-            elif data_type == "integer":
-                new.int_value = 0 if new.is_null else data[attribute.name()]
             elif data_type == "enum":
                 new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
                 if data[attribute.name()]:

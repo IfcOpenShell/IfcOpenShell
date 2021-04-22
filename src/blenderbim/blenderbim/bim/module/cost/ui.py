@@ -62,9 +62,6 @@ class BIM_PT_cost_schedules(Panel):
             if attribute.is_optional:
                 row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
-        # row = self.layout.row(align=True)
-        # row.label(text="X Summary Cost Items")
-
     def draw_editable_cost_item_ui(self, cost_schedule_id):
         self.layout.template_list(
             "BIM_UL_cost_items",
@@ -125,6 +122,9 @@ class BIM_UL_cost_items(UIList):
             if props.active_cost_item_id == item.ifc_definition_id:
                 row.operator("bim.edit_cost_item", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_cost_item", text="", icon="CANCEL")
+            elif props.active_cost_item_id:
+                row.operator("bim.add_cost_item", text="", icon="ADD").cost_item = item.ifc_definition_id
+                row.operator("bim.remove_cost_item", text="", icon="X").cost_item = item.ifc_definition_id
             else:
                 row.operator(
                     "bim.enable_editing_cost_item", text="", icon="GREASEPENCIL"
