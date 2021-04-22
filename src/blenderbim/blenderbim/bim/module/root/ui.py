@@ -41,7 +41,8 @@ class BIM_PT_class(Panel):
                 row.label(text=name)
                 row.operator("bim.copy_class", icon="DUPLICATE", text="")
                 row.operator("bim.unlink_object", icon="UNLINKED", text="")
-                row.operator("bim.enable_reassign_class", icon="GREASEPENCIL", text="")
+                if IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcRoot"):
+                    row.operator("bim.enable_reassign_class", icon="GREASEPENCIL", text="")
                 if context.selected_objects:
                     row.operator("bim.unassign_class", icon="X", text="")
                 else:
