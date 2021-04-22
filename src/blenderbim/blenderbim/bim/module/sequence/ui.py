@@ -81,6 +81,7 @@ class BIM_PT_work_schedules(Panel):
 
     def draw(self, context):
         self.props = context.scene.BIMWorkScheduleProperties
+        self.tprops = context.scene.BIMTaskTreeProperties
 
         if not Data.is_loaded:
             Data.load(IfcStore.get_file())
@@ -130,7 +131,7 @@ class BIM_PT_work_schedules(Panel):
         self.layout.template_list(
             "BIM_UL_tasks",
             "",
-            self.props,
+            self.tprops,
             "tasks",
             self.props,
             "active_task_index",
@@ -214,7 +215,7 @@ class BIM_UL_tasks(UIList):
                     row.operator("bim.edit_task", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_task", text="", icon="CANCEL")
             elif props.active_task_id:
-                if props.active_task_id in Data.tasks[item.ifc_definition_id]["IsPredecessorTo"]:
+                if item.is_predecessor:
                     row.operator(
                         "bim.unassign_predecessor", text="", icon="BACK", emboss=False
                     ).task = item.ifc_definition_id
@@ -223,7 +224,7 @@ class BIM_UL_tasks(UIList):
                         "bim.assign_predecessor", text="", icon="TRACKING_BACKWARDS", emboss=False
                     ).task = item.ifc_definition_id
 
-                if props.active_task_id in Data.tasks[item.ifc_definition_id]["IsSuccessorFrom"]:
+                if item.is_successor:
                     row.operator(
                         "bim.unassign_successor", text="", icon="FORWARD", emboss=False
                     ).task = item.ifc_definition_id

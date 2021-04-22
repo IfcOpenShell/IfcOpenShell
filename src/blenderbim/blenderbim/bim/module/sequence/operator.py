@@ -223,32 +223,22 @@ class EnableEditingTasks(bpy.types.Operator):
 
     def execute(self, context):
         self.props = context.scene.BIMWorkScheduleProperties
+        self.tprops = context.scene.BIMTaskTreeProperties
         self.props.active_work_schedule_id = self.work_schedule
-        while len(self.props.tasks) > 0:
-            self.props.tasks.remove(0)
+        while len(self.tprops.tasks) > 0:
+            self.tprops.tasks.remove(0)
 
         self.contracted_tasks = json.loads(self.props.contracted_tasks)
         for related_object_id in Data.work_schedules[self.work_schedule]["RelatedObjects"]:
             self.create_new_task_li(related_object_id, 0)
+        bpy.ops.bim.load_task_properties()
         self.props.is_editing = "TASKS"
         return {"FINISHED"}
 
     def create_new_task_li(self, related_object_id, level_index):
         task = Data.tasks[related_object_id]
-        new = self.props.tasks.add()
+        new = self.tprops.tasks.add()
         new.ifc_definition_id = related_object_id
-        new.name = task["Name"] or "Unnamed"
-        new.identification = task["Identification"] or "XXX"
-        if task["TaskTime"]:
-            task_time = Data.task_times[task["TaskTime"]]
-            new.start = self.canonicalise_time(task_time["ScheduleStart"])
-            new.finish = self.canonicalise_time(task_time["ScheduleFinish"])
-            # TODO: duration
-            new.duration = "-"
-        else:
-            new.start = "-"
-            new.finish = "-"
-            new.duration = "-"
         new.is_expanded = related_object_id not in self.contracted_tasks
         new.level_index = level_index
         if task["RelatedObjects"]:
@@ -256,6 +246,38 @@ class EnableEditingTasks(bpy.types.Operator):
             if new.is_expanded:
                 for related_object_id in task["RelatedObjects"]:
                     self.create_new_task_li(related_object_id, level_index + 1)
+        return {"FINISHED"}
+
+
+class LoadTaskProperties(bpy.types.Operator):
+    bl_idname = "bim.load_task_properties"
+    bl_label = "Load Task Properties"
+    task: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMWorkScheduleProperties
+        self.tprops = context.scene.BIMTaskTreeProperties
+        self.props.is_task_update_enabled = False
+        for item in self.tprops.tasks:
+            if self.task and item.ifc_definition_id != self.task:
+                continue
+            task = Data.tasks[item.ifc_definition_id]
+            item.name = task["Name"] or "Unnamed"
+            item.identification = task["Identification"] or "XXX"
+            if self.props.active_task_id:
+                item.is_predecessor = self.props.active_task_id in task["IsPredecessorTo"]
+                item.is_successor = self.props.active_task_id in task["IsSuccessorFrom"]
+            if task["TaskTime"]:
+                task_time = Data.task_times[task["TaskTime"]]
+                item.start = self.canonicalise_time(task_time["ScheduleStart"])
+                item.finish = self.canonicalise_time(task_time["ScheduleFinish"])
+                # TODO: duration
+                item.duration = "-"
+            else:
+                item.start = "-"
+                item.finish = "-"
+                item.duration = "-"
+        self.props.is_task_update_enabled = True
         return {"FINISHED"}
 
     def canonicalise_time(self, time):
@@ -400,6 +422,7 @@ class EnableEditingTaskTime(bpy.types.Operator):
                     new.enum_value = data[attribute.name()]
         props.active_task_time_id = task_time_id
         props.active_task_id = self.task
+        bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
     def add_task_time(self):
@@ -448,7 +471,7 @@ class EditTaskTime(bpy.types.Operator):
         )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_task_time()
-        bpy.ops.bim.enable_editing_tasks(work_schedule=props.active_work_schedule_id)
+        bpy.ops.bim.load_task_properties(task=props.active_task_id)
         return {"FINISHED"}
 
     def convert_strings_to_date_times(self, attributes):
@@ -498,6 +521,7 @@ class EnableEditingTask(bpy.types.Operator):
                 if data[attribute.name()]:
                     new.enum_value = data[attribute.name()]
         props.active_task_id = self.task
+        bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
 
@@ -535,7 +559,7 @@ class EditTask(bpy.types.Operator):
         )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_task()
-        bpy.ops.bim.enable_editing_tasks(work_schedule=props.active_work_schedule_id)
+        bpy.ops.bim.load_task_properties(task=props.active_task_id)
         return {"FINISHED"}
 
 
@@ -554,6 +578,7 @@ class AssignPredecessor(bpy.types.Operator):
             related_process=IfcStore.get_file().by_id(props.active_task_id),
         )
         Data.load(self.file)
+        bpy.ops.bim.load_task_properties(task=self.task)
         return {"FINISHED"}
 
 
@@ -572,6 +597,7 @@ class AssignSuccessor(bpy.types.Operator):
             related_process=IfcStore.get_file().by_id(self.task),
         )
         Data.load(self.file)
+        bpy.ops.bim.load_task_properties(task=self.task)
         return {"FINISHED"}
 
 
@@ -590,6 +616,7 @@ class UnassignPredecessor(bpy.types.Operator):
             related_process=IfcStore.get_file().by_id(props.active_task_id),
         )
         Data.load(self.file)
+        bpy.ops.bim.load_task_properties(task=self.task)
         return {"FINISHED"}
 
 
@@ -608,6 +635,7 @@ class UnassignSuccessor(bpy.types.Operator):
             related_process=self.file.by_id(self.task),
         )
         Data.load(self.file)
+        bpy.ops.bim.load_task_properties(task=self.task)
         return {"FINISHED"}
 
 

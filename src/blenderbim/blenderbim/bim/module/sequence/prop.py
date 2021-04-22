@@ -18,10 +18,10 @@ from bpy.props import (
 
 
 def updateTaskName(self, context):
-    if self.name == "Unnamed":
+    props = context.scene.BIMWorkScheduleProperties
+    if not props.is_task_update_enabled or self.name == "Unnamed":
         return
     self.file = IfcStore.get_file()
-    props = context.scene.BIMWorkScheduleProperties
     ifcopenshell.api.run(
         "sequence.edit_task",
         self.file,
@@ -34,10 +34,10 @@ def updateTaskName(self, context):
 
 
 def updateTaskIdentification(self, context):
-    if self.identification == "X":
+    props = context.scene.BIMWorkScheduleProperties
+    if not props.is_task_update_enabled or self.identification == "XXX":
         return
     self.file = IfcStore.get_file()
-    props = context.scene.BIMWorkScheduleProperties
     ifcopenshell.api.run(
         "sequence.edit_task",
         self.file,
@@ -58,6 +58,11 @@ def updateTaskTimeFinish(self, context):
 
 
 def updateTaskTimeDateTime(self, context, startfinish):
+    props = context.scene.BIMWorkScheduleProperties
+
+    if not props.is_task_update_enabled:
+        return
+
     def canonicalise_time(time):
         if not time:
             return "-"
@@ -112,6 +117,8 @@ class Task(PropertyGroup):
     duration: StringProperty(name="Duration")
     start: StringProperty(name="Start", update=updateTaskTimeStart)
     finish: StringProperty(name="Finish", update=updateTaskTimeFinish)
+    is_predecessor: BoolProperty(name="Is Predecessor")
+    is_successor: BoolProperty(name="Is Successor")
 
 
 class WorkPlan(PropertyGroup):
@@ -132,7 +139,6 @@ class BIMWorkScheduleProperties(PropertyGroup):
     is_editing: StringProperty(name="Is Editing")
     active_work_schedule_index: IntProperty(name="Active Work Schedules Index")
     active_work_schedule_id: IntProperty(name="Active Work Schedules Id")
-    tasks: CollectionProperty(name="Tasks", type=Task)
     active_task_index: IntProperty(name="Active Task Index")
     active_task_id: IntProperty(name="Active Task Id")
     task_attributes: CollectionProperty(name="Task Attributes", type=Attribute)
@@ -140,6 +146,13 @@ class BIMWorkScheduleProperties(PropertyGroup):
     active_task_time_id: IntProperty(name="Active Task Id")
     task_time_attributes: CollectionProperty(name="Task Time Attributes", type=Attribute)
     contracted_tasks: StringProperty(name="Contracted Task Items", default="[]")
+    is_task_update_enabled: BoolProperty(name="Is Task Update Enabled", default=True)
+
+
+class BIMTaskTreeProperties(PropertyGroup):
+    # This belongs by itself for performance reasons.
+    # In Blender if you add thousands of tasks it makes other property access in the same group really slow.
+    tasks: CollectionProperty(name="Tasks", type=Task)
 
 
 class WorkCalendar(PropertyGroup):
