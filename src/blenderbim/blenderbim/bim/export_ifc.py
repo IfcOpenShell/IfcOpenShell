@@ -77,19 +77,19 @@ class IfcExporter:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         to_delete = []
 
-        for guid, obj in IfcStore.guid_map.items():
+        for ifc_definition_id, obj in IfcStore.id_map.items():
             try:
                 self.sync_object_placement(obj)
-                self.sync_object_container(guid, obj)
+                self.sync_object_container(ifc_definition_id, obj)
             except ReferenceError:
                 pass  # The object is likely deleted
             if self.should_delete(obj):
-                to_delete.append(guid)
+                to_delete.append(ifc_definition_id)
 
         SpatialData.purge()
 
-        for guid in to_delete:
-            product = self.file.by_id(guid)
+        for ifc_definition_id in to_delete:
+            product = self.file.by_id(ifc_definition_id)
             IfcStore.unlink_element(product)
             ifcopenshell.api.run("root.remove_product", self.file, **{"product": product})
 
