@@ -70,8 +70,7 @@ def purge_module_data():
 
 @persistent
 def loadIfcStore(scene):
-    IfcStore.file = None
-    IfcStore.schema = None
+    IfcStore.purge()
     ifc_file = IfcStore.get_file()
     IfcStore.get_schema()
     [
