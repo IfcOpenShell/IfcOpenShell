@@ -30,6 +30,9 @@ def name_callback(obj, data):
     element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
     if not element.is_a("IfcRoot"):
         return
+    if element.is_a("IfcSpatialStructureElement") or (hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy):
+        collection = obj.users_collection[0]
+        collection.name = obj.name
     element.Name = "/".join(obj.name.split("/")[1:])
     AttributeData.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
 
@@ -69,13 +72,13 @@ def purge_module_data():
 def loadIfcStore(scene):
     IfcStore.file = None
     IfcStore.schema = None
-    props = bpy.context.scene.BIMProperties
-    IfcStore.id_map = (
-        {int(k): bpy.data.objects.get(v) for k, v in json.loads(props.id_map).items()} if props.id_map else {}
-    )
-    IfcStore.guid_map = (
-        {k: bpy.data.objects.get(v) for k, v in json.loads(props.guid_map).items()} if props.id_map else {}
-    )
+    ifc_file = IfcStore.get_file()
+    IfcStore.get_schema()
+    [
+        IfcStore.link_element(ifc_file.by_id(o.BIMObjectProperties.ifc_definition_id), o)
+        for o in bpy.data.objects
+        if o.BIMObjectProperties.ifc_definition_id
+    ]
     purge_module_data()
 
 
@@ -83,25 +86,6 @@ def loadIfcStore(scene):
 def ensureIfcExported(scene):
     if IfcStore.get_file() and not bpy.context.scene.BIMProperties.ifc_file:
         bpy.ops.export_ifc.bim("INVOKE_DEFAULT")
-
-
-@persistent
-def storeIdMap(scene):
-    try:
-        bpy.context.scene.BIMProperties.id_map = json.dumps({k: v.name for k, v in IfcStore.id_map.items()})
-        bpy.context.scene.BIMProperties.guid_map = json.dumps({k: v.name for k, v in IfcStore.guid_map.items()})
-    except:
-        # Regenerate maps. Is there a better solution for this? It seems fragile.
-        file = IfcStore.get_file()
-        IfcStore.id_map = {
-            o.ifc_definition_id: o.name for o in bpy.data.objects if o.BIMObjectProperties.ifc_definition_id
-        }
-        IfcStore.guid_map = {
-            file.by_id(i).GlobalId: n for i, n in IfcStore.id_map.items() if file.by_id(i).is_a("IfcRoot")
-        }
-        # Then attempt to store it again
-        bpy.context.scene.BIMProperties.id_map = json.dumps({k: v.name for k, v in IfcStore.id_map.items()})
-        bpy.context.scene.BIMProperties.guid_map = json.dumps({k: v.name for k, v in IfcStore.guid_map.items()})
 
 
 def get_application(ifc):
@@ -176,12 +160,12 @@ def create_application_organisation(ifc):
 @persistent
 def setDefaultProperties(scene):
     ifcopenshell.api.owner.settings.get_person = (
-        lambda ifc : ifc.by_id(int(bpy.context.scene.BIMOwnerProperties.user_person))
+        lambda ifc: ifc.by_id(int(bpy.context.scene.BIMOwnerProperties.user_person))
         if bpy.context.scene.BIMOwnerProperties.user_person
         else None
     )
     ifcopenshell.api.owner.settings.get_organisation = (
-        lambda ifc : ifc.by_id(int(bpy.context.scene.BIMOwnerProperties.user_organisation))
+        lambda ifc: ifc.by_id(int(bpy.context.scene.BIMOwnerProperties.user_organisation))
         if bpy.context.scene.BIMOwnerProperties.user_organisation
         else None
     )

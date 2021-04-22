@@ -112,8 +112,8 @@ class EnableEditingCostItems(bpy.types.Operator):
     def create_new_cost_item_li(self, related_object_id, level_index):
         cost_item = Data.cost_items[related_object_id]
         new = self.props.cost_items.add()
-        new.name = cost_item["Name"] or "Unnamed"
         new.ifc_definition_id = related_object_id
+        new.name = cost_item["Name"] or "Unnamed"
         new.is_expanded = related_object_id not in self.contracted_cost_items
         new.level_index = level_index
         if cost_item["RelatedObjects"]:
