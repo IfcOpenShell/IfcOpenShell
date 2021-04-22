@@ -414,7 +414,11 @@ class IfcImporter:
             self.exclude_elements |= self.native_elements
 
     def is_native(self, element):
-        if not element.Representation or not element.Representation.Representations or element.HasOpenings:
+        if (
+            not element.Representation
+            or not element.Representation.Representations
+            or getattr(element, "HasOpenings", None)
+        ):
             return
         representations = self.get_transformed_body_representations(element.Representation.Representations)
 
@@ -776,9 +780,6 @@ class IfcImporter:
         if element is None:
             return
 
-        if not self.ifc_import_settings.should_import_spaces and element.is_a("IfcSpace"):
-            return
-
         self.ifc_import_settings.logger.info("Creating object %s", element)
 
         if mesh:
@@ -999,6 +1000,7 @@ class IfcImporter:
         bpy.ops.mesh.tris_convert_to_quads(context_override)
         bpy.ops.mesh.normals_make_consistent(context_override)
         bpy.ops.object.editmode_toggle(context_override)
+        IfcStore.edited_objs.clear()
 
     def add_opening_relation(self, element, obj):
         if not element.is_a("IfcOpeningElement"):
@@ -1080,8 +1082,6 @@ class IfcImporter:
 
     def add_related_objects(self, parent, related_objects):
         for element in related_objects:
-            if element.is_a("IfcSpace"):
-                continue
             global_id = element.GlobalId
             collection = bpy.data.collections.new(self.get_name(element))
             self.spatial_structure_elements[global_id] = {"blender": collection}
@@ -1125,8 +1125,6 @@ class IfcImporter:
             container = element.ContainedInStructure[0].RelatingStructure
         elif hasattr(element, "Decomposes") and element.Decomposes:
             container = element.Decomposes[0].RelatingObject
-        if container.is_a("IfcSpace"):
-            return self.get_aggregate_container(container)
         return container
 
     def create_openings_collection(self):
@@ -1175,9 +1173,7 @@ class IfcImporter:
             and element.ContainedInStructure[0].RelatingStructure
         ):
             container = element.ContainedInStructure[0].RelatingStructure
-            if container.is_a("IfcSpace"):
-                return self.place_object_in_spatial_tree(container, obj)
-            elif element.is_a("IfcGrid"):
+            if element.is_a("IfcGrid"):
                 grid_collection = bpy.data.collections.get(obj.name)
                 if grid_collection:  # Just in case we ran into invalid grids from Revit
                     self.spatial_structure_elements[container.GlobalId]["blender"].children.link(grid_collection)
@@ -1189,22 +1185,15 @@ class IfcImporter:
             if element.Decomposes[0].RelatingObject.is_a("IfcProject"):
                 collection = self.project["blender"]
             elif element.Decomposes[0].RelatingObject.is_a("IfcSpatialStructureElement"):
-                if element.is_a("IfcSpatialStructureElement") and not element.is_a("IfcSpace"):
+                if element.is_a("IfcSpatialStructureElement"):
                     global_id = element.GlobalId
-                else:
-                    global_id = element.Decomposes[0].RelatingObject.GlobalId
                 if global_id in self.spatial_structure_elements:
                     if (
                         element.is_a("IfcSpatialStructureElement")
-                        and not element.is_a("IfcSpace")
                         and "blender_obj" in self.spatial_structure_elements[global_id]
                     ):
                         bpy.data.objects.remove(self.spatial_structure_elements[global_id]["blender_obj"])
                     collection = self.spatial_structure_elements[global_id]["blender"]
-                # This may occur if we are nesting an IfcSpace (which is special
-                # since it does not have a collection within an IfcSpace
-                if not collection:
-                    return self.place_object_in_spatial_tree(element.Decomposes[0].RelatingObject, obj)
             else:
                 collection = self.aggregates[element.Decomposes[0].RelatingObject.GlobalId]["blender"]
             if collection:
@@ -1428,7 +1417,6 @@ class IfcImportSettings:
         self.logger = None
         self.input_file = None
         self.diff_file = None
-        self.should_import_spaces = False
         self.should_auto_set_workarounds = True
         self.should_use_cpu_multiprocessing = True
         self.should_merge_by_class = False

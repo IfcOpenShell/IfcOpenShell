@@ -64,7 +64,11 @@ class facet(metaclass=meta_facet):
             yield k, getattr(self, k)
 
     def __str__(self):
-        return self.message % dict(list(self))
+        di = dict(list(self))
+        for k, v in di.items():
+            if isinstance(v, str) and not len(v):
+                di[k] = "not specified"
+        return self.message % di
 
 
 class entity(facet):
@@ -88,19 +92,19 @@ class classification(facet):
     """
 
     parameters = ["system", "value"]
-    message = "a classification reference to '%(value)s' from '%(system)s'"
+    message = "a classification reference '%(value)s' from '%(system)s'"
 
     def __call__(self, inst, logger):
         refs = []
         for association in inst.HasAssociations:
             if association.is_a("IfcRelAssociatesClassification"):
                 cref = association.RelatingClassification
-                refs.append((cref.ReferencedSource, cref.Name))
+                refs.append((cref.ReferencedSource.Name, cref.ItemReference))
 
         return facet_evaluation(
             (self.system, self.value) in refs,
             # @todo
-            "",
+            "[classification_eval_todo]",
         )
 
 
@@ -109,17 +113,19 @@ class property(facet):
     The IDS property facet implenented using `ifcopenshell.util.element`
     """
 
-    parameters = ["property", "propertyset", "value"]
-    message = "a property '%(property)s' in '%(propertyset)s' with value '%(value)s'"
+    parameters = ["name", "propertyset", "value"]
+    
+    # import pdb;pdb.set_trace()
+    message = "a property '%(name)s' in '%(propertyset)s' with value '%(value)s'"
 
     def __call__(self, inst, logger):
         props = ifcopenshell.util.element.get_psets(inst)
         pset = props.get(self.propertyset)
-        val = pset.get(self.property) if pset else None
+        val = pset.get(self.name) if pset else None
         logger.debug("Testing %s == %s", val, self.value)
 
         di = {
-            "property": self.property,
+            "name": self.name,
             "propertyset": self.propertyset,
             "value": val,
         }
@@ -128,11 +134,36 @@ class property(facet):
             msg = self.message % di
         else:
             if pset:
-                msg = "a set '%(propertyset)s', but no property '%(property)'" % di
+                msg = "a set '%(propertyset)s', but no property '%(name)'" % di
             else:
                 msg = "no set '%(propertyset)s'" % di
 
         return facet_evaluation(val == self.value, msg)
+
+
+class material(facet):
+    """
+    The IDS material facet 
+    """
+    parameters = ["name", "value"]
+    message = "a material '%(name)s with value '%(value)s'"
+
+    def __call__(self, inst, logger):
+        material_relations = [rel for rel in inst.HasAssociations if rel.is_a("IfcRelAssociatesMaterial")]
+        names = []
+        for rel in material_relations:
+            if rel.RelatingMaterial.is_a() == "IfcMaterialLayerSetUsage":
+                layers = rel.RelatingMaterial.ForLayerSet.MaterialLayers
+                names = [layer.Material.Name for layer in layers]
+            elif rel.RelatingMaterial.is_a() == "IfcMaterial":
+                names.append(rel.RelatingMaterial.Name)
+        
+        
+        return facet_evaluation(
+            0,
+            # @todo
+            "[material_eval_todo]",
+        )
 
 
 class boolean_logic:
@@ -166,17 +197,39 @@ class restriction:
     """
 
     def __init__(self, node):
-        self.options = [
-            n.getAttribute("value")
-            for n in node.childNodes
-            if n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("enumeration")
-        ]
 
+        self.restriction_on = node.getAttribute("base")
+        self.options = []
+        self.type = []
+        
+        for n in node.childNodes:
+            if n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("enumeration"):
+                self.options.append(n.getAttribute("value"))
+                self.type = "enumeration"        
+            elif n.nodeType == n.ELEMENT_NODE and (n.tagName.endswith("Inclusive") or n.tagName.endswith("Exclusive")):
+                self.options.append(n.getAttribute("value"))
+                self.type = "bounds"
+            elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("length"):
+                self.options.append(n.getAttribute("value"))
+                self.type = "length"
+            elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("pattern"):
+                self.options.append(n.getAttribute("value"))
+                self.type = "pattern"
+                
+        # "Given an instance with %(applicabiliy)s\nWe expect %(requirements)s" % self.__dict__
     def __eq__(self, other):
         return other in self.options
 
     def __repr__(self):
-        return " or ".join(self.options)
+        if self.type == "enumeration":
+            return " or ".join(self.options)
+        elif self.type == "bounds":
+            self.options.sort()
+            return "of type %s, having a value between %s and %s" % (self.restriction_on, self.options[0], self.options[1])
+        elif self.type == "length":
+            return "of type %s with a length of %s" % (self.restriction_on, self.options[0])
+        elif self.type == "pattern":
+            return "of type %s respecting pattern %s" % (self.restriction_on, self.options[0])
 
 
 class specification:
@@ -202,10 +255,11 @@ class specification:
     def __call__(self, inst, logger):
         if self.applicabiliy(inst, logger):
             valid = self.requirements(inst, logger)
+
             if valid:
-                logger.info(str(self) + "\n%s has" % inst + " " + str(valid) + " so is compliant")
+                logger.info({'guid':inst.GlobalId, 'result':valid.success,'sentence':str(self) + "\n%s has" % inst + " " + str(valid) + " so is compliant"})
             else:
-                logger.error(str(self) + "\n%s has" % inst + " " + str(valid) + " so is not compliant")
+                logger.error({'guid':inst.GlobalId, 'result':valid.success, 'sentence':str(self) + "\n%s has" % inst + " " + str(valid) + " so is not compliant"})
 
     def __str__(self):
         return "Given an instance with %(applicabiliy)s\nWe expect %(requirements)s" % self.__dict__
@@ -229,15 +283,17 @@ class ids:
         for spec in self.specifications:
             for elem in ifc_file.by_type("IfcObject"):
                 spec(elem, logger)
-
-
+                
 if __name__ == "__main__":
-    import sys
+    import sys, os
     import logging
     import ifcopenshell
 
+    filename = os.path.join(os.getcwd(), "ids.txt")
+
     logger = logging.getLogger("IDS")
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    logging.basicConfig(filename=filename, level=logging.INFO, format="%(message)s")
+    logging.FileHandler(filename, mode='w')
 
     ids_file = ids(sys.argv[1])
     ifc_file = ifcopenshell.open(sys.argv[2])

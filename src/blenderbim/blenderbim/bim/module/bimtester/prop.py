@@ -18,6 +18,13 @@ scenarios_enum = []
 classes_enum = []
 
 
+def purge():
+    global scenarios_enum
+    global classes_enum
+    scenarios_enum = []
+    classes_enum = []
+
+
 def getScenarios(self, context):
     global scenarios_enum
     if len(scenarios_enum) < 1:

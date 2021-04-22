@@ -1,0 +1,11 @@
+<link href="jsgantt.css" rel="stylesheet" type="text/css"/>
+<script src="jsgantt.js" type="text/javascript"></script>
+<div style="position:relative" class="gantt" id="GanttChartDIV"></div>
+<script type="text/javascript">
+var g = new JSGantt.GanttChart(document.getElementById('GanttChartDIV'), 'day');
+var json_data = `
+{{{json_data}}}
+`;
+JSGantt.parseJSONString(json_data, g);
+g.Draw();
+</script>

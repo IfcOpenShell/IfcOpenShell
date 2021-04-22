@@ -67,9 +67,11 @@ class ExportIFC(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     json_version: bpy.props.EnumProperty(items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version")
     json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
-    should_force_resave: bpy.props.BoolProperty(name="Resave .blend", default=False)
 
     def invoke(self, context, event):
+        if bpy.context.scene.BIMProperties.ifc_file:
+            self.filepath = bpy.context.scene.BIMProperties.ifc_file
+            return self.execute(context)
         if not self.filepath:
             self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".ifc")
         WindowManager = context.window_manager
@@ -104,8 +106,8 @@ class ExportIFC(bpy.types.Operator):
             new.name = output_file
         if not bpy.context.scene.BIMProperties.ifc_file:
             bpy.context.scene.BIMProperties.ifc_file = output_file
-        if self.should_force_resave:
-            bpy.ops.wm.save_as_mainfile(filepath=bpy.data.filepath)
+        if bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath:
+            bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
         return {"FINISHED"}
 
 
@@ -115,7 +117,6 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
 
-    should_import_spaces: bpy.props.BoolProperty(name="Import Spaces", default=False)
     should_auto_set_workarounds: bpy.props.BoolProperty(name="Automatically Set Vendor Workarounds", default=True)
     should_use_cpu_multiprocessing: bpy.props.BoolProperty(name="Import with CPU Multiprocessing", default=True)
     should_merge_by_class: bpy.props.BoolProperty(name="Import and Merge by Class", default=False)
@@ -140,7 +141,6 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         )
 
         settings = import_ifc.IfcImportSettings.factory(context, self.filepath, logger)
-        settings.should_import_spaces = self.should_import_spaces
         settings.should_auto_set_workarounds = self.should_auto_set_workarounds
         settings.should_use_cpu_multiprocessing = self.should_use_cpu_multiprocessing
         settings.should_merge_by_class = self.should_merge_by_class
@@ -324,6 +324,7 @@ class SelectIfcFile(bpy.types.Operator):
     bl_idname = "bim.select_ifc_file"
     bl_label = "Select IFC File"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
 
     def execute(self, context):
         bpy.context.scene.BIMProperties.ifc_file = self.filepath

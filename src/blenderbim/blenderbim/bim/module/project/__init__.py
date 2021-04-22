@@ -3,9 +3,21 @@ from . import ui, prop, operator
 
 classes = (
     operator.CreateProject,
+    operator.CreateProjectLibrary,
     operator.ValidateIfcFile,
+    operator.SelectLibraryFile,
+    operator.ChangeLibraryElement,
+    operator.RefreshLibrary,
+    operator.RewindLibrary,
+    operator.AssignLibraryDeclaration,
+    operator.UnassignLibraryDeclaration,
+    operator.SaveLibraryFile,
+    operator.AppendLibraryElement,
+    prop.LibraryElement,
     prop.BIMProjectProperties,
     ui.BIM_PT_project,
+    ui.BIM_PT_project_library,
+    ui.BIM_UL_library,
 )
 
 
