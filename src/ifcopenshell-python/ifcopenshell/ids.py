@@ -78,6 +78,8 @@ class entity(facet):
 
     parameters = ["name"]
     message = "an entity name '%(name)s'"
+    
+    # @todo predefinedtype
 
     def __call__(self, inst, logger):
         logger.debug("Testing %s == %s", inst.is_a(), self.name)
