@@ -154,6 +154,7 @@ class material(facet):
         material_relations = [rel for rel in inst.HasAssociations if rel.is_a("IfcRelAssociatesMaterial")]
         names = []
         for rel in material_relations:
+            # @todo not all subtypes of IfcMaterial handled
             if rel.RelatingMaterial.is_a() == "IfcMaterialLayerSetUsage":
                 layers = rel.RelatingMaterial.ForLayerSet.MaterialLayers
                 names = [layer.Material.Name for layer in layers]
