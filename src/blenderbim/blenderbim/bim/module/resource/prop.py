@@ -27,10 +27,11 @@ class Resource(PropertyGroup):
 class BIMResourceProperties(PropertyGroup):
     resource_attributes: CollectionProperty(name="Resource Attributes", type=Attribute)
     is_editing: BoolProperty(name="Is Editing")
-    is_a:StringProperty(name="Contracted Cost Items", default="[]")
     active_resource_id: IntProperty(name="Active Resource Id")
     active_resource_index: IntProperty(name="Active Resource Id")
+    is_nested_resource_update_enabled: BoolProperty(name="Is nested_resource Update Enabled", default=True)
     resources: CollectionProperty(name="Resource", type=Resource)
+    is_loaded: BoolProperty(name="Is Editing")
     active_nested_resource_id: IntProperty(name="Active Nested Ressource Id")
     active_nested_resource_index: IntProperty(name="Active Nested Resource Index")
     nested_resource_attributes: CollectionProperty(name="Nested Resource Attributes", type=Attribute)
