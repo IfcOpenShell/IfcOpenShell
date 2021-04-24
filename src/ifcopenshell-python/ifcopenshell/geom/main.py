@@ -134,6 +134,9 @@ class tree(ifcopenshell_wrapper.tree):
 
     def add_file(self, file, settings):
         ifcopenshell_wrapper.tree.add_file(self, file.wrapped_data, settings)
+        
+    def add_iterator(self, iterator):
+        ifcopenshell_wrapper.tree.add_file(self, iterator)
 
     def select(self, value, **kwargs):
         def unwrap(value):
