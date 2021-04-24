@@ -21,7 +21,6 @@ class BIM_PT_resources(Panel):
         if self.props.is_loaded:
             row.operator("bim.disable_resource_editing_ui", text="CANCEL EDITING RESOURCES", icon="CANCEL")
         else:
-            row = self.layout.row()
             row.operator("bim.load_resources", text="Load Resources", icon="GREASEPENCIL")
 
         if not Data.is_loaded:
@@ -37,18 +36,23 @@ class BIM_PT_resources(Panel):
         row = self.layout.row()
         row.label(text=resource["Name"] or "Unnamed", icon="BOOKMARKS")
         if self.props.active_resource_id and self.props.active_resource_id == resource_id:
-            row.operator("bim.add_subcontract_resource", text="", icon="FILE_TICK").resource = resource_id
-            row.operator("bim.add_crew_resource", text="", icon="COMMUNITY").resource = resource_id
-            row.operator("bim.add_equipement_resource", text="", icon="TOOL_SETTINGS").resource = resource_id
-            row.operator("bim.add_labor_resource", text="", icon="ARMATURE_DATA").resource = resource_id
-            row.operator("bim.add_material_resource", text="", icon="MATERIAL").resource = resource_id
-            row.operator("bim.add_product_resource", text="", icon="PACKAGE").resource = resource_id
-            row.operator("bim.edit_resource", text="", icon="CHECKMARK")
-            row.operator("bim.disable_nested_resource_editing_ui", text="", icon="CANCEL")
+            if self.props.is_editing == "RESOURCE":
+                row.operator("bim.edit_resource", text="", icon="CHECKMARK")
+            elif self.props.is_editing == "NESTED_RESOURCE":
+                row.operator("bim.add_subcontract_resource", text="", icon="FILE_TICK").resource = resource_id
+                row.operator("bim.add_crew_resource", text="", icon="COMMUNITY").resource = resource_id
+                row.operator("bim.add_equipment_resource", text="", icon="TOOL_SETTINGS").resource = resource_id
+                row.operator("bim.add_labor_resource", text="", icon="ARMATURE_DATA").resource = resource_id
+                row.operator("bim.add_material_resource", text="", icon="MATERIAL").resource = resource_id
+                row.operator("bim.add_product_resource", text="", icon="PACKAGE").resource = resource_id
+                row.operator("bim.edit_resource", text="", icon="CHECKMARK")#.resource = resource_id
+                #TODO add if statement in operator for editing resource so that it doesnt toggle the wrong panel
+            row.operator("bim.disable_editing_resource", text="", icon="CANCEL")
+        elif self.props.active_resource_id:
+            row.operator("bim.remove_resource", text="", icon="X").resource = resource_id
         else:
             row.operator("bim.enable_editing_nested_resources", text="", icon="ACTION").resource = resource_id
             row.operator("bim.enable_editing_resource", text="", icon="GREASEPENCIL").resource = resource_id
-            row.operator("bim.remove_resource", text="", icon="X").resource = resource_id
 
         if self.props.active_resource_id == resource_id:
             if self.props.is_editing == "RESOURCE":
@@ -57,7 +61,7 @@ class BIM_PT_resources(Panel):
                 self.draw_editable_nested_resource_ui(resource_id)
 
     def draw_editable_resource_ui(self):
-        for attribute in self.props.resources:
+        for attribute in self.props.resource_attributes:
             row = self.layout.row(align=True)
             if attribute.data_type == "string":
                 row.prop(attribute, "string_value", text=attribute.name)

@@ -7,6 +7,7 @@ class Usecase:
     def __init__(self, file, **settings):
         self.file = file
         self.settings = {
+            "parent_resource": None,
             "name": "Unnamed",
             "predefined_type": "NOTDEFINED",
         }
@@ -23,8 +24,13 @@ class Usecase:
         )
         # TODO: this is an ambiguity by buildingSMART: Can we nest and IfcCrewResource under an ifcCrewResource ?
         # See https://forums.buildingsmart.org/t/is-the-ifcCrewResource-project-declaration-mutually-exclusive-to-aggregation-within-a-relating-ifcworkplan/3510
-        context = self.file.by_type("IfcContext")[0]
-        ifcopenshell.api.run(
-            "project.assign_declaration", self.file, definition=crew_resource, relating_context=context
-        )
+        if self.settings["parent_resource"]:
+            ifcopenshell.api.run(
+                "nest.assign_object", self.file, related_object=resource, relating_object=self.settings["parent_resource"]
+            )
+        else:
+            context = self.file.by_type("IfcContext")[0]
+            ifcopenshell.api.run(
+                "project.assign_declaration", self.file, definition=crew_resource, relating_context=context
+            )
         return crew_resource

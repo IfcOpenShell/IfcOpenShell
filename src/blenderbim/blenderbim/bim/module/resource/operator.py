@@ -37,9 +37,9 @@ class EnableEditingResource(bpy.types.Operator):
 
     def enable_editing_resource(self):
         data = Data.resources[self.resource]
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcResource").all_attributes():
+        for attribute in IfcStore.get_schema().declaration_by_name("IfcCrewResource").all_attributes():
             data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
+            if data_type == "entity" or isinstance(data_type, tuple):
                 continue
             new = self.props.resource_attributes.add()
             new.name = attribute.name()
@@ -113,6 +113,7 @@ class DisableEditingResource(bpy.types.Operator):
         context.scene.BIMResourceProperties.active_resource_id = 0
         return {"FINISHED"}
 
+
 class DisableResourceEditingUI(bpy.types.Operator):
     bl_idname = "bim.disable_resource_editing_ui"
     bl_label = "Disable Resources Editing UI"
@@ -121,13 +122,6 @@ class DisableResourceEditingUI(bpy.types.Operator):
         context.scene.BIMResourceProperties.is_loaded = False
         return {"FINISHED"}
 
-class DisableNestedResourceEditingUI(bpy.types.Operator):
-    bl_idname = "bim.disable_nested_resource_editing_ui"
-    bl_label = "Disable Task Editing UI"
-
-    def execute(self, context):
-        context.scene.BIMNestedResourceProperties.is_editing = False
-        return {"FINISHED"}
 
 class AddSubcontractResource(bpy.types.Operator):
     bl_idname = "bim.add_subcontract_resource"
@@ -166,13 +160,13 @@ class AddCrewResource(bpy.types.Operator):
 
 
 class AddEquipementResource(bpy.types.Operator):
-    bl_idname = "bim.add_equipement_resource"
+    bl_idname = "bim.add_equipment_resource"
     bl_label = "Add Equipement Resource"
     resource: bpy.props.IntProperty()
 
     def execute(self, context):
         ifcopenshell.api.run(
-        "resource.add_equipement_resource",
+        "resource.add_equipment_resource",
         IfcStore.get_file(),
         resource=IfcStore.get_file().by_id(self.resource)
         )
@@ -229,7 +223,7 @@ class EditResource(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMResourceProperties
         attributes = {}
-        for attribute in props.cost_resource_attributes:
+        for attribute in props.nested_resource_attributes:
             if attribute.is_null:
                 attributes[attribute.name] = None
             else:
