@@ -19,5 +19,4 @@ class Data:
             for rel in resource.IsNestedBy:
                 [data["RelatedObjects"].append(o.id()) for o in rel.RelatedObjects if o.is_a("IfcCrewResource") or o.is_a("IfcsubcontractResource")]
             cls.resources[resource.id()] = data
-
         cls.is_loaded=True

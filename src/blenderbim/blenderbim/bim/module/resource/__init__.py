@@ -16,7 +16,7 @@ classes = (
     operator.RemoveResource,
     operator.EnableEditingNestedResource,
     operator.LoadNestedResourceProperties,
-    operator.DisableNestedResourceEditingUI,
+    # operator.DisableNestedResourceEditingUI,
     prop.Resource,
     prop.BIMResourceProperties,
     prop.BIMResourceTreeProperties,
