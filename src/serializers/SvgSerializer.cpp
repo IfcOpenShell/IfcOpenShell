@@ -1671,7 +1671,10 @@ void SvgSerializer::addTextAnnotations(const drawing_key& k) {
 							trsf.SetTranslationPart(v);
 						}
 
-						if (!range || (v.Z() >= range->first && v.Z() < range->second)) {
+						auto z_local = gp::DZ().Transformed(trsf);
+						auto view_dir = z_local.Dot(meta.pln_3d.Axis().Direction());
+
+						if ((!range || (v.Z() >= range->first && v.Z() < range->second)) && view_dir > 0.99) {
 
 							if (meta.pln_3d.Position().Direction().Dot(gp_Dir(trsf.HVectorialPart().Column(3))) > 0.99) {
 								auto svg_name = nameElement(ann);
@@ -1863,6 +1866,8 @@ void SvgSerializer::finalize() {
 				
 				draw_hlr(ax, { nullptr, drawing_name });
 			}
+
+			addTextAnnotations({ nullptr, drawing_name });
 
 			if (storey_height_display_ != SH_NONE && pln && std::abs(pln->Position().Direction().Z()) < 1.e-5) {
 				auto storeys = this->file->instances_by_type("IfcBuildingStorey");
