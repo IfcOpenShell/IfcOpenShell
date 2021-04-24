@@ -574,6 +574,11 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 				b->second[0] - b->first[0],
 				b->second[1] - b->first[1]
 			);
+
+#if OCC_VERSION_HEX >= 0x70300
+			view_box_3d_.emplace();
+			BRepBndLib::AddOBB(compound_unmirrored, *view_box_3d_, false, false, false);
+#endif
 		}
 
 		std::vector<string_property> props;
@@ -711,6 +716,17 @@ void SvgSerializer::write(const geometry_data& data) {
 	make_transform_global.Build();
 	// (When determinant < 0, copy is implied and the input is not mutated.)
 	auto compound_unmirrored = make_transform_global.Shape();
+
+#if OCC_VERSION_HEX >= 0x70300
+	if (view_box_3d_) {
+		Bnd_OBB obb;
+		BRepBndLib::AddOBB(compound_unmirrored, obb, false, false, false);
+		if (view_box_3d_->IsOut(obb)) {
+			Logger::Notice("Not including element due to viewBox", data.product);
+			return;
+		}
+	}
+#endif
 
 	if (is_floor_plan_) {
 		BRepBndLib::Add(compound_unmirrored, bnd_);
