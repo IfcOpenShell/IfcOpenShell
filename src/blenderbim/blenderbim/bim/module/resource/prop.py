@@ -16,27 +16,39 @@ from bpy.props import (
 )
 
 
+def updateResourceName(self, context):
+    props = context.scene.BIMResourceProperties
+    if not props.is_resource_update_enabled or self.name == "Unnamed":
+        return
+    self.file = IfcStore.get_file()
+    ifcopenshell.api.run(
+        "resource.edit_resource",
+        self.file,
+        **{"resource": self.file.by_id(self.ifc_definition_id), "attributes": {"Name": self.name}},
+    )
+    Data.load(IfcStore.get_file())
+    if props.active_resource_id == self.ifc_definition_id:
+        attribute = props.resource_attributes.get("Name")
+        attribute.string_value = self.name
 
 
 class Resource(PropertyGroup):
-    name: StringProperty(name="Name")
+    name: StringProperty(name="Name", update=updateResourceName)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     has_children: BoolProperty(name="Has Children")
     is_expanded: BoolProperty(name="Is Expanded")
     level_index: IntProperty(name="Level Index")
 
+
 class BIMResourceTreeProperties(PropertyGroup):
-    nested_resources: CollectionProperty(name="nested_resources", type=Resource)
+    resources: CollectionProperty(name="Resources", type=Resource)
+
 
 class BIMResourceProperties(PropertyGroup):
     resource_attributes: CollectionProperty(name="Resource Attributes", type=Attribute)
-    is_editing: StringProperty(name="Is Editing")
+    is_editing: BoolProperty(name="Is Editing")
     active_resource_index: IntProperty(name="Active Resource Index")
     active_resource_id: IntProperty(name="Active Resource Id")
-    active_nested_resource_index: IntProperty(name="Active nested_resource Index")
-    active_nested_resource_id: IntProperty(name="Active nested_resource Id")
-    nested_resource_attributes: CollectionProperty(name="nested_resource Attributes", type=Attribute)
-    contracted_nested_resources: StringProperty(name="Contracted nested_resource Items", default="[]")
-    is_nested_resource_update_enabled: BoolProperty(name="Is nested_resource Update Enabled", default=True)
-    resources: CollectionProperty(name="Resource", type=Resource)
+    contracted_resources: StringProperty(name="Contracted Resources", default="[]")
+    is_resource_update_enabled: BoolProperty(name="Is Resource Update Enabled", default=True)
     is_loaded: BoolProperty(name="Is Editing")

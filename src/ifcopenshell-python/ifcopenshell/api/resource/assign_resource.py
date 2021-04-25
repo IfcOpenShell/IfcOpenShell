@@ -21,17 +21,17 @@ class Usecase:
                 ):
                     return
 
-        referenced_by = None
+        resource_of = None
         if self.settings["relating_resource"].ResourceOf:
-            referenced_by = self.settings["relating_resource"].ResourceOf[0]
+            resource_of = self.settings["relating_resource"].ResourceOf[0]
 
-        if referenced_by:
-            related_objects = list(referenced_by.RelatedObjects)
+        if resource_of:
+            related_objects = list(resource_of.RelatedObjects)
             related_objects.append(self.settings["related_object"])
-            referenced_by.RelatedObjects = related_objects
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": referenced_by})
+            resource_of.RelatedObjects = related_objects
+            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": resource_of})
         else:
-            referenced_by = self.file.create_entity(
+            resource_of = self.file.create_entity(
                 "IfcRelAssignsToResource",
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
@@ -40,4 +40,4 @@ class Usecase:
                     "RelatingProduct": self.settings["relating_resource"],
                 }
             )
-        return referenced_by
+        return resource_of

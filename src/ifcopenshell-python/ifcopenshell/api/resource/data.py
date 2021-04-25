@@ -1,6 +1,3 @@
-import ifcopenshell.api
-
-
 class Data:
     is_loaded = False
     resources = {}
@@ -17,6 +14,7 @@ class Data:
             del data["OwnerHistory"]
             data["RelatedObjects"] = []
             for rel in resource.IsNestedBy:
-                [data["RelatedObjects"].append(o.id()) for o in rel.RelatedObjects if o.is_a("IfcCrewResource") or o.is_a("IfcsubcontractResource")]
+                [data["RelatedObjects"].append(o.id()) for o in rel.RelatedObjects]
+            data["HasContext"] = resource.HasContext[0].RelatingContext.id() if resource.HasContext else None
             cls.resources[resource.id()] = data
         cls.is_loaded=True
