@@ -37,7 +37,7 @@ class Usecase:
                     "GlobalId": ifcopenshell.guid.new(),
                     "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
                     "RelatedObjects": [self.settings["related_object"]],
-                    "RelatingProduct": self.settings["relating_resource"],
+                    "RelatingResource": self.settings["relating_resource"],
                 }
             )
         return resource_of

@@ -33,7 +33,7 @@ class BIM_PT_resources(Panel):
             return
 
         row = self.layout.row(align=True)
-        op = row.operator("bim.add_resource", text="Add SubContract", icon="FILE_TICK")
+        op = row.operator("bim.add_resource", text="Add SubContract", icon="TEXT")
         op.ifc_class = "IfcSubContractResource"
         op.resource = 0
         op = row.operator("bim.add_resource", text="Add Crew", icon="COMMUNITY")
@@ -88,7 +88,7 @@ class BIM_UL_resources(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         resource = Data.resources[item.ifc_definition_id]
         icon_map = {
-            "IfcSubContractResource": "FILE_TICK",
+            "IfcSubContractResource": "TEXT",
             "IfcCrewResource": "COMMUNITY",
             "IfcConstructionEquipmentResource": "TOOL_SETTINGS",
             "IfcLaborResource": "OUTLINER_OB_ARMATURE",
@@ -112,6 +112,16 @@ class BIM_UL_resources(UIList):
             else:
                 row.label(text="", icon="DOT")
             row.prop(item, "name", emboss=False, text="", icon=icon_map[resource["type"]])
+
+            if context.active_object:
+                oprops = context.active_object.BIMObjectProperties
+                row = layout.row(align=True)
+                if oprops.ifc_definition_id in Data.resources[item.ifc_definition_id]["RelatedObjects"]:
+                    op = row.operator("bim.unassign_resource", text="", icon="KEYFRAME_HLT", emboss=False)
+                    op.resource = item.ifc_definition_id
+                else:
+                    op = row.operator("bim.assign_resource", text="", icon="KEYFRAME", emboss=False)
+                    op.resource = item.ifc_definition_id
 
             if props.active_resource_id == item.ifc_definition_id:
                 row.operator("bim.edit_resource", text="", icon="CHECKMARK")

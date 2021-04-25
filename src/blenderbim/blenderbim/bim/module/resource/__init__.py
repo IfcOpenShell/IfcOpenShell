@@ -12,6 +12,8 @@ classes = (
     operator.LoadResourceProperties,
     operator.ExpandResource,
     operator.ContractResource,
+    operator.AssignResource,
+    operator.UnAssignResource,
     prop.Resource,
     prop.BIMResourceProperties,
     prop.BIMResourceTreeProperties,
