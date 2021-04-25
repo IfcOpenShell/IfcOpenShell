@@ -197,3 +197,47 @@ class ContractResource(bpy.types.Operator):
         Data.load(self.file)
         bpy.ops.bim.load_resources()
         return {"FINISHED"}
+
+
+class AssignResource(bpy.types.Operator):
+    bl_idname = "bim.assign_resource"
+    bl_label = "Assign Resource"
+    resource: bpy.props.IntProperty()
+    related_object: bpy.props.StringProperty()
+
+    def execute(self, context):
+        related_objects = (
+            [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
+        )
+        for related_object in related_objects:
+            self.file = IfcStore.get_file()
+            ifcopenshell.api.run(
+                "resource.assign_resource",
+                self.file,
+                relating_resource=self.file.by_id(self.resource),
+                related_object=self.file.by_id(related_object.BIMObjectProperties.ifc_definition_id),
+            )
+        Data.load(self.file)
+        return {"FINISHED"}
+
+
+class UnAssignResource(bpy.types.Operator):
+    bl_idname = "bim.unassign_resource"
+    bl_label = "Unassign Resource"
+    resource: bpy.props.IntProperty()
+    related_object: bpy.props.StringProperty()
+
+    def execute(self, context):
+        related_objects = (
+            [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
+        )
+        for related_object in related_objects:
+            self.file = IfcStore.get_file()
+            ifcopenshell.api.run(
+                "resource.unassign_resource",
+                self.file,
+                relating_resource=self.file.by_id(self.resource),
+                related_object=self.file.by_id(related_object.BIMObjectProperties.ifc_definition_id),
+            )
+        Data.load(self.file)
+        return {"FINISHED"}
