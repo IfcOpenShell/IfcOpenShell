@@ -30,10 +30,10 @@ class LoadResources(bpy.types.Operator):
         new.ifc_definition_id = related_object_id
         new.is_expanded = related_object_id not in self.contracted_resources
         new.level_index = level_index
-        if resource["RelatedObjects"]:
+        if resource["IsNestedBy"]:
             new.has_children = True
             if new.is_expanded:
-                for related_object_id in resource["RelatedObjects"]:
+                for related_object_id in resource["IsNestedBy"]:
                     self.create_new_resource_li(related_object_id, level_index + 1)
         return {"FINISHED"}
 
@@ -221,7 +221,7 @@ class AssignResource(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class UnAssignResource(bpy.types.Operator):
+class UnassignResource(bpy.types.Operator):
     bl_idname = "bim.unassign_resource"
     bl_label = "Unassign Resource"
     resource: bpy.props.IntProperty()
