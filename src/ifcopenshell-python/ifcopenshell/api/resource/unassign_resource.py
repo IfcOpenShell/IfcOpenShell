@@ -1,4 +1,3 @@
-import ifcopenshell
 import ifcopenshell.api
 
 

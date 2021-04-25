@@ -116,7 +116,7 @@ class BIM_UL_resources(UIList):
             if context.active_object:
                 oprops = context.active_object.BIMObjectProperties
                 row = layout.row(align=True)
-                if oprops.ifc_definition_id in Data.resources[item.ifc_definition_id]["RelatedObjects"]:
+                if oprops.ifc_definition_id in Data.resources[item.ifc_definition_id]["ResourceOf"]:
                     op = row.operator("bim.unassign_resource", text="", icon="KEYFRAME_HLT", emboss=False)
                     op.resource = item.ifc_definition_id
                 else:
