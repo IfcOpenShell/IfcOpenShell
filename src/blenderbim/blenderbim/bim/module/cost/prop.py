@@ -71,3 +71,11 @@ class BIMCostProperties(PropertyGroup):
     quantity_types: EnumProperty(items=getQuantityTypes, name="Quantity Types")
     active_cost_item_quantity_id: IntProperty(name="Active Cost Item Quantity Id")
     quantity_attributes: CollectionProperty(name="Quantity Attributes", type=Attribute)
+    cost_types: EnumProperty(items=[
+        ("FIXED", "Fixed", "The cost value is a fixed number"),
+        ("SUM", "Sum", "The cost value is automatically derived from the sum of all nested cost items"),
+        ("CATEGORY", "Category", "The cost value represents a single category"),
+    ], name="Cost Types")
+    cost_category: StringProperty(name="Cost Category")
+    active_cost_item_value_id: IntProperty(name="Active Cost Item Value Id")
+    cost_value_attributes: CollectionProperty(name="Cost Value Attributes", type=Attribute)

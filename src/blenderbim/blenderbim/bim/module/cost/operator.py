@@ -104,7 +104,7 @@ class EnableEditingCostItems(bpy.types.Operator):
             self.props.cost_items.remove(0)
 
         self.contracted_cost_items = json.loads(self.props.contracted_cost_items)
-        for related_object_id in Data.cost_schedules[self.cost_schedule]["RelatedObjects"]:
+        for related_object_id in Data.cost_schedules[self.cost_schedule]["Controls"]:
             self.create_new_cost_item_li(related_object_id, 0)
         self.props.is_editing = "COST_ITEMS"
         return {"FINISHED"}
@@ -116,10 +116,10 @@ class EnableEditingCostItems(bpy.types.Operator):
         new.name = cost_item["Name"] or "Unnamed"
         new.is_expanded = related_object_id not in self.contracted_cost_items
         new.level_index = level_index
-        if cost_item["RelatedObjects"]:
+        if cost_item["IsNestedBy"]:
             new.has_children = True
             if new.is_expanded:
-                for related_object_id in cost_item["RelatedObjects"]:
+                for related_object_id in cost_item["IsNestedBy"]:
                     self.create_new_cost_item_li(related_object_id, level_index + 1)
 
         return {"FINISHED"}
@@ -456,4 +456,120 @@ class EditCostItemQuantity(bpy.types.Operator):
         )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_cost_item_quantity()
+        return {"FINISHED"}
+
+
+class AddCostItemValue(bpy.types.Operator):
+    bl_idname = "bim.add_cost_item_value"
+    bl_label = "Add Cost Item Value"
+    cost_item: bpy.props.IntProperty()
+    cost_type: bpy.props.StringProperty()
+    cost_category: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        if self.cost_type == "FIXED":
+            category = None
+        elif self.cost_type == "SUM":
+            category = "*"
+        elif self.cost_type == "CATEGORY":
+            category = self.cost_category
+        value = ifcopenshell.api.run("cost.add_cost_item_value", self.file, cost_item=self.file.by_id(self.cost_item))
+        ifcopenshell.api.run(
+            "cost.edit_cost_item_value", self.file, cost_value=value, attributes={"Category": category}
+        )
+        Data.load(self.file)
+        return {"FINISHED"}
+
+
+class RemoveCostItemValue(bpy.types.Operator):
+    bl_idname = "bim.remove_cost_item_value"
+    bl_label = "Add Cost Item Value"
+    cost_value: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "cost.remove_cost_item_value",
+            self.file,
+            cost_value=self.file.by_id(self.cost_value),
+        )
+        Data.load(self.file)
+        return {"FINISHED"}
+
+
+class EnableEditingCostItemValue(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_cost_item_value"
+    bl_label = "Enable Editing Cost Item Value"
+    cost_value: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMCostProperties
+        while len(self.props.cost_value_attributes) > 0:
+            self.props.cost_value_attributes.remove(0)
+        self.props.active_cost_item_value_id = self.cost_value
+        data = Data.cost_values[self.cost_value]
+
+        for attribute in IfcStore.get_schema().declaration_by_name(data["type"]).all_attributes():
+            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            if data_type == "entity" or isinstance(data_type, tuple):
+                continue
+            new = self.props.cost_value_attributes.add()
+            new.name = attribute.name()
+            new.is_null = data[attribute.name()] is None
+            new.is_optional = attribute.optional()
+            new.data_type = data_type
+            if attribute.name() == "AppliedValue":
+                # TODO: for now, only support simple values
+                new.data_type = "float"
+                new.float_value = 0.0 if new.is_null else data[attribute.name()]
+            if data_type == "string":
+                new.string_value = "" if new.is_null else data[attribute.name()]
+            elif data_type == "float":
+                new.float_value = 0.0 if new.is_null else data[attribute.name()]
+            elif data_type == "integer":
+                new.int_value = 0 if new.is_null else data[attribute.name()]
+            elif data_type == "enum":
+                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
+                if data[attribute.name()]:
+                    new.enum_value = data[attribute.name()]
+        return {"FINISHED"}
+
+
+class DisableEditingCostItemValue(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_cost_item_value"
+    bl_label = "Disable Editing Cost Item Value"
+
+    def execute(self, context):
+        props = context.scene.BIMCostProperties
+        props.active_cost_item_value_id = 0
+        return {"FINISHED"}
+
+
+class EditCostItemValue(bpy.types.Operator):
+    bl_idname = "bim.edit_cost_item_value"
+    bl_label = "Edit Cost Item Value"
+    cost_value: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMCostProperties
+        attributes = {}
+        for attribute in props.cost_value_attributes:
+            if attribute.is_null:
+                attributes[attribute.name] = None
+            else:
+                if attribute.data_type == "string":
+                    attributes[attribute.name] = attribute.string_value
+                if attribute.data_type == "float":
+                    attributes[attribute.name] = attribute.float_value
+                if attribute.data_type == "integer":
+                    attributes[attribute.name] = attribute.int_value
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "cost.edit_cost_item_value",
+            self.file,
+            **{"cost_value": self.file.by_id(self.cost_value), "attributes": attributes},
+        )
+        Data.load(IfcStore.get_file())
+        bpy.ops.bim.disable_editing_cost_item_value()
         return {"FINISHED"}
