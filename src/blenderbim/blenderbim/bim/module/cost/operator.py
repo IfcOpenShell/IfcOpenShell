@@ -1,3 +1,4 @@
+import os
 import bpy
 import json
 import ifcopenshell.api
@@ -98,6 +99,21 @@ class EnableEditingCostItems(bpy.types.Operator):
     cost_schedule: bpy.props.IntProperty()
 
     def execute(self, context):
+        if context.preferences.addons["blenderbim"].preferences.should_play_chaching_sound:
+            # lol
+            # TODO: make pitch higher as costs rise
+            try:
+                import aud
+
+                device = aud.Device()
+                sound = aud.Sound(os.path.join(context.scene.BIMProperties.data_dir, "chaching.mp3"))
+                handle = device.play(sound)
+                sound_buffered = aud.Sound.buffer(sound)
+                handle_buffered = device.play(sound_buffered)
+                handle.stop()
+                handle_buffered.stop()
+            except:
+                pass  # ah well
         self.props = context.scene.BIMCostProperties
         self.props.active_cost_schedule_id = self.cost_schedule
         while len(self.props.cost_items) > 0:

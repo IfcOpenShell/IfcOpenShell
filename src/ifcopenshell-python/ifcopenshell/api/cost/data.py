@@ -72,7 +72,6 @@ class Data:
         for cost_value in cost_item.CostValues or []:
             cls.load_cost_item_value(cost_item, cost_value)
             data["CostValues"].append(cost_value.id())
-            print('applied value is', cls.cost_values[cost_value.id()]["AppliedValue"])
             data["TotalAppliedValue"] += cls.cost_values[cost_value.id()]["AppliedValue"]
         data["TotalCostValue"] = data["TotalCostQuantity"] * data["TotalAppliedValue"]
 
@@ -127,7 +126,6 @@ class Data:
 
     @classmethod
     def get_primitive_applied_value(cls, applied_value):
-        print('applied value is ', applied_value)
         if not applied_value:
             return 0.0
         elif isinstance(applied_value, float):
