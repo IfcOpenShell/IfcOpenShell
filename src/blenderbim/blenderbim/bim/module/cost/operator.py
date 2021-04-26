@@ -106,6 +106,7 @@ class EnableEditingCostItems(bpy.types.Operator):
                 import aud
 
                 device = aud.Device()
+                # chaching.mp3 is by Lucish_ CC-BY-3.0 https://freesound.org/people/Lucish_/sounds/554841/
                 sound = aud.Sound(os.path.join(context.scene.BIMProperties.data_dir, "chaching.mp3"))
                 handle = device.play(sound)
                 sound_buffered = aud.Sound.buffer(sound)
