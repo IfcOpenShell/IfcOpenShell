@@ -11,7 +11,6 @@ class Usecase:
     def execute(self):
         quantity = self.file.create_entity(self.settings["ifc_class"], Name="Unnamed")
         quantity[3] = 0.0
-        cost_item = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcCostItem")
         quantities = list(self.settings["cost_item"].CostQuantities or [])
         quantities.append(quantity)
         self.settings["cost_item"].CostQuantities = quantities
