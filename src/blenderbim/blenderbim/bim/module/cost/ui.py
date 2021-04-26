@@ -72,7 +72,12 @@ class BIM_PT_cost_schedules(Panel):
             "active_cost_item_index",
         )
         if self.props.active_cost_item_id:
-            self.draw_editable_cost_item_attributes_ui()
+            if self.props.cost_item_editing_type == "ATTRIBUTES":
+                self.draw_editable_cost_item_attributes_ui()
+            elif self.props.cost_item_editing_type == "QUANTITIES":
+                self.draw_editable_cost_item_quantities_ui()
+            elif self.props.cost_item_editing_type == "VALUES":
+                self.draw_editable_cost_item_values_ui()
 
     def draw_editable_cost_item_attributes_ui(self):
         for attribute in self.props.cost_item_attributes:
@@ -88,11 +93,64 @@ class BIM_PT_cost_schedules(Panel):
             if attribute.is_optional:
                 row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
+    def draw_editable_cost_item_quantities_ui(self):
+        row = self.layout.row(align=True)
+        row.prop(self.props, "quantity_types", text="")
+        op = row.operator("bim.add_cost_item_quantity", text="", icon="ADD")
+        op.cost_item = self.props.active_cost_item_id
+        op.ifc_class = self.props.quantity_types
+
+        for quantity_id in Data.cost_items[self.props.active_cost_item_id]["CostQuantities"]:
+            quantity = Data.physical_quantities[quantity_id]
+            value = quantity[[k for k in quantity.keys() if "Value" in k][0]]
+            row = self.layout.row(align=True)
+            row.label(text=quantity["Name"])
+            row.label(text=str(value))
+            if self.props.active_cost_item_quantity_id and self.props.active_cost_item_quantity_id == quantity_id:
+                op = row.operator("bim.edit_cost_item_quantity", text="", icon="CHECKMARK")
+                op.physical_quantity = quantity_id
+                row.operator("bim.disable_editing_cost_item_quantity", text="", icon="CANCEL")
+            elif self.props.active_cost_item_quantity_id:
+                op = row.operator("bim.remove_cost_item_quantity", text="", icon="X")
+                op.cost_item = self.props.active_cost_item_id
+                op.physical_quantity = quantity_id
+            else:
+                op = row.operator("bim.enable_editing_cost_item_quantity", text="", icon="GREASEPENCIL")
+                op.physical_quantity = quantity_id
+                op = row.operator("bim.remove_cost_item_quantity", text="", icon="X")
+                op.cost_item = self.props.active_cost_item_id
+                op.physical_quantity = quantity_id
+
+            if self.props.active_cost_item_quantity_id and self.props.active_cost_item_quantity_id == quantity_id:
+                box = self.layout.box()
+                self.draw_editable_cost_item_quantity_ui(box)
+
+    def draw_editable_cost_item_quantity_ui(self, layout):
+        for attribute in self.props.quantity_attributes:
+            row = layout.row(align=True)
+            if attribute.data_type == "string":
+                row.prop(attribute, "string_value", text=attribute.name)
+            elif attribute.data_type == "boolean":
+                row.prop(attribute, "bool_value", text=attribute.name)
+            elif attribute.data_type == "integer":
+                row.prop(attribute, "int_value", text=attribute.name)
+            elif attribute.data_type == "float":
+                row.prop(attribute, "float_value", text=attribute.name)
+            elif attribute.data_type == "enum":
+                row.prop(attribute, "enum_value", text=attribute.name)
+            if attribute.is_optional:
+                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+
+    def draw_editable_cost_item_values_ui(self):
+        row = self.layout.row(align=True)
+        row.label(text="Editing values!")
+
 
 class BIM_UL_cost_items(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             props = context.scene.BIMCostProperties
+            cost_item = Data.cost_items[item.ifc_definition_id]
             row = layout.row(align=True)
             for i in range(0, item.level_index):
                 row.label(text="", icon="BLANK1")
@@ -109,10 +167,20 @@ class BIM_UL_cost_items(UIList):
                 row.label(text="", icon="DOT")
             row.prop(item, "name", emboss=False, text="")
 
+            row.label(text="M3")
+            op = row.operator("bim.enable_editing_cost_item_quantities", text="", icon="PROPERTIES")
+            op.cost_item = item.ifc_definition_id
+            row.label(text=str(cost_item["TotalCostQuantities"]))
+
+            op = row.operator("bim.enable_editing_cost_item_values", text="", icon="DISC")
+            op.cost_item = item.ifc_definition_id
+            row.label(text="$100")
+            row.label(text="$1500", icon="CON_TRANSLIKE")
+
             if context.active_object:
                 oprops = context.active_object.BIMObjectProperties
                 row = layout.row(align=True)
-                if oprops.ifc_definition_id in Data.cost_items[item.ifc_definition_id]["Controls"]:
+                if oprops.ifc_definition_id in cost_item["Controls"]:
                     op = row.operator("bim.unassign_control", text="", icon="KEYFRAME_HLT", emboss=False)
                     op.cost_item = item.ifc_definition_id
                 else:
