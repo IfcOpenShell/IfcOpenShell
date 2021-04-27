@@ -96,6 +96,9 @@ class BIM_PT_cost_schedules(Panel):
     def draw_editable_cost_item_quantities_ui(self):
         row = self.layout.row(align=True)
         row.prop(self.props, "quantity_types", text="")
+        if self.props.quantity_types == "QTO":
+            row.prop(self.props, "qto_name", text="")
+            row.prop(self.props, "prop_name", text="")
         op = row.operator("bim.add_cost_item_quantity", text="", icon="ADD")
         op.cost_item = self.props.active_cost_item_id
         op.ifc_class = self.props.quantity_types
