@@ -217,7 +217,10 @@ class restriction:
                 self.type = "length"
             elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("pattern"):
                 self.options.append(n.getAttribute("value"))
-                self.type = "pattern"            
+                self.type = "pattern"      
+            elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("boolean"):
+                self.options.append(n.getAttribute("value").capitalize())
+                self.type = "boolean"            
 
         # "Given an instance with %(applicability)s\nWe expect %(requirements)s" % self.__dict__
     
@@ -234,7 +237,8 @@ class restriction:
             return "of type %s with a length of %s" % (self.restriction_on, self.options[0])
         elif self.type == "pattern":
             return "of type %s respecting pattern %s" % (self.restriction_on, self.options[0])
-
+        elif self.type == "boolean":
+            return "of type %s set to %s" % (self.restriction_on, self.options[0])
 
 class specification:
     """
@@ -303,7 +307,7 @@ if __name__ == "__main__":
     logging.FileHandler(filename, mode='w')
 
     # ids_file = ids(sys.argv[1])
-    ids_file = ids(r"C:\Users\artom\Desktop\Code\IFC sandbox\IDS, MVDxml samples\IDS_test_1.xml")
+    ids_file = ids(r"C:\Users\artom\Desktop\Code\IFC sandbox\IDS, MVDxml samples\IDS_test_2.xml")
     # ifc_file = ifcopenshell.open(sys.argv[2])
     ifc_file = ifcopenshell.open(r"C:\Users\artom\Desktop\Code\IFC sandbox\IFC samples\IFC Artur.ifc")
     # ifc_file = ifcopenshell.open(r"C:\Users\artom\Desktop\Code\IFC sandbox\IFC samples\IFC Schependomlaan.ifc")
