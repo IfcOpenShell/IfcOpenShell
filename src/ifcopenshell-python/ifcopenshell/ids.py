@@ -79,6 +79,8 @@ class entity(facet):
     parameters = ["name"]
     message = "an entity name '%(name)s'"
 
+    # @todo predefinedtype
+
     def __call__(self, inst, logger):
         logger.debug("Testing %s == %s", inst.is_a(), self.name)
         # @nb with inheritance
@@ -134,7 +136,7 @@ class property(facet):
             msg = self.message % di
         else:
             if pset:
-                msg = "a set '%(propertyset)s', but no property '%(name)'" % di
+                msg = "a set '%(propertyset)s', but no property '%(name)s'" % di
             else:
                 msg = "no set '%(propertyset)s'" % di
 
@@ -152,6 +154,7 @@ class material(facet):
         material_relations = [rel for rel in inst.HasAssociations if rel.is_a("IfcRelAssociatesMaterial")]
         names = []
         for rel in material_relations:
+            # @todo not all subtypes of IfcMaterial handled
             if rel.RelatingMaterial.is_a() == "IfcMaterialLayerSetUsage":
                 layers = rel.RelatingMaterial.ForLayerSet.MaterialLayers
                 names = [layer.Material.Name for layer in layers]
@@ -214,9 +217,10 @@ class restriction:
                 self.type = "length"
             elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("pattern"):
                 self.options.append(n.getAttribute("value"))
-                self.type = "pattern"
-                
-        # "Given an instance with %(applicabiliy)s\nWe expect %(requirements)s" % self.__dict__
+                self.type = "pattern"            
+
+        # "Given an instance with %(applicability)s\nWe expect %(requirements)s" % self.__dict__
+    
     def __eq__(self, other):
         return other in self.options
 
@@ -250,10 +254,10 @@ class specification:
         phrases[0].tagName == "applicability" or error("expected <applicability>")
         phrases[1].tagName == "requirements" or error("expected <requirements>")
 
-        self.applicabiliy, self.requirements = (boolean_and(parse_rules(phrase)) for phrase in phrases)
+        self.applicability, self.requirements = (boolean_and(parse_rules(phrase)) for phrase in phrases)
 
     def __call__(self, inst, logger):
-        if self.applicabiliy(inst, logger):
+        if self.applicability(inst, logger):
             valid = self.requirements(inst, logger)
 
             if valid:
@@ -262,7 +266,7 @@ class specification:
                 logger.error({'guid':inst.GlobalId, 'result':valid.success, 'sentence':str(self) + "\n%s has" % inst + " " + str(valid) + " so is not compliant"})
 
     def __str__(self):
-        return "Given an instance with %(applicabiliy)s\nWe expect %(requirements)s" % self.__dict__
+        return "Given an instance with %(applicability)s\nWe expect %(requirements)s" % self.__dict__
 
 
 class ids:
@@ -292,9 +296,23 @@ if __name__ == "__main__":
     filename = os.path.join(os.getcwd(), "ids.txt")
 
     logger = logging.getLogger("IDS")
-    logging.basicConfig(filename=filename, level=logging.INFO, format="%(message)s")
+    #TEMP logging.basicConfig(filename=filename, level=logging.INFO, format="%(message)s")
+    logging.basicConfig(filename=filename, level=logging.INFO, format="%(levelname)s - %(message)s")
+    #TEMP logging.basicConfig(level=logging.INFO, format="%(message)s")
+    logging.basicConfig(level=logging.DEBUG, format="%(message)s")
     logging.FileHandler(filename, mode='w')
 
-    ids_file = ids(sys.argv[1])
-    ifc_file = ifcopenshell.open(sys.argv[2])
+    # ids_file = ids(sys.argv[1])
+    ids_file = ids(r"C:\Users\artom\Desktop\Code\IFC sandbox\IDS, MVDxml samples\IDS_test_1.xml")
+    # ifc_file = ifcopenshell.open(sys.argv[2])
+    ifc_file = ifcopenshell.open(r"C:\Users\artom\Desktop\Code\IFC sandbox\IFC samples\IFC Artur.ifc")
+    # ifc_file = ifcopenshell.open(r"C:\Users\artom\Desktop\Code\IFC sandbox\IFC samples\IFC Schependomlaan.ifc")
+
+    #applicability = ids_file.specifications[0].applicability
+    requirements = ids_file.specifications[0].requirements
+    # print(len(applicability))
+    # print(requirements)
+    products = ifc_file.by_type('IfcProduct')
+    print(f"IFC file contains {len(products)} elements")
+
     ids_file.validate(ifc_file, logger)
