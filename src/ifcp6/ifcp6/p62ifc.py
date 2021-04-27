@@ -12,7 +12,8 @@ class P62Ifc:
         self.work_plan = None
         self.project = {}
         self.wbs = {}
-        self.activity = {}
+        self.activities = {}
+        self.relationships = {}
 
     def execute(self):
         self.parse_xml()
@@ -36,16 +37,22 @@ class P62Ifc:
             }
 
         for activity in project.findall("pr:Activity", ns):
-            self.wbs[activity.find("pr:WBSObjectId", ns).text]["activities"].append(
-                {
-                    "Name": activity.find("pr:Name", ns).text,
-                    "Identification": activity.find("pr:Id", ns).text,
-                    "StartDate": datetime.fromisoformat(activity.find("pr:StartDate", ns).text),
-                    "FinishDate": datetime.fromisoformat(activity.find("pr:FinishDate", ns).text),
-                    "Status": activity.find("pr:Status", ns).text,
-                    "ifc": None,
-                }
-            )
+            activity_id = activity.find("pr:ObjectId", ns).text
+            self.wbs[activity.find("pr:WBSObjectId", ns).text]["activities"].append(activity_id)
+            self.activities[activity_id] = {
+                "Name": activity.find("pr:Name", ns).text,
+                "Identification": activity.find("pr:Id", ns).text,
+                "StartDate": datetime.fromisoformat(activity.find("pr:StartDate", ns).text),
+                "FinishDate": datetime.fromisoformat(activity.find("pr:FinishDate", ns).text),
+                "Status": activity.find("pr:Status", ns).text,
+                "ifc": None,
+            }
+
+        for relationship in project.findall("pr:Relationship", ns):
+            self.relationships[relationship.find("pr:ObjectId", ns).text] = {
+                "PredecessorActivity": relationship.find("pr:PredecessorActivityObjectId", ns).text,
+                "SuccessorActivity": relationship.find("pr:SuccessorActivityObjectId", ns).text,
+            }
 
     def get_wbs(self, wbs):
         return {"Name": wbs.find("pr:Name", ns).text, "subtasks": []}
@@ -55,6 +62,7 @@ class P62Ifc:
             self.file = self.create_boilerplate_ifc()
         work_schedule = self.create_work_schedule()
         self.create_tasks(work_schedule)
+        self.create_rel_sequences()
 
     def create_work_schedule(self):
         return ifcopenshell.api.run(
@@ -78,8 +86,8 @@ class P62Ifc:
             task=wbs["ifc"],
             attributes={"Name": wbs["Name"], "Identification": wbs["Code"]},
         )
-        for activity in wbs["activities"]:
-            self.create_task_from_activity(activity, wbs, work_schedule)
+        for activity_id in wbs["activities"]:
+            self.create_task_from_activity(self.activities[activity_id], wbs, work_schedule)
 
     def create_task_from_activity(self, activity, wbs, work_schedule):
         activity["ifc"] = ifcopenshell.api.run(
@@ -108,6 +116,15 @@ class P62Ifc:
                 "ScheduleFinish": activity["FinishDate"],
             },
         )
+
+    def create_rel_sequences(self):
+        for relationship in self.relationships.values():
+            ifcopenshell.api.run(
+                "sequence.assign_sequence",
+                self.file,
+                relating_process=self.activities[relationship["PredecessorActivity"]]["ifc"],
+                related_process=self.activities[relationship["SuccessorActivity"]]["ifc"],
+            )
 
     def create_boilerplate_ifc(self):
         self.file = ifcopenshell.file(schema="IFC4")
