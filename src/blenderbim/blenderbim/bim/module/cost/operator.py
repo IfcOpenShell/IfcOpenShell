@@ -379,14 +379,30 @@ class AddCostItemQuantity(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
+        self.props = context.scene.BIMCostProperties
+        if self.props.quantity_types == "QTO":
+            self.add_quantities_from_qto_filter()
+        else:
+            self.add_manual_quantity()
+        Data.load(self.file)
+        return {"FINISHED"}
+
+    def add_quantities_from_qto_filter(self):
+        ifcopenshell.api.run(
+            "cost.assign_cost_item_product_quantities",
+            self.file,
+            cost_item=self.file.by_id(self.cost_item),
+            qto_name=self.props.qto_name,
+            prop_name=self.props.prop_name
+        )
+
+    def add_manual_quantity(self):
         ifcopenshell.api.run(
             "cost.add_cost_item_quantity",
             self.file,
             cost_item=self.file.by_id(self.cost_item),
             ifc_class=self.ifc_class,
         )
-        Data.load(self.file)
-        return {"FINISHED"}
 
 
 class RemoveCostItemQuantity(bpy.types.Operator):
