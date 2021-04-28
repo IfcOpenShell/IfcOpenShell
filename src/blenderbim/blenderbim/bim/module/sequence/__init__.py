@@ -17,8 +17,6 @@ classes = (
     operator.EnableEditingTasks,
     operator.DisableEditingWorkSchedule,
     operator.DisableTaskEditingUI,
-    operator.LoadWorkCalendars,
-    operator.DisableWorkCalendarEditingUI,
     operator.AddWorkCalendar,
     operator.EditWorkCalendar,
     operator.RemoveWorkCalendar,
@@ -54,7 +52,6 @@ classes = (
     ui.BIM_PT_work_plans,
     ui.BIM_PT_work_schedules,
     ui.BIM_PT_work_calendars,
-    ui.BIM_UL_work_calendars,
     ui.BIM_UL_tasks,
 )
 

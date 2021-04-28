@@ -747,32 +747,6 @@ class GenerateGanttChart(bpy.types.Operator):
             self.create_new_task_json(task_id)
 
 
-class LoadWorkCalendars(bpy.types.Operator):
-    bl_idname = "bim.load_work_calendars"
-    bl_label = "Load Work Calendars"
-
-    def execute(self, context):
-        props = context.scene.BIMWorkCalendarProperties
-        while len(props.work_calendars) > 0:
-            props.work_calendars.remove(0)
-        for ifc_definition_id, work_calendar in Data.work_calendars.items():
-            new = props.work_calendars.add()
-            new.ifc_definition_id = ifc_definition_id
-            new.name = work_calendar["Name"] or "Unnamed"
-        props.is_editing = True
-        bpy.ops.bim.disable_editing_work_calendar()
-        return {"FINISHED"}
-
-
-class DisableWorkCalendarEditingUI(bpy.types.Operator):
-    bl_idname = "bim.disable_work_calendar_editing_ui"
-    bl_label = "Disable WorkCalendar Editing UI"
-
-    def execute(self, context):
-        context.scene.BIMWorkCalendarProperties.is_editing = False
-        return {"FINISHED"}
-
-
 class AddWorkCalendar(bpy.types.Operator):
     bl_idname = "bim.add_work_calendar"
     bl_label = "Add Work Calendar"
@@ -780,7 +754,6 @@ class AddWorkCalendar(bpy.types.Operator):
     def execute(self, context):
         ifcopenshell.api.run("sequence.add_work_calendar", IfcStore.get_file())
         Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_work_calendars()
         return {"FINISHED"}
 
 
@@ -806,7 +779,7 @@ class EditWorkCalendar(bpy.types.Operator):
             **{"work_calendar": self.file.by_id(props.active_work_calendar_id), "attributes": attributes},
         )
         Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_work_calendars()
+        bpy.ops.bim.disable_editing_work_calendar()
         return {"FINISHED"}
 
 
@@ -821,7 +794,6 @@ class RemoveWorkCalendar(bpy.types.Operator):
             "sequence.remove_work_calendar", self.file, **{"work_calendar": self.file.by_id(self.work_calendar)}
         )
         Data.load(self.file)
-        bpy.ops.bim.load_work_calendars()
         return {"FINISHED"}
 
 
