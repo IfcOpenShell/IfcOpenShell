@@ -9,6 +9,8 @@ classes = (
     operator.RemoveWorkPlan,
     operator.EnableEditingWorkPlan,
     operator.DisableEditingWorkPlan,
+    operator.EnableAggregatingWorkSchedule,
+    operator.AggregateWorkSchedule,
     operator.AddWorkSchedule,
     operator.EditWorkSchedule,
     operator.RemoveWorkSchedule,
