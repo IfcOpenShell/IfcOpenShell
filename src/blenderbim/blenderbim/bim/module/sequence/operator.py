@@ -44,6 +44,7 @@ class EditWorkPlan(bpy.types.Operator):
             **{"work_plan": self.file.by_id(props.active_work_plan_id), "attributes": attributes},
         )
         Data.load(IfcStore.get_file())
+        bpy.ops.bim.disable_editing_work_plan()
         return {"FINISHED"}
 
 
