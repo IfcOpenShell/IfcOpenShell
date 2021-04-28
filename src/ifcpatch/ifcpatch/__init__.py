@@ -17,7 +17,7 @@ def execute(args, is_library=None):
     patcher = recipe.Patcher(args["input"], ifc_file, logger, args["arguments"])
     print("# Patching ...")
     patcher.patch()
-    ifc_file = patcher.file
+    ifc_file = getattr(patcher, "file_patched", patcher.file)
     if is_library is True:
         return ifc_file
     print("# Writing patched file ...")
