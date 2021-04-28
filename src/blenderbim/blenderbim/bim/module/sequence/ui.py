@@ -19,30 +19,36 @@ class BIM_PT_work_plans(Panel):
         if not Data.is_loaded:
             Data.load(IfcStore.get_file())
         self.props = context.scene.BIMWorkPlanProperties
+
+        row = self.layout.row()
+        row.operator("bim.add_work_plan", icon="ADD")
+
+        for work_plan_id, work_plan in Data.work_plans.items():
+            self.draw_work_plan_ui(work_plan_id, work_plan)
+
+    def draw_work_plan_ui(self, work_plan_id, work_plan):
         row = self.layout.row(align=True)
-        row.label(text="{} Work Plans Found".format(len(Data.work_plans)), icon="TEXT")
-        if self.props.is_editing:
+        row.label(text=work_plan["Name"] or "Unnamed", icon="TEXT")
 
-            row.operator("bim.add_work_plan", text="", icon="ADD")
-            row.operator("bim.disable_work_plan_editing_ui", text="", icon="CHECKMARK")
-
+        if self.props.active_work_plan_id == work_plan_id:
+            row.operator("bim.edit_work_plan", text="", icon="CHECKMARK")
+            row.operator("bim.disable_editing_work_plan", text="", icon="CANCEL")
+        elif self.props.active_work_plan_id:
+            row.operator("bim.remove_work_plan", text="", icon="X").work_plan = work_plan_id
         else:
-            row.operator("bim.load_work_plans", text="", icon="GREASEPENCIL")
+            op = row.operator("bim.enable_editing_work_plan_schedules", text="", icon="LINENUMBERS_ON")
+            op.work_plan = work_plan_id
+            op = row.operator("bim.enable_editing_work_plan", text="", icon="GREASEPENCIL")
+            op.work_plan = work_plan_id
+            row.operator("bim.remove_work_plan", text="", icon="X").work_plan = work_plan_id
 
-        if self.props.is_editing:
-            self.layout.template_list(
-                "BIM_UL_work_plans",
-                "",
-                self.props,
-                "work_plans",
-                self.props,
-                "active_work_plan_index",
-            )
+        if self.props.active_work_plan_id == work_plan_id:
+            if self.props.is_editing == "ATTRIBUTES":
+                self.draw_editable_ui()
+            elif self.props.is_editing == "SCHEDULES":
+                self.draw_work_schedule_ui()
 
-        if self.props.active_work_plan_id:
-            self.draw_editable_ui(context)
-
-    def draw_editable_ui(self, context):
+    def draw_editable_ui(self):
         for attribute in self.props.work_plan_attributes:
             row = self.layout.row(align=True)
             if attribute.data_type == "string":
@@ -51,30 +57,22 @@ class BIM_PT_work_plans(Panel):
                 row.prop(attribute, "enum_value", text=attribute.name)
             if attribute.is_optional:
                 row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
-        if self.props.aggregate_work_schedule:
-            self.draw_aggregating_work_schedule_ui()
 
-    def draw_aggregating_work_schedule_ui(self):
+    def draw_work_schedule_ui(self):
         row = self.layout.row(align=True)
         row.prop(self.props, "work_schedules", text="")
-        op = row.operator("bim.aggregate_work_schedule", text="", icon="ADD")
-        # op.work_schedule = self.props.work_schedules
+        op = row.operator("bim.assign_work_schedule", text="", icon="ADD")
+        op.work_plan = self.props.active_work_plan_id
+        op.work_schedule = int(self.props.work_schedules)
 
-class BIM_UL_work_plans(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        if item:
-            row = layout.row(align=True)
-            row.label(text=item.name)
-            if context.scene.BIMWorkPlanProperties.active_work_plan_id == item.ifc_definition_id:
-                row.operator("bim.enable_aggregating_work_schedules", text="", icon="LINENUMBERS_ON")
-                row.operator("bim.edit_work_plan", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_work_plan", text="", icon="X")
-            elif context.scene.BIMWorkPlanProperties.active_work_plan_id:
-                row.operator("bim.remove_work_plan", text="", icon="X").work_plan = item.ifc_definition_id
-            else:
-                op = row.operator("bim.enable_editing_work_plan", text="", icon="GREASEPENCIL")
-                op.work_plan = item.ifc_definition_id
-                row.operator("bim.remove_work_plan", text="", icon="X").work_plan = item.ifc_definition_id
+        for work_schedule_id in Data.work_plans[self.props.active_work_plan_id]["IsDecomposedBy"]:
+            work_schedule = Data.work_schedules[work_schedule_id]
+            row = self.layout.row(align=True)
+            row.label(text=work_schedule["Name"] or "Unnamed", icon="LINENUMBERS_ON")
+            op = row.operator("bim.unassign_work_schedule", text="", icon="X")
+            op.work_plan = self.props.active_work_plan_id
+            op.work_schedule = int(self.props.work_schedules)
+
 
 
 class BIM_PT_work_schedules(Panel):

@@ -2,15 +2,14 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.LoadWorkPlans,
-    operator.DisableWorkPlanEditingUI,
     operator.AddWorkPlan,
     operator.EditWorkPlan,
     operator.RemoveWorkPlan,
     operator.EnableEditingWorkPlan,
     operator.DisableEditingWorkPlan,
-    operator.EnableAggregatingWorkSchedule,
-    operator.AggregateWorkSchedule,
+    operator.EnableEditingWorkPlanSchedules,
+    operator.AssignWorkSchedule,
+    operator.UnassignWorkSchedule,
     operator.AddWorkSchedule,
     operator.EditWorkSchedule,
     operator.RemoveWorkSchedule,
@@ -53,7 +52,6 @@ classes = (
     prop.WorkCalendar,
     prop.BIMWorkCalendarProperties,
     ui.BIM_PT_work_plans,
-    ui.BIM_UL_work_plans,
     ui.BIM_PT_work_schedules,
     ui.BIM_PT_work_calendars,
     ui.BIM_UL_work_calendars,
