@@ -130,6 +130,28 @@ class DisableEditingWorkPlan(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class EnableAggregatingWorkSchedule(bpy.types.Operator):
+    bl_idname = "bim.enable_aggregating_work_schedules"
+    bl_label = "Enable Assigning Work Schedules"
+
+    def execute(self, context):
+        props = context.scene.BIMWorkPlanProperties
+        props.aggregate_work_schedule = True
+        return {"FINISHED"}
+
+class AggregateWorkSchedule(bpy.types.Operator):
+    bl_idname = "bim.aggregate_work_schedule"
+    bl_label = "Enable Assigning Work Schedule"
+    work_schedule: bpy.props.IntProperty()
+
+    def execute(self, context):
+        ifcopenshell.api.run(
+            "aggregate.assign_object",
+            self.file,
+            **{"relating_object": self.file.by_id(props.active_work_plan_id), "product": self.file.by_id(self.work_schedule)},
+        )
+        Data.load(IfcStore.get_file())
+
 class AddWorkSchedule(bpy.types.Operator):
     bl_idname = "bim.add_work_schedule"
     bl_label = "Add Work Schedule"

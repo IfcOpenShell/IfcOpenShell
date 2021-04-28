@@ -106,6 +106,21 @@ def updateTaskTimeDateTime(self, context, startfinish):
     Data.load(IfcStore.get_file())
     setattr(self, startfinish, canonicalise_time(startfinish_datetime))
 
+workschedule_enum = []
+
+def getWorkSchedules(self, context):
+    global workschedule_enum
+    self.file = IfcStore.get_file()
+    if len(workschedule_enum) == 0 and IfcStore.get_schema():
+        workschedule_enum.clear()
+        workschedule_enum = [("")]
+        workschedule_enum.extend(
+            [
+                (s.id(), s.Name, "")
+                for s in self.file.by_type("IfcWorkSchedule")
+            ]
+        )
+    return workschedule_enum
 
 class Task(PropertyGroup):
     name: StringProperty(name="Name", update=updateTaskName)
@@ -132,7 +147,8 @@ class BIMWorkPlanProperties(PropertyGroup):
     work_plans: CollectionProperty(name="Work Plans", type=WorkPlan)
     active_work_plan_index: IntProperty(name="Active Work Plan Index")
     active_work_plan_id: IntProperty(name="Active Work Plan Id")
-
+    work_schedules: EnumProperty(items=getWorkSchedules, name="Quantity Types")
+    aggregate_work_schedule: BoolProperty(name="Is Aggregating WorkSchedule", default=False)
 
 class BIMWorkScheduleProperties(PropertyGroup):
     work_schedule_attributes: CollectionProperty(name="Work Schedule Attributes", type=Attribute)

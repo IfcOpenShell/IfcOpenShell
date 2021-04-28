@@ -22,8 +22,10 @@ class BIM_PT_work_plans(Panel):
         row = self.layout.row(align=True)
         row.label(text="{} Work Plans Found".format(len(Data.work_plans)), icon="TEXT")
         if self.props.is_editing:
+
             row.operator("bim.add_work_plan", text="", icon="ADD")
             row.operator("bim.disable_work_plan_editing_ui", text="", icon="CHECKMARK")
+
         else:
             row.operator("bim.load_work_plans", text="", icon="GREASEPENCIL")
 
@@ -49,7 +51,14 @@ class BIM_PT_work_plans(Panel):
                 row.prop(attribute, "enum_value", text=attribute.name)
             if attribute.is_optional:
                 row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+        if self.props.aggregate_work_schedule:
+            self.draw_aggregating_work_schedule_ui()
 
+    def draw_aggregating_work_schedule_ui(self):
+        row = self.layout.row(align=True)
+        row.prop(self.props, "work_schedules", text="")
+        op = row.operator("bim.aggregate_work_schedule", text="", icon="ADD")
+        # op.work_schedule = self.props.work_schedules
 
 class BIM_UL_work_plans(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
@@ -57,6 +66,7 @@ class BIM_UL_work_plans(UIList):
             row = layout.row(align=True)
             row.label(text=item.name)
             if context.scene.BIMWorkPlanProperties.active_work_plan_id == item.ifc_definition_id:
+                row.operator("bim.enable_aggregating_work_schedules", text="", icon="LINENUMBERS_ON")
                 row.operator("bim.edit_work_plan", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_work_plan", text="", icon="X")
             elif context.scene.BIMWorkPlanProperties.active_work_plan_id:
