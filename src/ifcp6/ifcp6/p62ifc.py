@@ -38,7 +38,11 @@ class P62Ifc:
 
         for activity in project.findall("pr:Activity", ns):
             activity_id = activity.find("pr:ObjectId", ns).text
-            self.wbs[activity.find("pr:WBSObjectId", ns).text]["activities"].append(activity_id)
+            wbs_id = activity.find("pr:WBSObjectId", ns).text
+            if not wbs_id:
+                print("No WBS ID found for activity", activity_id)
+                continue
+            self.wbs[wbs_id]["activities"].append(activity_id)
             self.activities[activity_id] = {
                 "Name": activity.find("pr:Name", ns).text,
                 "Identification": activity.find("pr:Id", ns).text,
