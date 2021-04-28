@@ -266,28 +266,30 @@ class BIM_PT_work_calendars(Panel):
         if not Data.is_loaded:
             Data.load(IfcStore.get_file())
         self.props = context.scene.BIMWorkCalendarProperties
+
+        row = self.layout.row()
+        row.operator("bim.add_work_calendar", icon="ADD")
+
+        for work_calendar_id, work_calendar in Data.work_calendars.items():
+            self.draw_work_calendar_ui(work_calendar_id, work_calendar)
+
+    def draw_work_calendar_ui(self, work_calendar_id, work_calendar):
         row = self.layout.row(align=True)
-        row.label(text="{} Work Calendar Found".format(len(Data.work_calendars)), icon="TEXT")
-        if self.props.is_editing:
-            row.operator("bim.add_work_calendar", text="", icon="ADD")
-            row.operator("bim.disable_work_calendar_editing_ui", text="", icon="CHECKMARK")
+        row.label(text=work_calendar["Name"] or "Unnamed", icon="VIEW_ORTHO")
+        if self.props.active_work_calendar_id == work_calendar_id:
+            row.operator("bim.edit_work_calendar", text="", icon="CHECKMARK")
+            row.operator("bim.disable_editing_work_calendar", text="", icon="CANCEL")
+        elif self.props.active_work_calendar_id:
+            row.operator("bim.remove_work_calendar", text="", icon="X").work_calendar = work_calendar_id
         else:
-            row.operator("bim.load_work_calendars", text="", icon="GREASEPENCIL")
+            op = row.operator("bim.enable_editing_work_calendar", text="", icon="GREASEPENCIL")
+            op.work_calendar = work_calendar_id
+            row.operator("bim.remove_work_calendar", text="", icon="X").work_calendar = work_calendar_id
 
-        if self.props.is_editing:
-            self.layout.template_list(
-                "BIM_UL_work_calendars",
-                "",
-                self.props,
-                "work_calendars",
-                self.props,
-                "active_work_calendar_index",
-            )
+        if self.props.active_work_calendar_id == work_calendar_id:
+            self.draw_editable_ui()
 
-        if self.props.active_work_calendar_id:
-            self.draw_editable_ui(context)
-
-    def draw_editable_ui(self, context):
+    def draw_editable_ui(self):
         for attribute in self.props.work_calendar_attributes:
             row = self.layout.row(align=True)
             if attribute.data_type == "string":
@@ -296,19 +298,3 @@ class BIM_PT_work_calendars(Panel):
                 row.prop(attribute, "enum_value", text=attribute.name)
             if attribute.is_optional:
                 row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
-
-
-class BIM_UL_work_calendars(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        if item:
-            row = layout.row(align=True)
-            row.label(text=item.name)
-            if context.scene.BIMWorkCalendarProperties.active_work_calendar_id == item.ifc_definition_id:
-                row.operator("bim.edit_work_calendar", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_work_calendar", text="", icon="X")
-            elif context.scene.BIMWorkCalendarProperties.active_work_calendar_id:
-                row.operator("bim.remove_work_calendar", text="", icon="X").work_calendar = item.ifc_definition_id
-            else:
-                op = row.operator("bim.enable_editing_work_calendar", text="", icon="GREASEPENCIL")
-                op.work_calendar = item.ifc_definition_id
-                row.operator("bim.remove_work_calendar", text="", icon="X").work_calendar = item.ifc_definition_id
