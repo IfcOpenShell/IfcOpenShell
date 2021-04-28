@@ -12,32 +12,6 @@ from bpy_extras.io_utils import ImportHelper
 from ifcopenshell.api.sequence.data import Data
 
 
-class LoadWorkPlans(bpy.types.Operator):
-    bl_idname = "bim.load_work_plans"
-    bl_label = "Load Work Plans"
-
-    def execute(self, context):
-        props = context.scene.BIMWorkPlanProperties
-        while len(props.work_plans) > 0:
-            props.work_plans.remove(0)
-        for ifc_definition_id, work_plan in Data.work_plans.items():
-            new = props.work_plans.add()
-            new.ifc_definition_id = ifc_definition_id
-            new.name = work_plan["Name"] or "Unnamed"
-        props.is_editing = True
-        bpy.ops.bim.disable_editing_work_plan()
-        return {"FINISHED"}
-
-
-class DisableWorkPlanEditingUI(bpy.types.Operator):
-    bl_idname = "bim.disable_work_plan_editing_ui"
-    bl_label = "Disable WorkPlan Editing UI"
-
-    def execute(self, context):
-        context.scene.BIMWorkPlanProperties.is_editing = False
-        return {"FINISHED"}
-
-
 class AddWorkPlan(bpy.types.Operator):
     bl_idname = "bim.add_work_plan"
     bl_label = "Add Work Plan"
@@ -45,7 +19,6 @@ class AddWorkPlan(bpy.types.Operator):
     def execute(self, context):
         ifcopenshell.api.run("sequence.add_work_plan", IfcStore.get_file())
         Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_work_plans()
         return {"FINISHED"}
 
 
@@ -71,7 +44,6 @@ class EditWorkPlan(bpy.types.Operator):
             **{"work_plan": self.file.by_id(props.active_work_plan_id), "attributes": attributes},
         )
         Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_work_plans()
         return {"FINISHED"}
 
 
@@ -84,7 +56,6 @@ class RemoveWorkPlan(bpy.types.Operator):
         self.file = IfcStore.get_file()
         ifcopenshell.api.run("sequence.remove_work_plan", self.file, **{"work_plan": self.file.by_id(self.work_plan)})
         Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_work_plans()
         return {"FINISHED"}
 
 
@@ -118,6 +89,7 @@ class EnableEditingWorkPlan(bpy.types.Operator):
                 if data[attribute.name()]:
                     new.enum_value = data[attribute.name()]
         props.active_work_plan_id = self.work_plan
+        props.is_editing = "ATTRIBUTES"
         return {"FINISHED"}
 
 
@@ -130,27 +102,57 @@ class DisableEditingWorkPlan(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EnableAggregatingWorkSchedule(bpy.types.Operator):
-    bl_idname = "bim.enable_aggregating_work_schedules"
-    bl_label = "Enable Assigning Work Schedules"
+class EnableEditingWorkPlanSchedules(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_work_plan_schedules"
+    bl_label = "Enable Editing Work Plan Schedules"
+    work_plan: bpy.props.IntProperty()
 
     def execute(self, context):
         props = context.scene.BIMWorkPlanProperties
-        props.aggregate_work_schedule = True
+        props.active_work_plan_id = self.work_plan
+        props.is_editing = "SCHEDULES"
         return {"FINISHED"}
 
-class AggregateWorkSchedule(bpy.types.Operator):
-    bl_idname = "bim.aggregate_work_schedule"
-    bl_label = "Enable Assigning Work Schedule"
+
+class AssignWorkSchedule(bpy.types.Operator):
+    bl_idname = "bim.assign_work_schedule"
+    bl_label = "Assign Work Schedule"
+    work_plan: bpy.props.IntProperty()
     work_schedule: bpy.props.IntProperty()
 
     def execute(self, context):
+        self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "aggregate.assign_object",
             self.file,
-            **{"relating_object": self.file.by_id(props.active_work_plan_id), "product": self.file.by_id(self.work_schedule)},
+            **{
+                "relating_object": self.file.by_id(self.work_plan),
+                "product": self.file.by_id(self.work_schedule),
+            },
         )
         Data.load(IfcStore.get_file())
+        return {"FINISHED"}
+
+
+class UnassignWorkSchedule(bpy.types.Operator):
+    bl_idname = "bim.unassign_work_schedule"
+    bl_label = "Unassign Work Schedule"
+    work_plan: bpy.props.IntProperty()
+    work_schedule: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "aggregate.unassign_object",
+            self.file,
+            **{
+                "relating_object": self.file.by_id(self.work_plan),
+                "product": self.file.by_id(self.work_schedule),
+            },
+        )
+        Data.load(IfcStore.get_file())
+        return {"FINISHED"}
+
 
 class AddWorkSchedule(bpy.types.Operator):
     bl_idname = "bim.add_work_schedule"
@@ -870,6 +872,7 @@ class ImportP6(bpy.types.Operator, ImportHelper):
 
     def execute(self, context):
         from ifcp6.p62ifc import P62Ifc
+
         self.file = IfcStore.get_file()
         start = time.time()
         p62ifc = P62Ifc()

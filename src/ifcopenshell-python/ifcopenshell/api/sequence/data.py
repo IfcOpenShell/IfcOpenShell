@@ -41,6 +41,9 @@ class Data:
             data["StartTime"] = ifcopenshell.util.date.ifc2datetime(data["StartTime"])
             if data["FinishTime"]:
                 data["FinishTime"] = ifcopenshell.util.date.ifc2datetime(data["FinishTime"])
+            data["IsDecomposedBy"] = []
+            for rel in work_plan.IsDecomposedBy:
+                data["IsDecomposedBy"].extend([o.id() for o in rel.RelatedObjects])
             cls.work_plans[work_plan.id()] = data
 
     @classmethod
