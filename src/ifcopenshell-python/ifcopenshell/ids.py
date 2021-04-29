@@ -55,7 +55,6 @@ class facet(metaclass=meta_facet):
         try:
             v = self.node.getElementsByTagName(k)[0]
             elems = [n for n in v.childNodes if n.nodeType == n.ELEMENT_NODE]
-
             if elems:
                 return restriction(elems[0])
             else:
@@ -91,7 +90,7 @@ class entity(facet):
         else:
             self.message = "an entity name '%(name)s'"
             return facet_evaluation(inst.is_a(self.name), self.message % {"name": inst.is_a()})
-            
+        
 
 class classification(facet):
     """
@@ -221,10 +220,8 @@ class restriction:
                 self.type = "length"
             elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("pattern"):
                 self.options.append(n.getAttribute("value"))
-                self.type = "pattern"           
+                self.type = "pattern"
 
-        # "Given an instance with %(applicability)s\nWe expect %(requirements)s" % self.__dict__
-    
     def __eq__(self, other):
         return other in self.options
 
@@ -253,7 +250,7 @@ class specification:
             return [cls(n) for cls, n in zip(classes, children)]
 
         phrases = [n for n in node.childNodes if n.nodeType == n.ELEMENT_NODE]
-        
+
         len(phrases) == 2 or error("expected two child nodes for <specification>")
         phrases[0].tagName == "applicability" or error("expected <applicability>")
         phrases[1].tagName == "requirements" or error("expected <requirements>")
@@ -290,8 +287,8 @@ class ids:
     def validate(self, ifc_file, logger):
         for spec in self.specifications:
             for elem in ifc_file.by_type("IfcObject"):
-               spec(elem, logger)
-                
+                spec(elem, logger)
+
 if __name__ == "__main__":
     import sys, os
     import logging
