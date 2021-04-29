@@ -7,11 +7,11 @@ class Usecase:
 
     def execute(self):
         work_time = self.file.create_entity("IfcWorkTime")
-        if self.settings["type"] == "WorkingTimes":
+        if self.settings["time_type"] == "WorkingTimes":
             working_times = list(self.settings["work_calendar"].WorkingTimes or [])
             working_times.append(work_time)
             self.settings["work_calendar"].WorkingTimes = working_times
-        elif self.settings["type"] == "ExceptionTimes":
+        elif self.settings["time_type"] == "ExceptionTimes":
             exception_times = list(self.settings["work_calendar"].ExceptionTimes or [])
             exception_times.append(work_time)
             self.settings["work_calendar"].ExceptionTimes = exception_times

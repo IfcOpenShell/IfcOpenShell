@@ -5,6 +5,10 @@ class Data:
     is_loaded = False
     work_plans = {}
     work_schedules = {}
+    work_calendars = {}
+    work_times = {}
+    recurrence_patterns = {}
+    time_periods = {}
     tasks = {}
     task_times = {}
 
@@ -14,6 +18,9 @@ class Data:
         cls.work_plans = {}
         cls.work_schedules = {}
         cls.work_calendars = {}
+        cls.work_times = {}
+        cls.recurrence_patterns = {}
+        cls.time_periods = {}
         cls.tasks = {}
         cls.task_times = {}
 
@@ -25,6 +32,9 @@ class Data:
         cls.load_work_plans()
         cls.load_work_schedules()
         cls.load_work_calendars()
+        cls.load_work_times()
+        cls.load_recurrence_patterns()
+        cls.load_time_periods()
         cls.load_tasks()
         cls.load_task_times()
         cls.is_loaded = True
@@ -71,9 +81,36 @@ class Data:
         for work_calendar in cls._file.by_type("IfcWorkCalendar"):
             data = work_calendar.get_info()
             del data["OwnerHistory"]
-            del data["WorkingTimes"]
-            del data["ExceptionTimes"]
+            data["WorkingTimes"] = [t.id() for t in work_calendar.WorkingTimes or []]
+            data["ExceptionTimes"] = [t.id() for t in work_calendar.ExceptionTimes or []]
             cls.work_calendars[work_calendar.id()] = data
+
+    @classmethod
+    def load_work_times(cls):
+        cls.work_times = {}
+        for work_time in cls._file.by_type("IfcWorkTime"):
+            data = work_time.get_info()
+            data["Start"] = ifcopenshell.util.date.ifc2datetime(data["Start"]) if data["Start"] else None
+            data["Finish"] = ifcopenshell.util.date.ifc2datetime(data["Finish"]) if data["Finish"] else None
+            data["RecurrencePattern"] = work_time.RecurrencePattern.id() if work_time.RecurrencePattern else None
+            cls.work_times[work_time.id()] = data
+
+    @classmethod
+    def load_recurrence_patterns(cls):
+        cls.recurrence_patterns = {}
+        for recurrence_pattern in cls._file.by_type("IfcRecurrencePattern"):
+            data = recurrence_pattern.get_info()
+            data["TimePeriods"] = [t.id() for t in recurrence_pattern.TimePeriods or []]
+            cls.recurrence_patterns[recurrence_pattern.id()] = data
+
+    @classmethod
+    def load_time_periods(cls):
+        cls.time_periods = {}
+        for time_period in cls._file.by_type("IfcTimePeriod"):
+            cls.time_periods[time_period.id()] = {
+                "StartTime": ifcopenshell.util.date.ifc2datetime(time_period.StartTime),
+                "EndTime": ifcopenshell.util.date.ifc2datetime(time_period.EndTime),
+            }
 
     @classmethod
     def load_tasks(cls):
