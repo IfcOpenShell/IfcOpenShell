@@ -170,7 +170,30 @@ class WorkCalendar(PropertyGroup):
 
 class BIMWorkCalendarProperties(PropertyGroup):
     work_calendar_attributes: CollectionProperty(name="Work Calendar Attributes", type=Attribute)
-    is_editing: BoolProperty(name="Is Editing", default=False)
+    work_time_attributes: CollectionProperty(name="Work Time Attributes", type=Attribute)
+    is_editing: StringProperty(name="Is Editing")
     work_calendars: CollectionProperty(name="Work Calendar", type=WorkCalendar)
-    active_work_calendar_index: IntProperty(name="Active Work Calendar Index")
     active_work_calendar_id: IntProperty(name="Active Work Calendar Id")
+    active_work_time_id: IntProperty(name="Active Work Time Id")
+    weekday_component_monday: BoolProperty(name="M")
+    weekday_component_tuesday: BoolProperty(name="T")
+    weekday_component_wednesday: BoolProperty(name="W")
+    weekday_component_thursday: BoolProperty(name="T")
+    weekday_component_friday: BoolProperty(name="F")
+    weekday_component_saturday: BoolProperty(name="S")
+    weekday_component_sunday: BoolProperty(name="S")
+    dummy_bool: BoolProperty(name="Active Work Calendar Id")
+    dummy_int: IntProperty(name="Active Work Calendar Id")
+    recurrence_types: EnumProperty(items=[
+        ("DAILY", "Daily", "e.g. Every day"),
+        ("WEEKLY", "Weekly", "e.g. Every Friday"),
+        ("MONTHLY_BY_DAY_OF_MONTH", "Monthly on Specified Date", "e.g. Every 2nd of each Month"),
+        ("MONTHLY_BY_POSITION", "Monthly on Specified Weekday", "e.g. Every 1st Friday of each Month"),
+        # https://forums.buildingsmart.org/t/what-does-by-day-count-and-by-weekday-count-mean-in-ifcrecurrencetypeenum/3571
+        # ("BY_DAY_COUNT", "", ""),
+        # ("BY_WEEKDAY_COUNT", "", ""),
+        ("YEARLY_BY_DAY_OF_MONTH", "Yearly on Specified Date", "e.g. Every 2nd of October"),
+        ("YEARLY_BY_POSITION", "Yearly on Specified Weekday", "e.g. Every 1st Friday of October"),
+    ], name="Recurrence Types")
+    start_time: StringProperty(name="Start Time")
+    end_time: StringProperty(name="End Time")

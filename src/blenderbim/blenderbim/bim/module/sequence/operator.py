@@ -799,7 +799,7 @@ class RemoveWorkCalendar(bpy.types.Operator):
 
 class EnableEditingWorkCalendar(bpy.types.Operator):
     bl_idname = "bim.enable_editing_work_calendar"
-    bl_label = "Enable Editing Work Plan"
+    bl_label = "Enable Editing Work Calendar"
     work_calendar: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -825,6 +825,7 @@ class EnableEditingWorkCalendar(bpy.types.Operator):
                 if data[attribute.name()]:
                     new.enum_value = data[attribute.name()]
         props.active_work_calendar_id = self.work_calendar
+        props.is_editing = "ATTRIBUTES"
         return {"FINISHED"}
 
 
@@ -855,4 +856,183 @@ class ImportP6(bpy.types.Operator, ImportHelper):
         p62ifc.execute()
         Data.load(IfcStore.get_file())
         print("Import finished in {:.2f} seconds".format(time.time() - start))
+        return {"FINISHED"}
+
+
+class EnableEditingWorkCalendarTimes(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_work_calendar_times"
+    bl_label = "Enable Editing Work Calendar Times"
+    work_calendar: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMWorkCalendarProperties
+        props.active_work_calendar_id = self.work_calendar
+        props.is_editing = "WORKTIMES"
+        return {"FINISHED"}
+
+
+class AddWorkTime(bpy.types.Operator):
+    bl_idname = "bim.add_work_time"
+    bl_label = "Add Work Time"
+    work_calendar: bpy.props.IntProperty()
+    time_type: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "sequence.add_work_time",
+            self.file,
+            **{"work_calendar": self.file.by_id(self.work_calendar), "time_type": self.time_type},
+        )
+        Data.load(IfcStore.get_file())
+        return {"FINISHED"}
+
+
+class EnableEditingWorkTime(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_work_time"
+    bl_label = "Enable Editing Work Time"
+    work_time: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMWorkCalendarProperties
+        while len(props.work_time_attributes) > 0:
+            props.work_time_attributes.remove(0)
+
+        data = Data.work_times[self.work_time]
+
+        for attribute in IfcStore.get_schema().declaration_by_name("IfcWorkTime").all_attributes():
+            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            if data_type == "entity":
+                continue
+            new = props.work_time_attributes.add()
+            new.name = attribute.name()
+            new.is_null = data[attribute.name()] is None
+            new.is_optional = attribute.optional()
+            new.data_type = data_type
+            if attribute.name() in ["Start", "Finish"]:
+                new.string_value = "" if new.is_null else data[attribute.name()].isoformat()
+            elif data_type == "string":
+                new.string_value = "" if new.is_null else data[attribute.name()]
+            elif data_type == "enum":
+                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
+                if data[attribute.name()]:
+                    new.enum_value = data[attribute.name()]
+        props.active_work_time_id = self.work_time
+        return {"FINISHED"}
+
+
+class DisableEditingWorkTime(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_work_time"
+    bl_label = "Disable Editing Work Time"
+
+    def execute(self, context):
+        context.scene.BIMWorkCalendarProperties.active_work_time_id = 0
+        return {"FINISHED"}
+
+
+class EditWorkTime(bpy.types.Operator):
+    bl_idname = "bim.edit_work_time"
+    bl_label = "Edit Work Time"
+
+    def execute(self, context):
+        props = context.scene.BIMWorkCalendarProperties
+        attributes = {}
+        for attribute in props.work_time_attributes:
+            if attribute.is_null:
+                attributes[attribute.name] = None
+            else:
+                if attribute.data_type == "string":
+                    attributes[attribute.name] = attribute.string_value
+                elif attribute.data_type == "enum":
+                    attributes[attribute.name] = attribute.enum_value
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "sequence.edit_work_time",
+            self.file,
+            **{"work_time": self.file.by_id(props.active_work_time_id), "attributes": attributes},
+        )
+        Data.load(IfcStore.get_file())
+        bpy.ops.bim.disable_editing_work_time()
+        return {"FINISHED"}
+
+
+class RemoveWorkTime(bpy.types.Operator):
+    bl_idname = "bim.remove_work_time"
+    bl_label = "Remove Work Plan"
+    work_time: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run("sequence.remove_work_time", self.file, **{"work_time": self.file.by_id(self.work_time)})
+        Data.load(self.file)
+        return {"FINISHED"}
+
+
+class AssignRecurrencePattern(bpy.types.Operator):
+    bl_idname = "bim.assign_recurrence_pattern"
+    bl_label = "Assign Recurrence Pattern"
+    work_time: bpy.props.IntProperty()
+    recurrence_type: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "sequence.assign_recurrence_pattern",
+            self.file,
+            **{"parent": self.file.by_id(self.work_time), "recurrence_type": self.recurrence_type},
+        )
+        Data.load(IfcStore.get_file())
+        return {"FINISHED"}
+
+
+class UnassignRecurrencePattern(bpy.types.Operator):
+    bl_idname = "bim.unassign_recurrence_pattern"
+    bl_label = "Unassign Recurrence Pattern"
+    recurrence_pattern: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "sequence.unassign_recurrence_pattern",
+            self.file,
+            **{"recurrence_pattern": self.file.by_id(self.recurrence_pattern)},
+        )
+        Data.load(self.file)
+        return {"FINISHED"}
+
+
+class AddTimePeriod(bpy.types.Operator):
+    bl_idname = "bim.add_time_period"
+    bl_label = "Add Time Period"
+    recurrence_pattern: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMWorkCalendarProperties
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "sequence.add_time_period",
+            self.file,
+            **{
+                "recurrence_pattern": self.file.by_id(self.recurrence_pattern),
+                "start_time": self.props.start_time,
+                "end_time": self.props.start_time,
+            },
+        )
+        Data.load(IfcStore.get_file())
+        return {"FINISHED"}
+
+
+class RemoveTimePeriod(bpy.types.Operator):
+    bl_idname = "bim.remove_time_period"
+    bl_label = "Remove Time Period"
+    time_period: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "sequence.remove_time_period",
+            self.file,
+            **{"time_period": self.file.by_id(self.time_period)},
+        )
+        Data.load(self.file)
         return {"FINISHED"}
