@@ -317,7 +317,7 @@ IfcCharacterEncoder::operator std::string() {
 	// Either 2 or 4 to uses \X2 or \X4 respectively.
 	// Currently hardcoded to 4, but \X2 might be  
 	// sufficient for nearly all purposes.
-	const int num_bytes = (str.empty() || *std::max_element(str.begin(), str.end())) > 0xffff ? 4 : 2;
+	const int num_bytes = (str.empty() || (*std::max_element(str.begin(), str.end()) > 0xffff)) ? 4 : 2;
 	const std::string num_bytes_str = std::string(1,num_bytes + 0x30);
 		
 	bool in_extended = false;

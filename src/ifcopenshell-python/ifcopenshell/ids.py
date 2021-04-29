@@ -79,6 +79,7 @@ class entity(facet):
     """
     The IDS entity facet currently *with* inheritance
     """
+
     parameters = ["name", "predefinedtype"]
     
     def __call__(self, inst, logger):

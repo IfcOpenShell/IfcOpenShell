@@ -6,6 +6,7 @@ import ifcopenshell.api.owner.settings
 from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.attribute.data import Data as AttributeData
+from ifcopenshell.api.type.data import Data as TypeData
 
 
 def mode_callback(obj, data):
@@ -33,6 +34,8 @@ def name_callback(obj, data):
     if element.is_a("IfcSpatialStructureElement") or (hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy):
         collection = obj.users_collection[0]
         collection.name = obj.name
+    if element.is_a("IfcTypeProduct"):
+        TypeData.purge()
     element.Name = "/".join(obj.name.split("/")[1:])
     AttributeData.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
 

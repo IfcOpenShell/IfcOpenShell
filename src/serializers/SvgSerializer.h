@@ -33,6 +33,11 @@
 #include <HLRAlgo_Projector.hxx>
 #include <gp_Pln.hxx>
 #include <Bnd_Box.hxx>
+#include <Standard_Version.hxx>
+
+#if OCC_VERSION_HEX >= 0x70300
+#include <Bnd_OBB.hxx>
+#endif
 
 #include <sstream>
 #include <string>
@@ -140,6 +145,11 @@ protected:
 	boost::optional<double> storey_height_line_length_;
 	boost::optional<std::pair<double, double>> size_, offset_2d_;
 	boost::optional<std::string> space_name_transform_;
+
+#if OCC_VERSION_HEX >= 0x70300	
+	boost::optional<Bnd_OBB> view_box_3d_;
+#endif
+	
 
 	bool with_section_heights_from_storey_, print_space_names_, print_space_areas_;
 	storey_height_display_types storey_height_display_;

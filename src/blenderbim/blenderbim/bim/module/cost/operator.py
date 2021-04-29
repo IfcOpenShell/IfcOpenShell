@@ -1,3 +1,4 @@
+import os
 import bpy
 import json
 import ifcopenshell.api
@@ -98,13 +99,29 @@ class EnableEditingCostItems(bpy.types.Operator):
     cost_schedule: bpy.props.IntProperty()
 
     def execute(self, context):
+        if context.preferences.addons["blenderbim"].preferences.should_play_chaching_sound:
+            # lol
+            # TODO: make pitch higher as costs rise
+            try:
+                import aud
+
+                device = aud.Device()
+                # chaching.mp3 is by Lucish_ CC-BY-3.0 https://freesound.org/people/Lucish_/sounds/554841/
+                sound = aud.Sound(os.path.join(context.scene.BIMProperties.data_dir, "chaching.mp3"))
+                handle = device.play(sound)
+                sound_buffered = aud.Sound.buffer(sound)
+                handle_buffered = device.play(sound_buffered)
+                handle.stop()
+                handle_buffered.stop()
+            except:
+                pass  # ah well
         self.props = context.scene.BIMCostProperties
         self.props.active_cost_schedule_id = self.cost_schedule
         while len(self.props.cost_items) > 0:
             self.props.cost_items.remove(0)
 
         self.contracted_cost_items = json.loads(self.props.contracted_cost_items)
-        for related_object_id in Data.cost_schedules[self.cost_schedule]["RelatedObjects"]:
+        for related_object_id in Data.cost_schedules[self.cost_schedule]["Controls"]:
             self.create_new_cost_item_li(related_object_id, 0)
         self.props.is_editing = "COST_ITEMS"
         return {"FINISHED"}
@@ -116,10 +133,10 @@ class EnableEditingCostItems(bpy.types.Operator):
         new.name = cost_item["Name"] or "Unnamed"
         new.is_expanded = related_object_id not in self.contracted_cost_items
         new.level_index = level_index
-        if cost_item["RelatedObjects"]:
+        if cost_item["IsNestedBy"]:
             new.has_children = True
             if new.is_expanded:
-                for related_object_id in cost_item["RelatedObjects"]:
+                for related_object_id in cost_item["IsNestedBy"]:
                     self.create_new_cost_item_li(related_object_id, level_index + 1)
 
         return {"FINISHED"}
@@ -242,6 +259,7 @@ class EnableEditingCostItem(bpy.types.Operator):
                 if data[attribute.name()]:
                     new.enum_value = data[attribute.name()]
         props.active_cost_item_id = self.cost_item
+        props.cost_item_editing_type = "ATTRIBUTES"
         return {"FINISHED"}
 
 
@@ -326,4 +344,265 @@ class UnassignControl(bpy.types.Operator):
                 relating_control=self.file.by_id(self.cost_item),
             )
         Data.load(self.file)
+        return {"FINISHED"}
+
+
+class EnableEditingCostItemQuantities(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_cost_item_quantities"
+    bl_label = "Enable Editing Cost Item Quantities"
+    cost_item: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMCostProperties
+        props.active_cost_item_id = self.cost_item
+        props.cost_item_editing_type = "QUANTITIES"
+        return {"FINISHED"}
+
+
+class EnableEditingCostItemValues(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_cost_item_values"
+    bl_label = "Enable Editing Cost Item Values"
+    cost_item: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMCostProperties
+        props.active_cost_item_id = self.cost_item
+        props.cost_item_editing_type = "VALUES"
+        return {"FINISHED"}
+
+
+class AddCostItemQuantity(bpy.types.Operator):
+    bl_idname = "bim.add_cost_item_quantity"
+    bl_label = "Add Cost Item Quantity"
+    cost_item: bpy.props.IntProperty()
+    ifc_class: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        self.props = context.scene.BIMCostProperties
+        if self.props.quantity_types == "QTO":
+            self.add_quantities_from_qto_filter()
+        else:
+            self.add_manual_quantity()
+        Data.load(self.file)
+        return {"FINISHED"}
+
+    def add_quantities_from_qto_filter(self):
+        ifcopenshell.api.run(
+            "cost.assign_cost_item_product_quantities",
+            self.file,
+            cost_item=self.file.by_id(self.cost_item),
+            qto_name=self.props.qto_name,
+            prop_name=self.props.prop_name
+        )
+
+    def add_manual_quantity(self):
+        ifcopenshell.api.run(
+            "cost.add_cost_item_quantity",
+            self.file,
+            cost_item=self.file.by_id(self.cost_item),
+            ifc_class=self.ifc_class,
+        )
+
+
+class RemoveCostItemQuantity(bpy.types.Operator):
+    bl_idname = "bim.remove_cost_item_quantity"
+    bl_label = "Add Cost Item Quantity"
+    cost_item: bpy.props.IntProperty()
+    physical_quantity: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "cost.remove_cost_item_quantity",
+            self.file,
+            cost_item=self.file.by_id(self.cost_item),
+            physical_quantity=self.file.by_id(self.physical_quantity),
+        )
+        Data.load(self.file)
+        return {"FINISHED"}
+
+
+class EnableEditingCostItemQuantity(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_cost_item_quantity"
+    bl_label = "Enable Editing Cost Item Quantity"
+    physical_quantity: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMCostProperties
+        while len(self.props.quantity_attributes) > 0:
+            self.props.quantity_attributes.remove(0)
+        self.props.active_cost_item_quantity_id = self.physical_quantity
+        data = Data.physical_quantities[self.physical_quantity]
+
+        for attribute in IfcStore.get_schema().declaration_by_name(data["type"]).all_attributes():
+            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            if data_type == "entity":
+                continue
+            new = self.props.quantity_attributes.add()
+            new.name = attribute.name()
+            new.is_null = data[attribute.name()] is None
+            new.is_optional = attribute.optional()
+            new.data_type = data_type
+            if data_type == "string":
+                new.string_value = "" if new.is_null else data[attribute.name()]
+            elif data_type == "float":
+                new.float_value = 0.0 if new.is_null else data[attribute.name()]
+            elif data_type == "integer":
+                new.int_value = 0 if new.is_null else data[attribute.name()]
+        return {"FINISHED"}
+
+
+class DisableEditingCostItemQuantity(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_cost_item_quantity"
+    bl_label = "Disable Editing Cost Item Quantity"
+
+    def execute(self, context):
+        props = context.scene.BIMCostProperties
+        props.active_cost_item_quantity_id = 0
+        return {"FINISHED"}
+
+
+class EditCostItemQuantity(bpy.types.Operator):
+    bl_idname = "bim.edit_cost_item_quantity"
+    bl_label = "Edit Cost Item Quantity"
+    physical_quantity: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMCostProperties
+        attributes = {}
+        for attribute in props.quantity_attributes:
+            if attribute.is_null:
+                attributes[attribute.name] = None
+            else:
+                if attribute.data_type == "string":
+                    attributes[attribute.name] = attribute.string_value
+                if attribute.data_type == "float":
+                    attributes[attribute.name] = attribute.float_value
+                if attribute.data_type == "integer":
+                    attributes[attribute.name] = attribute.int_value
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "cost.edit_cost_item_quantity",
+            self.file,
+            **{"physical_quantity": self.file.by_id(self.physical_quantity), "attributes": attributes},
+        )
+        Data.load(IfcStore.get_file())
+        bpy.ops.bim.disable_editing_cost_item_quantity()
+        return {"FINISHED"}
+
+
+class AddCostItemValue(bpy.types.Operator):
+    bl_idname = "bim.add_cost_item_value"
+    bl_label = "Add Cost Item Value"
+    cost_item: bpy.props.IntProperty()
+    cost_type: bpy.props.StringProperty()
+    cost_category: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        if self.cost_type == "FIXED":
+            category = None
+        elif self.cost_type == "SUM":
+            category = "*"
+        elif self.cost_type == "CATEGORY":
+            category = self.cost_category
+        value = ifcopenshell.api.run("cost.add_cost_item_value", self.file, cost_item=self.file.by_id(self.cost_item))
+        ifcopenshell.api.run(
+            "cost.edit_cost_item_value", self.file, cost_value=value, attributes={"Category": category}
+        )
+        Data.load(self.file)
+        return {"FINISHED"}
+
+
+class RemoveCostItemValue(bpy.types.Operator):
+    bl_idname = "bim.remove_cost_item_value"
+    bl_label = "Add Cost Item Value"
+    cost_value: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "cost.remove_cost_item_value",
+            self.file,
+            cost_value=self.file.by_id(self.cost_value),
+        )
+        Data.load(self.file)
+        return {"FINISHED"}
+
+
+class EnableEditingCostItemValue(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_cost_item_value"
+    bl_label = "Enable Editing Cost Item Value"
+    cost_value: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMCostProperties
+        while len(self.props.cost_value_attributes) > 0:
+            self.props.cost_value_attributes.remove(0)
+        self.props.active_cost_item_value_id = self.cost_value
+        data = Data.cost_values[self.cost_value]
+
+        for attribute in IfcStore.get_schema().declaration_by_name(data["type"]).all_attributes():
+            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            if data_type == "entity" or isinstance(data_type, tuple):
+                continue
+            new = self.props.cost_value_attributes.add()
+            new.name = attribute.name()
+            new.is_null = data[attribute.name()] is None
+            new.is_optional = attribute.optional()
+            new.data_type = data_type
+            if attribute.name() == "AppliedValue":
+                # TODO: for now, only support simple values
+                new.data_type = "float"
+                new.float_value = 0.0 if new.is_null else data[attribute.name()]
+            if data_type == "string":
+                new.string_value = "" if new.is_null else data[attribute.name()]
+            elif data_type == "float":
+                new.float_value = 0.0 if new.is_null else data[attribute.name()]
+            elif data_type == "integer":
+                new.int_value = 0 if new.is_null else data[attribute.name()]
+            elif data_type == "enum":
+                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
+                if data[attribute.name()]:
+                    new.enum_value = data[attribute.name()]
+        return {"FINISHED"}
+
+
+class DisableEditingCostItemValue(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_cost_item_value"
+    bl_label = "Disable Editing Cost Item Value"
+
+    def execute(self, context):
+        props = context.scene.BIMCostProperties
+        props.active_cost_item_value_id = 0
+        return {"FINISHED"}
+
+
+class EditCostItemValue(bpy.types.Operator):
+    bl_idname = "bim.edit_cost_item_value"
+    bl_label = "Edit Cost Item Value"
+    cost_value: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMCostProperties
+        attributes = {}
+        for attribute in props.cost_value_attributes:
+            if attribute.is_null:
+                attributes[attribute.name] = None
+            else:
+                if attribute.data_type == "string":
+                    attributes[attribute.name] = attribute.string_value
+                if attribute.data_type == "float":
+                    attributes[attribute.name] = attribute.float_value
+                if attribute.data_type == "integer":
+                    attributes[attribute.name] = attribute.int_value
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "cost.edit_cost_item_value",
+            self.file,
+            **{"cost_value": self.file.by_id(self.cost_value), "attributes": attributes},
+        )
+        Data.load(IfcStore.get_file())
+        bpy.ops.bim.disable_editing_cost_item_value()
         return {"FINISHED"}
