@@ -58,6 +58,7 @@ classes = (
     prop.BIMWorkScheduleProperties,
     prop.BIMTaskTreeProperties,
     prop.WorkCalendar,
+    prop.RecurrenceComponent,
     prop.BIMWorkCalendarProperties,
     ui.BIM_PT_work_plans,
     ui.BIM_PT_work_schedules,
