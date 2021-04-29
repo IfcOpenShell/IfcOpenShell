@@ -8,8 +8,11 @@ class Usecase:
     def execute(self):
         recurrence = self.file.createIfcRecurrencePattern(self.settings["recurrence_type"])
 
-        if self.settings["parent"].is_a("IfcWorkTime") and self.settings["parent"].RecurrencePattern:
-            if len(self.file.get_inverse(self.settings["parent"].RecurrencePattern)) == 1:
+        if self.settings["parent"].is_a("IfcWorkTime"):
+            if (
+                self.settings["parent"].RecurrencePattern
+                and len(self.file.get_inverse(self.settings["parent"].RecurrencePattern)) == 1
+            ):
                 self.file.remove(self.settings["parent"].RecurrencePattern)
             self.settings["parent"].RecurrencePattern = recurrence
         elif self.settings["parent"].is_a("IfcTaskTimeRecurring"):

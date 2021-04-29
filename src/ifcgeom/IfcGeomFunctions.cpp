@@ -529,22 +529,25 @@ void IfcGeom::Kernel::set_rotation(const std::array<double, 4> &p_rotation) {
     offset_and_rotation = combine_offset_and_rotation(offset, rotation);
 }
 
-bool IfcGeom::Kernel::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape) {
-	TopTools_ListOfShape face_list;
-	TopExp_Explorer exp(compound, TopAbs_FACE);
+bool IfcGeom::Kernel::shape_to_face_list(const TopoDS_Shape& s, TopTools_ListOfShape& li) {
+	TopExp_Explorer exp(s, TopAbs_FACE);
 	for (; exp.More(); exp.Next()) {
 		TopoDS_Face face = TopoDS::Face(exp.Current());
-		face_list.Append(face);
+		li.Append(face);
 	}
+	return true;
+}
 
+bool IfcGeom::Kernel::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape) {
+	TopTools_ListOfShape face_list;
+	shape_to_face_list(compound, face_list);
 	if (face_list.Extent() == 0) {
 		return false;
 	}
-
 	return create_solid_from_faces(face_list, shape);
 }
 
-bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_list, TopoDS_Shape& shape) {
+bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_list, TopoDS_Shape& shape, bool force_sewing) {
 	bool valid_shell = false;
 
 	if (face_list.Extent() == 1) {
@@ -565,7 +568,7 @@ bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_l
 	// found a case where this actually improves boolean ops later on.
 	// if (!faceset_helper_ || !faceset_helper_->non_manifold()) {
 
-	for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
+	for (face_iterator.Initialize(face_list); !force_sewing && face_iterator.More(); face_iterator.Next()) {
 		// As soon as is detected one of the edges is shared, the assumption is made no
 		// additional sewing is necessary.
 		if (!has_shared_edges) {

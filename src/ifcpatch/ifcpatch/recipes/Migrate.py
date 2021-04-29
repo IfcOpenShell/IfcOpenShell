@@ -10,9 +10,9 @@ class Patcher:
         self.args = args
 
     def patch(self):
-        self.new = ifcopenshell.file(schema=self.args[0])
+        self.file_patched = ifcopenshell.file(schema=self.args[0])
         migrator = ifcopenshell.util.schema.Migrator()
         for element in self.file:
+            migrator.migrate(element, self.file_patched)
             print("Migrating", element)
-            print("Successfully converted to", migrator.migrate(element, self.new))
-        self.file = self.new
+            print("Successfully converted to", migrator.migrate(element, self.file_patched))

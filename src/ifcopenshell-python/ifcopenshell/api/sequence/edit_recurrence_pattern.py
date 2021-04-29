@@ -13,9 +13,14 @@ class Usecase:
             if name == "TimePeriods" and value:
                 periods = []
                 for period in value:
-                    periods.append(self.file.create_entity("IfcTimePeriod", **{
-                        "StartTime": ifcopenshell.util.date.datetime2ifc(period[0]),
-                        "EndTime": ifcopenshell.util.date.datetime2ifc(period[1])
-                    }))
+                    periods.append(
+                        self.file.create_entity(
+                            "IfcTimePeriod",
+                            **{
+                                "StartTime": ifcopenshell.util.date.datetime2ifc(period[0]),
+                                "EndTime": ifcopenshell.util.date.datetime2ifc(period[1]),
+                            },
+                        )
+                    )
                 value = periods
             setattr(self.settings["recurrence_pattern"], name, value)
