@@ -266,29 +266,69 @@ class BIM_PT_work_calendars(Panel):
         if not Data.is_loaded:
             Data.load(IfcStore.get_file())
         self.props = context.scene.BIMWorkCalendarProperties
+
+        row = self.layout.row()
+        row.operator("bim.add_work_calendar", icon="ADD")
+
+        for work_calendar_id, work_calendar in Data.work_calendars.items():
+            self.draw_work_calendar_ui(work_calendar_id, work_calendar)
+
+    def draw_work_calendar_ui(self, work_calendar_id, work_calendar):
         row = self.layout.row(align=True)
-        row.label(text="{} Work Calendar Found".format(len(Data.work_calendars)), icon="TEXT")
-        if self.props.is_editing:
-            row.operator("bim.add_work_calendar", text="", icon="ADD")
-            row.operator("bim.disable_work_calendar_editing_ui", text="", icon="CHECKMARK")
+        row.label(text=work_calendar["Name"] or "Unnamed", icon="VIEW_ORTHO")
+        if self.props.active_work_calendar_id == work_calendar_id:
+            row.operator("bim.edit_work_calendar", text="", icon="CHECKMARK")
+            row.operator("bim.disable_editing_work_calendar", text="", icon="CANCEL")
+        elif self.props.active_work_calendar_id:
+            row.operator("bim.remove_work_calendar", text="", icon="X").work_calendar = work_calendar_id
         else:
-            row.operator("bim.load_work_calendars", text="", icon="GREASEPENCIL")
+            op = row.operator("bim.enable_editing_work_calendar_times", text="", icon="MESH_GRID")
+            op.work_calendar = work_calendar_id
+            op = row.operator("bim.enable_editing_work_calendar", text="", icon="GREASEPENCIL")
+            op.work_calendar = work_calendar_id
+            row.operator("bim.remove_work_calendar", text="", icon="X").work_calendar = work_calendar_id
 
-        if self.props.is_editing:
-            self.layout.template_list(
-                "BIM_UL_work_calendars",
-                "",
-                self.props,
-                "work_calendars",
-                self.props,
-                "active_work_calendar_index",
-            )
+        if self.props.active_work_calendar_id == work_calendar_id:
+            if self.props.is_editing == "ATTRIBUTES":
+                self.draw_editable_ui()
+            elif self.props.is_editing == "WORKTIMES":
+                self.draw_work_times_ui(work_calendar_id, work_calendar)
 
-        if self.props.active_work_calendar_id:
-            self.draw_editable_ui(context)
+    def draw_work_times_ui(self, work_calendar_id, work_calendar):
+        row = self.layout.row(align=True)
+        op = row.operator("bim.add_work_time", text="Add Work Time", icon="ADD")
+        op.work_calendar = work_calendar_id
+        op.time_type = "WorkingTimes"
+        op = row.operator("bim.add_work_time", text="Add Exception Time", icon="ADD")
+        op.work_calendar = work_calendar_id
+        op.time_type = "ExceptionTimes"
 
-    def draw_editable_ui(self, context):
-        for attribute in self.props.work_calendar_attributes:
+        for work_time_id in work_calendar["WorkingTimes"]:
+            self.draw_work_time_ui(Data.work_times[work_time_id], time_type="WorkingTimes")
+
+        for work_time_id in work_calendar["ExceptionTimes"]:
+            self.draw_work_time_ui(Data.work_times[work_time_id], time_type="ExceptionTimes")
+
+    def draw_work_time_ui(self, work_time, time_type):
+        row = self.layout.row(align=True)
+        row.label(text=work_time["Name"] or "Unnamed", icon="MESH_GRID" if time_type == "WorkingTimes" else "LIGHTPROBE_GRID")
+        if self.props.active_work_time_id == work_time["id"]:
+            row.operator("bim.edit_work_time", text="", icon="CHECKMARK")
+            row.operator("bim.disable_editing_work_time", text="", icon="CANCEL")
+        elif self.props.active_work_time_id:
+            op = row.operator("bim.remove_work_time", text="", icon="X")
+            op.work_time = work_time["id"]
+        else:
+            op = row.operator("bim.enable_editing_work_time", text="", icon="GREASEPENCIL")
+            op.work_time = work_time["id"]
+            op = row.operator("bim.remove_work_time", text="", icon="X")
+            op.work_time = work_time["id"]
+
+        if self.props.active_work_time_id == work_time["id"]:
+            self.draw_editable_work_time_ui(work_time)
+
+    def draw_editable_work_time_ui(self, work_time):
+        for attribute in self.props.work_time_attributes:
             row = self.layout.row(align=True)
             if attribute.data_type == "string":
                 row.prop(attribute, "string_value", text=attribute.name)
@@ -297,18 +337,59 @@ class BIM_PT_work_calendars(Panel):
             if attribute.is_optional:
                 row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
+        if work_time["RecurrencePattern"]:
+            self.draw_editable_recurrence_pattern_ui(Data.recurrence_patterns[work_time["RecurrencePattern"]])
+        else:
+            row = self.layout.row(align=True)
+            row.prop(self.props, "recurrence_types", icon="RECOVER_LAST", text="")
+            op = row.operator("bim.assign_recurrence_pattern", icon="ADD", text="")
+            op.work_time = work_time["id"]
+            op.recurrence_type = self.props.recurrence_types
 
-class BIM_UL_work_calendars(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        if item:
-            row = layout.row(align=True)
-            row.label(text=item.name)
-            if context.scene.BIMWorkCalendarProperties.active_work_calendar_id == item.ifc_definition_id:
-                row.operator("bim.edit_work_calendar", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_work_calendar", text="", icon="X")
-            elif context.scene.BIMWorkCalendarProperties.active_work_calendar_id:
-                row.operator("bim.remove_work_calendar", text="", icon="X").work_calendar = item.ifc_definition_id
-            else:
-                op = row.operator("bim.enable_editing_work_calendar", text="", icon="GREASEPENCIL")
-                op.work_calendar = item.ifc_definition_id
-                row.operator("bim.remove_work_calendar", text="", icon="X").work_calendar = item.ifc_definition_id
+    def draw_editable_recurrence_pattern_ui(self, recurrence_pattern):
+        box = self.layout.box()
+        row = box.row(align=True)
+        row.label(text=recurrence_pattern["RecurrenceType"], icon="RECOVER_LAST")
+        op = row.operator("bim.unassign_recurrence_pattern", text="", icon="X")
+        op.recurrence_pattern = recurrence_pattern["id"]
+
+        row = box.row(align=True)
+        row.prop(self.props, "start_time", text="")
+        row.prop(self.props, "end_time", text="")
+        op = row.operator("bim.add_time_period", text="", icon="ADD")
+        op.recurrence_pattern = recurrence_pattern["id"]
+
+        for time_period_id in recurrence_pattern["TimePeriods"]:
+            time_period = Data.time_periods[time_period_id]
+            row = box.row(align=True)
+            row.label(text="{} - {}".format(time_period["StartTime"], time_period["EndTime"]), icon="TIME")
+            op = row.operator("bim.remove_time_period", text="", icon="X")
+            op.time_period = time_period_id
+
+        if recurrence_pattern["RecurrenceType"] == "DAILY":
+            pass # No need to show any custom UI
+        if recurrence_pattern["RecurrenceType"] == "WEEKLY":
+            row = box.row(align=True)
+            row.prop(self.props, "weekday_component_monday", text="M")
+            row.prop(self.props, "weekday_component_tuesday", text="T")
+            row.prop(self.props, "weekday_component_wednesday", text="W")
+            row.prop(self.props, "weekday_component_thursday", text="T")
+            row.prop(self.props, "weekday_component_friday", text="F")
+            row.prop(self.props, "weekday_component_saturday", text="S")
+            row.prop(self.props, "weekday_component_sunday", text="S")
+
+        row = box.row(align=True)
+        row.prop(self.props, "dummy_int", text="Recurrence Interval")
+        row = box.row(align=True)
+        row.prop(self.props, "dummy_int", text="Occurs N Times")
+
+
+    def draw_editable_ui(self):
+        for attribute in self.props.work_calendar_attributes:
+            row = self.layout.row(align=True)
+            if attribute.data_type == "string":
+                row.prop(attribute, "string_value", text=attribute.name)
+            elif attribute.data_type == "enum":
+                row.prop(attribute, "enum_value", text=attribute.name)
+            if attribute.is_optional:
+                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
