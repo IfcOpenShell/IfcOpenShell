@@ -1056,10 +1056,15 @@ void SvgSerializer::write(const geometry_data& data) {
 				object_type.erase(std::remove_if(object_type.begin(), object_type.end(), [](char c) { return !std::isalnum(c); }), object_type.end());
 			}
 
+			auto z_local = gp::DZ().Transformed(data.trsf.Inverted());
+
 			if (data.product->declaration().is("IfcAnnotation") &&     // is an Annotation
 				(proj.Magnitude() > 1.e-5) && 					       // when projected onto the view has a length
-				zmin >= range.first && zmin < (range.second - 1.e-5))  // the Z-coords are within the range of the building storey,
-				                                                       // this excludes the upper bound with a small tolerance
+				is_floor_plan_
+					? (zmin >= range.first && zmin < (range.second - 1.e-5)) // the Z-coords are within the range of the building storey,
+				                                                             // this excludes the upper bound with a small tolerance
+					: (projection_direction.Dot(z_local) < -0.99)            // For elevations only include annotations that are "facing" the view direction
+				)
 			{
 				auto svg_name = data.svg_name;
 
@@ -1076,9 +1081,24 @@ void SvgSerializer::write(const geometry_data& data) {
 					}
 				}
 
+				auto subshape_to_use = subshape;
+				if (variant.which() == 2) {
+					// @todo remove duplication with code below.
+
+					gp_Trsf trsf;
+					trsf.SetTransformation(gp::XOY(), pln.Position());
+					subshape_to_use.Move(trsf);
+
+					gp_Trsf trsf_mirror;
+					trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
+					BRepBuilderAPI_Transform make_transform_mirror(subshape_to_use, trsf_mirror, true);
+					make_transform_mirror.Build();
+					subshape_to_use = make_transform_mirror.Shape();
+				}
+
 				if (object_type == "Dimension") {
 
-					TopExp_Explorer exp(subshape, TopAbs_EDGE, TopAbs_FACE);
+					TopExp_Explorer exp(subshape_to_use, TopAbs_EDGE, TopAbs_FACE);
 					for (; exp.More(); exp.Next()) {
 						const auto& e = TopoDS::Edge(exp.Current());
 						TopoDS_Vertex v0, v1;
@@ -1151,7 +1171,7 @@ void SvgSerializer::write(const geometry_data& data) {
 					
 				} else if (object_type == "Symbol") {
 
-					TopExp_Explorer exp(subshape, TopAbs_WIRE, TopAbs_FACE);
+					TopExp_Explorer exp(subshape_to_use, TopAbs_WIRE, TopAbs_FACE);
 					for (; exp.More(); exp.Next()) {
 						const auto& W = TopoDS::Wire(exp.Current());
 						write(*po, W, *dash_it);
@@ -1671,6 +1691,7 @@ void SvgSerializer::addTextAnnotations(const drawing_key& k) {
 							trsf.SetTranslationPart(v);
 						}
 
+						// @todo Inverted?
 						auto z_local = gp::DZ().Transformed(trsf);
 						auto view_dir = z_local.Dot(meta.pln_3d.Axis().Direction());
 
