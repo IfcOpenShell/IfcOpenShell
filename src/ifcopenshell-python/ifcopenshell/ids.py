@@ -52,12 +52,16 @@ class facet(metaclass=meta_facet):
         self.node = node
 
     def __getattr__(self, k):
-        v = self.node.getElementsByTagName(k)[0]
-        elems = [n for n in v.childNodes if n.nodeType == n.ELEMENT_NODE]
-        if elems:
-            return restriction(elems[0])
-        else:
-            return v.firstChild.nodeValue.strip()
+        try:
+            v = self.node.getElementsByTagName(k)[0]
+            elems = [n for n in v.childNodes if n.nodeType == n.ELEMENT_NODE]
+
+            if elems:
+                return restriction(elems[0])
+            else:
+                return v.firstChild.nodeValue.strip()
+        except IndexError:
+            return None
 
     def __iter__(self):
         for k in self.parameters:
@@ -75,18 +79,18 @@ class entity(facet):
     """
     The IDS entity facet currently *with* inheritance
     """
-
-    parameters = ["name"]
-    message = "an entity name '%(name)s'"
-
-    # @todo predefinedtype
-
+    parameters = ["name", "predefinedtype"]
+    
     def __call__(self, inst, logger):
-        logger.debug("Testing %s == %s", inst.is_a(), self.name)
         # @nb with inheritance
-        # return inst.is_a() == self.name
-        return facet_evaluation(inst.is_a(self.name), self.message % {"name": inst.is_a()})
-
+        if self.predefinedtype:
+            # logger.debug("Testing if entity predefinedtype '%s' == '%s'", inst.PredefinedType, self.predefinedtype)
+            self.message = "an entity name '%(name)s' of predefined type '%(predefinedtype)s'"
+            return facet_evaluation(inst.is_a(self.name) and inst.PredefinedType == self.predefinedtype, self.message % {"name": inst.is_a(), "predefinedtype": inst.PredefinedType})
+        else:
+            self.message = "an entity name '%(name)s'"
+            return facet_evaluation(inst.is_a(self.name), self.message % {"name": inst.is_a()})
+            
 
 class classification(facet):
     """
@@ -124,7 +128,7 @@ class property(facet):
         props = ifcopenshell.util.element.get_psets(inst)
         pset = props.get(self.propertyset)
         val = pset.get(self.name) if pset else None
-        logger.debug("Testing %s == %s", val, self.value)
+        logger.debug("Testing if property %s == %s", val, self.value)
 
         di = {
             "name": self.name,
@@ -160,7 +164,6 @@ class material(facet):
                 names = [layer.Material.Name for layer in layers]
             elif rel.RelatingMaterial.is_a() == "IfcMaterial":
                 names.append(rel.RelatingMaterial.Name)
-        
         
         return facet_evaluation(
             0,
@@ -217,10 +220,7 @@ class restriction:
                 self.type = "length"
             elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("pattern"):
                 self.options.append(n.getAttribute("value"))
-                self.type = "pattern"      
-            elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("boolean"):
-                self.options.append(n.getAttribute("value").capitalize())
-                self.type = "boolean"            
+                self.type = "pattern"           
 
         # "Given an instance with %(applicability)s\nWe expect %(requirements)s" % self.__dict__
     
@@ -237,8 +237,7 @@ class restriction:
             return "of type %s with a length of %s" % (self.restriction_on, self.options[0])
         elif self.type == "pattern":
             return "of type %s respecting pattern %s" % (self.restriction_on, self.options[0])
-        elif self.type == "boolean":
-            return "of type %s set to %s" % (self.restriction_on, self.options[0])
+
 
 class specification:
     """
@@ -253,7 +252,7 @@ class specification:
             return [cls(n) for cls, n in zip(classes, children)]
 
         phrases = [n for n in node.childNodes if n.nodeType == n.ELEMENT_NODE]
-
+        
         len(phrases) == 2 or error("expected two child nodes for <specification>")
         phrases[0].tagName == "applicability" or error("expected <applicability>")
         phrases[1].tagName == "requirements" or error("expected <requirements>")
@@ -265,9 +264,9 @@ class specification:
             valid = self.requirements(inst, logger)
 
             if valid:
-                logger.info({'guid':inst.GlobalId, 'result':valid.success,'sentence':str(self) + "\n%s has" % inst + " " + str(valid) + " so is compliant"})
+                logger.info({'guid':inst.GlobalId, 'result':valid.success,'sentence':str(self) + "\n'" + inst.Name + "' (id:" + inst.GlobalId + ") has " + str(valid) + " so is compliant"})
             else:
-                logger.error({'guid':inst.GlobalId, 'result':valid.success, 'sentence':str(self) + "\n%s has" % inst + " " + str(valid) + " so is not compliant"})
+                logger.error({'guid':inst.GlobalId, 'result':valid.success, 'sentence':str(self) + "\n'" + inst.Name + "' (id:" + inst.GlobalId + ") has " + str(valid) + " so is not compliant"})
 
     def __str__(self):
         return "Given an instance with %(applicability)s\nWe expect %(requirements)s" % self.__dict__
@@ -290,7 +289,7 @@ class ids:
     def validate(self, ifc_file, logger):
         for spec in self.specifications:
             for elem in ifc_file.by_type("IfcObject"):
-                spec(elem, logger)
+               spec(elem, logger)
                 
 if __name__ == "__main__":
     import sys, os
@@ -300,23 +299,12 @@ if __name__ == "__main__":
     filename = os.path.join(os.getcwd(), "ids.txt")
 
     logger = logging.getLogger("IDS")
-    #TEMP logging.basicConfig(filename=filename, level=logging.INFO, format="%(message)s")
-    logging.basicConfig(filename=filename, level=logging.INFO, format="%(levelname)s - %(message)s")
-    #TEMP logging.basicConfig(level=logging.INFO, format="%(message)s")
-    logging.basicConfig(level=logging.DEBUG, format="%(message)s")
+    logging.basicConfig(filename=filename, level=logging.INFO, format="%(message)s")
     logging.FileHandler(filename, mode='w')
 
-    # ids_file = ids(sys.argv[1])
-    ids_file = ids(r"C:\Users\artom\Desktop\Code\IFC sandbox\IDS, MVDxml samples\IDS_test_2.xml")
-    # ifc_file = ifcopenshell.open(sys.argv[2])
-    ifc_file = ifcopenshell.open(r"C:\Users\artom\Desktop\Code\IFC sandbox\IFC samples\IFC Artur.ifc")
-    # ifc_file = ifcopenshell.open(r"C:\Users\artom\Desktop\Code\IFC sandbox\IFC samples\IFC Schependomlaan.ifc")
-
-    #applicability = ids_file.specifications[0].applicability
-    requirements = ids_file.specifications[0].requirements
-    # print(len(applicability))
-    # print(requirements)
-    products = ifc_file.by_type('IfcProduct')
-    print(f"IFC file contains {len(products)} elements")
-
+    ids_file = ids(sys.argv[1])
+    ifc_file = ifcopenshell.open(sys.argv[2])
+    
     ids_file.validate(ifc_file, logger)
+    
+    print(f"Validated {len(ids_file.specifications[0].requirements.terms)} IDS requirements on {len(ifc_file.by_type('IfcProduct'))} IFC elements. Results saved to {filename}")
