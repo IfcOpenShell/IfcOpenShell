@@ -173,7 +173,7 @@ bool IfcUtil::valid_binary_string(const std::string& s) {
 	for (std::string::const_iterator it = s.begin(); it != s.end(); ++it) {
 		if (*it != '0' && *it != '1') return false;
 	}
-	return s.empty() ? false : true;
+	return true;
 }
 
 void IfcUtil::sanitate_material_name(std::string &str)
