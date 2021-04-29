@@ -6,6 +6,15 @@ from typing import List, Generator, Optional
 import ifcopenshell
 from ifcopenshell.entity_instance import entity_instance
 
+templates = {}
+
+
+def get_template(schema):
+    global templates
+    if schema not in templates:
+        templates[schema] = PsetQto(schema)
+    return templates[schema]
+
 
 class PsetQto:
     templates_path = {
