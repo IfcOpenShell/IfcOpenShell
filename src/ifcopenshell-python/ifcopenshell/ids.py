@@ -304,7 +304,7 @@ if __name__ == "__main__":
 
     ids_file = ids(sys.argv[1])
     ifc_file = ifcopenshell.open(sys.argv[2])
-    
+
     ids_file.validate(ifc_file, logger)
     
-    print(f"Validated {len(ids_file.specifications[0].requirements.terms)} IDS requirements on {len(ifc_file.by_type('IfcProduct'))} IFC elements. Results saved to {filename}")
+    print("Validated %s IDS requirements on %s IFC elements. Results saved to %s" % (len(ids_file.specifications[0].requirements.terms), len(ifc_file.by_type('IfcProduct')), filename))
