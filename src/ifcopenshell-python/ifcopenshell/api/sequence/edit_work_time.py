@@ -10,6 +10,6 @@ class Usecase:
 
     def execute(self):
         for name, value in self.settings["attributes"].items():
-            if name in ["Start", "Finish"]:
+            if value and name in ["Start", "Finish"]:
                 value = ifcopenshell.util.date.datetime2ifc(value, "IfcDate")
             setattr(self.settings["work_time"], name, value)

@@ -26,9 +26,9 @@ class Usecase:
             controls = self.settings["relating_control"].Controls[0]
 
         if controls:
-            related_objects = list(controls.RelatedObjects)
-            related_objects.append(self.settings["related_object"])
-            controls.RelatedObjects = related_objects
+            related_objects = set(controls.RelatedObjects)
+            related_objects.add(self.settings["related_object"])
+            controls.RelatedObjects = list(related_objects)
             ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": controls})
         else:
             controls = self.file.create_entity(

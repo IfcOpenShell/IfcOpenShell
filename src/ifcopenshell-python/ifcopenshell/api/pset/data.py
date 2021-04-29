@@ -1,6 +1,6 @@
 import ifcopenshell
 import ifcopenshell.util.attribute
-import blenderbim.bim.schema  # TODO: refactor elsewhere
+import ifcopenshell.util.pset
 
 
 class Data:
@@ -17,6 +17,7 @@ class Data:
     @classmethod
     def load(cls, file, product_id):
         cls._file = file
+        cls._psetqto = ifcopenshell.util.pset.get_template("IFC4")
         cls._schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(file.schema)
         if not file:
             return
@@ -150,7 +151,7 @@ class Data:
 
     @classmethod
     def get_properties_from_template(cls, name):
-        template = blenderbim.bim.schema.ifc.psetqto.get_by_name(name)
+        template = cls._psetqto.get_by_name(name)
         if not template:
             return
         properties = []

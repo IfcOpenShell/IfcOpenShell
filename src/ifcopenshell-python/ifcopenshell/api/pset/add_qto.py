@@ -1,5 +1,4 @@
 import ifcopenshell
-import blenderbim.bim.schema  # TODO: refactor
 
 
 class Usecase:
