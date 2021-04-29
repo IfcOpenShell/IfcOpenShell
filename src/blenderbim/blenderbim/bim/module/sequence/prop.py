@@ -107,6 +107,13 @@ def updateTaskTimeDateTime(self, context, startfinish):
     setattr(self, startfinish, canonicalise_time(startfinish_datetime))
 
 
+workschedule_enum = []
+
+
+def getWorkSchedules(self, context):
+    return [(str(k), v["Name"], "") for k, v in Data.work_schedules.items()]
+
+
 class Task(PropertyGroup):
     name: StringProperty(name="Name", update=updateTaskName)
     identification: StringProperty(name="Identification", update=updateTaskIdentification)
@@ -128,10 +135,11 @@ class WorkPlan(PropertyGroup):
 
 class BIMWorkPlanProperties(PropertyGroup):
     work_plan_attributes: CollectionProperty(name="Work Plan Attributes", type=Attribute)
-    is_editing: BoolProperty(name="Is Editing", default=False)
+    is_editing: StringProperty(name="Is Editing")
     work_plans: CollectionProperty(name="Work Plans", type=WorkPlan)
     active_work_plan_index: IntProperty(name="Active Work Plan Index")
     active_work_plan_id: IntProperty(name="Active Work Plan Id")
+    work_schedules: EnumProperty(items=getWorkSchedules, name="Work Schedules")
 
 
 class BIMWorkScheduleProperties(PropertyGroup):
@@ -150,7 +158,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
 
 
 class BIMTaskTreeProperties(PropertyGroup):
-    # This belongs by itself for performance reasons.
+    # This belongs by itself for performance reasons. https://developer.blender.org/T87737
     # In Blender if you add thousands of tasks it makes other property access in the same group really slow.
     tasks: CollectionProperty(name="Tasks", type=Task)
 
@@ -160,9 +168,34 @@ class WorkCalendar(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
+class RecurrenceComponent(PropertyGroup):
+    name: StringProperty(name="Name")
+    is_specified: BoolProperty(name="Is Specified")
+
+
 class BIMWorkCalendarProperties(PropertyGroup):
     work_calendar_attributes: CollectionProperty(name="Work Calendar Attributes", type=Attribute)
-    is_editing: BoolProperty(name="Is Editing", default=False)
+    work_time_attributes: CollectionProperty(name="Work Time Attributes", type=Attribute)
+    is_editing: StringProperty(name="Is Editing")
     work_calendars: CollectionProperty(name="Work Calendar", type=WorkCalendar)
-    active_work_calendar_index: IntProperty(name="Active Work Calendar Index")
     active_work_calendar_id: IntProperty(name="Active Work Calendar Id")
+    active_work_time_id: IntProperty(name="Active Work Time Id")
+    day_components: CollectionProperty(name="Day Components", type=RecurrenceComponent)
+    weekday_components: CollectionProperty(name="Weekday Components", type=RecurrenceComponent)
+    month_components: CollectionProperty(name="Month Components", type=RecurrenceComponent)
+    position: IntProperty(name="Position")
+    interval: IntProperty(name="Recurrence Interval")
+    occurrences: IntProperty(name="Occurs N Times")
+    recurrence_types: EnumProperty(items=[
+        ("DAILY", "Daily", "e.g. Every day"),
+        ("WEEKLY", "Weekly", "e.g. Every Friday"),
+        ("MONTHLY_BY_DAY_OF_MONTH", "Monthly on Specified Date", "e.g. Every 2nd of each Month"),
+        ("MONTHLY_BY_POSITION", "Monthly on Specified Weekday", "e.g. Every 1st Friday of each Month"),
+        # https://forums.buildingsmart.org/t/what-does-by-day-count-and-by-weekday-count-mean-in-ifcrecurrencetypeenum/3571
+        # ("BY_DAY_COUNT", "", ""),
+        # ("BY_WEEKDAY_COUNT", "", ""),
+        ("YEARLY_BY_DAY_OF_MONTH", "Yearly on Specified Date", "e.g. Every 2nd of October"),
+        ("YEARLY_BY_POSITION", "Yearly on Specified Weekday", "e.g. Every 1st Friday of October"),
+    ], name="Recurrence Types")
+    start_time: StringProperty(name="Start Time")
+    end_time: StringProperty(name="End Time")

@@ -76,6 +76,7 @@ class ReassignClass(bpy.types.Operator):
 class AssignClass(bpy.types.Operator):
     bl_idname = "bim.assign_class"
     bl_label = "Assign IFC Class"
+    bl_options = {'REGISTER', 'UNDO'}
     obj: bpy.props.StringProperty()
     ifc_class: bpy.props.StringProperty()
     predefined_type: bpy.props.StringProperty()
