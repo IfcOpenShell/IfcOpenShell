@@ -176,4 +176,4 @@ def apply_ifc_classification_properties(ifc_file, element, classificationPropert
             pset = ifcopenshell.api.run("pset.add_pset", ifc_file, product=element, name=prop["propertySet"])
         if prop["dataType"] == "boolean":
             predefinedValue = predefinedValue == "TRUE"
-        ifcopenshell.api.run("pset.edit_pset", pset=pset, properties={prop["name"]: predefinedValue})
+        ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties={prop["name"]: predefinedValue})
