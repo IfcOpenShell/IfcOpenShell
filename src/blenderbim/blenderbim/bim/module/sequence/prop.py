@@ -168,6 +168,11 @@ class WorkCalendar(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
+class RecurrenceComponent(PropertyGroup):
+    name: StringProperty(name="Name")
+    is_specified: BoolProperty(name="Is Specified")
+
+
 class BIMWorkCalendarProperties(PropertyGroup):
     work_calendar_attributes: CollectionProperty(name="Work Calendar Attributes", type=Attribute)
     work_time_attributes: CollectionProperty(name="Work Time Attributes", type=Attribute)
@@ -175,15 +180,12 @@ class BIMWorkCalendarProperties(PropertyGroup):
     work_calendars: CollectionProperty(name="Work Calendar", type=WorkCalendar)
     active_work_calendar_id: IntProperty(name="Active Work Calendar Id")
     active_work_time_id: IntProperty(name="Active Work Time Id")
-    weekday_component_monday: BoolProperty(name="M")
-    weekday_component_tuesday: BoolProperty(name="T")
-    weekday_component_wednesday: BoolProperty(name="W")
-    weekday_component_thursday: BoolProperty(name="T")
-    weekday_component_friday: BoolProperty(name="F")
-    weekday_component_saturday: BoolProperty(name="S")
-    weekday_component_sunday: BoolProperty(name="S")
-    dummy_bool: BoolProperty(name="Active Work Calendar Id")
-    dummy_int: IntProperty(name="Active Work Calendar Id")
+    day_components: CollectionProperty(name="Day Components", type=RecurrenceComponent)
+    weekday_components: CollectionProperty(name="Weekday Components", type=RecurrenceComponent)
+    month_components: CollectionProperty(name="Month Components", type=RecurrenceComponent)
+    position: IntProperty(name="Position")
+    interval: IntProperty(name="Recurrence Interval")
+    occurrences: IntProperty(name="Occurs N Times")
     recurrence_types: EnumProperty(items=[
         ("DAILY", "Daily", "e.g. Every day"),
         ("WEEKLY", "Weekly", "e.g. Every Friday"),

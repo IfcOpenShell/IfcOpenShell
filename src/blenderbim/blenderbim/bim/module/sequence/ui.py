@@ -74,7 +74,6 @@ class BIM_PT_work_plans(Panel):
             op.work_schedule = int(self.props.work_schedules)
 
 
-
 class BIM_PT_work_schedules(Panel):
     bl_label = "IFC Work Schedules"
     bl_idname = "BIM_PT_work_schedules"
@@ -116,7 +115,9 @@ class BIM_PT_work_schedules(Panel):
             row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = work_schedule_id
         else:
             row.operator("bim.enable_editing_tasks", text="", icon="ACTION").work_schedule = work_schedule_id
-            row.operator("bim.enable_editing_work_schedule", text="", icon="GREASEPENCIL").work_schedule = work_schedule_id
+            row.operator(
+                "bim.enable_editing_work_schedule", text="", icon="GREASEPENCIL"
+            ).work_schedule = work_schedule_id
             row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = work_schedule_id
 
         if self.props.active_work_schedule_id == work_schedule_id:
@@ -311,7 +312,11 @@ class BIM_PT_work_calendars(Panel):
 
     def draw_work_time_ui(self, work_time, time_type):
         row = self.layout.row(align=True)
-        row.label(text=work_time["Name"] or "Unnamed", icon="MESH_GRID" if time_type == "WorkingTimes" else "LIGHTPROBE_GRID")
+        row.label(
+            text=work_time["Name"] or "Unnamed", icon="MESH_GRID" if time_type == "WorkingTimes" else "LIGHTPROBE_GRID"
+        )
+        if work_time["Start"] or work_time["Finish"]:
+            row.label(text="{} - {}".format(work_time["Start"] or "*", work_time["Finish"] or "*"))
         if self.props.active_work_time_id == work_time["id"]:
             row.operator("bim.edit_work_time", text="", icon="CHECKMARK")
             row.operator("bim.disable_editing_work_time", text="", icon="CANCEL")
@@ -366,23 +371,42 @@ class BIM_PT_work_calendars(Panel):
             op = row.operator("bim.remove_time_period", text="", icon="X")
             op.time_period = time_period_id
 
-        if recurrence_pattern["RecurrenceType"] == "DAILY":
-            pass # No need to show any custom UI
-        if recurrence_pattern["RecurrenceType"] == "WEEKLY":
+        applicable_data = {
+            "DAILY": ["Interval", "Occurrences"],
+            "WEEKLY": ["WeekdayComponent", "Interval", "Occurrences"],
+            "MONTHLY_BY_DAY_OF_MONTH": ["DayComponent", "Interval", "Occurrences"],
+            "MONTHLY_BY_POSITION": ["WeekdayComponent", "Position", "Interval", "Occurrences"],
+            "BY_DAY_COUNT": ["Interval", "Occurrences"],
+            "BY_WEEKDAY_COUNT": ["WeekdayComponent", "Interval", "Occurrences"],
+            "YEARLY_BY_DAY_OF_MONTH": ["DayComponent", "MonthComponent", "Interval", "Occurrences"],
+            "YEARLY_BY_POSITION": ["WeekdayComponent", "MonthComponent", "Position", "Interval", "Occurrences"],
+        }
+
+        if "Position" in applicable_data[recurrence_pattern["RecurrenceType"]]:
+            row = box.row()
+            row.prop(self.props, "position")
+
+        if "DayComponent" in applicable_data[recurrence_pattern["RecurrenceType"]]:
+            for i, component in enumerate(self.props.day_components):
+                if i % 7 == 0:
+                    row = box.row(align=True)
+                row.prop(component, "is_specified", text=component.name)
+
+        if "WeekdayComponent" in applicable_data[recurrence_pattern["RecurrenceType"]]:
             row = box.row(align=True)
-            row.prop(self.props, "weekday_component_monday", text="M")
-            row.prop(self.props, "weekday_component_tuesday", text="T")
-            row.prop(self.props, "weekday_component_wednesday", text="W")
-            row.prop(self.props, "weekday_component_thursday", text="T")
-            row.prop(self.props, "weekday_component_friday", text="F")
-            row.prop(self.props, "weekday_component_saturday", text="S")
-            row.prop(self.props, "weekday_component_sunday", text="S")
+            for component in self.props.weekday_components:
+                row.prop(component, "is_specified", text=component.name)
 
-        row = box.row(align=True)
-        row.prop(self.props, "dummy_int", text="Recurrence Interval")
-        row = box.row(align=True)
-        row.prop(self.props, "dummy_int", text="Occurs N Times")
+        if "MonthComponent" in applicable_data[recurrence_pattern["RecurrenceType"]]:
+            for i, component in enumerate(self.props.month_components):
+                if i % 4 == 0:
+                    row = box.row(align=True)
+                row.prop(component, "is_specified", text=component.name)
 
+        row = box.row()
+        row.prop(self.props, "interval")
+        row = box.row()
+        row.prop(self.props, "occurrences")
 
     def draw_editable_ui(self):
         for attribute in self.props.work_calendar_attributes:
