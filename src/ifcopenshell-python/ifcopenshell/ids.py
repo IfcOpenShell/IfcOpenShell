@@ -84,7 +84,7 @@ class entity(facet):
     
     def __call__(self, inst, logger):
         # @nb with inheritance
-        if self.predefinedtype:
+        if self.predefinedtype and "4" in ifc_file.schema:
             # logger.debug("Testing if entity predefinedtype '%s' == '%s'", inst.PredefinedType, self.predefinedtype)
             self.message = "an entity name '%(name)s' of predefined type '%(predefinedtype)s'"
             return facet_evaluation(inst.is_a(self.name) and inst.PredefinedType == self.predefinedtype, self.message % {"name": inst.is_a(), "predefinedtype": inst.PredefinedType})
