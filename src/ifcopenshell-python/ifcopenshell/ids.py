@@ -54,12 +54,15 @@ class facet(metaclass=meta_facet):
     def __getattr__(self, k):
         try:
             v = self.node.getElementsByTagName(k)[0]
+        except IndexError:
+            v = None
+        if v:
             elems = [n for n in v.childNodes if n.nodeType == n.ELEMENT_NODE]
             if elems:
                 return restriction(elems[0])
             else:
                 return v.firstChild.nodeValue.strip()
-        except IndexError:
+        else:
             return None
 
     def __iter__(self):
@@ -300,8 +303,10 @@ if __name__ == "__main__":
     logging.basicConfig(filename=filename, level=logging.INFO, format="%(message)s")
     logging.FileHandler(filename, mode='w')
 
-    ids_file = ids(sys.argv[1])
-    ifc_file = ifcopenshell.open(sys.argv[2])
+    # ids_file = ids(sys.argv[1])
+    # ifc_file = ifcopenshell.open(sys.argv[2])
+    ids_file = ids(r"C:\Users\artom\Desktop\Code\IFC sandbox\IDS, MVDxml samples\IDS_test_3.xml")
+    ifc_file = ifcopenshell.open(r"C:\Users\artom\Desktop\Code\IFC sandbox\IFC samples\IFC Artur.ifc")
 
     ids_file.validate(ifc_file, logger)
     
