@@ -12,6 +12,7 @@ class P62Ifc:
         self.work_plan = None
         self.project = {}
         self.wbs = {}
+        self.root_activites = []
         self.activities = {}
         self.relationships = {}
 
@@ -39,10 +40,10 @@ class P62Ifc:
         for activity in project.findall("pr:Activity", ns):
             activity_id = activity.find("pr:ObjectId", ns).text
             wbs_id = activity.find("pr:WBSObjectId", ns).text
-            if not wbs_id:
-                print("No WBS ID found for activity", activity_id)
-                continue
-            self.wbs[wbs_id]["activities"].append(activity_id)
+            if wbs_id:
+                self.wbs[wbs_id]["activities"].append(activity_id)
+            else:
+                self.root_activites.append(activity_id)
             self.activities[activity_id] = {
                 "Name": activity.find("pr:Name", ns).text,
                 "Identification": activity.find("pr:Id", ns).text,
@@ -76,6 +77,8 @@ class P62Ifc:
     def create_tasks(self, work_schedule):
         for wbs in self.wbs.values():
             self.create_task_from_wbs(wbs, work_schedule)
+        for activity_id in self.root_activites:
+            self.create_task_from_activity(self.activities[activity_id], None, work_schedule)
 
     def create_task_from_wbs(self, wbs, work_schedule):
         wbs["ifc"] = ifcopenshell.api.run(
@@ -91,13 +94,14 @@ class P62Ifc:
             attributes={"Name": wbs["Name"], "Identification": wbs["Code"]},
         )
         for activity_id in wbs["activities"]:
-            self.create_task_from_activity(self.activities[activity_id], wbs, work_schedule)
+            self.create_task_from_activity(self.activities[activity_id], wbs, None)
 
     def create_task_from_activity(self, activity, wbs, work_schedule):
         activity["ifc"] = ifcopenshell.api.run(
             "sequence.add_task",
             self.file,
-            parent_task=wbs["ifc"],
+            work_schedule=None if wbs else work_schedule,
+            parent_task=wbs["ifc"] if wbs else None,
         )
         ifcopenshell.api.run(
             "sequence.edit_task",
