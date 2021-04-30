@@ -278,7 +278,8 @@ class BIM_PT_work_calendars(Panel):
         row = self.layout.row(align=True)
         row.label(text=work_calendar["Name"] or "Unnamed", icon="VIEW_ORTHO")
         if self.props.active_work_calendar_id == work_calendar_id:
-            row.operator("bim.edit_work_calendar", text="", icon="CHECKMARK")
+            if self.props.is_editing == "ATTRIBUTES":
+                row.operator("bim.edit_work_calendar", text="", icon="CHECKMARK")
             row.operator("bim.disable_editing_work_calendar", text="", icon="CANCEL")
         elif self.props.active_work_calendar_id:
             row.operator("bim.remove_work_calendar", text="", icon="X").work_calendar = work_calendar_id
@@ -313,7 +314,7 @@ class BIM_PT_work_calendars(Panel):
     def draw_work_time_ui(self, work_time, time_type):
         row = self.layout.row(align=True)
         row.label(
-            text=work_time["Name"] or "Unnamed", icon="MESH_GRID" if time_type == "WorkingTimes" else "LIGHTPROBE_GRID"
+            text=work_time["Name"] or "Unnamed", icon="AUTO" if time_type == "WorkingTimes" else "HOME"
         )
         if work_time["Start"] or work_time["Finish"]:
             row.label(text="{} - {}".format(work_time["Start"] or "*", work_time["Finish"] or "*"))
