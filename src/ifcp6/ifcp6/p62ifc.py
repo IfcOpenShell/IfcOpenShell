@@ -32,10 +32,11 @@ class P62Ifc:
 
     def parse_xml(self):
         tree = ET.parse(self.xml)
-        self.ns = {"pr": "http://xmlns.oracle.com/Primavera/P6/V19.12/API/BusinessObjects"}
         root = tree.getroot()
+        self.ns = {"pr": root.tag[1:].partition("}")[0]}
         project = root.find("pr:Project", self.ns)
         self.project["Name"] = project.find("pr:Name", self.ns).text
+        self.parse_calendar_xml(root)
         self.parse_calendar_xml(project)
         self.parse_wbs_xml(project)
         self.parse_activity_xml(project)
@@ -139,8 +140,8 @@ class P62Ifc:
             self.file = self.create_boilerplate_ifc()
         work_schedule = self.create_work_schedule()
         self.create_calendars()
-        # self.create_tasks(work_schedule)
-        # self.create_rel_sequences()
+        self.create_tasks(work_schedule)
+        self.create_rel_sequences()
 
     def create_work_schedule(self):
         return ifcopenshell.api.run(
