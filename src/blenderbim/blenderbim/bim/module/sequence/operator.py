@@ -91,7 +91,7 @@ class EnableEditingWorkPlan(bpy.types.Operator):
                 if data[attribute.name()]:
                     new.enum_value = data[attribute.name()]
         props.active_work_plan_id = self.work_plan
-        props.is_editing = "ATTRIBUTES"
+        props.editing_type = "ATTRIBUTES"
         return {"FINISHED"}
 
 
@@ -112,7 +112,7 @@ class EnableEditingWorkPlanSchedules(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMWorkPlanProperties
         props.active_work_plan_id = self.work_plan
-        props.is_editing = "SCHEDULES"
+        props.editing_type = "SCHEDULES"
         return {"FINISHED"}
 
 
@@ -217,7 +217,7 @@ class EnableEditingWorkSchedule(bpy.types.Operator):
         while len(self.props.work_schedule_attributes) > 0:
             self.props.work_schedule_attributes.remove(0)
         self.enable_editing_work_schedule()
-        self.props.is_editing = "WORK_SCHEDULE"
+        self.props.editing_type = "WORK_SCHEDULE"
         return {"FINISHED"}
 
     def enable_editing_work_schedule(self):
@@ -258,7 +258,7 @@ class EnableEditingTasks(bpy.types.Operator):
         for related_object_id in Data.work_schedules[self.work_schedule]["RelatedObjects"]:
             self.create_new_task_li(related_object_id, 0)
         bpy.ops.bim.load_task_properties()
-        self.props.is_editing = "TASKS"
+        self.props.editing_type = "TASKS"
         return {"FINISHED"}
 
     def create_new_task_li(self, related_object_id, level_index):
@@ -318,15 +318,6 @@ class DisableEditingWorkSchedule(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.BIMWorkScheduleProperties.active_work_schedule_id = 0
-        return {"FINISHED"}
-
-
-class DisableTaskEditingUI(bpy.types.Operator):
-    bl_idname = "bim.disable_task_editing_ui"
-    bl_label = "Disable Task Editing UI"
-
-    def execute(self, context):
-        context.scene.BIMTaskProperties.is_editing = False
         return {"FINISHED"}
 
 
@@ -448,6 +439,7 @@ class EnableEditingTaskTime(bpy.types.Operator):
                     new.enum_value = data[attribute.name()]
         props.active_task_time_id = task_time_id
         props.active_task_id = self.task
+        props.editing_task_type = "TASKTIME"
         bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
@@ -455,16 +447,6 @@ class EnableEditingTaskTime(bpy.types.Operator):
         task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=self.file.by_id(self.task))
         Data.load(IfcStore.get_file())
         return task_time
-
-
-class DisableEditingTaskTime(bpy.types.Operator):
-    bl_idname = "bim.disable_editing_task_time"
-    bl_label = "Disable Editing Task Time"
-
-    def execute(self, context):
-        context.scene.BIMWorkScheduleProperties.active_task_time_id = 0
-        bpy.ops.bim.disable_editing_task()
-        return {"FINISHED"}
 
 
 class EditTaskTime(bpy.types.Operator):
@@ -547,6 +529,7 @@ class EnableEditingTask(bpy.types.Operator):
                 if data[attribute.name()]:
                     new.enum_value = data[attribute.name()]
         props.active_task_id = self.task
+        props.editing_task_type = "ATTRIBUTES"
         bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
@@ -557,6 +540,7 @@ class DisableEditingTask(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.BIMWorkScheduleProperties.active_task_id = 0
+        context.scene.BIMWorkScheduleProperties.active_task_time_id = 0
         return {"FINISHED"}
 
 
@@ -826,7 +810,7 @@ class EnableEditingWorkCalendar(bpy.types.Operator):
                 if data[attribute.name()]:
                     new.enum_value = data[attribute.name()]
         self.props.active_work_calendar_id = self.work_calendar
-        self.props.is_editing = "ATTRIBUTES"
+        self.props.editing_type = "ATTRIBUTES"
         return {"FINISHED"}
 
 
@@ -868,7 +852,7 @@ class EnableEditingWorkCalendarTimes(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMWorkCalendarProperties
         props.active_work_calendar_id = self.work_calendar
-        props.is_editing = "WORKTIMES"
+        props.editing_type = "WORKTIMES"
         return {"FINISHED"}
 
 
@@ -1122,4 +1106,56 @@ class RemoveTimePeriod(bpy.types.Operator):
             **{"time_period": self.file.by_id(self.time_period)},
         )
         Data.load(self.file)
+        return {"FINISHED"}
+
+
+class EnableEditingTaskCalendar(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_task_calendar"
+    bl_label = "Enable Editing Task Calendar"
+    task: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMWorkScheduleProperties
+        props.active_task_id = self.task
+        props.editing_task_type = "CALENDAR"
+        return {"FINISHED"}
+
+
+class EditTaskCalendar(bpy.types.Operator):
+    bl_idname = "bim.edit_task_calendar"
+    bl_label = "Edit Task Calendar"
+    work_calendar: bpy.props.IntProperty()
+    task: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "control.assign_control",
+            self.file,
+            **{
+                "relating_control": self.file.by_id(self.work_calendar),
+                "related_object": self.file.by_id(self.task),
+            },
+        )
+        Data.load(IfcStore.get_file())
+        return {"FINISHED"}
+
+
+class RemoveTaskCalendar(bpy.types.Operator):
+    bl_idname = "bim.remove_task_calendar"
+    bl_label = "Remove Task Calendar"
+    work_calendar: bpy.props.IntProperty()
+    task: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "control.unassign_control",
+            self.file,
+            **{
+                "relating_control": self.file.by_id(self.work_calendar),
+                "related_object": self.file.by_id(self.task),
+            },
+        )
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}

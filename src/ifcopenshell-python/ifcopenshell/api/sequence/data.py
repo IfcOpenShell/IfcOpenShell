@@ -118,6 +118,7 @@ class Data:
         for task in cls._file.by_type("IfcTask"):
             data = task.get_info()
             del data["OwnerHistory"]
+            data["HasAssignmentsWorkCalendar"] = []
             data["RelatedObjects"] = []
             data["RelatingProducts"] = []
             data["IsPredecessorTo"] = []
@@ -133,6 +134,11 @@ class Data:
             ]
             [data["IsPredecessorTo"].append(rel.RelatedProcess.id()) for rel in task.IsPredecessorTo or []]
             [data["IsSuccessorFrom"].append(rel.RelatingProcess.id()) for rel in task.IsSuccessorFrom or []]
+            [
+                data["HasAssignmentsWorkCalendar"].append(rel.RelatingControl.id())
+                for rel in task.HasAssignments or []
+                if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkCalendar")
+            ]
             cls.tasks[task.id()] = data
 
     @classmethod

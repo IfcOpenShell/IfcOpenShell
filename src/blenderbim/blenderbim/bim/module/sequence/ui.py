@@ -43,9 +43,9 @@ class BIM_PT_work_plans(Panel):
             row.operator("bim.remove_work_plan", text="", icon="X").work_plan = work_plan_id
 
         if self.props.active_work_plan_id == work_plan_id:
-            if self.props.is_editing == "ATTRIBUTES":
+            if self.props.editing_type == "ATTRIBUTES":
                 self.draw_editable_ui()
-            elif self.props.is_editing == "SCHEDULES":
+            elif self.props.editing_type == "SCHEDULES":
                 self.draw_work_schedule_ui()
 
     def draw_editable_ui(self):
@@ -104,9 +104,9 @@ class BIM_PT_work_schedules(Panel):
         row.label(text=work_schedule["Name"] or "Unnamed", icon="LINENUMBERS_ON")
 
         if self.props.active_work_schedule_id and self.props.active_work_schedule_id == work_schedule_id:
-            if self.props.is_editing == "WORK_SCHEDULE":
+            if self.props.editing_type == "WORK_SCHEDULE":
                 row.operator("bim.edit_work_schedule", text="", icon="CHECKMARK")
-            elif self.props.is_editing == "TASKS":
+            elif self.props.editing_type == "TASKS":
                 row.prop(self.props, "should_show_times", text="", icon="TIME")
                 row.operator("bim.generate_gantt_chart", text="", icon="NLA").work_schedule = work_schedule_id
                 row.operator("bim.add_summary_task", text="", icon="ADD").work_schedule = work_schedule_id
@@ -121,9 +121,9 @@ class BIM_PT_work_schedules(Panel):
             row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = work_schedule_id
 
         if self.props.active_work_schedule_id == work_schedule_id:
-            if self.props.is_editing == "WORK_SCHEDULE":
+            if self.props.editing_type == "WORK_SCHEDULE":
                 self.draw_editable_work_schedule_ui()
-            elif self.props.is_editing == "TASKS":
+            elif self.props.editing_type == "TASKS":
                 self.draw_editable_task_ui(work_schedule_id)
 
     def draw_editable_work_schedule_ui(self):
@@ -145,10 +145,28 @@ class BIM_PT_work_schedules(Panel):
             self.props,
             "active_task_index",
         )
-        if self.props.active_task_id:
+        if self.props.active_task_id and self.props.editing_task_type == "ATTRIBUTES":
             self.draw_editable_task_attributes_ui()
-        if self.props.active_task_time_id:
+        elif self.props.active_task_id and self.props.editing_task_type == "CALENDAR":
+            self.draw_editable_task_calendar_ui()
+        elif self.props.active_task_time_id and self.props.editing_task_type == "TASKTIME":
             self.draw_editable_task_time_attributes_ui()
+
+    def draw_editable_task_calendar_ui(self):
+        task = Data.tasks[self.props.active_task_id]
+        if task["HasAssignmentsWorkCalendar"]:
+            row = self.layout.row(align=True)
+            calendar = Data.work_calendars[task["HasAssignmentsWorkCalendar"][0]]
+            row.label(text=calendar["Name"] or "Unnamed")
+            op = row.operator("bim.remove_task_calendar", text="", icon="X")
+            op.work_calendar = task["HasAssignmentsWorkCalendar"][0]
+            op.task = self.props.active_task_id
+        else:
+            row = self.layout.row(align=True)
+            row.prop(self.props, "work_calendars", text="")
+            op = row.operator("bim.edit_task_calendar", text="", icon="ADD")
+            op.work_calendar = int(self.props.work_calendars)
+            op.task = self.props.active_task_id
 
     def draw_editable_task_attributes_ui(self):
         for attribute in self.props.task_attributes:
@@ -218,9 +236,11 @@ class BIM_UL_tasks(UIList):
                     op.task = item.ifc_definition_id
 
             if props.active_task_id == item.ifc_definition_id:
-                if props.active_task_time_id:
+                if props.editing_task_type == "TASKTIME":
                     row.operator("bim.edit_task_time", text="", icon="CHECKMARK")
-                else:
+                elif props.editing_task_type == "CALENDAR":
+                    row.operator("bim.disable_editing_task", text="", icon="CHECKMARK")
+                elif props.editing_task_type == "ATTRIBUTES":
                     row.operator("bim.edit_task", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_task", text="", icon="CANCEL")
             elif props.active_task_id:
@@ -246,6 +266,7 @@ class BIM_UL_tasks(UIList):
                 row.operator("bim.remove_task", text="", icon="X").task = item.ifc_definition_id
             else:
                 row.operator("bim.enable_editing_task_time", text="", icon="TIME").task = item.ifc_definition_id
+                row.operator("bim.enable_editing_task_calendar", text="", icon="VIEW_ORTHO").task = item.ifc_definition_id
                 row.operator("bim.enable_editing_task", text="", icon="GREASEPENCIL").task = item.ifc_definition_id
                 row.operator("bim.add_task", text="", icon="ADD").task = item.ifc_definition_id
                 row.operator("bim.remove_task", text="", icon="X").task = item.ifc_definition_id
@@ -278,7 +299,7 @@ class BIM_PT_work_calendars(Panel):
         row = self.layout.row(align=True)
         row.label(text=work_calendar["Name"] or "Unnamed", icon="VIEW_ORTHO")
         if self.props.active_work_calendar_id == work_calendar_id:
-            if self.props.is_editing == "ATTRIBUTES":
+            if self.props.editing_type == "ATTRIBUTES":
                 row.operator("bim.edit_work_calendar", text="", icon="CHECKMARK")
             row.operator("bim.disable_editing_work_calendar", text="", icon="CANCEL")
         elif self.props.active_work_calendar_id:
@@ -291,9 +312,9 @@ class BIM_PT_work_calendars(Panel):
             row.operator("bim.remove_work_calendar", text="", icon="X").work_calendar = work_calendar_id
 
         if self.props.active_work_calendar_id == work_calendar_id:
-            if self.props.is_editing == "ATTRIBUTES":
+            if self.props.editing_type == "ATTRIBUTES":
                 self.draw_editable_ui()
-            elif self.props.is_editing == "WORKTIMES":
+            elif self.props.editing_type == "WORKTIMES":
                 self.draw_work_times_ui(work_calendar_id, work_calendar)
 
     def draw_work_times_ui(self, work_calendar_id, work_calendar):
