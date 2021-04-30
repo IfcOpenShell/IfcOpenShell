@@ -114,6 +114,10 @@ def getWorkSchedules(self, context):
     return [(str(k), v["Name"], "") for k, v in Data.work_schedules.items()]
 
 
+def getWorkCalendars(self, context):
+    return [(str(k), v["Name"], "") for k, v in Data.work_calendars.items()]
+
+
 class Task(PropertyGroup):
     name: StringProperty(name="Name", update=updateTaskName)
     identification: StringProperty(name="Identification", update=updateTaskIdentification)
@@ -135,7 +139,7 @@ class WorkPlan(PropertyGroup):
 
 class BIMWorkPlanProperties(PropertyGroup):
     work_plan_attributes: CollectionProperty(name="Work Plan Attributes", type=Attribute)
-    is_editing: StringProperty(name="Is Editing")
+    editing_type: StringProperty(name="Editing Type")
     work_plans: CollectionProperty(name="Work Plans", type=WorkPlan)
     active_work_plan_index: IntProperty(name="Active Work Plan Index")
     active_work_plan_id: IntProperty(name="Active Work Plan Id")
@@ -143,8 +147,10 @@ class BIMWorkPlanProperties(PropertyGroup):
 
 
 class BIMWorkScheduleProperties(PropertyGroup):
+    work_calendars: EnumProperty(items=getWorkCalendars, name="Work Calendars")
     work_schedule_attributes: CollectionProperty(name="Work Schedule Attributes", type=Attribute)
-    is_editing: StringProperty(name="Is Editing")
+    editing_type: StringProperty(name="Editing Type")
+    editing_task_type: StringProperty(name="Editing Task Type")
     active_work_schedule_index: IntProperty(name="Active Work Schedules Index")
     active_work_schedule_id: IntProperty(name="Active Work Schedules Id")
     active_task_index: IntProperty(name="Active Task Index")
@@ -176,8 +182,7 @@ class RecurrenceComponent(PropertyGroup):
 class BIMWorkCalendarProperties(PropertyGroup):
     work_calendar_attributes: CollectionProperty(name="Work Calendar Attributes", type=Attribute)
     work_time_attributes: CollectionProperty(name="Work Time Attributes", type=Attribute)
-    is_editing: StringProperty(name="Is Editing")
-    work_calendars: CollectionProperty(name="Work Calendar", type=WorkCalendar)
+    editing_type: StringProperty(name="Editing Type")
     active_work_calendar_id: IntProperty(name="Active Work Calendar Id")
     active_work_time_id: IntProperty(name="Active Work Time Id")
     day_components: CollectionProperty(name="Day Components", type=RecurrenceComponent)
