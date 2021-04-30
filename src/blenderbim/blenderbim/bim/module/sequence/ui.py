@@ -149,8 +149,29 @@ class BIM_PT_work_schedules(Panel):
             self.draw_editable_task_attributes_ui()
         elif self.props.active_task_id and self.props.editing_task_type == "CALENDAR":
             self.draw_editable_task_calendar_ui()
+        elif self.props.active_task_id and self.props.editing_task_type == "SEQUENCE":
+            self.draw_editable_task_sequence_ui()
         elif self.props.active_task_time_id and self.props.editing_task_type == "TASKTIME":
             self.draw_editable_task_time_attributes_ui()
+
+    def draw_editable_task_sequence_ui(self):
+        task = Data.tasks[self.props.active_task_id]
+        row = self.layout.row()
+        row.label(text="{} Predecessors".format(len(task["IsSuccessorFrom"])), icon="BACK")
+        for sequence_id in task["IsSuccessorFrom"]:
+            self.draw_editable_sequence_ui(Data.sequences[sequence_id], "RelatingProcess")
+
+        row = self.layout.row()
+        row.label(text="{} Successors".format(len(task["IsPredecessorTo"])), icon="FORWARD")
+        for sequence_id in task["IsPredecessorTo"]:
+            self.draw_editable_sequence_ui(Data.sequences[sequence_id], "RelatedProcess")
+
+    def draw_editable_sequence_ui(self, sequence, process_type):
+        task = Data.tasks[sequence[process_type]]
+        row = self.layout.row(align=True)
+        row.label(text=task["Identification"] or "XXX")
+        row.label(text=task["Name"] or "Unnamed")
+        row.label(text=sequence["SequenceType"] or "N/A")
 
     def draw_editable_task_calendar_ui(self):
         task = Data.tasks[self.props.active_task_id]
@@ -240,31 +261,35 @@ class BIM_UL_tasks(UIList):
                     row.operator("bim.edit_task_time", text="", icon="CHECKMARK")
                 elif props.editing_task_type == "CALENDAR":
                     row.operator("bim.disable_editing_task", text="", icon="CHECKMARK")
+                elif props.editing_task_type == "SEQUENCE":
+                    row.operator("bim.disable_editing_task", text="", icon="CHECKMARK")
                 elif props.editing_task_type == "ATTRIBUTES":
                     row.operator("bim.edit_task", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_task", text="", icon="CANCEL")
             elif props.active_task_id:
-                if item.is_predecessor:
-                    row.operator(
-                        "bim.unassign_predecessor", text="", icon="BACK", emboss=False
-                    ).task = item.ifc_definition_id
-                else:
-                    row.operator(
-                        "bim.assign_predecessor", text="", icon="TRACKING_BACKWARDS", emboss=False
-                    ).task = item.ifc_definition_id
+                if props.editing_task_type == "SEQUENCE":
+                    if item.is_predecessor:
+                        row.operator(
+                            "bim.unassign_predecessor", text="", icon="BACK", emboss=False
+                        ).task = item.ifc_definition_id
+                    else:
+                        row.operator(
+                            "bim.assign_predecessor", text="", icon="TRACKING_BACKWARDS", emboss=False
+                        ).task = item.ifc_definition_id
 
-                if item.is_successor:
-                    row.operator(
-                        "bim.unassign_successor", text="", icon="FORWARD", emboss=False
-                    ).task = item.ifc_definition_id
-                else:
-                    row.operator(
-                        "bim.assign_successor", text="", icon="TRACKING_FORWARDS", emboss=False
-                    ).task = item.ifc_definition_id
+                    if item.is_successor:
+                        row.operator(
+                            "bim.unassign_successor", text="", icon="FORWARD", emboss=False
+                        ).task = item.ifc_definition_id
+                    else:
+                        row.operator(
+                            "bim.assign_successor", text="", icon="TRACKING_FORWARDS", emboss=False
+                        ).task = item.ifc_definition_id
 
                 row.operator("bim.add_task", text="", icon="ADD").task = item.ifc_definition_id
                 row.operator("bim.remove_task", text="", icon="X").task = item.ifc_definition_id
             else:
+                row.operator("bim.enable_editing_task_sequence", text="", icon="TRACKING").task = item.ifc_definition_id
                 row.operator("bim.enable_editing_task_time", text="", icon="TIME").task = item.ifc_definition_id
                 row.operator("bim.enable_editing_task_calendar", text="", icon="VIEW_ORTHO").task = item.ifc_definition_id
                 row.operator("bim.enable_editing_task", text="", icon="GREASEPENCIL").task = item.ifc_definition_id

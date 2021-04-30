@@ -291,8 +291,12 @@ class LoadTaskProperties(bpy.types.Operator):
             item.name = task["Name"] or "Unnamed"
             item.identification = task["Identification"] or "XXX"
             if self.props.active_task_id:
-                item.is_predecessor = self.props.active_task_id in task["IsPredecessorTo"]
-                item.is_successor = self.props.active_task_id in task["IsSuccessorFrom"]
+                item.is_predecessor = self.props.active_task_id in [
+                    Data.sequences[r]["RelatedProcess"] for r in task["IsPredecessorTo"]
+                ]
+                item.is_successor = self.props.active_task_id in [
+                    Data.sequences[r]["RelatingProcess"] for r in task["IsSuccessorFrom"]
+                ]
             if task["TaskTime"]:
                 task_time = Data.task_times[task["TaskTime"]]
                 item.start = self.canonicalise_time(task_time["ScheduleStart"])
@@ -440,7 +444,6 @@ class EnableEditingTaskTime(bpy.types.Operator):
         props.active_task_time_id = task_time_id
         props.active_task_id = self.task
         props.editing_task_type = "TASKTIME"
-        bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
     def add_task_time(self):
@@ -530,7 +533,6 @@ class EnableEditingTask(bpy.types.Operator):
                     new.enum_value = data[attribute.name()]
         props.active_task_id = self.task
         props.editing_task_type = "ATTRIBUTES"
-        bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
 
@@ -1158,4 +1160,27 @@ class RemoveTaskCalendar(bpy.types.Operator):
             },
         )
         Data.load(IfcStore.get_file())
+        return {"FINISHED"}
+
+
+class EnableEditingTaskSequence(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_task_sequence"
+    bl_label = "Enable Editing Task Sequence"
+    task: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMWorkScheduleProperties
+        props.active_task_id = self.task
+        props.editing_task_type = "SEQUENCE"
+        bpy.ops.bim.load_task_properties()
+        return {"FINISHED"}
+
+
+class DisableEditingTaskTime(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_task_time"
+    bl_label = "Disable Editing Task Time"
+
+    def execute(self, context):
+        context.scene.BIMWorkScheduleProperties.active_task_time_id = 0
+        bpy.ops.bim.disable_editing_task()
         return {"FINISHED"}

@@ -156,7 +156,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
     active_task_index: IntProperty(name="Active Task Index")
     active_task_id: IntProperty(name="Active Task Id")
     task_attributes: CollectionProperty(name="Task Attributes", type=Attribute)
-    should_show_times: BoolProperty(name="Should Show Times", default=True)
+    should_show_times: BoolProperty(name="Should Show Times", default=False)
     active_task_time_id: IntProperty(name="Active Task Id")
     task_time_attributes: CollectionProperty(name="Task Time Attributes", type=Attribute)
     contracted_tasks: StringProperty(name="Contracted Task Items", default="[]")

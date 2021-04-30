@@ -130,6 +130,7 @@ class P62Ifc:
             self.relationships[relationship.find("pr:ObjectId", self.ns).text] = {
                 "PredecessorActivity": relationship.find("pr:PredecessorActivityObjectId", self.ns).text,
                 "SuccessorActivity": relationship.find("pr:SuccessorActivityObjectId", self.ns).text,
+                "Type": relationship.find("pr:Type", self.ns).text,
             }
 
     def get_wbs(self, wbs):
@@ -338,12 +339,24 @@ class P62Ifc:
         )
 
     def create_rel_sequences(self):
+        self.sequence_type_map = {
+            "Start to Start": "START_START",
+            "Start to Finish": "START_FINISH",
+            "Finish to Start": "FINISH_START",
+            "Finish to Finish": "FINISH_FINISH",
+        }
         for relationship in self.relationships.values():
-            ifcopenshell.api.run(
+            rel_sequence = ifcopenshell.api.run(
                 "sequence.assign_sequence",
                 self.file,
                 relating_process=self.activities[relationship["PredecessorActivity"]]["ifc"],
                 related_process=self.activities[relationship["SuccessorActivity"]]["ifc"],
+            )
+            ifcopenshell.api.run(
+                "sequence.edit_sequence",
+                self.file,
+                rel_sequence=rel_sequence,
+                attributes={"SequenceType": self.sequence_type_map[relationship["Type"]]},
             )
 
     def create_boilerplate_ifc(self):
