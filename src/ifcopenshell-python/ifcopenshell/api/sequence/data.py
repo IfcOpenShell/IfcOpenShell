@@ -11,6 +11,7 @@ class Data:
     time_periods = {}
     tasks = {}
     task_times = {}
+    sequences = {}
 
     @classmethod
     def purge(cls):
@@ -23,6 +24,7 @@ class Data:
         cls.time_periods = {}
         cls.tasks = {}
         cls.task_times = {}
+        cls.sequences = {}
 
     @classmethod
     def load(cls, file):
@@ -37,6 +39,7 @@ class Data:
         cls.load_time_periods()
         cls.load_tasks()
         cls.load_task_times()
+        cls.load_sequences()
         cls.is_loaded = True
 
     @classmethod
@@ -132,8 +135,8 @@ class Data:
                 for r in task.HasAssignments
                 if r.is_a("IfcRelAssignsToProduct")
             ]
-            [data["IsPredecessorTo"].append(rel.RelatedProcess.id()) for rel in task.IsPredecessorTo or []]
-            [data["IsSuccessorFrom"].append(rel.RelatingProcess.id()) for rel in task.IsSuccessorFrom or []]
+            [data["IsPredecessorTo"].append(rel.id()) for rel in task.IsPredecessorTo or []]
+            [data["IsSuccessorFrom"].append(rel.id()) for rel in task.IsSuccessorFrom or []]
             [
                 data["HasAssignmentsWorkCalendar"].append(rel.RelatingControl.id())
                 for rel in task.HasAssignments or []
@@ -153,3 +156,13 @@ class Data:
                     data[key] = ifcopenshell.util.date.ifc2datetime(value)
                 # TODO parse duration
             cls.task_times[task_time.id()] = data
+
+    @classmethod
+    def load_sequences(cls):
+        cls.sequences = {}
+        for sequence in cls._file.by_type("IfcRelSequence"):
+            data = sequence.get_info()
+            data["RelatingProcess"] = sequence.RelatingProcess.id()
+            data["RelatedProcess"] = sequence.RelatedProcess.id()
+            data["TimeLag"] = sequence.TimeLag.id() if sequence.TimeLag else None
+            cls.sequences[sequence.id()] = data
