@@ -173,6 +173,33 @@ class BIM_PT_work_schedules(Panel):
         row.label(text=task["Name"] or "Unnamed")
         row.label(text=sequence["SequenceType"] or "N/A")
 
+        if self.props.active_sequence_id == sequence["id"]:
+            row = self.layout.row()
+            row.operator("bim.edit_sequence_attributes", text="", icon="CHECKMARK")
+            row.operator("bim.disable_editing_sequence_attributes", text="", icon="X")
+            self.draw_editable_sequence_attributes_ui()
+        else:
+            row = self.layout.row()
+            row.operator("bim.enable_editing_sequence_attributes", text="", icon="GREASEPENCIL").sequence = sequence["id"]
+
+
+    def draw_editable_sequence_attributes_ui(self):
+        for attribute in self.props.sequence_attributes:
+            row = self.layout.row(align=True)
+            if attribute.data_type == "string":
+                row.prop(attribute, "string_value", text=attribute.name)
+            elif attribute.data_type == "boolean":
+                row.prop(attribute, "bool_value", text=attribute.name)
+            elif attribute.data_type == "integer":
+                row.prop(attribute, "int_value", text=attribute.name)
+            elif attribute.data_type == "float":
+                row.prop(attribute, "float_value", text=attribute.name)
+            elif attribute.data_type == "enum":
+                row.prop(attribute, "enum_value", text=attribute.name)
+            if attribute.is_optional:
+                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+
+
     def draw_editable_task_calendar_ui(self):
         task = Data.tasks[self.props.active_task_id]
         if task["HasAssignmentsWorkCalendar"]:
