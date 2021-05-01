@@ -161,6 +161,8 @@ class BIMWorkScheduleProperties(PropertyGroup):
     task_time_attributes: CollectionProperty(name="Task Time Attributes", type=Attribute)
     contracted_tasks: StringProperty(name="Contracted Task Items", default="[]")
     is_task_update_enabled: BoolProperty(name="Is Task Update Enabled", default=True)
+    active_sequence_id: IntProperty(name="Active Sequence Id")
+    sequence_attributes: CollectionProperty(name="Sequence Attributes", type=Attribute)
 
 
 class BIMTaskTreeProperties(PropertyGroup):

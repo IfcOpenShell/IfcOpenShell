@@ -1184,3 +1184,69 @@ class DisableEditingTaskTime(bpy.types.Operator):
         context.scene.BIMWorkScheduleProperties.active_task_time_id = 0
         bpy.ops.bim.disable_editing_task()
         return {"FINISHED"}
+
+class EnableEditingSequenceAttributes(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_sequence_attributes"
+    bl_label = "Enable Editing Sequence Attributes"
+    sequence: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMWorkScheduleProperties
+        self.props.active_sequence_id = self.sequence
+        while len(self.props.sequence_attributes) > 0:
+            self.props.sequence_attributes.remove(0)
+        self.enable_editing_sequence_attributes()
+        return {'FINISHED'}
+
+    def enable_editing_sequence_attributes(self):
+        data = Data.sequences[self.sequence]
+        for attribute in IfcStore.get_schema().declaration_by_name("IfcRelSequence").all_attributes():
+            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            if data_type == "entity":
+                continue
+            new = self.props.sequence_attributes.add()
+            new.name = attribute.name()
+            new.is_null = data[attribute.name()] is None
+            new.is_optional = attribute.optional()
+            new.data_type = data_type
+            if data_type == "string":
+                new.string_value = "" if new.is_null else data[attribute.name()]
+            elif data_type == "enum":
+                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
+                if data[attribute.name()]:
+                    new.enum_value = data[attribute.name()]
+
+class EditSequenceAttributes(bpy.types.Operator):
+    bl_idname = "bim.edit_sequence_attributes"
+    bl_label = "Edit Work Schedule"
+
+    def execute(self, context):
+        props = context.scene.BIMWorkScheduleProperties
+        attributes = {}
+        for attribute in props.sequence_attributes:
+            if attribute.is_null:
+                attributes[attribute.name] = None
+            else:
+                if attribute.data_type == "string":
+                    attributes[attribute.name] = attribute.string_value
+                elif attribute.data_type == "enum":
+                    attributes[attribute.name] = attribute.enum_value
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "sequence.edit_sequence",
+            self.file,
+            **{"rel_sequence": self.file.by_id(props.active_sequence_id), "attributes": attributes},
+        )
+        Data.load(self.file)
+        bpy.ops.bim.disable_editing_sequence_attributes()
+        return {"FINISHED"}
+
+
+
+class DisableEditingSequenceAttributes(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_sequence_attributes"
+    bl_label = "Disable Editing Sequence Attributes"
+
+    def execute(self, context):
+        context.scene.BIMWorkScheduleProperties.active_sequence_id = 0
+        return {"FINISHED"}
