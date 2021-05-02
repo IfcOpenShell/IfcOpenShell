@@ -1250,3 +1250,22 @@ class DisableEditingSequenceAttributes(bpy.types.Operator):
     def execute(self, context):
         context.scene.BIMWorkScheduleProperties.active_sequence_id = 0
         return {"FINISHED"}
+
+
+class SelectTaskRelatedProducts(bpy.types.Operator):
+    bl_idname = "bim.select_task_related_products"
+    bl_label = "Select Similar Type"
+    task: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        related_products = ifcopenshell.api.run(
+            "sequence.get_related_products",
+            self.file,
+            **{"related_object": self.file.by_id(self.task)}
+        )
+        for obj in bpy.context.visible_objects:
+            obj.select_set(False)
+            if obj.BIMObjectProperties.ifc_definition_id in related_products:
+                obj.select_set(True)
+        return {"FINISHED"}

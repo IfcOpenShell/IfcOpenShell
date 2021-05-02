@@ -58,6 +58,7 @@ classes = (
     operator.GenerateGanttChart,
     operator.ImportP6,
     operator.LoadTaskProperties,
+    operator.SelectTaskRelatedProducts,
     prop.WorkPlan,
     prop.BIMWorkPlanProperties,
     prop.Task,
