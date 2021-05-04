@@ -11,6 +11,7 @@ class Data:
     time_periods = {}
     tasks = {}
     task_times = {}
+    lag_times = {}
     sequences = {}
 
     @classmethod
@@ -24,6 +25,7 @@ class Data:
         cls.time_periods = {}
         cls.tasks = {}
         cls.task_times = {}
+        cls.lag_times = {}
         cls.sequences = {}
 
     @classmethod
@@ -39,6 +41,7 @@ class Data:
         cls.load_time_periods()
         cls.load_tasks()
         cls.load_task_times()
+        cls.load_lag_times()
         cls.load_sequences()
         cls.is_loaded = True
 
@@ -157,6 +160,18 @@ class Data:
                 elif key == "ScheduleDuration":
                     data[key] = ifcopenshell.util.date.ifc2datetime(value)
             cls.task_times[task_time.id()] = data
+
+    @classmethod
+    def load_lag_times(cls):
+        cls.lag_times = {}
+        for lag_time in cls._file.by_type("IfcLagTime"):
+            data = lag_time.get_info()
+            if data["LagValue"]:
+                if data["LagValue"].is_a("IfcDuration"):
+                    data["LagValue"] = ifcopenshell.util.date.ifc2datetime(data["LagValue"].wrappedValue)
+                else:
+                    data["LagValue"] = float(data["LagValue"].wrappedValue)
+            cls.lag_times[lag_time.id()] = data
 
     @classmethod
     def load_sequences(cls):

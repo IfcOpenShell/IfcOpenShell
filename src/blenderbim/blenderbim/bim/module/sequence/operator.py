@@ -303,7 +303,9 @@ class LoadTaskProperties(bpy.types.Operator):
                 task_time = Data.task_times[task["TaskTime"]]
                 item.start = self.canonicalise_time(task_time["ScheduleStart"])
                 item.finish = self.canonicalise_time(task_time["ScheduleFinish"])
-                item.duration = isodate.duration_isoformat(task_time["ScheduleDuration"]) if task_time["ScheduleDuration"] else "-"
+                item.duration = (
+                    isodate.duration_isoformat(task_time["ScheduleDuration"]) if task_time["ScheduleDuration"] else "-"
+                )
             else:
                 item.start = "-"
                 item.finish = "-"
@@ -433,7 +435,11 @@ class EnableEditingTaskTime(bpy.types.Operator):
                 if isinstance(data[attribute.name()], datetime):
                     new.string_value = "" if new.is_null else data[attribute.name()].isoformat()
                 elif isinstance(data[attribute.name()], isodate.Duration):
-                    new.string_value = "" if new.is_null else ifcopenshell.util.date.datetime2ifc(data[attribute.name()], "IfcDuration")
+                    new.string_value = (
+                        ""
+                        if new.is_null
+                        else ifcopenshell.util.date.datetime2ifc(data[attribute.name()], "IfcDuration")
+                    )
                 else:
                     new.string_value = "" if new.is_null else data[attribute.name()]
             elif data_type == "boolean":
@@ -1190,6 +1196,7 @@ class DisableEditingTaskTime(bpy.types.Operator):
         bpy.ops.bim.disable_editing_task()
         return {"FINISHED"}
 
+
 class EnableEditingSequenceAttributes(bpy.types.Operator):
     bl_idname = "bim.enable_editing_sequence_attributes"
     bl_label = "Enable Editing Sequence Attributes"
@@ -1198,10 +1205,11 @@ class EnableEditingSequenceAttributes(bpy.types.Operator):
     def execute(self, context):
         self.props = context.scene.BIMWorkScheduleProperties
         self.props.active_sequence_id = self.sequence
+        self.props.editing_sequence_type = "ATTRIBUTES"
         while len(self.props.sequence_attributes) > 0:
             self.props.sequence_attributes.remove(0)
         self.enable_editing_sequence_attributes()
-        return {'FINISHED'}
+        return {"FINISHED"}
 
     def enable_editing_sequence_attributes(self):
         data = Data.sequences[self.sequence]
@@ -1221,9 +1229,82 @@ class EnableEditingSequenceAttributes(bpy.types.Operator):
                 if data[attribute.name()]:
                     new.enum_value = data[attribute.name()]
 
+
+class EnableEditingSequenceTimeLag(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_sequence_time_lag"
+    bl_label = "Enable Editing Sequence Time Lag"
+    sequence: bpy.props.IntProperty()
+    lag_time: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMWorkScheduleProperties
+        self.props.active_sequence_id = self.sequence
+        self.props.editing_sequence_type = "TIME_LAG"
+        while len(self.props.time_lag_attributes) > 0:
+            self.props.time_lag_attributes.remove(0)
+        self.enable_editing_attributes()
+        return {"FINISHED"}
+
+    def enable_editing_attributes(self):
+        data = Data.lag_times[self.lag_time]
+        for attribute in IfcStore.get_schema().declaration_by_name("IfcLagTime").all_attributes():
+            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            if data_type == "entity":
+                continue
+            new = self.props.time_lag_attributes.add()
+            new.name = attribute.name()
+            new.is_null = data[attribute.name()] is None
+            new.is_optional = attribute.optional()
+            new.data_type = data_type
+            if attribute.name() == "LagValue":
+                if isinstance(data[attribute.name()], isodate.Duration):
+                    new.data_type = "string"
+                    new.string_value = (
+                        ""
+                        if new.is_null
+                        else ifcopenshell.util.date.datetime2ifc(data[attribute.name()], "IfcDuration")
+                    )
+                else:
+                    new.data_type = "float"
+                    new.float_value = 0.0 if new.is_null else data[attribute.name()]
+            elif data_type == "string":
+                new.string_value = "" if new.is_null else data[attribute.name()]
+            elif data_type == "float":
+                new.float_value = 0.0 if new.is_null else data[attribute.name()]
+            elif data_type == "enum":
+                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
+                if data[attribute.name()]:
+                    new.enum_value = data[attribute.name()]
+
+
+class UnassignLagTime(bpy.types.Operator):
+    bl_idname = "bim.unassign_lag_time"
+    bl_label = "Unassign Time Lag"
+    sequence: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run("sequence.unassign_lag_time", self.file, **{"rel_sequence": self.file.by_id(self.sequence)})
+        Data.load(IfcStore.get_file())
+        return {"FINISHED"}
+
+
+class AssignLagTime(bpy.types.Operator):
+    bl_idname = "bim.assign_lag_time"
+    bl_label = "Assign Time Lag"
+    sequence: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run("sequence.assign_lag_time", self.file, **{"rel_sequence": self.file.by_id(self.sequence), "lag_value": "P0D"})
+        Data.load(IfcStore.get_file())
+        return {"FINISHED"}
+
+
+
 class EditSequenceAttributes(bpy.types.Operator):
     bl_idname = "bim.edit_sequence_attributes"
-    bl_label = "Edit Work Schedule"
+    bl_label = "Edit Sequence"
 
     def execute(self, context):
         props = context.scene.BIMWorkScheduleProperties
@@ -1243,13 +1324,42 @@ class EditSequenceAttributes(bpy.types.Operator):
             **{"rel_sequence": self.file.by_id(props.active_sequence_id), "attributes": attributes},
         )
         Data.load(self.file)
-        bpy.ops.bim.disable_editing_sequence_attributes()
+        bpy.ops.bim.disable_editing_sequence()
+        return {"FINISHED"}
+
+
+class EditSequenceTimeLag(bpy.types.Operator):
+    bl_idname = "bim.edit_sequence_time_lag"
+    bl_label = "Edit Time Lag"
+    lag_time: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMWorkScheduleProperties
+        attributes = {}
+        for attribute in props.time_lag_attributes:
+            if attribute.is_null:
+                attributes[attribute.name] = None
+            else:
+                if attribute.data_type == "string":
+                    attributes[attribute.name] = attribute.string_value
+                elif attribute.data_type == "float":
+                    attributes[attribute.name] = attribute.float_value
+                elif attribute.data_type == "enum":
+                    attributes[attribute.name] = attribute.enum_value
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "sequence.edit_lag_time",
+            self.file,
+            **{"lag_time": self.file.by_id(self.lag_time), "attributes": attributes},
+        )
+        Data.load(self.file)
+        bpy.ops.bim.disable_editing_sequence()
         return {"FINISHED"}
 
 
 
-class DisableEditingSequenceAttributes(bpy.types.Operator):
-    bl_idname = "bim.disable_editing_sequence_attributes"
+class DisableEditingSequence(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_sequence"
     bl_label = "Disable Editing Sequence Attributes"
 
     def execute(self, context):
@@ -1265,9 +1375,7 @@ class SelectTaskRelatedProducts(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         related_products = ifcopenshell.api.run(
-            "sequence.get_related_products",
-            self.file,
-            **{"related_object": self.file.by_id(self.task)}
+            "sequence.get_related_products", self.file, **{"related_object": self.file.by_id(self.task)}
         )
         for obj in bpy.context.visible_objects:
             obj.select_set(False)
