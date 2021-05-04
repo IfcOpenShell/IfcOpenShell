@@ -1,3 +1,4 @@
+import isodate
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.sequence.data import Data
@@ -172,15 +173,48 @@ class BIM_PT_work_schedules(Panel):
         row.label(text=task["Identification"] or "XXX")
         row.label(text=task["Name"] or "Unnamed")
         row.label(text=sequence["SequenceType"] or "N/A")
-        if self.props.active_sequence_id == sequence["id"]:
-            row.operator("bim.edit_sequence_attributes", text="", icon="CHECKMARK")
-            row.operator("bim.disable_editing_sequence_attributes", text="", icon="X")
-            self.draw_editable_sequence_attributes_ui()
+        if sequence["TimeLag"]:
+            row.operator("bim.unassign_lag_time", text="", icon="X").sequence = sequence["id"]
+            row.label(text=isodate.duration_isoformat(Data.lag_times[sequence["TimeLag"]]["LagValue"]))
         else:
-            row.operator("bim.enable_editing_sequence_attributes", text="", icon="GREASEPENCIL").sequence = sequence["id"]
+            row.operator("bim.assign_lag_time", text="", icon="ADD").sequence = sequence["id"]
+            row.label(text="N/A")
+        if self.props.active_sequence_id == sequence["id"]:
+            if self.props.editing_sequence_type == "ATTRIBUTES":
+                row.operator("bim.edit_sequence_attributes", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_sequence", text="", icon="X")
+                self.draw_editable_sequence_attributes_ui()
+            elif self.props.editing_sequence_type == "TIME_LAG":
+                op = row.operator("bim.edit_sequence_time_lag", text="", icon="CHECKMARK")
+                op.lag_time = sequence["TimeLag"]
+                row.operator("bim.disable_editing_sequence", text="", icon="X")
+                self.draw_editable_sequence_time_lag_ui()
+        else:
+            if sequence["TimeLag"]:
+                op = row.operator("bim.enable_editing_sequence_time_lag", text="", icon="CON_LOCKTRACK")
+                op.sequence = sequence["id"]
+                op.lag_time = sequence["TimeLag"]
+            op = row.operator("bim.enable_editing_sequence_attributes", text="", icon="GREASEPENCIL")
+            op.sequence = sequence["id"]
 
     def draw_editable_sequence_attributes_ui(self):
         for attribute in self.props.sequence_attributes:
+            row = self.layout.row(align=True)
+            if attribute.data_type == "string":
+                row.prop(attribute, "string_value", text=attribute.name)
+            elif attribute.data_type == "boolean":
+                row.prop(attribute, "bool_value", text=attribute.name)
+            elif attribute.data_type == "integer":
+                row.prop(attribute, "int_value", text=attribute.name)
+            elif attribute.data_type == "float":
+                row.prop(attribute, "float_value", text=attribute.name)
+            elif attribute.data_type == "enum":
+                row.prop(attribute, "enum_value", text=attribute.name)
+            if attribute.is_optional:
+                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+
+    def draw_editable_sequence_time_lag_ui(self):
+        for attribute in self.props.time_lag_attributes:
             row = self.layout.row(align=True)
             if attribute.data_type == "string":
                 row.prop(attribute, "string_value", text=attribute.name)
@@ -312,9 +346,13 @@ class BIM_UL_tasks(UIList):
                 row.operator("bim.remove_task", text="", icon="X").task = item.ifc_definition_id
             else:
                 row.operator("bim.enable_editing_task_sequence", text="", icon="TRACKING").task = item.ifc_definition_id
-                row.operator("bim.select_task_related_products", icon="RESTRICT_SELECT_OFF", text="").task = item.ifc_definition_id
+                row.operator(
+                    "bim.select_task_related_products", icon="RESTRICT_SELECT_OFF", text=""
+                ).task = item.ifc_definition_id
                 row.operator("bim.enable_editing_task_time", text="", icon="TIME").task = item.ifc_definition_id
-                row.operator("bim.enable_editing_task_calendar", text="", icon="VIEW_ORTHO").task = item.ifc_definition_id
+                row.operator(
+                    "bim.enable_editing_task_calendar", text="", icon="VIEW_ORTHO"
+                ).task = item.ifc_definition_id
                 row.operator("bim.enable_editing_task", text="", icon="GREASEPENCIL").task = item.ifc_definition_id
                 row.operator("bim.add_task", text="", icon="ADD").task = item.ifc_definition_id
                 row.operator("bim.remove_task", text="", icon="X").task = item.ifc_definition_id
@@ -382,9 +420,7 @@ class BIM_PT_work_calendars(Panel):
 
     def draw_work_time_ui(self, work_time, time_type):
         row = self.layout.row(align=True)
-        row.label(
-            text=work_time["Name"] or "Unnamed", icon="AUTO" if time_type == "WorkingTimes" else "HOME"
-        )
+        row.label(text=work_time["Name"] or "Unnamed", icon="AUTO" if time_type == "WorkingTimes" else "HOME")
         if work_time["Start"] or work_time["Finish"]:
             row.label(text="{} - {}".format(work_time["Start"] or "*", work_time["Finish"] or "*"))
         if self.props.active_work_time_id == work_time["id"]:
