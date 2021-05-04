@@ -184,6 +184,13 @@ endif
 	cp -r dist/working/python-dateutil-2.8.1/dateutil dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
+	# Provides duration parsing for construction sequencing
+	mkdir dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/b1/80/fb8c13a4cd38eb5021dc3741a9e588e4d1de88d895c1910c6fc8a08b7a70/isodate-0.6.0.tar.gz
+	cd dist/working && tar -xzvf isodate*
+	cp -r dist/working/isodate-0.6.0/src/isodate dist/blenderbim/libs/site/packages/
+	rm -rf dist/working
+
 	# Provides jsgantt-improved supports for web-based construction sequencing gantt charts
 	mkdir dist/working
 	cd dist/working && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
