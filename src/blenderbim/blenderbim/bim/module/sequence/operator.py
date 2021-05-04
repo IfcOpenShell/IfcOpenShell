@@ -2,6 +2,7 @@ import os
 import bpy
 import json
 import time
+import isodate
 import pystache
 import webbrowser
 import ifcopenshell.api
@@ -302,7 +303,7 @@ class LoadTaskProperties(bpy.types.Operator):
                 task_time = Data.task_times[task["TaskTime"]]
                 item.start = self.canonicalise_time(task_time["ScheduleStart"])
                 item.finish = self.canonicalise_time(task_time["ScheduleFinish"])
-                item.duration = str(task_time["ScheduleDuration"].days) if task_time["ScheduleDuration"] else "-"
+                item.duration = isodate.duration_isoformat(task_time["ScheduleDuration"]) if task_time["ScheduleDuration"] else "-"
             else:
                 item.start = "-"
                 item.finish = "-"
@@ -431,7 +432,7 @@ class EnableEditingTaskTime(bpy.types.Operator):
             if data_type == "string":
                 if isinstance(data[attribute.name()], datetime):
                     new.string_value = "" if new.is_null else data[attribute.name()].isoformat()
-                elif isinstance(data[attribute.name()], timedelta):
+                elif isinstance(data[attribute.name()], isodate.Duration):
                     new.string_value = "" if new.is_null else ifcopenshell.util.date.datetime2ifc(data[attribute.name()], "IfcDuration")
                 else:
                     new.string_value = "" if new.is_null else data[attribute.name()]
@@ -500,7 +501,7 @@ class EditTaskTime(bpy.types.Operator):
                     except:
                         attributes[key] = None
             elif key == "ScheduleDuration":
-                attributes[key] = ifcopenshell.util.date.ifc2datetime(value)
+                attributes[key] = isodate.parse_duration(value)
         return attributes
 
 
