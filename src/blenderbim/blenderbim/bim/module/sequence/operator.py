@@ -7,6 +7,7 @@ import webbrowser
 import ifcopenshell.api
 import ifcopenshell.util.date
 from datetime import datetime
+from datetime import timedelta
 from dateutil import parser
 from blenderbim.bim.ifc import IfcStore
 from bpy_extras.io_utils import ImportHelper
@@ -301,8 +302,7 @@ class LoadTaskProperties(bpy.types.Operator):
                 task_time = Data.task_times[task["TaskTime"]]
                 item.start = self.canonicalise_time(task_time["ScheduleStart"])
                 item.finish = self.canonicalise_time(task_time["ScheduleFinish"])
-                # TODO: duration
-                item.duration = "-"
+                item.duration = str(task_time["ScheduleDuration"].days) if task_time["ScheduleDuration"] else "-"
             else:
                 item.start = "-"
                 item.finish = "-"
@@ -431,6 +431,8 @@ class EnableEditingTaskTime(bpy.types.Operator):
             if data_type == "string":
                 if isinstance(data[attribute.name()], datetime):
                     new.string_value = "" if new.is_null else data[attribute.name()].isoformat()
+                elif isinstance(data[attribute.name()], timedelta):
+                    new.string_value = "" if new.is_null else ifcopenshell.util.date.datetime2ifc(data[attribute.name()], "IfcDuration")
                 else:
                     new.string_value = "" if new.is_null else data[attribute.name()]
             elif data_type == "boolean":
@@ -497,6 +499,8 @@ class EditTaskTime(bpy.types.Operator):
                         attributes[key] = parser.parse(value, dayfirst=True, fuzzy=True)
                     except:
                         attributes[key] = None
+            elif key == "ScheduleDuration":
+                attributes[key] = ifcopenshell.util.date.ifc2datetime(value)
         return attributes
 
 

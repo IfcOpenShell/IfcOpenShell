@@ -13,4 +13,7 @@ class Usecase:
             if "Start" in name or "Finish" in name or name == "StatusTime":
                 if value:
                     value = ifcopenshell.util.date.datetime2ifc(value, "IfcDateTime")
+            if name == "ScheduleDuration":
+                if value:
+                    value = ifcopenshell.util.date.datetime2ifc(value, "IfcDuration")
             setattr(self.settings["task_time"], name, value)

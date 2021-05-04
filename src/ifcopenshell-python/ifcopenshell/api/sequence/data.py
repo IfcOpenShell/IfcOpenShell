@@ -154,7 +154,8 @@ class Data:
                     continue
                 if "Start" in key or "Finish" in key or key == "StatusTime":
                     data[key] = ifcopenshell.util.date.ifc2datetime(value)
-                # TODO parse duration
+                elif key == "ScheduleDuration":
+                    data[key] = ifcopenshell.util.date.ifc2datetime(value)
             cls.task_times[task_time.id()] = data
 
     @classmethod
