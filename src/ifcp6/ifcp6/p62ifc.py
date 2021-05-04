@@ -1,4 +1,5 @@
 import datetime
+from datetime import timedelta
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.date
@@ -121,6 +122,7 @@ class P62Ifc:
                 "Identification": activity.find("pr:Id", self.ns).text,
                 "StartDate": datetime.datetime.fromisoformat(activity.find("pr:StartDate", self.ns).text),
                 "FinishDate": datetime.datetime.fromisoformat(activity.find("pr:FinishDate", self.ns).text),
+                "PlannedDuration": datetime.timedelta(days=float(activity.find("pr:PlannedDuration", self.ns).text)),
                 "Status": activity.find("pr:Status", self.ns).text,
                 "ifc": None,
             }
@@ -335,6 +337,7 @@ class P62Ifc:
             attributes={
                 "ScheduleStart": activity["StartDate"],
                 "ScheduleFinish": activity["FinishDate"],
+                "ScheduleDuration": activity["PlannedDuration"] if activity["PlannedDuration"] else None,
             },
         )
 
