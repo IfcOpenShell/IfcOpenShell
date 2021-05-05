@@ -261,3 +261,56 @@ class BIM_UL_structural_analysis_models(UIList):
                 op.structural_analysis_model = item.ifc_definition_id
                 op = row.operator("bim.remove_structural_analysis_model", text="", icon="X")
                 op.structural_analysis_model = item.ifc_definition_id
+
+
+class BIM_PT_structural_load_cases(Panel):
+    bl_label = "IFC Structural Load Cases"
+    bl_idname = "BIM_PT_structural_load_cases"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
+    def draw(self, context):
+        self.props = context.scene.BIMStructuralProperties
+
+        if not Data.is_loaded:
+            Data.load(IfcStore.get_file())
+
+        row = self.layout.row()
+        row.operator("bim.add_structural_load_case", icon="ADD")
+
+        for load_case_id, load_case in Data.load_cases.items():
+            self.draw_load_case_ui(load_case_id, load_case)
+
+    def draw_load_case_ui(self, load_case_id, load_case):
+        row = self.layout.row(align=True)
+        row.label(text=load_case["Name"] or "Unnamed", icon="CON_CLAMPTO")
+
+        if self.props.active_load_case_id and self.props.active_load_case_id == load_case_id:
+            row.operator("bim.edit_structural_load_case", text="", icon="CHECKMARK")
+            row.operator("bim.disable_editing_structural_load_case", text="", icon="CANCEL")
+        elif self.props.active_load_case_id:
+            row.operator("bim.remove_structural_load_case", text="", icon="X").load_case = load_case_id
+        else:
+            row.operator(
+                "bim.enable_editing_structural_load_case", text="", icon="GREASEPENCIL"
+            ).load_case = load_case_id
+            row.operator("bim.remove_structural_load_case", text="", icon="X").load_case = load_case_id
+
+        if self.props.active_load_case_id == load_case_id:
+            self.draw_editable_load_case_ui()
+
+    def draw_editable_load_case_ui(self):
+        for attribute in self.props.load_case_attributes:
+            row = self.layout.row(align=True)
+            if attribute.data_type == "string":
+                row.prop(attribute, "string_value", text=attribute.name)
+            elif attribute.data_type == "enum":
+                row.prop(attribute, "enum_value", text=attribute.name)
+            if attribute.is_optional:
+                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")

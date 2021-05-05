@@ -41,6 +41,12 @@ class BIMStructuralProperties(PropertyGroup):
     active_structural_analysis_model_index: IntProperty(name="Active Structural Analysis Model Index")
     active_structural_analysis_model_id: IntProperty(name="Active Structural Analysis Model Id")
 
+    # editing_type: StringProperty(name="Editing Type")
+    # active_load_case_index: IntProperty(name="Active Work Schedules Index")
+
+    load_case_attributes: CollectionProperty(name="Load Case Attributes", type=Attribute)
+    active_load_case_id: IntProperty(name="Active Load Case Id")
+
 
 class BIMObjectStructuralProperties(PropertyGroup):
     boundary_condition_attributes: CollectionProperty(name="Boundary Condition Attributes", type=Attribute)
@@ -50,3 +56,5 @@ class BIMObjectStructuralProperties(PropertyGroup):
     is_editing_axis: BoolProperty(name="Is Editing Axis", default=False)
     axis_angle: FloatProperty(name="Axis Angle", update=updateAxisAngle)
     axis_empty: PointerProperty(name="Axis Empty", type=bpy.types.Object)
+
+    # relating_structural_activity: PointerProperty(name="Relating Structural Activity", type=bpy.types.Object)
