@@ -307,11 +307,42 @@ class LoadTaskProperties(bpy.types.Operator):
                     isodate.duration_isoformat(task_time["ScheduleDuration"]) if task_time["ScheduleDuration"] else "-"
                 )
             else:
+                derived_start = self.derive_start(item.ifc_definition_id)
+                derived_finish = self.derive_finish(item.ifc_definition_id)
+                item.derived_start = self.canonicalise_time(derived_start) if derived_start else ""
+                item.derived_finish = self.canonicalise_time(derived_finish) if derived_finish else ""
+                if derived_start and derived_finish:
+                    derived_duration = ifcopenshell.util.date.timedelta2duration(derived_finish - derived_start)
+                    item.derived_duration = isodate.duration_isoformat(derived_duration)
                 item.start = "-"
                 item.finish = "-"
                 item.duration = "-"
         self.props.is_task_update_enabled = True
         return {"FINISHED"}
+
+    def derive_start(self, ifc_definition_id, start=None):
+        task = Data.tasks[ifc_definition_id]
+        if task["TaskTime"]:
+            schedule_start = Data.task_times[task["TaskTime"]]["ScheduleStart"]
+            if schedule_start:
+                return schedule_start
+        for subtask in task["RelatedObjects"]:
+            schedule_start = self.derive_start(subtask, start)
+            if schedule_start and (start is None or schedule_start < start):
+                start = schedule_start
+        return start
+
+    def derive_finish(self, ifc_definition_id, finish=None):
+        task = Data.tasks[ifc_definition_id]
+        if task["TaskTime"]:
+            schedule_finish = Data.task_times[task["TaskTime"]]["ScheduleFinish"]
+            if schedule_finish:
+                return schedule_finish
+        for subtask in task["RelatedObjects"]:
+            schedule_finish = self.derive_finish(subtask, finish)
+            if schedule_finish and (finish is None or schedule_finish > finish):
+                finish = schedule_finish
+        return finish
 
     def canonicalise_time(self, time):
         if not time:
@@ -850,7 +881,7 @@ class ImportP6(bpy.types.Operator, ImportHelper):
         p62ifc = P62Ifc()
         p62ifc.xml = self.filepath
         p62ifc.file = self.file
-        p62ifc.work_plan = self.file.by_type("IfcWorkPlan")[0]
+        p62ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
         p62ifc.execute()
         Data.load(IfcStore.get_file())
         print("Import finished in {:.2f} seconds".format(time.time() - start))
@@ -1284,7 +1315,9 @@ class UnassignLagTime(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run("sequence.unassign_lag_time", self.file, **{"rel_sequence": self.file.by_id(self.sequence)})
+        ifcopenshell.api.run(
+            "sequence.unassign_lag_time", self.file, **{"rel_sequence": self.file.by_id(self.sequence)}
+        )
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
@@ -1296,10 +1329,13 @@ class AssignLagTime(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run("sequence.assign_lag_time", self.file, **{"rel_sequence": self.file.by_id(self.sequence), "lag_value": "P0D"})
+        ifcopenshell.api.run(
+            "sequence.assign_lag_time",
+            self.file,
+            **{"rel_sequence": self.file.by_id(self.sequence), "lag_value": "P0D"},
+        )
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
-
 
 
 class EditSequenceAttributes(bpy.types.Operator):
@@ -1355,7 +1391,6 @@ class EditSequenceTimeLag(bpy.types.Operator):
         Data.load(self.file)
         bpy.ops.bim.disable_editing_sequence()
         return {"FINISHED"}
-
 
 
 class DisableEditingSequence(bpy.types.Operator):

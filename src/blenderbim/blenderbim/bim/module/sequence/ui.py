@@ -298,9 +298,20 @@ class BIM_UL_tasks(UIList):
             row.prop(item, "name", emboss=False, text="")
 
             if props.should_show_times:
-                row.prop(item, "start", emboss=False, text="")
-                row.prop(item, "finish", emboss=False, text="")
-                row.prop(item, "duration", emboss=False, text="")
+                if item.derived_start:
+                    row.label(text=item.derived_start + "*")
+                else:
+                    row.prop(item, "start", emboss=False, text="")
+
+                if item.derived_finish:
+                    row.label(text=item.derived_finish + "*")
+                else:
+                    row.prop(item, "finish", emboss=False, text="")
+
+                if item.derived_duration:
+                    row.label(text=item.derived_duration + "*")
+                else:
+                    row.prop(item, "duration", emboss=False, text="")
 
             if context.active_object:
                 oprops = context.active_object.BIMObjectProperties
