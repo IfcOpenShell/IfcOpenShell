@@ -7,21 +7,25 @@ except:
     pass  # Duration parsing not supported
 
 
+def timedelta2duration(timedelta):
+    components = {
+        "days": getattr(timedelta, "days", 0),
+        "hours": 0,
+        "minutes": 0,
+        "seconds": getattr(timedelta, "seconds", 0),
+    }
+    if components["seconds"]:
+        components["hours"], components["minutes"], components["seconds"] = [
+            int(i) for i in str(datetime.timedelta(seconds=components["seconds"])).split(":")
+        ]
+    return isodate.Duration(**components)
+
+
 def ifc2datetime(element):
     if isinstance(element, str) and element[0] == "P":  # IfcDuration
         duration = isodate.parse_duration(element)
         if isinstance(duration, datetime.timedelta):
-            components = {
-                "days": getattr(duration, "days", 0),
-                "hours": 0,
-                "minutes": 0,
-                "seconds": getattr(duration, "seconds", 0),
-            }
-            if components["seconds"]:
-                components["hours"], components["minutes"], components["seconds"] = [
-                    int(i) for i in str(datetime.timedelta(seconds=components["seconds"])).split(":")
-                ]
-            duration = isodate.Duration(**components)
+            return timedelta2duration(duration)
         return duration
     elif isinstance(element, str) and element[2] == ":":  # IfcTime
         return datetime.time.fromisoformat(element)
