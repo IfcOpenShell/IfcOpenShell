@@ -257,7 +257,10 @@ class EnableEditingTasks(bpy.types.Operator):
             self.tprops.tasks.remove(0)
 
         self.contracted_tasks = json.loads(self.props.contracted_tasks)
-        for related_object_id in Data.work_schedules[self.work_schedule]["RelatedObjects"]:
+        sort_keys = {
+            i: Data.tasks[i]["Identification"] for i in Data.work_schedules[self.work_schedule]["RelatedObjects"]
+        }
+        for related_object_id in sorted(sort_keys, key=sort_keys.__getitem__):
             self.create_new_task_li(related_object_id, 0)
         bpy.ops.bim.load_task_properties()
         self.props.editing_type = "TASKS"
@@ -272,7 +275,8 @@ class EnableEditingTasks(bpy.types.Operator):
         if task["RelatedObjects"]:
             new.has_children = True
             if new.is_expanded:
-                for related_object_id in task["RelatedObjects"]:
+                sort_keys = {i: Data.tasks[i]["Identification"] for i in task["RelatedObjects"]}
+                for related_object_id in sorted(sort_keys, key=sort_keys.__getitem__):
                     self.create_new_task_li(related_object_id, level_index + 1)
         return {"FINISHED"}
 
