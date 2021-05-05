@@ -199,7 +199,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
     time_lag_attributes: CollectionProperty(name="Time Lag Attributes", type=Attribute)
     visualisation_start: StringProperty(name="Visualisation Start", update=updateVisualisationStart)
     visualisation_finish: StringProperty(name="Visualisation Finish", update=updateVisualisationFinish)
-    speed_multiplier: FloatProperty(name="Speed Multiplier")
+    speed_multiplier: FloatProperty(name="Speed Multiplier", default=10000)
     speed_animation_duration: StringProperty(name="Speed Animation Duration", default="PT1S")
     speed_animation_frames: IntProperty(name="Speed Animation Frames", default=24)
     speed_real_duration: StringProperty(name="Speed Real Duration", default="P1W")

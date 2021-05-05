@@ -1510,7 +1510,6 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
                 self.start,
                 self.finish,
                 bpy.context.scene.render.fps,
-                isodate.parse_duration(self.props.speed_animation_duration),
                 self.props.speed_multiplier,
             )
 
