@@ -110,8 +110,10 @@ def updateTaskTimeDateTime(self, context, startfinish):
 def updateVisualisationStart(self, context):
     updateVisualisationStartFinish(self, context, "visualisation_start")
 
+
 def updateVisualisationFinish(self, context):
     updateVisualisationStartFinish(self, context, "visualisation_finish")
+
 
 def updateVisualisationStartFinish(self, context, startfinish):
     def canonicalise_time(time):
@@ -197,6 +199,19 @@ class BIMWorkScheduleProperties(PropertyGroup):
     time_lag_attributes: CollectionProperty(name="Time Lag Attributes", type=Attribute)
     visualisation_start: StringProperty(name="Visualisation Start", update=updateVisualisationStart)
     visualisation_finish: StringProperty(name="Visualisation Finish", update=updateVisualisationFinish)
+    speed_multiplier: FloatProperty(name="Speed Multiplier")
+    speed_animation_duration: StringProperty(name="Speed Animation Duration", default="PT1S")
+    speed_animation_frames: IntProperty(name="Speed Animation Frames", default=24)
+    speed_real_duration: StringProperty(name="Speed Real Duration", default="P1W")
+    speed_types: EnumProperty(
+        items=[
+            ("FRAME_SPEED", "Frame-based", "e.g. 25 frames = 1 real week"),
+            ("DURATION_SPEED", "Duration-based", "e.g. 1 video second = 1 real week"),
+            ("MULTIPLIER_SPEED", "Multiplier", "e.g. 1000 x real life speed"),
+        ],
+        name="Speed Type",
+        default="FRAME_SPEED",
+    )
 
 
 class BIMTaskTreeProperties(PropertyGroup):
@@ -227,16 +242,19 @@ class BIMWorkCalendarProperties(PropertyGroup):
     position: IntProperty(name="Position")
     interval: IntProperty(name="Recurrence Interval")
     occurrences: IntProperty(name="Occurs N Times")
-    recurrence_types: EnumProperty(items=[
-        ("DAILY", "Daily", "e.g. Every day"),
-        ("WEEKLY", "Weekly", "e.g. Every Friday"),
-        ("MONTHLY_BY_DAY_OF_MONTH", "Monthly on Specified Date", "e.g. Every 2nd of each Month"),
-        ("MONTHLY_BY_POSITION", "Monthly on Specified Weekday", "e.g. Every 1st Friday of each Month"),
-        # https://forums.buildingsmart.org/t/what-does-by-day-count-and-by-weekday-count-mean-in-ifcrecurrencetypeenum/3571
-        # ("BY_DAY_COUNT", "", ""),
-        # ("BY_WEEKDAY_COUNT", "", ""),
-        ("YEARLY_BY_DAY_OF_MONTH", "Yearly on Specified Date", "e.g. Every 2nd of October"),
-        ("YEARLY_BY_POSITION", "Yearly on Specified Weekday", "e.g. Every 1st Friday of October"),
-    ], name="Recurrence Types")
+    recurrence_types: EnumProperty(
+        items=[
+            ("DAILY", "Daily", "e.g. Every day"),
+            ("WEEKLY", "Weekly", "e.g. Every Friday"),
+            ("MONTHLY_BY_DAY_OF_MONTH", "Monthly on Specified Date", "e.g. Every 2nd of each Month"),
+            ("MONTHLY_BY_POSITION", "Monthly on Specified Weekday", "e.g. Every 1st Friday of each Month"),
+            # https://forums.buildingsmart.org/t/what-does-by-day-count-and-by-weekday-count-mean-in-ifcrecurrencetypeenum/3571
+            # ("BY_DAY_COUNT", "", ""),
+            # ("BY_WEEKDAY_COUNT", "", ""),
+            ("YEARLY_BY_DAY_OF_MONTH", "Yearly on Specified Date", "e.g. Every 2nd of October"),
+            ("YEARLY_BY_POSITION", "Yearly on Specified Weekday", "e.g. Every 1st Friday of October"),
+        ],
+        name="Recurrence Types",
+    )
     start_time: StringProperty(name="Start Time")
     end_time: StringProperty(name="End Time")
