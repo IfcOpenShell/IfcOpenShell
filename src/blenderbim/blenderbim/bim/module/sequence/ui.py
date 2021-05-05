@@ -137,6 +137,18 @@ class BIM_PT_work_schedules(Panel):
         op = row.operator("bim.visualise_work_schedule_date", text="", icon="RESTRICT_RENDER_OFF")
         op.work_schedule = self.props.active_work_schedule_id
         op = row.operator("bim.visualise_work_schedule_date_range", text="", icon="OUTLINER_OB_CAMERA")
+        op.work_schedule = self.props.active_work_schedule_id
+
+        row = self.layout.row(align=True)
+        row.prop(self.props, "speed_types", text="")
+        if self.props.speed_types == "FRAME_SPEED":
+            row.prop(self.props, "speed_animation_frames", text="")
+            row.prop(self.props, "speed_real_duration", text="")
+        elif self.props.speed_types == "DURATION_SPEED":
+            row.prop(self.props, "speed_animation_duration", text="")
+            row.prop(self.props, "speed_real_duration", text="")
+        elif self.props.speed_types == "MULTIPLIER_SPEED":
+            row.prop(self.props, "speed_multiplier", text="")
 
     def draw_editable_work_schedule_ui(self):
         for attribute in self.props.work_schedule_attributes:

@@ -1462,8 +1462,86 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        # for obj in bpy.context.visible_objects:
-        #    obj.select_set(False)
-        #    if obj.BIMObjectProperties.ifc_definition_id in related_products:
-        #        obj.select_set(True)
+        self.props = context.scene.BIMWorkScheduleProperties
+        self.start = parser.parse(self.props.visualisation_start, dayfirst=True, fuzzy=True)
+        self.finish = parser.parse(self.props.visualisation_finish, dayfirst=True, fuzzy=True)
+        self.duration = self.finish - self.start
+        self.start_frame = 1
+        self.total_frames = self.calculate_total_frames()
+        self.preprocess_tasks()
+        for obj in bpy.data.objects:
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            product_frames = self.product_frames.get(obj.BIMObjectProperties.ifc_definition_id)
+            if not product_frames:
+                continue
+            obj.hide_viewport = True
+            obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
+            obj.hide_viewport = False
+            obj.color = (0.0, 1.0, 0.0, 1)
+            obj.keyframe_insert(data_path="hide_viewport", frame=product_frames["STARTED"])
+            obj.keyframe_insert(data_path="color", frame=product_frames["STARTED"])
+            obj.color = (1.0, 1.0, 1.0, 1)
+            obj.keyframe_insert(data_path="color", frame=product_frames["COMPLETED"])
+        area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
+        area.spaces[0].shading.color_type = "OBJECT"
+        context.scene.frame_start = self.start_frame
+        context.scene.frame_end = self.start_frame + self.total_frames
         return {"FINISHED"}
+
+    def calculate_total_frames(self):
+        if self.props.speed_types == "FRAME_SPEED":
+            return self.calculate_using_frames(
+                self.start,
+                self.finish,
+                self.props.speed_animation_frames,
+                isodate.parse_duration(self.props.speed_real_duration),
+            )
+        elif self.props.speed_types == "DURATION_SPEED":
+            return self.calculate_using_duration(
+                self.start,
+                self.finish,
+                bpy.context.scene.render.fps,
+                isodate.parse_duration(self.props.speed_animation_duration),
+                isodate.parse_duration(self.props.speed_real_duration),
+            )
+        elif self.props.speed_types == "MULTIPLIER_SPEED":
+            return self.calculate_using_multiplier(
+                self.start,
+                self.finish,
+                bpy.context.scene.render.fps,
+                isodate.parse_duration(self.props.speed_animation_duration),
+                self.props.speed_multiplier,
+            )
+
+    def calculate_using_multiplier(self, start, finish, fps, multiplier):
+        animation_time = (finish - start) / multiplier
+        return animation_time.total_seconds() * fps
+
+    def calculate_using_duration(self, start, finish, fps, animation_duration, real_duration):
+        return self.calculate_using_multiplier(start, finish, fps, real_duration / animation_duration)
+
+    def calculate_using_frames(self, start, finish, animation_frames, real_duration):
+        return ((finish - start) / real_duration) * animation_frames
+
+    def preprocess_tasks(self):
+        self.product_frames = {}
+        for rel in self.file.by_id(self.work_schedule).Controls or []:
+            for related_object in rel.RelatedObjects:
+                if related_object.is_a("IfcTask"):
+                    self.preprocess_task(related_object)
+
+    def preprocess_task(self, task):
+        for rel in task.IsNestedBy or []:
+            for related_object in rel.RelatedObjects:
+                self.preprocess_task(related_object)
+        start = helper.derive_date(task.id(), "ScheduleStart", is_earliest=True)
+        finish = helper.derive_date(task.id(), "ScheduleFinish", is_latest=True)
+        if not start or not finish:
+            return
+        product_ids = [r.RelatingProduct.id() for r in task.HasAssignments or [] if r.is_a("IfcRelAssignsToProduct")]
+        for product_id in product_ids:
+            self.product_frames[product_id] = {
+                "STARTED": round(self.start_frame + (((start - self.start) / self.duration) * self.total_frames)),
+                "COMPLETED": round(self.start_frame + (((finish - self.start) / self.duration) * self.total_frames)),
+            }
