@@ -7,6 +7,7 @@ import pystache
 import webbrowser
 import ifcopenshell.api
 import ifcopenshell.util.date
+import blenderbim.bim.module.sequence.helper as helper
 from datetime import datetime
 from datetime import timedelta
 from dateutil import parser
@@ -311,8 +312,8 @@ class LoadTaskProperties(bpy.types.Operator):
                     isodate.duration_isoformat(task_time["ScheduleDuration"]) if task_time["ScheduleDuration"] else "-"
                 )
             else:
-                derived_start = self.derive_start(item.ifc_definition_id)
-                derived_finish = self.derive_finish(item.ifc_definition_id)
+                derived_start = helper.derive_date(item.ifc_definition_id, "ScheduleStart", is_earliest=True)
+                derived_finish = helper.derive_date(item.ifc_definition_id, "ScheduleFinish", is_latest=True)
                 item.derived_start = self.canonicalise_time(derived_start) if derived_start else ""
                 item.derived_finish = self.canonicalise_time(derived_finish) if derived_finish else ""
                 if derived_start and derived_finish:
@@ -323,30 +324,6 @@ class LoadTaskProperties(bpy.types.Operator):
                 item.duration = "-"
         self.props.is_task_update_enabled = True
         return {"FINISHED"}
-
-    def derive_start(self, ifc_definition_id, start=None):
-        task = Data.tasks[ifc_definition_id]
-        if task["TaskTime"]:
-            schedule_start = Data.task_times[task["TaskTime"]]["ScheduleStart"]
-            if schedule_start:
-                return schedule_start
-        for subtask in task["RelatedObjects"]:
-            schedule_start = self.derive_start(subtask, start)
-            if schedule_start and (start is None or schedule_start < start):
-                start = schedule_start
-        return start
-
-    def derive_finish(self, ifc_definition_id, finish=None):
-        task = Data.tasks[ifc_definition_id]
-        if task["TaskTime"]:
-            schedule_finish = Data.task_times[task["TaskTime"]]["ScheduleFinish"]
-            if schedule_finish:
-                return schedule_finish
-        for subtask in task["RelatedObjects"]:
-            schedule_finish = self.derive_finish(subtask, finish)
-            if schedule_finish and (finish is None or schedule_finish > finish):
-                finish = schedule_finish
-        return finish
 
     def canonicalise_time(self, time):
         if not time:
@@ -1420,4 +1397,73 @@ class SelectTaskRelatedProducts(bpy.types.Operator):
             obj.select_set(False)
             if obj.BIMObjectProperties.ifc_definition_id in related_products:
                 obj.select_set(True)
+        return {"FINISHED"}
+
+
+class VisualiseWorkScheduleDate(bpy.types.Operator):
+    bl_idname = "bim.visualise_work_schedule_date"
+    bl_label = "Visualise Work Schedule Date"
+    work_schedule: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMWorkScheduleProperties
+        self.file = IfcStore.get_file()
+        self.date = parser.parse(props.visualisation_start, dayfirst=True, fuzzy=True)
+        self.preprocess_tasks()
+        for obj in bpy.data.objects:
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            obj.color = (1.0, 1.0, 1.0, 1)
+            obj.hide_set(False)
+            if obj.BIMObjectProperties.ifc_definition_id in self.not_yet_started:
+                obj.hide_set(True)
+            elif obj.BIMObjectProperties.ifc_definition_id in self.started:
+                obj.color = (0.0, 1.0, 0.0, 1)
+            elif obj.BIMObjectProperties.ifc_definition_id in self.completed:
+                pass
+            else:
+                obj.color = (1.0, 0.0, 0.0, 1)
+        area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
+        area.spaces[0].shading.color_type = "OBJECT"
+        return {"FINISHED"}
+
+    def preprocess_tasks(self):
+        self.not_yet_started = set()
+        self.started = set()
+        self.completed = set()
+        for rel in self.file.by_id(self.work_schedule).Controls or []:
+            for related_object in rel.RelatedObjects:
+                if related_object.is_a("IfcTask"):
+                    self.preprocess_task(related_object)
+
+    def preprocess_task(self, task):
+        for rel in task.IsNestedBy or []:
+            for related_object in rel.RelatedObjects:
+                self.preprocess_task(related_object)
+        start = helper.derive_date(task.id(), "ScheduleStart", is_earliest=True)
+        finish = helper.derive_date(task.id(), "ScheduleFinish", is_latest=True)
+        if not start or not finish:
+            return
+        products = [r.RelatingProduct.id() for r in task.HasAssignments or [] if r.is_a("IfcRelAssignsToProduct")]
+        if not products:
+            return
+        if self.date < start:
+            self.not_yet_started.update(products)
+        elif self.date < finish:
+            self.started.update(products)
+        else:
+            self.completed.update(products)
+
+
+class VisualiseWorkScheduleDateRange(bpy.types.Operator):
+    bl_idname = "bim.visualise_work_schedule_date_range"
+    bl_label = "Visualise Work Schedule Date Range"
+    work_schedule: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        # for obj in bpy.context.visible_objects:
+        #    obj.select_set(False)
+        #    if obj.BIMObjectProperties.ifc_definition_id in related_products:
+        #        obj.select_set(True)
         return {"FINISHED"}

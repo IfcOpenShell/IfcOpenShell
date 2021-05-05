@@ -107,6 +107,32 @@ def updateTaskTimeDateTime(self, context, startfinish):
     setattr(self, startfinish, canonicalise_time(startfinish_datetime))
 
 
+def updateVisualisationStart(self, context):
+    updateVisualisationStartFinish(self, context, "visualisation_start")
+
+def updateVisualisationFinish(self, context):
+    updateVisualisationStartFinish(self, context, "visualisation_finish")
+
+def updateVisualisationStartFinish(self, context, startfinish):
+    def canonicalise_time(time):
+        if not time:
+            return "-"
+        return time.strftime("%d/%m/%y")
+
+    startfinish_value = getattr(self, startfinish)
+    try:
+        startfinish_datetime = parser.isoparse(startfinish_value)
+    except:
+        try:
+            startfinish_datetime = parser.parse(startfinish_value, dayfirst=True, fuzzy=True)
+        except:
+            setattr(self, startfinish, "-")
+            return
+    canonical_value = canonicalise_time(startfinish_datetime)
+    if startfinish_value != canonical_value:
+        setattr(self, startfinish, canonical_value)
+
+
 workschedule_enum = []
 
 
@@ -159,6 +185,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
     active_task_index: IntProperty(name="Active Task Index")
     active_task_id: IntProperty(name="Active Task Id")
     task_attributes: CollectionProperty(name="Task Attributes", type=Attribute)
+    should_show_visualisation_ui: BoolProperty(name="Should Show Visualisation UI", default=False)
     should_show_times: BoolProperty(name="Should Show Times", default=False)
     active_task_time_id: IntProperty(name="Active Task Id")
     task_time_attributes: CollectionProperty(name="Task Time Attributes", type=Attribute)
@@ -168,6 +195,8 @@ class BIMWorkScheduleProperties(PropertyGroup):
     active_sequence_id: IntProperty(name="Active Sequence Id")
     sequence_attributes: CollectionProperty(name="Sequence Attributes", type=Attribute)
     time_lag_attributes: CollectionProperty(name="Time Lag Attributes", type=Attribute)
+    visualisation_start: StringProperty(name="Visualisation Start", update=updateVisualisationStart)
+    visualisation_finish: StringProperty(name="Visualisation Finish", update=updateVisualisationFinish)
 
 
 class BIMTaskTreeProperties(PropertyGroup):

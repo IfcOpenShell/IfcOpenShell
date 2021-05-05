@@ -109,6 +109,7 @@ class BIM_PT_work_schedules(Panel):
                 row.operator("bim.edit_work_schedule", text="", icon="CHECKMARK")
             elif self.props.editing_type == "TASKS":
                 row.prop(self.props, "should_show_times", text="", icon="TIME")
+                row.prop(self.props, "should_show_visualisation_ui", text="", icon="CAMERA_STEREO")
                 row.operator("bim.generate_gantt_chart", text="", icon="NLA").work_schedule = work_schedule_id
                 row.operator("bim.add_summary_task", text="", icon="ADD").work_schedule = work_schedule_id
             row.operator("bim.disable_editing_work_schedule", text="", icon="CANCEL")
@@ -122,10 +123,20 @@ class BIM_PT_work_schedules(Panel):
             row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = work_schedule_id
 
         if self.props.active_work_schedule_id == work_schedule_id:
+            if self.props.should_show_visualisation_ui:
+                self.draw_visualisation_ui()
             if self.props.editing_type == "WORK_SCHEDULE":
                 self.draw_editable_work_schedule_ui()
             elif self.props.editing_type == "TASKS":
                 self.draw_editable_task_ui(work_schedule_id)
+
+    def draw_visualisation_ui(self):
+        row = self.layout.row(align=True)
+        row.prop(self.props, "visualisation_start", text="", icon="REW")
+        row.prop(self.props, "visualisation_finish", text="", icon="FF")
+        op = row.operator("bim.visualise_work_schedule_date", text="", icon="RESTRICT_RENDER_OFF")
+        op.work_schedule = self.props.active_work_schedule_id
+        op = row.operator("bim.visualise_work_schedule_date_range", text="", icon="OUTLINER_OB_CAMERA")
 
     def draw_editable_work_schedule_ui(self):
         for attribute in self.props.work_schedule_attributes:
