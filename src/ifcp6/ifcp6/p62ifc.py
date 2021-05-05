@@ -302,11 +302,14 @@ class P62Ifc:
             work_schedule=None if wbs["ParentObjectId"] else work_schedule,
             parent_task=self.wbs[wbs["ParentObjectId"]]["ifc"] if wbs["ParentObjectId"] else None,
         )
+        identification = wbs["Code"]
+        if wbs["ParentObjectId"]:
+            identification = self.wbs[wbs["ParentObjectId"]]["ifc"].Identification + "." + wbs["Code"]
         ifcopenshell.api.run(
             "sequence.edit_task",
             self.file,
             task=wbs["ifc"],
-            attributes={"Name": wbs["Name"], "Identification": wbs["Code"]},
+            attributes={"Name": wbs["Name"], "Identification": identification},
         )
         for activity_id in wbs["activities"]:
             self.create_task_from_activity(self.activities[activity_id], wbs, None)
