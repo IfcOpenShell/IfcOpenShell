@@ -124,6 +124,7 @@ class P62Ifc:
                 "FinishDate": datetime.datetime.fromisoformat(activity.find("pr:FinishDate", self.ns).text),
                 "PlannedDuration": datetime.timedelta(hours=float(activity.find("pr:PlannedDuration", self.ns).text)),
                 "Status": activity.find("pr:Status", self.ns).text,
+                "CalendarObjectId": activity.find("pr:CalendarObjectId", self.ns).text,
                 "ifc": None,
             }
 
@@ -346,6 +347,15 @@ class P62Ifc:
                 "ScheduleDuration": activity["PlannedDuration"] if activity["PlannedDuration"] else None,
             },
         )
+        if activity["CalendarObjectId"]:
+            ifcopenshell.api.run(
+                "control.assign_control",
+                self.file,
+                **{
+                    "relating_control": self.calendars[activity["CalendarObjectId"]]["ifc"],
+                    "related_object": activity["ifc"],
+                },
+            )
 
     def create_rel_sequences(self):
         self.sequence_type_map = {
