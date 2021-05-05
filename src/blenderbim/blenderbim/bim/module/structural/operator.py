@@ -436,3 +436,139 @@ class EditStructuralMemberAxis(bpy.types.Operator):
         )
         bpy.ops.bim.disable_editing_structural_member_axis()
         return {"FINISHED"}
+
+
+class AssignStructuralLoadCase(bpy.types.Operator):
+    bl_idname = "bim.assign_structural_load_case"
+    bl_label = "Assign Structural Load Case"
+    work_plan: bpy.props.IntProperty()
+    load_case: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "aggregate.assign_object",
+            self.file,
+            **{
+                "relating_object": self.file.by_id(self.work_plan),
+                "product": self.file.by_id(self.load_case),
+            },
+        )
+        Data.load(IfcStore.get_file())
+        return {"FINISHED"}
+
+
+class UnassignStructuralLoadCase(bpy.types.Operator):
+    bl_idname = "bim.unassign_structural_load_case"
+    bl_label = "Unassign Structural Load Case"
+    work_plan: bpy.props.IntProperty()
+    load_case: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "aggregate.unassign_object",
+            self.file,
+            **{
+                "relating_object": self.file.by_id(self.work_plan),
+                "product": self.file.by_id(self.load_case),
+            },
+        )
+        Data.load(IfcStore.get_file())
+        return {"FINISHED"}
+
+
+class AddStructuralLoadCase(bpy.types.Operator):
+    bl_idname = "bim.add_structural_load_case"
+    bl_label = "Add Structural Load Case"
+
+    def execute(self, context):
+        ifcopenshell.api.run("structural.add_structural_load_case", IfcStore.get_file())
+        Data.load(IfcStore.get_file())
+        return {"FINISHED"}
+
+
+class EditStructuralLoadCase(bpy.types.Operator):
+    bl_idname = "bim.edit_structural_load_case"
+    bl_label = "Edit Structural Load Case"
+
+    def execute(self, context):
+        props = context.scene.BIMStructuralProperties
+        attributes = {}
+        for attribute in props.load_case_attributes:
+            if attribute.is_null:
+                attributes[attribute.name] = None
+            else:
+                if attribute.data_type == "string":
+                    attributes[attribute.name] = attribute.string_value
+                elif attribute.data_type == "enum":
+                    attributes[attribute.name] = attribute.enum_value
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "structural.edit_structural_load_case",
+            self.file,
+            **{"load_case": self.file.by_id(props.active_load_case_id), "attributes": attributes},
+        )
+        Data.load(IfcStore.get_file())
+        bpy.ops.bim.disable_editing_structural_load_case()
+        return {"FINISHED"}
+
+
+class RemoveStructuralLoadCase(bpy.types.Operator):
+    bl_idname = "bim.remove_structural_load_case"
+    bl_label = "Remove Structural Load Case"
+    load_case: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "structural.remove_structural_load_case", self.file, load_case=self.file.by_id(self.load_case)
+        )
+        Data.load(self.file)
+        return {"FINISHED"}
+
+
+class EnableEditingStructuralLoadCase(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_structural_load_case"
+    bl_label = "Enable Editing Structural Load Case"
+    load_case: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMStructuralProperties
+        self.props.active_load_case_id = self.load_case
+        while len(self.props.load_case_attributes) > 0:
+            self.props.load_case_attributes.remove(0)
+        self.enable_editing_structural_load_case()
+        return {"FINISHED"}
+
+    def enable_editing_structural_load_case(self):
+        data = Data.load_cases[self.load_case]
+        print(data)
+
+        for attribute in IfcStore.get_schema().declaration_by_name("IfcStructuralLoadCase").all_attributes():
+            if attribute.name() in ["SelfWeightCoefficients", "Coefficient"]:
+                continue
+            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            if data_type == "entity":
+                continue
+            new = self.props.load_case_attributes.add()
+            new.name = attribute.name()
+            new.is_null = data[attribute.name()] is None
+            new.is_optional = attribute.optional()
+            print(data_type)
+            new.data_type = data_type
+            if data_type == "string":
+                new.string_value = "" if new.is_null else data[attribute.name()]
+            elif data_type == "enum":
+                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
+                if data[attribute.name()]:
+                    new.enum_value = data[attribute.name()]
+
+
+class DisableEditingStructuralLoadCase(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_structural_load_case"
+    bl_label = "Disable Editing Structural Load Case"
+
+    def execute(self, context):
+        context.scene.BIMStructuralProperties.active_load_case_id = 0
+        return {"FINISHED"}
