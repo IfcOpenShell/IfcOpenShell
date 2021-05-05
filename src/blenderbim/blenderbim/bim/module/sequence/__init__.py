@@ -63,6 +63,8 @@ classes = (
     operator.ImportP6,
     operator.LoadTaskProperties,
     operator.SelectTaskRelatedProducts,
+    operator.VisualiseWorkScheduleDate,
+    operator.VisualiseWorkScheduleDateRange,
     prop.WorkPlan,
     prop.BIMWorkPlanProperties,
     prop.Task,
