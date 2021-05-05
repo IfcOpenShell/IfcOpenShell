@@ -122,7 +122,7 @@ class P62Ifc:
                 "Identification": activity.find("pr:Id", self.ns).text,
                 "StartDate": datetime.datetime.fromisoformat(activity.find("pr:StartDate", self.ns).text),
                 "FinishDate": datetime.datetime.fromisoformat(activity.find("pr:FinishDate", self.ns).text),
-                "PlannedDuration": datetime.timedelta(days=float(activity.find("pr:PlannedDuration", self.ns).text)),
+                "PlannedDuration": datetime.timedelta(hours=float(activity.find("pr:PlannedDuration", self.ns).text)),
                 "Status": activity.find("pr:Status", self.ns).text,
                 "ifc": None,
             }
@@ -141,6 +141,8 @@ class P62Ifc:
     def create_ifc(self):
         if not self.file:
             self.file = self.create_boilerplate_ifc()
+        if not self.work_plan:
+            self.work_plan = ifcopenshell.api.run("sequence.add_work_plan", self.file)
         work_schedule = self.create_work_schedule()
         self.create_calendars()
         self.create_tasks(work_schedule)
@@ -340,6 +342,7 @@ class P62Ifc:
             attributes={
                 "ScheduleStart": activity["StartDate"],
                 "ScheduleFinish": activity["FinishDate"],
+                "DurationType": "WORKTIME" if activity["PlannedDuration"] else None,
                 "ScheduleDuration": activity["PlannedDuration"] if activity["PlannedDuration"] else None,
             },
         )
