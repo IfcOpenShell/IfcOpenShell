@@ -37,6 +37,8 @@ class MSP2Ifc:
         project = tree.getroot()
         self.ns = {"pr": project.tag[1:].partition("}")[0]}
         self.project["Name"] = project.find("pr:Name", self.ns).text
+        self.outline_level = 0
+        self.outline_parents = {}
         self.parse_task_xml(project)
         self.parse_calendar_xml(project)
 
@@ -47,15 +49,25 @@ class MSP2Ifc:
             task_index_level = task.find("pr:OutlineLevel", self.ns).text
             wbs_id = task.find("pr:WBS", self.ns).text
             relationship = task.find("pr:PredecessorLink", self.ns)
+            outline_level = int(task.find("pr:OutlineLevel", self.ns).text)
+
+            if outline_level != 0:
+                parent_task = self.tasks[self.outline_parents[outline_level-1]]
+                parent_task["subtasks"].append(task_id)
+            self.outline_level = outline_level
+            self.outline_parents[outline_level] = task_id
+
             self.tasks[task_id] = {
                 "Name": task.find("pr:Name", self.ns).text,
-                "UID": task.find("pr:UID", self.ns).text,
+                "OutlineNumber": task.find("pr:OutlineNumber", self.ns).text,
+                "OutlineLevel": outline_level,
                 "Start": datetime.datetime.fromisoformat(task.find("pr:Start", self.ns).text),
                 "Finish": datetime.datetime.fromisoformat(task.find("pr:Finish", self.ns).text),
                 "Duration":  ifcopenshell.util.date.ifc2datetime(task.find("pr:Duration", self.ns).text),
                 "Priority": task.find("pr:Priority", self.ns).text,
                 "CalendarUID": task.find("pr:CalendarUID", self.ns).text,
                 "PredecessorTask": relationship.find("pr:PredecessorUID", self.ns).text if relationship else None,
+                "subtasks": [],
                 "ifc": None,
             }
 
@@ -99,7 +111,9 @@ class MSP2Ifc:
 
     def create_tasks(self, work_schedule):
         for task_id in self.tasks:
-            self.create_task_from_task(self.tasks[task_id], None, work_schedule)
+            task = self.tasks[task_id]
+            if task["OutlineLevel"] == 0:
+                self.create_task(task, work_schedule=work_schedule)
 
     def create_work_schedule(self):
         return ifcopenshell.api.run(
@@ -113,11 +127,12 @@ class MSP2Ifc:
             )
             self.process_working_week(calendar["StandardWorkWeek"], calendar["ifc"])
 
-    def create_task_from_task(self, task, wbs, work_schedule):
+    def create_task(self, task, work_schedule=None, parent_task=None):
         task["ifc"] = ifcopenshell.api.run(
             "sequence.add_task",
             self.file,
-            work_schedule=None if wbs else work_schedule,
+            work_schedule=work_schedule if work_schedule else None,
+            parent_task=parent_task["ifc"] if parent_task else None,
         )
         ifcopenshell.api.run(
             "sequence.edit_task",
@@ -125,7 +140,7 @@ class MSP2Ifc:
             task=task["ifc"],
             attributes={
                 "Name": task["Name"],
-                "Identification": task["UID"],
+                "Identification": task["OutlineNumber"],
                 "IsMilestone": task["Start"] == task["Finish"],
             },
         )
@@ -141,6 +156,8 @@ class MSP2Ifc:
                 "ScheduleDuration": task["Duration"] if task["Duration"] else None,
             },
         )
+        for subtask_id in task["subtasks"]:
+            self.create_task(self.tasks[subtask_id], parent_task=task)
 
     def process_working_week(self, week, calendar):
         for day in week:
@@ -193,12 +210,14 @@ class MSP2Ifc:
             "Finish to Start": "FINISH_START",
             "Finish to Finish": "FINISH_FINISH",
         }
-        for key, value in self.tasks.items():
+        for task in self.tasks.values():
+            if not task["PredecessorTask"]:
+                continue
             rel_sequence = ifcopenshell.api.run(
                 "sequence.assign_sequence",
                 self.file,
-                related_process = self.tasks[key]["ifc"],
-                relating_process = self.tasks[self.tasks[key]["PredecessorTask"]]["ifc"]
+                related_process = task["ifc"],
+                relating_process = self.tasks[task["PredecessorTask"]]["ifc"]
             )
             ifcopenshell.api.run(
                 "sequence.edit_sequence",

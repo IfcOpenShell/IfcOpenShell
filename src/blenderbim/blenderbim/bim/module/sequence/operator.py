@@ -1,3 +1,4 @@
+import re
 import os
 import bpy
 import json
@@ -258,10 +259,11 @@ class EnableEditingTasks(bpy.types.Operator):
             self.tprops.tasks.remove(0)
 
         self.contracted_tasks = json.loads(self.props.contracted_tasks)
-        sort_keys = {
+        self.sort_keys = {
             i: Data.tasks[i]["Identification"] for i in Data.work_schedules[self.work_schedule]["RelatedObjects"]
         }
-        for related_object_id in sorted(sort_keys, key=sort_keys.__getitem__):
+
+        for related_object_id in sorted(self.sort_keys, key=self.natural_sort_key):
             self.create_new_task_li(related_object_id, 0)
         bpy.ops.bim.load_task_properties()
         self.props.editing_type = "TASKS"
@@ -276,10 +278,13 @@ class EnableEditingTasks(bpy.types.Operator):
         if task["RelatedObjects"]:
             new.has_children = True
             if new.is_expanded:
-                sort_keys = {i: Data.tasks[i]["Identification"] for i in task["RelatedObjects"]}
-                for related_object_id in sorted(sort_keys, key=sort_keys.__getitem__):
+                self.sort_keys = {i: Data.tasks[i]["Identification"] for i in task["RelatedObjects"]}
+                for related_object_id in sorted(self.sort_keys, key=self.natural_sort_key):
                     self.create_new_task_li(related_object_id, level_index + 1)
-        return {"FINISHED"}
+
+    def natural_sort_key(self, i, _nsre=re.compile("([0-9]+)")):
+        s = self.sort_keys[i]
+        return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]
 
 
 class LoadTaskProperties(bpy.types.Operator):
@@ -867,6 +872,7 @@ class ImportP6(bpy.types.Operator, ImportHelper):
         Data.load(IfcStore.get_file())
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
+
 
 class ImportMSP(bpy.types.Operator, ImportHelper):
     bl_idname = "import_msp.bim"
