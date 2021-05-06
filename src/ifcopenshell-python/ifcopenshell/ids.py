@@ -52,12 +52,18 @@ class facet(metaclass=meta_facet):
         self.node = node
 
     def __getattr__(self, k):
-        v = self.node.getElementsByTagName(k)[0]
-        elems = [n for n in v.childNodes if n.nodeType == n.ELEMENT_NODE]
-        if elems:
-            return restriction(elems[0])
+        try:
+            v = self.node.getElementsByTagName(k)[0]
+        except IndexError:
+            v = None
+        if v:
+            elems = [n for n in v.childNodes if n.nodeType == n.ELEMENT_NODE]
+            if elems:
+                return restriction(elems[0])
+            else:
+                return v.firstChild.nodeValue.strip()
         else:
-            return v.firstChild.nodeValue.strip()
+            return None
 
     def __iter__(self):
         for k in self.parameters:
@@ -76,15 +82,18 @@ class entity(facet):
     The IDS entity facet currently *with* inheritance
     """
 
-    parameters = ["name"]
-    message = "an entity name '%(name)s'"
-
+    parameters = ["name", "predefinedtype"]
+    
     def __call__(self, inst, logger):
-        logger.debug("Testing %s == %s", inst.is_a(), self.name)
         # @nb with inheritance
-        # return inst.is_a() == self.name
-        return facet_evaluation(inst.is_a(self.name), self.message % {"name": inst.is_a()})
-
+        if self.predefinedtype and hasattr(inst, "PredefinedType"):
+            # logger.debug("Testing if entity predefinedtype '%s' == '%s'", inst.PredefinedType, self.predefinedtype)
+            self.message = "an entity name '%(name)s' of predefined type '%(predefinedtype)s'"
+            return facet_evaluation(inst.is_a(self.name) and inst.PredefinedType == self.predefinedtype, self.message % {"name": inst.is_a(), "predefinedtype": inst.PredefinedType})
+        else:
+            self.message = "an entity name '%(name)s'"
+            return facet_evaluation(inst.is_a(self.name), self.message % {"name": inst.is_a()})
+        
 
 class classification(facet):
     """
@@ -122,7 +131,7 @@ class property(facet):
         props = ifcopenshell.util.element.get_psets(inst)
         pset = props.get(self.propertyset)
         val = pset.get(self.name) if pset else None
-        logger.debug("Testing %s == %s", val, self.value)
+        logger.debug("Testing if property %s == %s", val, self.value)
 
         di = {
             "name": self.name,
@@ -134,7 +143,7 @@ class property(facet):
             msg = self.message % di
         else:
             if pset:
-                msg = "a set '%(propertyset)s', but no property '%(name)'" % di
+                msg = "a set '%(propertyset)s', but no property '%(name)s'" % di
             else:
                 msg = "no set '%(propertyset)s'" % di
 
@@ -152,12 +161,12 @@ class material(facet):
         material_relations = [rel for rel in inst.HasAssociations if rel.is_a("IfcRelAssociatesMaterial")]
         names = []
         for rel in material_relations:
+            # @todo not all subtypes of IfcMaterial handled
             if rel.RelatingMaterial.is_a() == "IfcMaterialLayerSetUsage":
                 layers = rel.RelatingMaterial.ForLayerSet.MaterialLayers
                 names = [layer.Material.Name for layer in layers]
             elif rel.RelatingMaterial.is_a() == "IfcMaterial":
                 names.append(rel.RelatingMaterial.Name)
-        
         
         return facet_evaluation(
             0,
@@ -215,8 +224,7 @@ class restriction:
             elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("pattern"):
                 self.options.append(n.getAttribute("value"))
                 self.type = "pattern"
-                
-        # "Given an instance with %(applicabiliy)s\nWe expect %(requirements)s" % self.__dict__
+
     def __eq__(self, other):
         return other in self.options
 
@@ -250,19 +258,19 @@ class specification:
         phrases[0].tagName == "applicability" or error("expected <applicability>")
         phrases[1].tagName == "requirements" or error("expected <requirements>")
 
-        self.applicabiliy, self.requirements = (boolean_and(parse_rules(phrase)) for phrase in phrases)
+        self.applicability, self.requirements = (boolean_and(parse_rules(phrase)) for phrase in phrases)
 
     def __call__(self, inst, logger):
-        if self.applicabiliy(inst, logger):
+        if self.applicability(inst, logger):
             valid = self.requirements(inst, logger)
 
             if valid:
-                logger.info({'guid':inst.GlobalId, 'result':valid.success,'sentence':str(self) + "\n%s has" % inst + " " + str(valid) + " so is compliant"})
+                logger.info({'guid':inst.GlobalId, 'result':valid.success,'sentence':str(self) + "\n'" + inst.Name + "' (id:" + inst.GlobalId + ") has " + str(valid) + " so is compliant"})
             else:
-                logger.error({'guid':inst.GlobalId, 'result':valid.success, 'sentence':str(self) + "\n%s has" % inst + " " + str(valid) + " so is not compliant"})
+                logger.error({'guid':inst.GlobalId, 'result':valid.success, 'sentence':str(self) + "\n'" + inst.Name + "' (id:" + inst.GlobalId + ") has " + str(valid) + " so is not compliant"})
 
     def __str__(self):
-        return "Given an instance with %(applicabiliy)s\nWe expect %(requirements)s" % self.__dict__
+        return "Given an instance with %(applicability)s\nWe expect %(requirements)s" % self.__dict__
 
 
 class ids:
@@ -283,7 +291,7 @@ class ids:
         for spec in self.specifications:
             for elem in ifc_file.by_type("IfcObject"):
                 spec(elem, logger)
-                
+
 if __name__ == "__main__":
     import sys, os
     import logging
@@ -297,4 +305,7 @@ if __name__ == "__main__":
 
     ids_file = ids(sys.argv[1])
     ifc_file = ifcopenshell.open(sys.argv[2])
+
     ids_file.validate(ifc_file, logger)
+    
+    print("Validated %s IDS requirements on %s IFC elements. Results saved to %s" % (len(ids_file.specifications[0].requirements.terms), len(ifc_file.by_type('IfcProduct')), filename))

@@ -48,17 +48,13 @@ public:
 		: file(file_), id_(id), type_(type), attributes_(0), offset_in_file_(offset_in_file)
 	{}
 
-	IfcEntityInstanceData(IfcParse::IfcFile* file_, size_t size)
-		: file(file_), id_(0), type_(0), attributes_(new Argument*[size]), offset_in_file_(0)
+   IfcEntityInstanceData(IfcParse::IfcFile* file_, size_t size)
+      : file(file_), id_(0), type_(0), attributes_(new Argument*[size] {0}), offset_in_file_(0)
 	{}
 
-	IfcEntityInstanceData(const IfcParse::declaration* type)
-		: file(0), id_(0), type_(type), attributes_(new Argument*[getArgumentCount()])
-	{
-		for (size_t i = 0; i < getArgumentCount(); ++i) {
-			attributes_[i] = 0;
-		}
-	}
+   IfcEntityInstanceData(const IfcParse::declaration* type)
+      : file(0), id_(0), type_(type), attributes_(new Argument*[getArgumentCount()]{ 0 }), offset_in_file_(0)
+   {}
 
 	void load() const;
 

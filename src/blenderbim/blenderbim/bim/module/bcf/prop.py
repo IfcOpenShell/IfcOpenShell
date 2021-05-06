@@ -17,6 +17,11 @@ from bpy.props import (
 bcfviewpoints_enum = None
 
 
+def purge():
+    global bcfviewpoints_enum
+    bcfviewpoints_enum = None
+
+
 def updateBcfReferenceLink(self, context):
     if bpy.context.scene.BCFProperties.is_loaded:
         bpy.ops.bim.edit_bcf_reference_links()

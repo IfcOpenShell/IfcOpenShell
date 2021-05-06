@@ -240,18 +240,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* l, T
 
 		TopoDS_Shape result = builder.Shape();
 
-		BRepOffsetAPI_Sewing sewer;
-		sewer.SetTolerance(getValue(GV_PRECISION));
-		sewer.SetMaxTolerance(getValue(GV_PRECISION));
-		sewer.SetMinTolerance(getValue(GV_PRECISION));
-
-		sewer.Add(result);
-		sewer.Add(BRepBuilderAPI_MakeFace(w1).Face());
-		sewer.Add(BRepBuilderAPI_MakeFace(w2).Face().Moved(end_profile));
-
-		sewer.Perform();
-
-		result = sewer.SewedShape();
+		TopTools_ListOfShape li;
+		shape_to_face_list(result, li);
+		li.Append(BRepBuilderAPI_MakeFace(w1).Face().Reversed());
+		li.Append(BRepBuilderAPI_MakeFace(w2).Face().Moved(end_profile));
+		
+		create_solid_from_faces(li, result, true);
 
 		// @todo ugly hack
 

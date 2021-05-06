@@ -45,6 +45,7 @@ namespace IfcUtil {
 
     IFC_PARSE_API const char* ArgumentTypeToString(ArgumentType argument_type);
 
+	/// Returns false when the string `s` contains character outside of {'0', '1'}
 	IFC_PARSE_API bool valid_binary_string(const std::string& s);
 }
 

@@ -8,6 +8,7 @@ import tempfile
 import ifcopenshell
 import ifcopenshell.util.placement
 import ifcopenshell.api
+from ifcopenshell.api.spatial.data import Data as SpatialData
 from blenderbim.bim.ifc import IfcStore
 import addon_utils
 
@@ -46,9 +47,6 @@ class IfcExporter:
                 jsonData = ifcjson.IFC2JSON5a(self.file, self.ifc_export_settings.json_compact).spf2Json()
                 with open(self.ifc_export_settings.output_file, "w") as outfile:
                     json.dump(jsonData, outfile, indent=None if self.ifc_export_settings.json_compact else 4)
-        if bpy.context.scene.BIMProjectProperties.is_authoring:
-            if bpy.data.filepath:
-                bpy.ops.wm.save_mainfile()
 
     def set_header(self):
         # TODO: add all metadata, pending bug #747
@@ -79,16 +77,19 @@ class IfcExporter:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         to_delete = []
 
-        for guid, obj in IfcStore.guid_map.items():
+        for ifc_definition_id, obj in IfcStore.id_map.items():
             try:
                 self.sync_object_placement(obj)
-            except:
-                pass
-            if self.should_delete(guid, obj):
-                to_delete.append(guid)
+                self.sync_object_container(ifc_definition_id, obj)
+            except ReferenceError:
+                pass  # The object is likely deleted
+            if self.should_delete(obj):
+                to_delete.append(ifc_definition_id)
 
-        for guid in to_delete:
-            product = self.file.by_id(guid)
+        SpatialData.purge()
+
+        for ifc_definition_id in to_delete:
+            product = self.file.by_id(ifc_definition_id)
             IfcStore.unlink_element(product)
             ifcopenshell.api.run("root.remove_product", self.file, **{"product": product})
 
@@ -104,9 +105,10 @@ class IfcExporter:
 
     def sync_object_placement(self, obj):
         blender_matrix = np.matrix(obj.matrix_world)
-        ifc_matrix = ifcopenshell.util.placement.get_local_placement(
-            self.file.by_id(obj.BIMObjectProperties.ifc_definition_id).ObjectPlacement
-        )
+        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        if not hasattr(element, "ObjectPlacement"):
+            return
+        ifc_matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
         ifc_matrix[0][3] *= self.unit_scale
         ifc_matrix[1][3] *= self.unit_scale
         ifc_matrix[2][3] *= self.unit_scale
@@ -124,7 +126,36 @@ class IfcExporter:
         if not np.allclose(ifc_matrix, blender_matrix, atol=0.0001):
             bpy.ops.bim.edit_object_placement(obj=obj.name)
 
-    def should_delete(self, guid, obj):
+    def sync_object_container(self, guid, obj):
+        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        element_collection = bpy.data.collections.get(obj.name)
+
+        if self.file.schema == "IFC2X3":
+            if element.is_a("IfcProject"):
+                return
+        elif element.is_a("IfcContext"):
+            return
+
+        if (element.is_a("IfcElement") and element_collection) or element.is_a("IfcSpatialStructureElement"):
+            try:
+                parent_collection = [c for c in bpy.data.collections if c.children.get(element_collection.name)][0]
+            except:
+                return  # Out of the spatial tree
+        else:
+            parent_collection = obj.users_collection[0]
+
+        parent_obj = bpy.data.objects.get(parent_collection.name)
+        if not parent_obj or not parent_obj.BIMObjectProperties.ifc_definition_id:
+            return
+        parent = self.file.by_id(parent_obj.BIMObjectProperties.ifc_definition_id)
+
+        if parent.is_a("IfcSpatialStructureElement") and not element.is_a("IfcSpatialStructureElement"):
+            if parent != ifcopenshell.util.element.get_container(element):
+                bpy.ops.bim.assign_container(relating_structure=parent.id(), related_element=obj.name)
+        elif parent != ifcopenshell.util.element.get_aggregate(element):
+            bpy.ops.bim.assign_object(relating_object=parent_obj.name, related_object=obj.name)
+
+    def should_delete(self, obj):
         try:
             # This will throw an exception if the Blender object no longer exists
             foo = obj.name

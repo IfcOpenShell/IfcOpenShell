@@ -76,6 +76,7 @@ class ReassignClass(bpy.types.Operator):
 class AssignClass(bpy.types.Operator):
     bl_idname = "bim.assign_class"
     bl_label = "Assign IFC Class"
+    bl_options = {'REGISTER', 'UNDO'}
     obj: bpy.props.StringProperty()
     ifc_class: bpy.props.StringProperty()
     predefined_type: bpy.props.StringProperty()
@@ -153,6 +154,7 @@ class AssignClass(bpy.types.Operator):
         collection.objects.link(obj)
         if parent_collection:
             parent_collection.children.link(collection)
+            bpy.ops.bim.assign_object(related_object=obj.name, relating_object=parent_collection.name)
         else:
             bpy.context.scene.collection.children.link(collection)
 
