@@ -169,11 +169,63 @@ class BIM_PT_structural_member(Panel):
             if self.props.is_editing_axis:
                 row = self.layout.row(align=True)
                 row.prop(self.props, "axis_angle")
-                row.operator("bim.edit_structural_member_axis", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_structural_member_axis", text="", icon="CANCEL")
+                row.operator("bim.edit_structural_item_axis", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_structural_item_axis", text="", icon="CANCEL")
             else:
                 row = self.layout.row()
-                row.operator("bim.enable_editing_structural_member_axis", text="Edit Axis", icon="GREASEPENCIL")
+                row.operator("bim.enable_editing_structural_item_axis", text="Edit Axis", icon="GREASEPENCIL")
+        else:
+            row = self.layout.row()
+            row.label(text="TODO")
+
+
+class BIM_PT_structural_connection(Panel):
+    bl_label = "IFC Structural Connection"
+    bl_idname = "BIM_PT_structural_connection"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            return False
+        props = context.active_object.BIMObjectProperties
+        if not props.ifc_definition_id:
+            return False
+        if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcStructuralConnection"):
+            return False
+        return True
+
+    def draw(self, context):
+        self.oprops = context.active_object.BIMObjectProperties
+        self.props = context.active_object.BIMStructuralProperties
+        self.file = IfcStore.get_file()
+
+        if self.file.by_id(self.oprops.ifc_definition_id).is_a("IfcStructuralCurveConnection"):
+            if self.props.is_editing_axis:
+                row = self.layout.row(align=True)
+                row.prop(self.props, "axis_angle")
+                row.operator("bim.edit_structural_item_axis", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_structural_item_axis", text="", icon="CANCEL")
+            else:
+                row = self.layout.row()
+                row.operator("bim.enable_editing_structural_item_axis", text="Edit Axis", icon="GREASEPENCIL")
+
+        elif self.file.by_id(self.oprops.ifc_definition_id).is_a("IfcStructuralPointConnection"):
+            if self.props.is_editing_connection_cs:
+                row = self.layout.row(align=True)
+                row.label(text="Editing Connection CS")
+                row.operator("bim.edit_structural_item_connection_cs", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_structural_item_connection_cs", text="", icon="CANCEL")
+                row = self.layout.row(align=True)
+                row.prop(self.props, "ccs_x_angle")
+                row.prop(self.props, "ccs_y_angle")
+                row.prop(self.props, "ccs_z_angle")
+            else:
+                row = self.layout.row()
+                row.operator("bim.enable_editing_structural_item_connection_cs", text="Edit Connection CS", icon="GREASEPENCIL")
         else:
             row = self.layout.row()
             row.label(text="TODO")
