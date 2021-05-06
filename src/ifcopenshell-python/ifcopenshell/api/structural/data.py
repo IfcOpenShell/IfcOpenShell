@@ -5,12 +5,14 @@ class Data:
     connections = {}
     boundary_conditions = {}
     connects_structural_members = {}
+    members = {}
+    structural_activities = {}
+    applied_loads = {}
+    connects_structural_activities = {}
 
     load_cases = {}
-    # load_case_combinations = {}
-    # load_groups = {}
-    # structural_activities = {}
-    # connects_structural_activities = {}
+    load_case_combinations = {}
+    load_groups = {}
 
     @classmethod
     def purge(cls):
@@ -20,7 +22,14 @@ class Data:
         cls.connections = {}
         cls.boundary_conditions = {}
         cls.connects_structural_members = {}
+        cls.members = {}
+        cls.structural_activities = {}
+        cls.applied_loads = {}
+        cls.connects_structural_activities = {}
+
         cls.load_cases = {}
+        cls.load_case_combinations = {}
+        cls.load_groups = {}
 
     @classmethod
     def load(cls, file, product_id=None):
@@ -28,9 +37,17 @@ class Data:
         if not cls._file:
             return
         if product_id:
-            return cls.load_structural_connection(product_id)
+            product = cls._file.by_id(product_id)
+            if product.is_a("IfcStructuralConnection"):
+                return cls.load_structural_connection(product_id)
+            if product.is_a("IfcStructuralMember"):
+                return cls.load_structural_member(product_id)
+            # if product.is_a("IfcStructuralAction"):
+            #     return cls.load_structural_action(product_id)
         cls.load_structural_analysis_models()
         cls.load_structural_load_cases()
+        cls.load_structural_load_case_combinations()
+        cls.load_structural_load_groups()
         cls.is_loaded = True
 
     @classmethod
@@ -80,11 +97,47 @@ class Data:
 
             cls.load_cases[case.id()] = data
 
-        print(data)
+    @classmethod
+    def load_structural_load_case_combinations(cls):
+        cls.load_case_combinations = {}
+
+        for case in cls._file.by_type("IfcStructuralLoadGroup"):
+            if case.PredefinedType != "LOAD_COMBINATION":
+                return
+            data = case.get_info()
+            del data["OwnerHistory"]
+
+            is_grouped_by = []
+            for load_group in case.IsGroupedBy or []:
+                is_grouped_by.append(load_group.id())
+            data["IsGroupedBy"] = is_grouped_by
+
+            cls.load_case_combinations[case.id()] = data
+
+    @classmethod
+    def load_structural_load_groups(cls):
+        cls.load_groups = {}
+
+        for case in cls._file.by_type("IfcStructuralLoadGroup"):
+            if case.PredefinedType != "LOAD_COMBINATION":
+                return
+            # if case.IsGroupedBy:
+            #     for rel in case.IsGroupedBy:
+            #         for product in rel.RelatedObjects:
+            #             cls.products.setdefault(product.id(), []).append(case.id())
+            data = case.get_info()
+            del data["OwnerHistory"]
+
+            is_grouped_by = []
+            for load_group in case.IsGroupedBy or []:
+                is_grouped_by.append(load_group.id())
+            data["IsGroupedBy"] = is_grouped_by
+
+            cls.load_groups[case.id()] = data
 
     @classmethod
     def load_structural_connection(cls, product_id):
-        cls.connections = {}
+        # cls.connections = {}
         cls.boundary_conditions = {}
         cls.connects_structural_members = {}
 
@@ -126,3 +179,38 @@ class Data:
             rel_data["AppliedCondition"] = rel.AppliedCondition.id()
 
         cls.connects_structural_members[rel.id()] = rel_data
+
+    @classmethod
+    def load_applied_load(cls, applied_load):
+        data = applied_load.get_info()
+        for key, value in data.items():
+            if not value or key in ["Name", "type", "id"]:
+                continue
+            data[key] = value.wrappedValue
+        cls.applied_loads[applied_load.id()] = data
+
+    @classmethod
+    def load_connects_structural_activity(cls, rel):
+        rel_data = rel.get_info()
+        del rel_data["OwnerHistory"]
+        rel_data["RelatingElement"] = rel.RelatingElement.id()
+        rel_data["RelatedStructuralActivity"] = rel.RelatedStructuralActivity.id()
+
+        if rel.RelatedStructuralActivity.AppliedLoad:
+            cls.load_applied_load(rel.RelatedStructuralActivity.AppliedLoad)
+            # rel_data["AppliedCondition"] = rel.RelatedStructuralActivity.AppliedLoad.id()
+
+        cls.connects_structural_activities[rel.id()] = rel_data
+
+    @classmethod
+    def load_structural_member(cls, product_id):
+        cls.connects_structural_activities = {}
+
+        member = cls._file.by_id(product_id)
+        member_data = {"ConnectsStructuralActivities": []}
+
+        for activity in member.AssignedStructuralActivity or []:
+            cls.load_connects_structural_activity(activity)
+            member_data["ConnectsStructuralActivities"].append(activity.id())
+
+        cls.members[member.id()] = member_data
