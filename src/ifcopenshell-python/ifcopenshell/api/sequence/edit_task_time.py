@@ -10,10 +10,9 @@ class Usecase:
 
     def execute(self):
         for name, value in self.settings["attributes"].items():
-            if "Start" in name or "Finish" in name or name == "StatusTime":
-                if value:
+            if value:
+                if "Start" in name or "Finish" in name or name == "StatusTime":
                     value = ifcopenshell.util.date.datetime2ifc(value, "IfcDateTime")
-            if name == "ScheduleDuration":
-                if value:
+                elif name == "ScheduleDuration":
                     value = ifcopenshell.util.date.datetime2ifc(value, "IfcDuration")
             setattr(self.settings["task_time"], name, value)

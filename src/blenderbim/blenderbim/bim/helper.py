@@ -1,153 +1,62 @@
+import bpy
+import json
 import math
+import ifcopenshell
+import ifcopenshell.util.attribute
 from mathutils import geometry
 from mathutils import Vector
-import bpy
+from blenderbim.bim.ifc import IfcStore
 
 
-# TODO: Deprecate this in favour of ifcopenshell.util.unit
+def import_attributes(ifc_class, props, data, callback=None):
+    for attribute in IfcStore.get_schema().declaration_by_name(ifc_class).all_attributes():
+        data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+        if data_type == "entity":
+            continue
+        new = props.add()
+        new.name = attribute.name()
+        new.is_null = data[attribute.name()] is None
+        new.is_optional = attribute.optional()
+        new.data_type = data_type
+        is_handled_by_callback = callback(attribute.name(), new, data) if callback else False
+        if is_handled_by_callback:
+            pass  # Our job is done
+        elif data_type == "string":
+            new.string_value = "" if new.is_null else data[attribute.name()]
+        elif data_type == "boolean":
+            new.bool_value = False if new.is_null else data[attribute.name()]
+        elif data_type == "integer":
+            new.int_value = 0 if new.is_null else data[attribute.name()]
+        elif data_type == "float":
+            new.float_value = 0.0 if new.is_null else data[attribute.name()]
+        elif data_type == "enum":
+            new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
+            if data[attribute.name()]:
+                new.enum_value = data[attribute.name()]
 
 
-class SIUnitHelper:
-    prefixes = {
-        "EXA": 1e18,
-        "PETA": 1e15,
-        "TERA": 1e12,
-        "GIGA": 1e9,
-        "MEGA": 1e6,
-        "KILO": 1e3,
-        "HECTO": 1e2,
-        "DECA": 1e1,
-        "DECI": 1e-1,
-        "CENTI": 1e-2,
-        "MILLI": 1e-3,
-        "MICRO": 1e-6,
-        "NANO": 1e-9,
-        "PICO": 1e-12,
-        "FEMTO": 1e-15,
-        "ATTO": 1e-18,
-    }
-    unit_names = [
-        "AMPERE",
-        "BECQUEREL",
-        "CANDELA",
-        "COULOMB",
-        "CUBIC_METRE",
-        "DEGREE CELSIUS",
-        "FARAD",
-        "GRAM",
-        "GRAY",
-        "HENRY",
-        "HERTZ",
-        "JOULE",
-        "KELVIN",
-        "LUMEN",
-        "LUX",
-        "MOLE",
-        "NEWTON",
-        "OHM",
-        "PASCAL",
-        "RADIAN",
-        "SECOND",
-        "SIEMENS",
-        "SIEVERT",
-        "SQUARE METRE",
-        "METRE",
-        "STERADIAN",
-        "TESLA",
-        "VOLT",
-        "WATT",
-        "WEBER",
-    ]
-    si_conversions = {
-        "inch": 0.0254,
-        "foot": 0.3048,
-        "yard": 0.914,
-        "mile": 1609,
-        "square inch": 0.0006452,
-        "square foot": 0.09290304,
-        "square yard": 0.83612736,
-        "acre": 4046.86,
-        "square mile": 2588881,
-        "cubic inch": 0.00001639,
-        "cubic foot": 0.02831684671168849,
-        "cubic yard": 0.7636,
-        "litre": 0.001,
-        "fluid ounce UK": 0.0000284130625,
-        "fluid ounce US": 0.00002957353,
-        "pint UK": 0.000568,
-        "pint US": 0.000473,
-        "gallon UK": 0.004546,
-        "gallon US": 0.003785,
-        "degree": math.pi / 180,
-        "ounce": 0.02835,
-        "pound": 0.454,
-        "ton UK": 1016.0469088,
-        "ton US": 907.18474,
-        "lbf": 4.4482216153,
-        "kip": 4448.2216153,
-        "psi": 6894.7572932,
-        "ksi": 6894757.2932,
-        "minute": 60,
-        "hour": 3600,
-        "day": 86400,
-        "btu": 1055.056,
-    }
+def export_attributes(props, callback=None):
+    attributes = {}
+    for attribute in props:
+        is_handled_by_callback = callback(attributes, attribute) if callback else False
+        if attribute.is_null:
+            attributes[attribute.name] = None
+        elif is_handled_by_callback:
+            pass  # Our job is done
+        elif attribute.data_type == "string":
+            attributes[attribute.name] = attribute.string_value
+        elif attribute.data_type == "boolean":
+            attributes[attribute.name] = attribute.bool_value
+        elif attribute.data_type == "integer":
+            attributes[attribute.name] = attribute.int_value
+        elif attribute.data_type == "float":
+            attributes[attribute.name] = attribute.float_value
+        elif attribute.data_type == "enum":
+            attributes[attribute.name] = attribute.enum_value
+    return attributes
 
-    @staticmethod
-    def get_prefix(text):
-        for prefix in SIUnitHelper.prefixes.keys():
-            if prefix in text.upper():
-                return prefix
 
-    @staticmethod
-    def get_prefix_multiplier(text):
-        if not text:
-            return 1
-        prefix = SIUnitHelper.get_prefix(text)
-        if prefix:
-            return SIUnitHelper.prefixes[prefix]
-        return 1
-
-    @staticmethod
-    def get_unit_name(text):
-        for name in SIUnitHelper.unit_names:
-            if name in text.upper().replace("METER", "METRE"):
-                return name
-
-    @staticmethod
-    def convert(value, from_prefix, from_unit, to_prefix, to_unit):
-        """Converts between length, area, and volume units
-
-        :param value: The numeric value you want to convert
-        :type value: float
-        :param from_prefix: A prefix from IfcSIPrefix. Can be None.
-        :type from_prefix: string
-        :param from_unit: IfcSIUnitName or IfcConversionBasedUnit.Name
-        :type from_unit: string
-        :param to_prefix: A prefix from IfcSIPrefix. Can be None.
-        :type to_prefix: string
-        :param to_unit: IfcSIUnitName or IfcConversionBasedUnit.Name
-        :type to_unit: string
-        """
-        if from_unit in SIUnitHelper.si_conversions:
-            value *= SIUnitHelper.si_conversions[from_unit]
-        elif from_prefix:
-            value *= SIUnitHelper.get_prefix_multiplier(from_prefix)
-            if "SQUARE" in from_unit:
-                value *= SIUnitHelper.get_prefix_multiplier(from_prefix)
-            elif "CUBIC" in from_unit:
-                value *= SIUnitHelper.get_prefix_multiplier(from_prefix)
-                value *= SIUnitHelper.get_prefix_multiplier(from_prefix)
-        if to_unit in SIUnitHelper.si_conversions:
-            return value * (1 / SIUnitHelper.si_conversions[to_unit])
-        elif to_prefix:
-            value *= 1 / SIUnitHelper.get_prefix_multiplier(to_prefix)
-            if "SQUARE" in from_unit:
-                value *= 1 / SIUnitHelper.get_prefix_multiplier(to_prefix)
-            elif "CUBIC" in from_unit:
-                value *= 1 / SIUnitHelper.get_prefix_multiplier(to_prefix)
-                value *= 1 / SIUnitHelper.get_prefix_multiplier(to_prefix)
-        return value
+# TODO: migrate the below helper functions into the drawing module, since it is specific to that module
 
 
 # This function stolen from https://github.com/kevancress/MeasureIt_ARCH/blob/dcf607ce0896aa2284463c6b4ae9cd023fc54cbe/measureit_arch_baseclass.py
@@ -302,7 +211,7 @@ def parse_diagram_scale(camera):
 def get_project_collection(scene):
     """Get main project collection"""
 
-    colls = [c for c in scene.collection.children if c.name.startswith('IfcProject')]
+    colls = [c for c in scene.collection.children if c.name.startswith("IfcProject")]
     if len(colls) != 1:
         raise RuntimeError("project collection missing or not unique")
     return colls[0]
@@ -315,7 +224,7 @@ def get_active_drawing(scene):
         return None, None
     try:
         drawing = props.drawings[props.active_drawing_index]
-        return scene.collection.children['Views'].children[f"IfcGroup/{drawing.name}"], drawing.camera
+        return scene.collection.children["Views"].children[f"IfcGroup/{drawing.name}"], drawing.camera
     except (KeyError, IndexError):
         raise RuntimeError("missing drawing collection")
 
@@ -333,8 +242,8 @@ def ortho_view_frame(camera, margin=0.015):
     """
     aspect = camera.BIMCameraProperties.raster_y / camera.BIMCameraProperties.raster_x
     size = camera.ortho_scale
-    hwidth = size * .5
-    hheight = size * .5 * aspect
+    hwidth = size * 0.5
+    hheight = size * 0.5 * aspect
     scale = parse_diagram_scale(camera)
     xmarg = margin * scale
     ymarg = margin * scale * aspect
