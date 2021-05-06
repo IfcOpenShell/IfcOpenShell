@@ -868,6 +868,26 @@ class ImportP6(bpy.types.Operator, ImportHelper):
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
 
+class ImportMSP(bpy.types.Operator, ImportHelper):
+    bl_idname = "import_msp.bim"
+    bl_label = "Import MSP"
+    filename_ext = ".xml"
+    filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
+
+    def execute(self, context):
+        from ifcp6.msp2ifc import MSP2Ifc
+
+        self.file = IfcStore.get_file()
+        start = time.time()
+        msp2ifc = MSP2Ifc()
+        msp2ifc.xml = self.filepath
+        msp2ifc.file = self.file
+        msp2ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
+        msp2ifc.execute()
+        Data.load(IfcStore.get_file())
+        print("Import finished in {:.2f} seconds".format(time.time() - start))
+        return {"FINISHED"}
+
 
 class EnableEditingWorkCalendarTimes(bpy.types.Operator):
     bl_idname = "bim.enable_editing_work_calendar_times"

@@ -61,6 +61,7 @@ classes = (
     operator.UnassignProduct,
     operator.GenerateGanttChart,
     operator.ImportP6,
+    operator.ImportMSP,
     operator.LoadTaskProperties,
     operator.SelectTaskRelatedProducts,
     operator.VisualiseWorkScheduleDate,
@@ -82,6 +83,7 @@ classes = (
 
 def menu_func_import(self, context):
     self.layout.operator(operator.ImportP6.bl_idname, text="P6 (.xml)")
+    self.layout.operator(operator.ImportMSP.bl_idname, text="Microsoft Project (.xml)")
 
 
 def register():
