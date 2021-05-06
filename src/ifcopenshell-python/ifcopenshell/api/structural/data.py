@@ -101,9 +101,9 @@ class Data:
     def load_structural_load_case_combinations(cls):
         cls.load_case_combinations = {}
 
-        for case in cls._file.by_type("IfcStructuralLoadGroup"):
+        for case in cls._file.by_type("IfcStructuralLoadGroup", include_subtypes=False):
             if case.PredefinedType != "LOAD_COMBINATION":
-                return
+                continue
             data = case.get_info()
             del data["OwnerHistory"]
 
@@ -118,9 +118,9 @@ class Data:
     def load_structural_load_groups(cls):
         cls.load_groups = {}
 
-        for case in cls._file.by_type("IfcStructuralLoadGroup"):
-            if case.PredefinedType != "LOAD_COMBINATION":
-                return
+        for case in cls._file.by_type("IfcStructuralLoadGroup", include_subtypes=False):
+            if case.PredefinedType == "LOAD_COMBINATION":
+                continue
             # if case.IsGroupedBy:
             #     for rel in case.IsGroupedBy:
             #         for product in rel.RelatedObjects:

@@ -30,6 +30,7 @@ classes = (
     operator.EditStructuralLoadCase,
     operator.RemoveStructuralLoadCase,
     operator.EnableEditingStructuralLoadCase,
+    operator.EnableEditingStructuralLoadCaseActivity,
     operator.DisableEditingStructuralLoadCase,
     prop.StructuralAnalysisModel,
     prop.BIMStructuralProperties,
