@@ -45,12 +45,14 @@ class MSP2Ifc:
 
     def parse_relationship_xml(self, task):
         relationships = {}
+        id = 0
         if task.findall("pr:PredecessorLink", self.ns):
             for relationship in task.findall("pr:PredecessorLink", self.ns):
-                relationships[task.find("pr:UID", self.ns).text] = {
+                relationships[id] = {
                     "PredecessorTask": relationship.find("pr:PredecessorUID", self.ns).text,
                     "Type": relationship.find("pr:Type", self.ns).text
                 }
+                id += 1
         return relationships
 
     def parse_task_xml(self, project):
@@ -59,11 +61,6 @@ class MSP2Ifc:
             task_index_level = task.find("pr:OutlineLevel", self.ns).text
             wbs_id = task.find("pr:WBS", self.ns).text
             relationships = self.parse_relationship_xml(task)
-
-            # for relationship in task.findall("pr:PredecessorLink", self.ns):
-            #     predecessor_task = relationship.find("pr:PredecessorUID", self.ns).text
-            #     type = relationship.find("pr:Type", self.ns).text
-
             outline_level = int(task.find("pr:OutlineLevel", self.ns).text)
 
             if outline_level != 0:
