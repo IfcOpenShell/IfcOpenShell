@@ -17,10 +17,12 @@ def import_attributes(ifc_class, props, data, callback=None):
         new.name = attribute.name()
         new.is_null = data[attribute.name()] is None
         new.is_optional = attribute.optional()
-        new.data_type = data_type
+        new.data_type = data_type if isinstance(data_type, str) else ""
         is_handled_by_callback = callback(attribute.name(), new, data) if callback else False
         if is_handled_by_callback:
             pass  # Our job is done
+        elif is_handled_by_callback is False:
+            props.remove(len(props) - 1)
         elif data_type == "string":
             new.string_value = "" if new.is_null else data[attribute.name()]
         elif data_type == "boolean":

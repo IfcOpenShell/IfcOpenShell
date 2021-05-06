@@ -1,5 +1,6 @@
 import ifcopenshell.api
 
+
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
@@ -18,8 +19,8 @@ class Usecase:
             self.file,
             ifc_class="IfcStructuralLoadCase",
             predefined_type=self.settings["predefined_type"],
-            action_type=self.settings["action_type"],
-            action_source=self.settings["action_source"],
             name=self.settings["name"],
         )
+        load_case.ActionType = self.settings["action_type"]
+        load_case.ActionSource = self.settings["action_source"]
         return load_case

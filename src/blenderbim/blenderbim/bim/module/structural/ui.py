@@ -350,19 +350,31 @@ class BIM_PT_structural_load_cases(Panel):
             row.operator("bim.remove_structural_load_case", text="", icon="X").load_case = load_case_id
         else:
             row.operator(
+                "bim.enable_editing_structural_load_case_activity", text="", icon="GHOST_ENABLED"
+            ).load_case = load_case_id
+            row.operator(
                 "bim.enable_editing_structural_load_case", text="", icon="GREASEPENCIL"
             ).load_case = load_case_id
             row.operator("bim.remove_structural_load_case", text="", icon="X").load_case = load_case_id
 
         if self.props.active_load_case_id == load_case_id:
-            self.draw_editable_load_case_ui()
+            if self.props.load_case_editing_type == "ATTRIBUTES":
+                self.draw_editable_load_case_ui()
+            elif self.props.load_case_editing_type == "ACTIVITY":
+                self.draw_editable_load_case_activity_ui()
 
     def draw_editable_load_case_ui(self):
         for attribute in self.props.load_case_attributes:
             row = self.layout.row(align=True)
             if attribute.data_type == "string":
                 row.prop(attribute, "string_value", text=attribute.name)
+            elif attribute.data_type == "float":
+                row.prop(attribute, "float_value", text=attribute.name)
             elif attribute.data_type == "enum":
                 row.prop(attribute, "enum_value", text=attribute.name)
             if attribute.is_optional:
                 row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+
+    def draw_editable_load_case_activity_ui(self):
+        row = self.layout.row(align=True)
+        row.label(text="Activities!")

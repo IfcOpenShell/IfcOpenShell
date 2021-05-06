@@ -51,10 +51,7 @@ class BIMStructuralProperties(PropertyGroup):
     structural_analysis_models: CollectionProperty(name="Structural Analysis Models", type=StructuralAnalysisModel)
     active_structural_analysis_model_index: IntProperty(name="Active Structural Analysis Model Index")
     active_structural_analysis_model_id: IntProperty(name="Active Structural Analysis Model Id")
-
-    # editing_type: StringProperty(name="Editing Type")
-    # active_load_case_index: IntProperty(name="Active Work Schedules Index")
-
+    load_case_editing_type: StringProperty(name="Load Case Editing Type")
     load_case_attributes: CollectionProperty(name="Load Case Attributes", type=Attribute)
     active_load_case_id: IntProperty(name="Active Load Case Id")
 
