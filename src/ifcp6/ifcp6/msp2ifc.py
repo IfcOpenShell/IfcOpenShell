@@ -19,13 +19,13 @@ class MSP2Ifc:
         self.tasks = {}
         self.relationships = {}
         self.day_map = {
-            "2": 1,
-            "3": 2,
-            "4": 3,
-            "5": 4,
-            "6": 5,
-            "7": 6,
-            "1": 7,
+            "1": 1,
+            "2": 2,
+            "3": 3,
+            "4": 4,
+            "5": 5,
+            "6": 6,
+            "7": 7,
         }
 
     def execute(self):
@@ -43,12 +43,27 @@ class MSP2Ifc:
         self.parse_calendar_xml(project)
 
 
+    def parse_relationship_xml(self, task):
+        relationships = {}
+        if task.findall("pr:PredecessorLink", self.ns):
+            for relationship in task.findall("pr:PredecessorLink", self.ns):
+                relationships[task.find("pr:UID", self.ns).text] = {
+                    "PredecessorTask": relationship.find("pr:PredecessorUID", self.ns).text,
+                    "Type": relationship.find("pr:Type", self.ns).text
+                }
+        return relationships
+
     def parse_task_xml(self, project):
         for task in project.find("pr:Tasks", self.ns):
             task_id = task.find("pr:UID", self.ns).text
             task_index_level = task.find("pr:OutlineLevel", self.ns).text
             wbs_id = task.find("pr:WBS", self.ns).text
-            relationship = task.find("pr:PredecessorLink", self.ns)
+            relationships = self.parse_relationship_xml(task)
+
+            # for relationship in task.findall("pr:PredecessorLink", self.ns):
+            #     predecessor_task = relationship.find("pr:PredecessorUID", self.ns).text
+            #     type = relationship.find("pr:Type", self.ns).text
+
             outline_level = int(task.find("pr:OutlineLevel", self.ns).text)
 
             if outline_level != 0:
@@ -66,7 +81,7 @@ class MSP2Ifc:
                 "Duration":  ifcopenshell.util.date.ifc2datetime(task.find("pr:Duration", self.ns).text),
                 "Priority": task.find("pr:Priority", self.ns).text,
                 "CalendarUID": task.find("pr:CalendarUID", self.ns).text,
-                "PredecessorTask": relationship.find("pr:PredecessorUID", self.ns).text if relationship else None,
+                "PredecessorTasks": relationships if relationships else None,
                 "subtasks": [],
                 "ifc": None,
             }
@@ -205,22 +220,26 @@ class MSP2Ifc:
 
     def create_rel_sequences(self):
         self.sequence_type_map = {
-            "Start to Start": "START_START",
-            "Start to Finish": "START_FINISH",
-            "Finish to Start": "FINISH_START",
-            "Finish to Finish": "FINISH_FINISH",
+            "1": "START_START",
+            "2": "START_FINISH",
+            "3": "FINISH_START",
+            "4": "FINISH_FINISH",
+            "0": "NOTDEFINED",
         }
         for task in self.tasks.values():
-            if not task["PredecessorTask"]:
+            if not task["PredecessorTasks"]:
                 continue
-            rel_sequence = ifcopenshell.api.run(
-                "sequence.assign_sequence",
-                self.file,
-                related_process = task["ifc"],
-                relating_process = self.tasks[task["PredecessorTask"]]["ifc"]
-            )
-            ifcopenshell.api.run(
-                "sequence.edit_sequence",
-                self.file,
-                rel_sequence=rel_sequence,
-            )
+            for predecessor in task["PredecessorTasks"].values():
+                rel_sequence = ifcopenshell.api.run(
+                    "sequence.assign_sequence",
+                    self.file,
+                    related_process = task["ifc"],
+                    relating_process = self.tasks[predecessor["PredecessorTask"]]["ifc"]
+                )
+                if predecessor["Type"]:
+                    ifcopenshell.api.run(
+                        "sequence.edit_sequence",
+                        self.file,
+                        rel_sequence=rel_sequence,
+                        attributes={"SequenceType": self.sequence_type_map[predecessor["Type"]]}
+                    )
