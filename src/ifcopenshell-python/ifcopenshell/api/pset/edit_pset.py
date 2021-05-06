@@ -1,4 +1,4 @@
-import blenderbim.bim.schema  # TODO: refactor
+import ifcopenshell
 
 
 class Usecase:
@@ -20,7 +20,9 @@ class Usecase:
             self.settings["pset"].Name = self.settings["Name"]
 
     def load_pset_template(self):
-        self.pset_template = blenderbim.bim.schema.ifc.psetqto.get_by_name(self.settings["pset"].Name)
+        # TODO: add IFC2X3 PsetQto template support
+        self.psetqto = ifcopenshell.util.pset.get_template("IFC4")
+        self.pset_template = self.psetqto.get_by_name(self.settings["pset"].Name)
 
     def update_existing_properties(self):
         for prop in self.get_properties():

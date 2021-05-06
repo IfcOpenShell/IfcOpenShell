@@ -5,7 +5,14 @@ class Data:
     is_loaded = False
     work_plans = {}
     work_schedules = {}
+    work_calendars = {}
+    work_times = {}
+    recurrence_patterns = {}
+    time_periods = {}
     tasks = {}
+    task_times = {}
+    lag_times = {}
+    sequences = {}
 
     @classmethod
     def purge(cls):
@@ -13,7 +20,13 @@ class Data:
         cls.work_plans = {}
         cls.work_schedules = {}
         cls.work_calendars = {}
+        cls.work_times = {}
+        cls.recurrence_patterns = {}
+        cls.time_periods = {}
         cls.tasks = {}
+        cls.task_times = {}
+        cls.lag_times = {}
+        cls.sequences = {}
 
     @classmethod
     def load(cls, file):
@@ -23,7 +36,13 @@ class Data:
         cls.load_work_plans()
         cls.load_work_schedules()
         cls.load_work_calendars()
+        cls.load_work_times()
+        cls.load_recurrence_patterns()
+        cls.load_time_periods()
         cls.load_tasks()
+        cls.load_task_times()
+        cls.load_lag_times()
+        cls.load_sequences()
         cls.is_loaded = True
 
     @classmethod
@@ -38,6 +57,9 @@ class Data:
             data["StartTime"] = ifcopenshell.util.date.ifc2datetime(data["StartTime"])
             if data["FinishTime"]:
                 data["FinishTime"] = ifcopenshell.util.date.ifc2datetime(data["FinishTime"])
+            data["IsDecomposedBy"] = []
+            for rel in work_plan.IsDecomposedBy:
+                data["IsDecomposedBy"].extend([o.id() for o in rel.RelatedObjects])
             cls.work_plans[work_plan.id()] = data
 
     @classmethod
@@ -52,19 +74,111 @@ class Data:
             data["StartTime"] = ifcopenshell.util.date.ifc2datetime(data["StartTime"])
             if data["FinishTime"]:
                 data["FinishTime"] = ifcopenshell.util.date.ifc2datetime(data["FinishTime"])
+            data["RelatedObjects"] = []
+            for rel in work_schedule.Controls:
+                for obj in rel.RelatedObjects:
+                    if obj.is_a("IfcTask"):
+                        data["RelatedObjects"].append(obj.id())
             cls.work_schedules[work_schedule.id()] = data
 
     @classmethod
     def load_work_calendars(cls):
+        cls.work_calendars = {}
         for work_calendar in cls._file.by_type("IfcWorkCalendar"):
             data = work_calendar.get_info()
             del data["OwnerHistory"]
-            del data["WorkingTimes"]
-            del data["ExceptionTimes"]
+            data["WorkingTimes"] = [t.id() for t in work_calendar.WorkingTimes or []]
+            data["ExceptionTimes"] = [t.id() for t in work_calendar.ExceptionTimes or []]
             cls.work_calendars[work_calendar.id()] = data
+
+    @classmethod
+    def load_work_times(cls):
+        cls.work_times = {}
+        for work_time in cls._file.by_type("IfcWorkTime"):
+            data = work_time.get_info()
+            data["Start"] = ifcopenshell.util.date.ifc2datetime(data["Start"]) if data["Start"] else None
+            data["Finish"] = ifcopenshell.util.date.ifc2datetime(data["Finish"]) if data["Finish"] else None
+            data["RecurrencePattern"] = work_time.RecurrencePattern.id() if work_time.RecurrencePattern else None
+            cls.work_times[work_time.id()] = data
+
+    @classmethod
+    def load_recurrence_patterns(cls):
+        cls.recurrence_patterns = {}
+        for recurrence_pattern in cls._file.by_type("IfcRecurrencePattern"):
+            data = recurrence_pattern.get_info()
+            data["TimePeriods"] = [t.id() for t in recurrence_pattern.TimePeriods or []]
+            cls.recurrence_patterns[recurrence_pattern.id()] = data
+
+    @classmethod
+    def load_time_periods(cls):
+        cls.time_periods = {}
+        for time_period in cls._file.by_type("IfcTimePeriod"):
+            cls.time_periods[time_period.id()] = {
+                "StartTime": ifcopenshell.util.date.ifc2datetime(time_period.StartTime),
+                "EndTime": ifcopenshell.util.date.ifc2datetime(time_period.EndTime),
+            }
 
     @classmethod
     def load_tasks(cls):
         cls.tasks = {}
         for task in cls._file.by_type("IfcTask"):
-            cls.tasks[task.id()] = {"Name": task.Name, "Identification": task.Identification or ""}
+            data = task.get_info()
+            del data["OwnerHistory"]
+            data["HasAssignmentsWorkCalendar"] = []
+            data["RelatedObjects"] = []
+            data["RelatingProducts"] = []
+            data["IsPredecessorTo"] = []
+            data["IsSuccessorFrom"] = []
+            if task.TaskTime:
+                data["TaskTime"] = data["TaskTime"].id()
+            for rel in task.IsNestedBy:
+                [data["RelatedObjects"].append(o.id()) for o in rel.RelatedObjects if o.is_a("IfcTask")]
+            [
+                data["RelatingProducts"].append(r.RelatingProduct.id())
+                for r in task.HasAssignments
+                if r.is_a("IfcRelAssignsToProduct")
+            ]
+            [data["IsPredecessorTo"].append(rel.id()) for rel in task.IsPredecessorTo or []]
+            [data["IsSuccessorFrom"].append(rel.id()) for rel in task.IsSuccessorFrom or []]
+            [
+                data["HasAssignmentsWorkCalendar"].append(rel.RelatingControl.id())
+                for rel in task.HasAssignments or []
+                if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkCalendar")
+            ]
+            cls.tasks[task.id()] = data
+
+    @classmethod
+    def load_task_times(cls):
+        cls.task_times = {}
+        for task_time in cls._file.by_type("IfcTaskTime"):
+            data = task_time.get_info()
+            for key, value in data.items():
+                if not value:
+                    continue
+                if "Start" in key or "Finish" in key or key == "StatusTime":
+                    data[key] = ifcopenshell.util.date.ifc2datetime(value)
+                elif key == "ScheduleDuration":
+                    data[key] = ifcopenshell.util.date.ifc2datetime(value)
+            cls.task_times[task_time.id()] = data
+
+    @classmethod
+    def load_lag_times(cls):
+        cls.lag_times = {}
+        for lag_time in cls._file.by_type("IfcLagTime"):
+            data = lag_time.get_info()
+            if data["LagValue"]:
+                if data["LagValue"].is_a("IfcDuration"):
+                    data["LagValue"] = ifcopenshell.util.date.ifc2datetime(data["LagValue"].wrappedValue)
+                else:
+                    data["LagValue"] = float(data["LagValue"].wrappedValue)
+            cls.lag_times[lag_time.id()] = data
+
+    @classmethod
+    def load_sequences(cls):
+        cls.sequences = {}
+        for sequence in cls._file.by_type("IfcRelSequence"):
+            data = sequence.get_info()
+            data["RelatingProcess"] = sequence.RelatingProcess.id()
+            data["RelatedProcess"] = sequence.RelatedProcess.id()
+            data["TimeLag"] = sequence.TimeLag.id() if sequence.TimeLag else None
+            cls.sequences[sequence.id()] = data

@@ -18,6 +18,11 @@ from bpy.props import (
 ifcpatchrecipes_enum = []
 
 
+def purge():
+    global ifcpatchrecipes_enum
+    ifcpatchrecipes_enum = []
+
+
 def getIfcPatchRecipes(self, context):
     global ifcpatchrecipes_enum
     if len(ifcpatchrecipes_enum) < 1:

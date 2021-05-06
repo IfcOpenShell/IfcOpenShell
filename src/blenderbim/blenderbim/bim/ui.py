@@ -190,13 +190,22 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     svg_command: StringProperty(name="SVG Command", description="E.g. [['firefox-bin', path]]")
     pdf_command: StringProperty(name="PDF Command", description="E.g. [['firefox-bin', path]]")
     should_hide_empty_props: BoolProperty(name="Should Hide Empty Properties", default=True)
+    should_play_chaching_sound: BoolProperty(
+        name="Should Make A Cha-Ching Sound When Project Costs Updates", default=False
+    )
 
     def draw(self, context):
         layout = self.layout
         row = layout.row()
-        row.label(text="To upgrade, first uninstall your current BlenderBIM Add-on, then install the new version.", icon="ERROR")
+        row.label(
+            text="To upgrade, first uninstall your current BlenderBIM Add-on, then install the new version.",
+            icon="ERROR",
+        )
         row = layout.row()
-        row.label(text="To uninstall, first disable the add-on. Then restart Blender before pressing the 'Remove' button.", icon="ERROR")
+        row.label(
+            text="To uninstall, first disable the add-on. Then restart Blender before pressing the 'Remove' button.",
+            icon="ERROR",
+        )
         row = layout.row()
         row.operator("bim.open_upstream", text="Visit Homepage").page = "home"
         row.operator("bim.open_upstream", text="Visit Documentation").page = "docs"

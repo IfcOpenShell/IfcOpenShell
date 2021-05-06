@@ -6,6 +6,12 @@ class Data:
     boundary_conditions = {}
     connects_structural_members = {}
 
+    load_cases = {}
+    # load_case_combinations = {}
+    # load_groups = {}
+    # structural_activities = {}
+    # connects_structural_activities = {}
+
     @classmethod
     def purge(cls):
         cls.is_loaded = False
@@ -14,6 +20,7 @@ class Data:
         cls.connections = {}
         cls.boundary_conditions = {}
         cls.connects_structural_members = {}
+        cls.load_cases = {}
 
     @classmethod
     def load(cls, file, product_id=None):
@@ -23,6 +30,7 @@ class Data:
         if product_id:
             return cls.load_structural_connection(product_id)
         cls.load_structural_analysis_models()
+        cls.load_structural_load_cases()
         cls.is_loaded = True
 
     @classmethod
@@ -52,6 +60,27 @@ class Data:
             data["SharedPlacement"] = model.SharedPlacement.id() if model.SharedPlacement else None
 
             cls.structural_analysis_models[model.id()] = data
+
+    @classmethod
+    def load_structural_load_cases(cls):
+        cls.load_cases = {}
+
+        for case in cls._file.by_type("IfcStructuralLoadCase"):
+            # if case.IsGroupedBy:
+            #     for rel in case.IsGroupedBy:
+            #         for product in rel.RelatedObjects:
+            #             cls.products.setdefault(product.id(), []).append(case.id())
+            data = case.get_info()
+            del data["OwnerHistory"]
+
+            is_grouped_by = []
+            for load_group in case.IsGroupedBy or []:
+                is_grouped_by.append(load_group.id())
+            data["IsGroupedBy"] = is_grouped_by
+
+            cls.load_cases[case.id()] = data
+
+        print(data)
 
     @classmethod
     def load_structural_connection(cls, product_id):

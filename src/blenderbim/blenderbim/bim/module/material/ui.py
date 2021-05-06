@@ -82,6 +82,13 @@ class BIM_PT_object_material(Panel):
                 self.set_items = self.material_set_data["MaterialProfiles"] or []
                 self.set_data = Data.profiles
                 self.set_item_name = "profile"
+            elif self.product_data["type"] == "IfcMaterialProfileSetUsage":
+                self.material_set_usage = Data.profile_set_usages[self.product_data["id"]]
+                self.material_set_id = self.material_set_usage["ForProfileSet"]
+                self.material_set_data = Data.profile_sets[self.material_set_id]
+                self.set_items = self.material_set_data["MaterialProfiles"] or []
+                self.set_data = Data.profiles
+                self.set_item_name = "profile"
             elif self.product_data["type"] == "IfcMaterialList":
                 self.material_set_id = self.product_data["id"]
                 self.material_set_data = Data.lists[self.material_set_id]

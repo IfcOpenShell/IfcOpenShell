@@ -13,44 +13,45 @@ class AssignContainer(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        related_element = (
-            bpy.data.objects.get(self.related_element) if self.related_element else bpy.context.active_object
+        related_elements = (
+            [bpy.data.objects.get(self.related_element)] if self.related_element else bpy.context.selected_objects
         )
-        oprops = related_element.BIMObjectProperties
         sprops = context.scene.BIMSpatialProperties
-        props = related_element.BIMObjectSpatialProperties
         relating_structure = (
             self.relating_structure or sprops.spatial_elements[sprops.active_spatial_element_index].ifc_definition_id
         )
+        for related_element in related_elements:
+            oprops = related_element.BIMObjectProperties
+            props = related_element.BIMObjectSpatialProperties
 
-        ifcopenshell.api.run(
-            "spatial.assign_container",
-            self.file,
-            **{
-                "product": self.file.by_id(oprops.ifc_definition_id),
-                "relating_structure": self.file.by_id(relating_structure),
-            },
-        )
-        bpy.ops.bim.edit_object_placement(obj=related_element.name)
-        Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
-        bpy.ops.bim.disable_editing_container(obj=related_element.name)
+            ifcopenshell.api.run(
+                "spatial.assign_container",
+                self.file,
+                **{
+                    "product": self.file.by_id(oprops.ifc_definition_id),
+                    "relating_structure": self.file.by_id(relating_structure),
+                },
+            )
+            bpy.ops.bim.edit_object_placement(obj=related_element.name)
+            Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
+            bpy.ops.bim.disable_editing_container(obj=related_element.name)
 
-        aggregate_collection = bpy.data.collections.get(related_element.name)
+            aggregate_collection = bpy.data.collections.get(related_element.name)
 
-        relating_structure_obj = IfcStore.id_map.get(relating_structure)
-        relating_collection = None
-        if relating_structure_obj:
-            relating_collection = bpy.data.collections.get(relating_structure_obj.name)
+            relating_structure_obj = IfcStore.id_map.get(relating_structure)
+            relating_collection = None
+            if relating_structure_obj:
+                relating_collection = bpy.data.collections.get(relating_structure_obj.name)
 
-        if aggregate_collection:
-            self.remove_collection(bpy.context.scene.collection, aggregate_collection)
-            for collection in bpy.data.collections:
-                self.remove_collection(collection, aggregate_collection)
-            relating_collection.children.link(aggregate_collection)
-        elif relating_collection:
-            for collection in related_element.users_collection:
-                collection.objects.unlink(related_element)
-            relating_collection.objects.link(related_element)
+            if aggregate_collection:
+                self.remove_collection(bpy.context.scene.collection, aggregate_collection)
+                for collection in bpy.data.collections:
+                    self.remove_collection(collection, aggregate_collection)
+                relating_collection.children.link(aggregate_collection)
+            elif relating_collection:
+                for collection in related_element.users_collection:
+                    collection.objects.unlink(related_element)
+                relating_collection.objects.link(related_element)
         return {"FINISHED"}
 
     def remove_collection(self, parent, child):

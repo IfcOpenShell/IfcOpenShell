@@ -12,6 +12,21 @@ class IfcStore:
     edited_objs = set()
     pset_template_path = ""
     pset_template_file = None
+    library_path = ""
+    library_file = None
+
+    @staticmethod
+    def purge():
+        IfcStore.path = ""
+        IfcStore.file = None
+        IfcStore.schema = None
+        IfcStore.id_map = {}
+        IfcStore.guid_map = {}
+        IfcStore.edited_objs = set()
+        IfcStore.pset_template_path = ""
+        IfcStore.pset_template_file = None
+        IfcStore.library_path = ""
+        IfcStore.library_file = None
 
     @staticmethod
     def get_file():

@@ -20,13 +20,23 @@ classes = (
     operator.EnableEditingStructuralConnectionCondition,
     operator.DisableEditingStructuralConnectionCondition,
     operator.RemoveStructuralConnectionCondition,
+    operator.EnableEditingStructuralMemberAxis,
+    operator.DisableEditingStructuralMemberAxis,
+    operator.EditStructuralMemberAxis,
+    operator.AddStructuralLoadCase,
+    operator.EditStructuralLoadCase,
+    operator.RemoveStructuralLoadCase,
+    operator.EnableEditingStructuralLoadCase,
+    operator.DisableEditingStructuralLoadCase,
     prop.StructuralAnalysisModel,
     prop.BIMStructuralProperties,
     prop.BIMObjectStructuralProperties,
     ui.BIM_PT_structural_analysis_models,
     ui.BIM_PT_structural_boundary_conditions,
     ui.BIM_PT_connected_structural_members,
+    ui.BIM_PT_structural_member,
     ui.BIM_UL_structural_analysis_models,
+    ui.BIM_PT_structural_load_cases,
 )
 
 

@@ -17,6 +17,15 @@ classes_enum = []
 types_enum = []
 
 
+def purge():
+    global products_enum
+    global classes_enum
+    global types_enum
+    products_enum = []
+    classes_enum = []
+    types_enum = []
+
+
 def getIfcPredefinedTypes(self, context):
     global types_enum
     file = IfcStore.get_file()

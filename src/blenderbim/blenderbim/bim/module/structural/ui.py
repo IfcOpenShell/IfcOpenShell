@@ -141,6 +141,44 @@ class BIM_PT_connected_structural_members(Panel):
         draw_boundary_condition_ui(box, data["AppliedCondition"], data["id"], self.props)
 
 
+class BIM_PT_structural_member(Panel):
+    bl_label = "IFC Structural Member"
+    bl_idname = "BIM_PT_structural_member"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            return False
+        props = context.active_object.BIMObjectProperties
+        if not props.ifc_definition_id:
+            return False
+        if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcStructuralMember"):
+            return False
+        return True
+
+    def draw(self, context):
+        self.oprops = context.active_object.BIMObjectProperties
+        self.props = context.active_object.BIMStructuralProperties
+        self.file = IfcStore.get_file()
+
+        if self.file.by_id(self.oprops.ifc_definition_id).is_a("IfcStructuralCurveMember"):
+            if self.props.is_editing_axis:
+                row = self.layout.row(align=True)
+                row.prop(self.props, "axis_angle")
+                row.operator("bim.edit_structural_member_axis", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_structural_member_axis", text="", icon="CANCEL")
+            else:
+                row = self.layout.row()
+                row.operator("bim.enable_editing_structural_member_axis", text="Edit Axis", icon="GREASEPENCIL")
+        else:
+            row = self.layout.row()
+            row.label(text="TODO")
+
+
 class BIM_PT_structural_analysis_models(Panel):
     bl_label = "IFC Structural Analysis Models"
     bl_idname = "BIM_PT_structural_analysis_models"
@@ -223,3 +261,56 @@ class BIM_UL_structural_analysis_models(UIList):
                 op.structural_analysis_model = item.ifc_definition_id
                 op = row.operator("bim.remove_structural_analysis_model", text="", icon="X")
                 op.structural_analysis_model = item.ifc_definition_id
+
+
+class BIM_PT_structural_load_cases(Panel):
+    bl_label = "IFC Structural Load Cases"
+    bl_idname = "BIM_PT_structural_load_cases"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
+    def draw(self, context):
+        self.props = context.scene.BIMStructuralProperties
+
+        if not Data.is_loaded:
+            Data.load(IfcStore.get_file())
+
+        row = self.layout.row()
+        row.operator("bim.add_structural_load_case", icon="ADD")
+
+        for load_case_id, load_case in Data.load_cases.items():
+            self.draw_load_case_ui(load_case_id, load_case)
+
+    def draw_load_case_ui(self, load_case_id, load_case):
+        row = self.layout.row(align=True)
+        row.label(text=load_case["Name"] or "Unnamed", icon="CON_CLAMPTO")
+
+        if self.props.active_load_case_id and self.props.active_load_case_id == load_case_id:
+            row.operator("bim.edit_structural_load_case", text="", icon="CHECKMARK")
+            row.operator("bim.disable_editing_structural_load_case", text="", icon="CANCEL")
+        elif self.props.active_load_case_id:
+            row.operator("bim.remove_structural_load_case", text="", icon="X").load_case = load_case_id
+        else:
+            row.operator(
+                "bim.enable_editing_structural_load_case", text="", icon="GREASEPENCIL"
+            ).load_case = load_case_id
+            row.operator("bim.remove_structural_load_case", text="", icon="X").load_case = load_case_id
+
+        if self.props.active_load_case_id == load_case_id:
+            self.draw_editable_load_case_ui()
+
+    def draw_editable_load_case_ui(self):
+        for attribute in self.props.load_case_attributes:
+            row = self.layout.row(align=True)
+            if attribute.data_type == "string":
+                row.prop(attribute, "string_value", text=attribute.name)
+            elif attribute.data_type == "enum":
+                row.prop(attribute, "enum_value", text=attribute.name)
+            if attribute.is_optional:
+                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")

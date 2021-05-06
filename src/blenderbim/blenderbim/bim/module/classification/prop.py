@@ -16,6 +16,11 @@ from bpy.props import (
 classification_enum = []
 
 
+def purge():
+    global classification_enum
+    classification_enum = []
+
+
 def getClassifications(self, context):
     global classification_enum
     if len(classification_enum) < 1:
