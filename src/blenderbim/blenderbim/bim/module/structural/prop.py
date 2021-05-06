@@ -26,6 +26,17 @@ def updateAxisAngle(self, context):
     empty.rotation_mode = "XYZ"
     empty.rotation_euler[0] = radians(self.axis_angle)
 
+def updateConnectionCS(self, context):
+    if not self.ccs_empty:
+        return
+    obj = context.active_object
+    empty = self.ccs_empty
+    empty.location = obj.data.vertices[0].co
+    empty.rotation_mode = "XYZ"
+    empty.rotation_euler[0] = radians(self.ccs_x_angle)
+    empty.rotation_euler[1] = radians(self.ccs_y_angle)
+    empty.rotation_euler[2] = radians(self.ccs_z_angle)
+
 
 class StructuralAnalysisModel(PropertyGroup):
     name: StringProperty(name="Name")
@@ -58,3 +69,8 @@ class BIMObjectStructuralProperties(PropertyGroup):
     axis_empty: PointerProperty(name="Axis Empty", type=bpy.types.Object)
 
     # relating_structural_activity: PointerProperty(name="Relating Structural Activity", type=bpy.types.Object)
+    is_editing_connection_cs: BoolProperty(name="Is Editing Connection CS", default=False)
+    ccs_x_angle: FloatProperty(name="Connection CS X Angle", update=updateConnectionCS)
+    ccs_y_angle: FloatProperty(name="Connection CS Y Angle", update=updateConnectionCS)
+    ccs_z_angle: FloatProperty(name="Connection CS Z Angle", update=updateConnectionCS)
+    ccs_empty: PointerProperty(name="CCS Empty", type=bpy.types.Object)
