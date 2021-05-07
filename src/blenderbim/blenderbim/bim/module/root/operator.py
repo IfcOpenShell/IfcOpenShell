@@ -76,7 +76,7 @@ class ReassignClass(bpy.types.Operator):
 class AssignClass(bpy.types.Operator):
     bl_idname = "bim.assign_class"
     bl_label = "Assign IFC Class"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     ifc_class: bpy.props.StringProperty()
     predefined_type: bpy.props.StringProperty()
@@ -92,10 +92,6 @@ class AssignClass(bpy.types.Operator):
         elif self.predefined_type == "":
             predefined_type = None
         for obj in objects:
-            if obj.data and hasattr(obj.data, "materials"):
-                for material in obj.data.materials:
-                    if not material.BIMMaterialProperties.ifc_style_id:
-                        bpy.ops.bim.add_style(material=material.name)
             self.assign_class(context, obj)
         return {"FINISHED"}
 
