@@ -627,13 +627,106 @@ class DisableEditingStructuralLoadCase(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EnableEditingStructuralLoadCaseActivity(bpy.types.Operator):
-    bl_idname = "bim.enable_editing_structural_load_case_activity"
-    bl_label = "Enable Editing Structural Load Case Activity"
+class EnableEditingStructuralLoadCaseGroups(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_structural_load_case_groups"
+    bl_label = "Enable Editing Structural Load Case Groups"
     load_case: bpy.props.IntProperty()
 
     def execute(self, context):
         self.props = context.scene.BIMStructuralProperties
         self.props.active_load_case_id = self.load_case
-        self.props.load_case_editing_type = "ACTIVITY"
+        self.props.load_case_editing_type = "GROUPS"
+        return {"FINISHED"}
+
+
+class AddStructuralLoadGroup(bpy.types.Operator):
+    bl_idname = "bim.add_structural_load_group"
+    bl_label = "Add Structural Load Group"
+    load_case: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        load_group = ifcopenshell.api.run("structural.add_structural_load_group", self.file)
+        ifcopenshell.api.run("group.assign_group", self.file, product=load_group, group=self.file.by_id(self.load_case))
+        Data.load(IfcStore.get_file())
+        return {"FINISHED"}
+
+
+class RemoveStructuralLoadGroup(bpy.types.Operator):
+    bl_idname = "bim.remove_structural_load_group"
+    bl_label = "Remove Structural Load Group"
+    load_group: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "structural.remove_structural_load_group", self.file, load_group=self.file.by_id(self.load_group)
+        )
+        Data.load(self.file)
+        return {"FINISHED"}
+
+
+class EnableEditingStructuralLoadGroupActivities(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_structural_load_group_activities"
+    bl_label = "Enable Editing Structural Load Group Activities"
+    load_group: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        self.props = context.scene.BIMStructuralProperties
+        self.props.active_load_group_id = self.load_group
+        self.props.load_group_editing_type = "ACTIVITY"
+        self.load_structural_activities()
+        return {"FINISHED"}
+
+    def load_structural_activities(self):
+        while len(self.props.load_group_activities) > 0:
+            self.props.load_group_activities.remove(0)
+        for activity_id in Data.load_groups[self.load_group]["IsGroupedBy"]:
+            activity = Data.structural_activities[activity_id]
+            new = self.props.load_group_activities.add()
+            new.ifc_definition_id = activity_id
+            new.name = self.file.by_id(activity["AssignedToStructuralItem"]).Name or "Unnamed"
+            new.applied_load_class = self.file.by_id(activity["AppliedLoad"]).is_a()
+
+
+class AddStructuralActivity(bpy.types.Operator):
+    bl_idname = "bim.add_structural_activity"
+    bl_label = "Add Structural Activity"
+    load_group: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMStructuralProperties
+        self.file = IfcStore.get_file()
+        for obj in context.selected_objects:
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            applied_load_class = self.props.applicable_structural_activity_types
+
+            if element.is_a("IfcStructuralPointConnection"):
+                if applied_load_class not in ["IfcStructuralLoadSingleForce", "IfcStructuralLoadSingleDisplacement"]:
+                    continue
+                ifc_class = "IfcStructuralPointAction"
+            elif element.is_a("IfcStructuralCurveMember"):
+                if applied_load_class != "IfcStructuralLoadLinearForce":
+                    continue
+                ifc_class = "IfcStructuralLinearAction"
+            elif element.is_a("IfcStructuralSurfaceMember"):
+                if applied_load_class != "IfcStructuralLoadPlanarForce":
+                    continue
+                ifc_class = "IfcStructuralPlanarAction"
+
+            activity = ifcopenshell.api.run(
+                "structural.add_structural_activity",
+                self.file,
+                ifc_class=ifc_class,
+                applied_load=None,  # TODO
+                structural_member=element
+            )
+            ifcopenshell.api.run(
+                "group.assign_group", self.file, product=activity, group=self.file.by_id(self.load_group)
+            )
+        Data.load(IfcStore.get_file())
+        bpy.ops.bim.enable_editing_structural_load_group_activities(load_group=self.load_group)
         return {"FINISHED"}

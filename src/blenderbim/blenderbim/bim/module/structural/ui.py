@@ -1,3 +1,4 @@
+import bpy
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.structural.data import Data
@@ -344,13 +345,16 @@ class BIM_PT_structural_load_cases(Panel):
         row.label(text=load_case["Name"] or "Unnamed", icon="CON_CLAMPTO")
 
         if self.props.active_load_case_id and self.props.active_load_case_id == load_case_id:
-            row.operator("bim.edit_structural_load_case", text="", icon="CHECKMARK")
+            if self.props.load_case_editing_type == "ATTRIBUTES":
+                row.operator("bim.edit_structural_load_case", text="", icon="CHECKMARK")
+            elif self.props.load_case_editing_type == "GROUPS":
+                row.operator("bim.add_structural_load_group", text="", icon="ADD").load_case = load_case_id
             row.operator("bim.disable_editing_structural_load_case", text="", icon="CANCEL")
         elif self.props.active_load_case_id:
             row.operator("bim.remove_structural_load_case", text="", icon="X").load_case = load_case_id
         else:
             row.operator(
-                "bim.enable_editing_structural_load_case_activity", text="", icon="GHOST_ENABLED"
+                "bim.enable_editing_structural_load_case_groups", text="", icon="GHOST_ENABLED"
             ).load_case = load_case_id
             row.operator(
                 "bim.enable_editing_structural_load_case", text="", icon="GREASEPENCIL"
@@ -360,8 +364,8 @@ class BIM_PT_structural_load_cases(Panel):
         if self.props.active_load_case_id == load_case_id:
             if self.props.load_case_editing_type == "ATTRIBUTES":
                 self.draw_editable_load_case_ui()
-            elif self.props.load_case_editing_type == "ACTIVITY":
-                self.draw_editable_load_case_activity_ui()
+            elif self.props.load_case_editing_type == "GROUPS":
+                self.draw_editable_load_case_group_ui(load_case)
 
     def draw_editable_load_case_ui(self):
         for attribute in self.props.load_case_attributes:
@@ -375,6 +379,42 @@ class BIM_PT_structural_load_cases(Panel):
             if attribute.is_optional:
                 row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
-    def draw_editable_load_case_activity_ui(self):
-        row = self.layout.row(align=True)
-        row.label(text="Activities!")
+    def draw_editable_load_case_group_ui(self, load_case):
+        box = self.layout.box()
+        if not len(load_case["IsGroupedBy"]):
+            row = box.row(align=True)
+            row.label(text="No Load Groups Found")
+        for load_group_id in load_case["IsGroupedBy"]:
+            load_group = Data.load_groups[load_group_id]
+            row = box.row(align=True)
+            row.label(text=load_group["Name"] or "Unnamed", icon="GHOST_ENABLED")
+            op = row.operator("bim.enable_editing_structural_load_group_activities", text="", icon="GHOST_ENABLED")
+            op.load_group = load_group_id
+            row.operator("bim.remove_structural_load_group", text="", icon="X").load_group = load_group_id
+
+            if self.props.active_load_group_id == load_group_id:
+                if self.props.load_group_editing_type == "ACTIVITY":
+                    self.draw_editable_load_group_activities_ui(box, load_group)
+
+    def draw_editable_load_group_activities_ui(self, layout, load_group):
+        row = layout.row(align=True)
+        row.prop(self.props, "applicable_structural_activity_types", text="")
+        op = row.operator("bim.add_structural_activity", text="", icon="ADD")
+        op.load_group = load_group["id"]
+        layout.template_list(
+            "BIM_UL_structural_activities",
+            "",
+            self.props,
+            "load_group_activities",
+            self.props,
+            "active_load_group_activity_index",
+        )
+
+
+
+class BIM_UL_structural_activities(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            row.label(text=item.name)
+            row.label(text=item.applied_load_class)

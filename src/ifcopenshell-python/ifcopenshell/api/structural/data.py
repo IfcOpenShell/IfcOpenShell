@@ -48,6 +48,7 @@ class Data:
         cls.load_structural_load_cases()
         cls.load_structural_load_case_combinations()
         cls.load_structural_load_groups()
+        cls.load_structural_activities()
         cls.is_loaded = True
 
     @classmethod
@@ -83,18 +84,12 @@ class Data:
         cls.load_cases = {}
 
         for case in cls._file.by_type("IfcStructuralLoadCase"):
-            # if case.IsGroupedBy:
-            #     for rel in case.IsGroupedBy:
-            #         for product in rel.RelatedObjects:
-            #             cls.products.setdefault(product.id(), []).append(case.id())
             data = case.get_info()
             del data["OwnerHistory"]
-
             is_grouped_by = []
-            for load_group in case.IsGroupedBy or []:
-                is_grouped_by.append(load_group.id())
+            for rel in case.IsGroupedBy or []:
+                is_grouped_by.extend([o.id() for o in rel.RelatedObjects])
             data["IsGroupedBy"] = is_grouped_by
-
             cls.load_cases[case.id()] = data
 
     @classmethod
@@ -121,19 +116,29 @@ class Data:
         for case in cls._file.by_type("IfcStructuralLoadGroup", include_subtypes=False):
             if case.PredefinedType == "LOAD_COMBINATION":
                 continue
-            # if case.IsGroupedBy:
-            #     for rel in case.IsGroupedBy:
-            #         for product in rel.RelatedObjects:
-            #             cls.products.setdefault(product.id(), []).append(case.id())
             data = case.get_info()
             del data["OwnerHistory"]
 
             is_grouped_by = []
-            for load_group in case.IsGroupedBy or []:
-                is_grouped_by.append(load_group.id())
+            for rel in case.IsGroupedBy or []:
+                is_grouped_by.extend([o.id() for o in rel.RelatedObjects])
             data["IsGroupedBy"] = is_grouped_by
 
             cls.load_groups[case.id()] = data
+
+    @classmethod
+    def load_structural_activities(cls):
+        cls.structural_activities = {}
+        for activity in cls._file.by_type("IfcStructuralActivity"):
+            data = activity.get_info()
+            del data["OwnerHistory"]
+            del data["ObjectPlacement"]
+            del data["Representation"]
+            data["AppliedLoad"] = data["AppliedLoad"].id() if data["AppliedLoad"] else None
+            data["AssignedToStructuralItem"] = None
+            if activity.AssignedToStructuralItem:
+                data["AssignedToStructuralItem"] = activity.AssignedToStructuralItem[0].RelatingElement.id()
+            cls.structural_activities[activity.id()] = data
 
     @classmethod
     def load_structural_connection(cls, product_id):
