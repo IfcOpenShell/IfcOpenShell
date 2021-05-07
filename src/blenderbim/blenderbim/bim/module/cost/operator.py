@@ -2,6 +2,7 @@ import os
 import bpy
 import json
 import ifcopenshell.api
+import blenderbim.bim.helper
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.cost.data import Data
 
@@ -22,15 +23,7 @@ class EditCostSchedule(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMCostProperties
-        attributes = {}
-        for attribute in props.cost_schedule_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                if attribute.data_type == "string":
-                    attributes[attribute.name] = attribute.string_value
-                elif attribute.data_type == "enum":
-                    attributes[attribute.name] = attribute.enum_value
+        attributes = blenderbim.bim.helper.export_attributes(props.cost_schedule_attributes)
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "cost.edit_cost_schedule",
@@ -73,24 +66,14 @@ class EnableEditingCostSchedule(bpy.types.Operator):
 
     def enable_editing_cost_schedule(self):
         data = Data.cost_schedules[self.cost_schedule]
+        blenderbim.bim.helper.import_attributes(
+            "IfcCostSchedule", self.props.cost_schedule_attributes, data, self.import_attributes
+        )
 
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcCostSchedule").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
-                continue
-            new = self.props.cost_schedule_attributes.add()
-            new.name = attribute.name()
-            new.is_null = data[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            new.data_type = data_type
-            if attribute.name() in ["SubmittedOn", "UpdateDate"]:
-                new.string_value = "" if new.is_null else data[attribute.name()].isoformat()
-            elif data_type == "string":
-                new.string_value = "" if new.is_null else data[attribute.name()]
-            elif data_type == "enum":
-                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
-                if data[attribute.name()]:
-                    new.enum_value = data[attribute.name()]
+    def import_attributes(self, name, prop, data):
+        if name in ["SubmittedOn", "UpdateDate"]:
+            prop.string_value = "" if prop.is_null else data[name].isoformat()
+            return True
 
 
 class EnableEditingCostItems(bpy.types.Operator):
@@ -242,22 +225,7 @@ class EnableEditingCostItem(bpy.types.Operator):
             props.cost_item_attributes.remove(0)
 
         data = Data.cost_items[self.cost_item]
-
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcCostItem").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity" or isinstance(data_type, tuple):
-                continue
-            new = props.cost_item_attributes.add()
-            new.name = attribute.name()
-            new.is_null = data[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            new.data_type = data_type
-            if data_type == "string":
-                new.string_value = "" if new.is_null else data[attribute.name()]
-            elif data_type == "enum":
-                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
-                if data[attribute.name()]:
-                    new.enum_value = data[attribute.name()]
+        blenderbim.bim.helper.import_attributes("IfcCostItem", props.cost_item_attributes, data)
         props.active_cost_item_id = self.cost_item
         props.cost_item_editing_type = "ATTRIBUTES"
         return {"FINISHED"}
@@ -278,19 +246,7 @@ class EditCostItem(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMCostProperties
-        attributes = {}
-        for attribute in props.cost_item_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                if attribute.data_type == "string":
-                    attributes[attribute.name] = attribute.string_value
-                elif attribute.data_type == "boolean":
-                    attributes[attribute.name] = attribute.bool_value
-                elif attribute.data_type == "integer":
-                    attributes[attribute.name] = attribute.int_value
-                elif attribute.data_type == "enum":
-                    attributes[attribute.name] = attribute.enum_value
+        attributes = blenderbim.bim.helper.export_attributes(props.cost_item_attributes)
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "cost.edit_cost_item",
@@ -434,22 +390,7 @@ class EnableEditingCostItemQuantity(bpy.types.Operator):
             self.props.quantity_attributes.remove(0)
         self.props.active_cost_item_quantity_id = self.physical_quantity
         data = Data.physical_quantities[self.physical_quantity]
-
-        for attribute in IfcStore.get_schema().declaration_by_name(data["type"]).all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
-                continue
-            new = self.props.quantity_attributes.add()
-            new.name = attribute.name()
-            new.is_null = data[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            new.data_type = data_type
-            if data_type == "string":
-                new.string_value = "" if new.is_null else data[attribute.name()]
-            elif data_type == "float":
-                new.float_value = 0.0 if new.is_null else data[attribute.name()]
-            elif data_type == "integer":
-                new.int_value = 0 if new.is_null else data[attribute.name()]
+        blenderbim.bim.helper.import_attributes(data["type"], self.props.quantity_attributes, data)
         return {"FINISHED"}
 
 
@@ -470,17 +411,7 @@ class EditCostItemQuantity(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMCostProperties
-        attributes = {}
-        for attribute in props.quantity_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                if attribute.data_type == "string":
-                    attributes[attribute.name] = attribute.string_value
-                if attribute.data_type == "float":
-                    attributes[attribute.name] = attribute.float_value
-                if attribute.data_type == "integer":
-                    attributes[attribute.name] = attribute.int_value
+        attributes = blenderbim.bim.helper.export_attributes(props.quantity_attributes)
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "cost.edit_cost_item_quantity",
@@ -543,30 +474,17 @@ class EnableEditingCostItemValue(bpy.types.Operator):
         self.props.active_cost_item_value_id = self.cost_value
         data = Data.cost_values[self.cost_value]
 
-        for attribute in IfcStore.get_schema().declaration_by_name(data["type"]).all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity" or isinstance(data_type, tuple):
-                continue
-            new = self.props.cost_value_attributes.add()
-            new.name = attribute.name()
-            new.is_null = data[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            new.data_type = data_type
-            if attribute.name() == "AppliedValue":
-                # TODO: for now, only support simple values
-                new.data_type = "float"
-                new.float_value = 0.0 if new.is_null else data[attribute.name()]
-            if data_type == "string":
-                new.string_value = "" if new.is_null else data[attribute.name()]
-            elif data_type == "float":
-                new.float_value = 0.0 if new.is_null else data[attribute.name()]
-            elif data_type == "integer":
-                new.int_value = 0 if new.is_null else data[attribute.name()]
-            elif data_type == "enum":
-                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
-                if data[attribute.name()]:
-                    new.enum_value = data[attribute.name()]
+        blenderbim.bim.helper.import_attributes(
+            data["type"], self.props.cost_value_attributes, data, self.import_attributes
+        )
         return {"FINISHED"}
+
+    def import_attributes(self, name, prop, data):
+        if name == "AppliedValue":
+            # TODO: for now, only support simple values
+            prop.data_type = "float"
+            prop.float_value = 0.0 if prop.is_null else data[name]
+            return True
 
 
 class DisableEditingCostItemValue(bpy.types.Operator):
@@ -586,17 +504,7 @@ class EditCostItemValue(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMCostProperties
-        attributes = {}
-        for attribute in props.cost_value_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                if attribute.data_type == "string":
-                    attributes[attribute.name] = attribute.string_value
-                if attribute.data_type == "float":
-                    attributes[attribute.name] = attribute.float_value
-                if attribute.data_type == "integer":
-                    attributes[attribute.name] = attribute.int_value
+        attributes = blenderbim.bim.helper.export_attributes(props.cost_value_attributes)
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "cost.edit_cost_item_value",
