@@ -242,7 +242,7 @@ class EnableEditingTasks(bpy.types.Operator):
 
         self.contracted_tasks = json.loads(self.props.contracted_tasks)
         self.sort_keys = {
-            i: Data.tasks[i]["Identification"] for i in Data.work_schedules[self.work_schedule]["RelatedObjects"]
+            i: Data.tasks[i]["Identification"] or "" for i in Data.work_schedules[self.work_schedule]["RelatedObjects"]
         }
 
         for related_object_id in sorted(self.sort_keys, key=self.natural_sort_key):
@@ -260,7 +260,7 @@ class EnableEditingTasks(bpy.types.Operator):
         if task["RelatedObjects"]:
             new.has_children = True
             if new.is_expanded:
-                self.sort_keys = {i: Data.tasks[i]["Identification"] for i in task["RelatedObjects"]}
+                self.sort_keys = {i: Data.tasks[i]["Identification"] or "" for i in task["RelatedObjects"]}
                 for related_object_id in sorted(self.sort_keys, key=self.natural_sort_key):
                     self.create_new_task_li(related_object_id, level_index + 1)
 
@@ -433,7 +433,9 @@ class EnableEditingTaskTime(bpy.types.Operator):
                 prop.string_value = "" if prop.is_null else data[name].isoformat()
                 return True
             elif isinstance(data[name], isodate.Duration):
-                prop.string_value = "" if prop.is_null else ifcopenshell.util.date.datetime2ifc(data[name], "IfcDuration")
+                prop.string_value = (
+                    "" if prop.is_null else ifcopenshell.util.date.datetime2ifc(data[name], "IfcDuration")
+                )
                 return True
 
     def add_task_time(self):
@@ -1154,9 +1156,7 @@ class EnableEditingSequenceTimeLag(bpy.types.Operator):
             if isinstance(data[name], isodate.Duration):
                 prop.data_type = "string"
                 prop.string_value = (
-                    ""
-                    if prop.is_null
-                    else ifcopenshell.util.date.datetime2ifc(data[name], "IfcDuration")
+                    "" if prop.is_null else ifcopenshell.util.date.datetime2ifc(data[name], "IfcDuration")
                 )
                 return True
             else:
