@@ -149,35 +149,59 @@ class BIM_PT_cost_schedules(Panel):
         row.prop(self.props, "cost_types", text="")
         if self.props.cost_types == "CATEGORY":
             row.prop(self.props, "cost_category", text="")
-        op = row.operator("bim.add_cost_item_value", text="", icon="ADD")
-        op.cost_item = self.props.active_cost_item_id
+        op = row.operator("bim.add_cost_value", text="", icon="ADD")
+        op.parent = self.props.active_cost_item_id
         op.cost_type = self.props.cost_types
         if self.props.cost_types == "CATEGORY":
             op.cost_category = self.props.cost_category
 
         for cost_value_id in Data.cost_items[self.props.active_cost_item_id]["CostValues"]:
-            cost_value = Data.cost_values[cost_value_id]
-            row = self.layout.row(align=True)
-            row.label(text=str(cost_value["Category"]))
-            row.label(text=str(cost_value["AppliedValue"]))
-            if self.props.active_cost_item_value_id and self.props.active_cost_item_value_id == cost_value_id:
-                op = row.operator("bim.edit_cost_item_value", text="", icon="CHECKMARK")
-                op.cost_value = cost_value_id
-                row.operator("bim.disable_editing_cost_item_value", text="", icon="CANCEL")
-            elif self.props.active_cost_item_value_id:
-                op = row.operator("bim.remove_cost_item_value", text="", icon="X")
-                op.cost_value = cost_value_id
-            else:
-                op = row.operator("bim.enable_editing_cost_item_value", text="", icon="GREASEPENCIL")
-                op.cost_value = cost_value_id
-                op = row.operator("bim.remove_cost_item_value", text="", icon="X")
-                op.cost_value = cost_value_id
+            self.draw_readonly_cost_value_ui(self.layout, cost_value_id)
 
-            if self.props.active_cost_item_value_id and self.props.active_cost_item_value_id == cost_value_id:
-                box = self.layout.box()
-                self.draw_editable_cost_item_value_ui(box)
+        if self.props.active_cost_item_value_id:
+            box = self.layout.box()
+            self.draw_editable_cost_value_ui(box, Data.cost_values[self.props.active_cost_item_value_id])
 
-    def draw_editable_cost_item_value_ui(self, layout):
+
+    def draw_readonly_cost_value_ui(self, layout, cost_value_id):
+        cost_value = Data.cost_values[cost_value_id]
+        row = layout.row(align=True)
+        row.label(text=str(cost_value["Category"]), icon="DISC")
+        row.label(text=str(cost_value["AppliedValue"]))
+        if self.props.active_cost_item_value_id and self.props.active_cost_item_value_id == cost_value_id:
+            op = row.operator("bim.edit_cost_value", text="", icon="CHECKMARK")
+            op.cost_value = cost_value_id
+            op = row.operator("bim.add_cost_value", text="", icon="ADD")
+            op.parent = cost_value_id
+            op.cost_type = self.props.cost_types
+            if self.props.cost_types == "CATEGORY":
+                op.cost_category = self.props.cost_category
+            row.operator("bim.disable_editing_cost_item_value", text="", icon="CANCEL")
+        elif self.props.active_cost_item_value_id:
+            op = row.operator("bim.add_cost_value", text="", icon="ADD")
+            op.parent = cost_value_id
+            op.cost_type = self.props.cost_types
+            if self.props.cost_types == "CATEGORY":
+                op.cost_category = self.props.cost_category
+            op = row.operator("bim.remove_cost_item_value", text="", icon="X")
+            op.cost_value = cost_value_id
+        else:
+            op = row.operator("bim.enable_editing_cost_item_value", text="", icon="GREASEPENCIL")
+            op.cost_value = cost_value_id
+            op = row.operator("bim.add_cost_value", text="", icon="ADD")
+            op.parent = cost_value_id
+            op.cost_type = self.props.cost_types
+            if self.props.cost_types == "CATEGORY":
+                op.cost_category = self.props.cost_category
+            op = row.operator("bim.remove_cost_item_value", text="", icon="X")
+            op.cost_value = cost_value_id
+
+        if len(cost_value["Components"]):
+            box = layout.box()
+            for component_id in cost_value["Components"]:
+                self.draw_readonly_cost_value_ui(box, component_id)
+
+    def draw_editable_cost_value_ui(self, layout, cost_value):
         for attribute in self.props.cost_value_attributes:
             row = layout.row(align=True)
             if attribute.data_type == "string":
@@ -192,6 +216,7 @@ class BIM_PT_cost_schedules(Panel):
                 row.prop(attribute, "enum_value", text=attribute.name)
             if attribute.is_optional:
                 row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+
 
 
 class BIM_UL_cost_items(UIList):
