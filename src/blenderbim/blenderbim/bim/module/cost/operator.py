@@ -423,10 +423,10 @@ class EditCostItemQuantity(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AddCostItemValue(bpy.types.Operator):
-    bl_idname = "bim.add_cost_item_value"
-    bl_label = "Add Cost Item Value"
-    cost_item: bpy.props.IntProperty()
+class AddCostValue(bpy.types.Operator):
+    bl_idname = "bim.add_cost_value"
+    bl_label = "Add Cost Value"
+    parent: bpy.props.IntProperty()
     cost_type: bpy.props.StringProperty()
     cost_category: bpy.props.StringProperty()
 
@@ -438,9 +438,9 @@ class AddCostItemValue(bpy.types.Operator):
             category = "*"
         elif self.cost_type == "CATEGORY":
             category = self.cost_category
-        value = ifcopenshell.api.run("cost.add_cost_item_value", self.file, cost_item=self.file.by_id(self.cost_item))
+        value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=self.file.by_id(self.parent))
         ifcopenshell.api.run(
-            "cost.edit_cost_item_value", self.file, cost_value=value, attributes={"Category": category}
+            "cost.edit_cost_value", self.file, cost_value=value, attributes={"Category": category}
         )
         Data.load(self.file)
         return {"FINISHED"}
@@ -497,8 +497,8 @@ class DisableEditingCostItemValue(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EditCostItemValue(bpy.types.Operator):
-    bl_idname = "bim.edit_cost_item_value"
+class EditCostValue(bpy.types.Operator):
+    bl_idname = "bim.edit_cost_value"
     bl_label = "Edit Cost Item Value"
     cost_value: bpy.props.IntProperty()
 
@@ -507,7 +507,7 @@ class EditCostItemValue(bpy.types.Operator):
         attributes = blenderbim.bim.helper.export_attributes(props.cost_value_attributes)
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
-            "cost.edit_cost_item_value",
+            "cost.edit_cost_value",
             self.file,
             **{"cost_value": self.file.by_id(self.cost_value), "attributes": attributes},
         )
