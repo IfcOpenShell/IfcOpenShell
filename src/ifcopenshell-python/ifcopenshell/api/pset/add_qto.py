@@ -22,3 +22,4 @@ class Usecase:
                     "RelatingPropertyDefinition": qto,
                 }
             )
+            return qto
