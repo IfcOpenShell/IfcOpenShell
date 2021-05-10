@@ -77,11 +77,11 @@
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
-	IfcEntityList::ptr select(IfcUtil::IfcBaseClass* e, bool completely_within = false) const {
+	IfcEntityList::ptr select(IfcUtil::IfcBaseClass* e, bool completely_within = false, double extend = 0.0) const {
 		if (!e->declaration().is("IfcProduct")) {
 			throw IfcParse::IfcException("Instance should be an IfcProduct");
 		}
-		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select((IfcUtil::IfcBaseEntity*)e, completely_within);
+		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select((IfcUtil::IfcBaseEntity*)e, completely_within, extend);
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
@@ -90,13 +90,13 @@
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
-	IfcEntityList::ptr select(const std::string& shape_serialization) const {
+	IfcEntityList::ptr select(const std::string& shape_serialization, bool completely_within = false, double extend = -1.e-5) const {
 		std::stringstream stream(shape_serialization);
 		BRepTools_ShapeSet shapes;
 		shapes.Read(stream);
 		const TopoDS_Shape& shp = shapes.Shape(shapes.NbShapes());
 
-		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select(shp);
+		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select(shp, completely_within, extend);
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
