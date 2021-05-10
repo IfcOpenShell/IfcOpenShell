@@ -309,6 +309,10 @@ class LoadTaskProperties(bpy.types.Operator):
                 item.start = "-"
                 item.finish = "-"
                 item.duration = "-"
+            if task["HasAssignmentsWorkCalendar"]:
+                item.calendar = Data.work_calendars[task["HasAssignmentsWorkCalendar"][0]]["Name"] or "Unnamed"
+            else:
+                item.calendar = ""
         self.props.is_task_update_enabled = True
         return {"FINISHED"}
 
@@ -1065,6 +1069,7 @@ class EditTaskCalendar(bpy.types.Operator):
             },
         )
         Data.load(IfcStore.get_file())
+        bpy.ops.bim.load_task_properties(task=self.task)
         return {"FINISHED"}
 
 
@@ -1085,6 +1090,7 @@ class RemoveTaskCalendar(bpy.types.Operator):
             },
         )
         Data.load(IfcStore.get_file())
+        bpy.ops.bim.load_task_properties(task=self.task)
         return {"FINISHED"}
 
 
