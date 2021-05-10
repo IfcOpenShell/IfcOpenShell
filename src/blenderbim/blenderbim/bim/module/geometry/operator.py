@@ -122,7 +122,7 @@ class AddRepresentation(bpy.types.Operator):
             [
                 bpy.ops.bim.add_style(material=s.material.name)
                 for s in obj.material_slots
-                if not s.material.BIMMaterialProperties.ifc_style_id
+                if s.material and not s.material.BIMMaterialProperties.ifc_style_id
             ]
 
             ifcopenshell.api.run(

@@ -1,4 +1,5 @@
 import bpy
+from blenderbim.bim.ifc import IfcStore
 from math import radians
 from blenderbim.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
@@ -14,6 +15,28 @@ from bpy.props import (
 )
 
 
+def getApplicableStructuralActivityTypes(self, context):
+    ifc_file = IfcStore.get_file()
+    element_classes = set(
+        [
+            ifc_file.by_id(o.BIMObjectProperties.ifc_definition_id).is_a()
+            for o in bpy.context.selected_objects
+            if o.BIMObjectProperties.ifc_definition_id
+        ]
+    )
+    types = [("IfcStructuralLoadTemperature", "IfcStructuralLoadTemperature", "")]
+    if "IfcStructuralPointConnection" in element_classes:
+        types.extend([
+            ("IfcStructuralLoadSingleForce", "IfcStructuralLoadSingleForce", ""),
+            ("IfcStructuralLoadSingleDisplacement", "IfcStructuralLoadSingleDisplacement", "")
+        ])
+    if "IfcStructuralCurveMember" in element_classes:
+        types.append(("IfcStructuralLoadLinearForce", "IfcStructuralLoadLinearForce", ""))
+    if "IfcStructuralSurfaceMember" in element_classes:
+        types.append(("IfcStructuralLoadPlanarForce", "IfcStructuralLoadPlanarForce", ""))
+    return types
+
+
 def updateAxisAngle(self, context):
     if not self.axis_empty:
         return
@@ -27,8 +50,26 @@ def updateAxisAngle(self, context):
     empty.rotation_euler[0] = radians(self.axis_angle)
 
 
+def updateConnectionCS(self, context):
+    if not self.ccs_empty:
+        return
+    obj = context.active_object
+    empty = self.ccs_empty
+    empty.location = obj.data.vertices[0].co
+    empty.rotation_mode = "XYZ"
+    empty.rotation_euler[0] = radians(self.ccs_x_angle)
+    empty.rotation_euler[1] = radians(self.ccs_y_angle)
+    empty.rotation_euler[2] = radians(self.ccs_z_angle)
+
+
 class StructuralAnalysisModel(PropertyGroup):
     name: StringProperty(name="Name")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+
+class StructuralActivity(PropertyGroup):
+    name: StringProperty(name="Name")
+    applied_load_class: StringProperty(name="Applied Load Class")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
@@ -40,12 +81,17 @@ class BIMStructuralProperties(PropertyGroup):
     structural_analysis_models: CollectionProperty(name="Structural Analysis Models", type=StructuralAnalysisModel)
     active_structural_analysis_model_index: IntProperty(name="Active Structural Analysis Model Index")
     active_structural_analysis_model_id: IntProperty(name="Active Structural Analysis Model Id")
-
-    # editing_type: StringProperty(name="Editing Type")
-    # active_load_case_index: IntProperty(name="Active Work Schedules Index")
-
+    load_case_editing_type: StringProperty(name="Load Case Editing Type")
     load_case_attributes: CollectionProperty(name="Load Case Attributes", type=Attribute)
     active_load_case_id: IntProperty(name="Active Load Case Id")
+    load_group_editing_type: StringProperty(name="Load Group Editing Type")
+    # load_group_attributes: CollectionProperty(name="Load Group Attributes", type=Attribute)
+    active_load_group_id: IntProperty(name="Active Load Group Id")
+    applicable_structural_activity_types: EnumProperty(
+        items=getApplicableStructuralActivityTypes, name="Applicable Structural Activity Types"
+    )
+    load_group_activities: CollectionProperty(name="Load Group Activities", type=StructuralActivity)
+    active_load_group_activity_index: IntProperty(name="Active Load Group Activity Index")
 
 
 class BIMObjectStructuralProperties(PropertyGroup):
@@ -58,3 +104,8 @@ class BIMObjectStructuralProperties(PropertyGroup):
     axis_empty: PointerProperty(name="Axis Empty", type=bpy.types.Object)
 
     # relating_structural_activity: PointerProperty(name="Relating Structural Activity", type=bpy.types.Object)
+    is_editing_connection_cs: BoolProperty(name="Is Editing Connection CS", default=False)
+    ccs_x_angle: FloatProperty(name="Connection CS X Angle", update=updateConnectionCS)
+    ccs_y_angle: FloatProperty(name="Connection CS Y Angle", update=updateConnectionCS)
+    ccs_z_angle: FloatProperty(name="Connection CS Z Angle", update=updateConnectionCS)
+    ccs_empty: PointerProperty(name="CCS Empty", type=bpy.types.Object)

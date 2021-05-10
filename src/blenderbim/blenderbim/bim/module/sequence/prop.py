@@ -159,6 +159,7 @@ class Task(PropertyGroup):
     derived_start: StringProperty(name="Derived Start")
     derived_finish: StringProperty(name="Derived Finish")
     derived_duration: StringProperty(name="Derived Duration")
+    calendar: StringProperty(name="Calendar")
     is_predecessor: BoolProperty(name="Is Predecessor")
     is_successor: BoolProperty(name="Is Successor")
 
@@ -189,6 +190,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
     task_attributes: CollectionProperty(name="Task Attributes", type=Attribute)
     should_show_visualisation_ui: BoolProperty(name="Should Show Visualisation UI", default=False)
     should_show_times: BoolProperty(name="Should Show Times", default=False)
+    should_show_calendars: BoolProperty(name="Should Show Calendars", default=False)
     active_task_time_id: IntProperty(name="Active Task Id")
     task_time_attributes: CollectionProperty(name="Task Time Attributes", type=Attribute)
     contracted_tasks: StringProperty(name="Contracted Task Items", default="[]")
