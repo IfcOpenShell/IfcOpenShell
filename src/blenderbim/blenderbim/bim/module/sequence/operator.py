@@ -291,6 +291,14 @@ class LoadTaskProperties(bpy.types.Operator):
                 item.is_successor = self.props.active_task_id in [
                     Data.sequences[r]["RelatingProcess"] for r in task["IsSuccessorFrom"]
                 ]
+
+            calendar = helper.derive_calendar(item.ifc_definition_id)
+            if task["HasAssignmentsWorkCalendar"]:
+                item.calendar = calendar["Name"] or "Unnamed"
+            else:
+                item.calendar = ""
+                item.derived_calendar = calendar["Name"] or "Unnamed" if calendar else ""
+
             if task["TaskTime"]:
                 task_time = Data.task_times[task["TaskTime"]]
                 item.start = self.canonicalise_time(task_time["ScheduleStart"])
@@ -309,10 +317,7 @@ class LoadTaskProperties(bpy.types.Operator):
                 item.start = "-"
                 item.finish = "-"
                 item.duration = "-"
-            if task["HasAssignmentsWorkCalendar"]:
-                item.calendar = Data.work_calendars[task["HasAssignmentsWorkCalendar"][0]]["Name"] or "Unnamed"
-            else:
-                item.calendar = ""
+
         self.props.is_task_update_enabled = True
         return {"FINISHED"}
 
@@ -1069,7 +1074,10 @@ class EditTaskCalendar(bpy.types.Operator):
             },
         )
         Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_task_properties(task=self.task)
+        if Data.tasks[self.task]["RelatedObjects"]:
+            bpy.ops.bim.load_task_properties()
+        else:
+            bpy.ops.bim.load_task_properties(task=self.task)
         return {"FINISHED"}
 
 
@@ -1090,7 +1098,10 @@ class RemoveTaskCalendar(bpy.types.Operator):
             },
         )
         Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_task_properties(task=self.task)
+        if Data.tasks[self.task]["RelatedObjects"]:
+            bpy.ops.bim.load_task_properties()
+        else:
+            bpy.ops.bim.load_task_properties(task=self.task)
         return {"FINISHED"}
 
 

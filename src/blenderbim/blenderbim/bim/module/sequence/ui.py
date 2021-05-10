@@ -338,7 +338,10 @@ class BIM_UL_tasks(UIList):
                     row.prop(item, "duration", emboss=False, text="")
 
             if props.should_show_calendars:
-                row.label(text=item.calendar)
+                if item.derived_calendar:
+                    row.label(text=item.derived_calendar + "*")
+                else:
+                    row.label(text=item.calendar or "-")
 
             if context.active_object:
                 oprops = context.active_object.BIMObjectProperties
