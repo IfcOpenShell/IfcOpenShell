@@ -2,6 +2,7 @@ import bpy
 import json
 import ifcopenshell
 import ifcopenshell.api
+import blenderbim.bim.helper
 from math import degrees
 from mathutils import Vector, Matrix
 from blenderbim.bim.ifc import IfcStore
@@ -259,7 +260,7 @@ class EditStructuralAnalysisModel(bpy.types.Operator):
             **{
                 "structural_analysis_model": self.file.by_id(props.active_structural_analysis_model_id),
                 "attributes": attributes,
-            }
+            },
         )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_structural_analysis_models()
@@ -277,7 +278,7 @@ class RemoveStructuralAnalysisModel(bpy.types.Operator):
         ifcopenshell.api.run(
             "structural.remove_structural_analysis_model",
             self.file,
-            **{"structural_analysis_model": self.file.by_id(self.structural_analysis_model)}
+            **{"structural_analysis_model": self.file.by_id(self.structural_analysis_model)},
         )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_structural_analysis_models()
@@ -340,7 +341,7 @@ class AssignStructuralAnalysisModel(bpy.types.Operator):
             **{
                 "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
                 "structural_analysis_model": self.file.by_id(self.structural_analysis_model),
-            }
+            },
         )
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
@@ -361,15 +362,15 @@ class UnassignStructuralAnalysisModel(bpy.types.Operator):
             **{
                 "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
                 "structural_analysis_model": self.file.by_id(self.structural_analysis_model),
-            }
+            },
         )
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
 
-class EnableEditingStructuralMemberAxis(bpy.types.Operator):
-    bl_idname = "bim.enable_editing_structural_member_axis"
-    bl_label = "Enable Editing Structural Member Axis"
+class EnableEditingStructuralItemAxis(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_structural_item_axis"
+    bl_label = "Enable Editing Structural Item Axis"
 
     def execute(self, context):
         obj = bpy.context.active_object
@@ -377,20 +378,22 @@ class EnableEditingStructuralMemberAxis(bpy.types.Operator):
         props = obj.BIMStructuralProperties
 
         self.file = IfcStore.get_file()
-        member = self.file.by_id(oprops.ifc_definition_id)
-        z_axis = Vector(member.Axis.DirectionRatios).normalized() @ obj.matrix_world if member.Axis else None
+        item = self.file.by_id(oprops.ifc_definition_id)
+        z_axis = Vector(item.Axis.DirectionRatios).normalized() @ obj.matrix_world if item.Axis else None
         x_axis = (obj.data.vertices[1].co - obj.data.vertices[0].co).normalized()
         location = obj.data.vertices[0].co
-        empty = bpy.data.objects.new("Member Axis", None)
+        empty = bpy.data.objects.new("Item Axis", None)
         empty.empty_display_type = "ARROWS"
         if z_axis:
             y_axis = (z_axis.cross(x_axis)).normalized()
-            empty.matrix_world = Matrix((
-                (x_axis[0], y_axis[0], z_axis[0], location[0]),
-                (x_axis[1], y_axis[1], z_axis[1], location[1]),
-                (x_axis[2], y_axis[2], z_axis[2], location[2]),
-                (0, 0, 0, 1),
-            ))
+            empty.matrix_world = Matrix(
+                (
+                    (x_axis[0], y_axis[0], z_axis[0], location[0]),
+                    (x_axis[1], y_axis[1], z_axis[1], location[1]),
+                    (x_axis[2], y_axis[2], z_axis[2], location[2]),
+                    (0, 0, 0, 1),
+                )
+            )
         else:
             empty.location = location
             empty.rotation_mode = "QUATERNION"
@@ -404,9 +407,9 @@ class EnableEditingStructuralMemberAxis(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class DisableEditingStructuralMemberAxis(bpy.types.Operator):
-    bl_idname = "bim.disable_editing_structural_member_axis"
-    bl_label = "Disable Editing Structural Member Axis"
+class DisableEditingStructuralItemAxis(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_structural_item_axis"
+    bl_label = "Disable Editing Structural Item Axis"
 
     def execute(self, context):
         obj = bpy.context.active_object
@@ -417,9 +420,9 @@ class DisableEditingStructuralMemberAxis(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EditStructuralMemberAxis(bpy.types.Operator):
-    bl_idname = "bim.edit_structural_member_axis"
-    bl_label = "Edit Structural Member Axis"
+class EditStructuralItemAxis(bpy.types.Operator):
+    bl_idname = "bim.edit_structural_item_axis"
+    bl_label = "Edit Structural Item Axis"
 
     def execute(self, context):
         obj = bpy.context.active_object
@@ -429,12 +432,85 @@ class EditStructuralMemberAxis(bpy.types.Operator):
         z_axis = relative_matrix.col[2][0:3]
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
-            "structural.edit_structural_member_axis",
+            "structural.edit_structural_item_axis",
             self.file,
-            structural_member=self.file.by_id(oprops.ifc_definition_id),
+            structural_item=self.file.by_id(oprops.ifc_definition_id),
             axis=z_axis,
         )
-        bpy.ops.bim.disable_editing_structural_member_axis()
+        bpy.ops.bim.disable_editing_structural_item_axis()
+        return {"FINISHED"}
+
+
+class EnableEditingStructuralItemConnectionCS(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_structural_item_connection_cs"
+    bl_label = "Enable Editing Structural Item Connection CS"
+
+    def execute(self, context):
+        obj = bpy.context.active_object
+        oprops = obj.BIMObjectProperties
+        props = obj.BIMStructuralProperties
+
+        self.file = IfcStore.get_file()
+        item = self.file.by_id(oprops.ifc_definition_id)
+        z_axis = Vector(item.Axis.DirectionRatios).normalized() @ obj.matrix_world if item.Axis else None
+        x_axis = (obj.data.vertices[1].co - obj.data.vertices[0].co).normalized()
+        location = obj.data.vertices[0].co
+        empty = bpy.data.objects.new("Item Connection CS", None)
+        empty.empty_display_type = "ARROWS"
+        if z_axis:
+            y_axis = (z_axis.cross(x_axis)).normalized()
+            empty.matrix_world = Matrix(
+                (
+                    (x_axis[0], y_axis[0], z_axis[0], location[0]),
+                    (x_axis[1], y_axis[1], z_axis[1], location[1]),
+                    (x_axis[2], y_axis[2], z_axis[2], location[2]),
+                    (0, 0, 0, 1),
+                )
+            )
+        else:
+            empty.location = location
+            empty.rotation_mode = "QUATERNION"
+            empty.rotation_quaternion = x_axis.to_track_quat("X", "Z")
+
+        props.axis_angle = degrees(empty.rotation_euler[0])
+        props.axis_empty = empty
+        context.scene.collection.objects.link(empty)
+
+        props.is_editing_axis = True
+        return {"FINISHED"}
+
+
+class DisableEditingStructuralItemConnectionCS(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_structural_item_connection_cs"
+    bl_label = "Disable Editing Structural Item Connection CS"
+
+    def execute(self, context):
+        obj = bpy.context.active_object
+        props = obj.BIMStructuralProperties
+        props.is_editing_axis = False
+        if props.axis_empty:
+            bpy.data.objects.remove(props.axis_empty)
+        return {"FINISHED"}
+
+
+class EditStructuralItemConnectionCS(bpy.types.Operator):
+    bl_idname = "bim.edit_structural_item_connection_cs"
+    bl_label = "Edit Structural Item Connection CS"
+
+    def execute(self, context):
+        obj = bpy.context.active_object
+        oprops = obj.BIMObjectProperties
+        props = obj.BIMStructuralProperties
+        relative_matrix = props.axis_empty.matrix_world @ obj.matrix_world.inverted()
+        z_axis = relative_matrix.col[2][0:3]
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "structural.edit_structural_item_connection_cs",
+            self.file,
+            structural_item=self.file.by_id(oprops.ifc_definition_id),
+            axis=z_axis,
+        )
+        bpy.ops.bim.disable_editing_structural_item_axis()
         return {"FINISHED"}
 
 
@@ -494,15 +570,7 @@ class EditStructuralLoadCase(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMStructuralProperties
-        attributes = {}
-        for attribute in props.load_case_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                if attribute.data_type == "string":
-                    attributes[attribute.name] = attribute.string_value
-                elif attribute.data_type == "enum":
-                    attributes[attribute.name] = attribute.enum_value
+        attributes = blenderbim.bim.helper.export_attributes(props.load_case_attributes)
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "structural.edit_structural_load_case",
@@ -536,33 +604,18 @@ class EnableEditingStructuralLoadCase(bpy.types.Operator):
     def execute(self, context):
         self.props = context.scene.BIMStructuralProperties
         self.props.active_load_case_id = self.load_case
+        self.props.load_case_editing_type = "ATTRIBUTES"
         while len(self.props.load_case_attributes) > 0:
             self.props.load_case_attributes.remove(0)
-        self.enable_editing_structural_load_case()
+        data = Data.load_cases[self.load_case]
+        blenderbim.bim.helper.import_attributes(
+            "IfcStructuralLoadCase", self.props.load_case_attributes, data, self.import_attributes
+        )
         return {"FINISHED"}
 
-    def enable_editing_structural_load_case(self):
-        data = Data.load_cases[self.load_case]
-        print(data)
-
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcStructuralLoadCase").all_attributes():
-            if attribute.name() in ["SelfWeightCoefficients", "Coefficient"]:
-                continue
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
-                continue
-            new = self.props.load_case_attributes.add()
-            new.name = attribute.name()
-            new.is_null = data[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            print(data_type)
-            new.data_type = data_type
-            if data_type == "string":
-                new.string_value = "" if new.is_null else data[attribute.name()]
-            elif data_type == "enum":
-                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
-                if data[attribute.name()]:
-                    new.enum_value = data[attribute.name()]
+    def import_attributes(self, name, prop, data):
+        if name in ["SelfWeightCoefficients"]:
+            return False
 
 
 class DisableEditingStructuralLoadCase(bpy.types.Operator):
@@ -571,4 +624,109 @@ class DisableEditingStructuralLoadCase(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.BIMStructuralProperties.active_load_case_id = 0
+        return {"FINISHED"}
+
+
+class EnableEditingStructuralLoadCaseGroups(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_structural_load_case_groups"
+    bl_label = "Enable Editing Structural Load Case Groups"
+    load_case: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMStructuralProperties
+        self.props.active_load_case_id = self.load_case
+        self.props.load_case_editing_type = "GROUPS"
+        return {"FINISHED"}
+
+
+class AddStructuralLoadGroup(bpy.types.Operator):
+    bl_idname = "bim.add_structural_load_group"
+    bl_label = "Add Structural Load Group"
+    load_case: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        load_group = ifcopenshell.api.run("structural.add_structural_load_group", self.file)
+        ifcopenshell.api.run("group.assign_group", self.file, product=load_group, group=self.file.by_id(self.load_case))
+        Data.load(IfcStore.get_file())
+        return {"FINISHED"}
+
+
+class RemoveStructuralLoadGroup(bpy.types.Operator):
+    bl_idname = "bim.remove_structural_load_group"
+    bl_label = "Remove Structural Load Group"
+    load_group: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "structural.remove_structural_load_group", self.file, load_group=self.file.by_id(self.load_group)
+        )
+        Data.load(self.file)
+        return {"FINISHED"}
+
+
+class EnableEditingStructuralLoadGroupActivities(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_structural_load_group_activities"
+    bl_label = "Enable Editing Structural Load Group Activities"
+    load_group: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        self.props = context.scene.BIMStructuralProperties
+        self.props.active_load_group_id = self.load_group
+        self.props.load_group_editing_type = "ACTIVITY"
+        self.load_structural_activities()
+        return {"FINISHED"}
+
+    def load_structural_activities(self):
+        while len(self.props.load_group_activities) > 0:
+            self.props.load_group_activities.remove(0)
+        for activity_id in Data.load_groups[self.load_group]["IsGroupedBy"]:
+            activity = Data.structural_activities[activity_id]
+            new = self.props.load_group_activities.add()
+            new.ifc_definition_id = activity_id
+            new.name = self.file.by_id(activity["AssignedToStructuralItem"]).Name or "Unnamed"
+            new.applied_load_class = self.file.by_id(activity["AppliedLoad"]).is_a()
+
+
+class AddStructuralActivity(bpy.types.Operator):
+    bl_idname = "bim.add_structural_activity"
+    bl_label = "Add Structural Activity"
+    load_group: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMStructuralProperties
+        self.file = IfcStore.get_file()
+        for obj in context.selected_objects:
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            applied_load_class = self.props.applicable_structural_activity_types
+
+            if element.is_a("IfcStructuralPointConnection"):
+                if applied_load_class not in ["IfcStructuralLoadSingleForce", "IfcStructuralLoadSingleDisplacement"]:
+                    continue
+                ifc_class = "IfcStructuralPointAction"
+            elif element.is_a("IfcStructuralCurveMember"):
+                if applied_load_class != "IfcStructuralLoadLinearForce":
+                    continue
+                ifc_class = "IfcStructuralLinearAction"
+            elif element.is_a("IfcStructuralSurfaceMember"):
+                if applied_load_class != "IfcStructuralLoadPlanarForce":
+                    continue
+                ifc_class = "IfcStructuralPlanarAction"
+
+            activity = ifcopenshell.api.run(
+                "structural.add_structural_activity",
+                self.file,
+                ifc_class=ifc_class,
+                applied_load=None,  # TODO
+                structural_member=element
+            )
+            ifcopenshell.api.run(
+                "group.assign_group", self.file, product=activity, group=self.file.by_id(self.load_group)
+            )
+        Data.load(IfcStore.get_file())
+        bpy.ops.bim.enable_editing_structural_load_group_activities(load_group=self.load_group)
         return {"FINISHED"}

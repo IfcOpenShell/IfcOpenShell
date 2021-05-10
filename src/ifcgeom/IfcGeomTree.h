@@ -166,8 +166,11 @@ namespace IfcGeom {
 
 				std::vector<T> ts;
 
-				if (IfcGeom::Kernel::count(s, TopAbs_SHELL) == 0) {
-					return ts;
+				if (extend < 0.) {
+					// Shell are only required when we do the boolean based intersection check
+					if (IfcGeom::Kernel::count(s, TopAbs_SHELL) == 0) {
+						return ts;
+					}
 				}
 
 				ts = select_box(bb, completely_within);
@@ -288,7 +291,9 @@ namespace IfcGeom {
 			if (it.initialize()) {
 				do {
 					IfcGeom::BRepElement<double>* elem = (IfcGeom::BRepElement<double>*)it.get();
-					add((IfcUtil::IfcBaseEntity*)it.file()->instance_by_id(elem->id()), elem->geometry().as_compound());
+					auto compound = elem->geometry().as_compound();
+					compound.Move(elem->transformation().data());
+					add((IfcUtil::IfcBaseEntity*)it.file()->instance_by_id(elem->id()), compound);
 				} while (it.next());
 			}
 		}

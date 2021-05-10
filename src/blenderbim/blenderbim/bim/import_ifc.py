@@ -718,7 +718,7 @@ class IfcImporter:
         # Create structural collections
         self.structural_member_collection = bpy.data.collections.new("Members")
         self.structural_connection_collection = bpy.data.collections.new("Connections")
-        self.structural_collection = bpy.data.collections.new("StructuralEntities")
+        self.structural_collection = bpy.data.collections.new("StructuralItems")
         self.structural_collection.children.link(self.structural_member_collection)
         self.structural_collection.children.link(self.structural_connection_collection)
         self.project["blender"].children.link(self.structural_collection)

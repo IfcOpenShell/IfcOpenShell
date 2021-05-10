@@ -1,3 +1,4 @@
+import re
 import os
 import bpy
 import json
@@ -7,6 +8,7 @@ import pystache
 import webbrowser
 import ifcopenshell.api
 import ifcopenshell.util.date
+import blenderbim.bim.helper
 import blenderbim.bim.module.sequence.helper as helper
 from datetime import datetime
 from datetime import timedelta
@@ -32,15 +34,7 @@ class EditWorkPlan(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMWorkPlanProperties
-        attributes = {}
-        for attribute in props.work_plan_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                if attribute.data_type == "string":
-                    attributes[attribute.name] = attribute.string_value
-                elif attribute.data_type == "enum":
-                    attributes[attribute.name] = attribute.enum_value
+        attributes = blenderbim.bim.helper.export_attributes(props.work_plan_attributes, self.export_attributes)
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "sequence.edit_work_plan",
@@ -50,6 +44,14 @@ class EditWorkPlan(bpy.types.Operator):
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_work_plan()
         return {"FINISHED"}
+
+    def export_attributes(self, attributes, prop):
+        if "Date" in prop.name or "Time" in prop.name:
+            attributes[prop.name] = helper.parse_datetime(prop.string_value)
+            return True
+        elif prop.name == "Duration" or prop.name == "TotalFloat":
+            attributes[prop.name] = helper.parse_duration(prop.string_value)
+            return True
 
 
 class RemoveWorkPlan(bpy.types.Operator):
@@ -76,26 +78,16 @@ class EnableEditingWorkPlan(bpy.types.Operator):
 
         data = Data.work_plans[self.work_plan]
 
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcWorkPlan").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
-                continue
-            new = props.work_plan_attributes.add()
-            new.name = attribute.name()
-            new.is_null = data[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            new.data_type = data_type
-            if attribute.name() in ["CreationDate", "StartTime", "FinishTime"]:
-                new.string_value = "" if new.is_null else data[attribute.name()].isoformat()
-            elif data_type == "string":
-                new.string_value = "" if new.is_null else data[attribute.name()]
-            elif data_type == "enum":
-                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
-                if data[attribute.name()]:
-                    new.enum_value = data[attribute.name()]
+        blenderbim.bim.helper.import_attributes("IfcWorkPlan", props.work_plan_attributes, data, self.import_attributes)
+
         props.active_work_plan_id = self.work_plan
         props.editing_type = "ATTRIBUTES"
         return {"FINISHED"}
+
+    def import_attributes(self, name, prop, data):
+        if name in ["CreationDate", "StartTime", "FinishTime"]:
+            prop.string_value = "" if prop.is_null else data[name].isoformat()
+            return True
 
 
 class DisableEditingWorkPlan(bpy.types.Operator):
@@ -175,15 +167,7 @@ class EditWorkSchedule(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMWorkScheduleProperties
-        attributes = {}
-        for attribute in props.work_schedule_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                if attribute.data_type == "string":
-                    attributes[attribute.name] = attribute.string_value
-                elif attribute.data_type == "enum":
-                    attributes[attribute.name] = attribute.enum_value
+        attributes = blenderbim.bim.helper.export_attributes(props.work_schedule_attributes, self.export_attributes)
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "sequence.edit_work_schedule",
@@ -193,6 +177,14 @@ class EditWorkSchedule(bpy.types.Operator):
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_work_schedule()
         return {"FINISHED"}
+
+    def export_attributes(self, attributes, prop):
+        if "Date" in prop.name or "Time" in prop.name:
+            attributes[prop.name] = helper.parse_datetime(prop.string_value)
+            return True
+        elif prop.name == "Duration" or prop.name == "TotalFloat":
+            attributes[prop.name] = helper.parse_duration(prop.string_value)
+            return True
 
 
 class RemoveWorkSchedule(bpy.types.Operator):
@@ -226,23 +218,14 @@ class EnableEditingWorkSchedule(bpy.types.Operator):
     def enable_editing_work_schedule(self):
         data = Data.work_schedules[self.work_schedule]
 
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcWorkSchedule").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
-                continue
-            new = self.props.work_schedule_attributes.add()
-            new.name = attribute.name()
-            new.is_null = data[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            new.data_type = data_type
-            if attribute.name() in ["CreationDate", "StartTime", "FinishTime"]:
-                new.string_value = "" if new.is_null else data[attribute.name()].isoformat()
-            elif data_type == "string":
-                new.string_value = "" if new.is_null else data[attribute.name()]
-            elif data_type == "enum":
-                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
-                if data[attribute.name()]:
-                    new.enum_value = data[attribute.name()]
+        blenderbim.bim.helper.import_attributes(
+            "IfcWorkSchedule", self.props.work_schedule_attributes, data, self.import_attributes
+        )
+
+    def import_attributes(self, name, prop, data):
+        if name in ["CreationDate", "StartTime", "FinishTime"]:
+            prop.string_value = "" if prop.is_null else data[name].isoformat()
+            return True
 
 
 class EnableEditingTasks(bpy.types.Operator):
@@ -258,10 +241,11 @@ class EnableEditingTasks(bpy.types.Operator):
             self.tprops.tasks.remove(0)
 
         self.contracted_tasks = json.loads(self.props.contracted_tasks)
-        sort_keys = {
-            i: Data.tasks[i]["Identification"] for i in Data.work_schedules[self.work_schedule]["RelatedObjects"]
+        self.sort_keys = {
+            i: Data.tasks[i]["Identification"] or "" for i in Data.work_schedules[self.work_schedule]["RelatedObjects"]
         }
-        for related_object_id in sorted(sort_keys, key=sort_keys.__getitem__):
+
+        for related_object_id in sorted(self.sort_keys, key=self.natural_sort_key):
             self.create_new_task_li(related_object_id, 0)
         bpy.ops.bim.load_task_properties()
         self.props.editing_type = "TASKS"
@@ -276,10 +260,13 @@ class EnableEditingTasks(bpy.types.Operator):
         if task["RelatedObjects"]:
             new.has_children = True
             if new.is_expanded:
-                sort_keys = {i: Data.tasks[i]["Identification"] for i in task["RelatedObjects"]}
-                for related_object_id in sorted(sort_keys, key=sort_keys.__getitem__):
+                self.sort_keys = {i: Data.tasks[i]["Identification"] or "" for i in task["RelatedObjects"]}
+                for related_object_id in sorted(self.sort_keys, key=self.natural_sort_key):
                     self.create_new_task_li(related_object_id, level_index + 1)
-        return {"FINISHED"}
+
+    def natural_sort_key(self, i, _nsre=re.compile("([0-9]+)")):
+        s = self.sort_keys[i]
+        return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]
 
 
 class LoadTaskProperties(bpy.types.Operator):
@@ -322,6 +309,10 @@ class LoadTaskProperties(bpy.types.Operator):
                 item.start = "-"
                 item.finish = "-"
                 item.duration = "-"
+            if task["HasAssignmentsWorkCalendar"]:
+                item.calendar = Data.work_calendars[task["HasAssignmentsWorkCalendar"][0]]["Name"] or "Unnamed"
+            else:
+                item.calendar = ""
         self.props.is_task_update_enabled = True
         return {"FINISHED"}
 
@@ -434,38 +425,22 @@ class EnableEditingTaskTime(bpy.types.Operator):
 
         data = Data.task_times[task_time_id]
 
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcTaskTime").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
-                continue
-            new = props.task_time_attributes.add()
-            new.name = attribute.name()
-            new.is_null = data[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            new.data_type = data_type
-            if data_type == "string":
-                if isinstance(data[attribute.name()], datetime):
-                    new.string_value = "" if new.is_null else data[attribute.name()].isoformat()
-                elif isinstance(data[attribute.name()], isodate.Duration):
-                    new.string_value = (
-                        ""
-                        if new.is_null
-                        else ifcopenshell.util.date.datetime2ifc(data[attribute.name()], "IfcDuration")
-                    )
-                else:
-                    new.string_value = "" if new.is_null else data[attribute.name()]
-            elif data_type == "boolean":
-                new.bool_value = False if new.is_null else data[attribute.name()]
-            elif data_type == "float":
-                new.float_value = 0.0 if new.is_null else data[attribute.name()]
-            elif data_type == "enum":
-                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
-                if data[attribute.name()]:
-                    new.enum_value = data[attribute.name()]
+        blenderbim.bim.helper.import_attributes("IfcTaskTime", props.task_time_attributes, data, self.import_attributes)
         props.active_task_time_id = task_time_id
         props.active_task_id = self.task
         props.editing_task_type = "TASKTIME"
         return {"FINISHED"}
+
+    def import_attributes(self, name, prop, data):
+        if prop.data_type == "string":
+            if isinstance(data[name], datetime):
+                prop.string_value = "" if prop.is_null else data[name].isoformat()
+                return True
+            elif isinstance(data[name], isodate.Duration):
+                prop.string_value = (
+                    "" if prop.is_null else ifcopenshell.util.date.datetime2ifc(data[name], "IfcDuration")
+                )
+                return True
 
     def add_task_time(self):
         task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=self.file.by_id(self.task))
@@ -479,20 +454,7 @@ class EditTaskTime(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMWorkScheduleProperties
-        attributes = {}
-        for attribute in props.task_time_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                if attribute.data_type == "string":
-                    attributes[attribute.name] = attribute.string_value
-                elif attribute.data_type == "boolean":
-                    attributes[attribute.name] = attribute.bool_value
-                elif attribute.data_type == "float":
-                    attributes[attribute.name] = attribute.float_value
-                elif attribute.data_type == "enum":
-                    attributes[attribute.name] = attribute.enum_value
-
+        attributes = blenderbim.bim.helper.export_attributes(props.task_time_attributes, self.export_attributes)
         attributes = self.convert_strings_to_date_times(attributes)
 
         self.file = IfcStore.get_file()
@@ -506,21 +468,13 @@ class EditTaskTime(bpy.types.Operator):
         bpy.ops.bim.load_task_properties(task=props.active_task_id)
         return {"FINISHED"}
 
-    def convert_strings_to_date_times(self, attributes):
-        for key, value in attributes.items():
-            if not value:
-                continue
-            if "Start" in key or "Finish" in key or key == "StatusTime":
-                try:
-                    attributes[key] = parser.isoparse(value)
-                except:
-                    try:
-                        attributes[key] = parser.parse(value, dayfirst=True, fuzzy=True)
-                    except:
-                        attributes[key] = None
-            elif key == "ScheduleDuration":
-                attributes[key] = isodate.parse_duration(value)
-        return attributes
+    def export_attributes(self, attributes, prop):
+        if "Start" in prop.name or "Finish" in prop.name or prop.name == "StatusTime":
+            attributes[prop.name] = helper.parse_datetime(value)
+            return True
+        elif prop.name == "ScheduleDuration":
+            attributes[prop.name] = helper.parse_duration(value)
+            return True
 
 
 class EnableEditingTask(bpy.types.Operator):
@@ -535,25 +489,7 @@ class EnableEditingTask(bpy.types.Operator):
 
         data = Data.tasks[self.task]
 
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcTask").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
-                continue
-            new = props.task_attributes.add()
-            new.name = attribute.name()
-            new.is_null = data[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            new.data_type = data_type
-            if data_type == "string":
-                new.string_value = "" if new.is_null else data[attribute.name()]
-            elif data_type == "boolean":
-                new.bool_value = False if new.is_null else data[attribute.name()]
-            elif data_type == "integer":
-                new.int_value = 0 if new.is_null else data[attribute.name()]
-            elif data_type == "enum":
-                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
-                if data[attribute.name()]:
-                    new.enum_value = data[attribute.name()]
+        blenderbim.bim.helper.import_attributes("IfcTask", props.task_attributes, data)
         props.active_task_id = self.task
         props.editing_task_type = "ATTRIBUTES"
         return {"FINISHED"}
@@ -575,19 +511,7 @@ class EditTask(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMWorkScheduleProperties
-        attributes = {}
-        for attribute in props.task_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                if attribute.data_type == "string":
-                    attributes[attribute.name] = attribute.string_value
-                elif attribute.data_type == "boolean":
-                    attributes[attribute.name] = attribute.bool_value
-                elif attribute.data_type == "integer":
-                    attributes[attribute.name] = attribute.int_value
-                elif attribute.data_type == "enum":
-                    attributes[attribute.name] = attribute.enum_value
+        attributes = blenderbim.bim.export_attributes(props.task_attributes)
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "sequence.edit_task", self.file, **{"task": self.file.by_id(props.active_task_id), "attributes": attributes}
@@ -773,15 +697,7 @@ class EditWorkCalendar(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMWorkCalendarProperties
-        attributes = {}
-        for attribute in props.work_calendar_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                if attribute.data_type == "string":
-                    attributes[attribute.name] = attribute.string_value
-                elif attribute.data_type == "enum":
-                    attributes[attribute.name] = attribute.enum_value
+        attributes = blenderbim.bim.helper.export_attributes(props.work_calendar_attributes)
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "sequence.edit_work_calendar",
@@ -819,21 +735,7 @@ class EnableEditingWorkCalendar(bpy.types.Operator):
 
         data = Data.work_calendars[self.work_calendar]
 
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcWorkCalendar").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
-                continue
-            new = self.props.work_calendar_attributes.add()
-            new.name = attribute.name()
-            new.is_null = data[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            new.data_type = data_type
-            if data_type == "string":
-                new.string_value = "" if new.is_null else data[attribute.name()]
-            elif data_type == "enum":
-                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
-                if data[attribute.name()]:
-                    new.enum_value = data[attribute.name()]
+        blenderbim.bim.helper.import_attributes("IfcWorkCalendar", self.props.work_calendar_attributes, data)
         self.props.active_work_calendar_id = self.work_calendar
         self.props.editing_type = "ATTRIBUTES"
         return {"FINISHED"}
@@ -864,6 +766,27 @@ class ImportP6(bpy.types.Operator, ImportHelper):
         p62ifc.file = self.file
         p62ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
         p62ifc.execute()
+        Data.load(IfcStore.get_file())
+        print("Import finished in {:.2f} seconds".format(time.time() - start))
+        return {"FINISHED"}
+
+
+class ImportMSP(bpy.types.Operator, ImportHelper):
+    bl_idname = "import_msp.bim"
+    bl_label = "Import MSP"
+    filename_ext = ".xml"
+    filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
+
+    def execute(self, context):
+        from ifcp6.msp2ifc import MSP2Ifc
+
+        self.file = IfcStore.get_file()
+        start = time.time()
+        msp2ifc = MSP2Ifc()
+        msp2ifc.xml = self.filepath
+        msp2ifc.file = self.file
+        msp2ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
+        msp2ifc.execute()
         Data.load(IfcStore.get_file())
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
@@ -910,28 +833,19 @@ class EnableEditingWorkTime(bpy.types.Operator):
 
         data = Data.work_times[self.work_time]
 
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcWorkTime").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
-                continue
-            new = self.props.work_time_attributes.add()
-            new.name = attribute.name()
-            new.is_null = data[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            new.data_type = data_type
-            if attribute.name() in ["Start", "Finish"]:
-                new.string_value = "" if new.is_null else data[attribute.name()].isoformat()
-            elif data_type == "string":
-                new.string_value = "" if new.is_null else data[attribute.name()]
-            elif data_type == "enum":
-                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
-                if data[attribute.name()]:
-                    new.enum_value = data[attribute.name()]
+        blenderbim.bim.helper.import_attributes(
+            "IfcWorkTime", self.props.work_time_attributes, data, self.import_attributes
+        )
 
         self.initialise_recurrence_components()
         self.load_recurrence_pattern_data(data)
         self.props.active_work_time_id = self.work_time
         return {"FINISHED"}
+
+    def import_attributes(self, name, prop, data):
+        if name in ["Start", "Finish"]:
+            prop.string_value = "" if prop.is_null else data[name].isoformat()
+            return True
 
     def initialise_recurrence_components(self):
         if len(self.props.day_components) == 0:
@@ -988,15 +902,7 @@ class EditWorkTime(bpy.types.Operator):
 
     def execute(self, context):
         self.props = context.scene.BIMWorkCalendarProperties
-        attributes = {}
-        for attribute in self.props.work_time_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                if attribute.data_type == "string":
-                    attributes[attribute.name] = attribute.string_value
-                elif attribute.data_type == "enum":
-                    attributes[attribute.name] = attribute.enum_value
+        attributes = blenderbim.bim.helper.export_attributes(self.props.work_time_attributes)
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "sequence.edit_work_time",
@@ -1163,6 +1069,7 @@ class EditTaskCalendar(bpy.types.Operator):
             },
         )
         Data.load(IfcStore.get_file())
+        bpy.ops.bim.load_task_properties(task=self.task)
         return {"FINISHED"}
 
 
@@ -1183,6 +1090,7 @@ class RemoveTaskCalendar(bpy.types.Operator):
             },
         )
         Data.load(IfcStore.get_file())
+        bpy.ops.bim.load_task_properties(task=self.task)
         return {"FINISHED"}
 
 
@@ -1225,21 +1133,7 @@ class EnableEditingSequenceAttributes(bpy.types.Operator):
 
     def enable_editing_sequence_attributes(self):
         data = Data.sequences[self.sequence]
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcRelSequence").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
-                continue
-            new = self.props.sequence_attributes.add()
-            new.name = attribute.name()
-            new.is_null = data[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            new.data_type = data_type
-            if data_type == "string":
-                new.string_value = "" if new.is_null else data[attribute.name()]
-            elif data_type == "enum":
-                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
-                if data[attribute.name()]:
-                    new.enum_value = data[attribute.name()]
+        blenderbim.bim.helper.import_attributes("IfcRelSequence", self.props.sequence_attributes, data)
 
 
 class EnableEditingSequenceTimeLag(bpy.types.Operator):
@@ -1259,34 +1153,22 @@ class EnableEditingSequenceTimeLag(bpy.types.Operator):
 
     def enable_editing_attributes(self):
         data = Data.lag_times[self.lag_time]
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcLagTime").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
-                continue
-            new = self.props.time_lag_attributes.add()
-            new.name = attribute.name()
-            new.is_null = data[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            new.data_type = data_type
-            if attribute.name() == "LagValue":
-                if isinstance(data[attribute.name()], isodate.Duration):
-                    new.data_type = "string"
-                    new.string_value = (
-                        ""
-                        if new.is_null
-                        else ifcopenshell.util.date.datetime2ifc(data[attribute.name()], "IfcDuration")
-                    )
-                else:
-                    new.data_type = "float"
-                    new.float_value = 0.0 if new.is_null else data[attribute.name()]
-            elif data_type == "string":
-                new.string_value = "" if new.is_null else data[attribute.name()]
-            elif data_type == "float":
-                new.float_value = 0.0 if new.is_null else data[attribute.name()]
-            elif data_type == "enum":
-                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
-                if data[attribute.name()]:
-                    new.enum_value = data[attribute.name()]
+        blenderbim.bim.helper.import_attributes(
+            "IfcLagTime", self.props.time_lag_attributes, data, self.import_attributes
+        )
+
+    def import_attributes(self, name, prop, data):
+        if name == "LagValue":
+            if isinstance(data[name], isodate.Duration):
+                prop.data_type = "string"
+                prop.string_value = (
+                    "" if prop.is_null else ifcopenshell.util.date.datetime2ifc(data[name], "IfcDuration")
+                )
+                return True
+            else:
+                prop.data_type = "float"
+                prop.float_value = 0.0 if prop.is_null else data[name]
+                return True
 
 
 class UnassignLagTime(bpy.types.Operator):
@@ -1325,15 +1207,7 @@ class EditSequenceAttributes(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMWorkScheduleProperties
-        attributes = {}
-        for attribute in props.sequence_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                if attribute.data_type == "string":
-                    attributes[attribute.name] = attribute.string_value
-                elif attribute.data_type == "enum":
-                    attributes[attribute.name] = attribute.enum_value
+        attributes = blenderbim.bim.helper.export_attributes(props.sequence_attributes)
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "sequence.edit_sequence",
@@ -1352,17 +1226,7 @@ class EditSequenceTimeLag(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMWorkScheduleProperties
-        attributes = {}
-        for attribute in props.time_lag_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                if attribute.data_type == "string":
-                    attributes[attribute.name] = attribute.string_value
-                elif attribute.data_type == "float":
-                    attributes[attribute.name] = attribute.float_value
-                elif attribute.data_type == "enum":
-                    attributes[attribute.name] = attribute.enum_value
+        attributes = blenderbim.bim.helper.export_attributes(props.time_lag_attributes)
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "sequence.edit_lag_time",

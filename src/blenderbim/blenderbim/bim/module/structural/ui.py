@@ -1,3 +1,4 @@
+import bpy
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.structural.data import Data
@@ -169,11 +170,63 @@ class BIM_PT_structural_member(Panel):
             if self.props.is_editing_axis:
                 row = self.layout.row(align=True)
                 row.prop(self.props, "axis_angle")
-                row.operator("bim.edit_structural_member_axis", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_structural_member_axis", text="", icon="CANCEL")
+                row.operator("bim.edit_structural_item_axis", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_structural_item_axis", text="", icon="CANCEL")
             else:
                 row = self.layout.row()
-                row.operator("bim.enable_editing_structural_member_axis", text="Edit Axis", icon="GREASEPENCIL")
+                row.operator("bim.enable_editing_structural_item_axis", text="Edit Axis", icon="GREASEPENCIL")
+        else:
+            row = self.layout.row()
+            row.label(text="TODO")
+
+
+class BIM_PT_structural_connection(Panel):
+    bl_label = "IFC Structural Connection"
+    bl_idname = "BIM_PT_structural_connection"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            return False
+        props = context.active_object.BIMObjectProperties
+        if not props.ifc_definition_id:
+            return False
+        if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcStructuralConnection"):
+            return False
+        return True
+
+    def draw(self, context):
+        self.oprops = context.active_object.BIMObjectProperties
+        self.props = context.active_object.BIMStructuralProperties
+        self.file = IfcStore.get_file()
+
+        if self.file.by_id(self.oprops.ifc_definition_id).is_a("IfcStructuralCurveConnection"):
+            if self.props.is_editing_axis:
+                row = self.layout.row(align=True)
+                row.prop(self.props, "axis_angle")
+                row.operator("bim.edit_structural_item_axis", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_structural_item_axis", text="", icon="CANCEL")
+            else:
+                row = self.layout.row()
+                row.operator("bim.enable_editing_structural_item_axis", text="Edit Axis", icon="GREASEPENCIL")
+
+        elif self.file.by_id(self.oprops.ifc_definition_id).is_a("IfcStructuralPointConnection"):
+            if self.props.is_editing_connection_cs:
+                row = self.layout.row(align=True)
+                row.label(text="Editing Connection CS")
+                row.operator("bim.edit_structural_item_connection_cs", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_structural_item_connection_cs", text="", icon="CANCEL")
+                row = self.layout.row(align=True)
+                row.prop(self.props, "ccs_x_angle")
+                row.prop(self.props, "ccs_y_angle")
+                row.prop(self.props, "ccs_z_angle")
+            else:
+                row = self.layout.row()
+                row.operator("bim.enable_editing_structural_item_connection_cs", text="Edit Connection CS", icon="GREASEPENCIL")
         else:
             row = self.layout.row()
             row.label(text="TODO")
@@ -292,25 +345,76 @@ class BIM_PT_structural_load_cases(Panel):
         row.label(text=load_case["Name"] or "Unnamed", icon="CON_CLAMPTO")
 
         if self.props.active_load_case_id and self.props.active_load_case_id == load_case_id:
-            row.operator("bim.edit_structural_load_case", text="", icon="CHECKMARK")
+            if self.props.load_case_editing_type == "ATTRIBUTES":
+                row.operator("bim.edit_structural_load_case", text="", icon="CHECKMARK")
+            elif self.props.load_case_editing_type == "GROUPS":
+                row.operator("bim.add_structural_load_group", text="", icon="ADD").load_case = load_case_id
             row.operator("bim.disable_editing_structural_load_case", text="", icon="CANCEL")
         elif self.props.active_load_case_id:
             row.operator("bim.remove_structural_load_case", text="", icon="X").load_case = load_case_id
         else:
+            row.operator(
+                "bim.enable_editing_structural_load_case_groups", text="", icon="GHOST_ENABLED"
+            ).load_case = load_case_id
             row.operator(
                 "bim.enable_editing_structural_load_case", text="", icon="GREASEPENCIL"
             ).load_case = load_case_id
             row.operator("bim.remove_structural_load_case", text="", icon="X").load_case = load_case_id
 
         if self.props.active_load_case_id == load_case_id:
-            self.draw_editable_load_case_ui()
+            if self.props.load_case_editing_type == "ATTRIBUTES":
+                self.draw_editable_load_case_ui()
+            elif self.props.load_case_editing_type == "GROUPS":
+                self.draw_editable_load_case_group_ui(load_case)
 
     def draw_editable_load_case_ui(self):
         for attribute in self.props.load_case_attributes:
             row = self.layout.row(align=True)
             if attribute.data_type == "string":
                 row.prop(attribute, "string_value", text=attribute.name)
+            elif attribute.data_type == "float":
+                row.prop(attribute, "float_value", text=attribute.name)
             elif attribute.data_type == "enum":
                 row.prop(attribute, "enum_value", text=attribute.name)
             if attribute.is_optional:
                 row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+
+    def draw_editable_load_case_group_ui(self, load_case):
+        box = self.layout.box()
+        if not len(load_case["IsGroupedBy"]):
+            row = box.row(align=True)
+            row.label(text="No Load Groups Found")
+        for load_group_id in load_case["IsGroupedBy"]:
+            load_group = Data.load_groups[load_group_id]
+            row = box.row(align=True)
+            row.label(text=load_group["Name"] or "Unnamed", icon="GHOST_ENABLED")
+            op = row.operator("bim.enable_editing_structural_load_group_activities", text="", icon="GHOST_ENABLED")
+            op.load_group = load_group_id
+            row.operator("bim.remove_structural_load_group", text="", icon="X").load_group = load_group_id
+
+            if self.props.active_load_group_id == load_group_id:
+                if self.props.load_group_editing_type == "ACTIVITY":
+                    self.draw_editable_load_group_activities_ui(box, load_group)
+
+    def draw_editable_load_group_activities_ui(self, layout, load_group):
+        row = layout.row(align=True)
+        row.prop(self.props, "applicable_structural_activity_types", text="")
+        op = row.operator("bim.add_structural_activity", text="", icon="ADD")
+        op.load_group = load_group["id"]
+        layout.template_list(
+            "BIM_UL_structural_activities",
+            "",
+            self.props,
+            "load_group_activities",
+            self.props,
+            "active_load_group_activity_index",
+        )
+
+
+
+class BIM_UL_structural_activities(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            row.label(text=item.name)
+            row.label(text=item.applied_load_class)
