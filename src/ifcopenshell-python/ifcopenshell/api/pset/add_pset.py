@@ -22,6 +22,7 @@ class Usecase:
                     "RelatingPropertyDefinition": pset,
                 }
             )
+            return pset
         elif self.settings["product"].is_a("IfcTypeObject"):
             pset = self.file.create_entity(
                 "IfcPropertySet", **{"GlobalId": ifcopenshell.guid.new(), "Name": self.settings["Name"]}
@@ -29,8 +30,9 @@ class Usecase:
             has_property_sets = list(self.settings["product"].HasPropertySets or [])
             has_property_sets.append(pset)
             self.settings["product"].HasPropertySets = has_property_sets
+            return pset
         elif self.settings["product"].is_a("IfcMaterialDefinition"):
-            pset = self.file.create_entity(
+            return self.file.create_entity(
                 "IfcMaterialProperties",
                 **{
                     "Name": self.settings["Name"],
