@@ -1,3 +1,6 @@
+import ifcopenshell.util.date
+
+
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
@@ -6,7 +9,9 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        lag_value = self.file.createIfcDuration(self.settings["lag_value"])
+        lag_value = self.file.createIfcDuration(
+            ifcopenshell.util.date.datetime2ifc(self.settings["lag_value"], "IfcDuration")
+        )
         lag_time = self.file.create_entity(
             "IfcLagTime",
             **{

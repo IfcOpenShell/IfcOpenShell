@@ -1,3 +1,4 @@
+import math
 import datetime
 import ifcopenshell
 import ifcopenshell.api
@@ -134,6 +135,7 @@ class P62Ifc:
                 "PredecessorActivity": relationship.find("pr:PredecessorActivityObjectId", self.ns).text,
                 "SuccessorActivity": relationship.find("pr:SuccessorActivityObjectId", self.ns).text,
                 "Type": relationship.find("pr:Type", self.ns).text,
+                "Lag": relationship.find("pr:Lag", self.ns).text,
             }
 
     def get_wbs(self, wbs):
@@ -344,14 +346,14 @@ class P62Ifc:
                 "ScheduleFinish": activity["FinishDate"],
                 "DurationType": "WORKTIME" if activity["PlannedDuration"] else None,
                 "ScheduleDuration": datetime.timedelta(
-                    days=float(activity["PlannedDuration"]) / float(calendar["HoursPerDay"])
+                    days=math.ceil(float(activity["PlannedDuration"]) / float(calendar["HoursPerDay"]))
                 )
                 or None
                 if activity["PlannedDuration"]
                 else None,
             },
         )
-        # Seem crashy
+        # Seems intermittently crashy - can we investigate for larger files?
         ifcopenshell.api.run(
             "control.assign_control",
             self.file,
@@ -381,6 +383,16 @@ class P62Ifc:
                 rel_sequence=rel_sequence,
                 attributes={"SequenceType": self.sequence_type_map[relationship["Type"]]},
             )
+            lag = float(relationship["Lag"])
+            if lag:
+                calendar = self.calendars[self.activities[relationship["PredecessorActivity"]]["CalendarObjectId"]]
+                ifcopenshell.api.run(
+                    "sequence.assign_lag_time",
+                    self.file,
+                    rel_sequence=rel_sequence,
+                    lag_value=datetime.timedelta(days=math.ceil(lag / float(calendar["HoursPerDay"]))),
+                    duration_type="WORKTIME",
+                )
 
     def create_boilerplate_ifc(self):
         self.file = ifcopenshell.file(schema="IFC4")
