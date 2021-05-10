@@ -22,7 +22,7 @@ def timedelta2duration(timedelta):
 
 
 def ifc2datetime(element):
-    if isinstance(element, str) and element[0] == "P":  # IfcDuration
+    if isinstance(element, str) and "P" in element[0:2]:  # IfcDuration
         duration = isodate.parse_duration(element)
         if isinstance(duration, datetime.timedelta):
             return timedelta2duration(duration)
