@@ -133,6 +133,7 @@ class Data:
                 data["TaskTime"] = data["TaskTime"].id()
             for rel in task.IsNestedBy:
                 [data["RelatedObjects"].append(o.id()) for o in rel.RelatedObjects if o.is_a("IfcTask")]
+            data["Nests"] = [r.RelatingObject.id() for r in task.Nests or []]
             [
                 data["RelatingProducts"].append(r.RelatingProduct.id())
                 for r in task.HasAssignments

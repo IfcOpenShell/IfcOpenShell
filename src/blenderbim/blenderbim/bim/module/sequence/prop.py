@@ -156,10 +156,11 @@ class Task(PropertyGroup):
     duration: StringProperty(name="Duration")
     start: StringProperty(name="Start", update=updateTaskTimeStart)
     finish: StringProperty(name="Finish", update=updateTaskTimeFinish)
+    calendar: StringProperty(name="Calendar")
     derived_start: StringProperty(name="Derived Start")
     derived_finish: StringProperty(name="Derived Finish")
     derived_duration: StringProperty(name="Derived Duration")
-    calendar: StringProperty(name="Calendar")
+    derived_calendar: StringProperty(name="Derived Calendar")
     is_predecessor: BoolProperty(name="Is Predecessor")
     is_successor: BoolProperty(name="Is Successor")
 

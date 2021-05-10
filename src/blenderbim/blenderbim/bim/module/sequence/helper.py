@@ -86,9 +86,32 @@ def derive_date(ifc_definition_id, attribute_name, date=None, is_earliest=False,
         if current_date:
             return current_date
     for subtask in task["RelatedObjects"]:
-        current_date = derive_date(
-            subtask, attribute_name, date=date, is_earliest=is_earliest, is_latest=is_latest
-        )
+        current_date = derive_date(subtask, attribute_name, date=date, is_earliest=is_earliest, is_latest=is_latest)
+        if is_earliest:
+            if current_date and (date is None or current_date < date):
+                date = current_date
+        if is_latest:
+            if current_date and (date is None or current_date > date):
+                date = current_date
+    return date
+
+
+def derive_calendar(ifc_definition_id):
+    task = Data.tasks[ifc_definition_id]
+    if task["HasAssignmentsWorkCalendar"]:
+        return Data.work_calendars[task["HasAssignmentsWorkCalendar"][0]]
+    if task["Nests"]:
+        return derive_calendar(task["Nests"][0])
+
+
+def derive_duration(ifc_definition_id, attribute_name):
+    task = Data.tasks[ifc_definition_id]
+    if task["TaskTime"]:
+        current_date = Data.task_times[task["TaskTime"]][attribute_name]
+        if current_date:
+            return current_date
+    for subtask in task["RelatedObjects"]:
+        current_date = derive_date(subtask, attribute_name, date=date, is_earliest=is_earliest, is_latest=is_latest)
         if is_earliest:
             if current_date and (date is None or current_date < date):
                 date = current_date
