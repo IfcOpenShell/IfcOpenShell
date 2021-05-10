@@ -109,6 +109,7 @@ class BIM_PT_work_schedules(Panel):
                 row.operator("bim.edit_work_schedule", text="", icon="CHECKMARK")
             elif self.props.editing_type == "TASKS":
                 row.prop(self.props, "should_show_times", text="", icon="TIME")
+                row.prop(self.props, "should_show_calendars", text="", icon="VIEW_ORTHO")
                 row.prop(self.props, "should_show_visualisation_ui", text="", icon="CAMERA_STEREO")
                 row.operator("bim.generate_gantt_chart", text="", icon="NLA").work_schedule = work_schedule_id
                 row.operator("bim.add_summary_task", text="", icon="ADD").work_schedule = work_schedule_id
@@ -336,6 +337,12 @@ class BIM_UL_tasks(UIList):
                 else:
                     row.prop(item, "duration", emboss=False, text="")
 
+            if props.should_show_calendars:
+                if item.derived_calendar:
+                    row.label(text=item.derived_calendar + "*")
+                else:
+                    row.label(text=item.calendar or "-")
+
             if context.active_object:
                 oprops = context.active_object.BIMObjectProperties
                 row = layout.row(align=True)
@@ -349,10 +356,6 @@ class BIM_UL_tasks(UIList):
             if props.active_task_id == item.ifc_definition_id:
                 if props.editing_task_type == "TASKTIME":
                     row.operator("bim.edit_task_time", text="", icon="CHECKMARK")
-                elif props.editing_task_type == "CALENDAR":
-                    row.operator("bim.disable_editing_task", text="", icon="CHECKMARK")
-                elif props.editing_task_type == "SEQUENCE":
-                    row.operator("bim.disable_editing_task", text="", icon="CHECKMARK")
                 elif props.editing_task_type == "ATTRIBUTES":
                     row.operator("bim.edit_task", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_task", text="", icon="CANCEL")

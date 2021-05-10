@@ -1,5 +1,4 @@
 import datetime
-from datetime import timedelta
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.date
@@ -94,6 +93,7 @@ class P62Ifc:
             self.calendars[calendar_id] = {
                 "Name": calendar.find("pr:Name", self.ns).text,
                 "Type": calendar.find("pr:Type", self.ns).text,
+                "HoursPerDay": calendar.find("pr:HoursPerDay", self.ns).text,
                 "StandardWorkWeek": standard_work_week,
                 "HolidayOrExceptions": exceptions,
             }
@@ -122,7 +122,7 @@ class P62Ifc:
                 "Identification": activity.find("pr:Id", self.ns).text,
                 "StartDate": datetime.datetime.fromisoformat(activity.find("pr:StartDate", self.ns).text),
                 "FinishDate": datetime.datetime.fromisoformat(activity.find("pr:FinishDate", self.ns).text),
-                "PlannedDuration": datetime.timedelta(hours=float(activity.find("pr:PlannedDuration", self.ns).text)),
+                "PlannedDuration": activity.find("pr:PlannedDuration", self.ns).text,
                 "Status": activity.find("pr:Status", self.ns).text,
                 "CalendarObjectId": activity.find("pr:CalendarObjectId", self.ns).text,
                 "ifc": None,
@@ -238,9 +238,8 @@ class P62Ifc:
             "sequence.edit_recurrence_pattern",
             self.file,
             recurrence_pattern=recurrence,
-            attributes={"DayComponent": month_data["FullDay"], "MonthComponent": [month], "Occurrences": 1},
+            attributes={"DayComponent": month_data["FullDay"], "MonthComponent": [month]},
         )
-
 
     def process_work_time_exceptions(self, year, month, month_data, calendar):
         for day in month_data["WorkTime"]:
@@ -280,7 +279,7 @@ class P62Ifc:
                 "sequence.edit_recurrence_pattern",
                 self.file,
                 recurrence_pattern=recurrence,
-                attributes={"DayComponent": day_component, "MonthComponent": [month], "Occurrences": 1},
+                attributes={"DayComponent": day_component, "MonthComponent": [month]},
             )
             for work_time in day["WorkTimes"]:
                 ifcopenshell.api.run(
@@ -290,7 +289,6 @@ class P62Ifc:
                     start_time=work_time["Start"],
                     end_time=work_time["Finish"],
                 )
-
 
     def create_tasks(self, work_schedule):
         for wbs in self.wbs.values():
@@ -336,6 +334,7 @@ class P62Ifc:
             },
         )
         task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=activity["ifc"])
+        calendar = self.calendars[activity["CalendarObjectId"]]
         ifcopenshell.api.run(
             "sequence.edit_task_time",
             self.file,
@@ -344,18 +343,23 @@ class P62Ifc:
                 "ScheduleStart": activity["StartDate"],
                 "ScheduleFinish": activity["FinishDate"],
                 "DurationType": "WORKTIME" if activity["PlannedDuration"] else None,
-                "ScheduleDuration": activity["PlannedDuration"] if activity["PlannedDuration"] else None,
+                "ScheduleDuration": datetime.timedelta(
+                    days=float(activity["PlannedDuration"]) / float(calendar["HoursPerDay"])
+                )
+                or None
+                if activity["PlannedDuration"]
+                else None,
             },
         )
-        if activity["CalendarObjectId"]:
-            ifcopenshell.api.run(
-                "control.assign_control",
-                self.file,
-                **{
-                    "relating_control": self.calendars[activity["CalendarObjectId"]]["ifc"],
-                    "related_object": activity["ifc"],
-                },
-            )
+        # Seem crashy
+        ifcopenshell.api.run(
+            "control.assign_control",
+            self.file,
+            **{
+                "relating_control": calendar["ifc"],
+                "related_object": activity["ifc"],
+            },
+        )
 
     def create_rel_sequences(self):
         self.sequence_type_map = {
