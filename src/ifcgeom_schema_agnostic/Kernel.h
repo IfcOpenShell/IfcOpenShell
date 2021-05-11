@@ -5,12 +5,24 @@
 #include "../ifcgeom/IfcGeomIteratorSettings.h"
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
 
+#ifdef HAS_SCHEMA_2x3
 #include "../ifcparse/Ifc2x3.h"
+#endif
+#ifdef HAS_SCHEMA_4
 #include "../ifcparse/Ifc4.h"
+#endif
+#ifdef HAS_SCHEMA_4x1
 #include "../ifcparse/Ifc4x1.h"
+#endif
+#ifdef HAS_SCHEMA_4x2
 #include "../ifcparse/Ifc4x2.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_rc1
 #include "../ifcparse/Ifc4x3_rc1.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_rc2
 #include "../ifcparse/Ifc4x3_rc2.h"
+#endif
 
 #include <boost/function.hpp>
 

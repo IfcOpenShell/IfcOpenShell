@@ -496,6 +496,10 @@ endfunction()
 
 set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_rc1" "4x3_rc2")
 
+foreach(s ${SCHEMA_VERSIONS})
+	add_definitions(-DHAS_SCHEMA_${s})
+endforeach()
+
 if(COMPILE_SCHEMA)
 	# @todo, this appears to be untested at the moment
 
@@ -573,8 +577,33 @@ if (BUILD_CONVERT)
 endif()
 
 # IfcParse
-file(GLOB IFCPARSE_H_FILES ../src/ifcparse/*.h)
-file(GLOB IFCPARSE_CPP_FILES ../src/ifcparse/*.cpp)
+file(GLOB IFCPARSE_H_FILES_ALL ../src/ifcparse/*.h)
+file(GLOB IFCPARSE_CPP_FILES_ALL ../src/ifcparse/*.cpp)
+
+foreach(s ${IFCPARSE_H_FILES_ALL})
+if (NOT s MATCHES "[0-9]")
+list(APPEND IFCPARSE_H_FILES "${s}")
+endif()
+endforeach()
+
+foreach(s ${IFCPARSE_CPP_FILES_ALL})
+if (NOT s MATCHES "[0-9]")
+list(APPEND IFCPARSE_CPP_FILES "${s}")
+endif()
+endforeach()
+
+foreach(s ${SCHEMA_VERSIONS})
+	list(APPEND IFCPARSE_H_FILES
+		../src/ifcparse/Ifc${s}.h
+		../src/ifcparse/Ifc${s}-definitions.h
+	)
+	list(APPEND IFCPARSE_CPP_FILES
+		../src/ifcparse/Ifc${s}.cpp
+		../src/ifcparse/Ifc${s}-schema.cpp
+	)
+endforeach()
+
+
 set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
 
 add_library(IfcParse ${IFCPARSE_FILES})
