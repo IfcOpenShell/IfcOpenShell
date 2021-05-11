@@ -166,7 +166,7 @@ class P62Ifc:
 
     def process_working_week(self, week, calendar):
         for day in week:
-            if day["ifc"]:
+            if day["ifc"] or not day["WorkTimes"]:
                 continue
 
             day["ifc"] = ifcopenshell.api.run(
@@ -346,7 +346,7 @@ class P62Ifc:
                 "ScheduleFinish": activity["FinishDate"],
                 "DurationType": "WORKTIME" if activity["PlannedDuration"] else None,
                 "ScheduleDuration": datetime.timedelta(
-                    days=math.ceil(float(activity["PlannedDuration"]) / float(calendar["HoursPerDay"]))
+                    days=float(activity["PlannedDuration"]) / float(calendar["HoursPerDay"])
                 )
                 or None
                 if activity["PlannedDuration"]
@@ -390,7 +390,7 @@ class P62Ifc:
                     "sequence.assign_lag_time",
                     self.file,
                     rel_sequence=rel_sequence,
-                    lag_value=datetime.timedelta(days=math.ceil(lag / float(calendar["HoursPerDay"]))),
+                    lag_value=datetime.timedelta(days=lag / float(calendar["HoursPerDay"])),
                     duration_type="WORKTIME",
                 )
 

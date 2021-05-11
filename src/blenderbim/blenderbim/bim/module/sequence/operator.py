@@ -8,6 +8,7 @@ import pystache
 import webbrowser
 import ifcopenshell.api
 import ifcopenshell.util.date
+import ifcopenshell.util.sequence
 import blenderbim.bim.helper
 import blenderbim.bim.module.sequence.helper as helper
 from datetime import datetime
@@ -275,6 +276,7 @@ class LoadTaskProperties(bpy.types.Operator):
     task: bpy.props.IntProperty()
 
     def execute(self, context):
+        self.file = IfcStore.get_file()
         self.props = context.scene.BIMWorkScheduleProperties
         self.tprops = context.scene.BIMTaskTreeProperties
         self.props.is_task_update_enabled = False
@@ -292,7 +294,9 @@ class LoadTaskProperties(bpy.types.Operator):
                     Data.sequences[r]["RelatingProcess"] for r in task["IsSuccessorFrom"]
                 ]
 
-            calendar = helper.derive_calendar(item.ifc_definition_id)
+            calendar = ifcopenshell.util.sequence.derive_calendar(self.file.by_id(item.ifc_definition_id))
+            if calendar:
+                calendar = Data.work_calendars[calendar.id()]
             if task["HasAssignmentsWorkCalendar"]:
                 item.calendar = calendar["Name"] or "Unnamed"
             else:
@@ -312,7 +316,9 @@ class LoadTaskProperties(bpy.types.Operator):
                 item.derived_start = self.canonicalise_time(derived_start) if derived_start else ""
                 item.derived_finish = self.canonicalise_time(derived_finish) if derived_finish else ""
                 if derived_start and derived_finish and calendar:
-                    derived_duration = helper.count_working_days(derived_start, derived_finish, calendar)
+                    derived_duration = ifcopenshell.util.sequence.count_working_days(
+                        derived_start, derived_finish, self.file.by_id(calendar["id"])
+                    )
                     item.derived_duration = f"P{derived_duration}D"
                 item.start = "-"
                 item.finish = "-"
@@ -460,7 +466,6 @@ class EditTaskTime(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMWorkScheduleProperties
         attributes = blenderbim.bim.helper.export_attributes(props.task_time_attributes, self.export_attributes)
-        attributes = self.convert_strings_to_date_times(attributes)
 
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
@@ -475,10 +480,10 @@ class EditTaskTime(bpy.types.Operator):
 
     def export_attributes(self, attributes, prop):
         if "Start" in prop.name or "Finish" in prop.name or prop.name == "StatusTime":
-            attributes[prop.name] = helper.parse_datetime(value)
+            attributes[prop.name] = helper.parse_datetime(prop.string_value)
             return True
         elif prop.name == "ScheduleDuration":
-            attributes[prop.name] = helper.parse_duration(value)
+            attributes[prop.name] = helper.parse_duration(prop.string_value)
             return True
 
 
