@@ -1677,7 +1677,19 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS
 		}
 	}
 	
-	return create_solid_from_faces(faces, shape);
+	if (faces.Extent() > getValue(GV_MAX_FACES_TO_ORIENT) || !create_solid_from_faces(faces, shape)) {
+		TopoDS_Compound compound;
+		BRep_Builder builder;
+		builder.MakeCompound(compound);
+
+		TopTools_ListIteratorOfListOfShape face_iterator;
+		for (face_iterator.Initialize(faces); face_iterator.More(); face_iterator.Next()) {
+			builder.Add(compound, face_iterator.Value());
+		}
+		shape = compound;
+	}
+	
+	return true;
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_Shape& shape) {
@@ -1779,7 +1791,19 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
 		}
 	}
 
-	return create_solid_from_faces(faces, shape);
+	if (faces.Extent() > getValue(GV_MAX_FACES_TO_ORIENT) || !create_solid_from_faces(faces, shape)) {
+		TopoDS_Compound compound;
+		BRep_Builder builder;
+		builder.MakeCompound(compound);
+
+		TopTools_ListIteratorOfListOfShape face_iterator;
+		for (face_iterator.Initialize(faces); face_iterator.More(); face_iterator.Next()) {
+			builder.Add(compound, face_iterator.Value());
+		}
+		shape = compound;
+	}
+
+	return true;
 }
 
 #endif
