@@ -12,32 +12,56 @@ template IteratorFactoryImplementation<float, float>& iterator_implementations<f
 template IteratorFactoryImplementation<float, double>& iterator_implementations<float, double>();
 template IteratorFactoryImplementation<double, double>& iterator_implementations<double, double>();
 
+#ifdef HAS_SCHEMA_2x3
 template <typename P, typename PP>
 extern void init_IteratorImplementation_Ifc2x3(IteratorFactoryImplementation<P, PP>*);
+#endif
 
+#ifdef HAS_SCHEMA_4
 template <typename P, typename PP>
 extern void init_IteratorImplementation_Ifc4(IteratorFactoryImplementation<P, PP>*);
+#endif
 
+#ifdef HAS_SCHEMA_4x1
 template <typename P, typename PP>
 extern void init_IteratorImplementation_Ifc4x1(IteratorFactoryImplementation<P, PP>*);
+#endif
 
+#ifdef HAS_SCHEMA_4x2
 template <typename P, typename PP>
 extern void init_IteratorImplementation_Ifc4x2(IteratorFactoryImplementation<P, PP>*);
+#endif
 
+#ifdef HAS_SCHEMA_4x3_rc1
 template <typename P, typename PP>
 extern void init_IteratorImplementation_Ifc4x3_rc1(IteratorFactoryImplementation<P, PP>*);
+#endif
 
+#ifdef HAS_SCHEMA_4x3_rc2
 template <typename P, typename PP>
 extern void init_IteratorImplementation_Ifc4x3_rc2(IteratorFactoryImplementation<P, PP>*);
+#endif
 
 template <typename P, typename PP>
 IteratorFactoryImplementation<P, PP>::IteratorFactoryImplementation() {
+#ifdef HAS_SCHEMA_2x3
 	init_IteratorImplementation_Ifc2x3(this);
+#endif	
+#ifdef HAS_SCHEMA_4
 	init_IteratorImplementation_Ifc4(this);
+#endif	
+#ifdef HAS_SCHEMA_4x1
 	init_IteratorImplementation_Ifc4x1(this);
+#endif	
+#ifdef HAS_SCHEMA_4x2
 	init_IteratorImplementation_Ifc4x2(this);
+#endif	
+#ifdef HAS_SCHEMA_4x3_rc1
 	init_IteratorImplementation_Ifc4x3_rc1(this);
+#endif	
+#ifdef HAS_SCHEMA_4x3_rc2
 	init_IteratorImplementation_Ifc4x3_rc2(this);
+#endif
 }
 
 template <typename P, typename PP>
