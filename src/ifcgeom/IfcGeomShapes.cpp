@@ -725,8 +725,22 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Shape& shape) {
-	std::unique_ptr<faceset_helper> helper_scope;
-	helper_scope.reset(new faceset_helper(this, l));
+	std::unique_ptr<faceset_helper<>> helper_scope;
+
+	IfcSchema::IfcCartesianPoint::list::ptr points = IfcParse::traverse((IfcUtil::IfcBaseClass*) l)->as<IfcSchema::IfcCartesianPoint>();
+	std::vector<const IfcSchema::IfcCartesianPoint*> points_(points->begin(), points->end());
+
+	IfcSchema::IfcPolyLoop::list::ptr loops = IfcParse::traverse((IfcUtil::IfcBaseClass*)l)->as<IfcSchema::IfcPolyLoop>();
+	std::vector<const IfcSchema::IfcPolyLoop*> loops_(loops->begin(), loops->end());
+
+	helper_scope.reset(new faceset_helper<>(
+		this,
+		points_,
+		loops_,
+		l->declaration().is(IfcSchema::IfcClosedShell::Class())
+	));
+
+	faceset_helper_ = helper_scope.get();
 
 	IfcSchema::IfcFace::list::ptr faces = l->CfsFaces();
 
@@ -1643,259 +1657,129 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcAdvancedBrep* l, TopoDS_Shape&
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS_Shape& shape) {
 	IfcSchema::IfcCartesianPointList3D* point_list = l->Coordinates();
-	const std::vector< std::vector<double> > coordinates = point_list->CoordList();
-	std::vector<gp_Pnt> points;
-	points.reserve(coordinates.size());
-	for (std::vector< std::vector<double> >::const_iterator it = coordinates.begin(); it != coordinates.end(); ++it) {
-		const std::vector<double>& coords = *it;
-		if (coords.size() != 3) {
-			Logger::Message(Logger::LOG_ERROR, "Invalid dimensions encountered on Coordinates", l);
-			return false;
-		}
-		points.push_back(gp_Pnt(coords[0] * getValue(GV_LENGTH_UNIT),
-		                        coords[1] * getValue(GV_LENGTH_UNIT),
-		                        coords[2] * getValue(GV_LENGTH_UNIT)));
-	}
+	auto coord_list = point_list->CoordList();
+	std::vector<std::vector<int>> indices = l->CoordIndex();
 
-	std::vector< std::vector<int> > indices = l->CoordIndex();
-	
-	std::vector<TopoDS_Face> faces;
-	faces.reserve(indices.size());
-
-	for(std::vector< std::vector<int> >::const_iterator it = indices.begin(); it != indices.end(); ++ it) {
-		const std::vector<int>& tri = *it;
-		if (tri.size() != 3) {
-			Logger::Message(Logger::LOG_ERROR, "Invalid dimensions encountered on CoordIndex", l);
-			return false;
-		}
-
-		const int min_index = *std::min_element(tri.begin(), tri.end());
-		const int max_index = *std::max_element(tri.begin(), tri.end());
-
-		if (min_index < 1 || max_index > (int) points.size()) {
-			Logger::Message(Logger::LOG_ERROR, "Contents of CoordIndex out of bounds", l);
-			return false;
-		}
-
-		if (tri[0] == tri[1] || tri[1] == tri[2] || tri[0] == tri[2]) {
-			auto tri_0 = boost::lexical_cast<std::string>(tri[0]);
-			auto tri_1 = boost::lexical_cast<std::string>(tri[1]);
-			auto tri_2 = boost::lexical_cast<std::string>(tri[2]);
-			Logger::Message(Logger::LOG_ERROR, "Degenerate triangle indices, skipping (" + tri_0 + "," + tri_1 + "," + tri_2 + ")", l);
-			continue;
-		}
-		
-		const gp_Pnt& a = points[tri[0] - 1]; // account for zero- vs
-		const gp_Pnt& b = points[tri[1] - 1]; // one-based indices in
-		const gp_Pnt& c = points[tri[2] - 1]; // c++ and express
-
-		BRepBuilderAPI_MakePolygon mp(a, b, c, true);
-
-		if (!mp.IsDone()) {
-			auto tri_0 = boost::lexical_cast<std::string>(tri[0]);
-			auto tri_1 = boost::lexical_cast<std::string>(tri[1]);
-			auto tri_2 = boost::lexical_cast<std::string>(tri[2]);
-			Logger::Message(Logger::LOG_ERROR, "Degenerate triangle, skipping (" + tri_0 + "," + tri_1 + "," + tri_2 + ")", l);
-			continue;
-		}
-
-		TopoDS_Wire wire = mp.Wire();
-		TopoDS_Face face = BRepBuilderAPI_MakeFace(wire).Face();
-
-		TopoDS_Iterator face_it(face, false);
-		const TopoDS_Wire& w = TopoDS::Wire(face_it.Value());
-		const bool reversed = w.Orientation() == TopAbs_REVERSED;
-		if (reversed) {
-			face.Reverse();
-		}
-
-		if (face_area(face) > getValue(GV_MINIMAL_FACE_AREA)) {
-			faces.push_back(face);
-		}
-	}
-
-	if (faces.empty()) return false;
-	
-	bool valid_shell = false;
-
-	// @todo Do this more efficiently by creating proper half-edge pairs.
-	BRepOffsetAPI_Sewing sewing_builder;
-	sewing_builder.SetTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-	sewing_builder.SetMaxTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-	sewing_builder.SetMinTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-		
-	for (std::vector<TopoDS_Face>::const_iterator it = faces.begin(); it != faces.end(); ++it) {
-		sewing_builder.Add(*it);
-	}
-
-	try {
-		sewing_builder.Perform();
-		shape = sewing_builder.SewedShape();
-		valid_shell = BRepCheck_Analyzer(shape).IsValid();
-	} catch(...) {}
-
-	if (valid_shell) {
-		try {
-			ShapeFix_Solid solid;
-			solid.LimitTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-			TopoDS_Solid solid_shape = solid.SolidFromShell(TopoDS::Shell(shape));
-			if (!solid_shape.IsNull()) {
-				try {
-					BRepClass3d_SolidClassifier classifier(solid_shape);
-					shape = solid_shape;
-				} catch (...) {}
-			}
-		} catch(...) {}
-	} else {
-		Logger::Message(Logger::LOG_WARNING, "Failed to sew faceset:", l);
-	}
-
-	if (!valid_shell) {
-		TopoDS_Compound compound;
-		BRep_Builder builder;
-		builder.MakeCompound(compound);
-		
-		for (std::vector<TopoDS_Face>::const_iterator it = faces.begin(); it != faces.end(); ++it) {
-			builder.Add(compound, *it);
-		}
-
-		shape = compound;
-	}
-
-	return true;
-}
-
-namespace {
-	bool make_indexed_polygon(IfcGeom::Kernel& k, const std::vector<gp_Pnt>& points, const std::vector<int>& indices, TopoDS_Wire& wire) {
-		TColgp_SequenceOfPnt polygon;
-		for (std::vector<int>::size_type j = 0; j != indices.size(); j++) {
-			const gp_Pnt& point = points[indices[j] - 1];
-			polygon.Append(point);
-		}
-		k.remove_duplicate_points_from_loop(polygon, true);
-
-		if (polygon.Length() < 3) {
-			return false;
-		}
-
-		BRepBuilderAPI_MakePolygon wire_builder;
-		for (int i = 1; i <= polygon.Length(); ++i) {
-			wire_builder.Add(polygon.Value(i));
-		}
-		wire_builder.Close();
-
-		wire = wire_builder.Wire();
-
-		TopoDS_Iterator it(wire);
-		for (; it.More(); it.Next()) {
-			BRepAdaptor_Curve ad(TopoDS::Edge(it.Value()));
-		}
-
-		ShapeFix_ShapeTolerance FTol;
-		FTol.SetTolerance(wire, k.getValue(IfcGeom::Kernel::GV_PRECISION), TopAbs_WIRE);
-
-		return true;
-	}
-}
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_Shape& shape) {
-    IfcSchema::IfcCartesianPointList3D* point_list = pfs->Coordinates();
-    const std::vector<std::vector<double> > coordinates = point_list->CoordList();
-    std::vector<gp_Pnt> points;
-    points.reserve(coordinates.size());
-
-    for (std::vector<std::vector<double> >::const_iterator it = coordinates.begin(); it != coordinates.end(); ++it) {
-        const std::vector<double>& coords = *it;
-        points.push_back(gp_Pnt(
-			coords[0] * getValue(GV_LENGTH_UNIT),
-			coords[1] * getValue(GV_LENGTH_UNIT),
-			coords[2] * getValue(GV_LENGTH_UNIT)));
-    }
-
-    auto polygonal_faces = pfs->Faces();
+	faceset_helper<
+		std::vector<double>,
+		std::vector<int>
+	> helper(this, coord_list, indices, l->hasClosed() ? l->Closed() : false);
 
 	TopTools_ListOfShape faces;
 
-    for (unsigned i = 0; i < polygonal_faces->size(); i++) {
-        IfcSchema::IfcIndexedPolygonalFace* la = (IfcSchema::IfcIndexedPolygonalFace*)*(polygonal_faces->begin() + i);
-        TopoDS_Face face;
-		TopoDS_Wire wire;
-		if (!make_indexed_polygon(*this, points, la->CoordIndex(), wire)) {
+	for (auto it = indices.begin(); it != indices.end(); ++it) {
+		TopoDS_Wire w;
+		if (helper.wire(*it, w)) {
+			BRepBuilderAPI_MakeFace mf(w);
+			if (mf.IsDone()) {
+				faces.Append(mf.Face());
+			}
+		}
+	}
+	
+	return create_solid_from_faces(faces, shape);
+}
+
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_Shape& shape) {
+	IfcSchema::IfcCartesianPointList3D* point_list = pfs->Coordinates();
+	auto coord_list = point_list->CoordList();
+	auto polygonal_faces = pfs->Faces();
+
+	std::vector<std::vector<int>> indices;
+	indices.reserve(polygonal_faces->size() * 2);
+
+	std::vector<std::vector<int>> loop_grouping;
+	loop_grouping.reserve(polygonal_faces->size());
+	
+	for (auto& f : *polygonal_faces) {
+		loop_grouping.emplace_back();
+		loop_grouping.back().push_back(indices.size());
+		indices.push_back(f->CoordIndex());
+		if (f->as<IfcSchema::IfcIndexedPolygonalFaceWithVoids>()) {
+			auto inner_coordinates = f->as<IfcSchema::IfcIndexedPolygonalFaceWithVoids>()->InnerCoordIndices();
+			for (auto& x : inner_coordinates) {
+				loop_grouping.back().push_back(indices.size());
+				indices.push_back(x);
+			}
+		}
+	}
+
+	faceset_helper<
+		std::vector<double>,
+		std::vector<int>
+	> helper(this, coord_list, indices, pfs->hasClosed() ? pfs->Closed() : false);
+
+	TopTools_ListOfShape faces;
+
+	for (auto& f : loop_grouping) {
+		bool not_planar = false;
+		
+		TopoDS_Wire w;
+		if (!helper.wire(indices[f[0]], w)) {
 			continue;
 		}
 
-        if (la->declaration().is(IfcSchema::IfcIndexedPolygonalFaceWithVoids::Class())) {
-            IfcSchema::IfcIndexedPolygonalFaceWithVoids* converted = (IfcSchema::IfcIndexedPolygonalFaceWithVoids*)la;
-            std::vector<std::vector<int> > innercoordinates = converted->InnerCoordIndices();
+		TopoDS_Face face;
+		std::vector<TopoDS_Wire> ws = { w };
 
-            BRepBuilderAPI_MakeFace facemaker = BRepBuilderAPI_MakeFace(wire);
-			std::vector<TopoDS_Wire> vectorofwires{ wire };
-            for (std::vector<std::vector<int> >::const_iterator it = innercoordinates.begin(); it != innercoordinates.end(); ++it) {
-				TopoDS_Wire inner_wire;
-				if (make_indexed_polygon(*this, points, *it, inner_wire)) {
-					vectorofwires.push_back(inner_wire);
-					facemaker.Add(inner_wire);
-				}
-            }
-
-			facemaker.Build();
-			if (facemaker.Error() == BRepBuilderAPI_FaceDone) {
-				face = facemaker.Face();
-			} else if (facemaker.Error() == BRepBuilderAPI_NotPlanar) {
-				TopTools_ListOfShape fs;
-				if (triangulate_wire(vectorofwires, fs)) {
-					Logger::Warning("Triangulated face boundary:", la);
-					TopTools_ListIteratorOfListOfShape it(fs);
-					for (; it.More(); it.Next()) {
-						const TopoDS_Face& tri = TopoDS::Face(it.Value());
-						if (face_area(tri) > getValue(GV_MINIMAL_FACE_AREA)) {
-							faces.Append(tri);
-						}
-					}
-					continue;
-				}
-			}
-        } else {
-			BRepBuilderAPI_MakeFace facemaker(wire);
-			facemaker.Build();
-			if (facemaker.Error() == BRepBuilderAPI_FaceDone) {
-				face = facemaker.Face();
-			} else if (facemaker.Error() == BRepBuilderAPI_NotPlanar) {
-				TopTools_ListOfShape fs;
-				if (triangulate_wire({ wire }, fs)) {
-					Logger::Warning("Triangulated face boundary:", la);
-					TopTools_ListIteratorOfListOfShape it(fs);
-					for (; it.More(); it.Next()) {
-						const TopoDS_Face& tri = TopoDS::Face(it.Value());
-						if (face_area(tri) > getValue(GV_MINIMAL_FACE_AREA)) {
-							faces.Append(tri);
-						}
-					}
-					continue;
-				}
-			}
-        }
-
-		if (face.IsNull()) {
-			Logger::Warning("Face creation failed:", la);
+		// @todo triangulate
+		BRepBuilderAPI_MakeFace mf(w);
+		if (mf.Error() == BRepBuilderAPI_NotPlanar) {
+			not_planar = true;
+		} else if (mf.IsDone()) {
+			face = mf.Face();
+		} else {
+			// todo log
 			continue;
 		}
 
-        TopoDS_Iterator face_it(face, false);
-        const TopoDS_Wire& w = TopoDS::Wire(face_it.Value());
-        const bool reversed = w.Orientation() == TopAbs_REVERSED;
-        if (reversed) {
-            face.Reverse();
-        }
+		if (f.size() > 1) {
 
-        if (face_area(face) > getValue(GV_MINIMAL_FACE_AREA)) {
-            faces.Append(face);
-        }
-    }
+			if (not_planar) {
+				for (auto it = f.begin() + 1; it != f.end(); ++it) {
+					TopoDS_Wire w2;
+					if (helper.wire(indices[*it], w2)) {
+						ws.push_back(w2);
+					}
+				}
+			} else {
+				BRepBuilderAPI_MakeFace mf2(face);
+				for (auto it = f.begin() + 1; it != f.end(); ++it) {
+					TopoDS_Wire w2;
+					if (helper.wire(indices[*it], w2)) {
+						mf2.Add(w2);
+						ws.push_back(w2);
+					}
 
-    if (faces.IsEmpty()) return false;
+				}
+				
+				if (mf2.Error() == BRepBuilderAPI_NotPlanar) {
+					not_planar = true;
+				} else if (mf2.IsDone()) {
+					face = mf2.Face();
+				}
+			}	
+			
+		}
 
-    return create_solid_from_faces(faces, shape);
+		if (not_planar) {
+			TopTools_ListOfShape fs;
+			if (triangulate_wire(ws, fs)) {
+				Logger::Warning("Triangulated face boundary:", pfs);
+				TopTools_ListIteratorOfListOfShape it(fs);
+				for (; it.More(); it.Next()) {
+					const TopoDS_Face& tri = TopoDS::Face(it.Value());
+					if (face_area(tri) > getValue(GV_MINIMAL_FACE_AREA)) {
+						faces.Append(tri);
+					}
+				}
+			}
+		} else {
+			faces.Append(face);
+		}
+	}
+
+	return create_solid_from_faces(faces, shape);
 }
 
 #endif
