@@ -240,18 +240,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* l, T
 
 		TopoDS_Shape result = builder.Shape();
 
-		BRepOffsetAPI_Sewing sewer;
-		sewer.SetTolerance(getValue(GV_PRECISION));
-		sewer.SetMaxTolerance(getValue(GV_PRECISION));
-		sewer.SetMinTolerance(getValue(GV_PRECISION));
-
-		sewer.Add(result);
-		sewer.Add(BRepBuilderAPI_MakeFace(w1).Face());
-		sewer.Add(BRepBuilderAPI_MakeFace(w2).Face().Moved(end_profile));
-
-		sewer.Perform();
-
-		result = sewer.SewedShape();
+		TopTools_ListOfShape li;
+		shape_to_face_list(result, li);
+		li.Append(BRepBuilderAPI_MakeFace(w1).Face().Reversed());
+		li.Append(BRepBuilderAPI_MakeFace(w2).Face().Moved(end_profile));
+		
+		create_solid_from_faces(li, result, true);
 
 		// @todo ugly hack
 
@@ -873,6 +867,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRepresentation* l, IfcRepresen
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresentationShapeItems& shapes) {
+	// @nb the selection is partly duplicated from convert_curves() but it's needed as a
+	// geometric set by it's static class definition does not inform us of the type of elements.
+	// @todo handle this better so that this doesn't log an error.
+	const bool include_curves = getValue(GV_DIMENSIONALITY) != +1;
+	const bool include_solids_and_surfaces = getValue(GV_DIMENSIONALITY) != -1;
+
 	IfcEntityList::ptr elements = l->Elements();
 	if ( !elements->size() ) return false;
 	bool part_succes = false;
@@ -885,16 +885,18 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresenta
 			if (!(convert_shapes(element, items) && flatten_shape_list(items, s, false))) {
 				continue;
 			}
-		} else if (shape_type(element) == ST_SHAPE) {
+		} else if (shape_type(element) == ST_SHAPE && include_solids_and_surfaces) {
 			if (!convert_shape(element, s)) {
 				continue;
 			}
-		} else if (shape_type(element) == ST_WIRE) {
+		} else if (shape_type(element) == ST_WIRE && include_curves) {
 			TopoDS_Wire w;
 			if (!convert_wire(element, w)) {
 				continue;
 			}
 			s = w;
+		} else {
+			continue;
 		}
 
 		part_succes = true;
@@ -1331,6 +1333,16 @@ namespace {
 		TopTools_IndexedDataMapOfShapeListOfShape map;
 		TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, map);
 
+		for (int i = 1; i <= map.Extent(); ++i) {
+			if (map.FindFromIndex(i).Extent() > 2) {
+				Logger::Warning("Self-intersecting Directrix");
+			}
+		}
+
+		std::set<TopoDS_TShape*> seen;
+
+		auto num_edges = IfcGeom::Kernel::count(wire, TopAbs_EDGE);
+
 		TopoDS_Vertex v0, v1;
 		// @todo this creates the ancestor map twice
 		TopExp::Vertices(wire, v0, v1);
@@ -1339,7 +1351,9 @@ namespace {
 
 		// @todo this probably still does not work on a closed wire consisting of one (circular) edge.
 		
-		while (!v0.IsSame(v1) || ignore_first_equality_because_closed) {
+		while (sorted_edges.size() < num_edges && 
+			(!v0.IsSame(v1) || ignore_first_equality_because_closed)) 
+		{
 			ignore_first_equality_because_closed = false;
 			if (!map.Contains(v0)) {
 				throw std::runtime_error("Disconnected vertex");
@@ -1351,10 +1365,11 @@ namespace {
 			for (; it.More(); it.Next()) {
 				const TopoDS_Edge& e = TopoDS::Edge(it.Value());
 				TopExp::Vertices(e, ve0, ve1, true);
-				if (ve0.IsSame(v0)) {
+				if (ve0.IsSame(v0) && seen.find(&*e.TShape()) == seen.end()) {
 					sorted_edges.push_back(e);
 					v0 = ve1;
 					added = true;
+					seen.insert(&*e.TShape());
 					break;
 				}
 			}

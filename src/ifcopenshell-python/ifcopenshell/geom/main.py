@@ -134,6 +134,9 @@ class tree(ifcopenshell_wrapper.tree):
 
     def add_file(self, file, settings):
         ifcopenshell_wrapper.tree.add_file(self, file.wrapped_data, settings)
+        
+    def add_iterator(self, iterator):
+        ifcopenshell_wrapper.tree.add_file(self, iterator)
 
     def select(self, value, **kwargs):
         def unwrap(value):
@@ -146,9 +149,14 @@ class tree(ifcopenshell_wrapper.tree):
         args = [self, unwrap(value)]
         if isinstance(value, entity_instance):
             args.append(kwargs.get("completely_within", False))
+            if "extend" in kwargs:
+                args.append(kwargs["extend"])
         elif has_occ:
             if isinstance(value, TopoDS.TopoDS_Shape):
                 args[1] = utils.serialize_shape(value)
+                args.append(kwargs.get("completely_within", False))
+                if "extend" in kwargs:
+                    args.append(kwargs["extend"])
         return [entity_instance(e) for e in ifcopenshell_wrapper.tree.select(*args)]
 
     def select_box(self, value, **kwargs):

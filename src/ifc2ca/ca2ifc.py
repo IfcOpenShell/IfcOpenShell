@@ -1,6 +1,7 @@
 import json
 import ifcopenshell
 import os
+from datetime import datetime
 
 
 class CA2IFC:
@@ -317,7 +318,8 @@ class CA2IFC:
         )
         p_o = self.f.createIfcPersonAndOrganization(person, organization)
         application = self.f.createIfcApplication(organization, "v0.0.x", "IFC2CA", "IFC2CA")
-        ownerHistory = self.f.createIfcOwnerHistory(p_o, application, "READWRITE", None, None, p_o, application)
+        timestamp = int(datetime.now().timestamp())
+        ownerHistory = self.f.createIfcOwnerHistory(p_o, application, "READWRITE", None, None, None, None, timestamp)
 
         return ownerHistory
 
@@ -497,8 +499,8 @@ class CA2IFC:
 
 
 if __name__ == "__main__":
-    inputFilename = "structure_01.json"
-    outputFilename = "structure_01.ifc"
+    inputFilename = "grid_of_beams.json"
+    outputFilename = "grid_of_beams.ifc"
 
     ca2ifc = CA2IFC(inputFilename, outputFilename)
     ca2ifc.convert()

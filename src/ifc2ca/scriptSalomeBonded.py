@@ -208,11 +208,6 @@ class MODEL:
         init_time += elapsed_time
         print("Building Geometry Defined in %g sec" % (elapsed_time))
 
-        if len([e for e in elements if e["geometryType"] == "line"]) > 0:
-            buildingShapeType = "EDGE"
-        if len([e for e in elements if e["geometryType"] == "surface"]) > 0:
-            buildingShapeType = "FACE"
-
         # Define and add groups for all curve, surface and rigid members
         if len([e for e in elements if e["geometryType"] == "line"]) > 0:
             # Make compound of requested group

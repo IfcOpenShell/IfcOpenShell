@@ -2,9 +2,9 @@ import json
 import ifcopenshell
 import ifcopenshell.util.selector
 
-with open("../ifcblenderexport/blenderbim/bim/schema/entity_descriptions.json") as f:
+with open("../blenderbim/blenderbim/bim/schema/entity_descriptions.json") as f:
     entity_descriptions = json.load(f)
-with open("../ifcblenderexport/blenderbim/bim/schema/enum_descriptions.json") as f:
+with open("../blenderbim/blenderbim/bim/schema/enum_descriptions.json") as f:
     enum_descriptions = json.load(f)
 
 print('{|class="wikitable"')

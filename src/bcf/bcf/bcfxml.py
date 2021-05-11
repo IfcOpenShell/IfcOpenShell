@@ -50,9 +50,12 @@ class BcfXml:
         zip_file = zipfile.ZipFile(filepath)
         self.filepath = tempfile.mkdtemp()
         zip_file.extractall(self.filepath)
-        data = self._read_xml("project.bcfp", "project.xsd")
-        self.project.project_id = data["Project"]["@ProjectId"]
-        self.project.name = data["Project"]["Name"]
+        if os.path.isfile(os.path.join(self.filepath, "project.bcfp")):
+            data = self._read_xml("project.bcfp", "project.xsd")
+            self.project.extension_schema = data["ExtensionSchema"]
+            if "Project" in data:
+                self.project.project_id = data["Project"]["@ProjectId"]
+                self.project.name = data["Project"].get("Name")
         return self.project
 
     def edit_project(self):

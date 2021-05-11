@@ -1,23 +1,42 @@
+import datetime
 from re import findall
-from datetime import datetime
+
+try:
+    import isodate
+except:
+    pass  # Duration parsing not supported
 
 
-def duration2dict(duration):
-    results = {}
-    for number, unit in findall("(?P<number>\d+)(?P<period>S|M|H|D|W|Y)", duration):
-        results[unit] = number
-    return results
+def timedelta2duration(timedelta):
+    components = {
+        "days": getattr(timedelta, "days", 0),
+        "hours": 0,
+        "minutes": 0,
+        "seconds": getattr(timedelta, "seconds", 0),
+    }
+    if components["seconds"]:
+        components["hours"], components["minutes"], components["seconds"] = [
+            int(i) for i in str(datetime.timedelta(seconds=components["seconds"])).split(":")
+        ]
+    return isodate.Duration(**components)
 
 
 def ifc2datetime(element):
-    if isinstance(element, str) and element[0] == "P":  # IfcDuration
-        return duration2dict(element)
-    elif isinstance(element, str):  # IfcDateTime, IfcDate
-        return datetime.fromisoformat(element)
+    if isinstance(element, str) and "P" in element[0:2]:  # IfcDuration
+        duration = isodate.parse_duration(element)
+        if isinstance(duration, datetime.timedelta):
+            return timedelta2duration(duration)
+        return duration
+    elif isinstance(element, str) and element[2] == ":":  # IfcTime
+        return datetime.time.fromisoformat(element)
+    elif isinstance(element, str) and ":" in element:  # IfcDateTime
+        return datetime.datetime.fromisoformat(element)
+    elif isinstance(element, str):  # IfcDate
+        return datetime.date.fromisoformat(element)
     elif isinstance(element, int):  # IfcTimeStamp
-        return datetime.fromtimestamp(element)
+        return datetime.datetime.fromtimestamp(element)
     elif element.is_a("IfcDateAndTime"):
-        return datetime(
+        return datetime.datetime(
             element.DateComponent.YearComponent,
             element.DateComponent.MonthComponent,
             element.DateComponent.DayComponent,
@@ -27,7 +46,7 @@ def ifc2datetime(element):
             # TODO: implement TimeComponent timezone
         )
     elif element.is_a("IfcCalendarDate"):
-        return datetime(
+        return datetime.date(
             element.YearComponent,
             element.MonthComponent,
             element.DayComponent,
@@ -36,15 +55,29 @@ def ifc2datetime(element):
 
 def datetime2ifc(dt, ifc_type):
     if isinstance(dt, str):
-        dt = datetime.fromisoformat(dt)
-    if ifc_type == "IfcTimeStamp":
+        if ifc_type == "IfcDuration":
+            return dt
+        dt = datetime.datetime.fromisoformat(dt)
+
+    if ifc_type == "IfcDuration":
+        return isodate.duration_isoformat(dt)
+    elif ifc_type == "IfcTimeStamp":
         return int(dt.timestamp())
     elif ifc_type == "IfcDateTime":
-        return dt.isoformat()
+        if isinstance(dt, datetime.datetime):
+            return dt.isoformat()
+        elif isinstance(dt, datetime.date):
+            return datetime.datetime.combine(dt, datetime.datetime.min.time()).isoformat()
     elif ifc_type == "IfcDate":
-        return dt.date().isoformat()
+        if isinstance(dt, datetime.datetime):
+            return dt.date().isoformat()
+        elif isinstance(dt, datetime.date):
+            return dt.isoformat()
     elif ifc_type == "IfcTime":
-        return dt.time().isoformat()
+        if isinstance(dt, datetime.datetime):
+            return dt.time().isoformat()
+        elif isinstance(dt, datetime.time):
+            return dt.isoformat()
     elif ifc_type == "IfcCalendarDate":
         return {"DayComponent": dt.day, "MonthComponent": dt.month, "YearComponent": dt.year}
     elif ifc_type == "IfcLocalTime":

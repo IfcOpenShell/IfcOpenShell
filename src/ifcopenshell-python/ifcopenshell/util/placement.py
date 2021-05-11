@@ -22,4 +22,4 @@ def get_local_placement(plc):
         parent = np.eye(4)
     else:
         parent = get_local_placement(plc.PlacementRelTo)
-    return np.dot(get_axis2placement(plc.RelativePlacement), parent)
+    return np.dot(parent, get_axis2placement(plc.RelativePlacement))

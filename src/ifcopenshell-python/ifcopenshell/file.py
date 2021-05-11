@@ -179,6 +179,14 @@ class file(object):
         :rtype: None
         """
         return self.wrapped_data.remove(inst.wrapped_data)
+        
+    def batch(self):
+        """Low-level mechanism to speed up deletion of large subgraphs"""
+        return self.wrapped_data.batch()
+        
+    def unbatch(self):
+        """Low-level mechanism to speed up deletion of large subgraphs"""
+        return self.wrapped_data.unbatch()
 
     def __iter__(self):
         return iter(self[id] for id in self.wrapped_data.entity_names())

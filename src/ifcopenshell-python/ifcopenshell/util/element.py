@@ -88,6 +88,11 @@ def get_container(element):
         return element.ContainedInStructure[0].RelatingStructure
 
 
+def get_aggregate(element):
+    if hasattr(element, "Decomposes") and element.Decomposes:
+        return element.Decomposes[0].RelatingObject
+
+
 def replace_attribute(element, old, new):
     for i, attribute in enumerate(element):
         if attribute == old:
@@ -119,11 +124,14 @@ def is_representation_of_context(representation, context, subcontext=None, targe
 
 
 def remove_deep(ifc_file, element):
+    # @todo maybe some sort of try-finally mechanism.
+    ifc_file.batch()
     subgraph = list(ifc_file.traverse(element))
     subgraph_set = set(subgraph)
     for ref in subgraph[::-1]:
         if ref.id() and len(set(ifc_file.get_inverse(ref)) - subgraph_set) == 0:
             ifc_file.remove(ref)
+    ifc_file.unbatch()
 
 
 def get_representation(element, context, subcontext=None, target_view=None):
