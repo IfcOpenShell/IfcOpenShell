@@ -153,6 +153,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_S
 
 	shape.Nullify();
 
+	/*
+	// @nb This logic was probably flawed always as this does not by itself result in a valid compsolid...
 	if (face.ShapeType() == TopAbs_COMPOUND) {
 		
 		// For compounds (most likely the result of a IfcCompositeProfileDef) 
@@ -174,6 +176,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_S
 		}
 
 	}
+	*/
 	
 	if (shape.IsNull()) {	
 		shape = BRepPrimAPI_MakePrism(face, height*dir);
