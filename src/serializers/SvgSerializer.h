@@ -33,6 +33,11 @@
 #include <HLRAlgo_Projector.hxx>
 #include <gp_Pln.hxx>
 #include <Bnd_Box.hxx>
+#include <Standard_Version.hxx>
+
+#if OCC_VERSION_HEX >= 0x70300
+#include <Bnd_OBB.hxx>
+#endif
 
 #include <sstream>
 #include <string>
@@ -97,12 +102,15 @@ struct vertical_section {
 	gp_Pln plane;
 	std::string name;
 	bool with_projection;
+	boost::optional<double> scale;
+	boost::optional<std::pair<double, double>> size;
 };
 
 typedef boost::variant<horizontal_plan, horizontal_plan_at_element, vertical_section> section_data;
 
 struct geometry_data {
 	TopoDS_Shape compound_local;
+	std::vector<boost::optional<std::vector<double>>> dash_arrays;
 	gp_Trsf trsf;
 	IfcUtil::IfcBaseEntity* product;
 	IfcUtil::IfcBaseEntity* storey;
@@ -130,16 +138,25 @@ public:
 	};
 protected:
 	std::ofstream svg_file;
-	double xmin, ymin, xmax, ymax, width, height;
+	double xmin, ymin, xmax, ymax;
 	boost::optional<std::vector<section_data>> section_data_;
 	boost::optional<std::vector<section_data>> deferred_section_data_;
 	boost::optional<double> scale_, calculated_scale_, center_x_, center_y_;
+	boost::optional<double> storey_height_line_length_;
+	boost::optional<std::pair<double, double>> size_, offset_2d_;
+	boost::optional<std::string> space_name_transform_;
 
-	bool with_section_heights_from_storey_, rescale, print_space_names_, print_space_areas_;
+#if OCC_VERSION_HEX >= 0x70300	
+	boost::optional<Bnd_OBB> view_box_3d_;
+#endif
+	
+
+	bool with_section_heights_from_storey_, print_space_names_, print_space_areas_;
 	storey_height_display_types storey_height_display_;
 	bool draw_door_arcs_, is_floor_plan_;
 	bool auto_section_, auto_elevation_;
-	bool use_namespace_, use_hlr_poly_, always_project_;
+	bool use_namespace_, use_hlr_poly_, always_project_, polygonal_;
+	bool emit_building_storeys_;
 
 	IfcParse::IfcFile* file;
 	IfcUtil::IfcBaseEntity* storey_;
@@ -173,7 +190,6 @@ public:
 		, xmax(-std::numeric_limits<double>::infinity())
 		, ymax(-std::numeric_limits<double>::infinity())
 		, with_section_heights_from_storey_(false)
-		, rescale(false)
 		, print_space_names_(false)
 		, print_space_areas_(false)
 		, draw_door_arcs_(false)
@@ -183,6 +199,8 @@ public:
 		, use_namespace_(false)
 		, use_hlr_poly_(false)
 		, always_project_(false)
+		, polygonal_(false)
+		, emit_building_storeys_(true)
 		, file(0)
 		, storey_(0)
 		, xcoords_begin(0)
@@ -195,10 +213,11 @@ public:
     void addSizeComponent(const boost::shared_ptr<util::string_buffer::float_item>& fi) { radii.push_back(fi); }
     void growBoundingBox(double x, double y) { if (x < xmin) xmin = x; if (x > xmax) xmax = x; if (y < ymin) ymin = y; if (y > ymax) ymax = y; }
     void writeHeader();
+	void doWriteHeader();
     bool ready();
     void write(const IfcGeom::TriangulationElement<real_t>* /*o*/) {}
     void write(const IfcGeom::BRepElement<real_t>* o);
-    void write(path_object& p, const TopoDS_Wire& wire);
+    void write(path_object& p, const TopoDS_Wire& wire, boost::optional<std::vector<double>> dash_array=boost::none);
 	void write(const geometry_data& data);
     path_object& start_path(const gp_Pln& p, IfcUtil::IfcBaseEntity* storey, const std::string& id);
 	path_object& start_path(const gp_Pln& p, const std::string& drawing_name, const std::string& id);
@@ -213,6 +232,9 @@ public:
 	void setPrintSpaceAreas(bool b) { print_space_areas_ = b; }
 	void setDrawStoreyHeights(storey_height_display_types sh) { storey_height_display_ = sh; }
 	void setDrawDoorArcs(bool b) { draw_door_arcs_ = b; }
+	void setStoreyHeightLineLength(double d) { storey_height_line_length_ = d; }
+	void setSpaceNameTransform(const std::string& v) { space_name_transform_ = v; }
+	void addTextAnnotations(const drawing_key& k);
 
 	std::array<std::array<double, 3>, 3> resize();
 	void resetScale();
@@ -241,8 +263,16 @@ public:
 		use_hlr_poly_ = b;
 	}
 
+	void setPolygonal(bool b) {
+		polygonal_ = b;
+	}
+
 	void setAlwaysProject(bool b) {
 		always_project_ = b;
+	}
+
+	void setWithoutStoreys(bool b) {
+		emit_building_storeys_ = !b;
 	}
 
 	void setScale(double s) { scale_ = s; }

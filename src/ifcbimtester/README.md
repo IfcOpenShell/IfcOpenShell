@@ -7,8 +7,8 @@ application, or use a GUI. It can generate reports in various formats including:
  * HTML
  * JSON
  * XUnit
- * BCF
- * Zoom Smart View
+ * BCF (TODO)
+ * Zoom Smart View (Someone needs to check if this works)
 
 Your exchange requirements are written in plain language which you can use to communicate to project teams and include
 in contracts. Multiple languages are supported. A series of exchange requirement templates are provided to get started,
@@ -23,7 +23,7 @@ As any interested stakeholder
 We need an IFC file
 
 Scenario: Receiving a file
- * IFC data must use the IFC4 schema
+ * IFC data must use the "IFC4" schema
 ```
 
 Languages supported include (in alphabetical order):

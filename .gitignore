@@ -1,4 +1,7 @@
 # Dependency and build folders created by the build scripts
+/_build-vs2017-x64/
+/_deps-vs2017-x64-installed/
+/_deps/
 /deps*/
 /build*/
 /install*/
@@ -27,3 +30,5 @@ Pipfile.lock
 *.mo
 # Vim
 *.swp
+
+

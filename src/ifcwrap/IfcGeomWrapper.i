@@ -77,11 +77,11 @@
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
-	IfcEntityList::ptr select(IfcUtil::IfcBaseClass* e, bool completely_within = false) const {
+	IfcEntityList::ptr select(IfcUtil::IfcBaseClass* e, bool completely_within = false, double extend = 0.0) const {
 		if (!e->declaration().is("IfcProduct")) {
 			throw IfcParse::IfcException("Instance should be an IfcProduct");
 		}
-		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select((IfcUtil::IfcBaseEntity*)e, completely_within);
+		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select((IfcUtil::IfcBaseEntity*)e, completely_within, extend);
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
@@ -90,13 +90,13 @@
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
-	IfcEntityList::ptr select(const std::string& shape_serialization) const {
+	IfcEntityList::ptr select(const std::string& shape_serialization, bool completely_within = false, double extend = -1.e-5) const {
 		std::stringstream stream(shape_serialization);
 		BRepTools_ShapeSet shapes;
 		shapes.Read(stream);
 		const TopoDS_Shape& shp = shapes.Shape(shapes.NbShapes());
 
-		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select(shp);
+		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select(shp, completely_within, extend);
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
@@ -472,21 +472,39 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 %inline %{
 	static boost::variant<IfcGeom::Element<double>*, IfcGeom::Representation::Representation*> create_shape(IfcGeom::IteratorSettings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
 		const std::string& schema_name = instance->declaration().schema()->name();
+
+		#ifdef HAS_SCHEMA_2x3
 		if (schema_name == "IFC2X3") {
 			return helper_fn_create_shape<Ifc2x3>(settings, instance, representation);
-		} else if (schema_name == "IFC4") {
-			return helper_fn_create_shape<Ifc4>(settings, instance, representation);
-		} else if (schema_name == "IFC4X1") {
-			return helper_fn_create_shape<Ifc4x1>(settings, instance, representation);
-		} else if (schema_name == "IFC4X2") {
-			return helper_fn_create_shape<Ifc4x2>(settings, instance, representation);
-		} else if (schema_name == "IFC4X3_RC1") {
-			return helper_fn_create_shape<Ifc4x3_rc1>(settings, instance, representation);
-		} else if (schema_name == "IFC4X3_RC2") {
-			return helper_fn_create_shape<Ifc4x3_rc2>(settings, instance, representation);
-		} else {
-			throw IfcParse::IfcException("No geometry support for " + schema_name);
 		}
+		#endif
+		#ifdef HAS_SCHEMA_4
+		if (schema_name == "IFC4") {
+			return helper_fn_create_shape<Ifc4>(settings, instance, representation);
+		}
+		#endif
+		#ifdef HAS_SCHEMA_4x1
+		if (schema_name == "IFC4X1") {
+			return helper_fn_create_shape<Ifc4x1>(settings, instance, representation);
+		}
+		#endif
+		#ifdef HAS_SCHEMA_4x2
+		if (schema_name == "IFC4X2") {
+			return helper_fn_create_shape<Ifc4x2>(settings, instance, representation);
+		}
+		#endif
+		#ifdef HAS_SCHEMA_4x3_rc1
+		if (schema_name == "IFC4X3_RC1") {
+			return helper_fn_create_shape<Ifc4x3_rc1>(settings, instance, representation);
+		}
+		#endif
+		#ifdef HAS_SCHEMA_4x3_rc2
+		if (schema_name == "IFC4X3_RC2") {
+			return helper_fn_create_shape<Ifc4x3_rc2>(settings, instance, representation);
+		}
+		#endif
+		
+		throw IfcParse::IfcException("No geometry support for " + schema_name);
 	}
 %}
 

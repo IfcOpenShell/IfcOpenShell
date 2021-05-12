@@ -76,21 +76,45 @@ void IfcParse::register_schema(schema_definition* s) {
 }
 
 
+#ifdef HAS_SCHEMA_2x3
 #include "../ifcparse/Ifc2x3.h"
+#endif
+#ifdef HAS_SCHEMA_4
 #include "../ifcparse/Ifc4.h"
+#endif
+#ifdef HAS_SCHEMA_4x1
 #include "../ifcparse/Ifc4x1.h"
+#endif
+#ifdef HAS_SCHEMA_4x2
 #include "../ifcparse/Ifc4x2.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_rc1
 #include "../ifcparse/Ifc4x3_rc1.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_rc2
 #include "../ifcparse/Ifc4x3_rc2.h"
+#endif
 
 const IfcParse::schema_definition* IfcParse::schema_by_name(const std::string& name) {
 	// TODO: initialize automatically somehow
+#ifdef HAS_SCHEMA_2x3
 	Ifc2x3::get_schema();
+#endif
+#ifdef HAS_SCHEMA_4
 	Ifc4::get_schema();
+#endif
+#ifdef HAS_SCHEMA_4x1
 	Ifc4x1::get_schema();
+#endif
+#ifdef HAS_SCHEMA_4x2
 	Ifc4x2::get_schema();
+#endif
+#ifdef HAS_SCHEMA_4x3_rc1
 	Ifc4x3_rc1::get_schema();
+#endif
+#ifdef HAS_SCHEMA_4x3_rc2
 	Ifc4x3_rc2::get_schema();
+#endif
 
 	std::map<std::string, const IfcParse::schema_definition*>::const_iterator it = schemas.find(boost::to_upper_copy(name));
 	if (it == schemas.end()) {

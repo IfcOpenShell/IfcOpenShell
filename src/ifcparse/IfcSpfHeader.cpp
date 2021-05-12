@@ -43,11 +43,6 @@ HeaderEntity::HeaderEntity(const char * const datatype, size_t size, IfcFile* fi
 	if (file) {
 		offset_in_file_ = file->stream->Tell();
 		load();
-	} else {
-		// attributes_ = new Argument*[size];
-		for (size_t i = 0; i < size; ++i) {
-			attributes_[i] = 0;
-		}
 	}
 }
 
