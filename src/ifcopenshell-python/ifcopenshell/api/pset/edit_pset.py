@@ -1,4 +1,5 @@
 import ifcopenshell
+import ifcopenshell.util.pset
 
 
 class Usecase:
