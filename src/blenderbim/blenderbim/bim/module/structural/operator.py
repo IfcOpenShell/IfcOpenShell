@@ -441,8 +441,8 @@ class EditStructuralItemAxis(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EnableEditingStructuralItemConnectionCS(bpy.types.Operator):
-    bl_idname = "bim.enable_editing_structural_item_connection_cs"
+class EnableEditingStructuralConnectionCS(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_structural_connection_cs"
     bl_label = "Enable Editing Structural Item Connection CS"
 
     def execute(self, context):
@@ -452,65 +452,72 @@ class EnableEditingStructuralItemConnectionCS(bpy.types.Operator):
 
         self.file = IfcStore.get_file()
         item = self.file.by_id(oprops.ifc_definition_id)
-        z_axis = Vector(item.Axis.DirectionRatios).normalized() @ obj.matrix_world if item.Axis else None
-        x_axis = (obj.data.vertices[1].co - obj.data.vertices[0].co).normalized()
+
         location = obj.data.vertices[0].co
         empty = bpy.data.objects.new("Item Connection CS", None)
         empty.empty_display_type = "ARROWS"
-        if z_axis:
-            y_axis = (z_axis.cross(x_axis)).normalized()
-            empty.matrix_world = Matrix(
-                (
-                    (x_axis[0], y_axis[0], z_axis[0], location[0]),
-                    (x_axis[1], y_axis[1], z_axis[1], location[1]),
-                    (x_axis[2], y_axis[2], z_axis[2], location[2]),
-                    (0, 0, 0, 1),
-                )
-            )
-        else:
-            empty.location = location
-            empty.rotation_mode = "QUATERNION"
-            empty.rotation_quaternion = x_axis.to_track_quat("X", "Z")
+        empty.location = location
 
-        props.axis_angle = degrees(empty.rotation_euler[0])
-        props.axis_empty = empty
+        if item.ConditionCoordinateSystem is not None:
+            z_axis = Vector(item.ConditionCoordinateSystem.Axis.DirectionRatios).normalized() @ obj.matrix_world if item.ConditionCoordinateSystem.Axis else None
+            x_axis = Vector(item.ConditionCoordinateSystem.RefDirection.DirectionRatios).normalized() @ obj.matrix_world if item.ConditionCoordinateSystem.RefDirection else None
+            
+            if z_axis:
+                y_axis = (z_axis.cross(x_axis)).normalized()
+                x_axis = (y_axis.cross(z_axis)).normalized()
+                empty.matrix_world = Matrix(
+                    (
+                        (x_axis[0], y_axis[0], z_axis[0], location[0]),
+                        (x_axis[1], y_axis[1], z_axis[1], location[1]),
+                        (x_axis[2], y_axis[2], z_axis[2], location[2]),
+                        (0, 0, 0, 1),
+                    )
+                )
+        
+
+        props.ccs_x_angle = degrees(empty.rotation_euler[0])
+        props.ccs_y_angle = degrees(empty.rotation_euler[1])
+        props.ccs_z_angle = degrees(empty.rotation_euler[2])
+        props.ccs_empty = empty
         context.scene.collection.objects.link(empty)
 
-        props.is_editing_axis = True
+        props.is_editing_connection_cs = True
         return {"FINISHED"}
 
 
-class DisableEditingStructuralItemConnectionCS(bpy.types.Operator):
-    bl_idname = "bim.disable_editing_structural_item_connection_cs"
-    bl_label = "Disable Editing Structural Item Connection CS"
+class DisableEditingStructuralConnectionCS(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_structural_connection_cs"
+    bl_label = "Disable Editing Structural Connection CS"
 
     def execute(self, context):
         obj = bpy.context.active_object
         props = obj.BIMStructuralProperties
-        props.is_editing_axis = False
-        if props.axis_empty:
-            bpy.data.objects.remove(props.axis_empty)
+        props.is_editing_connection_cs = False
+        if props.ccs_empty:
+            bpy.data.objects.remove(props.ccs_empty)
         return {"FINISHED"}
 
 
-class EditStructuralItemConnectionCS(bpy.types.Operator):
-    bl_idname = "bim.edit_structural_item_connection_cs"
-    bl_label = "Edit Structural Item Connection CS"
+class EditStructuralConnectionCS(bpy.types.Operator):
+    bl_idname = "bim.edit_structural_connection_cs"
+    bl_label = "Edit Structural Connection CS"
 
     def execute(self, context):
         obj = bpy.context.active_object
         oprops = obj.BIMObjectProperties
         props = obj.BIMStructuralProperties
-        relative_matrix = props.axis_empty.matrix_world @ obj.matrix_world.inverted()
+        relative_matrix = props.ccs_empty.matrix_world @ obj.matrix_world.inverted()
+        x_axis = relative_matrix.col[0][0:3]
         z_axis = relative_matrix.col[2][0:3]
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
-            "structural.edit_structural_item_connection_cs",
+            "structural.edit_structural_connection_cs",
             self.file,
             structural_item=self.file.by_id(oprops.ifc_definition_id),
             axis=z_axis,
+            ref_direction=x_axis,
         )
-        bpy.ops.bim.disable_editing_structural_item_axis()
+        bpy.ops.bim.disable_editing_structural_connection_cs()
         return {"FINISHED"}
 
 
