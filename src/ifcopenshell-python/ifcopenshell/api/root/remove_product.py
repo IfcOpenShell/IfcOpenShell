@@ -22,5 +22,7 @@ class Usecase:
                 self.file, **{"product": self.settings["product"], "representation": representation}
             )
             ifcopenshell.api.run("geometry.remove_representation", self.file, **{"representation": representation})
+        for opening in self.settings["product"].HasOpenings or []:
+            ifcopenshell.api.run("void.remove_opening", self.file, opening=opening.RelatedOpeningElement)
         # TODO: remove object placement and other relationships
         self.file.remove(self.settings["product"])
