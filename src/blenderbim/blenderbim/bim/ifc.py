@@ -57,9 +57,20 @@ class IfcStore:
         blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)
 
     @staticmethod
-    def unlink_element(element, obj=None):
-        del IfcStore.id_map[element.id()]
-        if hasattr(element, "GlobalId"):
+    def unlink_element(element=None, obj=None):
+        if element is None:
+            try:
+                element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+            except:
+                pass
+
+        if element:
+            del IfcStore.id_map[element.id()]
+        else:
+            del IfcStore.id_map[obj.BIMObjectProperties.ifc_definition_id]
+
+        if element and hasattr(element, "GlobalId"):
             del IfcStore.guid_map[element.GlobalId]
+
         if obj:
             obj.BIMObjectProperties.ifc_definition_id = 0

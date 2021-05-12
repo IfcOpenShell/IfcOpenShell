@@ -5,6 +5,7 @@ import ifcopenshell.api
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
 from ifcopenshell.api.geometry.data import Data as GeometryData
+from ifcopenshell.api.void.data import Data as VoidData
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -181,6 +182,7 @@ class UnassignClass(bpy.types.Operator):
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            self.remove_voids(product, obj)
             IfcStore.unlink_element(product, obj)
             ifcopenshell.api.run("root.remove_product", self.file, **{"product": product})
             if "/" in obj.name and obj.name[0:3] == "Ifc":
@@ -188,6 +190,12 @@ class UnassignClass(bpy.types.Operator):
             if obj.data and obj.data.name == "Void":
                 bpy.data.objects.remove(obj)
         return {"FINISHED"}
+
+    def remove_voids(self, product, obj):
+        if product.id() not in VoidData.products:
+            VoidData.load(self.file, product.id())
+        for opening_id in VoidData.products[product.id()]:
+            bpy.ops.bim.remove_opening(opening_id=opening_id, obj=obj.name)
 
 
 class UnlinkObject(bpy.types.Operator):
@@ -203,7 +211,7 @@ class UnlinkObject(bpy.types.Operator):
             objects = bpy.context.selected_objects
         for obj in objects:
             if obj.BIMObjectProperties.ifc_definition_id:
-                obj.BIMObjectProperties.ifc_definition_id = 0
+                IfcStore.unlink_element(obj=obj)
             if "Ifc" in obj.name and "/" in obj.name:
                 obj.name = "/".join(obj.name.split("/")[1:])
         return {"FINISHED"}
