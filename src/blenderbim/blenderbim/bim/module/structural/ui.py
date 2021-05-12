@@ -66,6 +66,7 @@ class BIM_PT_structural_boundary_conditions(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    # bl_parent_id = "BIM_PT_structural_connection"
 
     @classmethod
     def poll(cls, context):
@@ -95,6 +96,7 @@ class BIM_PT_connected_structural_members(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
+    # bl_parent_id = "BIM_PT_structural_connection"
 
     @classmethod
     def poll(cls, context):
@@ -218,15 +220,17 @@ class BIM_PT_structural_connection(Panel):
             if self.props.is_editing_connection_cs:
                 row = self.layout.row(align=True)
                 row.label(text="Editing Connection CS")
-                row.operator("bim.edit_structural_item_connection_cs", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_structural_item_connection_cs", text="", icon="CANCEL")
+                row.operator("bim.edit_structural_connection_cs", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_structural_connection_cs", text="", icon="CANCEL")
                 row = self.layout.row(align=True)
-                row.prop(self.props, "ccs_x_angle")
-                row.prop(self.props, "ccs_y_angle")
-                row.prop(self.props, "ccs_z_angle")
+                row.prop(self.props, "ccs_x_angle", text="X Angle")
+                row = self.layout.row(align=True)
+                row.prop(self.props, "ccs_y_angle", text="Y Angle")
+                row = self.layout.row(align=True)
+                row.prop(self.props, "ccs_z_angle", text="Z Angle")
             else:
                 row = self.layout.row()
-                row.operator("bim.enable_editing_structural_item_connection_cs", text="Edit Connection CS", icon="GREASEPENCIL")
+                row.operator("bim.enable_editing_structural_connection_cs", text="Edit Connection CS", icon="GREASEPENCIL")
         else:
             row = self.layout.row()
             row.label(text="TODO")
