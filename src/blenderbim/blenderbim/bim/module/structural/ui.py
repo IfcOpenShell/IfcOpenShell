@@ -1,4 +1,5 @@
 import bpy
+import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.structural.data import Data
@@ -402,7 +403,8 @@ class BIM_PT_structural_load_cases(Panel):
 
     def draw_editable_load_group_activities_ui(self, layout, load_group):
         row = layout.row(align=True)
-        row.prop(self.props, "applicable_structural_activity_types", text="")
+        row.prop(self.props, "applicable_structural_load_types", text="")
+        row.prop(self.props, "applicable_structural_loads", text="")
         op = row.operator("bim.add_structural_activity", text="", icon="ADD")
         op.load_group = load_group["id"]
         layout.template_list(
@@ -422,3 +424,65 @@ class BIM_UL_structural_activities(UIList):
             row = layout.row(align=True)
             row.label(text=item.name)
             row.label(text=item.applied_load_class)
+
+
+class BIM_PT_structural_loads(Panel):
+    bl_label = "IFC Structural Loads"
+    bl_idname = "BIM_PT_structural_loads"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
+    def draw(self, context):
+        if not Data.is_loaded:
+            Data.load(IfcStore.get_file())
+        self.props = context.scene.BIMStructuralProperties
+
+        row = self.layout.row(align=True)
+        row.label(
+            text="{} Structural Loads Found".format(len(Data.structural_loads)), icon="GHOST_ENABLED"
+        )
+        if self.props.is_editing_loads:
+            row.prop(self.props, "structural_load_types", text="")
+            row.operator("bim.add_structural_load", text="", icon="ADD").ifc_class = self.props.structural_load_types
+            row.operator("bim.disable_structural_load_editing_ui", text="", icon="CANCEL")
+        else:
+            row.operator("bim.load_structural_loads", text="", icon="GREASEPENCIL")
+
+        if self.props.is_editing_loads:
+            self.layout.template_list(
+                "BIM_UL_structural_loads",
+                "",
+                self.props,
+                "structural_loads",
+                self.props,
+                "active_structural_load_index",
+            )
+
+        if self.props.active_structural_load_id:
+            blenderbim.bim.helper.draw_attributes(self.props.structural_load_attributes, self.layout)
+
+
+class BIM_UL_structural_loads(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            row.label(text=item.name)
+            row.label(text=Data.structural_loads[item.ifc_definition_id]["type"])
+
+            if context.scene.BIMStructuralProperties.active_structural_load_id == item.ifc_definition_id:
+                row.operator("bim.edit_structural_load", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_structural_load", text="", icon="CANCEL")
+            elif context.scene.BIMStructuralProperties.active_structural_load_id:
+                op = row.operator("bim.remove_structural_load", text="", icon="X")
+                op.structural_load = item.ifc_definition_id
+            else:
+                op = row.operator("bim.enable_editing_structural_load", text="", icon="GREASEPENCIL")
+                op.structural_load = item.ifc_definition_id
+                op = row.operator("bim.remove_structural_load", text="", icon="X")
+                op.structural_load = item.ifc_definition_id

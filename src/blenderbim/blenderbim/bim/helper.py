@@ -8,6 +8,23 @@ from mathutils import Vector
 from blenderbim.bim.ifc import IfcStore
 
 
+def draw_attributes(props, layout):
+    for attribute in props:
+        row = layout.row(align=True)
+        if attribute.data_type == "string":
+            row.prop(attribute, "string_value", text=attribute.name)
+        elif attribute.data_type == "boolean":
+            row.prop(attribute, "bool_value", text=attribute.name)
+        elif attribute.data_type == "integer":
+            row.prop(attribute, "int_value", text=attribute.name)
+        elif attribute.data_type == "float":
+            row.prop(attribute, "float_value", text=attribute.name)
+        elif attribute.data_type == "enum":
+            row.prop(attribute, "enum_value", text=attribute.name)
+        if attribute.is_optional:
+            row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+
+
 def import_attributes(ifc_class, props, data, callback=None):
     for attribute in IfcStore.get_schema().declaration_by_name(ifc_class).all_attributes():
         data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
