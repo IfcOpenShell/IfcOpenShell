@@ -2,6 +2,8 @@ import bpy
 import json
 import ifcopenshell.api
 import ifcopenshell.util.unit
+import ifcopenshell.util.pset
+import ifcopenshell.util.attribute
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data
 from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
@@ -31,32 +33,99 @@ class EnablePsetEditing(bpy.types.Operator):
             obj = bpy.data.objects.get(self.obj)
         elif self.obj_type == "Material":
             obj = bpy.data.materials.get(self.obj)
-        props = obj.PsetProperties
+        self.props = obj.PsetProperties
 
-        while len(props.properties) > 0:
-            props.properties.remove(0)
+        while len(self.props.properties) > 0:
+            self.props.properties.remove(0)
 
         data = Data.psets if self.pset_id in Data.psets else Data.qtos
-        props.active_pset_name = data[self.pset_id]["Name"]
-        for prop in data[self.pset_id]["Properties"]:
-            new = props.properties.add()
-            new.name = prop["Name"]
-            new.is_null = prop["is_null"]
-            if prop["type"] == "string":
-                new.string_value = prop["value"] or ""
-            elif prop["type"] == "integer":
-                new.int_value = prop["value"] or 0
-            elif prop["type"] == "float":
-                new.float_value = prop["value"] or 0.0
-            elif prop["type"] == "boolean":
-                new.bool_value = prop["value"] or False
-            elif prop["type"] == "enum":
-                new.enum_items = json.dumps(prop["enum_items"])
-                if prop["value"]:
-                    new.enum_value = prop["value"]
+        pset_data = data[self.pset_id]
+        self.props.active_pset_name = pset_data["Name"]
 
-        props.active_pset_id = self.pset_id
+        templates = ifcopenshell.util.pset.get_template("IFC4")
+        pset_template = templates.get_by_name(pset_data["Name"])
+
+        if pset_template:
+            self.load_from_pset_template(pset_template, pset_data)
+        else:
+            self.load_from_pset_data(pset_data)
+
+        self.props.active_pset_id = self.pset_id
         return {"FINISHED"}
+
+    def load_from_pset_template(self, pset_template, pset_data):
+        data = {Data.properties[p]["Name"]: Data.properties[p]["NominalValue"] for p in pset_data["Properties"]}
+        for prop_template in pset_template.HasPropertyTemplates:
+            if not prop_template.is_a("IfcSimplePropertyTemplate"):
+                continue  # Other types not yet supported
+
+            if prop_template.TemplateType == "P_SINGLEVALUE":
+                try:
+                    data_type = ifcopenshell.util.attribute.get_primitive_type(
+                        IfcStore.get_schema().declaration_by_name(prop_template.PrimaryMeasureType or "IfcLabel")
+                    )
+                except:
+                    # TODO: Occurs if the data type is something that exists in IFC4 and not in IFC2X3. To fully fix
+                    # this we need to generate the IFC2X3 pset template definitions.
+                    continue
+            elif prop_template.TemplateType == "P_ENUMERATEDVALUE":
+                data_type = "enum"
+                enum_items = [v.wrappedValue for v in prop_template.Enumerators.EnumerationValues]
+            elif prop_template.TemplateType in ["Q_LENGTH", "Q_AREA", "Q_VOLUME", "Q_WEIGHT", "Q_TIME"]:
+                data_type = "float"
+            elif prop_template.TemplateType == "Q_COUNT":
+                data_type = "integer"
+            else:
+                continue  # Other types not yet supported
+
+            new = self.props.properties.add()
+            new.name = prop_template.Name
+            new.is_null = data.get(prop_template.Name, None) is None
+            new.data_type = data_type
+
+            if data_type == "string":
+                new.string_value = "" if new.is_null else data[prop_template.Name]
+            elif data_type == "integer":
+                new.int_value = 0 if new.is_null else data[prop_template.Name]
+            elif data_type == "float":
+                new.float_value = 0.0 if new.is_null else data[prop_template.Name]
+            elif data_type == "boolean":
+                new.bool_value = False if new.is_null else data[prop_template.Name]
+            elif data_type == "enum":
+                new.enum_items = json.dumps(enum_items)
+                if data.get(prop_template.Name):
+                    new.enum_value = data[prop_template.Name]
+
+    def load_from_pset_data(self, pset_data):
+        for prop_id in pset_data["Properties"]:
+            prop = Data.properties[prop_id]
+
+            value = prop["NominalValue"]
+            if isinstance(value, str):
+                data_type = "string"
+            elif isinstance(value, float):
+                data_type = "float"
+            elif isinstance(value, bool):
+                data_type = "boolean"
+            elif isinstance(value, int):
+                data_type = "integer"
+            else:
+                data_type = "string"
+                value = str(value)
+
+            new = self.props.properties.add()
+            new.name = prop["Name"]
+            new.is_null = prop["NominalValue"] is None
+            new.data_type = data_type
+
+            if data_type == "string":
+                new.string_value = "" if new.is_null else value
+            elif data_type == "integer":
+                new.int_value = 0 if new.is_null else value
+            elif data_type == "float":
+                new.float_value = 0.0 if new.is_null else value
+            elif data_type == "boolean":
+                new.bool_value = False if new.is_null else value
 
 
 class DisablePsetEditing(bpy.types.Operator):
@@ -98,22 +167,19 @@ class EditPset(bpy.types.Operator):
             properties = json.loads(self.properties)
         else:
             data = Data.psets if pset_id in Data.psets else Data.qtos
-            for prop in data[pset_id]["Properties"]:
-                blender_prop = props.properties.get(prop["Name"])
-                if not blender_prop:
-                    continue
-                if blender_prop.is_null:
-                    properties[prop["Name"]] = None
-                elif prop["type"] == "string":
-                    properties[prop["Name"]] = blender_prop.string_value
-                elif prop["type"] == "boolean":
-                    properties[prop["Name"]] = blender_prop.bool_value
-                elif prop["type"] == "integer":
-                    properties[prop["Name"]] = blender_prop.int_value
-                elif prop["type"] == "float":
-                    properties[prop["Name"]] = blender_prop.float_value
-                elif prop["type"] == "enum":
-                    properties[prop["Name"]] = blender_prop.enum_value
+            for prop in props.properties:
+                if prop.is_null:
+                    properties[prop.name] = None
+                elif prop.data_type == "string":
+                    properties[prop.name] = prop.string_value
+                elif prop.data_type == "boolean":
+                    properties[prop.name] = prop.bool_value
+                elif prop.data_type == "integer":
+                    properties[prop.name] = prop.int_value
+                elif prop.data_type == "float":
+                    properties[prop.name] = prop.float_value
+                elif prop.data_type == "enum":
+                    properties[prop.name] = prop.enum_value
 
         if pset_id in Data.psets:
             ifcopenshell.api.run(

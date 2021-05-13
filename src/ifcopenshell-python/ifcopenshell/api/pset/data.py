@@ -7,18 +7,17 @@ class Data:
     products = {}
     psets = {}
     qtos = {}
+    properties = {}
 
     @classmethod
     def purge(cls):
         cls.products = {}
         cls.psets = {}
         cls.qtos = {}
+        cls.properties = {}
 
     @classmethod
     def load(cls, file, product_id):
-        cls._file = file
-        cls._psetqto = ifcopenshell.util.pset.get_template("IFC4")
-        cls._schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(file.schema)
         if not file:
             return
         product = file.by_id(product_id)
@@ -59,133 +58,47 @@ class Data:
 
     @classmethod
     def add_pset(cls, pset, product_id):
-        new_pset = {
-            "Name": pset.Name,
-            "is_expanded": True,
-            "Properties": cls.get_properties_from_template(pset.Name) or [],
-        }
-        cls.products[product_id]["psets"].add(int(pset.id()))
-        cls.psets[int(pset.id())] = new_pset
-        try:
-            if hasattr(pset, "HasProperties"):
-                props = pset.HasProperties
-            elif hasattr(pset, "Properties"):  # For IfcMaterialProperties
-                props = pset.Properties
-        except:
-            return  # I've seen ArchiCAD produce invalid IFCs with empty data
-        # Invalid IFC, but some vendors like Solidworks do this so we accomodate it
-        if not props:
-            return
+        data = pset.get_info()
+        del data["OwnerHistory"]
+        del data["HasProperties"]
+        if hasattr(pset, "HasProperties"):
+            props = pset.HasProperties or []
+        elif hasattr(pset, "Properties"):
+            props = pset.Properties or []
+        # TODO: support more than single values
+        data["Properties"] = [p.id() for p in props if p.is_a("IfcPropertySingleValue")]
+        cls.psets[pset.id()] = data
+        cls.products[product_id]["psets"].add(pset.id())
         for prop in props:
-            if prop.is_a("IfcPropertySingleValue") and prop.NominalValue:
-                has_existing_prop = False
-                for existing_prop in new_pset["Properties"]:
-                    if existing_prop["Name"] == prop.Name:
-                        if prop.NominalValue is None:
-                            existing_prop["value"] = None
-                        elif existing_prop["type"] == "string":
-                            existing_prop["value"] = str(prop.NominalValue.wrappedValue)
-                        elif existing_prop["type"] == "float":
-                            existing_prop["value"] = float(prop.NominalValue.wrappedValue)
-                        elif existing_prop["type"] == "integer":
-                            existing_prop["value"] = int(prop.NominalValue.wrappedValue)
-                        elif existing_prop["type"] == "boolean":
-                            existing_prop["value"] = bool(prop.NominalValue.wrappedValue)
-                        elif existing_prop["type"] == "enum":
-                            existing_prop["value"] = str(prop.NominalValue.wrappedValue)
-                        existing_prop["is_null"] = prop.NominalValue.wrappedValue is None
-                        has_existing_prop = True
-                        break
-                if not has_existing_prop:
-                    value = prop.NominalValue.wrappedValue
-                    if isinstance(value, str):
-                        data_type = "string"
-                    elif isinstance(value, float):
-                        data_type = "float"
-                    elif isinstance(value, bool):
-                        data_type = "boolean"
-                    elif isinstance(value, int):
-                        data_type = "integer"
-                    else:
-                        data_type = "string"
-                        value = str(value)
-                    new_pset["Properties"].append(
-                        {
-                            "Name": prop.Name,
-                            "value": value,
-                            "type": data_type,
-                            "enum_items": [],
-                            "is_null": prop.NominalValue.wrappedValue is None,
-                        }
-                    )
+            # TODO: support more than single values
+            if prop.is_a("IfcPropertySingleValue"):
+                cls.load_prop(prop)
+
+    @classmethod
+    def load_prop(cls, prop):
+        data = prop.get_info()
+        if prop.is_a("IfcProperty"):
+            # TODO: support units
+            del data["Unit"]
+            if prop.NominalValue is not None:
+                data["NominalValue"] = prop.NominalValue.wrappedValue
+        elif prop.is_a("IfcPhysicalQuantity"):
+            # TODO: support units
+            del data["Unit"]
+            # For convenience, which trumps correctness in this case
+            data["NominalValue"] = prop[3]
+        cls.properties[prop.id()] = data
 
     @classmethod
     def add_qto(cls, qto, product_id):
-        new_qto = {
-            "Name": qto.Name,
-            "is_expanded": True,
-            "Properties": cls.get_properties_from_template(qto.Name) or [],
-        }
-        cls.products[product_id]["qtos"].add(int(qto.id()))
-        cls.qtos[int(qto.id())] = new_qto
-        for prop in qto.Quantities or []:
-            if prop.is_a("IfcPhysicalSimpleQuantity"):
-                value = prop[3]
-                has_existing_prop = False
-                for existing_prop in new_qto["Properties"]:
-                    if existing_prop["Name"] == prop.Name:
-                        existing_prop["value"] = float(value)
-                        existing_prop["is_null"] = value is None
-                        has_existing_prop = True
-                        break
-                if not has_existing_prop:
-                    new_qto["Properties"].append(
-                        {
-                            "Name": prop.Name,
-                            "value": float(value),
-                            "type": "float",
-                            "enum_items": [],
-                            "is_null": value is None,
-                        }
-                    )
-
-    @classmethod
-    def get_properties_from_template(cls, name):
-        template = cls._psetqto.get_by_name(name)
-        if not template:
-            return
-        properties = []
-        for prop_template in template.HasPropertyTemplates:
-            if not prop_template.is_a("IfcSimplePropertyTemplate"):
-                continue  # Other types not yet supported
-            enum_items = []
-
-            if prop_template.TemplateType == "P_SINGLEVALUE":
-                try:
-                    data_type = ifcopenshell.util.attribute.get_primitive_type(
-                        cls._schema.declaration_by_name(prop_template.PrimaryMeasureType or "IfcLabel")
-                    )
-                except:
-                    # TODO: Occurs if the data type is something that exists in IFC4 and not in IFC2X3. To fully fix
-                    # this we need to generate the IFC2X3 pset template definitions.
-                    continue
-            elif prop_template.TemplateType == "P_ENUMERATEDVALUE":
-                data_type = "enum"
-                enum_items = [v.wrappedValue for v in prop_template.Enumerators.EnumerationValues]
-            elif prop_template.TemplateType in ["Q_LENGTH", "Q_AREA", "Q_VOLUME", "Q_WEIGHT", "Q_TIME"]:
-                data_type = "float"
-            elif prop_template.TemplateType == "Q_COUNT":
-                data_type = "integer"
-            else:
-                continue  # Other types not yet supported
-
-            properties.append(
-                {
-                    "Name": prop_template.Name,
-                    "value": None,
-                    "type": data_type,
-                    "enum_items": enum_items,
-                    "is_null": True,
-                }
-            )
-        return properties
+        data = qto.get_info()
+        del data["OwnerHistory"]
+        del data["Quantities"]
+        # TODO: support more than just simple quantities
+        # We call it properties for convenience, not for correctness
+        data["Properties"] = [q.id() for q in qto.Quantities or [] if q.is_a("IfcPhysicalSimpleQuantity")]
+        cls.qtos[qto.id()] = data
+        cls.products[product_id]["qtos"].add(qto.id())
+        for quantity in qto.Quantities or []:
+            if quantity.is_a("IfcPhysicalSimpleQuantity"):
+                cls.load_prop(quantity)
