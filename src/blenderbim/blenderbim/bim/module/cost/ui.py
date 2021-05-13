@@ -32,6 +32,8 @@ class BIM_PT_cost_schedules(Panel):
         row.label(text=cost_schedule["Name"] or "Unnamed", icon="LINENUMBERS_ON")
 
         if self.props.active_cost_schedule_id and self.props.active_cost_schedule_id == cost_schedule_id:
+            op = row.operator("bim.select_cost_schedule_products", icon="RESTRICT_SELECT_OFF", text="")
+            op.cost_schedule = cost_schedule_id
             if self.props.is_editing == "COST_SCHEDULE":
                 row.operator("bim.edit_cost_schedule", text="", icon="CHECKMARK")
             elif self.props.is_editing == "COST_ITEMS":
@@ -271,6 +273,8 @@ class BIM_UL_cost_items(UIList):
                 row.operator("bim.add_cost_item", text="", icon="ADD").cost_item = item.ifc_definition_id
                 row.operator("bim.remove_cost_item", text="", icon="X").cost_item = item.ifc_definition_id
             else:
+                op = row.operator("bim.select_cost_item_products", icon="RESTRICT_SELECT_OFF", text="")
+                op.cost_item = item.ifc_definition_id
                 row.operator(
                     "bim.enable_editing_cost_item", text="", icon="GREASEPENCIL"
                 ).cost_item = item.ifc_definition_id
