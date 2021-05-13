@@ -532,3 +532,41 @@ class CopyCostItemValues(bpy.types.Operator):
         )
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
+
+
+class SelectCostItemProducts(bpy.types.Operator):
+    bl_idname = "bim.select_cost_item_products"
+    bl_label = "Select Cost Item Products"
+    cost_item: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        related_products = Data.cost_items[self.cost_item]["Controls"]
+        for obj in bpy.context.visible_objects:
+            obj.select_set(False)
+            if obj.BIMObjectProperties.ifc_definition_id in related_products:
+                obj.select_set(True)
+        return {"FINISHED"}
+
+
+class SelectCostScheduleProducts(bpy.types.Operator):
+    bl_idname = "bim.select_cost_schedule_products"
+    bl_label = "Select Cost Schedule Products"
+    cost_schedule: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        self.related_products = []
+        for cost_item_id in Data.cost_schedules[self.cost_schedule]["Controls"]:
+            self.get_related_products(Data.cost_items[cost_item_id])
+        self.related_products = set(self.related_products)
+        for obj in bpy.context.visible_objects:
+            obj.select_set(False)
+            if obj.BIMObjectProperties.ifc_definition_id in self.related_products:
+                obj.select_set(True)
+        return {"FINISHED"}
+
+    def get_related_products(self, cost_item):
+        self.related_products.extend(cost_item["Controls"])
+        for child_id in cost_item["IsNestedBy"]:
+            self.get_related_products(Data.cost_items[child_id])

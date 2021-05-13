@@ -31,6 +31,8 @@ classes = (
     operator.AddCostValue,
     operator.RemoveCostItemValue,
     operator.CopyCostItemValues,
+    operator.SelectCostItemProducts,
+    operator.SelectCostScheduleProducts,
     prop.CostItem,
     prop.BIMCostProperties,
     ui.BIM_PT_cost_schedules,
