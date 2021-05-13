@@ -36,8 +36,16 @@ classes = (
     operator.EnableEditingStructuralLoadCaseGroups,
     operator.DisableEditingStructuralLoadCase,
     operator.EnableEditingStructuralLoadGroupActivities,
+    operator.LoadStructuralLoads,
+    operator.DisableStructuralLoadEditingUI,
+    operator.AddStructuralLoad,
+    operator.EnableEditingStructuralLoad,
+    operator.DisableEditingStructuralLoad,
+    operator.RemoveStructuralLoad,
+    operator.EditStructuralLoad,
     prop.StructuralAnalysisModel,
     prop.StructuralActivity,
+    prop.StructuralLoad,
     prop.BIMStructuralProperties,
     prop.BIMObjectStructuralProperties,
     ui.BIM_PT_structural_analysis_models,
@@ -48,6 +56,8 @@ classes = (
     ui.BIM_UL_structural_analysis_models,
     ui.BIM_UL_structural_activities,
     ui.BIM_PT_structural_load_cases,
+    ui.BIM_UL_structural_loads,
+    ui.BIM_PT_structural_loads,
 )
 
 

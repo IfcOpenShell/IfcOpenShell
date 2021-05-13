@@ -7,7 +7,7 @@ class Data:
     connects_structural_members = {}
     members = {}
     structural_activities = {}
-    applied_loads = {}
+    structural_loads = {}
     connects_structural_activities = {}
 
     load_cases = {}
@@ -24,7 +24,7 @@ class Data:
         cls.connects_structural_members = {}
         cls.members = {}
         cls.structural_activities = {}
-        cls.applied_loads = {}
+        cls.structural_loads = {}
         cls.connects_structural_activities = {}
 
         cls.load_cases = {}
@@ -49,6 +49,7 @@ class Data:
         cls.load_structural_load_case_combinations()
         cls.load_structural_load_groups()
         cls.load_structural_activities()
+        cls.load_structural_loads()
         cls.is_loaded = True
 
     @classmethod
@@ -195,8 +196,14 @@ class Data:
         cls.connects_structural_members[rel.id()] = rel_data
 
     @classmethod
-    def load_applied_load(cls, applied_load):
-        cls.applied_loads[applied_load.id()] = applied_load.get_info()
+    def load_structural_loads(cls):
+        cls.structural_loads = {}
+        for load in cls._file.by_type("IfcStructuralLoad"):
+            cls.load_structural_load(load)
+
+    @classmethod
+    def load_structural_load(cls, load):
+        cls.structural_loads[load.id()] = load.get_info()
 
     @classmethod
     def load_connects_structural_activity(cls, rel):
@@ -206,7 +213,7 @@ class Data:
         rel_data["RelatedStructuralActivity"] = rel.RelatedStructuralActivity.id()
 
         if rel.RelatedStructuralActivity.AppliedLoad:
-            cls.load_applied_load(rel.RelatedStructuralActivity.AppliedLoad)
+            cls.load_structural_load(rel.RelatedStructuralActivity.AppliedLoad)
             # rel_data["AppliedCondition"] = rel.RelatedStructuralActivity.AppliedLoad.id()
 
         cls.connects_structural_activities[rel.id()] = rel_data

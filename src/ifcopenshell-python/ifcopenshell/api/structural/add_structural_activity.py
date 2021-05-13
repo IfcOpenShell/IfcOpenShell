@@ -21,8 +21,7 @@ class Usecase:
             ifc_class=self.settings["ifc_class"],
             predefined_type=self.settings["predefined_type"],
         )
-        # TODO
-        # activity.AppliedLoad = self.settings["applied_load"]
+        activity.AppliedLoad = self.settings["applied_load"]
         activity.GlobalOrLocal = self.settings["global_or_local"]
 
         rel = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcRelConnectsStructuralActivity")
