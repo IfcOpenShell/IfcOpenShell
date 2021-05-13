@@ -88,7 +88,7 @@ IfcUtil::IfcBaseClass* execute_based_on_schema(
 		return fn_4x3_rc1(shape, t);
 	}
 #endif
-#ifdef HAS_SCHEMA_4x3_rx2
+#ifdef HAS_SCHEMA_4x3_rc2
 	if (schema_name_lower == "ifc4x3_rc2") {
 		return fn_4x3_rc2(shape, t);
 	}
