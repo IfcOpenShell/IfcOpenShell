@@ -458,11 +458,7 @@ class RemoveCostItemValue(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "cost.remove_cost_item_value",
-            self.file,
-            cost_value=self.file.by_id(self.cost_value),
-        )
+        ifcopenshell.api.run("cost.remove_cost_item_value", self.file, cost_value=self.file.by_id(self.cost_value))
         Data.load(self.file)
         return {"FINISHED"}
 
@@ -518,4 +514,21 @@ class EditCostValue(bpy.types.Operator):
         )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_cost_item_value()
+        return {"FINISHED"}
+
+
+class CopyCostItemValues(bpy.types.Operator):
+    bl_idname = "bim.copy_cost_item_values"
+    bl_label = "Copy Cost Item Values"
+    source: bpy.props.IntProperty()
+    destination: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "cost.copy_cost_item_values",
+            self.file,
+            **{"source": self.file.by_id(self.source), "destination": self.file.by_id(self.destination)},
+        )
+        Data.load(IfcStore.get_file())
         return {"FINISHED"}
