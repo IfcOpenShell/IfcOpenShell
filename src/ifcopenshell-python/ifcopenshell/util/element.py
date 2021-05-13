@@ -1,3 +1,6 @@
+import ifcopenshell
+
+
 def get_psets(element):
     psets = {}
     try:
@@ -132,6 +135,29 @@ def remove_deep(ifc_file, element):
         if ref.id() and len(set(ifc_file.get_inverse(ref)) - subgraph_set) == 0:
             ifc_file.remove(ref)
     ifc_file.unbatch()
+
+
+def copy(ifc_file, element):
+    new = ifc_file.create_entity(element.is_a())
+    for i, attribute in enumerate(element):
+        if attribute is None:
+            continue
+        new[i] = attribute
+    return new
+
+
+def copy_deep(ifc_file, element):
+    new = ifc_file.create_entity(element.is_a())
+    for i, attribute in enumerate(element):
+        if attribute is None:
+            continue
+        if isinstance(attribute, ifcopenshell.entity_instance):
+            attribute = copy_deep(ifc_file, attribute)
+        elif isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance):
+            for j, item in enumerate(attribute):
+                attribute[j] = copy_deep(ifc_file, item)
+        new[i] = attribute
+    return new
 
 
 def get_representation(element, context, subcontext=None, target_view=None):
