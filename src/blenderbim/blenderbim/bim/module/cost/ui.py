@@ -260,9 +260,14 @@ class BIM_UL_cost_items(UIList):
                     op.cost_item = item.ifc_definition_id
 
             if props.active_cost_item_id == item.ifc_definition_id:
-                row.operator("bim.edit_cost_item", text="", icon="CHECKMARK")
+                if props.cost_item_editing_type == "ATTRIBUTES":
+                    row.operator("bim.edit_cost_item", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_cost_item", text="", icon="CANCEL")
             elif props.active_cost_item_id:
+                if props.cost_item_editing_type == "VALUES":
+                    op = row.operator("bim.copy_cost_item_values", text="", icon="COPYDOWN")
+                    op.source = props.active_cost_item_id
+                    op.destination = item.ifc_definition_id
                 row.operator("bim.add_cost_item", text="", icon="ADD").cost_item = item.ifc_definition_id
                 row.operator("bim.remove_cost_item", text="", icon="X").cost_item = item.ifc_definition_id
             else:
