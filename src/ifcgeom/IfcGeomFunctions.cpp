@@ -4447,6 +4447,7 @@ bool IfcGeom::Kernel::faceset_helper<CP, LP>::construct(const std::vector<double
 	}
 	auto LU = kernel_->getValue(GV_LENGTH_UNIT);
 	l->SetCoord(cp[0] * LU, cp[1] * LU, cp[2] * LU);
+	return true;
 }
 
 /*
