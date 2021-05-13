@@ -1038,7 +1038,7 @@ IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& e) {
 	type_ = e.type_;
 	id_ = 0;
 
-	const unsigned int count = e.getArgumentCount();
+	const size_t count = e.getArgumentCount();
 
 	// In order not to have the instance read from file
 	attributes_ = new Argument*[count];
@@ -1051,7 +1051,7 @@ IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& e) {
 
 static IfcParse::NullArgument static_null_attribute;
 
-Argument* IfcEntityInstanceData::getArgument(unsigned int i) const {
+Argument* IfcEntityInstanceData::getArgument(size_t i) const {
 	if (attributes_ == 0) {
 		load();
 	}
@@ -1152,7 +1152,7 @@ public:
 		if (attribute_) {
 			apply_attribute_(t, attribute_);
 		} else {
-			for (unsigned i = 0; i < data_->getArgumentCount(); ++i) {
+			for (size_t i = 0; i < data_->getArgumentCount(); ++i) {
 				Argument* attr = data_->getArgument(i);
 				apply_attribute_(t, attr);
 			}
@@ -1161,7 +1161,7 @@ public:
 
 };
 
-void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::ArgumentType attr_type) {
+void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::ArgumentType attr_type) {
 	if (attributes_ == 0) {
 		load();
 	}
@@ -1603,7 +1603,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 		// information needs to be accounted for for IfcLengthMeasures.
         double conversion_factor = std::numeric_limits<double>::quiet_NaN();
 
-		for (unsigned i = 0; i < we->getArgumentCount(); ++i) {
+		for (size_t i = 0; i < we->getArgumentCount(); ++i) {
 			Argument* attr = we->getArgument(i);
 			IfcUtil::ArgumentType attr_type = attr->type();
 
@@ -1819,7 +1819,7 @@ void IfcFile::process_deletion_() {
 					continue;
 				}
 
-				for (unsigned i = 0; i < related_instance->data().getArgumentCount(); ++i) {
+				for (size_t i = 0; i < related_instance->data().getArgumentCount(); ++i) {
 					Argument* attr = related_instance->data().getArgument(i);
 					if (attr->isNull()) continue;
 
