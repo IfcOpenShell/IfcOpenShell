@@ -32,6 +32,8 @@ class BIM_PT_cost_schedules(Panel):
         row.label(text=cost_schedule["Name"] or "Unnamed", icon="LINENUMBERS_ON")
 
         if self.props.active_cost_schedule_id and self.props.active_cost_schedule_id == cost_schedule_id:
+            op = row.operator("bim.select_cost_schedule_products", icon="RESTRICT_SELECT_OFF", text="")
+            op.cost_schedule = cost_schedule_id
             if self.props.is_editing == "COST_SCHEDULE":
                 row.operator("bim.edit_cost_schedule", text="", icon="CHECKMARK")
             elif self.props.is_editing == "COST_ITEMS":
@@ -97,8 +99,7 @@ class BIM_PT_cost_schedules(Panel):
         row = self.layout.row(align=True)
         row.prop(self.props, "quantity_types", text="")
         if self.props.quantity_types == "QTO":
-            row.prop(self.props, "qto_name", text="")
-            row.prop(self.props, "prop_name", text="")
+            row.prop(self.props, "quantity_names", text="")
         op = row.operator("bim.add_cost_item_quantity", text="", icon="ADD")
         op.cost_item = self.props.active_cost_item_id
         op.ifc_class = self.props.quantity_types
@@ -254,19 +255,26 @@ class BIM_UL_cost_items(UIList):
                 oprops = context.active_object.BIMObjectProperties
                 row = layout.row(align=True)
                 if oprops.ifc_definition_id in cost_item["Controls"]:
-                    op = row.operator("bim.unassign_control", text="", icon="KEYFRAME_HLT", emboss=False)
+                    op = row.operator("bim.unassign_cost_item_product", text="", icon="KEYFRAME_HLT", emboss=False)
                     op.cost_item = item.ifc_definition_id
                 else:
-                    op = row.operator("bim.assign_control", text="", icon="KEYFRAME", emboss=False)
+                    op = row.operator("bim.assign_cost_item_product", text="", icon="KEYFRAME", emboss=False)
                     op.cost_item = item.ifc_definition_id
 
             if props.active_cost_item_id == item.ifc_definition_id:
-                row.operator("bim.edit_cost_item", text="", icon="CHECKMARK")
+                if props.cost_item_editing_type == "ATTRIBUTES":
+                    row.operator("bim.edit_cost_item", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_cost_item", text="", icon="CANCEL")
             elif props.active_cost_item_id:
+                if props.cost_item_editing_type == "VALUES":
+                    op = row.operator("bim.copy_cost_item_values", text="", icon="COPYDOWN")
+                    op.source = props.active_cost_item_id
+                    op.destination = item.ifc_definition_id
                 row.operator("bim.add_cost_item", text="", icon="ADD").cost_item = item.ifc_definition_id
                 row.operator("bim.remove_cost_item", text="", icon="X").cost_item = item.ifc_definition_id
             else:
+                op = row.operator("bim.select_cost_item_products", icon="RESTRICT_SELECT_OFF", text="")
+                op.cost_item = item.ifc_definition_id
                 row.operator(
                     "bim.enable_editing_cost_item", text="", icon="GREASEPENCIL"
                 ).cost_item = item.ifc_definition_id

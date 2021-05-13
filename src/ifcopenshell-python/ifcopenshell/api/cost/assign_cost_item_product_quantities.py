@@ -4,7 +4,7 @@ import ifcopenshell.api
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
-        self.settings = {"cost_item": None, "qto_name": "", "prop_name": ""}
+        self.settings = {"cost_item": None, "prop_name": ""}
         for key, value in settings.items():
             self.settings[key] = value
 
@@ -25,7 +25,7 @@ class Usecase:
                     self.add_quantity_from_qto(relationship.RelatingPropertyDefinition)
 
     def add_quantity_from_qto(self, qto):
-        if not qto.is_a("IfcElementQuantity") or qto.Name.lower() != self.settings["qto_name"].lower():
+        if not qto.is_a("IfcElementQuantity"):
             return
         for prop in qto.Quantities:
             if prop.is_a("IfcPhysicalSimpleQuantity") and prop.Name.lower() == self.settings["prop_name"].lower():

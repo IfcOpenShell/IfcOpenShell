@@ -3,6 +3,7 @@ import bpy
 import json
 import ifcopenshell.api
 import blenderbim.bim.helper
+from blenderbim.bim.module.cost.prop import purge
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.cost.data import Data
 
@@ -259,8 +260,8 @@ class EditCostItem(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AssignControl(bpy.types.Operator):
-    bl_idname = "bim.assign_control"
+class AssignCostItemProduct(bpy.types.Operator):
+    bl_idname = "bim.assign_cost_item_product"
     bl_label = "Assign Control"
     cost_item: bpy.props.IntProperty()
     related_object: bpy.props.StringProperty()
@@ -269,20 +270,23 @@ class AssignControl(bpy.types.Operator):
         related_objects = (
             [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
         )
-        for related_object in related_objects:
-            self.file = IfcStore.get_file()
-            ifcopenshell.api.run(
-                "control.assign_control",
-                self.file,
-                related_object=self.file.by_id(related_object.BIMObjectProperties.ifc_definition_id),
-                relating_control=self.file.by_id(self.cost_item),
-            )
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "cost.assign_cost_item_product",
+            self.file,
+            cost_item=self.file.by_id(self.cost_item),
+            products=[
+                self.file.by_id(o.BIMObjectProperties.ifc_definition_id)
+                for o in related_objects
+                if o.BIMObjectProperties.ifc_definition_id
+            ],
+        )
         Data.load(self.file)
         return {"FINISHED"}
 
 
-class UnassignControl(bpy.types.Operator):
-    bl_idname = "bim.unassign_control"
+class UnassignCostItemProduct(bpy.types.Operator):
+    bl_idname = "bim.unassign_cost_item_product"
     bl_label = "Unassign Control"
     cost_item: bpy.props.IntProperty()
     related_object: bpy.props.StringProperty()
@@ -291,14 +295,17 @@ class UnassignControl(bpy.types.Operator):
         related_objects = (
             [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
         )
-        for related_object in related_objects:
-            self.file = IfcStore.get_file()
-            ifcopenshell.api.run(
-                "control.unassign_control",
-                self.file,
-                related_object=self.file.by_id(related_object.BIMObjectProperties.ifc_definition_id),
-                relating_control=self.file.by_id(self.cost_item),
-            )
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "cost.unassign_cost_item_product",
+            self.file,
+            cost_item=self.file.by_id(self.cost_item),
+            products=[
+                self.file.by_id(o.BIMObjectProperties.ifc_definition_id)
+                for o in related_objects
+                if o.BIMObjectProperties.ifc_definition_id
+            ],
+        )
         Data.load(self.file)
         return {"FINISHED"}
 
@@ -312,6 +319,7 @@ class EnableEditingCostItemQuantities(bpy.types.Operator):
         props = context.scene.BIMCostProperties
         props.active_cost_item_id = self.cost_item
         props.cost_item_editing_type = "QUANTITIES"
+        purge()
         return {"FINISHED"}
 
 
@@ -348,8 +356,7 @@ class AddCostItemQuantity(bpy.types.Operator):
             "cost.assign_cost_item_product_quantities",
             self.file,
             cost_item=self.file.by_id(self.cost_item),
-            qto_name=self.props.qto_name,
-            prop_name=self.props.prop_name
+            prop_name=self.props.quantity_names,
         )
 
     def add_manual_quantity(self):
@@ -439,9 +446,7 @@ class AddCostValue(bpy.types.Operator):
         elif self.cost_type == "CATEGORY":
             category = self.cost_category
         value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=self.file.by_id(self.parent))
-        ifcopenshell.api.run(
-            "cost.edit_cost_value", self.file, cost_value=value, attributes={"Category": category}
-        )
+        ifcopenshell.api.run("cost.edit_cost_value", self.file, cost_value=value, attributes={"Category": category})
         Data.load(self.file)
         return {"FINISHED"}
 
@@ -453,11 +458,7 @@ class RemoveCostItemValue(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "cost.remove_cost_item_value",
-            self.file,
-            cost_value=self.file.by_id(self.cost_value),
-        )
+        ifcopenshell.api.run("cost.remove_cost_item_value", self.file, cost_value=self.file.by_id(self.cost_value))
         Data.load(self.file)
         return {"FINISHED"}
 
@@ -514,3 +515,58 @@ class EditCostValue(bpy.types.Operator):
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_cost_item_value()
         return {"FINISHED"}
+
+
+class CopyCostItemValues(bpy.types.Operator):
+    bl_idname = "bim.copy_cost_item_values"
+    bl_label = "Copy Cost Item Values"
+    source: bpy.props.IntProperty()
+    destination: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "cost.copy_cost_item_values",
+            self.file,
+            **{"source": self.file.by_id(self.source), "destination": self.file.by_id(self.destination)},
+        )
+        Data.load(IfcStore.get_file())
+        return {"FINISHED"}
+
+
+class SelectCostItemProducts(bpy.types.Operator):
+    bl_idname = "bim.select_cost_item_products"
+    bl_label = "Select Cost Item Products"
+    cost_item: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        related_products = Data.cost_items[self.cost_item]["Controls"]
+        for obj in bpy.context.visible_objects:
+            obj.select_set(False)
+            if obj.BIMObjectProperties.ifc_definition_id in related_products:
+                obj.select_set(True)
+        return {"FINISHED"}
+
+
+class SelectCostScheduleProducts(bpy.types.Operator):
+    bl_idname = "bim.select_cost_schedule_products"
+    bl_label = "Select Cost Schedule Products"
+    cost_schedule: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        self.related_products = []
+        for cost_item_id in Data.cost_schedules[self.cost_schedule]["Controls"]:
+            self.get_related_products(Data.cost_items[cost_item_id])
+        self.related_products = set(self.related_products)
+        for obj in bpy.context.visible_objects:
+            obj.select_set(False)
+            if obj.BIMObjectProperties.ifc_definition_id in self.related_products:
+                obj.select_set(True)
+        return {"FINISHED"}
+
+    def get_related_products(self, cost_item):
+        self.related_products.extend(cost_item["Controls"])
+        for child_id in cost_item["IsNestedBy"]:
+            self.get_related_products(Data.cost_items[child_id])
