@@ -197,7 +197,7 @@ int main(int argc, char** argv) {
 	typedef char char_t;
 #endif
 
-	double deflection_tolerance;
+	double deflection_tolerance, angular_tolerance, force_space_transparency;
 	inclusion_filter include_filter;
 	inclusion_traverse_filter include_traverse_filter;
 	exclusion_filter exclude_filter;
@@ -289,6 +289,9 @@ int main(int argc, char** argv) {
 		("disable-opening-subtractions",
 			"Specifies whether to disable the boolean subtraction of "
 			"IfcOpeningElement Representations from their RelatingElements.")
+		("disable-boolean-results",
+			"Specifies whether to disable the boolean operation within representations "
+			"such as clippings by means of IfcBooleanResult and subtypes")
 		("enable-layerset-slicing",
 			"Specifies whether to enable the slicing of products according "
 			"to their associated IfcMaterialLayerSet.")
@@ -326,13 +329,23 @@ int main(int argc, char** argv) {
 			"model in other modelling application in any case.")
 		("deflection-tolerance", po::value<double>(&deflection_tolerance)->default_value(1e-3),
 			"Sets the deflection tolerance of the mesher, 1e-3 by default if not specified.")
+		("force-space-transparency", po::value<double>(&force_space_transparency),
+			"Overrides transparency of spaces in geometry output.")
+		("angular-tolerance", po::value<double>(&angular_tolerance)->default_value(0.5),
+			"Sets the angular tolerance of the mesher in radians 0.5 by default if not specified.")
 		("generate-uvs",
 			"Generates UVs (texture coordinates) by using simple box projection. Requires normals. "
 			"Not guaranteed to work properly if used with --weld-vertices.")
         ("default-material-file", new po::typed_value<path_t, char_t>(&default_material_filename),
             "Specifies a material file that describes the material object types will have"
             "if an object does not have any specified material in the IFC file.")
-		("validate", "Checks whether geometrical output conforms to the included explicit quantities.");
+		("validate", "Checks whether geometrical output conforms to the included explicit quantities.")
+		("no-wire-intersection-check", "Skip wire intersection check.")
+		("no-wire-intersection-tolerance", "Set wire intersection tolerance to 0.")
+		("strict-tolerance", "Use exact tolerance from model. Default is a 10 "
+						 "times increase for more permissive edge curves and fewer artifacts after "
+						 "boolean operations at the expense of geometric detail "
+						 "due to vertex collapsing and wire intersection fuzziness.");
 
     std::string bounds;
 #ifdef HAVE_ICU
@@ -340,7 +353,11 @@ int main(int argc, char** argv) {
 #endif
     short precision;
 	double section_height;
-	std::string svg_scale;
+	std::string svg_scale, svg_center;
+	std::string section_ref, elevation_ref;
+	// "none", "full" or "left"
+	std::string storey_height_display;
+	SvgSerializer::storey_height_display_types svg_storey_height_display = SvgSerializer::SH_NONE;
 
     po::options_description serializer_options("Serialization options");
     serializer_options.add_options()
@@ -355,6 +372,31 @@ int main(int argc, char** argv) {
 		("scale", po::value<std::string>(&svg_scale),
 			"Interprets SVG bounds in mm, centers layout and draw elements to scale. "
 			"Only used when converting to SVG. Example 1:100.")
+		("center", po::value<std::string>(&svg_center),
+			"When using --scale, specifies the location in the range [0 1]x[0 1] around which"
+			"to center the drawings. Example 0.5x0.5 (default).")
+		("section-ref", po::value<std::string>(&section_ref),
+			"Element at which vertical cross sections should be created")
+		("elevation-ref", po::value<std::string>(&elevation_ref),
+			"Element at which vertical elevations should be created")
+		("auto-section",
+			"Creates SVG cross section drawings automatically based on model extents")
+		("auto-elevation",
+			"Creates SVG elevation drawings automatically based on model extents")
+		("draw-storey-heights",
+			po::value<std::string>(&storey_height_display)->default_value("none")->implicit_value("full"),
+			"Draws a horizontal line at the height of building storeys in vertical drawings")
+		("storey-height-line-length", po::value<double>(), 
+			"Length of the line when --draw-storey-heights=left")
+		("svg-xmlns",
+			"Stores name and guid in a separate namespace as opposed to data-name, data-guid")
+		("svg-poly",
+			"Uses the polygonal algorithm for hidden line rendering")
+		("svg-write-poly",
+			"Approximate every curve as polygonal in SVG output")
+		("svg-project",
+			"Always enable hidden line rendering instead of only on elevations")
+		("svg-without-storeys", "Don't emit drawings for building storeys")
 		("door-arcs", "Draw door openings arcs for IfcDoor elements")
 		("section-height", po::value<double>(&section_height),
 		    "Specifies the cut section height for SVG 2D geometry.")
@@ -379,6 +421,7 @@ int main(int argc, char** argv) {
 		("site-local-placement",
 			"Place elements locally in the IfcSite coordinate system, instead of placing "
 			"them in the IFC global coords. Applicable for OBJ and DAE output.")
+		("y-up", "Change the 'up' axis to positive Y, default is Z UP, Applicable for OBJ output.")
 		("building-local-placement",
 			"Similar to --site-local-placement, but placing elements in locally in the parent IfcBuilding coord system")
         ("precision", po::value<short>(&precision)->default_value(SerializerSettings::DEFAULT_PRECISION),
@@ -388,6 +431,8 @@ int main(int argc, char** argv) {
             " and any other value means that 6 or 7 decimals are used.")
 		("print-space-names", "Prints IfcSpace LongName and Name in the geometry output. Applicable for SVG output")
 		("print-space-areas", "Prints calculated IfcSpace areas in square meters. Applicable for SVG output")
+		("space-name-transform", po::value<std::string>(),
+			"Additional transform to the space labels in SVG")
 		("edge-arrows", "Adds arrow heads to edge segments to signify edge direction")
 		;
 
@@ -433,6 +478,7 @@ int main(int argc, char** argv) {
 	const bool merge_boolean_operands = vmap.count("merge-boolean-operands") != 0;
 #endif
 	const bool disable_opening_subtractions = vmap.count("disable-opening-subtractions") != 0;
+	const bool disable_boolean_results = vmap.count("disable-boolean-results") != 0;
 	const bool include_plan = vmap.count("plan") != 0;
 	const bool include_model = vmap.count("model") != 0 || (!include_plan);
 	const bool enable_layerset_slicing = vmap.count("enable-layerset-slicing") != 0;
@@ -443,6 +489,7 @@ int main(int argc, char** argv) {
 	const bool use_material_names = vmap.count("use-material-names") != 0;
 	const bool use_element_types = vmap.count("use-element-types") != 0;
 	const bool use_element_hierarchy = vmap.count("use-element-hierarchy") != 0;
+	const bool use_y_up = vmap.count("y-up") != 0;
 	const bool no_normals = vmap.count("no-normals") != 0;
 	const bool center_model = vmap.count("center-model") != 0;
 	const bool center_model_geometry = vmap.count("center-model-geometry") != 0;
@@ -453,6 +500,9 @@ int main(int argc, char** argv) {
 	const bool generate_uvs = vmap.count("generate-uvs") != 0;
 	const bool validate = vmap.count("validate") != 0;
 	const bool edge_arrows = vmap.count("edge-arrows") != 0;
+	const bool no_wire_intersection_check = vmap.count("no-wire-intersection-check") != 0;
+	const bool no_wire_intersection_tolerance = vmap.count("no-wire-intersection-tolerance") != 0;
+	const bool strict_tolerance = vmap.count("strict-tolerance") != 0;
 
     if (!quiet || vmap.count("version")) {
 		print_version();
@@ -469,6 +519,22 @@ int main(int argc, char** argv) {
         print_usage();
         return EXIT_FAILURE;
     }
+
+	if (vmap.count("draw-storey-heights")) {
+		boost::to_lower(storey_height_display);
+
+		if (storey_height_display == "none") {
+			svg_storey_height_display = SvgSerializer::SH_NONE;
+		} else if (storey_height_display == "full") {
+			svg_storey_height_display = SvgSerializer::SH_FULL;
+		} else if (storey_height_display == "left") {
+			svg_storey_height_display = SvgSerializer::SH_LEFT;
+		} else {
+			cerr_ << "[Error] --draw-storey-heights should be none|full|left" << std::endl;
+			print_usage();
+			return EXIT_FAILURE;
+		}
+	}
     
 	if (vmap.count("log-format") == 1) {
 		boost::to_lower(log_format);
@@ -517,8 +583,8 @@ int main(int argc, char** argv) {
         }
     }
 
-	boost::optional<double> bounding_width;
-	boost::optional<double> bounding_height;
+	boost::optional<double> bounding_width, bounding_height, relative_center_x, relative_center_y;
+
 	if (vmap.count("bounds") == 1) {
 		int w, h;
 		if (sscanf(bounds.c_str(), "%ux%u", &w, &h) == 2 && w > 0 && h > 0) {
@@ -527,6 +593,18 @@ int main(int argc, char** argv) {
 		} else {
 			cerr_ << "[Error] Invalid use of --bounds" << std::endl;
             print_options(serializer_options);
+			return EXIT_FAILURE;
+		}
+	}
+
+	if (vmap.count("center") == 1) {
+		double cx, cy;
+		if (sscanf(svg_center.c_str(), "%lfx%lf", &cx, &cy) == 2 && cx >= 0. && cy >= 0. && cx <= 1. && cy <= 1.) {
+			relative_center_x = cx;
+			relative_center_y = cy;
+		} else {
+			cerr_ << "[Error] Invalid use of --bounds" << std::endl;
+			print_options(serializer_options);
 			return EXIT_FAILURE;
 		}
 	}
@@ -689,6 +767,7 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::FASTER_BOOLEANS,              merge_boolean_operands);
 #endif
 	settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, disable_opening_subtractions);
+	settings.set(IfcGeom::IteratorSettings::DISABLE_BOOLEAN_RESULT, disable_boolean_results);
 	settings.set(IfcGeom::IteratorSettings::INCLUDE_CURVES,               include_plan);
 	settings.set(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES,  !include_model);
 	settings.set(IfcGeom::IteratorSettings::APPLY_LAYERSETS,              enable_layerset_slicing);
@@ -700,15 +779,25 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::SITE_LOCAL_PLACEMENT, site_local_placement);
 	settings.set(IfcGeom::IteratorSettings::BUILDING_LOCAL_PLACEMENT, building_local_placement);
 	settings.set(IfcGeom::IteratorSettings::VALIDATE_QUANTITIES, validate);
+	settings.set(IfcGeom::IteratorSettings::NO_WIRE_INTERSECTION_CHECK, no_wire_intersection_check);
+	settings.set(IfcGeom::IteratorSettings::NO_WIRE_INTERSECTION_TOLERANCE, no_wire_intersection_tolerance);
+	settings.set(IfcGeom::IteratorSettings::STRICT_TOLERANCE, strict_tolerance);
 
     settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);
+	settings.set(SerializerSettings::USE_Y_UP, use_y_up);
 	settings.set(SerializerSettings::USE_ELEMENT_STEPIDS, use_element_stepids);
 	settings.set(SerializerSettings::USE_MATERIAL_NAMES, use_material_names);
 	settings.set(SerializerSettings::USE_ELEMENT_TYPES, use_element_types);
 	settings.set(SerializerSettings::USE_ELEMENT_HIERARCHY, use_element_hierarchy);
     settings.set_deflection_tolerance(deflection_tolerance);
-    settings.precision = precision;
+	settings.set_angular_tolerance(angular_tolerance);
+	settings.precision = precision;
+
+	if (vmap.count("force-space-transparency")) {
+		settings.force_space_transparency(force_space_transparency);
+		IfcGeom::update_default_style("IfcSpace").Transparency().reset(force_space_transparency);
+	}
 
 	boost::shared_ptr<GeometrySerializer> serializer; /**< @todo use std::unique_ptr when possible */
 	if (output_extension == OBJ) {
@@ -889,6 +978,9 @@ int main(int argc, char** argv) {
 		if (vmap.count("print-space-areas") != 0) {
 			static_cast<SvgSerializer*>(serializer.get())->setPrintSpaceAreas(true);
 		}
+		if (vmap.count("draw-storey-heights") != 0) {
+			static_cast<SvgSerializer*>(serializer.get())->setDrawStoreyHeights(svg_storey_height_display);
+		}		
 		if (bounding_width.is_initialized() && bounding_height.is_initialized()) {
 			static_cast<SvgSerializer*>(serializer.get())->setBoundingRectangle(bounding_width.get(), bounding_height.get());
 		}
@@ -905,6 +997,36 @@ int main(int argc, char** argv) {
 				return EXIT_FAILURE;
 			}
 		}
+		if (vmap.count("section-ref")) {
+			static_cast<SvgSerializer*>(serializer.get())->setSectionRef(section_ref);
+		}
+		if (vmap.count("elevation-ref")) {
+			static_cast<SvgSerializer*>(serializer.get())->setElevationRef(elevation_ref);
+		}
+		if (vmap.count("auto-section")) {
+			static_cast<SvgSerializer*>(serializer.get())->setAutoSection(true);
+		}
+		if (vmap.count("auto-elevation")) {
+			static_cast<SvgSerializer*>(serializer.get())->setAutoElevation(true);
+		}
+		static_cast<SvgSerializer*>(serializer.get())->setUseNamespace(vmap.count("svg-xmlns") > 0);
+		static_cast<SvgSerializer*>(serializer.get())->setUseHlrPoly(vmap.count("svg-poly") > 0);
+		static_cast<SvgSerializer*>(serializer.get())->setPolygonal(vmap.count("svg-write-poly") > 0);
+		static_cast<SvgSerializer*>(serializer.get())->setAlwaysProject(vmap.count("svg-project") > 0);
+		static_cast<SvgSerializer*>(serializer.get())->setWithoutStoreys(vmap.count("svg-without-storeys") > 0);
+		if (relative_center_x && relative_center_y) {
+			static_cast<SvgSerializer*>(serializer.get())->setDrawingCenter(*relative_center_x, *relative_center_y);
+		}
+		if (vmap.count("storey-height-line-length")) {
+			static_cast<SvgSerializer*>(serializer.get())->setStoreyHeightLineLength(
+				vmap["storey-height-line-length"].as<double>()
+			);
+		}
+		if (vmap.count("space-name-transform")) {
+			static_cast<SvgSerializer*>(serializer.get())->setSpaceNameTransform(
+				vmap["space-name-transform"].as<std::string>()
+			);
+		}		
 	}
 
     if (convert_back_units) {

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Mit XMLSpy v2011 rel. 3 (http://www.altova.com) von Klaus Linhard (IABI e.V.) bearbeitet -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="Version">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="DetailedVersion" type="xs:string" minOccurs="0"/>
+			</xs:sequence>
+			<xs:attribute name="VersionId" type="xs:string"/>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

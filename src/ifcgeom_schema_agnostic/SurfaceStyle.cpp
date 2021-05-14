@@ -4,6 +4,7 @@
 #include <boost/property_tree/ptree.hpp>
 
 #include <map>
+#include <mutex>
 
 namespace pt = boost::property_tree;
 
@@ -42,6 +43,10 @@ void InitDefaultMaterials() {
 
 	default_materials.insert(std::make_pair("IfcPlate", IfcGeom::SurfaceStyle("IfcPlate")));
 	default_materials["IfcPlate"].Diffuse().reset(IfcGeom::SurfaceStyle::ColorComponent(0.8, 0.8, 0.8));
+
+	default_materials.insert(std::make_pair("IfcSpace", IfcGeom::SurfaceStyle("IfcSpace")));
+	default_materials["IfcWindow"].Diffuse().reset(IfcGeom::SurfaceStyle::ColorComponent(0.65, 0.75, 0.8));
+	default_materials["IfcWindow"].Transparency().reset(0.8);
 
 	default_material = IfcGeom::SurfaceStyle("DefaultMaterial");
 	default_material.Diffuse().reset(IfcGeom::SurfaceStyle::ColorComponent(0.7, 0.7, 0.7));
@@ -108,6 +113,9 @@ void IfcGeom::set_default_style_file(const std::string& json_file) {
 }
 
 const IfcGeom::SurfaceStyle* IfcGeom::get_default_style(const std::string& s) {
+	static std::mutex m;
+	std::lock_guard<std::mutex> lk(m);
+
 	if (!default_materials_initialized) InitDefaultMaterials();
 	std::map<std::string, IfcGeom::SurfaceStyle>::const_iterator it = default_materials.find(s);
 	if (it == default_materials.end()) {
@@ -120,4 +128,13 @@ const IfcGeom::SurfaceStyle* IfcGeom::get_default_style(const std::string& s) {
 	}
 	const IfcGeom::SurfaceStyle& surface_style = it->second;
 	return &surface_style;
+}
+
+IfcGeom::SurfaceStyle& IfcGeom::update_default_style(const std::string& s) {
+	if (!default_materials_initialized) InitDefaultMaterials();
+	std::map<std::string, IfcGeom::SurfaceStyle>::iterator it = default_materials.find(s);
+	if (it == default_materials.end()) {
+		throw std::runtime_error("No style registered for " + s);
+	}
+	return it->second;
 }

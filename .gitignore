@@ -1,4 +1,7 @@
 # Dependency and build folders created by the build scripts
+/_build-vs2017-x64/
+/_deps-vs2017-x64-installed/
+/_deps/
 /deps*/
 /build*/
 /install*/
@@ -12,3 +15,20 @@ __pycache__
 .vscode
 # PyCharm files
 .idea
+
+#Virtual Env Files
+Pipfile
+Pipfile.lock
+
+# Docs
+/docs/output
+/docs/rst_files
+/docs/doxygen
+/src/ifcblenderexport/docs/_build
+
+# gettext binary translation files
+*.mo
+# Vim
+*.swp
+
+

@@ -660,7 +660,7 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, Argument**& attrib
 		filler = vector_or_array<Argument*>(vector);
 	}
 
-	size_t return_value = num_attributes;
+	size_t return_value = 0;
 
 	while( next.startPos || next.lexer ) {
 		if ( TokenFunc::isOperator(next,',') ) {
@@ -668,10 +668,12 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, Argument**& attrib
 		} else if ( TokenFunc::isOperator(next,')') ) {
 			break;
 		} else if ( TokenFunc::isOperator(next,'(') ) {
+			return_value++;
 			ArgumentList* alist = new ArgumentList();
 			alist->size() = load(entity_instance_name, alist->arguments(), 0);
 			filler.push_back(alist);
 		} else {
+			return_value++;
 			if ( TokenFunc::isIdentifier(next) ) {
 				if (!parsing_complete_) {
 					register_inverse(entity_instance_name, next);
@@ -1019,10 +1021,13 @@ void IfcEntityInstanceData::load() const {
 	// type_ is 0 for header entities which have their size predetermined in code
 	Argument** tmp_data = nullptr;
 	if (type_ != 0) {
-		tmp_data = new Argument*[getArgumentCount()];
+		tmp_data = new Argument*[getArgumentCount()]{};
 	}
 	file->seek_to(*this);
-	file->load(id(), tmp_data, getArgumentCount());
+	size_t n = file->load(id(), tmp_data, getArgumentCount());
+	if (n != getArgumentCount()) {
+		Logger::Error("Wrong number of attributes on instance with id #" + boost::lexical_cast<std::string>(id_));
+	}
 	file->try_read_semicolon();
 	// @todo does this need to be atomic somehow?
 	attributes_ = tmp_data;
@@ -1033,7 +1038,7 @@ IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& e) {
 	type_ = e.type_;
 	id_ = 0;
 
-	const unsigned int count = e.getArgumentCount();
+	const size_t count = e.getArgumentCount();
 
 	// In order not to have the instance read from file
 	attributes_ = new Argument*[count];
@@ -1046,7 +1051,7 @@ IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& e) {
 
 static IfcParse::NullArgument static_null_attribute;
 
-Argument* IfcEntityInstanceData::getArgument(unsigned int i) const {
+Argument* IfcEntityInstanceData::getArgument(size_t i) const {
 	if (attributes_ == 0) {
 		load();
 	}
@@ -1147,7 +1152,7 @@ public:
 		if (attribute_) {
 			apply_attribute_(t, attribute_);
 		} else {
-			for (unsigned i = 0; i < data_->getArgumentCount(); ++i) {
+			for (size_t i = 0; i < data_->getArgumentCount(); ++i) {
 				Argument* attr = data_->getArgument(i);
 				apply_attribute_(t, attr);
 			}
@@ -1156,7 +1161,7 @@ public:
 
 };
 
-void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::ArgumentType attr_type) {
+void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::ArgumentType attr_type) {
 	if (attributes_ == 0) {
 		load();
 	}
@@ -1299,7 +1304,7 @@ void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::Ar
 //
 #ifdef USE_MMAP
 IfcFile::IfcFile(const std::string& fn, bool mmap) {
-	return IfcFile::Init(new IfcSpfStream(fn, mmap));
+	initialize_(new IfcSpfStream(fn, mmap));
 }
 #else
 IfcFile::IfcFile(const std::string& fn) {
@@ -1321,7 +1326,6 @@ IfcFile::IfcFile(IfcParse::IfcSpfStream* s) {
 
 IfcFile::IfcFile(const IfcParse::schema_definition* schema)
 	: parsing_complete_(true)
-	, good_(true)
 	, schema_(schema)
 	, ifcroot_type_(schema_->declaration_by_name("IfcRoot"))
 	, MaxId(0)
@@ -1336,8 +1340,6 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 	// number parsing. See comment above on line 41.
 	init_locale();
 
-	good_ = false;
-
 	parsing_complete_ = false;
 	MaxId = 0;
 	tokens = 0;
@@ -1348,24 +1350,30 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 	
 	stream = s;
 	if (!stream->valid) {
+		good_ = file_open_status::READ_ERROR;
 		return;
 	}
 
 	tokens = new IfcSpfLexer(stream, this);
-	_header.file(this);
-	_header.tryRead();
-
+	
 	std::vector<std::string> schemas;
-	try {
-		schemas = _header.file_schema().schema_identifiers();
-	} catch (...) {
-		// Purposely empty catch block
+
+	_header.file(this);
+	if (_header.tryRead()) {
+		try {
+			schemas = _header.file_schema().schema_identifiers();
+		} catch (...) {
+			// Purposely empty catch block
+		}
+	} else {
+		good_ = file_open_status::NO_HEADER;
 	}
 
 	if (schemas.size() == 1) {
 		try {
 			schema_ = IfcParse::schema_by_name(schemas.front());
 		} catch (const IfcParse::IfcException& e) {
+			good_ = file_open_status::UNSUPPORTED_SCHEMA;
 			Logger::Error(e);
 		}
 	}
@@ -1375,8 +1383,6 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 			+ boost::algorithm::join(schemas, ", ") + ")");
 		return;
 	}
-
-	good_ = true;
 
 	ifcroot_type_ = schema_->declaration_by_name("IfcRoot");
 
@@ -1597,7 +1603,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 		// information needs to be accounted for for IfcLengthMeasures.
         double conversion_factor = std::numeric_limits<double>::quiet_NaN();
 
-		for (unsigned i = 0; i < we->getArgumentCount(); ++i) {
+		for (size_t i = 0; i < we->getArgumentCount(); ++i) {
 			Argument* attr = we->getArgument(i);
 			IfcUtil::ArgumentType attr_type = attr->type();
 
@@ -1704,65 +1710,76 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 		}
 	}
 
-	// The mapping by entity type is updated.
-	const IfcParse::declaration* ty = &new_entity->declaration();
+// The mapping by entity type is updated.
+const IfcParse::declaration* ty = &new_entity->declaration();
 
-	if (ty->as_entity()) {
-		IfcEntityList::ptr insts = instances_by_type_excl_subtypes(ty);
-		if (!insts) {
-			insts = IfcEntityList::ptr(new IfcEntityList());
-			bytype_excl[ty] = insts;
-		}
-		insts->push(new_entity);
+if (ty->as_entity()) {
+	IfcEntityList::ptr insts = instances_by_type_excl_subtypes(ty);
+	if (!insts) {
+		insts = IfcEntityList::ptr(new IfcEntityList());
+		bytype_excl[ty] = insts;
+	}
+	insts->push(new_entity);
+}
+
+for (; ty->as_entity();) {
+	IfcEntityList::ptr insts = instances_by_type(ty);
+	if (!insts) {
+		insts = IfcEntityList::ptr(new IfcEntityList());
+		bytype[ty] = insts;
+	}
+	insts->push(new_entity);
+
+	const IfcParse::declaration* pt = ty->as_entity()->supertype();
+	if (pt) {
+		ty = pt;
+	}
+	else {
+		break;
+	}
+}
+
+if (ty->as_entity()) {
+	int new_id = -1;
+	if (!new_entity->data().file) {
+		// For newly created entities ensure a valid ENTITY_INSTANCE_NAME is set
+		new_entity->data().file = this;
+		new_id = new_entity->data().set_id();
+	}
+	else {
+		new_id = new_entity->data().id();
 	}
 
-	for (; ty->as_entity();) {
-		IfcEntityList::ptr insts = instances_by_type(ty);
-		if (!insts) {
-			insts = IfcEntityList::ptr(new IfcEntityList());
-			bytype[ty] = insts;
-		}
-		insts->push(new_entity);
-
-		const IfcParse::declaration* pt = ty->as_entity()->supertype();
-		if (pt) {
-			ty = pt;
-		} else {
-			break;
-		}
+	if (byid.find(new_id) != byid.end()) {
+		// This should not happen
+		std::stringstream ss;
+		ss << "Overwriting entity with id " << new_id;
+		Logger::Message(Logger::LOG_WARNING, ss.str());
 	}
 
-	if (ty->as_entity()) {
-		int new_id = -1;
-		if (!new_entity->data().file) {
-			// For newly created entities ensure a valid ENTITY_INSTANCE_NAME is set
-			new_entity->data().file = this;
-			new_id = new_entity->data().set_id();
-		} else {
-			new_id = new_entity->data().id();
-		}
+	// The mapping by entity instance name is updated.
+	byid[new_id] = new_entity;
+}
 
-		if (byid.find(new_id) != byid.end()) {
-			// This should not happen
-			std::stringstream ss;
-			ss << "Overwriting entity with id " << new_id;
-			Logger::Message(Logger::LOG_WARNING, ss.str());
-		}
+if (parsing_complete_ && ty->as_entity()) {
+	build_inverses_(new_entity);
+}
 
-		// The mapping by entity instance name is updated.
-		byid[new_id] = new_entity;
-	}
-
-	if (parsing_complete_ && ty->as_entity()) {
-		build_inverses_(new_entity);
-	}
-
-	return new_entity;
+return new_entity;
 }
 
 void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 	const unsigned id = entity->data().id();
+
 	IfcUtil::IfcBaseClass* file_entity = instance_by_id(id);
+
+	// Attention when running removeEntity inside a loop over a list of entities to be removed. 
+	// This invalidates the iterator. A workaround is to reverse the loop:
+	// boost::shared_ptr<IfcEntityList> entities = ...;
+	// for (auto it = entities->end() - 1; it >= entities->begin(); --it) {
+		//    IfcUtil::IfcBaseClass *const inst = *it;
+		//    model->removeEntity(inst);
+		// }
 
 	// TODO: Create a set of weak relations. Inverse relations that do not dictate an 
 	// instance to be retained. For example: when deleting an IfcRepresentation, the 
@@ -1775,117 +1792,180 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 		throw IfcParse::IfcException("Instance not part of this file");
 	}
 
-	IfcEntityList::ptr references = instances_by_reference(id);
+	batch_deletion_ids_.insert(id);
 
-	// Alter entity instances with INVERSE relations to the entity being 
-	// deleted. This is necessary to maintain a valid IFC file, because 
-	// dangling references to it's entities name should be removed. At this
-	// moment, inversely related instances affected by the removal of the
-	// entity being deleted are not deleted themselves.
-	if (references) {
-		for (IfcEntityList::it iit = references->begin(); iit != references->end(); ++iit) {
-			IfcUtil::IfcBaseEntity* related_instance = (IfcUtil::IfcBaseEntity*) *iit;
+	if (!batch_mode_) {
+		process_deletion_();
+	}
+}
 
+void IfcFile::process_deletion_() {
 
-			for (unsigned i = 0; i < related_instance->data().getArgumentCount(); ++i) {
-				Argument* attr = related_instance->data().getArgument(i);
-				if (attr->isNull()) continue;
+	for (auto& id : batch_deletion_ids_) {
+		auto entity = instance_by_id(id);
 
-				IfcUtil::ArgumentType attr_type = attr->type();
-				switch(attr_type) {
-				case IfcUtil::Argument_ENTITY_INSTANCE: {
-					IfcUtil::IfcBaseClass* instance_attribute = *attr;
-					if (instance_attribute == entity) {
-						IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
-						copy->set(boost::blank());
-						related_instance->data().setArgument(i, copy);
-					} }
-					break;
-				case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
-					IfcEntityList::ptr instance_list = *attr;
-					if (instance_list->contains(entity)) {
-						instance_list->remove(entity);
+		IfcEntityList::ptr references = instances_by_reference(id);
 
-						IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
-						copy->set(instance_list);
-						related_instance->data().setArgument(i, copy);
-					} }
-					break;
-				case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE: {
-					IfcEntityListList::ptr instance_list_list = *attr;
-					if (instance_list_list->contains(entity)) {
-						IfcEntityListList::ptr new_list(new IfcEntityListList);
-						for (IfcEntityListList::outer_it it = instance_list_list->begin(); it != instance_list_list->end(); ++it) {
-							std::vector<IfcUtil::IfcBaseClass*> instances = *it;
-							std::vector<IfcUtil::IfcBaseClass*>::iterator jt;
-							while ((jt = std::find(instances.begin(), instances.end(), entity)) != instances.end()) {
-								instances.erase(jt);
+		// Alter entity instances with INVERSE relations to the entity being 
+		// deleted. This is necessary to maintain a valid IFC file, because 
+		// dangling references to it's entities name should be removed. At this
+		// moment, inversely related instances affected by the removal of the
+		// entity being deleted are not deleted themselves.
+		if (references) {
+			for (IfcEntityList::it iit = references->begin(); iit != references->end(); ++iit) {
+				IfcUtil::IfcBaseEntity* related_instance = (IfcUtil::IfcBaseEntity*) *iit;
+
+				if (std::find(batch_deletion_ids_.begin(), batch_deletion_ids_.end(), related_instance->data().id()) != batch_deletion_ids_.end()) {
+					continue;
+				}
+
+				for (size_t i = 0; i < related_instance->data().getArgumentCount(); ++i) {
+					Argument* attr = related_instance->data().getArgument(i);
+					if (attr->isNull()) continue;
+
+					IfcUtil::ArgumentType attr_type = attr->type();
+					switch (attr_type) {
+					case IfcUtil::Argument_ENTITY_INSTANCE: {
+						IfcUtil::IfcBaseClass* instance_attribute = *attr;
+						if (instance_attribute == entity) {
+							IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
+							copy->set(boost::blank());
+							related_instance->data().setArgument(i, copy);
+						} }
+															break;
+					case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
+						IfcEntityList::ptr instance_list = *attr;
+						if (instance_list->contains(entity)) {
+							instance_list->remove(entity);
+
+							IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
+							copy->set(instance_list);
+							related_instance->data().setArgument(i, copy);
+						} }
+																		 break;
+					case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE: {
+						IfcEntityListList::ptr instance_list_list = *attr;
+						if (instance_list_list->contains(entity)) {
+							IfcEntityListList::ptr new_list(new IfcEntityListList);
+							for (IfcEntityListList::outer_it it = instance_list_list->begin(); it != instance_list_list->end(); ++it) {
+								std::vector<IfcUtil::IfcBaseClass*> instances = *it;
+								std::vector<IfcUtil::IfcBaseClass*>::iterator jt;
+								while ((jt = std::find(instances.begin(), instances.end(), entity)) != instances.end()) {
+									instances.erase(jt);
+								}
+								new_list->push(instances);
 							}
-							new_list->push(instances);
-						}
 
-						IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
-						copy->set(new_list);
-						related_instance->data().setArgument(i, copy);
-					} }
-					break;
-				default: break;
+							IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
+							copy->set(new_list);
+							related_instance->data().setArgument(i, copy);
+						} }
+																					  break;
+					default: break;
+					}
 				}
 			}
 		}
-		byref.erase(byref.find(id));
-	}
 
-	IfcEntityList::ptr entity_attributes = traverse(entity, 1);
-	for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
-		IfcUtil::IfcBaseClass* entity_attribute = *it;
-		if (entity_attribute == entity) continue;
-		const unsigned int name = entity_attribute->data().id();
-		// Do not update inverses for simple types (which have id()==0 in IfcOpenShell).
-		if (name != 0) {
-			entities_by_ref_t::iterator byref_it = byref.find(name);
-			if (byref_it != byref.end()) {
-				std::vector<unsigned>& ids = byref_it->second;
-				ids.erase(std::remove(ids.begin(), ids.end(), id), ids.end());
+		if (!batch_mode_) {
+			byref.erase(id);
+
+			// This is based on traversal which needs instances to still be contained in the map.
+			// another option would be to keep byid intact for the remainder of this loop
+			IfcEntityList::ptr entity_attributes = traverse(entity, 1);
+			for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
+				IfcUtil::IfcBaseClass* entity_attribute = *it;
+				if (entity_attribute == entity) continue;
+				const unsigned int name = entity_attribute->data().id();
+				// Do not update inverses for simple types (which have id()==0 in IfcOpenShell).
+				if (name != 0) {
+					entities_by_ref_t::iterator byref_it = byref.find(name);
+					if (byref_it != byref.end()) {
+						std::vector<unsigned>& ids = byref_it->second;
+						ids.erase(std::remove(ids.begin(), ids.end(), id), ids.end());
+					}
+					by_ref_cached_.erase(name);
+				}
+			}
+		}
+
+		if (entity->declaration().is(*ifcroot_type_)) {
+			const std::string global_id = *entity->data().getArgument(0);
+			auto it = byguid.find(global_id);
+			if (it != byguid.end()) {
+				byguid.erase(it);
+			}
+			else {
+				Logger::Warning("GlobalId on rooted instance not encountered in map");
+			}
+		}
+
+		byid.erase(byid.find(id));
+
+		const IfcParse::declaration* ty = &entity->declaration();
+
+		{
+			IfcEntityList::ptr instances_of_same_type = instances_by_type_excl_subtypes(ty);
+			instances_of_same_type->remove(entity);
+			if (instances_of_same_type->size() == 0) {
+				bytype_excl.erase(ty);
+			}
+		}
+
+		for (;;) {
+			IfcEntityList::ptr instances_of_same_type = instances_by_type(ty);
+			if (instances_of_same_type) {
+				instances_of_same_type->remove(entity);
+			}
+			if (instances_of_same_type->size() == 0) {
+				bytype.erase(ty);
+			}
+
+			const IfcParse::declaration* pt = ty->as_entity()->supertype();
+			if (pt) {
+				ty = pt;
+			}
+			else {
+				break;
+			}
+		}
+
+		// This entity_file_map remains obviously flawed, but until we have proper lookup by value, or another mechanism,
+		// to prevent duplicate definitions with usage of add() we have to keep it. This might be a good moment to clear it.
+		for (auto it = entity_file_map.begin(); it != entity_file_map.end();) {
+			if (it->second == entity) {
+				it = entity_file_map.erase(it);
+			}
+			else {
+				++it;
+			}
+		}
+
+		delete entity;
+
+	}
+	
+	if (batch_mode_) {
+		for (auto it = byref.begin(); it != byref.end();) {
+			bool do_delete = batch_deletion_ids_.find(it->first) != batch_deletion_ids_.end();
+			if (!do_delete) {
+				it->second.erase(std::remove_if(it->second.begin(), it->second.end(), [this](int x) {
+					return batch_deletion_ids_.find(x) != batch_deletion_ids_.end();
+				}), it->second.end());
+				do_delete = it->second.empty();
+			}
+			if (do_delete) {
+				it = byref.erase(it);
+			}
+			else {
+				++it;
 			}
 		}
 	}
 
-	if (entity->declaration().is(*ifcroot_type_)) {
-		const std::string global_id = *entity->data().getArgument(0);
-		byguid.erase(byguid.find(global_id));
-	}
-	
-	byid.erase(byid.find(id));
+	by_ref_cached_.clear();
 
-	const IfcParse::declaration* ty = &entity->declaration();
-
-	{
-		IfcEntityList::ptr instances_of_same_type = instances_by_type_excl_subtypes(ty);
-		instances_of_same_type->remove(entity);
-		if (instances_of_same_type->size() == 0) {
-			bytype_excl.erase(ty);
-		}
-	}
-
-	for (;;) {
-		IfcEntityList::ptr instances_of_same_type = instances_by_type(ty);
-		if (instances_of_same_type) {
-			instances_of_same_type->remove(entity);
-		}
-		if (instances_of_same_type->size() == 0) {
-			bytype.erase(ty);
-		}
-
-		const IfcParse::declaration* pt = ty->as_entity()->supertype();
-		if (pt) {
-			ty = pt;
-		} else {
-			break;
-		}
-	}
-	
-	delete entity;
+	batch_deletion_ids_.clear();
 }
 
 IfcEntityList::ptr IfcFile::instances_by_type(const IfcParse::declaration* t) {

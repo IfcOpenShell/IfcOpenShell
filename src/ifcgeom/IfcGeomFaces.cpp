@@ -584,10 +584,14 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRectangleHollowProfileDef* l, 
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrapeziumProfileDef* l, TopoDS_Shape& face) {
-	const double x1 = l->BottomXDim() / 2.0f * getValue(GV_LENGTH_UNIT);
+	const double x1 = l->BottomXDim() / 2. * getValue(GV_LENGTH_UNIT);
 	const double w = l->TopXDim() * getValue(GV_LENGTH_UNIT);
 	const double dx = l->TopXOffset() * getValue(GV_LENGTH_UNIT);
-	const double y = l->YDim() / 2.0f  * getValue(GV_LENGTH_UNIT);
+	const double y = l->YDim() / 2.  * getValue(GV_LENGTH_UNIT);
+
+	// See: https://forums.buildingsmart.org/t/how-are-the-sides-of-ifctrapeziumprofiledefs-bounding-box-calculated-in-most-implementations/2945/8
+	// The trapezium x center should not be midway of BottomXDim but rather at the center of the overall bounding box.
+	const double x_offset = ((std::min(dx, 0.) + std::max(w + dx, x1 * 2.)) / 2.) - x1;
 
 	if ( x1 < ALMOST_ZERO || w < ALMOST_ZERO || y < ALMOST_ZERO ) {
 		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
@@ -603,7 +607,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrapeziumProfileDef* l, TopoDS
 		IfcGeom::Kernel::convert(l->Position(), trsf2d);
 	}
 
-	double coords[8] = {-x1,-y, x1,-y, dx+w-x1,y, dx-x1,y};
+	double coords[8] = {
+		-x1 - x_offset, -y,
+		+x1 - x_offset, -y,
+		-x1 + dx + w - x_offset, y,
+		-x1 + dx - x_offset,y
+	};
 	return profile_helper(4,coords,0,0,0,trsf2d,face);
 }
 
@@ -622,6 +631,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Sh
 	bool doFillet2 = doFillet1;
 	double x2 = x1, dy2 = dy1, f2 = f1;
 
+	// @todo in IFC4 a IfcAsymmetricIShapeProfileDef is not a subtype anymore of IfcIShapeProfileDef!
 	if (l->declaration().is(IfcSchema::IfcAsymmetricIShapeProfileDef::Class())) {
 		IfcSchema::IfcAsymmetricIShapeProfileDef* assym = (IfcSchema::IfcAsymmetricIShapeProfileDef*) l;
 		x2 = assym->TopFlangeWidth() / 2. * getValue(GV_LENGTH_UNIT);
@@ -650,7 +660,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Sh
 
 	double coords[24] = {-x1,-y, x1,-y, x1,-y+dy1, d1,-y+dy1, d1,y-dy2, x2,y-dy2, x2,y, -x2,y, -x2,y-dy2, -d1,y-dy2, -d1,-y+dy1, -x1,-y+dy1};
 	int fillets[4] = {3,4,9,10};
-	double radii[4] = {f1,f1,f2,f2};
+	double radii[4] = {f1,f2,f2,f1};
 	return profile_helper(12,coords,(doFillet1||doFillet2) ? 4 : 0,fillets,radii,trsf2d,face);
 }
 

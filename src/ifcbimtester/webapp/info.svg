@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   sodipodi:docname="info.svg"
+   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
+   id="svg8"
+   version="1.1"
+   viewBox="0 0 15 10"
+   height="10mm"
+   width="15mm">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     inkscape:window-maximized="1"
+     inkscape:window-y="25"
+     inkscape:window-x="0"
+     inkscape:window-height="1055"
+     inkscape:window-width="1920"
+     showgrid="false"
+     inkscape:document-rotation="0"
+     inkscape:current-layer="layer1"
+     inkscape:document-units="mm"
+     inkscape:cy="7.4426888"
+     inkscape:cx="42.12184"
+     inkscape:zoom="8.6683577"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     borderopacity="1.0"
+     bordercolor="#666666"
+     pagecolor="#ffffff"
+     id="base" />
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     id="layer1"
+     inkscape:groupmode="layer"
+     inkscape:label="Layer 1">
+    <path
+       d="M 9.5,5 A 4.5,4.5000019 0 0 1 5,9.5000019 4.5,4.5000019 0 0 1 0.5,5 4.5,4.5000019 0 0 1 5,0.49999809 4.5,4.5000019 0 0 1 9.5,5 Z"
+       style="fill:none;stroke:#3d3242;stroke-width:0.999996;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;stop-color:#000000"
+       id="path833" />
+    <g
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:10.5833px;line-height:125%;font-family:'Andale Mono';-inkscape-font-specification:'Andale Mono, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#3d3242;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       id="text837"
+       aria-label="i">
+      <path
+         id="path861"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Webdings;-inkscape-font-specification:Webdings;fill:#3d3242;fill-opacity:1;stroke-width:0.264583px"
+         d="m 9.2322863,5.002584 q 0,1.7518255 -1.2402304,2.9920559 Q 6.7518255,9.2297027 5,9.2297027 q -1.7518255,0 -2.9920559,-1.2350628 Q 0.76771367,6.7544095 0.76771367,5.002584 q 0,-1.7518254 1.24023043,-2.9920559 Q 3.2481745,0.77029771 5,0.77029771 q 1.7518255,0 2.9920559,1.24023039 1.2402304,1.2402305 1.2402304,2.9920559 z m -0.692462,0 q 0,-1.467606 -1.0386929,-2.5062989 Q 6.467606,1.4575921 5,1.4575921 q -1.467606,0 -2.506299,1.038693 -1.038693,1.0386929 -1.038693,2.5062989 0,1.467606 1.038693,2.506299 Q 3.532394,8.5424084 5,8.5424084 q 1.467606,0 2.5011314,-1.0335254 Q 8.5398243,6.47019 8.5398243,5.002584 Z M 5.8681613,2.8218455 q 0,0.3358958 -0.2583813,0.5736066 Q 5.3565662,3.6331629 5,3.6331629 q -0.3617339,0 -0.6149476,-0.2377108 -0.2532137,-0.2377108 -0.2532137,-0.5736066 0,-0.3358957 0.2532137,-0.5736065 Q 4.6382661,2.0105281 5,2.0105281 q 0.3565662,0 0.60978,0.2377109 0.2583813,0.2377108 0.2583813,0.5736065 z M 5.7079649,8.1651716 H 4.2868675 V 4.1344227 h 1.4210974 z" />
+    </g>
+  </g>
+</svg>

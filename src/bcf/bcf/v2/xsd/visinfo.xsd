@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Mit XMLSpy v2011 rel. 2 sp1 (http://www.altova.com) von Klaus Linhard (IABI e.V.) bearbeitet -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:element name="VisualizationInfo">
+		<xs:annotation>
+			<xs:documentation>VisualizationInfo documentation</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="Components" type="Components" minOccurs="0"/>
+				<xs:element name="OrthogonalCamera" type="OrthogonalCamera" minOccurs="0"/>
+				<xs:element name="PerspectiveCamera" type="PerspectiveCamera" minOccurs="0"/>
+				<xs:element name="Lines" minOccurs="0">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Line" type="Line" maxOccurs="unbounded"/>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="ClippingPlanes" minOccurs="0">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="ClippingPlane" type="ClippingPlane" minOccurs="0" maxOccurs="unbounded"/>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<!-- ISG Jira issue BCF-17: Add support for text in the viewpoints -->
+				<xs:element name="Bitmap" minOccurs="0" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Bitmap" type="BitmapFormat"/>
+							<!-- Name of the bitmap file in the topic folder -->
+							<xs:element name="Reference" type="xs:string"/>
+							<!-- Location of the center of the bitmap -->
+							<xs:element name="Location" type="Point"/>
+							<!-- Normal of the bitmap -->
+							<xs:element name="Normal" type="Direction"/>
+							<!-- Upvector of the bitmap -->
+							<xs:element name="Up" type="Direction"/>
+							<!-- Height of the bitmap -->
+							<xs:element name="Height" type="xs:double"/>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+			<!-- Guid of the viewpoint -->
+			<xs:attribute name="Guid" type="Guid" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:complexType name="OrthogonalCamera">
+		<xs:sequence>
+			<xs:element name="CameraViewPoint" type="Point"/>
+			<xs:element name="CameraDirection" type="Direction"/>
+			<xs:element name="CameraUpVector" type="Direction"/>
+			<xs:element name="ViewToWorldScale" type="xs:double">
+				<xs:annotation>
+					<xs:documentation>view's visible size in meters</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="PerspectiveCamera">
+		<xs:sequence>
+			<xs:element name="CameraViewPoint" type="Point"/>
+			<xs:element name="CameraDirection" type="Direction"/>
+			<xs:element name="CameraUpVector" type="Direction"/>
+			<xs:element name="FieldOfView" type="FieldOfView">
+				<xs:annotation>
+					<xs:documentation>
+						It is currently limited to a value between 45 and 60 degrees.
+						This limitation will be dropped in the next release and viewers
+						should be expect values outside this range in current implementations.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="Point">
+		<xs:sequence>
+			<xs:element name="X" type="xs:double"/>
+			<xs:element name="Y" type="xs:double"/>
+			<xs:element name="Z" type="xs:double"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="Direction">
+		<xs:sequence>
+			<xs:element name="X" type="xs:double"/>
+			<xs:element name="Y" type="xs:double"/>
+			<xs:element name="Z" type="xs:double"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:simpleType name="FieldOfView">
+		<xs:restriction base="xs:double">
+			<xs:minInclusive value="1"/>
+			<xs:maxInclusive value="170"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:complexType name="Components">
+		<xs:sequence>
+			<xs:element name="ViewSetupHints" type="ViewSetupHints" minOccurs="0" />
+			<!-- Components with relevance to the viewpoint. They should be displayed highlighted or selected in a viewer -->
+			<xs:element name="Selection" type="ComponentSelection" minOccurs="0" />
+			<xs:element name="Visibility" type="ComponentVisibility" minOccurs="1" />
+			<xs:element name="Coloring" type="ComponentColoring" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ViewSetupHints">
+		<xs:attribute name="SpacesVisible" type="xs:boolean"/>
+		<xs:attribute name="SpaceBoundariesVisible" type="xs:boolean"/>
+		<xs:attribute name="OpeningsVisible" type="xs:boolean"/>
+	</xs:complexType>
+	<xs:complexType name="ComponentSelection">
+		<xs:sequence>
+			<xs:element name="Component" type="Component" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ComponentVisibility">
+		<xs:sequence>
+			<xs:element name="Exceptions" minOccurs="0">
+				<!-- List Components that are different than the DefaultVisibility. E.g. if DefaultVisibility = false then list
+					 Components that should be visible -->
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="Component" type="Component" maxOccurs="unbounded"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>	
+		</xs:sequence>
+		<xs:attribute name="DefaultVisibility" type="xs:boolean"/>
+	</xs:complexType>
+	<xs:complexType name="ComponentColoring">
+		<xs:sequence>
+			<xs:element name="Color" maxOccurs="unbounded">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="Component" type="Component" maxOccurs="unbounded"/>
+					</xs:sequence>
+					<xs:attribute ref="Color"/>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="Component">
+		<xs:sequence>
+			<xs:element name="OriginatingSystem" type="xs:string" minOccurs="0"/>
+			<xs:element name="AuthoringToolId" type="xs:string" minOccurs="0"/>
+		</xs:sequence>
+		<xs:attribute ref="IfcGuid"/>
+		<!-- ISG Jira Issue BCF-14 -->
+	</xs:complexType>
+	<xs:attribute name="Color">
+		<xs:simpleType>
+			<xs:restriction base="xs:normalizedString">
+			<!-- Should either match 3 or 4 hex bytes , e.g. "FF00FF" or "FF00FF99" -->
+				<xs:pattern value="[0-9,a-f,A-F]{6}([0-9,a-f,A-F]{2})?"/>
+			</xs:restriction>
+		</xs:simpleType>
+	</xs:attribute>
+	<xs:attribute name="IfcGuid">
+		<xs:simpleType>
+			<xs:restriction base="xs:normalizedString">
+				<xs:length value="22"/>
+				<xs:pattern value="[0-9,A-Z,a-z,_$]*"/>
+			</xs:restriction>
+		</xs:simpleType>
+	</xs:attribute>
+	<xs:complexType name="Line">
+		<xs:sequence>
+			<xs:element name="StartPoint" type="Point"/>
+			<xs:element name="EndPoint" type="Point"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ClippingPlane">
+		<xs:sequence>
+			<xs:element name="Location" type="Point"/>
+			<xs:element name="Direction" type="Direction"/>
+		</xs:sequence>
+	</xs:complexType>
+	<!-- ISG Jira issue BCF-17: Add support for text in the viewpoints -->
+	<xs:simpleType name="BitmapFormat">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="PNG"/>
+			<xs:enumeration value="JPG"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Guid">
+		<xs:restriction base="xs:string">
+			<xs:pattern value="[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"/>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

@@ -90,13 +90,19 @@ namespace IfcGeom {
 		const boost::optional<ColorComponent>& Specular() const { return specular; }
 		const boost::optional<double>& Transparency() const { return transparency; }
 		const boost::optional<double>& Specularity() const { return specularity; }
+		const boost::optional<int>& Id() const { return id; }
+		
 		boost::optional<ColorComponent>& Diffuse() { return diffuse; }
 		boost::optional<ColorComponent>& Specular() { return specular; }
 		boost::optional<double>& Transparency() { return transparency; }
 		boost::optional<double>& Specularity() { return specularity; }
+		boost::optional<int>& Id() { return id; }
 	};
 
-  IFC_GEOM_API const SurfaceStyle* get_default_style(const std::string& ifc_type);
+	IFC_GEOM_API const SurfaceStyle* get_default_style(const std::string& ifc_type);
+
+	IFC_GEOM_API SurfaceStyle& update_default_style(const std::string& ifc_type);
+
 	IFC_GEOM_API void set_default_style_file(const std::string& json_file);
 }
 

@@ -807,7 +807,190 @@ extern type_declaration* IFC2X3_IfcVolumetricFlowRateMeasure_type;
 extern type_declaration* IFC2X3_IfcWarpingConstantMeasure_type;
 extern type_declaration* IFC2X3_IfcWarpingMomentMeasure_type;
 extern type_declaration* IFC2X3_IfcYearNumber_type;
+extern enumeration_type* IFC2X3_IfcActionSourceTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcActionTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcActuatorTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcAddressTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcAheadOrBehind_type;
+extern enumeration_type* IFC2X3_IfcAirTerminalBoxTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcAirTerminalTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcAirToAirHeatRecoveryTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcAlarmTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcAnalysisModelTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcAnalysisTheoryTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcArithmeticOperatorEnum_type;
+extern enumeration_type* IFC2X3_IfcAssemblyPlaceEnum_type;
+extern enumeration_type* IFC2X3_IfcBSplineCurveForm_type;
+extern enumeration_type* IFC2X3_IfcBeamTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcBenchmarkEnum_type;
+extern enumeration_type* IFC2X3_IfcBoilerTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcBooleanOperator_type;
+extern enumeration_type* IFC2X3_IfcBuildingElementProxyTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcCableCarrierFittingTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcCableCarrierSegmentTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcCableSegmentTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcChangeActionEnum_type;
+extern enumeration_type* IFC2X3_IfcChillerTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcCoilTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcColumnTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcCompressorTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcCondenserTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcConnectionTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcConstraintEnum_type;
+extern enumeration_type* IFC2X3_IfcControllerTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcCooledBeamTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcCoolingTowerTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcCostScheduleTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcCoveringTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcCurrencyEnum_type;
+extern enumeration_type* IFC2X3_IfcCurtainWallTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcDamperTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcDataOriginEnum_type;
+extern enumeration_type* IFC2X3_IfcDerivedUnitEnum_type;
+extern enumeration_type* IFC2X3_IfcDimensionExtentUsage_type;
+extern enumeration_type* IFC2X3_IfcDirectionSenseEnum_type;
+extern enumeration_type* IFC2X3_IfcDistributionChamberElementTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcDocumentConfidentialityEnum_type;
+extern enumeration_type* IFC2X3_IfcDocumentStatusEnum_type;
+extern enumeration_type* IFC2X3_IfcDoorPanelOperationEnum_type;
+extern enumeration_type* IFC2X3_IfcDoorPanelPositionEnum_type;
+extern enumeration_type* IFC2X3_IfcDoorStyleConstructionEnum_type;
+extern enumeration_type* IFC2X3_IfcDoorStyleOperationEnum_type;
+extern enumeration_type* IFC2X3_IfcDuctFittingTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcDuctSegmentTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcDuctSilencerTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcElectricApplianceTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcElectricCurrentEnum_type;
+extern enumeration_type* IFC2X3_IfcElectricDistributionPointFunctionEnum_type;
+extern enumeration_type* IFC2X3_IfcElectricFlowStorageDeviceTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcElectricGeneratorTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcElectricHeaterTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcElectricMotorTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcElectricTimeControlTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcElementAssemblyTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcElementCompositionEnum_type;
+extern enumeration_type* IFC2X3_IfcEnergySequenceEnum_type;
+extern enumeration_type* IFC2X3_IfcEnvironmentalImpactCategoryEnum_type;
+extern enumeration_type* IFC2X3_IfcEvaporativeCoolerTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcEvaporatorTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcFanTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcFilterTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcFireSuppressionTerminalTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcFlowDirectionEnum_type;
+extern enumeration_type* IFC2X3_IfcFlowInstrumentTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcFlowMeterTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcFootingTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcGasTerminalTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcGeometricProjectionEnum_type;
+extern enumeration_type* IFC2X3_IfcGlobalOrLocalEnum_type;
+extern enumeration_type* IFC2X3_IfcHeatExchangerTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcHumidifierTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcInternalOrExternalEnum_type;
+extern enumeration_type* IFC2X3_IfcInventoryTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcJunctionBoxTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcLampTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcLayerSetDirectionEnum_type;
+extern enumeration_type* IFC2X3_IfcLightDistributionCurveEnum_type;
+extern enumeration_type* IFC2X3_IfcLightEmissionSourceEnum_type;
+extern enumeration_type* IFC2X3_IfcLightFixtureTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcLoadGroupTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcLogicalOperatorEnum_type;
+extern enumeration_type* IFC2X3_IfcMemberTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcMotorConnectionTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcNullStyle_type;
+extern enumeration_type* IFC2X3_IfcObjectTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcObjectiveEnum_type;
+extern enumeration_type* IFC2X3_IfcOccupantTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcOutletTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcPermeableCoveringOperationEnum_type;
+extern enumeration_type* IFC2X3_IfcPhysicalOrVirtualEnum_type;
+extern enumeration_type* IFC2X3_IfcPileConstructionEnum_type;
+extern enumeration_type* IFC2X3_IfcPileTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcPipeFittingTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcPipeSegmentTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcPlateTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcProcedureTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcProfileTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcProjectOrderRecordTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcProjectOrderTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcProjectedOrTrueLengthEnum_type;
+extern enumeration_type* IFC2X3_IfcPropertySourceEnum_type;
+extern enumeration_type* IFC2X3_IfcProtectiveDeviceTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcPumpTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcRailingTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcRampFlightTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcRampTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcReflectanceMethodEnum_type;
+extern enumeration_type* IFC2X3_IfcReinforcingBarRoleEnum_type;
+extern enumeration_type* IFC2X3_IfcReinforcingBarSurfaceEnum_type;
+extern enumeration_type* IFC2X3_IfcResourceConsumptionEnum_type;
+extern enumeration_type* IFC2X3_IfcRibPlateDirectionEnum_type;
+extern enumeration_type* IFC2X3_IfcRoleEnum_type;
+extern enumeration_type* IFC2X3_IfcRoofTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcSIPrefix_type;
+extern enumeration_type* IFC2X3_IfcSIUnitName_type;
+extern enumeration_type* IFC2X3_IfcSanitaryTerminalTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcSectionTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcSensorTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcSequenceEnum_type;
+extern enumeration_type* IFC2X3_IfcServiceLifeFactorTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcServiceLifeTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcSlabTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcSoundScaleEnum_type;
+extern enumeration_type* IFC2X3_IfcSpaceHeaterTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcSpaceTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcStackTerminalTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcStairFlightTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcStairTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcStateEnum_type;
+extern enumeration_type* IFC2X3_IfcStructuralCurveTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcStructuralSurfaceTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcSurfaceSide_type;
+extern enumeration_type* IFC2X3_IfcSurfaceTextureEnum_type;
+extern enumeration_type* IFC2X3_IfcSwitchingDeviceTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcTankTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcTendonTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcTextPath_type;
+extern enumeration_type* IFC2X3_IfcThermalLoadSourceEnum_type;
+extern enumeration_type* IFC2X3_IfcThermalLoadTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcTimeSeriesDataTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcTimeSeriesScheduleTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcTransformerTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcTransitionCode_type;
+extern enumeration_type* IFC2X3_IfcTransportElementTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcTrimmingPreference_type;
+extern enumeration_type* IFC2X3_IfcTubeBundleTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcUnitEnum_type;
+extern enumeration_type* IFC2X3_IfcUnitaryEquipmentTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcValveTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcVibrationIsolatorTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcWallTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcWasteTerminalTypeEnum_type;
+extern enumeration_type* IFC2X3_IfcWindowPanelOperationEnum_type;
+extern enumeration_type* IFC2X3_IfcWindowPanelPositionEnum_type;
+extern enumeration_type* IFC2X3_IfcWindowStyleConstructionEnum_type;
+extern enumeration_type* IFC2X3_IfcWindowStyleOperationEnum_type;
+extern enumeration_type* IFC2X3_IfcWorkControlTypeEnum_type;
 
+
+const IfcParse::enumeration_type& Ifc2x3::IfcActionSourceTypeEnum::declaration() const { return *IFC2X3_IfcActionSourceTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcActionSourceTypeEnum::Class() { return *IFC2X3_IfcActionSourceTypeEnum_type; }
+
+Ifc2x3::IfcActionSourceTypeEnum::IfcActionSourceTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcActionSourceTypeEnum::IfcActionSourceTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcActionSourceTypeEnum::IfcActionSourceTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
 
 const char* Ifc2x3::IfcActionSourceTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 27 ) throw IfcException("Unable to find find keyword in schema");
@@ -846,6 +1029,25 @@ Ifc2x3::IfcActionSourceTypeEnum::Value Ifc2x3::IfcActionSourceTypeEnum::FromStri
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcActionTypeEnum::declaration() const { return *IFC2X3_IfcActionTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcActionTypeEnum::Class() { return *IFC2X3_IfcActionTypeEnum_type; }
+
+Ifc2x3::IfcActionTypeEnum::IfcActionTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcActionTypeEnum::IfcActionTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcActionTypeEnum::IfcActionTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcActionTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 5 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "PERMANENT_G", "VARIABLE_Q", "EXTRAORDINARY_A", "USERDEFINED", "NOTDEFINED" };
@@ -859,6 +1061,25 @@ Ifc2x3::IfcActionTypeEnum::Value Ifc2x3::IfcActionTypeEnum::FromString(const std
     if (s == "USERDEFINED") return ::Ifc2x3::IfcActionTypeEnum::IfcActionType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcActionTypeEnum::IfcActionType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcActuatorTypeEnum::declaration() const { return *IFC2X3_IfcActuatorTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcActuatorTypeEnum::Class() { return *IFC2X3_IfcActuatorTypeEnum_type; }
+
+Ifc2x3::IfcActuatorTypeEnum::IfcActuatorTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcActuatorTypeEnum::IfcActuatorTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcActuatorTypeEnum::IfcActuatorTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcActuatorTypeEnum::ToString(Value v) {
@@ -878,6 +1099,25 @@ Ifc2x3::IfcActuatorTypeEnum::Value Ifc2x3::IfcActuatorTypeEnum::FromString(const
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcAddressTypeEnum::declaration() const { return *IFC2X3_IfcAddressTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcAddressTypeEnum::Class() { return *IFC2X3_IfcAddressTypeEnum_type; }
+
+Ifc2x3::IfcAddressTypeEnum::IfcAddressTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcAddressTypeEnum::IfcAddressTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcAddressTypeEnum::IfcAddressTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcAddressTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 5 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "OFFICE", "SITE", "HOME", "DISTRIBUTIONPOINT", "USERDEFINED" };
@@ -893,6 +1133,25 @@ Ifc2x3::IfcAddressTypeEnum::Value Ifc2x3::IfcAddressTypeEnum::FromString(const s
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcAheadOrBehind::declaration() const { return *IFC2X3_IfcAheadOrBehind_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcAheadOrBehind::Class() { return *IFC2X3_IfcAheadOrBehind_type; }
+
+Ifc2x3::IfcAheadOrBehind::IfcAheadOrBehind(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcAheadOrBehind::IfcAheadOrBehind(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcAheadOrBehind::IfcAheadOrBehind(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcAheadOrBehind::ToString(Value v) {
     if ( v < 0 || v >= 2 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "AHEAD", "BEHIND" };
@@ -903,6 +1162,25 @@ Ifc2x3::IfcAheadOrBehind::Value Ifc2x3::IfcAheadOrBehind::FromString(const std::
     if (s == "AHEAD") return ::Ifc2x3::IfcAheadOrBehind::IfcAheadOrBehind_AHEAD;
     if (s == "BEHIND") return ::Ifc2x3::IfcAheadOrBehind::IfcAheadOrBehind_BEHIND;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcAirTerminalBoxTypeEnum::declaration() const { return *IFC2X3_IfcAirTerminalBoxTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcAirTerminalBoxTypeEnum::Class() { return *IFC2X3_IfcAirTerminalBoxTypeEnum_type; }
+
+Ifc2x3::IfcAirTerminalBoxTypeEnum::IfcAirTerminalBoxTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcAirTerminalBoxTypeEnum::IfcAirTerminalBoxTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcAirTerminalBoxTypeEnum::IfcAirTerminalBoxTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcAirTerminalBoxTypeEnum::ToString(Value v) {
@@ -918,6 +1196,25 @@ Ifc2x3::IfcAirTerminalBoxTypeEnum::Value Ifc2x3::IfcAirTerminalBoxTypeEnum::From
     if (s == "USERDEFINED") return ::Ifc2x3::IfcAirTerminalBoxTypeEnum::IfcAirTerminalBoxType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcAirTerminalBoxTypeEnum::IfcAirTerminalBoxType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcAirTerminalTypeEnum::declaration() const { return *IFC2X3_IfcAirTerminalTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcAirTerminalTypeEnum::Class() { return *IFC2X3_IfcAirTerminalTypeEnum_type; }
+
+Ifc2x3::IfcAirTerminalTypeEnum::IfcAirTerminalTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcAirTerminalTypeEnum::IfcAirTerminalTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcAirTerminalTypeEnum::IfcAirTerminalTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcAirTerminalTypeEnum::ToString(Value v) {
@@ -937,6 +1234,25 @@ Ifc2x3::IfcAirTerminalTypeEnum::Value Ifc2x3::IfcAirTerminalTypeEnum::FromString
     if (s == "USERDEFINED") return ::Ifc2x3::IfcAirTerminalTypeEnum::IfcAirTerminalType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcAirTerminalTypeEnum::IfcAirTerminalType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcAirToAirHeatRecoveryTypeEnum::declaration() const { return *IFC2X3_IfcAirToAirHeatRecoveryTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcAirToAirHeatRecoveryTypeEnum::Class() { return *IFC2X3_IfcAirToAirHeatRecoveryTypeEnum_type; }
+
+Ifc2x3::IfcAirToAirHeatRecoveryTypeEnum::IfcAirToAirHeatRecoveryTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcAirToAirHeatRecoveryTypeEnum::IfcAirToAirHeatRecoveryTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcAirToAirHeatRecoveryTypeEnum::IfcAirToAirHeatRecoveryTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcAirToAirHeatRecoveryTypeEnum::ToString(Value v) {
@@ -960,6 +1276,25 @@ Ifc2x3::IfcAirToAirHeatRecoveryTypeEnum::Value Ifc2x3::IfcAirToAirHeatRecoveryTy
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcAlarmTypeEnum::declaration() const { return *IFC2X3_IfcAlarmTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcAlarmTypeEnum::Class() { return *IFC2X3_IfcAlarmTypeEnum_type; }
+
+Ifc2x3::IfcAlarmTypeEnum::IfcAlarmTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcAlarmTypeEnum::IfcAlarmTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcAlarmTypeEnum::IfcAlarmTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcAlarmTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 8 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "BELL", "BREAKGLASSBUTTON", "LIGHT", "MANUALPULLBOX", "SIREN", "WHISTLE", "USERDEFINED", "NOTDEFINED" };
@@ -978,6 +1313,25 @@ Ifc2x3::IfcAlarmTypeEnum::Value Ifc2x3::IfcAlarmTypeEnum::FromString(const std::
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcAnalysisModelTypeEnum::declaration() const { return *IFC2X3_IfcAnalysisModelTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcAnalysisModelTypeEnum::Class() { return *IFC2X3_IfcAnalysisModelTypeEnum_type; }
+
+Ifc2x3::IfcAnalysisModelTypeEnum::IfcAnalysisModelTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcAnalysisModelTypeEnum::IfcAnalysisModelTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcAnalysisModelTypeEnum::IfcAnalysisModelTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcAnalysisModelTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 5 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "IN_PLANE_LOADING_2D", "OUT_PLANE_LOADING_2D", "LOADING_3D", "USERDEFINED", "NOTDEFINED" };
@@ -991,6 +1345,25 @@ Ifc2x3::IfcAnalysisModelTypeEnum::Value Ifc2x3::IfcAnalysisModelTypeEnum::FromSt
     if (s == "USERDEFINED") return ::Ifc2x3::IfcAnalysisModelTypeEnum::IfcAnalysisModelType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcAnalysisModelTypeEnum::IfcAnalysisModelType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcAnalysisTheoryTypeEnum::declaration() const { return *IFC2X3_IfcAnalysisTheoryTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcAnalysisTheoryTypeEnum::Class() { return *IFC2X3_IfcAnalysisTheoryTypeEnum_type; }
+
+Ifc2x3::IfcAnalysisTheoryTypeEnum::IfcAnalysisTheoryTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcAnalysisTheoryTypeEnum::IfcAnalysisTheoryTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcAnalysisTheoryTypeEnum::IfcAnalysisTheoryTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcAnalysisTheoryTypeEnum::ToString(Value v) {
@@ -1009,6 +1382,25 @@ Ifc2x3::IfcAnalysisTheoryTypeEnum::Value Ifc2x3::IfcAnalysisTheoryTypeEnum::From
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcArithmeticOperatorEnum::declaration() const { return *IFC2X3_IfcArithmeticOperatorEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcArithmeticOperatorEnum::Class() { return *IFC2X3_IfcArithmeticOperatorEnum_type; }
+
+Ifc2x3::IfcArithmeticOperatorEnum::IfcArithmeticOperatorEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcArithmeticOperatorEnum::IfcArithmeticOperatorEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcArithmeticOperatorEnum::IfcArithmeticOperatorEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcArithmeticOperatorEnum::ToString(Value v) {
     if ( v < 0 || v >= 4 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "ADD", "DIVIDE", "MULTIPLY", "SUBTRACT" };
@@ -1023,6 +1415,25 @@ Ifc2x3::IfcArithmeticOperatorEnum::Value Ifc2x3::IfcArithmeticOperatorEnum::From
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcAssemblyPlaceEnum::declaration() const { return *IFC2X3_IfcAssemblyPlaceEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcAssemblyPlaceEnum::Class() { return *IFC2X3_IfcAssemblyPlaceEnum_type; }
+
+Ifc2x3::IfcAssemblyPlaceEnum::IfcAssemblyPlaceEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcAssemblyPlaceEnum::IfcAssemblyPlaceEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcAssemblyPlaceEnum::IfcAssemblyPlaceEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcAssemblyPlaceEnum::ToString(Value v) {
     if ( v < 0 || v >= 3 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "SITE", "FACTORY", "NOTDEFINED" };
@@ -1034,6 +1445,25 @@ Ifc2x3::IfcAssemblyPlaceEnum::Value Ifc2x3::IfcAssemblyPlaceEnum::FromString(con
     if (s == "FACTORY") return ::Ifc2x3::IfcAssemblyPlaceEnum::IfcAssemblyPlace_FACTORY;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcAssemblyPlaceEnum::IfcAssemblyPlace_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcBSplineCurveForm::declaration() const { return *IFC2X3_IfcBSplineCurveForm_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcBSplineCurveForm::Class() { return *IFC2X3_IfcBSplineCurveForm_type; }
+
+Ifc2x3::IfcBSplineCurveForm::IfcBSplineCurveForm(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcBSplineCurveForm::IfcBSplineCurveForm(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcBSplineCurveForm::IfcBSplineCurveForm(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcBSplineCurveForm::ToString(Value v) {
@@ -1052,6 +1482,25 @@ Ifc2x3::IfcBSplineCurveForm::Value Ifc2x3::IfcBSplineCurveForm::FromString(const
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcBeamTypeEnum::declaration() const { return *IFC2X3_IfcBeamTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcBeamTypeEnum::Class() { return *IFC2X3_IfcBeamTypeEnum_type; }
+
+Ifc2x3::IfcBeamTypeEnum::IfcBeamTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcBeamTypeEnum::IfcBeamTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcBeamTypeEnum::IfcBeamTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcBeamTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 6 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "BEAM", "JOIST", "LINTEL", "T_BEAM", "USERDEFINED", "NOTDEFINED" };
@@ -1066,6 +1515,25 @@ Ifc2x3::IfcBeamTypeEnum::Value Ifc2x3::IfcBeamTypeEnum::FromString(const std::st
     if (s == "USERDEFINED") return ::Ifc2x3::IfcBeamTypeEnum::IfcBeamType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcBeamTypeEnum::IfcBeamType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcBenchmarkEnum::declaration() const { return *IFC2X3_IfcBenchmarkEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcBenchmarkEnum::Class() { return *IFC2X3_IfcBenchmarkEnum_type; }
+
+Ifc2x3::IfcBenchmarkEnum::IfcBenchmarkEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcBenchmarkEnum::IfcBenchmarkEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcBenchmarkEnum::IfcBenchmarkEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcBenchmarkEnum::ToString(Value v) {
@@ -1084,6 +1552,25 @@ Ifc2x3::IfcBenchmarkEnum::Value Ifc2x3::IfcBenchmarkEnum::FromString(const std::
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcBoilerTypeEnum::declaration() const { return *IFC2X3_IfcBoilerTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcBoilerTypeEnum::Class() { return *IFC2X3_IfcBoilerTypeEnum_type; }
+
+Ifc2x3::IfcBoilerTypeEnum::IfcBoilerTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcBoilerTypeEnum::IfcBoilerTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcBoilerTypeEnum::IfcBoilerTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcBoilerTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 4 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "WATER", "STEAM", "USERDEFINED", "NOTDEFINED" };
@@ -1096,6 +1583,25 @@ Ifc2x3::IfcBoilerTypeEnum::Value Ifc2x3::IfcBoilerTypeEnum::FromString(const std
     if (s == "USERDEFINED") return ::Ifc2x3::IfcBoilerTypeEnum::IfcBoilerType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcBoilerTypeEnum::IfcBoilerType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcBooleanOperator::declaration() const { return *IFC2X3_IfcBooleanOperator_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcBooleanOperator::Class() { return *IFC2X3_IfcBooleanOperator_type; }
+
+Ifc2x3::IfcBooleanOperator::IfcBooleanOperator(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcBooleanOperator::IfcBooleanOperator(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcBooleanOperator::IfcBooleanOperator(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcBooleanOperator::ToString(Value v) {
@@ -1111,6 +1617,25 @@ Ifc2x3::IfcBooleanOperator::Value Ifc2x3::IfcBooleanOperator::FromString(const s
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcBuildingElementProxyTypeEnum::declaration() const { return *IFC2X3_IfcBuildingElementProxyTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcBuildingElementProxyTypeEnum::Class() { return *IFC2X3_IfcBuildingElementProxyTypeEnum_type; }
+
+Ifc2x3::IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcBuildingElementProxyTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 2 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "USERDEFINED", "NOTDEFINED" };
@@ -1121,6 +1646,25 @@ Ifc2x3::IfcBuildingElementProxyTypeEnum::Value Ifc2x3::IfcBuildingElementProxyTy
     if (s == "USERDEFINED") return ::Ifc2x3::IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcCableCarrierFittingTypeEnum::declaration() const { return *IFC2X3_IfcCableCarrierFittingTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcCableCarrierFittingTypeEnum::Class() { return *IFC2X3_IfcCableCarrierFittingTypeEnum_type; }
+
+Ifc2x3::IfcCableCarrierFittingTypeEnum::IfcCableCarrierFittingTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcCableCarrierFittingTypeEnum::IfcCableCarrierFittingTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcCableCarrierFittingTypeEnum::IfcCableCarrierFittingTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcCableCarrierFittingTypeEnum::ToString(Value v) {
@@ -1139,6 +1683,25 @@ Ifc2x3::IfcCableCarrierFittingTypeEnum::Value Ifc2x3::IfcCableCarrierFittingType
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcCableCarrierSegmentTypeEnum::declaration() const { return *IFC2X3_IfcCableCarrierSegmentTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcCableCarrierSegmentTypeEnum::Class() { return *IFC2X3_IfcCableCarrierSegmentTypeEnum_type; }
+
+Ifc2x3::IfcCableCarrierSegmentTypeEnum::IfcCableCarrierSegmentTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcCableCarrierSegmentTypeEnum::IfcCableCarrierSegmentTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcCableCarrierSegmentTypeEnum::IfcCableCarrierSegmentTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcCableCarrierSegmentTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 6 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "CABLELADDERSEGMENT", "CABLETRAYSEGMENT", "CABLETRUNKINGSEGMENT", "CONDUITSEGMENT", "USERDEFINED", "NOTDEFINED" };
@@ -1155,6 +1718,25 @@ Ifc2x3::IfcCableCarrierSegmentTypeEnum::Value Ifc2x3::IfcCableCarrierSegmentType
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcCableSegmentTypeEnum::declaration() const { return *IFC2X3_IfcCableSegmentTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcCableSegmentTypeEnum::Class() { return *IFC2X3_IfcCableSegmentTypeEnum_type; }
+
+Ifc2x3::IfcCableSegmentTypeEnum::IfcCableSegmentTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcCableSegmentTypeEnum::IfcCableSegmentTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcCableSegmentTypeEnum::IfcCableSegmentTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcCableSegmentTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 4 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "CABLESEGMENT", "CONDUCTORSEGMENT", "USERDEFINED", "NOTDEFINED" };
@@ -1167,6 +1749,25 @@ Ifc2x3::IfcCableSegmentTypeEnum::Value Ifc2x3::IfcCableSegmentTypeEnum::FromStri
     if (s == "USERDEFINED") return ::Ifc2x3::IfcCableSegmentTypeEnum::IfcCableSegmentType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcCableSegmentTypeEnum::IfcCableSegmentType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcChangeActionEnum::declaration() const { return *IFC2X3_IfcChangeActionEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcChangeActionEnum::Class() { return *IFC2X3_IfcChangeActionEnum_type; }
+
+Ifc2x3::IfcChangeActionEnum::IfcChangeActionEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcChangeActionEnum::IfcChangeActionEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcChangeActionEnum::IfcChangeActionEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcChangeActionEnum::ToString(Value v) {
@@ -1185,6 +1786,25 @@ Ifc2x3::IfcChangeActionEnum::Value Ifc2x3::IfcChangeActionEnum::FromString(const
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcChillerTypeEnum::declaration() const { return *IFC2X3_IfcChillerTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcChillerTypeEnum::Class() { return *IFC2X3_IfcChillerTypeEnum_type; }
+
+Ifc2x3::IfcChillerTypeEnum::IfcChillerTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcChillerTypeEnum::IfcChillerTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcChillerTypeEnum::IfcChillerTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcChillerTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 5 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "AIRCOOLED", "WATERCOOLED", "HEATRECOVERY", "USERDEFINED", "NOTDEFINED" };
@@ -1198,6 +1818,25 @@ Ifc2x3::IfcChillerTypeEnum::Value Ifc2x3::IfcChillerTypeEnum::FromString(const s
     if (s == "USERDEFINED") return ::Ifc2x3::IfcChillerTypeEnum::IfcChillerType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcChillerTypeEnum::IfcChillerType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcCoilTypeEnum::declaration() const { return *IFC2X3_IfcCoilTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcCoilTypeEnum::Class() { return *IFC2X3_IfcCoilTypeEnum_type; }
+
+Ifc2x3::IfcCoilTypeEnum::IfcCoilTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcCoilTypeEnum::IfcCoilTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcCoilTypeEnum::IfcCoilTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcCoilTypeEnum::ToString(Value v) {
@@ -1218,6 +1857,25 @@ Ifc2x3::IfcCoilTypeEnum::Value Ifc2x3::IfcCoilTypeEnum::FromString(const std::st
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcColumnTypeEnum::declaration() const { return *IFC2X3_IfcColumnTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcColumnTypeEnum::Class() { return *IFC2X3_IfcColumnTypeEnum_type; }
+
+Ifc2x3::IfcColumnTypeEnum::IfcColumnTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcColumnTypeEnum::IfcColumnTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcColumnTypeEnum::IfcColumnTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcColumnTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 3 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "COLUMN", "USERDEFINED", "NOTDEFINED" };
@@ -1229,6 +1887,25 @@ Ifc2x3::IfcColumnTypeEnum::Value Ifc2x3::IfcColumnTypeEnum::FromString(const std
     if (s == "USERDEFINED") return ::Ifc2x3::IfcColumnTypeEnum::IfcColumnType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcColumnTypeEnum::IfcColumnType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcCompressorTypeEnum::declaration() const { return *IFC2X3_IfcCompressorTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcCompressorTypeEnum::Class() { return *IFC2X3_IfcCompressorTypeEnum_type; }
+
+Ifc2x3::IfcCompressorTypeEnum::IfcCompressorTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcCompressorTypeEnum::IfcCompressorTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcCompressorTypeEnum::IfcCompressorTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcCompressorTypeEnum::ToString(Value v) {
@@ -1258,6 +1935,25 @@ Ifc2x3::IfcCompressorTypeEnum::Value Ifc2x3::IfcCompressorTypeEnum::FromString(c
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcCondenserTypeEnum::declaration() const { return *IFC2X3_IfcCondenserTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcCondenserTypeEnum::Class() { return *IFC2X3_IfcCondenserTypeEnum_type; }
+
+Ifc2x3::IfcCondenserTypeEnum::IfcCondenserTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcCondenserTypeEnum::IfcCondenserTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcCondenserTypeEnum::IfcCondenserTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcCondenserTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 8 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "WATERCOOLEDSHELLTUBE", "WATERCOOLEDSHELLCOIL", "WATERCOOLEDTUBEINTUBE", "WATERCOOLEDBRAZEDPLATE", "AIRCOOLED", "EVAPORATIVECOOLED", "USERDEFINED", "NOTDEFINED" };
@@ -1276,6 +1972,25 @@ Ifc2x3::IfcCondenserTypeEnum::Value Ifc2x3::IfcCondenserTypeEnum::FromString(con
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcConnectionTypeEnum::declaration() const { return *IFC2X3_IfcConnectionTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcConnectionTypeEnum::Class() { return *IFC2X3_IfcConnectionTypeEnum_type; }
+
+Ifc2x3::IfcConnectionTypeEnum::IfcConnectionTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcConnectionTypeEnum::IfcConnectionTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcConnectionTypeEnum::IfcConnectionTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcConnectionTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 4 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "ATPATH", "ATSTART", "ATEND", "NOTDEFINED" };
@@ -1288,6 +2003,25 @@ Ifc2x3::IfcConnectionTypeEnum::Value Ifc2x3::IfcConnectionTypeEnum::FromString(c
     if (s == "ATEND") return ::Ifc2x3::IfcConnectionTypeEnum::IfcConnectionType_ATEND;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcConnectionTypeEnum::IfcConnectionType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcConstraintEnum::declaration() const { return *IFC2X3_IfcConstraintEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcConstraintEnum::Class() { return *IFC2X3_IfcConstraintEnum_type; }
+
+Ifc2x3::IfcConstraintEnum::IfcConstraintEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcConstraintEnum::IfcConstraintEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcConstraintEnum::IfcConstraintEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcConstraintEnum::ToString(Value v) {
@@ -1303,6 +2037,25 @@ Ifc2x3::IfcConstraintEnum::Value Ifc2x3::IfcConstraintEnum::FromString(const std
     if (s == "USERDEFINED") return ::Ifc2x3::IfcConstraintEnum::IfcConstraint_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcConstraintEnum::IfcConstraint_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcControllerTypeEnum::declaration() const { return *IFC2X3_IfcControllerTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcControllerTypeEnum::Class() { return *IFC2X3_IfcControllerTypeEnum_type; }
+
+Ifc2x3::IfcControllerTypeEnum::IfcControllerTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcControllerTypeEnum::IfcControllerTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcControllerTypeEnum::IfcControllerTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcControllerTypeEnum::ToString(Value v) {
@@ -1323,6 +2076,25 @@ Ifc2x3::IfcControllerTypeEnum::Value Ifc2x3::IfcControllerTypeEnum::FromString(c
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcCooledBeamTypeEnum::declaration() const { return *IFC2X3_IfcCooledBeamTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcCooledBeamTypeEnum::Class() { return *IFC2X3_IfcCooledBeamTypeEnum_type; }
+
+Ifc2x3::IfcCooledBeamTypeEnum::IfcCooledBeamTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcCooledBeamTypeEnum::IfcCooledBeamTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcCooledBeamTypeEnum::IfcCooledBeamTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcCooledBeamTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 4 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "ACTIVE", "PASSIVE", "USERDEFINED", "NOTDEFINED" };
@@ -1335,6 +2107,25 @@ Ifc2x3::IfcCooledBeamTypeEnum::Value Ifc2x3::IfcCooledBeamTypeEnum::FromString(c
     if (s == "USERDEFINED") return ::Ifc2x3::IfcCooledBeamTypeEnum::IfcCooledBeamType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcCooledBeamTypeEnum::IfcCooledBeamType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcCoolingTowerTypeEnum::declaration() const { return *IFC2X3_IfcCoolingTowerTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcCoolingTowerTypeEnum::Class() { return *IFC2X3_IfcCoolingTowerTypeEnum_type; }
+
+Ifc2x3::IfcCoolingTowerTypeEnum::IfcCoolingTowerTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcCoolingTowerTypeEnum::IfcCoolingTowerTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcCoolingTowerTypeEnum::IfcCoolingTowerTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcCoolingTowerTypeEnum::ToString(Value v) {
@@ -1350,6 +2141,25 @@ Ifc2x3::IfcCoolingTowerTypeEnum::Value Ifc2x3::IfcCoolingTowerTypeEnum::FromStri
     if (s == "USERDEFINED") return ::Ifc2x3::IfcCoolingTowerTypeEnum::IfcCoolingTowerType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcCoolingTowerTypeEnum::IfcCoolingTowerType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcCostScheduleTypeEnum::declaration() const { return *IFC2X3_IfcCostScheduleTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcCostScheduleTypeEnum::Class() { return *IFC2X3_IfcCostScheduleTypeEnum_type; }
+
+Ifc2x3::IfcCostScheduleTypeEnum::IfcCostScheduleTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcCostScheduleTypeEnum::IfcCostScheduleTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcCostScheduleTypeEnum::IfcCostScheduleTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcCostScheduleTypeEnum::ToString(Value v) {
@@ -1371,6 +2181,25 @@ Ifc2x3::IfcCostScheduleTypeEnum::Value Ifc2x3::IfcCostScheduleTypeEnum::FromStri
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcCoveringTypeEnum::declaration() const { return *IFC2X3_IfcCoveringTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcCoveringTypeEnum::Class() { return *IFC2X3_IfcCoveringTypeEnum_type; }
+
+Ifc2x3::IfcCoveringTypeEnum::IfcCoveringTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcCoveringTypeEnum::IfcCoveringTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcCoveringTypeEnum::IfcCoveringTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcCoveringTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 10 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "CEILING", "FLOORING", "CLADDING", "ROOFING", "INSULATION", "MEMBRANE", "SLEEVING", "WRAPPING", "USERDEFINED", "NOTDEFINED" };
@@ -1389,6 +2218,25 @@ Ifc2x3::IfcCoveringTypeEnum::Value Ifc2x3::IfcCoveringTypeEnum::FromString(const
     if (s == "USERDEFINED") return ::Ifc2x3::IfcCoveringTypeEnum::IfcCoveringType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcCoveringTypeEnum::IfcCoveringType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcCurrencyEnum::declaration() const { return *IFC2X3_IfcCurrencyEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcCurrencyEnum::Class() { return *IFC2X3_IfcCurrencyEnum_type; }
+
+Ifc2x3::IfcCurrencyEnum::IfcCurrencyEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcCurrencyEnum::IfcCurrencyEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcCurrencyEnum::IfcCurrencyEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcCurrencyEnum::ToString(Value v) {
@@ -1484,6 +2332,25 @@ Ifc2x3::IfcCurrencyEnum::Value Ifc2x3::IfcCurrencyEnum::FromString(const std::st
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcCurtainWallTypeEnum::declaration() const { return *IFC2X3_IfcCurtainWallTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcCurtainWallTypeEnum::Class() { return *IFC2X3_IfcCurtainWallTypeEnum_type; }
+
+Ifc2x3::IfcCurtainWallTypeEnum::IfcCurtainWallTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcCurtainWallTypeEnum::IfcCurtainWallTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcCurtainWallTypeEnum::IfcCurtainWallTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcCurtainWallTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 2 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "USERDEFINED", "NOTDEFINED" };
@@ -1494,6 +2361,25 @@ Ifc2x3::IfcCurtainWallTypeEnum::Value Ifc2x3::IfcCurtainWallTypeEnum::FromString
     if (s == "USERDEFINED") return ::Ifc2x3::IfcCurtainWallTypeEnum::IfcCurtainWallType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcCurtainWallTypeEnum::IfcCurtainWallType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcDamperTypeEnum::declaration() const { return *IFC2X3_IfcDamperTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcDamperTypeEnum::Class() { return *IFC2X3_IfcDamperTypeEnum_type; }
+
+Ifc2x3::IfcDamperTypeEnum::IfcDamperTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcDamperTypeEnum::IfcDamperTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcDamperTypeEnum::IfcDamperTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcDamperTypeEnum::ToString(Value v) {
@@ -1519,6 +2405,25 @@ Ifc2x3::IfcDamperTypeEnum::Value Ifc2x3::IfcDamperTypeEnum::FromString(const std
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcDataOriginEnum::declaration() const { return *IFC2X3_IfcDataOriginEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcDataOriginEnum::Class() { return *IFC2X3_IfcDataOriginEnum_type; }
+
+Ifc2x3::IfcDataOriginEnum::IfcDataOriginEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcDataOriginEnum::IfcDataOriginEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcDataOriginEnum::IfcDataOriginEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcDataOriginEnum::ToString(Value v) {
     if ( v < 0 || v >= 5 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "MEASURED", "PREDICTED", "SIMULATED", "USERDEFINED", "NOTDEFINED" };
@@ -1532,6 +2437,25 @@ Ifc2x3::IfcDataOriginEnum::Value Ifc2x3::IfcDataOriginEnum::FromString(const std
     if (s == "USERDEFINED") return ::Ifc2x3::IfcDataOriginEnum::IfcDataOrigin_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcDataOriginEnum::IfcDataOrigin_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcDerivedUnitEnum::declaration() const { return *IFC2X3_IfcDerivedUnitEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcDerivedUnitEnum::Class() { return *IFC2X3_IfcDerivedUnitEnum_type; }
+
+Ifc2x3::IfcDerivedUnitEnum::IfcDerivedUnitEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcDerivedUnitEnum::IfcDerivedUnitEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcDerivedUnitEnum::IfcDerivedUnitEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcDerivedUnitEnum::ToString(Value v) {
@@ -1593,6 +2517,25 @@ Ifc2x3::IfcDerivedUnitEnum::Value Ifc2x3::IfcDerivedUnitEnum::FromString(const s
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcDimensionExtentUsage::declaration() const { return *IFC2X3_IfcDimensionExtentUsage_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcDimensionExtentUsage::Class() { return *IFC2X3_IfcDimensionExtentUsage_type; }
+
+Ifc2x3::IfcDimensionExtentUsage::IfcDimensionExtentUsage(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcDimensionExtentUsage::IfcDimensionExtentUsage(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcDimensionExtentUsage::IfcDimensionExtentUsage(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcDimensionExtentUsage::ToString(Value v) {
     if ( v < 0 || v >= 2 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "ORIGIN", "TARGET" };
@@ -1605,6 +2548,25 @@ Ifc2x3::IfcDimensionExtentUsage::Value Ifc2x3::IfcDimensionExtentUsage::FromStri
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcDirectionSenseEnum::declaration() const { return *IFC2X3_IfcDirectionSenseEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcDirectionSenseEnum::Class() { return *IFC2X3_IfcDirectionSenseEnum_type; }
+
+Ifc2x3::IfcDirectionSenseEnum::IfcDirectionSenseEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcDirectionSenseEnum::IfcDirectionSenseEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcDirectionSenseEnum::IfcDirectionSenseEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcDirectionSenseEnum::ToString(Value v) {
     if ( v < 0 || v >= 2 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "POSITIVE", "NEGATIVE" };
@@ -1615,6 +2577,25 @@ Ifc2x3::IfcDirectionSenseEnum::Value Ifc2x3::IfcDirectionSenseEnum::FromString(c
     if (s == "POSITIVE") return ::Ifc2x3::IfcDirectionSenseEnum::IfcDirectionSense_POSITIVE;
     if (s == "NEGATIVE") return ::Ifc2x3::IfcDirectionSenseEnum::IfcDirectionSense_NEGATIVE;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcDistributionChamberElementTypeEnum::declaration() const { return *IFC2X3_IfcDistributionChamberElementTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcDistributionChamberElementTypeEnum::Class() { return *IFC2X3_IfcDistributionChamberElementTypeEnum_type; }
+
+Ifc2x3::IfcDistributionChamberElementTypeEnum::IfcDistributionChamberElementTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcDistributionChamberElementTypeEnum::IfcDistributionChamberElementTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcDistributionChamberElementTypeEnum::IfcDistributionChamberElementTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcDistributionChamberElementTypeEnum::ToString(Value v) {
@@ -1637,6 +2618,25 @@ Ifc2x3::IfcDistributionChamberElementTypeEnum::Value Ifc2x3::IfcDistributionCham
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcDocumentConfidentialityEnum::declaration() const { return *IFC2X3_IfcDocumentConfidentialityEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcDocumentConfidentialityEnum::Class() { return *IFC2X3_IfcDocumentConfidentialityEnum_type; }
+
+Ifc2x3::IfcDocumentConfidentialityEnum::IfcDocumentConfidentialityEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcDocumentConfidentialityEnum::IfcDocumentConfidentialityEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcDocumentConfidentialityEnum::IfcDocumentConfidentialityEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcDocumentConfidentialityEnum::ToString(Value v) {
     if ( v < 0 || v >= 6 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "PUBLIC", "RESTRICTED", "CONFIDENTIAL", "PERSONAL", "USERDEFINED", "NOTDEFINED" };
@@ -1653,6 +2653,25 @@ Ifc2x3::IfcDocumentConfidentialityEnum::Value Ifc2x3::IfcDocumentConfidentiality
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcDocumentStatusEnum::declaration() const { return *IFC2X3_IfcDocumentStatusEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcDocumentStatusEnum::Class() { return *IFC2X3_IfcDocumentStatusEnum_type; }
+
+Ifc2x3::IfcDocumentStatusEnum::IfcDocumentStatusEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcDocumentStatusEnum::IfcDocumentStatusEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcDocumentStatusEnum::IfcDocumentStatusEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcDocumentStatusEnum::ToString(Value v) {
     if ( v < 0 || v >= 5 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "DRAFT", "FINALDRAFT", "FINAL", "REVISION", "NOTDEFINED" };
@@ -1666,6 +2685,25 @@ Ifc2x3::IfcDocumentStatusEnum::Value Ifc2x3::IfcDocumentStatusEnum::FromString(c
     if (s == "REVISION") return ::Ifc2x3::IfcDocumentStatusEnum::IfcDocumentStatus_REVISION;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcDocumentStatusEnum::IfcDocumentStatus_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcDoorPanelOperationEnum::declaration() const { return *IFC2X3_IfcDoorPanelOperationEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcDoorPanelOperationEnum::Class() { return *IFC2X3_IfcDoorPanelOperationEnum_type; }
+
+Ifc2x3::IfcDoorPanelOperationEnum::IfcDoorPanelOperationEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcDoorPanelOperationEnum::IfcDoorPanelOperationEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcDoorPanelOperationEnum::IfcDoorPanelOperationEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcDoorPanelOperationEnum::ToString(Value v) {
@@ -1686,6 +2724,25 @@ Ifc2x3::IfcDoorPanelOperationEnum::Value Ifc2x3::IfcDoorPanelOperationEnum::From
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcDoorPanelPositionEnum::declaration() const { return *IFC2X3_IfcDoorPanelPositionEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcDoorPanelPositionEnum::Class() { return *IFC2X3_IfcDoorPanelPositionEnum_type; }
+
+Ifc2x3::IfcDoorPanelPositionEnum::IfcDoorPanelPositionEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcDoorPanelPositionEnum::IfcDoorPanelPositionEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcDoorPanelPositionEnum::IfcDoorPanelPositionEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcDoorPanelPositionEnum::ToString(Value v) {
     if ( v < 0 || v >= 4 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "LEFT", "MIDDLE", "RIGHT", "NOTDEFINED" };
@@ -1698,6 +2755,25 @@ Ifc2x3::IfcDoorPanelPositionEnum::Value Ifc2x3::IfcDoorPanelPositionEnum::FromSt
     if (s == "RIGHT") return ::Ifc2x3::IfcDoorPanelPositionEnum::IfcDoorPanelPosition_RIGHT;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcDoorPanelPositionEnum::IfcDoorPanelPosition_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcDoorStyleConstructionEnum::declaration() const { return *IFC2X3_IfcDoorStyleConstructionEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcDoorStyleConstructionEnum::Class() { return *IFC2X3_IfcDoorStyleConstructionEnum_type; }
+
+Ifc2x3::IfcDoorStyleConstructionEnum::IfcDoorStyleConstructionEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcDoorStyleConstructionEnum::IfcDoorStyleConstructionEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcDoorStyleConstructionEnum::IfcDoorStyleConstructionEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcDoorStyleConstructionEnum::ToString(Value v) {
@@ -1717,6 +2793,25 @@ Ifc2x3::IfcDoorStyleConstructionEnum::Value Ifc2x3::IfcDoorStyleConstructionEnum
     if (s == "USERDEFINED") return ::Ifc2x3::IfcDoorStyleConstructionEnum::IfcDoorStyleConstruction_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcDoorStyleConstructionEnum::IfcDoorStyleConstruction_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcDoorStyleOperationEnum::declaration() const { return *IFC2X3_IfcDoorStyleOperationEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcDoorStyleOperationEnum::Class() { return *IFC2X3_IfcDoorStyleOperationEnum_type; }
+
+Ifc2x3::IfcDoorStyleOperationEnum::IfcDoorStyleOperationEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcDoorStyleOperationEnum::IfcDoorStyleOperationEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcDoorStyleOperationEnum::IfcDoorStyleOperationEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcDoorStyleOperationEnum::ToString(Value v) {
@@ -1747,6 +2842,25 @@ Ifc2x3::IfcDoorStyleOperationEnum::Value Ifc2x3::IfcDoorStyleOperationEnum::From
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcDuctFittingTypeEnum::declaration() const { return *IFC2X3_IfcDuctFittingTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcDuctFittingTypeEnum::Class() { return *IFC2X3_IfcDuctFittingTypeEnum_type; }
+
+Ifc2x3::IfcDuctFittingTypeEnum::IfcDuctFittingTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcDuctFittingTypeEnum::IfcDuctFittingTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcDuctFittingTypeEnum::IfcDuctFittingTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcDuctFittingTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 9 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "BEND", "CONNECTOR", "ENTRY", "EXIT", "JUNCTION", "OBSTRUCTION", "TRANSITION", "USERDEFINED", "NOTDEFINED" };
@@ -1766,6 +2880,25 @@ Ifc2x3::IfcDuctFittingTypeEnum::Value Ifc2x3::IfcDuctFittingTypeEnum::FromString
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcDuctSegmentTypeEnum::declaration() const { return *IFC2X3_IfcDuctSegmentTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcDuctSegmentTypeEnum::Class() { return *IFC2X3_IfcDuctSegmentTypeEnum_type; }
+
+Ifc2x3::IfcDuctSegmentTypeEnum::IfcDuctSegmentTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcDuctSegmentTypeEnum::IfcDuctSegmentTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcDuctSegmentTypeEnum::IfcDuctSegmentTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcDuctSegmentTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 4 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "RIGIDSEGMENT", "FLEXIBLESEGMENT", "USERDEFINED", "NOTDEFINED" };
@@ -1778,6 +2911,25 @@ Ifc2x3::IfcDuctSegmentTypeEnum::Value Ifc2x3::IfcDuctSegmentTypeEnum::FromString
     if (s == "USERDEFINED") return ::Ifc2x3::IfcDuctSegmentTypeEnum::IfcDuctSegmentType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcDuctSegmentTypeEnum::IfcDuctSegmentType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcDuctSilencerTypeEnum::declaration() const { return *IFC2X3_IfcDuctSilencerTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcDuctSilencerTypeEnum::Class() { return *IFC2X3_IfcDuctSilencerTypeEnum_type; }
+
+Ifc2x3::IfcDuctSilencerTypeEnum::IfcDuctSilencerTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcDuctSilencerTypeEnum::IfcDuctSilencerTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcDuctSilencerTypeEnum::IfcDuctSilencerTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcDuctSilencerTypeEnum::ToString(Value v) {
@@ -1793,6 +2945,25 @@ Ifc2x3::IfcDuctSilencerTypeEnum::Value Ifc2x3::IfcDuctSilencerTypeEnum::FromStri
     if (s == "USERDEFINED") return ::Ifc2x3::IfcDuctSilencerTypeEnum::IfcDuctSilencerType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcDuctSilencerTypeEnum::IfcDuctSilencerType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcElectricApplianceTypeEnum::declaration() const { return *IFC2X3_IfcElectricApplianceTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcElectricApplianceTypeEnum::Class() { return *IFC2X3_IfcElectricApplianceTypeEnum_type; }
+
+Ifc2x3::IfcElectricApplianceTypeEnum::IfcElectricApplianceTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcElectricApplianceTypeEnum::IfcElectricApplianceTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcElectricApplianceTypeEnum::IfcElectricApplianceTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcElectricApplianceTypeEnum::ToString(Value v) {
@@ -1831,6 +3002,25 @@ Ifc2x3::IfcElectricApplianceTypeEnum::Value Ifc2x3::IfcElectricApplianceTypeEnum
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcElectricCurrentEnum::declaration() const { return *IFC2X3_IfcElectricCurrentEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcElectricCurrentEnum::Class() { return *IFC2X3_IfcElectricCurrentEnum_type; }
+
+Ifc2x3::IfcElectricCurrentEnum::IfcElectricCurrentEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcElectricCurrentEnum::IfcElectricCurrentEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcElectricCurrentEnum::IfcElectricCurrentEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcElectricCurrentEnum::ToString(Value v) {
     if ( v < 0 || v >= 3 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "ALTERNATING", "DIRECT", "NOTDEFINED" };
@@ -1842,6 +3032,25 @@ Ifc2x3::IfcElectricCurrentEnum::Value Ifc2x3::IfcElectricCurrentEnum::FromString
     if (s == "DIRECT") return ::Ifc2x3::IfcElectricCurrentEnum::IfcElectricCurrent_DIRECT;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcElectricCurrentEnum::IfcElectricCurrent_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcElectricDistributionPointFunctionEnum::declaration() const { return *IFC2X3_IfcElectricDistributionPointFunctionEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcElectricDistributionPointFunctionEnum::Class() { return *IFC2X3_IfcElectricDistributionPointFunctionEnum_type; }
+
+Ifc2x3::IfcElectricDistributionPointFunctionEnum::IfcElectricDistributionPointFunctionEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcElectricDistributionPointFunctionEnum::IfcElectricDistributionPointFunctionEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcElectricDistributionPointFunctionEnum::IfcElectricDistributionPointFunctionEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcElectricDistributionPointFunctionEnum::ToString(Value v) {
@@ -1865,6 +3074,25 @@ Ifc2x3::IfcElectricDistributionPointFunctionEnum::Value Ifc2x3::IfcElectricDistr
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcElectricFlowStorageDeviceTypeEnum::declaration() const { return *IFC2X3_IfcElectricFlowStorageDeviceTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcElectricFlowStorageDeviceTypeEnum::Class() { return *IFC2X3_IfcElectricFlowStorageDeviceTypeEnum_type; }
+
+Ifc2x3::IfcElectricFlowStorageDeviceTypeEnum::IfcElectricFlowStorageDeviceTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcElectricFlowStorageDeviceTypeEnum::IfcElectricFlowStorageDeviceTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcElectricFlowStorageDeviceTypeEnum::IfcElectricFlowStorageDeviceTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcElectricFlowStorageDeviceTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 7 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "BATTERY", "CAPACITORBANK", "HARMONICFILTER", "INDUCTORBANK", "UPS", "USERDEFINED", "NOTDEFINED" };
@@ -1882,6 +3110,25 @@ Ifc2x3::IfcElectricFlowStorageDeviceTypeEnum::Value Ifc2x3::IfcElectricFlowStora
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcElectricGeneratorTypeEnum::declaration() const { return *IFC2X3_IfcElectricGeneratorTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcElectricGeneratorTypeEnum::Class() { return *IFC2X3_IfcElectricGeneratorTypeEnum_type; }
+
+Ifc2x3::IfcElectricGeneratorTypeEnum::IfcElectricGeneratorTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcElectricGeneratorTypeEnum::IfcElectricGeneratorTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcElectricGeneratorTypeEnum::IfcElectricGeneratorTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcElectricGeneratorTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 2 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "USERDEFINED", "NOTDEFINED" };
@@ -1892,6 +3139,25 @@ Ifc2x3::IfcElectricGeneratorTypeEnum::Value Ifc2x3::IfcElectricGeneratorTypeEnum
     if (s == "USERDEFINED") return ::Ifc2x3::IfcElectricGeneratorTypeEnum::IfcElectricGeneratorType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcElectricGeneratorTypeEnum::IfcElectricGeneratorType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcElectricHeaterTypeEnum::declaration() const { return *IFC2X3_IfcElectricHeaterTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcElectricHeaterTypeEnum::Class() { return *IFC2X3_IfcElectricHeaterTypeEnum_type; }
+
+Ifc2x3::IfcElectricHeaterTypeEnum::IfcElectricHeaterTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcElectricHeaterTypeEnum::IfcElectricHeaterTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcElectricHeaterTypeEnum::IfcElectricHeaterTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcElectricHeaterTypeEnum::ToString(Value v) {
@@ -1907,6 +3173,25 @@ Ifc2x3::IfcElectricHeaterTypeEnum::Value Ifc2x3::IfcElectricHeaterTypeEnum::From
     if (s == "USERDEFINED") return ::Ifc2x3::IfcElectricHeaterTypeEnum::IfcElectricHeaterType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcElectricHeaterTypeEnum::IfcElectricHeaterType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcElectricMotorTypeEnum::declaration() const { return *IFC2X3_IfcElectricMotorTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcElectricMotorTypeEnum::Class() { return *IFC2X3_IfcElectricMotorTypeEnum_type; }
+
+Ifc2x3::IfcElectricMotorTypeEnum::IfcElectricMotorTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcElectricMotorTypeEnum::IfcElectricMotorTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcElectricMotorTypeEnum::IfcElectricMotorTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcElectricMotorTypeEnum::ToString(Value v) {
@@ -1926,6 +3211,25 @@ Ifc2x3::IfcElectricMotorTypeEnum::Value Ifc2x3::IfcElectricMotorTypeEnum::FromSt
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcElectricTimeControlTypeEnum::declaration() const { return *IFC2X3_IfcElectricTimeControlTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcElectricTimeControlTypeEnum::Class() { return *IFC2X3_IfcElectricTimeControlTypeEnum_type; }
+
+Ifc2x3::IfcElectricTimeControlTypeEnum::IfcElectricTimeControlTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcElectricTimeControlTypeEnum::IfcElectricTimeControlTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcElectricTimeControlTypeEnum::IfcElectricTimeControlTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcElectricTimeControlTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 5 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "TIMECLOCK", "TIMEDELAY", "RELAY", "USERDEFINED", "NOTDEFINED" };
@@ -1939,6 +3243,25 @@ Ifc2x3::IfcElectricTimeControlTypeEnum::Value Ifc2x3::IfcElectricTimeControlType
     if (s == "USERDEFINED") return ::Ifc2x3::IfcElectricTimeControlTypeEnum::IfcElectricTimeControlType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcElectricTimeControlTypeEnum::IfcElectricTimeControlType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcElementAssemblyTypeEnum::declaration() const { return *IFC2X3_IfcElementAssemblyTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcElementAssemblyTypeEnum::Class() { return *IFC2X3_IfcElementAssemblyTypeEnum_type; }
+
+Ifc2x3::IfcElementAssemblyTypeEnum::IfcElementAssemblyTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcElementAssemblyTypeEnum::IfcElementAssemblyTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcElementAssemblyTypeEnum::IfcElementAssemblyTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcElementAssemblyTypeEnum::ToString(Value v) {
@@ -1962,6 +3285,25 @@ Ifc2x3::IfcElementAssemblyTypeEnum::Value Ifc2x3::IfcElementAssemblyTypeEnum::Fr
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcElementCompositionEnum::declaration() const { return *IFC2X3_IfcElementCompositionEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcElementCompositionEnum::Class() { return *IFC2X3_IfcElementCompositionEnum_type; }
+
+Ifc2x3::IfcElementCompositionEnum::IfcElementCompositionEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcElementCompositionEnum::IfcElementCompositionEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcElementCompositionEnum::IfcElementCompositionEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcElementCompositionEnum::ToString(Value v) {
     if ( v < 0 || v >= 3 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "COMPLEX", "ELEMENT", "PARTIAL" };
@@ -1973,6 +3315,25 @@ Ifc2x3::IfcElementCompositionEnum::Value Ifc2x3::IfcElementCompositionEnum::From
     if (s == "ELEMENT") return ::Ifc2x3::IfcElementCompositionEnum::IfcElementComposition_ELEMENT;
     if (s == "PARTIAL") return ::Ifc2x3::IfcElementCompositionEnum::IfcElementComposition_PARTIAL;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcEnergySequenceEnum::declaration() const { return *IFC2X3_IfcEnergySequenceEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcEnergySequenceEnum::Class() { return *IFC2X3_IfcEnergySequenceEnum_type; }
+
+Ifc2x3::IfcEnergySequenceEnum::IfcEnergySequenceEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcEnergySequenceEnum::IfcEnergySequenceEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcEnergySequenceEnum::IfcEnergySequenceEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcEnergySequenceEnum::ToString(Value v) {
@@ -1991,6 +3352,25 @@ Ifc2x3::IfcEnergySequenceEnum::Value Ifc2x3::IfcEnergySequenceEnum::FromString(c
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcEnvironmentalImpactCategoryEnum::declaration() const { return *IFC2X3_IfcEnvironmentalImpactCategoryEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcEnvironmentalImpactCategoryEnum::Class() { return *IFC2X3_IfcEnvironmentalImpactCategoryEnum_type; }
+
+Ifc2x3::IfcEnvironmentalImpactCategoryEnum::IfcEnvironmentalImpactCategoryEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcEnvironmentalImpactCategoryEnum::IfcEnvironmentalImpactCategoryEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcEnvironmentalImpactCategoryEnum::IfcEnvironmentalImpactCategoryEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcEnvironmentalImpactCategoryEnum::ToString(Value v) {
     if ( v < 0 || v >= 8 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "COMBINEDVALUE", "DISPOSAL", "EXTRACTION", "INSTALLATION", "MANUFACTURE", "TRANSPORTATION", "USERDEFINED", "NOTDEFINED" };
@@ -2007,6 +3387,25 @@ Ifc2x3::IfcEnvironmentalImpactCategoryEnum::Value Ifc2x3::IfcEnvironmentalImpact
     if (s == "USERDEFINED") return ::Ifc2x3::IfcEnvironmentalImpactCategoryEnum::IfcEnvironmentalImpactCategory_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcEnvironmentalImpactCategoryEnum::IfcEnvironmentalImpactCategory_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcEvaporativeCoolerTypeEnum::declaration() const { return *IFC2X3_IfcEvaporativeCoolerTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcEvaporativeCoolerTypeEnum::Class() { return *IFC2X3_IfcEvaporativeCoolerTypeEnum_type; }
+
+Ifc2x3::IfcEvaporativeCoolerTypeEnum::IfcEvaporativeCoolerTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcEvaporativeCoolerTypeEnum::IfcEvaporativeCoolerTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcEvaporativeCoolerTypeEnum::IfcEvaporativeCoolerTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcEvaporativeCoolerTypeEnum::ToString(Value v) {
@@ -2030,6 +3429,25 @@ Ifc2x3::IfcEvaporativeCoolerTypeEnum::Value Ifc2x3::IfcEvaporativeCoolerTypeEnum
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcEvaporatorTypeEnum::declaration() const { return *IFC2X3_IfcEvaporatorTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcEvaporatorTypeEnum::Class() { return *IFC2X3_IfcEvaporatorTypeEnum_type; }
+
+Ifc2x3::IfcEvaporatorTypeEnum::IfcEvaporatorTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcEvaporatorTypeEnum::IfcEvaporatorTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcEvaporatorTypeEnum::IfcEvaporatorTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcEvaporatorTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 7 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "DIRECTEXPANSIONSHELLANDTUBE", "DIRECTEXPANSIONTUBEINTUBE", "DIRECTEXPANSIONBRAZEDPLATE", "FLOODEDSHELLANDTUBE", "SHELLANDCOIL", "USERDEFINED", "NOTDEFINED" };
@@ -2045,6 +3463,25 @@ Ifc2x3::IfcEvaporatorTypeEnum::Value Ifc2x3::IfcEvaporatorTypeEnum::FromString(c
     if (s == "USERDEFINED") return ::Ifc2x3::IfcEvaporatorTypeEnum::IfcEvaporatorType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcEvaporatorTypeEnum::IfcEvaporatorType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcFanTypeEnum::declaration() const { return *IFC2X3_IfcFanTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcFanTypeEnum::Class() { return *IFC2X3_IfcFanTypeEnum_type; }
+
+Ifc2x3::IfcFanTypeEnum::IfcFanTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcFanTypeEnum::IfcFanTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcFanTypeEnum::IfcFanTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcFanTypeEnum::ToString(Value v) {
@@ -2066,6 +3503,25 @@ Ifc2x3::IfcFanTypeEnum::Value Ifc2x3::IfcFanTypeEnum::FromString(const std::stri
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcFilterTypeEnum::declaration() const { return *IFC2X3_IfcFilterTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcFilterTypeEnum::Class() { return *IFC2X3_IfcFilterTypeEnum_type; }
+
+Ifc2x3::IfcFilterTypeEnum::IfcFilterTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcFilterTypeEnum::IfcFilterTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcFilterTypeEnum::IfcFilterTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcFilterTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 7 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "AIRPARTICLEFILTER", "ODORFILTER", "OILFILTER", "STRAINER", "WATERFILTER", "USERDEFINED", "NOTDEFINED" };
@@ -2081,6 +3537,25 @@ Ifc2x3::IfcFilterTypeEnum::Value Ifc2x3::IfcFilterTypeEnum::FromString(const std
     if (s == "USERDEFINED") return ::Ifc2x3::IfcFilterTypeEnum::IfcFilterType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcFilterTypeEnum::IfcFilterType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcFireSuppressionTerminalTypeEnum::declaration() const { return *IFC2X3_IfcFireSuppressionTerminalTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcFireSuppressionTerminalTypeEnum::Class() { return *IFC2X3_IfcFireSuppressionTerminalTypeEnum_type; }
+
+Ifc2x3::IfcFireSuppressionTerminalTypeEnum::IfcFireSuppressionTerminalTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcFireSuppressionTerminalTypeEnum::IfcFireSuppressionTerminalTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcFireSuppressionTerminalTypeEnum::IfcFireSuppressionTerminalTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcFireSuppressionTerminalTypeEnum::ToString(Value v) {
@@ -2100,6 +3575,25 @@ Ifc2x3::IfcFireSuppressionTerminalTypeEnum::Value Ifc2x3::IfcFireSuppressionTerm
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcFlowDirectionEnum::declaration() const { return *IFC2X3_IfcFlowDirectionEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcFlowDirectionEnum::Class() { return *IFC2X3_IfcFlowDirectionEnum_type; }
+
+Ifc2x3::IfcFlowDirectionEnum::IfcFlowDirectionEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcFlowDirectionEnum::IfcFlowDirectionEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcFlowDirectionEnum::IfcFlowDirectionEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcFlowDirectionEnum::ToString(Value v) {
     if ( v < 0 || v >= 4 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "SOURCE", "SINK", "SOURCEANDSINK", "NOTDEFINED" };
@@ -2112,6 +3606,25 @@ Ifc2x3::IfcFlowDirectionEnum::Value Ifc2x3::IfcFlowDirectionEnum::FromString(con
     if (s == "SOURCEANDSINK") return ::Ifc2x3::IfcFlowDirectionEnum::IfcFlowDirection_SOURCEANDSINK;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcFlowDirectionEnum::IfcFlowDirection_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcFlowInstrumentTypeEnum::declaration() const { return *IFC2X3_IfcFlowInstrumentTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcFlowInstrumentTypeEnum::Class() { return *IFC2X3_IfcFlowInstrumentTypeEnum_type; }
+
+Ifc2x3::IfcFlowInstrumentTypeEnum::IfcFlowInstrumentTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcFlowInstrumentTypeEnum::IfcFlowInstrumentTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcFlowInstrumentTypeEnum::IfcFlowInstrumentTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcFlowInstrumentTypeEnum::ToString(Value v) {
@@ -2134,6 +3647,25 @@ Ifc2x3::IfcFlowInstrumentTypeEnum::Value Ifc2x3::IfcFlowInstrumentTypeEnum::From
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcFlowMeterTypeEnum::declaration() const { return *IFC2X3_IfcFlowMeterTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcFlowMeterTypeEnum::Class() { return *IFC2X3_IfcFlowMeterTypeEnum_type; }
+
+Ifc2x3::IfcFlowMeterTypeEnum::IfcFlowMeterTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcFlowMeterTypeEnum::IfcFlowMeterTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcFlowMeterTypeEnum::IfcFlowMeterTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcFlowMeterTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 8 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "ELECTRICMETER", "ENERGYMETER", "FLOWMETER", "GASMETER", "OILMETER", "WATERMETER", "USERDEFINED", "NOTDEFINED" };
@@ -2152,6 +3684,25 @@ Ifc2x3::IfcFlowMeterTypeEnum::Value Ifc2x3::IfcFlowMeterTypeEnum::FromString(con
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcFootingTypeEnum::declaration() const { return *IFC2X3_IfcFootingTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcFootingTypeEnum::Class() { return *IFC2X3_IfcFootingTypeEnum_type; }
+
+Ifc2x3::IfcFootingTypeEnum::IfcFootingTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcFootingTypeEnum::IfcFootingTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcFootingTypeEnum::IfcFootingTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcFootingTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 6 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "FOOTING_BEAM", "PAD_FOOTING", "PILE_CAP", "STRIP_FOOTING", "USERDEFINED", "NOTDEFINED" };
@@ -2168,6 +3719,25 @@ Ifc2x3::IfcFootingTypeEnum::Value Ifc2x3::IfcFootingTypeEnum::FromString(const s
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcGasTerminalTypeEnum::declaration() const { return *IFC2X3_IfcGasTerminalTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcGasTerminalTypeEnum::Class() { return *IFC2X3_IfcGasTerminalTypeEnum_type; }
+
+Ifc2x3::IfcGasTerminalTypeEnum::IfcGasTerminalTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcGasTerminalTypeEnum::IfcGasTerminalTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcGasTerminalTypeEnum::IfcGasTerminalTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcGasTerminalTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 5 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "GASAPPLIANCE", "GASBOOSTER", "GASBURNER", "USERDEFINED", "NOTDEFINED" };
@@ -2181,6 +3751,25 @@ Ifc2x3::IfcGasTerminalTypeEnum::Value Ifc2x3::IfcGasTerminalTypeEnum::FromString
     if (s == "USERDEFINED") return ::Ifc2x3::IfcGasTerminalTypeEnum::IfcGasTerminalType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcGasTerminalTypeEnum::IfcGasTerminalType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcGeometricProjectionEnum::declaration() const { return *IFC2X3_IfcGeometricProjectionEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcGeometricProjectionEnum::Class() { return *IFC2X3_IfcGeometricProjectionEnum_type; }
+
+Ifc2x3::IfcGeometricProjectionEnum::IfcGeometricProjectionEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcGeometricProjectionEnum::IfcGeometricProjectionEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcGeometricProjectionEnum::IfcGeometricProjectionEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcGeometricProjectionEnum::ToString(Value v) {
@@ -2202,6 +3791,25 @@ Ifc2x3::IfcGeometricProjectionEnum::Value Ifc2x3::IfcGeometricProjectionEnum::Fr
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcGlobalOrLocalEnum::declaration() const { return *IFC2X3_IfcGlobalOrLocalEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcGlobalOrLocalEnum::Class() { return *IFC2X3_IfcGlobalOrLocalEnum_type; }
+
+Ifc2x3::IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcGlobalOrLocalEnum::ToString(Value v) {
     if ( v < 0 || v >= 2 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "GLOBAL_COORDS", "LOCAL_COORDS" };
@@ -2212,6 +3820,25 @@ Ifc2x3::IfcGlobalOrLocalEnum::Value Ifc2x3::IfcGlobalOrLocalEnum::FromString(con
     if (s == "GLOBAL_COORDS") return ::Ifc2x3::IfcGlobalOrLocalEnum::IfcGlobalOrLocal_GLOBAL_COORDS;
     if (s == "LOCAL_COORDS") return ::Ifc2x3::IfcGlobalOrLocalEnum::IfcGlobalOrLocal_LOCAL_COORDS;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcHeatExchangerTypeEnum::declaration() const { return *IFC2X3_IfcHeatExchangerTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcHeatExchangerTypeEnum::Class() { return *IFC2X3_IfcHeatExchangerTypeEnum_type; }
+
+Ifc2x3::IfcHeatExchangerTypeEnum::IfcHeatExchangerTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcHeatExchangerTypeEnum::IfcHeatExchangerTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcHeatExchangerTypeEnum::IfcHeatExchangerTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcHeatExchangerTypeEnum::ToString(Value v) {
@@ -2226,6 +3853,25 @@ Ifc2x3::IfcHeatExchangerTypeEnum::Value Ifc2x3::IfcHeatExchangerTypeEnum::FromSt
     if (s == "USERDEFINED") return ::Ifc2x3::IfcHeatExchangerTypeEnum::IfcHeatExchangerType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcHeatExchangerTypeEnum::IfcHeatExchangerType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcHumidifierTypeEnum::declaration() const { return *IFC2X3_IfcHumidifierTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcHumidifierTypeEnum::Class() { return *IFC2X3_IfcHumidifierTypeEnum_type; }
+
+Ifc2x3::IfcHumidifierTypeEnum::IfcHumidifierTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcHumidifierTypeEnum::IfcHumidifierTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcHumidifierTypeEnum::IfcHumidifierTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcHumidifierTypeEnum::ToString(Value v) {
@@ -2253,6 +3899,25 @@ Ifc2x3::IfcHumidifierTypeEnum::Value Ifc2x3::IfcHumidifierTypeEnum::FromString(c
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcInternalOrExternalEnum::declaration() const { return *IFC2X3_IfcInternalOrExternalEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcInternalOrExternalEnum::Class() { return *IFC2X3_IfcInternalOrExternalEnum_type; }
+
+Ifc2x3::IfcInternalOrExternalEnum::IfcInternalOrExternalEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcInternalOrExternalEnum::IfcInternalOrExternalEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcInternalOrExternalEnum::IfcInternalOrExternalEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcInternalOrExternalEnum::ToString(Value v) {
     if ( v < 0 || v >= 3 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "INTERNAL", "EXTERNAL", "NOTDEFINED" };
@@ -2264,6 +3929,25 @@ Ifc2x3::IfcInternalOrExternalEnum::Value Ifc2x3::IfcInternalOrExternalEnum::From
     if (s == "EXTERNAL") return ::Ifc2x3::IfcInternalOrExternalEnum::IfcInternalOrExternal_EXTERNAL;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcInternalOrExternalEnum::IfcInternalOrExternal_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcInventoryTypeEnum::declaration() const { return *IFC2X3_IfcInventoryTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcInventoryTypeEnum::Class() { return *IFC2X3_IfcInventoryTypeEnum_type; }
+
+Ifc2x3::IfcInventoryTypeEnum::IfcInventoryTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcInventoryTypeEnum::IfcInventoryTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcInventoryTypeEnum::IfcInventoryTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcInventoryTypeEnum::ToString(Value v) {
@@ -2281,6 +3965,25 @@ Ifc2x3::IfcInventoryTypeEnum::Value Ifc2x3::IfcInventoryTypeEnum::FromString(con
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcJunctionBoxTypeEnum::declaration() const { return *IFC2X3_IfcJunctionBoxTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcJunctionBoxTypeEnum::Class() { return *IFC2X3_IfcJunctionBoxTypeEnum_type; }
+
+Ifc2x3::IfcJunctionBoxTypeEnum::IfcJunctionBoxTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcJunctionBoxTypeEnum::IfcJunctionBoxTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcJunctionBoxTypeEnum::IfcJunctionBoxTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcJunctionBoxTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 2 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "USERDEFINED", "NOTDEFINED" };
@@ -2291,6 +3994,25 @@ Ifc2x3::IfcJunctionBoxTypeEnum::Value Ifc2x3::IfcJunctionBoxTypeEnum::FromString
     if (s == "USERDEFINED") return ::Ifc2x3::IfcJunctionBoxTypeEnum::IfcJunctionBoxType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcJunctionBoxTypeEnum::IfcJunctionBoxType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcLampTypeEnum::declaration() const { return *IFC2X3_IfcLampTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcLampTypeEnum::Class() { return *IFC2X3_IfcLampTypeEnum_type; }
+
+Ifc2x3::IfcLampTypeEnum::IfcLampTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcLampTypeEnum::IfcLampTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcLampTypeEnum::IfcLampTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcLampTypeEnum::ToString(Value v) {
@@ -2311,6 +4033,25 @@ Ifc2x3::IfcLampTypeEnum::Value Ifc2x3::IfcLampTypeEnum::FromString(const std::st
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcLayerSetDirectionEnum::declaration() const { return *IFC2X3_IfcLayerSetDirectionEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcLayerSetDirectionEnum::Class() { return *IFC2X3_IfcLayerSetDirectionEnum_type; }
+
+Ifc2x3::IfcLayerSetDirectionEnum::IfcLayerSetDirectionEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcLayerSetDirectionEnum::IfcLayerSetDirectionEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcLayerSetDirectionEnum::IfcLayerSetDirectionEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcLayerSetDirectionEnum::ToString(Value v) {
     if ( v < 0 || v >= 3 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "AXIS1", "AXIS2", "AXIS3" };
@@ -2322,6 +4063,25 @@ Ifc2x3::IfcLayerSetDirectionEnum::Value Ifc2x3::IfcLayerSetDirectionEnum::FromSt
     if (s == "AXIS2") return ::Ifc2x3::IfcLayerSetDirectionEnum::IfcLayerSetDirection_AXIS2;
     if (s == "AXIS3") return ::Ifc2x3::IfcLayerSetDirectionEnum::IfcLayerSetDirection_AXIS3;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcLightDistributionCurveEnum::declaration() const { return *IFC2X3_IfcLightDistributionCurveEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcLightDistributionCurveEnum::Class() { return *IFC2X3_IfcLightDistributionCurveEnum_type; }
+
+Ifc2x3::IfcLightDistributionCurveEnum::IfcLightDistributionCurveEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcLightDistributionCurveEnum::IfcLightDistributionCurveEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcLightDistributionCurveEnum::IfcLightDistributionCurveEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcLightDistributionCurveEnum::ToString(Value v) {
@@ -2336,6 +4096,25 @@ Ifc2x3::IfcLightDistributionCurveEnum::Value Ifc2x3::IfcLightDistributionCurveEn
     if (s == "TYPE_C") return ::Ifc2x3::IfcLightDistributionCurveEnum::IfcLightDistributionCurve_TYPE_C;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcLightDistributionCurveEnum::IfcLightDistributionCurve_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcLightEmissionSourceEnum::declaration() const { return *IFC2X3_IfcLightEmissionSourceEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcLightEmissionSourceEnum::Class() { return *IFC2X3_IfcLightEmissionSourceEnum_type; }
+
+Ifc2x3::IfcLightEmissionSourceEnum::IfcLightEmissionSourceEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcLightEmissionSourceEnum::IfcLightEmissionSourceEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcLightEmissionSourceEnum::IfcLightEmissionSourceEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcLightEmissionSourceEnum::ToString(Value v) {
@@ -2359,6 +4138,25 @@ Ifc2x3::IfcLightEmissionSourceEnum::Value Ifc2x3::IfcLightEmissionSourceEnum::Fr
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcLightFixtureTypeEnum::declaration() const { return *IFC2X3_IfcLightFixtureTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcLightFixtureTypeEnum::Class() { return *IFC2X3_IfcLightFixtureTypeEnum_type; }
+
+Ifc2x3::IfcLightFixtureTypeEnum::IfcLightFixtureTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcLightFixtureTypeEnum::IfcLightFixtureTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcLightFixtureTypeEnum::IfcLightFixtureTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcLightFixtureTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 4 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "POINTSOURCE", "DIRECTIONSOURCE", "USERDEFINED", "NOTDEFINED" };
@@ -2371,6 +4169,25 @@ Ifc2x3::IfcLightFixtureTypeEnum::Value Ifc2x3::IfcLightFixtureTypeEnum::FromStri
     if (s == "USERDEFINED") return ::Ifc2x3::IfcLightFixtureTypeEnum::IfcLightFixtureType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcLightFixtureTypeEnum::IfcLightFixtureType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcLoadGroupTypeEnum::declaration() const { return *IFC2X3_IfcLoadGroupTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcLoadGroupTypeEnum::Class() { return *IFC2X3_IfcLoadGroupTypeEnum_type; }
+
+Ifc2x3::IfcLoadGroupTypeEnum::IfcLoadGroupTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcLoadGroupTypeEnum::IfcLoadGroupTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcLoadGroupTypeEnum::IfcLoadGroupTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcLoadGroupTypeEnum::ToString(Value v) {
@@ -2389,6 +4206,25 @@ Ifc2x3::IfcLoadGroupTypeEnum::Value Ifc2x3::IfcLoadGroupTypeEnum::FromString(con
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcLogicalOperatorEnum::declaration() const { return *IFC2X3_IfcLogicalOperatorEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcLogicalOperatorEnum::Class() { return *IFC2X3_IfcLogicalOperatorEnum_type; }
+
+Ifc2x3::IfcLogicalOperatorEnum::IfcLogicalOperatorEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcLogicalOperatorEnum::IfcLogicalOperatorEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcLogicalOperatorEnum::IfcLogicalOperatorEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcLogicalOperatorEnum::ToString(Value v) {
     if ( v < 0 || v >= 2 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "LOGICALAND", "LOGICALOR" };
@@ -2399,6 +4235,25 @@ Ifc2x3::IfcLogicalOperatorEnum::Value Ifc2x3::IfcLogicalOperatorEnum::FromString
     if (s == "LOGICALAND") return ::Ifc2x3::IfcLogicalOperatorEnum::IfcLogicalOperator_LOGICALAND;
     if (s == "LOGICALOR") return ::Ifc2x3::IfcLogicalOperatorEnum::IfcLogicalOperator_LOGICALOR;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcMemberTypeEnum::declaration() const { return *IFC2X3_IfcMemberTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcMemberTypeEnum::Class() { return *IFC2X3_IfcMemberTypeEnum_type; }
+
+Ifc2x3::IfcMemberTypeEnum::IfcMemberTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcMemberTypeEnum::IfcMemberTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcMemberTypeEnum::IfcMemberTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcMemberTypeEnum::ToString(Value v) {
@@ -2425,6 +4280,25 @@ Ifc2x3::IfcMemberTypeEnum::Value Ifc2x3::IfcMemberTypeEnum::FromString(const std
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcMotorConnectionTypeEnum::declaration() const { return *IFC2X3_IfcMotorConnectionTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcMotorConnectionTypeEnum::Class() { return *IFC2X3_IfcMotorConnectionTypeEnum_type; }
+
+Ifc2x3::IfcMotorConnectionTypeEnum::IfcMotorConnectionTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcMotorConnectionTypeEnum::IfcMotorConnectionTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcMotorConnectionTypeEnum::IfcMotorConnectionTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcMotorConnectionTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 5 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "BELTDRIVE", "COUPLING", "DIRECTDRIVE", "USERDEFINED", "NOTDEFINED" };
@@ -2440,6 +4314,25 @@ Ifc2x3::IfcMotorConnectionTypeEnum::Value Ifc2x3::IfcMotorConnectionTypeEnum::Fr
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcNullStyle::declaration() const { return *IFC2X3_IfcNullStyle_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcNullStyle::Class() { return *IFC2X3_IfcNullStyle_type; }
+
+Ifc2x3::IfcNullStyle::IfcNullStyle(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcNullStyle::IfcNullStyle(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcNullStyle::IfcNullStyle(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcNullStyle::ToString(Value v) {
     if ( v < 0 || v >= 1 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "NULL" };
@@ -2449,6 +4342,25 @@ const char* Ifc2x3::IfcNullStyle::ToString(Value v) {
 Ifc2x3::IfcNullStyle::Value Ifc2x3::IfcNullStyle::FromString(const std::string& s) {
     if (s == "NULL") return ::Ifc2x3::IfcNullStyle::IfcNullStyle_NULL;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcObjectTypeEnum::declaration() const { return *IFC2X3_IfcObjectTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcObjectTypeEnum::Class() { return *IFC2X3_IfcObjectTypeEnum_type; }
+
+Ifc2x3::IfcObjectTypeEnum::IfcObjectTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcObjectTypeEnum::IfcObjectTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcObjectTypeEnum::IfcObjectTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcObjectTypeEnum::ToString(Value v) {
@@ -2469,6 +4381,25 @@ Ifc2x3::IfcObjectTypeEnum::Value Ifc2x3::IfcObjectTypeEnum::FromString(const std
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcObjectiveEnum::declaration() const { return *IFC2X3_IfcObjectiveEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcObjectiveEnum::Class() { return *IFC2X3_IfcObjectiveEnum_type; }
+
+Ifc2x3::IfcObjectiveEnum::IfcObjectiveEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcObjectiveEnum::IfcObjectiveEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcObjectiveEnum::IfcObjectiveEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcObjectiveEnum::ToString(Value v) {
     if ( v < 0 || v >= 8 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "CODECOMPLIANCE", "DESIGNINTENT", "HEALTHANDSAFETY", "REQUIREMENT", "SPECIFICATION", "TRIGGERCONDITION", "USERDEFINED", "NOTDEFINED" };
@@ -2485,6 +4416,25 @@ Ifc2x3::IfcObjectiveEnum::Value Ifc2x3::IfcObjectiveEnum::FromString(const std::
     if (s == "USERDEFINED") return ::Ifc2x3::IfcObjectiveEnum::IfcObjective_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcObjectiveEnum::IfcObjective_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcOccupantTypeEnum::declaration() const { return *IFC2X3_IfcOccupantTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcOccupantTypeEnum::Class() { return *IFC2X3_IfcOccupantTypeEnum_type; }
+
+Ifc2x3::IfcOccupantTypeEnum::IfcOccupantTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcOccupantTypeEnum::IfcOccupantTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcOccupantTypeEnum::IfcOccupantTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcOccupantTypeEnum::ToString(Value v) {
@@ -2506,6 +4456,25 @@ Ifc2x3::IfcOccupantTypeEnum::Value Ifc2x3::IfcOccupantTypeEnum::FromString(const
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcOutletTypeEnum::declaration() const { return *IFC2X3_IfcOutletTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcOutletTypeEnum::Class() { return *IFC2X3_IfcOutletTypeEnum_type; }
+
+Ifc2x3::IfcOutletTypeEnum::IfcOutletTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcOutletTypeEnum::IfcOutletTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcOutletTypeEnum::IfcOutletTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcOutletTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 5 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "AUDIOVISUALOUTLET", "COMMUNICATIONSOUTLET", "POWEROUTLET", "USERDEFINED", "NOTDEFINED" };
@@ -2519,6 +4488,25 @@ Ifc2x3::IfcOutletTypeEnum::Value Ifc2x3::IfcOutletTypeEnum::FromString(const std
     if (s == "USERDEFINED") return ::Ifc2x3::IfcOutletTypeEnum::IfcOutletType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcOutletTypeEnum::IfcOutletType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcPermeableCoveringOperationEnum::declaration() const { return *IFC2X3_IfcPermeableCoveringOperationEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcPermeableCoveringOperationEnum::Class() { return *IFC2X3_IfcPermeableCoveringOperationEnum_type; }
+
+Ifc2x3::IfcPermeableCoveringOperationEnum::IfcPermeableCoveringOperationEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcPermeableCoveringOperationEnum::IfcPermeableCoveringOperationEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcPermeableCoveringOperationEnum::IfcPermeableCoveringOperationEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcPermeableCoveringOperationEnum::ToString(Value v) {
@@ -2536,6 +4524,25 @@ Ifc2x3::IfcPermeableCoveringOperationEnum::Value Ifc2x3::IfcPermeableCoveringOpe
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcPhysicalOrVirtualEnum::declaration() const { return *IFC2X3_IfcPhysicalOrVirtualEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcPhysicalOrVirtualEnum::Class() { return *IFC2X3_IfcPhysicalOrVirtualEnum_type; }
+
+Ifc2x3::IfcPhysicalOrVirtualEnum::IfcPhysicalOrVirtualEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcPhysicalOrVirtualEnum::IfcPhysicalOrVirtualEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcPhysicalOrVirtualEnum::IfcPhysicalOrVirtualEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcPhysicalOrVirtualEnum::ToString(Value v) {
     if ( v < 0 || v >= 3 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "PHYSICAL", "VIRTUAL", "NOTDEFINED" };
@@ -2547,6 +4554,25 @@ Ifc2x3::IfcPhysicalOrVirtualEnum::Value Ifc2x3::IfcPhysicalOrVirtualEnum::FromSt
     if (s == "VIRTUAL") return ::Ifc2x3::IfcPhysicalOrVirtualEnum::IfcPhysicalOrVirtual_VIRTUAL;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcPhysicalOrVirtualEnum::IfcPhysicalOrVirtual_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcPileConstructionEnum::declaration() const { return *IFC2X3_IfcPileConstructionEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcPileConstructionEnum::Class() { return *IFC2X3_IfcPileConstructionEnum_type; }
+
+Ifc2x3::IfcPileConstructionEnum::IfcPileConstructionEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcPileConstructionEnum::IfcPileConstructionEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcPileConstructionEnum::IfcPileConstructionEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcPileConstructionEnum::ToString(Value v) {
@@ -2565,6 +4591,25 @@ Ifc2x3::IfcPileConstructionEnum::Value Ifc2x3::IfcPileConstructionEnum::FromStri
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcPileTypeEnum::declaration() const { return *IFC2X3_IfcPileTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcPileTypeEnum::Class() { return *IFC2X3_IfcPileTypeEnum_type; }
+
+Ifc2x3::IfcPileTypeEnum::IfcPileTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcPileTypeEnum::IfcPileTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcPileTypeEnum::IfcPileTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcPileTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 5 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "COHESION", "FRICTION", "SUPPORT", "USERDEFINED", "NOTDEFINED" };
@@ -2578,6 +4623,25 @@ Ifc2x3::IfcPileTypeEnum::Value Ifc2x3::IfcPileTypeEnum::FromString(const std::st
     if (s == "USERDEFINED") return ::Ifc2x3::IfcPileTypeEnum::IfcPileType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcPileTypeEnum::IfcPileType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcPipeFittingTypeEnum::declaration() const { return *IFC2X3_IfcPipeFittingTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcPipeFittingTypeEnum::Class() { return *IFC2X3_IfcPipeFittingTypeEnum_type; }
+
+Ifc2x3::IfcPipeFittingTypeEnum::IfcPipeFittingTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcPipeFittingTypeEnum::IfcPipeFittingTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcPipeFittingTypeEnum::IfcPipeFittingTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcPipeFittingTypeEnum::ToString(Value v) {
@@ -2599,6 +4663,25 @@ Ifc2x3::IfcPipeFittingTypeEnum::Value Ifc2x3::IfcPipeFittingTypeEnum::FromString
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcPipeSegmentTypeEnum::declaration() const { return *IFC2X3_IfcPipeSegmentTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcPipeSegmentTypeEnum::Class() { return *IFC2X3_IfcPipeSegmentTypeEnum_type; }
+
+Ifc2x3::IfcPipeSegmentTypeEnum::IfcPipeSegmentTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcPipeSegmentTypeEnum::IfcPipeSegmentTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcPipeSegmentTypeEnum::IfcPipeSegmentTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcPipeSegmentTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 6 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "FLEXIBLESEGMENT", "RIGIDSEGMENT", "GUTTER", "SPOOL", "USERDEFINED", "NOTDEFINED" };
@@ -2615,6 +4698,25 @@ Ifc2x3::IfcPipeSegmentTypeEnum::Value Ifc2x3::IfcPipeSegmentTypeEnum::FromString
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcPlateTypeEnum::declaration() const { return *IFC2X3_IfcPlateTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcPlateTypeEnum::Class() { return *IFC2X3_IfcPlateTypeEnum_type; }
+
+Ifc2x3::IfcPlateTypeEnum::IfcPlateTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcPlateTypeEnum::IfcPlateTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcPlateTypeEnum::IfcPlateTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcPlateTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 4 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "CURTAIN_PANEL", "SHEET", "USERDEFINED", "NOTDEFINED" };
@@ -2627,6 +4729,25 @@ Ifc2x3::IfcPlateTypeEnum::Value Ifc2x3::IfcPlateTypeEnum::FromString(const std::
     if (s == "USERDEFINED") return ::Ifc2x3::IfcPlateTypeEnum::IfcPlateType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcPlateTypeEnum::IfcPlateType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcProcedureTypeEnum::declaration() const { return *IFC2X3_IfcProcedureTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcProcedureTypeEnum::Class() { return *IFC2X3_IfcProcedureTypeEnum_type; }
+
+Ifc2x3::IfcProcedureTypeEnum::IfcProcedureTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcProcedureTypeEnum::IfcProcedureTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcProcedureTypeEnum::IfcProcedureTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcProcedureTypeEnum::ToString(Value v) {
@@ -2648,6 +4769,25 @@ Ifc2x3::IfcProcedureTypeEnum::Value Ifc2x3::IfcProcedureTypeEnum::FromString(con
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcProfileTypeEnum::declaration() const { return *IFC2X3_IfcProfileTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcProfileTypeEnum::Class() { return *IFC2X3_IfcProfileTypeEnum_type; }
+
+Ifc2x3::IfcProfileTypeEnum::IfcProfileTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcProfileTypeEnum::IfcProfileTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcProfileTypeEnum::IfcProfileTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcProfileTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 2 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "CURVE", "AREA" };
@@ -2658,6 +4798,25 @@ Ifc2x3::IfcProfileTypeEnum::Value Ifc2x3::IfcProfileTypeEnum::FromString(const s
     if (s == "CURVE") return ::Ifc2x3::IfcProfileTypeEnum::IfcProfileType_CURVE;
     if (s == "AREA") return ::Ifc2x3::IfcProfileTypeEnum::IfcProfileType_AREA;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcProjectOrderRecordTypeEnum::declaration() const { return *IFC2X3_IfcProjectOrderRecordTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcProjectOrderRecordTypeEnum::Class() { return *IFC2X3_IfcProjectOrderRecordTypeEnum_type; }
+
+Ifc2x3::IfcProjectOrderRecordTypeEnum::IfcProjectOrderRecordTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcProjectOrderRecordTypeEnum::IfcProjectOrderRecordTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcProjectOrderRecordTypeEnum::IfcProjectOrderRecordTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcProjectOrderRecordTypeEnum::ToString(Value v) {
@@ -2677,6 +4836,25 @@ Ifc2x3::IfcProjectOrderRecordTypeEnum::Value Ifc2x3::IfcProjectOrderRecordTypeEn
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcProjectOrderTypeEnum::declaration() const { return *IFC2X3_IfcProjectOrderTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcProjectOrderTypeEnum::Class() { return *IFC2X3_IfcProjectOrderTypeEnum_type; }
+
+Ifc2x3::IfcProjectOrderTypeEnum::IfcProjectOrderTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcProjectOrderTypeEnum::IfcProjectOrderTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcProjectOrderTypeEnum::IfcProjectOrderTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcProjectOrderTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 7 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "CHANGEORDER", "MAINTENANCEWORKORDER", "MOVEORDER", "PURCHASEORDER", "WORKORDER", "USERDEFINED", "NOTDEFINED" };
@@ -2694,6 +4872,25 @@ Ifc2x3::IfcProjectOrderTypeEnum::Value Ifc2x3::IfcProjectOrderTypeEnum::FromStri
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcProjectedOrTrueLengthEnum::declaration() const { return *IFC2X3_IfcProjectedOrTrueLengthEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcProjectedOrTrueLengthEnum::Class() { return *IFC2X3_IfcProjectedOrTrueLengthEnum_type; }
+
+Ifc2x3::IfcProjectedOrTrueLengthEnum::IfcProjectedOrTrueLengthEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcProjectedOrTrueLengthEnum::IfcProjectedOrTrueLengthEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcProjectedOrTrueLengthEnum::IfcProjectedOrTrueLengthEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcProjectedOrTrueLengthEnum::ToString(Value v) {
     if ( v < 0 || v >= 2 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "PROJECTED_LENGTH", "TRUE_LENGTH" };
@@ -2704,6 +4901,25 @@ Ifc2x3::IfcProjectedOrTrueLengthEnum::Value Ifc2x3::IfcProjectedOrTrueLengthEnum
     if (s == "PROJECTED_LENGTH") return ::Ifc2x3::IfcProjectedOrTrueLengthEnum::IfcProjectedOrTrueLength_PROJECTED_LENGTH;
     if (s == "TRUE_LENGTH") return ::Ifc2x3::IfcProjectedOrTrueLengthEnum::IfcProjectedOrTrueLength_TRUE_LENGTH;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcPropertySourceEnum::declaration() const { return *IFC2X3_IfcPropertySourceEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcPropertySourceEnum::Class() { return *IFC2X3_IfcPropertySourceEnum_type; }
+
+Ifc2x3::IfcPropertySourceEnum::IfcPropertySourceEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcPropertySourceEnum::IfcPropertySourceEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcPropertySourceEnum::IfcPropertySourceEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcPropertySourceEnum::ToString(Value v) {
@@ -2725,6 +4941,25 @@ Ifc2x3::IfcPropertySourceEnum::Value Ifc2x3::IfcPropertySourceEnum::FromString(c
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcProtectiveDeviceTypeEnum::declaration() const { return *IFC2X3_IfcProtectiveDeviceTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcProtectiveDeviceTypeEnum::Class() { return *IFC2X3_IfcProtectiveDeviceTypeEnum_type; }
+
+Ifc2x3::IfcProtectiveDeviceTypeEnum::IfcProtectiveDeviceTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcProtectiveDeviceTypeEnum::IfcProtectiveDeviceTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcProtectiveDeviceTypeEnum::IfcProtectiveDeviceTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcProtectiveDeviceTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 8 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "FUSEDISCONNECTOR", "CIRCUITBREAKER", "EARTHFAILUREDEVICE", "RESIDUALCURRENTCIRCUITBREAKER", "RESIDUALCURRENTSWITCH", "VARISTOR", "USERDEFINED", "NOTDEFINED" };
@@ -2741,6 +4976,25 @@ Ifc2x3::IfcProtectiveDeviceTypeEnum::Value Ifc2x3::IfcProtectiveDeviceTypeEnum::
     if (s == "USERDEFINED") return ::Ifc2x3::IfcProtectiveDeviceTypeEnum::IfcProtectiveDeviceType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcProtectiveDeviceTypeEnum::IfcProtectiveDeviceType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcPumpTypeEnum::declaration() const { return *IFC2X3_IfcPumpTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcPumpTypeEnum::Class() { return *IFC2X3_IfcPumpTypeEnum_type; }
+
+Ifc2x3::IfcPumpTypeEnum::IfcPumpTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcPumpTypeEnum::IfcPumpTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcPumpTypeEnum::IfcPumpTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcPumpTypeEnum::ToString(Value v) {
@@ -2760,6 +5014,25 @@ Ifc2x3::IfcPumpTypeEnum::Value Ifc2x3::IfcPumpTypeEnum::FromString(const std::st
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcRailingTypeEnum::declaration() const { return *IFC2X3_IfcRailingTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcRailingTypeEnum::Class() { return *IFC2X3_IfcRailingTypeEnum_type; }
+
+Ifc2x3::IfcRailingTypeEnum::IfcRailingTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcRailingTypeEnum::IfcRailingTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcRailingTypeEnum::IfcRailingTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcRailingTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 5 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "HANDRAIL", "GUARDRAIL", "BALUSTRADE", "USERDEFINED", "NOTDEFINED" };
@@ -2775,6 +5048,25 @@ Ifc2x3::IfcRailingTypeEnum::Value Ifc2x3::IfcRailingTypeEnum::FromString(const s
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcRampFlightTypeEnum::declaration() const { return *IFC2X3_IfcRampFlightTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcRampFlightTypeEnum::Class() { return *IFC2X3_IfcRampFlightTypeEnum_type; }
+
+Ifc2x3::IfcRampFlightTypeEnum::IfcRampFlightTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcRampFlightTypeEnum::IfcRampFlightTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcRampFlightTypeEnum::IfcRampFlightTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcRampFlightTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 4 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "STRAIGHT", "SPIRAL", "USERDEFINED", "NOTDEFINED" };
@@ -2787,6 +5079,25 @@ Ifc2x3::IfcRampFlightTypeEnum::Value Ifc2x3::IfcRampFlightTypeEnum::FromString(c
     if (s == "USERDEFINED") return ::Ifc2x3::IfcRampFlightTypeEnum::IfcRampFlightType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcRampFlightTypeEnum::IfcRampFlightType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcRampTypeEnum::declaration() const { return *IFC2X3_IfcRampTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcRampTypeEnum::Class() { return *IFC2X3_IfcRampTypeEnum_type; }
+
+Ifc2x3::IfcRampTypeEnum::IfcRampTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcRampTypeEnum::IfcRampTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcRampTypeEnum::IfcRampTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcRampTypeEnum::ToString(Value v) {
@@ -2805,6 +5116,25 @@ Ifc2x3::IfcRampTypeEnum::Value Ifc2x3::IfcRampTypeEnum::FromString(const std::st
     if (s == "USERDEFINED") return ::Ifc2x3::IfcRampTypeEnum::IfcRampType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcRampTypeEnum::IfcRampType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcReflectanceMethodEnum::declaration() const { return *IFC2X3_IfcReflectanceMethodEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcReflectanceMethodEnum::Class() { return *IFC2X3_IfcReflectanceMethodEnum_type; }
+
+Ifc2x3::IfcReflectanceMethodEnum::IfcReflectanceMethodEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcReflectanceMethodEnum::IfcReflectanceMethodEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcReflectanceMethodEnum::IfcReflectanceMethodEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcReflectanceMethodEnum::ToString(Value v) {
@@ -2827,6 +5157,25 @@ Ifc2x3::IfcReflectanceMethodEnum::Value Ifc2x3::IfcReflectanceMethodEnum::FromSt
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcReinforcingBarRoleEnum::declaration() const { return *IFC2X3_IfcReinforcingBarRoleEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcReinforcingBarRoleEnum::Class() { return *IFC2X3_IfcReinforcingBarRoleEnum_type; }
+
+Ifc2x3::IfcReinforcingBarRoleEnum::IfcReinforcingBarRoleEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcReinforcingBarRoleEnum::IfcReinforcingBarRoleEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcReinforcingBarRoleEnum::IfcReinforcingBarRoleEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcReinforcingBarRoleEnum::ToString(Value v) {
     if ( v < 0 || v >= 9 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "MAIN", "SHEAR", "LIGATURE", "STUD", "PUNCHING", "EDGE", "RING", "USERDEFINED", "NOTDEFINED" };
@@ -2846,6 +5195,25 @@ Ifc2x3::IfcReinforcingBarRoleEnum::Value Ifc2x3::IfcReinforcingBarRoleEnum::From
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcReinforcingBarSurfaceEnum::declaration() const { return *IFC2X3_IfcReinforcingBarSurfaceEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcReinforcingBarSurfaceEnum::Class() { return *IFC2X3_IfcReinforcingBarSurfaceEnum_type; }
+
+Ifc2x3::IfcReinforcingBarSurfaceEnum::IfcReinforcingBarSurfaceEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcReinforcingBarSurfaceEnum::IfcReinforcingBarSurfaceEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcReinforcingBarSurfaceEnum::IfcReinforcingBarSurfaceEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcReinforcingBarSurfaceEnum::ToString(Value v) {
     if ( v < 0 || v >= 2 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "PLAIN", "TEXTURED" };
@@ -2856,6 +5224,25 @@ Ifc2x3::IfcReinforcingBarSurfaceEnum::Value Ifc2x3::IfcReinforcingBarSurfaceEnum
     if (s == "PLAIN") return ::Ifc2x3::IfcReinforcingBarSurfaceEnum::IfcReinforcingBarSurface_PLAIN;
     if (s == "TEXTURED") return ::Ifc2x3::IfcReinforcingBarSurfaceEnum::IfcReinforcingBarSurface_TEXTURED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcResourceConsumptionEnum::declaration() const { return *IFC2X3_IfcResourceConsumptionEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcResourceConsumptionEnum::Class() { return *IFC2X3_IfcResourceConsumptionEnum_type; }
+
+Ifc2x3::IfcResourceConsumptionEnum::IfcResourceConsumptionEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcResourceConsumptionEnum::IfcResourceConsumptionEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcResourceConsumptionEnum::IfcResourceConsumptionEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcResourceConsumptionEnum::ToString(Value v) {
@@ -2876,6 +5263,25 @@ Ifc2x3::IfcResourceConsumptionEnum::Value Ifc2x3::IfcResourceConsumptionEnum::Fr
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcRibPlateDirectionEnum::declaration() const { return *IFC2X3_IfcRibPlateDirectionEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcRibPlateDirectionEnum::Class() { return *IFC2X3_IfcRibPlateDirectionEnum_type; }
+
+Ifc2x3::IfcRibPlateDirectionEnum::IfcRibPlateDirectionEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcRibPlateDirectionEnum::IfcRibPlateDirectionEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcRibPlateDirectionEnum::IfcRibPlateDirectionEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcRibPlateDirectionEnum::ToString(Value v) {
     if ( v < 0 || v >= 2 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "DIRECTION_X", "DIRECTION_Y" };
@@ -2886,6 +5292,25 @@ Ifc2x3::IfcRibPlateDirectionEnum::Value Ifc2x3::IfcRibPlateDirectionEnum::FromSt
     if (s == "DIRECTION_X") return ::Ifc2x3::IfcRibPlateDirectionEnum::IfcRibPlateDirection_DIRECTION_X;
     if (s == "DIRECTION_Y") return ::Ifc2x3::IfcRibPlateDirectionEnum::IfcRibPlateDirection_DIRECTION_Y;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcRoleEnum::declaration() const { return *IFC2X3_IfcRoleEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcRoleEnum::Class() { return *IFC2X3_IfcRoleEnum_type; }
+
+Ifc2x3::IfcRoleEnum::IfcRoleEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcRoleEnum::IfcRoleEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcRoleEnum::IfcRoleEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcRoleEnum::ToString(Value v) {
@@ -2921,6 +5346,25 @@ Ifc2x3::IfcRoleEnum::Value Ifc2x3::IfcRoleEnum::FromString(const std::string& s)
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcRoofTypeEnum::declaration() const { return *IFC2X3_IfcRoofTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcRoofTypeEnum::Class() { return *IFC2X3_IfcRoofTypeEnum_type; }
+
+Ifc2x3::IfcRoofTypeEnum::IfcRoofTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcRoofTypeEnum::IfcRoofTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcRoofTypeEnum::IfcRoofTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcRoofTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 14 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "FLAT_ROOF", "SHED_ROOF", "GABLE_ROOF", "HIP_ROOF", "HIPPED_GABLE_ROOF", "GAMBREL_ROOF", "MANSARD_ROOF", "BARREL_ROOF", "RAINBOW_ROOF", "BUTTERFLY_ROOF", "PAVILION_ROOF", "DOME_ROOF", "FREEFORM", "NOTDEFINED" };
@@ -2943,6 +5387,25 @@ Ifc2x3::IfcRoofTypeEnum::Value Ifc2x3::IfcRoofTypeEnum::FromString(const std::st
     if (s == "FREEFORM") return ::Ifc2x3::IfcRoofTypeEnum::IfcRoofType_FREEFORM;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcRoofTypeEnum::IfcRoofType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcSIPrefix::declaration() const { return *IFC2X3_IfcSIPrefix_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcSIPrefix::Class() { return *IFC2X3_IfcSIPrefix_type; }
+
+Ifc2x3::IfcSIPrefix::IfcSIPrefix(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcSIPrefix::IfcSIPrefix(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcSIPrefix::IfcSIPrefix(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcSIPrefix::ToString(Value v) {
@@ -2969,6 +5432,25 @@ Ifc2x3::IfcSIPrefix::Value Ifc2x3::IfcSIPrefix::FromString(const std::string& s)
     if (s == "FEMTO") return ::Ifc2x3::IfcSIPrefix::IfcSIPrefix_FEMTO;
     if (s == "ATTO") return ::Ifc2x3::IfcSIPrefix::IfcSIPrefix_ATTO;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcSIUnitName::declaration() const { return *IFC2X3_IfcSIUnitName_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcSIUnitName::Class() { return *IFC2X3_IfcSIUnitName_type; }
+
+Ifc2x3::IfcSIUnitName::IfcSIUnitName(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcSIUnitName::IfcSIUnitName(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcSIUnitName::IfcSIUnitName(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcSIUnitName::ToString(Value v) {
@@ -3011,6 +5493,25 @@ Ifc2x3::IfcSIUnitName::Value Ifc2x3::IfcSIUnitName::FromString(const std::string
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcSanitaryTerminalTypeEnum::declaration() const { return *IFC2X3_IfcSanitaryTerminalTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcSanitaryTerminalTypeEnum::Class() { return *IFC2X3_IfcSanitaryTerminalTypeEnum_type; }
+
+Ifc2x3::IfcSanitaryTerminalTypeEnum::IfcSanitaryTerminalTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcSanitaryTerminalTypeEnum::IfcSanitaryTerminalTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcSanitaryTerminalTypeEnum::IfcSanitaryTerminalTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcSanitaryTerminalTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 12 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "BATH", "BIDET", "CISTERN", "SHOWER", "SINK", "SANITARYFOUNTAIN", "TOILETPAN", "URINAL", "WASHHANDBASIN", "WCSEAT", "USERDEFINED", "NOTDEFINED" };
@@ -3033,6 +5534,25 @@ Ifc2x3::IfcSanitaryTerminalTypeEnum::Value Ifc2x3::IfcSanitaryTerminalTypeEnum::
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcSectionTypeEnum::declaration() const { return *IFC2X3_IfcSectionTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcSectionTypeEnum::Class() { return *IFC2X3_IfcSectionTypeEnum_type; }
+
+Ifc2x3::IfcSectionTypeEnum::IfcSectionTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcSectionTypeEnum::IfcSectionTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcSectionTypeEnum::IfcSectionTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcSectionTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 2 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "UNIFORM", "TAPERED" };
@@ -3043,6 +5563,25 @@ Ifc2x3::IfcSectionTypeEnum::Value Ifc2x3::IfcSectionTypeEnum::FromString(const s
     if (s == "UNIFORM") return ::Ifc2x3::IfcSectionTypeEnum::IfcSectionType_UNIFORM;
     if (s == "TAPERED") return ::Ifc2x3::IfcSectionTypeEnum::IfcSectionType_TAPERED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcSensorTypeEnum::declaration() const { return *IFC2X3_IfcSensorTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcSensorTypeEnum::Class() { return *IFC2X3_IfcSensorTypeEnum_type; }
+
+Ifc2x3::IfcSensorTypeEnum::IfcSensorTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcSensorTypeEnum::IfcSensorTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcSensorTypeEnum::IfcSensorTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcSensorTypeEnum::ToString(Value v) {
@@ -3070,6 +5609,25 @@ Ifc2x3::IfcSensorTypeEnum::Value Ifc2x3::IfcSensorTypeEnum::FromString(const std
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcSequenceEnum::declaration() const { return *IFC2X3_IfcSequenceEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcSequenceEnum::Class() { return *IFC2X3_IfcSequenceEnum_type; }
+
+Ifc2x3::IfcSequenceEnum::IfcSequenceEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcSequenceEnum::IfcSequenceEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcSequenceEnum::IfcSequenceEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcSequenceEnum::ToString(Value v) {
     if ( v < 0 || v >= 5 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "START_START", "START_FINISH", "FINISH_START", "FINISH_FINISH", "NOTDEFINED" };
@@ -3083,6 +5641,25 @@ Ifc2x3::IfcSequenceEnum::Value Ifc2x3::IfcSequenceEnum::FromString(const std::st
     if (s == "FINISH_FINISH") return ::Ifc2x3::IfcSequenceEnum::IfcSequence_FINISH_FINISH;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcSequenceEnum::IfcSequence_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcServiceLifeFactorTypeEnum::declaration() const { return *IFC2X3_IfcServiceLifeFactorTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcServiceLifeFactorTypeEnum::Class() { return *IFC2X3_IfcServiceLifeFactorTypeEnum_type; }
+
+Ifc2x3::IfcServiceLifeFactorTypeEnum::IfcServiceLifeFactorTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcServiceLifeFactorTypeEnum::IfcServiceLifeFactorTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcServiceLifeFactorTypeEnum::IfcServiceLifeFactorTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcServiceLifeFactorTypeEnum::ToString(Value v) {
@@ -3104,6 +5681,25 @@ Ifc2x3::IfcServiceLifeFactorTypeEnum::Value Ifc2x3::IfcServiceLifeFactorTypeEnum
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcServiceLifeTypeEnum::declaration() const { return *IFC2X3_IfcServiceLifeTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcServiceLifeTypeEnum::Class() { return *IFC2X3_IfcServiceLifeTypeEnum_type; }
+
+Ifc2x3::IfcServiceLifeTypeEnum::IfcServiceLifeTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcServiceLifeTypeEnum::IfcServiceLifeTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcServiceLifeTypeEnum::IfcServiceLifeTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcServiceLifeTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 5 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "ACTUALSERVICELIFE", "EXPECTEDSERVICELIFE", "OPTIMISTICREFERENCESERVICELIFE", "PESSIMISTICREFERENCESERVICELIFE", "REFERENCESERVICELIFE" };
@@ -3117,6 +5713,25 @@ Ifc2x3::IfcServiceLifeTypeEnum::Value Ifc2x3::IfcServiceLifeTypeEnum::FromString
     if (s == "PESSIMISTICREFERENCESERVICELIFE") return ::Ifc2x3::IfcServiceLifeTypeEnum::IfcServiceLifeType_PESSIMISTICREFERENCESERVICELIFE;
     if (s == "REFERENCESERVICELIFE") return ::Ifc2x3::IfcServiceLifeTypeEnum::IfcServiceLifeType_REFERENCESERVICELIFE;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcSlabTypeEnum::declaration() const { return *IFC2X3_IfcSlabTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcSlabTypeEnum::Class() { return *IFC2X3_IfcSlabTypeEnum_type; }
+
+Ifc2x3::IfcSlabTypeEnum::IfcSlabTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcSlabTypeEnum::IfcSlabTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcSlabTypeEnum::IfcSlabTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcSlabTypeEnum::ToString(Value v) {
@@ -3135,6 +5750,25 @@ Ifc2x3::IfcSlabTypeEnum::Value Ifc2x3::IfcSlabTypeEnum::FromString(const std::st
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcSoundScaleEnum::declaration() const { return *IFC2X3_IfcSoundScaleEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcSoundScaleEnum::Class() { return *IFC2X3_IfcSoundScaleEnum_type; }
+
+Ifc2x3::IfcSoundScaleEnum::IfcSoundScaleEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcSoundScaleEnum::IfcSoundScaleEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcSoundScaleEnum::IfcSoundScaleEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcSoundScaleEnum::ToString(Value v) {
     if ( v < 0 || v >= 7 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "DBA", "DBB", "DBC", "NC", "NR", "USERDEFINED", "NOTDEFINED" };
@@ -3150,6 +5784,25 @@ Ifc2x3::IfcSoundScaleEnum::Value Ifc2x3::IfcSoundScaleEnum::FromString(const std
     if (s == "USERDEFINED") return ::Ifc2x3::IfcSoundScaleEnum::IfcSoundScale_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcSoundScaleEnum::IfcSoundScale_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcSpaceHeaterTypeEnum::declaration() const { return *IFC2X3_IfcSpaceHeaterTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcSpaceHeaterTypeEnum::Class() { return *IFC2X3_IfcSpaceHeaterTypeEnum_type; }
+
+Ifc2x3::IfcSpaceHeaterTypeEnum::IfcSpaceHeaterTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcSpaceHeaterTypeEnum::IfcSpaceHeaterTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcSpaceHeaterTypeEnum::IfcSpaceHeaterTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcSpaceHeaterTypeEnum::ToString(Value v) {
@@ -3171,6 +5824,25 @@ Ifc2x3::IfcSpaceHeaterTypeEnum::Value Ifc2x3::IfcSpaceHeaterTypeEnum::FromString
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcSpaceTypeEnum::declaration() const { return *IFC2X3_IfcSpaceTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcSpaceTypeEnum::Class() { return *IFC2X3_IfcSpaceTypeEnum_type; }
+
+Ifc2x3::IfcSpaceTypeEnum::IfcSpaceTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcSpaceTypeEnum::IfcSpaceTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcSpaceTypeEnum::IfcSpaceTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcSpaceTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 2 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "USERDEFINED", "NOTDEFINED" };
@@ -3181,6 +5853,25 @@ Ifc2x3::IfcSpaceTypeEnum::Value Ifc2x3::IfcSpaceTypeEnum::FromString(const std::
     if (s == "USERDEFINED") return ::Ifc2x3::IfcSpaceTypeEnum::IfcSpaceType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcSpaceTypeEnum::IfcSpaceType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcStackTerminalTypeEnum::declaration() const { return *IFC2X3_IfcStackTerminalTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcStackTerminalTypeEnum::Class() { return *IFC2X3_IfcStackTerminalTypeEnum_type; }
+
+Ifc2x3::IfcStackTerminalTypeEnum::IfcStackTerminalTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcStackTerminalTypeEnum::IfcStackTerminalTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcStackTerminalTypeEnum::IfcStackTerminalTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcStackTerminalTypeEnum::ToString(Value v) {
@@ -3198,6 +5889,25 @@ Ifc2x3::IfcStackTerminalTypeEnum::Value Ifc2x3::IfcStackTerminalTypeEnum::FromSt
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcStairFlightTypeEnum::declaration() const { return *IFC2X3_IfcStairFlightTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcStairFlightTypeEnum::Class() { return *IFC2X3_IfcStairFlightTypeEnum_type; }
+
+Ifc2x3::IfcStairFlightTypeEnum::IfcStairFlightTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcStairFlightTypeEnum::IfcStairFlightTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcStairFlightTypeEnum::IfcStairFlightTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcStairFlightTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 7 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "STRAIGHT", "WINDER", "SPIRAL", "CURVED", "FREEFORM", "USERDEFINED", "NOTDEFINED" };
@@ -3213,6 +5923,25 @@ Ifc2x3::IfcStairFlightTypeEnum::Value Ifc2x3::IfcStairFlightTypeEnum::FromString
     if (s == "USERDEFINED") return ::Ifc2x3::IfcStairFlightTypeEnum::IfcStairFlightType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcStairFlightTypeEnum::IfcStairFlightType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcStairTypeEnum::declaration() const { return *IFC2X3_IfcStairTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcStairTypeEnum::Class() { return *IFC2X3_IfcStairTypeEnum_type; }
+
+Ifc2x3::IfcStairTypeEnum::IfcStairTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcStairTypeEnum::IfcStairTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcStairTypeEnum::IfcStairTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcStairTypeEnum::ToString(Value v) {
@@ -3241,6 +5970,25 @@ Ifc2x3::IfcStairTypeEnum::Value Ifc2x3::IfcStairTypeEnum::FromString(const std::
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcStateEnum::declaration() const { return *IFC2X3_IfcStateEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcStateEnum::Class() { return *IFC2X3_IfcStateEnum_type; }
+
+Ifc2x3::IfcStateEnum::IfcStateEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcStateEnum::IfcStateEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcStateEnum::IfcStateEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcStateEnum::ToString(Value v) {
     if ( v < 0 || v >= 5 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "READWRITE", "READONLY", "LOCKED", "READWRITELOCKED", "READONLYLOCKED" };
@@ -3254,6 +6002,25 @@ Ifc2x3::IfcStateEnum::Value Ifc2x3::IfcStateEnum::FromString(const std::string& 
     if (s == "READWRITELOCKED") return ::Ifc2x3::IfcStateEnum::IfcState_READWRITELOCKED;
     if (s == "READONLYLOCKED") return ::Ifc2x3::IfcStateEnum::IfcState_READONLYLOCKED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcStructuralCurveTypeEnum::declaration() const { return *IFC2X3_IfcStructuralCurveTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcStructuralCurveTypeEnum::Class() { return *IFC2X3_IfcStructuralCurveTypeEnum_type; }
+
+Ifc2x3::IfcStructuralCurveTypeEnum::IfcStructuralCurveTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcStructuralCurveTypeEnum::IfcStructuralCurveTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcStructuralCurveTypeEnum::IfcStructuralCurveTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcStructuralCurveTypeEnum::ToString(Value v) {
@@ -3273,6 +6040,25 @@ Ifc2x3::IfcStructuralCurveTypeEnum::Value Ifc2x3::IfcStructuralCurveTypeEnum::Fr
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcStructuralSurfaceTypeEnum::declaration() const { return *IFC2X3_IfcStructuralSurfaceTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcStructuralSurfaceTypeEnum::Class() { return *IFC2X3_IfcStructuralSurfaceTypeEnum_type; }
+
+Ifc2x3::IfcStructuralSurfaceTypeEnum::IfcStructuralSurfaceTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcStructuralSurfaceTypeEnum::IfcStructuralSurfaceTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcStructuralSurfaceTypeEnum::IfcStructuralSurfaceTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcStructuralSurfaceTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 5 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "BENDING_ELEMENT", "MEMBRANE_ELEMENT", "SHELL", "USERDEFINED", "NOTDEFINED" };
@@ -3288,6 +6074,25 @@ Ifc2x3::IfcStructuralSurfaceTypeEnum::Value Ifc2x3::IfcStructuralSurfaceTypeEnum
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcSurfaceSide::declaration() const { return *IFC2X3_IfcSurfaceSide_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcSurfaceSide::Class() { return *IFC2X3_IfcSurfaceSide_type; }
+
+Ifc2x3::IfcSurfaceSide::IfcSurfaceSide(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcSurfaceSide::IfcSurfaceSide(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcSurfaceSide::IfcSurfaceSide(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcSurfaceSide::ToString(Value v) {
     if ( v < 0 || v >= 3 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "POSITIVE", "NEGATIVE", "BOTH" };
@@ -3299,6 +6104,25 @@ Ifc2x3::IfcSurfaceSide::Value Ifc2x3::IfcSurfaceSide::FromString(const std::stri
     if (s == "NEGATIVE") return ::Ifc2x3::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE;
     if (s == "BOTH") return ::Ifc2x3::IfcSurfaceSide::IfcSurfaceSide_BOTH;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcSurfaceTextureEnum::declaration() const { return *IFC2X3_IfcSurfaceTextureEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcSurfaceTextureEnum::Class() { return *IFC2X3_IfcSurfaceTextureEnum_type; }
+
+Ifc2x3::IfcSurfaceTextureEnum::IfcSurfaceTextureEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcSurfaceTextureEnum::IfcSurfaceTextureEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcSurfaceTextureEnum::IfcSurfaceTextureEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcSurfaceTextureEnum::ToString(Value v) {
@@ -3320,6 +6144,25 @@ Ifc2x3::IfcSurfaceTextureEnum::Value Ifc2x3::IfcSurfaceTextureEnum::FromString(c
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcSwitchingDeviceTypeEnum::declaration() const { return *IFC2X3_IfcSwitchingDeviceTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcSwitchingDeviceTypeEnum::Class() { return *IFC2X3_IfcSwitchingDeviceTypeEnum_type; }
+
+Ifc2x3::IfcSwitchingDeviceTypeEnum::IfcSwitchingDeviceTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcSwitchingDeviceTypeEnum::IfcSwitchingDeviceTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcSwitchingDeviceTypeEnum::IfcSwitchingDeviceTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcSwitchingDeviceTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 7 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "CONTACTOR", "EMERGENCYSTOP", "STARTER", "SWITCHDISCONNECTOR", "TOGGLESWITCH", "USERDEFINED", "NOTDEFINED" };
@@ -3335,6 +6178,25 @@ Ifc2x3::IfcSwitchingDeviceTypeEnum::Value Ifc2x3::IfcSwitchingDeviceTypeEnum::Fr
     if (s == "USERDEFINED") return ::Ifc2x3::IfcSwitchingDeviceTypeEnum::IfcSwitchingDeviceType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcSwitchingDeviceTypeEnum::IfcSwitchingDeviceType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcTankTypeEnum::declaration() const { return *IFC2X3_IfcTankTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcTankTypeEnum::Class() { return *IFC2X3_IfcTankTypeEnum_type; }
+
+Ifc2x3::IfcTankTypeEnum::IfcTankTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcTankTypeEnum::IfcTankTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcTankTypeEnum::IfcTankTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcTankTypeEnum::ToString(Value v) {
@@ -3353,6 +6215,25 @@ Ifc2x3::IfcTankTypeEnum::Value Ifc2x3::IfcTankTypeEnum::FromString(const std::st
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcTendonTypeEnum::declaration() const { return *IFC2X3_IfcTendonTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcTendonTypeEnum::Class() { return *IFC2X3_IfcTendonTypeEnum_type; }
+
+Ifc2x3::IfcTendonTypeEnum::IfcTendonTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcTendonTypeEnum::IfcTendonTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcTendonTypeEnum::IfcTendonTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcTendonTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 6 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "STRAND", "WIRE", "BAR", "COATED", "USERDEFINED", "NOTDEFINED" };
@@ -3369,6 +6250,25 @@ Ifc2x3::IfcTendonTypeEnum::Value Ifc2x3::IfcTendonTypeEnum::FromString(const std
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcTextPath::declaration() const { return *IFC2X3_IfcTextPath_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcTextPath::Class() { return *IFC2X3_IfcTextPath_type; }
+
+Ifc2x3::IfcTextPath::IfcTextPath(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcTextPath::IfcTextPath(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcTextPath::IfcTextPath(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcTextPath::ToString(Value v) {
     if ( v < 0 || v >= 4 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "LEFT", "RIGHT", "UP", "DOWN" };
@@ -3381,6 +6281,25 @@ Ifc2x3::IfcTextPath::Value Ifc2x3::IfcTextPath::FromString(const std::string& s)
     if (s == "UP") return ::Ifc2x3::IfcTextPath::IfcTextPath_UP;
     if (s == "DOWN") return ::Ifc2x3::IfcTextPath::IfcTextPath_DOWN;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcThermalLoadSourceEnum::declaration() const { return *IFC2X3_IfcThermalLoadSourceEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcThermalLoadSourceEnum::Class() { return *IFC2X3_IfcThermalLoadSourceEnum_type; }
+
+Ifc2x3::IfcThermalLoadSourceEnum::IfcThermalLoadSourceEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcThermalLoadSourceEnum::IfcThermalLoadSourceEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcThermalLoadSourceEnum::IfcThermalLoadSourceEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcThermalLoadSourceEnum::ToString(Value v) {
@@ -3406,6 +6325,25 @@ Ifc2x3::IfcThermalLoadSourceEnum::Value Ifc2x3::IfcThermalLoadSourceEnum::FromSt
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcThermalLoadTypeEnum::declaration() const { return *IFC2X3_IfcThermalLoadTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcThermalLoadTypeEnum::Class() { return *IFC2X3_IfcThermalLoadTypeEnum_type; }
+
+Ifc2x3::IfcThermalLoadTypeEnum::IfcThermalLoadTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcThermalLoadTypeEnum::IfcThermalLoadTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcThermalLoadTypeEnum::IfcThermalLoadTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcThermalLoadTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 4 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "SENSIBLE", "LATENT", "RADIANT", "NOTDEFINED" };
@@ -3418,6 +6356,25 @@ Ifc2x3::IfcThermalLoadTypeEnum::Value Ifc2x3::IfcThermalLoadTypeEnum::FromString
     if (s == "RADIANT") return ::Ifc2x3::IfcThermalLoadTypeEnum::IfcThermalLoadType_RADIANT;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcThermalLoadTypeEnum::IfcThermalLoadType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcTimeSeriesDataTypeEnum::declaration() const { return *IFC2X3_IfcTimeSeriesDataTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcTimeSeriesDataTypeEnum::Class() { return *IFC2X3_IfcTimeSeriesDataTypeEnum_type; }
+
+Ifc2x3::IfcTimeSeriesDataTypeEnum::IfcTimeSeriesDataTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcTimeSeriesDataTypeEnum::IfcTimeSeriesDataTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcTimeSeriesDataTypeEnum::IfcTimeSeriesDataTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcTimeSeriesDataTypeEnum::ToString(Value v) {
@@ -3437,6 +6394,25 @@ Ifc2x3::IfcTimeSeriesDataTypeEnum::Value Ifc2x3::IfcTimeSeriesDataTypeEnum::From
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcTimeSeriesScheduleTypeEnum::declaration() const { return *IFC2X3_IfcTimeSeriesScheduleTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcTimeSeriesScheduleTypeEnum::Class() { return *IFC2X3_IfcTimeSeriesScheduleTypeEnum_type; }
+
+Ifc2x3::IfcTimeSeriesScheduleTypeEnum::IfcTimeSeriesScheduleTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcTimeSeriesScheduleTypeEnum::IfcTimeSeriesScheduleTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcTimeSeriesScheduleTypeEnum::IfcTimeSeriesScheduleTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcTimeSeriesScheduleTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 6 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "ANNUAL", "MONTHLY", "WEEKLY", "DAILY", "USERDEFINED", "NOTDEFINED" };
@@ -3451,6 +6427,25 @@ Ifc2x3::IfcTimeSeriesScheduleTypeEnum::Value Ifc2x3::IfcTimeSeriesScheduleTypeEn
     if (s == "USERDEFINED") return ::Ifc2x3::IfcTimeSeriesScheduleTypeEnum::IfcTimeSeriesScheduleType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcTimeSeriesScheduleTypeEnum::IfcTimeSeriesScheduleType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcTransformerTypeEnum::declaration() const { return *IFC2X3_IfcTransformerTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcTransformerTypeEnum::Class() { return *IFC2X3_IfcTransformerTypeEnum_type; }
+
+Ifc2x3::IfcTransformerTypeEnum::IfcTransformerTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcTransformerTypeEnum::IfcTransformerTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcTransformerTypeEnum::IfcTransformerTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcTransformerTypeEnum::ToString(Value v) {
@@ -3468,6 +6463,25 @@ Ifc2x3::IfcTransformerTypeEnum::Value Ifc2x3::IfcTransformerTypeEnum::FromString
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcTransitionCode::declaration() const { return *IFC2X3_IfcTransitionCode_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcTransitionCode::Class() { return *IFC2X3_IfcTransitionCode_type; }
+
+Ifc2x3::IfcTransitionCode::IfcTransitionCode(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcTransitionCode::IfcTransitionCode(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcTransitionCode::IfcTransitionCode(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcTransitionCode::ToString(Value v) {
     if ( v < 0 || v >= 4 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "DISCONTINUOUS", "CONTINUOUS", "CONTSAMEGRADIENT", "CONTSAMEGRADIENTSAMECURVATURE" };
@@ -3480,6 +6494,25 @@ Ifc2x3::IfcTransitionCode::Value Ifc2x3::IfcTransitionCode::FromString(const std
     if (s == "CONTSAMEGRADIENT") return ::Ifc2x3::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT;
     if (s == "CONTSAMEGRADIENTSAMECURVATURE") return ::Ifc2x3::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENTSAMECURVATURE;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcTransportElementTypeEnum::declaration() const { return *IFC2X3_IfcTransportElementTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcTransportElementTypeEnum::Class() { return *IFC2X3_IfcTransportElementTypeEnum_type; }
+
+Ifc2x3::IfcTransportElementTypeEnum::IfcTransportElementTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcTransportElementTypeEnum::IfcTransportElementTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcTransportElementTypeEnum::IfcTransportElementTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcTransportElementTypeEnum::ToString(Value v) {
@@ -3497,6 +6530,25 @@ Ifc2x3::IfcTransportElementTypeEnum::Value Ifc2x3::IfcTransportElementTypeEnum::
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcTrimmingPreference::declaration() const { return *IFC2X3_IfcTrimmingPreference_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcTrimmingPreference::Class() { return *IFC2X3_IfcTrimmingPreference_type; }
+
+Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcTrimmingPreference::ToString(Value v) {
     if ( v < 0 || v >= 3 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "CARTESIAN", "PARAMETER", "UNSPECIFIED" };
@@ -3510,6 +6562,25 @@ Ifc2x3::IfcTrimmingPreference::Value Ifc2x3::IfcTrimmingPreference::FromString(c
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcTubeBundleTypeEnum::declaration() const { return *IFC2X3_IfcTubeBundleTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcTubeBundleTypeEnum::Class() { return *IFC2X3_IfcTubeBundleTypeEnum_type; }
+
+Ifc2x3::IfcTubeBundleTypeEnum::IfcTubeBundleTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcTubeBundleTypeEnum::IfcTubeBundleTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcTubeBundleTypeEnum::IfcTubeBundleTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcTubeBundleTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 3 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "FINNED", "USERDEFINED", "NOTDEFINED" };
@@ -3521,6 +6592,25 @@ Ifc2x3::IfcTubeBundleTypeEnum::Value Ifc2x3::IfcTubeBundleTypeEnum::FromString(c
     if (s == "USERDEFINED") return ::Ifc2x3::IfcTubeBundleTypeEnum::IfcTubeBundleType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcTubeBundleTypeEnum::IfcTubeBundleType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcUnitEnum::declaration() const { return *IFC2X3_IfcUnitEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcUnitEnum::Class() { return *IFC2X3_IfcUnitEnum_type; }
+
+Ifc2x3::IfcUnitEnum::IfcUnitEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcUnitEnum::IfcUnitEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcUnitEnum::IfcUnitEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcUnitEnum::ToString(Value v) {
@@ -3563,6 +6653,25 @@ Ifc2x3::IfcUnitEnum::Value Ifc2x3::IfcUnitEnum::FromString(const std::string& s)
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcUnitaryEquipmentTypeEnum::declaration() const { return *IFC2X3_IfcUnitaryEquipmentTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcUnitaryEquipmentTypeEnum::Class() { return *IFC2X3_IfcUnitaryEquipmentTypeEnum_type; }
+
+Ifc2x3::IfcUnitaryEquipmentTypeEnum::IfcUnitaryEquipmentTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcUnitaryEquipmentTypeEnum::IfcUnitaryEquipmentTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcUnitaryEquipmentTypeEnum::IfcUnitaryEquipmentTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcUnitaryEquipmentTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 6 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "AIRHANDLER", "AIRCONDITIONINGUNIT", "SPLITSYSTEM", "ROOFTOPUNIT", "USERDEFINED", "NOTDEFINED" };
@@ -3577,6 +6686,25 @@ Ifc2x3::IfcUnitaryEquipmentTypeEnum::Value Ifc2x3::IfcUnitaryEquipmentTypeEnum::
     if (s == "USERDEFINED") return ::Ifc2x3::IfcUnitaryEquipmentTypeEnum::IfcUnitaryEquipmentType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcUnitaryEquipmentTypeEnum::IfcUnitaryEquipmentType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcValveTypeEnum::declaration() const { return *IFC2X3_IfcValveTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcValveTypeEnum::Class() { return *IFC2X3_IfcValveTypeEnum_type; }
+
+Ifc2x3::IfcValveTypeEnum::IfcValveTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcValveTypeEnum::IfcValveTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcValveTypeEnum::IfcValveTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcValveTypeEnum::ToString(Value v) {
@@ -3612,6 +6740,25 @@ Ifc2x3::IfcValveTypeEnum::Value Ifc2x3::IfcValveTypeEnum::FromString(const std::
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcVibrationIsolatorTypeEnum::declaration() const { return *IFC2X3_IfcVibrationIsolatorTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcVibrationIsolatorTypeEnum::Class() { return *IFC2X3_IfcVibrationIsolatorTypeEnum_type; }
+
+Ifc2x3::IfcVibrationIsolatorTypeEnum::IfcVibrationIsolatorTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcVibrationIsolatorTypeEnum::IfcVibrationIsolatorTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcVibrationIsolatorTypeEnum::IfcVibrationIsolatorTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcVibrationIsolatorTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 4 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "COMPRESSION", "SPRING", "USERDEFINED", "NOTDEFINED" };
@@ -3624,6 +6771,25 @@ Ifc2x3::IfcVibrationIsolatorTypeEnum::Value Ifc2x3::IfcVibrationIsolatorTypeEnum
     if (s == "USERDEFINED") return ::Ifc2x3::IfcVibrationIsolatorTypeEnum::IfcVibrationIsolatorType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcVibrationIsolatorTypeEnum::IfcVibrationIsolatorType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcWallTypeEnum::declaration() const { return *IFC2X3_IfcWallTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcWallTypeEnum::Class() { return *IFC2X3_IfcWallTypeEnum_type; }
+
+Ifc2x3::IfcWallTypeEnum::IfcWallTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcWallTypeEnum::IfcWallTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcWallTypeEnum::IfcWallTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcWallTypeEnum::ToString(Value v) {
@@ -3641,6 +6807,25 @@ Ifc2x3::IfcWallTypeEnum::Value Ifc2x3::IfcWallTypeEnum::FromString(const std::st
     if (s == "USERDEFINED") return ::Ifc2x3::IfcWallTypeEnum::IfcWallType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcWallTypeEnum::IfcWallType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcWasteTerminalTypeEnum::declaration() const { return *IFC2X3_IfcWasteTerminalTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcWasteTerminalTypeEnum::Class() { return *IFC2X3_IfcWasteTerminalTypeEnum_type; }
+
+Ifc2x3::IfcWasteTerminalTypeEnum::IfcWasteTerminalTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcWasteTerminalTypeEnum::IfcWasteTerminalTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcWasteTerminalTypeEnum::IfcWasteTerminalTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcWasteTerminalTypeEnum::ToString(Value v) {
@@ -3663,6 +6848,25 @@ Ifc2x3::IfcWasteTerminalTypeEnum::Value Ifc2x3::IfcWasteTerminalTypeEnum::FromSt
     if (s == "USERDEFINED") return ::Ifc2x3::IfcWasteTerminalTypeEnum::IfcWasteTerminalType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcWasteTerminalTypeEnum::IfcWasteTerminalType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcWindowPanelOperationEnum::declaration() const { return *IFC2X3_IfcWindowPanelOperationEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcWindowPanelOperationEnum::Class() { return *IFC2X3_IfcWindowPanelOperationEnum_type; }
+
+Ifc2x3::IfcWindowPanelOperationEnum::IfcWindowPanelOperationEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcWindowPanelOperationEnum::IfcWindowPanelOperationEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcWindowPanelOperationEnum::IfcWindowPanelOperationEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcWindowPanelOperationEnum::ToString(Value v) {
@@ -3689,6 +6893,25 @@ Ifc2x3::IfcWindowPanelOperationEnum::Value Ifc2x3::IfcWindowPanelOperationEnum::
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const IfcParse::enumeration_type& Ifc2x3::IfcWindowPanelPositionEnum::declaration() const { return *IFC2X3_IfcWindowPanelPositionEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcWindowPanelPositionEnum::Class() { return *IFC2X3_IfcWindowPanelPositionEnum_type; }
+
+Ifc2x3::IfcWindowPanelPositionEnum::IfcWindowPanelPositionEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcWindowPanelPositionEnum::IfcWindowPanelPositionEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcWindowPanelPositionEnum::IfcWindowPanelPositionEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
+}
+
 const char* Ifc2x3::IfcWindowPanelPositionEnum::ToString(Value v) {
     if ( v < 0 || v >= 6 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "LEFT", "MIDDLE", "RIGHT", "BOTTOM", "TOP", "NOTDEFINED" };
@@ -3703,6 +6926,25 @@ Ifc2x3::IfcWindowPanelPositionEnum::Value Ifc2x3::IfcWindowPanelPositionEnum::Fr
     if (s == "TOP") return ::Ifc2x3::IfcWindowPanelPositionEnum::IfcWindowPanelPosition_TOP;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcWindowPanelPositionEnum::IfcWindowPanelPosition_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcWindowStyleConstructionEnum::declaration() const { return *IFC2X3_IfcWindowStyleConstructionEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcWindowStyleConstructionEnum::Class() { return *IFC2X3_IfcWindowStyleConstructionEnum_type; }
+
+Ifc2x3::IfcWindowStyleConstructionEnum::IfcWindowStyleConstructionEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcWindowStyleConstructionEnum::IfcWindowStyleConstructionEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcWindowStyleConstructionEnum::IfcWindowStyleConstructionEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcWindowStyleConstructionEnum::ToString(Value v) {
@@ -3721,6 +6963,25 @@ Ifc2x3::IfcWindowStyleConstructionEnum::Value Ifc2x3::IfcWindowStyleConstruction
     if (s == "OTHER_CONSTRUCTION") return ::Ifc2x3::IfcWindowStyleConstructionEnum::IfcWindowStyleConstruction_OTHER_CONSTRUCTION;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcWindowStyleConstructionEnum::IfcWindowStyleConstruction_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcWindowStyleOperationEnum::declaration() const { return *IFC2X3_IfcWindowStyleOperationEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcWindowStyleOperationEnum::Class() { return *IFC2X3_IfcWindowStyleOperationEnum_type; }
+
+Ifc2x3::IfcWindowStyleOperationEnum::IfcWindowStyleOperationEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcWindowStyleOperationEnum::IfcWindowStyleOperationEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcWindowStyleOperationEnum::IfcWindowStyleOperationEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcWindowStyleOperationEnum::ToString(Value v) {
@@ -3742,6 +7003,25 @@ Ifc2x3::IfcWindowStyleOperationEnum::Value Ifc2x3::IfcWindowStyleOperationEnum::
     if (s == "USERDEFINED") return ::Ifc2x3::IfcWindowStyleOperationEnum::IfcWindowStyleOperation_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc2x3::IfcWindowStyleOperationEnum::IfcWindowStyleOperation_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+const IfcParse::enumeration_type& Ifc2x3::IfcWorkControlTypeEnum::declaration() const { return *IFC2X3_IfcWorkControlTypeEnum_type; }
+const IfcParse::enumeration_type& Ifc2x3::IfcWorkControlTypeEnum::Class() { return *IFC2X3_IfcWorkControlTypeEnum_type; }
+
+Ifc2x3::IfcWorkControlTypeEnum::IfcWorkControlTypeEnum(IfcEntityInstanceData* e) {
+    data_ = e;
+}
+
+Ifc2x3::IfcWorkControlTypeEnum::IfcWorkControlTypeEnum(Value v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
+    data_->setArgument(0,attr);
+}
+
+Ifc2x3::IfcWorkControlTypeEnum::IfcWorkControlTypeEnum(const std::string& v) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
+    data_->setArgument(0,attr);
 }
 
 const char* Ifc2x3::IfcWorkControlTypeEnum::ToString(Value v) {

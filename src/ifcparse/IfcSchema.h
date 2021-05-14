@@ -443,10 +443,12 @@ namespace IfcParse {
 
 		const std::string& name() const { return name_; }
 
-		IfcUtil::IfcBaseClass* instantiate(IfcEntityInstanceData* data) const { return (*factory_)(data); }
+		IfcUtil::IfcBaseClass* instantiate(IfcEntityInstanceData* data) const;
 	};
 
 	const schema_definition* schema_by_name(const std::string&);
+
+	void register_schema(schema_definition*);
 }
 
 #endif

@@ -1,0 +1,29 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 95abbe21..293c951c 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -284,10 +284,10 @@ add_subdirectory(COLLADASaxFrameworkLoader)
+ add_subdirectory(COLLADAStreamWriter)
+ 
+ # building COLLADAValidator app
+-add_subdirectory(COLLADAValidator)
++# add_subdirectory(COLLADAValidator)
+ 
+ # DAE validator app
+-add_subdirectory(DAEValidator)
++# add_subdirectory(DAEValidator)
+ 
+ # Library export
+ install(EXPORT LibraryExport DESTINATION ${OPENCOLLADA_INST_CMAKECONFIG} FILE OpenCOLLADATargets.cmake)
+diff --git a/GeneratedSaxParser/src/GeneratedSaxParserUtils.cpp b/GeneratedSaxParser/src/GeneratedSaxParserUtils.cpp
+index 1f9a3eef..dd6f5c59 100644
+--- a/GeneratedSaxParser/src/GeneratedSaxParserUtils.cpp
++++ b/GeneratedSaxParser/src/GeneratedSaxParserUtils.cpp
+@@ -10,6 +10,7 @@
+ 
+ #include "GeneratedSaxParserUtils.h"
+ #include <math.h>
++#include <cmath>
+ #include <memory>
+ #include <string.h>
+ #include <limits>

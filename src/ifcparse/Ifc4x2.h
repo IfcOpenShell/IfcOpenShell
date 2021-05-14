@@ -635,7 +635,7 @@ typedef IfcUtil::IfcBaseClass IfcVectorOrDirection;
 /// 
 /// HISTORY: New type in IFC 2x4.
 typedef IfcUtil::IfcBaseClass IfcWarpingStiffnessSelect;
-struct IfcActionRequestTypeEnum {
+class IFC_PARSE_API IfcActionRequestTypeEnum : public IfcUtil::IfcBaseType {
 /// IfcActionRequestTypeEnum defines the types of sources through which a request can be made. 
 ///   HISTORY: New Enumeration in IFC2x4. 
 ///   Enumeration: 
@@ -647,21 +647,37 @@ struct IfcActionRequestTypeEnum {
 /// VERBAL: Request was made verbally in person.  
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcActionRequestType_EMAIL, IfcActionRequestType_FAX, IfcActionRequestType_PHONE, IfcActionRequestType_POST, IfcActionRequestType_VERBAL, IfcActionRequestType_USERDEFINED, IfcActionRequestType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcActionRequestType_EMAIL, IfcActionRequestType_FAX, IfcActionRequestType_PHONE, IfcActionRequestType_POST, IfcActionRequestType_VERBAL, IfcActionRequestType_USERDEFINED, IfcActionRequestType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcActionRequestTypeEnum (IfcEntityInstanceData* e);
+    IfcActionRequestTypeEnum (Value v);
+    IfcActionRequestTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcActionSourceTypeEnum {
+class IFC_PARSE_API IfcActionSourceTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI:This enumeration type contains possible
 ///   action sources. 
 /// 
 /// HISTORY: New type in Release IFC2x
 ///   Edition 2.
-typedef enum {IfcActionSourceType_DEAD_LOAD_G, IfcActionSourceType_COMPLETION_G1, IfcActionSourceType_LIVE_LOAD_Q, IfcActionSourceType_SNOW_S, IfcActionSourceType_WIND_W, IfcActionSourceType_PRESTRESSING_P, IfcActionSourceType_SETTLEMENT_U, IfcActionSourceType_TEMPERATURE_T, IfcActionSourceType_EARTHQUAKE_E, IfcActionSourceType_FIRE, IfcActionSourceType_IMPULSE, IfcActionSourceType_IMPACT, IfcActionSourceType_TRANSPORT, IfcActionSourceType_ERECTION, IfcActionSourceType_PROPPING, IfcActionSourceType_SYSTEM_IMPERFECTION, IfcActionSourceType_SHRINKAGE, IfcActionSourceType_CREEP, IfcActionSourceType_LACK_OF_FIT, IfcActionSourceType_BUOYANCY, IfcActionSourceType_ICE, IfcActionSourceType_CURRENT, IfcActionSourceType_WAVE, IfcActionSourceType_RAIN, IfcActionSourceType_BRAKES, IfcActionSourceType_USERDEFINED, IfcActionSourceType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcActionSourceType_DEAD_LOAD_G, IfcActionSourceType_COMPLETION_G1, IfcActionSourceType_LIVE_LOAD_Q, IfcActionSourceType_SNOW_S, IfcActionSourceType_WIND_W, IfcActionSourceType_PRESTRESSING_P, IfcActionSourceType_SETTLEMENT_U, IfcActionSourceType_TEMPERATURE_T, IfcActionSourceType_EARTHQUAKE_E, IfcActionSourceType_FIRE, IfcActionSourceType_IMPULSE, IfcActionSourceType_IMPACT, IfcActionSourceType_TRANSPORT, IfcActionSourceType_ERECTION, IfcActionSourceType_PROPPING, IfcActionSourceType_SYSTEM_IMPERFECTION, IfcActionSourceType_SHRINKAGE, IfcActionSourceType_CREEP, IfcActionSourceType_LACK_OF_FIT, IfcActionSourceType_BUOYANCY, IfcActionSourceType_ICE, IfcActionSourceType_CURRENT, IfcActionSourceType_WAVE, IfcActionSourceType_RAIN, IfcActionSourceType_BRAKES, IfcActionSourceType_USERDEFINED, IfcActionSourceType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcActionSourceTypeEnum (IfcEntityInstanceData* e);
+    IfcActionSourceTypeEnum (Value v);
+    IfcActionSourceTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcActionTypeEnum {
+class IFC_PARSE_API IfcActionTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration type is used to distinguish
 ///   between possible action types at a high level. It can be used for an automated
 ///   definition of load combinations and for dimensioning. The contained items and
@@ -669,11 +685,19 @@ struct IfcActionTypeEnum {
 /// 
 /// HISTORY: New type in Release IFC2x
 ///   Edition 2.
-typedef enum {IfcActionType_PERMANENT_G, IfcActionType_VARIABLE_Q, IfcActionType_EXTRAORDINARY_A, IfcActionType_USERDEFINED, IfcActionType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcActionType_PERMANENT_G, IfcActionType_VARIABLE_Q, IfcActionType_EXTRAORDINARY_A, IfcActionType_USERDEFINED, IfcActionType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcActionTypeEnum (IfcEntityInstanceData* e);
+    IfcActionTypeEnum (Value v);
+    IfcActionTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcActuatorTypeEnum {
+class IFC_PARSE_API IfcActuatorTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcActuatorTypeEnum defines the range of different types of actuator that can be specified. 
 /// 
 /// HISTORY: New type in IFC
@@ -690,11 +714,19 @@ struct IfcActuatorTypeEnum {
 /// 
 /// See property set of actuator common attributes for specification of
 ///   properties for hand operated actuators.
-typedef enum {IfcActuatorType_ELECTRICACTUATOR, IfcActuatorType_HANDOPERATEDACTUATOR, IfcActuatorType_HYDRAULICACTUATOR, IfcActuatorType_PNEUMATICACTUATOR, IfcActuatorType_THERMOSTATICACTUATOR, IfcActuatorType_USERDEFINED, IfcActuatorType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcActuatorType_ELECTRICACTUATOR, IfcActuatorType_HANDOPERATEDACTUATOR, IfcActuatorType_HYDRAULICACTUATOR, IfcActuatorType_PNEUMATICACTUATOR, IfcActuatorType_THERMOSTATICACTUATOR, IfcActuatorType_USERDEFINED, IfcActuatorType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcActuatorTypeEnum (IfcEntityInstanceData* e);
+    IfcActuatorTypeEnum (Value v);
+    IfcActuatorTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcAddressTypeEnum {
+class IFC_PARSE_API IfcAddressTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: Identifies the logical location of the address.
 /// 
 /// HISTORY New type in IFC Release 2x.
@@ -706,11 +738,19 @@ struct IfcAddressTypeEnum {
 ///   HOME A home address.
 ///   DISTRIBUTIONPOINT A postal distribution point address.
 ///   USERDEFINED A user defined address type to be provided.
-typedef enum {IfcAddressType_OFFICE, IfcAddressType_SITE, IfcAddressType_HOME, IfcAddressType_DISTRIBUTIONPOINT, IfcAddressType_USERDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcAddressType_OFFICE, IfcAddressType_SITE, IfcAddressType_HOME, IfcAddressType_DISTRIBUTIONPOINT, IfcAddressType_USERDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcAddressTypeEnum (IfcEntityInstanceData* e);
+    IfcAddressTypeEnum (Value v);
+    IfcAddressTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcAirTerminalBoxTypeEnum {
+class IFC_PARSE_API IfcAirTerminalBoxTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration identifies different types of air terminal boxes.   
 /// 
 /// Valid enumerations are:
@@ -722,11 +762,19 @@ struct IfcAirTerminalBoxTypeEnum {
 ///   NOTDEFINED:					  Undefined terminal box.
 /// 
 /// HISTORY: New enumeration in IFC R2.0
-typedef enum {IfcAirTerminalBoxType_CONSTANTFLOW, IfcAirTerminalBoxType_VARIABLEFLOWPRESSUREDEPENDANT, IfcAirTerminalBoxType_VARIABLEFLOWPRESSUREINDEPENDANT, IfcAirTerminalBoxType_USERDEFINED, IfcAirTerminalBoxType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcAirTerminalBoxType_CONSTANTFLOW, IfcAirTerminalBoxType_VARIABLEFLOWPRESSUREDEPENDANT, IfcAirTerminalBoxType_VARIABLEFLOWPRESSUREINDEPENDANT, IfcAirTerminalBoxType_USERDEFINED, IfcAirTerminalBoxType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcAirTerminalBoxTypeEnum (IfcEntityInstanceData* e);
+    IfcAirTerminalBoxTypeEnum (Value v);
+    IfcAirTerminalBoxTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcAirTerminalTypeEnum {
+class IFC_PARSE_API IfcAirTerminalTypeEnum : public IfcUtil::IfcBaseType {
 /// Enumeration defining the functional types of air terminals. 
 ///   The IfcAirTerminalTypeEnum contains the following:
 /// 
@@ -740,11 +788,19 @@ struct IfcAirTerminalTypeEnum {
 /// NOTE: Architectural louvres within doors or windows are defined by IfcPermeableCoveringProperties.
 /// 
 /// HISTORY: New enumeration in IFC R2x2.  Modified in IFC R2x4 to add LOUVRE and remove EYEBALL, IRIS, LINEARGRILLE, LINEARDIFFUSER
-typedef enum {IfcAirTerminalType_DIFFUSER, IfcAirTerminalType_GRILLE, IfcAirTerminalType_LOUVRE, IfcAirTerminalType_REGISTER, IfcAirTerminalType_USERDEFINED, IfcAirTerminalType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcAirTerminalType_DIFFUSER, IfcAirTerminalType_GRILLE, IfcAirTerminalType_LOUVRE, IfcAirTerminalType_REGISTER, IfcAirTerminalType_USERDEFINED, IfcAirTerminalType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcAirTerminalTypeEnum (IfcEntityInstanceData* e);
+    IfcAirTerminalTypeEnum (Value v);
+    IfcAirTerminalTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcAirToAirHeatRecoveryTypeEnum {
+class IFC_PARSE_API IfcAirToAirHeatRecoveryTypeEnum : public IfcUtil::IfcBaseType {
 /// Defines general types of pumps.
 ///   The IfcPumpTypeEnum contains the following:
 /// 
@@ -761,11 +817,19 @@ struct IfcAirToAirHeatRecoveryTypeEnum {
 ///   NOTDEFINED:  Undefined air to air heat recovery type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-typedef enum {IfcAirToAirHeatRecoveryType_FIXEDPLATECOUNTERFLOWEXCHANGER, IfcAirToAirHeatRecoveryType_FIXEDPLATECROSSFLOWEXCHANGER, IfcAirToAirHeatRecoveryType_FIXEDPLATEPARALLELFLOWEXCHANGER, IfcAirToAirHeatRecoveryType_ROTARYWHEEL, IfcAirToAirHeatRecoveryType_RUNAROUNDCOILLOOP, IfcAirToAirHeatRecoveryType_HEATPIPE, IfcAirToAirHeatRecoveryType_TWINTOWERENTHALPYRECOVERYLOOPS, IfcAirToAirHeatRecoveryType_THERMOSIPHONSEALEDTUBEHEATEXCHANGERS, IfcAirToAirHeatRecoveryType_THERMOSIPHONCOILTYPEHEATEXCHANGERS, IfcAirToAirHeatRecoveryType_USERDEFINED, IfcAirToAirHeatRecoveryType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcAirToAirHeatRecoveryType_FIXEDPLATECOUNTERFLOWEXCHANGER, IfcAirToAirHeatRecoveryType_FIXEDPLATECROSSFLOWEXCHANGER, IfcAirToAirHeatRecoveryType_FIXEDPLATEPARALLELFLOWEXCHANGER, IfcAirToAirHeatRecoveryType_ROTARYWHEEL, IfcAirToAirHeatRecoveryType_RUNAROUNDCOILLOOP, IfcAirToAirHeatRecoveryType_HEATPIPE, IfcAirToAirHeatRecoveryType_TWINTOWERENTHALPYRECOVERYLOOPS, IfcAirToAirHeatRecoveryType_THERMOSIPHONSEALEDTUBEHEATEXCHANGERS, IfcAirToAirHeatRecoveryType_THERMOSIPHONCOILTYPEHEATEXCHANGERS, IfcAirToAirHeatRecoveryType_USERDEFINED, IfcAirToAirHeatRecoveryType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcAirToAirHeatRecoveryTypeEnum (IfcEntityInstanceData* e);
+    IfcAirToAirHeatRecoveryTypeEnum (Value v);
+    IfcAirToAirHeatRecoveryTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcAlarmTypeEnum {
+class IFC_PARSE_API IfcAlarmTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcAlarmTypeEnum defines the range of different types of alarm that can be specified. 
 /// 
 /// HISTORY: New type in IFC 2x2
@@ -780,28 +844,52 @@ struct IfcAlarmTypeEnum {
 /// WHISTLE: An audible alarm.  
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcAlarmType_BELL, IfcAlarmType_BREAKGLASSBUTTON, IfcAlarmType_LIGHT, IfcAlarmType_MANUALPULLBOX, IfcAlarmType_SIREN, IfcAlarmType_WHISTLE, IfcAlarmType_USERDEFINED, IfcAlarmType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
-};
-struct IfcAlignmentTypeEnum {
+public:
+    typedef enum {IfcAlarmType_BELL, IfcAlarmType_BREAKGLASSBUTTON, IfcAlarmType_LIGHT, IfcAlarmType_MANUALPULLBOX, IfcAlarmType_SIREN, IfcAlarmType_WHISTLE, IfcAlarmType_USERDEFINED, IfcAlarmType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
 
-typedef enum {IfcAlignmentType_USERDEFINED, IfcAlignmentType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcAlarmTypeEnum (IfcEntityInstanceData* e);
+    IfcAlarmTypeEnum (Value v);
+    IfcAlarmTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcAnalysisModelTypeEnum {
+class IFC_PARSE_API IfcAlignmentTypeEnum : public IfcUtil::IfcBaseType {
+
+public:
+    typedef enum {IfcAlignmentType_USERDEFINED, IfcAlignmentType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcAlignmentTypeEnum (IfcEntityInstanceData* e);
+    IfcAlignmentTypeEnum (Value v);
+    IfcAlignmentTypeEnum (const std::string& v);
+    operator Value() const;
+};
+class IFC_PARSE_API IfcAnalysisModelTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This type definition is used to distinguish
 ///   between different types of structural analysis models. The analysis models are
 ///   differentiated by their dimensionality. 
 /// 
 /// HISTORY: New type in Release IFC2x
 ///   Edition 2.
-typedef enum {IfcAnalysisModelType_IN_PLANE_LOADING_2D, IfcAnalysisModelType_OUT_PLANE_LOADING_2D, IfcAnalysisModelType_LOADING_3D, IfcAnalysisModelType_USERDEFINED, IfcAnalysisModelType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcAnalysisModelType_IN_PLANE_LOADING_2D, IfcAnalysisModelType_OUT_PLANE_LOADING_2D, IfcAnalysisModelType_LOADING_3D, IfcAnalysisModelType_USERDEFINED, IfcAnalysisModelType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcAnalysisModelTypeEnum (IfcEntityInstanceData* e);
+    IfcAnalysisModelTypeEnum (Value v);
+    IfcAnalysisModelTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcAnalysisTheoryTypeEnum {
+class IFC_PARSE_API IfcAnalysisTheoryTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This type definition is used to distinguish
 ///   between different types of structural analysis methods, i.e. first order
 ///   theory, second order theory (small deformations), third order theory (large
@@ -809,11 +897,19 @@ struct IfcAnalysisTheoryTypeEnum {
 /// 
 /// HISTORY: New type in Release IFC2x
 ///   Edition 2.
-typedef enum {IfcAnalysisTheoryType_FIRST_ORDER_THEORY, IfcAnalysisTheoryType_SECOND_ORDER_THEORY, IfcAnalysisTheoryType_THIRD_ORDER_THEORY, IfcAnalysisTheoryType_FULL_NONLINEAR_THEORY, IfcAnalysisTheoryType_USERDEFINED, IfcAnalysisTheoryType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcAnalysisTheoryType_FIRST_ORDER_THEORY, IfcAnalysisTheoryType_SECOND_ORDER_THEORY, IfcAnalysisTheoryType_THIRD_ORDER_THEORY, IfcAnalysisTheoryType_FULL_NONLINEAR_THEORY, IfcAnalysisTheoryType_USERDEFINED, IfcAnalysisTheoryType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcAnalysisTheoryTypeEnum (IfcEntityInstanceData* e);
+    IfcAnalysisTheoryTypeEnum (Value v);
+    IfcAnalysisTheoryTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcArithmeticOperatorEnum {
+class IFC_PARSE_API IfcArithmeticOperatorEnum : public IfcUtil::IfcBaseType {
 /// IfcArithmeticOperatorEnum specifies the form of arithmetical operation implied by the relationship. 
 /// Enumeration 
 /// 
@@ -826,11 +922,19 @@ struct IfcArithmeticOperatorEnum {
 /// 
 /// Use definitions 
 /// There can be only one arithmetic operator for each applied value relationship. This is to enforce arithmetic consistency. Given this consistency, the cardinality of the IfcAppliedValueRelationship.Components attribute is a set of one to many applied values that are components of an applied value.
-typedef enum {IfcArithmeticOperator_ADD, IfcArithmeticOperator_DIVIDE, IfcArithmeticOperator_MULTIPLY, IfcArithmeticOperator_SUBTRACT} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcArithmeticOperator_ADD, IfcArithmeticOperator_DIVIDE, IfcArithmeticOperator_MULTIPLY, IfcArithmeticOperator_SUBTRACT} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcArithmeticOperatorEnum (IfcEntityInstanceData* e);
+    IfcArithmeticOperatorEnum (Value v);
+    IfcArithmeticOperatorEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcAssemblyPlaceEnum {
+class IFC_PARSE_API IfcAssemblyPlaceEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: Enumeration defining where the
 ///   assembly is intended to take place, either in a factory or
 ///   on the building site.
@@ -843,11 +947,19 @@ struct IfcAssemblyPlaceEnum {
 /// SITE - this assembly is assembled at site
 /// 
 /// FACTORY - this assembly is assembled in a factory
-typedef enum {IfcAssemblyPlace_SITE, IfcAssemblyPlace_FACTORY, IfcAssemblyPlace_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcAssemblyPlace_SITE, IfcAssemblyPlace_FACTORY, IfcAssemblyPlace_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcAssemblyPlaceEnum (IfcEntityInstanceData* e);
+    IfcAssemblyPlaceEnum (Value v);
+    IfcAssemblyPlaceEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcAudioVisualApplianceTypeEnum {
+class IFC_PARSE_API IfcAudioVisualApplianceTypeEnum : public IfcUtil::IfcBaseType {
 /// Defines the range of different types of audio-video devices that can be specified. 
 /// HISTORY: New enumeration in IFC2x4 
 /// 
@@ -862,11 +974,19 @@ struct IfcAudioVisualApplianceTypeEnum {
 /// SWITCHER: A device that receives audio and/or video signals, switches sources, and transmits signals to downstream devices. 
 /// TELEPHONE: A telecommunications device that is used to transmit and receive sound, and optionally video. 
 /// TUNER: An electronic receiver that detects, demodulates, and amplifies transmitted signals.
-typedef enum {IfcAudioVisualApplianceType_AMPLIFIER, IfcAudioVisualApplianceType_CAMERA, IfcAudioVisualApplianceType_DISPLAY, IfcAudioVisualApplianceType_MICROPHONE, IfcAudioVisualApplianceType_PLAYER, IfcAudioVisualApplianceType_PROJECTOR, IfcAudioVisualApplianceType_RECEIVER, IfcAudioVisualApplianceType_SPEAKER, IfcAudioVisualApplianceType_SWITCHER, IfcAudioVisualApplianceType_TELEPHONE, IfcAudioVisualApplianceType_TUNER, IfcAudioVisualApplianceType_USERDEFINED, IfcAudioVisualApplianceType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcAudioVisualApplianceType_AMPLIFIER, IfcAudioVisualApplianceType_CAMERA, IfcAudioVisualApplianceType_DISPLAY, IfcAudioVisualApplianceType_MICROPHONE, IfcAudioVisualApplianceType_PLAYER, IfcAudioVisualApplianceType_PROJECTOR, IfcAudioVisualApplianceType_RECEIVER, IfcAudioVisualApplianceType_SPEAKER, IfcAudioVisualApplianceType_SWITCHER, IfcAudioVisualApplianceType_TELEPHONE, IfcAudioVisualApplianceType_TUNER, IfcAudioVisualApplianceType_USERDEFINED, IfcAudioVisualApplianceType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcAudioVisualApplianceTypeEnum (IfcEntityInstanceData* e);
+    IfcAudioVisualApplianceTypeEnum (Value v);
+    IfcAudioVisualApplianceTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcBSplineCurveForm {
+class IFC_PARSE_API IfcBSplineCurveForm : public IfcUtil::IfcBaseType {
 /// Definition from ISO/CD 10303-42:1992: This type is used to indicate that the B-spline curve represents a part of a curve of some specific form.
 /// 
 /// Enumeration
@@ -881,17 +1001,33 @@ struct IfcBSplineCurveForm {
 /// NOTE Corresponding ISO 10303 type: b_spline_curve_form. Please refer to ISO/IS 10303-42:1994, p. 15 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in Release IFC2x2.
-typedef enum {IfcBSplineCurveForm_POLYLINE_FORM, IfcBSplineCurveForm_CIRCULAR_ARC, IfcBSplineCurveForm_ELLIPTIC_ARC, IfcBSplineCurveForm_PARABOLIC_ARC, IfcBSplineCurveForm_HYPERBOLIC_ARC, IfcBSplineCurveForm_UNSPECIFIED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
-};
-struct IfcBSplineSurfaceForm {
+public:
+    typedef enum {IfcBSplineCurveForm_POLYLINE_FORM, IfcBSplineCurveForm_CIRCULAR_ARC, IfcBSplineCurveForm_ELLIPTIC_ARC, IfcBSplineCurveForm_PARABOLIC_ARC, IfcBSplineCurveForm_HYPERBOLIC_ARC, IfcBSplineCurveForm_UNSPECIFIED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
 
-typedef enum {IfcBSplineSurfaceForm_PLANE_SURF, IfcBSplineSurfaceForm_CYLINDRICAL_SURF, IfcBSplineSurfaceForm_CONICAL_SURF, IfcBSplineSurfaceForm_SPHERICAL_SURF, IfcBSplineSurfaceForm_TOROIDAL_SURF, IfcBSplineSurfaceForm_SURF_OF_REVOLUTION, IfcBSplineSurfaceForm_RULED_SURF, IfcBSplineSurfaceForm_GENERALISED_CONE, IfcBSplineSurfaceForm_QUADRIC_SURF, IfcBSplineSurfaceForm_SURF_OF_LINEAR_EXTRUSION, IfcBSplineSurfaceForm_UNSPECIFIED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcBSplineCurveForm (IfcEntityInstanceData* e);
+    IfcBSplineCurveForm (Value v);
+    IfcBSplineCurveForm (const std::string& v);
+    operator Value() const;
 };
-struct IfcBeamTypeEnum {
+class IFC_PARSE_API IfcBSplineSurfaceForm : public IfcUtil::IfcBaseType {
+
+public:
+    typedef enum {IfcBSplineSurfaceForm_PLANE_SURF, IfcBSplineSurfaceForm_CYLINDRICAL_SURF, IfcBSplineSurfaceForm_CONICAL_SURF, IfcBSplineSurfaceForm_SPHERICAL_SURF, IfcBSplineSurfaceForm_TOROIDAL_SURF, IfcBSplineSurfaceForm_SURF_OF_REVOLUTION, IfcBSplineSurfaceForm_RULED_SURF, IfcBSplineSurfaceForm_GENERALISED_CONE, IfcBSplineSurfaceForm_QUADRIC_SURF, IfcBSplineSurfaceForm_SURF_OF_LINEAR_EXTRUSION, IfcBSplineSurfaceForm_UNSPECIFIED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcBSplineSurfaceForm (IfcEntityInstanceData* e);
+    IfcBSplineSurfaceForm (Value v);
+    IfcBSplineSurfaceForm (const std::string& v);
+    operator Value() const;
+};
+class IFC_PARSE_API IfcBeamTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration defines the
 /// different types of linear elements an IfcBeamType object
 /// can fulfill:
@@ -931,23 +1067,47 @@ struct IfcBeamTypeEnum {
 /// IFC2x4 CHANGE The enumerators
 /// HOLLOWCORE and SPANDREL have been
 /// added.
-typedef enum {IfcBeamType_BEAM, IfcBeamType_JOIST, IfcBeamType_HOLLOWCORE, IfcBeamType_LINTEL, IfcBeamType_SPANDREL, IfcBeamType_T_BEAM, IfcBeamType_GIRDER_SEGMENT, IfcBeamType_DIAPHRAGM, IfcBeamType_PIERCAP, IfcBeamType_HATSTONE, IfcBeamType_CORNICE, IfcBeamType_EDGEBEAM, IfcBeamType_USERDEFINED, IfcBeamType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
-};
-struct IfcBearingTypeDisplacementEnum {
+public:
+    typedef enum {IfcBeamType_BEAM, IfcBeamType_JOIST, IfcBeamType_HOLLOWCORE, IfcBeamType_LINTEL, IfcBeamType_SPANDREL, IfcBeamType_T_BEAM, IfcBeamType_GIRDER_SEGMENT, IfcBeamType_DIAPHRAGM, IfcBeamType_PIERCAP, IfcBeamType_HATSTONE, IfcBeamType_CORNICE, IfcBeamType_EDGEBEAM, IfcBeamType_USERDEFINED, IfcBeamType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
 
-typedef enum {IfcBearingTypeDisplacement_FIXED_MOVEMENT, IfcBearingTypeDisplacement_GUIDED_LONGITUDINAL, IfcBearingTypeDisplacement_GUIDED_TRANSVERSAL, IfcBearingTypeDisplacement_FREE_MOVEMENT, IfcBearingTypeDisplacement_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcBeamTypeEnum (IfcEntityInstanceData* e);
+    IfcBeamTypeEnum (Value v);
+    IfcBeamTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcBearingTypeEnum {
+class IFC_PARSE_API IfcBearingTypeDisplacementEnum : public IfcUtil::IfcBaseType {
 
-typedef enum {IfcBearingType_CYLINDRICAL, IfcBearingType_SPHERICAL, IfcBearingType_ELASTOMERIC, IfcBearingType_POT, IfcBearingType_GUIDE, IfcBearingType_ROCKER, IfcBearingType_ROLLER, IfcBearingType_USERDEFINED, IfcBearingType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcBearingTypeDisplacement_FIXED_MOVEMENT, IfcBearingTypeDisplacement_GUIDED_LONGITUDINAL, IfcBearingTypeDisplacement_GUIDED_TRANSVERSAL, IfcBearingTypeDisplacement_FREE_MOVEMENT, IfcBearingTypeDisplacement_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcBearingTypeDisplacementEnum (IfcEntityInstanceData* e);
+    IfcBearingTypeDisplacementEnum (Value v);
+    IfcBearingTypeDisplacementEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcBenchmarkEnum {
+class IFC_PARSE_API IfcBearingTypeEnum : public IfcUtil::IfcBaseType {
+
+public:
+    typedef enum {IfcBearingType_CYLINDRICAL, IfcBearingType_SPHERICAL, IfcBearingType_ELASTOMERIC, IfcBearingType_POT, IfcBearingType_GUIDE, IfcBearingType_ROCKER, IfcBearingType_ROLLER, IfcBearingType_DISK, IfcBearingType_USERDEFINED, IfcBearingType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcBearingTypeEnum (IfcEntityInstanceData* e);
+    IfcBearingTypeEnum (Value v);
+    IfcBearingTypeEnum (const std::string& v);
+    operator Value() const;
+};
+class IFC_PARSE_API IfcBenchmarkEnum : public IfcUtil::IfcBaseType {
 /// IfcBenchmarkEnum is an enumeration used to identify the logical comparators that can be applied in conjunction with constraint values. 
 /// 
 /// HISTORY: New type in IFC Release 2.0
@@ -988,11 +1148,19 @@ struct IfcBenchmarkEnum {
 /// 
 /// NOTINCLUDEDIN 
 ///   Identifies that a value (individual item) must not be included (i.e. must be excluded) in the aggregation (set, list or table) set by the constraint.
-typedef enum {IfcBenchmark_GREATERTHAN, IfcBenchmark_GREATERTHANOREQUALTO, IfcBenchmark_LESSTHAN, IfcBenchmark_LESSTHANOREQUALTO, IfcBenchmark_EQUALTO, IfcBenchmark_NOTEQUALTO, IfcBenchmark_INCLUDES, IfcBenchmark_NOTINCLUDES, IfcBenchmark_INCLUDEDIN, IfcBenchmark_NOTINCLUDEDIN} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcBenchmark_GREATERTHAN, IfcBenchmark_GREATERTHANOREQUALTO, IfcBenchmark_LESSTHAN, IfcBenchmark_LESSTHANOREQUALTO, IfcBenchmark_EQUALTO, IfcBenchmark_NOTEQUALTO, IfcBenchmark_INCLUDES, IfcBenchmark_NOTINCLUDES, IfcBenchmark_INCLUDEDIN, IfcBenchmark_NOTINCLUDEDIN} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcBenchmarkEnum (IfcEntityInstanceData* e);
+    IfcBenchmarkEnum (Value v);
+    IfcBenchmarkEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcBoilerTypeEnum {
+class IFC_PARSE_API IfcBoilerTypeEnum : public IfcUtil::IfcBaseType {
 /// Enumeration defining the typical types of boilers.
 ///   The IfcBoilerTypeEnum contains the following:
 /// 
@@ -1002,11 +1170,19 @@ struct IfcBoilerTypeEnum {
 ///   NOTDEFINED:  Undefined Boiler type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-typedef enum {IfcBoilerType_WATER, IfcBoilerType_STEAM, IfcBoilerType_USERDEFINED, IfcBoilerType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcBoilerType_WATER, IfcBoilerType_STEAM, IfcBoilerType_USERDEFINED, IfcBoilerType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcBoilerTypeEnum (IfcEntityInstanceData* e);
+    IfcBoilerTypeEnum (Value v);
+    IfcBoilerTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcBooleanOperator {
+class IFC_PARSE_API IfcBooleanOperator : public IfcUtil::IfcBaseType {
 /// Definition from ISO/CD 10303-42:1992: This type defines the three Boolean operators used in the definition of CSG solids.
 /// 
 /// UNION: The operation of constructing the regularized set theoretic union of the volumes defined by two solids.
@@ -1016,23 +1192,47 @@ struct IfcBooleanOperator {
 /// NOTE Corresponding STEP type: boolean_operator, please refer to ISO/IS 10303-42:1994, p.167 for the final definition of the formal standard.
 /// 
 /// HISTORY New Type in IFC Release 1.5.1.
-typedef enum {IfcBooleanOperator_UNION, IfcBooleanOperator_INTERSECTION, IfcBooleanOperator_DIFFERENCE} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
-};
-struct IfcBridgePartTypeEnum {
+public:
+    typedef enum {IfcBooleanOperator_UNION, IfcBooleanOperator_INTERSECTION, IfcBooleanOperator_DIFFERENCE} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
 
-typedef enum {IfcBridgePartType_ABUTMENT, IfcBridgePartType_DECK, IfcBridgePartType_DECK_SEGMENT, IfcBridgePartType_FOUNDATION, IfcBridgePartType_PIER, IfcBridgePartType_PIER_SEGMENT, IfcBridgePartType_PYLON, IfcBridgePartType_SUBSTRUCTURE, IfcBridgePartType_SUPERSTRUCTURE, IfcBridgePartType_SURFACESTRUCTURE, IfcBridgePartType_USERDEFINED, IfcBridgePartType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcBooleanOperator (IfcEntityInstanceData* e);
+    IfcBooleanOperator (Value v);
+    IfcBooleanOperator (const std::string& v);
+    operator Value() const;
 };
-struct IfcBridgeTypeEnum {
+class IFC_PARSE_API IfcBridgePartTypeEnum : public IfcUtil::IfcBaseType {
 
-typedef enum {IfcBridgeType_BOXGIRDER, IfcBridgeType_ARCHED, IfcBridgeType_SUSPENSION, IfcBridgeType_CABLE_STAYED, IfcBridgeType_CULVERT, IfcBridgeType_GIRDER, IfcBridgeType_SLAB, IfcBridgeType_CANTILIVERSLAB, IfcBridgeType_BOWSTRING, IfcBridgeType_LADDER, IfcBridgeType_FRAMEWORK, IfcBridgeType_PORTAL, IfcBridgeType_USERDEFINED, IfcBridgeType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcBridgePartType_ABUTMENT, IfcBridgePartType_DECK, IfcBridgePartType_DECK_SEGMENT, IfcBridgePartType_FOUNDATION, IfcBridgePartType_PIER, IfcBridgePartType_PIER_SEGMENT, IfcBridgePartType_PYLON, IfcBridgePartType_SUBSTRUCTURE, IfcBridgePartType_SUPERSTRUCTURE, IfcBridgePartType_SURFACESTRUCTURE, IfcBridgePartType_USERDEFINED, IfcBridgePartType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcBridgePartTypeEnum (IfcEntityInstanceData* e);
+    IfcBridgePartTypeEnum (Value v);
+    IfcBridgePartTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcBuildingElementPartTypeEnum {
+class IFC_PARSE_API IfcBridgeTypeEnum : public IfcUtil::IfcBaseType {
+
+public:
+    typedef enum {IfcBridgeType_ARCHED, IfcBridgeType_CABLE_STAYED, IfcBridgeType_CANTILEVER, IfcBridgeType_CULVERT, IfcBridgeType_FRAMEWORK, IfcBridgeType_GIRDER, IfcBridgeType_SUSPENSION, IfcBridgeType_TRUSS, IfcBridgeType_USERDEFINED, IfcBridgeType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcBridgeTypeEnum (IfcEntityInstanceData* e);
+    IfcBridgeTypeEnum (Value v);
+    IfcBridgeTypeEnum (const std::string& v);
+    operator Value() const;
+};
+class IFC_PARSE_API IfcBuildingElementPartTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration defines the different types of building element parts:
 /// 
 /// INSULATION: The part provides thermal insulation, for example as insulation layer between wall panels in sandwich walls or as infill in stud walls.
@@ -1041,11 +1241,19 @@ struct IfcBuildingElementPartTypeEnum {
 /// NOTDEFINED: Undefined accessory
 /// 
 /// HISTORY New Enumeration in IFC 2x4.
-typedef enum {IfcBuildingElementPartType_INSULATION, IfcBuildingElementPartType_PRECASTPANEL, IfcBuildingElementPartType_APRON, IfcBuildingElementPartType_USERDEFINED, IfcBuildingElementPartType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcBuildingElementPartType_INSULATION, IfcBuildingElementPartType_PRECASTPANEL, IfcBuildingElementPartType_APRON, IfcBuildingElementPartType_USERDEFINED, IfcBuildingElementPartType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcBuildingElementPartTypeEnum (IfcEntityInstanceData* e);
+    IfcBuildingElementPartTypeEnum (Value v);
+    IfcBuildingElementPartTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcBuildingElementProxyTypeEnum {
+class IFC_PARSE_API IfcBuildingElementProxyTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration defines the
 ///   available generic types for IfcBuildingElementProxyType.
 /// 
@@ -1057,11 +1265,19 @@ struct IfcBuildingElementProxyTypeEnum {
 /// USERDEFINED
 /// 
 /// NOTDEFINED
-typedef enum {IfcBuildingElementProxyType_COMPLEX, IfcBuildingElementProxyType_ELEMENT, IfcBuildingElementProxyType_PARTIAL, IfcBuildingElementProxyType_PROVISIONFORVOID, IfcBuildingElementProxyType_PROVISIONFORSPACE, IfcBuildingElementProxyType_USERDEFINED, IfcBuildingElementProxyType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcBuildingElementProxyType_COMPLEX, IfcBuildingElementProxyType_ELEMENT, IfcBuildingElementProxyType_PARTIAL, IfcBuildingElementProxyType_PROVISIONFORVOID, IfcBuildingElementProxyType_PROVISIONFORSPACE, IfcBuildingElementProxyType_USERDEFINED, IfcBuildingElementProxyType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcBuildingElementProxyTypeEnum (IfcEntityInstanceData* e);
+    IfcBuildingElementProxyTypeEnum (Value v);
+    IfcBuildingElementProxyTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcBuildingSystemTypeEnum {
+class IFC_PARSE_API IfcBuildingSystemTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration identifies
 /// different types of distribution systems.
 /// HISTORY New enumeration
@@ -1076,11 +1292,19 @@ struct IfcBuildingSystemTypeEnum {
 /// natural sun light,
 /// TRANSPORT: System of all transport elements in a
 /// building that enables the transport of people or goods.
-typedef enum {IfcBuildingSystemType_FENESTRATION, IfcBuildingSystemType_FOUNDATION, IfcBuildingSystemType_LOADBEARING, IfcBuildingSystemType_OUTERSHELL, IfcBuildingSystemType_SHADING, IfcBuildingSystemType_TRANSPORT, IfcBuildingSystemType_REINFORCING, IfcBuildingSystemType_PRESTRESSING, IfcBuildingSystemType_USERDEFINED, IfcBuildingSystemType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcBuildingSystemType_FENESTRATION, IfcBuildingSystemType_FOUNDATION, IfcBuildingSystemType_LOADBEARING, IfcBuildingSystemType_OUTERSHELL, IfcBuildingSystemType_SHADING, IfcBuildingSystemType_TRANSPORT, IfcBuildingSystemType_REINFORCING, IfcBuildingSystemType_PRESTRESSING, IfcBuildingSystemType_USERDEFINED, IfcBuildingSystemType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcBuildingSystemTypeEnum (IfcEntityInstanceData* e);
+    IfcBuildingSystemTypeEnum (Value v);
+    IfcBuildingSystemTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcBurnerTypeEnum {
+class IFC_PARSE_API IfcBurnerTypeEnum : public IfcUtil::IfcBaseType {
 /// Enumeration defining the functional type of burner.
 ///   The IfcBurnerTypeEnum contains the following:
 /// 
@@ -1088,11 +1312,19 @@ struct IfcBurnerTypeEnum {
 ///   NOTDEFINED:  Undefined burner type.
 /// 
 /// HISTORY: New enumeration in IFC R2x4.
-typedef enum {IfcBurnerType_USERDEFINED, IfcBurnerType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcBurnerType_USERDEFINED, IfcBurnerType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcBurnerTypeEnum (IfcEntityInstanceData* e);
+    IfcBurnerTypeEnum (Value v);
+    IfcBurnerTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcCableCarrierFittingTypeEnum {
+class IFC_PARSE_API IfcCableCarrierFittingTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcCableCarrierFittingTypeEnum defines the range of different types of cable carrier fitting that can be specified. 
 ///   HISTORY: New type in IFC 2x2  
 ///   Enumeration 
@@ -1103,11 +1335,19 @@ struct IfcCableCarrierFittingTypeEnum {
 /// TEE: A fitting at which a branch is taken from the main route of the cable carrier. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcCableCarrierFittingType_BEND, IfcCableCarrierFittingType_CROSS, IfcCableCarrierFittingType_REDUCER, IfcCableCarrierFittingType_TEE, IfcCableCarrierFittingType_USERDEFINED, IfcCableCarrierFittingType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcCableCarrierFittingType_BEND, IfcCableCarrierFittingType_CROSS, IfcCableCarrierFittingType_REDUCER, IfcCableCarrierFittingType_TEE, IfcCableCarrierFittingType_USERDEFINED, IfcCableCarrierFittingType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcCableCarrierFittingTypeEnum (IfcEntityInstanceData* e);
+    IfcCableCarrierFittingTypeEnum (Value v);
+    IfcCableCarrierFittingTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcCableCarrierSegmentTypeEnum {
+class IFC_PARSE_API IfcCableCarrierSegmentTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcCableCarrierSegmentTypeEnum defines the range of different types of cable carrier segment that can be specified. 
 ///   HISTORY: New type in IFC 2x2  
 ///   Enumeration 
@@ -1118,11 +1358,19 @@ struct IfcCableCarrierSegmentTypeEnum {
 /// CONDUITSEGMENT: An enclosed tubular carrier segment through which cables are pulled.
 /// USERDEFINED: User-defined type.  
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcCableCarrierSegmentType_CABLELADDERSEGMENT, IfcCableCarrierSegmentType_CABLETRAYSEGMENT, IfcCableCarrierSegmentType_CABLETRUNKINGSEGMENT, IfcCableCarrierSegmentType_CONDUITSEGMENT, IfcCableCarrierSegmentType_USERDEFINED, IfcCableCarrierSegmentType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcCableCarrierSegmentType_CABLELADDERSEGMENT, IfcCableCarrierSegmentType_CABLETRAYSEGMENT, IfcCableCarrierSegmentType_CABLETRUNKINGSEGMENT, IfcCableCarrierSegmentType_CONDUITSEGMENT, IfcCableCarrierSegmentType_USERDEFINED, IfcCableCarrierSegmentType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcCableCarrierSegmentTypeEnum (IfcEntityInstanceData* e);
+    IfcCableCarrierSegmentTypeEnum (Value v);
+    IfcCableCarrierSegmentTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcCableFittingTypeEnum {
+class IFC_PARSE_API IfcCableFittingTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcCableFittingTypeEnum defines the range of different types of cable fitting that can be specified. 
 ///   HISTORY: New type in IFC 2x4  
 ///   Enumeration 
@@ -1134,11 +1382,19 @@ struct IfcCableFittingTypeEnum {
 /// TRANSITION: A fitting that joins two cable segments of different connector types.  
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcCableFittingType_CONNECTOR, IfcCableFittingType_ENTRY, IfcCableFittingType_EXIT, IfcCableFittingType_JUNCTION, IfcCableFittingType_TRANSITION, IfcCableFittingType_USERDEFINED, IfcCableFittingType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcCableFittingType_CONNECTOR, IfcCableFittingType_ENTRY, IfcCableFittingType_EXIT, IfcCableFittingType_JUNCTION, IfcCableFittingType_TRANSITION, IfcCableFittingType_USERDEFINED, IfcCableFittingType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcCableFittingTypeEnum (IfcEntityInstanceData* e);
+    IfcCableFittingTypeEnum (Value v);
+    IfcCableFittingTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcCableSegmentTypeEnum {
+class IFC_PARSE_API IfcCableSegmentTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcCableSegmentTypeEnum defines the range of different types of cable segment that can be specified. 
 /// 
 /// HISTORY: New type in IFC
@@ -1151,37 +1407,57 @@ struct IfcCableSegmentTypeEnum {
 /// CORESEGMENT: A self contained element of a  cable that comprises one or more conductors and sheathing.The core of one lead is normally single wired or multiwired which are intertwined.  
 /// USERDEFINED: User-defined type.  
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcCableSegmentType_BUSBARSEGMENT, IfcCableSegmentType_CABLESEGMENT, IfcCableSegmentType_CONDUCTORSEGMENT, IfcCableSegmentType_CORESEGMENT, IfcCableSegmentType_USERDEFINED, IfcCableSegmentType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
-};
-struct IfcCaissonFoundationTypeEnum {
+public:
+    typedef enum {IfcCableSegmentType_BUSBARSEGMENT, IfcCableSegmentType_CABLESEGMENT, IfcCableSegmentType_CONDUCTORSEGMENT, IfcCableSegmentType_CORESEGMENT, IfcCableSegmentType_USERDEFINED, IfcCableSegmentType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
 
-typedef enum {IfcCaissonFoundationType_WELL, IfcCaissonFoundationType_CAISSON, IfcCaissonFoundationType_USERDEFINED, IfcCaissonFoundationType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcCableSegmentTypeEnum (IfcEntityInstanceData* e);
+    IfcCableSegmentTypeEnum (Value v);
+    IfcCableSegmentTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcChangeActionEnum {
+class IFC_PARSE_API IfcCaissonFoundationTypeEnum : public IfcUtil::IfcBaseType {
+
+public:
+    typedef enum {IfcCaissonFoundationType_WELL, IfcCaissonFoundationType_CAISSON, IfcCaissonFoundationType_USERDEFINED, IfcCaissonFoundationType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcCaissonFoundationTypeEnum (IfcEntityInstanceData* e);
+    IfcCaissonFoundationTypeEnum (Value v);
+    IfcCaissonFoundationTypeEnum (const std::string& v);
+    operator Value() const;
+};
+class IFC_PARSE_API IfcChangeActionEnum : public IfcUtil::IfcBaseType {
 /// IfcChangeActionEnum identifies the type of change that might have occurred to the object during the last session (for example, added, modified, deleted). This information is required in a partial model exchange scenario so that an application or model server will know how an object might have been affected by the previous application. Valid enumerations are:
 /// 
 /// NOCHANGE: Object has not been modified.
-/// 
 /// MODIFIED: A modification to the object has been made by the user and application defined by the LastModifyingUser and LastModifyingApplication respectively.
-/// 
 /// ADDED: The object has been created by the user and application defined by the OwningUser and OwningApplication respectively.
-/// 
 /// DELETED: The object has been deleted by the user and application defined by the LastModifyingUser and LastModifyingApplication respectively.
-/// 
 /// NOTDEFINED: The change action is not known or has not been defined.
 /// 
 /// Consider Application A will create an IFC dataset that it wants to publish to others for modification and have the ability to subsequently merge these changes back into the original model. Before publication, it may want to set the IfcChangeActionEnum to NOCHANGE to establish a baseline so that other application changes can be easily identified. Application B then receives this IFC dataset and adds a new object and sets IfcChangeActionEnum to ADDED with Application B defined as the OwningApplication. Application B then modifies an existing object and (re)defines the LastModifiedDate to the time of the modification, LastModifyingUser to the IfcPersonAndOrganization making the change, and sets the LastModifyingApplication to Application B. When Application A receives this modified dataset, it can determine which objects have been added and modified by Application B and either merge or reject these changes as necessary. Consequently, the intent is that an application only modifies the value of IfcChangeActionEnum when it does something to the object, with the further intent that a model server is responsible for clearing the IfcChangeActionEnum back to NOCHANGE when it is ready to be republished.
 /// 
 /// HISTORY: New enumeration in IFC R2.0. Modified in IFC2x4.
-typedef enum {IfcChangeAction_NOCHANGE, IfcChangeAction_MODIFIED, IfcChangeAction_ADDED, IfcChangeAction_DELETED, IfcChangeAction_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcChangeAction_NOCHANGE, IfcChangeAction_MODIFIED, IfcChangeAction_ADDED, IfcChangeAction_DELETED, IfcChangeAction_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcChangeActionEnum (IfcEntityInstanceData* e);
+    IfcChangeActionEnum (Value v);
+    IfcChangeActionEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcChillerTypeEnum {
+class IFC_PARSE_API IfcChillerTypeEnum : public IfcUtil::IfcBaseType {
 /// Enumeration defining the typical types of Chillers classified by their method of heat rejection. 
 ///   The IfcChillerTypeEnum contains the following:
 /// 
@@ -1192,11 +1468,19 @@ struct IfcChillerTypeEnum {
 ///   NOTDEFINED: Undefined chiller type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-typedef enum {IfcChillerType_AIRCOOLED, IfcChillerType_WATERCOOLED, IfcChillerType_HEATRECOVERY, IfcChillerType_USERDEFINED, IfcChillerType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcChillerType_AIRCOOLED, IfcChillerType_WATERCOOLED, IfcChillerType_HEATRECOVERY, IfcChillerType_USERDEFINED, IfcChillerType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcChillerTypeEnum (IfcEntityInstanceData* e);
+    IfcChillerTypeEnum (Value v);
+    IfcChillerTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcChimneyTypeEnum {
+class IFC_PARSE_API IfcChimneyTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: Enumeration defining the valid
 ///   types of chimneys that can be predefined using the
 ///   enumeration values.
@@ -1207,11 +1491,19 @@ struct IfcChimneyTypeEnum {
 /// NOTE Currently there are no specific enumerators
 ///   defined, the IfcChimneyTypeEnum has been added
 ///   for future extensions.
-typedef enum {IfcChimneyType_USERDEFINED, IfcChimneyType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcChimneyType_USERDEFINED, IfcChimneyType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcChimneyTypeEnum (IfcEntityInstanceData* e);
+    IfcChimneyTypeEnum (Value v);
+    IfcChimneyTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcCoilTypeEnum {
+class IFC_PARSE_API IfcCoilTypeEnum : public IfcUtil::IfcBaseType {
 /// Enumeration defining the typical types of coils.
 /// 
 /// The IfcCoilTypeEnum contains the following:
@@ -1234,11 +1526,19 @@ struct IfcCoilTypeEnum {
 /// NOTDEFINED:  Undefined coil type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-typedef enum {IfcCoilType_DXCOOLINGCOIL, IfcCoilType_ELECTRICHEATINGCOIL, IfcCoilType_GASHEATINGCOIL, IfcCoilType_HYDRONICCOIL, IfcCoilType_STEAMHEATINGCOIL, IfcCoilType_WATERCOOLINGCOIL, IfcCoilType_WATERHEATINGCOIL, IfcCoilType_USERDEFINED, IfcCoilType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcCoilType_DXCOOLINGCOIL, IfcCoilType_ELECTRICHEATINGCOIL, IfcCoilType_GASHEATINGCOIL, IfcCoilType_HYDRONICCOIL, IfcCoilType_STEAMHEATINGCOIL, IfcCoilType_WATERCOOLINGCOIL, IfcCoilType_WATERHEATINGCOIL, IfcCoilType_USERDEFINED, IfcCoilType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcCoilTypeEnum (IfcEntityInstanceData* e);
+    IfcCoilTypeEnum (Value v);
+    IfcCoilTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcColumnTypeEnum {
+class IFC_PARSE_API IfcColumnTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration defines the
 /// different types of linear elements an IfcColumnType object
 /// can fulfill:
@@ -1253,11 +1553,19 @@ struct IfcColumnTypeEnum {
 /// future releases of IFC.
 /// HISTORY New Enumeration
 /// in Release IFC2x Edition 2.
-typedef enum {IfcColumnType_COLUMN, IfcColumnType_PILASTER, IfcColumnType_PIERSTEM, IfcColumnType_PIERSTEM_SEGMENT, IfcColumnType_STANDCOLUMN, IfcColumnType_USERDEFINED, IfcColumnType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcColumnType_COLUMN, IfcColumnType_PILASTER, IfcColumnType_PIERSTEM, IfcColumnType_PIERSTEM_SEGMENT, IfcColumnType_STANDCOLUMN, IfcColumnType_USERDEFINED, IfcColumnType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcColumnTypeEnum (IfcEntityInstanceData* e);
+    IfcColumnTypeEnum (Value v);
+    IfcColumnTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcCommunicationsApplianceTypeEnum {
+class IFC_PARSE_API IfcCommunicationsApplianceTypeEnum : public IfcUtil::IfcBaseType {
 /// Defines the range of different types of communications appliance that can be specified. 
 /// 
 /// HISTORY: New enumeration in IFC2x4 
@@ -1274,11 +1582,19 @@ struct IfcCommunicationsApplianceTypeEnum {
 /// REPEATER: A repeater is an electronic device that receives a signal and retransmits it at a higher level and/or higher power, or onto the other side of an obstruction, so that the signal can cover longer distances without degradation. 
 /// ROUTER: A router is a networking device whose software and hardware are usually tailored to the tasks of routing and forwarding information. For example, on the Internet, information is directed to various paths by routers. 
 /// SCANNER: A machine that has the primary function of scanning the content of printed matter and converting it to digital format that can be stored in a computer.
-typedef enum {IfcCommunicationsApplianceType_ANTENNA, IfcCommunicationsApplianceType_COMPUTER, IfcCommunicationsApplianceType_FAX, IfcCommunicationsApplianceType_GATEWAY, IfcCommunicationsApplianceType_MODEM, IfcCommunicationsApplianceType_NETWORKAPPLIANCE, IfcCommunicationsApplianceType_NETWORKBRIDGE, IfcCommunicationsApplianceType_NETWORKHUB, IfcCommunicationsApplianceType_PRINTER, IfcCommunicationsApplianceType_REPEATER, IfcCommunicationsApplianceType_ROUTER, IfcCommunicationsApplianceType_SCANNER, IfcCommunicationsApplianceType_USERDEFINED, IfcCommunicationsApplianceType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcCommunicationsApplianceType_ANTENNA, IfcCommunicationsApplianceType_COMPUTER, IfcCommunicationsApplianceType_FAX, IfcCommunicationsApplianceType_GATEWAY, IfcCommunicationsApplianceType_MODEM, IfcCommunicationsApplianceType_NETWORKAPPLIANCE, IfcCommunicationsApplianceType_NETWORKBRIDGE, IfcCommunicationsApplianceType_NETWORKHUB, IfcCommunicationsApplianceType_PRINTER, IfcCommunicationsApplianceType_REPEATER, IfcCommunicationsApplianceType_ROUTER, IfcCommunicationsApplianceType_SCANNER, IfcCommunicationsApplianceType_USERDEFINED, IfcCommunicationsApplianceType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcCommunicationsApplianceTypeEnum (IfcEntityInstanceData* e);
+    IfcCommunicationsApplianceTypeEnum (Value v);
+    IfcCommunicationsApplianceTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcComplexPropertyTemplateTypeEnum {
+class IFC_PARSE_API IfcComplexPropertyTemplateTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration defines the subtype of instances of IfcComplexProperty or IfcPhysicalComplexQuantity that may be created and defined by an IfcComplexPropertyTemplate.
 /// 
 /// HISTORY New enumeration in IFC2x4.
@@ -1287,11 +1603,19 @@ struct IfcComplexPropertyTemplateTypeEnum {
 /// 
 /// P_COMPLEX: the properties defined by this IfcComplexPropertyTemplate are of type IfcComplexProperty.
 /// Q_COMPLEX: the properties defined by this IfcComplexPropertyTemplate are of type IfcPhysicalComplexQuantity.
-typedef enum {IfcComplexPropertyTemplateType_P_COMPLEX, IfcComplexPropertyTemplateType_Q_COMPLEX} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcComplexPropertyTemplateType_P_COMPLEX, IfcComplexPropertyTemplateType_Q_COMPLEX} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcComplexPropertyTemplateTypeEnum (IfcEntityInstanceData* e);
+    IfcComplexPropertyTemplateTypeEnum (Value v);
+    IfcComplexPropertyTemplateTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcCompressorTypeEnum {
+class IFC_PARSE_API IfcCompressorTypeEnum : public IfcUtil::IfcBaseType {
 /// Types of compressors.
 ///   The IfcCompressorTypeEnum contains the following:
 /// 
@@ -1314,11 +1638,19 @@ struct IfcCompressorTypeEnum {
 ///   NOTDEFINED:  Undefined compressor type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-typedef enum {IfcCompressorType_DYNAMIC, IfcCompressorType_RECIPROCATING, IfcCompressorType_ROTARY, IfcCompressorType_SCROLL, IfcCompressorType_TROCHOIDAL, IfcCompressorType_SINGLESTAGE, IfcCompressorType_BOOSTER, IfcCompressorType_OPENTYPE, IfcCompressorType_HERMETIC, IfcCompressorType_SEMIHERMETIC, IfcCompressorType_WELDEDSHELLHERMETIC, IfcCompressorType_ROLLINGPISTON, IfcCompressorType_ROTARYVANE, IfcCompressorType_SINGLESCREW, IfcCompressorType_TWINSCREW, IfcCompressorType_USERDEFINED, IfcCompressorType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcCompressorType_DYNAMIC, IfcCompressorType_RECIPROCATING, IfcCompressorType_ROTARY, IfcCompressorType_SCROLL, IfcCompressorType_TROCHOIDAL, IfcCompressorType_SINGLESTAGE, IfcCompressorType_BOOSTER, IfcCompressorType_OPENTYPE, IfcCompressorType_HERMETIC, IfcCompressorType_SEMIHERMETIC, IfcCompressorType_WELDEDSHELLHERMETIC, IfcCompressorType_ROLLINGPISTON, IfcCompressorType_ROTARYVANE, IfcCompressorType_SINGLESCREW, IfcCompressorType_TWINSCREW, IfcCompressorType_USERDEFINED, IfcCompressorType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcCompressorTypeEnum (IfcEntityInstanceData* e);
+    IfcCompressorTypeEnum (Value v);
+    IfcCompressorTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcCondenserTypeEnum {
+class IFC_PARSE_API IfcCondenserTypeEnum : public IfcUtil::IfcBaseType {
 /// Enumeration defining the typical types of condensers.  Air is used as the cooling medium for AIRCOOLED; water is used as the cooling medium for all other types.  The IfcCondenserTypeEnum contains the following:
 /// 
 /// AIRCOOLED: A condenser in which heat is transferred to an air-stream.
@@ -1332,11 +1664,19 @@ struct IfcCondenserTypeEnum {
 ///   NOTDEFINED:  Undefined condenser type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.  WATERCOOLED added in IFC 2x4.
-typedef enum {IfcCondenserType_AIRCOOLED, IfcCondenserType_EVAPORATIVECOOLED, IfcCondenserType_WATERCOOLED, IfcCondenserType_WATERCOOLEDBRAZEDPLATE, IfcCondenserType_WATERCOOLEDSHELLCOIL, IfcCondenserType_WATERCOOLEDSHELLTUBE, IfcCondenserType_WATERCOOLEDTUBEINTUBE, IfcCondenserType_USERDEFINED, IfcCondenserType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcCondenserType_AIRCOOLED, IfcCondenserType_EVAPORATIVECOOLED, IfcCondenserType_WATERCOOLED, IfcCondenserType_WATERCOOLEDBRAZEDPLATE, IfcCondenserType_WATERCOOLEDSHELLCOIL, IfcCondenserType_WATERCOOLEDSHELLTUBE, IfcCondenserType_WATERCOOLEDTUBEINTUBE, IfcCondenserType_USERDEFINED, IfcCondenserType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcCondenserTypeEnum (IfcEntityInstanceData* e);
+    IfcCondenserTypeEnum (Value v);
+    IfcCondenserTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcConnectionTypeEnum {
+class IFC_PARSE_API IfcConnectionTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration defines the different ways how path based elements (such as IfcWallStandardCase) can connect, as shown in Figure 65. 
 /// 
 /// HISTORY New type in IFC Release 2.0 
@@ -1357,11 +1697,19 @@ struct IfcConnectionTypeEnum {
 ///   RelatedConnectionType: AtStart 
 /// 
 /// Figure 65 — Connection types</td
-typedef enum {IfcConnectionType_ATPATH, IfcConnectionType_ATSTART, IfcConnectionType_ATEND, IfcConnectionType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcConnectionType_ATPATH, IfcConnectionType_ATSTART, IfcConnectionType_ATEND, IfcConnectionType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcConnectionTypeEnum (IfcEntityInstanceData* e);
+    IfcConnectionTypeEnum (Value v);
+    IfcConnectionTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcConstraintEnum {
+class IFC_PARSE_API IfcConstraintEnum : public IfcUtil::IfcBaseType {
 /// IfcConstraintEnum is an enumeration used to qualify a constraint. 
 /// 
 /// HISTORY: New type in IFC Release 2.0
@@ -1379,11 +1727,19 @@ struct IfcConstraintEnum {
 /// 
 /// ADVISORY 
 ///   Qualifies a constraint such that it is advised that it is followed within or at the values set.
-typedef enum {IfcConstraint_HARD, IfcConstraint_SOFT, IfcConstraint_ADVISORY, IfcConstraint_USERDEFINED, IfcConstraint_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcConstraint_HARD, IfcConstraint_SOFT, IfcConstraint_ADVISORY, IfcConstraint_USERDEFINED, IfcConstraint_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcConstraintEnum (IfcEntityInstanceData* e);
+    IfcConstraintEnum (Value v);
+    IfcConstraintEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcConstructionEquipmentResourceTypeEnum {
+class IFC_PARSE_API IfcConstructionEquipmentResourceTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration is used to identify the primary purpose of a construction equipment resource. It is limited to the most common equipment used in construction.  The IfcConstructionEquipmentResourceTypeEnum contains the following:
 /// 
 /// DEMOLISHING: Removal or destruction of building elements.
@@ -1398,11 +1754,19 @@ struct IfcConstructionEquipmentResourceTypeEnum {
 /// NOTDEFINED: Undefined resource.
 /// 
 /// HISTORY: New enumeration in IFC2x4
-typedef enum {IfcConstructionEquipmentResourceType_DEMOLISHING, IfcConstructionEquipmentResourceType_EARTHMOVING, IfcConstructionEquipmentResourceType_ERECTING, IfcConstructionEquipmentResourceType_HEATING, IfcConstructionEquipmentResourceType_LIGHTING, IfcConstructionEquipmentResourceType_PAVING, IfcConstructionEquipmentResourceType_PUMPING, IfcConstructionEquipmentResourceType_TRANSPORTING, IfcConstructionEquipmentResourceType_USERDEFINED, IfcConstructionEquipmentResourceType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcConstructionEquipmentResourceType_DEMOLISHING, IfcConstructionEquipmentResourceType_EARTHMOVING, IfcConstructionEquipmentResourceType_ERECTING, IfcConstructionEquipmentResourceType_HEATING, IfcConstructionEquipmentResourceType_LIGHTING, IfcConstructionEquipmentResourceType_PAVING, IfcConstructionEquipmentResourceType_PUMPING, IfcConstructionEquipmentResourceType_TRANSPORTING, IfcConstructionEquipmentResourceType_USERDEFINED, IfcConstructionEquipmentResourceType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcConstructionEquipmentResourceTypeEnum (IfcEntityInstanceData* e);
+    IfcConstructionEquipmentResourceTypeEnum (Value v);
+    IfcConstructionEquipmentResourceTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcConstructionMaterialResourceTypeEnum {
+class IFC_PARSE_API IfcConstructionMaterialResourceTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration is used to identify the primary purpose of a construction material resource. It is limited to the most common raw materials used in construction and excludes materials commonly sold as finished products.  The IfcConstructionMaterialResourceTypeEnum contains the following:
 /// 
 /// AGGREGATES: Construction aggregate including sand, gravel, and crushed stone.
@@ -1418,11 +1782,19 @@ struct IfcConstructionMaterialResourceTypeEnum {
 /// NOTDEFINED: Undefined resource.
 /// 
 /// HISTORY: New enumeration in IFC2x4
-typedef enum {IfcConstructionMaterialResourceType_AGGREGATES, IfcConstructionMaterialResourceType_CONCRETE, IfcConstructionMaterialResourceType_DRYWALL, IfcConstructionMaterialResourceType_FUEL, IfcConstructionMaterialResourceType_GYPSUM, IfcConstructionMaterialResourceType_MASONRY, IfcConstructionMaterialResourceType_METAL, IfcConstructionMaterialResourceType_PLASTIC, IfcConstructionMaterialResourceType_WOOD, IfcConstructionMaterialResourceType_NOTDEFINED, IfcConstructionMaterialResourceType_USERDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcConstructionMaterialResourceType_AGGREGATES, IfcConstructionMaterialResourceType_CONCRETE, IfcConstructionMaterialResourceType_DRYWALL, IfcConstructionMaterialResourceType_FUEL, IfcConstructionMaterialResourceType_GYPSUM, IfcConstructionMaterialResourceType_MASONRY, IfcConstructionMaterialResourceType_METAL, IfcConstructionMaterialResourceType_PLASTIC, IfcConstructionMaterialResourceType_WOOD, IfcConstructionMaterialResourceType_NOTDEFINED, IfcConstructionMaterialResourceType_USERDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcConstructionMaterialResourceTypeEnum (IfcEntityInstanceData* e);
+    IfcConstructionMaterialResourceTypeEnum (Value v);
+    IfcConstructionMaterialResourceTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcConstructionProductResourceTypeEnum {
+class IFC_PARSE_API IfcConstructionProductResourceTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration is used to identify the primary purpose of a construction product resource. It describes use of products created for construction, and excludes products of the finished building model.  The IfcConstructionProductsResourceTypeEnum contains the following:
 /// 
 /// ASSEMBLY: Construction of assemblies for use as input to the building model or other assemblies.
@@ -1431,11 +1803,19 @@ struct IfcConstructionProductResourceTypeEnum {
 /// NOTDEFINED: Undefined resource.
 /// 
 /// HISTORY: New enumeration in IFC2x4
-typedef enum {IfcConstructionProductResourceType_ASSEMBLY, IfcConstructionProductResourceType_FORMWORK, IfcConstructionProductResourceType_USERDEFINED, IfcConstructionProductResourceType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcConstructionProductResourceType_ASSEMBLY, IfcConstructionProductResourceType_FORMWORK, IfcConstructionProductResourceType_USERDEFINED, IfcConstructionProductResourceType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcConstructionProductResourceTypeEnum (IfcEntityInstanceData* e);
+    IfcConstructionProductResourceTypeEnum (Value v);
+    IfcConstructionProductResourceTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcControllerTypeEnum {
+class IFC_PARSE_API IfcControllerTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcControllerTypeEnum defines the range of different types of controller that can be specified.
 /// 
 /// HISTORY: New type in IFC R2.0
@@ -1450,11 +1830,19 @@ struct IfcControllerTypeEnum {
 /// TWOPOSITION: Output can be either on or off
 /// USERDEFINED: User-defined type.
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcControllerType_FLOATING, IfcControllerType_PROGRAMMABLE, IfcControllerType_PROPORTIONAL, IfcControllerType_MULTIPOSITION, IfcControllerType_TWOPOSITION, IfcControllerType_USERDEFINED, IfcControllerType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcControllerType_FLOATING, IfcControllerType_PROGRAMMABLE, IfcControllerType_PROPORTIONAL, IfcControllerType_MULTIPOSITION, IfcControllerType_TWOPOSITION, IfcControllerType_USERDEFINED, IfcControllerType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcControllerTypeEnum (IfcEntityInstanceData* e);
+    IfcControllerTypeEnum (Value v);
+    IfcControllerTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcCooledBeamTypeEnum {
+class IFC_PARSE_API IfcCooledBeamTypeEnum : public IfcUtil::IfcBaseType {
 /// There are two general types of cooled or chilled beams: passive and active.
 /// 
 /// An active Cooled Beam uses a fan or other auxilliary device to aid in air recirculation, while a passive
@@ -1474,41 +1862,63 @@ struct IfcCooledBeamTypeEnum {
 /// NOTDEFINED:  Undefined cooled beam type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-typedef enum {IfcCooledBeamType_ACTIVE, IfcCooledBeamType_PASSIVE, IfcCooledBeamType_USERDEFINED, IfcCooledBeamType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcCooledBeamType_ACTIVE, IfcCooledBeamType_PASSIVE, IfcCooledBeamType_USERDEFINED, IfcCooledBeamType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcCooledBeamTypeEnum (IfcEntityInstanceData* e);
+    IfcCooledBeamTypeEnum (Value v);
+    IfcCooledBeamTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcCoolingTowerTypeEnum {
+class IFC_PARSE_API IfcCoolingTowerTypeEnum : public IfcUtil::IfcBaseType {
 /// Enumeration defining the typical types of cooling towers. 
 ///   The IfcCoolingTowerTypeEnum contains the following:
 /// 
 /// NATURALDRAFT: Air flow is produced naturally.
 ///   MECHANICALINDUCEDDRAFT: Air flow is produced by a mechanical device, typically one or more fans, located on 
-/// 
 /// the air outlet side of the cooling tower.
 ///   MECHANICALFORCEDDRAFT: Air flow is produced by a mechanical device, typically one or more fans, located on 
-/// 
 /// the inlet air side of the cooling tower.
 ///   USERDEFINED:  User-defined cooling tower type.
 ///   NOTDEFINED:  Undefined cooling tower type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-typedef enum {IfcCoolingTowerType_NATURALDRAFT, IfcCoolingTowerType_MECHANICALINDUCEDDRAFT, IfcCoolingTowerType_MECHANICALFORCEDDRAFT, IfcCoolingTowerType_USERDEFINED, IfcCoolingTowerType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcCoolingTowerType_NATURALDRAFT, IfcCoolingTowerType_MECHANICALINDUCEDDRAFT, IfcCoolingTowerType_MECHANICALFORCEDDRAFT, IfcCoolingTowerType_USERDEFINED, IfcCoolingTowerType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcCoolingTowerTypeEnum (IfcEntityInstanceData* e);
+    IfcCoolingTowerTypeEnum (Value v);
+    IfcCoolingTowerTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcCostItemTypeEnum {
+class IFC_PARSE_API IfcCostItemTypeEnum : public IfcUtil::IfcBaseType {
 /// An IfcCostItemTypeEnum is a list of the available types of cost items. 
 ///   HISTORY: New type in IFC2x4  
 ///   Enumeration 
 /// 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcCostItemType_USERDEFINED, IfcCostItemType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcCostItemType_USERDEFINED, IfcCostItemType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcCostItemTypeEnum (IfcEntityInstanceData* e);
+    IfcCostItemTypeEnum (Value v);
+    IfcCostItemTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcCostScheduleTypeEnum {
+class IFC_PARSE_API IfcCostScheduleTypeEnum : public IfcUtil::IfcBaseType {
 /// An IfcCostScheduleTypeEnum is a list of the available types of cost schedule from which that required may be selected. 
 ///   HISTORY: New type in IFC 2x2  
 ///   Enumeration 
@@ -1522,11 +1932,19 @@ struct IfcCostScheduleTypeEnum {
 /// SCHEDULEOFRATES: A listing of each type of goods forming construction or installation works with the cost of purchase, construction/installation, overheads and profit assigned so that additional items of that type can be costed.  
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcCostScheduleType_BUDGET, IfcCostScheduleType_COSTPLAN, IfcCostScheduleType_ESTIMATE, IfcCostScheduleType_TENDER, IfcCostScheduleType_PRICEDBILLOFQUANTITIES, IfcCostScheduleType_UNPRICEDBILLOFQUANTITIES, IfcCostScheduleType_SCHEDULEOFRATES, IfcCostScheduleType_USERDEFINED, IfcCostScheduleType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcCostScheduleType_BUDGET, IfcCostScheduleType_COSTPLAN, IfcCostScheduleType_ESTIMATE, IfcCostScheduleType_TENDER, IfcCostScheduleType_PRICEDBILLOFQUANTITIES, IfcCostScheduleType_UNPRICEDBILLOFQUANTITIES, IfcCostScheduleType_SCHEDULEOFRATES, IfcCostScheduleType_USERDEFINED, IfcCostScheduleType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcCostScheduleTypeEnum (IfcEntityInstanceData* e);
+    IfcCostScheduleTypeEnum (Value v);
+    IfcCostScheduleTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcCoveringTypeEnum {
+class IFC_PARSE_API IfcCoveringTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration defines the range
 /// of different types of covering that can further specify an
 /// IfcCovering or an IfcCoveringType.
@@ -1570,11 +1988,19 @@ struct IfcCoveringTypeEnum {
 /// covering
 /// NOTDEFINED: undefined type of
 /// covering
-typedef enum {IfcCoveringType_CEILING, IfcCoveringType_FLOORING, IfcCoveringType_CLADDING, IfcCoveringType_ROOFING, IfcCoveringType_MOLDING, IfcCoveringType_SKIRTINGBOARD, IfcCoveringType_INSULATION, IfcCoveringType_MEMBRANE, IfcCoveringType_SLEEVING, IfcCoveringType_WRAPPING, IfcCoveringType_COPING, IfcCoveringType_USERDEFINED, IfcCoveringType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcCoveringType_CEILING, IfcCoveringType_FLOORING, IfcCoveringType_CLADDING, IfcCoveringType_ROOFING, IfcCoveringType_MOLDING, IfcCoveringType_SKIRTINGBOARD, IfcCoveringType_INSULATION, IfcCoveringType_MEMBRANE, IfcCoveringType_SLEEVING, IfcCoveringType_WRAPPING, IfcCoveringType_COPING, IfcCoveringType_USERDEFINED, IfcCoveringType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcCoveringTypeEnum (IfcEntityInstanceData* e);
+    IfcCoveringTypeEnum (Value v);
+    IfcCoveringTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcCrewResourceTypeEnum {
+class IFC_PARSE_API IfcCrewResourceTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration is used to identify the primary purpose of a crew resource.  The IfcCrewResourceTypeEnum contains the following:
 /// 
 /// OFFICE: A composition of resources performing administration work in an office.
@@ -1583,11 +2009,19 @@ struct IfcCrewResourceTypeEnum {
 /// NOTDEFINED: Undefined resource.
 /// 
 /// HISTORY: New enumeration in IFC2x4
-typedef enum {IfcCrewResourceType_OFFICE, IfcCrewResourceType_SITE, IfcCrewResourceType_USERDEFINED, IfcCrewResourceType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcCrewResourceType_OFFICE, IfcCrewResourceType_SITE, IfcCrewResourceType_USERDEFINED, IfcCrewResourceType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcCrewResourceTypeEnum (IfcEntityInstanceData* e);
+    IfcCrewResourceTypeEnum (Value v);
+    IfcCrewResourceTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcCurtainWallTypeEnum {
+class IFC_PARSE_API IfcCurtainWallTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: Enumeration defining
 /// the valid types of curtain wall that can be predefined using the
 /// enumeration values. 
@@ -1597,11 +2031,19 @@ struct IfcCurtainWallTypeEnum {
 /// are no specific enumerators defined, the IfcCurtainWallTypeEnum
 /// has
 /// been added for future extensions.
-typedef enum {IfcCurtainWallType_USERDEFINED, IfcCurtainWallType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcCurtainWallType_USERDEFINED, IfcCurtainWallType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcCurtainWallTypeEnum (IfcEntityInstanceData* e);
+    IfcCurtainWallTypeEnum (Value v);
+    IfcCurtainWallTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcCurveInterpolationEnum {
+class IFC_PARSE_API IfcCurveInterpolationEnum : public IfcUtil::IfcBaseType {
 /// IfcCurveInterpolationEnum specifies the possible methods
 /// for the interpolation of property values given as a curve.
 /// 
@@ -1619,11 +2061,19 @@ struct IfcCurveInterpolationEnum {
 /// logarithm (base 10) of the values.
 /// NOTDEFINED: No interpolation information is
 /// provided
-typedef enum {IfcCurveInterpolation_LINEAR, IfcCurveInterpolation_LOG_LINEAR, IfcCurveInterpolation_LOG_LOG, IfcCurveInterpolation_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcCurveInterpolation_LINEAR, IfcCurveInterpolation_LOG_LINEAR, IfcCurveInterpolation_LOG_LOG, IfcCurveInterpolation_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcCurveInterpolationEnum (IfcEntityInstanceData* e);
+    IfcCurveInterpolationEnum (Value v);
+    IfcCurveInterpolationEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcDamperTypeEnum {
+class IFC_PARSE_API IfcDamperTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration defines the various types of damper:
 /// 
 /// BALANCINGDAMPER: Damper used for purposes of manually balancing pressure differences.  Commonly operated by mechanical adjustment.
@@ -1641,11 +2091,19 @@ struct IfcDamperTypeEnum {
 /// NOTDEFINED: Undefined damper.
 /// 
 /// HISTORY: New enumeration in IFC R2.0
-typedef enum {IfcDamperType_BACKDRAFTDAMPER, IfcDamperType_BALANCINGDAMPER, IfcDamperType_BLASTDAMPER, IfcDamperType_CONTROLDAMPER, IfcDamperType_FIREDAMPER, IfcDamperType_FIRESMOKEDAMPER, IfcDamperType_FUMEHOODEXHAUST, IfcDamperType_GRAVITYDAMPER, IfcDamperType_GRAVITYRELIEFDAMPER, IfcDamperType_RELIEFDAMPER, IfcDamperType_SMOKEDAMPER, IfcDamperType_USERDEFINED, IfcDamperType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcDamperType_BACKDRAFTDAMPER, IfcDamperType_BALANCINGDAMPER, IfcDamperType_BLASTDAMPER, IfcDamperType_CONTROLDAMPER, IfcDamperType_FIREDAMPER, IfcDamperType_FIRESMOKEDAMPER, IfcDamperType_FUMEHOODEXHAUST, IfcDamperType_GRAVITYDAMPER, IfcDamperType_GRAVITYRELIEFDAMPER, IfcDamperType_RELIEFDAMPER, IfcDamperType_SMOKEDAMPER, IfcDamperType_USERDEFINED, IfcDamperType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcDamperTypeEnum (IfcEntityInstanceData* e);
+    IfcDamperTypeEnum (Value v);
+    IfcDamperTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcDataOriginEnum {
+class IFC_PARSE_API IfcDataOriginEnum : public IfcUtil::IfcBaseType {
 /// IfcDataOriginEnum identifies the origin of time data:
 /// 
 /// MEASURED: The origin of the time data is a measurement device.
@@ -1654,11 +2112,19 @@ struct IfcDataOriginEnum {
 ///   NOTDEFINED: The origin of the time data is undefined.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-typedef enum {IfcDataOrigin_MEASURED, IfcDataOrigin_PREDICTED, IfcDataOrigin_SIMULATED, IfcDataOrigin_USERDEFINED, IfcDataOrigin_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcDataOrigin_MEASURED, IfcDataOrigin_PREDICTED, IfcDataOrigin_SIMULATED, IfcDataOrigin_USERDEFINED, IfcDataOrigin_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcDataOriginEnum (IfcEntityInstanceData* e);
+    IfcDataOriginEnum (Value v);
+    IfcDataOriginEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcDerivedUnitEnum {
+class IFC_PARSE_API IfcDerivedUnitEnum : public IfcUtil::IfcBaseType {
 /// IfcDerivedUnitEnum is an enumeration type for allowed types of derived units.
 /// ENUMERATION 
 /// 
@@ -1716,11 +2182,19 @@ struct IfcDerivedUnitEnum {
 /// HISTORY: New type in IFC Release 2.0.
 /// 
 /// IFC 2x4 change: added TEMPERATURERATEOFCHANGE.
-typedef enum {IfcDerivedUnit_ANGULARVELOCITYUNIT, IfcDerivedUnit_AREADENSITYUNIT, IfcDerivedUnit_COMPOUNDPLANEANGLEUNIT, IfcDerivedUnit_DYNAMICVISCOSITYUNIT, IfcDerivedUnit_HEATFLUXDENSITYUNIT, IfcDerivedUnit_INTEGERCOUNTRATEUNIT, IfcDerivedUnit_ISOTHERMALMOISTURECAPACITYUNIT, IfcDerivedUnit_KINEMATICVISCOSITYUNIT, IfcDerivedUnit_LINEARVELOCITYUNIT, IfcDerivedUnit_MASSDENSITYUNIT, IfcDerivedUnit_MASSFLOWRATEUNIT, IfcDerivedUnit_MOISTUREDIFFUSIVITYUNIT, IfcDerivedUnit_MOLECULARWEIGHTUNIT, IfcDerivedUnit_SPECIFICHEATCAPACITYUNIT, IfcDerivedUnit_THERMALADMITTANCEUNIT, IfcDerivedUnit_THERMALCONDUCTANCEUNIT, IfcDerivedUnit_THERMALRESISTANCEUNIT, IfcDerivedUnit_THERMALTRANSMITTANCEUNIT, IfcDerivedUnit_VAPORPERMEABILITYUNIT, IfcDerivedUnit_VOLUMETRICFLOWRATEUNIT, IfcDerivedUnit_ROTATIONALFREQUENCYUNIT, IfcDerivedUnit_TORQUEUNIT, IfcDerivedUnit_MOMENTOFINERTIAUNIT, IfcDerivedUnit_LINEARMOMENTUNIT, IfcDerivedUnit_LINEARFORCEUNIT, IfcDerivedUnit_PLANARFORCEUNIT, IfcDerivedUnit_MODULUSOFELASTICITYUNIT, IfcDerivedUnit_SHEARMODULUSUNIT, IfcDerivedUnit_LINEARSTIFFNESSUNIT, IfcDerivedUnit_ROTATIONALSTIFFNESSUNIT, IfcDerivedUnit_MODULUSOFSUBGRADEREACTIONUNIT, IfcDerivedUnit_ACCELERATIONUNIT, IfcDerivedUnit_CURVATUREUNIT, IfcDerivedUnit_HEATINGVALUEUNIT, IfcDerivedUnit_IONCONCENTRATIONUNIT, IfcDerivedUnit_LUMINOUSINTENSITYDISTRIBUTIONUNIT, IfcDerivedUnit_MASSPERLENGTHUNIT, IfcDerivedUnit_MODULUSOFLINEARSUBGRADEREACTIONUNIT, IfcDerivedUnit_MODULUSOFROTATIONALSUBGRADEREACTIONUNIT, IfcDerivedUnit_PHUNIT, IfcDerivedUnit_ROTATIONALMASSUNIT, IfcDerivedUnit_SECTIONAREAINTEGRALUNIT, IfcDerivedUnit_SECTIONMODULUSUNIT, IfcDerivedUnit_SOUNDPOWERLEVELUNIT, IfcDerivedUnit_SOUNDPOWERUNIT, IfcDerivedUnit_SOUNDPRESSURELEVELUNIT, IfcDerivedUnit_SOUNDPRESSUREUNIT, IfcDerivedUnit_TEMPERATUREGRADIENTUNIT, IfcDerivedUnit_TEMPERATURERATEOFCHANGEUNIT, IfcDerivedUnit_THERMALEXPANSIONCOEFFICIENTUNIT, IfcDerivedUnit_WARPINGCONSTANTUNIT, IfcDerivedUnit_WARPINGMOMENTUNIT, IfcDerivedUnit_USERDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcDerivedUnit_ANGULARVELOCITYUNIT, IfcDerivedUnit_AREADENSITYUNIT, IfcDerivedUnit_COMPOUNDPLANEANGLEUNIT, IfcDerivedUnit_DYNAMICVISCOSITYUNIT, IfcDerivedUnit_HEATFLUXDENSITYUNIT, IfcDerivedUnit_INTEGERCOUNTRATEUNIT, IfcDerivedUnit_ISOTHERMALMOISTURECAPACITYUNIT, IfcDerivedUnit_KINEMATICVISCOSITYUNIT, IfcDerivedUnit_LINEARVELOCITYUNIT, IfcDerivedUnit_MASSDENSITYUNIT, IfcDerivedUnit_MASSFLOWRATEUNIT, IfcDerivedUnit_MOISTUREDIFFUSIVITYUNIT, IfcDerivedUnit_MOLECULARWEIGHTUNIT, IfcDerivedUnit_SPECIFICHEATCAPACITYUNIT, IfcDerivedUnit_THERMALADMITTANCEUNIT, IfcDerivedUnit_THERMALCONDUCTANCEUNIT, IfcDerivedUnit_THERMALRESISTANCEUNIT, IfcDerivedUnit_THERMALTRANSMITTANCEUNIT, IfcDerivedUnit_VAPORPERMEABILITYUNIT, IfcDerivedUnit_VOLUMETRICFLOWRATEUNIT, IfcDerivedUnit_ROTATIONALFREQUENCYUNIT, IfcDerivedUnit_TORQUEUNIT, IfcDerivedUnit_MOMENTOFINERTIAUNIT, IfcDerivedUnit_LINEARMOMENTUNIT, IfcDerivedUnit_LINEARFORCEUNIT, IfcDerivedUnit_PLANARFORCEUNIT, IfcDerivedUnit_MODULUSOFELASTICITYUNIT, IfcDerivedUnit_SHEARMODULUSUNIT, IfcDerivedUnit_LINEARSTIFFNESSUNIT, IfcDerivedUnit_ROTATIONALSTIFFNESSUNIT, IfcDerivedUnit_MODULUSOFSUBGRADEREACTIONUNIT, IfcDerivedUnit_ACCELERATIONUNIT, IfcDerivedUnit_CURVATUREUNIT, IfcDerivedUnit_HEATINGVALUEUNIT, IfcDerivedUnit_IONCONCENTRATIONUNIT, IfcDerivedUnit_LUMINOUSINTENSITYDISTRIBUTIONUNIT, IfcDerivedUnit_MASSPERLENGTHUNIT, IfcDerivedUnit_MODULUSOFLINEARSUBGRADEREACTIONUNIT, IfcDerivedUnit_MODULUSOFROTATIONALSUBGRADEREACTIONUNIT, IfcDerivedUnit_PHUNIT, IfcDerivedUnit_ROTATIONALMASSUNIT, IfcDerivedUnit_SECTIONAREAINTEGRALUNIT, IfcDerivedUnit_SECTIONMODULUSUNIT, IfcDerivedUnit_SOUNDPOWERLEVELUNIT, IfcDerivedUnit_SOUNDPOWERUNIT, IfcDerivedUnit_SOUNDPRESSURELEVELUNIT, IfcDerivedUnit_SOUNDPRESSUREUNIT, IfcDerivedUnit_TEMPERATUREGRADIENTUNIT, IfcDerivedUnit_TEMPERATURERATEOFCHANGEUNIT, IfcDerivedUnit_THERMALEXPANSIONCOEFFICIENTUNIT, IfcDerivedUnit_WARPINGCONSTANTUNIT, IfcDerivedUnit_WARPINGMOMENTUNIT, IfcDerivedUnit_USERDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcDerivedUnitEnum (IfcEntityInstanceData* e);
+    IfcDerivedUnitEnum (Value v);
+    IfcDerivedUnitEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcDirectionSenseEnum {
+class IFC_PARSE_API IfcDirectionSenseEnum : public IfcUtil::IfcBaseType {
 /// IfcDirectionSenseEnum is an enumeration denoting whether sense of direction is positive or negative along the given axis.
 /// 
 /// ENUMERATION
@@ -1729,11 +2203,19 @@ struct IfcDirectionSenseEnum {
 /// NEGATIVE: Direction defined to be negative.
 /// 
 /// HISTORY New Type in IFC2x.
-typedef enum {IfcDirectionSense_POSITIVE, IfcDirectionSense_NEGATIVE} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcDirectionSense_POSITIVE, IfcDirectionSense_NEGATIVE} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcDirectionSenseEnum (IfcEntityInstanceData* e);
+    IfcDirectionSenseEnum (Value v);
+    IfcDirectionSenseEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcDiscreteAccessoryTypeEnum {
+class IFC_PARSE_API IfcDiscreteAccessoryTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration defines the different types of discrete accessories:
 /// 
 /// ANCHORPLATE: An accessory consisting of a steel plate, shear stud connectors or welded-on rebar which is embedded into the surface of a concrete element so that other elements can be welded or bolted onto it later.
@@ -1743,11 +2225,19 @@ struct IfcDiscreteAccessoryTypeEnum {
 /// NOTDEFINED: Undefined accessory
 /// 
 /// HISTORY New Enumeration in IFC 2x4.
-typedef enum {IfcDiscreteAccessoryType_ANCHORPLATE, IfcDiscreteAccessoryType_BRACKET, IfcDiscreteAccessoryType_SHOE, IfcDiscreteAccessoryType_EXPANSION_JOINT_DEVICE, IfcDiscreteAccessoryType_USERDEFINED, IfcDiscreteAccessoryType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcDiscreteAccessoryType_ANCHORPLATE, IfcDiscreteAccessoryType_BRACKET, IfcDiscreteAccessoryType_SHOE, IfcDiscreteAccessoryType_EXPANSION_JOINT_DEVICE, IfcDiscreteAccessoryType_USERDEFINED, IfcDiscreteAccessoryType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcDiscreteAccessoryTypeEnum (IfcEntityInstanceData* e);
+    IfcDiscreteAccessoryTypeEnum (Value v);
+    IfcDiscreteAccessoryTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcDistributionChamberElementTypeEnum {
+class IFC_PARSE_API IfcDistributionChamberElementTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration identifies different types of distribution chambers.
 /// 
 /// Valid enumerations are:
@@ -1764,17 +2254,33 @@ struct IfcDistributionChamberElementTypeEnum {
 /// NOTDEFINED: Undefined chamber type.
 /// 
 /// HISTORY: New enumeration in IFC R2x2
-typedef enum {IfcDistributionChamberElementType_FORMEDDUCT, IfcDistributionChamberElementType_INSPECTIONCHAMBER, IfcDistributionChamberElementType_INSPECTIONPIT, IfcDistributionChamberElementType_MANHOLE, IfcDistributionChamberElementType_METERCHAMBER, IfcDistributionChamberElementType_SUMP, IfcDistributionChamberElementType_TRENCH, IfcDistributionChamberElementType_VALVECHAMBER, IfcDistributionChamberElementType_USERDEFINED, IfcDistributionChamberElementType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
-};
-struct IfcDistributionPortTypeEnum {
+public:
+    typedef enum {IfcDistributionChamberElementType_FORMEDDUCT, IfcDistributionChamberElementType_INSPECTIONCHAMBER, IfcDistributionChamberElementType_INSPECTIONPIT, IfcDistributionChamberElementType_MANHOLE, IfcDistributionChamberElementType_METERCHAMBER, IfcDistributionChamberElementType_SUMP, IfcDistributionChamberElementType_TRENCH, IfcDistributionChamberElementType_VALVECHAMBER, IfcDistributionChamberElementType_USERDEFINED, IfcDistributionChamberElementType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
 
-typedef enum {IfcDistributionPortType_CABLE, IfcDistributionPortType_CABLECARRIER, IfcDistributionPortType_DUCT, IfcDistributionPortType_PIPE, IfcDistributionPortType_USERDEFINED, IfcDistributionPortType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcDistributionChamberElementTypeEnum (IfcEntityInstanceData* e);
+    IfcDistributionChamberElementTypeEnum (Value v);
+    IfcDistributionChamberElementTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcDistributionSystemEnum {
+class IFC_PARSE_API IfcDistributionPortTypeEnum : public IfcUtil::IfcBaseType {
+
+public:
+    typedef enum {IfcDistributionPortType_CABLE, IfcDistributionPortType_CABLECARRIER, IfcDistributionPortType_DUCT, IfcDistributionPortType_PIPE, IfcDistributionPortType_USERDEFINED, IfcDistributionPortType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcDistributionPortTypeEnum (IfcEntityInstanceData* e);
+    IfcDistributionPortTypeEnum (Value v);
+    IfcDistributionPortTypeEnum (const std::string& v);
+    operator Value() const;
+};
+class IFC_PARSE_API IfcDistributionSystemEnum : public IfcUtil::IfcBaseType {
 /// This enumeration identifies different types of distribution systems.
 /// 
 /// HISTORY: New enumeration in IFC R2x4
@@ -1822,11 +2328,19 @@ struct IfcDistributionSystemEnum {
 ///   SIGNAL: A raw analog signal, such as modulated data or measurements from sensors.
 ///   TELEPHONE: A transport or network dedicated to telephone system usage.
 ///   TV: A transport of multiple media sources (e.g. analog cable, satellite, over-the-air).
-typedef enum {IfcDistributionSystem_AIRCONDITIONING, IfcDistributionSystem_AUDIOVISUAL, IfcDistributionSystem_CHEMICAL, IfcDistributionSystem_CHILLEDWATER, IfcDistributionSystem_COMMUNICATION, IfcDistributionSystem_COMPRESSEDAIR, IfcDistributionSystem_CONDENSERWATER, IfcDistributionSystem_CONTROL, IfcDistributionSystem_CONVEYING, IfcDistributionSystem_DATA, IfcDistributionSystem_DISPOSAL, IfcDistributionSystem_DOMESTICCOLDWATER, IfcDistributionSystem_DOMESTICHOTWATER, IfcDistributionSystem_DRAINAGE, IfcDistributionSystem_EARTHING, IfcDistributionSystem_ELECTRICAL, IfcDistributionSystem_ELECTROACOUSTIC, IfcDistributionSystem_EXHAUST, IfcDistributionSystem_FIREPROTECTION, IfcDistributionSystem_FUEL, IfcDistributionSystem_GAS, IfcDistributionSystem_HAZARDOUS, IfcDistributionSystem_HEATING, IfcDistributionSystem_LIGHTING, IfcDistributionSystem_LIGHTNINGPROTECTION, IfcDistributionSystem_MUNICIPALSOLIDWASTE, IfcDistributionSystem_OIL, IfcDistributionSystem_OPERATIONAL, IfcDistributionSystem_POWERGENERATION, IfcDistributionSystem_RAINWATER, IfcDistributionSystem_REFRIGERATION, IfcDistributionSystem_SECURITY, IfcDistributionSystem_SEWAGE, IfcDistributionSystem_SIGNAL, IfcDistributionSystem_STORMWATER, IfcDistributionSystem_TELEPHONE, IfcDistributionSystem_TV, IfcDistributionSystem_VACUUM, IfcDistributionSystem_VENT, IfcDistributionSystem_VENTILATION, IfcDistributionSystem_WASTEWATER, IfcDistributionSystem_WATERSUPPLY, IfcDistributionSystem_USERDEFINED, IfcDistributionSystem_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcDistributionSystem_AIRCONDITIONING, IfcDistributionSystem_AUDIOVISUAL, IfcDistributionSystem_CHEMICAL, IfcDistributionSystem_CHILLEDWATER, IfcDistributionSystem_COMMUNICATION, IfcDistributionSystem_COMPRESSEDAIR, IfcDistributionSystem_CONDENSERWATER, IfcDistributionSystem_CONTROL, IfcDistributionSystem_CONVEYING, IfcDistributionSystem_DATA, IfcDistributionSystem_DISPOSAL, IfcDistributionSystem_DOMESTICCOLDWATER, IfcDistributionSystem_DOMESTICHOTWATER, IfcDistributionSystem_DRAINAGE, IfcDistributionSystem_EARTHING, IfcDistributionSystem_ELECTRICAL, IfcDistributionSystem_ELECTROACOUSTIC, IfcDistributionSystem_EXHAUST, IfcDistributionSystem_FIREPROTECTION, IfcDistributionSystem_FUEL, IfcDistributionSystem_GAS, IfcDistributionSystem_HAZARDOUS, IfcDistributionSystem_HEATING, IfcDistributionSystem_LIGHTING, IfcDistributionSystem_LIGHTNINGPROTECTION, IfcDistributionSystem_MUNICIPALSOLIDWASTE, IfcDistributionSystem_OIL, IfcDistributionSystem_OPERATIONAL, IfcDistributionSystem_POWERGENERATION, IfcDistributionSystem_RAINWATER, IfcDistributionSystem_REFRIGERATION, IfcDistributionSystem_SECURITY, IfcDistributionSystem_SEWAGE, IfcDistributionSystem_SIGNAL, IfcDistributionSystem_STORMWATER, IfcDistributionSystem_TELEPHONE, IfcDistributionSystem_TV, IfcDistributionSystem_VACUUM, IfcDistributionSystem_VENT, IfcDistributionSystem_VENTILATION, IfcDistributionSystem_WASTEWATER, IfcDistributionSystem_WATERSUPPLY, IfcDistributionSystem_USERDEFINED, IfcDistributionSystem_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcDistributionSystemEnum (IfcEntityInstanceData* e);
+    IfcDistributionSystemEnum (Value v);
+    IfcDistributionSystemEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcDocumentConfidentialityEnum {
+class IFC_PARSE_API IfcDocumentConfidentialityEnum : public IfcUtil::IfcBaseType {
 /// IfcDocumentConfidentialityEnum enables selection of the level of confidentiality of document information from a list of choices. 
 /// 
 /// HISTORY: New enumeration in IFC 2x
@@ -1839,19 +2353,35 @@ struct IfcDocumentConfidentialityEnum {
 /// PERSONAL: Document is personal to the author. 
 /// USERDEFINED 
 /// NOTDEFINED
-typedef enum {IfcDocumentConfidentiality_PUBLIC, IfcDocumentConfidentiality_RESTRICTED, IfcDocumentConfidentiality_CONFIDENTIAL, IfcDocumentConfidentiality_PERSONAL, IfcDocumentConfidentiality_USERDEFINED, IfcDocumentConfidentiality_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcDocumentConfidentiality_PUBLIC, IfcDocumentConfidentiality_RESTRICTED, IfcDocumentConfidentiality_CONFIDENTIAL, IfcDocumentConfidentiality_PERSONAL, IfcDocumentConfidentiality_USERDEFINED, IfcDocumentConfidentiality_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcDocumentConfidentialityEnum (IfcEntityInstanceData* e);
+    IfcDocumentConfidentialityEnum (Value v);
+    IfcDocumentConfidentialityEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcDocumentStatusEnum {
+class IFC_PARSE_API IfcDocumentStatusEnum : public IfcUtil::IfcBaseType {
 /// IfcDocumentStatusEnum enables selection of the status of document information from a list of choices.
 /// 
 /// HISTORY: New enumeration in IFC Release 2x.
-typedef enum {IfcDocumentStatus_DRAFT, IfcDocumentStatus_FINALDRAFT, IfcDocumentStatus_FINAL, IfcDocumentStatus_REVISION, IfcDocumentStatus_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcDocumentStatus_DRAFT, IfcDocumentStatus_FINALDRAFT, IfcDocumentStatus_FINAL, IfcDocumentStatus_REVISION, IfcDocumentStatus_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcDocumentStatusEnum (IfcEntityInstanceData* e);
+    IfcDocumentStatusEnum (Value v);
+    IfcDocumentStatusEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcDoorPanelOperationEnum {
+class IFC_PARSE_API IfcDoorPanelOperationEnum : public IfcUtil::IfcBaseType {
 /// This enumeration defines the basic ways how individual door panels operate as shown in Figure 164.
 /// HISTORY New Enumeration in IFC Release 2.0.
 /// IFC2x4 CHANGE Enumerator FIXEDPANELadded.
@@ -1885,11 +2415,19 @@ struct IfcDoorPanelOperationEnum {
 /// Figure 165 — Door panel operations
 /// 
 /// NOTE  Figures (symbolic representation) depend on the national building code.  These figures are only shown as illustrations
-typedef enum {IfcDoorPanelOperation_SWINGING, IfcDoorPanelOperation_DOUBLE_ACTING, IfcDoorPanelOperation_SLIDING, IfcDoorPanelOperation_FOLDING, IfcDoorPanelOperation_REVOLVING, IfcDoorPanelOperation_ROLLINGUP, IfcDoorPanelOperation_FIXEDPANEL, IfcDoorPanelOperation_USERDEFINED, IfcDoorPanelOperation_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcDoorPanelOperation_SWINGING, IfcDoorPanelOperation_DOUBLE_ACTING, IfcDoorPanelOperation_SLIDING, IfcDoorPanelOperation_FOLDING, IfcDoorPanelOperation_REVOLVING, IfcDoorPanelOperation_ROLLINGUP, IfcDoorPanelOperation_FIXEDPANEL, IfcDoorPanelOperation_USERDEFINED, IfcDoorPanelOperation_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcDoorPanelOperationEnum (IfcEntityInstanceData* e);
+    IfcDoorPanelOperationEnum (Value v);
+    IfcDoorPanelOperationEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcDoorPanelPositionEnum {
+class IFC_PARSE_API IfcDoorPanelPositionEnum : public IfcUtil::IfcBaseType {
 /// Definition: This enumeration defines the basic ways to describe the location of a door panel within a door lining.
 /// 
 /// HISTORY New Enumeration in IFC Release 2.x
@@ -1897,11 +2435,19 @@ struct IfcDoorPanelPositionEnum {
 /// Figure 166 shows the designation of a door panel with PanelPosition = LEFT and a door panel with PanelPosition = RIGHT within a door style with OperationType = DOUBLE_DOOR_SINGLE_SWING. The position is given as shown in the XZ plane of the local placement, looking into the direction of the positive Y axis. 
 /// 
 /// Figure 166 — Door panel positions
-typedef enum {IfcDoorPanelPosition_LEFT, IfcDoorPanelPosition_MIDDLE, IfcDoorPanelPosition_RIGHT, IfcDoorPanelPosition_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcDoorPanelPosition_LEFT, IfcDoorPanelPosition_MIDDLE, IfcDoorPanelPosition_RIGHT, IfcDoorPanelPosition_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcDoorPanelPositionEnum (IfcEntityInstanceData* e);
+    IfcDoorPanelPositionEnum (Value v);
+    IfcDoorPanelPositionEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcDoorStyleConstructionEnum {
+class IFC_PARSE_API IfcDoorStyleConstructionEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration defines the
 ///   basic types of construction of doors. The construction type
 ///   relates to the main material (or material combination) used
@@ -1909,11 +2455,19 @@ struct IfcDoorStyleConstructionEnum {
 /// 
 /// HISTORY New Enumeration in
 ///   IFC Release 2x .
-typedef enum {IfcDoorStyleConstruction_ALUMINIUM, IfcDoorStyleConstruction_HIGH_GRADE_STEEL, IfcDoorStyleConstruction_STEEL, IfcDoorStyleConstruction_WOOD, IfcDoorStyleConstruction_ALUMINIUM_WOOD, IfcDoorStyleConstruction_ALUMINIUM_PLASTIC, IfcDoorStyleConstruction_PLASTIC, IfcDoorStyleConstruction_USERDEFINED, IfcDoorStyleConstruction_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcDoorStyleConstruction_ALUMINIUM, IfcDoorStyleConstruction_HIGH_GRADE_STEEL, IfcDoorStyleConstruction_STEEL, IfcDoorStyleConstruction_WOOD, IfcDoorStyleConstruction_ALUMINIUM_WOOD, IfcDoorStyleConstruction_ALUMINIUM_PLASTIC, IfcDoorStyleConstruction_PLASTIC, IfcDoorStyleConstruction_USERDEFINED, IfcDoorStyleConstruction_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcDoorStyleConstructionEnum (IfcEntityInstanceData* e);
+    IfcDoorStyleConstructionEnum (Value v);
+    IfcDoorStyleConstructionEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcDoorStyleOperationEnum {
+class IFC_PARSE_API IfcDoorStyleOperationEnum : public IfcUtil::IfcBaseType {
 /// This enumeration defines the basic ways to describe how doors operate as shown in Figure 167.
 /// HISTORY  New Enumeration in Release IFC2x.
 /// 
@@ -2083,11 +2637,19 @@ struct IfcDoorStyleOperationEnum {
 /// defined by the ObjectPlacement at IfcDoor,
 /// and the IfcDoorLiningProperties.LiningOffset
 /// parameter.
-typedef enum {IfcDoorStyleOperation_SINGLE_SWING_LEFT, IfcDoorStyleOperation_SINGLE_SWING_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_SINGLE_SWING, IfcDoorStyleOperation_DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_LEFT, IfcDoorStyleOperation_DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_RIGHT, IfcDoorStyleOperation_DOUBLE_SWING_LEFT, IfcDoorStyleOperation_DOUBLE_SWING_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_DOUBLE_SWING, IfcDoorStyleOperation_SLIDING_TO_LEFT, IfcDoorStyleOperation_SLIDING_TO_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_SLIDING, IfcDoorStyleOperation_FOLDING_TO_LEFT, IfcDoorStyleOperation_FOLDING_TO_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_FOLDING, IfcDoorStyleOperation_REVOLVING, IfcDoorStyleOperation_ROLLINGUP, IfcDoorStyleOperation_USERDEFINED, IfcDoorStyleOperation_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcDoorStyleOperation_SINGLE_SWING_LEFT, IfcDoorStyleOperation_SINGLE_SWING_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_SINGLE_SWING, IfcDoorStyleOperation_DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_LEFT, IfcDoorStyleOperation_DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_RIGHT, IfcDoorStyleOperation_DOUBLE_SWING_LEFT, IfcDoorStyleOperation_DOUBLE_SWING_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_DOUBLE_SWING, IfcDoorStyleOperation_SLIDING_TO_LEFT, IfcDoorStyleOperation_SLIDING_TO_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_SLIDING, IfcDoorStyleOperation_FOLDING_TO_LEFT, IfcDoorStyleOperation_FOLDING_TO_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_FOLDING, IfcDoorStyleOperation_REVOLVING, IfcDoorStyleOperation_ROLLINGUP, IfcDoorStyleOperation_USERDEFINED, IfcDoorStyleOperation_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcDoorStyleOperationEnum (IfcEntityInstanceData* e);
+    IfcDoorStyleOperationEnum (Value v);
+    IfcDoorStyleOperationEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcDoorTypeEnum {
+class IFC_PARSE_API IfcDoorTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration defines the
 /// different predefined types of an IfcDoorType object can
 /// fulfill:
@@ -2104,11 +2666,19 @@ struct IfcDoorTypeEnum {
 /// 
 /// HISTORY New Enumeration
 /// in IFC2x4.
-typedef enum {IfcDoorType_DOOR, IfcDoorType_GATE, IfcDoorType_TRAPDOOR, IfcDoorType_USERDEFINED, IfcDoorType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcDoorType_DOOR, IfcDoorType_GATE, IfcDoorType_TRAPDOOR, IfcDoorType_USERDEFINED, IfcDoorType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcDoorTypeEnum (IfcEntityInstanceData* e);
+    IfcDoorTypeEnum (Value v);
+    IfcDoorTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcDoorTypeOperationEnum {
+class IFC_PARSE_API IfcDoorTypeOperationEnum : public IfcUtil::IfcBaseType {
 /// This enumeration defines the basic ways to describe how doors operate, as shown in Figure 66. It combines the partitioning of the door into a single or multiple door panels and the operation types of that panels.
 /// 
 /// In the most common case of swinging doors the IfcDoorTypeOperationEnum defined the hinge side (left hing or right hung) and the opening direction (opening to the left, opening to the right). Whether the door opens inwards or outwards is determined by the local coordinate system of the IfcDoor, or IfcDoorStandardCase.
@@ -2289,11 +2859,19 @@ struct IfcDoorTypeOperationEnum {
 /// The location of the panel relative to the wall thickness is
 /// defined by theObjectPlacement at IfcDoor, and the
 /// IfcDoorLiningProperties.LiningOffset parameter.
-typedef enum {IfcDoorTypeOperation_SINGLE_SWING_LEFT, IfcDoorTypeOperation_SINGLE_SWING_RIGHT, IfcDoorTypeOperation_DOUBLE_DOOR_SINGLE_SWING, IfcDoorTypeOperation_DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_LEFT, IfcDoorTypeOperation_DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_RIGHT, IfcDoorTypeOperation_DOUBLE_SWING_LEFT, IfcDoorTypeOperation_DOUBLE_SWING_RIGHT, IfcDoorTypeOperation_DOUBLE_DOOR_DOUBLE_SWING, IfcDoorTypeOperation_SLIDING_TO_LEFT, IfcDoorTypeOperation_SLIDING_TO_RIGHT, IfcDoorTypeOperation_DOUBLE_DOOR_SLIDING, IfcDoorTypeOperation_FOLDING_TO_LEFT, IfcDoorTypeOperation_FOLDING_TO_RIGHT, IfcDoorTypeOperation_DOUBLE_DOOR_FOLDING, IfcDoorTypeOperation_REVOLVING, IfcDoorTypeOperation_ROLLINGUP, IfcDoorTypeOperation_SWING_FIXED_LEFT, IfcDoorTypeOperation_SWING_FIXED_RIGHT, IfcDoorTypeOperation_USERDEFINED, IfcDoorTypeOperation_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcDoorTypeOperation_SINGLE_SWING_LEFT, IfcDoorTypeOperation_SINGLE_SWING_RIGHT, IfcDoorTypeOperation_DOUBLE_DOOR_SINGLE_SWING, IfcDoorTypeOperation_DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_LEFT, IfcDoorTypeOperation_DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_RIGHT, IfcDoorTypeOperation_DOUBLE_SWING_LEFT, IfcDoorTypeOperation_DOUBLE_SWING_RIGHT, IfcDoorTypeOperation_DOUBLE_DOOR_DOUBLE_SWING, IfcDoorTypeOperation_SLIDING_TO_LEFT, IfcDoorTypeOperation_SLIDING_TO_RIGHT, IfcDoorTypeOperation_DOUBLE_DOOR_SLIDING, IfcDoorTypeOperation_FOLDING_TO_LEFT, IfcDoorTypeOperation_FOLDING_TO_RIGHT, IfcDoorTypeOperation_DOUBLE_DOOR_FOLDING, IfcDoorTypeOperation_REVOLVING, IfcDoorTypeOperation_ROLLINGUP, IfcDoorTypeOperation_SWING_FIXED_LEFT, IfcDoorTypeOperation_SWING_FIXED_RIGHT, IfcDoorTypeOperation_USERDEFINED, IfcDoorTypeOperation_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcDoorTypeOperationEnum (IfcEntityInstanceData* e);
+    IfcDoorTypeOperationEnum (Value v);
+    IfcDoorTypeOperationEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcDuctFittingTypeEnum {
+class IFC_PARSE_API IfcDuctFittingTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration is used to identify the primary purpose of a duct fitting. This is a very basic categorization mechanism
 ///   to generically identify the duct fitting type. Subcategories
 ///   of duct fittings are not enumerated. 
@@ -2327,11 +2905,19 @@ struct IfcDuctFittingTypeEnum {
 ///   NOTDEFINED:  Undefined fitting.
 /// 
 /// HISTORY: New enumeration in IFC 2x2
-typedef enum {IfcDuctFittingType_BEND, IfcDuctFittingType_CONNECTOR, IfcDuctFittingType_ENTRY, IfcDuctFittingType_EXIT, IfcDuctFittingType_JUNCTION, IfcDuctFittingType_OBSTRUCTION, IfcDuctFittingType_TRANSITION, IfcDuctFittingType_USERDEFINED, IfcDuctFittingType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcDuctFittingType_BEND, IfcDuctFittingType_CONNECTOR, IfcDuctFittingType_ENTRY, IfcDuctFittingType_EXIT, IfcDuctFittingType_JUNCTION, IfcDuctFittingType_OBSTRUCTION, IfcDuctFittingType_TRANSITION, IfcDuctFittingType_USERDEFINED, IfcDuctFittingType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcDuctFittingTypeEnum (IfcEntityInstanceData* e);
+    IfcDuctFittingTypeEnum (Value v);
+    IfcDuctFittingTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcDuctSegmentTypeEnum {
+class IFC_PARSE_API IfcDuctSegmentTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration is used to identify the primary purpose of a
 ///   duct segment. This is a very basic categorization mechanism
 ///   to generically identify the duct segment type. Subcategories
@@ -2347,11 +2933,19 @@ struct IfcDuctSegmentTypeEnum {
 ///   NOTDEFINED:  Undefined segment.
 /// 
 /// HISTORY: New enumeration in IFC 2x2
-typedef enum {IfcDuctSegmentType_RIGIDSEGMENT, IfcDuctSegmentType_FLEXIBLESEGMENT, IfcDuctSegmentType_USERDEFINED, IfcDuctSegmentType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcDuctSegmentType_RIGIDSEGMENT, IfcDuctSegmentType_FLEXIBLESEGMENT, IfcDuctSegmentType_USERDEFINED, IfcDuctSegmentType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcDuctSegmentTypeEnum (IfcEntityInstanceData* e);
+    IfcDuctSegmentTypeEnum (Value v);
+    IfcDuctSegmentTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcDuctSilencerTypeEnum {
+class IFC_PARSE_API IfcDuctSilencerTypeEnum : public IfcUtil::IfcBaseType {
 /// Enumeration defining the typical types of duct silencers. 
 ///   The IfcDuctSilencerTypeEnum contains the following:
 /// 
@@ -2362,11 +2956,19 @@ struct IfcDuctSilencerTypeEnum {
 ///   NOTDEFINED:  Undefined duct silencer type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-typedef enum {IfcDuctSilencerType_FLATOVAL, IfcDuctSilencerType_RECTANGULAR, IfcDuctSilencerType_ROUND, IfcDuctSilencerType_USERDEFINED, IfcDuctSilencerType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcDuctSilencerType_FLATOVAL, IfcDuctSilencerType_RECTANGULAR, IfcDuctSilencerType_ROUND, IfcDuctSilencerType_USERDEFINED, IfcDuctSilencerType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcDuctSilencerTypeEnum (IfcEntityInstanceData* e);
+    IfcDuctSilencerTypeEnum (Value v);
+    IfcDuctSilencerTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcElectricApplianceTypeEnum {
+class IFC_PARSE_API IfcElectricApplianceTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcElectricApplianceTypeEnum defines the range of different types of electrical appliance that can be specified. 
 /// 
 /// HISTORY: New type in IFC R2.0.
@@ -2396,11 +2998,19 @@ struct IfcElectricApplianceTypeEnum {
 /// WASHINGMACHINE: An appliance that has the primary function of washing clothes. 	  
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcElectricApplianceType_DISHWASHER, IfcElectricApplianceType_ELECTRICCOOKER, IfcElectricApplianceType_FREESTANDINGELECTRICHEATER, IfcElectricApplianceType_FREESTANDINGFAN, IfcElectricApplianceType_FREESTANDINGWATERHEATER, IfcElectricApplianceType_FREESTANDINGWATERCOOLER, IfcElectricApplianceType_FREEZER, IfcElectricApplianceType_FRIDGE_FREEZER, IfcElectricApplianceType_HANDDRYER, IfcElectricApplianceType_KITCHENMACHINE, IfcElectricApplianceType_MICROWAVE, IfcElectricApplianceType_PHOTOCOPIER, IfcElectricApplianceType_REFRIGERATOR, IfcElectricApplianceType_TUMBLEDRYER, IfcElectricApplianceType_VENDINGMACHINE, IfcElectricApplianceType_WASHINGMACHINE, IfcElectricApplianceType_USERDEFINED, IfcElectricApplianceType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcElectricApplianceType_DISHWASHER, IfcElectricApplianceType_ELECTRICCOOKER, IfcElectricApplianceType_FREESTANDINGELECTRICHEATER, IfcElectricApplianceType_FREESTANDINGFAN, IfcElectricApplianceType_FREESTANDINGWATERHEATER, IfcElectricApplianceType_FREESTANDINGWATERCOOLER, IfcElectricApplianceType_FREEZER, IfcElectricApplianceType_FRIDGE_FREEZER, IfcElectricApplianceType_HANDDRYER, IfcElectricApplianceType_KITCHENMACHINE, IfcElectricApplianceType_MICROWAVE, IfcElectricApplianceType_PHOTOCOPIER, IfcElectricApplianceType_REFRIGERATOR, IfcElectricApplianceType_TUMBLEDRYER, IfcElectricApplianceType_VENDINGMACHINE, IfcElectricApplianceType_WASHINGMACHINE, IfcElectricApplianceType_USERDEFINED, IfcElectricApplianceType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcElectricApplianceTypeEnum (IfcEntityInstanceData* e);
+    IfcElectricApplianceTypeEnum (Value v);
+    IfcElectricApplianceTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcElectricDistributionBoardTypeEnum {
+class IFC_PARSE_API IfcElectricDistributionBoardTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcElectricDistributionBoardTypeEnum defines the range of different types and/or functions of electric distribution board possible. 
 ///   HISTORY: New type in IFC 2x4. Replaces IfcElectricDistributionPointTypeEnum  
 ///   Enumeration 
@@ -2411,11 +3021,19 @@ struct IfcElectricDistributionBoardTypeEnum {
 /// SWITCHBOARD: A distribution point at which switching devices are located. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcElectricDistributionBoardType_CONSUMERUNIT, IfcElectricDistributionBoardType_DISTRIBUTIONBOARD, IfcElectricDistributionBoardType_MOTORCONTROLCENTRE, IfcElectricDistributionBoardType_SWITCHBOARD, IfcElectricDistributionBoardType_USERDEFINED, IfcElectricDistributionBoardType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcElectricDistributionBoardType_CONSUMERUNIT, IfcElectricDistributionBoardType_DISTRIBUTIONBOARD, IfcElectricDistributionBoardType_MOTORCONTROLCENTRE, IfcElectricDistributionBoardType_SWITCHBOARD, IfcElectricDistributionBoardType_USERDEFINED, IfcElectricDistributionBoardType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcElectricDistributionBoardTypeEnum (IfcEntityInstanceData* e);
+    IfcElectricDistributionBoardTypeEnum (Value v);
+    IfcElectricDistributionBoardTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcElectricFlowStorageDeviceTypeEnum {
+class IFC_PARSE_API IfcElectricFlowStorageDeviceTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcElectricFlowStorageDeviceTypeEnum defines the range of different types of electrical flow storage device available. 
 ///   HISTORY: New type in IFC 2x2  
 ///   Enumeration 
@@ -2426,11 +3044,19 @@ struct IfcElectricFlowStorageDeviceTypeEnum {
 /// UPS: A device that provides a time limited alternative source of power supply in the event of failure of the main supply.  
 /// USERDEFINED: User-defined type.  
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcElectricFlowStorageDeviceType_BATTERY, IfcElectricFlowStorageDeviceType_CAPACITORBANK, IfcElectricFlowStorageDeviceType_HARMONICFILTER, IfcElectricFlowStorageDeviceType_INDUCTORBANK, IfcElectricFlowStorageDeviceType_UPS, IfcElectricFlowStorageDeviceType_USERDEFINED, IfcElectricFlowStorageDeviceType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcElectricFlowStorageDeviceType_BATTERY, IfcElectricFlowStorageDeviceType_CAPACITORBANK, IfcElectricFlowStorageDeviceType_HARMONICFILTER, IfcElectricFlowStorageDeviceType_INDUCTORBANK, IfcElectricFlowStorageDeviceType_UPS, IfcElectricFlowStorageDeviceType_USERDEFINED, IfcElectricFlowStorageDeviceType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcElectricFlowStorageDeviceTypeEnum (IfcEntityInstanceData* e);
+    IfcElectricFlowStorageDeviceTypeEnum (Value v);
+    IfcElectricFlowStorageDeviceTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcElectricGeneratorTypeEnum {
+class IFC_PARSE_API IfcElectricGeneratorTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcElectricGeneratorTypeEnum defines the range of types of electric generators available.
 ///   HISTORY: New type in IFC 2x2.  Values added in IFC 2x4. 
 /// 
@@ -2441,11 +3067,19 @@ struct IfcElectricGeneratorTypeEnum {
 /// STANDALONE: Electrical generator which does not include its source of kinetic energy, that is, a motor, engine, or turbine is modeled by a separate object. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcElectricGeneratorType_CHP, IfcElectricGeneratorType_ENGINEGENERATOR, IfcElectricGeneratorType_STANDALONE, IfcElectricGeneratorType_USERDEFINED, IfcElectricGeneratorType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcElectricGeneratorType_CHP, IfcElectricGeneratorType_ENGINEGENERATOR, IfcElectricGeneratorType_STANDALONE, IfcElectricGeneratorType_USERDEFINED, IfcElectricGeneratorType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcElectricGeneratorTypeEnum (IfcEntityInstanceData* e);
+    IfcElectricGeneratorTypeEnum (Value v);
+    IfcElectricGeneratorTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcElectricMotorTypeEnum {
+class IFC_PARSE_API IfcElectricMotorTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcElectricMotorTypeEnum defines the range of different types of electric motor that can be specified. 
 ///   HISTORY: New type in IFC 2x2  
 ///   Enumeration 
@@ -2457,11 +3091,19 @@ struct IfcElectricMotorTypeEnum {
 /// SYNCHRONOUS: A motor that operates at a constant speed up to full load. The rotor speed is equal to the speed of the rotating magnetic field of the stator; there is no slip. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcElectricMotorType_DC, IfcElectricMotorType_INDUCTION, IfcElectricMotorType_POLYPHASE, IfcElectricMotorType_RELUCTANCESYNCHRONOUS, IfcElectricMotorType_SYNCHRONOUS, IfcElectricMotorType_USERDEFINED, IfcElectricMotorType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcElectricMotorType_DC, IfcElectricMotorType_INDUCTION, IfcElectricMotorType_POLYPHASE, IfcElectricMotorType_RELUCTANCESYNCHRONOUS, IfcElectricMotorType_SYNCHRONOUS, IfcElectricMotorType_USERDEFINED, IfcElectricMotorType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcElectricMotorTypeEnum (IfcEntityInstanceData* e);
+    IfcElectricMotorTypeEnum (Value v);
+    IfcElectricMotorTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcElectricTimeControlTypeEnum {
+class IFC_PARSE_API IfcElectricTimeControlTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcElectricTimeControlTypeEnum defines the range of types of electrical time control available. 
 ///   HISTORY: New type in IFC 2x2  
 ///   Enumeration 
@@ -2471,11 +3113,19 @@ struct IfcElectricTimeControlTypeEnum {
 /// RELAY: Electromagnetically operated contactor for making or breaking a control circuit. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcElectricTimeControlType_TIMECLOCK, IfcElectricTimeControlType_TIMEDELAY, IfcElectricTimeControlType_RELAY, IfcElectricTimeControlType_USERDEFINED, IfcElectricTimeControlType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcElectricTimeControlType_TIMECLOCK, IfcElectricTimeControlType_TIMEDELAY, IfcElectricTimeControlType_RELAY, IfcElectricTimeControlType_USERDEFINED, IfcElectricTimeControlType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcElectricTimeControlTypeEnum (IfcEntityInstanceData* e);
+    IfcElectricTimeControlTypeEnum (Value v);
+    IfcElectricTimeControlTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcElementAssemblyTypeEnum {
+class IFC_PARSE_API IfcElementAssemblyTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: An enumeration defining the
 ///   basic configuration types for element assemblies.
 /// 
@@ -2495,11 +3145,19 @@ struct IfcElementAssemblyTypeEnum {
 ///   TRUSS: A structure built up of members with (quasi) pinned joints
 ///   USERDEFINED: User-defined element assembly
 ///   NOTDEFINED: Undefined element assembly
-typedef enum {IfcElementAssemblyType_ACCESSORY_ASSEMBLY, IfcElementAssemblyType_ARCH, IfcElementAssemblyType_BEAM_GRID, IfcElementAssemblyType_BRACED_FRAME, IfcElementAssemblyType_GIRDER, IfcElementAssemblyType_REINFORCEMENT_UNIT, IfcElementAssemblyType_RIGID_FRAME, IfcElementAssemblyType_SLAB_FIELD, IfcElementAssemblyType_TRUSS, IfcElementAssemblyType_ABUTMENT, IfcElementAssemblyType_PIER, IfcElementAssemblyType_PYLON, IfcElementAssemblyType_CROSS_BRACING, IfcElementAssemblyType_DECK, IfcElementAssemblyType_USERDEFINED, IfcElementAssemblyType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcElementAssemblyType_ACCESSORY_ASSEMBLY, IfcElementAssemblyType_ARCH, IfcElementAssemblyType_BEAM_GRID, IfcElementAssemblyType_BRACED_FRAME, IfcElementAssemblyType_GIRDER, IfcElementAssemblyType_REINFORCEMENT_UNIT, IfcElementAssemblyType_RIGID_FRAME, IfcElementAssemblyType_SLAB_FIELD, IfcElementAssemblyType_TRUSS, IfcElementAssemblyType_ABUTMENT, IfcElementAssemblyType_PIER, IfcElementAssemblyType_PYLON, IfcElementAssemblyType_CROSS_BRACING, IfcElementAssemblyType_DECK, IfcElementAssemblyType_USERDEFINED, IfcElementAssemblyType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcElementAssemblyTypeEnum (IfcEntityInstanceData* e);
+    IfcElementAssemblyTypeEnum (Value v);
+    IfcElementAssemblyTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcElementCompositionEnum {
+class IFC_PARSE_API IfcElementCompositionEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: Enumeration that provides an
 ///   indication, whether the spatial structure element or proxy
 ///   represents a:
@@ -2512,11 +3170,19 @@ struct IfcElementCompositionEnum {
 /// 
 /// HISTORY New enumeration in
 ///   IFC Release 2.x
-typedef enum {IfcElementComposition_COMPLEX, IfcElementComposition_ELEMENT, IfcElementComposition_PARTIAL} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcElementComposition_COMPLEX, IfcElementComposition_ELEMENT, IfcElementComposition_PARTIAL} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcElementCompositionEnum (IfcEntityInstanceData* e);
+    IfcElementCompositionEnum (Value v);
+    IfcElementCompositionEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcEngineTypeEnum {
+class IFC_PARSE_API IfcEngineTypeEnum : public IfcUtil::IfcBaseType {
 /// Enumeration defining the typical types of engines.  The IfcEngineTypeEnum contains the following:
 /// 
 /// EXTERNALCOMBUSTION: Combustion is external.
@@ -2525,11 +3191,19 @@ struct IfcEngineTypeEnum {
 ///   NOTDEFINED:  Undefined engine type.
 /// 
 /// HISTORY: New enumeration in IFC 2x4.
-typedef enum {IfcEngineType_EXTERNALCOMBUSTION, IfcEngineType_INTERNALCOMBUSTION, IfcEngineType_USERDEFINED, IfcEngineType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcEngineType_EXTERNALCOMBUSTION, IfcEngineType_INTERNALCOMBUSTION, IfcEngineType_USERDEFINED, IfcEngineType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcEngineTypeEnum (IfcEntityInstanceData* e);
+    IfcEngineTypeEnum (Value v);
+    IfcEngineTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcEvaporativeCoolerTypeEnum {
+class IFC_PARSE_API IfcEvaporativeCoolerTypeEnum : public IfcUtil::IfcBaseType {
 /// Enumeration defining the typical types of evaporative coolers. 
 ///   The IfcEvaporativeCoolerTypeEnum contains the following:
 /// 
@@ -2546,11 +3220,19 @@ struct IfcEvaporativeCoolerTypeEnum {
 ///   NOTDEFINED:  Undefined evaporative cooler type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-typedef enum {IfcEvaporativeCoolerType_DIRECTEVAPORATIVERANDOMMEDIAAIRCOOLER, IfcEvaporativeCoolerType_DIRECTEVAPORATIVERIGIDMEDIAAIRCOOLER, IfcEvaporativeCoolerType_DIRECTEVAPORATIVESLINGERSPACKAGEDAIRCOOLER, IfcEvaporativeCoolerType_DIRECTEVAPORATIVEPACKAGEDROTARYAIRCOOLER, IfcEvaporativeCoolerType_DIRECTEVAPORATIVEAIRWASHER, IfcEvaporativeCoolerType_INDIRECTEVAPORATIVEPACKAGEAIRCOOLER, IfcEvaporativeCoolerType_INDIRECTEVAPORATIVEWETCOIL, IfcEvaporativeCoolerType_INDIRECTEVAPORATIVECOOLINGTOWERORCOILCOOLER, IfcEvaporativeCoolerType_INDIRECTDIRECTCOMBINATION, IfcEvaporativeCoolerType_USERDEFINED, IfcEvaporativeCoolerType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcEvaporativeCoolerType_DIRECTEVAPORATIVERANDOMMEDIAAIRCOOLER, IfcEvaporativeCoolerType_DIRECTEVAPORATIVERIGIDMEDIAAIRCOOLER, IfcEvaporativeCoolerType_DIRECTEVAPORATIVESLINGERSPACKAGEDAIRCOOLER, IfcEvaporativeCoolerType_DIRECTEVAPORATIVEPACKAGEDROTARYAIRCOOLER, IfcEvaporativeCoolerType_DIRECTEVAPORATIVEAIRWASHER, IfcEvaporativeCoolerType_INDIRECTEVAPORATIVEPACKAGEAIRCOOLER, IfcEvaporativeCoolerType_INDIRECTEVAPORATIVEWETCOIL, IfcEvaporativeCoolerType_INDIRECTEVAPORATIVECOOLINGTOWERORCOILCOOLER, IfcEvaporativeCoolerType_INDIRECTDIRECTCOMBINATION, IfcEvaporativeCoolerType_USERDEFINED, IfcEvaporativeCoolerType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcEvaporativeCoolerTypeEnum (IfcEntityInstanceData* e);
+    IfcEvaporativeCoolerTypeEnum (Value v);
+    IfcEvaporativeCoolerTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcEvaporatorTypeEnum {
+class IFC_PARSE_API IfcEvaporatorTypeEnum : public IfcUtil::IfcBaseType {
 /// Enumeration defining the typical types of evaporators. 
 ///   The IfcEvaporatorTypeEnum contains the following:
 /// 
@@ -2564,11 +3246,19 @@ struct IfcEvaporatorTypeEnum {
 ///   NOTDEFINED:  Undefined evaporator type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-typedef enum {IfcEvaporatorType_DIRECTEXPANSION, IfcEvaporatorType_DIRECTEXPANSIONSHELLANDTUBE, IfcEvaporatorType_DIRECTEXPANSIONTUBEINTUBE, IfcEvaporatorType_DIRECTEXPANSIONBRAZEDPLATE, IfcEvaporatorType_FLOODEDSHELLANDTUBE, IfcEvaporatorType_SHELLANDCOIL, IfcEvaporatorType_USERDEFINED, IfcEvaporatorType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcEvaporatorType_DIRECTEXPANSION, IfcEvaporatorType_DIRECTEXPANSIONSHELLANDTUBE, IfcEvaporatorType_DIRECTEXPANSIONTUBEINTUBE, IfcEvaporatorType_DIRECTEXPANSIONBRAZEDPLATE, IfcEvaporatorType_FLOODEDSHELLANDTUBE, IfcEvaporatorType_SHELLANDCOIL, IfcEvaporatorType_USERDEFINED, IfcEvaporatorType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcEvaporatorTypeEnum (IfcEntityInstanceData* e);
+    IfcEvaporatorTypeEnum (Value v);
+    IfcEvaporatorTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcEventTriggerTypeEnum {
+class IFC_PARSE_API IfcEventTriggerTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcEventTriggerTypeEnum defines the range of different types of event trigger that can be specified.
 /// 
 /// HISTORY: New type in IFC2x4
@@ -2581,11 +3271,19 @@ struct IfcEventTriggerTypeEnum {
 /// EVENTCOMPLEX: An event trigger that is a complex combination of things
 /// USERDEFINED
 /// NOTDEFINED
-typedef enum {IfcEventTriggerType_EVENTRULE, IfcEventTriggerType_EVENTMESSAGE, IfcEventTriggerType_EVENTTIME, IfcEventTriggerType_EVENTCOMPLEX, IfcEventTriggerType_USERDEFINED, IfcEventTriggerType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcEventTriggerType_EVENTRULE, IfcEventTriggerType_EVENTMESSAGE, IfcEventTriggerType_EVENTTIME, IfcEventTriggerType_EVENTCOMPLEX, IfcEventTriggerType_USERDEFINED, IfcEventTriggerType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcEventTriggerTypeEnum (IfcEntityInstanceData* e);
+    IfcEventTriggerTypeEnum (Value v);
+    IfcEventTriggerTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcEventTypeEnum {
+class IFC_PARSE_API IfcEventTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcEventTypeEnum defines the range of different types of event that can be specified.
 /// 
 /// HISTORY  New type in IFC2x4
@@ -2597,11 +3295,19 @@ struct IfcEventTypeEnum {
 /// INTERMEDIATEEVENT: An event that occurs at an intermediate stage of a process
 /// USERDEFINED
 /// NOTDEFINED
-typedef enum {IfcEventType_STARTEVENT, IfcEventType_ENDEVENT, IfcEventType_INTERMEDIATEEVENT, IfcEventType_USERDEFINED, IfcEventType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcEventType_STARTEVENT, IfcEventType_ENDEVENT, IfcEventType_INTERMEDIATEEVENT, IfcEventType_USERDEFINED, IfcEventType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcEventTypeEnum (IfcEntityInstanceData* e);
+    IfcEventTypeEnum (Value v);
+    IfcEventTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcExternalSpatialElementTypeEnum {
+class IFC_PARSE_API IfcExternalSpatialElementTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration defines the
 /// different types of external spatial elements.
 /// Enumeration:
@@ -2618,11 +3324,19 @@ struct IfcExternalSpatialElementTypeEnum {
 /// 
 /// HISTORY New enumeration
 /// in IFC2x4.
-typedef enum {IfcExternalSpatialElementType_EXTERNAL, IfcExternalSpatialElementType_EXTERNAL_EARTH, IfcExternalSpatialElementType_EXTERNAL_WATER, IfcExternalSpatialElementType_EXTERNAL_FIRE, IfcExternalSpatialElementType_USERDEFINED, IfcExternalSpatialElementType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcExternalSpatialElementType_EXTERNAL, IfcExternalSpatialElementType_EXTERNAL_EARTH, IfcExternalSpatialElementType_EXTERNAL_WATER, IfcExternalSpatialElementType_EXTERNAL_FIRE, IfcExternalSpatialElementType_USERDEFINED, IfcExternalSpatialElementType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcExternalSpatialElementTypeEnum (IfcEntityInstanceData* e);
+    IfcExternalSpatialElementTypeEnum (Value v);
+    IfcExternalSpatialElementTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcFanTypeEnum {
+class IFC_PARSE_API IfcFanTypeEnum : public IfcUtil::IfcBaseType {
 /// Enumeration defining the typical types of fans.
 ///   The IfcFanTypeEnum contains the following:
 /// 
@@ -2637,11 +3351,19 @@ struct IfcFanTypeEnum {
 ///   NOTDEFINED: Undefined fan type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-typedef enum {IfcFanType_CENTRIFUGALFORWARDCURVED, IfcFanType_CENTRIFUGALRADIAL, IfcFanType_CENTRIFUGALBACKWARDINCLINEDCURVED, IfcFanType_CENTRIFUGALAIRFOIL, IfcFanType_TUBEAXIAL, IfcFanType_VANEAXIAL, IfcFanType_PROPELLORAXIAL, IfcFanType_USERDEFINED, IfcFanType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcFanType_CENTRIFUGALFORWARDCURVED, IfcFanType_CENTRIFUGALRADIAL, IfcFanType_CENTRIFUGALBACKWARDINCLINEDCURVED, IfcFanType_CENTRIFUGALAIRFOIL, IfcFanType_TUBEAXIAL, IfcFanType_VANEAXIAL, IfcFanType_PROPELLORAXIAL, IfcFanType_USERDEFINED, IfcFanType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcFanTypeEnum (IfcEntityInstanceData* e);
+    IfcFanTypeEnum (Value v);
+    IfcFanTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcFastenerTypeEnum {
+class IFC_PARSE_API IfcFastenerTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration defines the different types of fasteners, except for mechanical fasteners:
 /// 
 /// GLUE: A fastening connection where glue is used to join together elements.
@@ -2651,11 +3373,19 @@ struct IfcFastenerTypeEnum {
 /// NOTDEFINED: Undefined fastener
 /// 
 /// HISTORY New Enumeration in IFC 2x4.
-typedef enum {IfcFastenerType_GLUE, IfcFastenerType_MORTAR, IfcFastenerType_WELD, IfcFastenerType_USERDEFINED, IfcFastenerType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcFastenerType_GLUE, IfcFastenerType_MORTAR, IfcFastenerType_WELD, IfcFastenerType_USERDEFINED, IfcFastenerType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcFastenerTypeEnum (IfcEntityInstanceData* e);
+    IfcFastenerTypeEnum (Value v);
+    IfcFastenerTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcFilterTypeEnum {
+class IFC_PARSE_API IfcFilterTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration defines the various types of filter typically used
 ///   within building services distribution systems:
 /// 
@@ -2669,11 +3399,19 @@ struct IfcFilterTypeEnum {
 ///   NOTDEFINED:	Undefined filter type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.  COMPRESSEDAIRFILTER added in IFC2x4.
-typedef enum {IfcFilterType_AIRPARTICLEFILTER, IfcFilterType_COMPRESSEDAIRFILTER, IfcFilterType_ODORFILTER, IfcFilterType_OILFILTER, IfcFilterType_STRAINER, IfcFilterType_WATERFILTER, IfcFilterType_USERDEFINED, IfcFilterType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcFilterType_AIRPARTICLEFILTER, IfcFilterType_COMPRESSEDAIRFILTER, IfcFilterType_ODORFILTER, IfcFilterType_OILFILTER, IfcFilterType_STRAINER, IfcFilterType_WATERFILTER, IfcFilterType_USERDEFINED, IfcFilterType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcFilterTypeEnum (IfcEntityInstanceData* e);
+    IfcFilterTypeEnum (Value v);
+    IfcFilterTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcFireSuppressionTerminalTypeEnum {
+class IFC_PARSE_API IfcFireSuppressionTerminalTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcFireSuppressionTerminalTypeEnum defines the range of different types of fire suppression terminal that can be specified. 
 /// 
 /// HISTORY: New type in IFC 2x2
@@ -2687,11 +3425,19 @@ struct IfcFireSuppressionTerminalTypeEnum {
 /// SPRINKLERDEFLECTOR: Device attached to a sprinkler to deflect the water flow into a spread pattern to cover the required area. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Underined type.
-typedef enum {IfcFireSuppressionTerminalType_BREECHINGINLET, IfcFireSuppressionTerminalType_FIREHYDRANT, IfcFireSuppressionTerminalType_HOSEREEL, IfcFireSuppressionTerminalType_SPRINKLER, IfcFireSuppressionTerminalType_SPRINKLERDEFLECTOR, IfcFireSuppressionTerminalType_USERDEFINED, IfcFireSuppressionTerminalType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcFireSuppressionTerminalType_BREECHINGINLET, IfcFireSuppressionTerminalType_FIREHYDRANT, IfcFireSuppressionTerminalType_HOSEREEL, IfcFireSuppressionTerminalType_SPRINKLER, IfcFireSuppressionTerminalType_SPRINKLERDEFLECTOR, IfcFireSuppressionTerminalType_USERDEFINED, IfcFireSuppressionTerminalType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcFireSuppressionTerminalTypeEnum (IfcEntityInstanceData* e);
+    IfcFireSuppressionTerminalTypeEnum (Value v);
+    IfcFireSuppressionTerminalTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcFlowDirectionEnum {
+class IFC_PARSE_API IfcFlowDirectionEnum : public IfcUtil::IfcBaseType {
 /// This enumeration defines the flow direction at a port as either a SOURCE, SINK, or SOURCEANDSINK.  For solids, liquids, or gas, the direction is the physical flow direction.  For electric power (circuits containing hot, neutral, ground), the direction is from the origination of power (from a distribution board to protective devices to switches to fixtures).  For communication signals, the direction originates from where the signal is shaped, such as a sensor.  For communicaton networks, the direction originates from the up-level network host, such as a router (having SOURCE ports) hosting multiple computers (having SINK ports).
 /// 
 /// SOURCE:        A flow source, where a substance flows out of the connection.
@@ -2700,11 +3446,19 @@ struct IfcFlowDirectionEnum {
 ///   NOTDEFINED:    Undefined flow direction.
 /// 
 /// HISTORY: New enumeration in IFC R2.0
-typedef enum {IfcFlowDirection_SOURCE, IfcFlowDirection_SINK, IfcFlowDirection_SOURCEANDSINK, IfcFlowDirection_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcFlowDirection_SOURCE, IfcFlowDirection_SINK, IfcFlowDirection_SOURCEANDSINK, IfcFlowDirection_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcFlowDirectionEnum (IfcEntityInstanceData* e);
+    IfcFlowDirectionEnum (Value v);
+    IfcFlowDirectionEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcFlowInstrumentTypeEnum {
+class IFC_PARSE_API IfcFlowInstrumentTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcFlowInstrumentTypeEnum defines the range of different types of flow instrument that can be specified. 
 /// 
 /// HISTORY: New type in IFC
@@ -2721,11 +3475,19 @@ struct IfcFlowInstrumentTypeEnum {
 /// VOLTMETER_RMS: A device that reads and displays the RMS (mean) voltage in an electrical circuit. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcFlowInstrumentType_PRESSUREGAUGE, IfcFlowInstrumentType_THERMOMETER, IfcFlowInstrumentType_AMMETER, IfcFlowInstrumentType_FREQUENCYMETER, IfcFlowInstrumentType_POWERFACTORMETER, IfcFlowInstrumentType_PHASEANGLEMETER, IfcFlowInstrumentType_VOLTMETER_PEAK, IfcFlowInstrumentType_VOLTMETER_RMS, IfcFlowInstrumentType_USERDEFINED, IfcFlowInstrumentType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcFlowInstrumentType_PRESSUREGAUGE, IfcFlowInstrumentType_THERMOMETER, IfcFlowInstrumentType_AMMETER, IfcFlowInstrumentType_FREQUENCYMETER, IfcFlowInstrumentType_POWERFACTORMETER, IfcFlowInstrumentType_PHASEANGLEMETER, IfcFlowInstrumentType_VOLTMETER_PEAK, IfcFlowInstrumentType_VOLTMETER_RMS, IfcFlowInstrumentType_USERDEFINED, IfcFlowInstrumentType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcFlowInstrumentTypeEnum (IfcEntityInstanceData* e);
+    IfcFlowInstrumentTypeEnum (Value v);
+    IfcFlowInstrumentTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcFlowMeterTypeEnum {
+class IFC_PARSE_API IfcFlowMeterTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration defines various types of flow meter:
 /// 
 /// ENERGYMETER:   An electric meter or energy meter is a device that measures the amount of electrical energy supplied to or produced by a residence, business or machine.
@@ -2741,11 +3503,19 @@ struct IfcFlowMeterTypeEnum {
 /// NOTDEFINED:    Undefined meter type
 /// 
 /// HISTORY: New enumeration in IFC 2x2
-typedef enum {IfcFlowMeterType_ENERGYMETER, IfcFlowMeterType_GASMETER, IfcFlowMeterType_OILMETER, IfcFlowMeterType_WATERMETER, IfcFlowMeterType_USERDEFINED, IfcFlowMeterType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcFlowMeterType_ENERGYMETER, IfcFlowMeterType_GASMETER, IfcFlowMeterType_OILMETER, IfcFlowMeterType_WATERMETER, IfcFlowMeterType_USERDEFINED, IfcFlowMeterType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcFlowMeterTypeEnum (IfcEntityInstanceData* e);
+    IfcFlowMeterTypeEnum (Value v);
+    IfcFlowMeterTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcFootingTypeEnum {
+class IFC_PARSE_API IfcFootingTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: Enumeration defining the generic footing type.
 /// 
 /// HISTORY New type in IFC Release 2x2
@@ -2760,11 +3530,19 @@ struct IfcFootingTypeEnum {
 ///   STRIP_FOOTING A linear element that transfers loads into the ground from either a continuous element, such as a wall, or from a series of elements, such as columns.
 ///   USERDEFINED Special types of footings which meet specific local requirements.
 ///   NOTDEFINED The type of footing is not defined.
-typedef enum {IfcFootingType_CAISSON_FOUNDATION, IfcFootingType_FOOTING_BEAM, IfcFootingType_PAD_FOOTING, IfcFootingType_PILE_CAP, IfcFootingType_STRIP_FOOTING, IfcFootingType_USERDEFINED, IfcFootingType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcFootingType_CAISSON_FOUNDATION, IfcFootingType_FOOTING_BEAM, IfcFootingType_PAD_FOOTING, IfcFootingType_PILE_CAP, IfcFootingType_STRIP_FOOTING, IfcFootingType_USERDEFINED, IfcFootingType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcFootingTypeEnum (IfcEntityInstanceData* e);
+    IfcFootingTypeEnum (Value v);
+    IfcFootingTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcFurnitureTypeEnum {
+class IFC_PARSE_API IfcFurnitureTypeEnum : public IfcUtil::IfcBaseType {
 /// IfcFurnitureTypeEnum defines the types of furniture from which the type required can be selected. 
 ///   HISTORY: New Enumeration in IFC 2x4. 
 ///   Enumeration: 
@@ -2778,17 +3556,33 @@ struct IfcFurnitureTypeEnum {
 /// SOFA: Furniture for seating multiple people.  
 /// USERDEFINED: User-defined type.  
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcFurnitureType_CHAIR, IfcFurnitureType_TABLE, IfcFurnitureType_DESK, IfcFurnitureType_BED, IfcFurnitureType_FILECABINET, IfcFurnitureType_SHELF, IfcFurnitureType_SOFA, IfcFurnitureType_USERDEFINED, IfcFurnitureType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
-};
-struct IfcGeographicElementTypeEnum {
+public:
+    typedef enum {IfcFurnitureType_CHAIR, IfcFurnitureType_TABLE, IfcFurnitureType_DESK, IfcFurnitureType_BED, IfcFurnitureType_FILECABINET, IfcFurnitureType_SHELF, IfcFurnitureType_SOFA, IfcFurnitureType_USERDEFINED, IfcFurnitureType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
 
-typedef enum {IfcGeographicElementType_TERRAIN, IfcGeographicElementType_SOIL_BORING_POINT, IfcGeographicElementType_USERDEFINED, IfcGeographicElementType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcFurnitureTypeEnum (IfcEntityInstanceData* e);
+    IfcFurnitureTypeEnum (Value v);
+    IfcFurnitureTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcGeometricProjectionEnum {
+class IFC_PARSE_API IfcGeographicElementTypeEnum : public IfcUtil::IfcBaseType {
+
+public:
+    typedef enum {IfcGeographicElementType_TERRAIN, IfcGeographicElementType_SOIL_BORING_POINT, IfcGeographicElementType_USERDEFINED, IfcGeographicElementType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcGeographicElementTypeEnum (IfcEntityInstanceData* e);
+    IfcGeographicElementTypeEnum (Value v);
+    IfcGeographicElementTypeEnum (const std::string& v);
+    operator Value() const;
+};
+class IFC_PARSE_API IfcGeometricProjectionEnum : public IfcUtil::IfcBaseType {
 /// IfcGeometricProjectionEnum defines the various representation types that can be semantically distinguished. Often different levels of detail of the shape representation are controlled by the representation type.
 /// 
 /// GRAPH_VIEW:
@@ -2830,28 +3624,52 @@ struct IfcGeometricProjectionEnum {
 /// No specification given.
 /// 
 /// HISTORY: New Type in Release IFC2x2.
-typedef enum {IfcGeometricProjection_GRAPH_VIEW, IfcGeometricProjection_SKETCH_VIEW, IfcGeometricProjection_MODEL_VIEW, IfcGeometricProjection_PLAN_VIEW, IfcGeometricProjection_REFLECTED_PLAN_VIEW, IfcGeometricProjection_SECTION_VIEW, IfcGeometricProjection_ELEVATION_VIEW, IfcGeometricProjection_USERDEFINED, IfcGeometricProjection_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcGeometricProjection_GRAPH_VIEW, IfcGeometricProjection_SKETCH_VIEW, IfcGeometricProjection_MODEL_VIEW, IfcGeometricProjection_PLAN_VIEW, IfcGeometricProjection_REFLECTED_PLAN_VIEW, IfcGeometricProjection_SECTION_VIEW, IfcGeometricProjection_ELEVATION_VIEW, IfcGeometricProjection_USERDEFINED, IfcGeometricProjection_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcGeometricProjectionEnum (IfcEntityInstanceData* e);
+    IfcGeometricProjectionEnum (Value v);
+    IfcGeometricProjectionEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcGlobalOrLocalEnum {
+class IFC_PARSE_API IfcGlobalOrLocalEnum : public IfcUtil::IfcBaseType {
 /// This enumeration type defines if the local object coordinate system or the global world coordinate system for the project is used to describe the measure values of entities which have a reference to this type.
 /// 
 /// NOTE  The world coordinate system is given by the IfcGeometricRepresentationContext.WorldCoordinateSystem
 /// and is unique within the project. The local (or object) coordinate system is given by IfcProduct.ObjectPlacement and is used by all IfcRepresentation's within the IfcProduct.Representation.
 /// 
 /// HISTORY: New type in IFC2x2.
-typedef enum {IfcGlobalOrLocal_GLOBAL_COORDS, IfcGlobalOrLocal_LOCAL_COORDS} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
-};
-struct IfcGridTypeEnum {
+public:
+    typedef enum {IfcGlobalOrLocal_GLOBAL_COORDS, IfcGlobalOrLocal_LOCAL_COORDS} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
 
-typedef enum {IfcGridType_RECTANGULAR, IfcGridType_RADIAL, IfcGridType_TRIANGULAR, IfcGridType_IRREGULAR, IfcGridType_USERDEFINED, IfcGridType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcGlobalOrLocalEnum (IfcEntityInstanceData* e);
+    IfcGlobalOrLocalEnum (Value v);
+    IfcGlobalOrLocalEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcHeatExchangerTypeEnum {
+class IFC_PARSE_API IfcGridTypeEnum : public IfcUtil::IfcBaseType {
+
+public:
+    typedef enum {IfcGridType_RECTANGULAR, IfcGridType_RADIAL, IfcGridType_TRIANGULAR, IfcGridType_IRREGULAR, IfcGridType_USERDEFINED, IfcGridType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcGridTypeEnum (IfcEntityInstanceData* e);
+    IfcGridTypeEnum (Value v);
+    IfcGridTypeEnum (const std::string& v);
+    operator Value() const;
+};
+class IFC_PARSE_API IfcHeatExchangerTypeEnum : public IfcUtil::IfcBaseType {
 /// Enumeration defining the typical types of heat exchangers. 
 ///   The IfcHeatExchangerTypeEnum contains the following:
 /// 
@@ -2861,11 +3679,19 @@ struct IfcHeatExchangerTypeEnum {
 ///   NOTDEFINED:  Undefined heat exchanger type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-typedef enum {IfcHeatExchangerType_PLATE, IfcHeatExchangerType_SHELLANDTUBE, IfcHeatExchangerType_USERDEFINED, IfcHeatExchangerType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcHeatExchangerType_PLATE, IfcHeatExchangerType_SHELLANDTUBE, IfcHeatExchangerType_USERDEFINED, IfcHeatExchangerType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcHeatExchangerTypeEnum (IfcEntityInstanceData* e);
+    IfcHeatExchangerTypeEnum (Value v);
+    IfcHeatExchangerTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcHumidifierTypeEnum {
+class IFC_PARSE_API IfcHumidifierTypeEnum : public IfcUtil::IfcBaseType {
 /// Enumeration defining the typical types of humidifiers. 
 ///   The IfcHumidifierTypeEnum contains the following:
 /// 
@@ -2886,11 +3712,19 @@ struct IfcHumidifierTypeEnum {
 ///   NOTDEFINED:  Undefined humidifier type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-typedef enum {IfcHumidifierType_STEAMINJECTION, IfcHumidifierType_ADIABATICAIRWASHER, IfcHumidifierType_ADIABATICPAN, IfcHumidifierType_ADIABATICWETTEDELEMENT, IfcHumidifierType_ADIABATICATOMIZING, IfcHumidifierType_ADIABATICULTRASONIC, IfcHumidifierType_ADIABATICRIGIDMEDIA, IfcHumidifierType_ADIABATICCOMPRESSEDAIRNOZZLE, IfcHumidifierType_ASSISTEDELECTRIC, IfcHumidifierType_ASSISTEDNATURALGAS, IfcHumidifierType_ASSISTEDPROPANE, IfcHumidifierType_ASSISTEDBUTANE, IfcHumidifierType_ASSISTEDSTEAM, IfcHumidifierType_USERDEFINED, IfcHumidifierType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcHumidifierType_STEAMINJECTION, IfcHumidifierType_ADIABATICAIRWASHER, IfcHumidifierType_ADIABATICPAN, IfcHumidifierType_ADIABATICWETTEDELEMENT, IfcHumidifierType_ADIABATICATOMIZING, IfcHumidifierType_ADIABATICULTRASONIC, IfcHumidifierType_ADIABATICRIGIDMEDIA, IfcHumidifierType_ADIABATICCOMPRESSEDAIRNOZZLE, IfcHumidifierType_ASSISTEDELECTRIC, IfcHumidifierType_ASSISTEDNATURALGAS, IfcHumidifierType_ASSISTEDPROPANE, IfcHumidifierType_ASSISTEDBUTANE, IfcHumidifierType_ASSISTEDSTEAM, IfcHumidifierType_USERDEFINED, IfcHumidifierType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcHumidifierTypeEnum (IfcEntityInstanceData* e);
+    IfcHumidifierTypeEnum (Value v);
+    IfcHumidifierTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcInterceptorTypeEnum {
+class IFC_PARSE_API IfcInterceptorTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcInterceptorTypeEnum defines the range of different types of interceptor that can be specified. 
 ///   HISTORY: New type in IFC 2x4 
 ///   Enumeration 
@@ -2901,11 +3735,19 @@ struct IfcInterceptorTypeEnum {
 /// PETROL: Two or more chambers with inlet and outlet pipes arranged to allow petrol/gasoline collected on the surface of water drained into them to evaporate through ventilating pipes. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcInterceptorType_CYCLONIC, IfcInterceptorType_GREASE, IfcInterceptorType_OIL, IfcInterceptorType_PETROL, IfcInterceptorType_USERDEFINED, IfcInterceptorType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcInterceptorType_CYCLONIC, IfcInterceptorType_GREASE, IfcInterceptorType_OIL, IfcInterceptorType_PETROL, IfcInterceptorType_USERDEFINED, IfcInterceptorType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcInterceptorTypeEnum (IfcEntityInstanceData* e);
+    IfcInterceptorTypeEnum (Value v);
+    IfcInterceptorTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcInternalOrExternalEnum {
+class IFC_PARSE_API IfcInternalOrExternalEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration defines the
 /// different types of space boundaries in terms of either being
 /// inside the building or outside the building.
@@ -2961,11 +3803,19 @@ struct IfcInternalOrExternalEnum {
 /// applicable to IfcSpace. The following enumerators are
 /// added: EXTERNAL_EARTH, EXTERNAL_WATER,
 /// EXTERNAL_FIRE.
-typedef enum {IfcInternalOrExternal_INTERNAL, IfcInternalOrExternal_EXTERNAL, IfcInternalOrExternal_EXTERNAL_EARTH, IfcInternalOrExternal_EXTERNAL_WATER, IfcInternalOrExternal_EXTERNAL_FIRE, IfcInternalOrExternal_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcInternalOrExternal_INTERNAL, IfcInternalOrExternal_EXTERNAL, IfcInternalOrExternal_EXTERNAL_EARTH, IfcInternalOrExternal_EXTERNAL_WATER, IfcInternalOrExternal_EXTERNAL_FIRE, IfcInternalOrExternal_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcInternalOrExternalEnum (IfcEntityInstanceData* e);
+    IfcInternalOrExternalEnum (Value v);
+    IfcInternalOrExternalEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcInventoryTypeEnum {
+class IFC_PARSE_API IfcInventoryTypeEnum : public IfcUtil::IfcBaseType {
 /// IfcInventoryTypeEnum defines the types of inventory that can be defined. 
 ///   HISTORY: New Enumeration in IFC Release 2.0  
 ///   Enumeration: 
@@ -2975,11 +3825,19 @@ struct IfcInventoryTypeEnum {
 /// FURNITUREINVENTORY: A collection of furniture instances of type IfcFurnishingElement 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcInventoryType_ASSETINVENTORY, IfcInventoryType_SPACEINVENTORY, IfcInventoryType_FURNITUREINVENTORY, IfcInventoryType_USERDEFINED, IfcInventoryType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcInventoryType_ASSETINVENTORY, IfcInventoryType_SPACEINVENTORY, IfcInventoryType_FURNITUREINVENTORY, IfcInventoryType_USERDEFINED, IfcInventoryType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcInventoryTypeEnum (IfcEntityInstanceData* e);
+    IfcInventoryTypeEnum (Value v);
+    IfcInventoryTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcJunctionBoxTypeEnum {
+class IFC_PARSE_API IfcJunctionBoxTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcJunctionBoxTypeEnum defines the range of types of junction boxes available.
 ///   HISTORY: New type in IFC 2x2.  Values added in IFC 2x4. 
 /// 
@@ -2987,17 +3845,33 @@ struct IfcJunctionBoxTypeEnum {
 /// DATA: Contains cables, outlets, and/or switches for communications use.
 /// USERDEFINED: User-defined type.
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcJunctionBoxType_DATA, IfcJunctionBoxType_POWER, IfcJunctionBoxType_USERDEFINED, IfcJunctionBoxType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
-};
-struct IfcKnotType {
+public:
+    typedef enum {IfcJunctionBoxType_DATA, IfcJunctionBoxType_POWER, IfcJunctionBoxType_USERDEFINED, IfcJunctionBoxType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
 
-typedef enum {IfcKnotType_UNIFORM_KNOTS, IfcKnotType_QUASI_UNIFORM_KNOTS, IfcKnotType_PIECEWISE_BEZIER_KNOTS, IfcKnotType_UNSPECIFIED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcJunctionBoxTypeEnum (IfcEntityInstanceData* e);
+    IfcJunctionBoxTypeEnum (Value v);
+    IfcJunctionBoxTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcLaborResourceTypeEnum {
+class IFC_PARSE_API IfcKnotType : public IfcUtil::IfcBaseType {
+
+public:
+    typedef enum {IfcKnotType_UNIFORM_KNOTS, IfcKnotType_QUASI_UNIFORM_KNOTS, IfcKnotType_PIECEWISE_BEZIER_KNOTS, IfcKnotType_UNSPECIFIED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcKnotType (IfcEntityInstanceData* e);
+    IfcKnotType (Value v);
+    IfcKnotType (const std::string& v);
+    operator Value() const;
+};
+class IFC_PARSE_API IfcLaborResourceTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration is used to identify the primary purpose of a labor resource, and is limited to high-level categories based upon common skillsets.  The IfcLaborResourceTypeEnum contains the following:
 /// 
 /// ADMINISTRATION: Coordination of work.
@@ -3022,11 +3896,19 @@ struct IfcLaborResourceTypeEnum {
 /// NOTDEFINED: Undefined resource.
 /// 
 /// HISTORY: New enumeration in IFC2x4
-typedef enum {IfcLaborResourceType_ADMINISTRATION, IfcLaborResourceType_CARPENTRY, IfcLaborResourceType_CLEANING, IfcLaborResourceType_CONCRETE, IfcLaborResourceType_DRYWALL, IfcLaborResourceType_ELECTRIC, IfcLaborResourceType_FINISHING, IfcLaborResourceType_FLOORING, IfcLaborResourceType_GENERAL, IfcLaborResourceType_HVAC, IfcLaborResourceType_LANDSCAPING, IfcLaborResourceType_MASONRY, IfcLaborResourceType_PAINTING, IfcLaborResourceType_PAVING, IfcLaborResourceType_PLUMBING, IfcLaborResourceType_ROOFING, IfcLaborResourceType_SITEGRADING, IfcLaborResourceType_STEELWORK, IfcLaborResourceType_SURVEYING, IfcLaborResourceType_USERDEFINED, IfcLaborResourceType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcLaborResourceType_ADMINISTRATION, IfcLaborResourceType_CARPENTRY, IfcLaborResourceType_CLEANING, IfcLaborResourceType_CONCRETE, IfcLaborResourceType_DRYWALL, IfcLaborResourceType_ELECTRIC, IfcLaborResourceType_FINISHING, IfcLaborResourceType_FLOORING, IfcLaborResourceType_GENERAL, IfcLaborResourceType_HVAC, IfcLaborResourceType_LANDSCAPING, IfcLaborResourceType_MASONRY, IfcLaborResourceType_PAINTING, IfcLaborResourceType_PAVING, IfcLaborResourceType_PLUMBING, IfcLaborResourceType_ROOFING, IfcLaborResourceType_SITEGRADING, IfcLaborResourceType_STEELWORK, IfcLaborResourceType_SURVEYING, IfcLaborResourceType_USERDEFINED, IfcLaborResourceType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcLaborResourceTypeEnum (IfcEntityInstanceData* e);
+    IfcLaborResourceTypeEnum (Value v);
+    IfcLaborResourceTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcLampTypeEnum {
+class IFC_PARSE_API IfcLampTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcLampTypeEnum defines the range of different types of lamp available. 
 /// 
 /// HISTORY: New type in IFC 2x2 Addendum
@@ -3044,11 +3926,19 @@ struct IfcLampTypeEnum {
 /// TUNGSTENFILAMENT: A lamp that emits light by passing an electrical current through a tungsten wire filament in a near vacuum.
 /// USERDEFINED: User-defined type.
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcLampType_COMPACTFLUORESCENT, IfcLampType_FLUORESCENT, IfcLampType_HALOGEN, IfcLampType_HIGHPRESSUREMERCURY, IfcLampType_HIGHPRESSURESODIUM, IfcLampType_LED, IfcLampType_METALHALIDE, IfcLampType_OLED, IfcLampType_TUNGSTENFILAMENT, IfcLampType_USERDEFINED, IfcLampType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcLampType_COMPACTFLUORESCENT, IfcLampType_FLUORESCENT, IfcLampType_HALOGEN, IfcLampType_HIGHPRESSUREMERCURY, IfcLampType_HIGHPRESSURESODIUM, IfcLampType_LED, IfcLampType_METALHALIDE, IfcLampType_OLED, IfcLampType_TUNGSTENFILAMENT, IfcLampType_USERDEFINED, IfcLampType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcLampTypeEnum (IfcEntityInstanceData* e);
+    IfcLampTypeEnum (Value v);
+    IfcLampTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcLayerSetDirectionEnum {
+class IFC_PARSE_API IfcLayerSetDirectionEnum : public IfcUtil::IfcBaseType {
 /// IfcLayerSetDirectionEnum provides identification of the axis of element geometry, denoting the layer set thickness direction, or direction of layer offsets.
 /// 
 /// ENUMERATION
@@ -3058,11 +3948,19 @@ struct IfcLayerSetDirectionEnum {
 /// AXIS3: Usually z-axis.
 /// 
 /// HISTORY: New Type in IFC2x.
-typedef enum {IfcLayerSetDirection_AXIS1, IfcLayerSetDirection_AXIS2, IfcLayerSetDirection_AXIS3} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcLayerSetDirection_AXIS1, IfcLayerSetDirection_AXIS2, IfcLayerSetDirection_AXIS3} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcLayerSetDirectionEnum (IfcEntityInstanceData* e);
+    IfcLayerSetDirectionEnum (Value v);
+    IfcLayerSetDirectionEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcLightDistributionCurveEnum {
+class IFC_PARSE_API IfcLightDistributionCurveEnum : public IfcUtil::IfcBaseType {
 /// There are three kinds of light distribution curves, according to Standard CEN TC 169, prEN 13032-1, CIE 121: 
 /// 
 /// TYPE_A: Type A is basically not used. For completeness the Type A Photometry equals the Type B rotated 90° around the Z-Axis counter clockwise. 
@@ -3077,11 +3975,19 @@ struct IfcLightDistributionCurveEnum {
 /// Figure 302 — Light distribution curves
 /// 
 /// HISTORY  This is a new enumeration in IFC2x2.
-typedef enum {IfcLightDistributionCurve_TYPE_A, IfcLightDistributionCurve_TYPE_B, IfcLightDistributionCurve_TYPE_C, IfcLightDistributionCurve_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcLightDistributionCurve_TYPE_A, IfcLightDistributionCurve_TYPE_B, IfcLightDistributionCurve_TYPE_C, IfcLightDistributionCurve_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcLightDistributionCurveEnum (IfcEntityInstanceData* e);
+    IfcLightDistributionCurveEnum (Value v);
+    IfcLightDistributionCurveEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcLightEmissionSourceEnum {
+class IFC_PARSE_API IfcLightEmissionSourceEnum : public IfcUtil::IfcBaseType {
 /// IfcLightEmissionSourceEnum defines the range of different types of light emitter available. 
 /// 
 /// HISTORY: New type in IFC2x2.
@@ -3099,11 +4005,19 @@ struct IfcLightEmissionSourceEnum {
 /// METALHALIDE 
 /// TUNGSTENFILAMENT 
 /// NOTDEFINED
-typedef enum {IfcLightEmissionSource_COMPACTFLUORESCENT, IfcLightEmissionSource_FLUORESCENT, IfcLightEmissionSource_HIGHPRESSUREMERCURY, IfcLightEmissionSource_HIGHPRESSURESODIUM, IfcLightEmissionSource_LIGHTEMITTINGDIODE, IfcLightEmissionSource_LOWPRESSURESODIUM, IfcLightEmissionSource_LOWVOLTAGEHALOGEN, IfcLightEmissionSource_MAINVOLTAGEHALOGEN, IfcLightEmissionSource_METALHALIDE, IfcLightEmissionSource_TUNGSTENFILAMENT, IfcLightEmissionSource_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcLightEmissionSource_COMPACTFLUORESCENT, IfcLightEmissionSource_FLUORESCENT, IfcLightEmissionSource_HIGHPRESSUREMERCURY, IfcLightEmissionSource_HIGHPRESSURESODIUM, IfcLightEmissionSource_LIGHTEMITTINGDIODE, IfcLightEmissionSource_LOWPRESSURESODIUM, IfcLightEmissionSource_LOWVOLTAGEHALOGEN, IfcLightEmissionSource_MAINVOLTAGEHALOGEN, IfcLightEmissionSource_METALHALIDE, IfcLightEmissionSource_TUNGSTENFILAMENT, IfcLightEmissionSource_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcLightEmissionSourceEnum (IfcEntityInstanceData* e);
+    IfcLightEmissionSourceEnum (Value v);
+    IfcLightEmissionSourceEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcLightFixtureTypeEnum {
+class IFC_PARSE_API IfcLightFixtureTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcLightFixtureTypeEnum defines the range of different types of light fixture available.
 /// 
 /// HISTORY: New type in IFC 2x Edition 2IFC 2x4: SECURITYLIGHTING added
@@ -3115,11 +4029,19 @@ struct IfcLightFixtureTypeEnum {
 /// SECURITYLIGHTING: A light fixture having specific purpose of directing occupants in an emergency, such as an illuminated exit sign or emergency flood light. 
 /// USERDEFINED: User-defined type.
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcLightFixtureType_POINTSOURCE, IfcLightFixtureType_DIRECTIONSOURCE, IfcLightFixtureType_SECURITYLIGHTING, IfcLightFixtureType_USERDEFINED, IfcLightFixtureType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcLightFixtureType_POINTSOURCE, IfcLightFixtureType_DIRECTIONSOURCE, IfcLightFixtureType_SECURITYLIGHTING, IfcLightFixtureType_USERDEFINED, IfcLightFixtureType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcLightFixtureTypeEnum (IfcEntityInstanceData* e);
+    IfcLightFixtureTypeEnum (Value v);
+    IfcLightFixtureTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcLoadGroupTypeEnum {
+class IFC_PARSE_API IfcLoadGroupTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This type definition is used to distinguish between different levels
 /// of load grouping.  It allows to differentiate between load groups, load cases, and load combinations.
 /// Normally, these enumeration types shall be used in the following context:
@@ -3141,11 +4063,19 @@ struct IfcLoadGroupTypeEnum {
 /// HISTORY: New type in IFC 2x2.
 /// 
 /// IFC 2x4 change:  Obsolete item LOAD_COMBINATION_GROUP removed.  Load cases are directly assigned to load combinations with different factors for each load case—load combination pair by means of IfcRelAssignsToGroupByFactor.
-typedef enum {IfcLoadGroupType_LOAD_GROUP, IfcLoadGroupType_LOAD_CASE, IfcLoadGroupType_LOAD_COMBINATION, IfcLoadGroupType_USERDEFINED, IfcLoadGroupType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcLoadGroupType_LOAD_GROUP, IfcLoadGroupType_LOAD_CASE, IfcLoadGroupType_LOAD_COMBINATION, IfcLoadGroupType_USERDEFINED, IfcLoadGroupType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcLoadGroupTypeEnum (IfcEntityInstanceData* e);
+    IfcLoadGroupTypeEnum (Value v);
+    IfcLoadGroupTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcLogicalOperatorEnum {
+class IFC_PARSE_API IfcLogicalOperatorEnum : public IfcUtil::IfcBaseType {
 /// Definition: IfcLogicalOperatorEnum is an enumeration that defines the logical operators that may be applied for the satisfaction of one or more operands (IfcConstraint) at a time. 
 /// 
 /// HISTORY  New type in IFC Release 2.0.  Renamed from IfcConstraintAggregatorEnum in IFC 2x2
@@ -3159,12 +4089,10 @@ struct IfcLogicalOperatorEnum {
 /// 
 /// LOGICALAND 
 ///   Defines a relationship between operands whereby the result is true if all operands are true, i.e. false if at least 
-/// 
 /// one operand is false. 
 /// 
 /// LOGICALOR 
 ///   Defines a relationship between operands whereby the result is true if at least one operand is true, i.e false if 
-/// 
 /// all operands are false. 
 /// 
 /// LOGICALXOR 
@@ -3172,18 +4100,15 @@ struct IfcLogicalOperatorEnum {
 /// 
 /// LOGICALNOTAND 
 ///   Defines a relationship between operands whereby the result is true if at least one operand is false, i.e false if 
-/// 
 /// all operands are true. 
 /// 
 /// LOGICALNOTOR 
 ///   Defines a relationship between operands whereby the result is true if all operands are false, i.e false if at least 
-/// 
 /// one operand is true. 
 /// 
 /// Use Definition 
 /// 
 /// The IfcLogicalOperatorEnum, when applied in a case of three operands, A, B and C, evaluates for each operator as 
-/// 
 /// follows:
 /// 
 /// TRUTH TABLE: LOGICALAND(A,B,C)
@@ -3395,11 +4320,19 @@ struct IfcLogicalOperatorEnum {
 /// F
 /// F
 /// F
-typedef enum {IfcLogicalOperator_LOGICALAND, IfcLogicalOperator_LOGICALOR, IfcLogicalOperator_LOGICALXOR, IfcLogicalOperator_LOGICALNOTAND, IfcLogicalOperator_LOGICALNOTOR} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcLogicalOperator_LOGICALAND, IfcLogicalOperator_LOGICALOR, IfcLogicalOperator_LOGICALXOR, IfcLogicalOperator_LOGICALNOTAND, IfcLogicalOperator_LOGICALNOTOR} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcLogicalOperatorEnum (IfcEntityInstanceData* e);
+    IfcLogicalOperatorEnum (Value v);
+    IfcLogicalOperatorEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcMechanicalFastenerTypeEnum {
+class IFC_PARSE_API IfcMechanicalFastenerTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration defines the
 /// different types of mechanical fasteners:
 /// 
@@ -3417,11 +4350,19 @@ struct IfcMechanicalFastenerTypeEnum {
 /// NOTDEFINED: Undefined mechanical fastener
 /// 
 /// HISTORY New Enumeration in IFC 2x4.
-typedef enum {IfcMechanicalFastenerType_ANCHORBOLT, IfcMechanicalFastenerType_BOLT, IfcMechanicalFastenerType_DOWEL, IfcMechanicalFastenerType_NAIL, IfcMechanicalFastenerType_NAILPLATE, IfcMechanicalFastenerType_RIVET, IfcMechanicalFastenerType_SCREW, IfcMechanicalFastenerType_SHEARCONNECTOR, IfcMechanicalFastenerType_STAPLE, IfcMechanicalFastenerType_STUDSHEARCONNECTOR, IfcMechanicalFastenerType_COUPLER, IfcMechanicalFastenerType_USERDEFINED, IfcMechanicalFastenerType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcMechanicalFastenerType_ANCHORBOLT, IfcMechanicalFastenerType_BOLT, IfcMechanicalFastenerType_DOWEL, IfcMechanicalFastenerType_NAIL, IfcMechanicalFastenerType_NAILPLATE, IfcMechanicalFastenerType_RIVET, IfcMechanicalFastenerType_SCREW, IfcMechanicalFastenerType_SHEARCONNECTOR, IfcMechanicalFastenerType_STAPLE, IfcMechanicalFastenerType_STUDSHEARCONNECTOR, IfcMechanicalFastenerType_COUPLER, IfcMechanicalFastenerType_USERDEFINED, IfcMechanicalFastenerType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcMechanicalFastenerTypeEnum (IfcEntityInstanceData* e);
+    IfcMechanicalFastenerTypeEnum (Value v);
+    IfcMechanicalFastenerTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcMedicalDeviceTypeEnum {
+class IFC_PARSE_API IfcMedicalDeviceTypeEnum : public IfcUtil::IfcBaseType {
 /// Enumeration defining the functional type of medical device.
 /// 
 /// The IfcMedicalDeviceTypeEnum contains the following:
@@ -3435,11 +4376,19 @@ struct IfcMedicalDeviceTypeEnum {
 /// NOTDEFINED:  Undefined medical device type.
 /// 
 /// HISTORY: New enumeration in IFC 2x4.
-typedef enum {IfcMedicalDeviceType_AIRSTATION, IfcMedicalDeviceType_FEEDAIRUNIT, IfcMedicalDeviceType_OXYGENGENERATOR, IfcMedicalDeviceType_OXYGENPLANT, IfcMedicalDeviceType_VACUUMSTATION, IfcMedicalDeviceType_USERDEFINED, IfcMedicalDeviceType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcMedicalDeviceType_AIRSTATION, IfcMedicalDeviceType_FEEDAIRUNIT, IfcMedicalDeviceType_OXYGENGENERATOR, IfcMedicalDeviceType_OXYGENPLANT, IfcMedicalDeviceType_VACUUMSTATION, IfcMedicalDeviceType_USERDEFINED, IfcMedicalDeviceType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcMedicalDeviceTypeEnum (IfcEntityInstanceData* e);
+    IfcMedicalDeviceTypeEnum (Value v);
+    IfcMedicalDeviceTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcMemberTypeEnum {
+class IFC_PARSE_API IfcMemberTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration defines the
 /// different types of linear elements an IfcMemberType object
 /// can fulfill:
@@ -3483,11 +4432,19 @@ struct IfcMemberTypeEnum {
 /// are added.
 /// IFC2x Edition 3 CHANGE The additional identifier MULLION has
 /// been added.
-typedef enum {IfcMemberType_BRACE, IfcMemberType_CHORD, IfcMemberType_COLLAR, IfcMemberType_MEMBER, IfcMemberType_MULLION, IfcMemberType_PLATE, IfcMemberType_POST, IfcMemberType_PURLIN, IfcMemberType_RAFTER, IfcMemberType_STRINGER, IfcMemberType_STRUT, IfcMemberType_STUD, IfcMemberType_STIFFENING_RIB, IfcMemberType_ARCH_SEGMENT, IfcMemberType_SUSPENSION_CABLE, IfcMemberType_SUSPENDER, IfcMemberType_STAY_CABLE, IfcMemberType_USERDEFINED, IfcMemberType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcMemberType_BRACE, IfcMemberType_CHORD, IfcMemberType_COLLAR, IfcMemberType_MEMBER, IfcMemberType_MULLION, IfcMemberType_PLATE, IfcMemberType_POST, IfcMemberType_PURLIN, IfcMemberType_RAFTER, IfcMemberType_STRINGER, IfcMemberType_STRUT, IfcMemberType_STUD, IfcMemberType_STIFFENING_RIB, IfcMemberType_ARCH_SEGMENT, IfcMemberType_SUSPENSION_CABLE, IfcMemberType_SUSPENDER, IfcMemberType_STAY_CABLE, IfcMemberType_USERDEFINED, IfcMemberType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcMemberTypeEnum (IfcEntityInstanceData* e);
+    IfcMemberTypeEnum (Value v);
+    IfcMemberTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcMotorConnectionTypeEnum {
+class IFC_PARSE_API IfcMotorConnectionTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcMotorConnectionTypeEnum defines the range of different types of motor connection that can be specified. 
 ///   HISTORY: New type in IFC 2x.  
 ///   Enumeration 
@@ -3497,11 +4454,19 @@ struct IfcMotorConnectionTypeEnum {
 /// DIRECTDRIVE: A direct, physical connection made between the motor and the driven device. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcMotorConnectionType_BELTDRIVE, IfcMotorConnectionType_COUPLING, IfcMotorConnectionType_DIRECTDRIVE, IfcMotorConnectionType_USERDEFINED, IfcMotorConnectionType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcMotorConnectionType_BELTDRIVE, IfcMotorConnectionType_COUPLING, IfcMotorConnectionType_DIRECTDRIVE, IfcMotorConnectionType_USERDEFINED, IfcMotorConnectionType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcMotorConnectionTypeEnum (IfcEntityInstanceData* e);
+    IfcMotorConnectionTypeEnum (Value v);
+    IfcMotorConnectionTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcNullStyle {
+class IFC_PARSE_API IfcNullStyle : public IfcUtil::IfcBaseType {
 /// Definition from ISO/CD 10303-46:1992: The null style type specifies, that a representation item is not styled.
 /// 
 /// NOTE  Corresponding ISO 10303 name: null_style. Please refer to ISO/IS 10303-46:1994 for the final
@@ -3510,19 +4475,35 @@ struct IfcNullStyle {
 /// HISTORY  New enumeration in IFC2x2.
 /// 
 /// IFC2x4 CHANGE  The enumeration is deprecated.
-typedef enum {IfcNullStyle_NULL} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcNullStyle_NULL} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcNullStyle (IfcEntityInstanceData* e);
+    IfcNullStyle (Value v);
+    IfcNullStyle (const std::string& v);
+    operator Value() const;
 };
-struct IfcObjectTypeEnum {
+class IFC_PARSE_API IfcObjectTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration defines the applicable object categories, that is, the subtypes at the 2nd level of the IFC inheritance tree. Attached to an object, it indicates to which subtype of IfcObject the entity referencing it would otherwise comply with. 
 /// 
 /// HISTORY New entity in IFC Release 1.0, has been renamed from IfcProxyEnum in IFC 2x.
-typedef enum {IfcObjectType_PRODUCT, IfcObjectType_PROCESS, IfcObjectType_CONTROL, IfcObjectType_RESOURCE, IfcObjectType_ACTOR, IfcObjectType_GROUP, IfcObjectType_PROJECT, IfcObjectType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcObjectType_PRODUCT, IfcObjectType_PROCESS, IfcObjectType_CONTROL, IfcObjectType_RESOURCE, IfcObjectType_ACTOR, IfcObjectType_GROUP, IfcObjectType_PROJECT, IfcObjectType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcObjectTypeEnum (IfcEntityInstanceData* e);
+    IfcObjectTypeEnum (Value v);
+    IfcObjectTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcObjectiveEnum {
+class IFC_PARSE_API IfcObjectiveEnum : public IfcUtil::IfcBaseType {
 /// IfcObjectiveEnum is an enumeration used to determine the objective for which purpose the constraint needs to be satisfied. 
 /// 
 /// HISTORY: IFC2x4 CHANGE: Extended to include CODEWAIVER.
@@ -3552,11 +4533,19 @@ struct IfcObjectiveEnum {
 /// 
 /// TRIGGERCONDITION 
 ///   A constraint whose objective is to indicate a limiting value beyond which the condition of an object requires a particular form of attention.
-typedef enum {IfcObjective_CODECOMPLIANCE, IfcObjective_CODEWAIVER, IfcObjective_DESIGNINTENT, IfcObjective_EXTERNAL, IfcObjective_HEALTHANDSAFETY, IfcObjective_MERGECONFLICT, IfcObjective_MODELVIEW, IfcObjective_PARAMETER, IfcObjective_REQUIREMENT, IfcObjective_SPECIFICATION, IfcObjective_TRIGGERCONDITION, IfcObjective_USERDEFINED, IfcObjective_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcObjective_CODECOMPLIANCE, IfcObjective_CODEWAIVER, IfcObjective_DESIGNINTENT, IfcObjective_EXTERNAL, IfcObjective_HEALTHANDSAFETY, IfcObjective_MERGECONFLICT, IfcObjective_MODELVIEW, IfcObjective_PARAMETER, IfcObjective_REQUIREMENT, IfcObjective_SPECIFICATION, IfcObjective_TRIGGERCONDITION, IfcObjective_USERDEFINED, IfcObjective_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcObjectiveEnum (IfcEntityInstanceData* e);
+    IfcObjectiveEnum (Value v);
+    IfcObjectiveEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcOccupantTypeEnum {
+class IFC_PARSE_API IfcOccupantTypeEnum : public IfcUtil::IfcBaseType {
 /// IfcOccupantTypeEnum defines the types of occupant from which the type required can be selected. 
 ///   HISTORY: New Enumeration in IFC Release 2.0 Modified in IFC 2x2 
 ///   Enumeration: 
@@ -3570,11 +4559,19 @@ struct IfcOccupantTypeEnum {
 /// TENANT: Actor renting the use of a property fro a period of time  
 /// USERDEFINED: User-defined type.  
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcOccupantType_ASSIGNEE, IfcOccupantType_ASSIGNOR, IfcOccupantType_LESSEE, IfcOccupantType_LESSOR, IfcOccupantType_LETTINGAGENT, IfcOccupantType_OWNER, IfcOccupantType_TENANT, IfcOccupantType_USERDEFINED, IfcOccupantType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcOccupantType_ASSIGNEE, IfcOccupantType_ASSIGNOR, IfcOccupantType_LESSEE, IfcOccupantType_LESSOR, IfcOccupantType_LETTINGAGENT, IfcOccupantType_OWNER, IfcOccupantType_TENANT, IfcOccupantType_USERDEFINED, IfcOccupantType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcOccupantTypeEnum (IfcEntityInstanceData* e);
+    IfcOccupantTypeEnum (Value v);
+    IfcOccupantTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcOpeningElementTypeEnum {
+class IFC_PARSE_API IfcOpeningElementTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: An enumeration defining the basic
 /// types for opening elements.
 /// 
@@ -3595,11 +4592,19 @@ struct IfcOpeningElementTypeEnum {
 /// element
 /// NOTDEFINED: Undefined opening
 /// element
-typedef enum {IfcOpeningElementType_OPENING, IfcOpeningElementType_RECESS, IfcOpeningElementType_USERDEFINED, IfcOpeningElementType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcOpeningElementType_OPENING, IfcOpeningElementType_RECESS, IfcOpeningElementType_USERDEFINED, IfcOpeningElementType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcOpeningElementTypeEnum (IfcEntityInstanceData* e);
+    IfcOpeningElementTypeEnum (Value v);
+    IfcOpeningElementTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcOutletTypeEnum {
+class IFC_PARSE_API IfcOutletTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcOutletTypeEnum defines the range of different types of outlet that can be specified. 
 /// 
 /// HISTORY: New type in IFC 2x. Telephone and Data outlets added in IFC 2x4
@@ -3613,22 +4618,38 @@ struct IfcOutletTypeEnum {
 /// TELEPHONEOUTLET: An outlet used for connecting telephone communications equipment.  
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcOutletType_AUDIOVISUALOUTLET, IfcOutletType_COMMUNICATIONSOUTLET, IfcOutletType_POWEROUTLET, IfcOutletType_DATAOUTLET, IfcOutletType_TELEPHONEOUTLET, IfcOutletType_USERDEFINED, IfcOutletType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcOutletType_AUDIOVISUALOUTLET, IfcOutletType_COMMUNICATIONSOUTLET, IfcOutletType_POWEROUTLET, IfcOutletType_DATAOUTLET, IfcOutletType_TELEPHONEOUTLET, IfcOutletType_USERDEFINED, IfcOutletType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcOutletTypeEnum (IfcEntityInstanceData* e);
+    IfcOutletTypeEnum (Value v);
+    IfcOutletTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcPerformanceHistoryTypeEnum {
+class IFC_PARSE_API IfcPerformanceHistoryTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration is used to identify the primary purpose of performance history.  The IfcPerformanceHistoryTypeEnum contains the following:
 /// 
 /// USERDEFINED: User-defined.
 /// NOTDEFINED: Undefined.
 /// 
 /// HISTORY: New enumeration in IFC2x4
-typedef enum {IfcPerformanceHistoryType_USERDEFINED, IfcPerformanceHistoryType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcPerformanceHistoryType_USERDEFINED, IfcPerformanceHistoryType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcPerformanceHistoryTypeEnum (IfcEntityInstanceData* e);
+    IfcPerformanceHistoryTypeEnum (Value v);
+    IfcPerformanceHistoryTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcPermeableCoveringOperationEnum {
+class IFC_PARSE_API IfcPermeableCoveringOperationEnum : public IfcUtil::IfcBaseType {
 /// Definition: Enumeration defining the valid types of permeable coverings. 
 /// 
 /// Enumeration:
@@ -3651,11 +4672,19 @@ struct IfcPermeableCoveringOperationEnum {
 ///   no information available
 /// 
 /// HISTORY: New Enumeration in IFC Release 2.0
-typedef enum {IfcPermeableCoveringOperation_GRILL, IfcPermeableCoveringOperation_LOUVER, IfcPermeableCoveringOperation_SCREEN, IfcPermeableCoveringOperation_USERDEFINED, IfcPermeableCoveringOperation_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcPermeableCoveringOperation_GRILL, IfcPermeableCoveringOperation_LOUVER, IfcPermeableCoveringOperation_SCREEN, IfcPermeableCoveringOperation_USERDEFINED, IfcPermeableCoveringOperation_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcPermeableCoveringOperationEnum (IfcEntityInstanceData* e);
+    IfcPermeableCoveringOperationEnum (Value v);
+    IfcPermeableCoveringOperationEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcPermitTypeEnum {
+class IFC_PARSE_API IfcPermitTypeEnum : public IfcUtil::IfcBaseType {
 /// IfcPermitTypeEnum defines the types of permits that can be granted. 
 ///   HISTORY: New Enumeration in IFC2x4. 
 ///   Enumeration: 
@@ -3665,11 +4694,19 @@ struct IfcPermitTypeEnum {
 /// WORK: Enables work to be carried out in an identified area. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcPermitType_ACCESS, IfcPermitType_BUILDING, IfcPermitType_WORK, IfcPermitType_USERDEFINED, IfcPermitType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcPermitType_ACCESS, IfcPermitType_BUILDING, IfcPermitType_WORK, IfcPermitType_USERDEFINED, IfcPermitType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcPermitTypeEnum (IfcEntityInstanceData* e);
+    IfcPermitTypeEnum (Value v);
+    IfcPermitTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcPhysicalOrVirtualEnum {
+class IFC_PARSE_API IfcPhysicalOrVirtualEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration defines the
 ///   different types of space boundaries in terms of its
 ///   physical manifestation. A space boundary can either be
@@ -3693,11 +4730,19 @@ struct IfcPhysicalOrVirtualEnum {
 /// 
 /// HISTORY: New enumeration in
 ///   IFC Release 2.0
-typedef enum {IfcPhysicalOrVirtual_PHYSICAL, IfcPhysicalOrVirtual_VIRTUAL, IfcPhysicalOrVirtual_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcPhysicalOrVirtual_PHYSICAL, IfcPhysicalOrVirtual_VIRTUAL, IfcPhysicalOrVirtual_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcPhysicalOrVirtualEnum (IfcEntityInstanceData* e);
+    IfcPhysicalOrVirtualEnum (Value v);
+    IfcPhysicalOrVirtualEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcPileConstructionEnum {
+class IFC_PARSE_API IfcPileConstructionEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: Enumeration defining the construction type
 ///   for piles. The type is mainly based on how the piles are used and manufactured.
 ///   Some material information is mixed in because this affects the way the piles
@@ -3720,11 +4765,19 @@ struct IfcPileConstructionEnum {
 ///   USERDEFINED Special types of pile construction which meet
 ///   specific local requirements. 
 ///   NOTDEFINED The type of pile construction is not defined.
-typedef enum {IfcPileConstruction_CAST_IN_PLACE, IfcPileConstruction_COMPOSITE, IfcPileConstruction_PRECAST_CONCRETE, IfcPileConstruction_PREFAB_STEEL, IfcPileConstruction_USERDEFINED, IfcPileConstruction_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcPileConstruction_CAST_IN_PLACE, IfcPileConstruction_COMPOSITE, IfcPileConstruction_PRECAST_CONCRETE, IfcPileConstruction_PREFAB_STEEL, IfcPileConstruction_USERDEFINED, IfcPileConstruction_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcPileConstructionEnum (IfcEntityInstanceData* e);
+    IfcPileConstructionEnum (Value v);
+    IfcPileConstructionEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcPileTypeEnum {
+class IFC_PARSE_API IfcPileTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: Enumeration defining the pile type. 
 /// 
 /// HISTORY New type in IFC Release 2x2
@@ -3738,11 +4791,19 @@ struct IfcPileTypeEnum {
 ///   SUPPORT A support pile.
 ///   USERDEFINED The type of pile function is user defined.
 ///   NOTDEFINED The type of pile function is not defined.
-typedef enum {IfcPileType_BORED, IfcPileType_DRIVEN, IfcPileType_JETGROUTING, IfcPileType_COHESION, IfcPileType_FRICTION, IfcPileType_SUPPORT, IfcPileType_USERDEFINED, IfcPileType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcPileType_BORED, IfcPileType_DRIVEN, IfcPileType_JETGROUTING, IfcPileType_COHESION, IfcPileType_FRICTION, IfcPileType_SUPPORT, IfcPileType_USERDEFINED, IfcPileType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcPileTypeEnum (IfcEntityInstanceData* e);
+    IfcPileTypeEnum (Value v);
+    IfcPileTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcPipeFittingTypeEnum {
+class IFC_PARSE_API IfcPipeFittingTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration is used to identify the primary purpose of a pipe fitting. This is a very basic categorization mechanism
 ///   to generically identify the pipe fitting type. Subcategories
 ///   of pipe fittings are not enumerated. 
@@ -3774,11 +4835,19 @@ struct IfcPipeFittingTypeEnum {
 ///   NOTDEFINED:  Undefined fitting.
 /// 
 /// HISTORY: New enumeration in IFC 2x2
-typedef enum {IfcPipeFittingType_BEND, IfcPipeFittingType_CONNECTOR, IfcPipeFittingType_ENTRY, IfcPipeFittingType_EXIT, IfcPipeFittingType_JUNCTION, IfcPipeFittingType_OBSTRUCTION, IfcPipeFittingType_TRANSITION, IfcPipeFittingType_USERDEFINED, IfcPipeFittingType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcPipeFittingType_BEND, IfcPipeFittingType_CONNECTOR, IfcPipeFittingType_ENTRY, IfcPipeFittingType_EXIT, IfcPipeFittingType_JUNCTION, IfcPipeFittingType_OBSTRUCTION, IfcPipeFittingType_TRANSITION, IfcPipeFittingType_USERDEFINED, IfcPipeFittingType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcPipeFittingTypeEnum (IfcEntityInstanceData* e);
+    IfcPipeFittingTypeEnum (Value v);
+    IfcPipeFittingTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcPipeSegmentTypeEnum {
+class IFC_PARSE_API IfcPipeSegmentTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration is used to identify the primary purpose of a
 ///   pipe segment. This is a very basic categorization mechanism
 ///   to generically identify the pipe segment type. Subcategories
@@ -3794,11 +4863,19 @@ struct IfcPipeSegmentTypeEnum {
 ///   NOTDEFINED:  Undefined segment.
 /// 
 /// HISTORY: New enumeration in IFC 2x2
-typedef enum {IfcPipeSegmentType_CULVERT, IfcPipeSegmentType_FLEXIBLESEGMENT, IfcPipeSegmentType_RIGIDSEGMENT, IfcPipeSegmentType_GUTTER, IfcPipeSegmentType_SPOOL, IfcPipeSegmentType_USERDEFINED, IfcPipeSegmentType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcPipeSegmentType_CULVERT, IfcPipeSegmentType_FLEXIBLESEGMENT, IfcPipeSegmentType_RIGIDSEGMENT, IfcPipeSegmentType_GUTTER, IfcPipeSegmentType_SPOOL, IfcPipeSegmentType_USERDEFINED, IfcPipeSegmentType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcPipeSegmentTypeEnum (IfcEntityInstanceData* e);
+    IfcPipeSegmentTypeEnum (Value v);
+    IfcPipeSegmentTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcPlateTypeEnum {
+class IFC_PARSE_API IfcPlateTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration
 /// defines the different types of planar elements an IfcPlateType
 /// object can fulfill:
@@ -3817,17 +4894,33 @@ struct IfcPlateTypeEnum {
 /// CHANGE  The additional identifiers CURTAIN_PANEL, SHEET have
 /// been
 /// added.
-typedef enum {IfcPlateType_CURTAIN_PANEL, IfcPlateType_SHEET, IfcPlateType_FLANGE_PLATE, IfcPlateType_WEB_PLATE, IfcPlateType_STIFFENER_PLATE, IfcPlateType_GUSSET_PLATE, IfcPlateType_COVER_PLATE, IfcPlateType_SPLICE_PLATE, IfcPlateType_BASE_PLATE, IfcPlateType_USERDEFINED, IfcPlateType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
-};
-struct IfcPreferredSurfaceCurveRepresentation {
+public:
+    typedef enum {IfcPlateType_CURTAIN_PANEL, IfcPlateType_SHEET, IfcPlateType_FLANGE_PLATE, IfcPlateType_WEB_PLATE, IfcPlateType_STIFFENER_PLATE, IfcPlateType_GUSSET_PLATE, IfcPlateType_COVER_PLATE, IfcPlateType_SPLICE_PLATE, IfcPlateType_BASE_PLATE, IfcPlateType_USERDEFINED, IfcPlateType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
 
-typedef enum {IfcPreferredSurfaceCurveRepresentation_CURVE3D, IfcPreferredSurfaceCurveRepresentation_PCURVE_S1, IfcPreferredSurfaceCurveRepresentation_PCURVE_S2} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcPlateTypeEnum (IfcEntityInstanceData* e);
+    IfcPlateTypeEnum (Value v);
+    IfcPlateTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcProcedureTypeEnum {
+class IFC_PARSE_API IfcPreferredSurfaceCurveRepresentation : public IfcUtil::IfcBaseType {
+
+public:
+    typedef enum {IfcPreferredSurfaceCurveRepresentation_CURVE3D, IfcPreferredSurfaceCurveRepresentation_PCURVE_S1, IfcPreferredSurfaceCurveRepresentation_PCURVE_S2} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcPreferredSurfaceCurveRepresentation (IfcEntityInstanceData* e);
+    IfcPreferredSurfaceCurveRepresentation (Value v);
+    IfcPreferredSurfaceCurveRepresentation (const std::string& v);
+    operator Value() const;
+};
+class IFC_PARSE_API IfcProcedureTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcProcedureTypeEnum defines the range of different types of procedure that can be specified.
 /// 
 /// HISTORY: New type in IFC2x2
@@ -3842,11 +4935,19 @@ struct IfcProcedureTypeEnum {
 /// STARTUP: A procedure undertaken to start up the operation an artifact
 /// USERDEFINED
 /// NOTDEFINED
-typedef enum {IfcProcedureType_ADVICE_CAUTION, IfcProcedureType_ADVICE_NOTE, IfcProcedureType_ADVICE_WARNING, IfcProcedureType_CALIBRATION, IfcProcedureType_DIAGNOSTIC, IfcProcedureType_SHUTDOWN, IfcProcedureType_STARTUP, IfcProcedureType_USERDEFINED, IfcProcedureType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcProcedureType_ADVICE_CAUTION, IfcProcedureType_ADVICE_NOTE, IfcProcedureType_ADVICE_WARNING, IfcProcedureType_CALIBRATION, IfcProcedureType_DIAGNOSTIC, IfcProcedureType_SHUTDOWN, IfcProcedureType_STARTUP, IfcProcedureType_USERDEFINED, IfcProcedureType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcProcedureTypeEnum (IfcEntityInstanceData* e);
+    IfcProcedureTypeEnum (Value v);
+    IfcProcedureTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcProfileTypeEnum {
+class IFC_PARSE_API IfcProfileTypeEnum : public IfcUtil::IfcBaseType {
 /// The enumeration defines whether the definition of a profile shape shall be geometrically resolved into a curve or into a surface.
 /// 
 /// HISTORY: New type in IFC 1.5.
@@ -3855,11 +4956,19 @@ struct IfcProfileTypeEnum {
 /// 
 /// CURVE: The resulting geometric item is of type curve and closed (with the only exception of the curve created by the IfcArbitraryOpenProfileDef which resolves into an open curve). The resulting geometry after applying a sweeping operation is a swept surface. This can be used to define shapes with thin sheets, such as ducts, where the thickness is not appropriate for geometric representation.
 /// AREA: The resulting geometric item is of type surface. The resulting geometry after applying a sweeping operation is a swept solid with defined volume.
-typedef enum {IfcProfileType_CURVE, IfcProfileType_AREA} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcProfileType_CURVE, IfcProfileType_AREA} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcProfileTypeEnum (IfcEntityInstanceData* e);
+    IfcProfileTypeEnum (Value v);
+    IfcProfileTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcProjectOrderTypeEnum {
+class IFC_PARSE_API IfcProjectOrderTypeEnum : public IfcUtil::IfcBaseType {
 /// An IfcProjectOrderTypeEnum is a list of the types of project order that may be identified. 
 ///   HISTORY: New type in IFC 2x2  
 ///   Enumeration 
@@ -3871,22 +4980,38 @@ struct IfcProjectOrderTypeEnum {
 /// WORKORDER: A general instruction to carry out work and a description of the work to be done. Note the difference between a work order generally and a maintenance work order. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcProjectOrderType_CHANGEORDER, IfcProjectOrderType_MAINTENANCEWORKORDER, IfcProjectOrderType_MOVEORDER, IfcProjectOrderType_PURCHASEORDER, IfcProjectOrderType_WORKORDER, IfcProjectOrderType_USERDEFINED, IfcProjectOrderType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcProjectOrderType_CHANGEORDER, IfcProjectOrderType_MAINTENANCEWORKORDER, IfcProjectOrderType_MOVEORDER, IfcProjectOrderType_PURCHASEORDER, IfcProjectOrderType_WORKORDER, IfcProjectOrderType_USERDEFINED, IfcProjectOrderType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcProjectOrderTypeEnum (IfcEntityInstanceData* e);
+    IfcProjectOrderTypeEnum (Value v);
+    IfcProjectOrderTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcProjectedOrTrueLengthEnum {
+class IFC_PARSE_API IfcProjectedOrTrueLengthEnum : public IfcUtil::IfcBaseType {
 /// This enumeration type is needed for load definition and is only considered if the load values are given as global actions and if they define linear or planar loads (that is, one- or two-dimensionally distributed loads).
 /// Figure 234 illustrates the interpretation of a load definition depending on the enumeration types IfcGlobalOrLocalEnum and IfcProjectedOrTrueLengthEnum.
 /// 
 /// HISTORY  New type in IFC2x2. 
 /// 
 /// Figure 234 — Projected or true length
-typedef enum {IfcProjectedOrTrueLength_PROJECTED_LENGTH, IfcProjectedOrTrueLength_TRUE_LENGTH} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcProjectedOrTrueLength_PROJECTED_LENGTH, IfcProjectedOrTrueLength_TRUE_LENGTH} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcProjectedOrTrueLengthEnum (IfcEntityInstanceData* e);
+    IfcProjectedOrTrueLengthEnum (Value v);
+    IfcProjectedOrTrueLengthEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcProjectionElementTypeEnum {
+class IFC_PARSE_API IfcProjectionElementTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: An enumeration defining the basic
 /// types for projection elements.
 /// 
@@ -3899,11 +5024,19 @@ struct IfcProjectionElementTypeEnum {
 /// element
 /// NOTDEFINED: Undefined projection
 /// element
-typedef enum {IfcProjectionElementType_BLISTER, IfcProjectionElementType_DEVIATOR, IfcProjectionElementType_USERDEFINED, IfcProjectionElementType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcProjectionElementType_BLISTER, IfcProjectionElementType_DEVIATOR, IfcProjectionElementType_USERDEFINED, IfcProjectionElementType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcProjectionElementTypeEnum (IfcEntityInstanceData* e);
+    IfcProjectionElementTypeEnum (Value v);
+    IfcProjectionElementTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcPropertySetTemplateTypeEnum {
+class IFC_PARSE_API IfcPropertySetTemplateTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration defines the general
 /// applicability of instances of IfcPropertySet, or
 /// IfcElementQuantity defined by this
@@ -3942,11 +5075,19 @@ struct IfcPropertySetTemplateTypeEnum {
 /// restriction provided, the property sets defined by this
 /// IfcPropertySetTemplate can be assigned to any entity, if not
 /// otherwise restricted by the ApplicableEntity attribute.
-typedef enum {IfcPropertySetTemplateType_PSET_TYPEDRIVENONLY, IfcPropertySetTemplateType_PSET_TYPEDRIVENOVERRIDE, IfcPropertySetTemplateType_PSET_OCCURRENCEDRIVEN, IfcPropertySetTemplateType_PSET_PERFORMANCEDRIVEN, IfcPropertySetTemplateType_QTO_TYPEDRIVENONLY, IfcPropertySetTemplateType_QTO_TYPEDRIVENOVERRIDE, IfcPropertySetTemplateType_QTO_OCCURRENCEDRIVEN, IfcPropertySetTemplateType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcPropertySetTemplateType_PSET_TYPEDRIVENONLY, IfcPropertySetTemplateType_PSET_TYPEDRIVENOVERRIDE, IfcPropertySetTemplateType_PSET_OCCURRENCEDRIVEN, IfcPropertySetTemplateType_PSET_PERFORMANCEDRIVEN, IfcPropertySetTemplateType_QTO_TYPEDRIVENONLY, IfcPropertySetTemplateType_QTO_TYPEDRIVENOVERRIDE, IfcPropertySetTemplateType_QTO_OCCURRENCEDRIVEN, IfcPropertySetTemplateType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcPropertySetTemplateTypeEnum (IfcEntityInstanceData* e);
+    IfcPropertySetTemplateTypeEnum (Value v);
+    IfcPropertySetTemplateTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcProtectiveDeviceTrippingUnitTypeEnum {
+class IFC_PARSE_API IfcProtectiveDeviceTrippingUnitTypeEnum : public IfcUtil::IfcBaseType {
 /// Defines the range of different tripping unit types that can be used in conjunction with a protective device. 
 /// HISTORY: New enumeration in IFC2x4 
 /// 
@@ -3954,11 +5095,19 @@ struct IfcProtectiveDeviceTrippingUnitTypeEnum {
 /// ELECTROMAGNETIC: A tripping unit activated by electromagnetic action. 
 /// RESIDUALCURRENT: A tripping unit activated by residual current detection. 
 /// THERMAL: A tripping unit activated by thermal action.
-typedef enum {IfcProtectiveDeviceTrippingUnitType_ELECTRONIC, IfcProtectiveDeviceTrippingUnitType_ELECTROMAGNETIC, IfcProtectiveDeviceTrippingUnitType_RESIDUALCURRENT, IfcProtectiveDeviceTrippingUnitType_THERMAL, IfcProtectiveDeviceTrippingUnitType_USERDEFINED, IfcProtectiveDeviceTrippingUnitType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcProtectiveDeviceTrippingUnitType_ELECTRONIC, IfcProtectiveDeviceTrippingUnitType_ELECTROMAGNETIC, IfcProtectiveDeviceTrippingUnitType_RESIDUALCURRENT, IfcProtectiveDeviceTrippingUnitType_THERMAL, IfcProtectiveDeviceTrippingUnitType_USERDEFINED, IfcProtectiveDeviceTrippingUnitType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcProtectiveDeviceTrippingUnitTypeEnum (IfcEntityInstanceData* e);
+    IfcProtectiveDeviceTrippingUnitTypeEnum (Value v);
+    IfcProtectiveDeviceTrippingUnitTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcProtectiveDeviceTypeEnum {
+class IFC_PARSE_API IfcProtectiveDeviceTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcProtectiveDeviceTypeEnum specifically defines the range of different breaker unit types that can be used in conjunction with protective device. Types may also be used as a reference to a complete protective device in circumstances where tripping units are not separately identified (typically expected to be the case during earlier stages of design). 
 /// 
 /// HISTORY: New type in IFC 2x2. Modified definition and usage in IFC 2x4 
@@ -3974,11 +5123,19 @@ struct IfcProtectiveDeviceTypeEnum {
 /// VARISTOR: A high voltage surge protection device.
 /// USERDEFINED: User-defined type.
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcProtectiveDeviceType_CIRCUITBREAKER, IfcProtectiveDeviceType_EARTHLEAKAGECIRCUITBREAKER, IfcProtectiveDeviceType_EARTHINGSWITCH, IfcProtectiveDeviceType_FUSEDISCONNECTOR, IfcProtectiveDeviceType_RESIDUALCURRENTCIRCUITBREAKER, IfcProtectiveDeviceType_RESIDUALCURRENTSWITCH, IfcProtectiveDeviceType_VARISTOR, IfcProtectiveDeviceType_USERDEFINED, IfcProtectiveDeviceType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcProtectiveDeviceType_CIRCUITBREAKER, IfcProtectiveDeviceType_EARTHLEAKAGECIRCUITBREAKER, IfcProtectiveDeviceType_EARTHINGSWITCH, IfcProtectiveDeviceType_FUSEDISCONNECTOR, IfcProtectiveDeviceType_RESIDUALCURRENTCIRCUITBREAKER, IfcProtectiveDeviceType_RESIDUALCURRENTSWITCH, IfcProtectiveDeviceType_VARISTOR, IfcProtectiveDeviceType_USERDEFINED, IfcProtectiveDeviceType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcProtectiveDeviceTypeEnum (IfcEntityInstanceData* e);
+    IfcProtectiveDeviceTypeEnum (Value v);
+    IfcProtectiveDeviceTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcPumpTypeEnum {
+class IFC_PARSE_API IfcPumpTypeEnum : public IfcUtil::IfcBaseType {
 /// Defines general types of pumps.
 /// 
 /// The IfcPumpTypeEnum contains the following:
@@ -4007,11 +5164,19 @@ struct IfcPumpTypeEnum {
 /// NOTDEFINED:  Pump type has not been defined.
 /// 
 /// HISTORY: New enumeration in IFC R2x.  SUBMERSIBLEPUMP and SUMPPUMP added in IFC2x4.
-typedef enum {IfcPumpType_CIRCULATOR, IfcPumpType_ENDSUCTION, IfcPumpType_SPLITCASE, IfcPumpType_SUBMERSIBLEPUMP, IfcPumpType_SUMPPUMP, IfcPumpType_VERTICALINLINE, IfcPumpType_VERTICALTURBINE, IfcPumpType_USERDEFINED, IfcPumpType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcPumpType_CIRCULATOR, IfcPumpType_ENDSUCTION, IfcPumpType_SPLITCASE, IfcPumpType_SUBMERSIBLEPUMP, IfcPumpType_SUMPPUMP, IfcPumpType_VERTICALINLINE, IfcPumpType_VERTICALTURBINE, IfcPumpType_USERDEFINED, IfcPumpType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcPumpTypeEnum (IfcEntityInstanceData* e);
+    IfcPumpTypeEnum (Value v);
+    IfcPumpTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcRailingTypeEnum {
+class IFC_PARSE_API IfcRailingTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: Enumeration defining the valid types of
 ///   railings that can be predefined using the enumeration values.  
 ///   HISTORY: New Enumeration in IFC
@@ -4032,11 +5197,19 @@ struct IfcRailingTypeEnum {
 ///   the user type is given by the attribute IfcRailing.ObjectType. 
 ///   NOTDEFINED: Undefined railing element, no type information
 ///   available.
-typedef enum {IfcRailingType_HANDRAIL, IfcRailingType_GUARDRAIL, IfcRailingType_BALUSTRADE, IfcRailingType_USERDEFINED, IfcRailingType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcRailingType_HANDRAIL, IfcRailingType_GUARDRAIL, IfcRailingType_BALUSTRADE, IfcRailingType_USERDEFINED, IfcRailingType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcRailingTypeEnum (IfcEntityInstanceData* e);
+    IfcRailingTypeEnum (Value v);
+    IfcRailingTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcRampFlightTypeEnum {
+class IFC_PARSE_API IfcRampFlightTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration defines the different types
 ///   of linear elements an IfcRampFlightType object can fulfill: 
 /// 
@@ -4048,11 +5221,19 @@ struct IfcRampFlightTypeEnum {
 /// 
 /// HISTORY: New Enumeration in
 ///   Release IFC2x Edition 2.
-typedef enum {IfcRampFlightType_STRAIGHT, IfcRampFlightType_SPIRAL, IfcRampFlightType_USERDEFINED, IfcRampFlightType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcRampFlightType_STRAIGHT, IfcRampFlightType_SPIRAL, IfcRampFlightType_USERDEFINED, IfcRampFlightType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcRampFlightTypeEnum (IfcEntityInstanceData* e);
+    IfcRampFlightTypeEnum (Value v);
+    IfcRampFlightTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcRampTypeEnum {
+class IFC_PARSE_API IfcRampTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration defines the basic configuration of the ramp type in terms of the number and shape of ramp flights, as shown in Figure 67. The type also distinguished turns by landings. In addition the subdivision of the straight and changing direction ramps is included. The ramp configurations are given for ramps without and with one and two landings. 
 /// 
 /// Ramps which are subdivided into more than two landings have to be defined by the geometry only. Also ramps with non-regular shapes have to be defined by the geometry only. The type of such ramps is USERDEFINED. 
@@ -4101,11 +5282,19 @@ struct IfcRampTypeEnum {
 ///     
 /// 
 /// Figure 67 — Ramp types
-typedef enum {IfcRampType_STRAIGHT_RUN_RAMP, IfcRampType_TWO_STRAIGHT_RUN_RAMP, IfcRampType_QUARTER_TURN_RAMP, IfcRampType_TWO_QUARTER_TURN_RAMP, IfcRampType_HALF_TURN_RAMP, IfcRampType_SPIRAL_RAMP, IfcRampType_USERDEFINED, IfcRampType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcRampType_STRAIGHT_RUN_RAMP, IfcRampType_TWO_STRAIGHT_RUN_RAMP, IfcRampType_QUARTER_TURN_RAMP, IfcRampType_TWO_QUARTER_TURN_RAMP, IfcRampType_HALF_TURN_RAMP, IfcRampType_SPIRAL_RAMP, IfcRampType_USERDEFINED, IfcRampType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcRampTypeEnum (IfcEntityInstanceData* e);
+    IfcRampTypeEnum (Value v);
+    IfcRampTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcRecurrenceTypeEnum {
+class IFC_PARSE_API IfcRecurrenceTypeEnum : public IfcUtil::IfcBaseType {
 /// IfcRecurrenceTypeEnum enumerates the recurring pattern type. The following
 ///   combinations are valid:
 /// 
@@ -4127,17 +5316,33 @@ struct IfcRecurrenceTypeEnum {
 /// 
 /// HISTORY: New enumeration in IFC
 ///   Release 2x4.
-typedef enum {IfcRecurrenceType_DAILY, IfcRecurrenceType_WEEKLY, IfcRecurrenceType_MONTHLY_BY_DAY_OF_MONTH, IfcRecurrenceType_MONTHLY_BY_POSITION, IfcRecurrenceType_BY_DAY_COUNT, IfcRecurrenceType_BY_WEEKDAY_COUNT, IfcRecurrenceType_YEARLY_BY_DAY_OF_MONTH, IfcRecurrenceType_YEARLY_BY_POSITION} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
-};
-struct IfcReferentTypeEnum {
+public:
+    typedef enum {IfcRecurrenceType_DAILY, IfcRecurrenceType_WEEKLY, IfcRecurrenceType_MONTHLY_BY_DAY_OF_MONTH, IfcRecurrenceType_MONTHLY_BY_POSITION, IfcRecurrenceType_BY_DAY_COUNT, IfcRecurrenceType_BY_WEEKDAY_COUNT, IfcRecurrenceType_YEARLY_BY_DAY_OF_MONTH, IfcRecurrenceType_YEARLY_BY_POSITION} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
 
-typedef enum {IfcReferentType_KILOPOINT, IfcReferentType_MILEPOINT, IfcReferentType_STATION, IfcReferentType_USERDEFINED, IfcReferentType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcRecurrenceTypeEnum (IfcEntityInstanceData* e);
+    IfcRecurrenceTypeEnum (Value v);
+    IfcRecurrenceTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcReflectanceMethodEnum {
+class IFC_PARSE_API IfcReferentTypeEnum : public IfcUtil::IfcBaseType {
+
+public:
+    typedef enum {IfcReferentType_KILOPOINT, IfcReferentType_MILEPOINT, IfcReferentType_STATION, IfcReferentType_USERDEFINED, IfcReferentType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcReferentTypeEnum (IfcEntityInstanceData* e);
+    IfcReferentTypeEnum (Value v);
+    IfcReferentTypeEnum (const std::string& v);
+    operator Value() const;
+};
+class IFC_PARSE_API IfcReflectanceMethodEnum : public IfcUtil::IfcBaseType {
 /// The IfcReflectanceMethodEnum defines the range of different reflectance methods available. 
 /// 
 /// HISTORY: New type in IFC 2x2.
@@ -4154,11 +5359,19 @@ struct IfcReflectanceMethodEnum {
 /// PLASTIC: A reflectance model providing a specular effect which is similar to the Phong model. 
 /// STRAUSS: A reflectance model for metallic and non-metallic appearance based on a limited set of control parameter.
 /// NOTDEFINED
-typedef enum {IfcReflectanceMethod_BLINN, IfcReflectanceMethod_FLAT, IfcReflectanceMethod_GLASS, IfcReflectanceMethod_MATT, IfcReflectanceMethod_METAL, IfcReflectanceMethod_MIRROR, IfcReflectanceMethod_PHONG, IfcReflectanceMethod_PLASTIC, IfcReflectanceMethod_STRAUSS, IfcReflectanceMethod_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcReflectanceMethod_BLINN, IfcReflectanceMethod_FLAT, IfcReflectanceMethod_GLASS, IfcReflectanceMethod_MATT, IfcReflectanceMethod_METAL, IfcReflectanceMethod_MIRROR, IfcReflectanceMethod_PHONG, IfcReflectanceMethod_PLASTIC, IfcReflectanceMethod_STRAUSS, IfcReflectanceMethod_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcReflectanceMethodEnum (IfcEntityInstanceData* e);
+    IfcReflectanceMethodEnum (Value v);
+    IfcReflectanceMethodEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcReinforcingBarRoleEnum {
+class IFC_PARSE_API IfcReinforcingBarRoleEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: Enumeration defining standard types for the
 ///   role, purpose or usage of the bar, i.e. the kind of loads and stresses they are
 ///   intended to carry.  
@@ -4178,11 +5391,19 @@ struct IfcReinforcingBarRoleEnum {
 ///   ANCHORING Anchoring reinforcement. 
 ///   USERDEFINED The type of reinforcement is user defined. 
 ///   NOTDEFINED The type of reinforcement is not defined.
-typedef enum {IfcReinforcingBarRole_MAIN, IfcReinforcingBarRole_SHEAR, IfcReinforcingBarRole_LIGATURE, IfcReinforcingBarRole_STUD, IfcReinforcingBarRole_PUNCHING, IfcReinforcingBarRole_EDGE, IfcReinforcingBarRole_RING, IfcReinforcingBarRole_ANCHORING, IfcReinforcingBarRole_USERDEFINED, IfcReinforcingBarRole_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcReinforcingBarRole_MAIN, IfcReinforcingBarRole_SHEAR, IfcReinforcingBarRole_LIGATURE, IfcReinforcingBarRole_STUD, IfcReinforcingBarRole_PUNCHING, IfcReinforcingBarRole_EDGE, IfcReinforcingBarRole_RING, IfcReinforcingBarRole_ANCHORING, IfcReinforcingBarRole_USERDEFINED, IfcReinforcingBarRole_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcReinforcingBarRoleEnum (IfcEntityInstanceData* e);
+    IfcReinforcingBarRoleEnum (Value v);
+    IfcReinforcingBarRoleEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcReinforcingBarSurfaceEnum {
+class IFC_PARSE_API IfcReinforcingBarSurfaceEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: Enumeration indicating whether the bar has a
 ///   plain or textured (ribbed) surface.  
 /// 
@@ -4192,23 +5413,47 @@ struct IfcReinforcingBarSurfaceEnum {
 /// 
 /// PLAIN The reinforcing bar surface is plain. 
 ///   TEXTURED The reinforcing bar surface is textured (ribbed).
-typedef enum {IfcReinforcingBarSurface_PLAIN, IfcReinforcingBarSurface_TEXTURED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
-};
-struct IfcReinforcingBarTypeEnum {
+public:
+    typedef enum {IfcReinforcingBarSurface_PLAIN, IfcReinforcingBarSurface_TEXTURED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
 
-typedef enum {IfcReinforcingBarType_ANCHORING, IfcReinforcingBarType_EDGE, IfcReinforcingBarType_LIGATURE, IfcReinforcingBarType_MAIN, IfcReinforcingBarType_PUNCHING, IfcReinforcingBarType_RING, IfcReinforcingBarType_SHEAR, IfcReinforcingBarType_STUD, IfcReinforcingBarType_SPACEBAR, IfcReinforcingBarType_USERDEFINED, IfcReinforcingBarType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcReinforcingBarSurfaceEnum (IfcEntityInstanceData* e);
+    IfcReinforcingBarSurfaceEnum (Value v);
+    IfcReinforcingBarSurfaceEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcReinforcingMeshTypeEnum {
+class IFC_PARSE_API IfcReinforcingBarTypeEnum : public IfcUtil::IfcBaseType {
 
-typedef enum {IfcReinforcingMeshType_USERDEFINED, IfcReinforcingMeshType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcReinforcingBarType_ANCHORING, IfcReinforcingBarType_EDGE, IfcReinforcingBarType_LIGATURE, IfcReinforcingBarType_MAIN, IfcReinforcingBarType_PUNCHING, IfcReinforcingBarType_RING, IfcReinforcingBarType_SHEAR, IfcReinforcingBarType_STUD, IfcReinforcingBarType_SPACEBAR, IfcReinforcingBarType_USERDEFINED, IfcReinforcingBarType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcReinforcingBarTypeEnum (IfcEntityInstanceData* e);
+    IfcReinforcingBarTypeEnum (Value v);
+    IfcReinforcingBarTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcRoleEnum {
+class IFC_PARSE_API IfcReinforcingMeshTypeEnum : public IfcUtil::IfcBaseType {
+
+public:
+    typedef enum {IfcReinforcingMeshType_USERDEFINED, IfcReinforcingMeshType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcReinforcingMeshTypeEnum (IfcEntityInstanceData* e);
+    IfcReinforcingMeshTypeEnum (Value v);
+    IfcReinforcingMeshTypeEnum (const std::string& v);
+    operator Value() const;
+};
+class IFC_PARSE_API IfcRoleEnum : public IfcUtil::IfcBaseType {
 /// Definition: Roles which may be played by an actor.
 /// 
 /// HISTORY This type has changes after IFC Release 2.0.  Spelling of COMMISSIONINGENGINEER fixed in IFC 2x4.
@@ -4238,11 +5483,19 @@ struct IfcRoleEnum {
 ///   FIELDCONSTRUCTIONMANAGER 
 ///   RESELLER
 ///   USERDEFINED User defined value to be provided.
-typedef enum {IfcRole_SUPPLIER, IfcRole_MANUFACTURER, IfcRole_CONTRACTOR, IfcRole_SUBCONTRACTOR, IfcRole_ARCHITECT, IfcRole_STRUCTURALENGINEER, IfcRole_COSTENGINEER, IfcRole_CLIENT, IfcRole_BUILDINGOWNER, IfcRole_BUILDINGOPERATOR, IfcRole_MECHANICALENGINEER, IfcRole_ELECTRICALENGINEER, IfcRole_PROJECTMANAGER, IfcRole_FACILITIESMANAGER, IfcRole_CIVILENGINEER, IfcRole_COMMISSIONINGENGINEER, IfcRole_ENGINEER, IfcRole_OWNER, IfcRole_CONSULTANT, IfcRole_CONSTRUCTIONMANAGER, IfcRole_FIELDCONSTRUCTIONMANAGER, IfcRole_RESELLER, IfcRole_USERDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcRole_SUPPLIER, IfcRole_MANUFACTURER, IfcRole_CONTRACTOR, IfcRole_SUBCONTRACTOR, IfcRole_ARCHITECT, IfcRole_STRUCTURALENGINEER, IfcRole_COSTENGINEER, IfcRole_CLIENT, IfcRole_BUILDINGOWNER, IfcRole_BUILDINGOPERATOR, IfcRole_MECHANICALENGINEER, IfcRole_ELECTRICALENGINEER, IfcRole_PROJECTMANAGER, IfcRole_FACILITIESMANAGER, IfcRole_CIVILENGINEER, IfcRole_COMMISSIONINGENGINEER, IfcRole_ENGINEER, IfcRole_OWNER, IfcRole_CONSULTANT, IfcRole_CONSTRUCTIONMANAGER, IfcRole_FIELDCONSTRUCTIONMANAGER, IfcRole_RESELLER, IfcRole_USERDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcRoleEnum (IfcEntityInstanceData* e);
+    IfcRoleEnum (Value v);
+    IfcRoleEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcRoofTypeEnum {
+class IFC_PARSE_API IfcRoofTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration defines the basic configuration of the roof in terms of the different roof shapes, as illustrated in Figure 68.
 /// 
 /// Roofs which are subdivided into more than these basic shapes have to be defined by the geometry only. Also roofs with non-regular shapes (free form roof) have to be defined by the geometry only. The type of such roofs is FREEFORM. 
@@ -4309,11 +5562,19 @@ struct IfcRoofTypeEnum {
 ///     
 /// 
 /// Figure 68 — Roof types
-typedef enum {IfcRoofType_FLAT_ROOF, IfcRoofType_SHED_ROOF, IfcRoofType_GABLE_ROOF, IfcRoofType_HIP_ROOF, IfcRoofType_HIPPED_GABLE_ROOF, IfcRoofType_GAMBREL_ROOF, IfcRoofType_MANSARD_ROOF, IfcRoofType_BARREL_ROOF, IfcRoofType_RAINBOW_ROOF, IfcRoofType_BUTTERFLY_ROOF, IfcRoofType_PAVILION_ROOF, IfcRoofType_DOME_ROOF, IfcRoofType_FREEFORM, IfcRoofType_USERDEFINED, IfcRoofType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcRoofType_FLAT_ROOF, IfcRoofType_SHED_ROOF, IfcRoofType_GABLE_ROOF, IfcRoofType_HIP_ROOF, IfcRoofType_HIPPED_GABLE_ROOF, IfcRoofType_GAMBREL_ROOF, IfcRoofType_MANSARD_ROOF, IfcRoofType_BARREL_ROOF, IfcRoofType_RAINBOW_ROOF, IfcRoofType_BUTTERFLY_ROOF, IfcRoofType_PAVILION_ROOF, IfcRoofType_DOME_ROOF, IfcRoofType_FREEFORM, IfcRoofType_USERDEFINED, IfcRoofType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcRoofTypeEnum (IfcEntityInstanceData* e);
+    IfcRoofTypeEnum (Value v);
+    IfcRoofTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcSIPrefix {
+class IFC_PARSE_API IfcSIPrefix : public IfcUtil::IfcBaseType {
 /// Definition from ISO/CD 10303-41:1992: An SI prefix is the name of a prefix that may be associated 
 /// with an SI unit. The definitions of SI prefixes are specified in ISO 1000 (clause 3).
 /// 
@@ -4341,11 +5602,19 @@ struct IfcSIPrefix {
 ///   ATTO: 10^-18. 
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
-typedef enum {IfcSIPrefix_EXA, IfcSIPrefix_PETA, IfcSIPrefix_TERA, IfcSIPrefix_GIGA, IfcSIPrefix_MEGA, IfcSIPrefix_KILO, IfcSIPrefix_HECTO, IfcSIPrefix_DECA, IfcSIPrefix_DECI, IfcSIPrefix_CENTI, IfcSIPrefix_MILLI, IfcSIPrefix_MICRO, IfcSIPrefix_NANO, IfcSIPrefix_PICO, IfcSIPrefix_FEMTO, IfcSIPrefix_ATTO} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcSIPrefix_EXA, IfcSIPrefix_PETA, IfcSIPrefix_TERA, IfcSIPrefix_GIGA, IfcSIPrefix_MEGA, IfcSIPrefix_KILO, IfcSIPrefix_HECTO, IfcSIPrefix_DECA, IfcSIPrefix_DECI, IfcSIPrefix_CENTI, IfcSIPrefix_MILLI, IfcSIPrefix_MICRO, IfcSIPrefix_NANO, IfcSIPrefix_PICO, IfcSIPrefix_FEMTO, IfcSIPrefix_ATTO} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcSIPrefix (IfcEntityInstanceData* e);
+    IfcSIPrefix (Value v);
+    IfcSIPrefix (const std::string& v);
+    operator Value() const;
 };
-struct IfcSIUnitName {
+class IFC_PARSE_API IfcSIUnitName : public IfcUtil::IfcBaseType {
 /// Definition from ISO/CD 10303-41:1992: An SI unit name is the name of an SI unit. The definitions of the 
 /// names of SI units are specified in ISO 1000 (clause 2).
 /// 
@@ -4385,11 +5654,19 @@ struct IfcSIUnitName {
 ///   WEBER: Unit for magnetic flux. 
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
-typedef enum {IfcSIUnitName_AMPERE, IfcSIUnitName_BECQUEREL, IfcSIUnitName_CANDELA, IfcSIUnitName_COULOMB, IfcSIUnitName_CUBIC_METRE, IfcSIUnitName_DEGREE_CELSIUS, IfcSIUnitName_FARAD, IfcSIUnitName_GRAM, IfcSIUnitName_GRAY, IfcSIUnitName_HENRY, IfcSIUnitName_HERTZ, IfcSIUnitName_JOULE, IfcSIUnitName_KELVIN, IfcSIUnitName_LUMEN, IfcSIUnitName_LUX, IfcSIUnitName_METRE, IfcSIUnitName_MOLE, IfcSIUnitName_NEWTON, IfcSIUnitName_OHM, IfcSIUnitName_PASCAL, IfcSIUnitName_RADIAN, IfcSIUnitName_SECOND, IfcSIUnitName_SIEMENS, IfcSIUnitName_SIEVERT, IfcSIUnitName_SQUARE_METRE, IfcSIUnitName_STERADIAN, IfcSIUnitName_TESLA, IfcSIUnitName_VOLT, IfcSIUnitName_WATT, IfcSIUnitName_WEBER} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcSIUnitName_AMPERE, IfcSIUnitName_BECQUEREL, IfcSIUnitName_CANDELA, IfcSIUnitName_COULOMB, IfcSIUnitName_CUBIC_METRE, IfcSIUnitName_DEGREE_CELSIUS, IfcSIUnitName_FARAD, IfcSIUnitName_GRAM, IfcSIUnitName_GRAY, IfcSIUnitName_HENRY, IfcSIUnitName_HERTZ, IfcSIUnitName_JOULE, IfcSIUnitName_KELVIN, IfcSIUnitName_LUMEN, IfcSIUnitName_LUX, IfcSIUnitName_METRE, IfcSIUnitName_MOLE, IfcSIUnitName_NEWTON, IfcSIUnitName_OHM, IfcSIUnitName_PASCAL, IfcSIUnitName_RADIAN, IfcSIUnitName_SECOND, IfcSIUnitName_SIEMENS, IfcSIUnitName_SIEVERT, IfcSIUnitName_SQUARE_METRE, IfcSIUnitName_STERADIAN, IfcSIUnitName_TESLA, IfcSIUnitName_VOLT, IfcSIUnitName_WATT, IfcSIUnitName_WEBER} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcSIUnitName (IfcEntityInstanceData* e);
+    IfcSIUnitName (Value v);
+    IfcSIUnitName (const std::string& v);
+    operator Value() const;
 };
-struct IfcSanitaryTerminalTypeEnum {
+class IFC_PARSE_API IfcSanitaryTerminalTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcSanitaryTerminalTypeEnum defines the range of different types of sanitary terminal that can be specified. 
 /// 
 /// NOTE: The value WCSEAT has been deprecated and should no longer be used; toilet seats should be represented by IfcDiscreteAccessory with ObjectType 'WC Seat'. 
@@ -4409,11 +5686,19 @@ struct IfcSanitaryTerminalTypeEnum {
 /// WCSEAT: [Deprecated] Hinged seat that fits on the top of a water closet (WC) pan. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcSanitaryTerminalType_BATH, IfcSanitaryTerminalType_BIDET, IfcSanitaryTerminalType_CISTERN, IfcSanitaryTerminalType_SHOWER, IfcSanitaryTerminalType_SINK, IfcSanitaryTerminalType_SANITARYFOUNTAIN, IfcSanitaryTerminalType_TOILETPAN, IfcSanitaryTerminalType_URINAL, IfcSanitaryTerminalType_WASHHANDBASIN, IfcSanitaryTerminalType_WCSEAT, IfcSanitaryTerminalType_USERDEFINED, IfcSanitaryTerminalType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcSanitaryTerminalType_BATH, IfcSanitaryTerminalType_BIDET, IfcSanitaryTerminalType_CISTERN, IfcSanitaryTerminalType_SHOWER, IfcSanitaryTerminalType_SINK, IfcSanitaryTerminalType_SANITARYFOUNTAIN, IfcSanitaryTerminalType_TOILETPAN, IfcSanitaryTerminalType_URINAL, IfcSanitaryTerminalType_WASHHANDBASIN, IfcSanitaryTerminalType_WCSEAT, IfcSanitaryTerminalType_USERDEFINED, IfcSanitaryTerminalType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcSanitaryTerminalTypeEnum (IfcEntityInstanceData* e);
+    IfcSanitaryTerminalTypeEnum (Value v);
+    IfcSanitaryTerminalTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcSectionTypeEnum {
+class IFC_PARSE_API IfcSectionTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: An enumeration indicating whether a
 ///   specific piece of a cross section is uniform or tapered in longitudinal
 ///   direction.  
@@ -4424,11 +5709,19 @@ struct IfcSectionTypeEnum {
 /// UNIFORM The section is uniform in longitudinal direction.
 /// 
 /// TAPERED The section is tapered in longitudinal direction.
-typedef enum {IfcSectionType_UNIFORM, IfcSectionType_TAPERED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcSectionType_UNIFORM, IfcSectionType_TAPERED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcSectionTypeEnum (IfcEntityInstanceData* e);
+    IfcSectionTypeEnum (Value v);
+    IfcSectionTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcSensorTypeEnum {
+class IFC_PARSE_API IfcSensorTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcSensorTypeEnum defines the range of different types of sensor that can be specified. 
 /// 
 /// HISTORY: New type in IFC R2.0.  Added missing enumerations in IFC2x4
@@ -4457,21 +5750,37 @@ struct IfcSensorTypeEnum {
 /// WINDSENSOR: A device that senses or detects airflow speed and direction. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcSensorType_COSENSOR, IfcSensorType_CO2SENSOR, IfcSensorType_CONDUCTANCESENSOR, IfcSensorType_CONTACTSENSOR, IfcSensorType_FIRESENSOR, IfcSensorType_FLOWSENSOR, IfcSensorType_FROSTSENSOR, IfcSensorType_GASSENSOR, IfcSensorType_HEATSENSOR, IfcSensorType_HUMIDITYSENSOR, IfcSensorType_IDENTIFIERSENSOR, IfcSensorType_IONCONCENTRATIONSENSOR, IfcSensorType_LEVELSENSOR, IfcSensorType_LIGHTSENSOR, IfcSensorType_MOISTURESENSOR, IfcSensorType_MOVEMENTSENSOR, IfcSensorType_PHSENSOR, IfcSensorType_PRESSURESENSOR, IfcSensorType_RADIATIONSENSOR, IfcSensorType_RADIOACTIVITYSENSOR, IfcSensorType_SMOKESENSOR, IfcSensorType_SOUNDSENSOR, IfcSensorType_TEMPERATURESENSOR, IfcSensorType_WINDSENSOR, IfcSensorType_USERDEFINED, IfcSensorType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcSensorType_COSENSOR, IfcSensorType_CO2SENSOR, IfcSensorType_CONDUCTANCESENSOR, IfcSensorType_CONTACTSENSOR, IfcSensorType_FIRESENSOR, IfcSensorType_FLOWSENSOR, IfcSensorType_FROSTSENSOR, IfcSensorType_GASSENSOR, IfcSensorType_HEATSENSOR, IfcSensorType_HUMIDITYSENSOR, IfcSensorType_IDENTIFIERSENSOR, IfcSensorType_IONCONCENTRATIONSENSOR, IfcSensorType_LEVELSENSOR, IfcSensorType_LIGHTSENSOR, IfcSensorType_MOISTURESENSOR, IfcSensorType_MOVEMENTSENSOR, IfcSensorType_PHSENSOR, IfcSensorType_PRESSURESENSOR, IfcSensorType_RADIATIONSENSOR, IfcSensorType_RADIOACTIVITYSENSOR, IfcSensorType_SMOKESENSOR, IfcSensorType_SOUNDSENSOR, IfcSensorType_TEMPERATURESENSOR, IfcSensorType_WINDSENSOR, IfcSensorType_USERDEFINED, IfcSensorType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcSensorTypeEnum (IfcEntityInstanceData* e);
+    IfcSensorTypeEnum (Value v);
+    IfcSensorTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcSequenceEnum {
+class IFC_PARSE_API IfcSequenceEnum : public IfcUtil::IfcBaseType {
 /// IfcSequenceEnum is an
 ///   enumeration that defines the different ways in which a
 ///   time lag is applied to a sequence between two processes.
 /// 
 /// HISTORY  New entity in IFC 1.0
-typedef enum {IfcSequence_START_START, IfcSequence_START_FINISH, IfcSequence_FINISH_START, IfcSequence_FINISH_FINISH, IfcSequence_USERDEFINED, IfcSequence_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcSequence_START_START, IfcSequence_START_FINISH, IfcSequence_FINISH_START, IfcSequence_FINISH_FINISH, IfcSequence_USERDEFINED, IfcSequence_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcSequenceEnum (IfcEntityInstanceData* e);
+    IfcSequenceEnum (Value v);
+    IfcSequenceEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcShadingDeviceTypeEnum {
+class IFC_PARSE_API IfcShadingDeviceTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: Enumeration defining the valid
 /// types of shading devices that can be predefined using the
 /// enumeration values.
@@ -4482,11 +5791,19 @@ struct IfcShadingDeviceTypeEnum {
 /// 
 /// HISTORY New Enumeration
 /// in ReleaseIFC2x4
-typedef enum {IfcShadingDeviceType_JALOUSIE, IfcShadingDeviceType_SHUTTER, IfcShadingDeviceType_AWNING, IfcShadingDeviceType_USERDEFINED, IfcShadingDeviceType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcShadingDeviceType_JALOUSIE, IfcShadingDeviceType_SHUTTER, IfcShadingDeviceType_AWNING, IfcShadingDeviceType_USERDEFINED, IfcShadingDeviceType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcShadingDeviceTypeEnum (IfcEntityInstanceData* e);
+    IfcShadingDeviceTypeEnum (Value v);
+    IfcShadingDeviceTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcSimplePropertyTemplateTypeEnum {
+class IFC_PARSE_API IfcSimplePropertyTemplateTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration defines the correct subtype of instances of IfcSimpleProperty or IfcPhysicalSimpleQuantity that are created and are assigned to this IfcSimplePropertyTemplate. It also determines how the attributes of IfcPropertyTemplate, PrimaryUnit, SecondaryUnit, PrimaryDataType, SecondaryDataType, should be used.
 /// 
 /// HISTORY New enumeration in IFC2x4.
@@ -4505,11 +5822,19 @@ struct IfcSimplePropertyTemplateTypeEnum {
 /// Q_COUNT: the properties defined by this IfcPropertyTemplate are of type IfcQuantityCount.
 /// Q_WEIGHT: the properties defined by this IfcPropertyTemplate are of type IfcQuantityWeight.
 /// Q_TIME: the properties defined by this IfcPropertyTemplate are of type IfcQuantityTime.
-typedef enum {IfcSimplePropertyTemplateType_P_SINGLEVALUE, IfcSimplePropertyTemplateType_P_ENUMERATEDVALUE, IfcSimplePropertyTemplateType_P_BOUNDEDVALUE, IfcSimplePropertyTemplateType_P_LISTVALUE, IfcSimplePropertyTemplateType_P_TABLEVALUE, IfcSimplePropertyTemplateType_P_REFERENCEVALUE, IfcSimplePropertyTemplateType_Q_LENGTH, IfcSimplePropertyTemplateType_Q_AREA, IfcSimplePropertyTemplateType_Q_VOLUME, IfcSimplePropertyTemplateType_Q_COUNT, IfcSimplePropertyTemplateType_Q_WEIGHT, IfcSimplePropertyTemplateType_Q_TIME} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcSimplePropertyTemplateType_P_SINGLEVALUE, IfcSimplePropertyTemplateType_P_ENUMERATEDVALUE, IfcSimplePropertyTemplateType_P_BOUNDEDVALUE, IfcSimplePropertyTemplateType_P_LISTVALUE, IfcSimplePropertyTemplateType_P_TABLEVALUE, IfcSimplePropertyTemplateType_P_REFERENCEVALUE, IfcSimplePropertyTemplateType_Q_LENGTH, IfcSimplePropertyTemplateType_Q_AREA, IfcSimplePropertyTemplateType_Q_VOLUME, IfcSimplePropertyTemplateType_Q_COUNT, IfcSimplePropertyTemplateType_Q_WEIGHT, IfcSimplePropertyTemplateType_Q_TIME} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcSimplePropertyTemplateTypeEnum (IfcEntityInstanceData* e);
+    IfcSimplePropertyTemplateTypeEnum (Value v);
+    IfcSimplePropertyTemplateTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcSlabTypeEnum {
+class IFC_PARSE_API IfcSlabTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration defines the
 ///   available predefined types of a slab. The
 ///   IfcSlabTypeEnum can be used for slab occurrences,
@@ -4542,11 +5867,19 @@ struct IfcSlabTypeEnum {
 /// 
 /// IFC2x3 CHANGE
 ///   new enumerator added.
-typedef enum {IfcSlabType_FLOOR, IfcSlabType_ROOF, IfcSlabType_LANDING, IfcSlabType_BASESLAB, IfcSlabType_APPROACH_SLAB, IfcSlabType_PAVING, IfcSlabType_WEARING, IfcSlabType_SIDEWALK, IfcSlabType_USERDEFINED, IfcSlabType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcSlabType_FLOOR, IfcSlabType_ROOF, IfcSlabType_LANDING, IfcSlabType_BASESLAB, IfcSlabType_APPROACH_SLAB, IfcSlabType_PAVING, IfcSlabType_WEARING, IfcSlabType_SIDEWALK, IfcSlabType_USERDEFINED, IfcSlabType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcSlabTypeEnum (IfcEntityInstanceData* e);
+    IfcSlabTypeEnum (Value v);
+    IfcSlabTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcSolarDeviceTypeEnum {
+class IFC_PARSE_API IfcSolarDeviceTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcSolarDeviceTypeEnum defines the range of types of solar devices available.
 ///   HISTORY: New type in IFC 2x4. 
 /// 
@@ -4556,11 +5889,19 @@ struct IfcSolarDeviceTypeEnum {
 /// SOLARPANEL: A device that converts solar radiation into electric current. 
 /// USERDEFINED: User-defined type.  
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcSolarDeviceType_SOLARCOLLECTOR, IfcSolarDeviceType_SOLARPANEL, IfcSolarDeviceType_USERDEFINED, IfcSolarDeviceType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcSolarDeviceType_SOLARCOLLECTOR, IfcSolarDeviceType_SOLARPANEL, IfcSolarDeviceType_USERDEFINED, IfcSolarDeviceType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcSolarDeviceTypeEnum (IfcEntityInstanceData* e);
+    IfcSolarDeviceTypeEnum (Value v);
+    IfcSolarDeviceTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcSpaceHeaterTypeEnum {
+class IFC_PARSE_API IfcSpaceHeaterTypeEnum : public IfcUtil::IfcBaseType {
 /// Enumeration defining the functional type of space heater.
 /// 
 /// The IfcSpaceHeaterTypeEnum contains the following:
@@ -4573,11 +5914,19 @@ struct IfcSpaceHeaterTypeEnum {
 /// NOTE: This enumeration was revised in IFC 2x4 and was renamed from IfcHydronicHeaterTypeEnum in IFC R2x.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-typedef enum {IfcSpaceHeaterType_CONVECTOR, IfcSpaceHeaterType_RADIATOR, IfcSpaceHeaterType_USERDEFINED, IfcSpaceHeaterType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcSpaceHeaterType_CONVECTOR, IfcSpaceHeaterType_RADIATOR, IfcSpaceHeaterType_USERDEFINED, IfcSpaceHeaterType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcSpaceHeaterTypeEnum (IfcEntityInstanceData* e);
+    IfcSpaceHeaterTypeEnum (Value v);
+    IfcSpaceHeaterTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcSpaceTypeEnum {
+class IFC_PARSE_API IfcSpaceTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration defines the
 /// available generic types for IfcSpace and
 /// IfcSpaceType.
@@ -4613,11 +5962,19 @@ struct IfcSpaceTypeEnum {
 /// NOTE the use is deprecated and
 /// only provided for backward compatibility
 /// purposes.
-typedef enum {IfcSpaceType_SPACE, IfcSpaceType_PARKING, IfcSpaceType_GFA, IfcSpaceType_INTERNAL, IfcSpaceType_EXTERNAL, IfcSpaceType_USERDEFINED, IfcSpaceType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcSpaceType_SPACE, IfcSpaceType_PARKING, IfcSpaceType_GFA, IfcSpaceType_INTERNAL, IfcSpaceType_EXTERNAL, IfcSpaceType_USERDEFINED, IfcSpaceType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcSpaceTypeEnum (IfcEntityInstanceData* e);
+    IfcSpaceTypeEnum (Value v);
+    IfcSpaceTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcSpatialZoneTypeEnum {
+class IFC_PARSE_API IfcSpatialZoneTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration defines the range
 /// of different types of spatial zones that can further specify an
 /// IfcSpatialZoneTypeEnum.
@@ -4643,11 +6000,19 @@ struct IfcSpatialZoneTypeEnum {
 /// zone
 /// NOTDEFINED: undefined type spatial
 /// zone
-typedef enum {IfcSpatialZoneType_CONSTRUCTION, IfcSpatialZoneType_FIRESAFETY, IfcSpatialZoneType_LIGHTING, IfcSpatialZoneType_OCCUPANCY, IfcSpatialZoneType_SECURITY, IfcSpatialZoneType_THERMAL, IfcSpatialZoneType_TRANSPORT, IfcSpatialZoneType_VENTILATION, IfcSpatialZoneType_USERDEFINED, IfcSpatialZoneType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcSpatialZoneType_CONSTRUCTION, IfcSpatialZoneType_FIRESAFETY, IfcSpatialZoneType_LIGHTING, IfcSpatialZoneType_OCCUPANCY, IfcSpatialZoneType_SECURITY, IfcSpatialZoneType_THERMAL, IfcSpatialZoneType_TRANSPORT, IfcSpatialZoneType_VENTILATION, IfcSpatialZoneType_USERDEFINED, IfcSpatialZoneType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcSpatialZoneTypeEnum (IfcEntityInstanceData* e);
+    IfcSpatialZoneTypeEnum (Value v);
+    IfcSpatialZoneTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcStackTerminalTypeEnum {
+class IFC_PARSE_API IfcStackTerminalTypeEnum : public IfcUtil::IfcBaseType {
 /// An IfcStackTerminalTypeEnum defines the range of different types of stack terminal that can be specified for use at the top of a vertical stack subsystem. 
 ///   HISTORY: New type in IFC 2x  
 ///   Enumeration 
@@ -4657,11 +6022,19 @@ struct IfcStackTerminalTypeEnum {
 /// RAINWATERHOPPER: A box placed at the top of a rainwater downpipe to catch rainwater from guttering. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcStackTerminalType_BIRDCAGE, IfcStackTerminalType_COWL, IfcStackTerminalType_RAINWATERHOPPER, IfcStackTerminalType_USERDEFINED, IfcStackTerminalType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcStackTerminalType_BIRDCAGE, IfcStackTerminalType_COWL, IfcStackTerminalType_RAINWATERHOPPER, IfcStackTerminalType_USERDEFINED, IfcStackTerminalType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcStackTerminalTypeEnum (IfcEntityInstanceData* e);
+    IfcStackTerminalTypeEnum (Value v);
+    IfcStackTerminalTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcStairFlightTypeEnum {
+class IFC_PARSE_API IfcStairFlightTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration defines the different types
 ///   of stair flights an IfcStairFlightType object can fulfill: 
 /// 
@@ -4677,11 +6050,19 @@ struct IfcStairFlightTypeEnum {
 /// 
 /// HISTORY: New Enumeration in
 ///   Release IFC2x Edition 2.
-typedef enum {IfcStairFlightType_STRAIGHT, IfcStairFlightType_WINDER, IfcStairFlightType_SPIRAL, IfcStairFlightType_CURVED, IfcStairFlightType_FREEFORM, IfcStairFlightType_USERDEFINED, IfcStairFlightType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcStairFlightType_STRAIGHT, IfcStairFlightType_WINDER, IfcStairFlightType_SPIRAL, IfcStairFlightType_CURVED, IfcStairFlightType_FREEFORM, IfcStairFlightType_USERDEFINED, IfcStairFlightType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcStairFlightTypeEnum (IfcEntityInstanceData* e);
+    IfcStairFlightTypeEnum (Value v);
+    IfcStairFlightTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcStairTypeEnum {
+class IFC_PARSE_API IfcStairTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration defines the basic configuration of the stair type in terms of the number of stair flights and the number of landings, as illustrated in Figure 69. The type also distinguished turns by windings or by landings. In addition the subdivision of the straight and changing direction stairs is included. The stair configurations are given for stairs without and with one, two or three landings. 
 /// 
 /// Stairs which are subdivided into more than three landings have to be defined by the geometry only. Also stairs with non-regular shapes have to be defined by the geometry only. The type of such stairs is OTHEROPERATION. 
@@ -4775,11 +6156,19 @@ struct IfcStairTypeEnum {
 ///     
 /// 
 /// Figure 69 — Stair types
-typedef enum {IfcStairType_STRAIGHT_RUN_STAIR, IfcStairType_TWO_STRAIGHT_RUN_STAIR, IfcStairType_QUARTER_WINDING_STAIR, IfcStairType_QUARTER_TURN_STAIR, IfcStairType_HALF_WINDING_STAIR, IfcStairType_HALF_TURN_STAIR, IfcStairType_TWO_QUARTER_WINDING_STAIR, IfcStairType_TWO_QUARTER_TURN_STAIR, IfcStairType_THREE_QUARTER_WINDING_STAIR, IfcStairType_THREE_QUARTER_TURN_STAIR, IfcStairType_SPIRAL_STAIR, IfcStairType_DOUBLE_RETURN_STAIR, IfcStairType_CURVED_RUN_STAIR, IfcStairType_TWO_CURVED_RUN_STAIR, IfcStairType_USERDEFINED, IfcStairType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcStairType_STRAIGHT_RUN_STAIR, IfcStairType_TWO_STRAIGHT_RUN_STAIR, IfcStairType_QUARTER_WINDING_STAIR, IfcStairType_QUARTER_TURN_STAIR, IfcStairType_HALF_WINDING_STAIR, IfcStairType_HALF_TURN_STAIR, IfcStairType_TWO_QUARTER_WINDING_STAIR, IfcStairType_TWO_QUARTER_TURN_STAIR, IfcStairType_THREE_QUARTER_WINDING_STAIR, IfcStairType_THREE_QUARTER_TURN_STAIR, IfcStairType_SPIRAL_STAIR, IfcStairType_DOUBLE_RETURN_STAIR, IfcStairType_CURVED_RUN_STAIR, IfcStairType_TWO_CURVED_RUN_STAIR, IfcStairType_USERDEFINED, IfcStairType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcStairTypeEnum (IfcEntityInstanceData* e);
+    IfcStairTypeEnum (Value v);
+    IfcStairTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcStateEnum {
+class IFC_PARSE_API IfcStateEnum : public IfcUtil::IfcBaseType {
 /// The IfcStateEnum enumeration identifies the state or accessibility of the object (for example, read/write, locked).
 /// 
 /// Valid enumerations are:
@@ -4793,11 +6182,19 @@ struct IfcStateEnum {
 /// HISTORY  New enumeration in IFC R2.0.
 /// 
 /// IFC2x3 CHANGE  This concept was initially introduced in IFC 2.0 as IfcModifiedFlag of type BINARY(3) FIXED and has been modified in R2x to an enumeration. It was initially introduced as a first step towards providing facilities for partial model exchange from a server as requested by the IFC implementers. It is intended for use primarily by a model server so that an application can identify the state of the object.
-typedef enum {IfcState_READWRITE, IfcState_READONLY, IfcState_LOCKED, IfcState_READWRITELOCKED, IfcState_READONLYLOCKED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcState_READWRITE, IfcState_READONLY, IfcState_LOCKED, IfcState_READWRITELOCKED, IfcState_READONLYLOCKED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcStateEnum (IfcEntityInstanceData* e);
+    IfcStateEnum (Value v);
+    IfcStateEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcStructuralCurveActivityTypeEnum {
+class IFC_PARSE_API IfcStructuralCurveActivityTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: Enumeration defining the distribution of load values in a curve action or reaction.
 /// 
 /// HISTORY New type in IFC 2x4
@@ -4813,11 +6210,19 @@ struct IfcStructuralCurveActivityTypeEnum {
 ///   DISCRETE The load is specified as a series of discrete load points.
 ///   USERDEFINED The load distribution is user-defined.
 ///   NOTDEFINED The load distribution is undefined.
-typedef enum {IfcStructuralCurveActivityType_CONST, IfcStructuralCurveActivityType_LINEAR, IfcStructuralCurveActivityType_POLYGONAL, IfcStructuralCurveActivityType_EQUIDISTANT, IfcStructuralCurveActivityType_SINUS, IfcStructuralCurveActivityType_PARABOLA, IfcStructuralCurveActivityType_DISCRETE, IfcStructuralCurveActivityType_USERDEFINED, IfcStructuralCurveActivityType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcStructuralCurveActivityType_CONST, IfcStructuralCurveActivityType_LINEAR, IfcStructuralCurveActivityType_POLYGONAL, IfcStructuralCurveActivityType_EQUIDISTANT, IfcStructuralCurveActivityType_SINUS, IfcStructuralCurveActivityType_PARABOLA, IfcStructuralCurveActivityType_DISCRETE, IfcStructuralCurveActivityType_USERDEFINED, IfcStructuralCurveActivityType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcStructuralCurveActivityTypeEnum (IfcEntityInstanceData* e);
+    IfcStructuralCurveActivityTypeEnum (Value v);
+    IfcStructuralCurveActivityTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcStructuralCurveMemberTypeEnum {
+class IFC_PARSE_API IfcStructuralCurveMemberTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This type definition shall be used to
 /// 
 /// distinguish between different types of structural 'curve' members, such as
@@ -4836,11 +6241,19 @@ struct IfcStructuralCurveMemberTypeEnum {
 /// 
 /// HISTORY New type in IFC 2x2.
 /// IFC 2x4 change:  Renamed from IfcStructuralCurveTypeEnum.
-typedef enum {IfcStructuralCurveMemberType_RIGID_JOINED_MEMBER, IfcStructuralCurveMemberType_PIN_JOINED_MEMBER, IfcStructuralCurveMemberType_CABLE, IfcStructuralCurveMemberType_TENSION_MEMBER, IfcStructuralCurveMemberType_COMPRESSION_MEMBER, IfcStructuralCurveMemberType_USERDEFINED, IfcStructuralCurveMemberType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcStructuralCurveMemberType_RIGID_JOINED_MEMBER, IfcStructuralCurveMemberType_PIN_JOINED_MEMBER, IfcStructuralCurveMemberType_CABLE, IfcStructuralCurveMemberType_TENSION_MEMBER, IfcStructuralCurveMemberType_COMPRESSION_MEMBER, IfcStructuralCurveMemberType_USERDEFINED, IfcStructuralCurveMemberType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcStructuralCurveMemberTypeEnum (IfcEntityInstanceData* e);
+    IfcStructuralCurveMemberTypeEnum (Value v);
+    IfcStructuralCurveMemberTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcStructuralSurfaceActivityTypeEnum {
+class IFC_PARSE_API IfcStructuralSurfaceActivityTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: Enumeration defining the distribution of load values in a surface action or reaction.
 /// 
 /// HISTORY New type in IFC 2x4
@@ -4853,11 +6266,19 @@ struct IfcStructuralSurfaceActivityTypeEnum {
 ///   ISOCONTOUR The load is specified by a series of iso-curves (level sets), i.e. curves at which the load value is constant.  These curves run perpendicularly to the load gradient.
 ///   USERDEFINED The load distribution is user-defined.
 ///   NOTDEFINED The load distribution is undefined.
-typedef enum {IfcStructuralSurfaceActivityType_CONST, IfcStructuralSurfaceActivityType_BILINEAR, IfcStructuralSurfaceActivityType_DISCRETE, IfcStructuralSurfaceActivityType_ISOCONTOUR, IfcStructuralSurfaceActivityType_USERDEFINED, IfcStructuralSurfaceActivityType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcStructuralSurfaceActivityType_CONST, IfcStructuralSurfaceActivityType_BILINEAR, IfcStructuralSurfaceActivityType_DISCRETE, IfcStructuralSurfaceActivityType_ISOCONTOUR, IfcStructuralSurfaceActivityType_USERDEFINED, IfcStructuralSurfaceActivityType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcStructuralSurfaceActivityTypeEnum (IfcEntityInstanceData* e);
+    IfcStructuralSurfaceActivityTypeEnum (Value v);
+    IfcStructuralSurfaceActivityTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcStructuralSurfaceMemberTypeEnum {
+class IFC_PARSE_API IfcStructuralSurfaceMemberTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This type definition shall be used to
 /// 
 /// distinguish between different types of structural surface members, such as the
@@ -4872,11 +6293,19 @@ struct IfcStructuralSurfaceMemberTypeEnum {
 /// 
 /// HISTORY New type in IFC 2x2.
 /// IFC 2x4 change:  Renamed from IfcStructuralSurfaceTypeEnum.
-typedef enum {IfcStructuralSurfaceMemberType_BENDING_ELEMENT, IfcStructuralSurfaceMemberType_MEMBRANE_ELEMENT, IfcStructuralSurfaceMemberType_SHELL, IfcStructuralSurfaceMemberType_USERDEFINED, IfcStructuralSurfaceMemberType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcStructuralSurfaceMemberType_BENDING_ELEMENT, IfcStructuralSurfaceMemberType_MEMBRANE_ELEMENT, IfcStructuralSurfaceMemberType_SHELL, IfcStructuralSurfaceMemberType_USERDEFINED, IfcStructuralSurfaceMemberType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcStructuralSurfaceMemberTypeEnum (IfcEntityInstanceData* e);
+    IfcStructuralSurfaceMemberTypeEnum (Value v);
+    IfcStructuralSurfaceMemberTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcSubContractResourceTypeEnum {
+class IFC_PARSE_API IfcSubContractResourceTypeEnum : public IfcUtil::IfcBaseType {
 /// This enumeration is used to identify the primary purpose of a subcontract resource.  The IfcSubContractResourceTypeEnum contains the following:
 /// 
 /// PURCHASE: Furnishing or supplying products.
@@ -4885,11 +6314,19 @@ struct IfcSubContractResourceTypeEnum {
 /// NOTDEFINED: Undefined resource.
 /// 
 /// HISTORY: New enumeration in IFC2x4
-typedef enum {IfcSubContractResourceType_PURCHASE, IfcSubContractResourceType_WORK, IfcSubContractResourceType_USERDEFINED, IfcSubContractResourceType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcSubContractResourceType_PURCHASE, IfcSubContractResourceType_WORK, IfcSubContractResourceType_USERDEFINED, IfcSubContractResourceType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcSubContractResourceTypeEnum (IfcEntityInstanceData* e);
+    IfcSubContractResourceTypeEnum (Value v);
+    IfcSubContractResourceTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcSurfaceFeatureTypeEnum {
+class IFC_PARSE_API IfcSurfaceFeatureTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration indicates the type of a surface feature.
 /// 
 /// HISTORY New type in IFC 2x4.
@@ -4901,11 +6338,19 @@ struct IfcSurfaceFeatureTypeEnum {
 ///   TREATMENT A subtractive surface feature, e.g. grinding, or an additive surface feature, e.g. coating, or an impregnating treatment, or a series of any of these kinds of treatments.
 ///   USERDEFINED A user-defined type of surface feature.
 ///   NOTDEFINED An undefined type of surface feature.
-typedef enum {IfcSurfaceFeatureType_MARK, IfcSurfaceFeatureType_TAG, IfcSurfaceFeatureType_TREATMENT, IfcSurfaceFeatureType_DEFECT, IfcSurfaceFeatureType_USERDEFINED, IfcSurfaceFeatureType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcSurfaceFeatureType_MARK, IfcSurfaceFeatureType_TAG, IfcSurfaceFeatureType_TREATMENT, IfcSurfaceFeatureType_DEFECT, IfcSurfaceFeatureType_USERDEFINED, IfcSurfaceFeatureType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcSurfaceFeatureTypeEnum (IfcEntityInstanceData* e);
+    IfcSurfaceFeatureTypeEnum (Value v);
+    IfcSurfaceFeatureTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcSurfaceSide {
+class IFC_PARSE_API IfcSurfaceSide : public IfcUtil::IfcBaseType {
 /// IfcSurfaceSide is a denotion of whether negative, positive or both sides of a surface are being referenced. 
 /// 
 /// ENUMERATION Definition from ISO/CD 10303-46:1992: 
@@ -4917,11 +6362,19 @@ struct IfcSurfaceSide {
 /// NOTE Corresponding ISO 10303 type: surface_side. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY: New Enumeration in IFC 2.0
-typedef enum {IfcSurfaceSide_POSITIVE, IfcSurfaceSide_NEGATIVE, IfcSurfaceSide_BOTH} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcSurfaceSide_POSITIVE, IfcSurfaceSide_NEGATIVE, IfcSurfaceSide_BOTH} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcSurfaceSide (IfcEntityInstanceData* e);
+    IfcSurfaceSide (Value v);
+    IfcSurfaceSide (const std::string& v);
+    operator Value() const;
 };
-struct IfcSwitchingDeviceTypeEnum {
+class IFC_PARSE_API IfcSwitchingDeviceTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcSwitchingDeviceTypeEnum defines the range of different types of switch that can be specified. 
 ///   HISTORY: New type in IFC 2x2 
 ///   Enumeration 
@@ -4938,11 +6391,19 @@ struct IfcSwitchingDeviceTypeEnum {
 /// TOGGLESWITCH: A toggle switch has two positions, and may enable or isolate electrical power or other setting (according to the switched port type). 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcSwitchingDeviceType_CONTACTOR, IfcSwitchingDeviceType_DIMMERSWITCH, IfcSwitchingDeviceType_EMERGENCYSTOP, IfcSwitchingDeviceType_KEYPAD, IfcSwitchingDeviceType_MOMENTARYSWITCH, IfcSwitchingDeviceType_SELECTORSWITCH, IfcSwitchingDeviceType_STARTER, IfcSwitchingDeviceType_SWITCHDISCONNECTOR, IfcSwitchingDeviceType_TOGGLESWITCH, IfcSwitchingDeviceType_USERDEFINED, IfcSwitchingDeviceType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcSwitchingDeviceType_CONTACTOR, IfcSwitchingDeviceType_DIMMERSWITCH, IfcSwitchingDeviceType_EMERGENCYSTOP, IfcSwitchingDeviceType_KEYPAD, IfcSwitchingDeviceType_MOMENTARYSWITCH, IfcSwitchingDeviceType_SELECTORSWITCH, IfcSwitchingDeviceType_STARTER, IfcSwitchingDeviceType_SWITCHDISCONNECTOR, IfcSwitchingDeviceType_TOGGLESWITCH, IfcSwitchingDeviceType_USERDEFINED, IfcSwitchingDeviceType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcSwitchingDeviceTypeEnum (IfcEntityInstanceData* e);
+    IfcSwitchingDeviceTypeEnum (Value v);
+    IfcSwitchingDeviceTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcSystemFurnitureElementTypeEnum {
+class IFC_PARSE_API IfcSystemFurnitureElementTypeEnum : public IfcUtil::IfcBaseType {
 /// IfcSystemFurnitureTypeEnum defines the types of system furniture from which the type required can be selected. 
 ///   HISTORY: New Enumeration in IFC 2x4 
 ///   Enumeration: 
@@ -4951,11 +6412,19 @@ struct IfcSystemFurnitureElementTypeEnum {
 /// WORKSURFACE: Workstation countertop.  
 /// USERDEFINED: User-defined type.  
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcSystemFurnitureElementType_PANEL, IfcSystemFurnitureElementType_WORKSURFACE, IfcSystemFurnitureElementType_USERDEFINED, IfcSystemFurnitureElementType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcSystemFurnitureElementType_PANEL, IfcSystemFurnitureElementType_WORKSURFACE, IfcSystemFurnitureElementType_USERDEFINED, IfcSystemFurnitureElementType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcSystemFurnitureElementTypeEnum (IfcEntityInstanceData* e);
+    IfcSystemFurnitureElementTypeEnum (Value v);
+    IfcSystemFurnitureElementTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcTankTypeEnum {
+class IFC_PARSE_API IfcTankTypeEnum : public IfcUtil::IfcBaseType {
 /// Enumeration defining the typical types of tanks.
 /// 
 /// The IfcTankTypeEnum contains the following:
@@ -4979,11 +6448,19 @@ struct IfcTankTypeEnum {
 /// NOTDEFINED:  Undefined tank type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.  BASIN and VESSEL added in IFC2x4.
-typedef enum {IfcTankType_BASIN, IfcTankType_BREAKPRESSURE, IfcTankType_EXPANSION, IfcTankType_FEEDANDEXPANSION, IfcTankType_PRESSUREVESSEL, IfcTankType_STORAGE, IfcTankType_VESSEL, IfcTankType_USERDEFINED, IfcTankType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcTankType_BASIN, IfcTankType_BREAKPRESSURE, IfcTankType_EXPANSION, IfcTankType_FEEDANDEXPANSION, IfcTankType_PRESSUREVESSEL, IfcTankType_STORAGE, IfcTankType_VESSEL, IfcTankType_USERDEFINED, IfcTankType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcTankTypeEnum (IfcEntityInstanceData* e);
+    IfcTankTypeEnum (Value v);
+    IfcTankTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcTaskDurationEnum {
+class IFC_PARSE_API IfcTaskDurationEnum : public IfcUtil::IfcBaseType {
 /// IfcTaskDurationEnum identifies how a time duration is measured:
 /// 
 /// ELAPSEDTIME: The time duration is based on elapsed time (24 hours per day, independent of calendar).
@@ -4991,11 +6468,19 @@ struct IfcTaskDurationEnum {
 ///   NOTDEFINED: The time duration is undefined.
 /// 
 /// HISTORY: New enumeration in IFC2x4.
-typedef enum {IfcTaskDuration_ELAPSEDTIME, IfcTaskDuration_WORKTIME, IfcTaskDuration_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcTaskDuration_ELAPSEDTIME, IfcTaskDuration_WORKTIME, IfcTaskDuration_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcTaskDurationEnum (IfcEntityInstanceData* e);
+    IfcTaskDurationEnum (Value v);
+    IfcTaskDurationEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcTaskTypeEnum {
+class IFC_PARSE_API IfcTaskTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcTaskTypeEnum defines the range of different types of task that can be specified.
 /// 
 /// HISTORY  New type in IFC2x4
@@ -5014,29 +6499,61 @@ struct IfcTaskTypeEnum {
 /// OPERATION: A procedure undertaken to start up the operation an artifact
 /// REMOVAL: Removal of an item from use and taking it from its place of use
 /// RENOVATION: Bringing something to an 'as-new' state
-typedef enum {IfcTaskType_ATTENDANCE, IfcTaskType_CONSTRUCTION, IfcTaskType_DEMOLITION, IfcTaskType_DISMANTLE, IfcTaskType_DISPOSAL, IfcTaskType_INSTALLATION, IfcTaskType_LOGISTIC, IfcTaskType_MAINTENANCE, IfcTaskType_MOVE, IfcTaskType_OPERATION, IfcTaskType_REMOVAL, IfcTaskType_RENOVATION, IfcTaskType_USERDEFINED, IfcTaskType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
-};
-struct IfcTendonAnchorTypeEnum {
+public:
+    typedef enum {IfcTaskType_ATTENDANCE, IfcTaskType_CONSTRUCTION, IfcTaskType_DEMOLITION, IfcTaskType_DISMANTLE, IfcTaskType_DISPOSAL, IfcTaskType_INSTALLATION, IfcTaskType_LOGISTIC, IfcTaskType_MAINTENANCE, IfcTaskType_MOVE, IfcTaskType_OPERATION, IfcTaskType_REMOVAL, IfcTaskType_RENOVATION, IfcTaskType_USERDEFINED, IfcTaskType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
 
-typedef enum {IfcTendonAnchorType_COUPLER, IfcTendonAnchorType_FIXED_END, IfcTendonAnchorType_TENSIONING_END, IfcTendonAnchorType_USERDEFINED, IfcTendonAnchorType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcTaskTypeEnum (IfcEntityInstanceData* e);
+    IfcTaskTypeEnum (Value v);
+    IfcTaskTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcTendonConduitTypeEnum {
+class IFC_PARSE_API IfcTendonAnchorTypeEnum : public IfcUtil::IfcBaseType {
 
-typedef enum {IfcTendonConduitType_DUCT, IfcTendonConduitType_COUPLER, IfcTendonConduitType_GROUTING_DUCT, IfcTendonConduitType_TRUMPET, IfcTendonConduitType_DIABOLO, IfcTendonConduitType_USERDEFINED, IfcTendonConduitType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
-};
-struct IfcTendonTypeEnum {
+public:
+    typedef enum {IfcTendonAnchorType_COUPLER, IfcTendonAnchorType_FIXED_END, IfcTendonAnchorType_TENSIONING_END, IfcTendonAnchorType_USERDEFINED, IfcTendonAnchorType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
 
-typedef enum {IfcTendonType_BAR, IfcTendonType_COATED, IfcTendonType_STRAND, IfcTendonType_WIRE, IfcTendonType_USERDEFINED, IfcTendonType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcTendonAnchorTypeEnum (IfcEntityInstanceData* e);
+    IfcTendonAnchorTypeEnum (Value v);
+    IfcTendonAnchorTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcTextPath {
+class IFC_PARSE_API IfcTendonConduitTypeEnum : public IfcUtil::IfcBaseType {
+
+public:
+    typedef enum {IfcTendonConduitType_DUCT, IfcTendonConduitType_COUPLER, IfcTendonConduitType_GROUTING_DUCT, IfcTendonConduitType_TRUMPET, IfcTendonConduitType_DIABOLO, IfcTendonConduitType_USERDEFINED, IfcTendonConduitType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcTendonConduitTypeEnum (IfcEntityInstanceData* e);
+    IfcTendonConduitTypeEnum (Value v);
+    IfcTendonConduitTypeEnum (const std::string& v);
+    operator Value() const;
+};
+class IFC_PARSE_API IfcTendonTypeEnum : public IfcUtil::IfcBaseType {
+
+public:
+    typedef enum {IfcTendonType_BAR, IfcTendonType_COATED, IfcTendonType_STRAND, IfcTendonType_WIRE, IfcTendonType_USERDEFINED, IfcTendonType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcTendonTypeEnum (IfcEntityInstanceData* e);
+    IfcTendonTypeEnum (Value v);
+    IfcTendonTypeEnum (const std::string& v);
+    operator Value() const;
+};
+class IFC_PARSE_API IfcTextPath : public IfcUtil::IfcBaseType {
 /// The text path determines the direction of the text characters in respect to each other.
 /// 
 /// NOTE: The IfcTextPath is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#151;Product data representation and exchange, Part 46: Integrated generic resources: Visual presentation.
@@ -5044,11 +6561,19 @@ struct IfcTextPath {
 /// NOTE Corresponding ISO 10303 name:text_path . Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x2.
-typedef enum {IfcTextPath_LEFT, IfcTextPath_RIGHT, IfcTextPath_UP, IfcTextPath_DOWN} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcTextPath_LEFT, IfcTextPath_RIGHT, IfcTextPath_UP, IfcTextPath_DOWN} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcTextPath (IfcEntityInstanceData* e);
+    IfcTextPath (Value v);
+    IfcTextPath (const std::string& v);
+    operator Value() const;
 };
-struct IfcTimeSeriesDataTypeEnum {
+class IFC_PARSE_API IfcTimeSeriesDataTypeEnum : public IfcUtil::IfcBaseType {
 /// IfcTimeSeriesDataTypeEnum describes a type of time series data and is used to determine a value during the time series which is not explicitly specified: 
 /// 
 /// CONTINUOUS: The time series data is continuous. 
@@ -5060,11 +6585,19 @@ struct IfcTimeSeriesDataTypeEnum {
 ///   NOTDEFINED: The time series data is not defined. 
 /// 
 /// HISTORY: New enumeration in IFC2x2.
-typedef enum {IfcTimeSeriesDataType_CONTINUOUS, IfcTimeSeriesDataType_DISCRETE, IfcTimeSeriesDataType_DISCRETEBINARY, IfcTimeSeriesDataType_PIECEWISEBINARY, IfcTimeSeriesDataType_PIECEWISECONSTANT, IfcTimeSeriesDataType_PIECEWISECONTINUOUS, IfcTimeSeriesDataType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcTimeSeriesDataType_CONTINUOUS, IfcTimeSeriesDataType_DISCRETE, IfcTimeSeriesDataType_DISCRETEBINARY, IfcTimeSeriesDataType_PIECEWISEBINARY, IfcTimeSeriesDataType_PIECEWISECONSTANT, IfcTimeSeriesDataType_PIECEWISECONTINUOUS, IfcTimeSeriesDataType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcTimeSeriesDataTypeEnum (IfcEntityInstanceData* e);
+    IfcTimeSeriesDataTypeEnum (Value v);
+    IfcTimeSeriesDataTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcTransformerTypeEnum {
+class IFC_PARSE_API IfcTransformerTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcTransformerTypeEnum defines the range of different types of transformer that can be specified. 
 ///   HISTORY: New type in IFC 2x2 
 ///   Enumeration 
@@ -5076,11 +6609,19 @@ struct IfcTransformerTypeEnum {
 /// VOLTAGE: A transformer that changes the voltage between circuits.  
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcTransformerType_CURRENT, IfcTransformerType_FREQUENCY, IfcTransformerType_INVERTER, IfcTransformerType_RECTIFIER, IfcTransformerType_VOLTAGE, IfcTransformerType_USERDEFINED, IfcTransformerType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcTransformerType_CURRENT, IfcTransformerType_FREQUENCY, IfcTransformerType_INVERTER, IfcTransformerType_RECTIFIER, IfcTransformerType_VOLTAGE, IfcTransformerType_USERDEFINED, IfcTransformerType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcTransformerTypeEnum (IfcEntityInstanceData* e);
+    IfcTransformerTypeEnum (Value v);
+    IfcTransformerTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcTransitionCode {
+class IFC_PARSE_API IfcTransitionCode : public IfcUtil::IfcBaseType {
 /// Definition from ISO/CD 10303-42:1992: This type conveys the continuity properties of a composite curve or surface. The continuity referred to is geometric, not parametric continuity. For example, in ContSameGradient the tangent vectors of successive segments will have the same direction, but may have different magnitude.  
 /// 
 /// NOTE  Corresponding ISO 10303 type: transition_code, please refer to ISO/IS 10303-42:1994, p. 14 for the final definition of the formal standard.
@@ -5097,17 +6638,33 @@ struct IfcTransitionCode {
 /// CONTINUOUS: The segments join but no condition on their tangents is implied. 
 /// CONTSAMEGRADIENT: The segments join and their tangent vectors or tangent planes are parallel and have the same direction at the joint: equality of derivatives is not required. 
 /// CONTSAMEGRADIENTSAMECURVATURE: For a curve, the segments join, their tangent vectors are parallel and in the same direction and their curvatures are equal at the joint: equality of derivatives is not required. For a surface this implies that the principle curvatures are the same and the principle directions are coincident along the common boundary.
-typedef enum {IfcTransitionCode_DISCONTINUOUS, IfcTransitionCode_CONTINUOUS, IfcTransitionCode_CONTSAMEGRADIENT, IfcTransitionCode_CONTSAMEGRADIENTSAMECURVATURE} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
-};
-struct IfcTransitionCurveType {
+public:
+    typedef enum {IfcTransitionCode_DISCONTINUOUS, IfcTransitionCode_CONTINUOUS, IfcTransitionCode_CONTSAMEGRADIENT, IfcTransitionCode_CONTSAMEGRADIENTSAMECURVATURE} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
 
-typedef enum {IfcTransitionCurveType_BIQUADRATICPARABOLA, IfcTransitionCurveType_BLOSSCURVE, IfcTransitionCurveType_CLOTHOIDCURVE, IfcTransitionCurveType_COSINECURVE, IfcTransitionCurveType_CUBICPARABOLA, IfcTransitionCurveType_SINECURVE} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcTransitionCode (IfcEntityInstanceData* e);
+    IfcTransitionCode (Value v);
+    IfcTransitionCode (const std::string& v);
+    operator Value() const;
 };
-struct IfcTransportElementTypeEnum {
+class IFC_PARSE_API IfcTransitionCurveType : public IfcUtil::IfcBaseType {
+
+public:
+    typedef enum {IfcTransitionCurveType_BIQUADRATICPARABOLA, IfcTransitionCurveType_BLOSSCURVE, IfcTransitionCurveType_CLOTHOIDCURVE, IfcTransitionCurveType_COSINECURVE, IfcTransitionCurveType_CUBICPARABOLA, IfcTransitionCurveType_SINECURVE} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcTransitionCurveType (IfcEntityInstanceData* e);
+    IfcTransitionCurveType (Value v);
+    IfcTransitionCurveType (const std::string& v);
+    operator Value() const;
+};
+class IFC_PARSE_API IfcTransportElementTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration is used to
 /// identify primary transport element types. The
 /// IfcTransportElementTypeEnum contains the following:
@@ -5132,11 +6689,19 @@ struct IfcTransportElementTypeEnum {
 /// IFC2x4 CHANGE New enumerators
 /// CRANEWAY and LIFTINGGEAR added in
 /// IFC2x4.
-typedef enum {IfcTransportElementType_ELEVATOR, IfcTransportElementType_ESCALATOR, IfcTransportElementType_MOVINGWALKWAY, IfcTransportElementType_CRANEWAY, IfcTransportElementType_LIFTINGGEAR, IfcTransportElementType_USERDEFINED, IfcTransportElementType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcTransportElementType_ELEVATOR, IfcTransportElementType_ESCALATOR, IfcTransportElementType_MOVINGWALKWAY, IfcTransportElementType_CRANEWAY, IfcTransportElementType_LIFTINGGEAR, IfcTransportElementType_USERDEFINED, IfcTransportElementType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcTransportElementTypeEnum (IfcEntityInstanceData* e);
+    IfcTransportElementTypeEnum (Value v);
+    IfcTransportElementTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcTrimmingPreference {
+class IFC_PARSE_API IfcTrimmingPreference : public IfcUtil::IfcBaseType {
 /// Definition from ISO/CD 10303-42:1992: This type is used to describe the preferred way of trimming a parametric curve where the trimming is multiply defined. 
 /// 
 /// NOTE Corresponding ISO 10303 type: trimming_preference, please refer to ISO/IS 10303-42:1994, p. 18 for the final definition of the formal standard.
@@ -5148,11 +6713,19 @@ struct IfcTrimmingPreference {
 /// CARTESIAN: Indicates that trimming by Cartesian point is preferred. 
 /// PARAMETER: Indicates the preference for the parameter value. 
 /// UNSPECIFIED: Indicates that no preference is communicated.
-typedef enum {IfcTrimmingPreference_CARTESIAN, IfcTrimmingPreference_PARAMETER, IfcTrimmingPreference_UNSPECIFIED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcTrimmingPreference_CARTESIAN, IfcTrimmingPreference_PARAMETER, IfcTrimmingPreference_UNSPECIFIED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcTrimmingPreference (IfcEntityInstanceData* e);
+    IfcTrimmingPreference (Value v);
+    IfcTrimmingPreference (const std::string& v);
+    operator Value() const;
 };
-struct IfcTubeBundleTypeEnum {
+class IFC_PARSE_API IfcTubeBundleTypeEnum : public IfcUtil::IfcBaseType {
 /// Enumeration defining the typical types of tube bundles. 
 ///   The IfcTubeBundleTypeEnum contains the following:
 /// 
@@ -5161,11 +6734,19 @@ struct IfcTubeBundleTypeEnum {
 ///   NOTDEFINED:  Undefined tube bundle type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-typedef enum {IfcTubeBundleType_FINNED, IfcTubeBundleType_USERDEFINED, IfcTubeBundleType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcTubeBundleType_FINNED, IfcTubeBundleType_USERDEFINED, IfcTubeBundleType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcTubeBundleTypeEnum (IfcEntityInstanceData* e);
+    IfcTubeBundleTypeEnum (Value v);
+    IfcTubeBundleTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcUnitEnum {
+class IFC_PARSE_API IfcUnitEnum : public IfcUtil::IfcBaseType {
 /// IfcUnitEnum is an enumeration type for allowed unit types of IfcNamedUnit.
 /// 
 /// ENUMERATION 
@@ -5202,11 +6783,19 @@ struct IfcUnitEnum {
 ///   USERDEFINED: User defined unit type. The type of unit is only implied by its name or the usage context.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-typedef enum {IfcUnit_ABSORBEDDOSEUNIT, IfcUnit_AMOUNTOFSUBSTANCEUNIT, IfcUnit_AREAUNIT, IfcUnit_DOSEEQUIVALENTUNIT, IfcUnit_ELECTRICCAPACITANCEUNIT, IfcUnit_ELECTRICCHARGEUNIT, IfcUnit_ELECTRICCONDUCTANCEUNIT, IfcUnit_ELECTRICCURRENTUNIT, IfcUnit_ELECTRICRESISTANCEUNIT, IfcUnit_ELECTRICVOLTAGEUNIT, IfcUnit_ENERGYUNIT, IfcUnit_FORCEUNIT, IfcUnit_FREQUENCYUNIT, IfcUnit_ILLUMINANCEUNIT, IfcUnit_INDUCTANCEUNIT, IfcUnit_LENGTHUNIT, IfcUnit_LUMINOUSFLUXUNIT, IfcUnit_LUMINOUSINTENSITYUNIT, IfcUnit_MAGNETICFLUXDENSITYUNIT, IfcUnit_MAGNETICFLUXUNIT, IfcUnit_MASSUNIT, IfcUnit_PLANEANGLEUNIT, IfcUnit_POWERUNIT, IfcUnit_PRESSUREUNIT, IfcUnit_RADIOACTIVITYUNIT, IfcUnit_SOLIDANGLEUNIT, IfcUnit_THERMODYNAMICTEMPERATUREUNIT, IfcUnit_TIMEUNIT, IfcUnit_VOLUMEUNIT, IfcUnit_USERDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcUnit_ABSORBEDDOSEUNIT, IfcUnit_AMOUNTOFSUBSTANCEUNIT, IfcUnit_AREAUNIT, IfcUnit_DOSEEQUIVALENTUNIT, IfcUnit_ELECTRICCAPACITANCEUNIT, IfcUnit_ELECTRICCHARGEUNIT, IfcUnit_ELECTRICCONDUCTANCEUNIT, IfcUnit_ELECTRICCURRENTUNIT, IfcUnit_ELECTRICRESISTANCEUNIT, IfcUnit_ELECTRICVOLTAGEUNIT, IfcUnit_ENERGYUNIT, IfcUnit_FORCEUNIT, IfcUnit_FREQUENCYUNIT, IfcUnit_ILLUMINANCEUNIT, IfcUnit_INDUCTANCEUNIT, IfcUnit_LENGTHUNIT, IfcUnit_LUMINOUSFLUXUNIT, IfcUnit_LUMINOUSINTENSITYUNIT, IfcUnit_MAGNETICFLUXDENSITYUNIT, IfcUnit_MAGNETICFLUXUNIT, IfcUnit_MASSUNIT, IfcUnit_PLANEANGLEUNIT, IfcUnit_POWERUNIT, IfcUnit_PRESSUREUNIT, IfcUnit_RADIOACTIVITYUNIT, IfcUnit_SOLIDANGLEUNIT, IfcUnit_THERMODYNAMICTEMPERATUREUNIT, IfcUnit_TIMEUNIT, IfcUnit_VOLUMEUNIT, IfcUnit_USERDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcUnitEnum (IfcEntityInstanceData* e);
+    IfcUnitEnum (Value v);
+    IfcUnitEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcUnitaryControlElementTypeEnum {
+class IFC_PARSE_API IfcUnitaryControlElementTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcUnitaryControlElementTypeEnum defines the range of different types and/or functions of unitary control elements possible. 
 /// 
 /// HISTORY: New type in IFC 2x4. 
@@ -5223,11 +6812,19 @@ struct IfcUnitaryControlElementTypeEnum {
 /// WEATHERSTATION: A control element that senses multiple climate properties such as temperature, humidity, pressure, wind, and rain. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcUnitaryControlElementType_ALARMPANEL, IfcUnitaryControlElementType_CONTROLPANEL, IfcUnitaryControlElementType_GASDETECTIONPANEL, IfcUnitaryControlElementType_INDICATORPANEL, IfcUnitaryControlElementType_MIMICPANEL, IfcUnitaryControlElementType_HUMIDISTAT, IfcUnitaryControlElementType_THERMOSTAT, IfcUnitaryControlElementType_WEATHERSTATION, IfcUnitaryControlElementType_USERDEFINED, IfcUnitaryControlElementType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcUnitaryControlElementType_ALARMPANEL, IfcUnitaryControlElementType_CONTROLPANEL, IfcUnitaryControlElementType_GASDETECTIONPANEL, IfcUnitaryControlElementType_INDICATORPANEL, IfcUnitaryControlElementType_MIMICPANEL, IfcUnitaryControlElementType_HUMIDISTAT, IfcUnitaryControlElementType_THERMOSTAT, IfcUnitaryControlElementType_WEATHERSTATION, IfcUnitaryControlElementType_USERDEFINED, IfcUnitaryControlElementType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcUnitaryControlElementTypeEnum (IfcEntityInstanceData* e);
+    IfcUnitaryControlElementTypeEnum (Value v);
+    IfcUnitaryControlElementTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcUnitaryEquipmentTypeEnum {
+class IFC_PARSE_API IfcUnitaryEquipmentTypeEnum : public IfcUtil::IfcBaseType {
 /// Enumeration defining the functional type of unitary equipment. 
 ///   The IfcUnitaryEquipmentTypeEnum contains the following:
 /// 
@@ -5240,11 +6837,19 @@ struct IfcUnitaryEquipmentTypeEnum {
 ///   NOTDEFINED:  Undefined unitary equipment type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.  DEHUMIDIFIER added in IFC 2x4
-typedef enum {IfcUnitaryEquipmentType_AIRHANDLER, IfcUnitaryEquipmentType_AIRCONDITIONINGUNIT, IfcUnitaryEquipmentType_DEHUMIDIFIER, IfcUnitaryEquipmentType_SPLITSYSTEM, IfcUnitaryEquipmentType_ROOFTOPUNIT, IfcUnitaryEquipmentType_USERDEFINED, IfcUnitaryEquipmentType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcUnitaryEquipmentType_AIRHANDLER, IfcUnitaryEquipmentType_AIRCONDITIONINGUNIT, IfcUnitaryEquipmentType_DEHUMIDIFIER, IfcUnitaryEquipmentType_SPLITSYSTEM, IfcUnitaryEquipmentType_ROOFTOPUNIT, IfcUnitaryEquipmentType_USERDEFINED, IfcUnitaryEquipmentType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcUnitaryEquipmentTypeEnum (IfcEntityInstanceData* e);
+    IfcUnitaryEquipmentTypeEnum (Value v);
+    IfcUnitaryEquipmentTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcValveTypeEnum {
+class IFC_PARSE_API IfcValveTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcValveTypeEnum defines the
 ///   range of different types of valve that can be specified. These are typically
 ///   used in conjunction with Pset_ValveTypeCommon, which contains common
@@ -5288,17 +6893,33 @@ struct IfcValveTypeEnum {
 ///   NOTDEFINED: Undefined valve type. 
 /// 
 /// HISTORY: New type in IFC R2.0
-typedef enum {IfcValveType_AIRRELEASE, IfcValveType_ANTIVACUUM, IfcValveType_CHANGEOVER, IfcValveType_CHECK, IfcValveType_COMMISSIONING, IfcValveType_DIVERTING, IfcValveType_DRAWOFFCOCK, IfcValveType_DOUBLECHECK, IfcValveType_DOUBLEREGULATING, IfcValveType_FAUCET, IfcValveType_FLUSHING, IfcValveType_GASCOCK, IfcValveType_GASTAP, IfcValveType_ISOLATING, IfcValveType_MIXING, IfcValveType_PRESSUREREDUCING, IfcValveType_PRESSURERELIEF, IfcValveType_REGULATING, IfcValveType_SAFETYCUTOFF, IfcValveType_STEAMTRAP, IfcValveType_STOPCOCK, IfcValveType_USERDEFINED, IfcValveType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
-};
-struct IfcVibrationDamperTypeEnum {
+public:
+    typedef enum {IfcValveType_AIRRELEASE, IfcValveType_ANTIVACUUM, IfcValveType_CHANGEOVER, IfcValveType_CHECK, IfcValveType_COMMISSIONING, IfcValveType_DIVERTING, IfcValveType_DRAWOFFCOCK, IfcValveType_DOUBLECHECK, IfcValveType_DOUBLEREGULATING, IfcValveType_FAUCET, IfcValveType_FLUSHING, IfcValveType_GASCOCK, IfcValveType_GASTAP, IfcValveType_ISOLATING, IfcValveType_MIXING, IfcValveType_PRESSUREREDUCING, IfcValveType_PRESSURERELIEF, IfcValveType_REGULATING, IfcValveType_SAFETYCUTOFF, IfcValveType_STEAMTRAP, IfcValveType_STOPCOCK, IfcValveType_USERDEFINED, IfcValveType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
 
-typedef enum {IfcVibrationDamperType_BENDING_YIELD, IfcVibrationDamperType_SHEAR_YIELD, IfcVibrationDamperType_AXIAL_YIELD, IfcVibrationDamperType_FRICTION, IfcVibrationDamperType_VISCOUS, IfcVibrationDamperType_RUBBER, IfcVibrationDamperType_USERDEFINED, IfcVibrationDamperType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcValveTypeEnum (IfcEntityInstanceData* e);
+    IfcValveTypeEnum (Value v);
+    IfcValveTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcVibrationIsolatorTypeEnum {
+class IFC_PARSE_API IfcVibrationDamperTypeEnum : public IfcUtil::IfcBaseType {
+
+public:
+    typedef enum {IfcVibrationDamperType_BENDING_YIELD, IfcVibrationDamperType_SHEAR_YIELD, IfcVibrationDamperType_AXIAL_YIELD, IfcVibrationDamperType_FRICTION, IfcVibrationDamperType_VISCOUS, IfcVibrationDamperType_RUBBER, IfcVibrationDamperType_USERDEFINED, IfcVibrationDamperType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcVibrationDamperTypeEnum (IfcEntityInstanceData* e);
+    IfcVibrationDamperTypeEnum (Value v);
+    IfcVibrationDamperTypeEnum (const std::string& v);
+    operator Value() const;
+};
+class IFC_PARSE_API IfcVibrationIsolatorTypeEnum : public IfcUtil::IfcBaseType {
 /// Enumeration defining the typical types of vibration isolators. 
 ///   The IfcVibrationIsolatorTypeEnum contains the following:
 /// 
@@ -5308,11 +6929,19 @@ struct IfcVibrationIsolatorTypeEnum {
 ///   NOTDEFINED:  Undefined vibration isolator type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-typedef enum {IfcVibrationIsolatorType_COMPRESSION, IfcVibrationIsolatorType_SPRING, IfcVibrationIsolatorType_BASE, IfcVibrationIsolatorType_USERDEFINED, IfcVibrationIsolatorType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcVibrationIsolatorType_COMPRESSION, IfcVibrationIsolatorType_SPRING, IfcVibrationIsolatorType_BASE, IfcVibrationIsolatorType_USERDEFINED, IfcVibrationIsolatorType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcVibrationIsolatorTypeEnum (IfcEntityInstanceData* e);
+    IfcVibrationIsolatorTypeEnum (Value v);
+    IfcVibrationIsolatorTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcVoidingFeatureTypeEnum {
+class IFC_PARSE_API IfcVoidingFeatureTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration qualifies a voiding feature regarding its shape and configuration relative to the voided element.
 /// 
 /// HISTORY New type in IFC 2x4.
@@ -5327,11 +6956,19 @@ struct IfcVoidingFeatureTypeEnum {
 ///   EDGE A shape modification along an edge of the element with the edge length as the predominant dimension of the feature, and feature profile dimensions which are typically much smaller than the edge length.  Can for example be a chamfer edge (differentiated from a chamfer by its ratio of dimensions and thus usually manufactured differently), rounded edge (a convex edge feature), or fillet edge (a concave edge feature).
 ///   USERDEFINED A user-defined type of voiding feature.
 ///   NOTDEFINED An undefined type of voiding feature.
-typedef enum {IfcVoidingFeatureType_CUTOUT, IfcVoidingFeatureType_NOTCH, IfcVoidingFeatureType_HOLE, IfcVoidingFeatureType_MITER, IfcVoidingFeatureType_CHAMFER, IfcVoidingFeatureType_EDGE, IfcVoidingFeatureType_USERDEFINED, IfcVoidingFeatureType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcVoidingFeatureType_CUTOUT, IfcVoidingFeatureType_NOTCH, IfcVoidingFeatureType_HOLE, IfcVoidingFeatureType_MITER, IfcVoidingFeatureType_CHAMFER, IfcVoidingFeatureType_EDGE, IfcVoidingFeatureType_USERDEFINED, IfcVoidingFeatureType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcVoidingFeatureTypeEnum (IfcEntityInstanceData* e);
+    IfcVoidingFeatureTypeEnum (Value v);
+    IfcVoidingFeatureTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcWallTypeEnum {
+class IFC_PARSE_API IfcWallTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration defines the
 /// different types of walls an IfcWallType object can
 /// fulfill:
@@ -5369,11 +7006,19 @@ struct IfcWallTypeEnum {
 /// added.
 /// IFC2x4 CHANGE New enumerator
 /// MOVABLE has been added.
-typedef enum {IfcWallType_MOVABLE, IfcWallType_PARAPET, IfcWallType_PARTITIONING, IfcWallType_PLUMBINGWALL, IfcWallType_SHEAR, IfcWallType_SOLIDWALL, IfcWallType_STANDARD, IfcWallType_POLYGONAL, IfcWallType_ELEMENTEDWALL, IfcWallType_RETAININGWALL, IfcWallType_USERDEFINED, IfcWallType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcWallType_MOVABLE, IfcWallType_PARAPET, IfcWallType_PARTITIONING, IfcWallType_PLUMBINGWALL, IfcWallType_SHEAR, IfcWallType_SOLIDWALL, IfcWallType_STANDARD, IfcWallType_POLYGONAL, IfcWallType_ELEMENTEDWALL, IfcWallType_RETAININGWALL, IfcWallType_USERDEFINED, IfcWallType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcWallTypeEnum (IfcEntityInstanceData* e);
+    IfcWallTypeEnum (Value v);
+    IfcWallTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcWasteTerminalTypeEnum {
+class IFC_PARSE_API IfcWasteTerminalTypeEnum : public IfcUtil::IfcBaseType {
 /// The IfcWasteTerminalTypeEnum defines the range of different types of waste terminal that can be specified. 
 ///   HISTORY: New type in IFC 2x2.  GREASEINTERCEPTOR, OILINTERCEPTOR, PETROLINTERCEPTOR moved to IfcInterceptorTypeEnum in IFC2x4.
 /// 
@@ -5388,11 +7033,19 @@ struct IfcWasteTerminalTypeEnum {
 /// WASTETRAP: Pipe fitting, set adjacent to a sanitary terminal, that retains liquid to prevent the passage of foul air. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcWasteTerminalType_FLOORTRAP, IfcWasteTerminalType_FLOORWASTE, IfcWasteTerminalType_GULLYSUMP, IfcWasteTerminalType_GULLYTRAP, IfcWasteTerminalType_ROOFDRAIN, IfcWasteTerminalType_WASTEDISPOSALUNIT, IfcWasteTerminalType_WASTETRAP, IfcWasteTerminalType_USERDEFINED, IfcWasteTerminalType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcWasteTerminalType_FLOORTRAP, IfcWasteTerminalType_FLOORWASTE, IfcWasteTerminalType_GULLYSUMP, IfcWasteTerminalType_GULLYTRAP, IfcWasteTerminalType_ROOFDRAIN, IfcWasteTerminalType_WASTEDISPOSALUNIT, IfcWasteTerminalType_WASTETRAP, IfcWasteTerminalType_USERDEFINED, IfcWasteTerminalType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcWasteTerminalTypeEnum (IfcEntityInstanceData* e);
+    IfcWasteTerminalTypeEnum (Value v);
+    IfcWasteTerminalTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcWindowPanelOperationEnum {
+class IFC_PARSE_API IfcWindowPanelOperationEnum : public IfcUtil::IfcBaseType {
 /// This enumeration defines the basic ways to describe how window panels operate, as shown in Figure 168. 
 /// 
 /// HISTORY New Enumeration in IFC Release 2.0
@@ -5477,11 +7130,19 @@ struct IfcWindowPanelOperationEnum {
 ///   These figures are only shown as illustrations 
 /// 
 /// Figure 169 — Window panel directions
-typedef enum {IfcWindowPanelOperation_SIDEHUNGRIGHTHAND, IfcWindowPanelOperation_SIDEHUNGLEFTHAND, IfcWindowPanelOperation_TILTANDTURNRIGHTHAND, IfcWindowPanelOperation_TILTANDTURNLEFTHAND, IfcWindowPanelOperation_TOPHUNG, IfcWindowPanelOperation_BOTTOMHUNG, IfcWindowPanelOperation_PIVOTHORIZONTAL, IfcWindowPanelOperation_PIVOTVERTICAL, IfcWindowPanelOperation_SLIDINGHORIZONTAL, IfcWindowPanelOperation_SLIDINGVERTICAL, IfcWindowPanelOperation_REMOVABLECASEMENT, IfcWindowPanelOperation_FIXEDCASEMENT, IfcWindowPanelOperation_OTHEROPERATION, IfcWindowPanelOperation_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcWindowPanelOperation_SIDEHUNGRIGHTHAND, IfcWindowPanelOperation_SIDEHUNGLEFTHAND, IfcWindowPanelOperation_TILTANDTURNRIGHTHAND, IfcWindowPanelOperation_TILTANDTURNLEFTHAND, IfcWindowPanelOperation_TOPHUNG, IfcWindowPanelOperation_BOTTOMHUNG, IfcWindowPanelOperation_PIVOTHORIZONTAL, IfcWindowPanelOperation_PIVOTVERTICAL, IfcWindowPanelOperation_SLIDINGHORIZONTAL, IfcWindowPanelOperation_SLIDINGVERTICAL, IfcWindowPanelOperation_REMOVABLECASEMENT, IfcWindowPanelOperation_FIXEDCASEMENT, IfcWindowPanelOperation_OTHEROPERATION, IfcWindowPanelOperation_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcWindowPanelOperationEnum (IfcEntityInstanceData* e);
+    IfcWindowPanelOperationEnum (Value v);
+    IfcWindowPanelOperationEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcWindowPanelPositionEnum {
+class IFC_PARSE_API IfcWindowPanelPositionEnum : public IfcUtil::IfcBaseType {
 /// This enumeration defines the basic configuration of the window type in terms of the location of window panels. The window configurations are given for windows with one, two or three panels (including fixed panels) as shown in Figure 170. It corresponds to the OperationType of the IfcWindowStyle definition, which references the IfcWindowPanelProperties. 
 /// 
 /// Windows which are subdivided into more than three panels have to be defined by the geometry only. The type of such windows is given by an IfcWindowStyle.OperationType = USERDEFINED or NOTDEFINED (see IfcWindowStyleOperationEnum for details). 
@@ -5546,11 +7207,19 @@ struct IfcWindowPanelPositionEnum {
 ///   placement of the window, looking into the direction of the positive Y
 ///   axis. 
 ///   These figures are only shown as illustrations.
-typedef enum {IfcWindowPanelPosition_LEFT, IfcWindowPanelPosition_MIDDLE, IfcWindowPanelPosition_RIGHT, IfcWindowPanelPosition_BOTTOM, IfcWindowPanelPosition_TOP, IfcWindowPanelPosition_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcWindowPanelPosition_LEFT, IfcWindowPanelPosition_MIDDLE, IfcWindowPanelPosition_RIGHT, IfcWindowPanelPosition_BOTTOM, IfcWindowPanelPosition_TOP, IfcWindowPanelPosition_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcWindowPanelPositionEnum (IfcEntityInstanceData* e);
+    IfcWindowPanelPositionEnum (Value v);
+    IfcWindowPanelPositionEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcWindowStyleConstructionEnum {
+class IFC_PARSE_API IfcWindowStyleConstructionEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration defines the
 ///   basic types of construction of windows. The construction
 ///   type relates to the main material (or material combination)
@@ -5558,11 +7227,19 @@ struct IfcWindowStyleConstructionEnum {
 /// 
 /// HISTORY New Enumeration in
 ///   IFC Release 2x .
-typedef enum {IfcWindowStyleConstruction_ALUMINIUM, IfcWindowStyleConstruction_HIGH_GRADE_STEEL, IfcWindowStyleConstruction_STEEL, IfcWindowStyleConstruction_WOOD, IfcWindowStyleConstruction_ALUMINIUM_WOOD, IfcWindowStyleConstruction_PLASTIC, IfcWindowStyleConstruction_OTHER_CONSTRUCTION, IfcWindowStyleConstruction_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcWindowStyleConstruction_ALUMINIUM, IfcWindowStyleConstruction_HIGH_GRADE_STEEL, IfcWindowStyleConstruction_STEEL, IfcWindowStyleConstruction_WOOD, IfcWindowStyleConstruction_ALUMINIUM_WOOD, IfcWindowStyleConstruction_PLASTIC, IfcWindowStyleConstruction_OTHER_CONSTRUCTION, IfcWindowStyleConstruction_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcWindowStyleConstructionEnum (IfcEntityInstanceData* e);
+    IfcWindowStyleConstructionEnum (Value v);
+    IfcWindowStyleConstructionEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcWindowStyleOperationEnum {
+class IFC_PARSE_API IfcWindowStyleOperationEnum : public IfcUtil::IfcBaseType {
 /// This enumeration defines the basic
 ///   configuration of the window type in terms of the number of window panels and
 ///   the subdivision of the total window. The window configurations are given for
@@ -5637,11 +7314,19 @@ struct IfcWindowStyleOperationEnum {
 ///   placement of the window, looking into the direction of the positive Y
 ///   axis. 
 ///   These figures are only shown as illustrations
-typedef enum {IfcWindowStyleOperation_SINGLE_PANEL, IfcWindowStyleOperation_DOUBLE_PANEL_VERTICAL, IfcWindowStyleOperation_DOUBLE_PANEL_HORIZONTAL, IfcWindowStyleOperation_TRIPLE_PANEL_VERTICAL, IfcWindowStyleOperation_TRIPLE_PANEL_BOTTOM, IfcWindowStyleOperation_TRIPLE_PANEL_TOP, IfcWindowStyleOperation_TRIPLE_PANEL_LEFT, IfcWindowStyleOperation_TRIPLE_PANEL_RIGHT, IfcWindowStyleOperation_TRIPLE_PANEL_HORIZONTAL, IfcWindowStyleOperation_USERDEFINED, IfcWindowStyleOperation_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcWindowStyleOperation_SINGLE_PANEL, IfcWindowStyleOperation_DOUBLE_PANEL_VERTICAL, IfcWindowStyleOperation_DOUBLE_PANEL_HORIZONTAL, IfcWindowStyleOperation_TRIPLE_PANEL_VERTICAL, IfcWindowStyleOperation_TRIPLE_PANEL_BOTTOM, IfcWindowStyleOperation_TRIPLE_PANEL_TOP, IfcWindowStyleOperation_TRIPLE_PANEL_LEFT, IfcWindowStyleOperation_TRIPLE_PANEL_RIGHT, IfcWindowStyleOperation_TRIPLE_PANEL_HORIZONTAL, IfcWindowStyleOperation_USERDEFINED, IfcWindowStyleOperation_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcWindowStyleOperationEnum (IfcEntityInstanceData* e);
+    IfcWindowStyleOperationEnum (Value v);
+    IfcWindowStyleOperationEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcWindowTypeEnum {
+class IFC_PARSE_API IfcWindowTypeEnum : public IfcUtil::IfcBaseType {
 /// Definition from IAI: This enumeration defines the
 /// different predefined types of an IfcWindowType object can
 /// fulfill:
@@ -5658,11 +7343,19 @@ struct IfcWindowTypeEnum {
 /// 
 /// HISTORY New Enumeration
 /// in IFC2x4.
-typedef enum {IfcWindowType_WINDOW, IfcWindowType_SKYLIGHT, IfcWindowType_LIGHTDOME, IfcWindowType_USERDEFINED, IfcWindowType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcWindowType_WINDOW, IfcWindowType_SKYLIGHT, IfcWindowType_LIGHTDOME, IfcWindowType_USERDEFINED, IfcWindowType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcWindowTypeEnum (IfcEntityInstanceData* e);
+    IfcWindowTypeEnum (Value v);
+    IfcWindowTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcWindowTypePartitioningEnum {
+class IFC_PARSE_API IfcWindowTypePartitioningEnum : public IfcUtil::IfcBaseType {
 /// This enumeration defines the basic configuration of the window type in terms of the number of window panels and the subdivision of the total window as shown in Figure 70. The window configurations are given for windows with one, two or three panels (including fixed panels).
 /// 
 /// Windows which are subdivided into more than three panels have to be defined by the geometry only. The type of such windows is USERDEFINED.
@@ -5734,11 +7427,19 @@ struct IfcWindowTypePartitioningEnum {
 /// local placement of the window, looking into the direction of the
 /// positive Y axis.
 /// These figures are only shown as illustrations
-typedef enum {IfcWindowTypePartitioning_SINGLE_PANEL, IfcWindowTypePartitioning_DOUBLE_PANEL_VERTICAL, IfcWindowTypePartitioning_DOUBLE_PANEL_HORIZONTAL, IfcWindowTypePartitioning_TRIPLE_PANEL_VERTICAL, IfcWindowTypePartitioning_TRIPLE_PANEL_BOTTOM, IfcWindowTypePartitioning_TRIPLE_PANEL_TOP, IfcWindowTypePartitioning_TRIPLE_PANEL_LEFT, IfcWindowTypePartitioning_TRIPLE_PANEL_RIGHT, IfcWindowTypePartitioning_TRIPLE_PANEL_HORIZONTAL, IfcWindowTypePartitioning_USERDEFINED, IfcWindowTypePartitioning_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcWindowTypePartitioning_SINGLE_PANEL, IfcWindowTypePartitioning_DOUBLE_PANEL_VERTICAL, IfcWindowTypePartitioning_DOUBLE_PANEL_HORIZONTAL, IfcWindowTypePartitioning_TRIPLE_PANEL_VERTICAL, IfcWindowTypePartitioning_TRIPLE_PANEL_BOTTOM, IfcWindowTypePartitioning_TRIPLE_PANEL_TOP, IfcWindowTypePartitioning_TRIPLE_PANEL_LEFT, IfcWindowTypePartitioning_TRIPLE_PANEL_RIGHT, IfcWindowTypePartitioning_TRIPLE_PANEL_HORIZONTAL, IfcWindowTypePartitioning_USERDEFINED, IfcWindowTypePartitioning_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcWindowTypePartitioningEnum (IfcEntityInstanceData* e);
+    IfcWindowTypePartitioningEnum (Value v);
+    IfcWindowTypePartitioningEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcWorkCalendarTypeEnum {
+class IFC_PARSE_API IfcWorkCalendarTypeEnum : public IfcUtil::IfcBaseType {
 /// An IfcWorkCalendarTypeEnum is an enumeration data type that specifies the types of work calendar from which the relevant control can be selected. If given it should help to identify base calendars.
 /// 
 /// HISTORY: Introduced in IFC2x4.
@@ -5750,11 +7451,19 @@ struct IfcWorkCalendarTypeEnum {
 /// THIRDSHIFT: Belongs to the third shift
 /// USERDEFINED
 /// NOTDEFINED
-typedef enum {IfcWorkCalendarType_FIRSTSHIFT, IfcWorkCalendarType_SECONDSHIFT, IfcWorkCalendarType_THIRDSHIFT, IfcWorkCalendarType_USERDEFINED, IfcWorkCalendarType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcWorkCalendarType_FIRSTSHIFT, IfcWorkCalendarType_SECONDSHIFT, IfcWorkCalendarType_THIRDSHIFT, IfcWorkCalendarType_USERDEFINED, IfcWorkCalendarType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcWorkCalendarTypeEnum (IfcEntityInstanceData* e);
+    IfcWorkCalendarTypeEnum (Value v);
+    IfcWorkCalendarTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcWorkPlanTypeEnum {
+class IFC_PARSE_API IfcWorkPlanTypeEnum : public IfcUtil::IfcBaseType {
 /// An IfcWorkPlanTypeEnum is an enumeration data type that specifies the types of work plan from which the relevant control can be selected.
 /// 
 /// HISTORY  Introduced in IFC2x4. Derived from IfcWorkControlTypeEnum that was introduced in IFC Release 2.0.
@@ -5766,11 +7475,19 @@ struct IfcWorkPlanTypeEnum {
 /// PLANNED: A control showing planned items.
 /// USERDEFINED
 /// NOTDEFINED
-typedef enum {IfcWorkPlanType_ACTUAL, IfcWorkPlanType_BASELINE, IfcWorkPlanType_PLANNED, IfcWorkPlanType_USERDEFINED, IfcWorkPlanType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcWorkPlanType_ACTUAL, IfcWorkPlanType_BASELINE, IfcWorkPlanType_PLANNED, IfcWorkPlanType_USERDEFINED, IfcWorkPlanType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcWorkPlanTypeEnum (IfcEntityInstanceData* e);
+    IfcWorkPlanTypeEnum (Value v);
+    IfcWorkPlanTypeEnum (const std::string& v);
+    operator Value() const;
 };
-struct IfcWorkScheduleTypeEnum {
+class IFC_PARSE_API IfcWorkScheduleTypeEnum : public IfcUtil::IfcBaseType {
 /// An IfcWorkScheduleTypeEnum is an enumeration data type that specifies the types of work schedule from which the relevant control can be selected.
 /// 
 /// HISTORY  Introduced in IFC2x4. Derived from IfcWorkControlTypeEnum that was introduced in IFC Release 2.0.
@@ -5782,9 +7499,17 @@ struct IfcWorkScheduleTypeEnum {
 /// PLANNED: A control showing planned items
 /// USERDEFINED
 /// NOTDEFINED
-typedef enum {IfcWorkScheduleType_ACTUAL, IfcWorkScheduleType_BASELINE, IfcWorkScheduleType_PLANNED, IfcWorkScheduleType_USERDEFINED, IfcWorkScheduleType_NOTDEFINED} Value;
-IFC_PARSE_API static const char* ToString(Value v);
-IFC_PARSE_API static Value FromString(const std::string& s);
+public:
+    typedef enum {IfcWorkScheduleType_ACTUAL, IfcWorkScheduleType_BASELINE, IfcWorkScheduleType_PLANNED, IfcWorkScheduleType_USERDEFINED, IfcWorkScheduleType_NOTDEFINED} Value;
+    static const char* ToString(Value v);
+    static Value FromString(const std::string& s);
+
+    virtual const IfcParse::enumeration_type& declaration() const;
+    static const IfcParse::enumeration_type& Class();
+    IfcWorkScheduleTypeEnum (IfcEntityInstanceData* e);
+    IfcWorkScheduleTypeEnum (Value v);
+    IfcWorkScheduleTypeEnum (const std::string& v);
+    operator Value() const;
 };
 /// IfcAbsorbedDoseMeasure is a measure of the absorbed radioactivity dose.
 /// Usually measured in Gray (Gy, J/kg).
@@ -6433,10 +8158,8 @@ public:
 ///   required for all IFC object instances, it is desirable to compress it to reduce overhead. The encoding of the base 64 character set is shown below:
 /// 
 ///            1         2         3         4         5         6
-/// 
-///  0123456789012345678901234567890123456789012345678901234567890123
-/// 
-/// "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$";
+///    0123456789012345678901234567890123456789012345678901234567890123
+///   "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$";
 /// 
 /// The resulting string is a fixed 22 character length string to be exchanged within the IFC exchange file structure.
 /// 
@@ -26562,7 +28285,8 @@ public:
 /// A bounded curve has a start point and an end point.
 class IFC_PARSE_API IfcBoundedCurve : public IfcCurve {
 public:
-        virtual const IfcParse::entity& declaration() const;
+        IfcTemplatedEntityList< IfcLinearPositioningElement >::ptr PositioningElement() const; // INVERSE IfcLinearPositioningElement::Axis
+    virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcBoundedCurve (IfcEntityInstanceData* e);
     IfcBoundedCurve ();
@@ -26604,196 +28328,6 @@ public:
     IfcBuildingElementType (IfcEntityInstanceData* e);
     IfcBuildingElementType (std::string v1_GlobalId, ::Ifc4x2::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc4x2::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc4x2::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef IfcTemplatedEntityList< IfcBuildingElementType > list;
-};
-/// The building storey has an
-/// elevation and typically represents a (nearly) horizontal
-/// aggregation of spaces that are vertically bound.
-/// A storey is (if specified) associated to a building. A storey
-/// may span over several connected storeys. Therefore storey complex
-/// provides for a collection of storeys included in a building. A
-/// storey can also be decomposed in (horizontical) parts, where each
-/// part defines a partial storey. This is defihned by the composition
-/// type attribute of the supertype
-/// IfcSpatialStructureElements which is interpreted as
-/// follow:
-/// 
-/// COMPLEX = building storey complex
-/// ELEMENT = building storey
-/// PARTIAL = partial building storey
-/// 
-/// EXAMPLE In split level houses, a storey is split into two or more partial storeys, each with a different elevation. It can be handled by defining a storey, which includes two or more partial storeys with the individual elevations.
-/// HISTORY New entity in IFC Release 1.0
-/// 
-/// Property Set Use Definition
-/// The property sets relating to the IfcBuildingStorey are
-/// defined by the IfcPropertySet and attached by the
-/// IfcRelDefinesByProperties relationship. It is accessible
-/// by the inverse IsDefinedBy relationship. The following
-/// property set definitions specific to the IfcBuildingStorey
-/// are part of this IFC release:
-/// 
-/// Pset_BuildingStoreyCommon: common property
-/// set for all types of building stories
-/// 
-/// Quantity Use Definition
-/// The quantities relating to the IfcBuildingStorey are
-/// defined by the IfcElementQuantity and attached by the
-/// IfcRelDefinesByProperties relationship. It is accessible
-/// by the inverse IsDefinedBy relationship. The following
-/// base quantities are defined and should be exchanged with the
-/// IfcElementQuantity.Name = 'BaseQuantities'. Other
-/// quantities, being subjected to local standard of measurement, can
-/// be defined with another string value assigned to Name. In
-/// this case a valid value for MethodOfMeasurement has to be
-/// provided.
-/// 
-/// Qto_BuildingStoreyBaseQuantities: base
-/// quantities for all building storey occurrences.
-/// 
-/// Spatial Structure Use Definition
-/// The IfcBuildingStorey is used to build the spatial
-/// structure of a building (that serves as the primary project
-/// breakdown and is required to be hierarchical). The spatial
-/// structure elements are linked together by using the objectified
-/// relationship IfcRelAggregates. The
-/// IfcBuildingStoreyreferences them by its inverse
-/// relationships:
-/// 
-/// IfcBuildingStorey.Decomposes -- referencing
-/// (IfcBuilding || IfcBuildingStorey) by
-/// IfcRelAggregates.RelatingObject, If it refers to another
-/// instance ofIfcBuildingStorey, the referenced
-/// IfcBuildingStorey needs to have a different and higher
-/// CompositionType, i.e. COMPLEX (if the other
-/// IfcBuildingStorey has ELEMENT), or ELEMENT (if the other
-/// IfcBuildingStorey has PARTIAL).
-/// IfcBuildingStorey.IsDecomposedBy -- referencing
-/// (IfcBuildingStorey || IfcSpace) by
-/// IfcRelAggregates.RelatedObjects. If it refers to another
-/// instance ofIfcBuildingStorey, the referenced
-/// IfcBuildingStorey needs to have a different and lower
-/// CompositionType, i.e. ELEMENT (if the other
-/// IfcBuildingStorey has COMPLEX), or PARTIAL (if the other
-/// IfcBuildingStorey has ELEMENT).
-/// 
-/// If there are building elements and/or other elements directly
-/// related to the IfcBuildingStorey (like most building
-/// elements, such as walls, columns, etc.), they are associated with
-/// the IfcBuildingStorey by using the objectified
-/// relationship IfcRelContainedInSpatialStructure. The
-/// IfcBuildingStorey references them by its inverse
-/// relationship:
-/// 
-/// IfcBuildingStorey.ContainsElements -- referencing any
-/// subtype of IfcProduct (with the exception of other spatial
-/// structure element) by
-/// IfcRelContainedInSpatialStructure.RelatedElements.
-/// 
-/// Figure 25 shows the IfcBuildingStorey as part of the
-/// spatial structure. It also serves as the spatial container for
-/// building and other elements.
-/// NOTE Detailed requirements on mandatory element
-/// containment and placement structure relationships are given in
-/// view definitions and implementer agreements.
-/// 
-/// Figure 25 — Building storey composition
-/// 
-/// Elements can also be referenced in an
-/// IfcBuildingStorey, for example, if they span through several
-/// storeys. This is expressed by using the objectified relationship
-/// IfcRelReferencedInSpatialStructure. Systems, such as
-/// building service or electrical distribution systems, zonal
-/// systems, or structural analysis systems, relate to
-/// IfcBuildingStorey by using the objectified relationship
-/// IfcRelServicesBuildings.
-/// 
-/// Attribute Use Definition
-/// 
-/// Figure 26 describes the heights and elevations of the IfcBuildingStorey.
-/// 
-/// elevation of storey provided by: IfcBuildingStorey.Elevation as a local height value
-/// relative to IfcBuilding.ElevationOfRefHeight, it is usually the top of construction slab
-/// net height of storey, also referred to as total height or system height (top of construction slab to top of construction slab above): provided by BaseQuantity with Name="GrossHeight"
-/// net height of storey (top of construction slab to bottom of construction slab above): provided by BaseQuantity with Name="NetHeight"
-/// 
-/// Figure 26 — Building storey elevations
-/// 
-/// Geometry Use Definitions
-/// The geometric representation of IfcBuildingStorey is
-/// given by the IfcProductDefinitionShape and
-/// IfcLocalPlacement, allowing multiple geometric
-/// representation.
-/// Local Placement
-/// The local placement for IfcBuildingStorey is defined in
-/// its supertype IfcProduct. It is defined by the
-/// IfcLocalPlacement, which defines the local coordinate
-/// system that is referenced by all geometric representations.
-/// 
-/// The PlacementRelTo relationship of
-/// IfcLocalPlacement shall point (if relative placement is
-/// used) to the IfcSpatialStructureElement of type
-/// IfcBuilding, or of type IfcBuildingStorey (e.g. to
-/// position a building storey relative to a building storey complex,
-/// or a partial building storey to a building storey).
-/// If the relative placement is not used, the absolute placement
-/// is defined within the world coordinate system.
-/// 
-/// Geometric Representations
-/// Currently, the use of a 2D 'FootPrint' representation of type
-/// 'GeometricCurveSet' and a 3D 'Body' representation of type 'Brep'
-/// is supported.
-/// 
-/// NOTE The independent geometric representation of
-/// IfcBuildingStorey may not be required or allowed in
-/// certain view definitions. In those cases only the contained
-/// elements and spaces have an independent geometric
-/// representation.
-/// 
-/// Foot Print Representation
-/// The foot print representation of IfcBuildingStorey is
-/// given by either a single 2D curve (such as IfcPolyline or
-/// IfcCompositeCurve), or by a list of 2D curves (in case of
-/// inner boundaries), if the building storey has an independent
-/// geometric representation.
-/// The representation identifier and type of this geometric
-/// representation of IfcBuildingStorey is:
-/// 
-/// IfcShapeRepresentation.RepresentationIdentifier =
-/// 'FootPrint'
-/// IfcShapeRepresentation.RepresentationType =
-/// 'GeometricCurveSet'
-/// 
-/// Body Representation
-/// The body (or solid model) geometric representation (if the
-/// building storey has an independent geometric representation) of
-/// IfcBuildingStorey is defined using faceted B-Rep
-/// capabilities (with or without voids), based on the
-/// IfcFacetedBrep or on the
-/// IfcFacetedBrepWithVoids.
-/// The representation identifier and type of this representation
-/// of IfcBuildingStorey is:
-/// 
-/// IfcShapeRepresentation.RepresentationIdentifier =
-/// 'Body'
-/// IfcShapeRepresentation.RepresentationType =
-/// 'Brep'
-/// 
-/// Since the building storey shape is usually described by the
-/// exterior building elements, an independent shape representation
-/// shall only be given, if the building storey is exposed
-/// independently from its constituting elements.
-class IFC_PARSE_API IfcBuildingStorey : public IfcSpatialStructureElement {
-public:
-    /// Whether the optional attribute Elevation is defined for this IfcBuildingStorey
-    bool hasElevation() const;
-    /// Elevation of the base of this storey, relative to the 0,00 internal reference height of the building. The 0.00 level is given by the absolute above sea level height by the ElevationOfRefHeight attribute given at IfcBuilding.
-    double Elevation() const;
-    void setElevation(double v);
-        virtual const IfcParse::entity& declaration() const;
-    static const IfcParse::entity& Class();
-    IfcBuildingStorey (IfcEntityInstanceData* e);
-    IfcBuildingStorey (std::string v1_GlobalId, ::Ifc4x2::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc4x2::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc4x2::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_LongName, boost::optional< ::Ifc4x2::IfcElementCompositionEnum::Value > v9_CompositionType, boost::optional< double > v10_Elevation);
-    typedef IfcTemplatedEntityList< IfcBuildingStorey > list;
 };
 /// Definition from IAI: The IfcChimneyType
 ///   defines a list of commonly shared property set definitions
@@ -28672,9 +30206,7 @@ public:
 /// A energy conversion type is used to define the common properties of a
 ///   energy conversion device that may be applied to many occurrences of that type. 
 /// An energy conversion device is a building systems device that converts energy from one form into another such 
-/// 
 /// as a boiler (i.e., combusting gas to heat water), chiller (i.e., using a refrigeration cycle to cool a 
-/// 
 /// liquid), or a cooling coil (i.e., using the phase-change characteristics of a refrigerant to cool air).
 ///   Energy conversion types (or the instantiable subtypes) may be exchanged 
 ///   without being already assigned to occurrences. 
@@ -29302,9 +30834,7 @@ public:
 /// A flow controller type is used to define the common properties of a
 ///   flow controller that may be applied to many occurrences of that type.
 /// A flow controller is a device that regulates flow within a distribution system, such as a valve in a piping 
-/// 
 /// system, modulating damper in an air distribution system, or electrical switch in an electrical distribution 
-/// 
 /// system. Flow controller types (or the instantiable subtypes) may be exchanged 
 ///   without being already assigned to occurrences. 
 /// 
@@ -29334,9 +30864,7 @@ public:
 /// A flow fitting type is used to define the common properties of a
 ///   flow fitting that may be applied to many occurrences of that type.
 /// A flow fitting is a device that is used to interconnect flow segments or other fittings within a distribution 
-/// 
 /// system, such as a tee in a ducted system that branches flow into two directions, a junction box in an 
-/// 
 /// electrical distribution system, etc. 
 ///   Flow fitting types (or the instantiable subtypes) may be exchanged 
 ///   without being already assigned to occurrences. 
@@ -29410,7 +30938,6 @@ public:
 /// A flow moving type is used to define the common properties of a
 ///   flow moving device that may be applied to many occurrences of that type.
 /// A flow moving device is a device that is used to produce a pressure differential in a distribution system, 
-/// 
 /// such as a pump, fan, compressor, etc. 
 ///   Flow moving types (or the instantiable subtypes) may be exchanged 
 ///   without being already assigned to occurrences. 
@@ -29441,7 +30968,6 @@ public:
 /// A flow segment type is used to define the common properties of a
 ///   flow segment that may be applied to many occurrences of that type.
 /// A flow segment is a section of a distribution system, such as a duct, pipe, conduit, etc. that typically has 
-/// 
 /// only two ports. 
 ///   Flow segment types (or the instantiable subtypes) may be exchanged 
 ///   without being already assigned to occurrences. 
@@ -29500,7 +31026,6 @@ public:
 /// The element type IfcFlowTreatmentDeviceType defines a list of commonly shared property set definitions of a flow treatment device and an optional set of product representations. It is used to define a flow treatment device specification (the specific product information that is common to all occurrences of that product type). 
 /// 
 /// A flow treatment device is a device used to change the physical properties of the medium, such as an air, oil 
-/// 
 /// or water filter (used to remove particulates from the fluid), or a duct silencer (used to attenuate noise).  Flow treatment types (or the instantiable subtypes) may be exchanged without being already assigned to occurrences. 
 /// 
 /// The occurrences of the IfcFlowTreatmentDeviceType are represented by instances of IfcFlowTreatmentDevice or its subtypes. 
@@ -31078,7 +32603,7 @@ public:
 /// Material Use Definition:
 /// 
 /// Material profile set association analogous to IfcColumnStandardCase should be used when applicable.
-class IFC_PARSE_API IfcPileType : public IfcBuildingElementType {
+class IFC_PARSE_API IfcPileType : public IfcDeepFoundationType {
 public:
     /// Subtype of pile.
     ::Ifc4x2::IfcPileTypeEnum::Value PredefinedType() const;
@@ -36876,6 +38401,196 @@ public:
     IfcBuildingElementProxyType (std::string v1_GlobalId, ::Ifc4x2::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc4x2::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc4x2::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc4x2::IfcBuildingElementProxyTypeEnum::Value v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcBuildingElementProxyType > list;
 };
+/// The building storey has an
+/// elevation and typically represents a (nearly) horizontal
+/// aggregation of spaces that are vertically bound.
+/// A storey is (if specified) associated to a building. A storey
+/// may span over several connected storeys. Therefore storey complex
+/// provides for a collection of storeys included in a building. A
+/// storey can also be decomposed in (horizontical) parts, where each
+/// part defines a partial storey. This is defihned by the composition
+/// type attribute of the supertype
+/// IfcSpatialStructureElements which is interpreted as
+/// follow:
+/// 
+/// COMPLEX = building storey complex
+/// ELEMENT = building storey
+/// PARTIAL = partial building storey
+/// 
+/// EXAMPLE In split level houses, a storey is split into two or more partial storeys, each with a different elevation. It can be handled by defining a storey, which includes two or more partial storeys with the individual elevations.
+/// HISTORY New entity in IFC Release 1.0
+/// 
+/// Property Set Use Definition
+/// The property sets relating to the IfcBuildingStorey are
+/// defined by the IfcPropertySet and attached by the
+/// IfcRelDefinesByProperties relationship. It is accessible
+/// by the inverse IsDefinedBy relationship. The following
+/// property set definitions specific to the IfcBuildingStorey
+/// are part of this IFC release:
+/// 
+/// Pset_BuildingStoreyCommon: common property
+/// set for all types of building stories
+/// 
+/// Quantity Use Definition
+/// The quantities relating to the IfcBuildingStorey are
+/// defined by the IfcElementQuantity and attached by the
+/// IfcRelDefinesByProperties relationship. It is accessible
+/// by the inverse IsDefinedBy relationship. The following
+/// base quantities are defined and should be exchanged with the
+/// IfcElementQuantity.Name = 'BaseQuantities'. Other
+/// quantities, being subjected to local standard of measurement, can
+/// be defined with another string value assigned to Name. In
+/// this case a valid value for MethodOfMeasurement has to be
+/// provided.
+/// 
+/// Qto_BuildingStoreyBaseQuantities: base
+/// quantities for all building storey occurrences.
+/// 
+/// Spatial Structure Use Definition
+/// The IfcBuildingStorey is used to build the spatial
+/// structure of a building (that serves as the primary project
+/// breakdown and is required to be hierarchical). The spatial
+/// structure elements are linked together by using the objectified
+/// relationship IfcRelAggregates. The
+/// IfcBuildingStoreyreferences them by its inverse
+/// relationships:
+/// 
+/// IfcBuildingStorey.Decomposes -- referencing
+/// (IfcBuilding || IfcBuildingStorey) by
+/// IfcRelAggregates.RelatingObject, If it refers to another
+/// instance ofIfcBuildingStorey, the referenced
+/// IfcBuildingStorey needs to have a different and higher
+/// CompositionType, i.e. COMPLEX (if the other
+/// IfcBuildingStorey has ELEMENT), or ELEMENT (if the other
+/// IfcBuildingStorey has PARTIAL).
+/// IfcBuildingStorey.IsDecomposedBy -- referencing
+/// (IfcBuildingStorey || IfcSpace) by
+/// IfcRelAggregates.RelatedObjects. If it refers to another
+/// instance ofIfcBuildingStorey, the referenced
+/// IfcBuildingStorey needs to have a different and lower
+/// CompositionType, i.e. ELEMENT (if the other
+/// IfcBuildingStorey has COMPLEX), or PARTIAL (if the other
+/// IfcBuildingStorey has ELEMENT).
+/// 
+/// If there are building elements and/or other elements directly
+/// related to the IfcBuildingStorey (like most building
+/// elements, such as walls, columns, etc.), they are associated with
+/// the IfcBuildingStorey by using the objectified
+/// relationship IfcRelContainedInSpatialStructure. The
+/// IfcBuildingStorey references them by its inverse
+/// relationship:
+/// 
+/// IfcBuildingStorey.ContainsElements -- referencing any
+/// subtype of IfcProduct (with the exception of other spatial
+/// structure element) by
+/// IfcRelContainedInSpatialStructure.RelatedElements.
+/// 
+/// Figure 25 shows the IfcBuildingStorey as part of the
+/// spatial structure. It also serves as the spatial container for
+/// building and other elements.
+/// NOTE Detailed requirements on mandatory element
+/// containment and placement structure relationships are given in
+/// view definitions and implementer agreements.
+/// 
+/// Figure 25 — Building storey composition
+/// 
+/// Elements can also be referenced in an
+/// IfcBuildingStorey, for example, if they span through several
+/// storeys. This is expressed by using the objectified relationship
+/// IfcRelReferencedInSpatialStructure. Systems, such as
+/// building service or electrical distribution systems, zonal
+/// systems, or structural analysis systems, relate to
+/// IfcBuildingStorey by using the objectified relationship
+/// IfcRelServicesBuildings.
+/// 
+/// Attribute Use Definition
+/// 
+/// Figure 26 describes the heights and elevations of the IfcBuildingStorey.
+/// 
+/// elevation of storey provided by: IfcBuildingStorey.Elevation as a local height value
+/// relative to IfcBuilding.ElevationOfRefHeight, it is usually the top of construction slab
+/// net height of storey, also referred to as total height or system height (top of construction slab to top of construction slab above): provided by BaseQuantity with Name="GrossHeight"
+/// net height of storey (top of construction slab to bottom of construction slab above): provided by BaseQuantity with Name="NetHeight"
+/// 
+/// Figure 26 — Building storey elevations
+/// 
+/// Geometry Use Definitions
+/// The geometric representation of IfcBuildingStorey is
+/// given by the IfcProductDefinitionShape and
+/// IfcLocalPlacement, allowing multiple geometric
+/// representation.
+/// Local Placement
+/// The local placement for IfcBuildingStorey is defined in
+/// its supertype IfcProduct. It is defined by the
+/// IfcLocalPlacement, which defines the local coordinate
+/// system that is referenced by all geometric representations.
+/// 
+/// The PlacementRelTo relationship of
+/// IfcLocalPlacement shall point (if relative placement is
+/// used) to the IfcSpatialStructureElement of type
+/// IfcBuilding, or of type IfcBuildingStorey (e.g. to
+/// position a building storey relative to a building storey complex,
+/// or a partial building storey to a building storey).
+/// If the relative placement is not used, the absolute placement
+/// is defined within the world coordinate system.
+/// 
+/// Geometric Representations
+/// Currently, the use of a 2D 'FootPrint' representation of type
+/// 'GeometricCurveSet' and a 3D 'Body' representation of type 'Brep'
+/// is supported.
+/// 
+/// NOTE The independent geometric representation of
+/// IfcBuildingStorey may not be required or allowed in
+/// certain view definitions. In those cases only the contained
+/// elements and spaces have an independent geometric
+/// representation.
+/// 
+/// Foot Print Representation
+/// The foot print representation of IfcBuildingStorey is
+/// given by either a single 2D curve (such as IfcPolyline or
+/// IfcCompositeCurve), or by a list of 2D curves (in case of
+/// inner boundaries), if the building storey has an independent
+/// geometric representation.
+/// The representation identifier and type of this geometric
+/// representation of IfcBuildingStorey is:
+/// 
+/// IfcShapeRepresentation.RepresentationIdentifier =
+/// 'FootPrint'
+/// IfcShapeRepresentation.RepresentationType =
+/// 'GeometricCurveSet'
+/// 
+/// Body Representation
+/// The body (or solid model) geometric representation (if the
+/// building storey has an independent geometric representation) of
+/// IfcBuildingStorey is defined using faceted B-Rep
+/// capabilities (with or without voids), based on the
+/// IfcFacetedBrep or on the
+/// IfcFacetedBrepWithVoids.
+/// The representation identifier and type of this representation
+/// of IfcBuildingStorey is:
+/// 
+/// IfcShapeRepresentation.RepresentationIdentifier =
+/// 'Body'
+/// IfcShapeRepresentation.RepresentationType =
+/// 'Brep'
+/// 
+/// Since the building storey shape is usually described by the
+/// exterior building elements, an independent shape representation
+/// shall only be given, if the building storey is exposed
+/// independently from its constituting elements.
+class IFC_PARSE_API IfcBuildingStorey : public IfcFacilityPart {
+public:
+    /// Whether the optional attribute Elevation is defined for this IfcBuildingStorey
+    bool hasElevation() const;
+    /// Elevation of the base of this storey, relative to the 0,00 internal reference height of the building. The 0.00 level is given by the absolute above sea level height by the ElevationOfRefHeight attribute given at IfcBuilding.
+    double Elevation() const;
+    void setElevation(double v);
+        virtual const IfcParse::entity& declaration() const;
+    static const IfcParse::entity& Class();
+    IfcBuildingStorey (IfcEntityInstanceData* e);
+    IfcBuildingStorey (std::string v1_GlobalId, ::Ifc4x2::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc4x2::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc4x2::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_LongName, boost::optional< ::Ifc4x2::IfcElementCompositionEnum::Value > v9_CompositionType, boost::optional< double > v10_Elevation);
+    typedef IfcTemplatedEntityList< IfcBuildingStorey > list;
+};
 /// Definition from IAI: A building system is a
 /// group by which building elements are group according to a common
 /// function within the building.
@@ -40974,8 +42689,7 @@ public:
 ///   the occurrence of a device that participates in a distribution
 ///   system and is used for temporary storage of a fluid
 ///   such as a liquid or a gas (e.g., tank). Its type is defined by 
-/// 
-/// IfcFlowStorageDeviceType or its subtypes.
+///   IfcFlowStorageDeviceType or its subtypes.
 /// 
 /// HISTORY: New entity in IFC R2x.
 /// 

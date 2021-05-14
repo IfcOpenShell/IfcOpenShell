@@ -13,6 +13,8 @@
 #include <TColStd_Array1OfReal.hxx>
 #include <TColStd_Array2OfReal.hxx>
 #include <TColStd_Array1OfInteger.hxx>
+#include <Geom_BezierCurve.hxx>
+#include <Geom_TrimmedCurve.hxx>
 
 #include "IfcGeom.h"
 
@@ -92,7 +94,11 @@ namespace {
 
 template <>
 int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool advanced) {
-	if (c->DynamicType() == STANDARD_TYPE(Geom_Line)) {
+	if (c->DynamicType() == STANDARD_TYPE(Geom_TrimmedCurve)) {
+		Handle_Geom_TrimmedCurve trim = Handle_Geom_TrimmedCurve::DownCast(c);
+		const Handle_Geom_Curve basis = trim->BasisCurve();
+		return convert_to_ifc(basis, curve, advanced);
+	} else if (c->DynamicType() == STANDARD_TYPE(Geom_Line)) {
 		IfcSchema::IfcDirection* d;
 		IfcSchema::IfcCartesianPoint* p;
 
@@ -129,6 +135,52 @@ int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool
 		return 1;
 	}
 #ifdef SCHEMA_HAS_IfcRationalBSplineSurfaceWithKnots
+	else if (c->DynamicType() == STANDARD_TYPE(Geom_BezierCurve)) {
+		Handle_Geom_BezierCurve bezier = Handle_Geom_BezierCurve::DownCast(c);
+
+		std::vector<int> mults;
+		std::vector<double> knots;
+		std::vector<double> weights;
+
+		IfcSchema::IfcKnotType::Value knot_spec = IfcSchema::IfcKnotType::IfcKnotType_QUASI_UNIFORM_KNOTS;
+
+		IfcSchema::IfcCartesianPoint::list::ptr points(new IfcSchema::IfcCartesianPoint::list);
+		TColgp_Array1OfPnt poles(1, bezier->NbPoles());
+		bezier->Poles(poles);
+		for (int i = 1; i <= bezier->NbPoles(); ++i) {
+			IfcSchema::IfcCartesianPoint* p;
+			if (!convert_to_ifc(poles.Value(i), p, advanced)) {
+				return 0;
+			}
+			points->push(p);
+
+			if (i == 1 || i == bezier->NbPoles()) {
+				mults.push_back(bezier->Degree() + 1);
+			} else {
+				mults.push_back(bezier->Degree());
+			}
+
+			knots.push_back((double) i - 1);
+		}
+
+		TColStd_Array1OfReal bspline_weights(1, bezier->NbPoles());
+		bezier->Weights(bspline_weights);
+		opencascade_array_to_vector(bspline_weights, weights);
+
+		curve = new IfcSchema::IfcRationalBSplineCurveWithKnots(
+			bezier->Degree(),
+			points,
+			IfcSchema::IfcBSplineCurveForm::IfcBSplineCurveForm_UNSPECIFIED,
+			bezier->IsClosed() != 0,
+			false,
+			mults,
+			knots,
+			knot_spec,
+			weights
+		);
+
+		return 1;
+	}
 	else if (c->DynamicType() == STANDARD_TYPE(Geom_BSplineCurve)) {
 		Handle_Geom_BSplineCurve bspline = Handle_Geom_BSplineCurve::DownCast(c);
 
@@ -381,6 +433,21 @@ int convert_to_ifc(const TopoDS_Edge& e, IfcSchema::IfcEdge*& edge, bool advance
 	}
 }
 
+namespace {
+	bool is_polygonal(const Handle_Geom_Curve& crv) {
+		if (crv->DynamicType() == STANDARD_TYPE(Geom_Line)) {
+			return true;
+		} else if (crv->DynamicType() == STANDARD_TYPE(Geom_TrimmedCurve)) {
+			return is_polygonal(Handle_Geom_TrimmedCurve::DownCast(crv)->BasisCurve());
+		} else if (crv->DynamicType() == STANDARD_TYPE(Geom_BSplineCurve)) {
+			auto bspl = Handle_Geom_BSplineCurve::DownCast(crv);
+			return bspl->NbPoles() == 2 && bspl->Degree() == 1;
+		} else {
+			return false;
+		}
+	}
+}
+
 template <>
 int convert_to_ifc(const TopoDS_Wire& wire, IfcSchema::IfcLoop*& loop, bool advanced) {
 	bool polygonal = true;
@@ -390,7 +457,7 @@ int convert_to_ifc(const TopoDS_Wire& wire, IfcSchema::IfcLoop*& loop, bool adva
 		if (crv.IsNull()) {
 			continue;
 		}
-		if (crv->DynamicType() != STANDARD_TYPE(Geom_Line)) {
+		if (!is_polygonal(crv)) {
 			polygonal = false;
 			break;
 		}
@@ -460,7 +527,7 @@ int convert_to_ifc(const TopoDS_Face& f, IfcSchema::IfcFace*& face, bool advance
 		face = new IfcSchema::IfcFace(bounds);
 		return 1;
 	} else {
-#ifdef USE_IFC4
+#ifdef SCHEMA_HAS_IfcAdvancedFace
 		IfcSchema::IfcSurface* surface;
 		if (!convert_to_ifc(surf, surface, advanced)) {
 			return 0;
@@ -499,7 +566,8 @@ int convert_to_ifc(const TopoDS_Shape& s, U*& item, bool advanced) {
 }
 
 IfcUtil::IfcBaseClass* IfcGeom::MAKE_TYPE_NAME(serialise_)(const TopoDS_Shape& shape, bool advanced) {
-#ifndef USE_IFC4
+
+#ifndef SCHEMA_HAS_IfcAdvancedBrep
 	advanced = false;
 #endif
 
@@ -528,7 +596,7 @@ IfcUtil::IfcBaseClass* IfcGeom::MAKE_TYPE_NAME(serialise_)(const TopoDS_Shape& s
 			}
 		}
 
-#ifdef USE_IFC4
+#ifdef SCHEMA_HAS_IfcAdvancedBrep
 		if (advanced) {
 			if (inner->size()) {
 				items->push(new IfcSchema::IfcAdvancedBrepWithVoids(outer, inner));

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Mit XMLSpy v2011 rel. 2 sp1 (http://www.altova.com) von Klaus Linhard (IABI e.V.) bearbeitet -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="ProjectExtension">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="Project" type="Project" minOccurs="0"/>
+				<xs:element name="ExtensionSchema" type="xs:anyURI"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:complexType name="Project">
+		<xs:sequence>
+			<xs:element name="Name" type="xs:string" minOccurs="0"/>
+		</xs:sequence>
+		<xs:attribute name="ProjectId" type="xs:string" use="required"/>
+	</xs:complexType>
+</xs:schema>

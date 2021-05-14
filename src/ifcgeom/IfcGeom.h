@@ -121,25 +121,29 @@ private:
 	manifold Shell / Solid from this set of faces. Only IfcPolyLoop instances are used. Points within the tolerance
 	threshiold are merged, so consider points a, b, c, distance(a, b) < eps then M(a, b) = Null, M(a, b) = M(a, c).
 	*/
+
+	template <typename CP=const IfcSchema::IfcCartesianPoint*, typename LP=const IfcSchema::IfcPolyLoop*>
 	class faceset_helper {
 	private:
 		MAKE_TYPE_NAME(Kernel)* kernel_;
-		std::set<const IfcSchema::IfcPolyLoop*> duplicates_;
-		std::map<int, int> vertex_mapping_;
+		std::set<LP> duplicates_;
+		std::map<const void*, int> vertex_mapping_;
 		std::map<std::pair<int, int>, TopoDS_Edge> edges_;
+		// not always in use
+		const std::vector<std::vector<double>>* points_ = nullptr;
 		double eps_;
 		bool non_manifold_;
 
 		template <typename Fn>
-		void loop_(IfcSchema::IfcCartesianPoint::list::ptr& ps, const Fn& callback) {
-			if (ps->size() < 3) {
+		void loop_(const LP& lp, const Fn& callback) {
+			auto ps = get_idxs(lp);
+
+			if (ps.size() < 3) {
 				return;
 			}
 
-			auto a = *(ps->end() - 1);
-			auto A = a->data().id();
-			for (auto& b : *ps) {
-				auto B = b->data().id();
+			auto A = ps.back();
+			for (auto& B : ps) {
 				auto C = vertex_mapping_[A], D = vertex_mapping_[B];
 				bool fwd = C < D;
 				if (!fwd) {
@@ -151,23 +155,66 @@ private:
 				}
 			}
 		}
+
+		bool construct(const IfcSchema::IfcCartesianPoint* cp, gp_Pnt* l);
+		bool construct(const std::vector<double>& cp, gp_Pnt* l);
+
+		const void* get_idx(const IfcSchema::IfcCartesianPoint* cp) {
+			return cp;
+		}
+
+		const void* get_idx(const std::vector<double>& cp) {
+			return &cp;
+		}
+
+		std::vector<const void*> get_idxs(const IfcSchema::IfcPolyLoop* lp) {
+			auto poly = lp->Polygon();
+			std::vector<const void*> idxs;
+			std::transform(poly->begin(), poly->end(), std::back_inserter(idxs), [this](const IfcSchema::IfcCartesianPoint* p) {return get_idx(p); });
+			return idxs;
+		}
+
+		std::vector<const void*> get_idxs(const std::vector<int>& it) {
+			std::vector<const void*> idxs;
+			std::transform(it.begin(), it.end(), std::back_inserter(idxs), [this](int i) { return get_idx((*points_)[i - 1]); });
+			return idxs;
+		}
+
+		/*
+		std::vector<uintptr_t> get_idxs(std::vector<std::vector<int>>::const_iterator it) {
+			std::vector<uintptr_t> idxs;
+			std::transform(it->begin(), it->end(), std::back_inserter(idxs), [this](int i) {return get_idx(i); });
+			return idxs;
+		}
+		*/
+
 	public:
+		/*
 		faceset_helper(MAKE_TYPE_NAME(Kernel)* kernel, const IfcSchema::IfcConnectedFaceSet* l);
+		*/
+
+		faceset_helper(
+			MAKE_TYPE_NAME(Kernel)* kernel, 
+			const std::vector<CP>& points,
+			const std::vector<LP>& indices,
+			bool should_by_closed);
 
 		~faceset_helper();
 
 		bool non_manifold() const { return non_manifold_; }
 		bool& non_manifold() { return non_manifold_; }
 
-		bool edge(const IfcSchema::IfcCartesianPoint* a, const IfcSchema::IfcCartesianPoint* b, TopoDS_Edge& e) {
-			int A = vertex_mapping_[a->data().id()];
-			int B = vertex_mapping_[b->data().id()];
+		/*
+		bool edge(CP a, CP b, TopoDS_Edge& e) {
+			int A = vertex_mapping_[get_idx(a)];
+			int B = vertex_mapping_[get_idx(b)];
 			if (A == B) {
 				return false;
 			}
 
 			return edge(A, B, e);
 		}
+		*/
 
 		bool edge(int A, int B, TopoDS_Edge& e) {
 			auto it = edges_.find({A, B});
@@ -178,15 +225,14 @@ private:
 			return true;
 		}
 
-		bool wire(const IfcSchema::IfcPolyLoop* loop, TopoDS_Wire& wire) {
+		bool wire(LP loop, TopoDS_Wire& wire) {
 			if (duplicates_.find(loop) != duplicates_.end()) {
 				return false;
 			}
 			BRep_Builder builder;
 			builder.MakeWire(wire);
 			int count = 0;
-			auto ps = loop->Polygon();
-			loop_(ps, [this, &builder, &wire, &count](int A, int B, bool fwd) {
+			loop_(loop, [this, &builder, &wire, &count](int A, int B, bool fwd) {
 				TopoDS_Edge e;
 				if (edge(A, B, e)) {
 					if (!fwd) {
@@ -201,7 +247,7 @@ private:
 
 				TopTools_ListOfShape results;
 				if (kernel_->wire_intersections(wire, results)) {
-					Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected", loop);
+					Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
 					kernel_->select_largest(results, wire);
 					non_manifold_ = true;
 				}
@@ -224,6 +270,16 @@ private:
 	double modelling_precision;
 	double dimensionality;
 	double layerset_first;
+	double no_wire_intersection_check;
+	double no_wire_intersection_tolerance;
+	double precision_factor;
+
+	// For stopping PlacementRelTo recursion in convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf)
+	const IfcParse::declaration* placement_rel_to;
+
+	faceset_helper<>* faceset_helper_;
+	double disable_boolean_result;
+
 	gp_Vec offset = gp_Vec{0.0, 0.0, 0.0};
 	gp_Quaternion rotation = gp_Quaternion{};
 	gp_Trsf offset_and_rotation = gp_Trsf();
@@ -236,11 +292,6 @@ private:
 
 	const SurfaceStyle* internalize_surface_style(const std::pair<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*>& shading_style);
 
-	 // For stopping PlacementRelTo recursion in convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf)
-	const IfcParse::declaration* placement_rel_to;
-
-	faceset_helper* faceset_helper_;
-
 public:
 	MAKE_TYPE_NAME(Kernel)()
 		: IfcGeom::Kernel(0)
@@ -250,8 +301,13 @@ public:
 		, ifc_planeangle_unit(-1.0)
 		, modelling_precision(0.00001)
 		, dimensionality(1.)
+		, layerset_first(-1.)
+		, no_wire_intersection_check(-1)
+		, no_wire_intersection_tolerance(-1)
+		, precision_factor(10.)
 		, placement_rel_to(nullptr)
 		, faceset_helper_(nullptr)
+		, disable_boolean_result(-1.)
 	{}
 
 	MAKE_TYPE_NAME(Kernel)(const MAKE_TYPE_NAME(Kernel)& other)
@@ -262,9 +318,12 @@ public:
 		, ifc_planeangle_unit(other.ifc_planeangle_unit)
 		, modelling_precision(other.modelling_precision)
 		, dimensionality(other.dimensionality)
-		, placement_rel_to(other.placement_rel_to)
 		// @nb faceset_helper_ always initialized to 0
+		, layerset_first(other.layerset_first)
+		, placement_rel_to(other.placement_rel_to)
 		, faceset_helper_(nullptr)
+		, disable_boolean_result(other.disable_boolean_result)
+
 		, offset(other.offset)
 		, rotation(other.rotation)
 		, offset_and_rotation(other.offset_and_rotation)
@@ -279,6 +338,9 @@ public:
 		modelling_precision = other.modelling_precision;
 		dimensionality = other.dimensionality;
 		placement_rel_to = other.placement_rel_to;
+		layerset_first = other.layerset_first;
+		disable_boolean_result = other.disable_boolean_result;
+
 		offset = other.offset;
 		rotation = other.rotation;
 		offset_and_rotation = other.offset_and_rotation;
@@ -336,7 +398,8 @@ public:
 	IfcSchema::IfcSurfaceStyleShading* get_surface_style(IfcSchema::IfcRepresentationItem* item);
 	const IfcSchema::IfcRepresentationItem* find_item_carrying_style(const IfcSchema::IfcRepresentationItem* item);
 	bool create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& solid);
-	bool create_solid_from_faces(const TopTools_ListOfShape& face_list, TopoDS_Shape& solid);
+	bool shape_to_face_list(const TopoDS_Shape& s, TopTools_ListOfShape& li);
+	bool create_solid_from_faces(const TopTools_ListOfShape& face_list, TopoDS_Shape& solid, bool force_sewing=false);
 	bool is_compound(const TopoDS_Shape& shape);
 	bool is_convex(const TopoDS_Wire& wire);
 	TopoDS_Shape halfspace_from_plane(const gp_Pln& pln,const gp_Pnt& cent);
@@ -491,10 +554,15 @@ public:
 
 	virtual bool convert_placement(IfcUtil::IfcBaseClass* item, gp_Trsf& trsf) {
 		if (item->as<IfcSchema::IfcObjectPlacement>()) {
-			return convert(item->as<IfcSchema::IfcObjectPlacement>(), trsf);
-		} else {
-			return false;
+			try {
+				return convert(item->as<IfcSchema::IfcObjectPlacement>(), trsf);
+			} catch (std::exception& e) { 
+				Logger::Error(e, item); 
+			} catch (...) { 
+				Logger::Error("Failed processing placement", item); 
+			}
 		}
+		return false;
 	}
 
 };

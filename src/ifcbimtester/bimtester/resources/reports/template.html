@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang={{_lang}}>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="foobaro">
+    <title>{{name}}</title>
+    <link href="https://fonts.googleapis.com/css?family=Comfortaa|Inconsolata|Open+Sans&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Arial', sans-serif; padding: 10px 40px; }
+        span.time { color: #999; font-style: italic; float: right; }
+        span.step-time { float: right; color: #555; font-size: 0.8em; font-style: italic; }
+        span.success { background-color: #97cc64; padding: 5px; border-radius: 5px; color: #FFF; font-weight: bold; }
+        span.failure { background-color: #fb5a3e; padding: 5px; border-radius: 5px; color: #FFF; font-weight: bold; }
+        p.failure { background-color: #fb5a3e; padding: 5px; border-radius: 5px; color: #fff; }
+        p.unspecified { background-color: #994f00; padding: 5px; border-radius: 5px; color: #fff; }
+        p.skipped { background-color: #8b8d8f; padding: 5px; border-radius: 5px; color: #fff; }
+        p.description { background-color: #eee; border-radius: 5px; padding: 20px; margin-left: auto; margin-right: auto; display: inline-block; font-weight: bold;}
+        li { padding: 10px; font-family: monospace; }
+        li.success { background-color: #b6cca1; color: #333; }
+        li.failure { background-color: #fbb4a8; color: #900; }
+        li.unspecified { background-color: #ffd37f; color: #a30; }
+        li.skipped { background-color: #f5f5f5; color: #333; }
+        li p { margin-bottom: 0px; }
+        footer { color: #999; font-size: 0.8em; }
+        header { text-align: center; }
+        hr { margin: 20px; margin-left: 0px; margin-right: 0px;  border: none; border-top: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>{{name}}</h1>
+        <p><strong>{{time}} {{file_name}}</strong></p>
+        <hr>
+        <span class="{{#is_success}}success{{/is_success}}{{^is_success}}failure{{/is_success}}">{{#is_success}}{{_success}}{{/is_success}}{{^is_success}}{{_failure}}{{/is_success}}</span>
+        {{_tests_passed}}: <strong>{{total_passes}} / {{total_steps}}</strong> ({{pass_rate}}%)
+        <br />
+        {{#description}}
+        <p class="description">
+            {{.}}<br />
+        </p>
+        {{/description}}
+        <hr>
+    </header>
+    {{#scenarios}}
+    <section>
+        <h2>{{name}}</h2>
+        <p>
+            <span class="{{#is_success}}success{{/is_success}}{{^is_success}}failure{{/is_success}}">{{#is_success}}{{_success}}{{/is_success}}{{^is_success}}{{_failure}}{{/is_success}}</span>
+            {{_tests_passed}}: <strong>{{total_passes}} / {{total_steps}}</strong> ({{pass_rate}}%)
+            <span class="time">
+            {{_duration}}: {{time}}s
+            </span>
+        </p>
+        <ol>
+            {{#steps}}
+            <li class="{{#is_success}}success{{/is_success}}{{^is_success}}failure{{/is_success}}{{#is_unspecified}} unspecified{{/is_unspecified}}{{#is_skipped}} skipped{{/is_skipped}}">
+                {{{name}}}
+                <span class="step-time">{{time}}s</span>
+                {{^is_success}}
+                <p class="failure{{#is_unspecified}} unspecified{{/is_unspecified}}{{#is_skipped}} skipped{{/is_skipped}}">
+                    {{#error_message}}
+                    {{.}}<br />
+                    {{/error_message}}
+                </p>
+                {{/is_success}}
+            </li>
+            {{/steps}}
+        </ol>
+    </section>
+    {{/scenarios}}
+    <hr>
+    <footer>
+        <p>
+            {{_auditing}} <a href="https://blenderbim.org/">BlenderBIM</a> {{_and}} <a href="http://ifcopenshell.org/">IfcOpenShell</a>.
+        </p>
+    </footer>
+</body>
+</html>

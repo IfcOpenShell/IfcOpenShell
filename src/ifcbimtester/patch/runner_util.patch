@@ -1,0 +1,14 @@
+--- behave/runner_util.py	2018-02-26 02:53:03.000000000 +1100
++++ /home/dion/Projects/IfcOpenShell/src/blenderbim/patch-behave-runner_util.py	2021-03-21 11:58:29.777638958 +1100
+@@ -381,7 +381,10 @@
+     locals_["__file__"] = filename
+     with open(filename, "rb") as f:
+         # pylint: disable=exec-used
+-        filename2 = os.path.relpath(filename, os.getcwd())
++        try:
++            filename2 = os.path.relpath(filename, os.getcwd())
++        except ValueError:
++            filename2 = filename
+         code = compile(f.read(), filename2, "exec", dont_inherit=True)
+         exec(code, globals_, locals_)
+ 

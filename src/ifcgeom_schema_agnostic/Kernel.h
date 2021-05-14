@@ -5,11 +5,24 @@
 #include "../ifcgeom/IfcGeomIteratorSettings.h"
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
 
+#ifdef HAS_SCHEMA_2x3
 #include "../ifcparse/Ifc2x3.h"
+#endif
+#ifdef HAS_SCHEMA_4
 #include "../ifcparse/Ifc4.h"
+#endif
+#ifdef HAS_SCHEMA_4x1
 #include "../ifcparse/Ifc4x1.h"
+#endif
+#ifdef HAS_SCHEMA_4x2
 #include "../ifcparse/Ifc4x2.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_rc1
 #include "../ifcparse/Ifc4x3_rc1.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_rc2
+#include "../ifcparse/Ifc4x3_rc2.h"
+#endif
 
 #include <boost/function.hpp>
 
@@ -53,7 +66,11 @@ namespace IfcGeom {
 			GV_PRECISION,
 			// Whether to process shapes of type Face or higher (1) Wire or lower (-1) or all (0)
 			GV_DIMENSIONALITY,
-            GV_LAYERSET_FIRST
+			GV_LAYERSET_FIRST,
+			GV_DISABLE_BOOLEAN_RESULT,
+			GV_NO_WIRE_INTERSECTION_CHECK,
+			GV_PRECISION_FACTOR,
+			GV_NO_WIRE_INTERSECTION_TOLERANCE,
 		};
 
 		Kernel(IfcParse::IfcFile* file_ = 0);

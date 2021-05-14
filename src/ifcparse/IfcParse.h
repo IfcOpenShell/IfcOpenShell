@@ -178,7 +178,7 @@ namespace IfcParse {
 
 	public:
 		ArgumentList() : size_(0), list_(0) {}
-		ArgumentList(size_t n) : size_(n), list_(new Argument*[size_]) {}
+      ArgumentList(size_t n) : size_(n), list_(new Argument*[size_] {0}) {}
 		~ArgumentList();
 
 		void read(IfcSpfLexer* t, std::vector<unsigned int>& ids);

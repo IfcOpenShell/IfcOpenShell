@@ -30,7 +30,7 @@ from . import ifcopenshell_wrapper
 try:
     import logging
 except ImportError as e:
-    logging = type('logger', (object,), {'exception': staticmethod(lambda s: print(s))})
+    logging = type("logger", (object,), {"exception": staticmethod(lambda s: print(s))})
 
 
 class entity_instance(object):
@@ -47,22 +47,25 @@ class entity_instance(object):
         print(products[0].Representation)
         >>> #423=IfcProductDefinitionShape($,$,(#409,#421))
     """
+
     def __init__(self, e):
         if isinstance(e, tuple):
             e = ifcopenshell_wrapper.new_IfcBaseClass(*e)
-        super(entity_instance, self).__setattr__('wrapped_data', e)
+        super(entity_instance, self).__setattr__("wrapped_data", e)
 
     def __getattr__(self, name):
         INVALID, FORWARD, INVERSE = range(3)
         attr_cat = self.wrapped_data.get_attribute_category(name)
         if attr_cat == FORWARD:
             return entity_instance.wrap_value(
-                self.wrapped_data.get_argument(self.wrapped_data.get_argument_index(name)))
+                self.wrapped_data.get_argument(self.wrapped_data.get_argument_index(name))
+            )
         elif attr_cat == INVERSE:
             return entity_instance.wrap_value(self.wrapped_data.get_inverse(name))
         else:
             raise AttributeError(
-                "entity instance of type '%s' has no attribute '%s'" % (self.wrapped_data.is_a(), name))
+                "entity instance of type '%s' has no attribute '%s'" % (self.wrapped_data.is_a(), name)
+            )
 
     @staticmethod
     def walk(f, g, value):
@@ -75,17 +78,21 @@ class entity_instance(object):
 
     @staticmethod
     def wrap_value(v):
-        def wrap(e): return entity_instance(e)
+        def wrap(e):
+            return entity_instance(e)
 
-        def is_instance(e): return isinstance(e, ifcopenshell_wrapper.entity_instance)
+        def is_instance(e):
+            return isinstance(e, ifcopenshell_wrapper.entity_instance)
 
         return entity_instance.walk(is_instance, wrap, v)
 
     @staticmethod
     def unwrap_value(v):
-        def unwrap(e): return e.wrapped_data
+        def unwrap(e):
+            return e.wrapped_data
 
-        def is_instance(e): return isinstance(e, entity_instance)
+        def is_instance(e):
+            return isinstance(e, entity_instance)
 
         return entity_instance.walk(is_instance, unwrap, v)
 
@@ -117,32 +124,36 @@ class entity_instance(object):
         return entity_instance.wrap_value(self.wrapped_data.get_argument(key))
 
     def __setitem__(self, idx, value):
-        attr_type = real_attr_type = self.attribute_type(idx).title().replace(' ', '')
-        real_attr_type = real_attr_type.replace('Derived', 'None')
-        attr_type = attr_type.replace('Binary', 'String')
-        attr_type = attr_type.replace('Enumeration', 'String')
-        
+        attr_type = real_attr_type = self.attribute_type(idx).title().replace(" ", "")
+        real_attr_type = real_attr_type.replace("Derived", "None")
+        attr_type = attr_type.replace("Binary", "String")
+        attr_type = attr_type.replace("Enumeration", "String")
+
         if value is None:
             if attr_type != "Derived":
                 self.wrapped_data.setArgumentAsNull(idx)
         else:
             valid = attr_type != "Derived"
-            if valid:                 
+            if valid:
                 try:
                     if isinstance(value, unicode):
                         value = value.encode("utf-8")
                 except BaseException:
                     pass
-                    
+
                 try:
                     if attr_type != "Derived":
-                        getattr(self.wrapped_data, "setArgumentAs%s" % attr_type)(idx, entity_instance.unwrap_value(value))
+                        getattr(self.wrapped_data, "setArgumentAs%s" % attr_type)(
+                            idx, entity_instance.unwrap_value(value)
+                        )
                 except BaseException as e:
                     valid = False
 
             if not valid:
-                raise ValueError("Expected %s for attribute %s.%s, got %r" % (
-                    real_attr_type, self.is_a(), self.attribute_name(idx), value))
+                raise ValueError(
+                    "Expected %s for attribute %s.%s, got %r"
+                    % (real_attr_type, self.is_a(), self.attribute_name(idx), value)
+                )
 
         return value
 
@@ -189,11 +200,15 @@ class entity_instance(object):
         return hash((self.id(), self.wrapped_data.file_pointer()))
 
     def __dir__(self):
-        return sorted(set(itertools.chain(
-            dir(type(self)),
-            map(str, self.wrapped_data.get_attribute_names()),
-            map(str, self.wrapped_data.get_inverse_attribute_names())
-        )))
+        return sorted(
+            set(
+                itertools.chain(
+                    dir(type(self)),
+                    map(str, self.wrapped_data.get_attribute_names()),
+                    map(str, self.wrapped_data.get_inverse_attribute_names()),
+                )
+            )
+        )
 
     def get_info(self, include_identifier=True, recursive=False, return_type=dict, ignore=()):
         """Return a dictionary of the entity_instance's properties (Python and IFC) and their values.
@@ -218,6 +233,7 @@ class entity_instance(object):
             >>> dict_keys(['Description', 'Name', 'BuildingAddress', 'LongName', 'GlobalId', 'ObjectPlacement', 'OwnerHistory', 'ObjectType',
             >>> ...'ElevationOfTerrain', 'CompositionType', 'id', 'Representation', 'type', 'ElevationOfRefHeight'])
         """
+
         def _():
             try:
                 if include_identifier:
@@ -231,18 +247,21 @@ class entity_instance(object):
                         continue
                     attr_value = self[i]
                     if recursive:
-                        def is_instance(e): return isinstance(e, entity_instance)
+
+                        def is_instance(e):
+                            return isinstance(e, entity_instance)
 
                         def get_info_(inst):
                             # for ty in ignore:
                             #     if inst.is_a(ty):
                             #         return None
-                            return entity_instance.get_info(inst,
-                                                            include_identifier=include_identifier,
-                                                            recursive=recursive,
-                                                            return_type=return_type,
-                                                            ignore=ignore
-                                                            )
+                            return entity_instance.get_info(
+                                inst,
+                                include_identifier=include_identifier,
+                                recursive=recursive,
+                                return_type=return_type,
+                                ignore=ignore,
+                            )
 
                         attr_value = entity_instance.walk(is_instance, get_info_, attr_value)
                     yield self.attribute_name(i), attr_value
@@ -252,3 +271,10 @@ class entity_instance(object):
         return return_type(_())
 
     __dict__ = property(get_info)
+    
+    def get_info_2(self, include_identifier=True, recursive=False, return_type=dict, ignore=()):
+        assert include_identifier
+        assert recursive
+        assert return_type is dict
+        assert len(ignore) == 0
+        return ifcopenshell_wrapper.get_info_cpp(self.wrapped_data)
