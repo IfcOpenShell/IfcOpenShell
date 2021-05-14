@@ -6,7 +6,7 @@ import ifcopenshell
 from . import export_ifc
 from . import schema
 from . import ifc
-from . import annotation
+import blenderbim.bim.module.drawing.annotation as annotation
 from . import decoration
 import bpy
 from blenderbim.bim.handler import purge_module_data
