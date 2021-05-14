@@ -992,7 +992,7 @@ class GridDecorator(BaseDecorator):
         p0 = location_3d_to_region_2d(region, region3d, v0)
         p1 = location_3d_to_region_2d(region, region3d, v1)
         dir = Vector((1, 0))
-        text = obj.BIMObjectProperties.attributes['AxisTag'].string_value
+        text = obj.name.split("/")[1].split(".")[0]
         self.draw_label(context, text, p0, dir, vcenter=True, gap=0)
         self.draw_label(context, text, p1, dir, vcenter=True, gap=0)
 

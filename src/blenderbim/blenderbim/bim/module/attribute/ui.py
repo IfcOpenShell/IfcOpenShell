@@ -15,7 +15,7 @@ def draw_ui(context, layout, obj_type):
         op = row.operator("bim.edit_attributes", icon="CHECKMARK", text="Save Attributes")
         op.obj_type = obj_type
         op.obj = obj.name
-        op = row.operator("bim.disable_editing_attributes", icon="X", text="")
+        op = row.operator("bim.disable_editing_attributes", icon="CANCEL", text="")
         op.obj_type = obj_type
         op.obj = obj.name
 
