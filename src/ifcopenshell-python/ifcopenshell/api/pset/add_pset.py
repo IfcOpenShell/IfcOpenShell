@@ -10,6 +10,13 @@ class Usecase:
 
     def execute(self):
         if self.settings["product"].is_a("IfcObject"):
+            for rel in self.settings["product"].IsDefinedBy or []:
+                if (
+                    rel.is_a("IfcRelDefinesByProperties")
+                    and rel.RelatingPropertyDefinition.Name == self.settings["Name"]
+                ):
+                    return rel.RelatingPropertyDefinition
+
             pset = self.file.create_entity(
                 "IfcPropertySet", **{"GlobalId": ifcopenshell.guid.new(), "Name": self.settings["Name"]}
             )
@@ -24,6 +31,10 @@ class Usecase:
             )
             return pset
         elif self.settings["product"].is_a("IfcTypeObject"):
+            for definition in self.settings["product"].HasPropertySets or []:
+                if definition.Name == self.settings["Name"]:
+                    return definition
+
             pset = self.file.create_entity(
                 "IfcPropertySet", **{"GlobalId": ifcopenshell.guid.new(), "Name": self.settings["Name"]}
             )
@@ -32,6 +43,10 @@ class Usecase:
             self.settings["product"].HasPropertySets = has_property_sets
             return pset
         elif self.settings["product"].is_a("IfcMaterialDefinition"):
+            for definition in self.settings["product"].HasPropertySets or []:
+                if definition.Name == self.settings["Name"]:
+                    return definition
+
             return self.file.create_entity(
                 "IfcMaterialProperties",
                 **{
