@@ -521,7 +521,7 @@ class EditTask(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMWorkScheduleProperties
-        attributes = blenderbim.bim.export_attributes(props.task_attributes)
+        attributes = blenderbim.bim.helper.export_attributes(props.task_attributes)
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "sequence.edit_task", self.file, **{"task": self.file.by_id(props.active_task_id), "attributes": attributes}
