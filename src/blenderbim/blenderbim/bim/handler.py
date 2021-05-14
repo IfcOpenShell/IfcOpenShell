@@ -34,6 +34,16 @@ def name_callback(obj, data):
     if element.is_a("IfcSpatialStructureElement") or (hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy):
         collection = obj.users_collection[0]
         collection.name = obj.name
+    if element.is_a("IfcGrid"):
+        axis_obj = IfcStore.id_map[element.UAxes[0].id()]
+        axis_collection = axis_obj.users_collection[0]
+        grid_collection = None
+        for collection in bpy.data.collections:
+            if axis_collection.name in collection.children.keys():
+                grid_collection = collection
+                break
+        if grid_collection:
+            grid_collection.name = obj.name
     if element.is_a("IfcTypeProduct"):
         TypeData.purge()
     element.Name = "/".join(obj.name.split("/")[1:])

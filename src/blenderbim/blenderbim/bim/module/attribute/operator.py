@@ -24,7 +24,7 @@ class EnableEditingAttributes(bpy.types.Operator):
             props.attributes.remove(0)
         for attribute in Data.products[oprops.ifc_definition_id]:
             new = props.attributes.add()
-            if attribute["type"] == "entity":
+            if attribute["type"] == "entity" or (attribute["type"] == "list" and attribute["list_type"] == "entity"):
                 continue
             new.name = attribute["name"]
             new.is_null = attribute["is_null"]

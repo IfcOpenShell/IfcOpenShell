@@ -184,7 +184,15 @@ class UnassignClass(bpy.types.Operator):
             product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
             self.remove_voids(product, obj)
             IfcStore.unlink_element(product, obj)
-            ifcopenshell.api.run("root.remove_product", self.file, **{"product": product})
+            if product.is_a("IfcGridAxis"):
+                ifcopenshell.api.run("grid.remove_grid_axis", self.file, **{"axis": product})
+            elif product.is_a("IfcGrid"):
+                grid_collection = bpy.data.collections.get(obj.name)
+                for axis_collection in grid_collection.children:
+                    for axis_obj in axis_collection.objects:
+                        bpy.ops.bim.unassign_class(obj=axis_obj.name)
+            else:
+                ifcopenshell.api.run("root.remove_product", self.file, **{"product": product})
             if "/" in obj.name and obj.name[0:3] == "Ifc":
                 obj.name = "/".join(obj.name.split("/")[1:])
             if obj.data and obj.data.name == "Void":
