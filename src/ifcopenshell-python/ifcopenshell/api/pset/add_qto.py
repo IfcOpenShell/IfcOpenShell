@@ -10,6 +10,13 @@ class Usecase:
 
     def execute(self):
         if self.settings["product"].is_a("IfcObject"):
+            for rel in self.settings["product"].IsDefinedBy or []:
+                if (
+                    rel.is_a("IfcRelDefinesByProperties")
+                    and rel.RelatingPropertyDefinition.Name == self.settings["Name"]
+                ):
+                    return rel.RelatingPropertyDefinition
+
             qto = self.file.create_entity(
                 "IfcElementQuantity", **{"GlobalId": ifcopenshell.guid.new(), "Name": self.settings["Name"]}
             )
