@@ -43,9 +43,9 @@ def updateTaskIdentification(self, context):
         self.file,
         **{"task": self.file.by_id(self.ifc_definition_id), "attributes": {"Identification": self.identification}},
     )
-    Data.load(IfcStore.get_file())
+    Data.load(self.file)
     if props.active_task_id == self.ifc_definition_id:
-        attribute = context.scene.BIMWorkScheduleProperties.task_attributes.get("Identification")
+        attribute = props.task_attributes.get("Identification")
         attribute.string_value = self.identification
 
 
@@ -107,6 +107,28 @@ def updateTaskTimeDateTime(self, context, startfinish):
     setattr(self, startfinish, canonicalise_time(startfinish_datetime))
 
 
+def updateTaskduration(self, context):
+    props = context.scene.BIMWorkScheduleProperties
+    if not props.is_task_update_enabled:
+        return
+    self.file = IfcStore.get_file()
+    task = self.file.by_id(self.ifc_definition_id)
+    if task.TaskTime:
+        task_time = task.TaskTime
+    else:
+        task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=task)
+        Data.load(IfcStore.get_file())
+    ifcopenshell.api.run(
+        "sequence.edit_task_time",
+        self.file,
+        **{"task_time":task_time, "attributes": {"ScheduleDuration": self.duration}},
+    )
+    Data.load(IfcStore.get_file())
+    if props.active_task_id == self.ifc_definition_id:
+        attribute = props.task_attributes.get("Duration")
+        attribute.string_value = self.duration
+
+
 def updateVisualisationStart(self, context):
     updateVisualisationStartFinish(self, context, "visualisation_start")
 
@@ -153,7 +175,7 @@ class Task(PropertyGroup):
     has_children: BoolProperty(name="Has Children")
     is_expanded: BoolProperty(name="Is Expanded")
     level_index: IntProperty(name="Level Index")
-    duration: StringProperty(name="Duration")
+    duration: StringProperty(name="Duration", update=updateTaskduration)
     start: StringProperty(name="Start", update=updateTaskTimeStart)
     finish: StringProperty(name="Finish", update=updateTaskTimeFinish)
     calendar: StringProperty(name="Calendar")
