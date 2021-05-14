@@ -31,7 +31,7 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
         op = row.operator("bim.edit_pset", icon="CHECKMARK", text="")
         op.obj = context.active_object.name if obj_type == "Object" else context.active_object.active_material.name
         op.obj_type = obj_type
-        op = row.operator("bim.disable_pset_editing", icon="X", text="")
+        op = row.operator("bim.disable_pset_editing", icon="CANCEL", text="")
         op.obj = context.active_object.name if obj_type == "Object" else context.active_object.active_material.name
         op.obj_type = obj_type
     if pset["is_expanded"]:

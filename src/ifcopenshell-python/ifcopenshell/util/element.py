@@ -154,6 +154,7 @@ def copy_deep(ifc_file, element):
         if isinstance(attribute, ifcopenshell.entity_instance):
             attribute = copy_deep(ifc_file, attribute)
         elif isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance):
+            attribute = list(attribute)
             for j, item in enumerate(attribute):
                 attribute[j] = copy_deep(ifc_file, item)
         new[i] = attribute
