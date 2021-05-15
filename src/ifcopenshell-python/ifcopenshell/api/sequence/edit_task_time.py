@@ -12,10 +12,9 @@ class Usecase:
 
     def execute(self):
         # If the user specifies both an end date and a duration, the duration takes priority
-        if "ScheduleDuration" in self.settings["attributes"].keys():
-            if self.settings["task_time"].ScheduleFinish:
-                del self.settings["attributes"]["ScheduleFinish"]
-        if "ActualDuration" in self.settings["attributes"].keys():
+        if "ScheduleDuration" in self.settings["attributes"].keys() and "ScheduleFinish" in self.settings["attributes"].keys():
+            del self.settings["attributes"]["ScheduleFinish"]
+        if "ActualDuration" in self.settings["attributes"].keys() and "ActualFinish" in self.settings["attributes"].keys():
             del self.settings["attributes"]["ActualFinish"]
 
         for name, value in self.settings["attributes"].items():
