@@ -15,8 +15,10 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        if self.settings["grid_axis"].AxisCurve:
-            ifcopenshell.util.element.remove_deep(self.file, self.settings["grid_axis"].AxisCurve)
+        existing_curve = self.settings["grid_axis"].AxisCurve
+        if existing_curve and len(self.file.get_inverse(existing_curve)) == 1:
+            ifcopenshell.util.element.remove_deep(self.file, existing_curve)
+            self.file.remove(existing_curve)
 
         self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         grid = [i for i in self.file.get_inverse(self.settings["grid_axis"]) if i.is_a("IfcGrid")][0]

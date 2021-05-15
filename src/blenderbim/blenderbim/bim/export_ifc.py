@@ -98,9 +98,7 @@ class IfcExporter:
             obj = bpy.data.objects.get(obj_name)
             if not obj:
                 continue
-            representation = IfcStore.get_file().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-            if representation.RepresentationType == "Tessellation" or representation.RepresentationType == "Brep":
-                bpy.ops.bim.update_mesh_representation(obj=obj.name)
+            bpy.ops.bim.update_mesh_representation(obj=obj.name)
         IfcStore.edited_objs.clear()
 
     def sync_object_placement(self, obj):
@@ -136,13 +134,18 @@ class IfcExporter:
         elif element.is_a("IfcContext"):
             return
 
-        if (element.is_a("IfcElement") and element_collection) or element.is_a("IfcSpatialStructureElement"):
+        if (
+            (element.is_a("IfcElement") and element_collection)
+            or element.is_a("IfcSpatialStructureElement")
+            or element.is_a("IfcGrid")
+        ):
             try:
                 parent_collection = [c for c in bpy.data.collections if c.children.get(element_collection.name)][0]
             except:
                 return  # Out of the spatial tree
         else:
             parent_collection = obj.users_collection[0]
+
 
         parent_obj = bpy.data.objects.get(parent_collection.name)
         if not parent_obj or not parent_obj.BIMObjectProperties.ifc_definition_id:

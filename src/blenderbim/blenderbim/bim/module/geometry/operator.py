@@ -73,6 +73,7 @@ class AddRepresentation(bpy.types.Operator):
 
         if obj.data:
             product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+
             context_id = self.context_id or int(bpy.context.scene.BIMProperties.contexts)
             context_of_items = self.file.by_id(context_id)
 
@@ -355,23 +356,6 @@ class UpdateMeshRepresentation(bpy.types.Operator):
         }
 
         new_representation = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
-
-        # if product.is_a("IfcWall"):
-        #    # Generate axis representation
-        #    axis_context_id = get_context_id("Model", "Axis", "MODEL_VIEW")
-        #    old_axis = ifcopenshell.util.element.get_representation(product, "Model", "Axis", "MODEL_VIEW")
-        #    if (
-        #        axis_context_id
-        #        and old_axis
-        #        and context_of_items.ContextType == "Model"
-        #        and context_of_items.ContextIdentifier
-        #        and context_of_items.ContextIdentifier == "Body"
-        #    ):
-        #        has_axis_generator = False
-        #        if has_axis_generator:
-        #            # TODO, just pseudocode for now
-        #            representation_data["geometry"] = axis_generator_function_call
-        #        pass
 
         box_context_id = get_context_id("Model", "Box", "MODEL_VIEW")
         old_box = ifcopenshell.util.element.get_representation(product, "Model", "Box", "MODEL_VIEW")
