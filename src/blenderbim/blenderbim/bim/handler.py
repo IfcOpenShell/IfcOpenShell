@@ -15,12 +15,15 @@ def mode_callback(obj, data):
             obj.mode != "EDIT"
             or not obj.data
             or not isinstance(obj.data, bpy.types.Mesh)
-            or not obj.data.BIMMeshProperties.ifc_definition_id
+            or not obj.BIMObjectProperties.ifc_definition_id
             or not bpy.context.scene.BIMProjectProperties.is_authoring
         ):
             return
-        representation = IfcStore.get_file().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-        if representation.RepresentationType == "Tessellation" or representation.RepresentationType == "Brep":
+        if obj.data.BIMMeshProperties.ifc_definition_id:
+            representation = IfcStore.get_file().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+            if representation.RepresentationType == "Tessellation" or representation.RepresentationType == "Brep":
+                IfcStore.edited_objs.add(obj.name)
+        elif IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id).is_a("IfcGridAxis"):
             IfcStore.edited_objs.add(obj.name)
 
 
