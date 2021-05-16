@@ -10,23 +10,33 @@ JSON_TO_IFC = {
     "Road": ["IfcCivilElement"],
     "TransportSquare": ["IfcSpace"],
     "TINRelief": ["IfcGeographicElement"],
-    "WaterBody": ["IfcGeographicElement"],
+    "WaterBody": ["IfcGeographicElement"],  # Update for IFC4.3
     "LandUse": ["IfcGeographicElement"],
     "PlantCover": ["IfcGeographicElement"],
     "SolitaryVegetationObject": ["IfcGeographicElement"],
     "CityFurniture": ["IfcFurnishingElement"],
     "GenericCityObject": ["IfcCivilElement"],
-    "Bridge": ["IfcCivilElement"],
-    "BridgePart": ["IfcCivilElement"],
-    "BridgeInstallation": ["IfcCivilElement"],
-    "BridgeConstructionElement": ["IfcCivilElement"],
-    "Tunnel": ["IfcCivilElement"],
-    "TunnelPart": ["IfcCivilElement"],
-    "TunnelInstallation": ["IfcCivilElement"],
+    "Bridge": ["IfcCivilElement"],  # Update for IFC4.3
+    "BridgePart": ["IfcCivilElement"],  # Update for IFC4.3
+    "BridgeInstallation": ["IfcCivilElement"],  # Update for IFC4.3
+    "BridgeConstructionElement": ["IfcCivilElement"],  # Update for IFC4.3
+    "Tunnel": ["IfcCivilElement"],  # Update for IFC4.3
+    "TunnelPart": ["IfcCivilElement"],  # Update for IFC4.3
+    "TunnelInstallation": ["IfcCivilElement"],  # Update for IFC4.3
     "CityObjectGroup": ["IfcCivilElement"],
-    "GroundSurface": ["IfcSlab"],
+    "GroundSurface": ["IfcSlab", {"PredefinedType": "BASESLAB"}],
     "RoofSurface": ["IfcRoof"],
-    "WallSurface": ["IfcWall"]
+    "WallSurface": ["IfcWall"],
+    "ClosureSurface": ["IfcSpace"],
+    "OuterCeilingSurface": ["IfcCovering", {"PredefinedType": "CEILING"}],
+    "OuterFloorSurface": ["IfcSlab", {"PredefinedType": "FLOOR"}],
+    "Window": ["IfcWindow"],
+    "Door": ["IfcDoor"],
+    "WaterSurface": ["IfcGeographicElement"],  # Update for IFC4.3
+    "WaterGroundSurface": ["IfcGeographicElement"],  # Update for IFC4.3
+    "WaterClosureSurface": ["IfcGeographicElement"],  # Update for IFC4.3
+    "TrafficArea": ["IfcCivilElement"],  # Update for IFC4.3
+    "AuxiliaryTrafficArea": ["IfcCivilElement"]  # Update for IFC4.3
 }
 
 class Cityjson2ifc:
@@ -89,9 +99,6 @@ class Cityjson2ifc:
         self.IFC_site = ifcopenshell.api.run("root.create_entity", self.IFC_model,
                                                                 **{"ifc_class": "IfcSite",
                                                                    "name": "My Site"})
-
-        # self.IFC_representation_sub_context = self.IFC_model.by_type("IFCGEOMETRICREPRESENTATIONSUBCONTEXT")[0]
-        # self.IFC_representation_context = self.IFC_model.by_type("IFCGEOMETRICREPRESENTATIONCONTEXT")[0]
 
     def create_owner_history(self):
         actor = self.IFC_model.createIfcActorRole("ENGINEER", None, None)
