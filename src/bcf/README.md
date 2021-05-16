@@ -11,16 +11,16 @@ Currently supports BCF version 2.1.
 The `bcfxml` module lets you interact with the BCF-XML standard.
 
 ```
-from bcf.bcfxml import BcfXml
+from bcf import bcfxml
 
-bcfxml = BcfXml()
 
 # Load a project
-project = bcfxml.get_project("/path/to/file.bcf")
+bcfxml = bcfxml.load("/path/to/file.bcf")
+
 
 # The project is also stored in the module
 # project == bcfxml.project
-
+project=bcfxml.get_project()
 print(project.name)
 
 # To edit a project, just modify the object directly
