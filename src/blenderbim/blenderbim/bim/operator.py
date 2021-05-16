@@ -11,6 +11,7 @@ import ifcopenshell
 import ifcopenshell.util.selector
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.element
+import ifcopenshell.util.representation
 import ifcopenshell.util.schema
 import numpy as np
 from . import export_ifc
@@ -617,7 +618,7 @@ class CutSection(bpy.types.Operator):
         if not element.Representation:
             return False
         for representation in element.Representation.Representations:
-            if ifcopenshell.util.element.is_representation_of_context(
+            if ifcopenshell.util.representation.is_representation_of_context(
                 representation, "Plan", "Annotation", camera.data.BIMCameraProperties.target_view
             ):
                 return True
