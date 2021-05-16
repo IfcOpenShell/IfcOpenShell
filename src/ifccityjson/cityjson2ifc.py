@@ -46,7 +46,6 @@ class Cityjson2ifc:
     def convert(self, city_model):
         self.city_model = city_model
         self.create_new_file()
-        self.write_file()
         self.create_metadata()
         self.geometry.build_vertices(self.IFC_model,
                                      coords=city_model.j["vertices"],
