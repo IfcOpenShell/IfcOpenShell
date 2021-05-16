@@ -22,7 +22,6 @@ class GeometryIO:
         elif geometry.type in ["CompositeSolid", "MultiSolid"]:
             return self.create_IFC_composite_closed_shell(IFC_model, geometry)
         elif geometry.type in ["CompositeSurface", "MultiSurface"]:
-            print('compose or multisurface')
             return self.create_IFC_surface(IFC_model, geometry)
         else:
             warnings.warn("Types other than solids are not yet supported")
@@ -31,9 +30,10 @@ class GeometryIO:
     def create_IFC_composite_closed_shell(self, IFC_model, geometry):
         shells = []
         for shell in geometry.boundaries:
+            # exterior shell
             outershell = shell[0]
             faces = []
-            for face in outershell:  # exterior shell
+            for face in outershell:
                 faces.append(self.create_IFC_face(IFC_model, face))
 
             shells.append(IFC_model.create_entity("IfcClosedShell", faces))
@@ -41,10 +41,10 @@ class GeometryIO:
         return IFC_geometry
 
     def create_IFC_closed_shell(self, IFC_model, geometry):
+        # exterior shell
         outershell = geometry.boundaries[0]
-        # print(geometry.surfaces[0]['surface_idx'][0])
         faces = []
-        for face in outershell:  # exterior shell
+        for face in outershell:
             faces.append(self.create_IFC_face(IFC_model, face))
 
         if len(geometry.boundaries) == 1:
@@ -55,11 +55,10 @@ class GeometryIO:
         # TODO: INTERIOR SHELL
         warnings.warn("Solid interior shell not yet supported")
         return
-        # for boundary in geometry.boundaries[1]:  # interior shell
+        # for boundary in geometry.boundaries[1:]:  # interior shells
         #     for face in boundary:
         #         for triangle in face:
         #             print(triangle)
-        # print(geometry.boundaries)
 
     def create_IFC_surface(self, IFC_model, geometry, surface_id=None):
         faces = None
@@ -95,6 +94,6 @@ class GeometryIO:
             for vertex in interior_face:
                 vertices.append(self.vertices[tuple(vertex)])
             polyloop = IFC_model.create_entity("IfcPolyLoop", vertices)
-            innerbounds.append(IFC_model.create_entity("IfcFaceOuterBound", polyloop, True))
+            innerbounds.append(IFC_model.create_entity("IfcFaceBound", polyloop, True))
         return IFC_model.create_entity("IfcFace", [outerbound] + innerbounds)
 
