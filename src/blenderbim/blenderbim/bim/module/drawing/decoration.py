@@ -13,7 +13,7 @@ import gpu
 import bgl
 from gpu.types import GPUShader, GPUBatch, GPUIndexBuf, GPUVertBuf, GPUVertFormat
 from gpu_extras.batch import batch_for_shader
-from . import helper
+import blenderbim.bim.module.drawing.helper as helper
 
 
 class BaseDecorator():

@@ -7,12 +7,20 @@ import ifcopenshell.util.representation
 import blenderbim.bim.module.drawing.svgwriter as svgwriter
 import blenderbim.bim.module.drawing.annotation as annotation
 from mathutils import Vector, Matrix, Euler, geometry
-from blenderbim.bim.operator import open_with_user_command
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.group.data import Data as GroupData
 from ifcopenshell.api.pset.data import Data as PsetData
 
 cwd = os.path.dirname(os.path.realpath(__file__))
+
+
+def open_with_user_command(user_command, path):
+    if user_command:
+        commands = eval(user_command)
+        for command in commands:
+            subprocess.run(command)
+    else:
+        webbrowser.open("file://" + path)
 
 
 class AddDrawing(bpy.types.Operator):
@@ -62,6 +70,14 @@ class CreateDrawing(bpy.types.Operator):
     bl_label = "Create Drawing"
 
     def execute(self, context):
+        self.camera = context.scene.camera
+        if (
+            not (self.camera.type == "CAMERA" and self.camera.data.type == "ORTHO")
+            or not self.camera.BIMObjectProperties.ifc_definition_id
+        ):
+            return
+        self.props = context.scene.DocProperties
+        self.drawing_name = IfcStore.get_file().by_id(self.camera.BIMObjectProperties.ifc_definition_id).Name
         base_svg = self.ifc_to_svg(context)
         annotation_svg = self.annotation_to_svg(context)
         svg_path = self.combine_svgs(context, base_svg, annotation_svg)
@@ -70,7 +86,7 @@ class CreateDrawing(bpy.types.Operator):
 
     def combine_svgs(self, context, base, annotation):
         # Hacky :)
-        svg_path = context.scene.BIMProperties.ifc_file[0:-4] + ".svg"
+        svg_path = os.path.join(context.scene.BIMProperties.data_dir, "diagrams", self.drawing_name + ".svg")
         with open(svg_path, "w") as outfile:
             with open(base) as infile:
                 for line in infile:
@@ -85,7 +101,9 @@ class CreateDrawing(bpy.types.Operator):
         return svg_path
 
     def ifc_to_svg(self, context):
-        svg_path = context.scene.BIMProperties.ifc_file[0:-4] + "-base.svg"
+        svg_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", self.drawing_name + "-base.svg")
+        if os.path.isfile(svg_path) and not self.props.should_regenerate_base_layer:
+            return svg_path
         ifcconvert_path = os.path.join(cwd, "..", "..", "..", "libs", "IfcConvert")
         subprocess.run(
             [
@@ -109,11 +127,11 @@ class CreateDrawing(bpy.types.Operator):
         return svg_path
 
     def annotation_to_svg(self, context):
-        camera = context.scene.camera
+        svg_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", self.drawing_name + "-annotation.svg")
+        if os.path.isfile(svg_path) and not self.props.should_regenerate_annotation_layer:
+            return svg_path
 
-        if not (camera.type == "CAMERA" and camera.data.type == "ORTHO"):
-            return
-
+        camera = self.camera
         svg_writer = svgwriter.SvgWriter()
 
         if camera.data.BIMCameraProperties.diagram_scale == "CUSTOM":
@@ -141,7 +159,7 @@ class CreateDrawing(bpy.types.Operator):
             width = height / render.resolution_y * render.resolution_x
 
         svg_writer.scale = float(numerator) / float(denominator)
-        svg_writer.output = context.scene.BIMProperties.ifc_file[0:-4] + "-annotation.svg"
+        svg_writer.output = svg_path
         svg_writer.data_dir = bpy.context.scene.BIMProperties.data_dir
         svg_writer.vector_style = drawing_style.vector_style
         svg_writer.camera = camera

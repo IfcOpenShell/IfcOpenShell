@@ -30,6 +30,10 @@ class BIM_PT_camera(Panel):
         layout.label(text="Generation Options:")
 
         row = layout.row()
+        row.prop(dprops, "should_regenerate_base_layer")
+        row = layout.row()
+        row.prop(dprops, "should_regenerate_annotation_layer")
+        row = layout.row()
         row.prop(dprops, "should_recut")
         row = layout.row()
         row.prop(dprops, "should_recut_selected")

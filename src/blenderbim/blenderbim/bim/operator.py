@@ -13,6 +13,8 @@ import ifcopenshell.util.geolocation
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.schema
+# Deleting the below drawing import breaks svgwrite's ElementTree appending because ... magic?
+import blenderbim.bim.module.drawing
 import numpy as np
 from . import export_ifc
 from . import import_ifc
