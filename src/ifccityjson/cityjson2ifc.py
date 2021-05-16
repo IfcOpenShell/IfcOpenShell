@@ -78,6 +78,7 @@ class Cityjson2ifc:
         self.IFC_model = ifcopenshell.api.run("project.create_file")
         self.IFC_project = ifcopenshell.api.run("root.create_entity", self.IFC_model, **{"ifc_class": "IfcProject"})
         self.properties["owner_history"] = self.create_owner_history()
+        ifcopenshell.api.run("unit.assign_unit", self.IFC_model)
         self.IFC_representation_context = ifcopenshell.api.run("context.add_context", self.IFC_model,
                                                                **{"context": "Model"})
         self.IFC_representation_sub_context = ifcopenshell.api.run("context.add_context", self.IFC_model,
