@@ -3,6 +3,7 @@ import bpy
 import json
 import subprocess
 import webbrowser
+import ifcopenshell.util.representation
 import blenderbim.bim.module.drawing.svgwriter as svgwriter
 import blenderbim.bim.module.drawing.annotation as annotation
 from mathutils import Vector, Matrix, Euler, geometry
@@ -12,6 +13,7 @@ from ifcopenshell.api.group.data import Data as GroupData
 from ifcopenshell.api.pset.data import Data as PsetData
 
 cwd = os.path.dirname(os.path.realpath(__file__))
+
 
 class AddDrawing(bpy.types.Operator):
     bl_idname = "bim.add_drawing"
@@ -69,7 +71,7 @@ class CreateDrawing(bpy.types.Operator):
     def combine_svgs(self, context, base, annotation):
         # Hacky :)
         svg_path = context.scene.BIMProperties.ifc_file[0:-4] + ".svg"
-        with open(svg_path, 'w') as outfile:
+        with open(svg_path, "w") as outfile:
             with open(base) as infile:
                 for line in infile:
                     if "</svg>" in line:
@@ -197,6 +199,11 @@ class AddAnnotation(bpy.types.Operator):
     def execute(self, context):
         if not bpy.context.scene.camera:
             return {"FINISHED"}
+        subcontext = ifcopenshell.util.representation.get_context(
+            IfcStore.get_file(), "Plan", "Annotation", context.scene.camera.data.BIMCameraProperties.target_view
+        )
+        if not subcontext:
+            return {"FINISHED"}
         if self.data_type == "text":
             if bpy.context.selected_objects:
                 for selected_object in bpy.context.selected_objects:
@@ -209,7 +216,14 @@ class AddAnnotation(bpy.types.Operator):
                 obj = annotation.Annotator.add_plane_to_annotation(obj)
             else:
                 obj = annotation.Annotator.add_line_to_annotation(obj)
+
+        if not obj.BIMObjectProperties.ifc_definition_id:
+            bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcAnnotation", context_id=subcontext.id())
+        else:
+            bpy.ops.bim.update_mesh_representation(obj=obj.name)
+
         bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = obj
+        obj.select_set(True)
         bpy.ops.object.mode_set(mode="EDIT")
         return {"FINISHED"}
