@@ -1,7 +1,6 @@
 import bpy
 import json
 import addon_utils
-import blenderbim.bim.decoration as decoration
 import ifcopenshell.api.owner.settings
 from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
@@ -252,12 +251,3 @@ def setDefaultProperties(scene):
         drawing_style.name = "Blender Default"
         drawing_style.render_type = "DEFAULT"
         bpy.ops.bim.save_drawing_style(index="2")
-
-
-@persistent
-def toggleDecorationsOnLoad(*args):
-    toggle = bpy.context.scene.DocProperties.should_draw_decorations
-    if toggle:
-        decoration.DecorationsHandler.install(bpy.context)
-    else:
-        decoration.DecorationsHandler.uninstall()

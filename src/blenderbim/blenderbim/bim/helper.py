@@ -97,18 +97,6 @@ def get_project_collection(scene):
     return colls[0]
 
 
-def get_active_drawing(scene):
-    """Get active drawing collection and camera"""
-    props = scene.DocProperties
-    if props.active_drawing_index is None or len(props.drawings) == 0:
-        return None, None
-    try:
-        drawing = props.drawings[props.active_drawing_index]
-        return scene.collection.children["Views"].children[f"IfcGroup/{drawing.name}"], drawing.camera
-    except (KeyError, IndexError):
-        raise RuntimeError("missing drawing collection")
-
-
 def ortho_view_frame(camera, margin=0.015):
     """Calculates 2d bounding box of camera view area.
 
