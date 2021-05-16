@@ -4,7 +4,7 @@ import shutil
 import zipfile
 import logging
 import tempfile
-import bcf.data
+import bcf.v2.data
 from datetime import datetime
 from xml.dom import minidom
 from xmlschema import XMLSchema
@@ -30,7 +30,7 @@ class BcfXml:
         self.filepath = None
         self.logger = logging.getLogger("bcfxml")
         self.author = "john@doe.com"
-        self.project = bcf.data.Project()
+        self.project = bcf.v2.data.Project()
         self.version = "2.1"
         self.topics = {}
 
@@ -47,9 +47,6 @@ class BcfXml:
     def get_project(self, filepath=None):
         if not filepath:
             return self.project
-        zip_file = zipfile.ZipFile(filepath)
-        self.filepath = tempfile.mkdtemp()
-        zip_file.extractall(self.filepath)
         if os.path.isfile(os.path.join(self.filepath, "project.bcfp")):
             data = self._read_xml("project.bcfp", "project.xsd")
             self.project.extension_schema = data["ExtensionSchema"]
@@ -102,9 +99,9 @@ class BcfXml:
         data = self._read_xml(os.path.join(guid, "markup.bcf"), "markup.xsd")
         if "Header" not in data:
             return
-        header = bcf.data.Header()
+        header = bcf.v2.data.Header()
         for item in data["Header"]["File"]:
-            header_file = bcf.data.HeaderFile()
+            header_file = bcf.v2.data.HeaderFile()
             optional_keys = {
                 "filename": "Filename",
                 "date": "Date",
@@ -124,7 +121,7 @@ class BcfXml:
         if guid in self.topics:
             return self.topics[guid]
         data = self._read_xml(os.path.join(guid, "markup.bcf"), "markup.xsd")
-        topic = bcf.data.Topic()
+        topic = bcf.v2.data.Topic()
         self.topics[guid] = topic
 
         mandatory_keys = {
@@ -155,7 +152,7 @@ class BcfXml:
                 setattr(topic, key, data["Topic"][value])
 
         if "BimSnippet" in data["Topic"]:
-            bim_snippet = bcf.data.BimSnippet()
+            bim_snippet = bcf.v2.data.BimSnippet()
             keys = {
                 "snippet_type": "@SnippetType",
                 "is_external": "@IsExternal",
@@ -169,7 +166,7 @@ class BcfXml:
 
         if "DocumentReference" in data["Topic"]:
             for item in data["Topic"]["DocumentReference"]:
-                document_reference = bcf.data.DocumentReference()
+                document_reference = bcf.v2.data.DocumentReference()
                 keys = {
                     "referenced_document": "ReferencedDocument",
                     "is_external": "@IsExternal",
@@ -183,14 +180,14 @@ class BcfXml:
 
         if "RelatedTopic" in data["Topic"]:
             for item in data["Topic"]["RelatedTopic"]:
-                related_topic = bcf.data.RelatedTopic()
+                related_topic = bcf.v2.data.RelatedTopic()
                 related_topic.guid = item["@Guid"]
                 topic.related_topics.append(related_topic)
         return topic
 
     def add_topic(self, topic=None):
         if topic is None:
-            topic = bcf.data.Topic()
+            topic = bcf.v2.data.Topic()
         if not topic.guid:
             topic.guid = str(uuid.uuid4())
         if not topic.title:
@@ -288,9 +285,12 @@ class BcfXml:
                     "isExternal": f.is_external,
                 },
             )
-            self._create_element(file_el, "Filename", text=f.filename)
-            self._create_element(file_el, "Date", text=f.date)
-            self._create_element(file_el, "Reference", text=f.reference)
+            if f.filename:
+                self._create_element(file_el, "Filename", text=f.filename)
+            if f.date:
+                self._create_element(file_el, "Date", text=f.date)
+            if f.reference:
+                self._create_element(file_el, "Reference", text=f.reference)
 
     def write_comments(self, comments, root):
         for comment in comments.values():
@@ -310,7 +310,7 @@ class BcfXml:
 
     def add_comment(self, topic, comment=None):
         if comment is None:
-            comment = bcf.data.Comment()
+            comment = bcf.v2.data.Comment()
         if not comment.guid:
             comment.guid = str(uuid.uuid4())
         if not comment.comment:
@@ -471,7 +471,7 @@ class BcfXml:
 
     def add_viewpoint(self, topic, viewpoint=None):
         if not viewpoint:
-            viewpoint = bcf.data.Viewpoint()
+            viewpoint = bcf.v2.data.Viewpoint()
         if not viewpoint.guid:
             viewpoint.guid = str(uuid.uuid4())
         if not viewpoint.viewpoint:
@@ -572,7 +572,7 @@ class BcfXml:
             header_file.is_external = False
         header_file.date = datetime.utcnow().isoformat()
         if not topic.header:
-            topic.header = bcf.data.Header()
+            topic.header = bcf.v2.data.Header()
         topic.header.files.append(header_file)
         self.edit_topic(topic)
 
@@ -582,7 +582,7 @@ class BcfXml:
         if "Comment" not in data:
             return comments
         for item in data["Comment"]:
-            comment = bcf.data.Comment()
+            comment = bcf.v2.data.Comment()
             mandatory_keys = {"guid": "@Guid", "date": "Date", "author": "Author", "comment": "Comment"}
             for key, value in mandatory_keys.items():
                 setattr(comment, key, item[value])
@@ -591,7 +591,7 @@ class BcfXml:
                 if value in item:
                     setattr(comment, key, item[value])
             if "Viewpoint" in item:
-                viewpoint = bcf.data.Viewpoint()
+                viewpoint = bcf.v2.data.Viewpoint()
                 viewpoint.guid = item["Viewpoint"]["@Guid"]
                 comment.viewpoint = viewpoint
             comments[comment.guid] = comment
@@ -610,7 +610,7 @@ class BcfXml:
         return viewpoints
 
     def get_viewpoint(self, data, topic_guid):
-        viewpoint = bcf.data.Viewpoint()
+        viewpoint = bcf.v2.data.Viewpoint()
         viewpoint.guid = data["@Guid"]
         optional_keys = {"viewpoint": "Viewpoint", "snapshot": "Snapshot", "index": "Index"}
         for key, value in optional_keys.items():
@@ -628,10 +628,10 @@ class BcfXml:
     def get_viewpoint_components(self, visinfo):
         if "Components" not in visinfo:
             return None
-        components = bcf.data.Components()
+        components = bcf.v2.data.Components()
         data = visinfo["Components"]
         if "ViewSetupHints" in data:
-            view_setup_hints = bcf.data.ViewSetupHints()
+            view_setup_hints = bcf.v2.data.ViewSetupHints()
             optional_keys = {
                 "spaces_visible": "@SpacesVisible",
                 "space_boundaries_visible": "@SpaceBoundariesVisible",
@@ -645,7 +645,7 @@ class BcfXml:
             for item in data["Selection"]["Component"]:
                 components.selection.append(self.get_component(item))
         if "Visibility" in data:
-            component_visibility = bcf.data.ComponentVisibility()
+            component_visibility = bcf.v2.data.ComponentVisibility()
             if "@DefaultVisibility" in data["Visibility"]:
                 component_visibility.default_visibility = data["Visibility"]["@DefaultVisibility"]
             if "Exceptions" in data["Visibility"] and "Component" in data["Visibility"]["Exceptions"]:
@@ -654,7 +654,7 @@ class BcfXml:
             components.visibility = component_visibility
         if "Coloring" in data and "Color" in data["Coloring"]:
             for item in data["Coloring"]["Color"]:
-                color = bcf.data.Color()
+                color = bcf.v2.data.Color()
                 color.color = item["@Color"]
                 for item2 in item["Component"]:
                     color.components.append(self.get_component(item2))
@@ -664,7 +664,7 @@ class BcfXml:
     def get_viewpoint_orthogonal_camera(self, visinfo):
         if "OrthogonalCamera" not in visinfo:
             return None
-        camera = bcf.data.OrthogonalCamera()
+        camera = bcf.v2.data.OrthogonalCamera()
         data = visinfo["OrthogonalCamera"]
         self.set_vector(camera.camera_view_point, data["CameraViewPoint"])
         self.set_vector(camera.camera_direction, data["CameraDirection"])
@@ -675,7 +675,7 @@ class BcfXml:
     def get_viewpoint_perspective_camera(self, visinfo):
         if "PerspectiveCamera" not in visinfo:
             return None
-        camera = bcf.data.PerspectiveCamera()
+        camera = bcf.v2.data.PerspectiveCamera()
         data = visinfo["PerspectiveCamera"]
         self.set_vector(camera.camera_view_point, data["CameraViewPoint"])
         self.set_vector(camera.camera_direction, data["CameraDirection"])
@@ -688,7 +688,7 @@ class BcfXml:
             return []
         lines = []
         for item in visinfo["Lines"]["Line"]:
-            line = bcf.data.Line()
+            line = bcf.v2.data.Line()
             self.set_vector(line.start_point, item["StartPoint"])
             self.set_vector(line.end_point, item["EndPoint"])
             lines.append(line)
@@ -699,7 +699,7 @@ class BcfXml:
             return []
         planes = []
         for item in visinfo["ClippingPlanes"]["ClippingPlane"]:
-            plane = bcf.data.ClippingPlane()
+            plane = bcf.v2.data.ClippingPlane()
             self.set_vector(plane.location, item["Location"])
             self.set_vector(plane.direction, item["Direction"])
             planes.append(plane)
@@ -710,7 +710,7 @@ class BcfXml:
             return []
         bitmaps = []
         for item in visinfo["Bitmap"]:
-            bitmap = bcf.data.Bitmap()
+            bitmap = bcf.v2.data.Bitmap()
             bitmap.reference = item["Reference"]
             bitmap.bitmap_type = item["Bitmap"].upper()
             self.set_vector(bitmap.location, item["Location"])
@@ -726,7 +726,7 @@ class BcfXml:
         to_obj.z = from_xml["Z"]
 
     def get_component(self, data):
-        component = bcf.data.Component()
+        component = bcf.v2.data.Component()
         optional_keys = {
             "originating_system": "OriginatingSystem",
             "authoring_tool_id": "AuthoringToolId",
