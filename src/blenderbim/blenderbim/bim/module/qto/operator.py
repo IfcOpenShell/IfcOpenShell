@@ -90,6 +90,7 @@ class QuantifyObjects(bpy.types.Operator):
                 result = helper.calculate_volume(obj)
             if not result:
                 continue
+            result = round(result, 3)
             qto = ifcopenshell.api.run(
                 "pset.add_qto",
                 self.file,
