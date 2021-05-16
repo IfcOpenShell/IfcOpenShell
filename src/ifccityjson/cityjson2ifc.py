@@ -1,6 +1,7 @@
 import ifcopenshell
-import warnings
+import ifcopenshell.api
 from geometry import GeometryIO
+from datetime import datetime
 
 JSON_TO_IFC = {
     "Building": ["IfcBuilding"],
@@ -45,6 +46,7 @@ class Cityjson2ifc:
     def convert(self, city_model):
         self.city_model = city_model
         self.create_new_file()
+        self.write_file()
         self.create_metadata()
         self.geometry.build_vertices(self.IFC_model,
                                      coords=city_model.j["vertices"],
@@ -73,14 +75,38 @@ class Cityjson2ifc:
             crs = self.IFC_model.create_entity("IfcProjectedCrs", Name=f"epsg:{epsg}")
             self.IFC_model.create_entity("IfcMapConversion", self.IFC_representation_context, **self.properties["local_translation"])
 
-        self.properties["owner_history"] = self.IFC_model.by_type("IfcOwnerHistory")[0]
-
     def create_new_file(self):
-        self.IFC_model = ifcopenshell.open('example/template.ifc')
-        self.IFC_site = self.IFC_model.by_type('IfcSite')[0]
-        self.IFC_representation_sub_context = self.IFC_model.by_type("IFCGEOMETRICREPRESENTATIONSUBCONTEXT")[0]
-        self.IFC_representation_context = self.IFC_model.by_type("IFCGEOMETRICREPRESENTATIONCONTEXT")[0]
-        # self.IFC_model = ifcopenshell.file(schema='IFC4')
+        self.IFC_model = ifcopenshell.api.run("project.create_file")
+        self.IFC_project = ifcopenshell.api.run("root.create_entity", self.IFC_model, **{"ifc_class": "IfcProject"})
+        self.properties["owner_history"] = self.create_owner_history()
+        self.IFC_representation_context = ifcopenshell.api.run("context.add_context", self.IFC_model,
+                                                               **{"context": "Model"})
+        self.IFC_representation_sub_context = ifcopenshell.api.run("context.add_context", self.IFC_model,
+                                                                **{"context": "Model",
+                                                                   "subcontext": "Body", # LODs as subcontext
+                                                                   "target_view": "MODEL_VIEW"})
+
+        self.IFC_site = ifcopenshell.api.run("root.create_entity", self.IFC_model,
+                                                                **{"ifc_class": "IfcSite",
+                                                                   "name": "My Site"})
+
+        # self.IFC_representation_sub_context = self.IFC_model.by_type("IFCGEOMETRICREPRESENTATIONSUBCONTEXT")[0]
+        # self.IFC_representation_context = self.IFC_model.by_type("IFCGEOMETRICREPRESENTATIONCONTEXT")[0]
+
+    def create_owner_history(self):
+        actor = self.IFC_model.createIfcActorRole("ENGINEER", None, None)
+        person = self.IFC_model.createIfcPerson("Oostwegel", None, "L.J.N.", None, None, None, (actor,))
+        organization = self.IFC_model.createIfcOrganization(
+            None,
+            "IfcOpenShell",
+            "IfcOpenShell, an open source (LGPL) software library that helps users and software developers to work with the IFC file format.",
+        )
+        p_o = self.IFC_model.createIfcPersonAndOrganization(person, organization)
+        application = self.IFC_model.createIfcApplication(organization, "v0.0.x", "ifccityjson", "ifccityjson")
+        timestamp = int(datetime.now().timestamp())
+        ownerHistory = self.IFC_model.createIfcOwnerHistory(p_o, application, "READWRITE", None, None, None, None, timestamp)
+
+        return ownerHistory
 
     def write_file(self):
         self.IFC_model.write(self.properties["file_destination"])
