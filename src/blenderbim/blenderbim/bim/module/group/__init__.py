@@ -11,6 +11,7 @@ classes = (
     operator.UnassignGroup,
     operator.EnableEditingGroup,
     operator.DisableEditingGroup,
+    operator.SelectGroupProducts,
     prop.Group,
     prop.BIMGroupProperties,
     ui.BIM_PT_groups,

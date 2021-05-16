@@ -109,7 +109,7 @@ class BIM_PT_cost_schedules(Panel):
             value = quantity[[k for k in quantity.keys() if "Value" in k][0]]
             row = self.layout.row(align=True)
             row.label(text=quantity["Name"])
-            row.label(text=str(value))
+            row.label(text="{0:.2f}".format(value))
             if self.props.active_cost_item_quantity_id and self.props.active_cost_item_quantity_id == quantity_id:
                 op = row.operator("bim.edit_cost_item_quantity", text="", icon="CHECKMARK")
                 op.physical_quantity = quantity_id
@@ -262,12 +262,12 @@ class BIM_UL_cost_items(UIList):
 
             op = row.operator("bim.enable_editing_cost_item_quantities", text="", icon="PROPERTIES")
             op.cost_item = item.ifc_definition_id
-            row.label(text=str("{0:.2f}".format(cost_item["TotalCostQuantity"])) + " (M3)")
+            row.label(text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + " (M3)")
 
             op = row.operator("bim.enable_editing_cost_item_values", text="", icon="DISC")
             op.cost_item = item.ifc_definition_id
-            row.label(text=str("{0:.2f}".format(cost_item["TotalAppliedValue"])))
-            row.label(text=str("{0:.2f}".format(cost_item["TotalCostValue"])), icon="CON_TRANSLIKE")
+            row.label(text="{0:.2f}".format(cost_item["TotalAppliedValue"]))
+            row.label(text="{0:.2f}".format(cost_item["TotalCostValue"]), icon="CON_TRANSLIKE")
 
             if context.active_object:
                 oprops = context.active_object.BIMObjectProperties
