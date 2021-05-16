@@ -46,14 +46,9 @@ class Usecase:
     def evaluate_geometry(self):
         self.boolean_modifiers = []
         for modifier in self.settings["blender_object"].modifiers:
-            if not modifier.type == "BOOLEAN":
-                continue
-            modifier_data = {}
-            for name in ["operation", "operand_type", "object", "solver", "use_self"]:
-                modifier_data[name] = getattr(modifier, name)
-            self.boolean_modifiers.append(modifier_data)
-            self.settings["blender_object"].modifiers.remove(modifier)
-
+            if modifier.type == "BOOLEAN":
+                modifier.show_viewport = False
+            
         if self.settings["should_force_triangulation"]:
             mesh = self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
             bm = bmesh.new()
@@ -68,10 +63,9 @@ class Usecase:
                 self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
             )
 
-        for modifier in self.boolean_modifiers:
-            new = self.settings["blender_object"].modifiers.new("IfcOpeningElement", "BOOLEAN")
-            for key, value in modifier.items():
-                setattr(new, key, value)
+        for modifier in self.settings["blender_object"].modifiers:
+            if modifier.type == "BOOLEAN":
+                modifier.show_viewport = True
 
     def create_model_representation(self):
         if self.settings["context"].is_a() == "IfcGeometricRepresentationContext":
