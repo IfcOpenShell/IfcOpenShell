@@ -443,9 +443,9 @@ class IfcImporter:
 
     def is_native_swept_disk_solid(self, representations):
         for representation in representations:
-            if len(representation["raw"].Items) > 1 or not representation["raw"].Items[0].is_a("IfcSweptDiskSolid"):
-                return False
-        return True
+            if len(representation["raw"].Items) > 0 and representation["raw"].Items[0].is_a("IfcSweptDiskSolid"):
+                return True
+        return False
 
     def is_native_faceted_brep(self, representations):
         for representation in representations:
