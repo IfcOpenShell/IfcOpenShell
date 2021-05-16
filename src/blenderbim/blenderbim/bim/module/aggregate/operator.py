@@ -45,7 +45,8 @@ class AssignObject(bpy.types.Operator):
                     self.remove_collection(collection, spatial_collection)
             else:
                 for collection in related_object.users_collection:
-                    collection.objects.unlink(related_object)
+                    if collection.name.startswith("Ifc"):
+                        collection.objects.unlink(related_object)
                 relating_collection.objects.link(related_object)
         return {"FINISHED"}
 
