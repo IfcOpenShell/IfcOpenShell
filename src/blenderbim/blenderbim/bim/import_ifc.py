@@ -443,7 +443,7 @@ class IfcImporter:
 
     def is_native_swept_disk_solid(self, representations):
         for representation in representations:
-            if len(representation["raw"].Items) > 0 and representation["raw"].Items[0].is_a("IfcSweptDiskSolid"):
+            if len(representation["raw"].Items) == 1 and representation["raw"].Items[0].is_a("IfcSweptDiskSolid"):
                 return True
         return False
 
