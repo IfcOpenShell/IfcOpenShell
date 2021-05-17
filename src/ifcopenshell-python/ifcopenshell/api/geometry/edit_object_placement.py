@@ -33,6 +33,12 @@ class Usecase:
         elif hasattr(self.settings["product"], "Decomposes") and self.settings["product"].Decomposes:
             relating_object = self.settings["product"].Decomposes[0].RelatingObject
             placement_rel_to = relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None
+        elif hasattr(self.settings["product"], "RelatingOpeningElement") and self.settings["product"].RelatingOpeningElement:
+            relating_object = self.settings["product"].RelatingOpeningElement
+            placement_rel_to = relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None
+        elif hasattr(self.settings["product"], "RelatingBuildingElement") and self.settings["product"].RelatingBuildingElement:
+            relating_object = self.settings["product"].RelatingBuildingElement
+            placement_rel_to = relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None
 
         placement = self.file.createIfcLocalPlacement(placement_rel_to, self.get_relative_placement(placement_rel_to))
         if self.settings["product"].ObjectPlacement:
