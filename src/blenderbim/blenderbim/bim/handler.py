@@ -1,7 +1,6 @@
 import bpy
 import json
 import addon_utils
-import blenderbim.bim.decoration as decoration
 import ifcopenshell.api.owner.settings
 from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
@@ -14,13 +13,16 @@ def mode_callback(obj, data):
         if (
             obj.mode != "EDIT"
             or not obj.data
-            or not isinstance(obj.data, bpy.types.Mesh)
-            or not obj.data.BIMMeshProperties.ifc_definition_id
+            or not isinstance(obj.data, (bpy.types.Mesh, bpy.types.Curve, bpy.types.TextCurve))
+            or not obj.BIMObjectProperties.ifc_definition_id
             or not bpy.context.scene.BIMProjectProperties.is_authoring
         ):
             return
-        representation = IfcStore.get_file().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-        if representation.RepresentationType == "Tessellation" or representation.RepresentationType == "Brep":
+        if obj.data.BIMMeshProperties.ifc_definition_id:
+            representation = IfcStore.get_file().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+            if representation.RepresentationType in ["Tessellation", "Brep", "Annotation2D"]:
+                IfcStore.edited_objs.add(obj.name)
+        elif IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id).is_a("IfcGridAxis"):
             IfcStore.edited_objs.add(obj.name)
 
 
@@ -34,6 +36,16 @@ def name_callback(obj, data):
     if element.is_a("IfcSpatialStructureElement") or (hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy):
         collection = obj.users_collection[0]
         collection.name = obj.name
+    if element.is_a("IfcGrid"):
+        axis_obj = IfcStore.id_map[element.UAxes[0].id()]
+        axis_collection = axis_obj.users_collection[0]
+        grid_collection = None
+        for collection in bpy.data.collections:
+            if axis_collection.name in collection.children.keys():
+                grid_collection = collection
+                break
+        if grid_collection:
+            grid_collection.name = obj.name
     if element.is_a("IfcTypeProduct"):
         TypeData.purge()
     element.Name = "/".join(obj.name.split("/")[1:])
@@ -239,12 +251,3 @@ def setDefaultProperties(scene):
         drawing_style.name = "Blender Default"
         drawing_style.render_type = "DEFAULT"
         bpy.ops.bim.save_drawing_style(index="2")
-
-
-@persistent
-def toggleDecorationsOnLoad(*args):
-    toggle = bpy.context.scene.DocProperties.should_draw_decorations
-    if toggle:
-        decoration.DecorationsHandler.install(bpy.context)
-    else:
-        decoration.DecorationsHandler.uninstall()

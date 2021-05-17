@@ -109,7 +109,7 @@ class BIM_PT_cost_schedules(Panel):
             value = quantity[[k for k in quantity.keys() if "Value" in k][0]]
             row = self.layout.row(align=True)
             row.label(text=quantity["Name"])
-            row.label(text=str(value))
+            row.label(text="{0:.2f}".format(value))
             if self.props.active_cost_item_quantity_id and self.props.active_cost_item_quantity_id == quantity_id:
                 op = row.operator("bim.edit_cost_item_quantity", text="", icon="CHECKMARK")
                 op.physical_quantity = quantity_id
@@ -157,7 +157,8 @@ class BIM_PT_cost_schedules(Panel):
             op.cost_category = self.props.cost_category
 
         for cost_value_id in Data.cost_items[self.props.active_cost_item_id]["CostValues"]:
-            self.draw_readonly_cost_value_ui(self.layout, cost_value_id)
+            row = self.layout.row(align=True)
+            self.draw_readonly_cost_value_ui(row, cost_value_id)
 
         if self.props.active_cost_item_value_id:
             box = self.layout.box()
@@ -166,41 +167,56 @@ class BIM_PT_cost_schedules(Panel):
 
     def draw_readonly_cost_value_ui(self, layout, cost_value_id):
         cost_value = Data.cost_values[cost_value_id]
-        row = layout.row(align=True)
-        row.label(text=str(cost_value["Category"]), icon="DISC")
-        row.label(text=str(cost_value["AppliedValue"]))
+        cost_value_label = "{0:.2f}".format(cost_value["AppliedValue"])
+        if cost_value["Category"]:
+            cost_value_label += " ({})".format(cost_value["Category"])
+        layout.label(text="", icon="DISC")
+        self.draw_cost_value_operator_ui(layout, cost_value_id)
+        layout.label(text=cost_value_label)
+
+        for component_id in cost_value["Components"] or []:
+            self.draw_readonly_component_cost_value_ui(layout, component_id)
+
+    def draw_readonly_component_cost_value_ui(self, layout, cost_value_id, level=1):
+        self.draw_cost_value_operator_ui(layout, cost_value_id)
+        cost_value = Data.cost_values[cost_value_id]
+        cost_value_label = ">" * level
+        cost_value_label += "{0:.2f}".format(cost_value["AppliedValue"])
+        if cost_value["Category"]:
+            cost_value_label += " ({})".format(cost_value["Category"])
+        layout.label(text=cost_value_label)
+
+        for component_id in cost_value["Components"] or []:
+            self.draw_readonly_component_cost_value_ui(layout, component_id, level + 1)
+
+    def draw_cost_value_operator_ui(self, layout, cost_value_id):
         if self.props.active_cost_item_value_id and self.props.active_cost_item_value_id == cost_value_id:
-            op = row.operator("bim.edit_cost_value", text="", icon="CHECKMARK")
+            op = layout.operator("bim.edit_cost_value", text="", icon="CHECKMARK")
             op.cost_value = cost_value_id
-            op = row.operator("bim.add_cost_value", text="", icon="ADD")
+            op = layout.operator("bim.add_cost_value", text="", icon="ADD")
             op.parent = cost_value_id
             op.cost_type = self.props.cost_types
             if self.props.cost_types == "CATEGORY":
                 op.cost_category = self.props.cost_category
-            row.operator("bim.disable_editing_cost_item_value", text="", icon="CANCEL")
+            layout.operator("bim.disable_editing_cost_item_value", text="", icon="CANCEL")
         elif self.props.active_cost_item_value_id:
-            op = row.operator("bim.add_cost_value", text="", icon="ADD")
+            op = layout.operator("bim.add_cost_value", text="", icon="ADD")
             op.parent = cost_value_id
             op.cost_type = self.props.cost_types
             if self.props.cost_types == "CATEGORY":
                 op.cost_category = self.props.cost_category
-            op = row.operator("bim.remove_cost_item_value", text="", icon="X")
+            op = layout.operator("bim.remove_cost_item_value", text="", icon="X")
             op.cost_value = cost_value_id
         else:
-            op = row.operator("bim.enable_editing_cost_item_value", text="", icon="GREASEPENCIL")
+            op = layout.operator("bim.enable_editing_cost_item_value", text="", icon="GREASEPENCIL")
             op.cost_value = cost_value_id
-            op = row.operator("bim.add_cost_value", text="", icon="ADD")
+            op = layout.operator("bim.add_cost_value", text="", icon="ADD")
             op.parent = cost_value_id
             op.cost_type = self.props.cost_types
             if self.props.cost_types == "CATEGORY":
                 op.cost_category = self.props.cost_category
-            op = row.operator("bim.remove_cost_item_value", text="", icon="X")
+            op = layout.operator("bim.remove_cost_item_value", text="", icon="X")
             op.cost_value = cost_value_id
-
-        if len(cost_value["Components"]):
-            box = layout.box()
-            for component_id in cost_value["Components"]:
-                self.draw_readonly_cost_value_ui(box, component_id)
 
     def draw_editable_cost_value_ui(self, layout, cost_value):
         for attribute in self.props.cost_value_attributes:
@@ -226,6 +242,7 @@ class BIM_UL_cost_items(UIList):
             props = context.scene.BIMCostProperties
             cost_item = Data.cost_items[item.ifc_definition_id]
             row = layout.row(align=True)
+
             for i in range(0, item.level_index):
                 row.label(text="", icon="BLANK1")
             if item.has_children:
@@ -239,17 +256,18 @@ class BIM_UL_cost_items(UIList):
                     ).cost_item = item.ifc_definition_id
             else:
                 row.label(text="", icon="DOT")
-            row.prop(item, "name", emboss=False, text="")
 
-            row.label(text="M3")
+            split1 = row.split(factor=0.7)
+            split1.prop(item, "name", emboss=False, text="")
+
             op = row.operator("bim.enable_editing_cost_item_quantities", text="", icon="PROPERTIES")
             op.cost_item = item.ifc_definition_id
-            row.label(text=str(cost_item["TotalCostQuantity"]))
+            row.label(text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + " (M3)")
 
             op = row.operator("bim.enable_editing_cost_item_values", text="", icon="DISC")
             op.cost_item = item.ifc_definition_id
-            row.label(text=str(cost_item["TotalAppliedValue"]))
-            row.label(text=str(cost_item["TotalCostValue"]), icon="CON_TRANSLIKE")
+            row.label(text="{0:.2f}".format(cost_item["TotalAppliedValue"]))
+            row.label(text="{0:.2f}".format(cost_item["TotalCostValue"]), icon="CON_TRANSLIKE")
 
             if context.active_object:
                 oprops = context.active_object.BIMObjectProperties

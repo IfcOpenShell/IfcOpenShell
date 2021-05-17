@@ -46,13 +46,8 @@ class Usecase:
     def evaluate_geometry(self):
         self.boolean_modifiers = []
         for modifier in self.settings["blender_object"].modifiers:
-            if not modifier.type == "BOOLEAN":
-                continue
-            modifier_data = {}
-            for name in ["operation", "operand_type", "object", "solver", "use_self"]:
-                modifier_data[name] = getattr(modifier, name)
-            self.boolean_modifiers.append(modifier_data)
-            self.settings["blender_object"].modifiers.remove(modifier)
+            if modifier.type == "BOOLEAN":
+                modifier.show_viewport = False
 
         if self.settings["should_force_triangulation"]:
             mesh = self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
@@ -68,10 +63,9 @@ class Usecase:
                 self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
             )
 
-        for modifier in self.boolean_modifiers:
-            new = self.settings["blender_object"].modifiers.new("IfcOpeningElement", "BOOLEAN")
-            for key, value in modifier.items():
-                setattr(new, key, value)
+        for modifier in self.settings["blender_object"].modifiers:
+            if modifier.type == "BOOLEAN":
+                modifier.show_viewport = True
 
     def create_model_representation(self):
         if self.settings["context"].is_a() == "IfcGeometricRepresentationContext":
@@ -124,6 +118,41 @@ class Usecase:
             pass
         elif self.settings["context"].ContextIdentifier == "SurveyPoints":
             pass
+
+    def create_text_representation(self):
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "Annotation2D",
+            [self.create_text()],
+        )
+
+    def create_text(self):
+        text = self.settings["geometry"]
+        if text.align_y in ["TOP_BASELINE", "BOTTOM_BASELINE", "BOTTOM"]:
+            y = "bottom"
+        elif text.align_y == "CENTER":
+            y = "middle"
+        elif text.align_y == "TOP":
+            y = "top"
+
+        if text.align_x == "LEFT":
+            x = "left"
+        elif text.align_x == "CENTER":
+            x = "middle"
+        elif text.align_x == "RIGHT":
+            x = "right"
+
+        origin = self.file.createIfcAxis2Placement3D(
+            self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
+            self.file.createIfcDirection((0.0, 0.0, 1.0)),
+            self.file.createIfcDirection((1.0, 0.0, 0.0)),
+        )
+
+        # TODO: Planar extent right now is wrong ...
+        return self.file.createIfcTextLiteralWithExtent(
+            text.body, origin, "RIGHT", self.file.createIfcPlanarExtent(1000, 1000), f"{y}-{x}"
+        )
 
     def create_variable_representation(self):
         if self.settings["is_wireframe"]:

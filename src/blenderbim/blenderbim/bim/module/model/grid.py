@@ -28,6 +28,7 @@ def add_object(self, context):
     self.file = IfcStore.get_file()
     if self.file:
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcGrid")
+        collection.name = obj.name
         grid = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         if has_site_collection:
             site_obj = bpy.data.objects.get(grandchild.name)
@@ -58,6 +59,7 @@ def add_object(self, context):
                 self.file,
                 **{"AxisTag": tag, "AxisCurve": obj, "UVWAxes": "UAxes", "Grid": grid},
             )
+            IfcStore.link_element(result, obj)
             ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"AxisCurve": obj, "grid_axis": result})
             obj.BIMObjectProperties.ifc_definition_id = result.id()
 
@@ -77,12 +79,13 @@ def add_object(self, context):
 
         axes_collection.objects.link(obj)
 
-        if IfcStore.get_file():
+        if self.file:
             result = ifcopenshell.api.run(
                 "grid.create_grid_axis",
                 self.file,
                 **{"AxisTag": tag, "AxisCurve": obj, "UVWAxes": "VAxes", "Grid": grid},
             )
+            IfcStore.link_element(result, obj)
             ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"AxisCurve": obj, "grid_axis": result})
             obj.BIMObjectProperties.ifc_definition_id = result.id()
 

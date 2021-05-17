@@ -21,3 +21,12 @@ class BIM_PT_qto_utilities(Panel):
         row.operator("bim.calculate_face_areas")
         row = layout.row(align=True)
         row.operator("bim.calculate_object_volumes")
+
+        row = layout.row(align=True)
+        row.prop(props, "qto_methods", text="")
+        row.operator("bim.execute_qto_method", icon="PROPERTIES", text="")
+
+        row = layout.row(align=True)
+        row.prop(props, "qto_name", text="")
+        row.prop(props, "prop_name", text="")
+        row.operator("bim.quantify_objects", icon="COPYDOWN", text="")

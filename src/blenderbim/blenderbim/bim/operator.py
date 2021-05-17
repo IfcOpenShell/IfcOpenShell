@@ -11,17 +11,18 @@ import ifcopenshell
 import ifcopenshell.util.selector
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.element
+import ifcopenshell.util.representation
 import ifcopenshell.util.schema
+# Deleting the below drawing import breaks svgwrite's ElementTree appending because ... magic?
+import blenderbim.bim.module.drawing
 import numpy as np
 from . import export_ifc
 from . import import_ifc
 from . import cut_ifc
-from . import svgwriter
 from . import sheeter
 from . import scheduler
 from . import schema
 from . import ifc
-from . import annotation
 from . import helper
 from bpy_extras.io_utils import ImportHelper
 from mathutils import Vector, Matrix, Euler, geometry
@@ -619,7 +620,7 @@ class CutSection(bpy.types.Operator):
         if not element.Representation:
             return False
         for representation in element.Representation.Representations:
-            if ifcopenshell.util.element.is_representation_of_context(
+            if ifcopenshell.util.representation.is_representation_of_context(
                 representation, "Plan", "Annotation", camera.data.BIMCameraProperties.target_view
             ):
                 return True
@@ -1102,33 +1103,6 @@ class SelectDocIfcFile(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
 
-class AddAnnotation(bpy.types.Operator):
-    bl_idname = "bim.add_annotation"
-    bl_label = "Add Annotation"
-    obj_name: bpy.props.StringProperty()
-    data_type: bpy.props.StringProperty()
-
-    def execute(self, context):
-        if not bpy.context.scene.camera:
-            return {"FINISHED"}
-        if self.data_type == "text":
-            if bpy.context.selected_objects:
-                for selected_object in bpy.context.selected_objects:
-                    obj = annotation.Annotator.add_text(related_element=selected_object)
-            else:
-                obj = annotation.Annotator.add_text()
-        else:
-            obj = annotation.Annotator.get_annotation_obj(self.obj_name, self.data_type)
-            if self.obj_name == "Break":
-                obj = annotation.Annotator.add_plane_to_annotation(obj)
-            else:
-                obj = annotation.Annotator.add_line_to_annotation(obj)
-        bpy.ops.object.select_all(action="DESELECT")
-        bpy.context.view_layer.objects.active = obj
-        bpy.ops.object.mode_set(mode="EDIT")
-        return {"FINISHED"}
-
-
 class GenerateReferences(bpy.types.Operator):
     bl_idname = "bim.generate_references"
     bl_label = "Generate References"
@@ -1581,7 +1555,7 @@ class RefreshDrawingList(bpy.types.Operator):
         for obj in bpy.context.scene.objects:
             if not isinstance(obj.data, bpy.types.Camera):
                 continue
-            if "IfcGroup/" in obj.name and obj.users_collection[0].name == obj.name:
+            if "IfcAnnotation/" in obj.name and obj.users_collection[0].name == obj.name:
                 new = bpy.context.scene.DocProperties.drawings.add()
                 new.name = obj.name.split("/")[1]
                 new.camera = obj
