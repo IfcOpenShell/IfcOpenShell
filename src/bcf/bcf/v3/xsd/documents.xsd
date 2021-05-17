@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:include schemaLocation="shared-types.xsd"/>
+
+    <xs:element name="DocumentInfo">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="Documents" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="Document" type="Document" minOccurs="0" maxOccurs="unbounded"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:complexType name="Document">
+        <xs:sequence>
+            <!-- Filename of the document with the file extension. Not used to store the file in the BCF -->
+            <xs:element name="Filename" type="NonEmptyOrBlankString"/>
+            <!-- Human readable description of the document -->
+            <xs:element name="Description" type="NonEmptyOrBlankString" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attributeGroup ref="DocumentAttributes"/>
+    </xs:complexType>
+    <xs:attributeGroup name="DocumentAttributes">
+        <!-- Guid of the document. Must match the filename in the BCF -->
+        <xs:attribute name="Guid" type="Guid" use="required"/>
+    </xs:attributeGroup>
+</xs:schema>
