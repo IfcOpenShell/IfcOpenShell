@@ -259,13 +259,6 @@ class BIMMaterialProperties(PropertyGroup):
     ifc_style_id: IntProperty(name="IFC Style ID")
 
 
-class SweptSolid(PropertyGroup):
-    name: StringProperty(name="Name")
-    outer_curve: StringProperty(name="Outer Curve")
-    inner_curves: StringProperty(name="Inner Curves")
-    extrusion: StringProperty(name="Extrusion")
-
-
 class ItemSlotMap(PropertyGroup):
     name: StringProperty(name="Item Element ID")
     slot_index: IntProperty(name="Material Slot Index")
@@ -275,7 +268,6 @@ class BIMMeshProperties(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_native: BoolProperty(name="Is Native", default=False)
     is_swept_solid: BoolProperty(name="Is Swept Solid")
-    swept_solids: CollectionProperty(name="Swept Solids", type=SweptSolid)
     is_parametric: BoolProperty(name="Is Parametric", default=False)
     ifc_definition: StringProperty(name="IFC Definition")
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
