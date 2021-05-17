@@ -24,7 +24,7 @@ class BIM_PT_groups(Panel):
         row.label(text="{} Groups Found".format(len(Data.groups)), icon="OUTLINER")
         if self.props.is_editing:
             row.operator("bim.add_group", text="", icon="ADD")
-            row.operator("bim.disable_group_editing_ui", text="", icon="CHECKMARK")
+            row.operator("bim.disable_group_editing_ui", text="", icon="CANCEL")
         else:
             row.operator("bim.load_groups", text="", icon="GREASEPENCIL")
 

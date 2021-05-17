@@ -1,5 +1,102 @@
 import bpy
 import math
+import mathutils.geometry
+from mathutils import Vector
+
+# Code taken and updated from https://blenderartists.org/t/detecting-intersection-of-bounding-boxes/457520/2
+
+
+class BoundingEdge:
+    def __init__(self, v0, v1):
+        self.vertex = (v0, v1)
+        self.vector = v1 - v0
+
+
+class BoundingFace:
+    def __init__(self, v0, v1, v2):
+        self.vertex = (v0, v1, v2)
+        self.normal = mathutils.geometry.normal(v0, v1, v2)
+
+
+class BoundingBox:
+    def __init__(self, ob, vertex=None):
+        self.vertex = vertex or [ob.matrix_world @ Vector(v) for v in ob.bound_box]
+        if self.vertex != None:
+            self.edge = [
+                BoundingEdge(self.vertex[0], self.vertex[1]),
+                BoundingEdge(self.vertex[1], self.vertex[2]),
+                BoundingEdge(self.vertex[2], self.vertex[3]),
+                BoundingEdge(self.vertex[3], self.vertex[0]),
+                BoundingEdge(self.vertex[4], self.vertex[5]),
+                BoundingEdge(self.vertex[5], self.vertex[6]),
+                BoundingEdge(self.vertex[6], self.vertex[7]),
+                BoundingEdge(self.vertex[7], self.vertex[4]),
+                BoundingEdge(self.vertex[0], self.vertex[4]),
+                BoundingEdge(self.vertex[1], self.vertex[5]),
+                BoundingEdge(self.vertex[2], self.vertex[6]),
+                BoundingEdge(self.vertex[3], self.vertex[7]),
+            ]
+            self.face = [
+                BoundingFace(self.vertex[0], self.vertex[1], self.vertex[3]),
+                BoundingFace(self.vertex[0], self.vertex[4], self.vertex[1]),
+                BoundingFace(self.vertex[0], self.vertex[3], self.vertex[4]),
+                BoundingFace(self.vertex[6], self.vertex[5], self.vertex[7]),
+                BoundingFace(self.vertex[6], self.vertex[7], self.vertex[2]),
+                BoundingFace(self.vertex[6], self.vertex[2], self.vertex[5]),
+            ]
+
+    def whichSide(self, vtxs, normal, faceVtx):
+        retVal = 0
+        positive = 0
+        negative = 0
+        for v in vtxs:
+            t = normal.dot(v - faceVtx)
+            if t > 0:
+                positive = positive + 1
+            elif t < 0:
+                negative = negative + 1
+
+            if positive != 0 and negative != 0:
+                return 0
+
+        if positive != 0:
+            retVal = 1
+        else:
+            retVal = -1
+        return retVal
+
+    # Taken from: http://www.geometrictools.com/Documentation/MethodOfSeparatingAxes.pdf
+    def intersect(self, bb):
+        retVal = False
+        if self.vertex != None and bb.vertex != None:
+            # check all the faces of this object for a seperation axis
+            for i, f in enumerate(self.face):
+                d = f.normal
+                if self.whichSide(bb.vertex, d, f.vertex[0]) > 0:
+                    return False  # all the vertexes are on the +ve side of the face
+
+            # now do it again for the other objects faces
+            for i, f in enumerate(bb.face):
+                d = f.normal
+                if self.whichSide(self.vertex, d, f.vertex[0]) > 0:
+                    return False  # all the vertexes are on the +ve side of the face
+
+            # do edge checks
+            for e1 in self.edge:
+                for e2 in bb.edge:
+                    d = e1.vector.cross(e2.vector)
+                    side0 = self.whichSide(self.vertex, d, e1.vertex[0])
+                    if side0 == 0:
+                        continue
+                    side1 = self.whichSide(bb.vertex, d, e1.vertex[0])
+                    if side1 == 0:
+                        continue
+
+                    if (side0 * side1) < 0:
+                        return False
+
+            retVal = True
+        return retVal
 
 
 # This function stolen from https://github.com/kevancress/MeasureIt_ARCH/blob/dcf607ce0896aa2284463c6b4ae9cd023fc54cbe/measureit_arch_baseclass.py
@@ -151,3 +248,12 @@ def get_active_drawing(scene):
         return scene.collection.children["Views"].children[f"IfcGroup/{drawing.name}"], drawing.camera
     except (KeyError, IndexError):
         raise RuntimeError("missing drawing collection")
+
+
+def get_project_collection(scene):
+    """Get main project collection"""
+
+    colls = [c for c in scene.collection.children if c.name.startswith("IfcProject")]
+    if len(colls) != 1:
+        raise RuntimeError("project collection missing or not unique")
+    return colls[0]

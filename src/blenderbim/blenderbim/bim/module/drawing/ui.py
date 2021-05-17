@@ -106,8 +106,7 @@ class BIM_PT_camera(Panel):
                 row.operator("bim.activate_drawing_style")
 
         row = layout.row(align=True)
-        row.operator("bim.cut_section", text="Create Drawing")
-        row.operator("bim.create_drawing", text="Create Drawing 2.0")
+        row.operator("bim.create_drawing", text="Create Drawing")
         op = row.operator("bim.open_view", icon="URL", text="")
         op.view = context.active_object.name.split("/")[1]
 

@@ -1,6 +1,8 @@
 import os
+import re
 import bpy
 import json
+import time
 import bmesh
 import subprocess
 import webbrowser
@@ -8,9 +10,10 @@ import ifcopenshell.util.selector
 import ifcopenshell.util.representation
 import blenderbim.bim.module.drawing.svgwriter as svgwriter
 import blenderbim.bim.module.drawing.annotation as annotation
-import blenderbim.bim.module.drawing.cut_ifc as cut_ifc # TODO: deprecate
+import blenderbim.bim.module.drawing.cut_ifc as cut_ifc  # TODO: deprecate
 import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
+import blenderbim.bim.module.drawing.helper as helper
 from mathutils import Vector, Matrix, Euler, geometry
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.group.data import Data as GroupData
@@ -33,6 +36,7 @@ class AddDrawing(bpy.types.Operator):
     bl_label = "Add Drawing"
 
     def execute(self, context):
+        self.file = IfcStore.get_file()
         new = context.scene.DocProperties.drawings.add()
         new.name = "DRAWING {}".format(len(context.scene.DocProperties.drawings))
         if not bpy.data.collections.get("Views"):
@@ -58,7 +62,9 @@ class AddDrawing(bpy.types.Operator):
         bpy.ops.bim.activate_drawing_style()
 
         bpy.ops.bim.add_group()
-        bpy.ops.bim.assign_group(product=camera.name, group=sorted(GroupData.groups.keys())[-1])
+        group = self.file.by_id(sorted(GroupData.groups.keys())[-1])
+        ifcopenshell.api.run("group.edit_group", self.file, **{"group": group, "attributes": {"Name": new.name}})
+        bpy.ops.bim.assign_group(product=camera.name, group=group.id())
         bpy.ops.bim.add_pset(obj=camera.name, obj_type="Object", pset_name="EPset_Drawing")
         pset_id = sorted(PsetData.products[camera.BIMObjectProperties.ifc_definition_id]["psets"])[-1]
         bpy.ops.bim.edit_pset(
@@ -81,21 +87,44 @@ class CreateDrawing(bpy.types.Operator):
             or not self.camera.BIMObjectProperties.ifc_definition_id
         ):
             return
+        self.file = IfcStore.get_file()
+        self.time = None
+        start = time.time()
+        self.profile_code("Start drawing generation process")
         self.props = context.scene.DocProperties
         self.drawing_name = IfcStore.get_file().by_id(self.camera.BIMObjectProperties.ifc_definition_id).Name
         base_svg = self.ifc_to_svg(context)
+        self.profile_code("Generate base layer")
         annotation_svg = self.annotation_to_svg(context)
+        self.profile_code("Generate annotation layer")
         svg_path = self.combine_svgs(context, base_svg, annotation_svg)
+        self.profile_code("Combine SVG layers")
         open_with_user_command(bpy.context.preferences.addons["blenderbim"].preferences.svg_command, svg_path)
+        print("Total Time: {:.2f}".format(time.time() - start))
         return {"FINISHED"}
+
+    def profile_code(self, message):
+        if not self.time:
+            self.time = time.time()
+        print("{} :: {:.2f}".format(message, time.time() - self.time))
+        self.time = time.time()
 
     def combine_svgs(self, context, base, annotation):
         # Hacky :)
         svg_path = os.path.join(context.scene.BIMProperties.data_dir, "diagrams", self.drawing_name + ".svg")
         with open(svg_path, "w") as outfile:
             with open(base) as infile:
+                should_skip = False
                 for line in infile:
                     if "</svg>" in line:
+                        continue
+                    elif "<defs>" in line:
+                        should_skip = True
+                        continue
+                    elif "</style>" in line:
+                        should_skip = False
+                        continue
+                    elif should_skip:
                         continue
                     outfile.write(line)
             with open(annotation) as infile:
@@ -127,6 +156,8 @@ class CreateDrawing(bpy.types.Operator):
                 "entities",
                 "IfcSpace",
                 "IfcOpeningElement",
+                "IfcDoor",
+                "IfcWindow",
             ]
         )
         return svg_path
@@ -205,12 +236,82 @@ class CreateDrawing(bpy.types.Operator):
                 svg_writer.annotations.setdefault("misc_objs", []).append(obj)
 
         svg_writer.annotations["attributes"] = [a.name for a in drawing_style.attributes]
+        svg_writer.annotations["annotation_objs"] = self.get_annotation(svg_writer)
 
         svg_writer.write()
         return svg_writer.output
 
     def is_landscape(self):
         return bpy.context.scene.render.resolution_x > bpy.context.scene.render.resolution_y
+
+    def get_annotation(self, svg_writer):
+        results = []
+        x = svg_writer.camera_width / 2
+        y = svg_writer.camera_height / 2
+        z = 0.01
+        camera_box = helper.BoundingBox(
+            self.camera,
+            [
+                self.camera.matrix_world @ Vector((-x, -y, -z)),
+                self.camera.matrix_world @ Vector((-x, -y, 0)),
+                self.camera.matrix_world @ Vector((-x, y, 0)),
+                self.camera.matrix_world @ Vector((-x, y, -z)),
+                self.camera.matrix_world @ Vector((x, -y, -z)),
+                self.camera.matrix_world @ Vector((x, -y, 0)),
+                self.camera.matrix_world @ Vector((x, y, 0)),
+                self.camera.matrix_world @ Vector((x, y, -z)),
+            ],
+        )
+        # This should probably be also part of IfcConvert in the future, here is a Python prototype
+        settings_2d = ifcopenshell.geom.settings()
+        settings_2d.set(settings_2d.INCLUDE_CURVES, True)
+        for obj in bpy.data.objects:
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            if obj == self.camera:
+                continue
+            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            representation = ifcopenshell.util.representation.get_representation(
+                element, "Plan", "Annotation", self.camera.data.BIMCameraProperties.target_view
+            )
+            if not representation:
+                continue
+            if not camera_box.intersect(helper.BoundingBox(obj)):
+                continue
+            shape = ifcopenshell.geom.create_shape(settings_2d, representation)
+            geometry = shape
+            e = geometry.edges
+            v = geometry.verts
+            results.append(
+                {
+                    "raw": element,
+                    "classes": self.get_classes(element, "annotation", svg_writer),
+                    "edges": [[e[i], e[i + 1]] for i in range(0, len(e), 2)],
+                    "vertices": [obj.matrix_world @ Vector((v[i], v[i + 1], v[i + 2])) for i in range(0, len(v), 3)],
+                }
+            )
+        return results
+
+    def get_classes(self, element, position, svg_writer):
+        classes = [position, element.is_a()]
+        material = ifcopenshell.util.element.get_material(element)
+        if material:
+            classes.append("material-{}".format(re.sub("[^0-9a-zA-Z]+", "", self.get_material_name(material))))
+        classes.append("globalid-{}".format(element.GlobalId))
+        for attribute in svg_writer.annotations["attributes"]:
+            result = self.selector.get_element_value(element, attribute)
+            if result:
+                classes.append(
+                    "{}-{}".format(re.sub("[^0-9a-zA-Z]+", "", attribute), re.sub("[^0-9a-zA-Z]+", "", result))
+                )
+        return classes
+
+    def get_material_name(self, element):
+        if hasattr(element, "Name") and element.Name:
+            return element.Name
+        elif hasattr(element, "LayerSetName") and element.LayerSetName:
+            return element.LayerSetName
+        return "mat-" + str(element.id())
 
 
 class AddAnnotation(bpy.types.Operator):
