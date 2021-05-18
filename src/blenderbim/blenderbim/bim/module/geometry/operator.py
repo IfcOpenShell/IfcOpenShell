@@ -186,14 +186,13 @@ class SwitchRepresentation(bpy.types.Operator):
         return representation
 
     def pull_mesh_from_ifc(self):
-        self.file = IfcStore.get_file()
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = import_ifc.IfcImportSettings.factory(bpy.context, IfcStore.path, logger)
         element = self.file.by_id(self.oprops.ifc_definition_id)
         settings = ifcopenshell.geom.settings()
 
         if self.context_of_items.ContextIdentifier == "Body":
-            if self.disable_opening_subtractions:
+            if element.is_a("IfcTypeProduct") or self.disable_opening_subtractions:
                 shape = ifcopenshell.geom.create_shape(settings, self.file.by_id(self.ifc_definition_id))
             else:
                 shape = ifcopenshell.geom.create_shape(settings, self.file.by_id(self.oprops.ifc_definition_id))
