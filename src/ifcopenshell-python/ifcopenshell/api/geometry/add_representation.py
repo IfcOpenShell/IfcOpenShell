@@ -252,7 +252,7 @@ class Usecase:
     def create_curves_from_mesh_ifc2x3(self, is_2d=False):
         curves = []
         points = [
-            self.create_cartesian_point(v.co.x, v.co.y, v.co.z if is_2d else None)
+            self.create_cartesian_point(v.co.x, v.co.y, v.co.z if not is_2d else None)
             for v in self.settings["geometry"].vertices
         ]
         coord_list = [p.Coordinates for p in points]
