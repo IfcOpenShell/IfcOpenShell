@@ -71,11 +71,11 @@ class Usecase:
             ifcopenshell.api.run("geometry.remove_representation", self.file, **{"representation": representation})
         for representation_map in self.settings["relating_type"].RepresentationMaps:
             representation = representation_map.MappedRepresentation
-            result = ifcopenshell.api.run(
+            mapped_representation = ifcopenshell.api.run(
                 "geometry.map_representation", self.file, **{"representation": representation}
             )
             ifcopenshell.api.run(
                 "geometry.assign_representation",
                 self.file,
-                **{"product": self.settings["related_object"], "representation": result}
+                **{"product": self.settings["related_object"], "representation": mapped_representation}
             )
