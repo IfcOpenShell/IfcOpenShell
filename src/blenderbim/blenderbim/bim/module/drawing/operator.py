@@ -270,6 +270,8 @@ class CreateDrawing(bpy.types.Operator):
             if obj == self.camera:
                 continue
             element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            if element.is_a("IfcTypeProduct"):
+                continue
             representation = ifcopenshell.util.representation.get_representation(
                 element, "Plan", "Annotation", self.camera.data.BIMCameraProperties.target_view
             )

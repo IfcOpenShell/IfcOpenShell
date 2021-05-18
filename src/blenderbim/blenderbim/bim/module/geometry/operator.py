@@ -154,13 +154,14 @@ class AddRepresentation(bpy.types.Operator):
         obj.data = mesh
         Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
 
-        if self.file.schema == "IFC2X3":
-            types = product.ObjectTypeOf
-        else:
-            types = product.Types
-        if product.is_a("IfcTypeProduct") and types:
-            for element in types[0].RelatedObjects:
-                Data.load(IfcStore.get_file(), element.id())
+        if product.is_a("IfcTypeProduct"):
+            if self.file.schema == "IFC2X3":
+                types = product.ObjectTypeOf
+            else:
+                types = product.Types
+            if types:
+                for element in types[0].RelatedObjects:
+                    Data.load(IfcStore.get_file(), element.id())
         return {"FINISHED"}
 
 
