@@ -4,8 +4,6 @@ from . import ui, prop, operator
 classes = (
     operator.EditObjectPlacement,
     operator.AddRepresentation,
-    operator.MapRepresentations,
-    operator.MapRepresentation,
     operator.SwitchRepresentation,
     operator.RemoveRepresentation,
     operator.UpdateMeshRepresentation,

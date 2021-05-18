@@ -156,22 +156,34 @@ class AddRepresentation(bpy.types.Operator):
 class SwitchRepresentation(bpy.types.Operator):
     bl_idname = "bim.switch_representation"
     bl_label = "Switch Representation"
+    obj: bpy.props.StringProperty()
     ifc_definition_id: bpy.props.IntProperty()
+    should_reload: bpy.props.BoolProperty()
     disable_opening_subtractions: bpy.props.BoolProperty()
 
     def execute(self, context):
-        self.obj = bpy.context.active_object
-        self.oprops = self.obj.BIMObjectProperties
+        self.element_obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        self.oprops = self.element_obj.BIMObjectProperties
 
         self.file = IfcStore.get_file()
         self.context_of_items = self.file.by_id(self.ifc_definition_id).ContextOfItems
-        self.mesh_name = "{}/{}".format(self.context_of_items.id(), self.ifc_definition_id)
+        self.mesh_name = self.get_mesh_name()
 
         mesh = bpy.data.meshes.get(self.mesh_name)
         if mesh:
-            self.obj.data.user_remap(mesh)
-        self.pull_mesh_from_ifc()
+            self.element_obj.data.user_remap(mesh)
+        if not mesh or self.should_reload:
+            self.pull_mesh_from_ifc()
         return {"FINISHED"}
+
+    def get_mesh_name(self):
+        representation = self.resolve_mapped_representation(self.file.by_id(self.ifc_definition_id))
+        return "{}/{}".format(self.context_of_items.id(), representation.id())
+
+    def resolve_mapped_representation(self, representation):
+        if representation.RepresentationType == "MappedRepresentation":
+            return self.resolve_mapped_representation(representation.Items[0].MappingSource.MappedRepresentation)
+        return representation
 
     def pull_mesh_from_ifc(self):
         self.file = IfcStore.get_file()
@@ -194,9 +206,9 @@ class SwitchRepresentation(bpy.types.Operator):
         mesh = ifc_importer.create_mesh(element, shape)
         mesh.name = self.mesh_name
         mesh.BIMMeshProperties.ifc_definition_id = self.ifc_definition_id
-        self.obj.data.user_remap(mesh)
+        self.element_obj.data.user_remap(mesh)
         material_creator = import_ifc.MaterialCreator(ifc_import_settings, ifc_importer)
-        material_creator.create(element, self.obj, mesh)
+        material_creator.create(element, self.element_obj, mesh)
 
         if self.disable_opening_subtractions and self.context_of_items.ContextIdentifier == "Body":
             if self.oprops.ifc_definition_id not in VoidData.products:
@@ -204,13 +216,13 @@ class SwitchRepresentation(bpy.types.Operator):
             for opening_id in VoidData.products[self.oprops.ifc_definition_id]:
                 if opening_id in IfcStore.id_map:
                     opening = IfcStore.id_map[opening_id]
-                    modifier = self.obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
+                    modifier = self.element_obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
                     modifier.operation = "DIFFERENCE"
                     modifier.object = opening
         else:
-            for modifier in self.obj.modifiers:
+            for modifier in self.element_obj.modifiers:
                 if modifier.type == "BOOLEAN" and "IfcOpeningElement" in modifier.name:
-                    self.obj.modifiers.remove(modifier)
+                    self.element_obj.modifiers.remove(modifier)
 
 
 class RemoveRepresentation(bpy.types.Operator):
@@ -246,61 +258,6 @@ class RemoveRepresentation(bpy.types.Operator):
         )
         ifcopenshell.api.run("geometry.remove_representation", self.file, **{"representation": representation})
         Data.load(IfcStore.get_file(), product.id())
-        return {"FINISHED"}
-
-
-class MapRepresentations(bpy.types.Operator):
-    bl_idname = "bim.map_representations"
-    bl_label = "Map Representations"
-    product_id: bpy.props.IntProperty()
-    type_product_id: bpy.props.IntProperty()
-
-    def execute(self, context):
-        related_object = IfcStore.id_map[self.product_id]
-
-        if self.product_id not in Data.products:
-            Data.load(IfcStore.get_file(), self.product_id)
-
-        for representation_id in Data.products[self.product_id]:
-            bpy.ops.bim.remove_representation(obj=related_object.name, representation_id=representation_id)
-
-        if self.type_product_id not in Data.products:
-            Data.load(IfcStore.get_file(), self.type_product_id)
-
-        for representation_id in Data.products[self.type_product_id]:
-            bpy.ops.bim.map_representation(
-                obj=related_object.name,
-                representation_id=representation_id,
-                obj_data=IfcStore.id_map[self.type_product_id].data.name,
-            )
-        return {"FINISHED"}
-
-
-class MapRepresentation(bpy.types.Operator):
-    bl_idname = "bim.map_representation"
-    bl_label = "Map Representation"
-    obj: bpy.props.StringProperty()
-    representation_id: bpy.props.IntProperty()
-    obj_data: bpy.props.StringProperty()
-
-    def execute(self, context):
-        objs = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
-        obj_data = bpy.data.meshes.get(self.obj_data) if self.obj_data else None
-
-        self.file = IfcStore.get_file()
-
-        for obj in objs:
-            bpy.ops.bim.edit_object_placement(obj=obj.name)
-            product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            if obj_data:
-                obj.data = obj_data
-            result = ifcopenshell.api.run(
-                "geometry.map_representation", self.file, **{"representation": self.file.by_id(self.representation_id)}
-            )
-            ifcopenshell.api.run(
-                "geometry.assign_representation", self.file, **{"product": product, "representation": result}
-            )
-            Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
 
 
@@ -407,7 +364,7 @@ class UpdateParametricRepresentation(bpy.types.Operator):
         props = obj.data.BIMMeshProperties
         parameter = props.ifc_parameters[self.index]
         element = IfcStore.get_file().by_id(parameter.step_id)[parameter.index] = parameter.value
-        bpy.ops.bim.switch_representation(ifc_definition_id=props.ifc_definition_id)
+        bpy.ops.bim.switch_representation(ifc_definition_id=props.ifc_definition_id, should_reload=True)
         return {"FINISHED"}
 
 
