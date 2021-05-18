@@ -5,7 +5,6 @@ classes = (
     operator.AddDrawing,
     operator.CreateDrawing,
     operator.AddAnnotation,
-    operator.CutSection,  # TODO: To deprecate
     operator.AddSheet,
     operator.OpenSheet,
     operator.AddDrawingToSheet,
