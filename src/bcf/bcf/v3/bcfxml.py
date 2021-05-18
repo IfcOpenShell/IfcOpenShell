@@ -46,16 +46,16 @@ class BcfXml:
     def get_project(self, filepath=None):
         if os.path.isfile(os.path.join(self.filepath, "project.bcfp")):
             data = self._read_xml("project.bcfp", "project.xsd")
-            if "Project" in data:
-                self.project.project_id = data["Project"]["@ProjectId"]
-                self.project.name = data["Project"].get("Name")
+            self.project.project_id = data["Project"]["@ProjectId"]
+            self.project.name = data["Project"].get("Name")
         return self.project
 
     def edit_project(self):
         self.document = minidom.Document()
         root = self._create_element(self.document, "ProjectInfo")
         project = self._create_element(root, "Project", {"ProjectId": self.project.project_id})
-        self._create_element(project, "Name", text=self.project.name)
+        if self.project.name:
+            self._create_element(project, "Name", text=self.project.name)
         with open(os.path.join(self.filepath, "project.bcfp"), "wb") as f:
             f.write(self.document.toprettyxml(encoding="utf-8"))
 
