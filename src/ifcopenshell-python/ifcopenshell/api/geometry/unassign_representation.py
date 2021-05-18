@@ -53,4 +53,4 @@ class Usecase:
         for item in mapped_representations:
             self.unassign_product_representation(item["product"], item["representation"])
         for representation in just_representations:
-            ifcopenshell.api.run("owner.remove_representation", self.file, **{"representation": representation})
+            ifcopenshell.api.run("geometry.remove_representation", self.file, **{"representation": representation})
