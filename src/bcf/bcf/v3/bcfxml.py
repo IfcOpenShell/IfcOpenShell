@@ -44,11 +44,6 @@ class BcfXml:
         self.edit_version()
 
     def get_project(self, filepath=None):
-        if not filepath:
-            return self.project
-        zip_file = zipfile.ZipFile(filepath)
-        self.filepath = tempfile.mkdtemp()
-        zip_file.extractall(self.filepath)
         if os.path.isfile(os.path.join(self.filepath, "project.bcfp")):
             data = self._read_xml("project.bcfp", "project.xsd")
             if "Project" in data:
@@ -80,7 +75,6 @@ class BcfXml:
     def edit_version(self):
         self.document = minidom.Document()
         root = self._create_element(self.document, "Version", {"VersionId": self.version})
-        # version = self._create_element(root, "DetailedVersion", text=self.version)
         with open(os.path.join(self.filepath, "bcf.version"), "wb") as f:
             f.write(self.document.toprettyxml(encoding="utf-8"))
 
