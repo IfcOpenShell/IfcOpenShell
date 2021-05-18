@@ -78,22 +78,22 @@ class BIM_PT_mesh(Panel):
         op.disable_opening_subtractions = True
 
         row = layout.row()
-        row.operator("bim.update_mesh_representation")
+        row.operator("bim.update_representation")
 
         row = layout.row()
-        op = row.operator("bim.update_mesh_representation", text="Update Mesh As Rectangle Extrusion")
+        op = row.operator("bim.update_representation", text="Update Mesh As Rectangle Extrusion")
         op.ifc_representation_class = "IfcExtrudedAreaSolid/IfcRectangleProfileDef"
 
         row = layout.row()
-        op = row.operator("bim.update_mesh_representation", text="Update Mesh As Circle Extrusion")
+        op = row.operator("bim.update_representation", text="Update Mesh As Circle Extrusion")
         op.ifc_representation_class = "IfcExtrudedAreaSolid/IfcCircleProfileDef"
 
         row = layout.row()
-        op = row.operator("bim.update_mesh_representation", text="Update Mesh As Arbitrary Extrusion")
+        op = row.operator("bim.update_representation", text="Update Mesh As Arbitrary Extrusion")
         op.ifc_representation_class = "IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef"
 
         row = layout.row()
-        op = row.operator("bim.update_mesh_representation", text="Update Mesh As Arbitrary Extrusion With Voids")
+        op = row.operator("bim.update_representation", text="Update Mesh As Arbitrary Extrusion With Voids")
         op.ifc_representation_class = "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
 
         row = layout.row()

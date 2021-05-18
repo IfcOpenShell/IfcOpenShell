@@ -271,9 +271,9 @@ class RemoveRepresentation(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class UpdateMeshRepresentation(bpy.types.Operator):
-    bl_idname = "bim.update_mesh_representation"
-    bl_label = "Update Mesh Representation"
+class UpdateRepresentation(bpy.types.Operator):
+    bl_idname = "bim.update_representation"
+    bl_label = "Update Representation"
     obj: bpy.props.StringProperty()
     ifc_representation_class: bpy.props.StringProperty()
 

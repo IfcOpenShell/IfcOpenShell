@@ -6,7 +6,7 @@ classes = (
     operator.AddRepresentation,
     operator.SwitchRepresentation,
     operator.RemoveRepresentation,
-    operator.UpdateMeshRepresentation,
+    operator.UpdateRepresentation,
     operator.UpdateParametricRepresentation,
     operator.GetRepresentationIfcParameters,
     prop.BIMGeometryProperties,

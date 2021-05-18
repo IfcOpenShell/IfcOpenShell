@@ -98,7 +98,7 @@ class IfcExporter:
             obj = bpy.data.objects.get(obj_name)
             if not obj:
                 continue
-            bpy.ops.bim.update_mesh_representation(obj=obj.name)
+            bpy.ops.bim.update_representation(obj=obj.name)
         IfcStore.edited_objs.clear()
 
     def sync_object_placement(self, obj):
