@@ -4,6 +4,7 @@ import ifcopenshell.util.type
 import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.type.data import Data
+from ifcopenshell.api.geometry.data import Data as GeometryData
 from blenderbim.bim.module.type.prop import getIfcTypes, getAvailableTypes, updateTypeInstanceIfcClass
 from mathutils import Vector
 
@@ -31,8 +32,18 @@ class AssignType(bpy.types.Operator):
                 },
             )
             Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
-            if self.file.by_id(relating_type).RepresentationMaps:
-                bpy.ops.bim.map_representations(product_id=oprops.ifc_definition_id, type_product_id=relating_type)
+            GeometryData.load(IfcStore.get_file(), oprops.ifc_definition_id)
+            representation_ids = GeometryData.products[oprops.ifc_definition_id]
+            if not representation_ids:
+                pass # TODO: clear geometry? Make void? Make none type?
+            has_switched = False
+            for representation_id in representation_ids:
+                representation = GeometryData.representations[representation_id]
+                if representation["ContextOfItems"]["ContextIdentifier"] == "Body":
+                    bpy.ops.bim.switch_representation(obj=related_object.name, ifc_definition_id=representation_id)
+                    has_switched = True
+            if not has_switched and representation_ids:
+                bpy.ops.bim.switch_representation(obj=related_object.name, ifc_definition_id=representation_id)
 
         bpy.ops.bim.disable_editing_type(obj=related_object.name)
         return {"FINISHED"}
