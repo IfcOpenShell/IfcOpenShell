@@ -343,7 +343,7 @@ class AddAnnotation(bpy.types.Operator):
         if not obj.BIMObjectProperties.ifc_definition_id:
             bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcAnnotation", context_id=subcontext.id())
         else:
-            bpy.ops.bim.update_mesh_representation(obj=obj.name)
+            bpy.ops.bim.update_representation(obj=obj.name)
 
         bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = obj
