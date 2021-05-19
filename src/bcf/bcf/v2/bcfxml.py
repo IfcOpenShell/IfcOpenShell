@@ -164,25 +164,23 @@ class BcfXml:
                     setattr(bim_snippet, key, data["Topic"]["BimSnippet"][value])
             topic.bim_snippet = bim_snippet
 
-        if "DocumentReference" in data["Topic"]:
-            for item in data["Topic"]["DocumentReference"]:
-                document_reference = bcf.v2.data.DocumentReference()
-                keys = {
-                    "referenced_document": "ReferencedDocument",
-                    "is_external": "@IsExternal",
-                    "guid": "@Guid",
-                    "description": "Description",
-                }
-                for key, value in keys.items():
-                    if value in item:
-                        setattr(document_reference, key, item[value])
-                topic.document_references.append(document_reference)
+        for item in data["Topic"]["DocumentReference"]:
+            document_reference = bcf.v2.data.DocumentReference()
+            keys = {
+                "referenced_document": "ReferencedDocument",
+                "is_external": "@IsExternal",
+                "guid": "@Guid",
+                "description": "Description",
+            }
+            for key, value in keys.items():
+                if value in item:
+                    setattr(document_reference, key, item[value])
+            topic.document_references.append(document_reference)
 
-        if "RelatedTopic" in data["Topic"]:
-            for item in data["Topic"]["RelatedTopic"]:
-                related_topic = bcf.v2.data.RelatedTopic()
-                related_topic.guid = item["@Guid"]
-                topic.related_topics.append(related_topic)
+        for item in data["Topic"]["RelatedTopic"]:
+            related_topic = bcf.v2.data.RelatedTopic()
+            related_topic.guid = item["@Guid"]
+            topic.related_topics.append(related_topic)
         return topic
 
     def add_topic(self, topic=None):
