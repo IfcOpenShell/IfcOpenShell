@@ -1,7 +1,10 @@
 import bpy
-from . import grid, wall, stair, door, window, slab, opening, pie
+from . import operator, ui, grid, wall, stair, door, window, slab, opening, pie
 
 classes = (
+    operator.AddTypeInstance,
+    ui.BIM_PT_authoring,
+    ui.BIM_PT_misc_utilities,
     grid.BIM_OT_add_object,
     wall.BIM_OT_add_object,
     stair.BIM_OT_add_object,

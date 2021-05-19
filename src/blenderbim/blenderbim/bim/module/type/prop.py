@@ -88,6 +88,11 @@ def updateTypeDropdowns(self, context):
 
 
 class BIMTypeProperties(PropertyGroup):
+    ifc_class: bpy.props.EnumProperty(items=getIfcTypes, name="IFC Class", update=updateTypeInstanceIfcClass)
+    relating_type: bpy.props.EnumProperty(items=getAvailableTypes, name="Relating Type")
+
+
+class BIMTypeObjectProperties(PropertyGroup):
     is_editing_type: BoolProperty(name="Is Editing Type", update=updateTypeDropdowns)
     relating_type_class: EnumProperty(items=getApplicableTypes, name="Relating Type Class")
     relating_type: EnumProperty(items=getRelatingTypes, name="Relating Type")
