@@ -10,6 +10,10 @@ class BIM_PT_search(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
     def draw(self, context):
         props = context.scene.BIMSearchProperties
 
