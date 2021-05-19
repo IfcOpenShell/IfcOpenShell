@@ -10,6 +10,7 @@ if bpy is not None:
 
     modules = {
         "project": None,
+        "parametric": None,
         "search": None,
         "bcf": None,
         "root": None,
