@@ -14,14 +14,6 @@ from ifcopenshell.api.void.data import Data as VoidData
 from mathutils import Vector
 
 
-def get_context_id(context_type, context_identifier, target_view):
-    for context in ContextData.contexts.values():
-        if context["ContextType"] == context_type:
-            for i, subcontext in context["HasSubContexts"].items():
-                if subcontext["ContextIdentifier"] == context_identifier and subcontext["TargetView"] == target_view:
-                    return i
-
-
 class EditObjectPlacement(bpy.types.Operator):
     bl_idname = "bim.edit_object_placement"
     bl_label = "Edit Object Placement"
@@ -106,23 +98,6 @@ class AddRepresentation(bpy.types.Operator):
         if not result:
             print("Failed to write shape representation")
             return {"FINISHED"}
-
-        # TODO: Migrate to parametric engine system
-        box_context_id = get_context_id("Model", "Box", "MODEL_VIEW")
-        old_box = ifcopenshell.util.representation.get_representation(product, "Model", "Box", "MODEL_VIEW")
-        if (
-            box_context_id
-            and context_of_items.ContextType == "Model"
-            and context_of_items.ContextIdentifier
-            and context_of_items.ContextIdentifier == "Body"
-        ):
-            if old_box:
-                bpy.ops.bim.remove_representation(representation_id=old_box.id(), obj=obj.name)
-            representation_data["context"] = self.file.by_id(box_context_id)
-            new_box = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
-            ifcopenshell.api.run(
-                "geometry.assign_representation", self.file, **{"product": product, "representation": new_box}
-            )
 
         [
             bpy.ops.bim.add_style(material=s.material.name)
@@ -325,20 +300,6 @@ class UpdateRepresentation(bpy.types.Operator):
         }
 
         new_representation = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
-
-        box_context_id = get_context_id("Model", "Box", "MODEL_VIEW")
-        old_box = ifcopenshell.util.representation.get_representation(product, "Model", "Box", "MODEL_VIEW")
-        if (
-            box_context_id
-            and old_box
-            and context_of_items.ContextType == "Model"
-            and context_of_items.ContextIdentifier
-            and context_of_items.ContextIdentifier == "Body"
-        ):
-            representation_data["context"] = self.file.by_id(box_context_id)
-            new_box = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
-            for inverse in self.file.get_inverse(old_box):
-                ifcopenshell.util.element.replace_attribute(inverse, old_box, new_box)
 
         ifcopenshell.api.run(
             "geometry.assign_styles",
