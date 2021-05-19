@@ -109,7 +109,7 @@ class BIM_PT_object_material(Panel):
         if self.props.is_editing:
             op = row.operator("bim.edit_assigned_material", icon="CHECKMARK", text="")
             op.material_set = self.material_set_id
-            row.operator("bim.disable_editing_assigned_material", icon="X", text="")
+            row.operator("bim.disable_editing_assigned_material", icon="CANCEL", text="")
         else:
             row.operator("bim.enable_editing_assigned_material", icon="GREASEPENCIL", text="")
             row.operator("bim.unassign_material", icon="X", text="")
@@ -168,7 +168,7 @@ class BIM_PT_object_material(Panel):
         row.prop(self.props, "material_set_item_material", icon="MATERIAL")
         op = row.operator("bim.edit_material_set_item", icon="CHECKMARK", text="")
         op.material_set_item = set_item_id
-        row.operator("bim.disable_editing_material_set_item", icon="X", text="")
+        row.operator("bim.disable_editing_material_set_item", icon="CANCEL", text="")
 
         for attribute in self.props.material_set_item_attributes:
             row = box.row(align=True)
@@ -197,7 +197,7 @@ class BIM_PT_object_material(Panel):
         else:
             # TODO: support non parametric profiles by showing a list of named profiles to select from, or an
             # eyedropper to pick profile geometry from the scene
-            row.operator("bim.disable_editing_material_set_item", icon="X", text="")
+            row.operator("bim.disable_editing_material_set_item", icon="CANCEL", text="")
 
     def draw_editable_profile_ui(self, layout, item):
         for attribute in self.props.material_set_item_profile_attributes:
