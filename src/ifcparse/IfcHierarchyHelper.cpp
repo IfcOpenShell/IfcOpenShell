@@ -159,7 +159,7 @@ typename Schema::IfcSite* IfcHierarchyHelper<Schema>::addSite(typename Schema::I
 		boost::none, boost::none, boost::none, boost::none, 0);
 
 	addEntity(site);
-	addRelatedObject<typename Schema::IfcRelAggregates>(proj, site);
+	addRelatedObject<typename Schema::IfcRelAggregates>(proj, site, owner_hist);
 	return site;
 }
 
@@ -182,7 +182,7 @@ typename Schema::IfcBuilding* IfcHierarchyHelper<Schema>::addBuilding(typename S
 		boost::none, boost::none, 0);
 
 	addEntity(building);
-	addRelatedObject<typename Schema::IfcRelAggregates>(site, building);
+	addRelatedObject<typename Schema::IfcRelAggregates>(site, building, owner_hist);
 	relatePlacements(site, building);
 
 	return building;
@@ -209,7 +209,7 @@ typename Schema::IfcBuildingStorey* IfcHierarchyHelper<Schema>::addBuildingStore
 		Schema::IfcElementCompositionEnum::IfcElementComposition_ELEMENT, boost::none);
 
 	addEntity(storey);
-	addRelatedObject<typename Schema::IfcRelAggregates>(building, storey);
+	addRelatedObject<typename Schema::IfcRelAggregates>(building, storey, owner_hist);
 	relatePlacements(building, storey);
 
 	return storey;
@@ -237,7 +237,7 @@ typename Schema::IfcBuildingStorey* IfcHierarchyHelper<Schema>::addBuildingProdu
 	const bool is_decomposition = product->Decomposes()->size() > 0;
 
 	if (!is_decomposition) {
-		addRelatedObject<typename Schema::IfcRelContainedInSpatialStructure>(storey, product);
+		addRelatedObject<typename Schema::IfcRelContainedInSpatialStructure>(storey, product, owner_hist);
 		relatePlacements(storey, product);
 	}
 	return storey;
