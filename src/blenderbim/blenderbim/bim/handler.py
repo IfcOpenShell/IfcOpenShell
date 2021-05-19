@@ -9,7 +9,7 @@ from ifcopenshell.api.type.data import Data as TypeData
 
 
 def mode_callback(obj, data):
-    for obj in bpy.context.selected_objects:
+    for obj in bpy.context.selected_objects + [bpy.context.active_object]:
         if (
             obj.mode != "EDIT"
             or not obj.data
