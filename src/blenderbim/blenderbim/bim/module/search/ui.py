@@ -1,5 +1,6 @@
 import bpy
 from bpy.types import Panel
+from blenderbim.bim.ifc import IfcStore
 
 
 class BIM_PT_search(Panel):
