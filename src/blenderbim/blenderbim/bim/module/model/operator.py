@@ -63,7 +63,13 @@ class JoinWall(bpy.types.Operator):
 
     def execute(self, context):
         selected_objs = context.selected_objects
-        if len(selected_objs) != 2:
+        if len(selected_objs) == 0:
+            return {"FINISHED"}
+        if not self.join_type:
+            for obj in selected_objs:
+                DumbWallJoiner(obj, obj).unjoin()
+            return {"FINISHED"}
+        if len(selected_objs) < 2:
             return {"FINISHED"}
         joiner = DumbWallJoiner([o for o in selected_objs if o != context.active_object][0], context.active_object)
         if self.join_type == "T":
@@ -98,6 +104,19 @@ class DumbWallJoiner:
         self.wall2_matrix = self.wall2.matrix_world
         self.pos_x = self.wall1_matrix.to_quaternion() @ Vector((1, 0, 0))
         self.neg_x = self.wall1_matrix.to_quaternion() @ Vector((-1, 0, 0))
+
+    # Unjoining a wall geometrically means to flatten the ends of the wall to
+    # remove any mitred angle from it.
+    def unjoin(self):
+        wall1_min_faces, wall1_max_faces = self.get_wall_end_faces(self.wall1)
+        min_x = min([v[0] for v in self.wall1.bound_box])
+        max_x = max([v[0] for v in self.wall1.bound_box])
+        for face in wall1_min_faces:
+            for v in face.vertices:
+                self.wall1.data.vertices[v].co[0] = min_x
+        for face in wall1_max_faces:
+            for v in face.vertices:
+                self.wall1.data.vertices[v].co[0] = max_x
 
     # A T-junction is an ordered operation where a single end of wall1 is joined
     # to wall2 if possible (i.e. walls aren't parallel). Wall2 is not modified.
