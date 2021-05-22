@@ -17,6 +17,22 @@ class BIM_PT_authoring(Panel):
         col.operator("bim.add_type_instance", icon="ADD")
 
 
+class BIM_PT_authoring_architectural(Panel):
+    bl_label = "Architectural"
+    bl_idname = "BIM_PT_authoring_architectural"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "BlenderBIM"
+    bl_parent_id = "BIM_PT_authoring"
+
+    def draw(self, context):
+        row = self.layout.row()
+        row.operator("bim.join_wall").join_type = "T"
+        row.operator("bim.join_wall").join_type = "L"
+        row.operator("bim.join_wall").join_type = "V"
+
+
 class BIM_PT_misc_utilities(Panel):
     bl_idname = "BIM_PT_misc_utilities"
     bl_label = "Miscellaneous"

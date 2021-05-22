@@ -3,7 +3,9 @@ from . import operator, ui, grid, wall, stair, door, window, slab, opening, pie
 
 classes = (
     operator.AddTypeInstance,
+    operator.JoinWall,
     ui.BIM_PT_authoring,
+    ui.BIM_PT_authoring_architectural,
     ui.BIM_PT_misc_utilities,
     grid.BIM_OT_add_object,
     wall.BIM_OT_add_object,
