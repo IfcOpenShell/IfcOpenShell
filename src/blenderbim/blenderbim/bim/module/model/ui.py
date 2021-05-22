@@ -31,6 +31,8 @@ class BIM_PT_authoring_architectural(Panel):
         row.operator("bim.join_wall").join_type = "T"
         row.operator("bim.join_wall").join_type = "L"
         row.operator("bim.join_wall").join_type = "V"
+        row.operator("bim.join_wall").join_type = "V"
+        row.operator("bim.join_wall").join_type = ""
 
 
 class BIM_PT_misc_utilities(Panel):
