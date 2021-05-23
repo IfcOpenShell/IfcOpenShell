@@ -71,13 +71,16 @@ class JoinWall(bpy.types.Operator):
             return {"FINISHED"}
         if len(selected_objs) < 2:
             return {"FINISHED"}
-        joiner = DumbWallJoiner([o for o in selected_objs if o != context.active_object][0], context.active_object)
-        if self.join_type == "T":
-            joiner.join_T()
-        elif self.join_type == "L":
-            joiner.join_L()
-        elif self.join_type == "V":
-            joiner.join_V()
+        for obj in selected_objs:
+            if obj == context.active_object:
+                continue
+            joiner = DumbWallJoiner(obj, context.active_object)
+            if self.join_type == "T":
+                joiner.join_T()
+            elif self.join_type == "L":
+                joiner.join_L()
+            elif self.join_type == "V":
+                joiner.join_V()
         return {"FINISHED"}
 
 
@@ -131,9 +134,9 @@ class DumbWallJoiner:
         ef2_distance, ef2_target_frontface, ef2_target_backface = self.get_projection_target(wall1_max_faces, 2)
 
         # Large distances probably means rounding issues which lead to very long projections
-        if ef1_distance and ef1_distance > 100:
+        if ef1_distance and ef1_distance > 50:
             ef1_distance = None
-        if ef2_distance and ef2_distance > 100:
+        if ef2_distance and ef2_distance > 50:
             ef2_distance = None
 
         # Project only the end faces that are closer to their target
@@ -178,7 +181,7 @@ class DumbWallJoiner:
             for v in face.vertices:
                 global_co = self.wall1_matrix @ self.wall1.data.vertices[v].co
                 if self.wall2.closest_point_on_mesh(self.wall2_matrix.inverted() @ global_co, distance=0.001)[0]:
-                    continue # Vertex is already coincident with other wall, do not mitre
+                    continue  # Vertex is already coincident with other wall, do not mitre
                 target_face_center = self.wall2_matrix @ wall1_target_backface.center
                 target_face_normal = (self.wall2_matrix.to_quaternion() @ wall1_target_backface.normal).normalized()
                 self.project_vertex(v, target_face_center, target_face_normal, self.wall1, self.wall1_matrix)
@@ -189,7 +192,7 @@ class DumbWallJoiner:
             for v in face.vertices:
                 global_co = self.wall1_matrix @ self.wall1.data.vertices[v].co
                 if self.wall2.closest_point_on_mesh(self.wall2_matrix.inverted() @ global_co, distance=0.001)[0]:
-                    continue # Vertex is already coincident with other wall, do not mitre
+                    continue  # Vertex is already coincident with other wall, do not mitre
                 target_face_center = self.wall2_matrix @ wall2_target_backface.center
                 target_face_normal = (self.wall2_matrix.to_quaternion() @ wall2_target_backface.normal).normalized()
                 self.project_vertex(v, target_face_center, target_face_normal, self.wall1, self.wall1_matrix)
