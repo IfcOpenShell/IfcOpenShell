@@ -27,12 +27,11 @@ class BIM_PT_authoring_architectural(Panel):
     bl_parent_id = "BIM_PT_authoring"
 
     def draw(self, context):
-        row = self.layout.row()
-        row.operator("bim.join_wall").join_type = "T"
-        row.operator("bim.join_wall").join_type = "L"
-        row.operator("bim.join_wall").join_type = "V"
-        row.operator("bim.join_wall").join_type = "V"
-        row.operator("bim.join_wall").join_type = ""
+        row = self.layout.row(align=True)
+        row.operator("bim.join_wall", icon="MOD_SKIN", text="T").join_type = "T"
+        row.operator("bim.join_wall", icon="MOD_SKIN", text="L").join_type = "L"
+        row.operator("bim.join_wall", icon="MOD_SKIN", text="V").join_type = "V"
+        row.operator("bim.join_wall", icon="X", text="").join_type = ""
 
 
 class BIM_PT_misc_utilities(Panel):
