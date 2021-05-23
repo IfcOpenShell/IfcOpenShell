@@ -59,10 +59,26 @@ class Usecase:
             del bm
             self.settings["geometry"] = mesh
         else:
+            
+            if len(self.settings["blender_object"].data.polygons) > 1:
+                self.settings["blender_object"].modifiers.new("BIM-Triangulate", 'TRIANGULATE')
+                dec = self.settings["blender_object"].modifiers.new("BIM-Decimate", 'DECIMATE')
+                dec.decimate_type = 'DISSOLVE'
+                dec.delimit = {'MATERIAL'}
+                dec.angle_limit = 0.00174533
+            
             self.settings["geometry"] = (
                 self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
             )
+            
+            dec = self.settings["blender_object"].modifiers.get("BIM-Decimate")
+            if dec:
+                self.settings["blender_object"].modifiers.remove(dec)
 
+            tri = self.settings["blender_object"].modifiers.get("BIM-Triangulate")
+            if tri:
+                self.settings["blender_object"].modifiers.remove(tri)
+            
         for modifier in self.settings["blender_object"].modifiers:
             if modifier.type == "BOOLEAN":
                 modifier.show_viewport = True
