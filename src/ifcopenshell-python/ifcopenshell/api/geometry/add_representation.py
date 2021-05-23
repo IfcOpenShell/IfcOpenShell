@@ -44,45 +44,36 @@ class Usecase:
         return self.create_variable_representation()
 
     def evaluate_geometry(self):
-        self.boolean_modifiers = []
+        
         for modifier in self.settings["blender_object"].modifiers:
             if modifier.type == "BOOLEAN":
                 modifier.show_viewport = False
+        
+        mesh = self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        bmesh.ops.triangulate(bm, faces=bm.faces)
 
-        if self.settings["should_force_triangulation"]:
-            mesh = self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
-            bm = bmesh.new()
-            bm.from_mesh(mesh)
-            bmesh.ops.triangulate(bm, faces=bm.faces)
-            bm.to_mesh(mesh)
-            bm.free()
-            del bm
-            self.settings["geometry"] = mesh
-        else:
-            
-            if len(self.settings["blender_object"].data.polygons) > 1:
-                self.settings["blender_object"].modifiers.new("BIM-Triangulate", 'TRIANGULATE')
-                dec = self.settings["blender_object"].modifiers.new("BIM-Decimate", 'DECIMATE')
-                dec.decimate_type = 'DISSOLVE'
-                dec.delimit = {'MATERIAL'}
-                dec.angle_limit = 0.00174533
-            
-            self.settings["geometry"] = (
-                self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+        if not self.settings["should_force_triangulation"]:
+            bmesh.ops.dissolve_limit(
+                bm,
+                angle_limit=0.00174533,
+                use_dissolve_boundaries=False,
+                verts=bm.verts[:],
+                edges=bm.edges[:],
+                delimit={'MATERIAL'}
             )
-            
-            dec = self.settings["blender_object"].modifiers.get("BIM-Decimate")
-            if dec:
-                self.settings["blender_object"].modifiers.remove(dec)
+        bm.to_mesh(mesh)
+        bm.free()
+        del bm
 
-            tri = self.settings["blender_object"].modifiers.get("BIM-Triangulate")
-            if tri:
-                self.settings["blender_object"].modifiers.remove(tri)
-            
+        self.settings["geometry"] = mesh
+        
         for modifier in self.settings["blender_object"].modifiers:
             if modifier.type == "BOOLEAN":
                 modifier.show_viewport = True
 
+                
     def create_model_representation(self):
         if self.settings["context"].is_a() == "IfcGeometricRepresentationContext":
             return self.create_variable_representation()
