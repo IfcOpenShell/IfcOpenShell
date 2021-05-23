@@ -337,7 +337,8 @@ class DumbWallGenerator:
 
     def has_sketch(self):
         return (
-            len(bpy.context.scene.grease_pencil.layers) == 1
+            bpy.context.scene.grease_pencil
+            and len(bpy.context.scene.grease_pencil.layers) == 1
             and bpy.context.scene.grease_pencil.layers[0].active_frame.strokes
         )
 
@@ -414,11 +415,20 @@ class DumbWallGenerator:
                     continue
                 if "IfcWall" not in sibling_obj.name:
                     continue
-                raycast = sibling_obj.closest_point_on_mesh(bpy.context.scene.cursor.location, distance=0.05)
-                if raycast[0]:
-                    # Rotate the wall in the direction of the face normal
-                    self.rotation = math.atan2(raycast[2][1], raycast[2][0])
-                    break
+                local_location = sibling_obj.matrix_world.inverted() @ self.location
+                raycast = sibling_obj.closest_point_on_mesh(local_location, distance=0.01)
+                if not raycast[0]:
+                    continue
+                for face in sibling_obj.data.polygons:
+                    if (
+                        abs(face.normal.y) >= 0.75
+                        and abs(mathutils.geometry.distance_point_to_plane(local_location, face.center, face.normal))
+                        < 0.01
+                    ):
+                        # Rotate the wall in the direction of the face normal
+                        normal = (sibling_obj.matrix_world.to_quaternion() @ face.normal).normalized()
+                        self.rotation = math.atan2(normal[1], normal[0])
+                        break
         return self.create_wall()
 
     def create_wall(self):
