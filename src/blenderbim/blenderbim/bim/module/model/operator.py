@@ -343,28 +343,68 @@ class DumbWallGenerator:
 
     def derive_from_sketch(self):
         objs = []
+        strokes = []
         layer = bpy.context.scene.grease_pencil.layers[0]
+
         for stroke in layer.active_frame.strokes:
             if len(stroke.points) == 1:
                 continue
-            direction = stroke.points[-1].co - stroke.points[0].co
-            self.length = direction.length
-            if self.length < 0.1:
+            coords = (stroke.points[0].co, stroke.points[-1].co)
+            direction = coords[1] - coords[0]
+            length = direction.length
+            if length < 0.1:
                 continue
+            data = {"coords": coords}
+
             # Round to nearest 50mm (yes, metric for now)
-            self.length = 0.05 * round(self.length / 0.05)
-            # self.length = round(self.length, 2)
+            self.length = 0.05 * round(length / 0.05)
             self.rotation = math.atan2(direction[1], direction[0])
-            # Round to nearest 15 degrees
-            nearest_degree = (math.pi / 4) / 3
+            # Round to nearest 5 degrees
+            nearest_degree = (math.pi / 180) * 5
             self.rotation = nearest_degree * round(self.rotation / nearest_degree)
-            self.location = stroke.points[0].co
-            obj = self.create_wall()
-            objs.append(obj)
-            if len(objs) > 1:
-                DumbWallJoiner(obj, objs[-2]).join_T()
+            self.location = coords[0]
+            data["obj"] = self.create_wall()
+            strokes.append(data)
+            objs.append(data["obj"])
+
+        if len(objs) < 2:
+            return objs
+
+        l_joins = set()
+        for stroke in strokes:
+            if not stroke["obj"]:
+                continue
+            for stroke2 in strokes:
+                if stroke2 == stroke or not stroke2["obj"]:
+                    continue
+                if self.has_nearby_ends(stroke, stroke2):
+                    wall_join = "-JOIN-".join(sorted([stroke["obj"].name, stroke2["obj"].name]))
+                    if wall_join not in l_joins:
+                        l_joins.add(wall_join)
+                        DumbWallJoiner(stroke["obj"], stroke2["obj"]).join_L()
+                elif self.has_end_near_stroke(stroke, stroke2):
+                    DumbWallJoiner(stroke["obj"], stroke2["obj"]).join_T()
         bpy.context.scene.grease_pencil.layers.remove(layer)
         return objs
+
+    def has_end_near_stroke(self, stroke, stroke2):
+        point, distance = mathutils.geometry.intersect_point_line(stroke["coords"][0], *stroke2["coords"])
+        if distance > 0 and distance < 1 and self.is_near(point, stroke["coords"][0]):
+            return True
+        point, distance = mathutils.geometry.intersect_point_line(stroke["coords"][1], *stroke2["coords"])
+        if distance > 0 and distance < 1 and self.is_near(point, stroke["coords"][1]):
+            return True
+
+    def has_nearby_ends(self, stroke, stroke2):
+        return (
+            self.is_near(stroke["coords"][0], stroke2["coords"][0])
+            or self.is_near(stroke["coords"][0], stroke2["coords"][1])
+            or self.is_near(stroke["coords"][1], stroke2["coords"][0])
+            or self.is_near(stroke["coords"][1], stroke2["coords"][1])
+        )
+
+    def is_near(self, point1, point2):
+        return (point1 - point2).length < 0.1
 
     def derive_from_cursor(self):
         self.location = bpy.context.scene.cursor.location
