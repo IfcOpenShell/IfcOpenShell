@@ -1058,43 +1058,78 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 
 	// Iterate over the shapes of the IfcProduct
 	for ( IfcGeom::IfcRepresentationShapeItems::const_iterator it3 = entity_shapes.begin(); it3 != entity_shapes.end(); ++ it3 ) {
-		TopoDS_Shape entity_shape_solid;
-		const TopoDS_Shape& entity_shape_unlocated = ensure_fit_for_subtraction(it3->Shape(),entity_shape_solid);
-		const gp_GTrsf& entity_shape_gtrsf = it3->Placement();
-		if (entity_shape_gtrsf.Form() == gp_Other) {
-			Logger::Message(Logger::LOG_WARNING, "Applying non uniform transformation to:", entity);
-		}
-		TopoDS_Shape entity_shape = apply_transformation(entity_shape_unlocated, entity_shape_gtrsf);
-
-		TopoDS_Shape result = entity_shape;
 		
-		auto it = opening_vector.begin();
-		auto jt = it;
+		bool is_manifold = Kernel::is_manifold(it3->Shape());
 
-		for (;; ++it) {
-			if (it == opening_vector.end() || jt->first / it->first > 10.) {
-
-				TopTools_ListOfShape opening_list;
-				for (auto kt = jt; kt < it; ++kt) {
-					opening_list.Append(kt->second);
-				}
-
-				TopoDS_Shape intermediate_result;
-				if (boolean_operation(result, opening_list, BOPAlgo_CUT, intermediate_result)) {
-					result = intermediate_result;
-				} else {
-					Logger::Message(Logger::LOG_ERROR, "Opening subtraction failed for " + boost::lexical_cast<std::string>(std::distance(jt, it)) + " openings", entity);
-				}
-
-				jt = it;
-			}
-
-			if (it == opening_vector.end()) {
-				break;
-			}
+		if (!is_manifold) {
+			Logger::Warning("Non-manifold first operand");
 		}
 
-		cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(it3->ItemId(), result, &it3->Style()));
+		for (int as_shell = 0; as_shell < 2; ++as_shell) {
+
+			TopoDS_Shape entity_shape_solid;
+			TopoDS_Shape entity_shape_unlocated;
+			if (as_shell) {
+				entity_shape_unlocated = it3->Shape();
+			} else {
+				entity_shape_unlocated = ensure_fit_for_subtraction(it3->Shape(), entity_shape_solid);
+			}
+			const gp_GTrsf& entity_shape_gtrsf = it3->Placement();
+			if (entity_shape_gtrsf.Form() == gp_Other) {
+				Logger::Message(Logger::LOG_WARNING, "Applying non uniform transformation to:", entity);
+			}
+			TopoDS_Shape entity_shape = apply_transformation(entity_shape_unlocated, entity_shape_gtrsf);
+
+			TopoDS_Shape result = entity_shape;
+
+			auto it = opening_vector.begin();
+			auto jt = it;
+
+			for (;; ++it) {
+				if (it == opening_vector.end() || jt->first / it->first > 10.) {
+
+					TopTools_ListOfShape opening_list;
+					for (auto kt = jt; kt < it; ++kt) {
+						opening_list.Append(kt->second);
+					}
+
+					TopoDS_Shape intermediate_result;
+					if (boolean_operation(result, opening_list, BOPAlgo_CUT, intermediate_result)) {
+						result = intermediate_result;
+					}
+					else {
+						Logger::Message(Logger::LOG_ERROR, "Opening subtraction failed for " + boost::lexical_cast<std::string>(std::distance(jt, it)) + " openings", entity);
+					}
+
+					jt = it;
+				}
+
+				if (it == opening_vector.end()) {
+					break;
+				}
+			}
+
+			int result_n_faces = count(result, TopAbs_FACE);
+
+			if (!is_manifold && as_shell == 0 && result_n_faces == 0) {
+				// If we have a non-manifold first operand and our first attempt
+				// on a Solid-Solid subtraction yielded a empty result (no faces)
+				// or a strange result, a larger number of faces with the original input
+				// included. Then retry (another iteration on the for-loop on as-shell)
+				// where we keep the first operand as is (a compound of faces probably,
+				// unless --orient-shells was activated in which case we're already lost).
+				if (!is_manifold) {
+					Logger::Warning("Retrying boolean operation on individual faces");
+				}
+				continue;
+			}
+
+			cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(it3->ItemId(), result, &it3->Style()));
+
+			// For manifold first operands we're not even going to try if processing
+			// as loose faces gives a better result.
+			break;
+		}
 	}
 	return true;
 }
@@ -4344,30 +4379,54 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 			}
 
 			if (success) {
-				
-				// when there are edges or vertex-edge distances close to the used fuzziness, the  
-				// output is not trusted and the operation is attempted with a higher fuzziness.
-				int reason = 0;
-				double v;
-				if ((v = min_edge_length(r)) < fuzziness * 3.) {
-					reason = 0;
+
+				TopTools_IndexedMapOfShape faces;
+				TopExp::MapShapes(r, TopAbs_FACE, faces);
+				bool all_faces_included_in_result = true;
+				for (TopExp_Explorer exp(a, TopAbs_FACE); exp.More(); exp.Next()) {
+					auto& f = TopoDS::Face(exp.Current());
+					if (!faces.Contains(f)) {
+						all_faces_included_in_result = false;
+						break;
+					}
+				}
+
+				int result_n_faces = count(r, TopAbs_FACE);
+				int first_op_n_faces = count(a, TopAbs_FACE);
+
+				if (all_faces_included_in_result && result_n_faces > first_op_n_faces) {
 					success = false;
-				} else if ((v = min_vertex_edge_distance(r, getValue(GV_PRECISION), fuzziness * 3.)) < fuzziness * 3.) {
-					reason = 1;
-					success = false;
-				} else if ((v = min_face_face_distance(r, 1.e-4)) < 1.e-4) {
-					reason = 2;
-					success = false;
+					Logger::Notice("Boolean result discarded because subtractions results in only the addition of faces");
+				} else {
+					// when there are edges or vertex-edge distances close to the used fuzziness, the  
+					// output is not trusted and the operation is attempted with a higher fuzziness.
+					int reason = 0;
+					double v;
+					if ((v = min_edge_length(r)) < fuzziness * 3.) {
+						reason = 0;
+						success = false;
+					}
+					else if ((v = min_vertex_edge_distance(r, getValue(GV_PRECISION), fuzziness * 3.)) < fuzziness * 3.) {
+						reason = 1;
+						success = false;
+					}
+					else if ((v = min_face_face_distance(r, 1.e-4)) < 1.e-4) {
+						reason = 2;
+						success = false;
+					}
+
+					if (!success) {
+						static const char* const reason_strings[] = { "edge length", "vertex-edge", "face-face" };
+						std::stringstream str;
+						str << "Boolean operation result failing " << reason_strings[reason] << " interference check, with fuzziness " << fuzziness << " with length " << v;
+						Logger::Notice(str.str());
+					}
 				}
 				
 				if (success) {
 					result = r;
-				} else {
-					static const char* const reason_strings[] = { "edge length", "vertex-edge", "face-face" };
-					std::stringstream str;
-					str << "Boolean operation result failing " << reason_strings[reason] << " interference check, with fuzziness " << fuzziness << " with length " << v;
-					Logger::Notice(str.str());
 				}
+
 			} else {
 				Logger::Notice("Boolean operation yields non-manifold result");
 			}
