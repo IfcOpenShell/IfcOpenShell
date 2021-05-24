@@ -166,7 +166,7 @@ class Usecase:
         if self.settings["is_wireframe"]:
             return self.create_wireframe_representation()
         elif self.settings["is_curve"]:
-            return self.create_curve_representation()
+            return self.create_curve3d_representation()
         elif self.settings["is_point_cloud"]:
             return self.create_point_cloud_representation()
         elif isinstance(self.settings["geometry"], bpy.types.Camera):
@@ -223,6 +223,14 @@ class Usecase:
             self.settings["context"].ContextIdentifier,
             "Curve3D",
             self.create_curves(),
+        )
+    
+    def create_curve2d_representation(self):
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "Curve2D",
+            self.create_curves(is_2d=True),
         )
 
     def create_curves(self, is_2d=False):
