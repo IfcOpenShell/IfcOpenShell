@@ -44,11 +44,11 @@ class Usecase:
         return self.create_variable_representation()
 
     def evaluate_geometry(self):
-        
+
         for modifier in self.settings["blender_object"].modifiers:
             if modifier.type == "BOOLEAN":
                 modifier.show_viewport = False
-        
+
         mesh = self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
         bm = bmesh.new()
         bm.from_mesh(mesh)
@@ -57,23 +57,22 @@ class Usecase:
         if not self.settings["should_force_triangulation"]:
             bmesh.ops.dissolve_limit(
                 bm,
-                angle_limit=0.00174533,
+                angle_limit=0.00174533,  # 1 degree
                 use_dissolve_boundaries=False,
                 verts=bm.verts[:],
                 edges=bm.edges[:],
-                delimit={'MATERIAL'}
+                delimit={"MATERIAL"},
             )
         bm.to_mesh(mesh)
         bm.free()
         del bm
 
         self.settings["geometry"] = mesh
-        
+
         for modifier in self.settings["blender_object"].modifiers:
             if modifier.type == "BOOLEAN":
                 modifier.show_viewport = True
 
-                
     def create_model_representation(self):
         if self.settings["context"].is_a() == "IfcGeometricRepresentationContext":
             return self.create_variable_representation()
@@ -200,7 +199,7 @@ class Usecase:
                 "XLength": self.convert_si_to_unit(width),
                 "YLength": self.convert_si_to_unit(height),
                 "ZLength": self.convert_si_to_unit(self.settings["geometry"].clip_end),
-            }
+            },
         )
 
         return self.file.createIfcShapeRepresentation(
