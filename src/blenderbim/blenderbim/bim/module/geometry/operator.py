@@ -262,7 +262,7 @@ class UpdateRepresentation(bpy.types.Operator):
 
         for obj in objs:
             self.update_obj_mesh_representation(context, obj)
-            IfcStore.edited_objs.discard(obj.name)
+            IfcStore.edited_objs.discard(obj)
         return {"FINISHED"}
 
     def update_obj_mesh_representation(self, context, obj):
