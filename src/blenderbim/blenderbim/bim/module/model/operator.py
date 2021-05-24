@@ -402,6 +402,7 @@ class DumbWallGenerator:
         self.relating_type = relating_type
 
     def generate(self):
+        self.file = IfcStore.get_file()
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
         thicknesses = []
         for rel in self.relating_type.HasAssociations:
@@ -550,4 +551,7 @@ class DumbWallGenerator:
         self.collection.objects.link(obj)
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcWall")
         bpy.ops.bim.assign_type(relating_type=self.relating_type.id(), related_object=obj.name)
+        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, Name="EPset_Parametric")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, Properties={"Engine": "BlenderBIM.DumbWall"})
         return obj
