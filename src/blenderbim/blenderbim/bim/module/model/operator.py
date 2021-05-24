@@ -86,6 +86,81 @@ class JoinWall(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AlignWall(bpy.types.Operator):
+    bl_idname = "bim.align_wall"
+    bl_label = "Align Wall"
+    bl_options = {"REGISTER", "UNDO"}
+    align_type: bpy.props.StringProperty()
+
+    def execute(self, context):
+        selected_objs = context.selected_objects
+        if len(selected_objs) < 2 or not context.active_object:
+            return {"FINISHED"}
+        for obj in selected_objs:
+            if obj == context.active_object:
+                continue
+            aligner = DumbWallAligner(obj, context.active_object)
+            if self.align_type == "CENTERLINE":
+                aligner.align_centerline()
+            elif self.align_type == "EXTERIOR":
+                aligner.align_exterior()
+            elif self.align_type == "INTERIOR":
+                aligner.align_interior()
+        return {"FINISHED"}
+
+
+def recalculate_dumb_wall_origin(wall):
+    new_origin = wall.matrix_world @ ((Vector(wall.bound_box[3]) + Vector(wall.bound_box[0])) / 2)
+    if (wall.matrix_world.translation - new_origin).length > 0.001:
+        wall.data.transform(
+            Matrix.Translation(
+                (wall.matrix_world.inverted().to_quaternion() @ (wall.matrix_world.translation - new_origin))
+            )
+        )
+        wall.matrix_world.translation = new_origin
+
+
+class DumbWallAligner:
+    # An alignment shifts the origin of all walls to the closest point on the
+    # local X axis of the reference wall. In addition, the Z rotation is copied.
+    # Z translations are ignored for alignment.
+    def __init__(self, wall, reference_wall):
+        self.wall = wall
+        self.reference_wall = reference_wall
+
+    def align_centerline(self):
+        self.align(self.reference_wall.matrix_world.translation, self.reference_wall.matrix_world @ Vector((1, 0, 0)))
+
+    def align_exterior(self):
+        width = (Vector(self.wall.bound_box[3]) - Vector(self.wall.bound_box[0])).y
+        offset = self.wall.matrix_world.to_quaternion() @ Vector((0, -width / 2, 0))
+        self.align(
+            self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[3]),
+            self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[7]),
+            offset,
+        )
+
+    def align_interior(self):
+        width = (Vector(self.wall.bound_box[3]) - Vector(self.wall.bound_box[0])).y
+        offset = self.wall.matrix_world.to_quaternion() @ Vector((0, width / 2, 0))
+        self.align(
+            self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[0]),
+            self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[4]),
+            offset,
+        )
+
+    def align(self, start, end, offset=None):
+        if offset is None:
+            offset = Vector()
+        recalculate_dumb_wall_origin(self.wall)
+        recalculate_dumb_wall_origin(self.reference_wall)
+        point, distance = mathutils.geometry.intersect_point_line(self.wall.matrix_world.translation, start, end)
+        new_origin = point + offset
+        self.wall.matrix_world.translation[0] = new_origin[0]
+        self.wall.matrix_world.translation[1] = new_origin[1]
+        self.wall.rotation_euler[2] = self.reference_wall.rotation_euler[2]
+
+
 class DumbWallJoiner:
     # A dumb wall is a prismatic wall along its local X axis.
     # Given two dumb walls, there are three types of wall joints.
@@ -208,18 +283,8 @@ class DumbWallJoiner:
 
     def recalculate_origins(self):
         bpy.context.view_layer.update()
-        self.recalculate_origin(self.wall1)
-        self.recalculate_origin(self.wall2)
-
-    def recalculate_origin(self, wall):
-        new_origin = wall.matrix_world @ ((Vector(wall.bound_box[3]) + Vector(wall.bound_box[0])) / 2)
-        if (wall.matrix_world.translation - new_origin).length > 0.001:
-            wall.data.transform(
-                Matrix.Translation(
-                    (wall.matrix_world.inverted().to_quaternion() @ (wall.matrix_world.translation - new_origin))
-                )
-            )
-            wall.matrix_world.translation = new_origin
+        recalculate_dumb_wall_origin(self.wall1)
+        recalculate_dumb_wall_origin(self.wall2)
 
     def swap_walls(self):
         self.wall1, self.wall2 = self.wall2, self.wall1
