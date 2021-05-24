@@ -69,6 +69,8 @@ class ExecuteQtoMethod(bpy.types.Operator):
         elif props.qto_methods == "VOLUME":
             for obj in bpy.context.selected_objects:
                 result += helper.calculate_volume(obj)
+        elif props.qto_methods == "FORMWORK":
+            result = helper.calculate_formwork_area(bpy.context.selected_objects)
         props.qto_result = str(round(result, 3))
         return {"FINISHED"}
 
@@ -88,6 +90,8 @@ class QuantifyObjects(bpy.types.Operator):
                 result = helper.calculate_height(obj)
             elif props.qto_methods == "VOLUME":
                 result = helper.calculate_volume(obj)
+            elif props.qto_methods == "FORMWORK":
+                result = helper.calculate_formwork_area([obj])
             if not result:
                 continue
             result = round(result, 3)
