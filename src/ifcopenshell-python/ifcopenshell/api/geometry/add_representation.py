@@ -33,7 +33,10 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        if isinstance(self.settings["geometry"], bpy.types.Mesh):
+        if (
+            isinstance(self.settings["geometry"], bpy.types.Mesh)
+            and self.settings["geometry"] == self.settings["blender_object"].data
+        ):
             self.evaluate_geometry()
         if self.settings["unit_scale"] is None:
             self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
@@ -44,7 +47,6 @@ class Usecase:
         return self.create_variable_representation()
 
     def evaluate_geometry(self):
-
         for modifier in self.settings["blender_object"].modifiers:
             if modifier.type == "BOOLEAN":
                 modifier.show_viewport = False
