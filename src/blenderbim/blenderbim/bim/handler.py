@@ -21,9 +21,9 @@ def mode_callback(obj, data):
         if obj.data.BIMMeshProperties.ifc_definition_id:
             representation = IfcStore.get_file().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
             if representation.RepresentationType in ["Tessellation", "Brep", "Annotation2D"]:
-                IfcStore.edited_objs.add(obj.name)
+                IfcStore.edited_objs.add(obj)
         elif IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id).is_a("IfcGridAxis"):
-            IfcStore.edited_objs.add(obj.name)
+            IfcStore.edited_objs.add(obj)
 
 
 def name_callback(obj, data):
