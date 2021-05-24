@@ -5,12 +5,13 @@ import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import mathutils.geometry
 from blenderbim.bim.ifc import IfcStore
-from mathutils import Vector
+from mathutils import Vector, Matrix
 
 
 class AddTypeInstance(bpy.types.Operator):
     bl_idname = "bim.add_type_instance"
     bl_label = "Add Type Instance"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         tprops = context.scene.BIMTypeProperties
@@ -59,6 +60,7 @@ class AddTypeInstance(bpy.types.Operator):
 class JoinWall(bpy.types.Operator):
     bl_idname = "bim.join_wall"
     bl_label = "Join Wall"
+    bl_options = {"REGISTER", "UNDO"}
     join_type: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -69,7 +71,7 @@ class JoinWall(bpy.types.Operator):
             for obj in selected_objs:
                 DumbWallJoiner(obj, obj).unjoin()
             return {"FINISHED"}
-        if len(selected_objs) < 2:
+        if len(selected_objs) < 2 or not context.active_object:
             return {"FINISHED"}
         for obj in selected_objs:
             if obj == context.active_object:
@@ -120,6 +122,7 @@ class DumbWallJoiner:
         for face in wall1_max_faces:
             for v in face.vertices:
                 self.wall1.data.vertices[v].co[0] = max_x
+        self.recalculate_origins()
 
     # A T-junction is an ordered operation where a single end of wall1 is joined
     # to wall2 if possible (i.e. walls aren't parallel). Wall2 is not modified.
@@ -127,6 +130,10 @@ class DumbWallJoiner:
     # at both ends to a front face of wall2. We then choose the end face that
     # has the shortest projection distance, and project it.
     def join_T(self):
+        self._join_T()
+        self.recalculate_origins()
+
+    def _join_T(self):
         wall1_min_faces, wall1_max_faces = self.get_wall_end_faces(self.wall1)
         wall2_end_faces1, wall2_end_faces2 = self.get_wall_end_faces(self.wall2)
         self.wall2_end_faces = wall2_end_faces1 + wall2_end_faces2
@@ -147,7 +154,7 @@ class DumbWallJoiner:
             self.project_end_faces(wall1_max_faces, ef2_target_frontface, ef2_target_backface)
             return (wall1_max_faces, ef2_target_frontface, ef2_target_backface)
         elif ef1_distance is None and ef2_distance is None:
-            return  # Life is short. BIM is hard.
+            return (None, None, None)  # Life is short. BIM is hard.
         elif ef1_distance < ef2_distance:
             self.project_end_faces(wall1_min_faces, ef1_target_frontface, ef1_target_backface)
             return (wall1_min_faces, ef1_target_frontface, ef1_target_backface)
@@ -160,10 +167,11 @@ class DumbWallJoiner:
     # joined back to wall1 as a regular T-junction.
     def join_L(self):
         self.should_project_to_frontface = False
-        self.join_T()
+        self._join_T()
         self.swap_walls()
         self.should_project_to_frontface = True
-        self.join_T()
+        self._join_T()
+        self.recalculate_origins()
 
     # A V-junction is an unordered operation where wall1 is joined to wall2,
     # then vice versa. First, we do a T-junction from wall1 to wall2, then vice
@@ -173,11 +181,11 @@ class DumbWallJoiner:
     # touch the other wall), then continue projecting those to the back face of
     # the other wall.
     def join_V(self):
-        wall2_end_faces, wall2_target_frontface, wall2_target_backface = self.join_T()
+        wall2_end_faces, wall2_target_frontface, wall2_target_backface = self._join_T()
         self.swap_walls()
-        wall1_end_faces, wall1_target_frontface, wall1_target_backface = self.join_T()
+        wall1_end_faces, wall1_target_frontface, wall1_target_backface = self._join_T()
 
-        for face in wall1_end_faces:
+        for face in wall1_end_faces or []:
             for v in face.vertices:
                 global_co = self.wall1_matrix @ self.wall1.data.vertices[v].co
                 if self.wall2.closest_point_on_mesh(self.wall2_matrix.inverted() @ global_co, distance=0.001)[0]:
@@ -188,7 +196,7 @@ class DumbWallJoiner:
 
         self.swap_walls()
 
-        for face in wall2_end_faces:
+        for face in wall2_end_faces or []:
             for v in face.vertices:
                 global_co = self.wall1_matrix @ self.wall1.data.vertices[v].co
                 if self.wall2.closest_point_on_mesh(self.wall2_matrix.inverted() @ global_co, distance=0.001)[0]:
@@ -196,6 +204,22 @@ class DumbWallJoiner:
                 target_face_center = self.wall2_matrix @ wall2_target_backface.center
                 target_face_normal = (self.wall2_matrix.to_quaternion() @ wall2_target_backface.normal).normalized()
                 self.project_vertex(v, target_face_center, target_face_normal, self.wall1, self.wall1_matrix)
+        self.recalculate_origins()
+
+    def recalculate_origins(self):
+        bpy.context.view_layer.update()
+        self.recalculate_origin(self.wall1)
+        self.recalculate_origin(self.wall2)
+
+    def recalculate_origin(self, wall):
+        new_origin = wall.matrix_world @ ((Vector(wall.bound_box[3]) + Vector(wall.bound_box[0])) / 2)
+        if (wall.matrix_world.translation - new_origin).length > 0.001:
+            wall.data.transform(
+                Matrix.Translation(
+                    (wall.matrix_world.inverted().to_quaternion() @ (wall.matrix_world.translation - new_origin))
+                )
+            )
+            wall.matrix_world.translation = new_origin
 
     def swap_walls(self):
         self.wall1, self.wall2 = self.wall2, self.wall1
@@ -211,14 +235,15 @@ class DumbWallJoiner:
                 self.project_vertex(v, target_face_center, target_face_normal, self.wall1, self.wall1_matrix)
 
     def project_vertex(self, v, target_face_center, target_face_normal, wall, wall_matrix):
+        original_point = wall_matrix @ wall.data.vertices[v].co
         point = mathutils.geometry.intersect_line_plane(
-            wall_matrix @ wall.data.vertices[v].co,
-            (wall_matrix @ wall.data.vertices[v].co) + self.pos_x,
+            original_point,
+            (original_point) + self.pos_x,
             target_face_center,
             target_face_normal,
         )
-        if not point:
-            return  # Not sure when this would trigger
+        if not point or (point - original_point).length > 50:
+            return
         local_point = wall_matrix.inverted() @ point
         wall.data.vertices[v].co = local_point
 
