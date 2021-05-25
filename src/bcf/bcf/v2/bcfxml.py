@@ -44,7 +44,9 @@ class BcfXml:
         self.edit_project()
         self.edit_version()
 
-    def get_project(self):
+    def get_project(self, filepath=None):
+        if not filepath:
+            return self.project
         if os.path.isfile(os.path.join(self.filepath, "project.bcfp")):
             data = self._read_xml("project.bcfp", "project.xsd")
             self.project.extension_schema = data["ExtensionSchema"]
