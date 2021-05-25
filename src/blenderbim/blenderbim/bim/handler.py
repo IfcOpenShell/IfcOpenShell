@@ -171,8 +171,19 @@ def create_application_organisation(ifc):
     )
 
 
+def active_object_callback():
+    obj = bpy.context.active_object
+    for obj in bpy.context.selected_objects:
+        if not obj.BIMObjectProperties.ifc_definition_id:
+            continue
+        if IfcStore.id_map[obj.BIMObjectProperties.ifc_definition_id] != obj:
+            bpy.ops.bim.copy_class(obj=obj.name)
+
+
 @persistent
 def setDefaultProperties(scene):
+    active_object_key = bpy.types.LayerObjects, "active"
+    bpy.msgbus.subscribe_rna(key=active_object_key, owner="BlenderBIM", args=(), notify=active_object_callback)
     ifcopenshell.api.owner.settings.get_person = (
         lambda ifc: ifc.by_id(int(bpy.context.scene.BIMOwnerProperties.user_person))
         if bpy.context.scene.BIMOwnerProperties.user_person
