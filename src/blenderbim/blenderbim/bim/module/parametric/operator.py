@@ -52,8 +52,8 @@ def generate_dumb_wall_axis(usecase_path, ifc_file, **settings):
         new_settings["context"] = axis_context
 
         mesh = bpy.data.meshes.new("Temporary Axis")
-        start = (Vector(obj.bound_box[3]) + Vector(obj.bound_box[0])) / 2
-        end = (Vector(obj.bound_box[7]) + Vector(obj.bound_box[4])) / 2
+        start = Vector(obj.bound_box[0])
+        end = Vector(obj.bound_box[4])
         mesh.from_pydata([start, end], [(0, 1)], [])
 
         new_settings["geometry"] = mesh
