@@ -224,7 +224,11 @@ class BIM_PT_object_material(Panel):
         else:
             item = self.set_data[set_item_id]
             row = self.layout.row(align=True)
-            row.label(text=item.get("Name", "Unnamed") or "Unnamed", icon="ALIGN_CENTER")
+            item_name = item.get("Name", "Unnamed") or "Unnamed"
+            thickness = item.get("LayerThickness")
+            if thickness:
+                item_name += f" ({thickness})"
+            row.label(text=item_name, icon="ALIGN_CENTER")
             row.label(text=Data.materials[item["Material"]]["Name"], icon="MATERIAL")
 
         if not is_first:
@@ -261,6 +265,7 @@ class BIM_PT_object_material(Panel):
             row.label(text="Description")
             row.label(text=str(self.material_set_data["Description"]))
 
+        total_thickness = 0
         for item_id in self.set_items:
             if self.product_data["type"] == "IfcMaterialList":
                 row = self.layout.row(align=True)
@@ -269,5 +274,14 @@ class BIM_PT_object_material(Panel):
             else:
                 item = self.set_data[item_id]
                 row = self.layout.row(align=True)
-                row.label(text=item.get("Name", "Unnamed") or "Unnamed", icon="ALIGN_CENTER")
+                item_name = item.get("Name", "Unnamed") or "Unnamed"
+                thickness = item.get("LayerThickness")
+                if thickness:
+                    item_name += f" ({thickness})"
+                    total_thickness += thickness
+                row.label(text=item_name, icon="ALIGN_CENTER")
                 row.label(text=Data.materials[item["Material"]]["Name"], icon="MATERIAL")
+
+        if total_thickness:
+            row = self.layout.row(align=True)
+            row.label(text=f"Total Thickness: {total_thickness}")
