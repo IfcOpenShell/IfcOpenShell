@@ -86,6 +86,12 @@ class BcfXml:
             subdirs = dirnames
             break
         for subdir in subdirs:
+            try:
+                uuid.UUID(subdir)
+            except ValueError:
+                continue
+            if not os.path.exists(os.path.join(self.filepath, subdir, "markup.bcf")):
+                continue
             self.topics[subdir] = self.get_topic(subdir)
         return self.topics
 
@@ -95,7 +101,7 @@ class BcfXml:
             return
         header = bcf.v3.data.Header()
         if data["Header"].get("Files"):
-            for item in data["Header"]["Files"]["File"]:
+            for item in data["Header"]["Files"].get("File", []):
                 header_file = bcf.v3.data.HeaderFile()
                 optional_keys = {
                     "filename": "Filename",
@@ -133,8 +139,6 @@ class BcfXml:
         optional_keys = {
             "priority": "Priority",
             "index": "Index",
-            "labels": "Labels",
-            "reference_links": "ReferenceLink",
             "modified_date": "ModifiedDate",
             "modified_author": "ModifiedAuthor",
             "due_date": "DueDate",
@@ -146,6 +150,12 @@ class BcfXml:
         for key, value in optional_keys.items():
             if value in data["Topic"]:
                 setattr(topic, key, data["Topic"][value])
+
+        if "ReferenceLinks" in data["Topic"]:
+            topic.reference_links.extend(data["Topic"]["ReferenceLinks"].get("ReferenceLink", []))
+
+        if "Labels" in data["Topic"]:
+            topic.labels.extend(data["Topic"]["Labels"].get("Label", []))
 
         if "BimSnippet" in data["Topic"]:
             bim_snippet = bcf.v3.data.BimSnippet()
@@ -159,8 +169,9 @@ class BcfXml:
                 if value in data["Topic"]["BimSnippet"]:
                     setattr(bim_snippet, key, data["Topic"]["BimSnippet"][value])
             topic.bim_snippet = bim_snippet
+
         if data["Topic"].get("DocumentReferences"):
-            for item in data["Topic"]["DocumentReferences"]["DocumentReference"]:
+            for item in data["Topic"]["DocumentReferences"].get("DocumentReference", []):
                 document_reference = bcf.v3.data.DocumentReference()
                 keys = {
                     "document_guid": "DocumentGuid",
@@ -172,8 +183,9 @@ class BcfXml:
                     if value in item:
                         setattr(document_reference, key, item[value])
                 topic.document_references.append(document_reference)
+
         if data["Topic"].get("RelatedTopics"):
-            for item in data["Topic"]["RelatedTopics"]["RelatedTopic"]:
+            for item in data["Topic"]["RelatedTopics"].get("RelatedTopic", []):
                 related_topic = bcf.v3.data.RelatedTopic()
                 related_topic.guid = item["@Guid"]
                 topic.related_topics.append(related_topic)
@@ -276,16 +288,15 @@ class BcfXml:
         with open(os.path.join(self.filepath, topic.guid, "markup.bcf"), "wb") as f:
             f.write(self.document.toprettyxml(encoding="utf-8"))
 
-    def write_document_references(self, reference, root):
-
-        for refer in reference:
-            document_reference_el = self._create_element(root, "DocumentReference", {"Guid": refer.guid})
-            if refer.document_guid:
-                self._create_element(document_reference_el, "DocumentGuid", text=refer.document_guid)
-            if refer.url:
-                self._create_element(document_reference_el, "Url", text=refer.url)
-            if refer.description:
-                self._create_element(document_reference_el, "Description", text=refer.description)
+    def write_document_references(self, references, root):
+        for reference in references:
+            document_reference_el = self._create_element(root, "DocumentReference", {"Guid": reference.guid})
+            if reference.document_guid:
+                self._create_element(document_reference_el, "DocumentGuid", text=reference.document_guid)
+            elif reference.url:
+                self._create_element(document_reference_el, "Url", text=reference.url)
+            if reference.description:
+                self._create_element(document_reference_el, "Description", text=reference.description)
 
     def write_header(self, header, root):
         if not header or not header.files:
@@ -615,10 +626,10 @@ class BcfXml:
 
     def get_comments(self, guid):
         comments = {}
-        data = self._read_xml(os.path.join(guid, "markup.bcf"), "markup.xsd")
-        if "Comment" not in data:
+        if "Comments" not in data["Topics"]:
             return comments
-        for item in data["Topic"]["Comments"]["Comment"]:
+        data = self._read_xml(os.path.join(guid, "markup.bcf"), "markup.xsd")
+        for item in data["Topic"]["Comments"].get("Comment", []):
             comment = bcf.v3.data.Comment()
             mandatory_keys = {
                 "guid": "@Guid",
@@ -645,9 +656,9 @@ class BcfXml:
 
     def get_viewpoints(self, guid):
         viewpoints = {}
-        data = self._read_xml(os.path.join(guid, "markup.bcf"), "markup.xsd")
-        if "Viewpoints" not in data:
+        if "Viewpoints" not in data["Topic"]:
             return viewpoints
+        data = self._read_xml(os.path.join(guid, "markup.bcf"), "markup.xsd")
         for item in data["Topic"]["Viewpoints"]:
             viewpoint = self.get_viewpoint(item, guid)
             viewpoints[viewpoint.guid] = viewpoint
