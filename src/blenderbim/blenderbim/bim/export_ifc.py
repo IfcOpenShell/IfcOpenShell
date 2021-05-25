@@ -94,11 +94,13 @@ class IfcExporter:
             ifcopenshell.api.run("root.remove_product", self.file, **{"product": product})
 
     def sync_edited_objects(self):
-        for obj_name in IfcStore.edited_objs.copy():
-            obj = bpy.data.objects.get(obj_name)
+        for obj in IfcStore.edited_objs.copy():
             if not obj:
                 continue
-            bpy.ops.bim.update_mesh_representation(obj=obj.name)
+            try:
+                bpy.ops.bim.update_representation(obj=obj.name)
+            except ReferenceError:
+                pass  # The object is likely deleted
         IfcStore.edited_objs.clear()
 
     def sync_object_placement(self, obj):

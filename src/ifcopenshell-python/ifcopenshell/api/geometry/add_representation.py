@@ -33,7 +33,10 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        if isinstance(self.settings["geometry"], bpy.types.Mesh):
+        if (
+            isinstance(self.settings["geometry"], bpy.types.Mesh)
+            and self.settings["geometry"] == self.settings["blender_object"].data
+        ):
             self.evaluate_geometry()
         if self.settings["unit_scale"] is None:
             self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
@@ -44,24 +47,29 @@ class Usecase:
         return self.create_variable_representation()
 
     def evaluate_geometry(self):
-        self.boolean_modifiers = []
         for modifier in self.settings["blender_object"].modifiers:
             if modifier.type == "BOOLEAN":
                 modifier.show_viewport = False
 
-        if self.settings["should_force_triangulation"]:
-            mesh = self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
-            bm = bmesh.new()
-            bm.from_mesh(mesh)
-            bmesh.ops.triangulate(bm, faces=bm.faces)
-            bm.to_mesh(mesh)
-            bm.free()
-            del bm
-            self.settings["geometry"] = mesh
-        else:
-            self.settings["geometry"] = (
-                self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+        mesh = self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        bmesh.ops.triangulate(bm, faces=bm.faces)
+
+        if not self.settings["should_force_triangulation"]:
+            bmesh.ops.dissolve_limit(
+                bm,
+                angle_limit=0.00174533,  # 1 degree
+                use_dissolve_boundaries=False,
+                verts=bm.verts[:],
+                edges=bm.edges[:],
+                delimit={"MATERIAL"},
             )
+        bm.to_mesh(mesh)
+        bm.free()
+        del bm
+
+        self.settings["geometry"] = mesh
 
         for modifier in self.settings["blender_object"].modifiers:
             if modifier.type == "BOOLEAN":
@@ -158,7 +166,7 @@ class Usecase:
         if self.settings["is_wireframe"]:
             return self.create_wireframe_representation()
         elif self.settings["is_curve"]:
-            return self.create_curve_representation()
+            return self.create_curve3d_representation()
         elif self.settings["is_point_cloud"]:
             return self.create_point_cloud_representation()
         elif isinstance(self.settings["geometry"], bpy.types.Camera):
@@ -193,7 +201,7 @@ class Usecase:
                 "XLength": self.convert_si_to_unit(width),
                 "YLength": self.convert_si_to_unit(height),
                 "ZLength": self.convert_si_to_unit(self.settings["geometry"].clip_end),
-            }
+            },
         )
 
         return self.file.createIfcShapeRepresentation(
@@ -215,6 +223,14 @@ class Usecase:
             self.settings["context"].ContextIdentifier,
             "Curve3D",
             self.create_curves(),
+        )
+    
+    def create_curve2d_representation(self):
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "Curve2D",
+            self.create_curves(is_2d=True),
         )
 
     def create_curves(self, is_2d=False):
@@ -252,7 +268,7 @@ class Usecase:
     def create_curves_from_mesh_ifc2x3(self, is_2d=False):
         curves = []
         points = [
-            self.create_cartesian_point(v.co.x, v.co.y, v.co.z if is_2d else None)
+            self.create_cartesian_point(v.co.x, v.co.y, v.co.z if not is_2d else None)
             for v in self.settings["geometry"].vertices
         ]
         coord_list = [p.Coordinates for p in points]

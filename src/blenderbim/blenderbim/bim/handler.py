@@ -8,8 +8,11 @@ from ifcopenshell.api.attribute.data import Data as AttributeData
 from ifcopenshell.api.type.data import Data as TypeData
 
 
+global_subscription_owner = object()
+
+
 def mode_callback(obj, data):
-    for obj in bpy.context.selected_objects:
+    for obj in bpy.context.selected_objects + [bpy.context.active_object]:
         if (
             obj.mode != "EDIT"
             or not obj.data
@@ -21,9 +24,9 @@ def mode_callback(obj, data):
         if obj.data.BIMMeshProperties.ifc_definition_id:
             representation = IfcStore.get_file().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
             if representation.RepresentationType in ["Tessellation", "Brep", "Annotation2D"]:
-                IfcStore.edited_objs.add(obj.name)
+                IfcStore.edited_objs.add(obj)
         elif IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id).is_a("IfcGridAxis"):
-            IfcStore.edited_objs.add(obj.name)
+            IfcStore.edited_objs.add(obj)
 
 
 def name_callback(obj, data):
@@ -87,6 +90,8 @@ def purge_module_data():
 def loadIfcStore(scene):
     IfcStore.purge()
     ifc_file = IfcStore.get_file()
+    if not ifc_file:
+        return
     IfcStore.get_schema()
     [
         IfcStore.link_element(ifc_file.by_id(o.BIMObjectProperties.ifc_definition_id), o)
@@ -171,8 +176,22 @@ def create_application_organisation(ifc):
     )
 
 
+def active_object_callback():
+    obj = bpy.context.active_object
+    for obj in bpy.context.selected_objects:
+        if not obj.BIMObjectProperties.ifc_definition_id:
+            continue
+        if IfcStore.id_map[obj.BIMObjectProperties.ifc_definition_id] != obj:
+            bpy.ops.bim.copy_class(obj=obj.name)
+
+
 @persistent
 def setDefaultProperties(scene):
+    global global_subscription_owner
+    active_object_key = bpy.types.LayerObjects, "active"
+    bpy.msgbus.subscribe_rna(
+        key=active_object_key, owner=global_subscription_owner, args=(), notify=active_object_callback
+    )
     ifcopenshell.api.owner.settings.get_person = (
         lambda ifc: ifc.by_id(int(bpy.context.scene.BIMOwnerProperties.user_person))
         if bpy.context.scene.BIMOwnerProperties.user_person

@@ -15,6 +15,7 @@ import site
 
 # process *.pth in /libs/site/packages to setup globally importable modules
 # 3 levels deep required by occ static ../../ path
+# TODO: 3 levels deep is no longer required as we no longer bundle OCC
 cwd = os.path.dirname(os.path.realpath(__file__))
 site.addsitedir(os.path.join(cwd, "libs", "site", "packages"))
 

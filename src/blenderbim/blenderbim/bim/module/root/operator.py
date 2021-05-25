@@ -245,9 +245,7 @@ class CopyClass(bpy.types.Operator):
             IfcStore.link_element(result, obj)
             relating_type = ifcopenshell.util.element.get_type(result)
             if relating_type and relating_type.RepresentationMaps:
-                bpy.ops.bim.map_representations(
-                    product_id=result.id(), type_product_id=ifcopenshell.util.element.get_type(result).id()
-                )
+                bpy.ops.bim.assign_type(relating_type=relating_type.id(), related_object=obj.name)
             else:
                 bpy.ops.bim.add_representation(obj=obj.name)
         return {"FINISHED"}

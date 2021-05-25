@@ -18,7 +18,7 @@ import multiprocessing
 import zipfile
 import tempfile
 import numpy as np
-import blenderbim.bim.prop
+from blenderbim.bim.module.drawing.prop import getDiagramScales
 from pathlib import Path
 from itertools import cycle
 from datetime import datetime
@@ -443,9 +443,9 @@ class IfcImporter:
 
     def is_native_swept_disk_solid(self, representations):
         for representation in representations:
-            if len(representation["raw"].Items) > 1 or not representation["raw"].Items[0].is_a("IfcSweptDiskSolid"):
-                return False
-        return True
+            if len(representation["raw"].Items) == 1 and representation["raw"].Items[0].is_a("IfcSweptDiskSolid"):
+                return True
+        return False
 
     def is_native_faceted_brep(self, representations):
         for representation in representations:
@@ -1218,7 +1218,8 @@ class IfcImporter:
             if not view_collection:
                 view_collection = bpy.data.collections.new("Views")
                 bpy.context.scene.collection.children.link(view_collection)
-            drawing_collection = bpy.data.collections.new(obj.name)
+            group = [r for r in element.HasAssignments if r.is_a("IfcRelAssignsToGroup")][0].RelatingGroup
+            drawing_collection = bpy.data.collections.new("IfcGroup/" + group.Name)
             view_collection.children.link(drawing_collection)
             drawing_collection.objects.link(obj)
         else:
@@ -1342,7 +1343,7 @@ class IfcImporter:
                 camera.BIMCameraProperties.target_view = pset["TargetView"]
             if "Scale" in pset:
                 valid_scales = [
-                    i[0] for i in blenderbim.bim.prop.getDiagramScales(None, None) if pset["Scale"] == i[0].split("|")[-1]
+                    i[0] for i in getDiagramScales(None, None) if pset["Scale"] == i[0].split("|")[-1]
                 ]
                 if valid_scales:
                     camera.BIMCameraProperties.diagram_scale = valid_scales[0]
