@@ -16,7 +16,7 @@ class DocumentReference:
     def __init__(self):
         self.description = None
         self.document_guid = None
-        self.url = False
+        self.url = None
         self.guid = None
 
 

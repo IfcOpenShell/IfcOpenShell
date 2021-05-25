@@ -92,6 +92,12 @@ class BcfXml:
             subdirs = dirnames
             break
         for subdir in subdirs:
+            try:
+                uuid.UUID(subdir)
+            except ValueError:
+                continue
+            if not os.path.exists(os.path.join(self.filepath, subdir, "markup.bcf")):
+                continue
             self.topics[subdir] = self.get_topic(subdir)
         return self.topics
 
