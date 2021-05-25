@@ -8,6 +8,9 @@ from ifcopenshell.api.attribute.data import Data as AttributeData
 from ifcopenshell.api.type.data import Data as TypeData
 
 
+global_subscription_owner = object()
+
+
 def mode_callback(obj, data):
     for obj in bpy.context.selected_objects + [bpy.context.active_object]:
         if (
@@ -87,6 +90,8 @@ def purge_module_data():
 def loadIfcStore(scene):
     IfcStore.purge()
     ifc_file = IfcStore.get_file()
+    if not ifc_file:
+        return
     IfcStore.get_schema()
     [
         IfcStore.link_element(ifc_file.by_id(o.BIMObjectProperties.ifc_definition_id), o)
@@ -182,8 +187,11 @@ def active_object_callback():
 
 @persistent
 def setDefaultProperties(scene):
+    global global_subscription_owner
     active_object_key = bpy.types.LayerObjects, "active"
-    bpy.msgbus.subscribe_rna(key=active_object_key, owner="BlenderBIM", args=(), notify=active_object_callback)
+    bpy.msgbus.subscribe_rna(
+        key=active_object_key, owner=global_subscription_owner, args=(), notify=active_object_callback
+    )
     ifcopenshell.api.owner.settings.get_person = (
         lambda ifc: ifc.by_id(int(bpy.context.scene.BIMOwnerProperties.user_person))
         if bpy.context.scene.BIMOwnerProperties.user_person

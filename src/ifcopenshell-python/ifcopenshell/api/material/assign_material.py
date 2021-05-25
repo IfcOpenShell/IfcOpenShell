@@ -1,4 +1,5 @@
 import ifcopenshell
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -18,7 +19,15 @@ class Usecase:
             material_set = self.file.create_entity(self.settings["type"])
             self.create_material_association(material_set)
         elif self.settings["type"] == "IfcMaterialLayerSetUsage":
-            material_set = self.file.create_entity("IfcMaterialLayerSet")
+            element_type = ifcopenshell.util.element.get_type(self.settings["product"])
+            if element_type:
+                element_type_material = ifcopenshell.util.element.get_material(element_type)
+                if element_type_material and element_type_material.is_a("IfcMaterialLayerSet"):
+                    material_set = element_type_material
+                else:
+                    material_set = self.file.create_entity("IfcMaterialLayerSet")
+            else:
+                material_set = self.file.create_entity("IfcMaterialLayerSet")
             material_set_usage = self.create_layer_set_usage(material_set)
             self.create_material_association(material_set_usage)
         elif self.settings["type"] == "IfcMaterialProfileSet":

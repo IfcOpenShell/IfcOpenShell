@@ -6,6 +6,7 @@ import ifcopenshell.util.unit
 import mathutils.geometry
 from blenderbim.bim.ifc import IfcStore
 from mathutils import Vector, Matrix
+from ifcopenshell.api.material.data import Data as MaterialData
 
 
 class AddTypeInstance(bpy.types.Operator):
@@ -83,6 +84,9 @@ class JoinWall(bpy.types.Operator):
                 joiner.join_L()
             elif self.join_type == "V":
                 joiner.join_V()
+            IfcStore.edited_objs.add(obj)
+        if self.join_type != "T":
+            IfcStore.edited_objs.add(context.active_object)
         return {"FINISHED"}
 
 
@@ -110,7 +114,7 @@ class AlignWall(bpy.types.Operator):
 
 
 def recalculate_dumb_wall_origin(wall):
-    new_origin = wall.matrix_world @ ((Vector(wall.bound_box[3]) + Vector(wall.bound_box[0])) / 2)
+    new_origin = wall.matrix_world @ Vector(wall.bound_box[0])
     if (wall.matrix_world.translation - new_origin).length > 0.001:
         wall.data.transform(
             Matrix.Translation(
@@ -524,14 +528,14 @@ class DumbWallGenerator:
 
     def create_wall(self):
         verts = [
-            Vector((0, self.width / 2, 0)),
-            Vector((0, -self.width / 2, 0)),
-            Vector((0, self.width / 2, self.height)),
-            Vector((0, -self.width / 2, self.height)),
-            Vector((self.length, self.width / 2, 0)),
-            Vector((self.length, -self.width / 2, 0)),
-            Vector((self.length, self.width / 2, self.height)),
-            Vector((self.length, -self.width / 2, self.height)),
+            Vector((0, self.width, 0)),
+            Vector((0, 0, 0)),
+            Vector((0, self.width, self.height)),
+            Vector((0, 0, self.height)),
+            Vector((self.length, self.width, 0)),
+            Vector((self.length, 0, 0)),
+            Vector((self.length, self.width, self.height)),
+            Vector((self.length, 0, self.height)),
         ]
         faces = [
             [1, 3, 2, 0],
@@ -554,4 +558,6 @@ class DumbWallGenerator:
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, Name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, Properties={"Engine": "BlenderBIM.DumbWall"})
+        ifcopenshell.api.run("material.assign_material", self.file, product=element, type="IfcMaterialLayerSetUsage")
+        MaterialData.load(self.file)
         return obj
