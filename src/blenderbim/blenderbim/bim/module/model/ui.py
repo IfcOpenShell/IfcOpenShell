@@ -36,6 +36,8 @@ class BIM_PT_authoring_architectural(Panel):
         row.operator("bim.align_wall", icon="ANCHOR_TOP", text="Ext.").align_type = "EXTERIOR"
         row.operator("bim.align_wall", icon="ANCHOR_CENTER", text="C/L").align_type = "CENTERLINE"
         row.operator("bim.align_wall", icon="ANCHOR_BOTTOM", text="Int.").align_type = "INTERIOR"
+        row = self.layout.row(align=True)
+        row.operator("bim.flip_wall", icon="ORIENTATION_NORMAL", text="Flip")
 
 
 class BIM_PT_misc_utilities(Panel):
