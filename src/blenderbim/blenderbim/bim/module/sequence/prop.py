@@ -121,7 +121,7 @@ def updateTaskduration(self, context):
     ifcopenshell.api.run(
         "sequence.edit_task_time",
         self.file,
-        **{"task_time":task_time, "attributes": {"ScheduleDuration": self.duration}},
+        **{"task_time": task_time, "attributes": {"ScheduleDuration": self.duration}},
     )
     Data.load(IfcStore.get_file())
     if props.active_task_id == self.ifc_definition_id:
@@ -283,3 +283,8 @@ class BIMWorkCalendarProperties(PropertyGroup):
     )
     start_time: StringProperty(name="Start Time")
     end_time: StringProperty(name="End Time")
+
+
+class DatePickerProperties(PropertyGroup):
+    display_date: StringProperty()
+    selected_date: StringProperty()

@@ -1,10 +1,9 @@
+import bpy
 import math
 import isodate
 import datetime
 from dateutil import parser
 from ifcopenshell.api.sequence.data import Data
-
-
 
 
 def derive_date(ifc_definition_id, attribute_name, date=None, is_earliest=False, is_latest=False):
@@ -56,3 +55,23 @@ def parse_duration(value):
         return isodate.parse_duration(value)
     except:
         return None
+
+
+def canonicalise_time(time):
+    if not time:
+        return "-"
+    return time.strftime("%d/%m/%y")
+
+
+def get_scene_prop(prop_path):
+    prop = bpy.context.scene.get(prop_path.split(".")[0])
+    for part in prop_path.split(".")[1:]:
+        if part:
+            prop = prop.get(part)
+    return prop
+
+
+def set_scene_prop(prop_path, value):
+    parent = get_scene_prop(prop_path[: prop_path.rfind(".")])
+    prop = prop_path.split(".")[-1]
+    parent[prop] = value
