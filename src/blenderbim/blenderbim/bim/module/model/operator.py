@@ -5,6 +5,7 @@ import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import mathutils.geometry
 from blenderbim.bim.ifc import IfcStore
+from math import pi
 from mathutils import Vector, Matrix
 from ifcopenshell.api.material.data import Data as MaterialData
 
@@ -13,15 +14,19 @@ class AddTypeInstance(bpy.types.Operator):
     bl_idname = "bim.add_type_instance"
     bl_label = "Add Type Instance"
     bl_options = {"REGISTER", "UNDO"}
+    ifc_class: bpy.props.StringProperty()
+    relating_type: bpy.props.IntProperty()
 
     def execute(self, context):
         tprops = context.scene.BIMTypeProperties
-        if not tprops.ifc_class or not tprops.relating_type:
+        ifc_class = self.ifc_class or tprops.ifc_class
+        relating_type = self.relating_type or tprops.relating_type
+        if not ifc_class or not relating_type:
             return {"FINISHED"}
         self.file = IfcStore.get_file()
-        instance_class = ifcopenshell.util.type.get_applicable_entities(tprops.ifc_class, self.file.schema)[0]
-        if instance_class in ["IfcWall", "IfcWallStandardCase"]:
-            obj = DumbWallGenerator(self.file.by_id(int(tprops.relating_type))).generate()
+        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema)[0]
+        if ifc_class == "IfcWallType":
+            obj = DumbWallGenerator(self.file.by_id(int(relating_type))).generate()
             if obj:
                 return {"FINISHED"}
         # A cube
@@ -55,6 +60,18 @@ class AddTypeInstance(bpy.types.Operator):
         bpy.ops.bim.assign_type(relating_type=int(tprops.relating_type), related_object=obj.name)
         if collection_obj and collection_obj.BIMObjectProperties.ifc_definition_id:
             obj.location[2] = collection_obj.location[2] - min([v[2] for v in obj.bound_box])
+        return {"FINISHED"}
+
+
+class AddWall(bpy.types.Operator):
+    bl_idname = "bim.add_wall"
+    bl_label = "Add Wall"
+    bl_options = {"REGISTER", "UNDO"}
+    join_type: bpy.props.StringProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMModelProperties
+        bpy.ops.bim.add_type_instance(ifc_class="IfcWallType", relating_type=int(props.relating_type))
         return {"FINISHED"}
 
 
