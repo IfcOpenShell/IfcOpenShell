@@ -133,11 +133,18 @@ class DumbWallAligner:
         self.reference_wall = reference_wall
 
     def align_centerline(self):
-        self.align(self.reference_wall.matrix_world.translation, self.reference_wall.matrix_world @ Vector((1, 0, 0)))
+        width = (Vector(self.wall.bound_box[3]) - Vector(self.wall.bound_box[0])).y
+        reference_width = (Vector(self.reference_wall.bound_box[3]) - Vector(self.reference_wall.bound_box[0])).y
+        offset = self.wall.matrix_world.to_quaternion() @ Vector((0, (reference_width / 2) - (width / 2), 0))
+        self.align(
+            self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[0]),
+            self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[4]),
+            offset,
+        )
 
     def align_exterior(self):
-        width = (Vector(self.wall.bound_box[3]) - Vector(self.wall.bound_box[0])).y
-        offset = self.wall.matrix_world.to_quaternion() @ Vector((0, -width / 2, 0))
+        wall_width = (Vector(self.wall.bound_box[3]) - Vector(self.wall.bound_box[0])).y
+        offset = self.wall.matrix_world.to_quaternion() @ Vector((0, -wall_width, 0))
         self.align(
             self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[3]),
             self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[7]),
@@ -145,13 +152,7 @@ class DumbWallAligner:
         )
 
     def align_interior(self):
-        width = (Vector(self.wall.bound_box[3]) - Vector(self.wall.bound_box[0])).y
-        offset = self.wall.matrix_world.to_quaternion() @ Vector((0, width / 2, 0))
-        self.align(
-            self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[0]),
-            self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[4]),
-            offset,
-        )
+        self.align(self.reference_wall.matrix_world.translation, self.reference_wall.matrix_world @ Vector((1, 0, 0)))
 
     def align(self, start, end, offset=None):
         if offset is None:
