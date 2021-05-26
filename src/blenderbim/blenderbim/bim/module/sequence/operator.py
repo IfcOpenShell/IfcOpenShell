@@ -3,6 +3,7 @@ import os
 import bpy
 import json
 import time
+import calendar
 import isodate
 import pystache
 import webbrowser
@@ -13,7 +14,7 @@ import blenderbim.bim.helper
 import blenderbim.bim.module.sequence.helper as helper
 from datetime import datetime
 from datetime import timedelta
-from dateutil import parser
+from dateutil import parser, relativedelta
 from blenderbim.bim.ifc import IfcStore
 from bpy_extras.io_utils import ImportHelper
 from ifcopenshell.api.sequence.data import Data
@@ -1424,3 +1425,89 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
                 "STARTED": round(self.start_frame + (((start - self.start) / self.duration) * self.total_frames)),
                 "COMPLETED": round(self.start_frame + (((finish - self.start) / self.duration) * self.total_frames)),
             }
+
+
+class BlenderBIM_DatePicker(bpy.types.Operator):
+    bl_label = "Date Picker"
+    bl_idname = "bim.datepicker"
+    display_date: bpy.props.StringProperty(name="Display Date")
+    selected_date: bpy.props.StringProperty(name="Selected Date")
+    target_prop: bpy.props.StringProperty(name="Target date prop to set")
+
+    def execute(self, context):
+        helper.set_scene_prop(self.target_prop, self.selected_date)
+        return {"FINISHED"}
+
+    def draw(self, context):
+        self.selected_date = helper.get_scene_prop("DatePickerProperties.selected_date") or helper.canonicalise_time(datetime.now())
+        current_date = parser.parse(context.scene.DatePickerProperties.display_date, dayfirst=True, fuzzy=True)
+        current_month = (current_date.year, current_date.month)
+        lines = calendar.monthcalendar(*current_month)
+        month_title, week_titles = calendar.month(*current_month).splitlines()[:2]
+
+        layout = self.layout
+        row = layout.row()
+        row.prop(self, "selected_date")
+
+        split = layout.split()
+        col = split.row()
+        op = col.operator("bim.redraw_datepicker", icon="TRIA_LEFT", text="")
+        op.action = "previous"
+        col = split.row()
+        col.label(text=month_title.strip())
+        col = split.row()
+        col.alignment = "RIGHT"
+        op = col.operator("bim.redraw_datepicker", icon="TRIA_RIGHT", text="")
+        op.action = "next"
+
+        row = layout.row(align=True)
+        for title in week_titles.split():
+            col = row.column(align=True)
+            col.alignment = "CENTER"
+            col.label(text=title.strip())
+
+        for line in lines:
+            row = layout.row(align=True)
+            for i in line:
+                col = row.column(align=True)
+                if i == 0:
+                    col.label(text="  ")
+                else:
+                    op = col.operator("bim.datepicker_setdate", text="{:2d}".format(i))
+                    selected_date = "{}/{}/{}".format(i, current_date.month, current_date.year)
+                    selected_date = parser.parse(selected_date, dayfirst=True, fuzzy=True)
+                    op.selected_date = helper.canonicalise_time(selected_date)
+
+    def invoke(self, context, event):
+        self.display_date = helper.get_scene_prop(self.target_prop) or helper.canonicalise_time(datetime.now())
+        context.scene.DatePickerProperties.display_date = self.display_date
+        context.scene.DatePickerProperties.selected_date = self.display_date
+        return context.window_manager.invoke_props_dialog(self)
+
+
+class BlenderBIM_DatePickerSetDate(bpy.types.Operator):
+    bl_label = "set date"
+    bl_idname = "bim.datepicker_setdate"
+    selected_date: bpy.props.StringProperty()
+
+    def invoke(self, context, event):
+        context.scene.DatePickerProperties.selected_date = self.selected_date
+        return {"FINISHED"}
+
+
+class BlenderBIM_RedrawDatePicker(bpy.types.Operator):
+    bl_label = "redraw datepicker window"
+    bl_idname = "bim.redraw_datepicker"
+    action: bpy.props.StringProperty()
+
+    def invoke(self, context, event):
+        current_date = parser.parse(context.scene.DatePickerProperties.display_date, dayfirst=True, fuzzy=True)
+
+        if self.action == "previous":
+            date_to_set = current_date - relativedelta.relativedelta(months=1)
+        elif self.action == "next":
+            date_to_set = current_date + relativedelta.relativedelta(months=1)
+
+        context.scene.DatePickerProperties.display_date = helper.canonicalise_time(date_to_set)
+
+        return {"FINISHED"}
