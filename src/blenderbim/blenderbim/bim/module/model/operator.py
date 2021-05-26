@@ -124,21 +124,57 @@ class AlignWall(bpy.types.Operator):
             if self.align_type == "CENTERLINE":
                 aligner.align_centerline()
             elif self.align_type == "EXTERIOR":
-                aligner.align_exterior()
+                aligner.align_first_layer()
             elif self.align_type == "INTERIOR":
-                aligner.align_interior()
+                aligner.align_last_layer()
         return {"FINISHED"}
 
 
-def recalculate_dumb_wall_origin(wall):
-    new_origin = wall.matrix_world @ Vector(wall.bound_box[0])
-    if (wall.matrix_world.translation - new_origin).length > 0.001:
-        wall.data.transform(
-            Matrix.Translation(
-                (wall.matrix_world.inverted().to_quaternion() @ (wall.matrix_world.translation - new_origin))
-            )
+class FlipWall(bpy.types.Operator):
+    bl_idname = "bim.flip_wall"
+    bl_label = "Flip Wall"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        selected_objs = context.selected_objects
+        if len(selected_objs) == 0:
+            return {"FINISHED"}
+        for obj in selected_objs:
+            DumbWallFlipper(obj).flip()
+        return {"FINISHED"}
+
+
+def recalculate_dumb_wall_origin(wall, new_origin=None):
+    if new_origin is None:
+        new_origin = wall.matrix_world @ Vector(wall.bound_box[0])
+    if (wall.matrix_world.translation - new_origin).length < 0.001:
+        return
+    wall.data.transform(
+        Matrix.Translation(
+            (wall.matrix_world.inverted().to_quaternion() @ (wall.matrix_world.translation - new_origin))
         )
-        wall.matrix_world.translation = new_origin
+    )
+    wall.matrix_world.translation = new_origin
+
+
+class DumbWallFlipper:
+    # A flip switches the origin from the min XY corner to the max XY corner, and rotates the origin by 180.
+    def __init__(self, wall):
+        self.wall = wall
+
+    def flip(self):
+        if (
+            self.wall.matrix_world.translation - self.wall.matrix_world @ Vector(self.wall.bound_box[0])
+        ).length < 0.001:
+            recalculate_dumb_wall_origin(self.wall, self.wall.matrix_world @ Vector(self.wall.bound_box[7]))
+            self.rotate_wall_180()
+        else:
+            recalculate_dumb_wall_origin(self.wall)
+
+    def rotate_wall_180(self):
+        flip_matrix = Matrix.Rotation(pi, 4, "Z")
+        self.wall.data.transform(flip_matrix)
+        self.wall.rotation_euler.rotate(flip_matrix)
 
 
 class DumbWallAligner:
@@ -150,37 +186,71 @@ class DumbWallAligner:
         self.reference_wall = reference_wall
 
     def align_centerline(self):
+        recalculate_dumb_wall_origin(self.wall)
+        recalculate_dumb_wall_origin(self.reference_wall)
+        self.align_rotation()
+
         width = (Vector(self.wall.bound_box[3]) - Vector(self.wall.bound_box[0])).y
         reference_width = (Vector(self.reference_wall.bound_box[3]) - Vector(self.reference_wall.bound_box[0])).y
-        offset = self.wall.matrix_world.to_quaternion() @ Vector((0, (reference_width / 2) - (width / 2), 0))
+
+        if self.is_rotation_flipped():
+            offset = self.wall.matrix_world.to_quaternion() @ Vector((0, - (reference_width / 2) - (width / 2), 0))
+        else:
+            offset = self.wall.matrix_world.to_quaternion() @ Vector((0, (reference_width / 2) - (width / 2), 0))
+
         self.align(
             self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[0]),
             self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[4]),
             offset,
         )
 
-    def align_exterior(self):
-        wall_width = (Vector(self.wall.bound_box[3]) - Vector(self.wall.bound_box[0])).y
-        offset = self.wall.matrix_world.to_quaternion() @ Vector((0, -wall_width, 0))
-        self.align(
-            self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[3]),
-            self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[7]),
-            offset,
-        )
+    def align_last_layer(self):
+        recalculate_dumb_wall_origin(self.wall)
+        recalculate_dumb_wall_origin(self.reference_wall)
+        self.align_rotation()
 
-    def align_interior(self):
-        self.align(self.reference_wall.matrix_world.translation, self.reference_wall.matrix_world @ Vector((1, 0, 0)))
+        if self.is_rotation_flipped():
+            DumbWallFlipper(self.wall).flip()
+            bpy.context.view_layer.update()
+        start = self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[3])
+        end = self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[7])
+
+        wall_width = (Vector(self.wall.bound_box[3]) - Vector(self.wall.bound_box[0])).y
+
+        offset = self.wall.matrix_world.to_quaternion() @ Vector((0, -wall_width, 0))
+        self.align(start, end, offset)
+
+    def align_first_layer(self):
+        recalculate_dumb_wall_origin(self.wall)
+        recalculate_dumb_wall_origin(self.reference_wall)
+        self.align_rotation()
+
+        if self.is_rotation_flipped():
+            DumbWallFlipper(self.wall).flip()
+            bpy.context.view_layer.update()
+
+        start = self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[0])
+        end = self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[4])
+
+        self.align(start, end)
 
     def align(self, start, end, offset=None):
         if offset is None:
-            offset = Vector()
-        recalculate_dumb_wall_origin(self.wall)
-        recalculate_dumb_wall_origin(self.reference_wall)
+            offset = Vector((0, 0, 0))
         point, distance = mathutils.geometry.intersect_point_line(self.wall.matrix_world.translation, start, end)
         new_origin = point + offset
         self.wall.matrix_world.translation[0] = new_origin[0]
         self.wall.matrix_world.translation[1] = new_origin[1]
-        self.wall.rotation_euler[2] = self.reference_wall.rotation_euler[2]
+
+    def align_rotation(self):
+        reference_rotation = self.reference_wall.rotation_euler[2] % (2 * pi)
+        self.wall.rotation_euler[2] = (pi * round(self.wall.rotation_euler[2] / pi)) + reference_rotation
+
+    def is_rotation_flipped(self):
+        pi2 = pi * 2
+        wall_delta_to_nearest_360 = abs((pi2 * round(self.wall.rotation_euler[2] / pi2)) - self.wall.rotation_euler[2])
+        reference_delta_to_nearest_360 = abs((pi2 * round(self.reference_wall.rotation_euler[2] / pi2)) - self.reference_wall.rotation_euler[2])
+        return abs(reference_delta_to_nearest_360 - wall_delta_to_nearest_360) > 0.1
 
 
 class DumbWallJoiner:

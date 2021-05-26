@@ -6,6 +6,7 @@ classes = (
     operator.AddWall,
     operator.JoinWall,
     operator.AlignWall,
+    operator.FlipWall,
     prop.BIMModelProperties,
     ui.BIM_PT_authoring,
     ui.BIM_PT_authoring_architectural,
