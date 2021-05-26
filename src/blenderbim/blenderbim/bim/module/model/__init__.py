@@ -1,10 +1,12 @@
 import bpy
-from . import operator, ui, grid, stair, door, window, slab, opening, pie
+from . import operator, prop, ui, grid, stair, door, window, slab, opening, pie, workspace
 
 classes = (
     operator.AddTypeInstance,
+    operator.AddWall,
     operator.JoinWall,
     operator.AlignWall,
+    prop.BIMModelProperties,
     ui.BIM_PT_authoring,
     ui.BIM_PT_authoring_architectural,
     ui.BIM_PT_misc_utilities,
@@ -32,6 +34,8 @@ addon_keymaps = []
 
 
 def register():
+    bpy.utils.register_tool(workspace.WallTool, after={"builtin.scale_cage"}, separator=True, group=True)
+    bpy.types.Scene.BIMModelProperties = bpy.props.PointerProperty(type=prop.BIMModelProperties)
     bpy.types.VIEW3D_MT_mesh_add.append(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(stair.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(door.add_object_button)
@@ -47,6 +51,8 @@ def register():
 
 
 def unregister():
+    bpy.utils.unregister_tool(workspace.WallTool)
+    del bpy.types.Scene.BIMModelProperties
     bpy.types.VIEW3D_MT_mesh_add.remove(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.remove(stair.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.remove(door.add_object_button)
