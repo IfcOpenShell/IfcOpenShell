@@ -479,22 +479,22 @@ class BcfXml:
     def write_viewpoint_bitmaps(self, viewpoint, parent):
         if not viewpoint.bitmaps:
             return
-        if viewpoint.bitmaps:
-            bitmaps_parent = self._create_element(parent, "Bitmaps")
-            for bitmap in viewpoint.bitmaps:
-                bitmap_el = self._create_element(bitmaps_parent, "Bitmap")
-                text_map = {"Format": bitmap.bitmap_type, "Reference": bitmap.reference}
-                for key, value in text_map.items():
-                    self._create_element(bitmap_el, key, text=value)
+        bitmaps_el = self._create_element(parent, "Bitmaps")
+        for bitmap in viewpoint.bitmaps:
+            bitmap_el = self._create_element(bitmaps_el, "Bitmap")
 
-                location_el = self._create_element(bitmap_el, "Location")
-                self.write_vector(location_el, bitmap.location)
-                normal_el = self._create_element(bitmap_el, "Normal")
-                self.write_vector(normal_el, bitmap.normal)
-                up_el = self._create_element(bitmap_el, "Up")
-                self.write_vector(up_el, bitmap.up)
+            text_map = {"Format": bitmap.bitmap_format, "Reference": bitmap.reference}
+            for key, value in text_map.items():
+                self._create_element(bitmap_el, key, text=value)
 
-                self._create_element(bitmap_el, "Height", text=bitmap.height)
+            location_el = self._create_element(bitmap_el, "Location")
+            self.write_vector(location_el, bitmap.location)
+            normal_el = self._create_element(bitmap_el, "Normal")
+            self.write_vector(normal_el, bitmap.normal)
+            up_el = self._create_element(bitmap_el, "Up")
+            self.write_vector(up_el, bitmap.up)
+
+            self._create_element(bitmap_el, "Height", text=bitmap.height)
 
     def write_vector(self, parent, from_obj):
         self._create_element(parent, "X", text=from_obj.x)
@@ -691,7 +691,7 @@ class BcfXml:
         components = bcf.v3.data.Components()
         data = visinfo["Components"]
         if "Selection" in data and "Component" in data["Selection"]:
-            for item in data["Selection"]["Component"]:
+            for item in data["Selection"].get("Component", []):
                 components.selection.append(self.get_component(item))
         if "Visibility" in data:
             component_visibility = bcf.v3.data.ComponentVisibility()
@@ -730,7 +730,7 @@ class BcfXml:
         self.set_vector(camera.camera_direction, data["CameraDirection"])
         self.set_vector(camera.camera_up_vector, data["CameraUpVector"])
         camera.view_to_world_scale = data["ViewToWorldScale"]
-        camera.aspect_ration = data["AspectRatio"]
+        camera.aspect_ratio = data["AspectRatio"]
         return camera
 
     def get_viewpoint_perspective_camera(self, visinfo):
@@ -742,14 +742,14 @@ class BcfXml:
         self.set_vector(camera.camera_direction, data["CameraDirection"])
         self.set_vector(camera.camera_up_vector, data["CameraUpVector"])
         camera.field_of_view = data["FieldOfView"]
-        camera.aspect_ration = data["AspectRatio"]
+        camera.aspect_ratio = data["AspectRatio"]
         return camera
 
     def get_viewpoint_lines(self, visinfo):
         if "Lines" not in visinfo:
             return []
         lines = []
-        for item in visinfo["Lines"]["Line"]:
+        for item in visinfo["Lines"].get("Line", []):
             line = bcf.v3.data.Line()
             self.set_vector(line.start_point, item["StartPoint"])
             self.set_vector(line.end_point, item["EndPoint"])
@@ -768,13 +768,13 @@ class BcfXml:
         return planes
 
     def get_viewpoint_bitmaps(self, visinfo):
-        if "Bitmap" not in visinfo:
+        if "Bitmaps" not in visinfo:
             return []
         bitmaps = []
-        for item in visinfo["Bitmaps"]["Bitmap"]:
+        for item in visinfo["Bitmaps"].get("Bitmap"):
             bitmap = bcf.v3.data.Bitmap()
             bitmap.reference = item["Reference"]
-            bitmap.bitmap_type = item["Format"].upper()
+            bitmap.bitmap_format = item["Format"].upper()
             self.set_vector(bitmap.location, item["Location"])
             self.set_vector(bitmap.normal, item["Normal"])
             self.set_vector(bitmap.up, item["Up"])
