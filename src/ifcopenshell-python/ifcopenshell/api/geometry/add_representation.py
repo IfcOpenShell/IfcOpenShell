@@ -1,8 +1,12 @@
 import bpy
 import bmesh
 import ifcopenshell.util.unit
-from mathutils import Vector
+from mathutils import Vector, Matrix
 from blenderbim.bim.module.geometry.helper import Helper
+
+Z_AXIS = Vector((0, 0, 1))
+X_AXIS = Vector((1, 0, 0))
+EPSILON = 1e-6
 
 
 class Usecase:
@@ -45,7 +49,26 @@ class Usecase:
         elif self.settings["context"].ContextType == "Plan":
             return self.create_plan_representation()
         return self.create_variable_representation()
+    
+    def should_triangulate_face(self, face, threshold=EPSILON):
+        vz = face.normal
+        co = face.verts[0].co
+        if vz.length < 0.5:
+            return True
+        if abs(vz.z) < 0.5:
+            vx = vz.cross(Z_AXIS)
+        else:
+            vx = vz.cross(X_AXIS)
+        vy = vx.cross(vz)
+        tM = Matrix([
+            [vx.x, vy.x, vz.x, co.x],
+            [vx.y, vy.y, vz.y, co.y],
+            [vx.z, vy.z, vz.z, co.z],
+            [0, 0, 0, 1]
+        ]).inverted()
 
+        return any([abs(tM @ v.co).z) > threshold  for v in face.verts])
+    
     def evaluate_geometry(self):
         for modifier in self.settings["blender_object"].modifiers:
             if modifier.type == "BOOLEAN":
@@ -54,17 +77,11 @@ class Usecase:
         mesh = self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
         bm = bmesh.new()
         bm.from_mesh(mesh)
-        bmesh.ops.triangulate(bm, faces=bm.faces)
-
-        if not self.settings["should_force_triangulation"]:
-            bmesh.ops.dissolve_limit(
-                bm,
-                angle_limit=0.00174533,  # 1 degree
-                use_dissolve_boundaries=False,
-                verts=bm.verts[:],
-                edges=bm.edges[:],
-                delimit={"MATERIAL"},
-            )
+        if self.settings["should_force_triangulation"]:
+            faces = bm.faces
+        else:
+            faces = [f for f in bm.faces if self.should_triangulate_face(f)]
+        bmesh.ops.triangulate(bm, faces=faces)
         bm.to_mesh(mesh)
         bm.free()
         del bm
