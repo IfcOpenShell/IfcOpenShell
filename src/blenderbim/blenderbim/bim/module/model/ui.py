@@ -38,6 +38,7 @@ class BIM_PT_authoring_architectural(Panel):
         row.operator("bim.align_wall", icon="ANCHOR_BOTTOM", text="Int.").align_type = "INTERIOR"
         row = self.layout.row(align=True)
         row.operator("bim.flip_wall", icon="ORIENTATION_NORMAL", text="Flip")
+        row.operator("bim.split_wall", icon="MOD_PHYSICS", text="Split")
 
 
 class BIM_PT_misc_utilities(Panel):

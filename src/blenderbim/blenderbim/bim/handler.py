@@ -55,6 +55,15 @@ def name_callback(obj, data):
     AttributeData.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
 
 
+def active_object_callback():
+    obj = bpy.context.active_object
+    for obj in bpy.context.selected_objects:
+        if not obj.BIMObjectProperties.ifc_definition_id:
+            continue
+        if IfcStore.id_map[obj.BIMObjectProperties.ifc_definition_id] != obj:
+            bpy.ops.bim.copy_class(obj=obj.name)
+
+
 def subscribe_to(object, data_path, callback):
     subscribe_to = object.path_resolve(data_path, False)
     bpy.msgbus.subscribe_rna(
@@ -174,15 +183,6 @@ def create_application_organisation(ifc):
             ],
         },
     )
-
-
-def active_object_callback():
-    obj = bpy.context.active_object
-    for obj in bpy.context.selected_objects:
-        if not obj.BIMObjectProperties.ifc_definition_id:
-            continue
-        if IfcStore.id_map[obj.BIMObjectProperties.ifc_definition_id] != obj:
-            bpy.ops.bim.copy_class(obj=obj.name)
 
 
 @persistent
