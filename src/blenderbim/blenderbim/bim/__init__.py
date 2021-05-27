@@ -125,6 +125,7 @@ if bpy is not None:
         bpy.types.Mesh.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
         bpy.types.Curve.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
         bpy.types.Camera.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
+        bpy.types.PointLight.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
         bpy.types.SCENE_PT_unit.append(ui.ifc_units)
 
         for module in modules.values():
@@ -146,6 +147,7 @@ if bpy is not None:
         del bpy.types.Mesh.BIMMeshProperties
         del bpy.types.Curve.BIMMeshProperties
         del bpy.types.Camera.BIMMeshProperties
+        del bpy.types.PointLight.BIMMeshProperties
         bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
 
         for module in reversed(list(modules.values())):

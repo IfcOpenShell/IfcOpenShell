@@ -99,6 +99,8 @@ class Usecase:
             return self.create_curve3d_representation()
         elif self.settings["context"].ContextIdentifier == "SurveyPoints":
             return self.create_geometric_curve_set_representation()
+        elif self.settings["context"].ContextIdentifier == "Lighting":
+            return self.create_lighting_representation()
 
     def create_plan_representation(self):
         if self.settings["context"].ContextIdentifier == "Annotation":
@@ -126,6 +128,28 @@ class Usecase:
             pass
         elif self.settings["context"].ContextIdentifier == "SurveyPoints":
             pass
+
+    def create_lighting_representation(self):
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "LightSource",
+            [self.create_light_source()],
+        )
+
+    def create_light_source(self):
+        if self.settings["geometry"].type == "POINT":
+            return self.create_light_source_positional()
+
+    def create_light_source_positional(self):
+        return self.file.create_entity(
+            "IfcLightSourcePositional",
+            **{
+                "LightColour": self.file.createIfcColourRgb(None, *self.settings["geometry"].color),
+                "Position": self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
+                "Radius": self.convert_si_to_unit(self.settings["geometry"].shadow_soft_size),
+            },
+        )
 
     def create_text_representation(self):
         return self.file.createIfcShapeRepresentation(
