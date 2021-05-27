@@ -49,7 +49,6 @@ class IfcExporter:
                     json.dump(jsonData, outfile, indent=None if self.ifc_export_settings.json_compact else 4)
 
     def set_header(self):
-        # TODO: add all metadata, pending bug #747
         self.file.wrapped_data.header.file_name.name = os.path.basename(self.ifc_export_settings.output_file)
         self.file.wrapped_data.header.file_name.time_stamp = (
             datetime.datetime.utcnow()
@@ -62,16 +61,6 @@ class IfcExporter:
         self.file.wrapped_data.header.file_name.originating_system = "{} {}".format(
             self.get_application_name(), self.get_application_version()
         )
-        # TODO: reimplement. See #1222.
-        # if self.owner_history:
-        #    if self.schema_version == "IFC2X3":
-        #        self.file.wrapped_data.header.file_name.authorization = self.owner_history.OwningUser.ThePerson.Id
-        #    else:
-        #        self.file.wrapped_data.header.file_name.authorization = (
-        #            self.owner_history.OwningUser.ThePerson.Identification
-        #        )
-        # else:
-        #    self.file.wrapped_data.header.file_name.authorization = "Nobody"
 
     def sync_object_placements_and_deletions(self):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
