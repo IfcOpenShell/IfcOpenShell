@@ -25,4 +25,6 @@ class Usecase:
                         ifcopenshell.api.run("sequence.remove_task", self.file, task=related_object)
                 elif inverse.RelatedObjects == tuple(self.settings["task"]):
                     self.file.remove(inverse)
+            elif inverse.is_a("IfcRelAssignsToControl"):
+                self.file.remove(inverse)
         self.file.remove(self.settings["task"])
