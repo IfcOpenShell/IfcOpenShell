@@ -1,11 +1,12 @@
 import bpy
+import bmesh
 import math
 import ifcopenshell
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import mathutils.geometry
 from blenderbim.bim.ifc import IfcStore
-from math import pi
+from math import pi, degrees
 from mathutils import Vector, Matrix
 from ifcopenshell.api.material.data import Data as MaterialData
 
@@ -144,6 +145,20 @@ class FlipWall(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SplitWall(bpy.types.Operator):
+    bl_idname = "bim.split_wall"
+    bl_label = "Split Wall"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        selected_objs = context.selected_objects
+        if len(selected_objs) == 0:
+            return {"FINISHED"}
+        for obj in selected_objs:
+            DumbWallSplitter(obj, bpy.context.scene.cursor.location).split()
+        return {"FINISHED"}
+
+
 def recalculate_dumb_wall_origin(wall, new_origin=None):
     if new_origin is None:
         new_origin = wall.matrix_world @ Vector(wall.bound_box[0])
@@ -155,6 +170,68 @@ def recalculate_dumb_wall_origin(wall, new_origin=None):
         )
     )
     wall.matrix_world.translation = new_origin
+
+
+class DumbWallSplitter:
+    def __init__(self, wall, point):
+        self.wall = wall
+        self.point = point
+
+    def split(self):
+        recalculate_dumb_wall_origin(self.wall)
+        self.point = self.determine_split_point()
+        if not self.point:
+            return
+        new_wall = self.duplicate_wall()
+        self.snap_end_face_to_point(self.wall, "max")
+        self.snap_end_face_to_point(new_wall, "min")
+
+    def determine_split_point(self):
+        start = self.wall.matrix_world @ Vector(self.wall.bound_box[0])
+        end = self.wall.matrix_world @ Vector(self.wall.bound_box[4])
+        point, distance = mathutils.geometry.intersect_point_line(self.point, start, end)
+        if round(distance, 2) <= 0 or round(distance, 2) >= 1:
+            return  # The split point is not on the wall
+        return point
+
+    def duplicate_wall(self):
+        new = self.wall.copy()
+        self.wall.users_collection[0].objects.link(new)
+        bpy.ops.bim.copy_class(obj=new.name)
+        return new
+
+    def snap_end_face_to_point(self, wall, which_end):
+        bm = bmesh.new()
+        bm.from_mesh(wall.data)
+        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
+        min_face, max_face = self.get_wall_end_faces(wall, bm)
+        face = min_face if which_end == "min" else max_face
+        local_point = wall.matrix_world.inverted() @ self.point
+        for vert in face.verts:
+            vert.co.x = local_point.x
+        bm.to_mesh(wall.data)
+        wall.data.update()
+        bm.free()
+        IfcStore.edited_objs.add(wall)
+
+    # An end face is a quad that is on one end of the wall or the other. It must
+    # have at least one vertex on either extreme X-axis, and a non-insignificant
+    # X component of its face normal
+    def get_wall_end_faces(self, wall, bm):
+        min_face = None
+        max_face = None
+        min_x = min([v[0] for v in wall.bound_box])
+        max_x = max([v[0] for v in wall.bound_box])
+        bm.faces.ensure_lookup_table()
+        for f in bm.faces:
+            for v in f.verts:
+                if v.co.x == min_x and abs(f.normal.x) > 0.1:
+                    min_face = f
+                elif v.co.x == max_x and abs(f.normal.x) > 0.1:
+                    max_face = f
+            if min_face and max_face:
+                break
+        return min_face, max_face
 
 
 class DumbWallFlipper:
@@ -194,7 +271,7 @@ class DumbWallAligner:
         reference_width = (Vector(self.reference_wall.bound_box[3]) - Vector(self.reference_wall.bound_box[0])).y
 
         if self.is_rotation_flipped():
-            offset = self.wall.matrix_world.to_quaternion() @ Vector((0, - (reference_width / 2) - (width / 2), 0))
+            offset = self.wall.matrix_world.to_quaternion() @ Vector((0, -(reference_width / 2) - (width / 2), 0))
         else:
             offset = self.wall.matrix_world.to_quaternion() @ Vector((0, (reference_width / 2) - (width / 2), 0))
 
@@ -243,14 +320,22 @@ class DumbWallAligner:
         self.wall.matrix_world.translation[1] = new_origin[1]
 
     def align_rotation(self):
-        reference_rotation = self.reference_wall.rotation_euler[2] % (2 * pi)
-        self.wall.rotation_euler[2] = (pi * round(self.wall.rotation_euler[2] / pi)) + reference_rotation
+        reference = (self.reference_wall.matrix_world.to_quaternion() @ Vector((1, 0, 0))).to_2d()
+        wall = (self.wall.matrix_world.to_quaternion() @ Vector((1, 0, 0))).to_2d()
+        angle = reference.angle_signed(wall)
+        if round(degrees(angle) % 360) in (0, 180):
+            return
+        elif angle > (pi / 2):
+            self.wall.rotation_euler[2] -= pi - angle
+        else:
+            self.wall.rotation_euler[2] += angle
+        bpy.context.view_layer.update()
 
     def is_rotation_flipped(self):
-        pi2 = pi * 2
-        wall_delta_to_nearest_360 = abs((pi2 * round(self.wall.rotation_euler[2] / pi2)) - self.wall.rotation_euler[2])
-        reference_delta_to_nearest_360 = abs((pi2 * round(self.reference_wall.rotation_euler[2] / pi2)) - self.reference_wall.rotation_euler[2])
-        return abs(reference_delta_to_nearest_360 - wall_delta_to_nearest_360) > 0.1
+        reference = (self.reference_wall.matrix_world.to_quaternion() @ Vector((1, 0, 0))).to_2d()
+        wall = (self.wall.matrix_world.to_quaternion() @ Vector((1, 0, 0))).to_2d()
+        angle = reference.angle_signed(wall)
+        return round(degrees(angle) % 360) == 180
 
 
 class DumbWallJoiner:

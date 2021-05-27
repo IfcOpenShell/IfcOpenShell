@@ -7,6 +7,7 @@ classes = (
     operator.JoinWall,
     operator.AlignWall,
     operator.FlipWall,
+    operator.SplitWall,
     prop.BIMModelProperties,
     ui.BIM_PT_authoring,
     ui.BIM_PT_authoring_architectural,

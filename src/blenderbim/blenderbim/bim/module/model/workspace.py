@@ -20,6 +20,7 @@ class WallTool(WorkSpaceTool):
         ("bim.join_wall", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("join_type", "L")]}),
         ("bim.join_wall", {"type": "Y", "value": "PRESS", "shift": True}, {"properties": [("join_type", "V")]}),
         ("bim.flip_wall", {"type": "F", "value": "PRESS", "shift": True}, {"properties": []}),
+        ("bim.split_wall", {"type": "S", "value": "PRESS", "shift": True}, {"properties": []}),
         (
             "bim.align_wall",
             {"type": "X", "value": "PRESS", "shift": True},
