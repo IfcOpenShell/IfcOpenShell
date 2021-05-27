@@ -280,7 +280,7 @@ ENDIF()
 # Use the found libTKernel as a template for all other OCC libraries
 # TODO Extract this into macro/function
 foreach(lib ${OPENCASCADE_LIBRARY_NAMES})
-    # Make sure we'll handle the Windows/MSVC debug postfix convetion too.
+    # Make sure we'll handle the Windows/MSVC debug postfix convention too.
     string(REPLACE TKerneld "${lib}" lib_path "${libTKernel}")
     string(REPLACE TKernel "${lib}" lib_path "${lib_path}")
 	list(APPEND OPENCASCADE_LIBRARIES "${lib_path}")
@@ -355,7 +355,7 @@ IF(COLLADA_SUPPORT AND BUILD_CONVERT)
 
 		# Use the found OpenCOLLADAFramework as a template for all other OpenCOLLADA libraries
 		foreach(lib ${OPENCOLLADA_LIBRARY_NAMES})
-            # Make sure we'll handle the Windows/MSVC debug postfix convetion too.
+            # Make sure we'll handle the Windows/MSVC debug postfix convention too.
             string(REPLACE OpenCOLLADAFrameworkd "${lib}" lib_path "${OpenCOLLADAFramework}")
             string(REPLACE OpenCOLLADAFramework "${lib}" lib_path "${lib_path}")
  			list(APPEND OPENCOLLADA_LIBRARIES "${lib_path}")
