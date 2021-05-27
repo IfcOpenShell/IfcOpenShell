@@ -31,6 +31,7 @@ if bpy is not None:
         "sequence": None,
         "group": None,
         "structural": None,
+        "boundary": None,
         "material": None,
         "style": None,
         "layer": None,

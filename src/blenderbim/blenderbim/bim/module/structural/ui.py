@@ -47,6 +47,7 @@ def draw_boundary_condition_editable_ui(layout, props):
         if attribute.is_optional:
             row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
+
 def draw_boundary_condition_read_only_ui(layout, boundary_condition_data):
     for key, value in boundary_condition_data.items():
         if key == "id" or key == "type" or value == None:
@@ -57,7 +58,6 @@ def draw_boundary_condition_read_only_ui(layout, boundary_condition_data):
             row.label(text="", icon="CHECKBOX_HLT" if value else "CHECKBOX_DEHLT")
         else:
             row.label(text=str(value))
-
 
 
 class BIM_PT_structural_boundary_conditions(Panel):
@@ -231,7 +231,9 @@ class BIM_PT_structural_connection(Panel):
                 row.prop(self.props, "ccs_z_angle", text="Z Angle")
             else:
                 row = self.layout.row()
-                row.operator("bim.enable_editing_structural_connection_cs", text="Edit Connection CS", icon="GREASEPENCIL")
+                row.operator(
+                    "bim.enable_editing_structural_connection_cs", text="Edit Connection CS", icon="GREASEPENCIL"
+                )
         else:
             row = self.layout.row()
             row.label(text="TODO")
@@ -417,7 +419,6 @@ class BIM_PT_structural_load_cases(Panel):
         )
 
 
-
 class BIM_UL_structural_activities(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
@@ -444,9 +445,7 @@ class BIM_PT_structural_loads(Panel):
         self.props = context.scene.BIMStructuralProperties
 
         row = self.layout.row(align=True)
-        row.label(
-            text="{} Structural Loads Found".format(len(Data.structural_loads)), icon="GHOST_ENABLED"
-        )
+        row.label(text="{} Structural Loads Found".format(len(Data.structural_loads)), icon="GHOST_ENABLED")
         if self.props.is_editing_loads:
             row.prop(self.props, "structural_load_types", text="")
             row.operator("bim.add_structural_load", text="", icon="ADD").ifc_class = self.props.structural_load_types
