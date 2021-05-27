@@ -332,6 +332,7 @@ class EnableEditingCostItemValues(bpy.types.Operator):
         props = context.scene.BIMCostProperties
         props.active_cost_item_id = self.cost_item
         props.cost_item_editing_type = "VALUES"
+        bpy.ops.bim.disable_editing_cost_item_value()
         return {"FINISHED"}
 
 
