@@ -82,6 +82,7 @@ def getSubcontexts(self, context):
         "CoG",
         "Profile",
         "SurveyPoints",
+        "Lighting",
     ]
     for subcontext in subcontexts:
         subcontexts_enum.append((subcontext, subcontext, ""))
