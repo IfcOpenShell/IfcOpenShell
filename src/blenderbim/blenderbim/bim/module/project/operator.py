@@ -255,3 +255,60 @@ class AppendLibraryElement(bpy.types.Operator):
         ifc_importer.type_collection = type_collection
         ifc_importer.create_type_product(element)
         ifc_importer.place_objects_in_spatial_tree()
+
+
+class EnableEditingHeader(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_header"
+    bl_label = "Enable Editing Header"
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        props = context.scene.BIMProjectProperties
+        props.is_editing = True
+
+        mvd = "".join(IfcStore.get_file().wrapped_data.header.file_description.description)
+        if "[" in mvd:
+            props.mvd = mvd.split("[")[1][0:-1]
+        else:
+            props.mvd = ""
+
+        author = self.file.wrapped_data.header.file_name.author
+        if author:
+            props.author_name = author[0]
+            if len(author) > 1:
+                props.author_email = author[1]
+
+        organisation = self.file.wrapped_data.header.file_name.organization
+        if organisation:
+            props.organisation_name = organisation[0]
+            if len(organisation) > 1:
+                props.organisation_email = organisation[1]
+
+        props.authorisation = self.file.wrapped_data.header.file_name.authorization
+        return {"FINISHED"}
+
+
+class EditHeader(bpy.types.Operator):
+    bl_idname = "bim.edit_header"
+    bl_label = "Edit Header"
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        props = context.scene.BIMProjectProperties
+        props.is_editing = True
+
+        self.file.wrapped_data.header.file_description.description = (f'ViewDefinition[{props.mvd}]',)
+        self.file.wrapped_data.header.file_name.author = (props.author_name, props.author_email)
+        self.file.wrapped_data.header.file_name.organization = (props.organisation_name, props.organisation_email)
+        self.file.wrapped_data.header.file_name.authorization = props.authorisation
+        bpy.ops.bim.disable_editing_header()
+        return {"FINISHED"}
+
+
+class DisableEditingHeader(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_header"
+    bl_label = "Disable Editing Header"
+
+    def execute(self, context):
+        context.scene.BIMProjectProperties.is_editing = False
+        return {"FINISHED"}

@@ -28,10 +28,40 @@ class BIM_PT_project(Panel):
         row.label(text=os.path.basename(props.ifc_file) or "No File Found")
 
         if IfcStore.get_file():
-            row.prop(pprops, "is_authoring", icon="GREASEPENCIL", text="")
+            row.prop(pprops, "is_authoring", icon="MODIFIER", text="")
+            if pprops.is_editing:
+                row.operator("bim.edit_header", icon="CHECKMARK", text="")
+                row.operator("bim.disable_editing_header", icon="CANCEL", text="")
+            else:
+                row.operator("bim.enable_editing_header", icon="GREASEPENCIL", text="")
+
             row = self.layout.row(align=True)
             row.label(text="IFC Schema", icon="FILE_CACHE")
             row.label(text=IfcStore.get_file().schema)
+
+            if pprops.is_editing:
+                row = self.layout.row(align=True)
+                row.prop(pprops, "mvd")
+
+                row = self.layout.row(align=True)
+                row.prop(pprops, "author_name")
+                row = self.layout.row(align=True)
+                row.prop(pprops, "author_email")
+
+                row = self.layout.row(align=True)
+                row.prop(pprops, "organisation_name")
+                row = self.layout.row(align=True)
+                row.prop(pprops, "organisation_email")
+
+                row = self.layout.row(align=True)
+                row.prop(pprops, "authorisation")
+            else:
+                row = self.layout.row(align=True)
+                row.label(text="IFC MVD", icon="FILE_HIDDEN")
+                mvd = "".join(IfcStore.get_file().wrapped_data.header.file_description.description)
+                if "[" in mvd:
+                    mvd = mvd.split("[")[1][0:-1]
+                row.label(text=mvd)
         else:
             row = self.layout.row(align=True)
             row.label(text="File Not Loaded", icon="ERROR")
