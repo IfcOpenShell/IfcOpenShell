@@ -1059,7 +1059,7 @@ class RefreshDrawingList(bpy.types.Operator):
                 continue
             if "IfcAnnotation/" in obj.name:
                 new = bpy.context.scene.DocProperties.drawings.add()
-                new.name = obj.name.split("/")[1]
+                new.name = "/".join(obj.name.split("/")[1:])
                 new.camera = obj
         return {"FINISHED"}
 

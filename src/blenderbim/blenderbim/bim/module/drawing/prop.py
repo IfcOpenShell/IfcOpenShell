@@ -99,9 +99,11 @@ def updateDrawingName(self, context):
         return
     if self.camera.name == self.name:
         return
-    self.camera.name = "IfcGroup/{}".format(self.name)
-    self.camera.users_collection[0].name = self.camera.name
-    self.name = self.camera.name.split("/")[1]
+    self.camera.name = "IfcAnnotation/{}".format(self.name)
+    unique_name = "/".join(self.camera.name.split("/")[1:])
+    self.camera.users_collection[0].name = "IfcGroup/{}".format(unique_name)
+    if self.name != unique_name:
+        self.name = unique_name
 
 
 def refreshActiveDrawingIndex(self, context):
