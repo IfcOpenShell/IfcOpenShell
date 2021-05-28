@@ -36,3 +36,24 @@ def add_pre_listener(usecase_path, ifc_file, callback):
 def add_post_listener(usecase_path, ifc_file, callback):
     ifc_key = registered_ifcs.setdefault(ifc_file, ifcopenshell.guid.new())
     post_listeners.setdefault(".".join([ifc_key, usecase_path]), set()).add(callback)
+    
+def remove_pre_listener(callback):
+    for ifc_key, callbacks in pre_listeners.items():
+        for fun in callbacks:
+            if fun == callback:
+                pre_listeners[ifc_key].remove(callback)
+                return
+
+def remove_post_listener(callback):
+    for ifc_key, callbacks in post_listeners.items():
+        for fun in callbacks:
+            if fun == callback:
+                post_listeners[ifc_key].remove(callback)
+                return
+
+def remove_all_listeners():
+    registered_ifcs.clear()
+    pre_listeners.clear()
+    post_listeners.clear()
+
+
