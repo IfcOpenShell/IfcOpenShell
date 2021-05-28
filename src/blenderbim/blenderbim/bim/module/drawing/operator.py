@@ -587,8 +587,14 @@ class ActivateView(bpy.types.Operator):
         camera = bpy.context.scene.DocProperties.drawings[self.drawing_index].camera
         if not camera:
             return {"FINISHED"}
-        bpy.context.scene.camera = camera
         area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        is_local_view = area.spaces[0].local_view is not None
+        if is_local_view:
+            bpy.ops.view3d.localview()
+            bpy.context.scene.camera = camera
+            bpy.ops.view3d.localview()
+        else:
+            bpy.context.scene.camera = camera
         area.spaces[0].region_3d.view_perspective = "CAMERA"
         views_collection = bpy.data.collections.get("Views")
         for collection in views_collection.children:
