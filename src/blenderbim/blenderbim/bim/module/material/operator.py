@@ -42,7 +42,7 @@ class AddMaterial(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.data.materials.get(self.obj) if self.obj else bpy.context.active_object.active_material
         self.file = IfcStore.get_file()
-        result = ifcopenshell.api.run("material.add_material", self.file, **{"Name": obj.name})
+        result = ifcopenshell.api.run("material.add_material", self.file, **{"name": obj.name})
         obj.BIMObjectProperties.ifc_definition_id = result.id()
         Data.load(IfcStore.get_file())
         material_prop_purge()

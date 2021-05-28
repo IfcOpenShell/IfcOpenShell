@@ -99,13 +99,13 @@ class QuantifyObjects(bpy.types.Operator):
                 "pset.add_qto",
                 self.file,
                 product=self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                Name=props.qto_name,
+                name=props.qto_name,
             )
             ifcopenshell.api.run(
                 "pset.edit_qto",
                 self.file,
                 qto=qto,
-                Properties={props.prop_name: result}
+                properties={props.prop_name: result}
             )
             PsetData.load(self.file, obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
