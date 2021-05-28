@@ -57,10 +57,10 @@ def add_object(self, context):
             result = ifcopenshell.api.run(
                 "grid.create_grid_axis",
                 self.file,
-                **{"AxisTag": tag, "AxisCurve": obj, "UVWAxes": "UAxes", "Grid": grid},
+                **{"axis_tag": tag, "uvw_axes": "UAxes", "grid": grid},
             )
             IfcStore.link_element(result, obj)
-            ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"AxisCurve": obj, "grid_axis": result})
+            ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"axis_curve": obj, "grid_axis": result})
             obj.BIMObjectProperties.ifc_definition_id = result.id()
 
     axes_collection = bpy.data.collections.new("VAxes")
@@ -83,10 +83,10 @@ def add_object(self, context):
             result = ifcopenshell.api.run(
                 "grid.create_grid_axis",
                 self.file,
-                **{"AxisTag": tag, "AxisCurve": obj, "UVWAxes": "VAxes", "Grid": grid},
+                **{"axis_tag": tag, "uvw_axes": "VAxes", "grid": grid},
             )
             IfcStore.link_element(result, obj)
-            ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"AxisCurve": obj, "grid_axis": result})
+            ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"axis_curve": obj, "grid_axis": result})
             obj.BIMObjectProperties.ifc_definition_id = result.id()
 
 

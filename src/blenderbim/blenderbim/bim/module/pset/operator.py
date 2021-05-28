@@ -187,8 +187,8 @@ class EditPset(bpy.types.Operator):
                 self.file,
                 **{
                     "pset": self.file.by_id(pset_id),
-                    "Name": props.active_pset_name,
-                    "Properties": properties,
+                    "name": props.active_pset_name,
+                    "properties": properties,
                 },
             )
         else:
@@ -197,8 +197,8 @@ class EditPset(bpy.types.Operator):
                 self.file,
                 **{
                     "qto": self.file.by_id(pset_id),
-                    "Name": props.active_pset_name,
-                    "Properties": properties,
+                    "name": props.active_pset_name,
+                    "properties": properties,
                 },
             )
         Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
@@ -260,7 +260,7 @@ class AddPset(bpy.types.Operator):
             self.file,
             **{
                 "product": self.file.by_id(oprops.ifc_definition_id),
-                "Name": pset_name,
+                "name": pset_name,
             },
         )
         Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
@@ -281,7 +281,7 @@ class AddQto(bpy.types.Operator):
             self.file,
             **{
                 "product": self.file.by_id(oprops.ifc_definition_id),
-                "Name": props.qto_name,
+                "name": props.qto_name,
             },
         )
         Data.load(IfcStore.get_file(), oprops.ifc_definition_id)

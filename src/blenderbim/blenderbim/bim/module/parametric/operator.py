@@ -78,7 +78,7 @@ def calculate_dumb_quantities(usecase_path, ifc_file, **settings):
     if not parametric or parametric["Engine"] != "BlenderBIM.DumbWall":
         return
     qto = ifcopenshell.api.run(
-        "pset.add_qto", ifc_file, should_run_listeners=False, product=product, Name="Qto_WallBaseQuantities"
+        "pset.add_qto", ifc_file, should_run_listeners=False, product=product, name="Qto_WallBaseQuantities"
     )
     length = obj.dimensions[0] / unit_scale
     width = obj.dimensions[1] / unit_scale
@@ -95,7 +95,7 @@ def calculate_dumb_quantities(usecase_path, ifc_file, **settings):
         net_volume = gross_volume
         bm.free()
 
-    ifcopenshell.api.run("pset.edit_qto", ifc_file, should_run_listeners=False, qto=qto, Properties={
+    ifcopenshell.api.run("pset.edit_qto", ifc_file, should_run_listeners=False, qto=qto, properties={
         "Length": round(length, 2),
         "Width": round(width, 2),
         "Height": round(height, 2),

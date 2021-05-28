@@ -269,7 +269,7 @@ class UpdateRepresentation(bpy.types.Operator):
         product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
 
         if product.is_a("IfcGridAxis"):
-            ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"AxisCurve": obj, "grid_axis": product})
+            ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"axis_curve": obj, "grid_axis": product})
             return
 
         bpy.ops.bim.edit_object_placement(obj=obj.name)
