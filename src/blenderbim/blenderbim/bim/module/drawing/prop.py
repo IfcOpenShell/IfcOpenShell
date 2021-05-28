@@ -198,10 +198,12 @@ class DrawingStyle(PropertyGroup):
 
 
 class DocProperties(PropertyGroup):
-    should_regenerate_base_layer: BoolProperty(name="Regenerate Base Layer", default=True)
-    should_regenerate_annotation_layer: BoolProperty(name="Regenerate Annotation Layer", default=True)
-    should_recut: BoolProperty(name="Should Recut", default=True)
-    should_recut_selected: BoolProperty(name="Should Recut Selected Only", default=False)
+    has_underlay: BoolProperty(name="Underlay", default=False)
+    has_linework: BoolProperty(name="Linework", default=True)
+    has_annotation: BoolProperty(name="Annotation", default=True)
+    should_use_underlay_cache: BoolProperty(name="Use Underlay Cache", default=False)
+    should_use_linework_cache: BoolProperty(name="Use Linework Cache", default=False)
+    should_use_annotation_cache: BoolProperty(name="Use Annotation Cache", default=False)
     should_extract: BoolProperty(name="Should Extract", default=True)
     drawings: CollectionProperty(name="Drawings", type=Drawing)
     active_drawing_index: IntProperty(name="Active Drawing Index", update=refreshActiveDrawingIndex)

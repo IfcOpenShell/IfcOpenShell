@@ -4,6 +4,7 @@ import bpy
 import json
 import time
 import bmesh
+import shutil
 import subprocess
 import webbrowser
 import ifcopenshell.util.selector
@@ -92,11 +93,13 @@ class CreateDrawing(bpy.types.Operator):
         self.profile_code("Start drawing generation process")
         self.props = context.scene.DocProperties
         self.drawing_name = IfcStore.get_file().by_id(self.camera.BIMObjectProperties.ifc_definition_id).Name
-        base_svg = self.ifc_to_svg(context)
-        self.profile_code("Generate base layer")
-        annotation_svg = self.annotation_to_svg(context)
-        self.profile_code("Generate annotation layer")
-        svg_path = self.combine_svgs(context, base_svg, annotation_svg)
+        underlay_svg = self.generate_underlay(context)
+        self.profile_code("Generate underlay")
+        linework_svg = self.generate_linework(context)
+        self.profile_code("Generate linework")
+        annotation_svg = self.generate_annotation(context)
+        self.profile_code("Generate annotation")
+        svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
         self.profile_code("Combine SVG layers")
         open_with_user_command(bpy.context.preferences.addons["blenderbim"].preferences.svg_command, svg_path)
         print("Total Time: {:.2f}".format(time.time() - start))
@@ -108,34 +111,121 @@ class CreateDrawing(bpy.types.Operator):
         print("{} :: {:.2f}".format(message, time.time() - self.time))
         self.time = time.time()
 
-    def combine_svgs(self, context, base, annotation):
+    def combine_svgs(self, context, underlay, linework, annotation):
         # Hacky :)
         svg_path = os.path.join(context.scene.BIMProperties.data_dir, "diagrams", self.drawing_name + ".svg")
         with open(svg_path, "w") as outfile:
-            with open(base) as infile:
-                should_skip = False
-                for line in infile:
-                    if "</svg>" in line:
-                        continue
-                    elif "<defs>" in line:
-                        should_skip = True
-                        continue
-                    elif "</style>" in line:
-                        should_skip = False
-                        continue
-                    elif should_skip:
-                        continue
-                    outfile.write(line)
-            with open(annotation) as infile:
-                for i, line in enumerate(infile):
-                    if i == 0 or i == 1:
-                        continue
-                    outfile.write(line)
+            has_boilerplate = False
+            if underlay:
+                with open(underlay) as infile:
+                    for line in infile:
+                        if "<svg " in line:
+                            line = line.replace('">', '" xmlns:ifc="http://www.ifcopenshell.org/ns">')
+                        if "</svg>" in line:
+                            continue
+                        outfile.write(line)
+                shutil.copyfile(underlay[0:-4] + ".png", svg_path[0:-4] + "-underlay.png")
+                has_boilerplate = True
+            if linework:
+                with open(linework) as infile:
+                    should_skip = False
+                    for i, line in enumerate(infile):
+                        if has_boilerplate and i == 0:
+                            continue
+                        if "</svg>" in line:
+                            continue
+                        elif "<defs>" in line:
+                            should_skip = True
+                            continue
+                        elif "</style>" in line:
+                            should_skip = False
+                            continue
+                        elif should_skip:
+                            continue
+                        outfile.write(line)
+                has_boilerplate = True
+            if annotation:
+                with open(annotation) as infile:
+                    for i, line in enumerate(infile):
+                        if has_boilerplate and i in [0, 1]:
+                            continue
+                        if "</svg>" in line:
+                            continue
+                        outfile.write(line)
+            outfile.write("</svg>")
         return svg_path
 
-    def ifc_to_svg(self, context):
-        svg_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", self.drawing_name + "-base.svg")
-        if os.path.isfile(svg_path) and not self.props.should_regenerate_base_layer:
+    def generate_underlay(self, context):
+        if not self.props.has_underlay:
+            return
+        svg_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", self.drawing_name + "-underlay.svg")
+        bpy.context.scene.render.filepath = svg_path[0:-4] + ".png"
+        drawing_style = bpy.context.scene.DocProperties.drawing_styles[
+            self.camera.data.BIMCameraProperties.active_drawing_style_index
+        ]
+
+        if drawing_style.render_type == "DEFAULT":
+            bpy.ops.render.render(write_still=True)
+        else:
+            previous_visibility = {}
+            for obj in self.camera.users_collection[0].objects:
+                previous_visibility[obj.name] = obj.hide_get()
+                obj.hide_set(True)
+            for obj in bpy.context.visible_objects:
+                if (
+                    (not obj.data and not obj.instance_collection)
+                    or isinstance(obj.data, bpy.types.Camera)
+                    or "IfcGrid/" in obj.name
+                    or "IfcGridAxis/" in obj.name
+                    or "IfcOpeningElement/" in obj.name
+                ):
+                    previous_visibility[obj.name] = obj.hide_get()
+                    obj.hide_set(True)
+
+            space = self.get_view_3d()
+            previous_shading = space.shading.type
+            previous_format = bpy.context.scene.render.image_settings.file_format
+            space.shading.type = "RENDERED"
+            bpy.context.scene.render.image_settings.file_format = "PNG"
+            bpy.ops.render.opengl(write_still=True)
+            space.shading.type = previous_shading
+            bpy.context.scene.render.image_settings.file_format = previous_format
+
+            for name, value in previous_visibility.items():
+                bpy.data.objects[name].hide_set(value)
+
+        svg_writer = svgwriter.SvgWriter()
+        if self.camera.data.BIMCameraProperties.diagram_scale == "CUSTOM":
+            human_scale, fraction = self.camera.data.BIMCameraProperties.custom_diagram_scale.split("|")
+        else:
+            human_scale, fraction = self.camera.data.BIMCameraProperties.diagram_scale.split("|")
+        if self.camera.data.BIMCameraProperties.is_nts:
+            svg_writer.human_scale = "NTS"
+        else:
+            svg_writer.human_scale = human_scale
+        render = bpy.context.scene.render
+        if self.is_landscape():
+            width = self.camera.data.ortho_scale
+            height = width / render.resolution_x * render.resolution_y
+        else:
+            height = self.camera.data.ortho_scale
+            width = height / render.resolution_y * render.resolution_x
+        svg_writer.output = svg_path
+        svg_writer.data_dir = bpy.context.scene.BIMProperties.data_dir
+        svg_writer.vector_style = drawing_style.vector_style
+        svg_writer.camera = self.camera
+        svg_writer.camera_width = width
+        svg_writer.camera_height = height
+        svg_writer.camera_projection = tuple(self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1)))
+        svg_writer.background_image = bpy.context.scene.render.filepath
+        svg_writer.write("underlay")
+        return svg_path
+
+    def generate_linework(self, context):
+        if not self.props.has_linework:
+            return
+        svg_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", self.drawing_name + "-linework.svg")
+        if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
             return svg_path
         ifcconvert_path = os.path.join(cwd, "..", "..", "..", "libs", "IfcConvert")
         subprocess.run(
@@ -161,9 +251,11 @@ class CreateDrawing(bpy.types.Operator):
         )
         return svg_path
 
-    def annotation_to_svg(self, context):
+    def generate_annotation(self, context):
+        if not self.props.has_annotation:
+            return
         svg_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", self.drawing_name + "-annotation.svg")
-        if os.path.isfile(svg_path) and not self.props.should_regenerate_annotation_layer:
+        if os.path.isfile(svg_path) and self.props.should_use_annotation_cache:
             return svg_path
 
         camera = self.camera
@@ -237,11 +329,20 @@ class CreateDrawing(bpy.types.Operator):
         svg_writer.annotations["attributes"] = [a.name for a in drawing_style.attributes]
         svg_writer.annotations["annotation_objs"] = self.get_annotation(svg_writer)
 
-        svg_writer.write()
+        svg_writer.write("annotation")
         return svg_writer.output
 
     def is_landscape(self):
         return bpy.context.scene.render.resolution_x > bpy.context.scene.render.resolution_y
+
+    def get_view_3d(self):
+        for area in bpy.context.screen.areas:
+            if area.type != "VIEW_3D":
+                continue
+            for space in area.spaces:
+                if space.type != "VIEW_3D":
+                    continue
+                return space
 
     def get_annotation(self, svg_writer):
         results = []
@@ -950,7 +1051,7 @@ class RefreshDrawingList(bpy.types.Operator):
         for obj in bpy.context.scene.objects:
             if not isinstance(obj.data, bpy.types.Camera):
                 continue
-            if "IfcAnnotation/" in obj.name and obj.users_collection[0].name == obj.name:
+            if "IfcAnnotation/" in obj.name:
                 new = bpy.context.scene.DocProperties.drawings.add()
                 new.name = obj.name.split("/")[1]
                 new.camera = obj
