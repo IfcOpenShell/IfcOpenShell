@@ -45,6 +45,7 @@ classes = (
     prop.BIMCameraProperties,
     prop.BIMTextProperties,
     ui.BIM_PT_camera,
+    ui.BIM_PT_drawing_underlay,
     ui.BIM_PT_drawings,
     ui.BIM_PT_schedules,
     ui.BIM_PT_sheets,

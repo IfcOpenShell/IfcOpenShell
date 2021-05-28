@@ -45,9 +45,10 @@ class SvgWriter:
         self.vector_style = None
         self.human_scale = "NTS"
         self.annotations = {}
+        self.background_image = None
         self.scale = 1 / 100  # 1:100
 
-    def write(self):
+    def write(self, layer):
         self.calculate_scale()
         self.svg = svgwrite.Drawing(
             self.output,
@@ -58,14 +59,16 @@ class SvgWriter:
             data_scale=self.human_scale,
         )
 
-        self.add_stylesheet()
-        self.add_markers()
-        self.add_symbols()
-        self.add_patterns()
-        # self.draw_background_image()
-        # self.draw_background_elements()
-        # self.draw_cut_polygons()
-        self.draw_annotations()
+        if layer == "underlay":
+            self.draw_background_image()
+        elif layer == "annotation":
+            self.add_stylesheet()
+            self.add_markers()
+            self.add_symbols()
+            self.add_patterns()
+            # self.draw_background_elements()
+            # self.draw_cut_polygons()
+            self.draw_annotations()
         self.svg.save(pretty=True)
 
     def calculate_scale(self):
@@ -98,10 +101,9 @@ class SvgWriter:
             self.svg.defs.add(External(child))
 
     def draw_background_image(self):
-        return # TODO reimplement for artistic drawing options
         self.svg.add(
             self.svg.image(
-                os.path.join("..", "diagrams", os.path.basename(self.ifc_cutter.background_image)),
+                os.path.join("..", "diagrams", os.path.basename(self.background_image)),
                 **{"width": self.width, "height": self.height}
             )
         )

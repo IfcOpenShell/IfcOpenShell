@@ -67,7 +67,7 @@ class Usecase:
             [0, 0, 0, 1]
         ]).inverted()
 
-        return any([abs(tM @ v.co).z) > threshold  for v in face.verts])
+        return any([abs((tM @ v.co).z) > threshold  for v in face.verts])
     
     def evaluate_geometry(self):
         for modifier in self.settings["blender_object"].modifiers:

@@ -27,16 +27,17 @@ class BIM_PT_camera(Panel):
         dprops = bpy.context.scene.DocProperties
         props = context.active_object.data.BIMCameraProperties
 
-        layout.label(text="Generation Options:")
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.prop(dprops, "has_underlay", icon="OUTLINER_OB_IMAGE")
+        row.prop(dprops, "should_use_underlay_cache", text="", icon="FILE_REFRESH")
+        row = col.row(align=True)
+        row.prop(dprops, "has_linework", icon="IMAGE_DATA")
+        row.prop(dprops, "should_use_linework_cache", text="", icon="FILE_REFRESH")
+        row = col.row(align=True)
+        row.prop(dprops, "has_annotation", icon="MOD_EDGESPLIT")
+        row.prop(dprops, "should_use_annotation_cache", text="", icon="FILE_REFRESH")
 
-        row = layout.row()
-        row.prop(dprops, "should_regenerate_base_layer")
-        row = layout.row()
-        row.prop(dprops, "should_regenerate_annotation_layer")
-        row = layout.row()
-        row.prop(dprops, "should_recut")
-        row = layout.row()
-        row.prop(dprops, "should_recut_selected")
         row = layout.row()
         row.prop(dprops, "should_extract")
 
@@ -68,7 +69,31 @@ class BIM_PT_camera(Panel):
             row = layout.row()
             row.prop(props, "custom_diagram_scale")
 
-        layout.label(text="Drawing Styles:")
+        row = layout.row(align=True)
+        row.operator("bim.create_drawing", text="Create Drawing", icon="OUTPUT")
+        op = row.operator("bim.open_view", icon="URL", text="")
+        op.view = context.active_object.name.split("/")[1]
+
+
+class BIM_PT_drawing_underlay(Panel):
+    bl_label = "Drawing Underlay"
+    bl_idname = "BIM_PT_drawing_underlay"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "data"
+    bl_parent_id = "BIM_PT_camera"
+
+    @classmethod
+    def poll(cls, context):
+        engine = context.engine
+        return context.camera and hasattr(context.active_object.data, "BIMCameraProperties")
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        dprops = bpy.context.scene.DocProperties
+        props = context.active_object.data.BIMCameraProperties
 
         row = layout.row(align=True)
         row.operator("bim.add_drawing_style")
@@ -105,10 +130,6 @@ class BIM_PT_camera(Panel):
                 row.operator("bim.save_drawing_style")
                 row.operator("bim.activate_drawing_style")
 
-        row = layout.row(align=True)
-        row.operator("bim.create_drawing", text="Create Drawing")
-        op = row.operator("bim.open_view", icon="URL", text="")
-        op.view = context.active_object.name.split("/")[1]
 
 
 class BIM_PT_drawings(Panel):
@@ -238,6 +259,7 @@ class BIM_PT_text(Panel):
 class BIM_PT_annotation_utilities(Panel):
     bl_idname = "BIM_PT_annotation_utilities"
     bl_label = "Annotation"
+    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "BlenderBIM"
