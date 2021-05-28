@@ -1,5 +1,4 @@
 import bpy
-import blenderbim.bim.schema  # refactor
 from ifcopenshell.api.material.data import Data
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.prop import StrProperty, Attribute

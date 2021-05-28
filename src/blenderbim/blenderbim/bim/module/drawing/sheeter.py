@@ -13,7 +13,7 @@ class SheetBuilder:
         self.scale = "NTS"
 
     def create(self, name, titleblock_name):
-        sheet_path = "{}sheets/{}.svg".format(self.data_dir, name)
+        sheet_path = os.path.join(self.data_dir, f"{name}.svg")
         root = ET.Element("svg")
         root.attrib["xmlns"] = "http://www.w3.org/2000/svg"
         root.attrib["xmlns:xlink"] = "http://www.w3.org/1999/xlink"
@@ -121,9 +121,9 @@ class SheetBuilder:
         title.attrib["height"] = str(self.convert_to_mm(title_root.attrib.get("height")))
 
     def build(self, sheet_name):
-        os.makedirs("{}build/{}/".format(self.data_dir, sheet_name), exist_ok=True)
+        os.makedirs(os.path.join(self.data_dir, "build", sheet_name), exist_ok=True)
 
-        sheet_path = "{}sheets/{}.svg".format(self.data_dir, sheet_name)
+        sheet_path = os.path.join(self.data_dir, "sheets", f"{sheet_name}.svg")
 
         ET.register_namespace("", "http://www.w3.org/2000/svg")
         ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
@@ -140,7 +140,7 @@ class SheetBuilder:
         self.build_drawings(root.findall('{http://www.w3.org/2000/svg}g[@data-type="drawing"]'), sheet_name)
         self.build_schedules(root.findall('{http://www.w3.org/2000/svg}g[@data-type="schedule"]'))
 
-        with open("{}build/{}/{}.svg".format(self.data_dir, sheet_name, sheet_name), "wb") as output:
+        with open(os.path.join(self.data_dir, "build", sheet_name, f"{sheet_name}.svg"), "wb") as output:
             tree.write(output)
 
     def build_drawings(self, drawings, sheet_name):
@@ -155,8 +155,9 @@ class SheetBuilder:
             view.append(self.parse_embedded_svg(foreground, {}))
 
             # Add background
-            background_path = "{}sheets/{}".format(self.data_dir, self.get_href(background))
-            copy(background_path, "{}build/{}/".format(self.data_dir, sheet_name))
+            background_path = os.path.join(self.data_dir, "sheets", self.get_href(background))
+
+            copy(background_path, os.path.join(self.data_dir, "build", sheet_name))
 
             # Add view title
             foreground_path = self.get_href(foreground)
@@ -202,7 +203,7 @@ class SheetBuilder:
             self.convert_to_mm(image.attrib.get("x")), self.convert_to_mm(image.attrib.get("y"))
         )
         svg_path = self.get_href(image)
-        with open("{}sheets/{}".format(self.data_dir, svg_path), "r") as template:
+        with open(os.path.join(self.data_dir, "sheets", svg_path), "r") as template:
             embedded = ET.fromstring(pystache.render(template.read(), data))
             # viewBox should not be nested
             embedded.attrib["viewBox"] = ""

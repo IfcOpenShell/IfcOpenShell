@@ -39,7 +39,7 @@ class ExportIFC(bpy.types.Operator):
         start = time.time()
         logger = logging.getLogger("ExportIFC")
         logging.basicConfig(
-            filename=context.scene.BIMProperties.data_dir + "process.log", filemode="a", level=logging.DEBUG
+            filename=os.path.join(context.scene.BIMProperties.data_dir, "process.log"), filemode="a", level=logging.DEBUG
         )
         extension = self.filepath.split(".")[-1]
         if extension == "ifczip":
@@ -98,7 +98,7 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         start = time.time()
         logger = logging.getLogger("ImportIFC")
         logging.basicConfig(
-            filename=bpy.context.scene.BIMProperties.data_dir + "process.log", filemode="a", level=logging.DEBUG
+            filename=os.path.join(bpy.context.scene.BIMProperties.data_dir, "process.log"), filemode="a", level=logging.DEBUG
         )
 
         settings = import_ifc.IfcImportSettings.factory(context, self.filepath, logger)
@@ -201,7 +201,7 @@ class FetchExternalMaterial(bpy.types.Operator):
         if location[-6:] != ".mpass":
             return {"FINISHED"}
         if not os.path.isabs(location):
-            location = os.path.join(os.path.join(bpy.context.scene.BIMProperties.data_dir, location))
+            location = os.path.join(bpy.context.scene.BIMProperties.data_dir, location)
         with open(location) as f:
             self.material_pass = json.load(f)
         if bpy.context.scene.render.engine == "BLENDER_EEVEE" and "eevee" in self.material_pass:
@@ -214,7 +214,7 @@ class FetchExternalMaterial(bpy.types.Operator):
         identification = bpy.context.active_object.active_material.BIMMaterialProperties.identification
         uri = self.material_pass[name]["uri"]
         if not os.path.isabs(uri):
-            uri = os.path.join(os.path.join(bpy.context.scene.BIMProperties.data_dir, uri))
+            uri = os.path.join(bpy.context.scene.BIMProperties.data_dir, uri)
         bpy.ops.wm.link(filename=identification, directory=os.path.join(uri, "Material"))
         for material in bpy.data.materials:
             if material.name == identification and material.library:

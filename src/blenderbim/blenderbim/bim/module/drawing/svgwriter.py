@@ -79,23 +79,23 @@ class SvgWriter:
         self.height = self.raw_height * self.scale
 
     def add_stylesheet(self):
-        with open("{}styles/{}.css".format(self.data_dir, self.vector_style), "r") as stylesheet:
+        with open(os.path.join(self.data_dir, "styles", f"{self.vector_style}.css"), "r") as stylesheet:
             self.svg.defs.add(self.svg.style(stylesheet.read()))
 
     def add_markers(self):
-        tree = ET.parse("{}templates/markers.svg".format(self.data_dir))
+        tree = ET.parse(os.path.join(self.data_dir, "templates", "markers.svg"))
         root = tree.getroot()
         for child in root.getchildren():
             self.svg.defs.add(External(child))
 
     def add_symbols(self):
-        tree = ET.parse("{}templates/symbols.svg".format(self.data_dir))
+        tree = ET.parse(os.path.join(self.data_dir, "templates", "symbols.svg"))
         root = tree.getroot()
         for child in root.getchildren():
             self.svg.defs.add(External(child))
 
     def add_patterns(self):
-        tree = ET.parse("{}templates/patterns.svg".format(self.data_dir))
+        tree = ET.parse(os.path.join(self.data_dir, "templates", "patterns.svg"))
         root = tree.getroot()
         for child in root.getchildren():
             self.svg.defs.add(External(child))
