@@ -30,6 +30,18 @@ def getAttributeEnumValues(self, context):
     return [(e, e, "") for e in json.loads(self.enum_items)]
 
 
+def updateSchemaDir(self, context):
+    import blenderbim.bim.schema
+
+    blenderbim.bim.schema.ifc.schema_dir = context.scene.BIMProperties.schema_dir
+
+
+def updateDataDir(self, context):
+    import blenderbim.bim.schema
+
+    blenderbim.bim.schema.ifc.data_dir = context.scene.BIMProperties.data_dir
+
+
 def updateIfcFile(self, context):
     if context.scene.BIMProperties.ifc_file:
         IfcStore.file = None
@@ -151,8 +163,12 @@ class Attribute(PropertyGroup):
 
 
 class BIMProperties(PropertyGroup):
-    schema_dir: StringProperty(default=os.path.join(cwd, "schema") + os.path.sep, name="Schema Directory")
-    data_dir: StringProperty(default=os.path.join(cwd, "data") + os.path.sep, name="Data Directory")
+    schema_dir: StringProperty(
+        default=os.path.join(cwd, "schema") + os.path.sep, name="Schema Directory", update=updateSchemaDir
+    )
+    data_dir: StringProperty(
+        default=os.path.join(cwd, "data") + os.path.sep, name="Data Directory", update=updateDataDir
+    )
     ifc_file: StringProperty(name="IFC File", update=updateIfcFile)
     id_map: StringProperty(name="ID Map")
     guid_map: StringProperty(name="GUID Map")

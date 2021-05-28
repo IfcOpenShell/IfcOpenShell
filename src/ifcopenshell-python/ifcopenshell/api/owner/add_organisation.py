@@ -9,7 +9,7 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        data = {"Name": self.settings["Name"]}
+        data = {"Name": self.settings["name"]}
         if self.file.schema == "IFC2X3":
             data["Id"] = self.settings["identification"]
         else:

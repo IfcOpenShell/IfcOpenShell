@@ -23,7 +23,6 @@ from pathlib import Path
 from itertools import cycle
 from datetime import datetime
 from blenderbim.bim.ifc import IfcStore
-from . import schema
 
 
 class FileCopy(threading.Thread):
