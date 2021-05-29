@@ -1,5 +1,5 @@
 import bpy
-from . import operator, prop, ui, grid, stair, door, window, slab, opening, pie, workspace
+from . import operator, prop, ui, grid, stair, door, window, opening, pie, workspace
 
 classes = (
     operator.AddTypeInstance,
@@ -16,7 +16,6 @@ classes = (
     stair.BIM_OT_add_object,
     door.BIM_OT_add_object,
     window.BIM_OT_add_object,
-    slab.BIM_OT_add_object,
     opening.BIM_OT_add_object,
     pie.OpenPieClass,
     pie.PieUpdateContainer,
@@ -42,7 +41,6 @@ def register():
     bpy.types.VIEW3D_MT_mesh_add.append(stair.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(door.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(window.add_object_button)
-    bpy.types.VIEW3D_MT_mesh_add.append(slab.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(opening.add_object_button)
     wm = bpy.context.window_manager
     if wm.keyconfigs.addon:
@@ -59,7 +57,6 @@ def unregister():
     bpy.types.VIEW3D_MT_mesh_add.remove(stair.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.remove(door.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.remove(window.add_object_button)
-    bpy.types.VIEW3D_MT_mesh_add.remove(slab.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.remove(opening.add_object_button)
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
