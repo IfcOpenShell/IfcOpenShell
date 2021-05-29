@@ -60,8 +60,8 @@ def remove_pre_listener(callback, usecase_path=""):
         for fun in callbacks:
             if fun == callback:
                 pre_listeners[listener_key].remove(callback)
-                
-                
+
+
 def remove_post_listener(callback, usecase_path=""):
     for listener_key, callbacks in post_listeners.items():
         if not listener_key.endswith(usecase_path):
@@ -69,8 +69,8 @@ def remove_post_listener(callback, usecase_path=""):
         for fun in callbacks:
             if fun == callback:
                 post_listeners[listener_key].remove(callback)
-                
- 
+
+
 def remove_all_listeners():
     registered_ifcs.clear()
     pre_listeners.clear()
