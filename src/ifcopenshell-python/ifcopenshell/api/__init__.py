@@ -42,33 +42,67 @@ def run(usecase_path, ifc_file=None, should_run_listeners=True, **settings):
 
 
 def add_pre_listener(usecase_path, ifc_file, callback):
+    """ Add a pre listener
+    There are 2 kind of listeners:
+    when ifc file is defined the listener will only run for specified file
+    when ifc file is None, the listener will run globally only based on usecase
+    :param usecase_path: string, ifcopenshell api use case path
+    :param ifc_file: ifc file object or None for global listener
+    :param callback: callback function
+    :return: ifc_key, uuid of listener, this is the prefix only, postfix is the usecase_path dot separated.
+    """
     ifc_key = registered_ifcs.setdefault(ifc_file, ifcopenshell.guid.new())
     pre_listeners.setdefault(".".join([ifc_key, usecase_path]), set()).add(callback)
     return ifc_key
 
 
 def add_post_listener(usecase_path, ifc_file, callback):
+    """ Add a post listener
+    There are 2 kind of listeners:
+    when ifc file is defined the listener will only run for specified file
+    when ifc file is None, the listener will run globally only based on usecase
+    :param usecase_path: string, ifcopenshell api use case path
+    :param ifc_file: ifc file object or None for global listener
+    :param callback: callback function
+    :return: ifc_key, uuid of listener, this is the prefix only, postfix is the usecase_path dot separated.
+    """
     ifc_key = registered_ifcs.setdefault(ifc_file, ifcopenshell.guid.new())
     post_listeners.setdefault(".".join([ifc_key, usecase_path]), set()).add(callback)
     return ifc_key
 
 
 def remove_pre_listener(callback, usecase_path=""):
+    """ Remove a pre listener
+    :param callback: callback function to remove
+    :param usecase_path: string, optional, ifcopenshell api usecase path, may be prefixed with ifc_key, dot separated.
+    :return:
+    """
     for listener_key, callbacks in pre_listeners.items():
         if not listener_key.endswith(usecase_path):
             continue
+        to_remove = set()
         for fun in callbacks:
             if fun == callback:
-                pre_listeners[listener_key].remove(callback)
+                to_remove.add(callback)
+        for callback in to_remove:
+            pre_listeners[listener_key].remove(callback)
 
 
 def remove_post_listener(callback, usecase_path=""):
+    """ Remove a post listener
+    :param callback: callback function to remove
+    :param usecase_path: string, optional ifcopenshell api usecase path, may be prefixed with ifc_key, dot separated.
+    :return:
+    """
     for listener_key, callbacks in post_listeners.items():
         if not listener_key.endswith(usecase_path):
             continue
+        to_remove = set()
         for fun in callbacks:
             if fun == callback:
-                post_listeners[listener_key].remove(callback)
+                to_remove.add(callback)
+        for callback in to_remove:
+            post_listeners[listener_key].remove(callback)
 
 
 def remove_all_listeners():
