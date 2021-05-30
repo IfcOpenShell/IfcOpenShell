@@ -48,6 +48,19 @@ class IfcStore:
         return IfcStore.schema
 
     @staticmethod
+    def get_element(id_or_guid):
+        if isinstance(id_or_guid, int):
+            map_object = IfcStore.id_map
+        else:
+            map_object = IfcStore.guid_map
+        try:
+            obj = map_object[id_or_guid]
+            obj.type  # In case the object has been deleted, this triggers an exception
+        except:
+            return
+        return obj
+
+    @staticmethod
     def link_element(element, obj):
         IfcStore.id_map[element.id()] = obj
         if hasattr(element, "GlobalId"):

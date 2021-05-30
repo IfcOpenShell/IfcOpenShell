@@ -38,7 +38,7 @@ class AssignContainer(bpy.types.Operator):
 
             aggregate_collection = bpy.data.collections.get(related_element.name)
 
-            relating_structure_obj = IfcStore.id_map.get(relating_structure)
+            relating_structure_obj = IfcStore.get_element(relating_structure)
             relating_collection = None
             if relating_structure_obj:
                 relating_collection = bpy.data.collections.get(relating_structure_obj.name)

@@ -5,6 +5,7 @@ import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.type.data import Data
 from ifcopenshell.api.geometry.data import Data as GeometryData
+from ifcopenshell.api.material.data import Data as MaterialData
 
 
 class AssignType(bpy.types.Operator):
@@ -31,6 +32,7 @@ class AssignType(bpy.types.Operator):
             )
             Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
             GeometryData.load(IfcStore.get_file(), oprops.ifc_definition_id)
+            MaterialData.load(IfcStore.get_file(), oprops.ifc_definition_id)
             representation_ids = GeometryData.products[oprops.ifc_definition_id]
             if not representation_ids:
                 pass # TODO: clear geometry? Make void? Make none type?
@@ -44,6 +46,7 @@ class AssignType(bpy.types.Operator):
                 bpy.ops.bim.switch_representation(obj=related_object.name, ifc_definition_id=representation_id)
 
         bpy.ops.bim.disable_editing_type(obj=related_object.name)
+        MaterialData.load(self.file)
         return {"FINISHED"}
 
 
