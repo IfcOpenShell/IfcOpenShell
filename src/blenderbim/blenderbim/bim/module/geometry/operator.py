@@ -200,11 +200,12 @@ class SwitchRepresentation(bpy.types.Operator):
             if self.oprops.ifc_definition_id not in VoidData.products:
                 VoidData.load(IfcStore.get_file(), self.oprops.ifc_definition_id)
             for opening_id in VoidData.products[self.oprops.ifc_definition_id]:
-                if opening_id in IfcStore.id_map:
-                    opening = IfcStore.id_map[opening_id]
-                    modifier = self.element_obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
-                    modifier.operation = "DIFFERENCE"
-                    modifier.object = opening
+                opening = IfcStore.get_element(opening_id)
+                if not opening:
+                    continue
+                modifier = self.element_obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
+                modifier.operation = "DIFFERENCE"
+                modifier.object = opening
         else:
             for modifier in self.element_obj.modifiers:
                 if modifier.type == "BOOLEAN" and "IfcOpeningElement" in modifier.name:

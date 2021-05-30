@@ -735,7 +735,6 @@ class DumbWallGenerator:
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbWall"})
-        ifcopenshell.api.run("material.assign_material", self.file, product=element, type="IfcMaterialLayerSetUsage")
         MaterialData.load(self.file)
         obj.select_set(True)
         return obj

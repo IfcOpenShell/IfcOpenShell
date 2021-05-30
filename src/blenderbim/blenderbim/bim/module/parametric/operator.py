@@ -106,7 +106,7 @@ def calculate_dumb_quantities(usecase_path, ifc_file, **settings):
 
 
 class DumbWallPlaner:
-    def regenerate_dumb_wall_thicknesses(self, usecase_path, ifc_file, **settings):
+    def regenerate_wall_thicknesses_from_layer(self, usecase_path, ifc_file, **settings):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         layer = settings["layer"]
         thickness = settings["attributes"].get("LayerThickness")
@@ -114,7 +114,7 @@ class DumbWallPlaner:
             return
         delta_thickness = thickness - layer.LayerThickness
         for layer_set in layer.ToMaterialLayerSet:
-            total_thickness = sum([l.LayerThickness for l in layer_set.MaterialLayers]) * self.unit_scale
+            total_thickness = sum([l.LayerThickness for l in layer_set.MaterialLayers])
             if not total_thickness:
                 continue
             for inverse in ifc_file.get_inverse(layer_set):
@@ -131,14 +131,27 @@ class DumbWallPlaner:
                         for element in rel.RelatedObjects:
                             self.regenerate_wall_thickness(element, delta_thickness)
 
+    def regenerate_wall_thicknesses_from_type(self, usecase_path, ifc_file, **settings):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        new_material = ifcopenshell.util.element.get_material(settings["relating_type"])
+        if not new_material.is_a("IfcMaterialLayerSet"):
+            return
+        obj = IfcStore.get_element(settings["related_object"].id())
+        if not obj:
+            return
+        current_thickness = obj.dimensions.y / self.unit_scale
+        new_thickness = sum([l.LayerThickness for l in new_material.MaterialLayers])
+        if current_thickness == new_thickness:
+            return
+        self.regenerate_wall_thickness(settings["related_object"], new_thickness - current_thickness)
+
     def regenerate_wall_thickness(self, element, delta_thickness):
         parametric = ifcopenshell.util.element.get_psets(element).get("EPset_Parametric")
         if not parametric or parametric["Engine"] != "BlenderBIM.DumbWall":
             return
-        try:
-            obj = IfcStore.id_map[element.id()]
-            obj.name # In case the object has been deleted
-        except:
+
+        obj = IfcStore.get_element(element.id())
+        if not obj:
             return
 
         bm = bmesh.new()
@@ -206,6 +219,9 @@ class ActivateParametricEngine(bpy.types.Operator):
             "geometry.add_representation", IfcStore.get_file(), calculate_dumb_quantities
         )
         ifcopenshell.api.add_pre_listener(
-            "material.edit_layer", IfcStore.get_file(), DumbWallPlaner().regenerate_dumb_wall_thicknesses
+            "material.edit_layer", IfcStore.get_file(), DumbWallPlaner().regenerate_wall_thicknesses_from_layer
+        )
+        ifcopenshell.api.add_pre_listener(
+            "type.assign_type", IfcStore.get_file(), DumbWallPlaner().regenerate_wall_thicknesses_from_type
         )
         return {"FINISHED"}
