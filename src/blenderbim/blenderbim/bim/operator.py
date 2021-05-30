@@ -11,6 +11,7 @@ import blenderbim.bim.module.drawing
 from . import export_ifc
 from . import import_ifc
 from . import schema
+from blenderbim.bim.ifc import IfcStore
 from bpy_extras.io_utils import ImportHelper
 from mathutils import Vector, Matrix, Euler, geometry
 from math import radians, degrees, atan, tan, cos, sin
@@ -26,6 +27,9 @@ class ExportIFC(bpy.types.Operator):
     json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
 
     def invoke(self, context, event):
+        if not IfcStore.get_file():
+            self.report({"ERROR"}, "No IFC project is available for export - create or import a project first.")
+            return {"FINISHED"}
         if bpy.context.scene.BIMProperties.ifc_file:
             self.filepath = bpy.context.scene.BIMProperties.ifc_file
             return self.execute(context)
