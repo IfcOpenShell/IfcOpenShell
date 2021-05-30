@@ -1,4 +1,5 @@
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.util.element
 
 
@@ -10,6 +11,9 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
+        material = ifcopenshell.util.element.get_material(self.settings["product"])
+        if material:
+            ifcopenshell.api.run("material.unassign_material", self.file, product=self.settings["product"])
         if self.settings["type"] == "IfcMaterial":
             self.assign_ifc_material()
         elif self.settings["type"] == "IfcMaterialConstituentSet":
