@@ -43,8 +43,8 @@ class Usecase:
             self.settings["product"].HasPropertySets = has_property_sets
             return pset
         elif self.settings["product"].is_a("IfcMaterialDefinition"):
-            for definition in self.settings["product"].HasPropertySets or []:
-                if definition.Name == self.settings["name"]:
+            for definition in self.settings["product"].HasProperties or []:
+                if definition.Name == self.settings["Name"]:
                     return definition
 
             return self.file.create_entity(

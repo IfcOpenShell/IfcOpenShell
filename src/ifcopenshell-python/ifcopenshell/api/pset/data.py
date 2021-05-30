@@ -59,8 +59,9 @@ class Data:
     @classmethod
     def add_pset(cls, pset, product_id):
         data = pset.get_info()
-        del data["OwnerHistory"]
-        del data["HasProperties"]
+        if not pset.is_a("IfcMaterialProperties"):
+            del data["OwnerHistory"]
+            del data["HasProperties"]
         if hasattr(pset, "HasProperties"):
             props = pset.HasProperties or []
         elif hasattr(pset, "Properties"):
