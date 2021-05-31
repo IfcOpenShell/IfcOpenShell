@@ -1,13 +1,13 @@
 import bpy
-from . import operator, prop, ui, grid, stair, door, window, opening, pie, workspace
+from . import handler, prop, ui, grid, product, wall, slab, stair, door, window, opening, pie, workspace
 
 classes = (
-    operator.AddTypeInstance,
-    operator.AddWall,
-    operator.JoinWall,
-    operator.AlignWall,
-    operator.FlipWall,
-    operator.SplitWall,
+    product.AddTypeInstance,
+    wall.AddWall,
+    wall.JoinWall,
+    wall.AlignWall,
+    wall.FlipWall,
+    wall.SplitWall,
     prop.BIMModelProperties,
     ui.BIM_PT_authoring,
     ui.BIM_PT_authoring_architectural,
@@ -42,6 +42,7 @@ def register():
     bpy.types.VIEW3D_MT_mesh_add.append(door.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(window.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(opening.add_object_button)
+    bpy.app.handlers.load_post.append(handler.load_post)
     wm = bpy.context.window_manager
     if wm.keyconfigs.addon:
         km = wm.keyconfigs.addon.keymaps.new(name="3D View", space_type="VIEW_3D")
