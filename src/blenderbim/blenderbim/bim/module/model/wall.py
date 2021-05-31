@@ -1,71 +1,17 @@
 import bpy
-import bmesh
 import math
+import bmesh
 import ifcopenshell
-import ifcopenshell.util.type
+import ifcopenshell.api
 import ifcopenshell.util.unit
+import ifcopenshell.util.element
+import ifcopenshell.util.representation
 import mathutils.geometry
 from blenderbim.bim.ifc import IfcStore
+from ifcopenshell.api.pset.data import Data as PsetData
+from ifcopenshell.api.material.data import Data as MaterialData
 from math import pi, degrees
 from mathutils import Vector, Matrix
-from ifcopenshell.api.material.data import Data as MaterialData
-
-
-class AddTypeInstance(bpy.types.Operator):
-    bl_idname = "bim.add_type_instance"
-    bl_label = "Add Type Instance"
-    bl_options = {"REGISTER", "UNDO"}
-    ifc_class: bpy.props.StringProperty()
-    relating_type: bpy.props.IntProperty()
-
-    def execute(self, context):
-        tprops = context.scene.BIMTypeProperties
-        ifc_class = self.ifc_class or tprops.ifc_class
-        relating_type = self.relating_type or tprops.relating_type
-        if not ifc_class or not relating_type:
-            return {"FINISHED"}
-        self.file = IfcStore.get_file()
-        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema)[0]
-        if ifc_class == "IfcWallType":
-            obj = DumbWallGenerator(self.file.by_id(int(relating_type))).generate()
-            if obj:
-                return {"FINISHED"}
-        elif ifc_class == "IfcSlabType":
-            obj = DumbSlabGenerator(self.file.by_id(int(relating_type))).generate()
-            if obj:
-                return {"FINISHED"}
-        # A cube
-        verts = [
-            Vector((-1, -1, -1)),
-            Vector((-1, -1, 1)),
-            Vector((-1, 1, -1)),
-            Vector((-1, 1, 1)),
-            Vector((1, -1, -1)),
-            Vector((1, -1, 1)),
-            Vector((1, 1, -1)),
-            Vector((1, 1, 1)),
-        ]
-        edges = []
-        faces = [
-            [0, 2, 3, 1],
-            [2, 3, 7, 6],
-            [4, 5, 7, 6],
-            [0, 1, 5, 4],
-            [1, 3, 7, 5],
-            [0, 2, 6, 4],
-        ]
-        mesh = bpy.data.meshes.new(name="Instance")
-        mesh.from_pydata(verts, edges, faces)
-        obj = bpy.data.objects.new("Instance", mesh)
-        obj.location = context.scene.cursor.location
-        collection = bpy.context.view_layer.active_layer_collection.collection
-        collection.objects.link(obj)
-        collection_obj = bpy.data.objects.get(collection.name)
-        bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
-        bpy.ops.bim.assign_type(relating_type=int(tprops.relating_type), related_object=obj.name)
-        if collection_obj and collection_obj.BIMObjectProperties.ifc_definition_id:
-            obj.location[2] = collection_obj.location[2] - min([v[2] for v in obj.bound_box])
-        return {"FINISHED"}
 
 
 class AddWall(bpy.types.Operator):
@@ -740,65 +686,173 @@ class DumbWallGenerator:
         return obj
 
 
-class DumbSlabGenerator:
-    def __init__(self, relating_type):
-        self.relating_type = relating_type
 
-    def generate(self):
-        self.file = IfcStore.get_file()
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
-        thicknesses = []
-        for rel in self.relating_type.HasAssociations:
-            if rel.is_a("IfcRelAssociatesMaterial"):
-                material = rel.RelatingMaterial
-                if material.is_a("IfcMaterialLayerSet"):
-                    thicknesses = [l.LayerThickness for l in material.MaterialLayers]
-                    break
-        if not thicknesses:
+def generate_dumb_wall_axis(usecase_path, ifc_file, **settings):
+    axis_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Axis", "GRAPH_VIEW")
+    if not axis_context:
+        return
+    obj = settings["blender_object"]
+    product = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+    parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
+    if not parametric or parametric["Engine"] != "BlenderBIM.DumbWall":
+        return
+    old_axis = ifcopenshell.util.representation.get_representation(product, "Model", "Axis", "GRAPH_VIEW")
+    if settings["context"].ContextType == "Model" and getattr(settings["context"], "ContextIdentifier") == "Body":
+        if old_axis:
+            bpy.ops.bim.remove_representation(representation_id=old_axis.id(), obj=obj.name)
+
+        new_settings = settings.copy()
+        new_settings["context"] = axis_context
+
+        mesh = bpy.data.meshes.new("Temporary Axis")
+        start = Vector(obj.bound_box[0])
+        end = Vector(obj.bound_box[4])
+        mesh.from_pydata([start, end], [(0, 1)], [])
+
+        new_settings["geometry"] = mesh
+        new_axis = ifcopenshell.api.run(
+            "geometry.add_representation", ifc_file, should_run_listeners=False, **new_settings
+        )
+        ifcopenshell.api.run(
+            "geometry.assign_representation",
+            ifc_file,
+            should_run_listeners=False,
+            **{"product": product, "representation": new_axis}
+        )
+        bpy.data.meshes.remove(mesh)
+
+
+def calculate_dumb_quantities(usecase_path, ifc_file, **settings):
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+    obj = settings["blender_object"]
+    product = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+    parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
+    if not parametric or parametric["Engine"] != "BlenderBIM.DumbWall":
+        return
+    qto = ifcopenshell.api.run(
+        "pset.add_qto", ifc_file, should_run_listeners=False, product=product, name="Qto_WallBaseQuantities"
+    )
+    length = obj.dimensions[0] / unit_scale
+    width = obj.dimensions[1] / unit_scale
+    height = obj.dimensions[2] / unit_scale
+
+    if product.HasOpenings:
+        # TODO: calculate gross / net
+        gross_volume = 0
+        net_volume = 0
+    else:
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        gross_volume = bm.calc_volume()
+        net_volume = gross_volume
+        bm.free()
+
+    ifcopenshell.api.run("pset.edit_qto", ifc_file, should_run_listeners=False, qto=qto, properties={
+        "Length": round(length, 2),
+        "Width": round(width, 2),
+        "Height": round(height, 2),
+        "GrossVolume": round(gross_volume, 2),
+        "NetVolume": round(net_volume, 2)
+    })
+    PsetData.load(ifc_file, obj.BIMObjectProperties.ifc_definition_id)
+
+
+class DumbWallPlaner:
+    def regenerate_wall_thicknesses_from_layer(self, usecase_path, ifc_file, **settings):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        layer = settings["layer"]
+        thickness = settings["attributes"].get("LayerThickness")
+        if thickness is None or layer.LayerThickness == thickness:
+            return
+        delta_thickness = thickness - layer.LayerThickness
+        for layer_set in layer.ToMaterialLayerSet:
+            total_thickness = sum([l.LayerThickness for l in layer_set.MaterialLayers])
+            if not total_thickness:
+                continue
+            for inverse in ifc_file.get_inverse(layer_set):
+                if not inverse.is_a("IfcMaterialLayerSetUsage"):
+                    continue
+                if ifc_file.schema == "IFC2X3":
+                    for rel in ifc_file.get_inverse(inverse):
+                        if not rel.is_a("IfcRelAssociatesMaterial"):
+                            continue
+                        for element in rel.RelatedObjects:
+                            self.regenerate_wall_thickness(element, delta_thickness)
+                else:
+                    for rel in inverse.AssociatedTo:
+                        for element in rel.RelatedObjects:
+                            self.regenerate_wall_thickness(element, delta_thickness)
+
+    def regenerate_wall_thicknesses_from_type(self, usecase_path, ifc_file, **settings):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        new_material = ifcopenshell.util.element.get_material(settings["relating_type"])
+        if not new_material.is_a("IfcMaterialLayerSet"):
+            return
+        obj = IfcStore.get_element(settings["related_object"].id())
+        if not obj:
+            return
+        current_thickness = obj.dimensions.y / self.unit_scale
+        new_thickness = sum([l.LayerThickness for l in new_material.MaterialLayers])
+        if current_thickness == new_thickness:
+            return
+        self.regenerate_wall_thickness(settings["related_object"], new_thickness - current_thickness)
+
+    def regenerate_wall_thickness(self, element, delta_thickness):
+        parametric = ifcopenshell.util.element.get_psets(element).get("EPset_Parametric")
+        if not parametric or parametric["Engine"] != "BlenderBIM.DumbWall":
             return
 
-        self.collection = bpy.context.view_layer.active_layer_collection.collection
-        self.collection_obj = bpy.data.objects.get(self.collection.name)
-        self.depth = sum(thicknesses) * unit_scale
-        self.width = 3
-        self.length = 3
-        self.rotation = 0
-        self.location = Vector((0, 0, 0))
-        return self.derive_from_cursor()
+        obj = IfcStore.get_element(element.id())
+        if not obj:
+            return
 
-    def derive_from_cursor(self):
-        self.location = bpy.context.scene.cursor.location
-        return self.create_slab()
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
 
-    def create_slab(self):
-        verts = [
-            Vector((0, 0, 0)),
-            Vector((0, self.width, 0)),
-            Vector((self.length, self.width, 0)),
-            Vector((self.length, 0, 0)),
-        ]
-        edges = []
-        faces = [[0, 3, 2, 1]]
+        min_face, max_face = self.get_wall_end_faces(obj, bm)
 
-        mesh = bpy.data.meshes.new(name="Dumb Slab")
-        mesh.from_pydata(verts, edges, faces)
-        obj = bpy.data.objects.new("Slab", mesh)
-        modifier = obj.modifiers.new("Slab Depth", "SOLIDIFY")
-        modifier.use_even_offset = True
-        modifier.offset = 1
-        modifier.thickness = self.depth
-        obj.name = "Slab"
-        if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
-            obj.location[2] = self.collection_obj.location[2] - self.depth
-        else:
-            obj.location[2] -= self.depth
-        self.collection.objects.link(obj)
-        bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcSlab", predefined_type="FLOOR")
-        bpy.ops.bim.assign_type(relating_type=self.relating_type.id(), related_object=obj.name)
-        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbSlab"})
-        ifcopenshell.api.run("material.assign_material", self.file, product=element, type="IfcMaterialLayerSetUsage")
-        MaterialData.load(self.file)
-        obj.select_set(True)
-        return obj
+        self.thicken_face(min_face, delta_thickness)
+        self.thicken_face(max_face, delta_thickness)
+
+        bm.to_mesh(obj.data)
+        obj.data.update()
+        bm.free()
+
+    def thicken_face(self, face, delta_thickness):
+        slide_magnitude = abs(delta_thickness) / 2 * self.unit_scale
+        for vert in face.verts:
+            slide_vector = None
+            for edge in vert.link_edges:
+                other_vert = edge.verts[1] if edge.verts[0] == vert else edge.verts[0]
+                if delta_thickness > 0:
+                    potential_slide_vector = vert.co - other_vert.co
+                else:
+                    potential_slide_vector = other_vert.co - vert.co
+                if abs(potential_slide_vector.x) > 0.9 or abs(potential_slide_vector.z) > 0.9:
+                    continue
+                slide_vector = potential_slide_vector
+                break
+            if not slide_vector:
+                continue
+            slide_vector *= (slide_magnitude / abs(slide_vector.y))
+            vert.co += slide_vector
+
+    # An end face is a quad that is on one end of the wall or the other. It must
+    # have at least one vertex on either extreme X-axis, and a non-insignificant
+    # X component of its face normal
+    def get_wall_end_faces(self, wall, bm):
+        min_face = None
+        max_face = None
+        min_x = min([v[0] for v in wall.bound_box])
+        max_x = max([v[0] for v in wall.bound_box])
+        bm.faces.ensure_lookup_table()
+        for f in bm.faces:
+            for v in f.verts:
+                if v.co.x == min_x and abs(f.normal.x) > 0.1:
+                    min_face = f
+                elif v.co.x == max_x and abs(f.normal.x) > 0.1:
+                    max_face = f
+            if min_face and max_face:
+                break
+        return min_face, max_face
