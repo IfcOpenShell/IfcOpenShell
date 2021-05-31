@@ -1,3 +1,5 @@
+import json
+import numpy
 import importlib
 import ifcopenshell
 import ifcopenshell.api
@@ -19,6 +21,30 @@ def run(usecase_path, ifc_file=None, should_run_listeners=True, **settings):
             global_key = registered_ifcs[None]
             for listener in pre_listeners.get(".".join([global_key, usecase_path]), []):
                 listener(usecase_path, ifc_file, **settings)
+
+    def serialise_entity_instance(entity):
+        return {"cast_type": "entity_instance", "value": entity.id(), "Name": getattr(entity, "Name", None)}
+
+    vcs_settings = settings.copy()
+    for key, value in settings.items():
+        if isinstance(value, ifcopenshell.entity_instance):
+            vcs_settings[key] = serialise_entity_instance(value)
+        elif isinstance(value, numpy.ndarray):
+            vcs_settings[key] = {"cast_type": "ndarray", "value": value.tolist()}
+        elif isinstance(value, list) and value and isinstance(value[0], ifcopenshell.entity_instance):
+            vcs_settings[key] = [serialise_entity_instance(i) for i in value]
+    if "add_representation" in usecase_path:
+        pass
+        # print(ifc_key, usecase_path, "{ ... settings too complex right now ... }")
+    elif "owner." in usecase_path:
+        pass
+    else:
+        pass
+        # print(vcs_settings)
+        # try:
+        #    print(ifc_key, usecase_path, json.dumps(vcs_settings))
+        # except:
+        #    print(ifc_key, usecase_path, vcs_settings)
 
     importlib.import_module(f"ifcopenshell.api.{usecase_path}")
     module, usecase = usecase_path.split(".")
@@ -42,7 +68,7 @@ def run(usecase_path, ifc_file=None, should_run_listeners=True, **settings):
 
 
 def add_pre_listener(usecase_path, ifc_file, callback):
-    """ Add a pre listener
+    """Add a pre listener
     There are 2 kind of listeners:
     when ifc file is defined the listener will only run for specified file
     when ifc file is None, the listener will run globally only based on usecase
@@ -57,7 +83,7 @@ def add_pre_listener(usecase_path, ifc_file, callback):
 
 
 def add_post_listener(usecase_path, ifc_file, callback):
-    """ Add a post listener
+    """Add a post listener
     There are 2 kind of listeners:
     when ifc file is defined the listener will only run for specified file
     when ifc file is None, the listener will run globally only based on usecase
@@ -72,7 +98,7 @@ def add_post_listener(usecase_path, ifc_file, callback):
 
 
 def remove_pre_listener(callback, usecase_path=""):
-    """ Remove a pre listener
+    """Remove a pre listener
     :param callback: callback function to remove
     :param usecase_path: string, optional, ifcopenshell api usecase path, may be prefixed with ifc_key, dot separated.
     :return:
@@ -89,7 +115,7 @@ def remove_pre_listener(callback, usecase_path=""):
 
 
 def remove_post_listener(callback, usecase_path=""):
-    """ Remove a post listener
+    """Remove a post listener
     :param callback: callback function to remove
     :param usecase_path: string, optional ifcopenshell api usecase path, may be prefixed with ifc_key, dot separated.
     :return:
