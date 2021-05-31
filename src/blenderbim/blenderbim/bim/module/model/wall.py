@@ -686,7 +686,6 @@ class DumbWallGenerator:
         return obj
 
 
-
 def generate_axis(usecase_path, ifc_file, **settings):
     axis_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Axis", "GRAPH_VIEW")
     if not axis_context:
@@ -747,13 +746,19 @@ def calculate_quantities(usecase_path, ifc_file, **settings):
         net_volume = gross_volume
         bm.free()
 
-    ifcopenshell.api.run("pset.edit_qto", ifc_file, should_run_listeners=False, qto=qto, properties={
-        "Length": round(length, 2),
-        "Width": round(width, 2),
-        "Height": round(height, 2),
-        "GrossVolume": round(gross_volume, 2),
-        "NetVolume": round(net_volume, 2)
-    })
+    ifcopenshell.api.run(
+        "pset.edit_qto",
+        ifc_file,
+        should_run_listeners=False,
+        qto=qto,
+        properties={
+            "Length": round(length, 2),
+            "Width": round(width, 2),
+            "Height": round(height, 2),
+            "GrossVolume": round(gross_volume, 2),
+            "NetVolume": round(net_volume, 2),
+        },
+    )
     PsetData.load(ifc_file, obj.BIMObjectProperties.ifc_definition_id)
 
 
@@ -835,7 +840,7 @@ class DumbWallPlaner:
                 break
             if not slide_vector:
                 continue
-            slide_vector *= (slide_magnitude / abs(slide_vector.y))
+            slide_vector *= slide_magnitude / abs(slide_vector.y)
             vert.co += slide_vector
 
     # An end face is a quad that is on one end of the wall or the other. It must

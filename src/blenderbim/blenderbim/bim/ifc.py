@@ -14,6 +14,7 @@ class IfcStore:
     pset_template_file = None
     library_path = ""
     library_file = None
+    element_listeners = set()
 
     @staticmethod
     def purge():
@@ -61,6 +62,10 @@ class IfcStore:
         return obj
 
     @staticmethod
+    def add_element_listener(callback):
+        IfcStore.element_listeners.add(callback)
+
+    @staticmethod
     def link_element(element, obj):
         IfcStore.id_map[element.id()] = obj
         if hasattr(element, "GlobalId"):
@@ -68,6 +73,8 @@ class IfcStore:
         obj.BIMObjectProperties.ifc_definition_id = element.id()
         blenderbim.bim.handler.subscribe_to(obj, "mode", blenderbim.bim.handler.mode_callback)
         blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)
+        for listener in IfcStore.element_listeners:
+            listener(element, obj)
 
     @staticmethod
     def unlink_element(element=None, obj=None):
