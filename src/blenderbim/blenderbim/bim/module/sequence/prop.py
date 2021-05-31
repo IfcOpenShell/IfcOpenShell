@@ -104,6 +104,7 @@ def updateTaskTimeDateTime(self, context, startfinish):
         **{"task_time": task_time, "attributes": {startfinish_key: startfinish_datetime}},
     )
     Data.load(IfcStore.get_file())
+    bpy.ops.bim.load_task_properties(task=props.active_task_id)
     setattr(self, startfinish, canonicalise_time(startfinish_datetime))
 
 
@@ -127,6 +128,7 @@ def updateTaskduration(self, context):
     if props.active_task_id == self.ifc_definition_id:
         attribute = props.task_attributes.get("Duration")
         attribute.string_value = self.duration
+    bpy.ops.bim.load_task_properties(task=props.active_task_id)
 
 
 def updateVisualisationStart(self, context):
