@@ -59,6 +59,7 @@ class DumbSlabGenerator:
         modifier.offset = 1
         modifier.thickness = self.depth
         obj.name = "Slab"
+        obj.location = self.location
         if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
             obj.location[2] = self.collection_obj.location[2] - self.depth
         else:
@@ -69,7 +70,64 @@ class DumbSlabGenerator:
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbSlab"})
-        ifcopenshell.api.run("material.assign_material", self.file, product=element, type="IfcMaterialLayerSetUsage")
         MaterialData.load(self.file)
         obj.select_set(True)
         return obj
+
+
+class DumbSlabPlaner:
+    def regenerate_from_layer(self, usecase_path, ifc_file, **settings):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        layer = settings["layer"]
+        thickness = settings["attributes"].get("LayerThickness")
+        if thickness is None or layer.LayerThickness == thickness:
+            return
+        delta_thickness = thickness - layer.LayerThickness
+        for layer_set in layer.ToMaterialLayerSet:
+            total_thickness = sum([l.LayerThickness for l in layer_set.MaterialLayers])
+            if not total_thickness:
+                continue
+            for inverse in ifc_file.get_inverse(layer_set):
+                if not inverse.is_a("IfcMaterialLayerSetUsage"):
+                    continue
+                if ifc_file.schema == "IFC2X3":
+                    for rel in ifc_file.get_inverse(inverse):
+                        if not rel.is_a("IfcRelAssociatesMaterial"):
+                            continue
+                        for element in rel.RelatedObjects:
+                            self.change_thickness(element, delta_thickness)
+                else:
+                    for rel in inverse.AssociatedTo:
+                        for element in rel.RelatedObjects:
+                            self.change_thickness(element, delta_thickness)
+
+    def regenerate_from_type(self, usecase_path, ifc_file, **settings):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        new_material = ifcopenshell.util.element.get_material(settings["relating_type"])
+        if not new_material.is_a("IfcMaterialLayerSet"):
+            return
+        obj = IfcStore.get_element(settings["related_object"].id())
+        if not obj:
+            return
+        current_thickness = obj.dimensions.z / self.unit_scale
+        new_thickness = sum([l.LayerThickness for l in new_material.MaterialLayers])
+        if current_thickness == new_thickness:
+            return
+        self.change_thickness(settings["related_object"], new_thickness - current_thickness)
+
+    def change_thickness(self, element, delta_thickness):
+        parametric = ifcopenshell.util.element.get_psets(element).get("EPset_Parametric")
+        if not parametric or parametric["Engine"] != "BlenderBIM.DumbSlab":
+            return
+
+        obj = IfcStore.get_element(element.id())
+        if not obj:
+            return
+
+        modifier = [m for m in obj.modifiers if m.type == "SOLIDIFY"]
+        if modifier:
+            modifier = modifier[0]
+        else:
+            pass
+        modifier.thickness += delta_thickness * self.unit_scale
+        obj.location[2] -= delta_thickness * self.unit_scale

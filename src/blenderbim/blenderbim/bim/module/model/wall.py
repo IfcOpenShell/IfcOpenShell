@@ -687,7 +687,7 @@ class DumbWallGenerator:
 
 
 
-def generate_dumb_wall_axis(usecase_path, ifc_file, **settings):
+def generate_axis(usecase_path, ifc_file, **settings):
     axis_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Axis", "GRAPH_VIEW")
     if not axis_context:
         return
@@ -722,7 +722,7 @@ def generate_dumb_wall_axis(usecase_path, ifc_file, **settings):
         bpy.data.meshes.remove(mesh)
 
 
-def calculate_dumb_quantities(usecase_path, ifc_file, **settings):
+def calculate_quantities(usecase_path, ifc_file, **settings):
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
     obj = settings["blender_object"]
     product = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
@@ -758,7 +758,7 @@ def calculate_dumb_quantities(usecase_path, ifc_file, **settings):
 
 
 class DumbWallPlaner:
-    def regenerate_wall_thicknesses_from_layer(self, usecase_path, ifc_file, **settings):
+    def regenerate_from_layer(self, usecase_path, ifc_file, **settings):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         layer = settings["layer"]
         thickness = settings["attributes"].get("LayerThickness")
@@ -777,13 +777,13 @@ class DumbWallPlaner:
                         if not rel.is_a("IfcRelAssociatesMaterial"):
                             continue
                         for element in rel.RelatedObjects:
-                            self.regenerate_wall_thickness(element, delta_thickness)
+                            self.change_thickness(element, delta_thickness)
                 else:
                     for rel in inverse.AssociatedTo:
                         for element in rel.RelatedObjects:
-                            self.regenerate_wall_thickness(element, delta_thickness)
+                            self.change_thickness(element, delta_thickness)
 
-    def regenerate_wall_thicknesses_from_type(self, usecase_path, ifc_file, **settings):
+    def regenerate_from_type(self, usecase_path, ifc_file, **settings):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         new_material = ifcopenshell.util.element.get_material(settings["relating_type"])
         if not new_material.is_a("IfcMaterialLayerSet"):
@@ -795,9 +795,9 @@ class DumbWallPlaner:
         new_thickness = sum([l.LayerThickness for l in new_material.MaterialLayers])
         if current_thickness == new_thickness:
             return
-        self.regenerate_wall_thickness(settings["related_object"], new_thickness - current_thickness)
+        self.change_thickness(settings["related_object"], new_thickness - current_thickness)
 
-    def regenerate_wall_thickness(self, element, delta_thickness):
+    def change_thickness(self, element, delta_thickness):
         parametric = ifcopenshell.util.element.get_psets(element).get("EPset_Parametric")
         if not parametric or parametric["Engine"] != "BlenderBIM.DumbWall":
             return
