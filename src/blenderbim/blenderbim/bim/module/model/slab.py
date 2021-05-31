@@ -5,10 +5,51 @@ import ifcopenshell
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import mathutils.geometry
+import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 from math import pi, degrees
 from mathutils import Vector, Matrix
 from ifcopenshell.api.material.data import Data as MaterialData
+
+
+def element_listener(element, obj):
+    blenderbim.bim.handler.subscribe_to(obj, "mode", mode_callback)
+
+
+def mode_callback(obj, data):
+    for obj in bpy.context.selected_objects + [bpy.context.active_object]:
+        if (
+            obj.mode != "EDIT"
+            or not obj.data
+            or not isinstance(obj.data, (bpy.types.Mesh, bpy.types.Curve, bpy.types.TextCurve))
+            or not obj.BIMObjectProperties.ifc_definition_id
+            or not bpy.context.scene.BIMProjectProperties.is_authoring
+        ):
+            return
+        product = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+        parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
+        if parametric and parametric["Engine"] != "BlenderBIM.DumbSlab":
+            return
+        modifier = [m for m in obj.modifiers if m.type == "SOLIDIFY"]
+        if modifier:
+            return
+        depth = obj.dimensions.z
+        bm = bmesh.from_edit_mesh(obj.data)
+        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
+        bm.faces.ensure_lookup_table()
+        non_bottom_faces = []
+        for face in bm.faces:
+            if face.normal.z > -0.9:
+                non_bottom_faces.append(face)
+            else:
+                face.normal_flip()
+        bmesh.ops.delete(bm, geom=non_bottom_faces, context="FACES")
+        bmesh.update_edit_mesh(obj.data)
+        bm.free()
+        modifier = obj.modifiers.new("Slab Depth", "SOLIDIFY")
+        modifier.use_even_offset = True
+        modifier.offset = 1
+        modifier.thickness = depth
 
 
 class DumbSlabGenerator:
