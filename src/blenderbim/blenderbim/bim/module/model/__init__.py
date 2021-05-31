@@ -54,6 +54,7 @@ def register():
 def unregister():
     bpy.utils.unregister_tool(workspace.WallTool)
     del bpy.types.Scene.BIMModelProperties
+    bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.types.VIEW3D_MT_mesh_add.remove(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.remove(stair.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.remove(door.add_object_button)

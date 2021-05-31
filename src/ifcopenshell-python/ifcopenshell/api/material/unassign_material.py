@@ -20,4 +20,4 @@ class Usecase:
                     continue
                 related_objects = set(rel.RelatedObjects)
                 related_objects.remove(self.settings["product"])
-                rel.RelatedObjects = list(related_object)
+                rel.RelatedObjects = list(related_objects)
