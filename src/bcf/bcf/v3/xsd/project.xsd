@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:include schemaLocation="shared-types.xsd"/>
+    <xs:element name="ProjectInfo">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="Project" type="Project"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:complexType name="Project">
+        <xs:sequence>
+            <xs:element name="Name" type="NonEmptyOrBlankString" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute name="ProjectId" type="NonEmptyOrBlankString" use="required"/>
+    </xs:complexType>
+</xs:schema>

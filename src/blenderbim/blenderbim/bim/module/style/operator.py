@@ -11,9 +11,9 @@ def get_colour_settings(material):
         transparency = bsdf.inputs["Alpha"].default_value
         diffuse_colour = bsdf.inputs["Base Color"].default_value
     return {
-        "SurfaceColour": material.diffuse_color,
-        "Transparency": transparency,
-        "DiffuseColour": diffuse_colour,
+        "surface_colour": tuple(material.diffuse_color),
+        "transparency": transparency,
+        "diffuse_colour": tuple(diffuse_colour),
     }
 
 
@@ -40,7 +40,7 @@ class AddStyle(bpy.types.Operator):
         self.file = IfcStore.get_file()
         material = bpy.data.materials.get(self.material) if self.material else bpy.context.active_object.active_material
         settings = get_colour_settings(material)
-        settings["Name"] = material.name
+        settings["name"] = material.name
         settings["external_definition"] = None # TODO: Implement. See #1222
         style = ifcopenshell.api.run("style.add_style", self.file, **settings)
         material.BIMMaterialProperties.ifc_style_id = int(style.id())

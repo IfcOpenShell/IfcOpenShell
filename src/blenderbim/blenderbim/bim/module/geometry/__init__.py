@@ -4,11 +4,9 @@ from . import ui, prop, operator
 classes = (
     operator.EditObjectPlacement,
     operator.AddRepresentation,
-    operator.MapRepresentations,
-    operator.MapRepresentation,
     operator.SwitchRepresentation,
     operator.RemoveRepresentation,
-    operator.UpdateMeshRepresentation,
+    operator.UpdateRepresentation,
     operator.UpdateParametricRepresentation,
     operator.GetRepresentationIfcParameters,
     prop.BIMGeometryProperties,

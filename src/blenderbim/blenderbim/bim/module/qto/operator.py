@@ -69,6 +69,8 @@ class ExecuteQtoMethod(bpy.types.Operator):
         elif props.qto_methods == "VOLUME":
             for obj in bpy.context.selected_objects:
                 result += helper.calculate_volume(obj)
+        elif props.qto_methods == "FORMWORK":
+            result = helper.calculate_formwork_area(bpy.context.selected_objects)
         props.qto_result = str(round(result, 3))
         return {"FINISHED"}
 
@@ -88,6 +90,8 @@ class QuantifyObjects(bpy.types.Operator):
                 result = helper.calculate_height(obj)
             elif props.qto_methods == "VOLUME":
                 result = helper.calculate_volume(obj)
+            elif props.qto_methods == "FORMWORK":
+                result = helper.calculate_formwork_area([obj])
             if not result:
                 continue
             result = round(result, 3)
@@ -95,13 +99,13 @@ class QuantifyObjects(bpy.types.Operator):
                 "pset.add_qto",
                 self.file,
                 product=self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                Name=props.qto_name,
+                name=props.qto_name,
             )
             ifcopenshell.api.run(
                 "pset.edit_qto",
                 self.file,
                 qto=qto,
-                Properties={props.prop_name: result}
+                properties={props.prop_name: result}
             )
             PsetData.load(self.file, obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}

@@ -38,10 +38,10 @@ def getDiagramScales(self, context):
     global diagram_scales_enum
     if (
         len(diagram_scales_enum) < 1
-        or (context.scene.unit_settings.system == "IMPERIAL" and len(diagram_scales_enum) == 13)
-        or (context.scene.unit_settings.system == "METRIC" and len(diagram_scales_enum) == 31)
+        or (bpy.context.scene.unit_settings.system == "IMPERIAL" and len(diagram_scales_enum) == 13)
+        or (bpy.context.scene.unit_settings.system == "METRIC" and len(diagram_scales_enum) == 31)
     ):
-        if context.scene.unit_settings.system == "IMPERIAL":
+        if bpy.context.scene.unit_settings.system == "IMPERIAL":
             diagram_scales_enum = [
                 ("CUSTOM", "Custom", ""),
                 ("1'=1'-0\"|1/1", "1'=1'-0\"", ""),
@@ -99,9 +99,11 @@ def updateDrawingName(self, context):
         return
     if self.camera.name == self.name:
         return
-    self.camera.name = "IfcGroup/{}".format(self.name)
-    self.camera.users_collection[0].name = self.camera.name
-    self.name = self.camera.name.split("/")[1]
+    self.camera.name = "IfcAnnotation/{}".format(self.name)
+    unique_name = "/".join(self.camera.name.split("/")[1:])
+    self.camera.users_collection[0].name = "IfcGroup/{}".format(unique_name)
+    if self.name != unique_name:
+        self.name = unique_name
 
 
 def refreshActiveDrawingIndex(self, context):
@@ -198,10 +200,12 @@ class DrawingStyle(PropertyGroup):
 
 
 class DocProperties(PropertyGroup):
-    should_regenerate_base_layer: BoolProperty(name="Regenerate Base Layer", default=True)
-    should_regenerate_annotation_layer: BoolProperty(name="Regenerate Annotation Layer", default=True)
-    should_recut: BoolProperty(name="Should Recut", default=True)
-    should_recut_selected: BoolProperty(name="Should Recut Selected Only", default=False)
+    has_underlay: BoolProperty(name="Underlay", default=False)
+    has_linework: BoolProperty(name="Linework", default=True)
+    has_annotation: BoolProperty(name="Annotation", default=True)
+    should_use_underlay_cache: BoolProperty(name="Use Underlay Cache", default=False)
+    should_use_linework_cache: BoolProperty(name="Use Linework Cache", default=False)
+    should_use_annotation_cache: BoolProperty(name="Use Annotation Cache", default=False)
     should_extract: BoolProperty(name="Should Extract", default=True)
     drawings: CollectionProperty(name="Drawings", type=Drawing)
     active_drawing_index: IntProperty(name="Active Drawing Index", update=refreshActiveDrawingIndex)

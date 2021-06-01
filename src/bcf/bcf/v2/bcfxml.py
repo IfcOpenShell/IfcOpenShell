@@ -92,6 +92,12 @@ class BcfXml:
             subdirs = dirnames
             break
         for subdir in subdirs:
+            try:
+                uuid.UUID(subdir)
+            except ValueError:
+                continue
+            if not os.path.exists(os.path.join(self.filepath, subdir, "markup.bcf")):
+                continue
             self.topics[subdir] = self.get_topic(subdir)
         return self.topics
 
@@ -444,7 +450,7 @@ class BcfXml:
         for bitmap in viewpoint.bitmaps:
             bitmap_el = self._create_element(parent, "Bitmap")
 
-            text_map = {"Bitmap": bitmap.bitmap_type, "Reference": bitmap.reference}
+            text_map = {"Bitmap": bitmap.bitmap_format, "Reference": bitmap.reference}
             for key, value in text_map.items():
                 self._create_element(bitmap_el, key, text=value)
 
@@ -712,7 +718,7 @@ class BcfXml:
         for item in visinfo["Bitmap"]:
             bitmap = bcf.v2.data.Bitmap()
             bitmap.reference = item["Reference"]
-            bitmap.bitmap_type = item["Bitmap"].upper()
+            bitmap.bitmap_format = item["Bitmap"].upper()
             self.set_vector(bitmap.location, item["Location"])
             self.set_vector(bitmap.normal, item["Normal"])
             self.set_vector(bitmap.up, item["Up"])

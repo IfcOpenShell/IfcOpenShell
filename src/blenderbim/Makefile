@@ -1,45 +1,6 @@
 VERSION:=`date '+%y%m%d'`
 PYVERSION:=py37
 
-ifeq ($(PLATFORM), win)
-ifeq ($(PYVERSION), py37)
-PYTHONOCC_URL:=https://anaconda.org/DLR-SC/pythonocc-core/0.17.3/download/win-64/pythonocc-core-0.17.3-py37he980bc4_10.tar.bz2
-OCE_URL:=https://anaconda.org/DLR-SC/oce/0.17.2/download/win-64/oce-0.17.2-he980bc4_14.tar.bz2
-TBB_URL:=https://anaconda.org/DLR-SC/tbb/2019.5/download/win-64/tbb-2019.5-he980bc4_0.tar.bz2
-endif
-ifeq ($(PYVERSION), py39)
-PYTHONOCC_URL:=https://anaconda.org/conda-forge/pythonocc-core/7.4.1/download/win-64/pythonocc-core-7.4.1-py39h3d1c7c5_0.tar.bz2
-OCE_URL:=https://anaconda.org/conda-forge/occt/7.4.0/download/win-64/occt-7.4.0-h823b557_3.tar.bz2
-TBB_URL:=https://anaconda.org/conda-forge/tbb/2020.2/download/win-64/tbb-2020.2-h2d74725_4.tar.bz2
-endif
-endif
-
-ifeq ($(PLATFORM), macos)
-ifeq ($(PYVERSION), py37)
-PYTHONOCC_URL:=https://anaconda.org/DLR-SC/pythonocc-core/0.17.3/download/osx-64/pythonocc-core-0.17.3-py37h04f5b5a_10.tar.bz2
-OCE_URL:=https://anaconda.org/DLR-SC/oce/0.17.2/download/osx-64/oce-0.17.2-h04f5b5a_12.tar.bz2
-TBB_URL:=https://anaconda.org/DLR-SC/tbb/4.3.6/download/osx-64/tbb-4.3.6-0.tar.bz2
-endif
-ifeq ($(PYVERSION), py39)
-PYTHONOCC_URL:=https://anaconda.org/conda-forge/pythonocc-core/7.4.1/download/osx-64/pythonocc-core-7.4.1-py39h4d29fe3_0.tar.bz2
-OCE_URL:=https://anaconda.org/conda-forge/occt/7.4.0/download/osx-64/occt-7.4.0-hb9b6dc7_3.tar.bz2
-TBB_URL:=https://anaconda.org/conda-forge/tbb/2020.2/download/osx-64/tbb-2020.2-h940c156_4.tar.bz2
-endif
-endif
-
-ifeq ($(PLATFORM), linux)
-ifeq ($(PYVERSION), py37)
-PYTHONOCC_URL:=https://anaconda.org/DLR-SC/pythonocc-core/0.17.3/download/linux-64/pythonocc-core-0.17.3-py37h6bb024c_10.tar.bz2
-OCE_URL:=https://anaconda.org/DLR-SC/oce/0.17.2/download/linux-64/oce-0.17.2-h6bb024c_14.tar.bz2
-TBB_URL:=https://anaconda.org/DLR-SC/tbb/4.3.6/download/linux-64/tbb-4.3.6-0.tar.bz2
-endif
-ifeq ($(PYVERSION), py39)
-PYTHONOCC_URL:=https://anaconda.org/conda-forge/pythonocc-core/7.4.1/download/linux-64/pythonocc-core-7.4.1-py39h465cb30_0.tar.bz2
-OCE_URL:=https://anaconda.org/conda-forge/occt/7.4.0/download/linux-64/occt-7.4.0-h9121d39_3.tar.bz2
-TBB_URL:=https://anaconda.org/conda-forge/tbb/2020.2/download/linux-64/tbb-2020.2-h4bd325d_4.tar.bz2
-endif
-endif
-
 .PHONY: dist
 dist:
 ifndef PLATFORM
@@ -52,10 +13,10 @@ endif
 
 	# Provides IfcOpenShell Python functionality
 ifeq ($(PYVERSION), py37)
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-37-v0.6.0-ff7219b-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-37-v0.6.0-81ad689-$(PLATFORM)64.zip
 endif
 ifeq ($(PYVERSION), py39)
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-39-v0.6.0-ff7219b-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-39-v0.6.0-81ad689-$(PLATFORM)64.zip
 endif
 	cd dist/working && unzip ifcblender*
 	cp -r dist/working/io_import_scene_ifc/ifcopenshell dist/blenderbim/libs/site/packages/
@@ -67,7 +28,7 @@ endif
 
 	# Provides IfcConvert for construction documentation
 	mkdir dist/working
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.6.0-517b819-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.6.0-81ad689-$(PLATFORM)64.zip
 	cd dist/working && unzip IfcConvert*
 ifeq ($(PLATFORM), win)
 	cp -r dist/working/IfcConvert.exe dist/blenderbim/libs/
@@ -75,66 +36,6 @@ else
 	cp -r dist/working/IfcConvert dist/blenderbim/libs/
 endif
 	rm -rf dist/working
-
-	# Provides Python OCC functionality for cutting IFC geometry for construction documentation
-	mkdir dist/working
-	cd dist/working && wget $(PYTHONOCC_URL)
-	cd dist/working && tar -xjvf pythonocc-core*
-ifeq ($(PLATFORM), win)
-	cd dist/working && cp -r Lib/site-packages/OCC ../blenderbim/libs/site/packages/
-else
-ifeq ($(PYVERSION), py37)
-	cd dist/working && cp -r lib/python3.7/site-packages/OCC ../blenderbim/libs/site/packages/
-endif
-ifeq ($(PYVERSION), py39)
-	cd dist/working && cp -r lib/python3.9/site-packages/OCC ../blenderbim/libs/site/packages/
-endif
-endif
-	rm -rf dist/working
-
-	# Required by Python OCC
-	mkdir dist/working
-	cd dist/working && wget $(OCE_URL)
-	cd dist/working && tar -xjvf oc*
-ifeq ($(PLATFORM), win)
-ifeq ($(PYVERSION), py37)
-	cd dist/working && cp -r Library/bin/* ../blenderbim/libs/site/packages/OCC/
-endif
-ifeq ($(PYVERSION), py39)
-	cd dist/working && cp -r Library/bin/* ../blenderbim/libs/site/packages/OCC/Core/
-endif
-else
-	# Unix Conda builds of PythonOCC expect OCE libs to have a RPATH of ../../../
-	cd dist/working && cp -r lib/* ../blenderbim/libs/
-endif
-ifeq ($(PLATFORM), linux)
-	rm -rf dist/blenderbim/libs/oce-0.17
-endif
-	rm -rf dist/working
-
-	# Required by OpenCascade
-	mkdir dist/working
-	cd dist/working && wget $(TBB_URL)
-	cd dist/working && tar -xjvf tbb*
-ifeq ($(PLATFORM), win)
-ifeq ($(PYVERSION), py37)
-	cd dist/working && cp -r Library/bin/* ../blenderbim/libs/site/packages/OCC/
-endif
-ifeq ($(PYVERSION), py39)
-	cd dist/working && cp -r Library/bin/* ../blenderbim/libs/site/packages/OCC/Core/
-endif
-else
-	cd dist/working && cp -r lib/* ../blenderbim/libs/
-endif
-	rm -rf dist/working
-
-ifeq ($(PLATFORM), macos)
-	mkdir dist/working
-	cd dist/working && wget https://blenderbim.org/builds/patch-blender28-bim-macos.zip
-	cd dist/working && unzip patch*
-	cd dist/working && cp -r *.dylib ../blenderbim/libs/
-	rm -rf dist/working
-endif
 
 	# Provides dependencies that are part of IfcOpenShell
 	mkdir dist/working

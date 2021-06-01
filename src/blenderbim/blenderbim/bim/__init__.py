@@ -6,14 +6,16 @@ bpy = sys.modules.get("bpy")
 if bpy is not None:
     import bpy
     import importlib
-    from . import handler, ui, prop, operator, gizmos
+    from . import handler, ui, prop, operator
 
     modules = {
         "project": None,
+        "parametric": None,
         "search": None,
         "bcf": None,
         "root": None,
         "unit": None,
+        "model": None,
         "georeference": None,
         "context": None,
         "drawing": None,
@@ -29,10 +31,10 @@ if bpy is not None:
         "sequence": None,
         "group": None,
         "structural": None,
+        "boundary": None,
         "material": None,
         "style": None,
         "layer": None,
-        "model": None,
         "owner": None,
         "pset": None,
         "qto": None,
@@ -61,60 +63,20 @@ if bpy is not None:
         operator.ExportIFC,
         operator.ImportIFC,
         operator.SelectExternalMaterialDir,
-        operator.AddSweptSolid,
-        operator.RemoveSweptSolid,
-        operator.AssignSweptSolidOuterCurve,
-        operator.SelectSweptSolidOuterCurve,
-        operator.AddSweptSolidInnerCurve,
-        operator.SelectSweptSolidInnerCurves,
-        operator.AssignSweptSolidExtrusion,
-        operator.SelectSweptSolidExtrusion,
         operator.FetchExternalMaterial,
         operator.FetchObjectPassport,
-        operator.CutSection,
-        operator.AddSheet,
-        operator.OpenSheet,
-        operator.AddDrawingToSheet,
-        operator.CreateSheets,
-        operator.OpenView,
-        operator.OpenViewCamera,
-        operator.ActivateView,
         operator.OpenUpstream,
         operator.AddSectionPlane,
         operator.RemoveSectionPlane,
         operator.ReloadIfcFile,
         operator.AddIfcFile,
         operator.RemoveIfcFile,
-        operator.SelectDocIfcFile,
-        operator.GenerateReferences,
-        operator.ResizeText,
-        operator.AddVariable,
-        operator.RemoveVariable,
-        operator.PropagateTextData,
         operator.SetOverrideColour,
-        operator.RemoveDrawing,
-        operator.AddDrawingStyle,
-        operator.RemoveDrawingStyle,
-        operator.SaveDrawingStyle,
-        operator.ActivateDrawingStyle,
-        operator.EditVectorStyle,
-        operator.RemoveSheet,
-        operator.AddSchedule,
-        operator.RemoveSchedule,
-        operator.SelectScheduleFile,
-        operator.BuildSchedule,
-        operator.AddScheduleToSheet,
         operator.SetViewportShadowFromSun,
-        operator.AddDrawingStyleAttribute,
-        operator.RemoveDrawingStyleAttribute,
         operator.CopyPropertyToSelection,
         operator.CopyAttributeToSelection,
-        operator.RefreshDrawingList,
-        operator.CleanWireframes,
         operator.LinkIfc,
         operator.SnapSpacesTogether,
-        operator.CopyGrid,
-        operator.AddSectionsAnnotations,
         prop.StrProperty,
         prop.Attribute,
         prop.BIMProperties,
@@ -123,25 +85,12 @@ if bpy is not None:
         prop.GlobalId,
         prop.BIMObjectProperties,
         prop.BIMMaterialProperties,
-        prop.SweptSolid,
         prop.ItemSlotMap,
         prop.BIMMeshProperties,
         ui.BIM_PT_section_plane,
-        ui.BIM_PT_drawings,
-        ui.BIM_PT_schedules,
-        ui.BIM_PT_sheets,
-        ui.BIM_PT_text,
-        ui.BIM_PT_annotation_utilities,
-        ui.BIM_PT_misc_utilities,
         ui.BIM_UL_generic,
-        ui.BIM_UL_drawinglist,
         ui.BIM_UL_topics,
         ui.BIM_ADDON_preferences,
-        gizmos.UglyDotGizmo,
-        gizmos.DotGizmo,
-        gizmos.DimensionLabelGizmo,
-        gizmos.ExtrusionGuidesGizmo,
-        gizmos.ExtrusionWidget
     ]
 
     for module in modules.values():
@@ -169,17 +118,18 @@ if bpy is not None:
         bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
         bpy.types.Object.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
         bpy.types.Material.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
-        bpy.types.Collection.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties) # Check if we need this
+        bpy.types.Collection.BIMObjectProperties = bpy.props.PointerProperty(
+            type=prop.BIMObjectProperties
+        )  # Check if we need this
         bpy.types.Material.BIMMaterialProperties = bpy.props.PointerProperty(type=prop.BIMMaterialProperties)
         bpy.types.Mesh.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
         bpy.types.Curve.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
         bpy.types.Camera.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
+        bpy.types.PointLight.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
         bpy.types.SCENE_PT_unit.append(ui.ifc_units)
 
         for module in modules.values():
             module.register()
-
-        bpy.app.handlers.depsgraph_update_pre.append(operator.depsgraph_update_pre_handler)
 
     def unregister():
         for cls in reversed(classes):
@@ -192,14 +142,13 @@ if bpy is not None:
         del bpy.types.Scene.BIMProperties
         del bpy.types.Object.BIMObjectProperties
         del bpy.types.Material.BIMObjectProperties
-        del bpy.types.Collection.BIMObjectProperties # Check if we need this
+        del bpy.types.Collection.BIMObjectProperties  # Check if we need this
         del bpy.types.Material.BIMMaterialProperties
         del bpy.types.Mesh.BIMMeshProperties
         del bpy.types.Curve.BIMMeshProperties
         del bpy.types.Camera.BIMMeshProperties
+        del bpy.types.PointLight.BIMMeshProperties
         bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
 
         for module in reversed(list(modules.values())):
             module.unregister()
-
-        bpy.app.handlers.depsgraph_update_pre.remove(operator.depsgraph_update_pre_handler)

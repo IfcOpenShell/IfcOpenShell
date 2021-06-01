@@ -104,6 +104,7 @@ def updateTaskTimeDateTime(self, context, startfinish):
         **{"task_time": task_time, "attributes": {startfinish_key: startfinish_datetime}},
     )
     Data.load(IfcStore.get_file())
+    bpy.ops.bim.load_task_properties(task=props.active_task_id)
     setattr(self, startfinish, canonicalise_time(startfinish_datetime))
 
 
@@ -121,12 +122,13 @@ def updateTaskduration(self, context):
     ifcopenshell.api.run(
         "sequence.edit_task_time",
         self.file,
-        **{"task_time":task_time, "attributes": {"ScheduleDuration": self.duration}},
+        **{"task_time": task_time, "attributes": {"ScheduleDuration": self.duration}},
     )
     Data.load(IfcStore.get_file())
     if props.active_task_id == self.ifc_definition_id:
         attribute = props.task_attributes.get("Duration")
         attribute.string_value = self.duration
+    bpy.ops.bim.load_task_properties(task=props.active_task_id)
 
 
 def updateVisualisationStart(self, context):
@@ -283,3 +285,8 @@ class BIMWorkCalendarProperties(PropertyGroup):
     )
     start_time: StringProperty(name="Start Time")
     end_time: StringProperty(name="End Time")
+
+
+class DatePickerProperties(PropertyGroup):
+    display_date: StringProperty()
+    selected_date: StringProperty()

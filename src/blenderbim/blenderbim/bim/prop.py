@@ -30,6 +30,18 @@ def getAttributeEnumValues(self, context):
     return [(e, e, "") for e in json.loads(self.enum_items)]
 
 
+def updateSchemaDir(self, context):
+    import blenderbim.bim.schema
+
+    blenderbim.bim.schema.ifc.schema_dir = context.scene.BIMProperties.schema_dir
+
+
+def updateDataDir(self, context):
+    import blenderbim.bim.schema
+
+    blenderbim.bim.schema.ifc.data_dir = context.scene.BIMProperties.data_dir
+
+
 def updateIfcFile(self, context):
     if context.scene.BIMProperties.ifc_file:
         IfcStore.file = None
@@ -82,6 +94,7 @@ def getSubcontexts(self, context):
         "CoG",
         "Profile",
         "SurveyPoints",
+        "Lighting",
     ]
     for subcontext in subcontexts:
         subcontexts_enum.append((subcontext, subcontext, ""))
@@ -150,8 +163,12 @@ class Attribute(PropertyGroup):
 
 
 class BIMProperties(PropertyGroup):
-    schema_dir: StringProperty(default=os.path.join(cwd, "schema") + os.path.sep, name="Schema Directory")
-    data_dir: StringProperty(default=os.path.join(cwd, "data") + os.path.sep, name="Data Directory")
+    schema_dir: StringProperty(
+        default=os.path.join(cwd, "schema") + os.path.sep, name="Schema Directory", update=updateSchemaDir
+    )
+    data_dir: StringProperty(
+        default=os.path.join(cwd, "data") + os.path.sep, name="Data Directory", update=updateDataDir
+    )
     ifc_file: StringProperty(name="IFC File", update=updateIfcFile)
     id_map: StringProperty(name="ID Map")
     guid_map: StringProperty(name="GUID Map")
@@ -259,13 +276,6 @@ class BIMMaterialProperties(PropertyGroup):
     ifc_style_id: IntProperty(name="IFC Style ID")
 
 
-class SweptSolid(PropertyGroup):
-    name: StringProperty(name="Name")
-    outer_curve: StringProperty(name="Outer Curve")
-    inner_curves: StringProperty(name="Inner Curves")
-    extrusion: StringProperty(name="Extrusion")
-
-
 class ItemSlotMap(PropertyGroup):
     name: StringProperty(name="Item Element ID")
     slot_index: IntProperty(name="Material Slot Index")
@@ -275,7 +285,6 @@ class BIMMeshProperties(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_native: BoolProperty(name="Is Native", default=False)
     is_swept_solid: BoolProperty(name="Is Swept Solid")
-    swept_solids: CollectionProperty(name="Swept Solids", type=SweptSolid)
     is_parametric: BoolProperty(name="Is Parametric", default=False)
     ifc_definition: StringProperty(name="IFC Definition")
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)

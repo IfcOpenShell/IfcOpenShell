@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+    <xs:include schemaLocation="shared-types.xsd"/>
+    <xs:element name="VisualizationInfo">
+        <xs:annotation>
+            <xs:documentation>VisualizationInfo documentation</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <!--
+                Although plural, 'Components' is not a collection
+                -->
+                <xs:element name="Components" type="Components" minOccurs="0"/>
+                <xs:choice>
+                    <xs:element name="OrthogonalCamera" type="OrthogonalCamera"/>
+                    <xs:element name="PerspectiveCamera" type="PerspectiveCamera"/>
+                </xs:choice>
+                <xs:element name="Lines" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="Line" type="Line" minOccurs="0" maxOccurs="unbounded"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="ClippingPlanes" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="ClippingPlane" type="ClippingPlane" minOccurs="0" maxOccurs="unbounded"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="Bitmaps" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="Bitmap" type="Bitmap" minOccurs="0" maxOccurs="unbounded"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+            <!-- Guid of the viewpoint -->
+            <xs:attribute name="Guid" type="Guid" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:complexType name="OrthogonalCamera">
+        <xs:sequence>
+            <xs:element name="CameraViewPoint" type="Point"/>
+            <xs:element name="CameraDirection" type="Direction"/>
+            <xs:element name="CameraUpVector" type="Direction"/>
+            <xs:element name="ViewToWorldScale" type="xs:double">
+                <xs:annotation>
+                    <xs:documentation>view's visible vertical size in meters</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AspectRatio" type="PositiveDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        Proportional relationship between the width and the height of the view (w/h).
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="PerspectiveCamera">
+        <xs:sequence>
+            <xs:element name="CameraViewPoint" type="Point"/>
+            <xs:element name="CameraDirection" type="Direction"/>
+            <xs:element name="CameraUpVector" type="Direction"/>
+            <xs:element name="FieldOfView" type="FieldOfView">
+                <xs:annotation>
+                    <xs:documentation>
+                        Vertical field of view, in degrees.
+                        It is currently limited to a value between 45 and 60 degrees.
+                        This limitation will be dropped in the next release and viewers
+                        should be expect values outside this range in current implementations.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AspectRatio" type="PositiveDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        Proportional relationship between the width and the height of the view (w/h).
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Point">
+        <xs:sequence>
+            <xs:element name="X" type="xs:double"/>
+            <xs:element name="Y" type="xs:double"/>
+            <xs:element name="Z" type="xs:double"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Direction">
+        <xs:sequence>
+            <xs:element name="X" type="xs:double"/>
+            <xs:element name="Y" type="xs:double"/>
+            <xs:element name="Z" type="xs:double"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:simpleType name="PositiveDouble">
+        <xs:restriction base="xs:double">
+            <xs:minExclusive value="0"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="FieldOfView">
+        <xs:restriction base="xs:double">
+            <xs:minExclusive value="0"/>
+            <xs:maxExclusive value="180"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:complexType name="Components">
+        <xs:sequence>
+            <!-- Components with relevance to the viewpoint. They should be displayed highlighted or selected in a viewer -->
+            <xs:element name="Selection" type="ComponentSelection" minOccurs="0"/>
+            <xs:element name="Visibility" type="ComponentVisibility" minOccurs="0"/>
+            <xs:element name="Coloring" type="ComponentColoring" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="ComponentSelection">
+        <xs:sequence>
+            <xs:element name="Component" type="Component" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="ComponentVisibility">
+        <xs:sequence>
+            <xs:element name="ViewSetupHints" type="ViewSetupHints" minOccurs="0"/>
+            <xs:element name="Exceptions" minOccurs="0">
+                <!-- List Components that are different than the DefaultVisibility. E.g. if DefaultVisibility = false then list
+                     Components that should be visible -->
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="Component" type="Component" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+        <xs:attribute name="DefaultVisibility" type="xs:boolean" default="false"/>
+    </xs:complexType>
+    <xs:complexType name="ViewSetupHints">
+        <xs:attribute name="SpacesVisible" type="xs:boolean" default="false"/>
+        <xs:attribute name="SpaceBoundariesVisible" type="xs:boolean" default="false"/>
+        <xs:attribute name="OpeningsVisible" type="xs:boolean" default="false"/>
+    </xs:complexType>
+    <xs:complexType name="ComponentColoring">
+        <xs:sequence>
+            <xs:element name="Color" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:sequence>
+                        <!-- At least one component is required for a Color. -->
+                        <xs:element name="Components">
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element name="Component" type="Component" maxOccurs="unbounded"/>
+                                </xs:sequence>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                    <xs:attribute ref="Color" use="required"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Component">
+        <xs:sequence>
+            <xs:element name="OriginatingSystem" type="NonEmptyOrBlankString" minOccurs="0"/>
+            <xs:element name="AuthoringToolId" type="NonEmptyOrBlankString" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute ref="IfcGuid"/>
+    </xs:complexType>
+    <xs:attribute name="Color">
+        <xs:simpleType>
+            <xs:restriction base="xs:normalizedString">
+                <!-- Should either match 3 or 4 hex bytes , e.g. "FF00FF" or "FF00FF99" -->
+                <xs:pattern value="[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?"/>
+            </xs:restriction>
+        </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="IfcGuid">
+        <xs:simpleType>
+            <xs:restriction base="xs:normalizedString">
+                <xs:length value="22"/>
+                <xs:pattern value="[0-9A-Za-z_$]*"/>
+            </xs:restriction>
+        </xs:simpleType>
+    </xs:attribute>
+    <xs:complexType name="Line">
+        <xs:sequence>
+            <xs:element name="StartPoint" type="Point"/>
+            <xs:element name="EndPoint" type="Point"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="ClippingPlane">
+        <xs:sequence>
+            <xs:element name="Location" type="Point"/>
+            <xs:element name="Direction" type="Direction"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Bitmap">
+        <xs:sequence>
+            <xs:element name="Format" type="BitmapFormat"/>
+            <!-- Name of the bitmap file in the topic folder -->
+            <xs:element name="Reference" type="NonEmptyOrBlankString"/>
+            <!-- Location of the center of the bitmap -->
+            <xs:element name="Location" type="Point"/>
+            <!-- Normal of the bitmap -->
+            <xs:element name="Normal" type="Direction"/>
+            <!-- Upvector of the bitmap -->
+            <xs:element name="Up" type="Direction"/>
+            <!-- Height of the bitmap -->
+            <xs:element name="Height" type="xs:double"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:simpleType name="BitmapFormat">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="png"/>
+            <xs:enumeration value="jpg"/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>

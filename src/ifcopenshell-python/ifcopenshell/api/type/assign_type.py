@@ -1,5 +1,6 @@
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -51,4 +52,49 @@ class Usecase:
                     "RelatedObjects": [self.settings["related_object"]],
                     "RelatingType": self.settings["relating_type"],
                 }
+            )
+
+        self.map_representations()
+        self.map_material_usages()
+
+    def map_representations(self):
+        if not self.settings["relating_type"].RepresentationMaps:
+            return
+        representations = []
+        if self.settings["related_object"].Representation:
+            representations = self.settings["related_object"].Representation.Representations
+        for representation in representations:
+            # TODO: check if this is right? Surely this can be a single usecase?
+            ifcopenshell.api.run(
+                "geometry.unassign_representation",
+                self.file,
+                **{"product": self.settings["related_object"], "representation": representation}
+            )
+            ifcopenshell.api.run("geometry.remove_representation", self.file, **{"representation": representation})
+        for representation_map in self.settings["relating_type"].RepresentationMaps:
+            representation = representation_map.MappedRepresentation
+            mapped_representation = ifcopenshell.api.run(
+                "geometry.map_representation", self.file, **{"representation": representation}
+            )
+            ifcopenshell.api.run(
+                "geometry.assign_representation",
+                self.file,
+                **{"product": self.settings["related_object"], "representation": mapped_representation}
+            )
+
+    def map_material_usages(self):
+        type_material = ifcopenshell.util.element.get_material(self.settings["relating_type"])
+        if type_material.is_a("IfcMaterialLayerSet"):
+            ifcopenshell.api.run(
+                "material.assign_material",
+                self.file,
+                product=self.settings["related_object"],
+                type="IfcMaterialLayerSetUsage",
+            )
+        elif type_material.is_a("IfcMaterialProfileSet"):
+            ifcopenshell.api.run(
+                "material.assign_material",
+                self.file,
+                product=self.settings["related_object"],
+                type="IfcMaterialProfileSetUsage",
             )
