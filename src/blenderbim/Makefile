@@ -92,6 +92,20 @@ endif
 	cp -r dist/working/isodate-0.6.0/src/isodate dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
+	# Provides networkx graph analysis for project dependency calculations
+	mkdir dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/b0/21/adfbf6168631e28577e4af9eb9f26d75fe72b2bb1d33762a5f2c425e6c2a/networkx-2.5.1.tar.gz
+	cd dist/working && tar -xzvf networkx*
+	cp -r dist/working/networkx-2.5.1/networkx dist/blenderbim/libs/site/packages/
+	rm -rf dist/working
+
+	# Required by networkx
+	mkdir dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/4f/51/15a4f6b8154d292e130e5e566c730d8ec6c9802563d58760666f1818ba58/decorator-5.0.9.tar.gz
+	cd dist/working && tar -xzvf decorator*
+	cp -r dist/working/decorator-5.0.9/src/decorator.py dist/blenderbim/libs/site/packages/
+	rm -rf dist/working
+
 	# Provides jsgantt-improved supports for web-based construction sequencing gantt charts
 	mkdir dist/working
 	cd dist/working && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
