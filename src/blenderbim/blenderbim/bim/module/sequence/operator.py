@@ -1439,7 +1439,9 @@ class BlenderBIM_DatePicker(bpy.types.Operator):
         return {"FINISHED"}
 
     def draw(self, context):
-        self.selected_date = helper.get_scene_prop("DatePickerProperties.selected_date") or helper.canonicalise_time(datetime.now())
+        self.selected_date = helper.get_scene_prop("DatePickerProperties.selected_date") or helper.canonicalise_time(
+            datetime.now()
+        )
         current_date = parser.parse(context.scene.DatePickerProperties.display_date, dayfirst=True, fuzzy=True)
         current_month = (current_date.year, current_date.month)
         lines = calendar.monthcalendar(*current_month)
@@ -1510,4 +1512,18 @@ class BlenderBIM_RedrawDatePicker(bpy.types.Operator):
 
         context.scene.DatePickerProperties.display_date = helper.canonicalise_time(date_to_set)
 
+        return {"FINISHED"}
+
+
+class RecalculateSchedule(bpy.types.Operator):
+    bl_idname = "bim.recalculate_schedule"
+    bl_label = "Recalculate Schedule"
+    work_schedule: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "sequence.recalculate_schedule", self.file, work_schedule=self.file.by_id(self.work_schedule)
+        )
+        Data.load(self.file)
         return {"FINISHED"}
