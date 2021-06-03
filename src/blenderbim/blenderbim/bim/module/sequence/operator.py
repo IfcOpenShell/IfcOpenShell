@@ -661,6 +661,15 @@ class GenerateGanttChart(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         self.json = []
+        self.sequence_type_map = {
+            None: "FS",
+            "START_START": "SS",
+            "START_FINISH": "SF",
+            "FINISH_START": "FS",
+            "FINISH_FINISH": "FF",
+            "USERDEFINED": "FS",
+            "NOTDEFINED": "FS",
+        }
         for task_id in Data.work_schedules[self.work_schedule]["RelatedObjects"]:
             self.create_new_task_json(task_id)
         with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"), "w") as f:
@@ -671,23 +680,35 @@ class GenerateGanttChart(bpy.types.Operator):
 
     def create_new_task_json(self, task_id):
         task = self.file.by_id(task_id)
-        self.json.append(
-            {
-                "pID": task.id(),
-                "pName": task.Name,
-                "pStart": task.TaskTime.ScheduleStart if task.TaskTime else "",
-                "pEnd": task.TaskTime.ScheduleFinish if task.TaskTime else "",
-                "pPlanStart": task.TaskTime.ScheduleStart if task.TaskTime else "",
-                "pPlanEnd": task.TaskTime.ScheduleFinish if task.TaskTime else "",
-                "pClass": "ggroupblack",
-                "pMile": 1 if task.IsMilestone else 0,
-                "pComp": 0,
-                "pGroup": 1,
-                "pParent": task.Nests[0].RelatingObject.id() if task.Nests else 0,
-                "pOpen": 1,
-                "pCost": 1,
-            }
+        data = {
+            "pID": task.id(),
+            "pName": task.Name,
+            "pStart": task.TaskTime.ScheduleStart if task.TaskTime else "",
+            "pEnd": task.TaskTime.ScheduleFinish if task.TaskTime else "",
+            "pPlanStart": task.TaskTime.ScheduleStart if task.TaskTime else "",
+            "pPlanEnd": task.TaskTime.ScheduleFinish if task.TaskTime else "",
+            "pMile": 1 if task.IsMilestone else 0,
+            "pComp": 0,
+            "pGroup": 1 if task.IsNestedBy else 0,
+            "pParent": task.Nests[0].RelatingObject.id() if task.Nests else 0,
+            "pOpen": 1,
+            "pCost": 1,
+        }
+        if task.TaskTime and task.TaskTime.IsCritical:
+            data["pClass"] = "gtaskred"
+        elif data["pGroup"]:
+            data["pClass"] = "ggroupblack"
+        elif data["pMile"]:
+            data["pClass"] = "gmilestone"
+        else:
+            data["pClass"] = "gtaskblue"
+        data["pDepend"] = ",".join(
+            [
+                "{}{}".format(rel.RelatingProcess.id(), self.sequence_type_map[rel.SequenceType])
+                for rel in task.IsSuccessorFrom or []
+            ]
         )
+        self.json.append(data)
         for task_id in Data.tasks[task_id]["RelatedObjects"]:
             self.create_new_task_json(task_id)
 
@@ -1439,7 +1460,9 @@ class BlenderBIM_DatePicker(bpy.types.Operator):
         return {"FINISHED"}
 
     def draw(self, context):
-        self.selected_date = helper.get_scene_prop("DatePickerProperties.selected_date") or helper.canonicalise_time(datetime.now())
+        self.selected_date = helper.get_scene_prop("DatePickerProperties.selected_date") or helper.canonicalise_time(
+            datetime.now()
+        )
         current_date = parser.parse(context.scene.DatePickerProperties.display_date, dayfirst=True, fuzzy=True)
         current_month = (current_date.year, current_date.month)
         lines = calendar.monthcalendar(*current_month)
@@ -1510,4 +1533,18 @@ class BlenderBIM_RedrawDatePicker(bpy.types.Operator):
 
         context.scene.DatePickerProperties.display_date = helper.canonicalise_time(date_to_set)
 
+        return {"FINISHED"}
+
+
+class RecalculateSchedule(bpy.types.Operator):
+    bl_idname = "bim.recalculate_schedule"
+    bl_label = "Recalculate Schedule"
+    work_schedule: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "sequence.recalculate_schedule", self.file, work_schedule=self.file.by_id(self.work_schedule)
+        )
+        Data.load(self.file)
         return {"FINISHED"}

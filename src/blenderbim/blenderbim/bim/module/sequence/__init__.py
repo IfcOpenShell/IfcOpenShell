@@ -66,6 +66,7 @@ classes = (
     operator.SelectTaskRelatedProducts,
     operator.VisualiseWorkScheduleDate,
     operator.VisualiseWorkScheduleDateRange,
+    operator.RecalculateSchedule,
     operator.BlenderBIM_DatePicker,
     operator.BlenderBIM_DatePickerSetDate,
     operator.BlenderBIM_RedrawDatePicker,

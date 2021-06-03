@@ -114,6 +114,7 @@ class BIM_PT_work_schedules(Panel):
                 row.prop(self.props, "should_show_calendars", text="", icon="VIEW_ORTHO")
                 row.prop(self.props, "should_show_visualisation_ui", text="", icon="CAMERA_STEREO")
                 row.operator("bim.generate_gantt_chart", text="", icon="NLA").work_schedule = work_schedule_id
+                row.operator("bim.recalculate_schedule", text="", icon="FILE_REFRESH").work_schedule = work_schedule_id
                 row.operator("bim.add_summary_task", text="", icon="ADD").work_schedule = work_schedule_id
             row.operator("bim.disable_editing_work_schedule", text="", icon="CANCEL")
         elif self.props.active_work_schedule_id:
