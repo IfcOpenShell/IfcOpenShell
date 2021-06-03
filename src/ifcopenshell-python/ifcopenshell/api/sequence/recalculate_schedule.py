@@ -14,29 +14,32 @@ class Usecase:
     def execute(self):
         # I learned everything about project dependency calcs from this YouTube playlist:
         # https://www.youtube.com/playlist?list=PLLRADeJk4TCK-X5vJY8focpFkau1MR7do
-        import time
-
-        self.time = time.time()
         self.build_network_graph()
-        print("{} :: {:.2f}".format("Build network", time.time() - self.time))
-        print("TOTAL NODES AND EDGES", len(self.g.nodes), len(self.g.edges))
-        self.time = time.time()
-        self.calculate_all_paths_sorted_by_duration()
-        print("{} :: {:.2f}".format("Calc all paths", time.time() - self.time))
-        self.time = time.time()
-        self.calculate_critical_path()
-        print("{} :: {:.2f}".format("Calc critical", time.time() - self.time))
-        self.time = time.time()
-        self.calculate_forward_pass()
-        print("{} :: {:.2f}".format("Forward", time.time() - self.time))
-        self.time = time.time()
-        self.calculate_backward_pass()
-        print("{} :: {:.2f}".format("Backward", time.time() - self.time))
-        self.time = time.time()
+
+        self.pending_nodes = set(self.g.nodes)
+        while self.pending_nodes:
+            remaining_nodes = set()
+            for pending_node in self.pending_nodes:
+                if not self.forward_pass(pending_node):
+                    remaining_nodes.add(pending_node)
+            self.pending_nodes = remaining_nodes
+
+        self.pending_nodes = set(self.g.nodes)
+        while self.pending_nodes:
+            remaining_nodes = set()
+            for pending_node in self.pending_nodes:
+                if not self.backward_pass(pending_node):
+                    remaining_nodes.add(pending_node)
+            self.pending_nodes = remaining_nodes
+
         self.update_task_times()
-        print("{} :: {:.2f}".format("Update", time.time() - self.time))
-        self.time = time.time()
-        print("DONE!", self.critical_paths)
+
+        # TODO: normalise durations to elapsed times. Leave this debug print until we finish this TODO.
+        for n in self.g.nodes:
+            if n == 'start' or n == 'finish':
+                print(n, self.g.nodes[n])
+            else:
+                print(self.file.by_id(n), self.g.nodes[n])
 
     def build_network_graph(self):
         self.sequence_type_map = {
@@ -87,97 +90,13 @@ class Usecase:
         )
         predecessor_types = [rel.SequenceType for rel in task.IsSuccessorFrom]
         successor_types = [rel.SequenceType for rel in task.IsPredecessorTo]
-        # This is less correct, but less computation
-        if not task.IsSuccessorFrom:
+
+        if not predecessor_types or (
+            "FINISH_START" not in predecessor_types and "START_START" not in predecessor_types
+        ):
             self.edges.append(("start", task.id(), {"lag_time": 0, "type": "FS"}))
-        # This I think is more correct, but unlikely to be necessary in most
-        # graphs, and simply adds more computation time
-        # if not predecessor_types or (
-        #    "FINISH_START" not in predecessor_types and "START_START" not in predecessor_types
-        # ):
-        #    self.edges.append(("start", task.id(), {"lag_time": 0, "type": "FS"}))
         if not successor_types or ("FINISH_START" not in successor_types and "FINISH_FINISH" not in successor_types):
             self.edges.append((task.id(), "finish", {"lag_time": 0, "type": "FS"}))
-
-    def calculate_all_paths_sorted_by_duration(self):
-        self.paths = []
-        total_paths = 0
-        for path in nx.algorithms.simple_paths.all_simple_paths(self.g, "start", "finish"):
-            total_duration = 0
-            for i, node in enumerate(path):
-                try:
-                    next_edge = self.g[node][path[i + 1]]
-                    prev_edge = self.g[path[i - 1]][node]
-                except:
-                    continue
-                if prev_edge["type"][1] == "S" and next_edge["type"][0] == "F":
-                    total_duration += self.g.nodes[node]["duration"]
-                elif prev_edge["type"][1] == "F" and next_edge["type"][0] == "S":
-                    total_duration -= self.g.nodes[node]["duration"]
-                total_duration += next_edge["lag_time"]
-            self.paths.append((total_duration, path))
-            total_paths += 1
-            if total_paths % 2000 == 0:
-                print(total_paths, total_duration)
-        self.paths = list(reversed(sorted(self.paths, key=lambda x: x[0])))
-
-    def calculate_critical_path(self):
-        self.critical_paths = [p for p in self.paths if p[0] == self.paths[0][0]]
-
-    def calculate_forward_pass(self):
-        for path_data in self.paths:
-            path = path_data[1]
-            for i, node in enumerate(path):
-                data = self.g.nodes[node]
-
-                if node == "start":
-                    data["early_start"] = 0
-                else:
-                    prev_node = self.g.nodes[path[i - 1]]
-                    prev_edge = self.g[path[i - 1]][node]
-                    if prev_edge["type"] == "FS" and data.get("early_start") is None:
-                        data["early_start"] = prev_node["early_finish"] + prev_edge["lag_time"]
-                    elif prev_edge["type"] == "FF" and data.get("early_finish") is None:
-                        data["early_finish"] = prev_node["early_finish"] + prev_edge["lag_time"]
-                    elif prev_edge["type"] == "SS" and data.get("early_start") is None:
-                        data["early_start"] = prev_node["early_start"] + prev_edge["lag_time"]
-                    elif prev_edge["type"] == "SF" and data.get("early_finish") is None:
-                        data["early_finish"] = prev_node["early_start"] + prev_edge["lag_time"]
-
-                if data.get("early_finish") is None:
-                    data["early_finish"] = data["early_start"] + data["duration"]
-                elif data.get("early_start") is None:
-                    data["early_start"] = data["early_finish"] - data["duration"]
-                #print(data)
-
-    def calculate_backward_pass(self):
-        critical_duration = self.critical_paths[0][0]
-        for path_data in self.paths:
-            path = list(reversed(path_data[1]))
-            for i, node in enumerate(path):
-                data = self.g.nodes[node]
-
-                if node == "finish":
-                    data["late_finish"] = critical_duration
-                else:
-                    prev_node = self.g.nodes[path[i - 1]]
-                    prev_edge = self.g[node][path[i - 1]]
-                    if prev_edge["type"] == "FS" and data.get("late_finish") is None:
-                        data["late_finish"] = prev_node["late_start"] - prev_edge["lag_time"]
-                    elif prev_edge["type"] == "FF" and data.get("late_finish") is None:
-                        data["late_finish"] = prev_node["late_finish"] - prev_edge["lag_time"]
-                    elif prev_edge["type"] == "SS" and data.get("late_start") is None:
-                        data["late_start"] = prev_node["late_start"] - prev_edge["lag_time"]
-                    elif prev_edge["type"] == "SF" and data.get("late_start") is None:
-                        data["late_start"] = prev_node["late_finish"] - prev_edge["lag_time"]
-
-                if data.get("late_finish") is None:
-                    data["late_finish"] = data["late_start"] + data["duration"]
-                elif data.get("late_start") is None:
-                    data["late_start"] = data["late_finish"] - data["duration"]
-
-                data["total_float"] = data["late_finish"] - data["early_finish"]
-                #print("DATA", data)
 
     def update_task_times(self):
         for ifc_definition_id in self.g.nodes:
@@ -195,3 +114,111 @@ class Usecase:
                     "IsCritical": data["total_float"] == 0,
                 },
             )
+
+    def forward_pass(self, node):
+        successors = self.g.successors(node)
+        predecessors = list(self.g.predecessors(node))
+        data = self.g.nodes[node]
+
+        if node == "start":
+            data["early_start"] = 0
+        else:
+            finishes = []
+            starts = []
+            for predecessor in predecessors:
+                edge = self.g[predecessor][node]
+                if edge["type"] == "FS":
+                    finish = self.g.nodes[predecessor].get("early_finish")
+                    if finish is None:
+                        return
+                    starts.append(finish + edge["lag_time"])
+                elif edge["type"] == "SS":
+                    start = self.g.nodes[predecessor].get("early_start")
+                    if start is None:
+                        return
+                    starts.append(start + edge["lag_time"])
+                elif edge["type"] == "FF":
+                    finish = self.g.nodes[predecessor].get("early_finish")
+                    if finish is None:
+                        return
+                    finishes.append(finish + edge["lag_time"])
+                elif edge["type"] == "SF":
+                    start = self.g.nodes[predecessor].get("early_start")
+                    if start is None:
+                        return
+                    finishes.append(start + edge["lag_time"])
+            if starts and finishes:
+                data["early_start"] = max(starts)
+                data["early_finish"] = max(finishes)
+                if data["early_start"] + data["duration"] > data["early_finish"]:
+                    data["early_finish"] = data["early_start"] + data["duration"]
+                else:
+                    data["early_start"] = data["early_finish"] - data["duration"]
+            elif finishes:
+                data["early_finish"] = max(finishes)
+            elif starts:
+                data["early_start"] = max(starts)
+            else:
+                print("How did this happen?")
+
+        if data.get("early_finish") is None:
+            data["early_finish"] = data["early_start"] + data["duration"]
+        elif data.get("early_start") is None:
+            data["early_start"] = data["early_finish"] - data["duration"]
+
+        return True
+
+    def backward_pass(self, node):
+        successors = list(self.g.successors(node))
+        predecessors = self.g.predecessors(node)
+        data = self.g.nodes[node]
+
+        if node == "finish":
+            data["late_finish"] = data["early_finish"]
+        else:
+            finishes = []
+            starts = []
+            for successor in successors:
+                edge = self.g[node][successor]
+                if edge["type"] == "FS":
+                    start = self.g.nodes[successor].get("late_start")
+                    if start is None:
+                        return
+                    finishes.append(start - edge["lag_time"])
+                elif edge["type"] == "SS":
+                    start = self.g.nodes[successor].get("late_start")
+                    if start is None:
+                        return
+                    starts.append(start - edge["lag_time"])
+                elif edge["type"] == "FF":
+                    finish = self.g.nodes[successor].get("late_finish")
+                    if finish is None:
+                        return
+                    finishes.append(finish - edge["lag_time"])
+                elif edge["type"] == "SF":
+                    finish = self.g.nodes[successor].get("late_finish")
+                    if finish is None:
+                        return
+                    starts.append(finish - edge["lag_time"])
+            if starts and finishes:
+                data["late_start"] = min(starts)
+                data["late_finish"] = min(finishes)
+                if data["late_start"] + data["duration"] < data["late_finish"]:
+                    data["late_finish"] = data["late_start"] + data["duration"]
+                else:
+                    data["late_start"] = data["late_finish"] - data["duration"]
+            elif finishes:
+                data["late_finish"] = min(finishes)
+            elif starts:
+                data["late_start"] = min(starts)
+            else:
+                print("How did this happen?")
+
+        if data.get("late_finish") is None:
+            data["late_finish"] = data["late_start"] + data["duration"]
+        elif data.get("late_start") is None:
+            data["late_start"] = data["late_finish"] - data["duration"]
+
+        data["total_float"] = data["late_finish"] - data["early_finish"]
+
+        return True
