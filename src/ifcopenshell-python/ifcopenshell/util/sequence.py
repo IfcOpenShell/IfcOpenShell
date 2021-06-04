@@ -1,5 +1,6 @@
 import datetime
 import ifcopenshell.util.date
+from functools import lru_cache
 
 
 def derive_calendar(task):
@@ -25,6 +26,41 @@ def count_working_days(start, finish, calendar):
     return result
 
 
+def get_finish_date(start, duration, duration_type, calendar):
+    current_date = datetime.date(start.year, start.month, start.day)
+    abs_duration = abs(duration.days)
+    date_offset = datetime.timedelta(days=1 if duration.days > 0 else -1)
+    while abs_duration > 0:
+        if duration_type == "ELAPSEDTIME" or not calendar:
+            abs_duration -= 1
+        elif ifcopenshell.util.sequence.is_working_day(current_date, calendar):
+            abs_duration -= 1
+        current_date += date_offset
+
+    if duration.days > 0:
+        current_date = get_soonest_working_day(current_date, duration_type, calendar)
+    else:
+        current_date = get_recent_working_day(current_date, duration_type, calendar)
+    return current_date
+
+
+def get_soonest_working_day(start, duration_type, calendar):
+    if duration_type == "ELAPSEDTIME" or not calendar:
+        return start
+    while not is_working_day(start, calendar):
+        start += datetime.timedelta(days=1)
+    return start
+
+
+def get_recent_working_day(start, duration_type, calendar):
+    if duration_type == "ELAPSEDTIME" or not calendar:
+        return start
+    while not is_working_day(start, calendar):
+        start -= datetime.timedelta(days=1)
+    return start
+
+
+@lru_cache(maxsize=None)
 def is_working_day(day, calendar):
     is_working_day = False
     for work_time in calendar.WorkingTimes or []:
@@ -37,13 +73,14 @@ def is_working_day(day, calendar):
         if is_work_time_applicable_to_day(work_time, day):
             is_working_day = False
             break
-    print('is day working day ', day, is_working_day)
     return is_working_day
 
 
 def is_work_time_applicable_to_day(work_time, day):
     start = None
     finish = None
+    if isinstance(day, datetime.datetime):
+        day = datetime.date(day.year, day.month, day.day)
 
     if work_time.Start:
         start = ifcopenshell.util.date.ifc2datetime(work_time.Start)

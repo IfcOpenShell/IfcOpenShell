@@ -2,6 +2,7 @@ import datetime
 import networkx as nx
 import ifcopenshell.api
 import ifcopenshell.util.date
+import ifcopenshell.util.sequence
 
 
 class Usecase:
@@ -12,8 +13,9 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        # I learned everything about project dependency calcs from this YouTube playlist:
-        # https://www.youtube.com/playlist?list=PLLRADeJk4TCK-X5vJY8focpFkau1MR7do
+        # The method implemented is the same as shown here:
+        # https://www.youtube.com/watch?v=qTErIV6OqLg
+        self.start_dates = []
         self.build_network_graph()
 
         self.pending_nodes = set(self.g.nodes)
@@ -34,13 +36,6 @@ class Usecase:
 
         self.update_task_times()
 
-        # TODO: normalise durations to elapsed times. Leave this debug print until we finish this TODO.
-        for n in self.g.nodes:
-            if n == 'start' or n == 'finish':
-                print(n, self.g.nodes[n])
-            else:
-                print(self.file.by_id(n), self.g.nodes[n])
-
     def build_network_graph(self):
         self.sequence_type_map = {
             None: "FS",
@@ -53,8 +48,8 @@ class Usecase:
         }
         self.g = nx.DiGraph()
         self.edges = []
-        self.g.add_node("start", duration=0)
-        self.g.add_node("finish", duration=0)
+        self.g.add_node("start", duration=0, duration_type="ELAPSEDTIME", calendar=None)
+        self.g.add_node("finish", duration=0, duration_type="ELAPSEDTIME", calendar=None)
         for rel in self.settings["work_schedule"].Controls:
             for related_object in rel.RelatedObjects:
                 if not related_object.is_a("IfcTask"):
@@ -70,9 +65,18 @@ class Usecase:
 
         if task.TaskTime and task.TaskTime.ScheduleDuration:
             duration = ifcopenshell.util.date.ifc2datetime(task.TaskTime.ScheduleDuration).days
+            duration_type = task.TaskTime.DurationType
         else:
             duration = 0
-        self.g.add_node(task.id(), duration=duration)
+            duration_type = "ELAPSEDTIME"
+
+        self.g.add_node(
+            task.id(),
+            duration=duration,
+            duration_type=duration_type,
+            calendar=ifcopenshell.util.sequence.derive_calendar(task),
+        )
+
         self.edges.extend(
             [
                 (
@@ -95,6 +99,8 @@ class Usecase:
             "FINISH_START" not in predecessor_types and "START_START" not in predecessor_types
         ):
             self.edges.append(("start", task.id(), {"lag_time": 0, "type": "FS"}))
+            if task.TaskTime and task.TaskTime.ScheduleStart:
+                self.start_dates.append(ifcopenshell.util.date.ifc2datetime(task.TaskTime.ScheduleStart))
         if not successor_types or ("FINISH_START" not in successor_types and "FINISH_FINISH" not in successor_types):
             self.edges.append((task.id(), "finish", {"lag_time": 0, "type": "FS"}))
 
@@ -108,12 +114,19 @@ class Usecase:
                 self.file,
                 task_time=self.file.by_id(ifc_definition_id).TaskTime,
                 attributes={
-                    "TotalFloat": ifcopenshell.util.date.datetime2ifc(
-                        datetime.timedelta(days=data["total_float"]), "IfcDuration"
-                    ),
-                    "IsCritical": data["total_float"] == 0,
+                    "TotalFloat": ifcopenshell.util.date.datetime2ifc(data["total_float"], "IfcDuration"),
+                    "IsCritical": data["total_float"].days == 0,
+                    "EarlyStart": ifcopenshell.util.date.datetime2ifc(data["early_start"], "IfcDateTime"),
+                    "EarlyFinish": ifcopenshell.util.date.datetime2ifc(data["early_finish"], "IfcDateTime"),
+                    "LateStart": ifcopenshell.util.date.datetime2ifc(data["late_start"], "IfcDateTime"),
+                    "LateFinish": ifcopenshell.util.date.datetime2ifc(data["late_finish"], "IfcDateTime"),
                 },
             )
+
+    def offset_date(self, date, days, node):
+        return ifcopenshell.util.sequence.get_finish_date(
+            date, datetime.timedelta(days=days), node["duration_type"], node["calendar"]
+        )
 
     def forward_pass(self, node):
         successors = self.g.successors(node)
@@ -121,39 +134,44 @@ class Usecase:
         data = self.g.nodes[node]
 
         if node == "start":
-            data["early_start"] = 0
+            data["early_start"] = min(self.start_dates)
         else:
             finishes = []
             starts = []
             for predecessor in predecessors:
+                predecessor_data = self.g.nodes[predecessor]
                 edge = self.g[predecessor][node]
                 if edge["type"] == "FS":
-                    finish = self.g.nodes[predecessor].get("early_finish")
+                    finish = predecessor_data.get("early_finish")
                     if finish is None:
                         return
-                    starts.append(finish + edge["lag_time"])
+                    starts.append(self.offset_date(finish, edge["lag_time"], data))
+                    starts.append(self.offset_date(finish, edge["lag_time"], predecessor_data))
                 elif edge["type"] == "SS":
-                    start = self.g.nodes[predecessor].get("early_start")
+                    start = predecessor_data.get("early_start")
                     if start is None:
                         return
-                    starts.append(start + edge["lag_time"])
+                    starts.append(self.offset_date(start, edge["lag_time"], data))
+                    starts.append(self.offset_date(start, edge["lag_time"], predecessor_data))
                 elif edge["type"] == "FF":
-                    finish = self.g.nodes[predecessor].get("early_finish")
+                    finish = predecessor_data.get("early_finish")
                     if finish is None:
                         return
-                    finishes.append(finish + edge["lag_time"])
+                    finishes.append(self.offset_date(finish, edge["lag_time"], data))
+                    finishes.append(self.offset_date(finish, edge["lag_time"], predecessor_data))
                 elif edge["type"] == "SF":
-                    start = self.g.nodes[predecessor].get("early_start")
+                    start = predecessor_data.get("early_start")
                     if start is None:
                         return
-                    finishes.append(start + edge["lag_time"])
+                    finishes.append(self.offset_date(start, edge["lag_time"], data))
+                    finishes.append(self.offset_date(start, edge["lag_time"], predecessor_data))
             if starts and finishes:
                 data["early_start"] = max(starts)
                 data["early_finish"] = max(finishes)
-                if data["early_start"] + data["duration"] > data["early_finish"]:
-                    data["early_finish"] = data["early_start"] + data["duration"]
+                if self.offset_date(data["early_start"], data["duration"], data) > data["early_finish"]:
+                    data["early_finish"] = self.offset_date(data["early_start"], data["duration"], data)
                 else:
-                    data["early_start"] = data["early_finish"] - data["duration"]
+                    data["early_start"] = self.offset_date(data["early_finish"], -data["duration"], data)
             elif finishes:
                 data["early_finish"] = max(finishes)
             elif starts:
@@ -162,9 +180,9 @@ class Usecase:
                 print("How did this happen?")
 
         if data.get("early_finish") is None:
-            data["early_finish"] = data["early_start"] + data["duration"]
+            data["early_finish"] = self.offset_date(data["early_start"], data["duration"], data)
         elif data.get("early_start") is None:
-            data["early_start"] = data["early_finish"] - data["duration"]
+            data["early_start"] = self.offset_date(data["early_finish"], -data["duration"], data)
 
         return True
 
@@ -179,34 +197,39 @@ class Usecase:
             finishes = []
             starts = []
             for successor in successors:
+                successor_data = self.g.nodes[successor]
                 edge = self.g[node][successor]
                 if edge["type"] == "FS":
-                    start = self.g.nodes[successor].get("late_start")
+                    start = successor_data.get("late_start")
                     if start is None:
                         return
-                    finishes.append(start - edge["lag_time"])
+                    finishes.append(self.offset_date(start, -edge["lag_time"], data))
+                    finishes.append(self.offset_date(start, -edge["lag_time"], successor_data))
                 elif edge["type"] == "SS":
-                    start = self.g.nodes[successor].get("late_start")
+                    start = successor_data.get("late_start")
                     if start is None:
                         return
-                    starts.append(start - edge["lag_time"])
+                    starts.append(self.offset_date(start, -edge["lag_time"], data))
+                    starts.append(self.offset_date(start, -edge["lag_time"], successor_data))
                 elif edge["type"] == "FF":
-                    finish = self.g.nodes[successor].get("late_finish")
+                    finish = successor_data.get("late_finish")
                     if finish is None:
                         return
-                    finishes.append(finish - edge["lag_time"])
+                    finishes.append(self.offset_date(finish, -edge["lag_time"], data))
+                    finishes.append(self.offset_date(finish, -edge["lag_time"], successor_data))
                 elif edge["type"] == "SF":
-                    finish = self.g.nodes[successor].get("late_finish")
+                    finish = successor_data.get("late_finish")
                     if finish is None:
                         return
-                    starts.append(finish - edge["lag_time"])
+                    starts.append(self.offset_date(finish, -edge["lag_time"], data))
+                    starts.append(self.offset_date(finish, -edge["lag_time"], successor_data))
             if starts and finishes:
                 data["late_start"] = min(starts)
                 data["late_finish"] = min(finishes)
-                if data["late_start"] + data["duration"] < data["late_finish"]:
-                    data["late_finish"] = data["late_start"] + data["duration"]
+                if self.offset_date(data["late_start"], data["duration"], data) < data["late_finish"]:
+                    data["late_finish"] = self.offset_date(data["late_start"], data["duration"], data)
                 else:
-                    data["late_start"] = data["late_finish"] - data["duration"]
+                    data["late_start"] = self.offset_date(data["late_finish"], -data["duration"], data)
             elif finishes:
                 data["late_finish"] = min(finishes)
             elif starts:
@@ -215,10 +238,13 @@ class Usecase:
                 print("How did this happen?")
 
         if data.get("late_finish") is None:
-            data["late_finish"] = data["late_start"] + data["duration"]
+            data["late_finish"] = self.offset_date(data["late_start"], data["duration"], data)
         elif data.get("late_start") is None:
-            data["late_start"] = data["late_finish"] - data["duration"]
+            data["late_start"] = self.offset_date(data["late_finish"], -data["duration"], data)
 
         data["total_float"] = data["late_finish"] - data["early_finish"]
+
+        # Waiting for yassine to confirm relationships
+        # data["free_float"] = min([self.g.nodes[s]["early_start"] for s in successors])
 
         return True
