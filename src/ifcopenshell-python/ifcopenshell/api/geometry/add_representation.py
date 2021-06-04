@@ -49,7 +49,7 @@ class Usecase:
         elif self.settings["context"].ContextType == "Plan":
             return self.create_plan_representation()
         return self.create_variable_representation()
-    
+
     def should_triangulate_face(self, face, threshold=EPSILON):
         vz = face.normal
         co = face.verts[0].co
@@ -60,15 +60,12 @@ class Usecase:
         else:
             vx = vz.cross(X_AXIS)
         vy = vx.cross(vz)
-        tM = Matrix([
-            [vx.x, vy.x, vz.x, co.x],
-            [vx.y, vy.y, vz.y, co.y],
-            [vx.z, vy.z, vz.z, co.z],
-            [0, 0, 0, 1]
-        ]).inverted()
+        tM = Matrix(
+            [[vx.x, vy.x, vz.x, co.x], [vx.y, vy.y, vz.y, co.y], [vx.z, vy.z, vz.z, co.z], [0, 0, 0, 1]]
+        ).inverted()
 
-        return any([abs((tM @ v.co).z) > threshold  for v in face.verts])
-    
+        return any([abs((tM @ v.co).z) > threshold for v in face.verts])
+
     def evaluate_geometry(self):
         for modifier in self.settings["blender_object"].modifiers:
             if modifier.type == "BOOLEAN":
@@ -265,7 +262,7 @@ class Usecase:
             "Curve3D",
             self.create_curves(),
         )
-    
+
     def create_curve2d_representation(self):
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
