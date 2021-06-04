@@ -65,7 +65,7 @@ class AddTypeInstance(bpy.types.Operator):
         return {"FINISHED"}
 
 
-def generate_box(usecase_path, ifc_file, **settings):
+def generate_box(usecase_path, ifc_file, settings):
     box_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Box", "MODEL_VIEW")
     if not box_context:
         return

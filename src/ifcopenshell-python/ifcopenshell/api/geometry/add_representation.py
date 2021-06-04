@@ -29,7 +29,7 @@ class Usecase:
             #  IfcExtrudedAreaSolid/IfcRectangleProfileDef
             #  IfcExtrudedAreaSolid/IfcCircleProfileDef
             #  IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef
-            #  IfcExtrudedAreaSolid/IfcArbitraryProfileDef
+            #  IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids
             "ifc_representation_class": None,  # Whether to cast a mesh into a particular class
         }
         self.ifc_vertices = []
