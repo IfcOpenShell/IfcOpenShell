@@ -242,7 +242,14 @@ class Usecase:
         elif data.get("late_start") is None:
             data["late_start"] = self.offset_date(data["late_finish"], -data["duration"], data)
 
-        data["total_float"] = data["late_finish"] - data["early_finish"]
+        if data["duration_type"] == "WORKTIME":
+            data["total_float"] = datetime.timedelta(
+                days=ifcopenshell.util.sequence.count_working_days(
+                    data["early_finish"], data["late_finish"], data["calendar"]
+                )
+            )
+        else:
+            data["total_float"] = data["late_finish"] - data["early_finish"]
 
         # Waiting for yassine to confirm relationships
         # data["free_float"] = min([self.g.nodes[s]["early_start"] for s in successors])
