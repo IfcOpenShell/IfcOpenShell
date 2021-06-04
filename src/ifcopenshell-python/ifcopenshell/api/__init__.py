@@ -15,12 +15,12 @@ def run(usecase_path, ifc_file=None, should_run_listeners=True, **settings):
 
     if should_run_listeners:
         for listener in pre_listeners.get(".".join([ifc_key, usecase_path]), []):
-            listener(usecase_path, ifc_file, **settings)
+            listener(usecase_path, ifc_file, settings)
 
         if None in registered_ifcs and ifc_key != registered_ifcs[None]:
             global_key = registered_ifcs[None]
             for listener in pre_listeners.get(".".join([global_key, usecase_path]), []):
-                listener(usecase_path, ifc_file, **settings)
+                listener(usecase_path, ifc_file, settings)
 
     def serialise_entity_instance(entity):
         return {"cast_type": "entity_instance", "value": entity.id(), "Name": getattr(entity, "Name", None)}
@@ -57,12 +57,12 @@ def run(usecase_path, ifc_file=None, should_run_listeners=True, **settings):
 
     if should_run_listeners:
         for listener in post_listeners.get(".".join([ifc_key, usecase_path]), []):
-            listener(usecase_path, ifc_file, **settings)
+            listener(usecase_path, ifc_file, settings)
 
         if None in registered_ifcs and ifc_key != registered_ifcs[None]:
             global_key = registered_ifcs[None]
             for listener in post_listeners.get(".".join([global_key, usecase_path]), []):
-                listener(usecase_path, ifc_file, **settings)
+                listener(usecase_path, ifc_file, settings)
 
     return result
 

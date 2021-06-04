@@ -7,11 +7,33 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import mathutils.geometry
+import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data as PsetData
 from ifcopenshell.api.material.data import Data as MaterialData
 from math import pi, degrees
 from mathutils import Vector, Matrix
+
+
+def element_listener(element, obj):
+    blenderbim.bim.handler.subscribe_to(obj, "mode", mode_callback)
+
+
+def mode_callback(obj, data):
+    for obj in bpy.context.selected_objects + [bpy.context.active_object]:
+        if (
+            obj.mode != "EDIT"
+            or not obj.data
+            or not isinstance(obj.data, (bpy.types.Mesh, bpy.types.Curve, bpy.types.TextCurve))
+            or not obj.BIMObjectProperties.ifc_definition_id
+            or not bpy.context.scene.BIMProjectProperties.is_authoring
+        ):
+            return
+        product = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+        parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
+        if not parametric or parametric["Engine"] != "BlenderBIM.DumbWall":
+            return
+        IfcStore.edited_objs.add(obj)
 
 
 class AddWall(bpy.types.Operator):
@@ -686,7 +708,11 @@ class DumbWallGenerator:
         return obj
 
 
-def generate_axis(usecase_path, ifc_file, **settings):
+def ensure_solid(usecase_path, ifc_file, settings):
+    settings["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef"
+
+
+def generate_axis(usecase_path, ifc_file, settings):
     axis_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Axis", "GRAPH_VIEW")
     if not axis_context:
         return
@@ -721,7 +747,7 @@ def generate_axis(usecase_path, ifc_file, **settings):
         bpy.data.meshes.remove(mesh)
 
 
-def calculate_quantities(usecase_path, ifc_file, **settings):
+def calculate_quantities(usecase_path, ifc_file, settings):
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
     obj = settings["blender_object"]
     product = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
@@ -763,7 +789,7 @@ def calculate_quantities(usecase_path, ifc_file, **settings):
 
 
 class DumbWallPlaner:
-    def regenerate_from_layer(self, usecase_path, ifc_file, **settings):
+    def regenerate_from_layer(self, usecase_path, ifc_file, settings):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         layer = settings["layer"]
         thickness = settings["attributes"].get("LayerThickness")
@@ -788,7 +814,7 @@ class DumbWallPlaner:
                         for element in rel.RelatedObjects:
                             self.change_thickness(element, delta_thickness)
 
-    def regenerate_from_type(self, usecase_path, ifc_file, **settings):
+    def regenerate_from_type(self, usecase_path, ifc_file, settings):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         new_material = ifcopenshell.util.element.get_material(settings["relating_type"])
         if not new_material.is_a("IfcMaterialLayerSet"):

@@ -30,6 +30,7 @@ def mode_callback(obj, data):
         parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
         if not parametric or parametric["Engine"] != "BlenderBIM.DumbSlab":
             return
+        IfcStore.edited_objs.add(obj)
         modifier = [m for m in obj.modifiers if m.type == "SOLIDIFY"]
         if modifier:
             return
@@ -50,6 +51,11 @@ def mode_callback(obj, data):
         modifier.use_even_offset = True
         modifier.offset = 1
         modifier.thickness = depth
+
+
+def ensure_solid(usecase_path, ifc_file, settings):
+    # TODO: check if voids are present
+    settings["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef"
 
 
 class DumbSlabGenerator:
@@ -117,7 +123,7 @@ class DumbSlabGenerator:
 
 
 class DumbSlabPlaner:
-    def regenerate_from_layer(self, usecase_path, ifc_file, **settings):
+    def regenerate_from_layer(self, usecase_path, ifc_file, settings):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         layer = settings["layer"]
         thickness = settings["attributes"].get("LayerThickness")
@@ -142,7 +148,7 @@ class DumbSlabPlaner:
                         for element in rel.RelatedObjects:
                             self.change_thickness(element, delta_thickness)
 
-    def regenerate_from_type(self, usecase_path, ifc_file, **settings):
+    def regenerate_from_type(self, usecase_path, ifc_file, settings):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         new_material = ifcopenshell.util.element.get_material(settings["relating_type"])
         if not new_material.is_a("IfcMaterialLayerSet"):
