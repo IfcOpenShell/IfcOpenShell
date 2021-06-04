@@ -70,7 +70,7 @@ class P62Ifc:
             exceptions = {}
             holiday_or_exceptions = calendar.find("pr:HolidayOrExceptions", self.ns)
             holiday_or_exception = []
-            if holiday_or_exceptions:
+            if holiday_or_exceptions is not None:
                 holiday_or_exception = holiday_or_exceptions.findall("pr:HolidayOrException", self.ns)
             for exception in holiday_or_exception:
                 d = datetime.datetime.fromisoformat(exception.find("pr:Date", self.ns).text).date()
@@ -337,6 +337,15 @@ class P62Ifc:
         )
         task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=activity["ifc"])
         calendar = self.calendars[activity["CalendarObjectId"]]
+        # Seems intermittently crashy - can we investigate for larger files?
+        ifcopenshell.api.run(
+            "control.assign_control",
+            self.file,
+            **{
+                "relating_control": calendar["ifc"],
+                "related_object": activity["ifc"],
+            },
+        )
         ifcopenshell.api.run(
             "sequence.edit_task_time",
             self.file,
@@ -351,15 +360,6 @@ class P62Ifc:
                 or None
                 if activity["PlannedDuration"]
                 else None,
-            },
-        )
-        # Seems intermittently crashy - can we investigate for larger files?
-        ifcopenshell.api.run(
-            "control.assign_control",
-            self.file,
-            **{
-                "relating_control": calendar["ifc"],
-                "related_object": activity["ifc"],
             },
         )
 
