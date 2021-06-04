@@ -28,7 +28,7 @@ def mode_callback(obj, data):
             return
         product = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
         parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-        if parametric and parametric["Engine"] != "BlenderBIM.DumbSlab":
+        if not parametric or parametric["Engine"] != "BlenderBIM.DumbSlab":
             return
         modifier = [m for m in obj.modifiers if m.type == "SOLIDIFY"]
         if modifier:
