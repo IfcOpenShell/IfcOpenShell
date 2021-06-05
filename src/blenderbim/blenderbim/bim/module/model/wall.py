@@ -100,6 +100,7 @@ class AlignWall(bpy.types.Operator):
                 aligner.align_first_layer()
             elif self.align_type == "INTERIOR":
                 aligner.align_last_layer()
+            IfcStore.edited_objs.add(obj)
         return {"FINISHED"}
 
 
@@ -114,6 +115,7 @@ class FlipWall(bpy.types.Operator):
             return {"FINISHED"}
         for obj in selected_objs:
             DumbWallFlipper(obj).flip()
+            IfcStore.edited_objs.add(obj)
         return {"FINISHED"}
 
 
@@ -128,6 +130,7 @@ class SplitWall(bpy.types.Operator):
             return {"FINISHED"}
         for obj in selected_objs:
             DumbWallSplitter(obj, bpy.context.scene.cursor.location).split()
+            IfcStore.edited_objs.add(obj)
         return {"FINISHED"}
 
 
@@ -793,9 +796,8 @@ class DumbWallPlaner:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         layer = settings["layer"]
         thickness = settings["attributes"].get("LayerThickness")
-        if thickness is None or layer.LayerThickness == thickness:
+        if thickness is None:
             return
-        delta_thickness = thickness - layer.LayerThickness
         for layer_set in layer.ToMaterialLayerSet:
             total_thickness = sum([l.LayerThickness for l in layer_set.MaterialLayers])
             if not total_thickness:
@@ -808,33 +810,31 @@ class DumbWallPlaner:
                         if not rel.is_a("IfcRelAssociatesMaterial"):
                             continue
                         for element in rel.RelatedObjects:
-                            self.change_thickness(element, delta_thickness)
+                            self.change_thickness(element, thickness)
                 else:
                     for rel in inverse.AssociatedTo:
                         for element in rel.RelatedObjects:
-                            self.change_thickness(element, delta_thickness)
+                            self.change_thickness(element, thickness)
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         new_material = ifcopenshell.util.element.get_material(settings["relating_type"])
         if not new_material.is_a("IfcMaterialLayerSet"):
             return
-        obj = IfcStore.get_element(settings["related_object"].id())
-        if not obj:
-            return
-        current_thickness = obj.dimensions.y / self.unit_scale
         new_thickness = sum([l.LayerThickness for l in new_material.MaterialLayers])
-        if current_thickness == new_thickness:
-            return
-        self.change_thickness(settings["related_object"], new_thickness - current_thickness)
+        self.change_thickness(settings["related_object"], new_thickness)
 
-    def change_thickness(self, element, delta_thickness):
+    def change_thickness(self, element, thickness):
         parametric = ifcopenshell.util.element.get_psets(element).get("EPset_Parametric")
         if not parametric or parametric["Engine"] != "BlenderBIM.DumbWall":
             return
 
         obj = IfcStore.get_element(element.id())
         if not obj:
+            return
+
+        delta_thickness = (thickness * self.unit_scale) - obj.dimensions.y
+        if round(delta_thickness, 2) == 0:
             return
 
         bm = bmesh.new()
@@ -849,9 +849,10 @@ class DumbWallPlaner:
         bm.to_mesh(obj.data)
         obj.data.update()
         bm.free()
+        IfcStore.edited_objs.add(obj)
 
     def thicken_face(self, face, delta_thickness):
-        slide_magnitude = abs(delta_thickness) / 2 * self.unit_scale
+        slide_magnitude = abs(delta_thickness) / 2
         for vert in face.verts:
             slide_vector = None
             for edge in vert.link_edges:
