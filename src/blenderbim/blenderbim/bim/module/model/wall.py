@@ -819,7 +819,7 @@ class DumbWallPlaner:
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         new_material = ifcopenshell.util.element.get_material(settings["relating_type"])
-        if not new_material.is_a("IfcMaterialLayerSet"):
+        if not new_material or not new_material.is_a("IfcMaterialLayerSet"):
             return
         new_thickness = sum([l.LayerThickness for l in new_material.MaterialLayers])
         self.change_thickness(settings["related_object"], new_thickness)

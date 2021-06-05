@@ -6,6 +6,7 @@ import ifcopenshell.util.representation
 from . import wall, slab
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data as PsetData
+from mathutils import Vector
 
 
 class AddTypeInstance(bpy.types.Operator):

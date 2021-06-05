@@ -84,6 +84,8 @@ class Usecase:
 
     def map_material_usages(self):
         type_material = ifcopenshell.util.element.get_material(self.settings["relating_type"])
+        if not type_material:
+            return
         if type_material.is_a("IfcMaterialLayerSet"):
             ifcopenshell.api.run(
                 "material.assign_material",
