@@ -11,6 +11,8 @@ class Usecase:
 
     def execute(self):
         element = self.file.add(self.settings["element"])
+        for rel in self.settings["element"].HasAssociations:
+            self.file.add(rel)
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
         added_contexts = [e for e in self.file.traverse(element) if e.is_a("IfcGeometricRepresentationContext")]
         for added_context in added_contexts:
