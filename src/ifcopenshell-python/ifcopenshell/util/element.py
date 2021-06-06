@@ -3,21 +3,15 @@ import ifcopenshell
 
 def get_psets(element):
     psets = {}
-    try:
-        if element.is_a("IfcTypeObject"):
-            if element.HasPropertySets:
-                for definition in element.HasPropertySets:
-                    psets[definition.Name] = get_property_definition(definition)
-        else:
-            for relationship in element.IsDefinedBy:
-                if relationship.is_a("IfcRelDefinesByProperties"):
-                    definition = relationship.RelatingPropertyDefinition
-                    psets[definition.Name] = get_property_definition(definition)
-    except Exception as e:
-        import traceback
-
-        print("failed to load properties: {}".format(e))
-        traceback.print_exc()
+    if element.is_a("IfcTypeObject"):
+        if element.HasPropertySets:
+            for definition in element.HasPropertySets:
+                psets[definition.Name] = get_property_definition(definition)
+    elif hasattr(element, "IsDefinedBy"):
+        for relationship in element.IsDefinedBy:
+            if relationship.is_a("IfcRelDefinesByProperties"):
+                definition = relationship.RelatingPropertyDefinition
+                psets[definition.Name] = get_property_definition(definition)
     return psets
 
 
