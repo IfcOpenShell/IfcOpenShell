@@ -192,6 +192,9 @@ class EditPset(bpy.types.Operator):
                 },
             )
         else:
+            for key, value in properties.items():
+                if isinstance(value, float):
+                    properties[key] = round(value, 4)
             ifcopenshell.api.run(
                 "pset.edit_qto",
                 self.file,
