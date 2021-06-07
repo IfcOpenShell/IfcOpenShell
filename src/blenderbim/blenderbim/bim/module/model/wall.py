@@ -774,11 +774,20 @@ def calculate_quantities(usecase_path, ifc_file, settings):
 
     if product.HasOpenings:
         # TODO: calculate gross / net
+        gross_footprint_area = 0
+        net_footprint_area = 0
+        gross_side_area = 0
+        net_side_area = 0
         gross_volume = 0
         net_volume = 0
     else:
         bm = bmesh.new()
         bm.from_mesh(obj.data)
+        bm.faces.ensure_lookup_table()
+        gross_footprint_area = sum([f.calc_area() for f in bm.faces if f.normal.z < -0.9])
+        net_footprint_area = gross_footprint_area
+        gross_side_area = sum([f.calc_area() for f in bm.faces if f.normal.y > 0.9])
+        net_side_area = gross_side_area
         gross_volume = bm.calc_volume()
         net_volume = gross_volume
         bm.free()
@@ -792,6 +801,10 @@ def calculate_quantities(usecase_path, ifc_file, settings):
             "Length": round(length, 2),
             "Width": round(width, 2),
             "Height": round(height, 2),
+            "GrossFootprintArea": round(gross_footprint_area, 2),
+            "NetFootprintArea": round(net_footprint_area, 2),
+            "GrossSideArea": round(gross_side_area, 2),
+            "NetSideArea": round(net_side_area, 2),
             "GrossVolume": round(gross_volume, 2),
             "NetVolume": round(net_volume, 2),
         },
