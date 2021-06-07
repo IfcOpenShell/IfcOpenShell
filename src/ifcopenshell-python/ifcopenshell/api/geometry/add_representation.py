@@ -134,7 +134,7 @@ class Usecase:
         elif self.settings["context"].ContextIdentifier == "CoG":
             pass
         elif self.settings["context"].ContextIdentifier == "FootPrint":
-            if self.settings["context"].TargetView in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]:
+            if self.settings["context"].TargetView in ["SKETCH_VIEW", "PLAN_VIEW", "REFLECTED_PLAN_VIEW"]:
                 return self.create_geometric_curve_set_representation(is_2d=True)
         elif self.settings["context"].ContextIdentifier == "Reference":
             pass
