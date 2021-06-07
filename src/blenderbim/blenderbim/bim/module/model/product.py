@@ -71,6 +71,8 @@ def generate_box(usecase_path, ifc_file, settings):
     if not box_context:
         return
     obj = settings["blender_object"]
+    if 0 in list(obj.dimensions):
+        return
     product = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
     old_box = ifcopenshell.util.representation.get_representation(product, "Model", "Box", "MODEL_VIEW")
     if settings["context"].ContextType == "Model" and getattr(settings["context"], "ContextIdentifier") == "Body":
