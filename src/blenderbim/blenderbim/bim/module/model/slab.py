@@ -58,8 +58,7 @@ def ensure_solid(usecase_path, ifc_file, settings):
     parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
     if not parametric or parametric["Engine"] != "BlenderBIM.DumbSlab":
         return
-    # TODO: check if voids are present
-    settings["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef"
+    settings["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
 
 
 class DumbSlabGenerator:
@@ -116,7 +115,12 @@ class DumbSlabGenerator:
         else:
             obj.location[2] -= self.depth
         self.collection.objects.link(obj)
-        bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcSlab", predefined_type="FLOOR")
+        bpy.ops.bim.assign_class(
+            obj=obj.name,
+            ifc_class="IfcSlab",
+            predefined_type="FLOOR",
+            ifc_representation_class="IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids",
+        )
         bpy.ops.bim.assign_type(relating_type=self.relating_type.id(), related_object=obj.name)
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")

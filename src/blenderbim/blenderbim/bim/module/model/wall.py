@@ -701,7 +701,11 @@ class DumbWallGenerator:
         if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
             obj.location[2] = self.collection_obj.location[2]
         self.collection.objects.link(obj)
-        bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcWall")
+        bpy.ops.bim.assign_class(
+            obj=obj.name,
+            ifc_class="IfcWall",
+            ifc_representation_class="IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef",
+        )
         bpy.ops.bim.assign_type(relating_type=self.relating_type.id(), related_object=obj.name)
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
