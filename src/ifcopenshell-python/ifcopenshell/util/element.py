@@ -52,7 +52,9 @@ def get_properties(properties):
 
 
 def get_type(element):
-    if hasattr(element, "IsTypedBy") and element.IsTypedBy:
+    if element.is_a("IfcTypeObject"):
+        return element
+    elif hasattr(element, "IsTypedBy") and element.IsTypedBy:
         return element.IsTypedBy[0].RelatingType
     elif hasattr(element, "IsDefinedBy") and element.IsDefinedBy:  # IFC2X3
         for relationship in element.IsDefinedBy:

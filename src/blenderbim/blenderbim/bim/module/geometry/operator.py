@@ -58,6 +58,7 @@ class AddRepresentation(bpy.types.Operator):
     obj: bpy.props.StringProperty()
     context_id: bpy.props.IntProperty()
     ifc_representation_class: bpy.props.StringProperty()
+    profile_set: bpy.props.IntProperty()
 
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
@@ -93,6 +94,7 @@ class AddRepresentation(bpy.types.Operator):
             "should_force_faceted_brep": context.scene.BIMGeometryProperties.should_force_faceted_brep,
             "should_force_triangulation": context.scene.BIMGeometryProperties.should_force_triangulation,
             "ifc_representation_class": self.ifc_representation_class,
+            "profile_set": self.file.by_id(self.profile_set) if self.profile_set else None
         }
 
         result = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
