@@ -36,6 +36,9 @@ def load_post(*args):
     ifcopenshell.api.add_post_listener(
         "geometry.add_representation", "BlenderBIM.DumbSlab.GenerateFootprint", slab.generate_footprint
     )
+    ifcopenshell.api.add_post_listener(
+        "geometry.add_representation", "BlenderBIM.DumbSlab.CalculateQuantities", slab.calculate_quantities
+    )
     ifcopenshell.api.add_pre_listener(
         "material.edit_layer", "BlenderBIM.DumbSlab.RegenerateFromLayer", slab.DumbSlabPlaner().regenerate_from_layer
     )
