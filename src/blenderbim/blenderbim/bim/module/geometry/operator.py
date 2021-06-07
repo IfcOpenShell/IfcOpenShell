@@ -57,6 +57,7 @@ class AddRepresentation(bpy.types.Operator):
     bl_label = "Add Representation"
     obj: bpy.props.StringProperty()
     context_id: bpy.props.IntProperty()
+    ifc_representation_class: bpy.props.StringProperty()
 
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
@@ -91,6 +92,7 @@ class AddRepresentation(bpy.types.Operator):
             "total_items": max(1, len(obj.material_slots)),
             "should_force_faceted_brep": context.scene.BIMGeometryProperties.should_force_faceted_brep,
             "should_force_triangulation": context.scene.BIMGeometryProperties.should_force_triangulation,
+            "ifc_representation_class": self.ifc_representation_class,
         }
 
         result = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)

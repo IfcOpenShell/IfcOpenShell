@@ -83,6 +83,7 @@ class AssignClass(bpy.types.Operator):
     predefined_type: bpy.props.StringProperty()
     userdefined_type: bpy.props.StringProperty()
     context_id: bpy.props.IntProperty()
+    ifc_representation_class: bpy.props.StringProperty()
 
     def execute(self, context):
         objects = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
@@ -111,7 +112,9 @@ class AssignClass(bpy.types.Operator):
         obj.name = "{}/{}".format(product.is_a(), obj.name)
         IfcStore.link_element(product, obj)
 
-        bpy.ops.bim.add_representation(obj=obj.name, context_id=self.context_id)
+        bpy.ops.bim.add_representation(
+            obj=obj.name, context_id=self.context_id, ifc_representation_class=self.ifc_representation_class
+        )
 
         if product.is_a("IfcElementType"):
             self.place_in_types_collection(obj)

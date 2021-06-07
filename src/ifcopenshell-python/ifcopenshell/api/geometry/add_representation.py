@@ -391,6 +391,8 @@ class Usecase:
     def create_arbitrary_void_extrusion_representation(self):
         helper = Helper(self.file)
         indices = helper.auto_detect_arbitrary_profile_with_voids_extruded_area_solid(self.settings["geometry"])
+        if not indices["inner_curves"]:
+            return self.create_arbitrary_extrusion_representation()
         profile_def = helper.create_arbitrary_profile_def_with_voids(
             self.settings["geometry"], indices["profile"], indices["inner_curves"]
         )
