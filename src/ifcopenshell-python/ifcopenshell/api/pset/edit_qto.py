@@ -32,9 +32,12 @@ class Usecase:
         if prop.Name not in self.settings["properties"]:
             return
         value = self.settings["properties"][prop.Name]
-        if prop.is_a("IfcPhysicalSimpleQuantity"):
-            prop[3] = float(value) if value else None
-        del self.settings["properties"][prop.Name]
+        name = prop.Name
+        if value is None:
+            self.file.remove(prop)
+        elif prop.is_a("IfcPhysicalSimpleQuantity"):
+            prop[3] = float(value)
+        del self.settings["properties"][name]
 
     def add_new_properties(self):
         properties = []
