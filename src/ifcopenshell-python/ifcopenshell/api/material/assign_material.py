@@ -38,7 +38,15 @@ class Usecase:
             material_set = self.file.create_entity(self.settings["type"])
             self.create_material_association(material_set)
         elif self.settings["type"] == "IfcMaterialProfileSetUsage":
-            material_set = self.file.create_entity("IfcMaterialProfileSet")
+            element_type = ifcopenshell.util.element.get_type(self.settings["product"])
+            if element_type:
+                element_type_material = ifcopenshell.util.element.get_material(element_type)
+                if element_type_material and element_type_material.is_a("IfcMaterialProfileSet"):
+                    material_set = element_type_material
+                else:
+                    material_set = self.file.create_entity("IfcMaterialProfileSet")
+            else:
+                material_set = self.file.create_entity("IfcMaterialProfileSet")
             material_set_usage = self.create_profile_set_usage(material_set)
             self.create_material_association(material_set_usage)
         elif self.settings["type"] == "IfcMaterialList":

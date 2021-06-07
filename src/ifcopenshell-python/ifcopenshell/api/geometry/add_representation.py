@@ -30,7 +30,9 @@ class Usecase:
             #  IfcExtrudedAreaSolid/IfcCircleProfileDef
             #  IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef
             #  IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids
+            #  IfcExtrudedAreaSolid/IfcMaterialProfileSet
             "ifc_representation_class": None,  # Whether to cast a mesh into a particular class
+            "profile_set": None,  # The material profile set if the extrusion requires it
         }
         self.ifc_vertices = []
         for key, value in settings.items():
@@ -217,6 +219,8 @@ class Usecase:
             return self.create_arbitrary_extrusion_representation()
         elif self.settings["ifc_representation_class"] == "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids":
             return self.create_arbitrary_void_extrusion_representation()
+        elif self.settings["ifc_representation_class"] == "IfcExtrudedAreaSolid/IfcMaterialProfileSet":
+            return self.create_material_profile_set_extrusion_representation()
         return self.create_mesh_representation()
 
     def create_camera_block_representation(self):
@@ -397,6 +401,31 @@ class Usecase:
             self.settings["geometry"], indices["profile"], indices["inner_curves"]
         )
         item = helper.create_extruded_area_solid(self.settings["geometry"], indices["extrusion"], profile_def)
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "SweptSolid",
+            [item],
+        )
+
+    def create_material_profile_set_extrusion_representation(self):
+        profile_def = (
+            self.settings["profile_set"].CompositeProfile
+            or self.settings["profile_set"].MaterialProfiles[0].Profile
+        )
+        position = None
+        if self.file.schema == "IFC2X3":
+            position = self.file.createIfcAxis2Placement3D(
+                self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
+                self.file.createIfcDirection((0.0, 0.0, 1.0)),
+                self.file.createIfcDirection((1.0, 0.0, 0.0)),
+            )
+        item = self.file.createIfcExtrudedAreaSolid(
+            profile_def,
+            position,
+            self.file.createIfcDirection((0.0, 0.0, 1.0)),
+            self.convert_si_to_unit(self.settings["blender_object"].dimensions[2]),
+        )
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
             self.settings["context"].ContextIdentifier,

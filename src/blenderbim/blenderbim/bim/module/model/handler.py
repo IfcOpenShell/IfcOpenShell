@@ -1,7 +1,7 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
-from blenderbim.bim.module.model import product, wall, slab
+from blenderbim.bim.module.model import product, wall, slab, column
 from blenderbim.bim.ifc import IfcStore
 from bpy.app.handlers import persistent
 
@@ -44,4 +44,9 @@ def load_post(*args):
     )
     ifcopenshell.api.add_pre_listener(
         "type.assign_type", "BlenderBIM.DumbSlab.RegenerateFromType", slab.DumbSlabPlaner().regenerate_from_type
+    )
+
+    IfcStore.add_element_listener(column.element_listener)
+    ifcopenshell.api.add_pre_listener(
+        "geometry.add_representation", "BlenderBIM.DumbColumn.EnsureSolid", column.ensure_solid
     )
