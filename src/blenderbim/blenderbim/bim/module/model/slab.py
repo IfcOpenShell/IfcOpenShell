@@ -4,12 +4,14 @@ import math
 import ifcopenshell
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
+import ifcopenshell.util.element
 import mathutils.geometry
 import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 from math import pi, degrees
 from mathutils import Vector, Matrix
 from ifcopenshell.api.material.data import Data as MaterialData
+from blenderbim.bim.module.geometry.helper import Helper
 
 
 def element_listener(element, obj):
@@ -59,6 +61,64 @@ def ensure_solid(usecase_path, ifc_file, settings):
     if not parametric or parametric["Engine"] != "BlenderBIM.DumbSlab":
         return
     settings["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
+
+
+def generate_footprint(usecase_path, ifc_file, settings):
+    footprint_context = ifcopenshell.util.representation.get_context(ifc_file, "Plan", "FootPrint", "SKETCH_VIEW")
+    if not footprint_context:
+        return
+    obj = settings["blender_object"]
+    product = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+    parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
+    if not parametric or parametric["Engine"] != "BlenderBIM.DumbSlab":
+        return
+    old_footprint = ifcopenshell.util.representation.get_representation(product, "Plan", "FootPrint", "SKETCH_VIEW")
+    if settings["context"].ContextType == "Model" and getattr(settings["context"], "ContextIdentifier") == "Body":
+        if old_footprint:
+            bpy.ops.bim.remove_representation(representation_id=old_footprint.id(), obj=obj.name)
+
+        helper = Helper(ifc_file)
+        indices = helper.auto_detect_arbitrary_profile_with_voids_extruded_area_solid(settings["geometry"])
+
+        bm = bmesh.new()
+        bm.from_mesh(settings["geometry"])
+        bm.verts.ensure_lookup_table()
+        bm.edges.ensure_lookup_table()
+
+        profile_edges = []
+
+        def append_profile_edges(profile_edges, indices):
+            indices.append(indices[0]) # Close the loop
+            edge_vert_pairs = list(zip(indices, indices[1:]))
+            for p in edge_vert_pairs:
+                profile_edges.append(
+                    [e for e in bm.verts[p[0]].link_edges if e.other_vert(bm.verts[p[0]]).index == p[1]][0]
+                )
+
+        append_profile_edges(profile_edges, indices["profile"])
+        for inner_indices in indices["inner_curves"]:
+            append_profile_edges(profile_edges, inner_indices)
+
+        irrelevant_edges = [e for e in bm.edges if e not in profile_edges]
+        bmesh.ops.delete(bm, geom=irrelevant_edges, context="EDGES")
+        mesh = bpy.data.meshes.new("Temporary Footprint")
+        bm.to_mesh(mesh)
+        bm.free()
+
+        new_settings = settings.copy()
+        new_settings["context"] = footprint_context
+        new_settings["geometry"] = mesh
+        new_footprint = ifcopenshell.api.run(
+            "geometry.add_representation", ifc_file, should_run_listeners=False, **new_settings
+        )
+
+        ifcopenshell.api.run(
+            "geometry.assign_representation",
+            ifc_file,
+            should_run_listeners=False,
+            **{"product": product, "representation": new_footprint}
+        )
+        bpy.data.meshes.remove(mesh)
 
 
 class DumbSlabGenerator:
