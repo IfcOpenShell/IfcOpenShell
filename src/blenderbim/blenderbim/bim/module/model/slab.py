@@ -54,6 +54,10 @@ def mode_callback(obj, data):
 
 
 def ensure_solid(usecase_path, ifc_file, settings):
+    product = ifc_file.by_id(settings["blender_object"].BIMObjectProperties.ifc_definition_id)
+    parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
+    if not parametric or parametric["Engine"] != "BlenderBIM.DumbSlab":
+        return
     # TODO: check if voids are present
     settings["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef"
 
