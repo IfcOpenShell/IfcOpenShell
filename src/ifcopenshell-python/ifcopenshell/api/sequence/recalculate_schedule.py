@@ -114,6 +114,7 @@ class Usecase:
                 self.file,
                 task_time=self.file.by_id(ifc_definition_id).TaskTime,
                 attributes={
+                    "FreeFloat": ifcopenshell.util.date.datetime2ifc(data["free_float"], "IfcDuration"),
                     "TotalFloat": ifcopenshell.util.date.datetime2ifc(data["total_float"], "IfcDuration"),
                     "IsCritical": data["total_float"].days == 0,
                     "EarlyStart": ifcopenshell.util.date.datetime2ifc(data["early_start"], "IfcDateTime"),
@@ -190,6 +191,7 @@ class Usecase:
         successors = list(self.g.successors(node))
         predecessors = self.g.predecessors(node)
         data = self.g.nodes[node]
+        free_floats = []
 
         if node == "finish":
             data["late_finish"] = data["early_finish"]
@@ -205,24 +207,44 @@ class Usecase:
                         return
                     finishes.append(self.offset_date(start, -edge["lag_time"], data))
                     finishes.append(self.offset_date(start, -edge["lag_time"], successor_data))
+                    free_floats.append(
+                        self.calculate_free_float(
+                            data["early_finish"], successor_data["early_start"], edge["lag_time"], data, successor_data
+                        )
+                    )
                 elif edge["type"] == "SS":
                     start = successor_data.get("late_start")
                     if start is None:
                         return
                     starts.append(self.offset_date(start, -edge["lag_time"], data))
                     starts.append(self.offset_date(start, -edge["lag_time"], successor_data))
+                    free_floats.append(
+                        self.calculate_free_float(
+                            data["early_start"], successor_data["early_start"], edge["lag_time"], data, successor_data
+                        )
+                    )
                 elif edge["type"] == "FF":
                     finish = successor_data.get("late_finish")
                     if finish is None:
                         return
                     finishes.append(self.offset_date(finish, -edge["lag_time"], data))
                     finishes.append(self.offset_date(finish, -edge["lag_time"], successor_data))
+                    free_floats.append(
+                        self.calculate_free_float(
+                            data["early_finish"], successor_data["early_finish"], edge["lag_time"], data, successor_data
+                        )
+                    )
                 elif edge["type"] == "SF":
                     finish = successor_data.get("late_finish")
                     if finish is None:
                         return
                     starts.append(self.offset_date(finish, -edge["lag_time"], data))
                     starts.append(self.offset_date(finish, -edge["lag_time"], successor_data))
+                    free_floats.append(
+                        self.calculate_free_float(
+                            data["early_start"], successor_data["early_finish"], edge["lag_time"], data, successor_data
+                        )
+                    )
             if starts and finishes:
                 data["late_start"] = min(starts)
                 data["late_finish"] = min(finishes)
@@ -251,7 +273,21 @@ class Usecase:
         else:
             data["total_float"] = data["late_finish"] - data["early_finish"]
 
-        # Waiting for yassine to confirm relationships
-        # data["free_float"] = min([self.g.nodes[s]["early_start"] for s in successors])
+        data["free_float"] = min(free_floats) if free_floats else None
 
         return True
+
+    def calculate_free_float(self, predecessor_date, successor_date, lag_time, predecessor_data, successor_data):
+        min_successor_date = min(
+            (
+                self.offset_date(successor_date, -lag_time, predecessor_data),
+                self.offset_date(successor_date, -lag_time, successor_data),
+            )
+        )
+        if predecessor_data["duration_type"] == "WORKTIME":
+            return datetime.timedelta(
+                days=ifcopenshell.util.sequence.count_working_days(
+                    predecessor_date, min_successor_date, predecessor_data["calendar"]
+                )
+            )
+        return min_successor_date - predecessor_date
