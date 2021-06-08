@@ -2,6 +2,7 @@ import operator
 import ifcopenshell.util.element
 
 from xml.dom.minidom import parse
+from xmlschema import XMLSchema
 
 
 class exception(Exception):
@@ -279,10 +280,13 @@ class ids:
     """
 
     def __init__(self, fn):
+        ids_schema = XMLSchema("http://standards.buildingsmart.org/IDS/ids.xsd")
+        ids_schema.validate(fn)
+        
         dom = parse(fn)
         ids = dom.childNodes[0]
         ids.tagName == "ids" or error("expected <ids>")
-
+        
         self.specifications = [
             specification(n) for n in ids.childNodes if n.nodeType == n.ELEMENT_NODE and n.tagName == "specification"
         ]
@@ -293,11 +297,14 @@ class ids:
                 spec(elem, logger)
 
 if __name__ == "__main__":
+    import time
+    start_time = time.time()
     import sys, os
     import logging
     import ifcopenshell
+    from datetime import date
 
-    filename = os.path.join(os.getcwd(), "ids.txt")
+    filename = os.path.join(os.getcwd(), str(date.today())+"_ids_result.txt")
 
     logger = logging.getLogger("IDS")
     logging.basicConfig(filename=filename, level=logging.INFO, format="%(message)s")
@@ -308,4 +315,4 @@ if __name__ == "__main__":
 
     ids_file.validate(ifc_file, logger)
     
-    print("Validated %s IDS requirements on %s IFC elements. Results saved to %s" % (len(ids_file.specifications[0].requirements.terms), len(ifc_file.by_type('IfcProduct')), filename))
+    print("Validated %s IDS requirements on %s IFC elements in %ss. Results saved to %s" % (len(ids_file.specifications[0].requirements.terms), len(ifc_file.by_type('IfcProduct')), round(time.time() - start_time, 2), filename))
