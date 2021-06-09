@@ -27,7 +27,11 @@ target_views_enum = []
 
 
 def getAttributeEnumValues(self, context):
-    return [(e, e, "") for e in json.loads(self.enum_items)]
+    # Support weird buildingSMART dictionary mappings which behave like enums
+    data = json.loads(self.enum_items)
+    if isinstance(data, dict):
+        return [(str(k), v, "") for k, v in data.items()]
+    return [(e, e, "") for e in data]
 
 
 def updateSchemaDir(self, context):

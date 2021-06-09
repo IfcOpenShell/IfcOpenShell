@@ -83,6 +83,7 @@ class BIMObjectMaterialProperties(PropertyGroup):
     material_type: EnumProperty(items=getMaterialTypes, name="Material Type")
     material: EnumProperty(items=getMaterials, name="Material")
     is_editing: BoolProperty(name="Is Editing", default=False)
+    material_set_usage_attributes: CollectionProperty(name="Material Set Usage Attributes", type=Attribute)
     material_set_attributes: CollectionProperty(name="Material Set Attributes", type=Attribute)
     active_material_set_item_id: IntProperty(name="Active Material Set ID")
     material_set_item_attributes: CollectionProperty(name="Material Set Item Attributes", type=Attribute)
