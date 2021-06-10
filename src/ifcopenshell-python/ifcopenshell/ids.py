@@ -1,7 +1,6 @@
 import operator
 import ifcopenshell.util.element
 
-from xml.dom.minidom import parse
 from xmlschema import XMLSchema
 
 
@@ -47,16 +46,22 @@ class facet(metaclass=meta_facet):
     The base class for IDS facets. IDS facets are functors constructed from
     XML nodes that return True or False. A getattr method is provided for
     conveniently extracting XML child node text content.
-    """
+    """ 
 
     def __init__(self, node):
         self.node = node
 
     def __getattr__(self, k):
-        try:
-            v = self.node.getElementsByTagName(k)[0]
-        except IndexError:
+        
+        if k in self.node:
+            v = self.node[k]
+        else:
             v = None
+        
+        return v
+        
+        #TODO implement restrictons
+        """
         if v:
             elems = [n for n in v.childNodes if n.nodeType == n.ELEMENT_NODE]
             if elems:
@@ -65,6 +70,7 @@ class facet(metaclass=meta_facet):
                 return v.firstChild.nodeValue.strip()
         else:
             return None
+        """
 
     def __iter__(self):
         for k in self.parameters:
@@ -90,10 +96,16 @@ class entity(facet):
         if self.predefinedtype and hasattr(inst, "PredefinedType"):
             # logger.debug("Testing if entity predefinedtype '%s' == '%s'", inst.PredefinedType, self.predefinedtype)
             self.message = "an entity name '%(name)s' of predefined type '%(predefinedtype)s'"
-            return facet_evaluation(inst.is_a(self.name) and inst.PredefinedType == self.predefinedtype, self.message % {"name": inst.is_a(), "predefinedtype": inst.PredefinedType})
+            return facet_evaluation(
+                inst.is_a(self.name) and inst.PredefinedType == self.predefinedtype,
+                self.message % {"name": inst.is_a(), "predefinedtype": inst.PredefinedType}
+                )
         else:
             self.message = "an entity name '%(name)s'"
-            return facet_evaluation(inst.is_a(self.name), self.message % {"name": inst.is_a()})
+            return facet_evaluation(
+                inst.is_a(self.name),
+                self.message % {"name": inst.is_a()}
+                )
         
 
 class classification(facet):
@@ -124,8 +136,6 @@ class property(facet):
     """
 
     parameters = ["name", "propertyset", "value"]
-    
-    # import pdb;pdb.set_trace()
     message = "a property '%(name)s' in '%(propertyset)s' with value '%(value)s'"
 
     def __call__(self, inst, logger):
@@ -211,20 +221,25 @@ class restriction:
         self.restriction_on = node.getAttribute("base")
         self.options = []
         self.type = []
-        
-        for n in node.childNodes:
-            if n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("enumeration"):
-                self.options.append(n.getAttribute("value"))
-                self.type = "enumeration"        
-            elif n.nodeType == n.ELEMENT_NODE and (n.tagName.endswith("Inclusive") or n.tagName.endswith("Exclusive")):
-                self.options.append(n.getAttribute("value"))
-                self.type = "bounds"
-            elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("length"):
-                self.options.append(n.getAttribute("value"))
-                self.type = "length"
-            elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("pattern"):
-                self.options.append(n.getAttribute("value"))
-                self.type = "pattern"
+
+        #TODO implement restrictions        
+        # for n in node.childNodes:
+        #     if n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("enumeration"):
+        #         self.options.append(n.getAttribute("value"))
+        #         self.type = "enumeration"        
+        #     elif n.nodeType == n.ELEMENT_NODE and (n.tagName.endswith("Inclusive") or n.tagName.endswith("Exclusive")):
+        #         self.options.append(n.getAttribute("value"))
+        #         self.type = "bounds"
+        #     elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("length"):
+        #         self.options.append(n.getAttribute("value"))
+        #         self.type = "length"
+        #     elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("pattern"):
+        #         self.options.append(n.getAttribute("value"))
+        #         self.type = "pattern"
+            #TODO add min/maxLength
+            #TODO add fractionDigits
+            #TODO add totalDigits
+            #TODO add whiteSpace
 
     def __eq__(self, other):
         return other in self.options
@@ -248,27 +263,22 @@ class specification:
 
     def __init__(self, node):
         def parse_rules(node):
-            children = [n for n in node.childNodes if n.nodeType == n.ELEMENT_NODE]
-            names = map(operator.attrgetter("tagName"), children)
+            children = [node[n][0] for n in node]
+            names = [n for n in node]
             classes = map(meta_facet.facets.__getitem__, names)
             return [cls(n) for cls, n in zip(classes, children)]
 
-        phrases = [n for n in node.childNodes if n.nodeType == n.ELEMENT_NODE]
-
-        len(phrases) == 2 or error("expected two child nodes for <specification>")
-        phrases[0].tagName == "applicability" or error("expected <applicability>")
-        phrases[1].tagName == "requirements" or error("expected <requirements>")
-
-        self.applicability, self.requirements = (boolean_and(parse_rules(phrase)) for phrase in phrases)
+        self.applicability = boolean_and(parse_rules(node['applicability']))
+        self.requirements = boolean_and(parse_rules(node['requirements']))
 
     def __call__(self, inst, logger):
         if self.applicability(inst, logger):
             valid = self.requirements(inst, logger)
 
             if valid:
-                logger.info({'guid':inst.GlobalId, 'result':valid.success,'sentence':str(self) + "\n'" + inst.Name + "' (id:" + inst.GlobalId + ") has " + str(valid) + " so is compliant"})
+                logger.info({'guid':inst.GlobalId, 'result':valid.success,'sentence':str(self) + "\n" + inst.is_a() + " '" + str(inst.Name) + "' (#" + str(inst.id()) + ") has " + str(valid) + " so is compliant"})
             else:
-                logger.error({'guid':inst.GlobalId, 'result':valid.success, 'sentence':str(self) + "\n'" + inst.Name + "' (id:" + inst.GlobalId + ") has " + str(valid) + " so is not compliant"})
+                logger.error({'guid':inst.GlobalId, 'result':valid.success, 'sentence':str(self) + "\n" + inst.is_a() + " '" + str(inst.Name) + "' (#" + str(inst.id()) + ") has " + str(valid) + " so is not compliant"})
 
     def __str__(self):
         return "Given an instance with %(applicability)s\nWe expect %(requirements)s" % self.__dict__
@@ -282,14 +292,9 @@ class ids:
     def __init__(self, fn):
         ids_schema = XMLSchema("http://standards.buildingsmart.org/IDS/ids.xsd")
         ids_schema.validate(fn)
-        
-        dom = parse(fn)
-        ids = dom.childNodes[0]
-        ids.tagName == "ids" or error("expected <ids>")
-        
-        self.specifications = [
-            specification(n) for n in ids.childNodes if n.nodeType == n.ELEMENT_NODE and n.tagName == "specification"
-        ]
+
+        ids = ids_schema.to_dict(fn)
+        self.specifications = [specification(s) for s in ids['specification']]
 
     def validate(self, ifc_file, logger):
         for spec in self.specifications:
