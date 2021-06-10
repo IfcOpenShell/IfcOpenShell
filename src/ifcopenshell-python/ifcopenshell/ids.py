@@ -121,14 +121,18 @@ class classification(facet):
         for association in inst.HasAssociations:
             if association.is_a("IfcRelAssociatesClassification"):
                 cref = association.RelatingClassification
-                refs.append((cref.ReferencedSource.Name, cref.ItemReference))
+                refs.append((cref.ReferencedSource.Name, cref.Identification))  # before was .ItemReference instead of .Identification
 
-        return facet_evaluation(
-            (self.system, self.value) in refs,
-            # @todo
-            "[classification_eval_todo]",
-        )
-
+        if refs:
+            return facet_evaluation(
+                (self.system, self.value) in refs,
+                self.message % {"system": refs[0][0], "value": refs[0][1]}
+            )
+        else:
+            return facet_evaluation(
+                False, 
+                "has no classification"
+            )
 
 class property(facet):
     """
