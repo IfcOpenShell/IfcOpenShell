@@ -273,9 +273,13 @@ class specification:
 
     def __call__(self, inst, logger):
         if self.applicability(inst, logger):
+            global ifc_checked
+            ifc_checked += 1
             valid = self.requirements(inst, logger)
 
             if valid:
+                global ifc_passed
+                ifc_passed += 1
                 logger.info({'guid':inst.GlobalId, 'result':valid.success,'sentence':str(self) + "\n" + inst.is_a() + " '" + str(inst.Name) + "' (#" + str(inst.id()) + ") has " + str(valid) + " so is compliant"})
             else:
                 logger.error({'guid':inst.GlobalId, 'result':valid.success, 'sentence':str(self) + "\n" + inst.is_a() + " '" + str(inst.Name) + "' (#" + str(inst.id()) + ") has " + str(valid) + " so is not compliant"})
@@ -301,6 +305,9 @@ class ids:
             for elem in ifc_file.by_type("IfcObject"):
                 spec(elem, logger)
 
+
+ifc_checked = 0
+ifc_passed = 0
 if __name__ == "__main__":
     import time
     start_time = time.time()
@@ -320,4 +327,6 @@ if __name__ == "__main__":
 
     ids_file.validate(ifc_file, logger)
     
-    print("Validated %s IDS requirements on %s IFC elements in %ss. Results saved to %s" % (len(ids_file.specifications[0].requirements.terms), len(ifc_file.by_type('IfcProduct')), round(time.time() - start_time, 2), filename))
+    print("Out of %s IFC elements, %s were checked against %s IDS requirements and %s of them passed (%s).\nRuntime=%ss. Results saved to %s" 
+    % (len(ifc_file.by_type('IfcProduct')), ifc_checked, len(ids_file.specifications[0].requirements.terms), ifc_passed, str(ifc_passed/ifc_checked*100)+'%', round(time.time() - start_time, 2), filename))
+
