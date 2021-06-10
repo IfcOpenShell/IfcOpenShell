@@ -346,6 +346,8 @@ class IfcImporter:
         self.profile_code("Create native products")
         self.create_products()
         self.profile_code("Create products")
+        self.create_empty_products()
+        self.profile_code("Create empty products")
         self.create_type_products()
         self.profile_code("Create type products")
         self.create_annotation()
@@ -714,6 +716,11 @@ class IfcImporter:
             if not iterator.next():
                 break
         print("Done creating geometry")
+
+    def create_empty_products(self):
+        for element in self.file.by_type("IfcProduct"):
+            if not element.Representation:
+                self.create_product(element)
 
     def create_annotation(self):
         self.create_curve_products(self.file.by_type("IfcAnnotation"))
