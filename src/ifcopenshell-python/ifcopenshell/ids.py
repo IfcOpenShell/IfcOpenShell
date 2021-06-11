@@ -94,7 +94,6 @@ class entity(facet):
     def __call__(self, inst, logger):
         # @nb with inheritance
         if self.predefinedtype and hasattr(inst, "PredefinedType"):
-            # logger.debug("Testing if entity predefinedtype '%s' == '%s'", inst.PredefinedType, self.predefinedtype)
             self.message = "an entity name '%(name)s' of predefined type '%(predefinedtype)s'"
             return facet_evaluation(
                 inst.is_a(self.name) and inst.PredefinedType == self.predefinedtype,
@@ -130,9 +129,10 @@ class classification(facet):
             )
         else:
             return facet_evaluation(
-                False, 
+                False,
                 "has no classification"
             )
+
 
 class property(facet):
     """
@@ -146,7 +146,6 @@ class property(facet):
         props = ifcopenshell.util.element.get_psets(inst)
         pset = props.get(self.propertyset)
         val = pset.get(self.name) if pset else None
-        logger.debug("Testing if property %s == %s", val, self.value)
 
         di = {
             "name": self.name,
@@ -158,35 +157,50 @@ class property(facet):
             msg = self.message % di
         else:
             if pset:
-                msg = "a set '%(propertyset)s', but no property '%(name)s'" % di
+                msg = "no property '%(name)s' in a set '%(propertyset)s'" % di
             else:
                 msg = "no set '%(propertyset)s'" % di
 
-        return facet_evaluation(val == self.value, msg)
+        return facet_evaluation(
+            str(val) == str(self.value),
+            msg
+            )
 
 
 class material(facet):
     """
-    The IDS material facet 
+    The IDS material facet by traversing the HasAssociations inverse attribute
     """
-    parameters = ["name", "value"]
-    message = "a material '%(name)s with value '%(value)s'"
+    parameters = ["value"]
+    message = "a material '%(value)s'"
 
     def __call__(self, inst, logger):
         material_relations = [rel for rel in inst.HasAssociations if rel.is_a("IfcRelAssociatesMaterial")]
-        names = []
+        materials = []
         for rel in material_relations:
-            # @todo not all subtypes of IfcMaterial handled
-            if rel.RelatingMaterial.is_a() == "IfcMaterialLayerSetUsage":
+            #TODO test all subtypes of material definitions
+            if rel.RelatingMaterial.is_a() == "IfcMaterial":
+                materials.append(rel.RelatingMaterial.Name)
+            elif rel.RelatingMaterial.is_a() == "IfcMaterialMaterialList":  #DEPRECATED in IFC4
+                [materials.append(mat.Name) for mat in rel.RelatingMaterial]
+            elif rel.RelatingMaterial.is_a() == "IfcMaterialConstituentSet":
+                [materials.append(mat.Material.Name) for mat in rel.RelatingMaterial.MaterialConstituents]
+            elif rel.RelatingMaterial.is_a() == "IfcMaterialLayerSet":
+                [materials.append(mat.Name) for mat in rel.RelatingMaterial.MaterialLayers]
+            elif rel.RelatingMaterial.is_a() == "IfcMaterialLayerSetUsage":
                 layers = rel.RelatingMaterial.ForLayerSet.MaterialLayers
-                names = [layer.Material.Name for layer in layers]
-            elif rel.RelatingMaterial.is_a() == "IfcMaterial":
-                names.append(rel.RelatingMaterial.Name)
-        
+                [materials.append(layer.Material.Name) for layer in layers]
+            elif rel.RelatingMaterial.is_a() == "IfcMaterialProfileSet":
+                [materials.append(mat.Material.Name) for mat in rel.RelatingMaterial.MaterialProfiles]
+            elif rel.RelatingMaterial.is_a() == "IfcMaterialProfileSetUsage":
+                profileSets = rel.RelatingMaterial.ForProfileSet.MaterialProfiles
+                [materials.append(pset.Material.Name) for pset in profileSets]
+            else:
+                logger.error({'guid':inst.GlobalId, 'result':'ERROR', 'sentence':'IfcRelAssociatesMaterial not implemented'})
+
         return facet_evaluation(
-            0,
-            # @todo
-            "[material_eval_todo]",
+            self.value in materials,
+            self.message % {"value": self.value},
         )
 
 
@@ -199,9 +213,13 @@ class boolean_logic:
         self.terms = terms
 
     def __call__(self, *args):
+        #TODO only takes one requirement of a type, should take all
         eval = [t(*args) for t in self.terms]
         join = [" and ", " or "][self.fold == any]
-        return facet_evaluation(self.fold(eval), join.join(map(str, eval)))
+        return facet_evaluation(
+            self.fold(eval),
+            join.join(map(str, eval))
+            )
 
     def __str__(self):
         return [" and ", " or "][self.fold == any].join(map(str, self.terms))
