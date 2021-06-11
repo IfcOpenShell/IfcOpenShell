@@ -213,7 +213,6 @@ class boolean_logic:
         self.terms = terms
 
     def __call__(self, *args):
-        #TODO only takes one requirement of a type, should take all
         eval = [t(*args) for t in self.terms]
         join = [" and ", " or "][self.fold == any]
         return facet_evaluation(
@@ -285,8 +284,8 @@ class specification:
 
     def __init__(self, node):
         def parse_rules(node):
-            children = [node[n][0] for n in node]
-            names = [n for n in node]
+            names = [req for req in node for n in node[req]]
+            children = [child for req in node for child in node[req]]
             classes = map(meta_facet.facets.__getitem__, names)
             return [cls(n) for cls, n in zip(classes, children)]
 
