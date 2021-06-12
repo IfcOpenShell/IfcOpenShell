@@ -52,25 +52,14 @@ class facet(metaclass=meta_facet):
         self.node = node
 
     def __getattr__(self, k):
-        
         if k in self.node:
             v = self.node[k]
-        else:
-            v = None
-        
-        return v
-        
-        #TODO implement restrictons
-        """
-        if v:
-            elems = [n for n in v.childNodes if n.nodeType == n.ELEMENT_NODE]
-            if elems:
-                return restriction(elems[0])
+            if isinstance(v, dict):  #is restriction?
+                return restriction(v['xs:restriction'][0])
             else:
-                return v.firstChild.nodeValue.strip()
+                return v
         else:
             return None
-        """
 
     def __iter__(self):
         for k in self.parameters:
@@ -140,7 +129,7 @@ class property(facet):
     """
 
     parameters = ["name", "propertyset", "value"]
-    message = "a property '%(name)s' in '%(propertyset)s' with value '%(value)s'"
+    message = "a property '%(name)s' in '%(propertyset)s' with a value '%(value)s'"
 
     def __call__(self, inst, logger):
         props = ifcopenshell.util.element.get_psets(inst)
@@ -162,7 +151,7 @@ class property(facet):
                 msg = "no set '%(propertyset)s'" % di
 
         return facet_evaluation(
-            str(val) == str(self.value),
+            val == self.value,
             msg
             )
 
@@ -239,43 +228,61 @@ class restriction:
 
     def __init__(self, node):
 
-        self.restriction_on = node.getAttribute("base")
+        self.restriction_on = node['@base'][3:]
+        self.type = ""
         self.options = []
-        self.type = []
-
-        #TODO implement restrictions        
-        # for n in node.childNodes:
-        #     if n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("enumeration"):
-        #         self.options.append(n.getAttribute("value"))
-        #         self.type = "enumeration"        
-        #     elif n.nodeType == n.ELEMENT_NODE and (n.tagName.endswith("Inclusive") or n.tagName.endswith("Exclusive")):
-        #         self.options.append(n.getAttribute("value"))
-        #         self.type = "bounds"
-        #     elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("length"):
-        #         self.options.append(n.getAttribute("value"))
-        #         self.type = "length"
-        #     elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("pattern"):
-        #         self.options.append(n.getAttribute("value"))
-        #         self.type = "pattern"
+  
+        for n in node:
+            if n[0:3] == "xs:":
+                if n[3:] == "enumeration":
+                    self.type = "enumeration"
+                    [self.options.append(x["@value"]) for x in node[n]]
+            #TODO implement other restrictions
+            #     elif n.nodeType == n.ELEMENT_NODE and (n.tagName.endswith("Inclusive") or n.tagName.endswith("Exclusive")):
+            #         self.type = "bounds"
+            #         self.options.append(n.getAttribute("value"))
+            #     elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("length"):
+            #         self.type = "length"
+            #         self.options.append(n.getAttribute("value"))
+            #     elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("pattern"):
+            #         self.type = "pattern"
+            #         self.options.append(n.getAttribute("value"))
             #TODO add min/maxLength
             #TODO add fractionDigits
             #TODO add totalDigits
             #TODO add whiteSpace
+                else:
+                    logger.error({'guid':inst.GlobalId, 'result':'ERROR', 'sentence':'Restriction not implemented'})
 
     def __eq__(self, other):
-        return other in self.options
-
-    def __repr__(self):
         if self.type == "enumeration":
-            return " or ".join(self.options)
+            return other in self.options
         elif self.type == "bounds":
             self.options.sort()
-            return "of type %s, having a value between %s and %s" % (self.restriction_on, self.options[0], self.options[1])
+            return False    #TODO
         elif self.type == "length":
-            return "of type %s with a length of %s" % (self.restriction_on, self.options[0])
+            return False    #TODO
         elif self.type == "pattern":
-            return "of type %s respecting pattern %s" % (self.restriction_on, self.options[0])
-
+            return False    #TODO
+        #TODO add min/maxLength
+        #TODO add fractionDigits
+        #TODO add totalDigits
+        #TODO add whiteSpace
+ 
+    def __repr__(self):
+        if self.type == "enumeration":
+            return "' or '".join(self.options)
+        elif self.type == "bounds":
+            self.options.sort()
+            return "of type '%s', having a value between %s and %s" % (self.restriction_on, str(self.options[0]), str(self.options[1]))
+        elif self.type == "length":
+            return "of type '%s' with a length of %s" % (self.restriction_on, str(self.options[0]))
+        elif self.type == "pattern":
+            return "of type '%s' respecting pattern '%s'" % (self.restriction_on, self.options[0])
+        #TODO add min/maxLength
+        #TODO add fractionDigits
+        #TODO add totalDigits
+        #TODO add whiteSpace
 
 class specification:
     """
@@ -348,6 +355,6 @@ if __name__ == "__main__":
 
     ids_file.validate(ifc_file, logger)
     
-    print("Out of %s IFC elements, %s were checked against %s IDS requirements and %s of them passed (%s).\nRuntime=%ss. Results saved to %s" 
-    % (len(ifc_file.by_type('IfcProduct')), ifc_checked, len(ids_file.specifications[0].requirements.terms), ifc_passed, str(ifc_passed/ifc_checked*100)+'%', round(time.time() - start_time, 2), filename))
+    print("Out of %s IFC elements, %s were checked against %s requirements in %s specification(s) and %s of them passed (%s).\nRuntime=%ss. Results saved to %s" 
+    % (len(ifc_file.by_type('IfcProduct')), ifc_checked, len(ids_file.specifications[0].requirements.terms), len(ids_file.specifications), ifc_passed, str(ifc_passed/ifc_checked*100)+'%', round(time.time() - start_time, 2), filename))
 
