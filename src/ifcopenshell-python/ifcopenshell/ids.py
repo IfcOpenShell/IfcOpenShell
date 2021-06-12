@@ -129,7 +129,7 @@ class property(facet):
     """
 
     parameters = ["name", "propertyset", "value"]
-    message = "a property '%(name)s' in '%(propertyset)s' with a value '%(value)s'"
+    message = "a property '%(name)s' in '%(propertyset)s' with a value %(value)s"
 
     def __call__(self, inst, logger):
         props = ifcopenshell.util.element.get_psets(inst)
@@ -139,7 +139,7 @@ class property(facet):
         di = {
             "name": self.name,
             "propertyset": self.propertyset,
-            "value": val,
+            "value": "'%s'" % val,
         }
 
         if val is not None:
@@ -236,7 +236,17 @@ class restriction:
             if n[0:3] == "xs:":
                 if n[3:] == "enumeration":
                     self.type = "enumeration"
-                    [self.options.append(x["@value"]) for x in node[n]]
+                    for x in node[n]:
+                        self.options.append(x["@value"])
+                elif n[8:] == "clusive":
+                    self.type = "bounds"
+                    if n[3:6] == 'min':
+                        self.options.insert(0,'>')
+                    else:
+                        self.options.insert(0,'<')
+                    if n[6:9] == 'Inc':
+                        self.options[0] += '='
+                    self.options[0] += node[n]['@value']
             #TODO implement other restrictions
             #     elif n.nodeType == n.ELEMENT_NODE and (n.tagName.endswith("Inclusive") or n.tagName.endswith("Exclusive")):
             #         self.type = "bounds"
@@ -252,14 +262,17 @@ class restriction:
             #TODO add totalDigits
             #TODO add whiteSpace
                 else:
-                    logger.error({'guid':inst.GlobalId, 'result':'ERROR', 'sentence':'Restriction not implemented'})
+                    logger.error({'result':'ERROR', 'sentence':'Restriction not implemented'})
 
     def __eq__(self, other):
         if self.type == "enumeration":
             return other in self.options
         elif self.type == "bounds":
-            self.options.sort()
-            return False    #TODO
+            result = True
+            for op in self.options:
+                if not(eval(str(other)+op)):
+                    result = False
+            return result
         elif self.type == "length":
             return False    #TODO
         elif self.type == "pattern":
@@ -271,10 +284,10 @@ class restriction:
  
     def __repr__(self):
         if self.type == "enumeration":
-            return "' or '".join(self.options)
+            return "'%s'" % "' or '".join(self.options)
         elif self.type == "bounds":
             self.options.sort()
-            return "of type '%s', having a value between %s and %s" % (self.restriction_on, str(self.options[0]), str(self.options[1]))
+            return "of type '%s', having a value %s" % (self.restriction_on, ' and '.join(self.options))
         elif self.type == "length":
             return "of type '%s' with a length of %s" % (self.restriction_on, str(self.options[0]))
         elif self.type == "pattern":
