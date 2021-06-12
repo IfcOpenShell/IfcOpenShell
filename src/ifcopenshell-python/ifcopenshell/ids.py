@@ -247,17 +247,21 @@ class restriction:
                     if n[6:9] == 'Inc':
                         self.options[0] += '='
                     self.options[0] += node[n]['@value']
-            #TODO implement other restrictions
-            #     elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("length"):
-            #         self.type = "length"
-            #         self.options.append(n.getAttribute("value"))
-            #     elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("pattern"):
-            #         self.type = "pattern"
-            #         self.options.append(n.getAttribute("value"))
-            #TODO add min/maxLength
-            #TODO add fractionDigits
-            #TODO add totalDigits
-            #TODO add whiteSpace
+                elif n[-5:] == "ength":
+                    self.type = "length"
+                    if n[3:6] == "min":
+                        self.options.append('>=')
+                    elif n[3:6] == "max":
+                        self.options.append('<=')
+                    else:
+                        self.options.append('==')
+                    self.options[-1] += str(node[n]['@value'])
+                elif n[3:] == "pattern":
+                    self.type = "pattern"
+                    self.options.append(node[n]['@value'])
+                #TODO add fractionDigits
+                #TODO add totalDigits
+                #TODO add whiteSpace
                 else:
                     logger.error({'result':'ERROR', 'sentence':'Restriction not implemented'})
 
@@ -271,10 +275,14 @@ class restriction:
                     result = False
             return result
         elif self.type == "length":
-            return False    #TODO
+            result = True
+            for op in self.options:
+                if not(eval(str(len(other))+op)):
+                    result = False
+            return result
         elif self.type == "pattern":
-            return False    #TODO
-        #TODO add min/maxLength
+            #TODO verify XML pattern
+            return False
         #TODO add fractionDigits
         #TODO add totalDigits
         #TODO add whiteSpace
@@ -286,10 +294,9 @@ class restriction:
             self.options.sort()
             return "of type '%s', having a value %s" % (self.restriction_on, ' and '.join(self.options))
         elif self.type == "length":
-            return "of type '%s' with a length of %s" % (self.restriction_on, str(self.options[0]))
+            return "of type '%s' with %s letters" % (self.restriction_on, ' and '.join(self.options))
         elif self.type == "pattern":
-            return "of type '%s' respecting pattern '%s'" % (self.restriction_on, self.options[0])
-        #TODO add min/maxLength
+            return "of type '%s' respecting pattern '%s'" % (self.restriction_on, ' and '.join(self.options))
         #TODO add fractionDigits
         #TODO add totalDigits
         #TODO add whiteSpace
