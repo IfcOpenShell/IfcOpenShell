@@ -248,9 +248,6 @@ class restriction:
                         self.options[0] += '='
                     self.options[0] += node[n]['@value']
             #TODO implement other restrictions
-            #     elif n.nodeType == n.ELEMENT_NODE and (n.tagName.endswith("Inclusive") or n.tagName.endswith("Exclusive")):
-            #         self.type = "bounds"
-            #         self.options.append(n.getAttribute("value"))
             #     elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("length"):
             #         self.type = "length"
             #         self.options.append(n.getAttribute("value"))
