@@ -4,6 +4,7 @@ import ifcopenshell.api
 import ifcopenshell.util.unit
 import ifcopenshell.util.pset
 import ifcopenshell.util.attribute
+import blenderbim.bim.schema
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data
 from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
@@ -42,8 +43,7 @@ class EnablePsetEditing(bpy.types.Operator):
         pset_data = data[self.pset_id]
         self.props.active_pset_name = pset_data["Name"]
 
-        templates = ifcopenshell.util.pset.get_template("IFC4")
-        pset_template = templates.get_by_name(pset_data["Name"])
+        pset_template = blenderbim.bim.schema.ifc.psetqto.get_by_name(pset_data["Name"])
 
         if pset_template:
             self.load_from_pset_template(pset_template, pset_data)
