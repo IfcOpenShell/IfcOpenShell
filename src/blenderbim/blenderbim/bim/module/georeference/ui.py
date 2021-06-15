@@ -117,6 +117,7 @@ class BIM_PT_gis(Panel):
             row = self.layout.row(align=True)
             row.label(text="XAxisOrdinate")
             row.label(text=props.blender_x_axis_ordinate)
+            row = self.layout.row(align=True)
             row.label(text="Derived Grid North")
             row.label(
                 text=str(
