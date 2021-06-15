@@ -1,4 +1,5 @@
 import isodate
+import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.sequence.data import Data
@@ -229,36 +230,10 @@ class BIM_PT_work_schedules(Panel):
             op.sequence = sequence["id"]
 
     def draw_editable_sequence_attributes_ui(self):
-        for attribute in self.props.sequence_attributes:
-            row = self.layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "boolean":
-                row.prop(attribute, "bool_value", text=attribute.name)
-            elif attribute.data_type == "integer":
-                row.prop(attribute, "int_value", text=attribute.name)
-            elif attribute.data_type == "float":
-                row.prop(attribute, "float_value", text=attribute.name)
-            elif attribute.data_type == "enum":
-                row.prop(attribute, "enum_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+        blenderbim.bim.helper.draw_attributes(self.props.sequence_attributes, self.layout)
 
     def draw_editable_sequence_time_lag_ui(self):
-        for attribute in self.props.time_lag_attributes:
-            row = self.layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "boolean":
-                row.prop(attribute, "bool_value", text=attribute.name)
-            elif attribute.data_type == "integer":
-                row.prop(attribute, "int_value", text=attribute.name)
-            elif attribute.data_type == "float":
-                row.prop(attribute, "float_value", text=attribute.name)
-            elif attribute.data_type == "enum":
-                row.prop(attribute, "enum_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+        blenderbim.bim.helper.draw_attributes(self.props.time_lag_attributes, self.layout)
 
     def draw_editable_task_calendar_ui(self):
         task = Data.tasks[self.props.active_task_id]
@@ -277,34 +252,12 @@ class BIM_PT_work_schedules(Panel):
             op.task = self.props.active_task_id
 
     def draw_editable_task_attributes_ui(self):
-        for attribute in self.props.task_attributes:
-            row = self.layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "boolean":
-                row.prop(attribute, "bool_value", text=attribute.name)
-            elif attribute.data_type == "integer":
-                row.prop(attribute, "int_value", text=attribute.name)
-            elif attribute.data_type == "enum":
-                row.prop(attribute, "enum_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+        blenderbim.bim.helper.draw_attributes(
+            self.props.task_attributes, self.layout, copy_operator="bim.copy_task_attribute"
+        )
 
     def draw_editable_task_time_attributes_ui(self):
-        for attribute in self.props.task_time_attributes:
-            row = self.layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "boolean":
-                row.prop(attribute, "bool_value", text=attribute.name)
-            elif attribute.data_type == "integer":
-                row.prop(attribute, "int_value", text=attribute.name)
-            elif attribute.data_type == "float":
-                row.prop(attribute, "float_value", text=attribute.name)
-            elif attribute.data_type == "enum":
-                row.prop(attribute, "enum_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+        blenderbim.bim.helper.draw_attributes(self.props.task_time_attributes, self.layout)
 
 
 class BIM_UL_tasks(UIList):
@@ -359,6 +312,15 @@ class BIM_UL_tasks(UIList):
                 else:
                     op = row.operator("bim.assign_product", text="", icon="KEYFRAME", emboss=False)
                     op.task = item.ifc_definition_id
+
+            if props.active_task_id and props.editing_task_type == "ATTRIBUTES":
+                row.prop(
+                    item,
+                    "is_selected",
+                    icon="CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT",
+                    text="",
+                    emboss=False,
+                )
 
             if props.active_task_id == item.ifc_definition_id:
                 if props.editing_task_type == "TASKTIME":

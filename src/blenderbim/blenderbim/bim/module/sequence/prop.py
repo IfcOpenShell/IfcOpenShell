@@ -176,6 +176,7 @@ class Task(PropertyGroup):
     identification: StringProperty(name="Identification", update=updateTaskIdentification)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     has_children: BoolProperty(name="Has Children")
+    is_selected: BoolProperty(name="Is Selected")
     is_expanded: BoolProperty(name="Is Expanded")
     level_index: IntProperty(name="Level Index")
     duration: StringProperty(name="Duration", update=updateTaskduration)

@@ -533,6 +533,30 @@ class EditTask(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class CopyTaskAttribute(bpy.types.Operator):
+    bl_idname = "bim.copy_task_attribute"
+    bl_label = "Copy Task Attribute"
+    data: bpy.props.StringProperty()
+
+    def execute(self, context):
+        data = json.loads(self.data)
+        self.file = IfcStore.get_file()
+        props = context.scene.BIMTaskTreeProperties
+        for task in props.tasks:
+            if task.is_selected:
+                ifcopenshell.api.run(
+                    "sequence.edit_task",
+                    self.file,
+                    **{
+                        "task": self.file.by_id(task.ifc_definition_id),
+                        "attributes": {data["name"]: None if data["is_null"] else data["value"]},
+                    },
+                )
+        Data.load(IfcStore.get_file())
+        bpy.ops.bim.load_task_properties()
+        return {"FINISHED"}
+
+
 class AssignPredecessor(bpy.types.Operator):
     bl_idname = "bim.assign_predecessor"
     bl_label = "Assign Predecessor"
@@ -1409,7 +1433,7 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         obj.color = (1.0, 1.0, 1.0, 1)
         obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
         obj.keyframe_insert(data_path="color", frame=self.start_frame)
-        obj.keyframe_insert(data_path="color", frame=product_frames["STARTED"]-1)
+        obj.keyframe_insert(data_path="color", frame=product_frames["STARTED"] - 1)
         obj.color = (1.0, 0.0, 0.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frames["STARTED"])
         obj.hide_viewport = True
@@ -1420,7 +1444,7 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
     def animate_operation(self, obj, product_frames):
         obj.color = (1.0, 1.0, 1.0, 1)
         obj.keyframe_insert(data_path="color", frame=self.start_frame)
-        obj.keyframe_insert(data_path="color", frame=product_frames["STARTED"]-1)
+        obj.keyframe_insert(data_path="color", frame=product_frames["STARTED"] - 1)
         obj.color = (0.0, 0.0, 1.0, 1)
         obj.keyframe_insert(data_path="color", frame=product_frames["STARTED"])
         obj.color = (1.0, 1.0, 1.0, 1)
