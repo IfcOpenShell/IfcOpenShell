@@ -127,6 +127,7 @@ class Data:
             data["HasAssignmentsWorkCalendar"] = []
             data["RelatedObjects"] = []
             data["RelatingProducts"] = []
+            data["OperatesOn"] = []
             data["IsPredecessorTo"] = []
             data["IsSuccessorFrom"] = []
             if task.TaskTime:
@@ -139,6 +140,7 @@ class Data:
                 for r in task.HasAssignments
                 if r.is_a("IfcRelAssignsToProduct")
             ]
+            [data["OperatesOn"].extend([o.id() for o in r.RelatedObjects]) for r in task.OperatesOn]
             [data["IsPredecessorTo"].append(rel.id()) for rel in task.IsPredecessorTo or []]
             [data["IsSuccessorFrom"].append(rel.id()) for rel in task.IsSuccessorFrom or []]
             [

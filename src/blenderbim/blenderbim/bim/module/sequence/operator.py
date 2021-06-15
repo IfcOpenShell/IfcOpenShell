@@ -721,7 +721,6 @@ class UnassignProcess(bpy.types.Operator):
         return {"FINISHED"}
 
 
-
 class GenerateGanttChart(bpy.types.Operator):
     bl_idname = "bim.generate_gantt_chart"
     bl_label = "Generate Gantt Chart"
@@ -1443,60 +1442,104 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         for obj in bpy.data.objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
-            # TODO: support multiple product frames per object
-            product_frames = self.product_frames.get(obj.BIMObjectProperties.ifc_definition_id)
-            if not product_frames:
-                continue
-            if product_frames["type"] in ["CONSTRUCTION", "INSTALLATION"]:
-                self.animate_creation(obj, product_frames)
-            elif product_frames["type"] in ["DEMOLITION", "DISMANTLE", "DISPOSAL", "REMOVAL"]:
-                self.animate_destruction(obj, product_frames)
-            elif product_frames["type"] in ["ATTENDANCE", "MAINTENANCE", "OPERATION", "RENOVATION"]:
-                self.animate_operation(obj, product_frames)
-            elif product_frames["type"] in ["LOGISTIC", "MOVE", "DISPOSAL"]:
-                self.animate_movement(obj, product_frames)
-            else:
-                self.animate_operation(obj, product_frames)
+            product_frames = self.product_frames.get(obj.BIMObjectProperties.ifc_definition_id, [])
+            for product_frame in product_frames:
+                if product_frame["relationship"] == "input":
+                    self.animate_input(obj, product_frame)
+                elif product_frame["relationship"] == "output":
+                    self.animate_output(obj, product_frame)
+
         area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].shading.color_type = "OBJECT"
         context.scene.frame_start = self.start_frame
         context.scene.frame_end = self.start_frame + self.total_frames
         return {"FINISHED"}
 
-    def animate_creation(self, obj, product_frames):
+    def animate_input(self, obj, product_frame):
+        if product_frame["type"] in ["LOGISTIC", "MOVE", "DISPOSAL"]:
+            self.animate_movement_from(obj, product_frame)
+        else:
+            self.animate_consumption(obj, product_frame)
+
+    def animate_output(self, obj, product_frame):
+        if product_frame["type"] in ["CONSTRUCTION", "INSTALLATION"]:
+            self.animate_creation(obj, product_frame)
+        elif product_frame["type"] in ["DEMOLITION", "DISMANTLE", "DISPOSAL", "REMOVAL"]:
+            self.animate_destruction(obj, product_frame)
+        elif product_frame["type"] in ["ATTENDANCE", "MAINTENANCE", "OPERATION", "RENOVATION"]:
+            self.animate_operation(obj, product_frame)
+        elif product_frame["type"] in ["LOGISTIC", "MOVE", "DISPOSAL"]:
+            self.animate_movement_to(obj, product_frame)
+        else:
+            self.animate_operation(obj, product_frame)
+
+    def animate_creation(self, obj, product_frame):
         obj.hide_viewport = True
         obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
         obj.hide_viewport = False
         obj.color = (0.0, 1.0, 0.0, 1)
-        obj.keyframe_insert(data_path="hide_viewport", frame=product_frames["STARTED"])
-        obj.keyframe_insert(data_path="color", frame=product_frames["STARTED"])
+        obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["STARTED"])
+        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
         obj.color = (1.0, 1.0, 1.0, 1)
-        obj.keyframe_insert(data_path="color", frame=product_frames["COMPLETED"])
+        obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
 
-    def animate_destruction(self, obj, product_frames):
+    def animate_destruction(self, obj, product_frame):
         obj.hide_viewport = False
         obj.color = (1.0, 1.0, 1.0, 1)
         obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
         obj.keyframe_insert(data_path="color", frame=self.start_frame)
-        obj.keyframe_insert(data_path="color", frame=product_frames["STARTED"] - 1)
+        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
         obj.color = (1.0, 0.0, 0.0, 1)
-        obj.keyframe_insert(data_path="color", frame=product_frames["STARTED"])
+        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
         obj.hide_viewport = True
         obj.color = (0.0, 0.0, 0.0, 1)
-        obj.keyframe_insert(data_path="color", frame=product_frames["COMPLETED"])
-        obj.keyframe_insert(data_path="hide_viewport", frame=product_frames["COMPLETED"])
+        obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
+        obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["COMPLETED"])
 
-    def animate_operation(self, obj, product_frames):
+    def animate_operation(self, obj, product_frame):
         obj.color = (1.0, 1.0, 1.0, 1)
         obj.keyframe_insert(data_path="color", frame=self.start_frame)
-        obj.keyframe_insert(data_path="color", frame=product_frames["STARTED"] - 1)
+        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
         obj.color = (0.0, 0.0, 1.0, 1)
-        obj.keyframe_insert(data_path="color", frame=product_frames["STARTED"])
+        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
         obj.color = (1.0, 1.0, 1.0, 1)
-        obj.keyframe_insert(data_path="color", frame=product_frames["COMPLETED"])
+        obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
 
-    def animate_movement(self, obj, product_frames):
-        self.animate_creation(obj, product_frames)
+    def animate_movement_to(self, obj, product_frame):
+        obj.hide_viewport = True
+        obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
+        obj.hide_viewport = False
+        obj.color = (1.0, 1.0, 0.0, 1)
+        obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["STARTED"])
+        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
+        obj.color = (1.0, 1.0, 1.0, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
+
+    def animate_movement_from(self, obj, product_frame):
+        obj.hide_viewport = False
+        obj.color = (1.0, 1.0, 1.0, 1)
+        obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
+        obj.keyframe_insert(data_path="color", frame=self.start_frame)
+        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
+        obj.color = (1.0, 0.5, 0.0, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
+        obj.hide_viewport = True
+        obj.color = (0.0, 0.0, 0.0, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
+        obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["COMPLETED"])
+
+    def animate_consumption(self, obj, product_frame):
+        obj.hide_viewport = False
+        obj.color = (1.0, 1.0, 1.0, 1)
+        obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
+        obj.keyframe_insert(data_path="color", frame=self.start_frame)
+        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
+        obj.color = (0.0, 1.0, 1.0, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
+        obj.hide_viewport = True
+        obj.color = (0.0, 0.0, 0.0, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
+        obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["COMPLETED"])
 
     def calculate_total_frames(self):
         if self.props.speed_types == "FRAME_SPEED":
@@ -1547,13 +1590,26 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         finish = helper.derive_date(task.id(), "ScheduleFinish", is_latest=True)
         if not start or not finish:
             return
-        product_ids = [r.RelatingProduct.id() for r in task.HasAssignments or [] if r.is_a("IfcRelAssignsToProduct")]
-        for product_id in product_ids:
-            self.product_frames[product_id] = {
+        output_ids = [r.RelatingProduct.id() for r in task.HasAssignments or [] if r.is_a("IfcRelAssignsToProduct")]
+        for output_id in output_ids:
+            self.add_product_frame(output_id, task, start, finish, "output")
+
+        input_ids = []
+        [input_ids.extend([o.id() for o in r.RelatedObjects]) for r in task.OperatesOn or []]
+        for input_id in input_ids:
+            self.add_product_frame(input_id, task, start, finish, "input")
+
+    def add_product_frame(self, product_id, task, start, finish, relationship):
+        self.product_frames.setdefault(product_id, []).append(
+            {
                 "type": task.PredefinedType,
+                "relationship": relationship,
                 "STARTED": round(self.start_frame + (((start - self.start) / self.duration) * self.total_frames)),
-                "COMPLETED": round(self.start_frame + (((finish - self.start) / self.duration) * self.total_frames)),
+                "COMPLETED": round(
+                    self.start_frame + (((finish - self.start) / self.duration) * self.total_frames)
+                ),
             }
+        )
 
 
 class BlenderBIM_DatePicker(bpy.types.Operator):
