@@ -1374,22 +1374,60 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         for obj in bpy.data.objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
+            # TODO: support multiple product frames per object
             product_frames = self.product_frames.get(obj.BIMObjectProperties.ifc_definition_id)
             if not product_frames:
                 continue
-            obj.hide_viewport = True
-            obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
-            obj.hide_viewport = False
-            obj.color = (0.0, 1.0, 0.0, 1)
-            obj.keyframe_insert(data_path="hide_viewport", frame=product_frames["STARTED"])
-            obj.keyframe_insert(data_path="color", frame=product_frames["STARTED"])
-            obj.color = (1.0, 1.0, 1.0, 1)
-            obj.keyframe_insert(data_path="color", frame=product_frames["COMPLETED"])
+            if product_frames["type"] in ["CONSTRUCTION", "INSTALLATION"]:
+                self.animate_creation(obj, product_frames)
+            elif product_frames["type"] in ["DEMOLITION", "DISMANTLE", "DISPOSAL", "REMOVAL"]:
+                self.animate_destruction(obj, product_frames)
+            elif product_frames["type"] in ["ATTENDANCE", "MAINTENANCE", "OPERATION", "RENOVATION"]:
+                self.animate_operation(obj, product_frames)
+            elif product_frames["type"] in ["LOGISTIC", "MOVE", "DISPOSAL"]:
+                self.animate_movement(obj, product_frames)
+            else:
+                self.animate_operation(obj, product_frames)
         area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].shading.color_type = "OBJECT"
         context.scene.frame_start = self.start_frame
         context.scene.frame_end = self.start_frame + self.total_frames
         return {"FINISHED"}
+
+    def animate_creation(self, obj, product_frames):
+        obj.hide_viewport = True
+        obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
+        obj.hide_viewport = False
+        obj.color = (0.0, 1.0, 0.0, 1)
+        obj.keyframe_insert(data_path="hide_viewport", frame=product_frames["STARTED"])
+        obj.keyframe_insert(data_path="color", frame=product_frames["STARTED"])
+        obj.color = (1.0, 1.0, 1.0, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frames["COMPLETED"])
+
+    def animate_destruction(self, obj, product_frames):
+        obj.hide_viewport = False
+        obj.color = (1.0, 1.0, 1.0, 1)
+        obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
+        obj.keyframe_insert(data_path="color", frame=self.start_frame)
+        obj.keyframe_insert(data_path="color", frame=product_frames["STARTED"]-1)
+        obj.color = (1.0, 0.0, 0.0, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frames["STARTED"])
+        obj.hide_viewport = True
+        obj.color = (0.0, 0.0, 0.0, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frames["COMPLETED"])
+        obj.keyframe_insert(data_path="hide_viewport", frame=product_frames["COMPLETED"])
+
+    def animate_operation(self, obj, product_frames):
+        obj.color = (1.0, 1.0, 1.0, 1)
+        obj.keyframe_insert(data_path="color", frame=self.start_frame)
+        obj.keyframe_insert(data_path="color", frame=product_frames["STARTED"]-1)
+        obj.color = (0.0, 0.0, 1.0, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frames["STARTED"])
+        obj.color = (1.0, 1.0, 1.0, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frames["COMPLETED"])
+
+    def animate_movement(self, obj, product_frames):
+        self.animate_creation(obj, product_frames)
 
     def calculate_total_frames(self):
         if self.props.speed_types == "FRAME_SPEED":
@@ -1443,6 +1481,7 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         product_ids = [r.RelatingProduct.id() for r in task.HasAssignments or [] if r.is_a("IfcRelAssignsToProduct")]
         for product_id in product_ids:
             self.product_frames[product_id] = {
+                "type": task.PredefinedType,
                 "STARTED": round(self.start_frame + (((start - self.start) / self.duration) * self.total_frames)),
                 "COMPLETED": round(self.start_frame + (((finish - self.start) / self.duration) * self.total_frames)),
             }
