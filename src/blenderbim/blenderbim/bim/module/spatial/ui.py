@@ -40,7 +40,8 @@ class BIM_PT_spatial(Panel):
                 op = row.operator("bim.change_spatial_level", text="", icon="FRAME_PREV")
                 op.parent_id = sprops.active_decomposes_parent_id
             row.operator("bim.assign_container", icon="CHECKMARK")
-            row.operator("bim.disable_editing_container", icon="X", text="")
+            row.operator("bim.copy_to_container", icon="COPYDOWN", text="")
+            row.operator("bim.disable_editing_container", icon="CANCEL", text="")
 
             self.layout.template_list(
                 "BIM_UL_spatial_elements", "", sprops, "spatial_elements", sprops, "active_spatial_element_index"
@@ -65,3 +66,10 @@ class BIM_UL_spatial_elements(UIList):
                 op.parent_id = item.ifc_definition_id
             layout.label(text=item.name)
             layout.label(text=item.long_name)
+            layout.prop(
+                item,
+                "is_selected",
+                icon="CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT",
+                text="",
+                emboss=False,
+            )
