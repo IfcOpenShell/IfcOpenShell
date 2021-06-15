@@ -14,6 +14,8 @@ class BIM_PT_representations(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not IfcStore.get_element(context.active_object.BIMObjectProperties.ifc_definition_id):
+            return False
         return IfcStore.get_file()
 
     def draw(self, context):

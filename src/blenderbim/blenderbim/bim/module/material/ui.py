@@ -36,6 +36,8 @@ class BIM_PT_object_material(Panel):
         props = context.active_object.BIMObjectProperties
         if not props.ifc_definition_id:
             return False
+        if not IfcStore.get_element(props.ifc_definition_id):
+            return False
         if not hasattr(IfcStore.get_file().by_id(props.ifc_definition_id), "HasAssociations"):
             return False
         return True

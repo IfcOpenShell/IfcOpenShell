@@ -84,13 +84,19 @@ class IfcStore:
             except:
                 pass
 
-        if element:
-            del IfcStore.id_map[element.id()]
-        else:
-            del IfcStore.id_map[obj.BIMObjectProperties.ifc_definition_id]
+        try:
+            if element:
+                del IfcStore.id_map[element.id()]
+            else:
+                del IfcStore.id_map[obj.BIMObjectProperties.ifc_definition_id]
+        except:
+            pass
 
-        if element and hasattr(element, "GlobalId"):
-            del IfcStore.guid_map[element.GlobalId]
+        try:
+            if element and hasattr(element, "GlobalId"):
+                del IfcStore.guid_map[element.GlobalId]
+        except:
+            pass
 
         if obj:
             obj.BIMObjectProperties.ifc_definition_id = 0

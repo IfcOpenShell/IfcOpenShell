@@ -60,7 +60,8 @@ def active_object_callback():
     for obj in bpy.context.selected_objects:
         if not obj.BIMObjectProperties.ifc_definition_id:
             continue
-        if IfcStore.id_map[obj.BIMObjectProperties.ifc_definition_id] != obj:
+        stored_obj = IfcStore.get_element(obj.BIMObjectProperties.ifc_definition_id)
+        if stored_obj and stored_obj != obj:
             bpy.ops.bim.copy_class(obj=obj.name)
 
 
