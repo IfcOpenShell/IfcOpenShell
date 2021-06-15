@@ -47,6 +47,7 @@ classes = (
     operator.DisableEditingTask,
     operator.DisableEditingTaskTime,
     operator.EditTask,
+    operator.CopyTaskAttribute,
     operator.AssignPredecessor,
     operator.AssignSuccessor,
     operator.UnassignPredecessor,
