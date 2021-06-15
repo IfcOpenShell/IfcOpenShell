@@ -54,6 +54,7 @@ class SpatialElement(PropertyGroup):
     long_name: StringProperty(name="Long Name")
     has_decomposition: BoolProperty(name="Has Decomposition")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+    is_selected: BoolProperty(name="Is Selected")
 
 
 class BIMSpatialProperties(PropertyGroup):

@@ -719,6 +719,8 @@ class IfcImporter:
 
     def create_empty_products(self):
         for element in self.file.by_type("IfcProduct"):
+            if element.GlobalId in self.added_data:
+                continue
             if not element.Representation:
                 self.create_product(element)
 
