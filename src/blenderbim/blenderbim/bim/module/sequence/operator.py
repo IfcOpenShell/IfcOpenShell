@@ -637,18 +637,18 @@ class AssignProduct(bpy.types.Operator):
     bl_idname = "bim.assign_product"
     bl_label = "Assign Product"
     task: bpy.props.IntProperty()
-    related_product: bpy.props.StringProperty()
+    relating_product: bpy.props.StringProperty()
 
     def execute(self, context):
-        related_products = (
-            [bpy.data.objects.get(self.related_product)] if self.related_product else bpy.context.selected_objects
+        relating_products = (
+            [bpy.data.objects.get(self.relating_product)] if self.relating_product else bpy.context.selected_objects
         )
-        for related_product in related_products:
+        for relating_product in relating_products:
             self.file = IfcStore.get_file()
             ifcopenshell.api.run(
                 "sequence.assign_product",
                 self.file,
-                relating_product=self.file.by_id(related_product.BIMObjectProperties.ifc_definition_id),
+                relating_product=self.file.by_id(relating_product.BIMObjectProperties.ifc_definition_id),
                 related_object=self.file.by_id(self.task),
             )
         Data.load(self.file)
@@ -659,22 +659,67 @@ class UnassignProduct(bpy.types.Operator):
     bl_idname = "bim.unassign_product"
     bl_label = "Unassign Product"
     task: bpy.props.IntProperty()
-    related_product: bpy.props.StringProperty()
+    relating_product: bpy.props.StringProperty()
 
     def execute(self, context):
-        related_products = (
-            [bpy.data.objects.get(self.related_product)] if self.related_product else bpy.context.selected_objects
+        relating_products = (
+            [bpy.data.objects.get(self.relating_product)] if self.relating_product else bpy.context.selected_objects
         )
-        for related_product in related_products:
+        for relating_product in relating_products:
             self.file = IfcStore.get_file()
             ifcopenshell.api.run(
                 "sequence.unassign_product",
                 self.file,
-                relating_product=self.file.by_id(related_product.BIMObjectProperties.ifc_definition_id),
+                relating_product=self.file.by_id(relating_product.BIMObjectProperties.ifc_definition_id),
                 related_object=self.file.by_id(self.task),
             )
         Data.load(self.file)
         return {"FINISHED"}
+
+
+class AssignProcess(bpy.types.Operator):
+    bl_idname = "bim.assign_process"
+    bl_label = "Assign Process"
+    task: bpy.props.IntProperty()
+    related_object: bpy.props.StringProperty()
+
+    def execute(self, context):
+        related_objects = (
+            [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
+        )
+        for related_object in related_objects:
+            self.file = IfcStore.get_file()
+            ifcopenshell.api.run(
+                "sequence.assign_process",
+                self.file,
+                related_object=self.file.by_id(related_object.BIMObjectProperties.ifc_definition_id),
+                relating_process=self.file.by_id(self.task),
+            )
+        Data.load(self.file)
+        return {"FINISHED"}
+
+
+class UnassignProcess(bpy.types.Operator):
+    bl_idname = "bim.unassign_process"
+    bl_label = "Unassign Process"
+    task: bpy.props.IntProperty()
+    related_object: bpy.props.StringProperty()
+
+    def execute(self, context):
+        related_objects = (
+            [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
+        )
+        for related_object in related_objects:
+            self.file = IfcStore.get_file()
+            ifcopenshell.api.run(
+                "sequence.unassign_process",
+                self.file,
+                related_object=self.file.by_id(related_object.BIMObjectProperties.ifc_definition_id),
+                relating_process=self.file.by_id(self.task),
+            )
+        Data.load(self.file)
+        return {"FINISHED"}
+
 
 
 class GenerateGanttChart(bpy.types.Operator):

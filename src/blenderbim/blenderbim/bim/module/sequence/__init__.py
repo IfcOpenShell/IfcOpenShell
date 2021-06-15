@@ -60,6 +60,8 @@ classes = (
     operator.RemoveTaskCalendar,
     operator.AssignProduct,
     operator.UnassignProduct,
+    operator.AssignProcess,
+    operator.UnassignProcess,
     operator.GenerateGanttChart,
     operator.ImportP6,
     operator.ImportMSP,

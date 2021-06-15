@@ -306,6 +306,14 @@ class BIM_UL_tasks(UIList):
             if context.active_object:
                 oprops = context.active_object.BIMObjectProperties
                 row = layout.row(align=True)
+
+                if oprops.ifc_definition_id in Data.tasks[item.ifc_definition_id]["OperatesOn"]:
+                    op = row.operator("bim.unassign_process", text="", icon="MARKER_HLT", emboss=False)
+                    op.task = item.ifc_definition_id
+                else:
+                    op = row.operator("bim.assign_process", text="", icon="MARKER", emboss=False)
+                    op.task = item.ifc_definition_id
+
                 if oprops.ifc_definition_id in Data.tasks[item.ifc_definition_id]["RelatingProducts"]:
                     op = row.operator("bim.unassign_product", text="", icon="KEYFRAME_HLT", emboss=False)
                     op.task = item.ifc_definition_id
