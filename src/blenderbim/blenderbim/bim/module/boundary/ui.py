@@ -20,6 +20,8 @@ class BIM_PT_boundary(Panel):
         props = context.active_object.BIMObjectProperties
         if not props.ifc_definition_id:
             return False
+        if not IfcStore.get_element(props.ifc_definition_id):
+            return False
         if IfcStore.get_file().by_id(props.ifc_definition_id).is_a() not in ["IfcSpace", "IfcExternalSpatialElement"]:
             return False
         return True

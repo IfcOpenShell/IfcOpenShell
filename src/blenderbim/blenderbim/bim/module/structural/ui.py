@@ -76,6 +76,8 @@ class BIM_PT_structural_boundary_conditions(Panel):
         props = context.active_object.BIMObjectProperties
         if not props.ifc_definition_id:
             return False
+        if not IfcStore.get_element(props.ifc_definition_id):
+            return False
         if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcStructuralConnection"):
             return False
         return True
@@ -105,6 +107,8 @@ class BIM_PT_connected_structural_members(Panel):
             return False
         props = context.active_object.BIMObjectProperties
         if not props.ifc_definition_id:
+            return False
+        if not IfcStore.get_element(props.ifc_definition_id):
             return False
         if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcStructuralConnection"):
             return False
@@ -160,6 +164,8 @@ class BIM_PT_structural_member(Panel):
         props = context.active_object.BIMObjectProperties
         if not props.ifc_definition_id:
             return False
+        if not IfcStore.get_element(props.ifc_definition_id):
+            return False
         if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcStructuralMember"):
             return False
         return True
@@ -197,6 +203,8 @@ class BIM_PT_structural_connection(Panel):
             return False
         props = context.active_object.BIMObjectProperties
         if not props.ifc_definition_id:
+            return False
+        if not IfcStore.get_element(props.ifc_definition_id):
             return False
         if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcStructuralConnection"):
             return False

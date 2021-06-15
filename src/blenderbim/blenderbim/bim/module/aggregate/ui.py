@@ -16,6 +16,8 @@ class BIM_PT_aggregate(Panel):
         props = context.active_object.BIMObjectProperties
         if not props.ifc_definition_id:
             return False
+        if not IfcStore.get_element(props.ifc_definition_id):
+            return False
         if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcObjectDefinition"):
             return False
         if props.ifc_definition_id not in Data.products:

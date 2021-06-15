@@ -17,6 +17,8 @@ class BIM_PT_spatial(Panel):
         oprops = context.active_object.BIMObjectProperties
         if not oprops.ifc_definition_id:
             return False
+        if not IfcStore.get_element(oprops.ifc_definition_id):
+            return False
         if oprops.ifc_definition_id not in Data.products:
             Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         if not Data.products[oprops.ifc_definition_id]:

@@ -101,6 +101,8 @@ class BIM_PT_object_psets(Panel):
         props = context.active_object.BIMObjectProperties
         if not props.ifc_definition_id:
             return False
+        if not IfcStore.get_element(props.ifc_definition_id):
+            return False
         if props.ifc_definition_id not in Data.products:
             Data.load(IfcStore.get_file(), props.ifc_definition_id)
         if not Data.products[props.ifc_definition_id]:
@@ -143,6 +145,8 @@ class BIM_PT_object_qtos(Panel):
             return False
         props = context.active_object.BIMObjectProperties
         if not props.ifc_definition_id:
+            return False
+        if not IfcStore.get_element(props.ifc_definition_id):
             return False
         if props.ifc_definition_id not in Data.products:
             Data.load(IfcStore.get_file(), props.ifc_definition_id)

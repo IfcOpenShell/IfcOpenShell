@@ -78,6 +78,8 @@ class BIM_PT_object_attributes(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not IfcStore.get_element(context.active_object.BIMObjectProperties.ifc_definition_id):
+            return False
         return bool(context.active_object.BIMObjectProperties.ifc_definition_id)
 
     def draw(self, context):
