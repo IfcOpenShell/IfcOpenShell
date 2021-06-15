@@ -127,7 +127,8 @@ def updateTaskduration(self, context):
     Data.load(IfcStore.get_file())
     if props.active_task_id == self.ifc_definition_id:
         attribute = props.task_time_attributes.get("Duration")
-        attribute.string_value = self.duration
+        if attribute:
+            attribute.string_value = self.duration
     bpy.ops.bim.load_task_properties(task=props.active_task_id)
 
 
