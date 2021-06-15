@@ -112,6 +112,9 @@ class P62Ifc:
 
     def parse_activity_xml(self, project):
         for activity in project.findall("pr:Activity", self.ns):
+            activity_type = activity.find("pr:Type", self.ns).text
+            if activity_type == "Level of Effort":
+                continue
             activity_id = activity.find("pr:ObjectId", self.ns).text
             wbs_id = activity.find("pr:WBSObjectId", self.ns).text
             if wbs_id:
@@ -131,9 +134,13 @@ class P62Ifc:
 
     def parse_relationship_xml(self, project):
         for relationship in project.findall("pr:Relationship", self.ns):
+            predecessor = relationship.find("pr:PredecessorActivityObjectId", self.ns).text
+            successor = relationship.find("pr:SuccessorActivityObjectId", self.ns).text
+            if predecessor not in self.activities or successor not in self.activities:
+                continue
             self.relationships[relationship.find("pr:ObjectId", self.ns).text] = {
-                "PredecessorActivity": relationship.find("pr:PredecessorActivityObjectId", self.ns).text,
-                "SuccessorActivity": relationship.find("pr:SuccessorActivityObjectId", self.ns).text,
+                "PredecessorActivity": predecessor,
+                "SuccessorActivity": successor,
                 "Type": relationship.find("pr:Type", self.ns).text,
                 "Lag": relationship.find("pr:Lag", self.ns).text,
             }
@@ -333,6 +340,7 @@ class P62Ifc:
                 "Identification": activity["Identification"],
                 "Status": activity["Status"],
                 "IsMilestone": activity["StartDate"] == activity["FinishDate"],
+                "PredefinedType": "CONSTRUCTION"
             },
         )
         task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=activity["ifc"])
