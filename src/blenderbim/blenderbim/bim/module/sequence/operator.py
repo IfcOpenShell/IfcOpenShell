@@ -1484,9 +1484,7 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
 
     def animate_destruction(self, obj, product_frame):
-        obj.hide_viewport = False
         obj.color = (1.0, 1.0, 1.0, 1)
-        obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
         obj.keyframe_insert(data_path="color", frame=self.start_frame)
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
         obj.color = (1.0, 0.0, 0.0, 1)
@@ -1516,9 +1514,7 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
 
     def animate_movement_from(self, obj, product_frame):
-        obj.hide_viewport = False
         obj.color = (1.0, 1.0, 1.0, 1)
-        obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
         obj.keyframe_insert(data_path="color", frame=self.start_frame)
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
         obj.color = (1.0, 0.5, 0.0, 1)
@@ -1529,9 +1525,7 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["COMPLETED"])
 
     def animate_consumption(self, obj, product_frame):
-        obj.hide_viewport = False
         obj.color = (1.0, 1.0, 1.0, 1)
-        obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
         obj.keyframe_insert(data_path="color", frame=self.start_frame)
         obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
         obj.color = (0.0, 1.0, 1.0, 1)
@@ -1605,9 +1599,7 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
                 "type": task.PredefinedType,
                 "relationship": relationship,
                 "STARTED": round(self.start_frame + (((start - self.start) / self.duration) * self.total_frames)),
-                "COMPLETED": round(
-                    self.start_frame + (((finish - self.start) / self.duration) * self.total_frames)
-                ),
+                "COMPLETED": round(self.start_frame + (((finish - self.start) / self.duration) * self.total_frames)),
             }
         )
 
