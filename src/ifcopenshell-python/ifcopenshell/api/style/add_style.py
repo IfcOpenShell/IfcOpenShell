@@ -23,7 +23,7 @@ class Usecase:
             "IfcSurfaceStyleRendering",
             **{
                 "SurfaceColour": self.create_colour_rgb(self.settings["surface_colour"]),
-                "Transparency": (self.settings["transparency"] - 1) * -1,
+                "Transparency": self.settings["transparency"],
                 "ReflectanceMethod": "NOTDEFINED",
                 "DiffuseColour": self.create_colour_rgb(self.settings["diffuse_colour"]),
             }
