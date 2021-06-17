@@ -73,8 +73,6 @@ class Usecase:
                     finishes.append(self.offset_date(start, days, duration_type, self.get_calendar(predecessor)))
                 else:
                     finishes.append(start)
-            else:
-                return
 
         if starts and finishes:
             start = max(starts)
@@ -135,8 +133,6 @@ class Usecase:
                 ),
                 "IfcDateTime",
             )
-        else:
-            return
 
         for rel in task.IsPredecessorTo:
             self.cascade_task(rel.RelatedProcess)

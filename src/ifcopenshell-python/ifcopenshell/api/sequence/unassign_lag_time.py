@@ -1,3 +1,6 @@
+import ifcopenshell.api
+
+
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
@@ -9,5 +12,9 @@ class Usecase:
 
     def execute(self):
         if len(self.file.get_inverse(self.settings["rel_sequence"].TimeLag)) == 1:
-            return self.file.remove(self.settings["rel_sequence"].TimeLag)
-        self.settings["rel_sequence"].TimeLag = None
+            self.file.remove(self.settings["rel_sequence"].TimeLag)
+        else:
+            self.settings["rel_sequence"].TimeLag = None
+        ifcopenshell.api.run(
+            "sequence.cascade_schedule", self.file, task=self.settings["rel_sequence"].RelatedProcess
+        )
