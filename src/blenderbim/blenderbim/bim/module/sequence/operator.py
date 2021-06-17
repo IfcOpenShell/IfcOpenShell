@@ -571,9 +571,6 @@ class AssignPredecessor(bpy.types.Operator):
             relating_process=IfcStore.get_file().by_id(self.task),
             related_process=IfcStore.get_file().by_id(props.active_task_id),
         )
-        ifcopenshell.api.run(
-            "sequence.edit_sequence", self.file, rel_sequence=rel, attributes={"SequenceType": "FINISH_START"}
-        )
         Data.load(self.file)
         bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
@@ -592,9 +589,6 @@ class AssignSuccessor(bpy.types.Operator):
             self.file,
             relating_process=IfcStore.get_file().by_id(props.active_task_id),
             related_process=IfcStore.get_file().by_id(self.task),
-        )
-        ifcopenshell.api.run(
-            "sequence.edit_sequence", self.file, rel_sequence=rel, attributes={"SequenceType": "FINISH_START"}
         )
         Data.load(self.file)
         bpy.ops.bim.load_task_properties()
