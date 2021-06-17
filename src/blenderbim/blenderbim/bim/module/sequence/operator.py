@@ -575,7 +575,7 @@ class AssignPredecessor(bpy.types.Operator):
             "sequence.edit_sequence", self.file, rel_sequence=rel, attributes={"SequenceType": "FINISH_START"}
         )
         Data.load(self.file)
-        bpy.ops.bim.load_task_properties(task=self.task)
+        bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
 
@@ -597,7 +597,7 @@ class AssignSuccessor(bpy.types.Operator):
             "sequence.edit_sequence", self.file, rel_sequence=rel, attributes={"SequenceType": "FINISH_START"}
         )
         Data.load(self.file)
-        bpy.ops.bim.load_task_properties(task=self.task)
+        bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
 
@@ -616,7 +616,7 @@ class UnassignPredecessor(bpy.types.Operator):
             related_process=IfcStore.get_file().by_id(props.active_task_id),
         )
         Data.load(self.file)
-        bpy.ops.bim.load_task_properties(task=self.task)
+        bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
 
@@ -635,7 +635,7 @@ class UnassignSuccessor(bpy.types.Operator):
             related_process=self.file.by_id(self.task),
         )
         Data.load(self.file)
-        bpy.ops.bim.load_task_properties(task=self.task)
+        bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
 
@@ -1166,19 +1166,18 @@ class EditTaskCalendar(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
+        task = self.file.by_id(self.task)
         ifcopenshell.api.run(
             "control.assign_control",
             self.file,
             **{
                 "relating_control": self.file.by_id(self.work_calendar),
-                "related_object": self.file.by_id(self.task),
+                "related_object": task,
             },
         )
+        ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=task)
         Data.load(IfcStore.get_file())
-        if Data.tasks[self.task]["RelatedObjects"]:
-            bpy.ops.bim.load_task_properties()
-        else:
-            bpy.ops.bim.load_task_properties(task=self.task)
+        bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
 
@@ -1190,19 +1189,18 @@ class RemoveTaskCalendar(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
+        task = self.file.by_id(self.task)
         ifcopenshell.api.run(
             "control.unassign_control",
             self.file,
             **{
                 "relating_control": self.file.by_id(self.work_calendar),
-                "related_object": self.file.by_id(self.task),
+                "related_object": task,
             },
         )
+        ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=task)
         Data.load(IfcStore.get_file())
-        if Data.tasks[self.task]["RelatedObjects"]:
-            bpy.ops.bim.load_task_properties()
-        else:
-            bpy.ops.bim.load_task_properties(task=self.task)
+        bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
 
@@ -1294,6 +1292,7 @@ class UnassignLagTime(bpy.types.Operator):
             "sequence.unassign_lag_time", self.file, **{"rel_sequence": self.file.by_id(self.sequence)}
         )
         Data.load(IfcStore.get_file())
+        bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
 
@@ -1328,6 +1327,7 @@ class EditSequenceAttributes(bpy.types.Operator):
         )
         Data.load(self.file)
         bpy.ops.bim.disable_editing_sequence()
+        bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
 
@@ -1347,6 +1347,7 @@ class EditSequenceTimeLag(bpy.types.Operator):
         )
         Data.load(self.file)
         bpy.ops.bim.disable_editing_sequence()
+        bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
 

@@ -1,3 +1,7 @@
+import ifcopenshell
+import ifcopenshell.api
+
+
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
@@ -8,3 +12,7 @@ class Usecase:
     def execute(self):
         for name, value in self.settings["attributes"].items():
             setattr(self.settings["rel_sequence"], name, value)
+        if "SequenceType" in self.settings["attributes"].keys():
+            ifcopenshell.api.run(
+                "sequence.cascade_schedule", self.file, task=self.settings["rel_sequence"].RelatedProcess
+            )
