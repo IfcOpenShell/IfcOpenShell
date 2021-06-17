@@ -146,26 +146,38 @@ class Usecase:
                     finish = predecessor_data.get("early_finish")
                     if finish is None:
                         return
-                    starts.append(self.offset_date(finish, edge["lag_time"], data))
-                    starts.append(self.offset_date(finish, edge["lag_time"], predecessor_data))
+                    if not edge["lag_time"]:
+                        starts.append(finish)
+                    else:
+                        starts.append(self.offset_date(finish, edge["lag_time"], data))
+                        starts.append(self.offset_date(finish, edge["lag_time"], predecessor_data))
                 elif edge["type"] == "SS":
                     start = predecessor_data.get("early_start")
                     if start is None:
                         return
-                    starts.append(self.offset_date(start, edge["lag_time"], data))
-                    starts.append(self.offset_date(start, edge["lag_time"], predecessor_data))
+                    if not edge["lag_time"]:
+                        starts.append(start)
+                    else:
+                        starts.append(self.offset_date(start, edge["lag_time"], data))
+                        starts.append(self.offset_date(start, edge["lag_time"], predecessor_data))
                 elif edge["type"] == "FF":
                     finish = predecessor_data.get("early_finish")
                     if finish is None:
                         return
-                    finishes.append(self.offset_date(finish, edge["lag_time"], data))
-                    finishes.append(self.offset_date(finish, edge["lag_time"], predecessor_data))
+                    if not edge["lag_time"]:
+                        finishes.append(finish)
+                    else:
+                        finishes.append(self.offset_date(finish, edge["lag_time"], data))
+                        finishes.append(self.offset_date(finish, edge["lag_time"], predecessor_data))
                 elif edge["type"] == "SF":
                     start = predecessor_data.get("early_start")
                     if start is None:
                         return
-                    finishes.append(self.offset_date(start, edge["lag_time"], data))
-                    finishes.append(self.offset_date(start, edge["lag_time"], predecessor_data))
+                    if not edge["lag_time"]:
+                        finishes.append(start)
+                    else:
+                        finishes.append(self.offset_date(start, edge["lag_time"], data))
+                        finishes.append(self.offset_date(start, edge["lag_time"], predecessor_data))
             if starts and finishes:
                 data["early_start"] = max(starts)
                 data["early_finish"] = max(finishes)
@@ -205,8 +217,11 @@ class Usecase:
                     start = successor_data.get("late_start")
                     if start is None:
                         return
-                    finishes.append(self.offset_date(start, -edge["lag_time"], data))
-                    finishes.append(self.offset_date(start, -edge["lag_time"], successor_data))
+                    if not edge["lag_time"]:
+                        finishes.append(start)
+                    else:
+                        finishes.append(self.offset_date(start, -edge["lag_time"], data))
+                        finishes.append(self.offset_date(start, -edge["lag_time"], successor_data))
                     free_floats.append(
                         self.calculate_free_float(
                             data["early_finish"], successor_data["early_start"], edge["lag_time"], data, successor_data
@@ -216,8 +231,11 @@ class Usecase:
                     start = successor_data.get("late_start")
                     if start is None:
                         return
-                    starts.append(self.offset_date(start, -edge["lag_time"], data))
-                    starts.append(self.offset_date(start, -edge["lag_time"], successor_data))
+                    if not edge["lag_time"]:
+                        starts.append(start)
+                    else:
+                        starts.append(self.offset_date(start, -edge["lag_time"], data))
+                        starts.append(self.offset_date(start, -edge["lag_time"], successor_data))
                     free_floats.append(
                         self.calculate_free_float(
                             data["early_start"], successor_data["early_start"], edge["lag_time"], data, successor_data
@@ -227,8 +245,11 @@ class Usecase:
                     finish = successor_data.get("late_finish")
                     if finish is None:
                         return
-                    finishes.append(self.offset_date(finish, -edge["lag_time"], data))
-                    finishes.append(self.offset_date(finish, -edge["lag_time"], successor_data))
+                    if not edge["lag_time"]:
+                        finishes.append(finish)
+                    else:
+                        finishes.append(self.offset_date(finish, -edge["lag_time"], data))
+                        finishes.append(self.offset_date(finish, -edge["lag_time"], successor_data))
                     free_floats.append(
                         self.calculate_free_float(
                             data["early_finish"], successor_data["early_finish"], edge["lag_time"], data, successor_data
@@ -238,8 +259,11 @@ class Usecase:
                     finish = successor_data.get("late_finish")
                     if finish is None:
                         return
-                    starts.append(self.offset_date(finish, -edge["lag_time"], data))
-                    starts.append(self.offset_date(finish, -edge["lag_time"], successor_data))
+                    if not edge["lag_time"]:
+                        starts.append(finish)
+                    else:
+                        starts.append(self.offset_date(finish, -edge["lag_time"], data))
+                        starts.append(self.offset_date(finish, -edge["lag_time"], successor_data))
                     free_floats.append(
                         self.calculate_free_float(
                             data["early_start"], successor_data["early_finish"], edge["lag_time"], data, successor_data
@@ -278,12 +302,15 @@ class Usecase:
         return True
 
     def calculate_free_float(self, predecessor_date, successor_date, lag_time, predecessor_data, successor_data):
-        min_successor_date = min(
-            (
-                self.offset_date(successor_date, -lag_time, predecessor_data),
-                self.offset_date(successor_date, -lag_time, successor_data),
+        if not lag_time:
+            min_successor_date = successor_date
+        else:
+            min_successor_date = min(
+                (
+                    self.offset_date(successor_date, -lag_time, predecessor_data),
+                    self.offset_date(successor_date, -lag_time, successor_data),
+                )
             )
-        )
         if predecessor_data["duration_type"] == "WORKTIME":
             return datetime.timedelta(
                 days=ifcopenshell.util.sequence.count_working_days(
