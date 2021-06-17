@@ -82,6 +82,7 @@ class Usecase:
             faces = [f for f in bm.faces if self.should_triangulate_face(f)]
         bmesh.ops.triangulate(bm, faces=faces)
         bm.to_mesh(mesh)
+        mesh.update()
         bm.free()
         del bm
 
