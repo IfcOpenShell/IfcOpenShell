@@ -23,5 +23,6 @@ class Usecase:
                 "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
                 "RelatingProcess": self.settings["relating_process"],
                 "RelatedProcess": self.settings["related_process"],
+                "SequenceType": "FINISH_START",
             }
         )
