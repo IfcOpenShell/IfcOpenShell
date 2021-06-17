@@ -10,6 +10,7 @@ def get_colour_settings(material):
         bsdf = material.node_tree.nodes["Principled BSDF"]
         transparency = bsdf.inputs["Alpha"].default_value
         diffuse_colour = bsdf.inputs["Base Color"].default_value
+    transparency = 1 - transparency
     return {
         "surface_colour": tuple(material.diffuse_color),
         "transparency": transparency,
