@@ -27,7 +27,7 @@ def ifc2datetime(element):
         if isinstance(duration, datetime.timedelta):
             return timedelta2duration(duration)
         return duration
-    elif isinstance(element, str) and element[2] == ":":  # IfcTime
+    elif isinstance(element, str) and len(element) > 3 and element[2] == ":":  # IfcTime
         return datetime.time.fromisoformat(element)
     elif isinstance(element, str) and ":" in element:  # IfcDateTime
         return datetime.datetime.fromisoformat(element)

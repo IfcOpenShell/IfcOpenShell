@@ -84,7 +84,7 @@ class Usecase:
                     rel.RelatedProcess.id(),
                     {
                         "lag_time": 0
-                        if not rel.TimeLag or not rel.TimeLag.LagValue
+                        if not rel.TimeLag
                         else ifcopenshell.util.date.ifc2datetime(rel.TimeLag.LagValue.wrappedValue).days,
                         "type": self.sequence_type_map[rel.SequenceType],
                     },

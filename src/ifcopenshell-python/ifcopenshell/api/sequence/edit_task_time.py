@@ -11,6 +11,9 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
+        self.task = self.get_task()
+        self.calendar = ifcopenshell.util.sequence.derive_calendar(self.task)
+
         # If the user specifies both an end date and a duration, the duration takes priority
         if (
             "ScheduleDuration" in self.settings["attributes"].keys()
@@ -26,11 +29,11 @@ class Usecase:
         duration_type = self.settings["attributes"].get("DurationType", self.settings["task_time"].DurationType)
         if "ScheduleFinish" in self.settings["attributes"]:
             self.settings["attributes"]["ScheduleFinish"] = ifcopenshell.util.sequence.get_soonest_working_day(
-                self.settings["attributes"]["ScheduleFinish"], duration_type, self.get_calendar()
+                self.settings["attributes"]["ScheduleFinish"], duration_type, self.calendar
             )
         if "ScheduleStart" in self.settings["attributes"]:
             self.settings["attributes"]["ScheduleStart"] = ifcopenshell.util.sequence.get_soonest_working_day(
-                self.settings["attributes"]["ScheduleStart"], duration_type, self.get_calendar()
+                self.settings["attributes"]["ScheduleStart"], duration_type, self.calendar
             )
 
         for name, value in self.settings["attributes"].items():
@@ -52,12 +55,22 @@ class Usecase:
         elif "ScheduleFinish" in self.settings["attributes"].keys() and self.settings["task_time"].ScheduleStart:
             self.calculate_duration()
 
+        if (
+            self.settings["task_time"].ScheduleDuration
+            and (
+                "ScheduleStart" in self.settings["attributes"].keys()
+                or "ScheduleFinish" in self.settings["attributes"].keys()
+                or "ScheduleDuration" in self.settings["attributes"].keys()
+            )
+        ):
+            ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=self.task)
+
     def calculate_finish(self):
         finish_date = ifcopenshell.util.sequence.get_finish_date(
             ifcopenshell.util.date.ifc2datetime(self.settings["task_time"].ScheduleStart),
             ifcopenshell.util.date.ifc2datetime(self.settings["task_time"].ScheduleDuration),
             self.settings["task_time"].DurationType,
-            self.get_calendar(),
+            self.calendar,
         )
         self.settings["task_time"].ScheduleFinish = ifcopenshell.util.date.datetime2ifc(finish_date, "IfcDateTime")
 
@@ -66,20 +79,14 @@ class Usecase:
         finish = ifcopenshell.util.date.ifc2datetime(self.settings["task_time"].ScheduleFinish)
         current_date = datetime.date(start.year, start.month, start.day)
         finish_date = datetime.date(finish.year, finish.month, finish.day)
-        calendar = self.get_calendar()
         duration = datetime.timedelta()
         while current_date < finish_date:
-            if self.settings["task_time"].DurationType == "ELAPSEDTIME" or not calendar:
+            if self.settings["task_time"].DurationType == "ELAPSEDTIME" or not self.calendar:
                 duration += datetime.timedelta(days=1)
-            elif ifcopenshell.util.sequence.is_working_day(current_date, calendar):
+            elif ifcopenshell.util.sequence.is_working_day(current_date, self.calendar):
                 duration += datetime.timedelta(days=1)
             current_date += datetime.timedelta(days=1)
         self.settings["task_time"].ScheduleDuration = ifcopenshell.util.date.datetime2ifc(duration, "IfcDuration")
 
-    def get_calendar(self):
-        task = [e for e in self.file.get_inverse(self.settings["task_time"]) if e.is_a("IfcTask")]
-        if not task:
-            return
-        else:
-            task = task[0]
-        return ifcopenshell.util.sequence.derive_calendar(task)
+    def get_task(self):
+        return [e for e in self.file.get_inverse(self.settings["task_time"]) if e.is_a("IfcTask")][0]
