@@ -113,6 +113,36 @@ def BIM_PT_transform(self, context):
         row.operator("bim.edit_object_placement")
 
 
+class BIM_PT_derived_placements(Panel):
+    bl_label = "IFC Derived Placements"
+    bl_idname = "BIM_PT_derived_placements"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_parent_id = "OBJECT_PT_transform"
+
+    def draw(self, context):
+        z = context.active_object.matrix_world.translation.z
+        z_values = [co[2] for co in context.active_object.bound_box]
+        row = self.layout.row(align=True)
+        row.label(text="Min Global Z")
+        row.label(text="{0:.3f}".format(min(z_values) + z))
+        row = self.layout.row(align=True)
+        row.label(text="Max Global Z")
+        row.label(text="{0:.3f}".format(max(z_values) + z))
+
+        collection = bpy.data.objects.get(context.active_object.users_collection[0].name)
+        if collection:
+            collection_z = collection.matrix_world.translation.z
+            row = self.layout.row(align=True)
+            row.label(text="Min Local Z")
+            row.label(text="{0:.3f}".format(min(z_values) + z - collection_z))
+            row = self.layout.row(align=True)
+            row.label(text="Max Local Z")
+            row.label(text="{0:.3f}".format(max(z_values) + z - collection_z))
+
+
 class BIM_PT_workarounds(Panel):
     bl_label = "IFC Vendor Workarounds"
     bl_idname = "BIM_PT_workarounds"
