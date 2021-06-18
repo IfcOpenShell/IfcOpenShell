@@ -105,6 +105,7 @@ class classification(facet):
     message = "a classification reference '%(value)s' from '%(system)s'"
 
     def __call__(self, inst, logger):
+        #TODO Location: 'type'/'instance'/'any'
         refs = []
         for association in inst.HasAssociations:
             if association.is_a("IfcRelAssociatesClassification"):
@@ -132,6 +133,7 @@ class property(facet):
     message = "a property '%(name)s' in '%(propertyset)s' with a value %(value)s"
 
     def __call__(self, inst, logger):
+        #TODO Location: 'type'/'instance'/'any'
         props = ifcopenshell.util.element.get_psets(inst)
         pset = props.get(self.propertyset)
         val = pset.get(self.name) if pset else None
@@ -150,6 +152,7 @@ class property(facet):
             else:
                 msg = "no set '%(propertyset)s'" % di
 
+        #TODO implement data type comparison
         return facet_evaluation(
             val == self.value,
             msg
@@ -165,6 +168,8 @@ class material(facet):
 
     def __call__(self, inst, logger):
         material_relations = [rel for rel in inst.HasAssociations if rel.is_a("IfcRelAssociatesMaterial")]
+        #TODO Location: 'type'/'instance'/'any'. Handle type... https://github.com/IfcOpenShell/IfcOpenShell/blob/257997c2cb8d382a7f3026f9a33fed6ccbe31282/src/ifcopenshell-python/ifcopenshell/util/element.py#L54
+        # [material_relations.append(rel) for rel in ifcopenshell.util.element.get_type(inst).HasAssociations if rel.is_a("IfcRelAssociatesMaterial")]
         materials = []
         for rel in material_relations:
             #TODO test all subtypes of material definitions
@@ -187,9 +192,12 @@ class material(facet):
             else:
                 logger.error({'guid':inst.GlobalId, 'result':'ERROR', 'sentence':'IfcRelAssociatesMaterial not implemented'})
 
+        if not materials:
+            materials.append('UNDEFINED')
+
         return facet_evaluation(
             self.value in materials,
-            self.message % {"value": self.value},
+            self.message % {"value": "'/'".join(materials)},
         )
 
 
@@ -266,27 +274,30 @@ class restriction:
                     logger.error({'result':'ERROR', 'sentence':'Restriction not implemented'})
 
     def __eq__(self, other):
-        if self.type == "enumeration":
-            return other in self.options
-        elif self.type == "bounds":
-            result = True
-            for op in self.options:
-                if not(eval(str(other)+op)):
-                    result = False
-            return result
-        elif self.type == "length":
-            result = True
-            for op in self.options:
-                if not(eval(str(len(other))+op)):
-                    result = False
-            return result
-        elif self.type == "pattern":
-            #TODO verify XML pattern
-            return False
-        #TODO add fractionDigits
-        #TODO add totalDigits
-        #TODO add whiteSpace
- 
+        result=False
+        #TODO implement data type comparison
+        if self and other:
+            if self.type == "enumeration" and self.restriction_on == 'bool':
+                self.options = [x.lower() for x in self.options]
+                result = str(other).lower() in self.options
+            elif self.type == "enumeration":
+                result = other in self.options
+            elif self.type == "bounds":
+                for op in self.options:
+                    if eval(str(other)+op):    #TODO eval not safe?
+                        result = True
+            elif self.type == "length":
+                for op in self.options:
+                    if eval(str(len(other))+op):   #TODO eval not safe?
+                        result = True
+            elif self.type == "pattern":
+                #TODO verify XML pattern
+                pass
+            #TODO add fractionDigits
+            #TODO add totalDigits
+            #TODO add whiteSpace
+        return result
+
     def __repr__(self):
         if self.type == "enumeration":
             return "'%s'" % "' or '".join(self.options)
@@ -300,6 +311,7 @@ class restriction:
         #TODO add fractionDigits
         #TODO add totalDigits
         #TODO add whiteSpace
+
 
 class specification:
     """
@@ -318,16 +330,17 @@ class specification:
 
     def __call__(self, inst, logger):
         if self.applicability(inst, logger):
-            global ifc_checked
-            ifc_checked += 1
+
             valid = self.requirements(inst, logger)
 
             if valid:
-                global ifc_passed
-                ifc_passed += 1
                 logger.info({'guid':inst.GlobalId, 'result':valid.success,'sentence':str(self) + "\n" + inst.is_a() + " '" + str(inst.Name) + "' (#" + str(inst.id()) + ") has " + str(valid) + " so is compliant"})
+                return True, True
             else:
                 logger.error({'guid':inst.GlobalId, 'result':valid.success, 'sentence':str(self) + "\n" + inst.is_a() + " '" + str(inst.Name) + "' (#" + str(inst.id()) + ") has " + str(valid) + " so is not compliant"})
+                return True, False
+        else:
+            return False, False 
 
     def __str__(self):
         return "Given an instance with %(applicability)s\nWe expect %(requirements)s" % self.__dict__
@@ -338,21 +351,27 @@ class ids:
     Represents the XML root <ids> node and its <specification> childNodes.
     """
 
-    def __init__(self, fn):
+    @staticmethod
+    def parse(fn):
         ids_schema = XMLSchema("http://standards.buildingsmart.org/IDS/ids.xsd")
         ids_schema.validate(fn)
+        
+        ids_content = ids_schema.to_dict(fn)
+        new_ids = ids()
+        new_ids.specifications = [specification(s) for s in ids_content['specification']]
+        return new_ids
 
-        ids = ids_schema.to_dict(fn)
-        self.specifications = [specification(s) for s in ids['specification']]
 
     def validate(self, ifc_file, logger):
+        self.ifc_checked = 0
+        self.ifc_passed = 0
         for spec in self.specifications:
             for elem in ifc_file.by_type("IfcObject"):
-                spec(elem, logger)
+                apply, comply = spec(elem, logger)
+                if apply: self.ifc_checked += 1
+                if comply: self.ifc_passed += 1
 
 
-ifc_checked = 0
-ifc_passed = 0
 if __name__ == "__main__":
     import time
     start_time = time.time()
@@ -367,11 +386,10 @@ if __name__ == "__main__":
     logging.basicConfig(filename=filename, level=logging.INFO, format="%(message)s")
     logging.FileHandler(filename, mode='w')
 
-    ids_file = ids(sys.argv[1])
     ifc_file = ifcopenshell.open(sys.argv[2])
+    ids_file = ids.parse(sys.argv[1])
 
     ids_file.validate(ifc_file, logger)
     
     print("Out of %s IFC elements, %s were checked against %s requirements in %s specification(s) and %s of them passed (%s).\nRuntime=%ss. Results saved to %s" 
-    % (len(ifc_file.by_type('IfcProduct')), ifc_checked, len(ids_file.specifications[0].requirements.terms), len(ids_file.specifications), ifc_passed, str(ifc_passed/ifc_checked*100)+'%', round(time.time() - start_time, 2), filename))
-
+    % (len(ifc_file.by_type('IfcProduct')), ids_file.ifc_checked, len(ids_file.specifications[0].requirements.terms), len(ids_file.specifications), ids_file.ifc_passed, str(ids_file.ifc_passed/ids_file.ifc_checked*100)+'%', round(time.time() - start_time, 2), filename))
