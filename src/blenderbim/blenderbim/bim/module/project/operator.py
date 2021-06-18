@@ -3,6 +3,7 @@ import logging
 import ifcopenshell
 import ifcopenshell.api
 import bpy
+import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim import import_ifc
 
@@ -232,9 +233,11 @@ class AppendLibraryElement(bpy.types.Operator):
         element = ifcopenshell.api.run(
             "project.append_asset",
             IfcStore.get_file(),
+            library=IfcStore.library_file,
             element=IfcStore.library_file.by_id(self.definition),
         )
         self.import_type_from_ifc(element)
+        blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}
 
     def import_type_from_ifc(self, element):
