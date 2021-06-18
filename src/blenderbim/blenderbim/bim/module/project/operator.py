@@ -144,7 +144,7 @@ class ChangeLibraryElement(bpy.types.Operator):
         [ifc_classes.add(e.is_a()) for e in elements]
         while len(self.props.library_elements) > 0:
             self.props.library_elements.remove(0)
-        if len(ifc_classes) == 1:
+        if len(ifc_classes) == 1 and list(ifc_classes)[0] == self.element_name:
             for element in elements:
                 new = self.props.library_elements.add()
                 new.name = element.Name or "Unnamed"
