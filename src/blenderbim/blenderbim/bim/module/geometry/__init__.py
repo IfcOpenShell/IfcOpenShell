@@ -10,6 +10,7 @@ classes = (
     operator.UpdateParametricRepresentation,
     operator.GetRepresentationIfcParameters,
     prop.BIMGeometryProperties,
+    ui.BIM_PT_derived_placements,
     ui.BIM_PT_representations,
     ui.BIM_PT_mesh,
     ui.BIM_PT_workarounds,
