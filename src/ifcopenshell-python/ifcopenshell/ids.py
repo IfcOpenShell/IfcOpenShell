@@ -110,8 +110,10 @@ class classification(facet):
         for association in inst.HasAssociations:
             if association.is_a("IfcRelAssociatesClassification"):
                 cref = association.RelatingClassification
-                refs.append((cref.ReferencedSource.Name, cref.Identification))  # before was .ItemReference instead of .Identification
-
+                if hasattr(cref, 'ItemReference'):  #IFC2x3
+                    refs.append((cref.ReferencedSource.Name, cref.ItemReference))
+                elif hasattr(cref, 'Identification'):   # IFC4
+                    refs.append((cref.ReferencedSource.Name, cref.Identification))                    
         if refs:
             return facet_evaluation(
                 (self.system, self.value) in refs,
