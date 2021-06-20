@@ -453,11 +453,18 @@ class BIM_PT_structural_loads(Panel):
         self.props = context.scene.BIMStructuralProperties
 
         row = self.layout.row(align=True)
-        row.label(text="{} Structural Loads Found".format(len(Data.structural_loads)), icon="GHOST_ENABLED")
+        row.label(text="{} Structural Loads Found".format(len(Data.structural_loads)), icon="ANIM_DATA")
         if self.props.is_editing_loads:
+            row.operator(
+                "bim.toggle_filter_structural_loads",
+                text="FILTER - OFF" if not self.props.filtered_structural_loads else "FILTER - ON",
+                icon="FILTER",
+            )
+            row.operator("bim.disable_structural_load_editing_ui", text="", icon="SCREEN_BACK")
+
+            row = self.layout.row(align=True)
             row.prop(self.props, "structural_load_types", text="")
             row.operator("bim.add_structural_load", text="", icon="ADD").ifc_class = self.props.structural_load_types
-            row.operator("bim.disable_structural_load_editing_ui", text="", icon="CANCEL")
         else:
             row.operator("bim.load_structural_loads", text="", icon="GREASEPENCIL")
 

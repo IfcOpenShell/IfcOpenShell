@@ -112,6 +112,7 @@ class StructuralActivity(PropertyGroup):
 class StructuralLoad(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+    number_of_inverse_references: IntProperty(name="Number of Inverse References")
 
 
 class BIMStructuralProperties(PropertyGroup):
@@ -137,12 +138,15 @@ class BIMStructuralProperties(PropertyGroup):
     )
     load_group_activities: CollectionProperty(name="Load Group Activities", type=StructuralActivity)
     active_load_group_activity_index: IntProperty(name="Active Load Group Activity Index")
+
     structural_loads: CollectionProperty(name="Structural Loads", type=StructuralLoad)
     active_structural_load_index: IntProperty(name="Active Structural Load Index")
     active_structural_load_id: IntProperty(name="Active Structural Load Id")
     is_editing_loads: BoolProperty(name="Is Editing Loads", default=False)
     structural_load_types: EnumProperty(items=getStructuralLoadTypes, name="Structural Load Types")
     structural_load_attributes: CollectionProperty(name="Structural Load Attributes", type=Attribute)
+    filtered_structural_loads: BoolProperty(name="Filtered Structural Loads", default=False)
+
 
 
 class BIMObjectStructuralProperties(PropertyGroup):

@@ -761,13 +761,29 @@ class LoadStructuralLoads(bpy.types.Operator):
     bl_label = "Load Structural Loads"
 
     def execute(self, context):
+        self.file = IfcStore.get_file()
         props = context.scene.BIMStructuralProperties
         while len(props.structural_loads) > 0:
             props.structural_loads.remove(0)
-        for ifc_definition_id, structural_loads in Data.structural_loads.items():
-            new = props.structural_loads.add()
-            new.ifc_definition_id = ifc_definition_id
-            new.name = structural_loads["Name"] or "Unnamed"
+        if props.filtered_structural_loads:
+            names = [structural_load["Name"] or "Unnamed" for _, structural_load in Data.structural_loads.items()]
+            for ifc_definition_id, structural_load in Data.structural_loads.items():
+                if (
+                    names.count(structural_load["Name"] or "Unnamed") > 1
+                    and len(self.file.get_inverse(self.file.by_id(ifc_definition_id))) < 2
+                ):
+                    continue
+                new = props.structural_loads.add()
+                new.ifc_definition_id = ifc_definition_id
+                new.name = structural_load["Name"] or "Unnamed"
+                new.number_of_inverse_references = len(self.file.get_inverse(self.file.by_id(ifc_definition_id)))
+
+        else:
+            for ifc_definition_id, structural_load in Data.structural_loads.items():
+                new = props.structural_loads.add()
+                new.ifc_definition_id = ifc_definition_id
+                new.name = structural_load["Name"] or "Unnamed"
+                new.number_of_inverse_references = len(self.file.get_inverse(self.file.by_id(ifc_definition_id)))
         props.is_editing_loads = True
         bpy.ops.bim.disable_editing_structural_load()
         return {"FINISHED"}
@@ -859,3 +875,16 @@ class EditStructuralLoad(bpy.types.Operator):
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_structural_loads()
         return {"FINISHED"}
+
+
+class ToggleFilterStructuralLoads(bpy.types.Operator):
+    bl_idname = "bim.toggle_filter_structural_loads"
+    bl_label = "Toggle Filter Structural Loads"
+
+    def execute(self, context):
+        props = context.scene.BIMStructuralProperties
+        props.filtered_structural_loads = not props.filtered_structural_loads
+        bpy.ops.bim.load_structural_loads()
+        return {"FINISHED"}
+
+
