@@ -888,3 +888,166 @@ class ToggleFilterStructuralLoads(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class LoadBoundaryConditions(bpy.types.Operator):
+    bl_idname = "bim.load_boundary_conditions"
+    bl_label = "Load Boundary Conditions"
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        props = context.scene.BIMStructuralProperties
+        while len(props.boundary_conditions) > 0:
+            props.boundary_conditions.remove(0)
+        if props.filtered_boundary_conditions:
+            names = [
+                boundary_condition["Name"] or "Unnamed" for _, boundary_condition in Data.boundary_conditions.items()
+            ]
+            for ifc_definition_id, boundary_condition in Data.boundary_conditions.items():
+                if (
+                    names.count(boundary_condition["Name"] or "Unnamed") > 1
+                    and len(self.file.get_inverse(self.file.by_id(ifc_definition_id))) < 2
+                ):
+                    continue
+                new = props.boundary_conditions.add()
+                new.ifc_definition_id = ifc_definition_id
+                new.name = boundary_condition["Name"] or "Unnamed"
+                new.number_of_inverse_references = len(self.file.get_inverse(self.file.by_id(ifc_definition_id)))
+
+        else:
+            for ifc_definition_id, boundary_condition in Data.boundary_conditions.items():
+                new = props.boundary_conditions.add()
+                new.ifc_definition_id = ifc_definition_id
+                new.name = boundary_condition["Name"] or "Unnamed"
+                new.number_of_inverse_references = len(self.file.get_inverse(self.file.by_id(ifc_definition_id)))
+        props.is_editing_boundary_conditions = True
+        bpy.ops.bim.disable_editing_boundary_condition()
+        return {"FINISHED"}
+
+
+class ToggleFilterBoundaryConditions(bpy.types.Operator):
+    bl_idname = "bim.toggle_filter_boundary_conditions"
+    bl_label = "Toggle Filter Boundary Conditions"
+
+    def execute(self, context):
+        props = context.scene.BIMStructuralProperties
+        props.filtered_boundary_conditions = not props.filtered_boundary_conditions
+        bpy.ops.bim.load_boundary_conditions()
+        return {"FINISHED"}
+
+
+class DisableBoundaryConditionEditingUI(bpy.types.Operator):
+    bl_idname = "bim.disable_boundary_condition_editing_ui"
+    bl_label = "Disable Boundary Condition Editing UI"
+
+    def execute(self, context):
+        context.scene.BIMStructuralProperties.is_editing_boundary_conditions = False
+        return {"FINISHED"}
+
+
+class AddBoundaryCondition(bpy.types.Operator):
+    bl_idname = "bim.add_boundary_condition"
+    bl_label = "Add Boundary Condition"
+    ifc_class: bpy.props.StringProperty()
+
+    def execute(self, context):
+        result = ifcopenshell.api.run(
+            "structural.add_structural_boundary_condition",
+            IfcStore.get_file(),
+            name="New Load",
+            ifc_class=self.ifc_class,
+        )
+        Data.load(IfcStore.get_file())
+        bpy.ops.bim.load_boundary_conditions()
+        bpy.ops.bim.enable_editing_boundary_condition(boundary_condition=result.id())
+        return {"FINISHED"}
+
+
+class EnableEditingBoundaryCondition(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_boundary_condition"
+    bl_label = "Enable Editing Boundary Condition"
+    boundary_condition: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMStructuralProperties
+        while len(props.boundary_condition_attributes) > 0:
+            props.boundary_condition_attributes.remove(0)
+
+        data = Data.boundary_conditions[self.boundary_condition]
+        # blenderbim.bim.helper.import_attributes(data["type"], props.boundary_condition_attributes, data)
+        for attribute in IfcStore.get_schema().declaration_by_name(data["type"]).all_attributes():
+            value = data[attribute.name()]
+            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            new = props.boundary_condition_attributes.add()
+            new.name = attribute.name()
+            new.is_null = value is None
+            new.is_optional = attribute.optional()
+            if data_type == "select":
+                enum_items = [s.name() for s in ifcopenshell.util.attribute.get_select_items(attribute)]
+                new.enum_items = json.dumps(enum_items)
+            if isinstance(value, bool):
+                new.bool_value = False if new.is_null else data[attribute.name()]
+                new.data_type = "bool"
+                new.enum_value = "IfcBoolean"
+            elif isinstance(value, float):
+                new.float_value = 0.0 if new.is_null else data[attribute.name()]
+                new.data_type = "float"
+                new.enum_value = [i for i in enum_items if i != "IfcBoolean"][0]
+            elif data_type == "string":
+                new.string_value = "" if new.is_null else data[attribute.name()]
+                new.data_type = "string"
+        props.active_boundary_condition_id = self.boundary_condition
+        return {"FINISHED"}
+
+
+class DisableEditingBoundaryCondition(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_boundary_condition"
+    bl_label = "Disable Editing Boundary Condition"
+
+    def execute(self, context):
+        context.scene.BIMStructuralProperties.active_boundary_condition_id = 0
+        return {"FINISHED"}
+
+
+class RemoveBoundaryCondition(bpy.types.Operator):
+    bl_idname = "bim.remove_boundary_condition"
+    bl_label = "Remove Boundary Condition"
+    boundary_condition: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMStructuralProperties
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "structural.remove_structural_boundary_condition",
+            self.file,
+            **{"boundary_condition": self.file.by_id(self.boundary_condition)},
+        )
+        Data.load(IfcStore.get_file())
+        bpy.ops.bim.load_boundary_conditions()
+        return {"FINISHED"}
+
+
+class EditBoundaryCondition(bpy.types.Operator):
+    bl_idname = "bim.edit_boundary_condition"
+    bl_label = "Edit Boundary Condition"
+
+    def execute(self, context):
+        props = context.scene.BIMStructuralProperties
+        self.file = IfcStore.get_file()
+        # attributes = blenderbim.bim.helper.export_attributes(props.boundary_condition_attributes)
+        attributes = {}
+        for attribute in props.boundary_condition_attributes:
+            if attribute.is_null:
+                attributes[attribute.name] = {"value": None, "type": "null"}
+            elif attribute.data_type == "string":
+                attributes[attribute.name] = {"value": attribute.string_value, "type": "string"}
+            elif attribute.enum_value == "IfcBoolean":
+                attributes[attribute.name] = {"value": attribute.bool_value, "type": attribute.enum_value}
+            else:
+                attributes[attribute.name] = {"value": attribute.float_value, "type": attribute.enum_value}
+        ifcopenshell.api.run(
+            "structural.edit_structural_boundary_condition",
+            self.file,
+            **{"condition": self.file.by_id(props.active_boundary_condition_id), "attributes": attributes},
+        )
+        Data.load(IfcStore.get_file())
+        bpy.ops.bim.load_boundary_conditions()
+        return {"FINISHED"}

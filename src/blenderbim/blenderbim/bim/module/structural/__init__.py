@@ -44,9 +44,18 @@ classes = (
     operator.RemoveStructuralLoad,
     operator.EditStructuralLoad,
     operator.ToggleFilterStructuralLoads,
+    operator.LoadBoundaryConditions,
+    operator.DisableBoundaryConditionEditingUI,
+    operator.AddBoundaryCondition,
+    operator.EnableEditingBoundaryCondition,
+    operator.DisableEditingBoundaryCondition,
+    operator.RemoveBoundaryCondition,
+    operator.EditBoundaryCondition,
+    operator.ToggleFilterBoundaryConditions,
     prop.StructuralAnalysisModel,
     prop.StructuralActivity,
     prop.StructuralLoad,
+    prop.BoundaryCondition,
     prop.BIMStructuralProperties,
     prop.BIMObjectStructuralProperties,
     ui.BIM_PT_structural_analysis_models,
@@ -59,6 +68,8 @@ classes = (
     ui.BIM_PT_structural_load_cases,
     ui.BIM_UL_structural_loads,
     ui.BIM_PT_structural_loads,
+    ui.BIM_UL_boundary_conditions,
+    ui.BIM_PT_boundary_conditions,
 )
 
 
