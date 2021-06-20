@@ -540,10 +540,7 @@ class AssignStructuralLoadCase(bpy.types.Operator):
         ifcopenshell.api.run(
             "aggregate.assign_object",
             self.file,
-            **{
-                "relating_object": self.file.by_id(self.work_plan),
-                "product": self.file.by_id(self.load_case),
-            },
+            **{"relating_object": self.file.by_id(self.work_plan), "product": self.file.by_id(self.load_case),},
         )
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
@@ -560,10 +557,7 @@ class UnassignStructuralLoadCase(bpy.types.Operator):
         ifcopenshell.api.run(
             "aggregate.unassign_object",
             self.file,
-            **{
-                "relating_object": self.file.by_id(self.work_plan),
-                "product": self.file.by_id(self.load_case),
-            },
+            **{"relating_object": self.file.by_id(self.work_plan), "product": self.file.by_id(self.load_case),},
         )
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
@@ -867,10 +861,7 @@ class EditStructuralLoad(bpy.types.Operator):
         ifcopenshell.api.run(
             "structural.edit_structural_load",
             self.file,
-            **{
-                "structural_load": self.file.by_id(props.active_structural_load_id),
-                "attributes": attributes,
-            },
+            **{"structural_load": self.file.by_id(props.active_structural_load_id), "attributes": attributes,},
         )
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_structural_loads()
