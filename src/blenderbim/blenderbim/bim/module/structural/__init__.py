@@ -43,6 +43,7 @@ classes = (
     operator.DisableEditingStructuralLoad,
     operator.RemoveStructuralLoad,
     operator.EditStructuralLoad,
+    operator.ToggleFilterStructuralLoads,
     prop.StructuralAnalysisModel,
     prop.StructuralActivity,
     prop.StructuralLoad,
