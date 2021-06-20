@@ -73,6 +73,15 @@ def getStructuralLoadTypes(self, context):
     return structuralloadtypes_enum
 
 
+def getBoundaryConditionTypes(self, context):
+    file = IfcStore.get_file()
+    if file:
+        declaration = IfcStore.get_schema().declaration_by_name("IfcBoundaryCondition")
+        boundaryconditiontypes_enum = [(d.name(), d.name(), "") for d in declaration.subtypes()]
+        return boundaryconditiontypes_enum
+    return []
+
+
 def updateAxisAngle(self, context):
     if not self.axis_empty:
         return
@@ -115,6 +124,12 @@ class StructuralLoad(PropertyGroup):
     number_of_inverse_references: IntProperty(name="Number of Inverse References")
 
 
+class BoundaryCondition(PropertyGroup):
+    name: StringProperty(name="Name")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+    number_of_inverse_references: IntProperty(name="Number of Inverse References")
+
+
 class BIMStructuralProperties(PropertyGroup):
     structural_analysis_model_attributes: CollectionProperty(
         name="Structural Analysis Model Attributes", type=Attribute
@@ -147,6 +162,13 @@ class BIMStructuralProperties(PropertyGroup):
     structural_load_attributes: CollectionProperty(name="Structural Load Attributes", type=Attribute)
     filtered_structural_loads: BoolProperty(name="Filtered Structural Loads", default=False)
 
+    boundary_conditions: CollectionProperty(name="Boundary Conditions", type=BoundaryCondition)
+    active_boundary_condition_index: IntProperty(name="Active Boundary Condition Index")
+    active_boundary_condition_id: IntProperty(name="Active Boundary Condition Id")
+    is_editing_boundary_conditions: BoolProperty(name="Is Editing Boundary Conditions", default=False)
+    boundary_condition_types: EnumProperty(items=getBoundaryConditionTypes, name="Boundary Condition Types")
+    boundary_condition_attributes: CollectionProperty(name="Boundary Condition Attributes", type=Attribute)
+    filtered_boundary_conditions: BoolProperty(name="Filtered Boundary Conditions", default=False)
 
 
 class BIMObjectStructuralProperties(PropertyGroup):

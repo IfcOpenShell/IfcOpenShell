@@ -50,6 +50,7 @@ class Data:
         cls.load_structural_load_groups()
         cls.load_structural_activities()
         cls.load_structural_loads()
+        cls.load_boundary_conditions()
         cls.is_loaded = True
 
     @classmethod
@@ -143,7 +144,6 @@ class Data:
 
     @classmethod
     def load_structural_connection(cls, product_id):
-        cls.boundary_conditions = {}
         cls.connects_structural_members = {}
 
         connection = cls._file.by_id(product_id)
@@ -204,6 +204,12 @@ class Data:
     @classmethod
     def load_structural_load(cls, load):
         cls.structural_loads[load.id()] = load.get_info()
+
+    @classmethod
+    def load_boundary_conditions(cls):
+        cls.boundary_conditions = {}
+        for bc in cls._file.by_type("IfcBoundaryCondition"):
+            cls.load_boundary_condition(bc)
 
     @classmethod
     def load_connects_structural_activity(cls, rel):
