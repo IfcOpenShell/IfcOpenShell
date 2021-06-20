@@ -145,12 +145,11 @@ class BIMStructuralProperties(PropertyGroup):
     # load_group_attributes: CollectionProperty(name="Load Group Attributes", type=Attribute)
     active_load_group_id: IntProperty(name="Active Load Group Id")
     applicable_structural_load_types: EnumProperty(
-        items=getApplicableStructuralLoadTypes, name="Applicable Structural Load Types",
-        update=updateApplicableStructuralLoadTypes
+        items=getApplicableStructuralLoadTypes,
+        name="Applicable Structural Load Types",
+        update=updateApplicableStructuralLoadTypes,
     )
-    applicable_structural_loads: EnumProperty(
-        items=getApplicableStructuralLoads, name="Applicable Structural Loads"
-    )
+    applicable_structural_loads: EnumProperty(items=getApplicableStructuralLoads, name="Applicable Structural Loads")
     load_group_activities: CollectionProperty(name="Load Group Activities", type=StructuralActivity)
     active_load_group_activity_index: IntProperty(name="Active Load Group Activity Index")
 
