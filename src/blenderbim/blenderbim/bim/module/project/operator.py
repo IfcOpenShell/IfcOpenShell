@@ -3,6 +3,7 @@ import logging
 import ifcopenshell
 import ifcopenshell.api
 import bpy
+import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim import import_ifc
 
@@ -143,7 +144,7 @@ class ChangeLibraryElement(bpy.types.Operator):
         [ifc_classes.add(e.is_a()) for e in elements]
         while len(self.props.library_elements) > 0:
             self.props.library_elements.remove(0)
-        if len(ifc_classes) == 1:
+        if len(ifc_classes) == 1 and list(ifc_classes)[0] == self.element_name:
             for element in elements:
                 new = self.props.library_elements.add()
                 new.name = element.Name or "Unnamed"
@@ -232,9 +233,11 @@ class AppendLibraryElement(bpy.types.Operator):
         element = ifcopenshell.api.run(
             "project.append_asset",
             IfcStore.get_file(),
+            library=IfcStore.library_file,
             element=IfcStore.library_file.by_id(self.definition),
         )
         self.import_type_from_ifc(element)
+        blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}
 
     def import_type_from_ifc(self, element):
@@ -255,3 +258,60 @@ class AppendLibraryElement(bpy.types.Operator):
         ifc_importer.type_collection = type_collection
         ifc_importer.create_type_product(element)
         ifc_importer.place_objects_in_spatial_tree()
+
+
+class EnableEditingHeader(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_header"
+    bl_label = "Enable Editing Header"
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        props = context.scene.BIMProjectProperties
+        props.is_editing = True
+
+        mvd = "".join(IfcStore.get_file().wrapped_data.header.file_description.description)
+        if "[" in mvd:
+            props.mvd = mvd.split("[")[1][0:-1]
+        else:
+            props.mvd = ""
+
+        author = self.file.wrapped_data.header.file_name.author
+        if author:
+            props.author_name = author[0]
+            if len(author) > 1:
+                props.author_email = author[1]
+
+        organisation = self.file.wrapped_data.header.file_name.organization
+        if organisation:
+            props.organisation_name = organisation[0]
+            if len(organisation) > 1:
+                props.organisation_email = organisation[1]
+
+        props.authorisation = self.file.wrapped_data.header.file_name.authorization
+        return {"FINISHED"}
+
+
+class EditHeader(bpy.types.Operator):
+    bl_idname = "bim.edit_header"
+    bl_label = "Edit Header"
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        props = context.scene.BIMProjectProperties
+        props.is_editing = True
+
+        self.file.wrapped_data.header.file_description.description = (f'ViewDefinition[{props.mvd}]',)
+        self.file.wrapped_data.header.file_name.author = (props.author_name, props.author_email)
+        self.file.wrapped_data.header.file_name.organization = (props.organisation_name, props.organisation_email)
+        self.file.wrapped_data.header.file_name.authorization = props.authorisation
+        bpy.ops.bim.disable_editing_header()
+        return {"FINISHED"}
+
+
+class DisableEditingHeader(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_header"
+    bl_label = "Disable Editing Header"
+
+    def execute(self, context):
+        context.scene.BIMProjectProperties.is_editing = False
+        return {"FINISHED"}

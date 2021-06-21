@@ -20,6 +20,8 @@
 #include "IfcGeom.h"
 #include "IfcGeomShapeType.h"
 
+#include <BRepCheck_Analyzer.hxx>
+
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
 using namespace IfcUtil;
@@ -91,6 +93,11 @@ bool IfcGeom::Kernel::convert_shape(const IfcBaseClass* l, TopoDS_Shape& r) {
 #ifndef NO_CACHE
 		cache.Shape[id] = r;
 #endif
+
+		if (Logger::LOG_DEBUG >= Logger::Verbosity()) {
+			BRepCheck_Analyzer ana(r);
+			Logger::Notice("Valid: " + std::to_string(ana.IsValid()), l);
+		}
 	} else if (!ignored) {
 		const char* const msg = processed
 			? "Failed to convert:"

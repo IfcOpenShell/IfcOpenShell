@@ -35,4 +35,18 @@ class Usecase:
                 )
             )
             self.settings["product"].RepresentationMaps = maps
+            if self.file.schema == "IFC2X3":
+                types = self.settings["product"].ObjectTypeOf
+            else:
+                types = self.settings["product"].Types
+            if types:
+                for element in types[0].RelatedObjects:
+                    mapped_representation = ifcopenshell.api.run(
+                        "geometry.map_representation", self.file, **{"representation": self.settings["representation"]}
+                    )
+                    ifcopenshell.api.run(
+                        "geometry.assign_representation",
+                        self.file,
+                        **{"product": element, "representation": mapped_representation}
+                    )
         ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": self.settings["product"]})

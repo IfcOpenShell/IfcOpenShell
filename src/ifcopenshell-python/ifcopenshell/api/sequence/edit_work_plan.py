@@ -1,3 +1,6 @@
+import ifcopenshell.util.date
+
+
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
@@ -7,4 +10,9 @@ class Usecase:
 
     def execute(self):
         for name, value in self.settings["attributes"].items():
+            if value:
+                if "Date" in name or "Time" in name:
+                    value = ifcopenshell.util.date.datetime2ifc(value, "IfcDateTime")
+                elif name == "Duration" or name == "TotalFloat":
+                    value = ifcopenshell.util.date.datetime2ifc(value, "IfcDuration")
             setattr(self.settings["work_plan"], name, value)

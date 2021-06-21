@@ -1,18 +1,33 @@
 import datetime
 from re import findall
 
+try:
+    import isodate
+except:
+    pass  # Duration parsing not supported
 
-def duration2dict(duration):
-    results = {}
-    for number, unit in findall("(?P<number>\d+)(?P<period>S|M|H|D|W|Y)", duration):
-        results[unit] = number
-    return results
+
+def timedelta2duration(timedelta):
+    components = {
+        "days": getattr(timedelta, "days", 0),
+        "hours": 0,
+        "minutes": 0,
+        "seconds": getattr(timedelta, "seconds", 0),
+    }
+    if components["seconds"]:
+        components["hours"], components["minutes"], components["seconds"] = [
+            int(i) for i in str(datetime.timedelta(seconds=components["seconds"])).split(":")
+        ]
+    return isodate.Duration(**components)
 
 
 def ifc2datetime(element):
-    if isinstance(element, str) and element[0] == "P":  # IfcDuration
-        return duration2dict(element)
-    elif isinstance(element, str) and element[2] == ":":  # IfcTime
+    if isinstance(element, str) and "P" in element[0:2]:  # IfcDuration
+        duration = isodate.parse_duration(element)
+        if isinstance(duration, datetime.timedelta):
+            return timedelta2duration(duration)
+        return duration
+    elif isinstance(element, str) and len(element) > 3 and element[2] == ":":  # IfcTime
         return datetime.time.fromisoformat(element)
     elif isinstance(element, str) and ":" in element:  # IfcDateTime
         return datetime.datetime.fromisoformat(element)
@@ -40,8 +55,13 @@ def ifc2datetime(element):
 
 def datetime2ifc(dt, ifc_type):
     if isinstance(dt, str):
+        if ifc_type == "IfcDuration":
+            return dt
         dt = datetime.datetime.fromisoformat(dt)
-    if ifc_type == "IfcTimeStamp":
+
+    if ifc_type == "IfcDuration":
+        return isodate.duration_isoformat(dt)
+    elif ifc_type == "IfcTimeStamp":
         return int(dt.timestamp())
     elif ifc_type == "IfcDateTime":
         if isinstance(dt, datetime.datetime):

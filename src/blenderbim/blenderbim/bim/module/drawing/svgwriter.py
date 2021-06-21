@@ -6,8 +6,8 @@ import pystache
 import xml.etree.ElementTree as ET
 import svgwrite
 import ifcopenshell
-from . import annotation
-from . import helper
+import blenderbim.bim.module.drawing.helper as helper
+import blenderbim.bim.module.drawing.annotation as annotation
 from mathutils import Vector
 from mathutils import geometry
 from blenderbim.bim.ifc import IfcStore
@@ -39,14 +39,17 @@ class External(svgwrite.container.Group):
 
 
 class SvgWriter:
-    def __init__(self, ifc_cutter):
-        self.ifc_cutter = ifc_cutter
+    def __init__(self):
+        self.output = "out.svg"
+        self.data_dir = None
+        self.vector_style = None
         self.human_scale = "NTS"
+        self.annotations = {}
+        self.background_image = None
         self.scale = 1 / 100  # 1:100
 
-    def write(self):
+    def write(self, layer):
         self.calculate_scale()
-        self.output = os.path.join(self.ifc_cutter.data_dir, "diagrams", self.ifc_cutter.diagram_name + ".svg")
         self.svg = svgwrite.Drawing(
             self.output,
             debug=False,
@@ -56,41 +59,43 @@ class SvgWriter:
             data_scale=self.human_scale,
         )
 
-        self.add_stylesheet()
-        self.add_markers()
-        self.add_symbols()
-        self.add_patterns()
-        self.draw_background_image()
-        self.draw_background_elements()
-        self.draw_cut_polygons()
-        self.draw_annotations()
+        if layer == "underlay":
+            self.draw_background_image()
+        elif layer == "annotation":
+            self.add_stylesheet()
+            self.add_markers()
+            self.add_symbols()
+            self.add_patterns()
+            # self.draw_background_elements()
+            # self.draw_cut_polygons()
+            self.draw_annotations()
         self.svg.save(pretty=True)
 
     def calculate_scale(self):
         self.scale *= 1000  # IFC is in meters, SVG is in mm
-        self.raw_width = self.ifc_cutter.section_box["x"]
-        self.raw_height = self.ifc_cutter.section_box["y"]
+        self.raw_width = self.camera_width
+        self.raw_height = self.camera_height
         self.width = self.raw_width * self.scale
         self.height = self.raw_height * self.scale
 
     def add_stylesheet(self):
-        with open("{}styles/{}.css".format(self.ifc_cutter.data_dir, self.ifc_cutter.vector_style), "r") as stylesheet:
+        with open(os.path.join(self.data_dir, "styles", f"{self.vector_style}.css"), "r") as stylesheet:
             self.svg.defs.add(self.svg.style(stylesheet.read()))
 
     def add_markers(self):
-        tree = ET.parse("{}templates/markers.svg".format(self.ifc_cutter.data_dir))
+        tree = ET.parse(os.path.join(self.data_dir, "templates", "markers.svg"))
         root = tree.getroot()
         for child in root.getchildren():
             self.svg.defs.add(External(child))
 
     def add_symbols(self):
-        tree = ET.parse("{}templates/symbols.svg".format(self.ifc_cutter.data_dir))
+        tree = ET.parse(os.path.join(self.data_dir, "templates", "symbols.svg"))
         root = tree.getroot()
         for child in root.getchildren():
             self.svg.defs.add(External(child))
 
     def add_patterns(self):
-        tree = ET.parse("{}templates/patterns.svg".format(self.ifc_cutter.data_dir))
+        tree = ET.parse(os.path.join(self.data_dir, "templates", "patterns.svg"))
         root = tree.getroot()
         for child in root.getchildren():
             self.svg.defs.add(External(child))
@@ -98,12 +103,13 @@ class SvgWriter:
     def draw_background_image(self):
         self.svg.add(
             self.svg.image(
-                os.path.join("..", "diagrams", os.path.basename(self.ifc_cutter.background_image)),
+                os.path.join("..", "diagrams", os.path.basename(self.background_image)),
                 **{"width": self.width, "height": self.height}
             )
         )
 
     def draw_background_elements(self):
+        return # TODO purge?
         for element in self.ifc_cutter.background_elements:
             if element["type"] == "polygon":
                 self.draw_polygon(element, "background")
@@ -116,16 +122,16 @@ class SvgWriter:
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
 
-        for obj in self.ifc_cutter.equal_objs:
+        for obj in self.annotations.get("equal_objs", []):
             self.draw_dimension_annotations(obj, text_override="EQ")
-        for obj in self.ifc_cutter.dimension_objs:
+        for obj in self.annotations.get("dimension_objs", []):
             self.draw_dimension_annotations(obj)
         self.draw_measureit_arch_dimension_annotations()
 
-        if self.ifc_cutter.break_obj:
-            self.draw_break_annotations(self.ifc_cutter.break_obj)
+        if self.annotations.get("break_obj"):
+            self.draw_break_annotations(self.annotations["break_obj"])
 
-        for grid_obj in self.ifc_cutter.grid_objs:
+        for grid_obj in self.annotations.get("grid_objs", []):
             matrix_world = grid_obj.matrix_world
             for edge in grid_obj.data.edges:
                 classes = ["annotation", "grid"]
@@ -174,21 +180,21 @@ class SvgWriter:
 
         self.draw_ifc_annotation()
 
-        for obj in self.ifc_cutter.misc_objs:
+        for obj in self.annotations.get("misc_objs", []):
             self.draw_misc_annotation(obj, ["IfcAnnotation"])
 
-        for obj_data in self.ifc_cutter.hidden_objs:
+        for obj_data in self.annotations.get("hidden_objs", []):
             self.draw_line_annotation(obj_data, ["hidden"])
 
-        for obj_data in self.ifc_cutter.solid_objs:
+        for obj_data in self.annotations.get("solid_objs", []):
             self.draw_line_annotation(obj_data, ["solid"])
 
-        if self.ifc_cutter.leader_obj:
-            self.draw_line_annotation(self.ifc_cutter.leader_obj, ["leader"])
+        if self.annotations.get("leader_obj"):
+            self.draw_line_annotation(self.annotations["leader_obj"], ["leader"])
 
-        if self.ifc_cutter.plan_level_obj:
-            matrix_world = self.ifc_cutter.plan_level_obj.matrix_world
-            for spline in self.ifc_cutter.plan_level_obj.data.splines:
+        if self.annotations.get("plan_level_obj"):
+            matrix_world = self.annotations["plan_level_obj"].matrix_world
+            for spline in self.annotations["plan_level_obj"].data.splines:
                 classes = ["annotation", "plan-level"]
                 points = self.get_spline_points(spline)
                 projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
@@ -208,7 +214,7 @@ class SvgWriter:
                     )
                 )
                 # TODO: allow metric to be configurable
-                rl = ((matrix_world @ points[0].co).xyz + self.ifc_cutter.plan_level_obj.location).z
+                rl = ((matrix_world @ points[0].co).xyz + self.annotations["plan_level_obj"].location).z
                 if bpy.context.scene.unit_settings.system == "IMPERIAL":
                     rl = helper.format_distance(rl)
                 else:
@@ -231,9 +237,9 @@ class SvgWriter:
                     )
                 )
 
-        if self.ifc_cutter.section_level_obj:
-            matrix_world = self.ifc_cutter.section_level_obj.matrix_world
-            for spline in self.ifc_cutter.section_level_obj.data.splines:
+        if self.annotations.get("section_level_obj"):
+            matrix_world = self.annotations["section_level_obj"].matrix_world
+            for spline in self.annotations["section_level_obj"].data.splines:
                 classes = ["annotation", "section-level"]
                 points = self.get_spline_points(spline)
                 projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
@@ -273,9 +279,9 @@ class SvgWriter:
                     )
                 )
 
-        if self.ifc_cutter.stair_obj:
-            matrix_world = self.ifc_cutter.stair_obj.matrix_world
-            for spline in self.ifc_cutter.stair_obj.data.splines:
+        if self.annotations.get("stair_obj"):
+            matrix_world = self.annotations["stair_obj"].matrix_world
+            for spline in self.annotations["stair_obj"].data.splines:
                 classes = ["annotation", "stair"]
                 points = self.get_spline_points(spline)
                 projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
@@ -308,7 +314,7 @@ class SvgWriter:
     def draw_ifc_annotation(self):
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
-        for annotation in self.ifc_cutter.annotation_objs:
+        for annotation in self.annotations.get("annotation_objs", []):
             for edge in annotation["edges"]:
                 v0_global = annotation["vertices"][edge[0]]
                 v1_global = annotation["vertices"][edge[1]]
@@ -357,7 +363,7 @@ class SvgWriter:
                 classes.append("material-{}".format(re.sub("[^0-9a-zA-Z]+", "", slot.material.name)))
         global_id = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId
         classes.append("globalid-{}".format(global_id))
-        for attribute in self.ifc_cutter.attributes:
+        for attribute in self.annotations.get("attributes", []):
             result = self.get_obj_value(obj, attribute)
             if result:
                 classes.append(
@@ -435,7 +441,7 @@ class SvgWriter:
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
 
-        for text_obj in self.ifc_cutter.text_objs:
+        for text_obj in self.annotations.get("text_objs", []):
             text_position = self.project_point_onto_camera(text_obj.location)
             text_position = Vector(((x_offset + text_position.x), (y_offset - text_position.y)))
 
@@ -473,8 +479,8 @@ class SvgWriter:
                 alignment_baseline = "baseline"
 
             text_body = text_obj.data.body
-            if text_obj.name in self.ifc_cutter.template_variables:
-                text_body = pystache.render(text_body, self.ifc_cutter.template_variables[text_obj.name])
+            if text_obj.name in self.annotations.get("template_variables", {}):
+                text_body = pystache.render(text_body, self.annotations["template_variables"][text_obj.name])
 
             for line_number, text_line in enumerate(text_body.split("\n")):
                 self.svg.add(
@@ -587,17 +593,18 @@ class SvgWriter:
         )
 
     def project_point_onto_camera(self, point):
-        return self.ifc_cutter.camera_obj.matrix_world.inverted() @ geometry.intersect_line_plane(
+        return self.camera.matrix_world.inverted() @ geometry.intersect_line_plane(
             point.xyz,
-            point.xyz - Vector(self.ifc_cutter.section_box["projection"]),
-            self.ifc_cutter.camera_obj.location,
-            Vector(self.ifc_cutter.section_box["projection"]),
+            point.xyz - Vector(self.camera_projection),
+            self.camera.location,
+            Vector(self.camera_projection),
         )
 
     def get_spline_points(self, spline):
         return spline.bezier_points if spline.bezier_points else spline.points
 
     def draw_cut_polygons(self):
+        return # deprecate?
         for polygon in self.ifc_cutter.cut_polygons:
             self.draw_polygon(polygon, "cut")
 

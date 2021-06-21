@@ -1,5 +1,5 @@
 import bcf
-import bcf.bcfxml
+import bcf.v2.bcfxml
 
 class BcfStore:
     bcfxml = None
@@ -7,5 +7,5 @@ class BcfStore:
     @staticmethod
     def get_bcfxml():
         if not BcfStore.bcfxml:
-            BcfStore.bcfxml = bcf.bcfxml.BcfXml()
+            BcfStore.bcfxml = bcf.v2.bcfxml.BcfXml()
         return BcfStore.bcfxml

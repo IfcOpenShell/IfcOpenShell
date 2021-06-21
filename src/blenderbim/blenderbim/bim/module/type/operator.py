@@ -4,8 +4,8 @@ import ifcopenshell.util.type
 import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.type.data import Data
-from blenderbim.bim.module.type.prop import getIfcTypes, getAvailableTypes, updateTypeInstanceIfcClass
-from mathutils import Vector
+from ifcopenshell.api.geometry.data import Data as GeometryData
+from ifcopenshell.api.material.data import Data as MaterialData
 
 
 class AssignType(bpy.types.Operator):
@@ -31,10 +31,22 @@ class AssignType(bpy.types.Operator):
                 },
             )
             Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
-            if self.file.by_id(relating_type).RepresentationMaps:
-                bpy.ops.bim.map_representations(product_id=oprops.ifc_definition_id, type_product_id=relating_type)
+            GeometryData.load(IfcStore.get_file(), oprops.ifc_definition_id)
+            MaterialData.load(IfcStore.get_file(), oprops.ifc_definition_id)
+            representation_ids = GeometryData.products[oprops.ifc_definition_id]
+            if not representation_ids:
+                pass # TODO: clear geometry? Make void? Make none type?
+            has_switched = False
+            for representation_id in representation_ids:
+                representation = GeometryData.representations[representation_id]
+                if representation["ContextOfItems"]["ContextIdentifier"] == "Body":
+                    bpy.ops.bim.switch_representation(obj=related_object.name, ifc_definition_id=representation_id)
+                    has_switched = True
+            if not has_switched and representation_ids:
+                bpy.ops.bim.switch_representation(obj=related_object.name, ifc_definition_id=representation_id)
 
         bpy.ops.bim.disable_editing_type(obj=related_object.name)
+        MaterialData.load(self.file)
         return {"FINISHED"}
 
 
@@ -104,47 +116,3 @@ class SelectSimilarType(bpy.types.Operator):
             if obj.BIMObjectProperties.ifc_definition_id in related_objects:
                 obj.select_set(True)
         return {"FINISHED"}
-
-
-class AddTypeInstance(bpy.types.Operator):
-    bl_idname = "bim.add_type_instance"
-    bl_label = "Add Type Instance"
-    ifc_class: bpy.props.EnumProperty(items=getIfcTypes, name="IFC Class", update=updateTypeInstanceIfcClass)
-    relating_type: bpy.props.EnumProperty(items=getAvailableTypes, name="Relating Type")
-
-    def execute(self, context):
-        if not self.ifc_class or not self.relating_type:
-            return {"FINISHED"}
-        # A cube
-        verts = [
-            Vector((-1, -1, -1)),
-            Vector((-1, -1, 1)),
-            Vector((-1, 1, -1)),
-            Vector((-1, 1, 1)),
-            Vector((1, -1, -1)),
-            Vector((1, -1, 1)),
-            Vector((1, 1, -1)),
-            Vector((1, 1, 1)),
-        ]
-        edges = []
-        faces = [
-            [0, 2, 3, 1],
-            [2, 3, 7, 6],
-            [4, 5, 7, 6],
-            [0, 1, 5, 4],
-            [1, 3, 7, 5],
-        ]
-        mesh = bpy.data.meshes.new(name="Instance")
-        mesh.from_pydata(verts, edges, faces)
-        obj = bpy.data.objects.new("Instance", mesh)
-        obj.location = context.scene.cursor.location
-        context.view_layer.active_layer_collection.collection.objects.link(obj)
-        self.file = IfcStore.get_file()
-        instance_class = ifcopenshell.util.type.get_applicable_entities(self.ifc_class, self.file.schema)[0]
-        bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
-        bpy.ops.bim.assign_type(relating_type=int(self.relating_type), related_object=obj.name)
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self)

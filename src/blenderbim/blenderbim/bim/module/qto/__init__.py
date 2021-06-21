@@ -5,6 +5,8 @@ classes = (
     operator.CalculateEdgeLengths,
     operator.CalculateFaceAreas,
     operator.CalculateObjectVolumes,
+    operator.ExecuteQtoMethod,
+    operator.QuantifyObjects,
     prop.BIMQtoProperties,
     ui.BIM_PT_qto_utilities,
 )

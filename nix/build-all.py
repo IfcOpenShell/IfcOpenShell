@@ -310,7 +310,7 @@ def run(cmds, cwd=None):
 BOOST_VERSION_UNDERSCORE=BOOST_VERSION.replace(".", "_")
 
 OCE_LOCATION="https://github.com/tpaviot/oce/archive/OCE-%s.tar.gz" % (OCE_VERSION,)
-BOOST_LOCATION="https://dl.bintray.com/boostorg/release/%s/source/" % (BOOST_VERSION,)
+BOOST_LOCATION="https://boostorg.jfrog.io/artifactory/main/release/%s/source/" % (BOOST_VERSION,)
 
 # Helper functions
 

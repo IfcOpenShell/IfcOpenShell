@@ -1,6 +1,10 @@
+import isodate
+import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.sequence.data import Data
+import blenderbim.bim.module.sequence.helper as helper
+from datetime import datetime
 
 
 class BIM_PT_work_plans(Panel):
@@ -43,9 +47,9 @@ class BIM_PT_work_plans(Panel):
             row.operator("bim.remove_work_plan", text="", icon="X").work_plan = work_plan_id
 
         if self.props.active_work_plan_id == work_plan_id:
-            if self.props.is_editing == "ATTRIBUTES":
+            if self.props.editing_type == "ATTRIBUTES":
                 self.draw_editable_ui()
-            elif self.props.is_editing == "SCHEDULES":
+            elif self.props.editing_type == "SCHEDULES":
                 self.draw_work_schedule_ui()
 
     def draw_editable_ui(self):
@@ -104,11 +108,14 @@ class BIM_PT_work_schedules(Panel):
         row.label(text=work_schedule["Name"] or "Unnamed", icon="LINENUMBERS_ON")
 
         if self.props.active_work_schedule_id and self.props.active_work_schedule_id == work_schedule_id:
-            if self.props.is_editing == "WORK_SCHEDULE":
+            if self.props.editing_type == "WORK_SCHEDULE":
                 row.operator("bim.edit_work_schedule", text="", icon="CHECKMARK")
-            elif self.props.is_editing == "TASKS":
+            elif self.props.editing_type == "TASKS":
                 row.prop(self.props, "should_show_times", text="", icon="TIME")
+                row.prop(self.props, "should_show_calendars", text="", icon="VIEW_ORTHO")
+                row.prop(self.props, "should_show_visualisation_ui", text="", icon="CAMERA_STEREO")
                 row.operator("bim.generate_gantt_chart", text="", icon="NLA").work_schedule = work_schedule_id
+                row.operator("bim.recalculate_schedule", text="", icon="FILE_REFRESH").work_schedule = work_schedule_id
                 row.operator("bim.add_summary_task", text="", icon="ADD").work_schedule = work_schedule_id
             row.operator("bim.disable_editing_work_schedule", text="", icon="CANCEL")
         elif self.props.active_work_schedule_id:
@@ -121,10 +128,36 @@ class BIM_PT_work_schedules(Panel):
             row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = work_schedule_id
 
         if self.props.active_work_schedule_id == work_schedule_id:
-            if self.props.is_editing == "WORK_SCHEDULE":
+            if self.props.should_show_visualisation_ui:
+                self.draw_visualisation_ui()
+            if self.props.editing_type == "WORK_SCHEDULE":
                 self.draw_editable_work_schedule_ui()
-            elif self.props.is_editing == "TASKS":
+            elif self.props.editing_type == "TASKS":
                 self.draw_editable_task_ui(work_schedule_id)
+
+    def draw_visualisation_ui(self):
+        row = self.layout.row(align=True)
+        target_prop = "BIMWorkScheduleProperties.visualisation_start"
+        op = row.operator("bim.datepicker", text=helper.get_scene_prop(target_prop), icon="REW")
+        op.target_prop = target_prop
+        target_prop = "BIMWorkScheduleProperties.visualisation_finish"
+        op = row.operator("bim.datepicker", text=helper.get_scene_prop(target_prop), icon="FF")
+        op.target_prop = target_prop
+        op = row.operator("bim.visualise_work_schedule_date", text="", icon="RESTRICT_RENDER_OFF")
+        op.work_schedule = self.props.active_work_schedule_id
+        op = row.operator("bim.visualise_work_schedule_date_range", text="", icon="OUTLINER_OB_CAMERA")
+        op.work_schedule = self.props.active_work_schedule_id
+
+        row = self.layout.row(align=True)
+        row.prop(self.props, "speed_types", text="")
+        if self.props.speed_types == "FRAME_SPEED":
+            row.prop(self.props, "speed_animation_frames", text="")
+            row.prop(self.props, "speed_real_duration", text="")
+        elif self.props.speed_types == "DURATION_SPEED":
+            row.prop(self.props, "speed_animation_duration", text="")
+            row.prop(self.props, "speed_real_duration", text="")
+        elif self.props.speed_types == "MULTIPLIER_SPEED":
+            row.prop(self.props, "speed_multiplier", text="")
 
     def draw_editable_work_schedule_ui(self):
         for attribute in self.props.work_schedule_attributes:
@@ -145,40 +178,86 @@ class BIM_PT_work_schedules(Panel):
             self.props,
             "active_task_index",
         )
-        if self.props.active_task_id:
+        if self.props.active_task_id and self.props.editing_task_type == "ATTRIBUTES":
             self.draw_editable_task_attributes_ui()
-        if self.props.active_task_time_id:
+        elif self.props.active_task_id and self.props.editing_task_type == "CALENDAR":
+            self.draw_editable_task_calendar_ui()
+        elif self.props.active_task_id and self.props.editing_task_type == "SEQUENCE":
+            self.draw_editable_task_sequence_ui()
+        elif self.props.active_task_time_id and self.props.editing_task_type == "TASKTIME":
             self.draw_editable_task_time_attributes_ui()
 
-    def draw_editable_task_attributes_ui(self):
-        for attribute in self.props.task_attributes:
+    def draw_editable_task_sequence_ui(self):
+        task = Data.tasks[self.props.active_task_id]
+        row = self.layout.row()
+        row.label(text="{} Predecessors".format(len(task["IsSuccessorFrom"])), icon="BACK")
+        for sequence_id in task["IsSuccessorFrom"]:
+            self.draw_editable_sequence_ui(Data.sequences[sequence_id], "RelatingProcess")
+
+        row = self.layout.row()
+        row.label(text="{} Successors".format(len(task["IsPredecessorTo"])), icon="FORWARD")
+        for sequence_id in task["IsPredecessorTo"]:
+            self.draw_editable_sequence_ui(Data.sequences[sequence_id], "RelatedProcess")
+
+    def draw_editable_sequence_ui(self, sequence, process_type):
+        task = Data.tasks[sequence[process_type]]
+        row = self.layout.row(align=True)
+        row.label(text=task["Identification"] or "XXX")
+        row.label(text=task["Name"] or "Unnamed")
+        row.label(text=sequence["SequenceType"] or "N/A")
+        if sequence["TimeLag"]:
+            row.operator("bim.unassign_lag_time", text="", icon="X").sequence = sequence["id"]
+            row.label(text=isodate.duration_isoformat(Data.lag_times[sequence["TimeLag"]]["LagValue"]))
+        else:
+            row.operator("bim.assign_lag_time", text="", icon="ADD").sequence = sequence["id"]
+            row.label(text="N/A")
+        if self.props.active_sequence_id == sequence["id"]:
+            if self.props.editing_sequence_type == "ATTRIBUTES":
+                row.operator("bim.edit_sequence_attributes", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_sequence", text="", icon="X")
+                self.draw_editable_sequence_attributes_ui()
+            elif self.props.editing_sequence_type == "TIME_LAG":
+                op = row.operator("bim.edit_sequence_time_lag", text="", icon="CHECKMARK")
+                op.lag_time = sequence["TimeLag"]
+                row.operator("bim.disable_editing_sequence", text="", icon="X")
+                self.draw_editable_sequence_time_lag_ui()
+        else:
+            if sequence["TimeLag"]:
+                op = row.operator("bim.enable_editing_sequence_time_lag", text="", icon="CON_LOCKTRACK")
+                op.sequence = sequence["id"]
+                op.lag_time = sequence["TimeLag"]
+            op = row.operator("bim.enable_editing_sequence_attributes", text="", icon="GREASEPENCIL")
+            op.sequence = sequence["id"]
+
+    def draw_editable_sequence_attributes_ui(self):
+        blenderbim.bim.helper.draw_attributes(self.props.sequence_attributes, self.layout)
+
+    def draw_editable_sequence_time_lag_ui(self):
+        blenderbim.bim.helper.draw_attributes(self.props.time_lag_attributes, self.layout)
+
+    def draw_editable_task_calendar_ui(self):
+        task = Data.tasks[self.props.active_task_id]
+        if task["HasAssignmentsWorkCalendar"]:
             row = self.layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "boolean":
-                row.prop(attribute, "bool_value", text=attribute.name)
-            elif attribute.data_type == "integer":
-                row.prop(attribute, "int_value", text=attribute.name)
-            elif attribute.data_type == "enum":
-                row.prop(attribute, "enum_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+            calendar = Data.work_calendars[task["HasAssignmentsWorkCalendar"][0]]
+            row.label(text=calendar["Name"] or "Unnamed")
+            op = row.operator("bim.remove_task_calendar", text="", icon="X")
+            op.work_calendar = task["HasAssignmentsWorkCalendar"][0]
+            op.task = self.props.active_task_id
+        else:
+            row = self.layout.row(align=True)
+            row.prop(self.props, "work_calendars", text="")
+            op = row.operator("bim.edit_task_calendar", text="", icon="ADD")
+            op.work_calendar = int(self.props.work_calendars)
+            op.task = self.props.active_task_id
+
+    def draw_editable_task_attributes_ui(self):
+        blenderbim.bim.helper.draw_attributes(
+            self.props.task_attributes, self.layout, copy_operator="bim.copy_task_attribute"
+        )
 
     def draw_editable_task_time_attributes_ui(self):
-        for attribute in self.props.task_time_attributes:
-            row = self.layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "boolean":
-                row.prop(attribute, "bool_value", text=attribute.name)
-            elif attribute.data_type == "integer":
-                row.prop(attribute, "int_value", text=attribute.name)
-            elif attribute.data_type == "float":
-                row.prop(attribute, "float_value", text=attribute.name)
-            elif attribute.data_type == "enum":
-                row.prop(attribute, "enum_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+        blenderbim.bim.helper.draw_attributes(self.props.task_time_attributes, self.layout)
 
 
 class BIM_UL_tasks(UIList):
@@ -203,13 +282,38 @@ class BIM_UL_tasks(UIList):
             row.prop(item, "name", emboss=False, text="")
 
             if props.should_show_times:
-                row.prop(item, "start", emboss=False, text="")
-                row.prop(item, "finish", emboss=False, text="")
-                row.prop(item, "duration", emboss=False, text="")
+                if item.derived_start:
+                    row.label(text=item.derived_start + "*")
+                else:
+                    row.prop(item, "start", emboss=False, text="")
+
+                if item.derived_finish:
+                    row.label(text=item.derived_finish + "*")
+                else:
+                    row.prop(item, "finish", emboss=False, text="")
+
+                if item.derived_duration:
+                    row.label(text=item.derived_duration + "*")
+                else:
+                    row.prop(item, "duration", emboss=False, text="")
+
+            if props.should_show_calendars:
+                if item.derived_calendar:
+                    row.label(text=item.derived_calendar + "*")
+                else:
+                    row.label(text=item.calendar or "-")
 
             if context.active_object:
                 oprops = context.active_object.BIMObjectProperties
                 row = layout.row(align=True)
+
+                if oprops.ifc_definition_id in Data.tasks[item.ifc_definition_id]["OperatesOn"]:
+                    op = row.operator("bim.unassign_process", text="", icon="MARKER_HLT", emboss=False)
+                    op.task = item.ifc_definition_id
+                else:
+                    op = row.operator("bim.assign_process", text="", icon="MARKER", emboss=False)
+                    op.task = item.ifc_definition_id
+
                 if oprops.ifc_definition_id in Data.tasks[item.ifc_definition_id]["RelatingProducts"]:
                     op = row.operator("bim.unassign_product", text="", icon="KEYFRAME_HLT", emboss=False)
                     op.task = item.ifc_definition_id
@@ -217,35 +321,52 @@ class BIM_UL_tasks(UIList):
                     op = row.operator("bim.assign_product", text="", icon="KEYFRAME", emboss=False)
                     op.task = item.ifc_definition_id
 
+            if props.active_task_id and props.editing_task_type == "ATTRIBUTES":
+                row.prop(
+                    item,
+                    "is_selected",
+                    icon="CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT",
+                    text="",
+                    emboss=False,
+                )
+
             if props.active_task_id == item.ifc_definition_id:
-                if props.active_task_time_id:
+                if props.editing_task_type == "TASKTIME":
                     row.operator("bim.edit_task_time", text="", icon="CHECKMARK")
-                else:
+                elif props.editing_task_type == "ATTRIBUTES":
                     row.operator("bim.edit_task", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_task", text="", icon="CANCEL")
             elif props.active_task_id:
-                if item.is_predecessor:
-                    row.operator(
-                        "bim.unassign_predecessor", text="", icon="BACK", emboss=False
-                    ).task = item.ifc_definition_id
-                else:
-                    row.operator(
-                        "bim.assign_predecessor", text="", icon="TRACKING_BACKWARDS", emboss=False
-                    ).task = item.ifc_definition_id
+                if props.editing_task_type == "SEQUENCE":
+                    if item.is_predecessor:
+                        row.operator(
+                            "bim.unassign_predecessor", text="", icon="BACK", emboss=False
+                        ).task = item.ifc_definition_id
+                    else:
+                        row.operator(
+                            "bim.assign_predecessor", text="", icon="TRACKING_BACKWARDS", emboss=False
+                        ).task = item.ifc_definition_id
 
-                if item.is_successor:
-                    row.operator(
-                        "bim.unassign_successor", text="", icon="FORWARD", emboss=False
-                    ).task = item.ifc_definition_id
-                else:
-                    row.operator(
-                        "bim.assign_successor", text="", icon="TRACKING_FORWARDS", emboss=False
-                    ).task = item.ifc_definition_id
+                    if item.is_successor:
+                        row.operator(
+                            "bim.unassign_successor", text="", icon="FORWARD", emboss=False
+                        ).task = item.ifc_definition_id
+                    else:
+                        row.operator(
+                            "bim.assign_successor", text="", icon="TRACKING_FORWARDS", emboss=False
+                        ).task = item.ifc_definition_id
 
                 row.operator("bim.add_task", text="", icon="ADD").task = item.ifc_definition_id
                 row.operator("bim.remove_task", text="", icon="X").task = item.ifc_definition_id
             else:
+                row.operator("bim.enable_editing_task_sequence", text="", icon="TRACKING").task = item.ifc_definition_id
+                row.operator(
+                    "bim.select_task_related_products", icon="RESTRICT_SELECT_OFF", text=""
+                ).task = item.ifc_definition_id
                 row.operator("bim.enable_editing_task_time", text="", icon="TIME").task = item.ifc_definition_id
+                row.operator(
+                    "bim.enable_editing_task_calendar", text="", icon="VIEW_ORTHO"
+                ).task = item.ifc_definition_id
                 row.operator("bim.enable_editing_task", text="", icon="GREASEPENCIL").task = item.ifc_definition_id
                 row.operator("bim.add_task", text="", icon="ADD").task = item.ifc_definition_id
                 row.operator("bim.remove_task", text="", icon="X").task = item.ifc_definition_id
@@ -278,7 +399,8 @@ class BIM_PT_work_calendars(Panel):
         row = self.layout.row(align=True)
         row.label(text=work_calendar["Name"] or "Unnamed", icon="VIEW_ORTHO")
         if self.props.active_work_calendar_id == work_calendar_id:
-            row.operator("bim.edit_work_calendar", text="", icon="CHECKMARK")
+            if self.props.editing_type == "ATTRIBUTES":
+                row.operator("bim.edit_work_calendar", text="", icon="CHECKMARK")
             row.operator("bim.disable_editing_work_calendar", text="", icon="CANCEL")
         elif self.props.active_work_calendar_id:
             row.operator("bim.remove_work_calendar", text="", icon="X").work_calendar = work_calendar_id
@@ -290,9 +412,9 @@ class BIM_PT_work_calendars(Panel):
             row.operator("bim.remove_work_calendar", text="", icon="X").work_calendar = work_calendar_id
 
         if self.props.active_work_calendar_id == work_calendar_id:
-            if self.props.is_editing == "ATTRIBUTES":
+            if self.props.editing_type == "ATTRIBUTES":
                 self.draw_editable_ui()
-            elif self.props.is_editing == "WORKTIMES":
+            elif self.props.editing_type == "WORKTIMES":
                 self.draw_work_times_ui(work_calendar_id, work_calendar)
 
     def draw_work_times_ui(self, work_calendar_id, work_calendar):
@@ -312,9 +434,7 @@ class BIM_PT_work_calendars(Panel):
 
     def draw_work_time_ui(self, work_time, time_type):
         row = self.layout.row(align=True)
-        row.label(
-            text=work_time["Name"] or "Unnamed", icon="MESH_GRID" if time_type == "WorkingTimes" else "LIGHTPROBE_GRID"
-        )
+        row.label(text=work_time["Name"] or "Unnamed", icon="AUTO" if time_type == "WorkingTimes" else "HOME")
         if work_time["Start"] or work_time["Finish"]:
             row.label(text="{} - {}".format(work_time["Start"] or "*", work_time["Finish"] or "*"))
         if self.props.active_work_time_id == work_time["id"]:

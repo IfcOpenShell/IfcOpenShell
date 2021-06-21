@@ -1,5 +1,6 @@
 import bpy
 import bmesh
+import mathutils
 import ifcopenshell
 import ifcopenshell.util.unit
 from math import pi
@@ -197,19 +198,26 @@ class Helper:
         return {"profile": outer_loop, "inner_curves": inner_loops, "extrusion": extrusion}
 
     # An extrusion edge is an edge that shares a single vertex with a profile
-    # face and is not parallel to the face.
+    # face and is not on the plane of the face.
     def detect_extrusion_edge(self, bm, profile_face):
         bm.edges.ensure_lookup_table()
         extrusion = None
         face_verts_set = set(profile_face.verts)
         for edge in bm.edges:
-            edge_vector = edge.verts[1].co - edge.verts[0].co
             unshared_verts = set(edge.verts) - face_verts_set
-            angle_to_normal = edge_vector.angle(profile_face.normal)
-            if len(unshared_verts) == 1 and (angle_to_normal < 0.001 or angle_to_normal - pi < 0.001):
-                if unshared_verts.pop() == edge.verts[1]:
-                    return [edge.verts[0].index, edge.verts[1].index]
-                return [edge.verts[1].index, edge.verts[0].index]
+            if len(unshared_verts) == 1:
+                unshared_vert = unshared_verts.pop()
+                if (
+                    abs(
+                        mathutils.geometry.distance_point_to_plane(
+                            unshared_vert.co, profile_face.verts[0].co, profile_face.normal
+                        )
+                    )
+                    > 0.001
+                ):
+                    if unshared_vert == edge.verts[1]:
+                        return [edge.verts[0].index, edge.verts[1].index]
+                    return [edge.verts[1].index, edge.verts[0].index]
 
     def create_extruded_area_solid(self, mesh, extrusion_indices, profile_def):
         position = self.create_ifc_axis_2_placement_3d(

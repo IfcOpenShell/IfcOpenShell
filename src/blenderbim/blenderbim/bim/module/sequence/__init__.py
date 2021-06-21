@@ -16,13 +16,18 @@ classes = (
     operator.EnableEditingWorkSchedule,
     operator.EnableEditingTasks,
     operator.DisableEditingWorkSchedule,
-    operator.DisableTaskEditingUI,
+    operator.DisableEditingSequence,
+    operator.EditSequenceAttributes,
+    operator.EditSequenceTimeLag,
+    operator.EnableEditingSequenceAttributes,
+    operator.EnableEditingSequenceTimeLag,
     operator.AddWorkCalendar,
     operator.EditWorkCalendar,
     operator.EditWorkTime,
     operator.RemoveWorkCalendar,
     operator.RemoveWorkTime,
     operator.UnassignRecurrencePattern,
+    operator.UnassignLagTime,
     operator.RemoveTimePeriod,
     operator.EnableEditingWorkCalendar,
     operator.EnableEditingWorkTime,
@@ -30,6 +35,7 @@ classes = (
     operator.DisableEditingWorkCalendar,
     operator.DisableEditingWorkTime,
     operator.AddWorkTime,
+    operator.AssignLagTime,
     operator.AssignRecurrencePattern,
     operator.AddTimePeriod,
     operator.AddTask,
@@ -39,19 +45,34 @@ classes = (
     operator.RemoveTask,
     operator.EnableEditingTask,
     operator.DisableEditingTask,
+    operator.DisableEditingTaskTime,
     operator.EditTask,
+    operator.CopyTaskAttribute,
     operator.AssignPredecessor,
     operator.AssignSuccessor,
     operator.UnassignPredecessor,
     operator.UnassignSuccessor,
     operator.EnableEditingTaskTime,
-    operator.DisableEditingTaskTime,
+    operator.EnableEditingTaskCalendar,
+    operator.EnableEditingTaskSequence,
     operator.EditTaskTime,
+    operator.EditTaskCalendar,
+    operator.RemoveTaskCalendar,
     operator.AssignProduct,
     operator.UnassignProduct,
+    operator.AssignProcess,
+    operator.UnassignProcess,
     operator.GenerateGanttChart,
     operator.ImportP6,
+    operator.ImportMSP,
     operator.LoadTaskProperties,
+    operator.SelectTaskRelatedProducts,
+    operator.VisualiseWorkScheduleDate,
+    operator.VisualiseWorkScheduleDateRange,
+    operator.RecalculateSchedule,
+    operator.BlenderBIM_DatePicker,
+    operator.BlenderBIM_DatePickerSetDate,
+    operator.BlenderBIM_RedrawDatePicker,
     prop.WorkPlan,
     prop.BIMWorkPlanProperties,
     prop.Task,
@@ -60,6 +81,7 @@ classes = (
     prop.WorkCalendar,
     prop.RecurrenceComponent,
     prop.BIMWorkCalendarProperties,
+    prop.DatePickerProperties,
     ui.BIM_PT_work_plans,
     ui.BIM_PT_work_schedules,
     ui.BIM_PT_work_calendars,
@@ -69,6 +91,7 @@ classes = (
 
 def menu_func_import(self, context):
     self.layout.operator(operator.ImportP6.bl_idname, text="P6 (.xml)")
+    self.layout.operator(operator.ImportMSP.bl_idname, text="Microsoft Project (.xml)")
 
 
 def register():
@@ -76,6 +99,7 @@ def register():
     bpy.types.Scene.BIMWorkScheduleProperties = bpy.props.PointerProperty(type=prop.BIMWorkScheduleProperties)
     bpy.types.Scene.BIMTaskTreeProperties = bpy.props.PointerProperty(type=prop.BIMTaskTreeProperties)
     bpy.types.Scene.BIMWorkCalendarProperties = bpy.props.PointerProperty(type=prop.BIMWorkCalendarProperties)
+    bpy.types.Scene.DatePickerProperties = bpy.props.PointerProperty(type=prop.DatePickerProperties)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
 
 
@@ -84,4 +108,5 @@ def unregister():
     del bpy.types.Scene.BIMWorkScheduleProperties
     del bpy.types.Scene.BIMTaskTreeProperties
     del bpy.types.Scene.BIMWorkCalendarProperties
+    del bpy.types.Scene.DatePickerProperties
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)

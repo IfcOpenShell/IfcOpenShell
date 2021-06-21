@@ -1,6 +1,4 @@
 import ifcopenshell.util.date
-from datetime import datetime
-from datetime import timedelta
 
 class Usecase:
     def __init__(self, file, **settings):

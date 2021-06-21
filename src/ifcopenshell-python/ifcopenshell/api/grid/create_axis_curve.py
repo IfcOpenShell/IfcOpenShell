@@ -8,22 +8,24 @@ class Usecase:
     def __init__(self, file, **settings):
         self.file = file
         self.settings = {
-            "AxisCurve": None,  # A Blender object
+            "axis_curve": None,  # A Blender object
             "grid_axis": None,
         }
         for key, value in settings.items():
             self.settings[key] = value
 
     def execute(self):
-        if self.settings["grid_axis"].AxisCurve:
-            ifcopenshell.util.element.remove_deep(self.file, self.settings["grid_axis"].AxisCurve)
+        existing_curve = self.settings["grid_axis"].AxisCurve
+        if existing_curve and len(self.file.get_inverse(existing_curve)) == 1:
+            ifcopenshell.util.element.remove_deep(self.file, existing_curve)
+            self.file.remove(existing_curve)
 
         self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         grid = [i for i in self.file.get_inverse(self.settings["grid_axis"]) if i.is_a("IfcGrid")][0]
         points = [
             Matrix(ifcopenshell.util.placement.get_local_placement(grid.ObjectPlacement)).inverted()
-            @ (self.settings["AxisCurve"].matrix_world @ v.co)
-            for v in self.settings["AxisCurve"].data.vertices[0:2]
+            @ (self.settings["axis_curve"].matrix_world @ v.co)
+            for v in self.settings["axis_curve"].data.vertices[0:2]
         ]
         self.settings["grid_axis"].AxisCurve = self.file.createIfcPolyline(
             [

@@ -1,6 +1,7 @@
 import ifcopenshell
-import warnings
+import ifcopenshell.api
 from geometry import GeometryIO
+from datetime import datetime
 
 JSON_TO_IFC = {
     "Building": ["IfcBuilding"],
@@ -9,23 +10,33 @@ JSON_TO_IFC = {
     "Road": ["IfcCivilElement"],
     "TransportSquare": ["IfcSpace"],
     "TINRelief": ["IfcGeographicElement"],
-    "WaterBody": ["IfcGeographicElement"],
+    "WaterBody": ["IfcGeographicElement"],  # Update for IFC4.3
     "LandUse": ["IfcGeographicElement"],
     "PlantCover": ["IfcGeographicElement"],
     "SolitaryVegetationObject": ["IfcGeographicElement"],
     "CityFurniture": ["IfcFurnishingElement"],
     "GenericCityObject": ["IfcCivilElement"],
-    "Bridge": ["IfcCivilElement"],
-    "BridgePart": ["IfcCivilElement"],
-    "BridgeInstallation": ["IfcCivilElement"],
-    "BridgeConstructionElement": ["IfcCivilElement"],
-    "Tunnel": ["IfcCivilElement"],
-    "TunnelPart": ["IfcCivilElement"],
-    "TunnelInstallation": ["IfcCivilElement"],
+    "Bridge": ["IfcCivilElement"],  # Update for IFC4.3
+    "BridgePart": ["IfcCivilElement"],  # Update for IFC4.3
+    "BridgeInstallation": ["IfcCivilElement"],  # Update for IFC4.3
+    "BridgeConstructionElement": ["IfcCivilElement"],  # Update for IFC4.3
+    "Tunnel": ["IfcCivilElement"],  # Update for IFC4.3
+    "TunnelPart": ["IfcCivilElement"],  # Update for IFC4.3
+    "TunnelInstallation": ["IfcCivilElement"],  # Update for IFC4.3
     "CityObjectGroup": ["IfcCivilElement"],
-    "GroundSurface": ["IfcSlab"],
+    "GroundSurface": ["IfcSlab", {"PredefinedType": "BASESLAB"}],
     "RoofSurface": ["IfcRoof"],
-    "WallSurface": ["IfcWall"]
+    "WallSurface": ["IfcWall"],
+    "ClosureSurface": ["IfcSpace"],
+    "OuterCeilingSurface": ["IfcCovering", {"PredefinedType": "CEILING"}],
+    "OuterFloorSurface": ["IfcSlab", {"PredefinedType": "FLOOR"}],
+    "Window": ["IfcWindow"],
+    "Door": ["IfcDoor"],
+    "WaterSurface": ["IfcGeographicElement"],  # Update for IFC4.3
+    "WaterGroundSurface": ["IfcGeographicElement"],  # Update for IFC4.3
+    "WaterClosureSurface": ["IfcGeographicElement"],  # Update for IFC4.3
+    "TrafficArea": ["IfcCivilElement"],  # Update for IFC4.3
+    "AuxiliaryTrafficArea": ["IfcCivilElement"]  # Update for IFC4.3
 }
 
 class Cityjson2ifc:
@@ -73,14 +84,36 @@ class Cityjson2ifc:
             crs = self.IFC_model.create_entity("IfcProjectedCrs", Name=f"epsg:{epsg}")
             self.IFC_model.create_entity("IfcMapConversion", self.IFC_representation_context, **self.properties["local_translation"])
 
-        self.properties["owner_history"] = self.IFC_model.by_type("IfcOwnerHistory")[0]
-
     def create_new_file(self):
-        self.IFC_model = ifcopenshell.open('example/template.ifc')
-        self.IFC_site = self.IFC_model.by_type('IfcSite')[0]
-        self.IFC_representation_sub_context = self.IFC_model.by_type("IFCGEOMETRICREPRESENTATIONSUBCONTEXT")[0]
-        self.IFC_representation_context = self.IFC_model.by_type("IFCGEOMETRICREPRESENTATIONCONTEXT")[0]
-        # self.IFC_model = ifcopenshell.file(schema='IFC4')
+        self.IFC_model = ifcopenshell.api.run("project.create_file")
+        self.IFC_project = ifcopenshell.api.run("root.create_entity", self.IFC_model, **{"ifc_class": "IfcProject"})
+        self.properties["owner_history"] = self.create_owner_history()
+        ifcopenshell.api.run("unit.assign_unit", self.IFC_model)
+        self.IFC_representation_context = ifcopenshell.api.run("context.add_context", self.IFC_model,
+                                                               **{"context": "Model"})
+        self.IFC_representation_sub_context = ifcopenshell.api.run("context.add_context", self.IFC_model,
+                                                                **{"context": "Model",
+                                                                   "subcontext": "Body", # LODs as subcontext
+                                                                   "target_view": "MODEL_VIEW"})
+
+        self.IFC_site = ifcopenshell.api.run("root.create_entity", self.IFC_model,
+                                                                **{"ifc_class": "IfcSite",
+                                                                   "name": "My Site"})
+
+    def create_owner_history(self):
+        actor = self.IFC_model.createIfcActorRole("ENGINEER", None, None)
+        person = self.IFC_model.createIfcPerson("Oostwegel", None, "L.J.N.", None, None, None, (actor,))
+        organization = self.IFC_model.createIfcOrganization(
+            None,
+            "IfcOpenShell",
+            "IfcOpenShell, an open source (LGPL) software library that helps users and software developers to work with the IFC file format.",
+        )
+        p_o = self.IFC_model.createIfcPersonAndOrganization(person, organization)
+        application = self.IFC_model.createIfcApplication(organization, "v0.0.x", "ifccityjson", "ifccityjson")
+        timestamp = int(datetime.now().timestamp())
+        ownerHistory = self.IFC_model.createIfcOwnerHistory(p_o, application, "READWRITE", None, None, None, None, timestamp)
+
+        return ownerHistory
 
     def write_file(self):
         self.IFC_model.write(self.properties["file_destination"])

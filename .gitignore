@@ -16,6 +16,10 @@ __pycache__
 # PyCharm files
 .idea
 
+#Virtual Env Files
+Pipfile
+Pipfile.lock
+
 # Docs
 /docs/output
 /docs/rst_files

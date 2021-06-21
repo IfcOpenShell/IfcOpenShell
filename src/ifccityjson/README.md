@@ -6,7 +6,7 @@ Converter for CityJSON files and IFC. Currently only supports one-way conversion
 IFCCityJSON only came into being 14/04/2021. Be prepared for lots of bugs, unfinished implementations and little to no documentation!
 
 ## Dependencies
-- [IfcOpenShell](https://github.com/IfcOpenShell/IfcOpenShell)
+- [IfcOpenShell](https://github.com/IfcOpenShell/IfcOpenShell) (also IfcOpenShell api is needed)
 - [CJIO](https://github.com/cityjson/cjio)
 
 ## Usage of IFCCityJSON
@@ -22,7 +22,7 @@ The example file that could be used is example/3D_BAG_example.json
 - [ ] "MultiPoint"
 - [ ] "MultiLineString"
 - [x] "MultiSurface"
-- [ ] "CompositeSurface"
+- [x] "CompositeSurface"
 - [x] "Solid": exterior shell
 - [ ] "Solid": interior shell
 - [x] "MultiSolid"
@@ -32,4 +32,7 @@ The example file that could be used is example/3D_BAG_example.json
 ## TODO
 - [x] CityJSON Attributes as IFC properties in 'CityJSON_attributes' pset
 - [x] Implement georeferencing
-- [ ] Do not use template IFC for new IFC file, but make IFC file from scratch
+- [x] Do not use template IFC for new IFC file, but make IFC file from scratch
+- [x] Create mapping to IFC for all CityJSON object types & semantic surfaces
+- [ ] Implement conversion of all geometries
+- [ ] Implement conversion of all LODs instead of online the most detailed

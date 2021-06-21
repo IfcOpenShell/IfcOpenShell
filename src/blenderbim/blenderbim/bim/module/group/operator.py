@@ -152,3 +152,20 @@ class UnassignGroup(bpy.types.Operator):
         )
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
+
+
+class SelectGroupProducts(bpy.types.Operator):
+    bl_idname = "bim.select_group_products"
+    bl_label = "Select Group Products"
+    group: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        for obj in bpy.context.visible_objects:
+            obj.select_set(False)
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            product_groups = Data.products.get(obj.BIMObjectProperties.ifc_definition_id, [])
+            if self.group in product_groups:
+                obj.select_set(True)
+        return {"FINISHED"}

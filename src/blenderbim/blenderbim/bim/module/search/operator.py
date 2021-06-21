@@ -111,11 +111,16 @@ class SelectPset(bpy.types.Operator):
                 continue
             element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
             psets = ifcopenshell.util.element.get_psets(element)
+            if search_pset_name == "":
+                props = {}
+                [props.update(p) for p in psets.values()]
+            else:
+                props = None
             if context.scene.BIMSearchProperties.should_ignorecase:
-                props = next((v for k, v in psets.items() if k.lower() == search_pset_name.lower()), {})
+                props = props or next((v for k, v in psets.items() if k.lower() == search_pset_name.lower()), {})
                 value = str(next((v for k, v in props.items() if k.lower() == search_prop_name.lower()), None))
             else:
-                props = psets.get(search_pset_name, {})
+                props = props or psets.get(search_pset_name, {})
                 value = props.get(search_prop_name, None)
             if does_keyword_exist(pattern, value):
                 obj.select_set(True)
@@ -163,11 +168,16 @@ class ColourByPset(bpy.types.Operator):
                 continue
             element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
             psets = ifcopenshell.util.element.get_psets(element)
+            if search_pset_name == "":
+                props = {}
+                [props.update(p) for p in psets.values()]
+            else:
+                props = None
             if context.scene.BIMSearchProperties.should_ignorecase:
-                props = next((v for k, v in psets.items() if k.lower() == search_pset_name.lower()), {})
+                props = props or next((v for k, v in psets.items() if k.lower() == search_pset_name.lower()), {})
                 value = str(next((v for k, v in props.items() if k.lower() == search_prop_name.lower()), None))
             else:
-                props = psets.get(search_pset_name, {})
+                props = props or psets.get(search_pset_name, {})
                 value = str(props.get(search_prop_name, None))
             if value not in values:
                 values[value] = next(colours)

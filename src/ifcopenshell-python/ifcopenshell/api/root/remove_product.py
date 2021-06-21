@@ -18,9 +18,20 @@ class Usecase:
         elif self.settings["product"].is_a("IfcTypeProduct"):
             representations = [rm.MappedRepresentation for rm in self.settings["product"].RepresentationMaps or []]
         for representation in representations:
-            ifcopenshell.api.run("geometry.unassign_representation",
-                self.file, **{"product": self.settings["product"], "representation": representation}
+            ifcopenshell.api.run(
+                "geometry.unassign_representation",
+                self.file,
+                **{"product": self.settings["product"], "representation": representation}
             )
             ifcopenshell.api.run("geometry.remove_representation", self.file, **{"representation": representation})
+        for opening in getattr(self.settings["product"], "HasOpenings", []) or []:
+            ifcopenshell.api.run("void.remove_opening", self.file, opening=opening.RelatedOpeningElement)
+
+        if self.settings["product"].is_a("IfcGrid"):
+            for axis in (
+                self.settings["product"].UAxes + self.settings["product"].VAxes + (self.settings["product"].WAxes or ())
+            ):
+                ifcopenshell.api.run("grid.remove_grid_axis", self.file, axis=axis)
+
         # TODO: remove object placement and other relationships
         self.file.remove(self.settings["product"])
