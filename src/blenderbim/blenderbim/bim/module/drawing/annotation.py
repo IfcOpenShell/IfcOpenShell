@@ -17,9 +17,9 @@ class Annotator:
 
     @staticmethod
     def add_text(related_element=None):
-        curve = bpy.data.curves.new(type="FONT", name="Plan/Annotation/PLAN_VIEW/Text")
+        curve = bpy.data.curves.new(type="FONT", name="Text")
         curve.body = "TEXT"
-        obj = bpy.data.objects.new("IfcAnnotation/Text", curve)
+        obj = bpy.data.objects.new("Text", curve)
         obj.matrix_world = bpy.context.scene.camera.matrix_world
         if related_element is None:
             location, _, _, _ = Annotator.get_placeholder_coords()
@@ -138,12 +138,12 @@ class Annotator:
             if name in obj.name:
                 return obj
         if data_type == "mesh":
-            data = bpy.data.meshes.new("Plan/Annotation/PLAN_VIEW/" + name)
+            data = bpy.data.meshes.new(name)
         elif data_type == "curve":
-            data = bpy.data.curves.new("Plan/Annotation/PLAN_VIEW/" + name, type="CURVE")
+            data = bpy.data.curves.new(name, type="CURVE")
             data.dimensions = "3D"
             data.resolution_u = 2
-        obj = bpy.data.objects.new("IfcAnnotation/" + name, data)
+        obj = bpy.data.objects.new(name, data)
         collection.objects.link(obj)
         return obj
 

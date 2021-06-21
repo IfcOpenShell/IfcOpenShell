@@ -19,3 +19,4 @@ class Usecase:
             if len(self.file.get_inverse(self.settings["parent"].Recurrence)) == 1:
                 self.file.remove(self.settings["parent"].Recurrence)
             self.settings["parent"].Recurrence = recurrence
+        return recurrence

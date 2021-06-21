@@ -50,7 +50,7 @@ protected:
 	}
 
 public:
-	virtual unsigned int getArgumentCount() const {
+	virtual size_t getArgumentCount() const {
 		return size_;
 	}
 

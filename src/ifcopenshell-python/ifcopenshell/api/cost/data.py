@@ -87,12 +87,31 @@ class Data:
         value_data["Components"] = [c.id() for c in value_data["Components"] or []]
         value_data["AppliedValue"] = cls.calculate_applied_value(cost_item, cost_value)
         cls.cost_values[cost_value.id()] = value_data
+        for component in cost_value.Components or []:
+            cls.load_cost_item_value(cost_item, component)
 
     @classmethod
     def calculate_applied_value(cls, cost_item, cost_value, category_filter=None):
-        result = 0
         if cost_value.ArithmeticOperator and cost_value.Components:
-            pass  # TODO
+            component_values = []
+            for component in cost_value.Components:
+                component_values.append(cls.calculate_applied_value(cost_item, component, category_filter))
+            if cost_value.ArithmeticOperator == "ADD":
+                return sum(component_values)
+            result = component_values.pop(0)
+            if cost_value.ArithmeticOperator == "DIVIDE":
+                for value in component_values:
+                    try:
+                        result /= value
+                    except ZeroDivisionError:
+                        pass
+            elif cost_value.ArithmeticOperator == "MULTIPLY":
+                for value in component_values:
+                    result *= value
+            elif cost_value.ArithmeticOperator == "SUBTRACT":
+                for value in component_values:
+                    result -= value
+            return result
         if cost_value.Category is None:
             return cls.get_primitive_applied_value(cost_value.AppliedValue)
         elif cost_value.Category == "*":
@@ -105,7 +124,7 @@ class Data:
                 return cls.sum_child_cost_items(cost_item, category_filter=cost_value.Category)
             else:
                 return cls.get_primitive_applied_value(cost_value.AppliedValue)
-        return result
+        return 0
 
     @classmethod
     def sum_child_cost_items(cls, cost_item, category_filter=None):

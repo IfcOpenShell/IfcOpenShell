@@ -18,11 +18,11 @@ import multiprocessing
 import zipfile
 import tempfile
 import numpy as np
+from blenderbim.bim.module.drawing.prop import getDiagramScales
 from pathlib import Path
 from itertools import cycle
 from datetime import datetime
 from blenderbim.bim.ifc import IfcStore
-from . import schema
 
 
 class FileCopy(threading.Thread):
@@ -346,6 +346,8 @@ class IfcImporter:
         self.profile_code("Create native products")
         self.create_products()
         self.profile_code("Create products")
+        self.create_empty_products()
+        self.profile_code("Create empty products")
         self.create_type_products()
         self.profile_code("Create type products")
         self.create_annotation()
@@ -442,9 +444,9 @@ class IfcImporter:
 
     def is_native_swept_disk_solid(self, representations):
         for representation in representations:
-            if len(representation["raw"].Items) > 1 or not representation["raw"].Items[0].is_a("IfcSweptDiskSolid"):
-                return False
-        return True
+            if len(representation["raw"].Items) == 1 and representation["raw"].Items[0].is_a("IfcSweptDiskSolid"):
+                return True
+        return False
 
     def is_native_faceted_brep(self, representations):
         for representation in representations:
@@ -702,14 +704,25 @@ class IfcImporter:
                 checkpoint = time.time()
             shape = iterator.get()
             if shape:
+                product = self.file.by_id(shape.guid)
                 if shape.context != "Body" and shape.guid in IfcStore.guid_map:
                     # We only load a single context, and we prioritise the Body context. See #1290.
                     pass
+                elif product.is_a("IfcAnnotation") and product.ObjectType == "DRAWING":
+                    # We have already processed this during the create_annotation step
+                    pass
                 else:
-                    self.create_product(self.file.by_id(shape.guid), shape)
+                    self.create_product(product, shape)
             if not iterator.next():
                 break
         print("Done creating geometry")
+
+    def create_empty_products(self):
+        for element in self.file.by_type("IfcProduct"):
+            if element.GlobalId in self.added_data:
+                continue
+            if not element.Representation:
+                self.create_product(element)
 
     def create_annotation(self):
         self.create_curve_products(self.file.by_type("IfcAnnotation"))
@@ -718,7 +731,7 @@ class IfcImporter:
         # Create structural collections
         self.structural_member_collection = bpy.data.collections.new("Members")
         self.structural_connection_collection = bpy.data.collections.new("Connections")
-        self.structural_collection = bpy.data.collections.new("StructuralEntities")
+        self.structural_collection = bpy.data.collections.new("StructuralItems")
         self.structural_collection.children.link(self.structural_member_collection)
         self.structural_collection.children.link(self.structural_connection_collection)
         self.project["blender"].children.link(self.structural_collection)
@@ -784,6 +797,8 @@ class IfcImporter:
 
         if mesh:
             pass
+        elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+            mesh = self.create_camera(element, shape)
         elif shape:
             mesh_name = self.get_mesh_name(shape.geometry)
             mesh = self.meshes.get(mesh_name)
@@ -1206,6 +1221,15 @@ class IfcImporter:
             self.structural_member_collection.objects.link(obj)
         elif element.is_a("IfcStructuralConnection"):
             self.structural_connection_collection.objects.link(obj)
+        elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+            view_collection = bpy.data.collections.get("Views")
+            if not view_collection:
+                view_collection = bpy.data.collections.new("Views")
+                bpy.context.scene.collection.children.link(view_collection)
+            group = [r for r in element.HasAssignments if r.is_a("IfcRelAssignsToGroup")][0].RelatingGroup
+            drawing_collection = bpy.data.collections.new("IfcGroup/" + group.Name)
+            view_collection.children.link(drawing_collection)
+            drawing_collection.objects.link(obj)
         else:
             self.ifc_import_settings.logger.warning("Warning: this object is outside the spatial hierarchy %s", element)
             bpy.context.scene.collection.objects.link(obj)
@@ -1293,6 +1317,48 @@ class IfcImporter:
         representation = self.file.by_id(representation_id)
         context_id = representation.ContextOfItems.id() if hasattr(representation, "ContextOfItems") else 0
         return "{}/{}".format(context_id, representation_id)
+
+    def create_camera(self, element, shape):
+        if hasattr(shape, "geometry"):
+            geometry = shape.geometry
+        else:
+            geometry = shape
+
+        v = geometry.verts
+        x = [v[i] for i in range(0, len(v), 3)]
+        y = [v[i + 1] for i in range(0, len(v), 3)]
+        z = [v[i + 2] for i in range(0, len(v), 3)]
+        width = max(x) - min(x)
+        height = max(y) - min(y)
+        depth = max(z) - min(z)
+
+        camera = bpy.data.cameras.new(self.get_mesh_name(geometry))
+        camera.type = "ORTHO"
+        camera.ortho_scale = width if width > height else height
+        camera.clip_end = depth
+
+        if width > height:
+            camera.BIMCameraProperties.raster_x = 1000
+            camera.BIMCameraProperties.raster_y = round(1000 * (height / width))
+        else:
+            camera.BIMCameraProperties.raster_x = round(1000 * (width / height))
+            camera.BIMCameraProperties.raster_y = 1000
+
+        psets = ifcopenshell.util.element.get_psets(element)
+        pset = psets.get("EPset_Drawing")
+        if pset:
+            if "TargetView" in pset:
+                camera.BIMCameraProperties.target_view = pset["TargetView"]
+            if "Scale" in pset:
+                valid_scales = [
+                    i[0] for i in getDiagramScales(None, None) if pset["Scale"] == i[0].split("|")[-1]
+                ]
+                if valid_scales:
+                    camera.BIMCameraProperties.diagram_scale = valid_scales[0]
+                else:
+                    camera.BIMCameraProperties.diagram_scale = "CUSTOM"
+                    camera.BIMCameraProperties.custom_diagram_scale = pset["Scale"]
+        return camera
 
     def create_mesh(self, element, shape):
         try:

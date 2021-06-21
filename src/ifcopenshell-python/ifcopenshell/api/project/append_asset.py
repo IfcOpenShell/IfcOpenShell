@@ -5,12 +5,22 @@ import ifcopenshell.api
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
-        self.settings = {"element": None}
+        self.settings = {"library": None, "element": None}
         for key, value in settings.items():
             self.settings[key] = value
 
     def execute(self):
-        element = self.file.add(self.settings["element"])
+        self.added_elements = set()
+        if self.settings["element"].is_a("IfcTypeProduct"):
+            return self.append_type_product()
+
+    def append_type_product(self):
+        self.whitelisted_inverse_attributes = {
+            "IfcObjectDefinition": ["HasAssociations"],
+            "IfcMaterialDefinition": ["HasExternalReferences", "HasProperties"],
+            "IfcRepresentationItem": ["StyledByItem"],
+        }
+        element = self.add_element(self.settings["element"])
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
         added_contexts = [e for e in self.file.traverse(element) if e.is_a("IfcGeometricRepresentationContext")]
         for added_context in added_contexts:
@@ -23,6 +33,24 @@ class Usecase:
             if added_context.is_a() == "IfcGeometricRepresentationContext":
                 ifcopenshell.util.element.remove_deep(self.file, added_context)
         return element
+
+    def add_element(self, element):
+        if element.id() == 0 or element.id() in self.added_elements:
+            return
+        new = self.file.add(element)
+        self.added_elements.add(element.id())
+        self.add_inverse(element)
+        for subelement in self.settings["library"].traverse(element):
+            self.add_inverse(subelement)
+        return new
+
+    def add_inverse(self, element):
+        inverse_attributes = []
+        [inverse_attributes.extend(v) for k, v in self.whitelisted_inverse_attributes.items() if element.is_a(k)]
+        inverse_attributes = set(inverse_attributes)
+        for attribute in inverse_attributes:
+            for inverse in getattr(element, attribute, []):
+                self.add_element(inverse)
 
     def get_equivalent_existing_context(self, added_context):
         for context in self.existing_contexts:

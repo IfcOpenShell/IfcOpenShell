@@ -280,7 +280,7 @@ ENDIF()
 # Use the found libTKernel as a template for all other OCC libraries
 # TODO Extract this into macro/function
 foreach(lib ${OPENCASCADE_LIBRARY_NAMES})
-    # Make sure we'll handle the Windows/MSVC debug postfix convetion too.
+    # Make sure we'll handle the Windows/MSVC debug postfix convention too.
     string(REPLACE TKerneld "${lib}" lib_path "${libTKernel}")
     string(REPLACE TKernel "${lib}" lib_path "${lib_path}")
 	list(APPEND OPENCASCADE_LIBRARIES "${lib_path}")
@@ -355,7 +355,7 @@ IF(COLLADA_SUPPORT AND BUILD_CONVERT)
 
 		# Use the found OpenCOLLADAFramework as a template for all other OpenCOLLADA libraries
 		foreach(lib ${OPENCOLLADA_LIBRARY_NAMES})
-            # Make sure we'll handle the Windows/MSVC debug postfix convetion too.
+            # Make sure we'll handle the Windows/MSVC debug postfix convention too.
             string(REPLACE OpenCOLLADAFrameworkd "${lib}" lib_path "${OpenCOLLADAFramework}")
             string(REPLACE OpenCOLLADAFramework "${lib}" lib_path "${lib_path}")
  			list(APPEND OPENCOLLADA_LIBRARIES "${lib_path}")
@@ -496,6 +496,10 @@ endfunction()
 
 set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_rc1" "4x3_rc2")
 
+foreach(s ${SCHEMA_VERSIONS})
+	add_definitions(-DHAS_SCHEMA_${s})
+endforeach()
+
 if(COMPILE_SCHEMA)
 	# @todo, this appears to be untested at the moment
 
@@ -573,8 +577,35 @@ if (BUILD_CONVERT)
 endif()
 
 # IfcParse
-file(GLOB IFCPARSE_H_FILES ../src/ifcparse/*.h)
-file(GLOB IFCPARSE_CPP_FILES ../src/ifcparse/*.cpp)
+file(GLOB IFCPARSE_H_FILES_ALL ../src/ifcparse/*.h)
+file(GLOB IFCPARSE_CPP_FILES_ALL ../src/ifcparse/*.cpp)
+
+foreach(s ${IFCPARSE_H_FILES_ALL})
+get_filename_component(p "${s}" NAME)
+if (NOT "${p}" MATCHES "[0-9]")
+list(APPEND IFCPARSE_H_FILES "${s}")
+endif()
+endforeach()
+
+foreach(s ${IFCPARSE_CPP_FILES_ALL})
+get_filename_component(p "${s}" NAME)
+if (NOT "${p}" MATCHES "[0-9]")
+list(APPEND IFCPARSE_CPP_FILES "${s}")
+endif()
+endforeach()
+
+foreach(s ${SCHEMA_VERSIONS})
+	list(APPEND IFCPARSE_H_FILES
+		../src/ifcparse/Ifc${s}.h
+		../src/ifcparse/Ifc${s}-definitions.h
+	)
+	list(APPEND IFCPARSE_CPP_FILES
+		../src/ifcparse/Ifc${s}.cpp
+		../src/ifcparse/Ifc${s}-schema.cpp
+	)
+endforeach()
+
+
 set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
 
 add_library(IfcParse ${IFCPARSE_FILES})

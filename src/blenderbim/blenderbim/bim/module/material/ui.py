@@ -1,3 +1,4 @@
+import blenderbim.bim.helper
 from bpy.types import Panel
 from ifcopenshell.api.material.data import Data
 from ifcopenshell.api.profile.data import Data as ProfileData
@@ -34,6 +35,8 @@ class BIM_PT_object_material(Panel):
     def poll(cls, context):
         props = context.active_object.BIMObjectProperties
         if not props.ifc_definition_id:
+            return False
+        if not IfcStore.get_element(props.ifc_definition_id):
             return False
         if not hasattr(IfcStore.get_file().by_id(props.ifc_definition_id), "HasAssociations"):
             return False
@@ -109,7 +112,9 @@ class BIM_PT_object_material(Panel):
         if self.props.is_editing:
             op = row.operator("bim.edit_assigned_material", icon="CHECKMARK", text="")
             op.material_set = self.material_set_id
-            row.operator("bim.disable_editing_assigned_material", icon="X", text="")
+            if "Usage" in self.product_data["type"]:
+                op.material_set_usage = self.product_data["id"]
+            row.operator("bim.disable_editing_assigned_material", icon="CANCEL", text="")
         else:
             row.operator("bim.enable_editing_assigned_material", icon="GREASEPENCIL", text="")
             row.operator("bim.unassign_material", icon="X", text="")
@@ -140,6 +145,8 @@ class BIM_PT_object_material(Panel):
         self.draw_read_only_set_ui()
 
     def draw_editable_set_ui(self):
+        blenderbim.bim.helper.draw_attributes(self.props.material_set_usage_attributes, self.layout)
+
         for attribute in self.props.material_set_attributes:
             row = self.layout.row(align=True)
             row.prop(attribute, "string_value", text=attribute.name)
@@ -168,7 +175,7 @@ class BIM_PT_object_material(Panel):
         row.prop(self.props, "material_set_item_material", icon="MATERIAL")
         op = row.operator("bim.edit_material_set_item", icon="CHECKMARK", text="")
         op.material_set_item = set_item_id
-        row.operator("bim.disable_editing_material_set_item", icon="X", text="")
+        row.operator("bim.disable_editing_material_set_item", icon="CANCEL", text="")
 
         for attribute in self.props.material_set_item_attributes:
             row = box.row(align=True)
@@ -197,7 +204,7 @@ class BIM_PT_object_material(Panel):
         else:
             # TODO: support non parametric profiles by showing a list of named profiles to select from, or an
             # eyedropper to pick profile geometry from the scene
-            row.operator("bim.disable_editing_material_set_item", icon="X", text="")
+            row.operator("bim.disable_editing_material_set_item", icon="CANCEL", text="")
 
     def draw_editable_profile_ui(self, layout, item):
         for attribute in self.props.material_set_item_profile_attributes:
@@ -224,7 +231,11 @@ class BIM_PT_object_material(Panel):
         else:
             item = self.set_data[set_item_id]
             row = self.layout.row(align=True)
-            row.label(text=item.get("Name", "Unnamed") or "Unnamed", icon="ALIGN_CENTER")
+            item_name = item.get("Name", "Unnamed") or "Unnamed"
+            thickness = item.get("LayerThickness")
+            if thickness:
+                item_name += f" ({thickness})"
+            row.label(text=item_name, icon="ALIGN_CENTER")
             row.label(text=Data.materials[item["Material"]]["Name"], icon="MATERIAL")
 
         if not is_first:
@@ -261,6 +272,39 @@ class BIM_PT_object_material(Panel):
             row.label(text="Description")
             row.label(text=str(self.material_set_data["Description"]))
 
+        if self.product_data["type"] == "IfcMaterialProfileSetUsage":
+            # TODO: complain to buildingSMART
+            cardinal_point_map = {
+                1: "bottom left",
+                2: "bottom centre",
+                3: "bottom right",
+                4: "mid-depth left",
+                5: "mid-depth centre",
+                6: "mid-depth right",
+                7: "top left",
+                8: "top centre",
+                9: "top right",
+                10: "geometric centroid",
+                11: "bottom in line with the geometric centroid",
+                12: "left in line with the geometric centroid",
+                13: "right in line with the geometric centroid",
+                14: "top in line with the geometric centroid",
+                15: "shear centre",
+                16: "bottom in line with the shear centre",
+                17: "left in line with the shear centre",
+                18: "right in line with the shear centre",
+                19: "top in line with the shear centre",
+            }
+            if self.material_set_usage["CardinalPoint"]:
+                row = self.layout.row(align=True)
+                row.label(text="CardinalPoint")
+                row.label(text=cardinal_point_map[self.material_set_usage["CardinalPoint"]])
+            if self.material_set_usage["ReferenceExtent"]:
+                row = self.layout.row(align=True)
+                row.label(text="ReferenceExtent")
+                row.label(text=str(self.material_set_usage["ReferenceExtent"]))
+
+        total_thickness = 0
         for item_id in self.set_items:
             if self.product_data["type"] == "IfcMaterialList":
                 row = self.layout.row(align=True)
@@ -269,5 +313,14 @@ class BIM_PT_object_material(Panel):
             else:
                 item = self.set_data[item_id]
                 row = self.layout.row(align=True)
-                row.label(text=item.get("Name", "Unnamed") or "Unnamed", icon="ALIGN_CENTER")
+                item_name = item.get("Name", "Unnamed") or "Unnamed"
+                thickness = item.get("LayerThickness")
+                if thickness:
+                    item_name += f" ({thickness})"
+                    total_thickness += thickness
+                row.label(text=item_name, icon="ALIGN_CENTER")
                 row.label(text=Data.materials[item["Material"]]["Name"], icon="MATERIAL")
+
+        if total_thickness:
+            row = self.layout.row(align=True)
+            row.label(text=f"Total Thickness: {total_thickness}")

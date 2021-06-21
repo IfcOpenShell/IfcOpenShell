@@ -740,6 +740,7 @@ const TopoDS_Shape& IfcGeom::Kernel::ensure_fit_for_subtraction(const TopoDS_Sha
 	return solid;
 }
 
+// @nb this function is only in use on older versions of occt.
 bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, 
 							   const IfcGeom::IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcGeom::IfcRepresentationShapeItems& cut_shapes) {
 
@@ -1057,43 +1058,78 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 
 	// Iterate over the shapes of the IfcProduct
 	for ( IfcGeom::IfcRepresentationShapeItems::const_iterator it3 = entity_shapes.begin(); it3 != entity_shapes.end(); ++ it3 ) {
-		TopoDS_Shape entity_shape_solid;
-		const TopoDS_Shape& entity_shape_unlocated = ensure_fit_for_subtraction(it3->Shape(),entity_shape_solid);
-		const gp_GTrsf& entity_shape_gtrsf = it3->Placement();
-		if (entity_shape_gtrsf.Form() == gp_Other) {
-			Logger::Message(Logger::LOG_WARNING, "Applying non uniform transformation to:", entity);
-		}
-		TopoDS_Shape entity_shape = apply_transformation(entity_shape_unlocated, entity_shape_gtrsf);
-
-		TopoDS_Shape result = entity_shape;
 		
-		auto it = opening_vector.begin();
-		auto jt = it;
+		bool is_manifold = Kernel::is_manifold(it3->Shape());
 
-		for (;; ++it) {
-			if (it == opening_vector.end() || jt->first / it->first > 10.) {
-
-				TopTools_ListOfShape opening_list;
-				for (auto kt = jt; kt < it; ++kt) {
-					opening_list.Append(kt->second);
-				}
-
-				TopoDS_Shape intermediate_result;
-				if (boolean_operation(result, opening_list, BOPAlgo_CUT, intermediate_result)) {
-					result = intermediate_result;
-				} else {
-					Logger::Message(Logger::LOG_ERROR, "Opening subtraction failed for " + boost::lexical_cast<std::string>(std::distance(jt, it)) + " openings", entity);
-				}
-
-				jt = it;
-			}
-
-			if (it == opening_vector.end()) {
-				break;
-			}
+		if (!is_manifold) {
+			Logger::Warning("Non-manifold first operand");
 		}
 
-		cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(it3->ItemId(), result, &it3->Style()));
+		for (int as_shell = 0; as_shell < 2; ++as_shell) {
+
+			TopoDS_Shape entity_shape_solid;
+			TopoDS_Shape entity_shape_unlocated;
+			if (as_shell) {
+				entity_shape_unlocated = it3->Shape();
+			} else {
+				entity_shape_unlocated = ensure_fit_for_subtraction(it3->Shape(), entity_shape_solid);
+			}
+			const gp_GTrsf& entity_shape_gtrsf = it3->Placement();
+			if (entity_shape_gtrsf.Form() == gp_Other) {
+				Logger::Message(Logger::LOG_WARNING, "Applying non uniform transformation to:", entity);
+			}
+			TopoDS_Shape entity_shape = apply_transformation(entity_shape_unlocated, entity_shape_gtrsf);
+
+			TopoDS_Shape result = entity_shape;
+
+			auto it = opening_vector.begin();
+			auto jt = it;
+
+			for (;; ++it) {
+				if (it == opening_vector.end() || jt->first / it->first > 10.) {
+
+					TopTools_ListOfShape opening_list;
+					for (auto kt = jt; kt < it; ++kt) {
+						opening_list.Append(kt->second);
+					}
+
+					TopoDS_Shape intermediate_result;
+					if (boolean_operation(result, opening_list, BOPAlgo_CUT, intermediate_result)) {
+						result = intermediate_result;
+					}
+					else {
+						Logger::Message(Logger::LOG_ERROR, "Opening subtraction failed for " + boost::lexical_cast<std::string>(std::distance(jt, it)) + " openings", entity);
+					}
+
+					jt = it;
+				}
+
+				if (it == opening_vector.end()) {
+					break;
+				}
+			}
+
+			int result_n_faces = count(result, TopAbs_FACE);
+
+			if (!is_manifold && as_shell == 0 && result_n_faces == 0) {
+				// If we have a non-manifold first operand and our first attempt
+				// on a Solid-Solid subtraction yielded a empty result (no faces)
+				// or a strange result, a larger number of faces with the original input
+				// included. Then retry (another iteration on the for-loop on as-shell)
+				// where we keep the first operand as is (a compound of faces probably,
+				// unless --orient-shells was activated in which case we're already lost).
+				if (!is_manifold) {
+					Logger::Warning("Retrying boolean operation on individual faces");
+				}
+				continue;
+			}
+
+			cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(it3->ItemId(), result, &it3->Style()));
+
+			// For manifold first operands we're not even going to try if processing
+			// as loose faces gives a better result.
+			break;
+		}
 	}
 	return true;
 }
@@ -4343,30 +4379,54 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 			}
 
 			if (success) {
-				
-				// when there are edges or vertex-edge distances close to the used fuzziness, the  
-				// output is not trusted and the operation is attempted with a higher fuzziness.
-				int reason = 0;
-				double v;
-				if ((v = min_edge_length(r)) < fuzziness * 3.) {
-					reason = 0;
+
+				TopTools_IndexedMapOfShape faces;
+				TopExp::MapShapes(r, TopAbs_FACE, faces);
+				bool all_faces_included_in_result = true;
+				for (TopExp_Explorer exp(a, TopAbs_FACE); exp.More(); exp.Next()) {
+					auto& f = TopoDS::Face(exp.Current());
+					if (!faces.Contains(f)) {
+						all_faces_included_in_result = false;
+						break;
+					}
+				}
+
+				int result_n_faces = count(r, TopAbs_FACE);
+				int first_op_n_faces = count(a, TopAbs_FACE);
+
+				if (all_faces_included_in_result && result_n_faces > first_op_n_faces) {
 					success = false;
-				} else if ((v = min_vertex_edge_distance(r, getValue(GV_PRECISION), fuzziness * 3.)) < fuzziness * 3.) {
-					reason = 1;
-					success = false;
-				} else if ((v = min_face_face_distance(r, 1.e-4)) < 1.e-4) {
-					reason = 2;
-					success = false;
+					Logger::Notice("Boolean result discarded because subtractions results in only the addition of faces");
+				} else {
+					// when there are edges or vertex-edge distances close to the used fuzziness, the  
+					// output is not trusted and the operation is attempted with a higher fuzziness.
+					int reason = 0;
+					double v;
+					if ((v = min_edge_length(r)) < fuzziness * 3.) {
+						reason = 0;
+						success = false;
+					}
+					else if ((v = min_vertex_edge_distance(r, getValue(GV_PRECISION), fuzziness * 3.)) < fuzziness * 3.) {
+						reason = 1;
+						success = false;
+					}
+					else if ((v = min_face_face_distance(r, 1.e-4)) < 1.e-4) {
+						reason = 2;
+						success = false;
+					}
+
+					if (!success) {
+						static const char* const reason_strings[] = { "edge length", "vertex-edge", "face-face" };
+						std::stringstream str;
+						str << "Boolean operation result failing " << reason_strings[reason] << " interference check, with fuzziness " << fuzziness << " with length " << v;
+						Logger::Notice(str.str());
+					}
 				}
 				
 				if (success) {
 					result = r;
-				} else {
-					static const char* const reason_strings[] = { "edge length", "vertex-edge", "face-face" };
-					std::stringstream str;
-					str << "Boolean operation result failing " << reason_strings[reason] << " interference check, with fuzziness " << fuzziness << " with length " << v;
-					Logger::Notice(str.str());
 				}
+
 			} else {
 				Logger::Notice("Boolean operation yields non-manifold result");
 			}
@@ -4426,11 +4486,33 @@ namespace {
 	}
 }
 
-IfcGeom::Kernel::faceset_helper::~faceset_helper() {
+template <typename CP, typename LP>
+IfcGeom::Kernel::faceset_helper<CP, LP>::~faceset_helper() {
+	// @todo this is super ugly, but how else can we be notified that the unique_ptr goes out of scope?
+	// Perhaps just supply a custom std::deleter?
 	kernel_->faceset_helper_ = nullptr;
 }
 
-IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema::IfcConnectedFaceSet* l)
+
+template <typename CP, typename LP>
+bool IfcGeom::Kernel::faceset_helper<CP, LP>::construct(const IfcSchema::IfcCartesianPoint* cp, gp_Pnt* l) {
+	return kernel_->convert(cp, *l);
+}
+
+template <typename CP, typename LP>
+bool IfcGeom::Kernel::faceset_helper<CP, LP>::construct(const std::vector<double>& cp, gp_Pnt* l) {
+	if (cp.size() != 3) {
+		return false;
+	}
+	auto LU = kernel_->getValue(GV_LENGTH_UNIT);
+	l->SetCoord(cp[0] * LU, cp[1] * LU, cp[2] * LU);
+	return true;
+}
+
+/*
+
+template <typename CP, typename LP>
+IfcGeom::Kernel::faceset_helper<CP, LP>::faceset_helper(Kernel* kernel, const IfcSchema::IfcConnectedFaceSet* l)
 	: kernel_(kernel) 
 	, non_manifold_(false)
 {
@@ -4519,7 +4601,7 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 				for (int v : vs) {
 					auto pt = *(points->begin() + v);
 					// NB: insert() ignores duplicate keys
-					vertex_mapping_.insert({ pt->data().id() , pnt_i });
+					vertex_mapping_.insert({ get_idx(pt), pnt_i });
 				}
 			}
 		}		
@@ -4576,3 +4658,165 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 		Logger::Warning(boost::lexical_cast<std::string>(duplicate_faces) + " duplicate faces removed, " + boost::lexical_cast<std::string>(loops_removed) + " loops removed and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges for:", l);
 	}
 }
+
+*/
+
+namespace {
+	const std::vector<std::vector<double>>* store_cache(const std::vector<std::vector<double>>& p) {
+		return &p;
+	}
+
+	const std::vector<std::vector<double>>* store_cache(const std::vector<const IfcSchema::IfcCartesianPoint*>& p) {
+		return nullptr;
+	}
+}
+
+template <typename CP, typename LP>
+IfcGeom::Kernel::faceset_helper<CP, LP>::faceset_helper(
+	Kernel* kernel,
+	const std::vector<CP>& points,
+	const std::vector<LP>& indices,
+	bool should_be_closed
+)
+	: kernel_(kernel)
+	, non_manifold_(false)
+	, points_(store_cache(points))
+{
+	std::vector<std::unique_ptr<gp_Pnt>> pnts(std::distance(points.begin(), points.end()));
+	std::vector<TopoDS_Vertex> vertices(pnts.size());
+
+	auto LU = kernel_->getValue(GV_LENGTH_UNIT);
+
+	IfcGeom::impl::tree<int> tree;
+
+	BRep_Builder B;
+
+	Bnd_Box box;
+	for (size_t i = 0; i < points.size(); ++i) {
+		gp_Pnt* p = new gp_Pnt;
+		if (construct(points[i], p)) {
+			pnts[i].reset(p);
+			B.MakeVertex(vertices[i], *p, Precision::Confusion());
+			tree.add(i, vertices[i]);
+			box.Add(*p);
+		} else {
+			delete p;
+		}
+	}
+
+	// Use the bbox diagonal to influence local epsilon
+	// double bdiff = std::sqrt(box.SquareExtent());
+
+	// @todo the bounding box diagonal is not used (see above)
+	// because we're explicitly interested in the miminal
+	// dimension of the element to limit the tolerance (for sheet-
+	// like elements for example). But the way below is very
+	// dependent on orientation due to the usage of the
+	// axis-aligned bounding box. Use PCA to find three non-aligned
+	// set of dimensions and use the one with the smallest eigenvalue.
+
+	// Find the minimal bounding box edge
+	double bmin[3], bmax[3];
+	box.Get(bmin[0], bmin[1], bmin[2], bmax[0], bmax[1], bmax[2]);
+	double bdiff = std::numeric_limits<double>::infinity();
+	for (size_t i = 0; i < 3; ++i) {
+		const double d = bmax[i] - bmin[i];
+		if (d > kernel->getValue(GV_PRECISION) * 10. && d < bdiff) {
+			bdiff = d;
+		}
+	}
+
+	eps_ = kernel->getValue(GV_PRECISION) * 10. * (std::min)(1.0, bdiff);
+
+	size_t loops_removed, non_manifold, duplicate_faces;
+
+	std::map<std::pair<int, int>, int> edge_use;
+
+	for (int i = 0; i < 3; ++i) {
+		// Some times files, have large tolerance values specified collapsing too many vertices.
+		// This case we detect below and re-run the loop with smaller epsilon. Normally
+		// the body of this loop would only be executed once.
+
+		loops_removed = 0;
+		non_manifold = 0;
+		duplicate_faces = 0;
+
+		vertex_mapping_.clear();
+		duplicates_.clear();
+
+		edge_use.clear();
+
+		if (eps_ < Precision::Confusion()) {
+			// occt uses some hard coded precision values, don't go smaller than that.
+			// @todo, can be reset though with BRepLib::Precision(double)
+			eps_ = Precision::Confusion();
+		}
+
+		for (int pnt_i = 0; pnt_i < (int)pnts.size(); ++pnt_i) {
+			if (pnts[pnt_i]) {
+				std::set<int> vs;
+				find_neighbours(tree, pnts, vs, pnt_i, eps_);
+
+				for (int v : vs) {
+					// NB: insert() ignores duplicate keys
+					// v-1?
+					vertex_mapping_.insert({ get_idx(points[v]), pnt_i });
+				}
+			}
+		}
+
+		typedef std::array<int, 2> edge_t;
+		typedef std::set<edge_t> edge_set_t;
+		std::set<edge_set_t> edge_sets;
+
+		for (auto ps = indices.begin(); ps != indices.end(); ++ps) {
+			std::vector<std::pair<int, int> > segments;
+			edge_set_t segment_set;
+
+			loop_(*ps, [&segments, &segment_set](int C, int D, bool) {
+				segment_set.insert(edge_t{ C,D });
+				segments.push_back(std::make_pair(C, D));
+			});
+
+			if (edge_sets.find(segment_set) != edge_sets.end()) {
+				duplicate_faces++;
+				duplicates_.insert(*ps);
+				continue;
+			}
+			edge_sets.insert(segment_set);
+
+			if (segments.size() >= 3) {
+				for (auto& p : segments) {
+					edge_use[p] ++;
+				}
+			}
+			else {
+				loops_removed += 1;
+			}
+		}
+
+		if (edge_use.size() != 0) {
+			break;
+		}
+		else {
+			eps_ /= 10.;
+		}
+	}
+
+	for (auto& p : edge_use) {
+		int a, b;
+		std::tie(a, b) = p.first;
+		edges_[p.first] = BRepBuilderAPI_MakeEdge(vertices[a], vertices[b]);
+
+		if (p.second != 2) {
+			non_manifold += 1;
+		}
+	}
+
+	if (loops_removed || (non_manifold && should_be_closed)) {
+		Logger::Warning(boost::lexical_cast<std::string>(duplicate_faces) + " duplicate faces removed, " + boost::lexical_cast<std::string>(loops_removed) + " loops removed and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges");
+	}
+}
+
+template class IfcGeom::Kernel::faceset_helper<const IfcSchema::IfcCartesianPoint*, const IfcSchema::IfcPolyLoop*>;
+template class IfcGeom::Kernel::faceset_helper<std::vector<double>, std::vector<int>>;

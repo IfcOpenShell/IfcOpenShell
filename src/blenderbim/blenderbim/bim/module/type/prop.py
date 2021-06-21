@@ -35,17 +35,7 @@ def getIfcTypes(self, context):
     global type_classes_enum
     file = IfcStore.get_file()
     if len(type_classes_enum) < 1 and file:
-        declaration = IfcStore.get_schema().declaration_by_name("IfcElementType")
-
-        def get_classes(declaration):
-            results = []
-            if not declaration.is_abstract():
-                results.append(declaration.name())
-            for subtype in declaration.subtypes():
-                results.extend(get_classes(subtype))
-            return results
-
-        classes = get_classes(declaration)
+        classes = set([e.is_a() for e in file.by_type("IfcElementType")])
         type_classes_enum.extend([(c, c, "") for c in sorted(classes)])
     return type_classes_enum
 
@@ -59,7 +49,9 @@ def getAvailableTypes(self, context):
 
 
 def updateTypeInstanceIfcClass(self, context):
+    global type_classes_enum
     global available_types_enum
+    type_classes_enum.clear()
     available_types_enum.clear()
 
 
@@ -88,6 +80,11 @@ def updateTypeDropdowns(self, context):
 
 
 class BIMTypeProperties(PropertyGroup):
+    ifc_class: bpy.props.EnumProperty(items=getIfcTypes, name="IFC Class", update=updateTypeInstanceIfcClass)
+    relating_type: bpy.props.EnumProperty(items=getAvailableTypes, name="Relating Type")
+
+
+class BIMTypeObjectProperties(PropertyGroup):
     is_editing_type: BoolProperty(name="Is Editing Type", update=updateTypeDropdowns)
     relating_type_class: EnumProperty(items=getApplicableTypes, name="Relating Type Class")
     relating_type: EnumProperty(items=getRelatingTypes, name="Relating Type")

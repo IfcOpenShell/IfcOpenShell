@@ -14,11 +14,8 @@ class Data:
         cls.products[product_id] = []
         product = file.by_id(product_id)
         representations = []
-        if product.is_a("IfcProduct"):
-            if product.Representation:
-                representations = product.Representation.Representations
-            else:
-                representations = []
+        if product.is_a("IfcProduct") and product.Representation:
+            representations = product.Representation.Representations
         elif product.is_a("IfcTypeProduct"):
             representations = [rm.MappedRepresentation for rm in product.RepresentationMaps or []]
         for representation in representations:

@@ -4,7 +4,7 @@ import ifcopenshell.api
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
-        self.settings = {"name": "Unnamed", "predefined_type": "NOTDEFINED", "working_times": [], "exception_times": []}
+        self.settings = {"name": "Unnamed", "predefined_type": "NOTDEFINED"}
         for key, value in settings.items():
             self.settings[key] = value
 

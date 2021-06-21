@@ -1,5 +1,6 @@
 import bpy
 import ifcopenshell.api
+import ifcopenshell.util.element
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.spatial.data import Data
 from blenderbim.bim.module.spatial.prop import getSpatialContainers
@@ -38,7 +39,7 @@ class AssignContainer(bpy.types.Operator):
 
             aggregate_collection = bpy.data.collections.get(related_element.name)
 
-            relating_structure_obj = IfcStore.id_map.get(relating_structure)
+            relating_structure_obj = IfcStore.get_element(relating_structure)
             relating_collection = None
             if relating_structure_obj:
                 relating_collection = bpy.data.collections.get(relating_structure_obj.name)
@@ -123,3 +124,34 @@ class RemoveContainer(bpy.types.Operator):
             parent.children.unlink(child)
         except:
             pass
+
+
+class CopyToContainer(bpy.types.Operator):
+    bl_idname = "bim.copy_to_container"
+    bl_label = "Copy To Container"
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        objects = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
+        sprops = context.scene.BIMSpatialProperties
+        container_ids = [c.ifc_definition_id for c in sprops.spatial_elements if c.is_selected]
+        for obj in objects:
+            container = ifcopenshell.util.element.get_container(self.file.by_id(obj.BIMObjectProperties.ifc_definition_id))
+            if container:
+                container_obj = IfcStore.get_element(container.id())
+                local_position = container_obj.matrix_world.inverted() @ obj.matrix_world
+            else:
+                local_position = obj.matrix_world
+
+            for container_id in container_ids:
+                container_obj = IfcStore.get_element(container_id)
+                if not container_obj:
+                    continue
+                new_obj = obj.copy()
+                new_obj.data = obj.data.copy()
+                new_obj.matrix_world = container_obj.matrix_world @ local_position
+                bpy.ops.bim.copy_class(obj=new_obj.name)
+                bpy.ops.bim.assign_container(relating_structure=container_id, related_element=new_obj.name)
+        obj.BIMObjectSpatialProperties.is_editing = False
+        return {"FINISHED"}

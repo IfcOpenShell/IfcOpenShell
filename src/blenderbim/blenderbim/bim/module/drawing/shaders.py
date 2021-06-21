@@ -1,10 +1,10 @@
-from mathutils import Matrix
 import bgl
+from mathutils import Matrix
 from gpu.types import GPUShader
 from gpu_extras.batch import batch_for_shader
 
 
-class BaseShader():
+class BaseShader:
     """Wrapepr for GPUShader
     To use for viewport decorations with geometry generated on GPU side.
 
@@ -85,14 +85,15 @@ class BaseShader():
 
     def __init__(self):
         # NB: libcode arg doesn't work
-        self.prog = GPUShader(vertexcode=self.VERT_GLSL,
-                              fragcode=self.FRAG_GLSL,
-                              geocode=self.LIB_GLSL + self.GEOM_GLSL,
-                              defines=self.DEF_GLSL)
+        self.prog = GPUShader(
+            vertexcode=self.VERT_GLSL,
+            fragcode=self.FRAG_GLSL,
+            geocode=self.LIB_GLSL + self.GEOM_GLSL,
+            defines=self.DEF_GLSL,
+        )
 
     def batch(self, indices=None, **data):
-        """Returns automatic GPUBatch filled with provided parameters
-        """
+        """Returns automatic GPUBatch filled with provided parameters"""
         batch = batch_for_shader(self.prog, self.TYPE, data, indices=indices)
         batch.program_set(self.prog)
         return batch
@@ -113,23 +114,26 @@ class BaseShader():
         region = ctx.region
         region3d = ctx.region_data
         try:
-            self.prog.uniform_float('viewMatrix', region3d.perspective_matrix)
+            self.prog.uniform_float("viewMatrix", region3d.perspective_matrix)
         except ValueError:  # unused uniform
             pass
         try:
-            self.prog.uniform_float('winSize', (region.width / 2, region.height / 2))
+            self.prog.uniform_float("winSize", (region.width / 2, region.height / 2))
         except ValueError:  # unused uniform
             pass
 
 
 class BaseLinesShader(BaseShader):
-    """Draws line segments with gaps around vertices at endpoints
-    """
-    TYPE = 'LINES'
+    """Draws line segments with gaps around vertices at endpoints"""
 
-    DEF_GLSL = BaseShader.DEF_GLSL + """
+    TYPE = "LINES"
+
+    DEF_GLSL = (
+        BaseShader.DEF_GLSL
+        + """
     #define GAP_SIZE {gap_size}
     """
+    )
 
     GEOM_GLSL = """
     layout(lines) in;
@@ -171,6 +175,7 @@ class GizmoShader(BaseShader):
 
     Scaling to match viewport is partially controlled by user preferences and gizmo code.
     """
+
     # TODO: add some magic to respect gizmo settings/params
 
     VERT_GLSL = """
@@ -187,12 +192,15 @@ class GizmoShader(BaseShader):
 class DotsGizmoShader(GizmoShader):
     """Draws circles of radius 1 around points"""
 
-    TYPE = 'POINTS'
+    TYPE = "POINTS"
 
-    DEF_GLSL = BaseShader.DEF_GLSL + """
+    DEF_GLSL = (
+        BaseShader.DEF_GLSL
+        + """
     #define CIRCLE_SEGMENTS 12
     #define CIRCLE_RADIUS 8
     """
+    )
 
     GEOM_GLSL = """
     layout(points) in;
@@ -235,11 +243,14 @@ class DotsGizmoShader(GizmoShader):
 class ExtrusionGuidesShader(GizmoShader):
     """Draws lines and add cross in XY plane at endpoints"""
 
-    TYPE = 'LINES'
+    TYPE = "LINES"
 
-    DEF_GLSL = BaseShader.DEF_GLSL + """
+    DEF_GLSL = (
+        BaseShader.DEF_GLSL
+        + """
     #define CROSS_SIZE .5
     """
+    )
 
     GEOM_GLSL = """
     uniform mat4 ModelViewProjectionMatrix;

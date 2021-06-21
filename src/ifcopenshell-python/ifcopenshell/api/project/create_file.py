@@ -22,4 +22,5 @@ class Usecase:
         self.file.wrapped_data.header.file_name.preprocessor_version = "IfcOpenShell {}".format(ifcopenshell.version)
         self.file.wrapped_data.header.file_name.originating_system = "IfcOpenShell {}".format(ifcopenshell.version)
         self.file.wrapped_data.header.file_name.authorization = "Nobody"
+        self.file.wrapped_data.header.file_description.description = ('ViewDefinition[DesignTransferView]',)
         return self.file

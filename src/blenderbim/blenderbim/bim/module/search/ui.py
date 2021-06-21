@@ -1,5 +1,6 @@
 import bpy
 from bpy.types import Panel
+from blenderbim.bim.ifc import IfcStore
 
 
 class BIM_PT_search(Panel):
@@ -9,6 +10,10 @@ class BIM_PT_search(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
 
     def draw(self, context):
         props = context.scene.BIMSearchProperties

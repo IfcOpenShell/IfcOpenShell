@@ -94,7 +94,7 @@ class entity(facet):
                 inst.is_a(self.name),
                 self.message % {"name": inst.is_a()}
                 )
-        
+
 
 class classification(facet):
     """
@@ -241,7 +241,7 @@ class restriction:
         self.restriction_on = node['@base'][3:]
         self.type = ""
         self.options = []
-  
+
         for n in node:
             if n[0:3] == "xs:":
                 if n[3:] == "enumeration":
@@ -274,6 +274,21 @@ class restriction:
                 #TODO add whiteSpace
                 else:
                     logger.error({'result':'ERROR', 'sentence':'Restriction not implemented'})
+        self.type = []
+        
+        for n in node.childNodes:
+            if n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("enumeration"):
+                self.options.append(n.getAttribute("value"))
+                self.type = "enumeration"        
+            elif n.nodeType == n.ELEMENT_NODE and (n.tagName.endswith("Inclusive") or n.tagName.endswith("Exclusive")):
+                self.options.append(n.getAttribute("value"))
+                self.type = "bounds"
+            elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("length"):
+                self.options.append(n.getAttribute("value"))
+                self.type = "length"
+            elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("pattern"):
+                self.options.append(n.getAttribute("value"))
+                self.type = "pattern"
 
     def __eq__(self, other):
         result=False

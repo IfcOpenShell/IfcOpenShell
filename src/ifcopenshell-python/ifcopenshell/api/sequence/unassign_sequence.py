@@ -16,3 +16,4 @@ class Usecase:
         for rel in self.settings["related_process"].IsSuccessorFrom or []:
             if rel.RelatingProcess == self.settings["relating_process"]:
                 self.file.remove(rel)
+        ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=self.settings["related_process"])
