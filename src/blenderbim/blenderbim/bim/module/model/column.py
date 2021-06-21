@@ -46,11 +46,11 @@ def ensure_solid(usecase_path, ifc_file, settings):
     if not parametric or parametric["Engine"] != "BlenderBIM.DumbColumn":
         return
     material = ifcopenshell.util.element.get_material(product)
-    if material and material.is_a("IfcMaterialProfileSet"):
-        settings["profile_set"] = material
+    if material and material.is_a("IfcMaterialProfileSetUsage"):
+        settings["profile_set_usage"] = material
     else:
         return
-    settings["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcMaterialProfileSet"
+    settings["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage"
 
 
 class DumbColumnGenerator:
@@ -110,20 +110,51 @@ class DumbColumnGenerator:
         bpy.ops.bim.assign_class(
             obj=obj.name, ifc_class="IfcColumn", predefined_type="COLUMN", should_add_representation=False
         )
+        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         bpy.ops.bim.assign_type(relating_type=self.relating_type.id(), related_object=obj.name)
+        profile_set_usage = ifcopenshell.util.element.get_material(element)
         bpy.ops.bim.add_representation(
             obj=obj.name,
             context_id=ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW").id(),
-            ifc_representation_class="IfcExtrudedAreaSolid/IfcMaterialProfileSet",
-            profile_set=self.profile_set.id(),
+            ifc_representation_class="IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage",
+            profile_set_usage=profile_set_usage.id(),
         )
-        representation = ifcopenshell.util.representation.get_representation(
-            self.file.by_id(obj.BIMObjectProperties.ifc_definition_id), "Model", "Body", "MODEL_VIEW"
-        )
+        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         bpy.ops.bim.switch_representation(obj=obj.name, ifc_definition_id=representation.id(), should_reload=True)
-        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbColumn"})
         MaterialData.load(self.file)
         obj.select_set(True)
         return obj
+
+
+class DumbColumnRegenerator:
+    def regenerate_from_profile(self, usecase_path, ifc_file, settings):
+        self.file = IfcStore.get_file()
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        profile = settings["profile"].Profile
+        if not profile:
+            return
+        for profile_set in [
+            mp.ToMaterialProfileSet[0] for mp in self.file.get_inverse(profile) if mp.is_a("IfcMaterialProfile")
+        ]:
+            for inverse in ifc_file.get_inverse(profile_set):
+                if not inverse.is_a("IfcMaterialProfileSetUsage"):
+                    continue
+                if ifc_file.schema == "IFC2X3":
+                    for rel in ifc_file.get_inverse(inverse):
+                        if not rel.is_a("IfcRelAssociatesMaterial"):
+                            continue
+                        for element in rel.RelatedObjects:
+                            self.change_profile(element)
+                else:
+                    for rel in inverse.AssociatedTo:
+                        for element in rel.RelatedObjects:
+                            self.change_profile(element)
+
+    def change_profile(self, element):
+        obj = IfcStore.get_element(element.id())
+        if not obj:
+            return
+        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        bpy.ops.bim.switch_representation(obj=obj.name, ifc_definition_id=representation.id(), should_reload=True)

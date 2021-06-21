@@ -30,9 +30,9 @@ class Usecase:
             #  IfcExtrudedAreaSolid/IfcCircleProfileDef
             #  IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef
             #  IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids
-            #  IfcExtrudedAreaSolid/IfcMaterialProfileSet
+            #  IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage
             "ifc_representation_class": None,  # Whether to cast a mesh into a particular class
-            "profile_set": None,  # The material profile set if the extrusion requires it
+            "profile_set_usage": None,  # The material profile set if the extrusion requires it
         }
         self.ifc_vertices = []
         for key, value in settings.items():
@@ -220,7 +220,7 @@ class Usecase:
             return self.create_arbitrary_extrusion_representation()
         elif self.settings["ifc_representation_class"] == "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids":
             return self.create_arbitrary_void_extrusion_representation()
-        elif self.settings["ifc_representation_class"] == "IfcExtrudedAreaSolid/IfcMaterialProfileSet":
+        elif self.settings["ifc_representation_class"] == "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage":
             return self.create_material_profile_set_extrusion_representation()
         return self.create_mesh_representation()
 
@@ -410,10 +410,8 @@ class Usecase:
         )
 
     def create_material_profile_set_extrusion_representation(self):
-        profile_def = (
-            self.settings["profile_set"].CompositeProfile
-            or self.settings["profile_set"].MaterialProfiles[0].Profile
-        )
+        profile_set = self.settings["profile_set_usage"].ForProfileSet
+        profile_def = profile_set.CompositeProfile or profile_set.MaterialProfiles[0].Profile
         position = None
         if self.file.schema == "IFC2X3":
             position = self.file.createIfcAxis2Placement3D(
