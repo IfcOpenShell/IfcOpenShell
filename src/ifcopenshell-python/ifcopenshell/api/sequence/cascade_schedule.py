@@ -77,11 +77,14 @@ class Usecase:
         if starts and finishes:
             start = max(starts)
             finish = max(finishes)
-            potential_finish = ifcopenshell.util.sequence.get_finish_date(
-                start,
-                duration,
-                task.TaskTime.DurationType,
-                self.get_calendar(task),
+            potential_finish = datetime.datetime.combine(
+                ifcopenshell.util.sequence.get_finish_date(
+                    start,
+                    duration,
+                    task.TaskTime.DurationType,
+                    self.get_calendar(task),
+                ),
+                datetime.datetime.min.time(),
             )
             if potential_finish > finish:
                 start_ifc = ifcopenshell.util.date.datetime2ifc(start, "IfcDateTime")
