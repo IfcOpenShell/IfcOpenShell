@@ -1,8 +1,10 @@
 import operator
 import ifcopenshell.util.element
+import re
 
 from xmlschema import XMLSchema
 
+from xmlschema.validators import facets, identities
 
 class exception(Exception):
     pass
@@ -128,7 +130,7 @@ class classification(facet):
 
 class property(facet):
     """
-    The IDS property facet implenented using `ifcopenshell.util.element`
+    The IDS property facet implemented using `ifcopenshell.util.element`
     """
 
     parameters = ["name", "propertyset", "value"]
@@ -308,8 +310,11 @@ class restriction:
                     if eval(str(len(other))+op):   #TODO eval not safe?
                         result = True
             elif self.type == "pattern":
-                #TODO verify XML pattern
-                pass
+                self.options
+                translated_pattern = identities.translate_pattern(r'[A-Z]{1,3}')    # Between one and three capital letters
+                regex_pattern = re.compile(translated_pattern)
+                if regex_pattern.fullmatch(other) is not None:
+                    result = True
             #TODO add fractionDigits
             #TODO add totalDigits
             #TODO add whiteSpace
