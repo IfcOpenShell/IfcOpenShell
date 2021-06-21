@@ -9,6 +9,7 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
+        # TODO: handle composite profiles
         old_profile = self.settings["material_profile"].Profile
         self.settings["material_profile"].Profile = self.settings["profile"]
         for profile_set in self.settings["material_profile"].ToMaterialProfileSet:
@@ -31,6 +32,8 @@ class Usecase:
 
     def change_profile(self, element):
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if not representation:
+            return
         for subelement in self.file.traverse(representation):
             if subelement.is_a("IfcSweptAreaSolid"):
                 subelement.SweptArea = self.settings["profile"]

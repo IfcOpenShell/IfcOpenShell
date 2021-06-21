@@ -1,6 +1,7 @@
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
+import ifcopenshell.util.representation
 
 
 class Usecase:
@@ -47,12 +48,29 @@ class Usecase:
                     material_set = self.file.create_entity("IfcMaterialProfileSet")
             else:
                 material_set = self.file.create_entity("IfcMaterialProfileSet")
+
+            self.update_representation_profile(material_set)
             material_set_usage = self.create_profile_set_usage(material_set)
             self.create_material_association(material_set_usage)
         elif self.settings["type"] == "IfcMaterialList":
             material_set = self.file.create_entity(self.settings["type"])
             material_set.Materials = [self.settings["material"]]
             self.create_material_association(material_set)
+
+    def update_representation_profile(self, material_set):
+        profile = material_set.CompositeProfile
+        if not profile and material_set.MaterialProfiles:
+            profile = material_set.MaterialProfiles[0].Profile
+        if not profile:
+            return
+        representation = ifcopenshell.util.representation.get_representation(
+            self.settings["product"], "Model", "Body", "MODEL_VIEW"
+        )
+        if not representation:
+            return
+        for subelement in self.file.traverse(representation):
+            if subelement.is_a("IfcSweptAreaSolid"):
+                subelement.SweptArea = profile
 
     def create_layer_set_usage(self, material_set):
         return self.file.create_entity(

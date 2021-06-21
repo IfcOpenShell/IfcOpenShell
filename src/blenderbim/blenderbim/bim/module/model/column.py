@@ -152,9 +152,17 @@ class DumbColumnRegenerator:
                         for element in rel.RelatedObjects:
                             self.change_profile(element)
 
+    def regenerate_from_type(self, usecase_path, ifc_file, settings):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        new_material = ifcopenshell.util.element.get_material(settings["relating_type"])
+        if not new_material or not new_material.is_a("IfcMaterialProfileSet"):
+            return
+        self.change_profile(settings["related_object"])
+
     def change_profile(self, element):
         obj = IfcStore.get_element(element.id())
         if not obj:
             return
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        bpy.ops.bim.switch_representation(obj=obj.name, ifc_definition_id=representation.id(), should_reload=True)
+        if representation:
+            bpy.ops.bim.switch_representation(obj=obj.name, ifc_definition_id=representation.id(), should_reload=True)

@@ -55,3 +55,8 @@ def load_post(*args):
         "BlenderBIM.DumbColumn.RegenerateFromProfile",
         column.DumbColumnRegenerator().regenerate_from_profile,
     )
+    ifcopenshell.api.add_post_listener(
+        "type.assign_type",
+        "BlenderBIM.DumbColumn.RegenerateFromType",
+        column.DumbColumnRegenerator().regenerate_from_type,
+    )
