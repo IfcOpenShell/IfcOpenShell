@@ -89,7 +89,7 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 		case IfcUtil::Argument_DOUBLE: {
 			const double d = *argument;
 			std::stringstream stream;
-			stream << d;
+			stream << std::setprecision (std::numeric_limits< double >::max_digits10) << d;
 			value = stream.str();
 			break; }
 		case IfcUtil::Argument_STRING:
@@ -134,7 +134,7 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 					for (int i = 1; i < 5; ++i) {
 						for (int j = 1; j < 4; ++j) {
 							const double trsf_value = trsf.Value(j, i);
-							stream << trsf_value << " ";
+							stream << std::setprecision (std::numeric_limits< double >::max_digits10) << trsf_value << " ";
 						}
 						stream << ((i == 4) ? "1" : "0 ");
 					}
