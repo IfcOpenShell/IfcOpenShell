@@ -62,14 +62,15 @@ def get_type(element):
                 return relationship.RelatingType
 
 
-def get_material(element):
+def get_material(element, should_skip_usage=False):
     if hasattr(element, "HasAssociations") and element.HasAssociations:
         for relationship in element.HasAssociations:
             if relationship.is_a("IfcRelAssociatesMaterial"):
-                if relationship.RelatingMaterial.is_a("IfcMaterialLayerSetUsage"):
-                    return relationship.RelatingMaterial.ForLayerSet
-                elif relationship.RelatingMaterial.is_a("IfcMaterialProfileSetUsage"):
-                    return relationship.RelatingMaterial.ForProfileSet
+                if should_skip_usage:
+                    if relationship.RelatingMaterial.is_a("IfcMaterialLayerSetUsage"):
+                        return relationship.RelatingMaterial.ForLayerSet
+                    elif relationship.RelatingMaterial.is_a("IfcMaterialProfileSetUsage"):
+                        return relationship.RelatingMaterial.ForProfileSet
                 return relationship.RelatingMaterial
     relating_type = get_type(element)
     if hasattr(relating_type, "HasAssociations") and relating_type.HasAssociations:

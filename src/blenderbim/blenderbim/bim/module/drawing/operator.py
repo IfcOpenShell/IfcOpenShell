@@ -396,7 +396,7 @@ class CreateDrawing(bpy.types.Operator):
 
     def get_classes(self, element, position, svg_writer):
         classes = [position, element.is_a()]
-        material = ifcopenshell.util.element.get_material(element)
+        material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
         if material:
             classes.append("material-{}".format(re.sub("[^0-9a-zA-Z]+", "", self.get_material_name(material))))
         classes.append("globalid-{}".format(element.GlobalId))
