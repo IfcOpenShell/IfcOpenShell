@@ -3,7 +3,6 @@ import ifcopenshell.util.element
 import re
 
 from xmlschema import XMLSchema
-
 from xmlschema.validators import facets, identities
 
 class exception(Exception):
@@ -103,28 +102,48 @@ class classification(facet):
     The IDS classification facet by traversing the HasAssociations inverse attribute
     """
 
-    parameters = ["system", "value"]
-    message = "a classification reference '%(value)s' from '%(system)s'"
+    parameters = ["system", "value", "location"]
+    message = "%(location)sclassification reference %(value)s from '%(system)s'"
 
     def __call__(self, inst, logger):
-        #TODO Location: 'type'/'instance'/'any'
+
+        self.location = self.node['@location']
+        
+        instance_classiciations = inst.HasAssociations
+        if ifcopenshell.util.element.get_type(inst):
+            type_classifications = ifcopenshell.util.element.get_type(inst).HasAssociations
+        else:
+            type_classifications = ()
+
+        if self.location == 'instance' and instance_classiciations:
+            associations = instance_classiciations
+        elif self.location == 'type' and type_classifications:
+            associations = type_classifications
+        elif self.location == 'any' and (instance_classiciations or type_classifications):
+            associations = instance_classiciations + type_classifications
+        else:
+            associations = ()
+
         refs = []
-        for association in inst.HasAssociations:
+        for association in associations:
             if association.is_a("IfcRelAssociatesClassification"):
                 cref = association.RelatingClassification
                 if hasattr(cref, 'ItemReference'):  #IFC2x3
                     refs.append((cref.ReferencedSource.Name, cref.ItemReference))
                 elif hasattr(cref, 'Identification'):   # IFC4
                     refs.append((cref.ReferencedSource.Name, cref.Identification))                    
+
+        self.location = location[self.location]
+
         if refs:
             return facet_evaluation(
                 (self.system, self.value) in refs,
-                self.message % {"system": refs[0][0], "value": refs[0][1]}
+                self.message % {"system": refs[0][0], "value": "'"+refs[0][1]+"'", "location": self.location}   # what if not first item of refs?
             )
-        else:
+        else:    
             return facet_evaluation(
                 False,
-                "has no classification"
+                "does not have %sclassification reference" % self.location
             )
 
 
@@ -133,28 +152,46 @@ class property(facet):
     The IDS property facet implemented using `ifcopenshell.util.element`
     """
 
-    parameters = ["name", "propertyset", "value"]
-    message = "a property '%(name)s' in '%(propertyset)s' with a value %(value)s"
+    parameters = ["name", "propertyset", "value", "location"]
+    message = "%(location)sproperty '%(name)s' in '%(propertyset)s' with a value %(value)s"
 
     def __call__(self, inst, logger):
-        #TODO Location: 'type'/'instance'/'any'
-        props = ifcopenshell.util.element.get_psets(inst)
+
+        self.location = self.node['@location']
+
+        instance_props = ifcopenshell.util.element.get_psets(inst)
+        if ifcopenshell.util.element.get_type(inst):
+            type_props = ifcopenshell.util.element.get_psets( ifcopenshell.util.element.get_type(inst) )
+        else:
+            type_props = {}
+
+        if self.location == 'instance':
+            props = instance_props
+        elif self.location == 'type' and type_props:
+            props = type_props
+        elif self.location == 'any' and (instance_props or type_props):
+            props = {**instance_props , **type_props}
+        else:
+            props = {}
+        
         pset = props.get(self.propertyset)
         val = pset.get(self.name) if pset else None
-
+        
+        self.location = location[self.location]
         di = {
             "name": self.name,
             "propertyset": self.propertyset,
             "value": "'%s'" % val,
+            "location": self.location
         }
 
         if val is not None:
             msg = self.message % di
         else:
             if pset:
-                msg = "no property '%(name)s' in a set '%(propertyset)s'" % di
+                msg = "does not have %(location)sproperty '%(name)s' in a set '%(propertyset)s'" % di
             else:
-                msg = "no set '%(propertyset)s'" % di
+                msg = "does not have %(location)sset '%(propertyset)s'" % di
 
         #TODO implement data type comparison
         return facet_evaluation(
@@ -167,16 +204,30 @@ class material(facet):
     """
     The IDS material facet by traversing the HasAssociations inverse attribute
     """
-    parameters = ["value"]
-    message = "a material '%(value)s'"
+    parameters = ["value", "location"]
+    message = "%(location)smaterial '%(value)s'"
 
     def __call__(self, inst, logger):
-        material_relations = [rel for rel in inst.HasAssociations if rel.is_a("IfcRelAssociatesMaterial")]
-        #TODO Location: 'type'/'instance'/'any'. Handle type... https://github.com/IfcOpenShell/IfcOpenShell/blob/257997c2cb8d382a7f3026f9a33fed6ccbe31282/src/ifcopenshell-python/ifcopenshell/util/element.py#L54
-        # [material_relations.append(rel) for rel in ifcopenshell.util.element.get_type(inst).HasAssociations if rel.is_a("IfcRelAssociatesMaterial")]
+
+        self.location = self.node['@location']
+
+        instance_material_rel = [rel for rel in inst.HasAssociations if rel.is_a("IfcRelAssociatesMaterial")]
+        if ifcopenshell.util.element.get_type(inst):
+            type_material_rel = [rel for rel in ifcopenshell.util.element.get_type(inst).HasAssociations if rel.is_a("IfcRelAssociatesMaterial")]
+        else:
+            type_material_rel = []
+
+        if self.location == 'instance':
+            material_relations = list(instance_material_rel)
+        elif self.location == 'type' and type_material_rel:
+            material_relations = list(type_material_rel)
+        elif self.location == 'any' and (instance_material_rel or type_material_rel):
+            material_relations = instance_material_rel + type_material_rel
+        else:
+            material_relations = []
+
         materials = []
         for rel in material_relations:
-            #TODO test all subtypes of material definitions
             if rel.RelatingMaterial.is_a() == "IfcMaterial":
                 materials.append(rel.RelatingMaterial.Name)
             elif rel.RelatingMaterial.is_a() == "IfcMaterialMaterialList":  #DEPRECATED in IFC4
@@ -199,9 +250,11 @@ class material(facet):
         if not materials:
             materials.append('UNDEFINED')
 
+        self.location = location[self.location]
+
         return facet_evaluation(
             self.value in materials,
-            self.message % {"value": "'/'".join(materials)},
+            self.message % {"value": "'/'".join(materials), "location": self.location},
         )
 
 
@@ -276,21 +329,6 @@ class restriction:
                 #TODO add whiteSpace
                 else:
                     logger.error({'result':'ERROR', 'sentence':'Restriction not implemented'})
-        self.type = []
-        
-        for n in node.childNodes:
-            if n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("enumeration"):
-                self.options.append(n.getAttribute("value"))
-                self.type = "enumeration"        
-            elif n.nodeType == n.ELEMENT_NODE and (n.tagName.endswith("Inclusive") or n.tagName.endswith("Exclusive")):
-                self.options.append(n.getAttribute("value"))
-                self.type = "bounds"
-            elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("length"):
-                self.options.append(n.getAttribute("value"))
-                self.type = "length"
-            elif n.nodeType == n.ELEMENT_NODE and n.tagName.endswith("pattern"):
-                self.options.append(n.getAttribute("value"))
-                self.type = "pattern"
 
     def __eq__(self, other):
         result=False
@@ -392,6 +430,14 @@ class ids:
                 apply, comply = spec(elem, logger)
                 if apply: self.ifc_checked += 1
                 if comply: self.ifc_passed += 1
+
+
+
+location = {
+    'instance': 'an instance ',
+    'type': 'a type ',
+    'any': 'a '
+}
 
 
 if __name__ == "__main__":
