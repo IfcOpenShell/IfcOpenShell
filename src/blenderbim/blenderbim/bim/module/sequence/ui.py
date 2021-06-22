@@ -111,8 +111,7 @@ class BIM_PT_work_schedules(Panel):
             if self.props.editing_type == "WORK_SCHEDULE":
                 row.operator("bim.edit_work_schedule", text="", icon="CHECKMARK")
             elif self.props.editing_type == "TASKS":
-                row.prop(self.props, "should_show_times", text="", icon="TIME")
-                row.prop(self.props, "should_show_calendars", text="", icon="VIEW_ORTHO")
+                row.prop(self.props, "should_show_column_ui", text="", icon="SHORTDISPLAY")
                 row.prop(self.props, "should_show_visualisation_ui", text="", icon="CAMERA_STEREO")
                 row.operator("bim.generate_gantt_chart", text="", icon="NLA").work_schedule = work_schedule_id
                 row.operator("bim.recalculate_schedule", text="", icon="FILE_REFRESH").work_schedule = work_schedule_id
@@ -128,12 +127,36 @@ class BIM_PT_work_schedules(Panel):
             row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = work_schedule_id
 
         if self.props.active_work_schedule_id == work_schedule_id:
+            if self.props.should_show_column_ui:
+                self.draw_column_ui()
             if self.props.should_show_visualisation_ui:
                 self.draw_visualisation_ui()
             if self.props.editing_type == "WORK_SCHEDULE":
                 self.draw_editable_work_schedule_ui()
             elif self.props.editing_type == "TASKS":
                 self.draw_editable_task_ui(work_schedule_id)
+
+    def draw_column_ui(self):
+        row = self.layout.row(align=True)
+        row.prop(self.props, "task_columns", text="")
+        op = row.operator("bim.add_task_column", text="", icon="ADD")
+        op.type = "IfcTask"
+        op.name = self.props.task_columns
+
+        row = self.layout.row(align=True)
+        row.prop(self.props, "task_time_columns", text="")
+        op = row.operator("bim.add_task_column", text="", icon="ADD")
+        op.type = "IfcTaskTime"
+        op.name = self.props.task_time_columns
+
+        row = self.layout.row(align=True)
+        row.prop(self.props, "other_columns", text="")
+        op = row.operator("bim.add_task_column", text="", icon="ADD")
+        type, name = self.props.other_columns.split(".")
+        op.type = type
+        op.name = f"{name}/string"
+
+        self.layout.template_list("BIM_UL_task_columns", "", self.props, "columns", self.props, "active_column_index")
 
     def draw_visualisation_ui(self):
         row = self.layout.row(align=True)
@@ -260,10 +283,19 @@ class BIM_PT_work_schedules(Panel):
         blenderbim.bim.helper.draw_attributes(self.props.task_time_attributes, self.layout)
 
 
+class BIM_UL_task_columns(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            row.prop(item, "name", emboss=False, text="")
+            row.operator("bim.remove_task_column", text="", icon="X")
+
+
 class BIM_UL_tasks(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             props = context.scene.BIMWorkScheduleProperties
+            task = IfcStore.get_file().by_id(item.ifc_definition_id)
             row = layout.row(align=True)
             for i in range(0, item.level_index):
                 row.label(text="", icon="BLANK1")
@@ -281,27 +313,36 @@ class BIM_UL_tasks(UIList):
             row.prop(item, "identification", emboss=False, text="")
             row.prop(item, "name", emboss=False, text="")
 
-            if props.should_show_times:
-                if item.derived_start:
-                    row.label(text=item.derived_start + "*")
+            for column in props.columns:
+                if column.name == "IfcTaskTime.ScheduleStart":
+                    if item.derived_start:
+                        row.label(text=item.derived_start + "*")
+                    else:
+                        row.prop(item, "start", emboss=False, text="")
+                elif column.name == "IfcTaskTime.ScheduleFinish":
+                    if item.derived_finish:
+                        row.label(text=item.derived_finish + "*")
+                    else:
+                        row.prop(item, "finish", emboss=False, text="")
+                elif column.name == "IfcTaskTime.ScheduleDuration":
+                    if item.derived_duration:
+                        row.label(text=item.derived_duration + "*")
+                    else:
+                        row.prop(item, "duration", emboss=False, text="")
+                elif column.name == "Controls.Calendar":
+                    if item.derived_calendar:
+                        row.label(text=item.derived_calendar + "*")
+                    else:
+                        row.label(text=item.calendar or "-")
                 else:
-                    row.prop(item, "start", emboss=False, text="")
-
-                if item.derived_finish:
-                    row.label(text=item.derived_finish + "*")
-                else:
-                    row.prop(item, "finish", emboss=False, text="")
-
-                if item.derived_duration:
-                    row.label(text=item.derived_duration + "*")
-                else:
-                    row.prop(item, "duration", emboss=False, text="")
-
-            if props.should_show_calendars:
-                if item.derived_calendar:
-                    row.label(text=item.derived_calendar + "*")
-                else:
-                    row.label(text=item.calendar or "-")
+                    ifc_class, name = column.name.split(".")
+                    if ifc_class == "IfcTask":
+                        value = getattr(task, name)
+                    elif ifc_class == "IfcTaskTime":
+                        value = getattr(task.TaskTime, name) if task.TaskTime else None
+                    if value is None:
+                        value = "-"
+                    row.label(text=str(value))
 
             if context.active_object:
                 oprops = context.active_object.BIMObjectProperties
