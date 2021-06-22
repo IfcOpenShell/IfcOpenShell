@@ -28,6 +28,7 @@
 #include <NCollection_UBTree.hxx>
 #include <BRepBndLib.hxx>
 #include <Bnd_Box.hxx>
+#include <BRep_Builder.hxx>
 #include <BRepAlgoAPI_Common.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
 #include <BRepExtrema_DistShapeShape.hxx>
@@ -93,9 +94,10 @@ namespace IfcGeom {
 				return select_box(b, completely_within);
 			}
 
-			std::vector<T> select_box(const gp_Pnt& p) const {
+			std::vector<T> select_box(const gp_Pnt& p, double extend=0.0) const {
 				Bnd_Box b;
 				b.Add(p);
+				b.SetGap(b.GetGap() + extend);
 				return select_box(b);
 			}
 
@@ -198,8 +200,8 @@ namespace IfcGeom {
 				return ts_filtered;
 			}
 
-			std::vector<T> select(const gp_Pnt& p) const {
-				std::vector<T> ts = select_box(p);
+			std::vector<T> select(const gp_Pnt& p, double extend=0.0) const {
+				std::vector<T> ts = select_box(p, extend);
 				if (ts.empty()) {
 					return ts;
 				}
@@ -207,17 +209,30 @@ namespace IfcGeom {
 				std::vector<T> ts_filtered;
 				ts_filtered.reserve(ts.size());
 
+				TopoDS_Vertex v;
+				if (extend > 0.) {
+					BRep_Builder B;
+					B.MakeVertex(v, p, Precision::Confusion());
+				}
+
 				typename std::vector<T>::const_iterator it = ts.begin();
 				for (it = ts.begin(); it != ts.end(); ++it) {
 					const TopoDS_Shape& B = shapes_.find(*it)->second;
-					TopExp_Explorer exp(B, TopAbs_SOLID);
-					for (; exp.More(); exp.Next()) {
-						BRepClass3d_SolidClassifier cls(exp.Current(), p, 1e-5);
-						if (cls.State() != TopAbs_OUT) {
+					if (extend > 0.0) {
+						BRepExtrema_DistShapeShape dss(v, B);
+						if (dss.Perform() && dss.NbSolution() >= 1) {
 							ts_filtered.push_back(*it);
-							break;
 						}
-					}					
+					} else {
+						TopExp_Explorer exp(B, TopAbs_SOLID);
+						for (; exp.More(); exp.Next()) {
+							BRepClass3d_SolidClassifier cls(exp.Current(), p, 1e-5);
+							if (cls.State() != TopAbs_OUT) {
+								ts_filtered.push_back(*it);
+								break;
+							}
+						}
+					}
 				}
 
 				return ts_filtered;

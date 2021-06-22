@@ -85,8 +85,8 @@
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
-	IfcEntityList::ptr select(const gp_Pnt& p) const {
-		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select(p);
+	IfcEntityList::ptr select(const gp_Pnt& p, double extend=0.0) const {
+		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select(p, extend);
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
