@@ -116,10 +116,18 @@ class MSP2Ifc:
             }
 
     def create_ifc(self):
+        if not self.file:
+            self.file = self.create_boilerplate_ifc()
+        if not self.work_plan:
+            self.work_plan = ifcopenshell.api.run("sequence.add_work_plan", self.file)
         work_schedule = self.create_work_schedule()
         self.create_tasks(work_schedule)
         self.create_calendars()
         self.create_rel_sequences()
+
+    def create_boilerplate_ifc(self):
+        self.file = ifcopenshell.file(schema="IFC4")
+        self.work_plan = self.file.create_entity("IfcWorkPlan")
 
     def create_tasks(self, work_schedule):
         for task_id in self.tasks:
