@@ -73,6 +73,8 @@ classes = (
     operator.BlenderBIM_DatePicker,
     operator.BlenderBIM_DatePickerSetDate,
     operator.BlenderBIM_RedrawDatePicker,
+    operator.AddTaskColumn,
+    operator.RemoveTaskColumn,
     prop.WorkPlan,
     prop.BIMWorkPlanProperties,
     prop.Task,
@@ -85,6 +87,7 @@ classes = (
     ui.BIM_PT_work_plans,
     ui.BIM_PT_work_schedules,
     ui.BIM_PT_work_calendars,
+    ui.BIM_UL_task_columns,
     ui.BIM_UL_tasks,
 )
 

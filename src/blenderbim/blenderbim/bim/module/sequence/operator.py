@@ -1705,3 +1705,28 @@ class RecalculateSchedule(bpy.types.Operator):
         )
         Data.load(self.file)
         return {"FINISHED"}
+
+
+class AddTaskColumn(bpy.types.Operator):
+    bl_idname = "bim.add_task_column"
+    bl_label = "Add Task Column"
+    type: bpy.props.StringProperty()
+    name: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMWorkScheduleProperties
+        new = self.props.columns.add()
+        name, data_type = self.name.split("/")
+        new.name = f"{self.type}.{name}"
+        new.data_type = data_type
+        return {"FINISHED"}
+
+
+class RemoveTaskColumn(bpy.types.Operator):
+    bl_idname = "bim.remove_task_column"
+    bl_label = "Remove Task Column"
+
+    def execute(self, context):
+        self.props = context.scene.BIMWorkScheduleProperties
+        self.props.columns.remove(self.props.active_column_index)
+        return {"FINISHED"}
