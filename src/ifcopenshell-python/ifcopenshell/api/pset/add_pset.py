@@ -18,7 +18,12 @@ class Usecase:
                     return rel.RelatingPropertyDefinition
 
             pset = self.file.create_entity(
-                "IfcPropertySet", **{"GlobalId": ifcopenshell.guid.new(), "Name": self.settings["name"]}
+                "IfcPropertySet",
+                **{
+                    "GlobalId": ifcopenshell.guid.new(),
+                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
+                    "Name": self.settings["name"],
+                }
             )
             self.file.create_entity(
                 "IfcRelDefinesByProperties",
@@ -36,7 +41,12 @@ class Usecase:
                     return definition
 
             pset = self.file.create_entity(
-                "IfcPropertySet", **{"GlobalId": ifcopenshell.guid.new(), "Name": self.settings["name"]}
+                "IfcPropertySet",
+                **{
+                    "GlobalId": ifcopenshell.guid.new(),
+                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
+                    "Name": self.settings["name"],
+                }
             )
             has_property_sets = list(self.settings["product"].HasPropertySets or [])
             has_property_sets.append(pset)
