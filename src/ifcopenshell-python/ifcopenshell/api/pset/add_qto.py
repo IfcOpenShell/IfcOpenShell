@@ -19,7 +19,12 @@ class Usecase:
                     return rel.RelatingPropertyDefinition
 
             qto = self.file.create_entity(
-                "IfcElementQuantity", **{"GlobalId": ifcopenshell.guid.new(), "Name": self.settings["name"]}
+                "IfcElementQuantity",
+                **{
+                    "GlobalId": ifcopenshell.guid.new(),
+                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
+                    "Name": self.settings["name"],
+                }
             )
             self.file.create_entity(
                 "IfcRelDefinesByProperties",
