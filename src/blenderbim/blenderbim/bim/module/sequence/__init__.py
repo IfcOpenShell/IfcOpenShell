@@ -75,6 +75,7 @@ classes = (
     operator.BlenderBIM_RedrawDatePicker,
     operator.AddTaskColumn,
     operator.RemoveTaskColumn,
+    operator.SetTaskSortColumn,
     prop.WorkPlan,
     prop.BIMWorkPlanProperties,
     prop.Task,
