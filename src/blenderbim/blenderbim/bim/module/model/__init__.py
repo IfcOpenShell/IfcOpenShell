@@ -35,7 +35,7 @@ addon_keymaps = []
 
 
 def register():
-    bpy.utils.register_tool(workspace.WallTool, after={"builtin.scale_cage"}, separator=True, group=True)
+    bpy.utils.register_tool(workspace.BimTool, after={"builtin.scale_cage"}, separator=True, group=True)
     bpy.types.Scene.BIMModelProperties = bpy.props.PointerProperty(type=prop.BIMModelProperties)
     bpy.types.VIEW3D_MT_mesh_add.append(grid.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(stair.add_object_button)
@@ -52,7 +52,7 @@ def register():
 
 
 def unregister():
-    bpy.utils.unregister_tool(workspace.WallTool)
+    bpy.utils.unregister_tool(workspace.BimTool)
     del bpy.types.Scene.BIMModelProperties
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.types.VIEW3D_MT_mesh_add.remove(grid.add_object_button)

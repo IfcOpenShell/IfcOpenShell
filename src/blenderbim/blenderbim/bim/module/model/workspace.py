@@ -1,15 +1,16 @@
+import os
 import bpy
 from bpy.types import WorkSpaceTool
 
 
-class WallTool(WorkSpaceTool):
+class BimTool(WorkSpaceTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
 
-    bl_idname = "bim.wall_tool"
-    bl_label = "Wall Tool"
-    bl_description = "Gives you wall related superpowers"
-    bl_icon = "ops.generic.select_circle"
+    bl_idname = "bim.bim_tool"
+    bl_label = "BIM Tool"
+    bl_description = "Gives you BIM authoring related superpowers"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.bim")
     bl_widget = None
     # https://docs.blender.org/api/current/bpy.types.KeyMapItems.html
     bl_keymap = (
