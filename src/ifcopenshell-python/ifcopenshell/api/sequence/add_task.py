@@ -19,7 +19,6 @@ class Usecase:
             ifc_class="IfcTask",
             name=None,
             predefined_type="NOTDEFINED",
-            identification="none",
         )
         task.IsMilestone = False
         if self.settings["work_schedule"]:
@@ -33,7 +32,9 @@ class Usecase:
                 }
             )
         elif self.settings["parent_task"]:
-            ifcopenshell.api.run(
+            rel = ifcopenshell.api.run(
                 "nest.assign_object", self.file, related_object=task, relating_object=self.settings["parent_task"]
             )
+            if self.settings["parent_task"].Identification:
+                task.Identification = self.settings["parent_task"].Identification + "." + str(len(rel.RelatedObjects))
         return task
