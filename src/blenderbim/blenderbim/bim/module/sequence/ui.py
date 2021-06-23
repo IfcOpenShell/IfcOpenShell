@@ -138,23 +138,26 @@ class BIM_PT_work_schedules(Panel):
 
     def draw_column_ui(self):
         row = self.layout.row(align=True)
-        row.prop(self.props, "task_columns", text="")
+        row.prop(self.props, "column_types", text="")
+        column_type = self.props.column_types
+        if self.props.column_types == "IfcTask":
+            row.prop(self.props, "task_columns", text="")
+            name, data_type = self.props.task_columns.split("/")
+        elif self.props.column_types == "IfcTaskTime":
+            row.prop(self.props, "task_time_columns", text="")
+            name, data_type = self.props.task_time_columns.split("/")
+        elif self.props.column_types == "Special":
+            row.prop(self.props, "other_columns", text="")
+            column_type, name = self.props.other_columns.split(".")
+            data_type = "string"
+        row.operator("bim.set_task_sort_column", text="", icon="SORTALPHA").column = f"{column_type}.{name}"
+        row.prop(
+            self.props, "is_sort_reversed", text="", icon="SORT_DESC" if self.props.is_sort_reversed else "SORT_ASC"
+        )
         op = row.operator("bim.add_task_column", text="", icon="ADD")
-        op.type = "IfcTask"
-        op.name = self.props.task_columns
-
-        row = self.layout.row(align=True)
-        row.prop(self.props, "task_time_columns", text="")
-        op = row.operator("bim.add_task_column", text="", icon="ADD")
-        op.type = "IfcTaskTime"
-        op.name = self.props.task_time_columns
-
-        row = self.layout.row(align=True)
-        row.prop(self.props, "other_columns", text="")
-        op = row.operator("bim.add_task_column", text="", icon="ADD")
-        type, name = self.props.other_columns.split(".")
-        op.type = type
-        op.name = f"{name}/string"
+        op.column_type = column_type
+        op.name = name
+        op.data_type = data_type
 
         self.layout.template_list("BIM_UL_task_columns", "", self.props, "columns", self.props, "active_column_index")
 
@@ -285,9 +288,12 @@ class BIM_PT_work_schedules(Panel):
 
 class BIM_UL_task_columns(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        props = context.scene.BIMWorkScheduleProperties
         if item:
             row = layout.row(align=True)
             row.prop(item, "name", emboss=False, text="")
+            if props.sort_column == item.name:
+                row.label(text="", icon="SORTALPHA")
             row.operator("bim.remove_task_column", text="", icon="X")
 
 

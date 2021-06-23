@@ -256,6 +256,16 @@ class BIMWorkScheduleProperties(PropertyGroup):
     should_show_column_ui: BoolProperty(name="Should Show Column UI", default=False)
     columns: CollectionProperty(name="Columns", type=Attribute)
     active_column_index: IntProperty(name="Active Column Index")
+    sort_column: StringProperty(name="Sort Column")
+    is_sort_reversed: BoolProperty(name="Is Sort Reversed")
+    column_types: EnumProperty(
+        items=[
+            ("IfcTask", "IfcTask", ""),
+            ("IfcTaskTime", "IfcTaskTime", ""),
+            ("Special", "Special", ""),
+        ],
+        name="Column Types",
+    )
     task_columns: EnumProperty(items=getTaskColumns, name="Task Columns")
     task_time_columns: EnumProperty(items=getTaskTimeColumns, name="Task Time Columns")
     other_columns: EnumProperty(

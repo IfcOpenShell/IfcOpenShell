@@ -244,10 +244,14 @@ class EnableEditingTasks(bpy.types.Operator):
 
         self.contracted_tasks = json.loads(self.props.contracted_tasks)
         self.sort_keys = {
-            i: Data.tasks[i]["Identification"] or "" for i in Data.work_schedules[self.work_schedule]["RelatedObjects"]
+            i: self.get_sort_key(Data.tasks[i]) for i in Data.work_schedules[self.work_schedule]["RelatedObjects"]
         }
 
-        for related_object_id in sorted(self.sort_keys, key=self.natural_sort_key):
+        related_object_ids = sorted(self.sort_keys, key=self.natural_sort_key)
+        if self.props.is_sort_reversed:
+            related_object_ids.reverse()
+
+        for related_object_id in related_object_ids:
             self.create_new_task_li(related_object_id, 0)
         bpy.ops.bim.load_task_properties()
         self.props.editing_type = "TASKS"
@@ -262,9 +266,26 @@ class EnableEditingTasks(bpy.types.Operator):
         if task["RelatedObjects"]:
             new.has_children = True
             if new.is_expanded:
-                self.sort_keys = {i: Data.tasks[i]["Identification"] or "" for i in task["RelatedObjects"]}
-                for related_object_id in sorted(self.sort_keys, key=self.natural_sort_key):
+                self.sort_keys = {i: self.get_sort_key(Data.tasks[i]) for i in task["RelatedObjects"]}
+                related_object_ids = sorted(self.sort_keys, key=self.natural_sort_key)
+                if self.props.is_sort_reversed:
+                    related_object_ids.reverse()
+                for related_object_id in related_object_ids:
                     self.create_new_task_li(related_object_id, level_index + 1)
+
+    def get_sort_key(self, task):
+        # Sorting only applies to actual tasks, not the WBS
+        if task["RelatedObjects"]:
+            # Sorry for the hack
+            return "0000000000" + (task["Identification"] or "")
+        if not self.props.sort_column:
+            return task["Identification"] or ""
+        column_type, name = self.props.sort_column.split(".")
+        if column_type == "IfcTask":
+            return task.get(name)
+        elif column_type == "IfcTaskTime" and task.get("TaskTime"):
+            task_time = Data.task_times[task.get("TaskTime")].get(name)
+        return task["Identification"] or ""
 
     def natural_sort_key(self, i, _nsre=re.compile("([0-9]+)")):
         s = self.sort_keys[i]
@@ -1710,15 +1731,15 @@ class RecalculateSchedule(bpy.types.Operator):
 class AddTaskColumn(bpy.types.Operator):
     bl_idname = "bim.add_task_column"
     bl_label = "Add Task Column"
-    type: bpy.props.StringProperty()
+    column_type: bpy.props.StringProperty()
     name: bpy.props.StringProperty()
+    data_type: bpy.props.StringProperty()
 
     def execute(self, context):
         self.props = context.scene.BIMWorkScheduleProperties
         new = self.props.columns.add()
-        name, data_type = self.name.split("/")
-        new.name = f"{self.type}.{name}"
-        new.data_type = data_type
+        new.name = f"{self.column_type}.{self.name}"
+        new.data_type = self.data_type
         return {"FINISHED"}
 
 
@@ -1729,4 +1750,16 @@ class RemoveTaskColumn(bpy.types.Operator):
     def execute(self, context):
         self.props = context.scene.BIMWorkScheduleProperties
         self.props.columns.remove(self.props.active_column_index)
+        return {"FINISHED"}
+
+
+class SetTaskSortColumn(bpy.types.Operator):
+    bl_idname = "bim.set_task_sort_column"
+    bl_label = "Set Task Sort Column"
+    column: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMWorkScheduleProperties
+        self.props.sort_column = self.column
+        bpy.ops.bim.enable_editing_tasks(work_schedule=self.props.active_work_schedule_id)
         return {"FINISHED"}
