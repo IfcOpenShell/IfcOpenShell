@@ -426,9 +426,9 @@ class EditAssignedMaterial(bpy.types.Operator):
             attributes = blenderbim.bim.helper.export_attributes(props.material_set_usage_attributes)
             attributes["CardinalPoint"] = int(attributes["CardinalPoint"]) if attributes["CardinalPoint"] else None
             ifcopenshell.api.run(
-                "material.edit_assigned_material",
+                "material.edit_profile_usage",
                 self.file,
-                **{"element": material_set_usage, "attributes": attributes},
+                **{"usage": material_set_usage, "attributes": attributes},
             )
             if material_set_usage.is_a("IfcMaterialLayerSetUsage"):
                 Data.load_layer_usages()
