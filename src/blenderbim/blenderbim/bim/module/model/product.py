@@ -94,3 +94,24 @@ def generate_box(usecase_path, ifc_file, settings):
             should_run_listeners=False,
             **{"product": product, "representation": new_box}
         )
+
+def regenerate_profile_usage(usecase_path, ifc_file, settings):
+    elements = []
+    if ifc_file.schema == "IFC2X3":
+        for rel in ifc_file.get_inverse(settings["usage"]):
+            if not rel.is_a("IfcRelAssociatesMaterial"):
+                continue
+            for element in rel.RelatedObjects:
+                elements.append(element)
+    else:
+        for rel in settings["usage"].AssociatedTo:
+            for element in rel.RelatedObjects:
+                elements.append(element)
+
+    for element in elements:
+        obj = IfcStore.get_element(element.id())
+        if not obj:
+            continue
+        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if representation:
+            bpy.ops.bim.switch_representation(obj=obj.name, ifc_definition_id=representation.id(), should_reload=True)

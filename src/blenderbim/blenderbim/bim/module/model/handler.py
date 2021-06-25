@@ -11,6 +11,11 @@ def load_post(*args):
     ifcopenshell.api.add_post_listener(
         "geometry.add_representation", "BlenderBIM.Product.GenerateBox", product.generate_box
     )
+    ifcopenshell.api.add_post_listener(
+        "material.edit_profile_usage",
+        "BlenderBIM.Product.RegenerateProfileUsage",
+        product.regenerate_profile_usage,
+    )
 
     IfcStore.add_element_listener(wall.element_listener)
     ifcopenshell.api.add_pre_listener(
