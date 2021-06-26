@@ -1494,6 +1494,16 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 	return;
 }
 
+void IfcFile::recalculate_id_counter() {
+	entity_by_id_t::key_type k = 0;
+	for (auto& p : byid) {
+		if (p.first > k) {
+			k = p.first;
+		}
+	}
+	MaxId = (unsigned int)k;
+}
+
 class traversal_visitor {
 private:
 	std::set<IfcUtil::IfcBaseClass*>& visited_;
