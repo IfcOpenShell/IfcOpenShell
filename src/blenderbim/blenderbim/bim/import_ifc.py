@@ -383,13 +383,10 @@ class IfcImporter:
 
     def is_point_far_away(self, point):
         # Arbitrary threshold based on experience
+        coords = point
         if hasattr(point, "Coordinates"):
-            return (
-                abs(point.Coordinates[0]) > 1000000
-                or abs(point.Coordinates[1]) > 1000000
-                or abs(point.Coordinates[2]) > 1000000
-            )
-        return abs(point[0]) > 1000000 or abs(point[1]) > 1000000 or abs(point[2]) > 1000000
+            coords = point.Coordinates
+        return abs(coords[0]) > 1000000 or abs(coords[1]) > 1000000 or abs(coords[2]) > 1000000
 
     def process_element_filter(self):
         if not self.ifc_import_settings.ifc_selector:
@@ -509,18 +506,18 @@ class IfcImporter:
         elements_checked = 0
         # If more than these points aren't far away, the file probably isn't absolutely positioned
         element_checking_threshold = 100
-        try:
-            point_lists = self.file.by_type("IfcCartesianPointList3D")
-        except:
+        if self.file.schema == "IFC2X3":
             # IFC2X3 does not have IfcCartesianPointList3D
             point_lists = []
+        else:
+            point_lists = self.file.by_type("IfcCartesianPointList3D")
         for point_list in point_lists:
             elements_checked += 1
             if elements_checked > element_checking_threshold:
                 return
             for i, point in enumerate(point_list.CoordList):
                 if len(point) == 3 and self.is_point_far_away(point):
-                    return point[0]
+                    return point
 
         for point in self.file.by_type("IfcCartesianPoint"):
             is_used_in_placement = False
@@ -534,7 +531,7 @@ class IfcImporter:
             if elements_checked > element_checking_threshold:
                 return
             if len(point.Coordinates) == 3 and self.is_point_far_away(point):
-                return point[0]
+                return point.Coordinates
 
     def apply_blender_offset_to_matrix(self, matrix):
         props = bpy.context.scene.BIMGeoreferenceProperties
