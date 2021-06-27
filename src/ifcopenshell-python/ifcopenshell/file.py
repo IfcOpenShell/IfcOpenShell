@@ -40,16 +40,14 @@ class Transaction:
         self.file = ifc_file
         self.operations = []
 
-    def serialise_entity_instance(self, info):
+    def serialise_entity_instance(self, element):
+        info = element.get_info()
         for key, value in info.items():
-            if isinstance(value, entity_instance):
-                info[key] = {"type": "single", "id": value.id()}
-            elif isinstance(value, tuple) and isinstance(value[0], entity_instance):
-                info[key] = {"type": "multiple", "ids": [v.id() for v in value]}
+            info[key] = element.walk(lambda v: isinstance(v, entity_instance), lambda v : {"id": v.id()}, value)
         return info
 
     def store_create(self, element):
-        self.operations.append({'action': 'create', 'value': self.serialise_entity_instance(element.get_info())})
+        self.operations.append({'action': 'create', 'value': self.serialise_entity_instance(element)})
 
     def store_edit(self, element, index, value):
         self.operations.append({'action': 'edit', 'id': element.id(), 'index': index, 'old': element[index], 'new': value})
@@ -65,10 +63,10 @@ class Transaction:
                     inverse_references.append((i, 'multiple'))
             inverses[inverse.id()] = inverse_references
         self.operations.append({
-            'action': 'delete', 'inverses': inverses, 'value': self.serialise_entity_instance(element.get_info())
+            'action': 'delete', 'inverses': inverses, 'value': self.serialise_entity_instance(element)
         })
 
-    def undo(self):
+    def rollback(self):
         self.file.wrapped_data.recalculate_id_counter()
         for operation in self.operations[::-1]:
             print('UNDOING OPERATION', operation)
@@ -85,11 +83,7 @@ class Transaction:
             elif operation['action'] == 'delete':
                 e = self.file.create_entity(operation['value']['type'])
                 for k, v in operation['value'].items():
-                    if isinstance(v, dict):
-                        if v['type'] == 'single':
-                            v = self.file.by_id(v['id'])
-                        elif v['type'] == 'multiple':
-                            v = [self.file.by_id(i) for i in v['ids']]
+                    v = e.walk(lambda v : isinstance(v, dict), lambda v : self.file.by_id(v['id']), v)
                     try:
                         setattr(e, k, v)
                     except:
@@ -107,16 +101,12 @@ class Transaction:
                                 new.append(e)
                                 inverse[index] = new
 
-    def redo(self):
+    def commit(self):
         for operation in self.operations:
             if operation['action'] == 'create':
                 e = self.file.create_entity(operation['value']['type'])
                 for k, v in operation['value'].items():
-                    if isinstance(v, dict):
-                        if v['type'] == 'single':
-                            v = self.file.by_id(v['id'])
-                        elif v['type'] == 'multiple':
-                            v = [self.file.by_id(i) for i in v['ids']]
+                    v = e.walk(lambda v : isinstance(v, dict), lambda v : self.file.by_id(v['id']), v)
                     try:
                         setattr(e, k, v)
                     except:
@@ -156,8 +146,8 @@ class file(object):
             args = map(ifcopenshell_wrapper.schema_by_name, args)
             self.wrapped_data = ifcopenshell_wrapper.file(*args)
         self.history_size = 5
-        self.history = [None] * self.history_size
-        self.current_history_index = self.history_size - 1
+        self.history = []
+        self.future = []
         self.transaction = None
 
     def begin_transaction(self):
@@ -166,27 +156,27 @@ class file(object):
     def end_transaction(self):
         if self.transaction:
             self.history.append(self.transaction)
-            self.history.pop(0)
+            if len(self.history) > self.history_size:
+                self.history.pop(0)
+            self.future = []
             self.transaction = None
 
     def discard_transaction(self):
         self.transaction = None
 
     def undo(self):
-        if self.current_history_index < 0:
+        if not self.history:
             return
-        event = self.history[self.current_history_index]
-        if event:
-            event.undo()
-            self.current_history_index -= 1
+        transaction = self.history.pop()
+        transaction.rollback()
+        self.future.append(transaction)
 
     def redo(self):
-        if self.current_history_index + 1 >= self.history_size:
+        if not self.future:
             return
-        event = self.history[self.current_history_index + 1]
-        if event:
-            event.redo()
-            self.current_history_index += 1
+        transaction = self.future.pop()
+        transaction.commit()
+        self.history.append(transaction)
 
     def create_entity(self, type, *args, **kwargs):
         """Create a new IFC entity in the file.
