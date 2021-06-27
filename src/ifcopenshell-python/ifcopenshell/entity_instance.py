@@ -116,7 +116,10 @@ class entity_instance(object):
         return self.wrapped_data.get_argument_name(attr_idx)
 
     def __setattr__(self, key, value):
-        self[self.wrapped_data.get_argument_index(key)] = value
+        index = self.wrapped_data.get_argument_index(key)
+        if self.wrapped_data.file.transaction:
+            self.wrapped_data.file.transaction.store_edit(self, index, value)
+        self[index] = value
 
     def __getitem__(self, key):
         if key < 0 or key >= len(self):
