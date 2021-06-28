@@ -48,10 +48,12 @@ class entity_instance(object):
         >>> #423=IfcProductDefinitionShape($,$,(#409,#421))
     """
 
-    def __init__(self, e):
+    def __init__(self, e, file=None):
         if isinstance(e, tuple):
             e = ifcopenshell_wrapper.new_IfcBaseClass(*e)
         super(entity_instance, self).__setattr__("wrapped_data", e)
+        if file is not None:
+            self.wrapped_data.file = file
 
     def __getattr__(self, name):
         INVALID, FORWARD, INVERSE = range(3)
