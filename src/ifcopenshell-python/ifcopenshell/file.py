@@ -198,10 +198,14 @@ class file(object):
             f.create_entity('IfcPerson', Identification='Foobar')
             >>> #3=IfcPerson('Foobar',$,$,$,$,$,$,$)
         """
+        eid = -1
+        try:
+            eid = kwargs.pop("_id", -1)
+        except: pass
         e = entity_instance((self.schema, type))
         # Hack, can a entity access its file?
         e.wrapped_data.file = self
-        self.wrapped_data.add(e.wrapped_data)
+        self.wrapped_data.add(e.wrapped_data, eid)
         e.wrapped_data.this.disown()
         attrs = list(enumerate(args)) + [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
         for idx, arg in attrs:
@@ -248,12 +252,12 @@ class file(object):
         """
         return self[guid]
 
-    def add(self, inst):
+    def add(self, inst, _id=None):
         """Adds an entity including any dependent entities to an IFC file.
 
         If the entity already exists, it is not re-added."""
         inst.wrapped_data.this.disown()
-        return entity_instance(self.wrapped_data.add(inst.wrapped_data))
+        return entity_instance(self.wrapped_data.add(inst.wrapped_data, -1 if _id is None else _id))
 
     def by_type(self, type, include_subtypes=True):
         """Return IFC objects filtered by IFC Type and wrapped with the entity_instance class.

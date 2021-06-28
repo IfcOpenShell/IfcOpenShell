@@ -1562,7 +1562,11 @@ void IfcFile::addEntities(IfcEntityList::ptr es) {
 	}
 }
 
-IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
+IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id) {
+	if (id != -1 && byid.find((unsigned)id) != byid.end()) {
+		throw IfcParse::IfcException("An instance with id " + boost::lexical_cast<std::string>(id) + " is already part of this file");
+	}
+
 	if (entity->declaration().schema() != schema()) {
 		throw IfcParse::IfcException("Unabled to add instance from " + entity->declaration().schema()->name() + " schema to file with " + schema()->name() + " schema");
 	}
@@ -1698,7 +1702,14 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 		// the instance is pointed to this file.
 		we->file = this;
 		if (we->type()->as_entity()) {
-			we->set_id(FreshId());
+			if (id == -1) {
+				we->set_id(FreshId());
+			} else {
+				we->set_id((unsigned int)id);
+				if ((unsigned) id > MaxId) {
+					MaxId = (unsigned)id;
+				}
+			}
 		}
 
 		// @todo entity_file_map: use weak_ptr
@@ -1720,62 +1731,68 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 		}
 	}
 
-// The mapping by entity type is updated.
-const IfcParse::declaration* ty = &new_entity->declaration();
+	// The mapping by entity type is updated.
+	const IfcParse::declaration* ty = &new_entity->declaration();
 
-if (ty->as_entity()) {
-	IfcEntityList::ptr insts = instances_by_type_excl_subtypes(ty);
-	if (!insts) {
-		insts = IfcEntityList::ptr(new IfcEntityList());
-		bytype_excl[ty] = insts;
-	}
-	insts->push(new_entity);
-}
-
-for (; ty->as_entity();) {
-	IfcEntityList::ptr insts = instances_by_type(ty);
-	if (!insts) {
-		insts = IfcEntityList::ptr(new IfcEntityList());
-		bytype[ty] = insts;
-	}
-	insts->push(new_entity);
-
-	const IfcParse::declaration* pt = ty->as_entity()->supertype();
-	if (pt) {
-		ty = pt;
-	}
-	else {
-		break;
-	}
-}
-
-if (ty->as_entity()) {
-	int new_id = -1;
-	if (!new_entity->data().file) {
-		// For newly created entities ensure a valid ENTITY_INSTANCE_NAME is set
-		new_entity->data().file = this;
-		new_id = new_entity->data().set_id();
-	}
-	else {
-		new_id = new_entity->data().id();
+	if (ty->as_entity()) {
+		IfcEntityList::ptr insts = instances_by_type_excl_subtypes(ty);
+		if (!insts) {
+			insts = IfcEntityList::ptr(new IfcEntityList());
+			bytype_excl[ty] = insts;
+		}
+		insts->push(new_entity);
 	}
 
-	if (byid.find(new_id) != byid.end()) {
-		// This should not happen
-		std::stringstream ss;
-		ss << "Overwriting entity with id " << new_id;
-		Logger::Message(Logger::LOG_WARNING, ss.str());
+	for (; ty->as_entity();) {
+		IfcEntityList::ptr insts = instances_by_type(ty);
+		if (!insts) {
+			insts = IfcEntityList::ptr(new IfcEntityList());
+			bytype[ty] = insts;
+		}
+		insts->push(new_entity);
+
+		const IfcParse::declaration* pt = ty->as_entity()->supertype();
+		if (pt) {
+			ty = pt;
+		}
+		else {
+			break;
+		}
 	}
 
-	// The mapping by entity instance name is updated.
-	byid[new_id] = new_entity;
-}
+	if (ty->as_entity()) {
+		int new_id = -1;
+		if (!new_entity->data().file) {
+			// For newly created entities ensure a valid ENTITY_INSTANCE_NAME is set
+			new_entity->data().file = this;
+			boost::optional<unsigned> id_value;
+			if (id != -1) {
+				id_value = (unsigned)id;
+				if ((unsigned)id > MaxId) {
+					MaxId = (unsigned)id;
+				}
+			}
+			new_id = new_entity->data().set_id(id_value);
+		} else {
+			new_id = new_entity->data().id();
+		}
 
-if (parsing_complete_ && ty->as_entity()) {
-	build_inverses_(new_entity);
-}
+		if (byid.find(new_id) != byid.end()) {
+			// This should not happen
+			std::stringstream ss;
+			ss << "Overwriting entity with id " << new_id;
+			Logger::Message(Logger::LOG_WARNING, ss.str());
+		}
 
-return new_entity;
+		// The mapping by entity instance name is updated.
+		byid[new_id] = new_entity;
+	}
+
+	if (parsing_complete_ && ty->as_entity()) {
+		build_inverses_(new_entity);
+	}
+
+	return new_entity;
 }
 
 void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
