@@ -177,6 +177,7 @@ class BIMProperties(PropertyGroup):
     id_map: StringProperty(name="ID Map")
     guid_map: StringProperty(name="GUID Map")
     export_schema: EnumProperty(items=[("IFC4", "IFC4", ""), ("IFC2X3", "IFC2X3", "")], name="IFC Schema")
+    last_transaction: StringProperty(name="Last Transaction")
     contexts: EnumProperty(items=getContexts, name="Contexts")
     available_contexts: EnumProperty(items=[("Model", "Model", ""), ("Plan", "Plan", "")], name="Available Contexts")
     available_subcontexts: EnumProperty(items=getSubcontexts, name="Available Subcontexts")

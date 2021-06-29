@@ -112,6 +112,20 @@ def loadIfcStore(scene):
 
 
 @persistent
+def undo_post(scene):
+    if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
+        IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
+        IfcStore.undo()
+
+
+@persistent
+def redo_post(scene):
+    if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
+        IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
+        IfcStore.redo()
+
+
+@persistent
 def ensureIfcExported(scene):
     if IfcStore.get_file() and not bpy.context.scene.BIMProperties.ifc_file:
         bpy.ops.export_ifc.bim("INVOKE_DEFAULT")
