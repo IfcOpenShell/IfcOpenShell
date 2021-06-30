@@ -88,7 +88,6 @@ class AssignClass(bpy.types.Operator):
     ifc_representation_class: bpy.props.StringProperty()
 
     def execute(self, context):
-        self.transaction_data = []
         objects = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
         self.file = IfcStore.get_file()
         self.declaration = IfcStore.get_schema().declaration_by_name(self.ifc_class)
@@ -117,7 +116,6 @@ class AssignClass(bpy.types.Operator):
         self.file.end_transaction()
         obj.name = "{}/{}".format(product.is_a(), obj.name)
         IfcStore.link_element(product, obj)
-        self.transaction_data.append({"element": product.id(), "obj": obj.name})
 
         if self.should_add_representation:
             bpy.ops.bim.add_representation(
@@ -178,18 +176,10 @@ class AssignClass(bpy.types.Operator):
                 break
 
     def rollback(self, data):
-        for linked_element in data:
-            IfcStore.unlink_element(
-                IfcStore.get_file().by_id(linked_element["element"]), bpy.data.objects.get(linked_element["obj"])
-            )
         IfcStore.get_file().undo()
 
     def commit(self, data):
         IfcStore.get_file().redo()
-        for linked_element in data:
-            IfcStore.link_element(
-                IfcStore.get_file().by_id(linked_element["element"]), bpy.data.objects.get(linked_element["obj"])
-            )
 
 
 class UnassignClass(bpy.types.Operator):

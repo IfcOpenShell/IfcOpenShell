@@ -166,6 +166,24 @@ class Attribute(PropertyGroup):
     enum_value: EnumProperty(items=getAttributeEnumValues, name="Value", update=updateAttributeEnumValue)
 
 
+class ElementMap(PropertyGroup):
+    name: StringProperty(name="STEP ID or GlobalId")
+    # See https://devtalk.blender.org/t/undo-breaks-my-addon/16567
+    obj: PointerProperty(name="Object", type=bpy.types.Object)
+
+
+class BIMIdMap(PropertyGroup):
+    # This belongs by itself for performance reasons. https://developer.blender.org/T87737
+    # In Blender if you add many collection items it makes other property access in the same group really slow.
+    id_map: CollectionProperty(name="GUID Map", type=ElementMap)
+
+
+class BIMGuidMap(PropertyGroup):
+    # This belongs by itself for performance reasons. https://developer.blender.org/T87737
+    # In Blender if you add many collection items it makes other property access in the same group really slow.
+    guid_map: CollectionProperty(name="GUID Map", type=ElementMap)
+
+
 class BIMProperties(PropertyGroup):
     schema_dir: StringProperty(
         default=os.path.join(cwd, "schema") + os.path.sep, name="Schema Directory", update=updateSchemaDir
@@ -174,8 +192,6 @@ class BIMProperties(PropertyGroup):
         default=os.path.join(cwd, "data") + os.path.sep, name="Data Directory", update=updateDataDir
     )
     ifc_file: StringProperty(name="IFC File", update=updateIfcFile)
-    id_map: StringProperty(name="ID Map")
-    guid_map: StringProperty(name="GUID Map")
     export_schema: EnumProperty(items=[("IFC4", "IFC4", ""), ("IFC2X3", "IFC2X3", "")], name="IFC Schema")
     last_transaction: StringProperty(name="Last Transaction")
     contexts: EnumProperty(items=getContexts, name="Contexts")

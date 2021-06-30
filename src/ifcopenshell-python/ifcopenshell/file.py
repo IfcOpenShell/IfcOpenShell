@@ -158,7 +158,7 @@ class file(object):
             args = filter(None, [schema])
             args = map(ifcopenshell_wrapper.schema_by_name, args)
             self.wrapped_data = ifcopenshell_wrapper.file(*args)
-        self.history_size = 5
+        self.history_size = 64
         self.history = []
         self.future = []
         self.transaction = None

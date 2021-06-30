@@ -79,6 +79,9 @@ if bpy is not None:
         operator.SnapSpacesTogether,
         prop.StrProperty,
         prop.Attribute,
+        prop.ElementMap,
+        prop.BIMIdMap,
+        prop.BIMGuidMap,
         prop.BIMProperties,
         prop.IfcParameter,
         prop.PsetQto,
@@ -117,6 +120,8 @@ if bpy is not None:
         bpy.app.handlers.save_pre.append(handler.ensureIfcExported)
         bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
         bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
+        bpy.types.Scene.BIMIdMap = bpy.props.PointerProperty(type=prop.BIMIdMap)
+        bpy.types.Scene.BIMGuidMap = bpy.props.PointerProperty(type=prop.BIMGuidMap)
         bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
         bpy.types.Object.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
         bpy.types.Material.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
@@ -141,6 +146,8 @@ if bpy is not None:
         bpy.app.handlers.save_pre.remove(handler.ensureIfcExported)
         bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
         bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
+        del bpy.types.Scene.BIMIdMap
+        del bpy.types.Scene.BIMGuidMap
         del bpy.types.Scene.BIMProperties
         del bpy.types.Object.BIMObjectProperties
         del bpy.types.Material.BIMObjectProperties
