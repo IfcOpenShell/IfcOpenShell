@@ -128,8 +128,8 @@ class IfcStore:
         data = getattr(operator, "transaction_data", None)
         bpy.context.scene.BIMProperties.last_transaction = key
         IfcStore.last_transaction = key
-        rollback = rollback or getattr(operator, "rollback", lambda: True)
-        commit = commit or getattr(operator, "commit", lambda: True)
+        rollback = rollback or getattr(operator, "rollback", lambda data: True)
+        commit = commit or getattr(operator, "commit", lambda data: True)
         if IfcStore.history and IfcStore.history[-1]["key"] == key:
             IfcStore.history[-1]["transactions"].append({"rollback": rollback, "commit": commit, "data": data})
         else:
