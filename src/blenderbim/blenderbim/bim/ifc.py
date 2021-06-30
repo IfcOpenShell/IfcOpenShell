@@ -8,6 +8,8 @@ class IfcStore:
     path = ""
     file = None
     schema = None
+    id_map = {}
+    guid_map = {}
     edited_objs = set()
     pset_template_path = ""
     pset_template_file = None
@@ -23,13 +25,13 @@ class IfcStore:
         IfcStore.path = ""
         IfcStore.file = None
         IfcStore.schema = None
+        IfcStore.id_map = {}
+        IfcStore.guid_map = {}
         IfcStore.edited_objs = set()
         IfcStore.pset_template_path = ""
         IfcStore.pset_template_file = None
         IfcStore.library_path = ""
         IfcStore.library_file = None
-        bpy.context.scene.BIMIdMap.id_map.clear()
-        bpy.context.scene.BIMGuidMap.guid_map.clear()
 
     @staticmethod
     def get_file():
@@ -53,12 +55,11 @@ class IfcStore:
     @staticmethod
     def get_element(id_or_guid):
         if isinstance(id_or_guid, int):
-            map_object = bpy.context.scene.BIMIdMap.id_map
-            id_or_guid = str(id_or_guid)
+            map_object = IfcStore.id_map
         else:
-            map_object = bpy.context.scene.BIMGuidMap.guid_map
+            map_object = IfcStore.guid_map
         try:
-            obj = map_object.get(id_or_guid).obj
+            obj = map_object[id_or_guid]
             obj.type  # In case the object has been deleted, this triggers an exception
         except:
             return
@@ -69,18 +70,25 @@ class IfcStore:
         IfcStore.element_listeners.add(callback)
 
     @staticmethod
+    def reload_linked_elements(should_reload_selected=False):
+        file = IfcStore.get_file()
+        if not file:
+            return
+        if should_reload_selected:
+            objects = bpy.context.selected_objects + [bpy.context.active_object]
+        else:
+            objects = bpy.data.objects
+        [
+            IfcStore.link_element(file.by_id(obj.BIMObjectProperties.ifc_definition_id), obj)
+            for obj in objects
+            if obj.BIMObjectProperties.ifc_definition_id
+        ]
+
+    @staticmethod
     def link_element(element, obj):
-        element_link = bpy.context.scene.BIMIdMap.id_map.get(str(element.id()))
-        if not element_link:
-            new = bpy.context.scene.BIMIdMap.id_map.add()
-            new.name = str(element.id())
-            new.obj = obj
+        IfcStore.id_map[element.id()] = obj
         if hasattr(element, "GlobalId"):
-            element_link = bpy.context.scene.BIMGuidMap.guid_map.get(element.GlobalId)
-            if not element_link:
-                new = bpy.context.scene.BIMGuidMap.guid_map.add()
-                new.name = element.GlobalId
-                new.obj = obj
+            IfcStore.guid_map[element.GlobalId] = obj
         obj.BIMObjectProperties.ifc_definition_id = element.id()
         blenderbim.bim.handler.subscribe_to(obj, "mode", blenderbim.bim.handler.mode_callback)
         blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)
@@ -97,19 +105,15 @@ class IfcStore:
 
         try:
             if element:
-                bpy.context.scene.BIMIdMap.id_map.remove(bpy.context.scene.BIMIdMap.id_map.find(str(element.id())))
+                del IfcStore.id_map[element.id()]
             else:
-                bpy.context.scene.BIMIdMap.id_map.remove(
-                    bpy.context.scene.BIMIdMap.id_map.find(str(obj.BIMObjectProperties.ifc_definition_id))
-                )
+                del IfcStore.id_map[obj.BIMObjectProperties.ifc_definition_id]
         except:
             pass
 
         try:
             if element and hasattr(element, "GlobalId"):
-                bpy.context.scene.BIMGuidMap.guid_map.remove(
-                    bpy.context.scene.BIMGuidMap.guid_map.find(element.GlobalId)
-                )
+                del IfcStore.guid_map[element.GlobalId]
         except:
             pass
 

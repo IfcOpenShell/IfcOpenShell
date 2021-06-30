@@ -66,9 +66,7 @@ class IfcExporter:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         to_delete = []
 
-        for element_map in bpy.context.scene.BIMIdMap.id_map:
-            ifc_definition_id = int(element_map.name)
-            obj = element_map.obj
+        for ifc_definition_id, obj in IfcStore.id_map.items():
             try:
                 self.sync_object_placement(obj)
                 self.sync_object_container(ifc_definition_id, obj)

@@ -166,24 +166,6 @@ class Attribute(PropertyGroup):
     enum_value: EnumProperty(items=getAttributeEnumValues, name="Value", update=updateAttributeEnumValue)
 
 
-class ElementMap(PropertyGroup):
-    name: StringProperty(name="STEP ID or GlobalId")
-    # See https://devtalk.blender.org/t/undo-breaks-my-addon/16567
-    obj: PointerProperty(name="Object", type=bpy.types.Object)
-
-
-class BIMIdMap(PropertyGroup):
-    # This belongs by itself for performance reasons. https://developer.blender.org/T87737
-    # In Blender if you add many collection items it makes other property access in the same group really slow.
-    id_map: CollectionProperty(name="GUID Map", type=ElementMap)
-
-
-class BIMGuidMap(PropertyGroup):
-    # This belongs by itself for performance reasons. https://developer.blender.org/T87737
-    # In Blender if you add many collection items it makes other property access in the same group really slow.
-    guid_map: CollectionProperty(name="GUID Map", type=ElementMap)
-
-
 class BIMProperties(PropertyGroup):
     schema_dir: StringProperty(
         default=os.path.join(cwd, "schema") + os.path.sep, name="Schema Directory", update=updateSchemaDir
