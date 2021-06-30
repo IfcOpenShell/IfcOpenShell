@@ -90,13 +90,18 @@ class Transaction:
                 self.file.remove(element)
             elif operation["action"] == "edit":
                 element = self.file.by_id(operation["id"])
-                element[operation["index"]] = self.unserialise_value(element, operation["old"])
+                try:
+                    element[operation["index"]] = self.unserialise_value(element, operation["old"])
+                except:
+                    # Catch discrepancy where IfcOpenShell creates but doesn't allow editing of invalid values
+                    pass
             elif operation["action"] == "delete":
                 e = self.file.create_entity(operation["value"]["type"], id=operation["value"]["id"])
                 for k, v in operation["value"].items():
                     try:
                         setattr(e, k, self.unserialise_value(e, v))
                     except:
+                        # Catch discrepancy where IfcOpenShell creates but doesn't allow editing of invalid values
                         pass
                 for inverse_id, data in operation["inverses"].items():
                     inverse = self.file.by_id(inverse_id)
@@ -119,6 +124,7 @@ class Transaction:
                     try:
                         setattr(e, k, self.unserialise_value(e, v))
                     except:
+                        # Catch discrepancy where IfcOpenShell creates but doesn't allow editing of invalid values
                         pass
             elif operation["action"] == "edit":
                 element = self.file.by_id(operation["id"])
