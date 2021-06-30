@@ -12,6 +12,7 @@ this document.
    :caption: Contents:
 
    blenderbim/installation
+   blenderbim/developer_guide
    blenderbim/scene
 
 
