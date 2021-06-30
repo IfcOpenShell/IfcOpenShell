@@ -4,7 +4,6 @@ from . import ui, prop, operator
 classes = (
     operator.CreateProject,
     operator.CreateProjectLibrary,
-    operator.ValidateIfcFile,
     operator.SelectLibraryFile,
     operator.ChangeLibraryElement,
     operator.RefreshLibrary,

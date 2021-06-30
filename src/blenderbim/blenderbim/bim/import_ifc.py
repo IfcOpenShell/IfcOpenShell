@@ -704,7 +704,7 @@ class IfcImporter:
                 product = self.file.by_id(shape.guid)
                 # Facetation is to accommodate broken Revit files
                 # See https://forums.buildingsmart.org/t/suggestions-on-how-to-improve-clarity-of-representation-context-usage-in-documentation/3663/6?u=moult
-                if shape.context not in ["Body", "Facetation"] and shape.guid in IfcStore.guid_map:
+                if shape.context not in ["Body", "Facetation"] and IfcStore.get_element(shape.guid):
                     # We only load a single context, and we prioritise the Body context. See #1290.
                     pass
                 elif product.is_a("IfcAnnotation") and product.ObjectType == "DRAWING":

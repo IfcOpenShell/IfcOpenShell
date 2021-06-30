@@ -1,4 +1,5 @@
 import bpy
+import uuid
 import ifcopenshell
 import blenderbim.bim.handler
 
@@ -15,6 +16,9 @@ class IfcStore:
     library_path = ""
     library_file = None
     element_listeners = set()
+    last_transaction = ""
+    history = []
+    future = []
 
     @staticmethod
     def purge():
@@ -66,6 +70,21 @@ class IfcStore:
         IfcStore.element_listeners.add(callback)
 
     @staticmethod
+    def reload_linked_elements(should_reload_selected=False):
+        file = IfcStore.get_file()
+        if not file:
+            return
+        if should_reload_selected:
+            objects = bpy.context.selected_objects + [bpy.context.active_object]
+        else:
+            objects = bpy.data.objects
+        [
+            IfcStore.link_element(file.by_id(obj.BIMObjectProperties.ifc_definition_id), obj)
+            for obj in objects
+            if obj.BIMObjectProperties.ifc_definition_id
+        ]
+
+    @staticmethod
     def link_element(element, obj):
         IfcStore.id_map[element.id()] = obj
         if hasattr(element, "GlobalId"):
@@ -100,3 +119,43 @@ class IfcStore:
 
         if obj:
             obj.BIMObjectProperties.ifc_definition_id = 0
+
+    @staticmethod
+    def generate_transaction_key(operator):
+        if not getattr(operator, "transaction_key", None):
+            setattr(operator, "transaction_key", str(uuid.uuid4()))
+
+    @staticmethod
+    def add_transaction(operator, rollback=None, commit=None):
+        IfcStore.generate_transaction_key(operator)
+        key = getattr(operator, "transaction_key", None)
+        data = getattr(operator, "transaction_data", None)
+        bpy.context.scene.BIMProperties.last_transaction = key
+        IfcStore.last_transaction = key
+        rollback = rollback or getattr(operator, "rollback", lambda data: True)
+        commit = commit or getattr(operator, "commit", lambda data: True)
+        if IfcStore.history and IfcStore.history[-1]["key"] == key:
+            IfcStore.history[-1]["transactions"].append({"rollback": rollback, "commit": commit, "data": data})
+        else:
+            IfcStore.history.append(
+                {"key": key, "transactions": [{"rollback": rollback, "commit": commit, "data": data}]}
+            )
+        IfcStore.future = []
+
+    @staticmethod
+    def undo():
+        if not IfcStore.history:
+            return
+        event = IfcStore.history.pop()
+        for transaction in event["transactions"][::-1]:
+            transaction["rollback"](transaction["data"])
+        IfcStore.future.append(event)
+
+    @staticmethod
+    def redo():
+        if not IfcStore.future:
+            return
+        event = IfcStore.future.pop()
+        for transaction in event["transactions"]:
+            transaction["commit"](transaction["data"])
+        IfcStore.history.append(event)
