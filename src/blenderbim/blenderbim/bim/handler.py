@@ -40,7 +40,7 @@ def name_callback(obj, data):
         collection = obj.users_collection[0]
         collection.name = obj.name
     if element.is_a("IfcGrid"):
-        axis_obj = IfcStore.id_map[element.UAxes[0].id()]
+        axis_obj = IfcStore.get_element(element.UAxes[0].id())
         axis_collection = axis_obj.users_collection[0]
         grid_collection = None
         for collection in bpy.data.collections:
@@ -103,12 +103,24 @@ def loadIfcStore(scene):
     if not ifc_file:
         return
     IfcStore.get_schema()
-    [
-        IfcStore.link_element(ifc_file.by_id(o.BIMObjectProperties.ifc_definition_id), o)
-        for o in bpy.data.objects
-        if o.BIMObjectProperties.ifc_definition_id
-    ]
+    IfcStore.reload_linked_elements()
     purge_module_data()
+
+
+@persistent
+def undo_post(scene):
+    if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
+        IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
+        IfcStore.undo()
+    IfcStore.reload_linked_elements(should_reload_selected=True)
+
+
+@persistent
+def redo_post(scene):
+    if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
+        IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
+        IfcStore.redo()
+    IfcStore.reload_linked_elements(should_reload_selected=True)
 
 
 @persistent

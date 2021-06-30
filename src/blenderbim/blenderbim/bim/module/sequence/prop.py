@@ -301,7 +301,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
 
 class BIMTaskTreeProperties(PropertyGroup):
     # This belongs by itself for performance reasons. https://developer.blender.org/T87737
-    # In Blender if you add thousands of tasks it makes other property access in the same group really slow.
+    # In Blender if you add many collection items it makes other property access in the same group really slow.
     tasks: CollectionProperty(name="Tasks", type=Task)
 
 

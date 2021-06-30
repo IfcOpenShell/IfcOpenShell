@@ -174,9 +174,8 @@ class BIMProperties(PropertyGroup):
         default=os.path.join(cwd, "data") + os.path.sep, name="Data Directory", update=updateDataDir
     )
     ifc_file: StringProperty(name="IFC File", update=updateIfcFile)
-    id_map: StringProperty(name="ID Map")
-    guid_map: StringProperty(name="GUID Map")
     export_schema: EnumProperty(items=[("IFC4", "IFC4", ""), ("IFC2X3", "IFC2X3", "")], name="IFC Schema")
+    last_transaction: StringProperty(name="Last Transaction")
     contexts: EnumProperty(items=getContexts, name="Contexts")
     available_contexts: EnumProperty(items=[("Model", "Model", ""), ("Plan", "Plan", "")], name="Available Contexts")
     available_subcontexts: EnumProperty(items=getSubcontexts, name="Available Subcontexts")
