@@ -494,7 +494,7 @@ function(files_for_ifc_version IFC_VERSION RESULT_NAME)
     )
 endfunction()
 
-set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_rc1" "4x3_rc2")
+set(SCHEMA_VERSIONS "2x3" "4")
 
 foreach(s ${SCHEMA_VERSIONS})
 	add_definitions(-DHAS_SCHEMA_${s})
@@ -638,7 +638,7 @@ if (UNIX)
 find_package(Threads)
 endif()
 
-TARGET_LINK_LIBRARIES(IfcGeom IFCParse ${IFCGEOM_SCHEMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+TARGET_LINK_LIBRARIES(IfcGeom IfcParse ${IFCGEOM_SCHEMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
 endif(BUILD_IFCGEOM)
 
