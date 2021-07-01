@@ -23,7 +23,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)  # not necessary, but encouraged
 
 project (IfcOpenShell VERSION 0.6.0)
 
-# use extra version to make pre-release using eg semver 
+# use extra version to make pre-release using eg semver
 set( EXTRA_VERSION "-alpha.3")
 
 foreach(max_year RANGE 2014 2030)
@@ -441,7 +441,7 @@ IF(MSVC)
 		# Disable overeager and false positives causing C4458 ("declaration of 'indentifier' hides class member"), at least for now.
 		ADD_DEFINITIONS(-wd4458)
 	ENDIF()
-    # Enforce standards-conformance on VS > 2015, older Boost versions fail to compile with this    
+    # Enforce standards-conformance on VS > 2015, older Boost versions fail to compile with this
     if (MSVC_VERSION GREATER 1900 AND (Boost_MAJOR_VERSION GREATER 1 OR Boost_MINOR_VERSION GREATER 66))
         add_definitions(-permissive-)
     endif()
@@ -486,8 +486,8 @@ INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCL
 
 function(files_for_ifc_version IFC_VERSION RESULT_NAME)
     set(IFC_PARSE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../src/ifcparse)
-    set(${RESULT_NAME} 
-        ${IFC_PARSE_DIR}/Ifc${IFC_VERSION}.h 
+    set(${RESULT_NAME}
+        ${IFC_PARSE_DIR}/Ifc${IFC_VERSION}.h
         ${IFC_PARSE_DIR}/Ifc${IFC_VERSION}enum.h
         ${IFC_PARSE_DIR}/Ifc${IFC_VERSION}.cpp
 		PARENT_SCOPE
@@ -504,13 +504,13 @@ if(COMPILE_SCHEMA)
 	# @todo, this appears to be untested at the moment
 
     find_package(PythonInterp)
-    
+
     IF(NOT PYTHONINTERP_FOUND)
         MESSAGE(FATAL_ERROR "A Python interpreter is necessary when COMPILE_SCHEMA is enabled. Disable COMPILE_SCHEMA or fix Python paths to proceed.")
     ENDIF()
-    
+
     set(IFC_RELEASE_NOT_USED ${SCHEMA_VERSIONS})
-    
+
     # Install pyparsing if necessary
     execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pip freeze OUTPUT_VARIABLE PYTHON_PACKAGE_LIST)
     if ("${PYTHON_PACKAGE_LIST}" STREQUAL "")
@@ -532,23 +532,23 @@ if(COMPILE_SCHEMA)
     else()
         message(STATUS "Python interpreter with pyparsing found")
     endif()
-    
+
     # Bootstrap the parser
     message(STATUS "Compiling schema, this will take a while...")
-    execute_process(COMMAND ${PYTHON_EXECUTABLE} bootstrap.py express.bnf 
-        WORKING_DIRECTORY ../src/ifcexpressparser 
+    execute_process(COMMAND ${PYTHON_EXECUTABLE} bootstrap.py express.bnf
+        WORKING_DIRECTORY ../src/ifcexpressparser
         OUTPUT_FILE express_parser.py
         RESULT_VARIABLE SUCCESS)
 
     if (NOT "${SUCCESS}" STREQUAL "0")
         MESSAGE(FATAL_ERROR "Failed to bootstrap parser. Make sure pyparsing is installed")
     endif()
-        
+
     # Generate code
     execute_process(COMMAND ${PYTHON_EXECUTABLE} ../ifcexpressparser/express_parser.py ../../${COMPILE_SCHEMA}
         WORKING_DIRECTORY ../src/ifcparse
         OUTPUT_VARIABLE COMPILED_SCHEMA_NAME)
-    
+
     # Prevent the schema that had just been compiled from being excluded
 	foreach(s ${SCHEMA_VERSIONS})
 		if("${COMPILED_SCHEMA_NAME}" STREQUAL "${s}")
@@ -638,7 +638,7 @@ if (UNIX)
 find_package(Threads)
 endif()
 
-TARGET_LINK_LIBRARIES(IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+TARGET_LINK_LIBRARIES(IfcGeom IFCParse ${IFCGEOM_SCHEMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
 endif(BUILD_IFCGEOM)
 
@@ -708,7 +708,7 @@ INSTALL(TARGETS IfcGeomServer
 
 endif()
 
-# Documentation	
+# Documentation
 IF(BUILD_DOCUMENTATION)
 	set(CMAKE_MODULE_PATH "../docs/cmake")
 	ADD_SUBDIRECTORY(../docs docs)
@@ -727,7 +727,7 @@ IF(BUILD_IFCMAX)
 ENDIF()
 
 # CMake installation targets
-INSTALL(FILES ${IFCPARSE_H_FILES} 
+INSTALL(FILES ${IFCPARSE_H_FILES}
 	DESTINATION ${INCLUDEDIR}/ifcparse
 )
 
@@ -738,11 +738,11 @@ INSTALL(TARGETS IfcParse
 )
 
 if(BUILD_IFCGEOM)
-INSTALL(FILES ${IFCGEOM_H_FILES} 
+INSTALL(FILES ${IFCGEOM_H_FILES}
 	DESTINATION ${INCLUDEDIR}/ifcgeom
 )
 
-INSTALL(FILES  ${SCHEMA_AGNOSTIC_H_FILES} 
+INSTALL(FILES  ${SCHEMA_AGNOSTIC_H_FILES}
 	DESTINATION ${INCLUDEDIR}/ifcgeom_schema_agnostic
 )
 

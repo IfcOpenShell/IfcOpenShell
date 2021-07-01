@@ -38,11 +38,11 @@ namespace IfcUtil {
 
 namespace IfcParse {
 
-	class declaration; 
-	
-	class type_declaration; 
-	class select_type; 
-	class enumeration_type; 
+	class declaration;
+
+	class type_declaration;
+	class select_type;
+	class enumeration_type;
 	class entity;
 
 	class named_type;
@@ -121,7 +121,7 @@ namespace IfcParse {
 		int index_in_schema_;
 		mutable const schema_definition* schema_;
 
-	public:		
+	public:
 		declaration(const std::string& name, int index_in_schema)
 			: name_(name)
 			, name_lower_(boost::to_lower_copy(name))
@@ -305,7 +305,7 @@ namespace IfcParse {
 		const std::vector<const entity*>& subtypes() const { return subtypes_; }
 		const std::vector<const attribute*>& attributes() const { return attributes_; }
 		const std::vector<bool>& derived() const { return derived_; }
-	
+
 		const std::vector<const attribute*> all_attributes() const {
 			std::vector<const attribute*> attrs;
 			attrs.reserve(derived_.size());
@@ -416,7 +416,7 @@ namespace IfcParse {
 		instance_factory* factory_;
 
 	public:
-		
+
 		schema_definition(const std::string& name, const std::vector<const declaration*>& declarations, instance_factory* factory);
 
 		~schema_definition();
@@ -446,7 +446,7 @@ namespace IfcParse {
 		IfcUtil::IfcBaseClass* instantiate(IfcEntityInstanceData* data) const;
 	};
 
-	const schema_definition* schema_by_name(const std::string&);
+	IFC_PARSE_API const schema_definition* schema_by_name(const std::string&);
 
 	void register_schema(schema_definition*);
 }
