@@ -40,6 +40,9 @@ the layout of buttons, input fields, and panels. Finally, ``Props`` define
 properties that Blender keeps track of, typically for interface input fields or
 user settings.
 
+The Blender system depends on the IFC system. The IFC system does not depend on
+the Blender system.
+
 .. image:: architecture.png
 
 ..
@@ -76,6 +79,72 @@ user settings.
 
 Of course, there are many details that we are glossing over, but it provides a
 good representation of data flow in the BlenderBIM Add-on.
+
+The code for these two systems may be found here:
+
+- `ifcopenshell <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/ifcopenshell-python>`__
+- `blenderbim <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/blenderbim>`__
+
+Module architecture
+-------------------
+
+Because BIM authoring is a vast field, the architecture is further grouped into
+modules. Modules include things like project related capabilities, structural
+related capabilities, costing related capabilities, and so on.
+
+Each module consists an IFC based system, which does all the IFC manipulations,
+and a Blender based counterpart, which exposes all of these operations to the
+user via the Blender interface.
+
+.. image:: module-architecture.png
+
+..
+
+    digraph G {
+        rankdir=LR;
+        node [fontname = "Handlee", shape=rect];
+        subgraph cluster_1 {
+            ifc1 [label="IFC", style=filled, color=pink];
+            blender1 [label="Blender", style=filled, color=lightblue];
+            ifc1 -> blender1
+            blender1 -> ifc1
+
+            label = "*XYZ Module*";
+            fontsize = 20;
+            color=grey
+        }
+        subgraph cluster_2 {
+            ifc2 [label="IFC", style=filled, color=pink];
+            blender2 [label="Blender", style=filled, color=lightblue];
+            ifc2 -> blender2
+            blender2 -> ifc2
+
+            label = "*Structural Module*";
+            fontsize = 20;
+            color=grey
+        }
+        subgraph cluster_3 {
+            ifc3 [label="IFC", style=filled, color=pink];
+            blender3 [label="Blender", style=filled, color=lightblue];
+            ifc3 -> blender3
+            blender3 -> ifc3
+
+            label = "*Project Module*";
+            fontsize = 20;
+            color=grey
+        }
+    }
+
+Modules are not arbitrary divisions, but instead reflect subgraphs of IFC
+relationships that minimise overlap with other subgraphs. Therefore modules are
+mostly self contained, and allow developers to work on a single portion of the
+code with relative certainty that their actions will not affects other
+developers. Sometimes, overlap is inevitable.
+
+There are over 40 modules, so we won't list them here.
+
+- `IFC modules <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/ifcopenshell-python/ifcopenshell/api>`__
+- `Blender modules <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/blenderbim/blenderbim/bim/module>`__
 
 IfcOpenShell Architecture
 -------------------------
@@ -180,3 +249,9 @@ The code for IfcOpenShell's various systems can be found here:
 - `ifcopenshell (core) <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/ifcopenshell-python/ifcopenshell>`__
 - `ifcopenshell.util <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/ifcopenshell-python/ifcopenshell/util>`__
 - `ifcopenshell.api <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.6.0/src/ifcopenshell-python/ifcopenshell/api>`__
+
+
+BlenderBIM Add-on architecture
+------------------------------
+
+TODO
