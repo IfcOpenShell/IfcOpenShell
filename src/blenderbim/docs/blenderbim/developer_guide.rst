@@ -99,7 +99,6 @@ user via the Blender interface.
 .. image:: module-architecture.png
 
 ..
-
     digraph G {
         rankdir=LR;
         node [fontname = "Handlee", shape=rect];
