@@ -197,6 +197,10 @@ const char* %(schema_name)s::%(name)s::ToString(Value v) {
 %(from_string_statements)s
     throw IfcException("Unable to find find keyword in schema");
 }
+
+%(schema_name)s::%(name)s::operator %(schema_name)s::%(name)s::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
 """
 
 entity_implementation = """// Function implementations for %(name)s
