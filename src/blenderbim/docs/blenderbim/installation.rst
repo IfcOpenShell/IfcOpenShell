@@ -142,9 +142,6 @@ Required static assets are:
     bim/data/gantt/jsgantt.js (from jsgantt-improved)
     bim/data/gantt/jsgantt.css (from jsgantt-improved)
 
-If you receive an error when enabling the add-on, you may have installed the
-package for the wrong platform.
-
 Source installation
 -------------------
 
