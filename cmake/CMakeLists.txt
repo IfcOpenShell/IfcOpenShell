@@ -494,7 +494,7 @@ function(files_for_ifc_version IFC_VERSION RESULT_NAME)
     )
 endfunction()
 
-set(SCHEMA_VERSIONS "2x3" "4")
+set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_rc1" "4x3_rc2")
 
 foreach(s ${SCHEMA_VERSIONS})
 	add_definitions(-DHAS_SCHEMA_${s})
