@@ -75,7 +75,9 @@ class IfcStore:
         if not file:
             return
         if should_reload_selected:
-            objects = bpy.context.selected_objects + [bpy.context.active_object]
+            objects = bpy.context.selected_objects
+            if bpy.context.active_object:
+                objects += [bpy.context.active_object]
         else:
             objects = bpy.data.objects
         [
@@ -94,6 +96,24 @@ class IfcStore:
         blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)
         for listener in IfcStore.element_listeners:
             listener(element, obj)
+
+        if IfcStore.history:
+            data = {"id": element.id(), "guid": getattr(element, "GlobalId", None), "obj": obj.name}
+            IfcStore.history[-1]["transactions"].append(
+                {"rollback": IfcStore.rollback_link_element, "commit": IfcStore.commit_link_element, "data": data}
+            )
+
+    @staticmethod
+    def rollback_link_element(data):
+        del IfcStore.id_map[data["id"]]
+        if data["guid"]:
+            del IfcStore.guid_map[data["guid"]]
+
+    @staticmethod
+    def commit_link_element(data):
+        IfcStore.id_map[data["id"]] = bpy.data.objects.get(data["obj"])
+        if data["guid"]:
+            IfcStore.guid_map[data["guid"]] = bpy.data.objects.get(data["obj"])
 
     @staticmethod
     def unlink_element(element=None, obj=None):
@@ -119,6 +139,35 @@ class IfcStore:
 
         if obj:
             obj.BIMObjectProperties.ifc_definition_id = 0
+
+    @staticmethod
+    def execute_ifc_operator(operator, context):
+        is_top_level_operator = not bool(operator.transaction_key)
+
+        if is_top_level_operator:
+            IfcStore.get_file().begin_transaction()
+            # This empty transaction ensures that each operator has at least one transaction
+            IfcStore.add_transaction(operator, rollback=lambda data: True, commit=lambda data: True)
+
+        result = getattr(operator, "_execute")(context)
+
+        if is_top_level_operator:
+            IfcStore.get_file().end_transaction()
+            IfcStore.add_transaction(
+                operator, rollback=IfcStore.rollback_ifc_operator, commit=IfcStore.commit_ifc_operator
+            )
+
+        return result
+
+    @staticmethod
+    def rollback_ifc_operator(data):
+        IfcStore.get_file().undo()
+        blenderbim.bim.handler.purge_module_data()
+
+    @staticmethod
+    def commit_ifc_operator(data):
+        IfcStore.get_file().redo()
+        blenderbim.bim.handler.purge_module_data()
 
     @staticmethod
     def generate_transaction_key(operator):

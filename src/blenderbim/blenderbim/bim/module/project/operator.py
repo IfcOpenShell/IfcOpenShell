@@ -16,6 +16,14 @@ class CreateProject(bpy.types.Operator):
     transaction_key: bpy.props.StringProperty()
 
     def execute(self, context):
+        IfcStore.generate_transaction_key(self)
+        IfcStore.add_transaction(self, rollback=self.rollback, commit=lambda data: True)
+        result = self._execute(context)
+        self.transaction_data = {"file": self.file}
+        IfcStore.add_transaction(self, rollback=lambda data: True, commit=self.commit)
+        return result
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         if self.file:
             return {"FINISHED"}
@@ -24,9 +32,6 @@ class CreateProject(bpy.types.Operator):
             "project.create_file", **{"version": bpy.context.scene.BIMProperties.export_schema}
         )
         self.file = IfcStore.get_file()
-
-        self.transaction_data = {"file": self.file}
-        IfcStore.add_transaction(self)
 
         bpy.ops.bim.add_person()
         bpy.ops.bim.add_organisation()
@@ -53,9 +58,9 @@ class CreateProject(bpy.types.Operator):
         bpy.ops.bim.assign_class(
             transaction_key=self.transaction_key, obj=building_storey.name, ifc_class="IfcBuildingStorey"
         )
-        bpy.ops.bim.assign_object(related_object=site.name, relating_object=project.name)
-        bpy.ops.bim.assign_object(related_object=building.name, relating_object=site.name)
-        bpy.ops.bim.assign_object(related_object=building_storey.name, relating_object=building.name)
+        bpy.ops.bim.assign_object(transaction_key=self.transaction_key, related_object=site.name, relating_object=project.name)
+        bpy.ops.bim.assign_object(transaction_key=self.transaction_key, related_object=building.name, relating_object=site.name)
+        bpy.ops.bim.assign_object(transaction_key=self.transaction_key, related_object=building_storey.name, relating_object=building.name)
 
         return {"FINISHED"}
 
@@ -75,6 +80,14 @@ class CreateProjectLibrary(bpy.types.Operator):
     transaction_key: bpy.props.StringProperty()
 
     def execute(self, context):
+        IfcStore.generate_transaction_key(self)
+        IfcStore.add_transaction(self, rollback=self.rollback, commit=lambda data: True)
+        result = self._execute(context)
+        self.transaction_data = {"file": self.file}
+        IfcStore.add_transaction(self, rollback=lambda data: True, commit=self.commit)
+        return result
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         if self.file:
             return {"FINISHED"}
@@ -83,9 +96,6 @@ class CreateProjectLibrary(bpy.types.Operator):
             "project.create_file", **{"version": bpy.context.scene.BIMProperties.export_schema}
         )
         self.file = IfcStore.get_file()
-
-        self.transaction_data = {"file": self.file}
-        IfcStore.add_transaction(self)
 
         if self.file.schema == "IFC2X3":
             bpy.ops.bim.add_person()
@@ -116,12 +126,15 @@ class SelectLibraryFile(bpy.types.Operator):
 
     def execute(self, context):
         old_filepath = IfcStore.library_path
+        result = self._execute(context)
+        self.transaction_data = {"old_filepath": old_filepath, "filepath": self.filepath}
+        IfcStore.add_transaction(self)
+        return result
+
+    def _execute(self, context):
         IfcStore.library_path = self.filepath
         IfcStore.library_file = ifcopenshell.open(self.filepath)
         bpy.ops.bim.refresh_library()
-
-        self.transaction_data = {"old_filepath": old_filepath, "filepath": self.filepath}
-        IfcStore.add_transaction(self)
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -217,23 +230,28 @@ class AssignLibraryDeclaration(bpy.types.Operator):
     bl_idname = "bim.assign_library_declaration"
     bl_label = "Assign Library Declaration"
     bl_options = {"REGISTER", "UNDO"}
+    transaction_key: bpy.props.StringProperty()
     definition: bpy.props.IntProperty()
 
     def execute(self, context):
+        IfcStore.library_file.begin_transaction()
+        result = self._execute(context)
+        IfcStore.library_file.end_transaction()
+        IfcStore.add_transaction(self)
+        return result
+
+    def _execute(self, context):
         self.props = context.scene.BIMProjectProperties
         self.file = IfcStore.library_file
-        self.file.begin_transaction()
         ifcopenshell.api.run(
             "project.assign_declaration",
             self.file,
             definition=self.file.by_id(self.definition),
             relating_context=self.file.by_type("IfcProjectLibrary")[0],
         )
-        self.file.end_transaction()
         element_name = self.props.active_library_element
         bpy.ops.bim.rewind_library()
         bpy.ops.bim.change_library_element(element_name=element_name)
-        IfcStore.add_transaction(self)
         return {"FINISHED"}
 
     def rollback(self, data):
@@ -247,23 +265,28 @@ class UnassignLibraryDeclaration(bpy.types.Operator):
     bl_idname = "bim.unassign_library_declaration"
     bl_label = "Unassign Library Declaration"
     bl_options = {"REGISTER", "UNDO"}
+    transaction_key: bpy.props.StringProperty()
     definition: bpy.props.IntProperty()
 
     def execute(self, context):
+        IfcStore.library_file.begin_transaction()
+        result = self._execute(context)
+        IfcStore.library_file.end_transaction()
+        IfcStore.add_transaction(self)
+        return result
+
+    def _execute(self, context):
         self.props = context.scene.BIMProjectProperties
         self.file = IfcStore.library_file
-        self.file.begin_transaction()
         ifcopenshell.api.run(
             "project.unassign_declaration",
             self.file,
             definition=self.file.by_id(self.definition),
             relating_context=self.file.by_type("IfcProjectLibrary")[0],
         )
-        self.file.end_transaction()
         element_name = self.props.active_library_element
         bpy.ops.bim.rewind_library()
         bpy.ops.bim.change_library_element(element_name=element_name)
-        IfcStore.add_transaction(self)
         return {"FINISHED"}
 
     def rollback(self, data):
@@ -286,21 +309,22 @@ class AppendLibraryElement(bpy.types.Operator):
     bl_idname = "bim.append_library_element"
     bl_label = "Append Library Element"
     bl_options = {"REGISTER", "UNDO"}
+    transaction_key: bpy.props.StringProperty()
     definition: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
-        self.file.begin_transaction()
         element = ifcopenshell.api.run(
             "project.append_asset",
             self.file,
             library=IfcStore.library_file,
             element=IfcStore.library_file.by_id(self.definition),
         )
-        self.file.end_transaction()
         self.import_type_from_ifc(element)
         blenderbim.bim.handler.purge_module_data()
-        IfcStore.add_transaction(self)
         return {"FINISHED"}
 
     def import_type_from_ifc(self, element):
@@ -321,12 +345,6 @@ class AppendLibraryElement(bpy.types.Operator):
         ifc_importer.type_collection = type_collection
         ifc_importer.create_type_product(element)
         ifc_importer.place_objects_in_spatial_tree()
-
-    def rollback(self, data):
-        IfcStore.get_file().undo()
-
-    def commit(self, data):
-        IfcStore.get_file().redo()
 
 
 class EnableEditingHeader(bpy.types.Operator):
@@ -367,24 +385,27 @@ class EditHeader(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        self.transaction_data = {}
+        self.transaction_data["old"] = self.record_state()
+        result = self._execute(context)
+        self.transaction_data["new"] = self.record_state()
+        IfcStore.add_transaction(self)
+        return result
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         props = context.scene.BIMProjectProperties
         props.is_editing = True
-
-        self.transaction_data = {}
-        self.transaction_data["old"] = self.record_state()
 
         self.file.wrapped_data.header.file_description.description = (f"ViewDefinition[{props.mvd}]",)
         self.file.wrapped_data.header.file_name.author = (props.author_name, props.author_email)
         self.file.wrapped_data.header.file_name.organization = (props.organisation_name, props.organisation_email)
         self.file.wrapped_data.header.file_name.authorization = props.authorisation
         bpy.ops.bim.disable_editing_header()
-
-        self.transaction_data["new"] = self.record_state()
-        IfcStore.add_transaction(self)
         return {"FINISHED"}
 
     def record_state(self):
+        self.file = IfcStore.get_file()
         return {
             "description": self.file.wrapped_data.header.file_description.description,
             "author": self.file.wrapped_data.header.file_name.author,

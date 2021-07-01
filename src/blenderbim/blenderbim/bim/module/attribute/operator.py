@@ -69,6 +69,9 @@ class EditAttributes(bpy.types.Operator):
     obj_type: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         if self.obj_type == "Object":
             obj = bpy.data.objects.get(self.obj)
@@ -99,11 +102,9 @@ class EditAttributes(bpy.types.Operator):
             elif attribute["type"] == "enum":
                 attributes[attribute["name"]] = blender_attribute.enum_value
         product = self.file.by_id(oprops.ifc_definition_id)
-        self.file.begin_transaction()
         ifcopenshell.api.run(
             "attribute.edit_attributes", self.file, **{"product": product, "attributes": attributes}
         )
-        self.file.end_transaction()
         if "Name" in attributes:
             new_name = "{}/{}".format(product.is_a(), product.Name or "Unnamed")
             collection = bpy.data.collections.get(obj.name)
@@ -112,17 +113,7 @@ class EditAttributes(bpy.types.Operator):
             obj.name = new_name
         Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         bpy.ops.bim.disable_editing_attributes(obj=obj.name, obj_type=self.obj_type)
-        self.transaction_data = {"ifc_definition_id": oprops.ifc_definition_id}
-        IfcStore.add_transaction(self)
         return {"FINISHED"}
-
-    def rollback(self, data):
-        IfcStore.get_file().undo()
-        Data.load(IfcStore.get_file(), data["ifc_definition_id"])
-
-    def commit(self, data):
-        IfcStore.get_file().redo()
-        Data.load(IfcStore.get_file(), data["ifc_definition_id"])
 
 
 class GenerateGlobalId(bpy.types.Operator):

@@ -17,9 +17,14 @@ from mathutils import Vector
 class EditObjectPlacement(bpy.types.Operator):
     bl_idname = "bim.edit_object_placement"
     bl_label = "Edit Object Placement"
+    bl_options = {"REGISTER", "UNDO"}
+    transaction_key: bpy.props.StringProperty()
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         objs = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
         self.file = IfcStore.get_file()
         # TODO: determine how to deal with this module dependency
