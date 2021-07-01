@@ -12,7 +12,10 @@ global_subscription_owner = object()
 
 
 def mode_callback(obj, data):
-    for obj in bpy.context.selected_objects + [bpy.context.active_object]:
+    objects = bpy.context.selected_objects
+    if bpy.context.active_object:
+        objects += [bpy.context.active_object]
+    for obj in objects:
         if (
             obj.mode != "EDIT"
             or not obj.data

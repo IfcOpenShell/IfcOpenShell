@@ -7,10 +7,15 @@ from ifcopenshell.api.aggregate.data import Data
 class AssignObject(bpy.types.Operator):
     bl_idname = "bim.assign_object"
     bl_label = "Assign Object"
+    bl_options = {"REGISTER", "UNDO"}
+    transaction_key: bpy.props.StringProperty()
     relating_object: bpy.props.StringProperty()
     related_object: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         related_objects = (
             [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
@@ -29,7 +34,7 @@ class AssignObject(bpy.types.Operator):
                     "relating_object": self.file.by_id(relating_object.BIMObjectProperties.ifc_definition_id),
                 },
             )
-            bpy.ops.bim.edit_object_placement(obj=related_object.name)
+            bpy.ops.bim.edit_object_placement(transaction_key=self.transaction_key, obj=related_object.name)
             Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
             bpy.ops.bim.disable_editing_aggregate(obj=related_object.name)
 
@@ -60,6 +65,7 @@ class AssignObject(bpy.types.Operator):
 class EnableEditingAggregate(bpy.types.Operator):
     bl_idname = "bim.enable_editing_aggregate"
     bl_label = "Enable Editing Aggregate"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bpy.context.active_object.BIMObjectProperties.relating_object = None
@@ -71,6 +77,7 @@ class DisableEditingAggregate(bpy.types.Operator):
     bl_idname = "bim.disable_editing_aggregate"
     bl_label = "Disable Editing Aggregate"
     obj: bpy.props.StringProperty()
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
@@ -81,14 +88,23 @@ class DisableEditingAggregate(bpy.types.Operator):
 class AddAggregate(bpy.types.Operator):
     bl_idname = "bim.add_aggregate"
     bl_label = "Add Aggregate"
+    bl_options = {"REGISTER", "UNDO"}
+    transaction_key: bpy.props.StringProperty()
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         aggregate_collection = bpy.data.collections.new("IfcElementAssembly/Assembly")
         bpy.context.scene.collection.children.link(aggregate_collection)
         aggregate = bpy.data.objects.new("Assembly", None)
         aggregate_collection.objects.link(aggregate)
-        bpy.ops.bim.assign_class(obj=aggregate.name, ifc_class="IfcElementAssembly")
-        bpy.ops.bim.assign_object(related_object=obj.name, relating_object=aggregate.name)
+        bpy.ops.bim.assign_class(
+            transaction_key=self.transaction_key, obj=aggregate.name, ifc_class="IfcElementAssembly"
+        )
+        bpy.ops.bim.assign_object(
+            transaction_key=self.transaction_key, related_object=obj.name, relating_object=aggregate.name
+        )
         return {"FINISHED"}
