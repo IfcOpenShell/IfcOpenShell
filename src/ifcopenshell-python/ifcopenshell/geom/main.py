@@ -151,6 +151,9 @@ class tree(ifcopenshell_wrapper.tree):
             args.append(kwargs.get("completely_within", False))
             if "extend" in kwargs:
                 args.append(kwargs["extend"])
+        elif isinstance(value, (list, tuple)) and len(value) == 3 and set(map(type, value)) == {float}:
+            if "extend" in kwargs:
+                args.append(kwargs["extend"])
         elif has_occ:
             if isinstance(value, TopoDS.TopoDS_Shape):
                 args[1] = utils.serialize_shape(value)
