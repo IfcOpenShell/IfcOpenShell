@@ -100,35 +100,43 @@ user via the Blender interface.
 
 ..
     digraph G {
-        rankdir=LR;
         node [fontname = "Handlee", shape=rect];
         subgraph cluster_1 {
-            ifc1 [label="IFC", style=filled, color=pink];
-            blender1 [label="Blender", style=filled, color=lightblue];
-            ifc1 -> blender1
-            blender1 -> ifc1
+            rank=same;
+            {
+                blender1 [label="Blender", style=filled, color=lightblue];
+                ifc1 [label="IFC", style=filled, color=pink];
+                ifc1 -> blender1
+                blender1 -> ifc1
+            }
 
-            label = "*XYZ Module*";
+            label = "*Project Module*";
             fontsize = 20;
             color=grey
         }
         subgraph cluster_2 {
-            ifc2 [label="IFC", style=filled, color=pink];
-            blender2 [label="Blender", style=filled, color=lightblue];
-            ifc2 -> blender2
-            blender2 -> ifc2
+            rank=same;
+            {
+                blender2 [label="Blender", style=filled, color=lightblue];
+                ifc2 [label="IFC", style=filled, color=pink];
+                ifc2 -> blender2
+                blender2 -> ifc2
+            }
 
             label = "*Structural Module*";
             fontsize = 20;
             color=grey
         }
         subgraph cluster_3 {
-            ifc3 [label="IFC", style=filled, color=pink];
-            blender3 [label="Blender", style=filled, color=lightblue];
-            ifc3 -> blender3
-            blender3 -> ifc3
+            rank=same;
+            {
+                blender3 [label="Blender", style=filled, color=lightblue];
+                ifc3 [label="IFC", style=filled, color=pink];
+                ifc3 -> blender3
+                blender3 -> ifc3
+            }
 
-            label = "*Project Module*";
+            label = "*XYZ Module*";
             fontsize = 20;
             color=grey
         }
