@@ -8,7 +8,6 @@ class AssignObject(bpy.types.Operator):
     bl_idname = "bim.assign_object"
     bl_label = "Assign Object"
     bl_options = {"REGISTER", "UNDO"}
-    transaction_key: bpy.props.StringProperty()
     relating_object: bpy.props.StringProperty()
     related_object: bpy.props.StringProperty()
 
@@ -34,7 +33,7 @@ class AssignObject(bpy.types.Operator):
                     "relating_object": self.file.by_id(relating_object.BIMObjectProperties.ifc_definition_id),
                 },
             )
-            bpy.ops.bim.edit_object_placement(transaction_key=self.transaction_key, obj=related_object.name)
+            bpy.ops.bim.edit_object_placement(obj=related_object.name)
             Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
             bpy.ops.bim.disable_editing_aggregate(obj=related_object.name)
 
@@ -89,7 +88,6 @@ class AddAggregate(bpy.types.Operator):
     bl_idname = "bim.add_aggregate"
     bl_label = "Add Aggregate"
     bl_options = {"REGISTER", "UNDO"}
-    transaction_key: bpy.props.StringProperty()
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -101,10 +99,6 @@ class AddAggregate(bpy.types.Operator):
         bpy.context.scene.collection.children.link(aggregate_collection)
         aggregate = bpy.data.objects.new("Assembly", None)
         aggregate_collection.objects.link(aggregate)
-        bpy.ops.bim.assign_class(
-            transaction_key=self.transaction_key, obj=aggregate.name, ifc_class="IfcElementAssembly"
-        )
-        bpy.ops.bim.assign_object(
-            transaction_key=self.transaction_key, related_object=obj.name, relating_object=aggregate.name
-        )
+        bpy.ops.bim.assign_class(obj=aggregate.name, ifc_class="IfcElementAssembly")
+        bpy.ops.bim.assign_object(related_object=obj.name, relating_object=aggregate.name)
         return {"FINISHED"}

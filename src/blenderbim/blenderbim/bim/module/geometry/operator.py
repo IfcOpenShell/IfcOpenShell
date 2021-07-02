@@ -18,7 +18,6 @@ class EditObjectPlacement(bpy.types.Operator):
     bl_idname = "bim.edit_object_placement"
     bl_label = "Edit Object Placement"
     bl_options = {"REGISTER", "UNDO"}
-    transaction_key: bpy.props.StringProperty()
     obj: bpy.props.StringProperty()
 
     def execute(self, context):

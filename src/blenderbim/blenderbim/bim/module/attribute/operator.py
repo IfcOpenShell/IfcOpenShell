@@ -64,7 +64,6 @@ class EditAttributes(bpy.types.Operator):
     bl_idname = "bim.edit_attributes"
     bl_label = "Edit Attributes"
     bl_options = {"REGISTER", "UNDO"}
-    transaction_key: bpy.props.StringProperty()
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
 
