@@ -51,7 +51,7 @@ This scenario where there is pure IfcOpenShell never occurs with the BlenderBIM
 Add-on. Instead, stuff happens in Blender operators.
 
 .. code-block:: python
-    :emphasize-lines: 5,7,8,10,13
+    :emphasize-lines: 6,7
 
     class Foobar(bpy.types.Operator):
         bl_idname = "foobar"
@@ -63,7 +63,6 @@ Add-on. Instead, stuff happens in Blender operators.
 
         def _execute(self, context):
             ifcopenshell.api.run("foo.bar", IfcStore.get_file())
-            context.scene.name = "Foobar"
             return {"FINISHED"}
 
 When your operator manipulates (creates, removes, or edits) IFC data directly or
