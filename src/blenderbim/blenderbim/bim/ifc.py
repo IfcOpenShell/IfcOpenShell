@@ -16,6 +16,7 @@ class IfcStore:
     library_path = ""
     library_file = None
     element_listeners = set()
+    current_transaction = ""
     last_transaction = ""
     history = []
     future = []
@@ -99,7 +100,7 @@ class IfcStore:
 
         if IfcStore.history:
             data = {"id": element.id(), "guid": getattr(element, "GlobalId", None), "obj": obj.name}
-            IfcStore.history[-1]["transactions"].append(
+            IfcStore.history[-1]["operations"].append(
                 {"rollback": IfcStore.rollback_link_element, "commit": IfcStore.commit_link_element, "data": data}
             )
 
@@ -111,9 +112,12 @@ class IfcStore:
 
     @staticmethod
     def commit_link_element(data):
-        IfcStore.id_map[data["id"]] = bpy.data.objects.get(data["obj"])
+        obj = bpy.data.objects.get(data["obj"])
+        IfcStore.id_map[data["id"]] = obj
         if data["guid"]:
-            IfcStore.guid_map[data["guid"]] = bpy.data.objects.get(data["obj"])
+            IfcStore.guid_map[data["guid"]] = obj
+        blenderbim.bim.handler.subscribe_to(obj, "mode", blenderbim.bim.handler.mode_callback)
+        blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)
 
     @staticmethod
     def unlink_element(element=None, obj=None):
@@ -142,20 +146,24 @@ class IfcStore:
 
     @staticmethod
     def execute_ifc_operator(operator, context):
-        is_top_level_operator = not bool(operator.transaction_key)
+        is_top_level_operator = not bool(IfcStore.current_transaction)
 
         if is_top_level_operator:
+            IfcStore.begin_transaction(operator)
             IfcStore.get_file().begin_transaction()
             # This empty transaction ensures that each operator has at least one transaction
-            IfcStore.add_transaction(operator, rollback=lambda data: True, commit=lambda data: True)
+            IfcStore.add_transaction_operation(operator, rollback=lambda data: True, commit=lambda data: True)
+        else:
+            operator.transaction_key = IfcStore.current_transaction
 
         result = getattr(operator, "_execute")(context)
 
         if is_top_level_operator:
             IfcStore.get_file().end_transaction()
-            IfcStore.add_transaction(
+            IfcStore.add_transaction_operation(
                 operator, rollback=IfcStore.rollback_ifc_operator, commit=IfcStore.commit_ifc_operator
             )
+            IfcStore.end_transaction(operator)
 
         return result
 
@@ -170,13 +178,17 @@ class IfcStore:
         blenderbim.bim.handler.purge_module_data()
 
     @staticmethod
-    def generate_transaction_key(operator):
-        if not getattr(operator, "transaction_key", None):
-            setattr(operator, "transaction_key", str(uuid.uuid4()))
+    def begin_transaction(operator):
+        IfcStore.current_transaction = str(uuid.uuid4())
+        operator.transaction_key = IfcStore.current_transaction
 
     @staticmethod
-    def add_transaction(operator, rollback=None, commit=None):
-        IfcStore.generate_transaction_key(operator)
+    def end_transaction(operator):
+        IfcStore.current_transaction = ""
+        operator.transaction_key = ""
+
+    @staticmethod
+    def add_transaction_operation(operator, rollback=None, commit=None):
         key = getattr(operator, "transaction_key", None)
         data = getattr(operator, "transaction_data", None)
         bpy.context.scene.BIMProperties.last_transaction = key
@@ -184,10 +196,10 @@ class IfcStore:
         rollback = rollback or getattr(operator, "rollback", lambda data: True)
         commit = commit or getattr(operator, "commit", lambda data: True)
         if IfcStore.history and IfcStore.history[-1]["key"] == key:
-            IfcStore.history[-1]["transactions"].append({"rollback": rollback, "commit": commit, "data": data})
+            IfcStore.history[-1]["operations"].append({"rollback": rollback, "commit": commit, "data": data})
         else:
             IfcStore.history.append(
-                {"key": key, "transactions": [{"rollback": rollback, "commit": commit, "data": data}]}
+                {"key": key, "operations": [{"rollback": rollback, "commit": commit, "data": data}]}
             )
         IfcStore.future = []
 
@@ -196,7 +208,7 @@ class IfcStore:
         if not IfcStore.history:
             return
         event = IfcStore.history.pop()
-        for transaction in event["transactions"][::-1]:
+        for transaction in event["operations"][::-1]:
             transaction["rollback"](transaction["data"])
         IfcStore.future.append(event)
 
@@ -205,6 +217,6 @@ class IfcStore:
         if not IfcStore.future:
             return
         event = IfcStore.future.pop()
-        for transaction in event["transactions"]:
+        for transaction in event["operations"]:
             transaction["commit"](transaction["data"])
         IfcStore.history.append(event)

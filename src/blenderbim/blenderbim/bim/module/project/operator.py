@@ -13,14 +13,14 @@ class CreateProject(bpy.types.Operator):
     bl_idname = "bim.create_project"
     bl_label = "Create Project"
     bl_options = {"REGISTER", "UNDO"}
-    transaction_key: bpy.props.StringProperty()
 
     def execute(self, context):
-        IfcStore.generate_transaction_key(self)
-        IfcStore.add_transaction(self, rollback=self.rollback, commit=lambda data: True)
+        IfcStore.begin_transaction(self)
+        IfcStore.add_transaction_operation(self, rollback=self.rollback, commit=lambda data: True)
         result = self._execute(context)
         self.transaction_data = {"file": self.file}
-        IfcStore.add_transaction(self, rollback=lambda data: True, commit=self.commit)
+        IfcStore.add_transaction_operation(self, rollback=lambda data: True, commit=self.commit)
+        IfcStore.end_transaction(self)
         return result
 
     def _execute(self, context):
@@ -41,7 +41,7 @@ class CreateProject(bpy.types.Operator):
         building = bpy.data.objects.new("My Building", None)
         building_storey = bpy.data.objects.new("Ground Floor", None)
 
-        bpy.ops.bim.assign_class(transaction_key=self.transaction_key, obj=project.name, ifc_class="IfcProject")
+        bpy.ops.bim.assign_class(obj=project.name, ifc_class="IfcProject")
         bpy.ops.bim.assign_unit()
         bpy.ops.bim.add_subcontext(context="Model")
         bpy.ops.bim.add_subcontext(context="Model", subcontext="Body", target_view="MODEL_VIEW")
@@ -53,14 +53,12 @@ class CreateProject(bpy.types.Operator):
             ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW").id()
         )
 
-        bpy.ops.bim.assign_class(transaction_key=self.transaction_key, obj=site.name, ifc_class="IfcSite")
-        bpy.ops.bim.assign_class(transaction_key=self.transaction_key, obj=building.name, ifc_class="IfcBuilding")
-        bpy.ops.bim.assign_class(
-            transaction_key=self.transaction_key, obj=building_storey.name, ifc_class="IfcBuildingStorey"
-        )
-        bpy.ops.bim.assign_object(transaction_key=self.transaction_key, related_object=site.name, relating_object=project.name)
-        bpy.ops.bim.assign_object(transaction_key=self.transaction_key, related_object=building.name, relating_object=site.name)
-        bpy.ops.bim.assign_object(transaction_key=self.transaction_key, related_object=building_storey.name, relating_object=building.name)
+        bpy.ops.bim.assign_class(obj=site.name, ifc_class="IfcSite")
+        bpy.ops.bim.assign_class(obj=building.name, ifc_class="IfcBuilding")
+        bpy.ops.bim.assign_class(obj=building_storey.name, ifc_class="IfcBuildingStorey")
+        bpy.ops.bim.assign_object(related_object=site.name, relating_object=project.name)
+        bpy.ops.bim.assign_object(related_object=building.name, relating_object=site.name)
+        bpy.ops.bim.assign_object(related_object=building_storey.name, relating_object=building.name)
 
         return {"FINISHED"}
 
@@ -77,14 +75,14 @@ class CreateProjectLibrary(bpy.types.Operator):
     bl_idname = "bim.create_project_library"
     bl_label = "Create Project Library"
     bl_options = {"REGISTER", "UNDO"}
-    transaction_key: bpy.props.StringProperty()
 
     def execute(self, context):
-        IfcStore.generate_transaction_key(self)
-        IfcStore.add_transaction(self, rollback=self.rollback, commit=lambda data: True)
+        IfcStore.begin_transaction(self)
+        IfcStore.add_transaction_operation(self, rollback=self.rollback, commit=lambda data: True)
         result = self._execute(context)
         self.transaction_data = {"file": self.file}
-        IfcStore.add_transaction(self, rollback=lambda data: True, commit=self.commit)
+        IfcStore.add_transaction_operation(self, rollback=lambda data: True, commit=self.commit)
+        IfcStore.end_transaction(self)
         return result
 
     def _execute(self, context):
@@ -102,9 +100,7 @@ class CreateProjectLibrary(bpy.types.Operator):
             bpy.ops.bim.add_organisation()
 
         project_library = bpy.data.objects.new("My Project Library", None)
-        bpy.ops.bim.assign_class(
-            transaction_key=self.transaction_key, obj=project_library.name, ifc_class="IfcProjectLibrary"
-        )
+        bpy.ops.bim.assign_class(obj=project_library.name, ifc_class="IfcProjectLibrary")
         bpy.ops.bim.assign_unit()
         return {"FINISHED"}
 
@@ -128,7 +124,7 @@ class SelectLibraryFile(bpy.types.Operator):
         old_filepath = IfcStore.library_path
         result = self._execute(context)
         self.transaction_data = {"old_filepath": old_filepath, "filepath": self.filepath}
-        IfcStore.add_transaction(self)
+        IfcStore.add_transaction_operation(self)
         return result
 
     def _execute(self, context):
@@ -230,14 +226,13 @@ class AssignLibraryDeclaration(bpy.types.Operator):
     bl_idname = "bim.assign_library_declaration"
     bl_label = "Assign Library Declaration"
     bl_options = {"REGISTER", "UNDO"}
-    transaction_key: bpy.props.StringProperty()
     definition: bpy.props.IntProperty()
 
     def execute(self, context):
         IfcStore.library_file.begin_transaction()
         result = self._execute(context)
         IfcStore.library_file.end_transaction()
-        IfcStore.add_transaction(self)
+        IfcStore.add_transaction_operation(self)
         return result
 
     def _execute(self, context):
@@ -265,14 +260,13 @@ class UnassignLibraryDeclaration(bpy.types.Operator):
     bl_idname = "bim.unassign_library_declaration"
     bl_label = "Unassign Library Declaration"
     bl_options = {"REGISTER", "UNDO"}
-    transaction_key: bpy.props.StringProperty()
     definition: bpy.props.IntProperty()
 
     def execute(self, context):
         IfcStore.library_file.begin_transaction()
         result = self._execute(context)
         IfcStore.library_file.end_transaction()
-        IfcStore.add_transaction(self)
+        IfcStore.add_transaction_operation(self)
         return result
 
     def _execute(self, context):
@@ -309,7 +303,6 @@ class AppendLibraryElement(bpy.types.Operator):
     bl_idname = "bim.append_library_element"
     bl_label = "Append Library Element"
     bl_options = {"REGISTER", "UNDO"}
-    transaction_key: bpy.props.StringProperty()
     definition: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -389,7 +382,7 @@ class EditHeader(bpy.types.Operator):
         self.transaction_data["old"] = self.record_state()
         result = self._execute(context)
         self.transaction_data["new"] = self.record_state()
-        IfcStore.add_transaction(self)
+        IfcStore.add_transaction_operation(self)
         return result
 
     def _execute(self, context):

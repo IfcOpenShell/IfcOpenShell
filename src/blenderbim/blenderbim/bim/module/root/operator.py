@@ -12,6 +12,7 @@ from blenderbim.bim.ifc import IfcStore
 class EnableReassignClass(bpy.types.Operator):
     bl_idname = "bim.enable_reassign_class"
     bl_label = "Enable Reassign IFC Class"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         obj = bpy.context.active_object
@@ -41,6 +42,7 @@ class EnableReassignClass(bpy.types.Operator):
 class DisableReassignClass(bpy.types.Operator):
     bl_idname = "bim.disable_reassign_class"
     bl_label = "Disable Reassign IFC Class"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bpy.context.active_object.BIMObjectProperties.is_reassigning_class = False
@@ -50,9 +52,13 @@ class DisableReassignClass(bpy.types.Operator):
 class ReassignClass(bpy.types.Operator):
     bl_idname = "bim.reassign_class"
     bl_label = "Reassign IFC Class"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         objects = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
         self.file = IfcStore.get_file()
         predefined_type = bpy.context.scene.BIMRootProperties.ifc_predefined_type
@@ -78,7 +84,6 @@ class AssignClass(bpy.types.Operator):
     bl_idname = "bim.assign_class"
     bl_label = "Assign IFC Class"
     bl_options = {"REGISTER", "UNDO"}
-    transaction_key: bpy.props.StringProperty()
     obj: bpy.props.StringProperty()
     ifc_class: bpy.props.StringProperty()
     predefined_type: bpy.props.StringProperty()
@@ -160,9 +165,7 @@ class AssignClass(bpy.types.Operator):
         collection.objects.link(obj)
         if parent_collection:
             parent_collection.children.link(collection)
-            bpy.ops.bim.assign_object(
-                transaction_key=self.transaction_key, related_object=obj.name, relating_object=parent_collection.name
-            )
+            bpy.ops.bim.assign_object(related_object=obj.name, relating_object=parent_collection.name)
         else:
             bpy.context.scene.collection.children.link(collection)
 
@@ -181,9 +184,13 @@ class AssignClass(bpy.types.Operator):
 class UnassignClass(bpy.types.Operator):
     bl_idname = "bim.unassign_class"
     bl_label = "Unassign IFC Class"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         if self.obj:
             objects = [bpy.data.objects.get(self.obj)]
@@ -220,9 +227,13 @@ class UnassignClass(bpy.types.Operator):
 class UnlinkObject(bpy.types.Operator):
     bl_idname = "bim.unlink_object"
     bl_label = "Unlink Object"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         if self.obj:
             objects = [bpy.data.objects.get(self.obj)]
@@ -239,9 +250,13 @@ class UnlinkObject(bpy.types.Operator):
 class CopyClass(bpy.types.Operator):
     bl_idname = "bim.copy_class"
     bl_label = "Copy Class"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         if self.obj:
             objects = [bpy.data.objects.get(self.obj)]

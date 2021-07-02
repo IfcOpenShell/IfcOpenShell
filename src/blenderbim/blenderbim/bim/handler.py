@@ -33,6 +33,10 @@ def mode_callback(obj, data):
 
 
 def name_callback(obj, data):
+    try:
+        oby.type
+    except:
+        return  # In case the object RNA is gone during an undo / redo operation
     # Blender material names are up to 63 UTF-8 bytes
     if not obj.BIMObjectProperties.ifc_definition_id or "/" not in obj.name or len(bytes(obj.name, "utf-8")) >= 63:
         return
