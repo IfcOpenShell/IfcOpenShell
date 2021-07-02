@@ -2,6 +2,7 @@ import ifcopenshell
 import ifcopenshell.util.schema
 import ifcopenshell.util.date
 
+
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
@@ -22,16 +23,21 @@ class Usecase:
 
         # TODO: should auto date migration be part of the migrator?
         if self.file.schema == "IFC2X3" and edition_date:
-            result.EditionDate = ifcopenshell.util.date.datetime2ifc(edition_date, "IfcCalendarDate")
+            result.EditionDate = self.file.create_entity(
+                "IfcCalendarDate", **ifcopenshell.util.date.datetime2ifc(edition_date, "IfcCalendarDate")
+            )
         else:
             result.EditionDate = ifcopenshell.util.date.datetime2ifc(edition_date, "IfcDate")
 
-        self.file.create_entity("IfcRelAssociatesClassification", **{
-            "GlobalId": ifcopenshell.guid.new(),
-            "RelatedObjects": [self.file.by_type("IfcProject")[0]],
-            "RelatingClassification": result
-        })
-        return # See bug #1272
+        self.file.create_entity(
+            "IfcRelAssociatesClassification",
+            **{
+                "GlobalId": ifcopenshell.guid.new(),
+                "RelatedObjects": [self.file.by_type("IfcProject")[0]],
+                "RelatingClassification": result,
+            }
+        )
+        return result  # See bug #1272
         try:
             result = self.file.add(self.settings["classification"])
         except:
