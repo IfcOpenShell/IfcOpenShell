@@ -81,11 +81,15 @@ class IfcStore:
                 objects += [bpy.context.active_object]
         else:
             objects = bpy.data.objects
-        [
-            IfcStore.link_element(file.by_id(obj.BIMObjectProperties.ifc_definition_id), obj)
-            for obj in objects
-            if obj.BIMObjectProperties.ifc_definition_id
-        ]
+
+        for obj in objects:
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            element = file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            data = {"id": element.id(), "obj": obj.name}
+            if hasattr(element, "GlobalId"):
+                data["guid"] = element.GlobalId
+            IfcStore.commit_link_element(data)
 
     @staticmethod
     def link_element(element, obj):
