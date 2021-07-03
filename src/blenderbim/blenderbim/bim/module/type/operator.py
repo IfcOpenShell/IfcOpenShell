@@ -11,10 +11,14 @@ from ifcopenshell.api.material.data import Data as MaterialData
 class AssignType(bpy.types.Operator):
     bl_idname = "bim.assign_type"
     bl_label = "Assign Type"
+    bl_options = {"REGISTER", "UNDO"}
     relating_type: bpy.props.IntProperty()
     related_object: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         relating_type = self.relating_type or int(context.active_object.BIMTypeProperties.relating_type)
         related_objects = (
@@ -85,6 +89,7 @@ class EnableEditingType(bpy.types.Operator):
 class DisableEditingType(bpy.types.Operator):
     bl_idname = "bim.disable_editing_type"
     bl_label = "Disable Editing Type"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):

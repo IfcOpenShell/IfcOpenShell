@@ -59,12 +59,16 @@ class EditObjectPlacement(bpy.types.Operator):
 class AddRepresentation(bpy.types.Operator):
     bl_idname = "bim.add_representation"
     bl_label = "Add Representation"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     context_id: bpy.props.IntProperty()
     ifc_representation_class: bpy.props.StringProperty()
     profile_set_usage: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
 
@@ -151,6 +155,7 @@ class AddRepresentation(bpy.types.Operator):
 class SwitchRepresentation(bpy.types.Operator):
     bl_idname = "bim.switch_representation"
     bl_label = "Switch Representation"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     ifc_definition_id: bpy.props.IntProperty()
     should_reload: bpy.props.BoolProperty()
