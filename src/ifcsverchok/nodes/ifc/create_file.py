@@ -10,12 +10,12 @@ class SvIfcCreateFileRefresh(bpy.types.Operator):
     bl_idname = "node.sv_ifc_create_file_refresh"
     bl_label = "LB Out"
 
-    idtree: StringProperty(default="")
-    idname: StringProperty(default="")
+    tree_name: StringProperty(default="")
+    node_name: StringProperty(default="")
     has_baked: bpy.props.BoolProperty(name="Has Baked", default=False)
 
     def execute(self, context):
-        node = bpy.data.node_groups[self.idtree].nodes[self.idname]
+        node = bpy.data.node_groups[self.tree_name].nodes[self.node_name]
         node.process()
         return {"FINISHED"}
 
@@ -30,7 +30,9 @@ class SvIfcCreateFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.S
         self.outputs.new("SvVerticesSocket", "file")
 
     def draw_buttons(self, context, layout):
-        self.wrapper_tracked_ui_draw_op(layout, "node.sv_ifc_create_file_refresh", icon="FILE_REFRESH", text="Refresh")
+        op = layout.operator("node.sv_ifc_create_file_refresh", icon="FILE_REFRESH", text="Refresh")
+        op.tree_name = self.id_data.name
+        op.node_name = self.name
 
     def process(self):
         self.sv_input_names = ["schema"]

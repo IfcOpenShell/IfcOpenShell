@@ -13,11 +13,11 @@ class SvIfcSelectBlenderObjectsRefresh(bpy.types.Operator):
     bl_label = "IFC Select Blender Objects Refresh"
     bl_options = {"UNDO"}
 
-    idtree: StringProperty(default="")
-    idname: StringProperty(default="")
+    tree_name: StringProperty(default="")
+    node_name: StringProperty(default="")
 
     def execute(self, context):
-        node = bpy.data.node_groups[self.idtree].nodes[self.idname]
+        node = bpy.data.node_groups[self.tree_name].nodes[self.node_name]
         node.process()
         return {"FINISHED"}
 
@@ -32,9 +32,9 @@ class SvIfcSelectBlenderObjects(bpy.types.Node, SverchCustomTreeNode, ifcsvercho
         self.inputs.new("SvStringsSocket", "entities").prop_name = "entities"
 
     def draw_buttons(self, context, layout):
-        self.wrapper_tracked_ui_draw_op(
-            layout, "node.sv_ifc_select_blender_objects_refresh", icon="FILE_REFRESH", text="Refresh"
-        )
+        op = layout.operator("node.sv_ifc_select_blender_objects_refresh", icon="FILE_REFRESH", text="Refresh")
+        op.tree_name = self.id_data.name
+        op.node_name = self.name
 
     def process(self):
         self.file = IfcStore.get_file()
