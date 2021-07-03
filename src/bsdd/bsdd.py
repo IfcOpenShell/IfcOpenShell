@@ -42,7 +42,7 @@ class Client:
         if self.access_token and self.access_token_expires_on > time.time():
             return self.access_token
         elif self.refresh_token and self.refresh_token_expires_on > time.time():
-            self.refresh_token()
+            self.get_new_access_token()
         else:
             self.login()
         return self.access_token
@@ -75,7 +75,7 @@ class Client:
                     ).json()
                 )
 
-    def refresh_token(self):
+    def get_new_access_token(self):
         self.set_tokens_from_response(
             requests.post(
                 self.token_endpoint,
