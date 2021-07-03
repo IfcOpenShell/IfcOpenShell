@@ -2,12 +2,15 @@
 
 
 def get_person(ifc):
-    return ifc.by_type("IfcPerson")[0]
+    people = ifc.by_type("IfcPerson") or [None]
+    return people [0]
 
 
 def get_organisation(ifc):
-    return ifc.by_type("IfcOrganization")[0]
+    organisations = ifc.by_type("IfcOrganization") or [None]
+    return organisations[0]
 
 
 def get_application(ifc):
-    return ifc.by_type("IfcApplication")[0]
+    applications = ifc.by_type("IfcApplication") or [None]
+    return applications[0]

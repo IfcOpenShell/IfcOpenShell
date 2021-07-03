@@ -141,14 +141,12 @@ def get_application(ifc):
     for element in ifc.by_type("IfcApplication"):
         if element.ApplicationIdentifier == "BlenderBIM" and element.Version == version:
             return element
-    return ifc.create_entity(
-        "IfcApplication",
-        **{
-            "ApplicationDeveloper": create_application_organisation(ifc),
-            "Version": get_application_version(),
-            "ApplicationFullName": "BlenderBIM Add-on",
-            "ApplicationIdentifier": "BlenderBIM",
-        },
+    return ifcopenshell.api.run(
+        "owner.add_application",
+        ifc,
+        version=get_application_version(),
+        application_full_name="BlenderBIM Add-on",
+        application_identifier="BlenderBIM",
     )
 
 
@@ -162,46 +160,6 @@ def get_application_version():
                 if addon.bl_info["name"] == "BlenderBIM"
             ][0]
         ]
-    )
-
-
-def create_application_organisation(ifc):
-    return ifc.create_entity(
-        "IfcOrganization",
-        **{
-            "Name": "IfcOpenShell",
-            "Description": "IfcOpenShell is an open source (LGPL) software library that helps users and software developers to work with the IFC file format.",
-            "Roles": [ifc.create_entity("IfcActorRole", **{"Role": "USERDEFINED", "UserDefinedRole": "CONTRIBUTOR"})],
-            "Addresses": [
-                ifc.create_entity(
-                    "IfcTelecomAddress",
-                    **{
-                        "Purpose": "USERDEFINED",
-                        "UserDefinedPurpose": "WEBPAGE",
-                        "Description": "The main webpage of the software collection.",
-                        "WWWHomePageURL": "https://ifcopenshell.org",
-                    },
-                ),
-                ifc.create_entity(
-                    "IfcTelecomAddress",
-                    **{
-                        "Purpose": "USERDEFINED",
-                        "UserDefinedPurpose": "WEBPAGE",
-                        "Description": "The BlenderBIM Add-on webpage of the software collection.",
-                        "WWWHomePageURL": "https://blenderbim.org",
-                    },
-                ),
-                ifc.create_entity(
-                    "IfcTelecomAddress",
-                    **{
-                        "Purpose": "USERDEFINED",
-                        "UserDefinedPurpose": "REPOSITORY",
-                        "Description": "The source code repository of the software collection.",
-                        "WWWHomePageURL": "https://github.com/IfcOpenShell/IfcOpenShell.git",
-                    },
-                ),
-            ],
-        },
     )
 
 
