@@ -5,6 +5,15 @@ import blenderbim.bim.import_ifc as import_ifc
 from blenderbim.bim.ifc import IfcStore
 
 
+class PrintIfcFile(bpy.types.Operator):
+    bl_idname = "bim.print_ifc_file"
+    bl_label = "Print IFC File"
+
+    def execute(self, context):
+        print(IfcStore.get_file().wrapped_data.to_string())
+        return {"FINISHED"}
+
+
 class ValidateIfcFile(bpy.types.Operator):
     bl_idname = "bim.validate_ifc_file"
     bl_label = "Validate IFC File"

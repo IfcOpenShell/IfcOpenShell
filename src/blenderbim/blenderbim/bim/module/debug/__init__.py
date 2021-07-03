@@ -2,6 +2,7 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.PrintIfcFile,
     operator.ValidateIfcFile,
     operator.ProfileImportIFC,
     operator.CreateAllShapes,
