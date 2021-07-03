@@ -57,10 +57,14 @@ class AddOpening(bpy.types.Operator):
 class RemoveOpening(bpy.types.Operator):
     bl_idname = "bim.remove_opening"
     bl_label = "Remove Opening"
+    bl_options = {"REGISTER", "UNDO"}
     opening_id: bpy.props.IntProperty()
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
         for modifier in obj.modifiers:
