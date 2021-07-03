@@ -30,9 +30,7 @@ class SvIfcCreateFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.S
         self.outputs.new("SvVerticesSocket", "file")
 
     def draw_buttons(self, context, layout):
-        op = layout.operator("node.sv_ifc_create_file_refresh", icon="FILE_REFRESH", text="Refresh")
-        op.tree_name = self.id_data.name
-        op.node_name = self.name
+        self.wrapper_tracked_ui_draw_op(layout, "node.sv_ifc_create_file_refresh", icon="FILE_REFRESH", text="Refresh")
 
     def process(self):
         self.sv_input_names = ["schema"]
