@@ -93,9 +93,6 @@ def replace_attribute(element, old, new):
     for i, attribute in enumerate(element):
         if has_element_reference(attribute, old):
             new_attribute = element.walk(lambda v: v == old, lambda v: new, attribute)
-            # TODO: make this unnecessary
-            if element.wrapped_data.file.transaction:
-                element.wrapped_data.file.transaction.store_edit(element, i, new_attribute)
             element[i] = new_attribute
 
 
