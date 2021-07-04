@@ -469,23 +469,30 @@ public:
 			IfcSchema::IfcPresentationStyleAssignment* style_assignment = (IfcSchema::IfcPresentationStyleAssignment*) *kt;
 
 			Logger::Warning("Deprecated usage of", style_assignment);
-#else
+
+			// Only in case of 2x3 or old style IfcPresentationStyleAssignment
+			auto styles = style_assignment->Styles();
+
+#elif defined SCHEMA_HAS_IfcPresentationStyleAssignment
 		IfcSchema::IfcPresentationStyleAssignment::list::ptr style_assignments = si->Styles();
 		for (IfcSchema::IfcPresentationStyleAssignment::list::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
 			IfcSchema::IfcPresentationStyleAssignment* style_assignment = *kt;
-#endif
 
 			// Only in case of 2x3 or old style IfcPresentationStyleAssignment
+			auto styles = style_assignment->Styles();
+#else
+    		auto styles = si->Styles();
+#endif
 
-			IfcEntityList::ptr styles = style_assignment->Styles();
-
-			for (IfcEntityList::it lt = styles->begin(); lt != styles->end(); ++lt) {
+			for (auto lt = styles->begin(); lt != styles->end(); ++lt) {
 				auto style_l = (*lt)->as<IfcSchema::IfcPresentationStyle>();
 				if (style_l) {
 					prs_styles.push_back(style_l);
 				}
 			}
-		}
+#if defined SCHEMA_HAS_IfcStyleAssignmentSelect or defined SCHEMA_HAS_IfcPresentationStyleAssignment
+	   }
+#endif
 		
 		for (auto& style : prs_styles) {
 			if (style->declaration().is(IfcSchema::IfcSurfaceStyle::Class())) {

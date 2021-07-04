@@ -103,8 +103,7 @@ int main() {
 	building->setRepresentation(building_shape);
 
 	// A pale white colour is assigned to the building.
-	file.setSurfaceColour(
-		building_shape, 0.75, 0.73, 0.68);
+	setSurfaceColour(file, building_shape, 0.75, 0.73, 0.68);
 
 	// For the ground mesh of the IfcSite we will use a Nurbs surface created in Open Cascade. Only
 	// in IFC4 the surface can be directly serialized. In IFC2X3 the it will have to be tesselated.
@@ -122,7 +121,7 @@ int main() {
 		(*it)->setContextOfItems(file.getRepresentationContext("Model"));
 	}
 	file.addEntity(ground_representation);
-	file.setSurfaceColour(ground_representation, 0.15, 0.25, 0.05);
+	setSurfaceColour(file, ground_representation, 0.15, 0.25, 0.05);
 
     /*
     // Note that IFC lacks elementary surfaces that STEP does have, such as spherical_surface.
