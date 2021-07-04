@@ -107,8 +107,7 @@ int main() {
 	south_wall->setObjectPlacement(file.addLocalPlacement(storey_placement));
 
 	// A pale white colour is assigned to the wall.
-	IfcSchema::IfcPresentationStyleAssignment* wall_colour = file.setSurfaceColour(
-		south_wall_shape, 0.75, 0.73, 0.68);
+	IfcSchema::IfcPresentationStyleAssignment* wall_colour = setSurfaceColour(file, south_wall_shape, 0.75, 0.73, 0.68);
 
 	// Now create a footing for the wall to rest on.
 	IfcSchema::IfcFooting* footing = new IfcSchema::IfcFooting(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(),
@@ -122,7 +121,7 @@ int main() {
 	footing->setRepresentation(file.addBox(10100, 5460, 2000));
 	footing->setObjectPlacement(file.addLocalPlacement(storey_placement, 0, 2500, -2000));
 	// The footing will have a dark gray colour
-	IfcSchema::IfcPresentationStyleAssignment* footing_colour = file.setSurfaceColour(footing->Representation(), 0.26, 0.22, 0.18);
+	IfcSchema::IfcPresentationStyleAssignment* footing_colour = setSurfaceColour(file,footing->Representation(), 0.26, 0.22, 0.18);
 
 	// IFC has two ways to apply boolean operations to geometry. IfcBooleanResults are commonly used 
 	// to clip geometry to a surface, for example to a slanted roof. For openings that are filled 
@@ -192,7 +191,7 @@ int main() {
 	file.addBuildingProduct(north_roof_part);
 	file.addBuildingProduct(roof);
 
-	file.setSurfaceColour(roof_rep, 0.24, 0.08, 0.04);
+	setSurfaceColour(file, roof_rep, 0.24, 0.08, 0.04);
 
 	// Copy the south wall to the north
 	IfcSchema::IfcWallStandardCase* north_wall = new IfcSchema::IfcWallStandardCase(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), S("North wall"),
@@ -202,7 +201,7 @@ int main() {
 #endif	
 	);
 	file.addBuildingProduct(north_wall);
-	file.setSurfaceColour(north_wall->Representation(), wall_colour);
+	setSurfaceColour(file,north_wall->Representation(), wall_colour);
 
 	// Two identical representations are created for the two remaining walls. Mapped items
 	// are not used, because it is not allowed by the standard for wall body representations.
@@ -215,7 +214,7 @@ int main() {
 		// 'axis 3d placement' that specifies the plane against which the geometry is clipped.
 		file.clipRepresentation(body, file.addPlacement3d(-2500, 0, 3000, -1, 0, 1), false);
 		file.clipRepresentation(body, file.addPlacement3d(2500, 0, 3000, 1, 0, 1), false);
-		file.setSurfaceColour(body, wall_colour);
+		setSurfaceColour(file, body, wall_colour);
 
 		IfcSchema::IfcShapeRepresentation* axis = file.addEmptyRepresentation("Axis", "Curve2D");
 		file.addAxis(axis, 5000);
@@ -291,7 +290,7 @@ int main() {
 		(*it)->setContextOfItems(file.getRepresentationContext("Model"));
 	}
 	file.addEntity(ground_representation);
-	file.setSurfaceColour(ground_representation, 0.15, 0.25, 0.05);
+	setSurfaceColour(file,ground_representation, 0.15, 0.25, 0.05);
 
 	// According to the Ifc2x3 schema an IfcWallStandardCase needs to have an IfcMaterialLayerSet
 	// assigned. Note that this material definition is independent of the surface styles we have 
@@ -371,7 +370,7 @@ int main() {
 	);
 
 	file.addBuildingProduct(stair);
-	file.setSurfaceColour(stair->Representation(), footing_colour);
+	setSurfaceColour(file, stair->Representation(), footing_colour);
 
 	IfcSchema::IfcOpeningElement* door_opening = new IfcSchema::IfcOpeningElement(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(),
 		null, null, null, file.addLocalPlacement(storey_placement, 5000-180, 2500-900, 0), file.addBox(1000, 1000, 2200), null
@@ -406,7 +405,7 @@ int main() {
 	file.addBox(door_body, 1000, 80,  80, 0, file.addPlacement3d(   0, 0, 2120));
 	file.addBox(door_body, 860, 30, 2120);
 	file.addBuildingProduct(door);
-	file.setSurfaceColour(door->Representation(), 0.9, 0.9, 0.9);
+	setSurfaceColour(file, door->Representation(), 0.9, 0.9, 0.9);
 	file.addEntity(new IfcSchema::IfcRelFillsElement(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), null, null, door_opening, door));
 
 	IfcSchema::IfcDoorStyle* door_style = new IfcSchema::IfcDoorStyle(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), S("Door type"), null, null, null, null, null,
@@ -440,9 +439,9 @@ int main() {
 	IfcSchema::IfcPresentationStyleAssignment* frame_style = 0;
 	for (IfcSchema::IfcShapeRepresentation::list::it i = frame_representations->begin(); i != frame_representations->end(); i += 2) {
 		if (frame_style) {
-			file.setSurfaceColour(*i, frame_style);
+			setSurfaceColour(file,*i, frame_style);
 		} else {
-			frame_style = file.setSurfaceColour(*i, 0.5, 0.4, 0.3);
+			frame_style = setSurfaceColour(file,*i, 0.5, 0.4, 0.3);
 		}
 		// Because of the duplication the iterator is incremented twice
 	}
@@ -509,7 +508,7 @@ int main() {
 		file.addEntity(glass_part);
 		window_parts->push(glass_part);
 		file.relatePlacements(window, glass_part);
-		file.setSurfaceColour(glass_part->Representation(), 0.6, 0.7, 0.75, 0.1);
+		setSurfaceColour(file,glass_part->Representation(), 0.6, 0.7, 0.75, 0.1);
 		
 		// Now create a decomposition relation between the window and the parts. Most viewers and authoring
 		// tools will consider the window a single entity that can be selected as a whole.
