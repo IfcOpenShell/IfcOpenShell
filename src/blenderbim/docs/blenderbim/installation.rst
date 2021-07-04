@@ -17,8 +17,12 @@ installation is available at the `Get BlenderBIM
 <https://blenderbim.org/download.html>`__ website. The latest release is
 typically updated every few weeks.
 
+Like all Blender add-ons, they can be installed using ``Edit > Preferences >
+Addons > Install > Choose Downloaded ZIP > Enable Add-on Checkbox``. You can
+enable add-ons permanently by using ``Save User Settings`` from the Addons menu.
+
 If you downloaded Blender as a ``.zip`` file without running an installer, you
-will find the BlenderBIM plug-in installed in the following directory, where
+will find the BlenderBIM Add-on installed in the following directory, where
 ``2.XX`` is the Blender version:
 ::
 
@@ -178,6 +182,7 @@ changes, you'll need to fix your setup manually. But this is relatively rare.
 ::
 
     $ git clone https://github.com/IfcOpenShell/IfcOpenShell.git
+    $ cd IfcOpenShell
 
     # Remove the Blender add-on Python code
     $ rm -r /path/to/blender/2.XX/scripts/addons/blenderbim/bim/
