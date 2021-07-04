@@ -1,6 +1,10 @@
 # Dependency and build folders created by the build scripts
+/_build-vs2015-x64/
+/_deps-vs2015-x64-installed/
 /_build-vs2017-x64/
 /_deps-vs2017-x64-installed/
+/_build-vs2019-x64/
+/_deps-vs2019-x64-installed/
 /_deps/
 /deps*/
 /build*/
