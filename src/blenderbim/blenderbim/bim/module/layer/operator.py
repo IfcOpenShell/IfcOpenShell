@@ -9,6 +9,7 @@ from ifcopenshell.api.layer.data import Data
 class LoadLayers(bpy.types.Operator):
     bl_idname = "bim.load_layers"
     bl_label = "Load Layers"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         self.file = IfcStore.get_file()
@@ -27,6 +28,7 @@ class LoadLayers(bpy.types.Operator):
 class DisableLayerEditingUI(bpy.types.Operator):
     bl_idname = "bim.disable_layer_editing_ui"
     bl_label = "Disable Layer Editing UI"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         context.scene.BIMLayerProperties.is_editing = False
@@ -36,6 +38,7 @@ class DisableLayerEditingUI(bpy.types.Operator):
 class EnableEditingLayer(bpy.types.Operator):
     bl_idname = "bim.enable_editing_layer"
     bl_label = "Enable Editing Layer"
+    bl_options = {"REGISTER", "UNDO"}
     layer: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -61,6 +64,7 @@ class EnableEditingLayer(bpy.types.Operator):
 class DisableEditingLayer(bpy.types.Operator):
     bl_idname = "bim.disable_editing_layer"
     bl_label = "Disable Editing Layer"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         context.scene.BIMLayerProperties.active_layer_id = 0
@@ -70,8 +74,12 @@ class DisableEditingLayer(bpy.types.Operator):
 class AddPresentationLayer(bpy.types.Operator):
     bl_idname = "bim.add_presentation_layer"
     bl_label = "Add Layer"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         result = ifcopenshell.api.run("layer.add_layer", IfcStore.get_file())
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_layers()
@@ -82,8 +90,12 @@ class AddPresentationLayer(bpy.types.Operator):
 class EditPresentationLayer(bpy.types.Operator):
     bl_idname = "bim.edit_presentation_layer"
     bl_label = "Edit Layer"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         props = context.scene.BIMLayerProperties
         attributes = {}
         for attribute in props.layer_attributes:
@@ -103,9 +115,13 @@ class EditPresentationLayer(bpy.types.Operator):
 class RemovePresentationLayer(bpy.types.Operator):
     bl_idname = "bim.remove_presentation_layer"
     bl_label = "Remove Presentation Layer"
+    bl_options = {"REGISTER", "UNDO"}
     layer: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         props = context.scene.BIMLayerProperties
         self.file = IfcStore.get_file()
         ifcopenshell.api.run("layer.remove_layer", self.file, **{"layer": self.file.by_id(self.layer)})
@@ -117,10 +133,14 @@ class RemovePresentationLayer(bpy.types.Operator):
 class AssignPresentationLayer(bpy.types.Operator):
     bl_idname = "bim.assign_presentation_layer"
     bl_label = "Assign Presentation Layer"
+    bl_options = {"REGISTER", "UNDO"}
     item: bpy.props.StringProperty()
     layer: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         item = bpy.data.meshes.get(self.item) if self.item else context.active_object.data
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
@@ -135,10 +155,14 @@ class AssignPresentationLayer(bpy.types.Operator):
 class UnassignPresentationLayer(bpy.types.Operator):
     bl_idname = "bim.unassign_presentation_layer"
     bl_label = "Unassign Presentation Layer"
+    bl_options = {"REGISTER", "UNDO"}
     item: bpy.props.StringProperty()
     layer: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         item = bpy.data.meshes.get(self.item) if self.item else context.active_object.data
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
