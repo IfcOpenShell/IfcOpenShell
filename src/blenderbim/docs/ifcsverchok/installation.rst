@@ -5,7 +5,7 @@ There are different methods of installation, depending on your situation.
 
 1. **Packaged installation** is recommended for regular users.
 2. **Daily build installation** is recommended for power users helping with testing.
-4. **Source installation** is recommended for developers.
+3. **Source installation** is recommended for developers.
 
 Packaged installation
 ---------------------
