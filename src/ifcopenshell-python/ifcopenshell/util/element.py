@@ -91,14 +91,19 @@ def get_aggregate(element):
 
 def replace_attribute(element, old, new):
     for i, attribute in enumerate(element):
-        if attribute == old:
-            element[i] = new
-        elif isinstance(attribute, tuple):
-            new_attribute = list(attribute)
-            for j, item in enumerate(attribute):
-                if item == old:
-                    new_attribute[j] = new
-                    element[i] = new_attribute
+        if has_element_reference(attribute, old):
+            new_attribute = element.walk(lambda v: v == old, lambda v: new, attribute)
+            # TODO: make this unnecessary
+            if element.wrapped_data.file.transaction:
+                element.wrapped_data.file.transaction.store_edit(element, i, new_attribute)
+            element[i] = new_attribute
+
+
+def has_element_reference(value, element):
+    if isinstance(value, (tuple, list)):
+        for v in value:
+            return has_element_reference(v, element)
+    return value == element
 
 
 def remove_deep(ifc_file, element):
