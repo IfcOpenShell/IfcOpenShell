@@ -21,9 +21,13 @@ def get_colour_settings(material):
 class EditStyle(bpy.types.Operator):
     bl_idname = "bim.edit_style"
     bl_label = "Edit Style"
+    bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         material = bpy.data.objects.get(self.material) if self.material else bpy.context.active_object.active_material
         settings = get_colour_settings(material)
@@ -55,6 +59,7 @@ class AddStyle(bpy.types.Operator):
 class UnlinkStyle(bpy.types.Operator):
     bl_idname = "bim.unlink_style"
     bl_label = "Unlink Style"
+    bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.StringProperty()
 
     def execute(self, context):
