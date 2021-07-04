@@ -228,10 +228,14 @@ class SwitchRepresentation(bpy.types.Operator):
 class RemoveRepresentation(bpy.types.Operator):
     bl_idname = "bim.remove_representation"
     bl_label = "Remove Representation"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     representation_id: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         representation = self.file.by_id(self.representation_id)
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
@@ -264,10 +268,14 @@ class RemoveRepresentation(bpy.types.Operator):
 class UpdateRepresentation(bpy.types.Operator):
     bl_idname = "bim.update_representation"
     bl_label = "Update Representation"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     ifc_representation_class: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         if not ContextData.is_loaded:
             ContextData.load(IfcStore.get_file())
 
@@ -342,6 +350,7 @@ class UpdateRepresentation(bpy.types.Operator):
 class UpdateParametricRepresentation(bpy.types.Operator):
     bl_idname = "bim.update_parametric_representation"
     bl_label = "Update Parametric Representation"
+    bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -357,6 +366,7 @@ class UpdateParametricRepresentation(bpy.types.Operator):
 class GetRepresentationIfcParameters(bpy.types.Operator):
     bl_idname = "bim.get_representation_ifc_parameters"
     bl_label = "Get Representation IFC Parameters"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         self.file = IfcStore.get_file()

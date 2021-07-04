@@ -71,14 +71,18 @@ class Transaction:
         for inverse in self.file.get_inverse(element):
             inverse_references = []
             for i, attribute in enumerate(inverse):
-                if attribute == element:
-                    inverse_references.append((i, "single"))
-                elif isinstance(attribute, tuple) and element in attribute:
-                    inverse_references.append((i, "multiple"))
+                if self.has_element_reference(attribute, element):
+                    inverse_references.append((i, self.serialise_value(inverse, attribute)))
             inverses[inverse.id()] = inverse_references
         self.operations.append(
             {"action": "delete", "inverses": inverses, "value": self.serialise_entity_instance(element)}
         )
+
+    def has_element_reference(self, value, element):
+        if isinstance(value, (tuple, list)):
+            for v in value:
+                return self.has_element_reference(v, element)
+        return value == element
 
     def rollback(self):
         for operation in self.operations[::-1]:
@@ -105,16 +109,8 @@ class Transaction:
                         pass
                 for inverse_id, data in operation["inverses"].items():
                     inverse = self.file.by_id(inverse_id)
-                    for index, data_type in data:
-                        if data_type == "single":
-                            inverse[index] = e
-                        elif data_type == "multiple":
-                            if inverse[index] is None:
-                                inverse[index] = e
-                            else:
-                                new = list(inverse[index])
-                                new.append(e)
-                                inverse[index] = new
+                    for index, value in data:
+                        inverse[index] = self.unserialise_value(inverse, value)
 
     def commit(self):
         for operation in self.operations:
