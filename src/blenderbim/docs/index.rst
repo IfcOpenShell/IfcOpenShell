@@ -14,6 +14,7 @@ IfcOpenShell Documentation
    ifcclash
    ifccobie
    ifcmax
+   ifcsverchok
    bimserver-plugin
 
 
