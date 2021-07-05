@@ -120,7 +120,6 @@ class SelectCsvIfcFile(bpy.types.Operator):
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
-
     def execute(self, context):
         context.scene.CsvProperties.csv_ifc_file = self.filepath
         return {"FINISHED"}
