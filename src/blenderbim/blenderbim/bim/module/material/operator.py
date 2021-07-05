@@ -12,11 +12,15 @@ from ifcopenshell.api.profile.data import Data as ProfileData
 class AssignParameterizedProfile(bpy.types.Operator):
     bl_idname = "bim.assign_parameterized_profile"
     bl_label = "Assign Parameterized Profile"
+    bl_options = {"REGISTER", "UNDO"}
     ifc_class: bpy.props.StringProperty()
     material_profile: bpy.props.IntProperty()
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
         profile = ifcopenshell.api.run(
@@ -38,9 +42,13 @@ class AssignParameterizedProfile(bpy.types.Operator):
 class AddMaterial(bpy.types.Operator):
     bl_idname = "bim.add_material"
     bl_label = "Add Material"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.materials.get(self.obj) if self.obj else bpy.context.active_object.active_material
         self.file = IfcStore.get_file()
         result = ifcopenshell.api.run("material.add_material", self.file, **{"name": obj.name})
@@ -53,9 +61,13 @@ class AddMaterial(bpy.types.Operator):
 class RemoveMaterial(bpy.types.Operator):
     bl_idname = "bim.remove_material"
     bl_label = "Remove Material"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.materials.get(self.obj) if self.obj else bpy.context.active_object.active_material
         self.file = IfcStore.get_file()
         result = ifcopenshell.api.run(
@@ -71,10 +83,14 @@ class RemoveMaterial(bpy.types.Operator):
 class AssignMaterial(bpy.types.Operator):
     bl_idname = "bim.assign_material"
     bl_label = "Assign Material"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     material_type: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         material_type = self.material_type or obj.BIMObjectMaterialProperties.material_type
         self.file = IfcStore.get_file()
@@ -95,9 +111,13 @@ class AssignMaterial(bpy.types.Operator):
 class UnassignMaterial(bpy.types.Operator):
     bl_idname = "bim.unassign_material"
     bl_label = "Unassign Material"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
@@ -112,10 +132,14 @@ class UnassignMaterial(bpy.types.Operator):
 class AddConstituent(bpy.types.Operator):
     bl_idname = "bim.add_constituent"
     bl_label = "Add Constituent"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     constituent_set: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
@@ -133,10 +157,14 @@ class AddConstituent(bpy.types.Operator):
 class RemoveConstituent(bpy.types.Operator):
     bl_idname = "bim.remove_constituent"
     bl_label = "Remove Constituent"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     constituent: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
@@ -149,10 +177,14 @@ class RemoveConstituent(bpy.types.Operator):
 class AddProfile(bpy.types.Operator):
     bl_idname = "bim.add_profile"
     bl_label = "Add Profile"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     profile_set: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
@@ -170,10 +202,14 @@ class AddProfile(bpy.types.Operator):
 class RemoveProfile(bpy.types.Operator):
     bl_idname = "bim.remove_profile"
     bl_label = "Remove Profile"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     profile: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
         ifcopenshell.api.run("material.remove_profile", self.file, **{"profile": self.file.by_id(self.profile)})
@@ -184,10 +220,14 @@ class RemoveProfile(bpy.types.Operator):
 class AddLayer(bpy.types.Operator):
     bl_idname = "bim.add_layer"
     bl_label = "Add Layer"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     layer_set: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
@@ -205,12 +245,16 @@ class AddLayer(bpy.types.Operator):
 class ReorderMaterialSetItem(bpy.types.Operator):
     bl_idname = "bim.reorder_material_set_item"
     bl_label = "Reorder Material Set Item"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     old_index: bpy.props.IntProperty()
     new_index: bpy.props.IntProperty()
     material_set: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
         material_set = self.file.by_id(self.material_set)
@@ -237,10 +281,14 @@ class ReorderMaterialSetItem(bpy.types.Operator):
 class RemoveLayer(bpy.types.Operator):
     bl_idname = "bim.remove_layer"
     bl_label = "Remove Layer"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     layer: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
         ifcopenshell.api.run("material.remove_layer", self.file, **{"layer": self.file.by_id(self.layer)})
@@ -251,10 +299,14 @@ class RemoveLayer(bpy.types.Operator):
 class AddListItem(bpy.types.Operator):
     bl_idname = "bim.add_list_item"
     bl_label = "Add List Item"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     list_item_set: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
@@ -272,11 +324,15 @@ class AddListItem(bpy.types.Operator):
 class RemoveListItem(bpy.types.Operator):
     bl_idname = "bim.remove_list_item"
     bl_label = "Remove List Item"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     list_item_set: bpy.props.IntProperty()
     list_item: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
@@ -294,6 +350,7 @@ class RemoveListItem(bpy.types.Operator):
 class EnableEditingAssignedMaterial(bpy.types.Operator):
     bl_idname = "bim.enable_editing_assigned_material"
     bl_label = "Enable Editing Assigned Material"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -381,6 +438,7 @@ class EnableEditingAssignedMaterial(bpy.types.Operator):
 class DisableEditingAssignedMaterial(bpy.types.Operator):
     bl_idname = "bim.disable_editing_assigned_material"
     bl_label = "Disable Editing Assigned Material"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -393,11 +451,15 @@ class DisableEditingAssignedMaterial(bpy.types.Operator):
 class EditAssignedMaterial(bpy.types.Operator):
     bl_idname = "bim.edit_assigned_material"
     bl_label = "Edit Assigned Material"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     material_set: bpy.props.IntProperty()
     material_set_usage: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         props = obj.BIMObjectMaterialProperties
@@ -424,7 +486,8 @@ class EditAssignedMaterial(bpy.types.Operator):
         if self.material_set_usage:
             material_set_usage = self.file.by_id(self.material_set_usage)
             attributes = blenderbim.bim.helper.export_attributes(props.material_set_usage_attributes)
-            attributes["CardinalPoint"] = int(attributes["CardinalPoint"]) if attributes["CardinalPoint"] else None
+            if attributes.get("CardinalPoint", None):
+                attributes["CardinalPoint"] = int(attributes["CardinalPoint"])
             ifcopenshell.api.run(
                 "material.edit_profile_usage",
                 self.file,
@@ -448,6 +511,7 @@ class EditAssignedMaterial(bpy.types.Operator):
 class EnableEditingMaterialSetItem(bpy.types.Operator):
     bl_idname = "bim.enable_editing_material_set_item"
     bl_label = "Enable Editing Material Set Item"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     material_set_item: bpy.props.IntProperty()
 
@@ -541,6 +605,7 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
 class DisableEditingMaterialSetItem(bpy.types.Operator):
     bl_idname = "bim.disable_editing_material_set_item"
     bl_label = "Disable Editing Material Set Item"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -553,10 +618,14 @@ class DisableEditingMaterialSetItem(bpy.types.Operator):
 class EditMaterialSetItem(bpy.types.Operator):
     bl_idname = "bim.edit_material_set_item"
     bl_label = "Edit Material Set Item"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     material_set_item: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
         props = obj.BIMObjectMaterialProperties

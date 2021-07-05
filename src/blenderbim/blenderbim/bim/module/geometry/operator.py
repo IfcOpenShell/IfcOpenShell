@@ -207,6 +207,7 @@ class SwitchRepresentation(bpy.types.Operator):
         mesh.BIMMeshProperties.ifc_definition_id = self.ifc_definition_id
         self.element_obj.data.user_remap(mesh)
         material_creator = import_ifc.MaterialCreator(ifc_import_settings, ifc_importer)
+        material_creator.load_existing_materials()
         material_creator.create(element, self.element_obj, mesh)
 
         if self.disable_opening_subtractions and self.context_of_items.ContextIdentifier == "Body":

@@ -57,6 +57,13 @@ class MaterialCreator:
         if self.parse_representations(element):
             self.assign_material_slots_to_faces()
 
+    def load_existing_materials(self):
+        for material in bpy.data.materials:
+            if material.BIMObjectProperties.ifc_definition_id:
+                self.materials[material.BIMObjectProperties.ifc_definition_id] = material
+            if material.BIMMaterialProperties.ifc_style_id:
+                self.styles[material.BIMMaterialProperties.ifc_style_id] = material
+
     def parse_representations(self, element):
         has_parsed = False
         if hasattr(element, "Representation"):
