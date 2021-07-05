@@ -7,11 +7,15 @@ from ifcopenshell.api.context.data import Data
 class AddSubcontext(bpy.types.Operator):
     bl_idname = "bim.add_subcontext"
     bl_label = "Add Subcontext"
+    bl_options = {"REGISTER", "UNDO"}
     context: bpy.props.StringProperty()
     subcontext: bpy.props.StringProperty()
     target_view: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "context.add_context",
@@ -29,9 +33,13 @@ class AddSubcontext(bpy.types.Operator):
 class RemoveSubcontext(bpy.types.Operator):
     bl_idname = "bim.remove_subcontext"
     bl_label = "Remove Context"
+    bl_options = {"REGISTER", "UNDO"}
     ifc_definition_id: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "context.remove_context", self.file, **{"context": self.file.by_id(self.ifc_definition_id)}

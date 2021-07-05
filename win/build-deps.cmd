@@ -187,7 +187,11 @@ set BOOST_LIBRARYDIR=%DEPENDENCY_DIR%\stage\%GEN_SHORTHAND%\lib
 set ZIP_EXT=7z
 set BOOST_ZIP=boost_%BOOST_VER%.%ZIP_EXT%
 
-call :DownloadFile http://121.36.151.68:9008/download/boost/1.74.0/boost_1_74_0.7z "%DEPS_DIR%" %BOOST_ZIP%
+:: On 2021-05-11 Boost changed download address:
+:: Instead of: https://dl.bintray.com/boostorg/release/ you should use https://boostorg.jfrog.io/artifactory/main/release/ to retrieve boost releases.
+
+rem call :DownloadFile https://dl.bintray.com/boostorg/release/%BOOST_VERSION%/source/%BOOST_ZIP% "%DEPS_DIR%" %BOOST_ZIP%
+call :DownloadFile https://boostorg.jfrog.io/artifactory/main/release/%BOOST_VERSION%/source/%BOOST_ZIP% "%DEPS_DIR%" %BOOST_ZIP%
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive %BOOST_ZIP% "%DEPS_DIR%" "%DEPENDENCY_DIR%"
@@ -217,7 +221,7 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 :JSON
 set DEPENDENCY_NAME=JSON for Modern C++ v3.6.1
 IF NOT EXIST "%INSTALL_DIR%\json\nlohmann". mkdir "%INSTALL_DIR%\json\nlohmann"
-call :DownloadFile http://121.36.151.68:9008/download/json/v3.6.1/json.hpp "%INSTALL_DIR%\json\nlohmann" json.hpp
+call :DownloadFile https://github.com/nlohmann/json/releases/download/v3.6.1/json.hpp "%INSTALL_DIR%\json\nlohmann" json.hpp
 
 :OpenCOLLADA
 :: Note OpenCOLLADA has only Release and Debug builds.
@@ -259,7 +263,7 @@ set DEPENDENCY_NAME=FreeType
 set DEPENDENCY_DIR=%DEPS_DIR%\freetype-2.6.5
 set FREETYPE_ZIP=ft265.zip
 cd "%DEPS_DIR%"
-call :DownloadFile http://121.36.151.68:9008/download/freetype/2.6.5/ft265.zip "%DEPS_DIR%" %FREETYPE_ZIP%
+call :DownloadFile http://download.savannah.gnu.org/releases/freetype/%FREETYPE_ZIP% "%DEPS_DIR%" %FREETYPE_ZIP%
 if not %ERRORLEVEL%==0 goto :Error
 call :ExtractArchive %FREETYPE_ZIP% "%DEPS_DIR%" "%DEPENDENCY_DIR%"
 if not %ERRORLEVEL%==0 goto :Error
@@ -373,7 +377,7 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 
     cd "%DEPS_DIR%"
-    call :DownloadFile http://121.36.151.68:9008/download/python/3.4.3/python-3.4.3.amd64.msi "%DEPS_DIR%" %PYTHON_INSTALLER%
+    call :DownloadFile https://www.python.org/ftp/python/%PYTHON_VERSION%/%PYTHON_INSTALLER% "%DEPS_DIR%" %PYTHON_INSTALLER%
     IF NOT %ERRORLEVEL%==0 GOTO :Error
     REM Uninstall if build Rebuild/Clean used
     IF NOT %BUILD_TYPE%==Build (
@@ -397,7 +401,7 @@ set DEPENDENCY_NAME=SWIG %SWIG_VERSION%
 set DEPENDENCY_DIR=N/A
 set SWIG_ZIP=swigwin-%SWIG_VERSION%.zip
 cd "%DEPS_DIR%"
-call :DownloadFile http://121.36.151.68:9008/download/swigwin/v3.0.12/swigwin-3.0.12.zip "%DEPS_DIR%" %SWIG_ZIP%
+call :DownloadFile https://sourceforge.net/projects/swig/files/swigwin/swigwin-%SWIG_VERSION%/%SWIG_ZIP% "%DEPS_DIR%" %SWIG_ZIP%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive %SWIG_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\swigwin"
 IF NOT %ERRORLEVEL%==0 GOTO :Error

@@ -21,6 +21,13 @@ class LibraryElement(PropertyGroup):
 
 class BIMProjectProperties(PropertyGroup):
     is_authoring: BoolProperty(name="Enable Authoring Mode", default=True)
+    is_editing: BoolProperty(name="Is Editing", default=False)
+    mvd: StringProperty(name="MVD")
+    author_name: StringProperty(name="Author")
+    author_email: StringProperty(name="Author Email")
+    organisation_name: StringProperty(name="Organisation")
+    organisation_email: StringProperty(name="Organisation Email")
+    authorisation: StringProperty(name="Authoriser")
     active_library_element: StringProperty(name="Enable Authoring Mode", default="")
     library_breadcrumb: CollectionProperty(name="Library Breadcrumb", type=StrProperty)
     library_elements: CollectionProperty(name="Library Elements", type=LibraryElement)

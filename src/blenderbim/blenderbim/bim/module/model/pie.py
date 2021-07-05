@@ -116,7 +116,7 @@ class VIEW3D_MT_PIE_bim(bpy.types.Menu):
     def draw(self, context):
         pie = self.layout.menu_pie()
         pie.operator("bim.edit_object_placement")
-        pie.operator("bim.update_mesh_representation")
+        pie.operator("bim.update_representation")
         pie.operator("bim.pie_add_opening")
         pie.operator("bim.pie_update_container")
         pie.operator("bim.open_pie_class", text="Assign IFC Class")

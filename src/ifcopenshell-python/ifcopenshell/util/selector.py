@@ -221,7 +221,7 @@ class Selector:
             key = ".".join(key.split(".")[1:])
         elif "." in key and key.split(".")[0] == "material":
             try:
-                element = ifcopenshell.util.element.get_material(element)
+                element = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
                 if not element:
                     return None
             except:

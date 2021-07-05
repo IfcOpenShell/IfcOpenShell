@@ -10,12 +10,12 @@ class SvIfcCreateFileRefresh(bpy.types.Operator):
     bl_idname = "node.sv_ifc_create_file_refresh"
     bl_label = "LB Out"
 
-    idtree: StringProperty(default="")
-    idname: StringProperty(default="")
+    tree_name: StringProperty(default="")
+    node_name: StringProperty(default="")
     has_baked: bpy.props.BoolProperty(name="Has Baked", default=False)
 
     def execute(self, context):
-        node = bpy.data.node_groups[self.idtree].nodes[self.idname]
+        node = bpy.data.node_groups[self.tree_name].nodes[self.node_name]
         node.process()
         return {"FINISHED"}
 

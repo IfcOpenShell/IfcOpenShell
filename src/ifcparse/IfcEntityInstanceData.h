@@ -64,12 +64,12 @@ public:
 
 	boost::shared_ptr<IfcEntityList> getInverse (const IfcParse::declaration* type, int attribute_index) const;
 
-	Argument* getArgument(unsigned int i) const;
+	Argument* getArgument(size_t i) const;
 
 	// NB: This makes a copy of the argument
-	void setArgument(unsigned int i, Argument* a, IfcUtil::ArgumentType attr_type = IfcUtil::Argument_UNKNOWN);
+	void setArgument(size_t i, Argument* a, IfcUtil::ArgumentType attr_type = IfcUtil::Argument_UNKNOWN);
 
-	virtual unsigned int getArgumentCount() const {
+	virtual size_t getArgumentCount() const {
 		if (type_ == 0) {
 			return 0;
 		}

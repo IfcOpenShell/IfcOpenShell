@@ -82,11 +82,11 @@ PROJECT_NAME="IfcOpenShell"
 PYTHON_VERSIONS=["2.7.16", "3.2.6", "3.3.6", "3.4.6", "3.5.3", "3.6.2", "3.7.3", "3.8.6", "3.9.1"]
 JSON_VERSION="v3.6.1"
 OCE_VERSION="0.18"
-OCCT_VERSION="master"
+# OCCT_VERSION="7.1.0"
 # OCCT_HASH="89aebde"
 # OCCT_VERSION="7.2.0"
 # OCCT_HASH="88af392"
-#OCCT_VERSION="7.5.0"
+OCCT_VERSION="7.3.0p3"
 BOOST_VERSION="1.71.0"
 #PCRE_VERSION="8.39"
 PCRE_VERSION="8.41"
@@ -310,7 +310,7 @@ def run(cmds, cwd=None):
 BOOST_VERSION_UNDERSCORE=BOOST_VERSION.replace(".", "_")
 
 OCE_LOCATION="https://github.com/tpaviot/oce/archive/OCE-%s.tar.gz" % (OCE_VERSION,)
-BOOST_LOCATION="https://dl.bintray.com/boostorg/release/%s/source/" % (BOOST_VERSION,)
+BOOST_LOCATION="https://boostorg.jfrog.io/artifactory/main/release/%s/source/" % (BOOST_VERSION,)
 
 # Helper functions
 
@@ -494,7 +494,7 @@ os.environ["LDFLAGS"] = LDFLAGS
 # build_dependency(name="cmake-%s" % (CMAKE_VERSION,), mode="autoconf", build_tool_args=[], download_url="https://cmake.org/files/v%s" % (CMAKE_VERSION_2,), download_name="cmake-%s.tar.gz" % (CMAKE_VERSION,))
 
 if "json" in targets:
-    json_url = "http://121.36.151.68:9008/download/json/v3.6.1/json.hpp".format(**locals())
+    json_url = "https://github.com/nlohmann/json/releases/download/{JSON_VERSION}/json.hpp".format(**locals())
     json_install_path = "{DEPS_DIR}/install/json/nlohmann/json.hpp".format(**locals())
     if not os.path.exists(os.path.dirname(json_install_path)):
         os.makedirs(os.path.dirname(json_install_path))
@@ -506,7 +506,7 @@ if "pcre" in targets:
         name="pcre-{PCRE_VERSION}".format(**locals()),
         mode="autoconf",
         build_tool_args=[DISABLE_FLAG],
-        download_url="http://121.36.151.68:9008/download/pcre/8.41/".format(**locals()),
+        download_url="https://downloads.sourceforge.net/project/pcre/pcre/{PCRE_VERSION}/".format(**locals()),
         download_name="pcre-{PCRE_VERSION}.tar.bz2".format(**locals())
     )
 
@@ -533,7 +533,7 @@ if USE_OCCT and "occ" in targets:
             "-DBUILD_MODULE_Draw=0",
             "-DBUILD_RELEASE_DISABLE_EXCEPTIONS=Off"
         ],
-        download_url = "http://47.92.33.33:8080/gitserver/r/occt.git",
+        download_url = "https://git.dev.opencascade.org/repos/occt.git",
         download_name = "occt",
         download_tool=download_tool_git,
         patch=None if OCCT_VERSION >= "7.4" else "./patches/occt/enable-exception-handling.patch",
@@ -620,7 +620,7 @@ if "python" in targets:
                 "python-{PYTHON_VERSION}{abi_tag}".format(**locals()),
                 "autoconf",
                 PYTHON_CONFIGURE_ARGS + [unicode_conf],
-                "http://121.36.151.68:9008/download/python/{PYTHON_VERSION}/".format(**locals()),
+                "http://www.python.org/ftp/python/{PYTHON_VERSION}/".format(**locals()),
                 "Python-{PYTHON_VERSION}.tgz".format(**locals())
             )
         except Exception as e:

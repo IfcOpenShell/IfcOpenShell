@@ -1,3 +1,4 @@
+import os
 import bpy
 import json
 
@@ -46,7 +47,7 @@ class ExecuteIfcPatch(bpy.types.Operator):
                 "output": context.scene.BIMPatchProperties.ifc_patch_output,
                 "recipe": context.scene.BIMPatchProperties.ifc_patch_recipes,
                 "arguments": json.loads(context.scene.BIMPatchProperties.ifc_patch_args or "[]"),
-                "log": context.scene.BIMProperties.data_dir + "process.log",
+                "log": os.path.join(context.scene.BIMProperties.data_dir, "process.log"),
             }
         )
         return {"FINISHED"}

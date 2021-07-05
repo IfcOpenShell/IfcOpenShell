@@ -1,5 +1,10 @@
 import bpy
 import bmesh
+import ifcopenshell
+import ifcopenshell.api
+from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.qto import helper
+from ifcopenshell.api.pset.data import Data as PsetData
 
 
 class CalculateEdgeLengths(bpy.types.Operator):
@@ -48,4 +53,59 @@ class CalculateObjectVolumes(bpy.types.Operator):
             result += bm.calc_volume()
             bm.free()
         bpy.context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
+        return {"FINISHED"}
+
+
+class ExecuteQtoMethod(bpy.types.Operator):
+    bl_idname = "bim.execute_qto_method"
+    bl_label = "Execute Qto Method"
+
+    def execute(self, context):
+        props = bpy.context.scene.BIMQtoProperties
+        result = 0
+        if props.qto_methods == "HEIGHT":
+            for obj in bpy.context.selected_objects:
+                result += helper.calculate_height(obj)
+        elif props.qto_methods == "VOLUME":
+            for obj in bpy.context.selected_objects:
+                result += helper.calculate_volume(obj)
+        elif props.qto_methods == "FORMWORK":
+            result = helper.calculate_formwork_area(bpy.context.selected_objects)
+        props.qto_result = str(round(result, 3))
+        return {"FINISHED"}
+
+
+class QuantifyObjects(bpy.types.Operator):
+    bl_idname = "bim.quantify_objects"
+    bl_label = "Quantify Objects"
+
+    def execute(self, context):
+        props = bpy.context.scene.BIMQtoProperties
+        self.file = IfcStore.get_file()
+        for obj in bpy.context.selected_objects:
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            result = 0
+            if props.qto_methods == "HEIGHT":
+                result = helper.calculate_height(obj)
+            elif props.qto_methods == "VOLUME":
+                result = helper.calculate_volume(obj)
+            elif props.qto_methods == "FORMWORK":
+                result = helper.calculate_formwork_area([obj])
+            if not result:
+                continue
+            result = round(result, 3)
+            qto = ifcopenshell.api.run(
+                "pset.add_qto",
+                self.file,
+                product=self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
+                name=props.qto_name,
+            )
+            ifcopenshell.api.run(
+                "pset.edit_qto",
+                self.file,
+                qto=qto,
+                properties={props.prop_name: result}
+            )
+            PsetData.load(self.file, obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}

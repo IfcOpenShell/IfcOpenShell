@@ -1,6 +1,8 @@
 import os
 import bpy
 import bcf
+import bcf.bcfxml
+import bcf.v2.data
 from . import bcfstore
 from blenderbim.bim.ifc import IfcStore
 from math import radians, degrees, atan, tan, cos, sin
@@ -26,9 +28,10 @@ class LoadBcfProject(bpy.types.Operator):
 
     def execute(self, context):
         bpy.context.scene.BCFProperties.is_loaded = False
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
         if self.filepath:
-            bcfxml.get_project(self.filepath)
+            bcfstore.BcfStore.bcfxml = bcf.bcfxml.load(self.filepath)
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        bcfxml.get_project()
         bpy.context.scene.BCFProperties.name = bcfxml.project.name
         bpy.ops.bim.load_bcf_topics()
         bpy.context.scene.BCFProperties.is_loaded = True
@@ -250,7 +253,7 @@ class AddBcfBimSnippet(bpy.types.Operator):
         props = bpy.context.scene.BCFProperties
         blender_topic = props.topics[props.active_topic_index]
         topic = bcfxml.topics[blender_topic.name]
-        bim_snippet = bcf.data.BimSnippet()
+        bim_snippet = bcf.v2.data.BimSnippet()
         bim_snippet.reference = blender_topic.bim_snippet_reference
         bim_snippet.reference_schema = blender_topic.bim_snippet_schema
         bim_snippet.snippet_type = blender_topic.bim_snippet_type
@@ -270,7 +273,7 @@ class AddBcfRelatedTopic(bpy.types.Operator):
         related_topic = None
         for topic in bcfxml.topics.values():
             if topic.title == blender_topic.related_topic:
-                related_topic = bcf.data.RelatedTopic()
+                related_topic = bcf.v2.data.RelatedTopic()
                 related_topic.guid = topic.guid
                 break
         if not related_topic:
@@ -291,7 +294,7 @@ class AddBcfHeaderFile(bpy.types.Operator):
         props = bpy.context.scene.BCFProperties
         blender_topic = props.topics[props.active_topic_index]
         topic = bcfxml.topics[blender_topic.name]
-        header_file = bcf.data.HeaderFile()
+        header_file = bcf.v2.data.HeaderFile()
         header_file.reference = blender_topic.file_reference
         if not os.path.exists(header_file.reference):
             header_file.filename = header_file.reference
@@ -327,14 +330,14 @@ class AddBcfViewpoint(bpy.types.Operator):
         props = bpy.context.scene.BCFProperties
         blender_topic = props.topics[props.active_topic_index]
         topic = bcfxml.topics[blender_topic.name]
-        viewpoint = bcf.data.Viewpoint()
+        viewpoint = bcf.v2.data.Viewpoint()
 
         if bpy.context.scene.camera.data.type == "ORTHO":
-            camera = bcf.data.OrthogonalCamera()
+            camera = bcf.v2.data.OrthogonalCamera()
             camera.view_to_world_scale = bpy.context.scene.camera.data.ortho_scale
             viewpoint.orthogonal_camera = camera
         elif bpy.context.scene.camera.data.type == "PERSP":
-            camera = bcf.data.PerspectiveCamera()
+            camera = bcf.v2.data.PerspectiveCamera()
             camera.field_of_view = degrees(bpy.context.scene.camera.data.angle)
             viewpoint.perspective_camera = camera
         camera.camera_view_point.x = bpy.context.scene.camera.location.x
@@ -422,7 +425,7 @@ class AddBcfDocumentReference(bpy.types.Operator):
         topic = bcfxml.topics[blender_topic.name]
         if not blender_topic.document_reference:
             return {"FINISHED"}
-        document_reference = bcf.data.DocumentReference()
+        document_reference = bcf.v2.data.DocumentReference()
         document_reference.referenced_document = blender_topic.document_reference
         document_reference.description = blender_topic.document_reference_description or None
         bcfxml.add_document_reference(topic, document_reference)
@@ -609,10 +612,10 @@ class AddBcfComment(bpy.types.Operator):
         topic = bcfxml.topics[blender_topic.name]
         if not blender_topic.comment:
             return {"FINISHED"}
-        comment = bcf.data.Comment()
+        comment = bcf.v2.data.Comment()
         comment.comment = blender_topic.comment
         if blender_topic.has_related_viewpoint and blender_topic.viewpoints:
-            comment.viewpoint = bcf.data.Viewpoint()
+            comment.viewpoint = bcf.v2.data.Viewpoint()
             comment.viewpoint.guid = blender_topic.viewpoints
         bcfxml.add_comment(topic, comment)
         bpy.ops.bim.load_bcf_comments(topic_guid = topic.guid)

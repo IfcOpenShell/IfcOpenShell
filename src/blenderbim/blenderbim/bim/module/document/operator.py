@@ -9,6 +9,7 @@ from ifcopenshell.api.document.data import Data
 class LoadInformation(bpy.types.Operator):
     bl_idname = "bim.load_information"
     bl_label = "Load Information"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         self.file = IfcStore.get_file()
@@ -31,6 +32,7 @@ class LoadInformation(bpy.types.Operator):
 class LoadDocumentReferences(bpy.types.Operator):
     bl_idname = "bim.load_document_references"
     bl_label = "Load Document References"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         self.file = IfcStore.get_file()
@@ -53,6 +55,7 @@ class LoadDocumentReferences(bpy.types.Operator):
 class DisableDocumentEditingUI(bpy.types.Operator):
     bl_idname = "bim.disable_document_editing_ui"
     bl_label = "Disable Document Editing UI"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         context.scene.BIMDocumentProperties.is_editing = ""
@@ -63,6 +66,7 @@ class DisableDocumentEditingUI(bpy.types.Operator):
 class EnableEditingDocument(bpy.types.Operator):
     bl_idname = "bim.enable_editing_document"
     bl_label = "Enable Editing Document"
+    bl_options = {"REGISTER", "UNDO"}
     document: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -99,6 +103,7 @@ class EnableEditingDocument(bpy.types.Operator):
 class DisableEditingDocument(bpy.types.Operator):
     bl_idname = "bim.disable_editing_document"
     bl_label = "Disable Editing Document"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         context.scene.BIMDocumentProperties.active_document_id = 0
@@ -108,8 +113,12 @@ class DisableEditingDocument(bpy.types.Operator):
 class AddInformation(bpy.types.Operator):
     bl_idname = "bim.add_information"
     bl_label = "Add Information"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         result = ifcopenshell.api.run("document.add_information", IfcStore.get_file())
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_information()
@@ -120,8 +129,12 @@ class AddInformation(bpy.types.Operator):
 class AddDocumentReference(bpy.types.Operator):
     bl_idname = "bim.add_document_reference"
     bl_label = "Add Document Reference"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         result = ifcopenshell.api.run("document.add_reference", IfcStore.get_file())
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_document_references()
@@ -132,8 +145,12 @@ class AddDocumentReference(bpy.types.Operator):
 class EditInformation(bpy.types.Operator):
     bl_idname = "bim.edit_information"
     bl_label = "Edit Information"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         props = context.scene.BIMDocumentProperties
         attributes = {}
         for attribute in props.document_attributes:
@@ -157,8 +174,12 @@ class EditInformation(bpy.types.Operator):
 class EditDocumentReference(bpy.types.Operator):
     bl_idname = "bim.edit_document_reference"
     bl_label = "Edit Document Reference"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         props = context.scene.BIMDocumentProperties
         attributes = {}
         for attribute in props.document_attributes:
@@ -180,9 +201,13 @@ class EditDocumentReference(bpy.types.Operator):
 class RemoveDocument(bpy.types.Operator):
     bl_idname = "bim.remove_document"
     bl_label = "Remove Document"
+    bl_options = {"REGISTER", "UNDO"}
     document: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         props = context.scene.BIMDocumentProperties
         self.file = IfcStore.get_file()
         ifcopenshell.api.run("document.remove_document", self.file, **{"document": self.file.by_id(self.document)})
@@ -197,6 +222,7 @@ class RemoveDocument(bpy.types.Operator):
 class EnableAssigningDocument(bpy.types.Operator):
     bl_idname = "bim.enable_assigning_document"
     bl_label = "Enable Assigning Document"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -213,6 +239,7 @@ class EnableAssigningDocument(bpy.types.Operator):
 class DisableAssigningDocument(bpy.types.Operator):
     bl_idname = "bim.disable_assigning_document"
     bl_label = "Disable Assigning Document"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -225,10 +252,14 @@ class DisableAssigningDocument(bpy.types.Operator):
 class AssignDocument(bpy.types.Operator):
     bl_idname = "bim.assign_document"
     bl_label = "Assign Document"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     document: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
@@ -246,10 +277,14 @@ class AssignDocument(bpy.types.Operator):
 class UnassignDocument(bpy.types.Operator):
     bl_idname = "bim.unassign_document"
     bl_label = "Unassign Document"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     document: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(

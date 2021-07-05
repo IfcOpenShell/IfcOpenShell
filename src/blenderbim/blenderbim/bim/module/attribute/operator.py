@@ -9,6 +9,7 @@ from ifcopenshell.api.attribute.data import Data
 class EnableEditingAttributes(bpy.types.Operator):
     bl_idname = "bim.enable_editing_attributes"
     bl_label = "Enable Editing Attributes"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
 
@@ -24,7 +25,7 @@ class EnableEditingAttributes(bpy.types.Operator):
             props.attributes.remove(0)
         for attribute in Data.products[oprops.ifc_definition_id]:
             new = props.attributes.add()
-            if attribute["type"] == "entity":
+            if attribute["type"] == "entity" or (attribute["type"] == "list" and attribute["list_type"] == "entity"):
                 continue
             new.name = attribute["name"]
             new.is_null = attribute["is_null"]
@@ -45,6 +46,7 @@ class EnableEditingAttributes(bpy.types.Operator):
 class DisableEditingAttributes(bpy.types.Operator):
     bl_idname = "bim.disable_editing_attributes"
     bl_label = "Disable Editing Attributes"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
 
@@ -61,10 +63,14 @@ class DisableEditingAttributes(bpy.types.Operator):
 class EditAttributes(bpy.types.Operator):
     bl_idname = "bim.edit_attributes"
     bl_label = "Edit Attributes"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         if self.obj_type == "Object":
             obj = bpy.data.objects.get(self.obj)
@@ -112,6 +118,7 @@ class EditAttributes(bpy.types.Operator):
 class GenerateGlobalId(bpy.types.Operator):
     bl_idname = "bim.generate_global_id"
     bl_label = "Regenerate GlobalId"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         index = bpy.context.active_object.BIMAttributeProperties.attributes.find("GlobalId")

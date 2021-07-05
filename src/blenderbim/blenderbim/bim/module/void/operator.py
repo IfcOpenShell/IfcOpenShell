@@ -57,17 +57,21 @@ class AddOpening(bpy.types.Operator):
 class RemoveOpening(bpy.types.Operator):
     bl_idname = "bim.remove_opening"
     bl_label = "Remove Opening"
+    bl_options = {"REGISTER", "UNDO"}
     opening_id: bpy.props.IntProperty()
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
         for modifier in obj.modifiers:
             if modifier.type != "BOOLEAN":
                 continue
             if modifier.object and modifier.object.BIMObjectProperties.ifc_definition_id == self.opening_id:
-                modifier.object.BIMObjectProperties.ifc_definition_id = 0
+                IfcStore.unlink_element(obj=modifier.object)
                 if "/" in modifier.object.name and modifier.object.name[0:3] == "Ifc":
                     modifier.object.name = "/".join(modifier.object.name.split("/")[1:])
                 obj.modifiers.remove(modifier)

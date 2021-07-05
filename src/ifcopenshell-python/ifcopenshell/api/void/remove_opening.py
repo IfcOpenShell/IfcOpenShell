@@ -1,3 +1,6 @@
+import ifcopenshell.api
+
+
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
@@ -15,6 +18,6 @@ class Usecase:
             if rel.RelatingOpeningElement == self.settings["opening"]:
                 to_remove.append(rel)
                 break
-        self.file.remove(self.settings["opening"])
+        ifcopenshell.api.run("root.remove_product", self.file, product=self.settings["opening"])
         for element in to_remove:
             self.file.remove(element)

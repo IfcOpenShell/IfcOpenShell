@@ -2,6 +2,7 @@ import bpy
 from blenderbim.bim.ifc import IfcStore
 from math import radians
 from blenderbim.bim.prop import StrProperty, Attribute
+from ifcopenshell.api.structural.data import Data
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -14,8 +15,18 @@ from bpy.props import (
     CollectionProperty,
 )
 
+structuralloadtypes_enum = []
+applicablestructuralloads_enum = []
 
-def getApplicableStructuralActivityTypes(self, context):
+
+def purge():
+    global structuralloadtypes_enum
+    global applicablestructuralloads_enum
+    structuralloadtypes_enum = []
+    applicablestructuralloads_enum = []
+
+
+def getApplicableStructuralLoadTypes(self, context):
     ifc_file = IfcStore.get_file()
     element_classes = set(
         [
@@ -35,6 +46,40 @@ def getApplicableStructuralActivityTypes(self, context):
     if "IfcStructuralSurfaceMember" in element_classes:
         types.append(("IfcStructuralLoadPlanarForce", "IfcStructuralLoadPlanarForce", ""))
     return types
+
+
+def updateApplicableStructuralLoadTypes(self, context):
+    global applicablestructuralloads_enum
+    applicablestructuralloads_enum.clear()
+
+
+def getApplicableStructuralLoads(self, context):
+    global applicablestructuralloads_enum
+    file = IfcStore.get_file()
+    if len(applicablestructuralloads_enum) < 1 and file:
+        for ifc_definition_id, load in Data.structural_loads.items():
+            if not load["Name"] or load["type"] != self.applicable_structural_load_types:
+                continue
+            applicablestructuralloads_enum.append((str(ifc_definition_id), load["Name"], ""))
+    return applicablestructuralloads_enum
+
+
+def getStructuralLoadTypes(self, context):
+    global structuralloadtypes_enum
+    file = IfcStore.get_file()
+    if len(structuralloadtypes_enum) < 1 and file:
+        declaration = IfcStore.get_schema().declaration_by_name("IfcStructuralLoadStatic")
+        structuralloadtypes_enum.extend([(d.name(), d.name(), "") for d in declaration.subtypes()])
+    return structuralloadtypes_enum
+
+
+def getBoundaryConditionTypes(self, context):
+    file = IfcStore.get_file()
+    if file:
+        declaration = IfcStore.get_schema().declaration_by_name("IfcBoundaryCondition")
+        boundaryconditiontypes_enum = [(d.name(), d.name(), "") for d in declaration.subtypes()]
+        return boundaryconditiontypes_enum
+    return []
 
 
 def updateAxisAngle(self, context):
@@ -73,6 +118,18 @@ class StructuralActivity(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
+class StructuralLoad(PropertyGroup):
+    name: StringProperty(name="Name")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+    number_of_inverse_references: IntProperty(name="Number of Inverse References")
+
+
+class BoundaryCondition(PropertyGroup):
+    name: StringProperty(name="Name")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+    number_of_inverse_references: IntProperty(name="Number of Inverse References")
+
+
 class BIMStructuralProperties(PropertyGroup):
     structural_analysis_model_attributes: CollectionProperty(
         name="Structural Analysis Model Attributes", type=Attribute
@@ -87,11 +144,30 @@ class BIMStructuralProperties(PropertyGroup):
     load_group_editing_type: StringProperty(name="Load Group Editing Type")
     # load_group_attributes: CollectionProperty(name="Load Group Attributes", type=Attribute)
     active_load_group_id: IntProperty(name="Active Load Group Id")
-    applicable_structural_activity_types: EnumProperty(
-        items=getApplicableStructuralActivityTypes, name="Applicable Structural Activity Types"
+    applicable_structural_load_types: EnumProperty(
+        items=getApplicableStructuralLoadTypes,
+        name="Applicable Structural Load Types",
+        update=updateApplicableStructuralLoadTypes,
     )
+    applicable_structural_loads: EnumProperty(items=getApplicableStructuralLoads, name="Applicable Structural Loads")
     load_group_activities: CollectionProperty(name="Load Group Activities", type=StructuralActivity)
     active_load_group_activity_index: IntProperty(name="Active Load Group Activity Index")
+
+    structural_loads: CollectionProperty(name="Structural Loads", type=StructuralLoad)
+    active_structural_load_index: IntProperty(name="Active Structural Load Index")
+    active_structural_load_id: IntProperty(name="Active Structural Load Id")
+    is_editing_loads: BoolProperty(name="Is Editing Loads", default=False)
+    structural_load_types: EnumProperty(items=getStructuralLoadTypes, name="Structural Load Types")
+    structural_load_attributes: CollectionProperty(name="Structural Load Attributes", type=Attribute)
+    filtered_structural_loads: BoolProperty(name="Filtered Structural Loads", default=False)
+
+    boundary_conditions: CollectionProperty(name="Boundary Conditions", type=BoundaryCondition)
+    active_boundary_condition_index: IntProperty(name="Active Boundary Condition Index")
+    active_boundary_condition_id: IntProperty(name="Active Boundary Condition Id")
+    is_editing_boundary_conditions: BoolProperty(name="Is Editing Boundary Conditions", default=False)
+    boundary_condition_types: EnumProperty(items=getBoundaryConditionTypes, name="Boundary Condition Types")
+    boundary_condition_attributes: CollectionProperty(name="Boundary Condition Attributes", type=Attribute)
+    filtered_boundary_conditions: BoolProperty(name="Filtered Boundary Conditions", default=False)
 
 
 class BIMObjectStructuralProperties(PropertyGroup):

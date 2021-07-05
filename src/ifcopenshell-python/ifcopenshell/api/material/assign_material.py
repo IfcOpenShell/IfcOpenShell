@@ -1,4 +1,7 @@
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.element
+import ifcopenshell.util.representation
 
 
 class Usecase:
@@ -9,6 +12,9 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
+        material = ifcopenshell.util.element.get_material(self.settings["product"])
+        if material:
+            ifcopenshell.api.run("material.unassign_material", self.file, product=self.settings["product"])
         if self.settings["type"] == "IfcMaterial":
             self.assign_ifc_material()
         elif self.settings["type"] == "IfcMaterialConstituentSet":
@@ -18,20 +24,53 @@ class Usecase:
             material_set = self.file.create_entity(self.settings["type"])
             self.create_material_association(material_set)
         elif self.settings["type"] == "IfcMaterialLayerSetUsage":
-            material_set = self.file.create_entity("IfcMaterialLayerSet")
+            element_type = ifcopenshell.util.element.get_type(self.settings["product"])
+            if element_type:
+                element_type_material = ifcopenshell.util.element.get_material(element_type)
+                if element_type_material and element_type_material.is_a("IfcMaterialLayerSet"):
+                    material_set = element_type_material
+                else:
+                    material_set = self.file.create_entity("IfcMaterialLayerSet")
+            else:
+                material_set = self.file.create_entity("IfcMaterialLayerSet")
             material_set_usage = self.create_layer_set_usage(material_set)
             self.create_material_association(material_set_usage)
         elif self.settings["type"] == "IfcMaterialProfileSet":
             material_set = self.file.create_entity(self.settings["type"])
             self.create_material_association(material_set)
         elif self.settings["type"] == "IfcMaterialProfileSetUsage":
-            material_set = self.file.create_entity("IfcMaterialProfileSet")
+            element_type = ifcopenshell.util.element.get_type(self.settings["product"])
+            if element_type:
+                element_type_material = ifcopenshell.util.element.get_material(element_type)
+                if element_type_material and element_type_material.is_a("IfcMaterialProfileSet"):
+                    material_set = element_type_material
+                else:
+                    material_set = self.file.create_entity("IfcMaterialProfileSet")
+            else:
+                material_set = self.file.create_entity("IfcMaterialProfileSet")
+
+            self.update_representation_profile(material_set)
             material_set_usage = self.create_profile_set_usage(material_set)
             self.create_material_association(material_set_usage)
         elif self.settings["type"] == "IfcMaterialList":
             material_set = self.file.create_entity(self.settings["type"])
             material_set.Materials = [self.settings["material"]]
             self.create_material_association(material_set)
+
+    def update_representation_profile(self, material_set):
+        profile = material_set.CompositeProfile
+        if not profile and material_set.MaterialProfiles:
+            profile = material_set.MaterialProfiles[0].Profile
+        if not profile:
+            return
+        representation = ifcopenshell.util.representation.get_representation(
+            self.settings["product"], "Model", "Body", "MODEL_VIEW"
+        )
+        if not representation:
+            return
+        for subelement in self.file.traverse(representation):
+            if subelement.is_a("IfcSweptAreaSolid"):
+                subelement.SweptArea = profile
 
     def create_layer_set_usage(self, material_set):
         return self.file.create_entity(

@@ -13,6 +13,7 @@ from blenderbim.bim.handler import purge_module_data
 class AddCsvAttribute(bpy.types.Operator):
     bl_idname = "bim.add_csv_attribute"
     bl_label = "Add CSV Attribute"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         attribute = context.scene.CsvProperties.csv_attributes.add()
@@ -22,6 +23,7 @@ class AddCsvAttribute(bpy.types.Operator):
 class RemoveCsvAttribute(bpy.types.Operator):
     bl_idname = "bim.remove_csv_attribute"
     bl_label = "Remove CSV Attribute"
+    bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -98,6 +100,7 @@ class ImportIfcCsv(bpy.types.Operator):
 class EyedropIfcCsv(bpy.types.Operator):
     bl_idname = "bim.eyedrop_ifccsv"
     bl_label = "Query Selected Items"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         global_ids = []
@@ -112,10 +115,10 @@ class EyedropIfcCsv(bpy.types.Operator):
 class SelectCsvIfcFile(bpy.types.Operator):
     bl_idname = "bim.select_csv_ifc_file"
     bl_label = "Select CSV IFC File"
+    bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
 
     def execute(self, context):
         context.scene.CsvProperties.csv_ifc_file = self.filepath

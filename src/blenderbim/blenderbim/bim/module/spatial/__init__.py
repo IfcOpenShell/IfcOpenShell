@@ -7,6 +7,7 @@ classes = (
     operator.EnableEditingContainer,
     operator.DisableEditingContainer,
     operator.ChangeSpatialLevel,
+    operator.CopyToContainer,
     prop.SpatialElement,
     prop.BIMSpatialProperties,
     prop.BIMObjectSpatialProperties,
