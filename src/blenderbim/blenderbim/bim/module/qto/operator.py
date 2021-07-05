@@ -10,6 +10,7 @@ from ifcopenshell.api.pset.data import Data as PsetData
 class CalculateEdgeLengths(bpy.types.Operator):
     bl_idname = "bim.calculate_edge_lengths"
     bl_label = "Calculate Edge Lengths"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         result = 0
@@ -26,6 +27,7 @@ class CalculateEdgeLengths(bpy.types.Operator):
 class CalculateFaceAreas(bpy.types.Operator):
     bl_idname = "bim.calculate_face_areas"
     bl_label = "Calculate Face Areas"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         result = 0
@@ -42,6 +44,7 @@ class CalculateFaceAreas(bpy.types.Operator):
 class CalculateObjectVolumes(bpy.types.Operator):
     bl_idname = "bim.calculate_object_volumes"
     bl_label = "Calculate Object Volumes"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         result = 0
@@ -59,6 +62,7 @@ class CalculateObjectVolumes(bpy.types.Operator):
 class ExecuteQtoMethod(bpy.types.Operator):
     bl_idname = "bim.execute_qto_method"
     bl_label = "Execute Qto Method"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         props = bpy.context.scene.BIMQtoProperties
@@ -78,8 +82,12 @@ class ExecuteQtoMethod(bpy.types.Operator):
 class QuantifyObjects(bpy.types.Operator):
     bl_idname = "bim.quantify_objects"
     bl_label = "Quantify Objects"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         props = bpy.context.scene.BIMQtoProperties
         self.file = IfcStore.get_file()
         for obj in bpy.context.selected_objects:
