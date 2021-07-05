@@ -115,11 +115,22 @@ def loadIfcStore(scene):
 
 
 @persistent
+def undo_pre(scene):
+    IfcStore.update_undo_redo_stack_objects()
+
+
+@persistent
 def undo_post(scene):
     if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
         IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
         IfcStore.undo()
-    IfcStore.reload_linked_elements(should_reload_selected=True)
+    IfcStore.update_undo_redo_stack_objects()
+    IfcStore.reload_linked_elements(objects=[bpy.data.objects.get(o) for o in IfcStore.undo_redo_stack_objects])
+
+
+@persistent
+def redo_pre(scene):
+    IfcStore.update_undo_redo_stack_objects()
 
 
 @persistent
@@ -127,7 +138,8 @@ def redo_post(scene):
     if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
         IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
         IfcStore.redo()
-    IfcStore.reload_linked_elements(should_reload_selected=True)
+    IfcStore.update_undo_redo_stack_objects()
+    IfcStore.reload_linked_elements(objects=[bpy.data.objects.get(o) for o in IfcStore.undo_redo_stack_objects])
 
 
 @persistent
