@@ -8,10 +8,14 @@ from ifcopenshell.api.context.data import Data as ContextData
 class AddOpening(bpy.types.Operator):
     bl_idname = "bim.add_opening"
     bl_label = "Add Opening"
+    bl_options = {"REGISTER", "UNDO"}
     opening: bpy.props.StringProperty()
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         opening = bpy.data.objects.get(self.opening)
         opening.display_type = "WIRE"
@@ -85,10 +89,14 @@ class RemoveOpening(bpy.types.Operator):
 class AddFilling(bpy.types.Operator):
     bl_idname = "bim.add_filling"
     bl_label = "Add Filling"
+    bl_options = {"REGISTER", "UNDO"}
     opening: bpy.props.StringProperty()
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         opening = bpy.data.objects.get(self.opening) if self.opening else context.scene.VoidProperties.desired_opening
         self.file = IfcStore.get_file()
@@ -108,9 +116,13 @@ class AddFilling(bpy.types.Operator):
 class RemoveFilling(bpy.types.Operator):
     bl_idname = "bim.remove_filling"
     bl_label = "Remove Filling"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
