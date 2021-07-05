@@ -72,7 +72,8 @@ class Transaction:
         self.batch_inverses = []
 
     def store_create(self, element):
-        self.operations.append({"action": "create", "value": self.serialise_entity_instance(element)})
+        if element.id():
+            self.operations.append({"action": "create", "value": self.serialise_entity_instance(element)})
 
     def store_edit(self, element, index, value):
         self.operations.append(
