@@ -51,7 +51,7 @@ class EnableEditingConstraint(bpy.types.Operator):
 
         for attribute in IfcStore.get_schema().declaration_by_name(props.is_editing).all_attributes():
             data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
+            if data_type == "entity" or (isinstance(data_type, tuple) and "entity" in ".".join(data_type)):
                 continue
             new = props.constraint_attributes.add()
             new.name = attribute.name()
