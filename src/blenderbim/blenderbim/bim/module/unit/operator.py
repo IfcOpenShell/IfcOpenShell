@@ -7,8 +7,12 @@ from ifcopenshell.api.unit.data import Data
 class AssignUnit(bpy.types.Operator):
     bl_idname = "bim.assign_unit"
     bl_label = "Assign Unit"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         ifcopenshell.api.run("unit.assign_unit", IfcStore.get_file(), **self.get_units())
         Data.load(IfcStore.get_file())
         return {"FINISHED"}

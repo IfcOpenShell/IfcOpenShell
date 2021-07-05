@@ -57,9 +57,13 @@ class AssignType(bpy.types.Operator):
 class UnassignType(bpy.types.Operator):
     bl_idname = "bim.unassign_type"
     bl_label = "Unassign Type"
+    bl_options = {"REGISTER", "UNDO"}
     related_object: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         related_objects = (
             [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
@@ -80,6 +84,7 @@ class UnassignType(bpy.types.Operator):
 class EnableEditingType(bpy.types.Operator):
     bl_idname = "bim.enable_editing_type"
     bl_label = "Enable Editing Type"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bpy.context.active_object.BIMTypeProperties.is_editing_type = True
@@ -101,6 +106,7 @@ class DisableEditingType(bpy.types.Operator):
 class SelectSimilarType(bpy.types.Operator):
     bl_idname = "bim.select_similar_type"
     bl_label = "Select Similar Type"
+    bl_options = {"REGISTER", "UNDO"}
     related_object: bpy.props.StringProperty()
 
     def execute(self, context):
