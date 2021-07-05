@@ -69,6 +69,7 @@ class AssignContainer(bpy.types.Operator):
 class EnableEditingContainer(bpy.types.Operator):
     bl_idname = "bim.enable_editing_container"
     bl_label = "Enable Editing Container"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bpy.context.active_object.BIMObjectSpatialProperties.is_editing = True
@@ -79,6 +80,7 @@ class EnableEditingContainer(bpy.types.Operator):
 class ChangeSpatialLevel(bpy.types.Operator):
     bl_idname = "bim.change_spatial_level"
     bl_label = "Change Spatial Level"
+    bl_options = {"REGISTER", "UNDO"}
     parent_id: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -101,9 +103,13 @@ class DisableEditingContainer(bpy.types.Operator):
 class RemoveContainer(bpy.types.Operator):
     bl_idname = "bim.remove_container"
     bl_label = "Remove Container"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         oprops = obj.BIMObjectProperties
         self.file = IfcStore.get_file()
@@ -134,9 +140,13 @@ class RemoveContainer(bpy.types.Operator):
 class CopyToContainer(bpy.types.Operator):
     bl_idname = "bim.copy_to_container"
     bl_label = "Copy To Container"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         objects = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
         sprops = context.scene.BIMSpatialProperties
