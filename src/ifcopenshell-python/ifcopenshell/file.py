@@ -39,6 +39,10 @@ class Transaction:
     def __init__(self, ifc_file):
         self.file = ifc_file
         self.operations = []
+        self.is_batched = False
+        self.batch_delete_index = 0
+        self.batch_delete_ids = set()
+        self.batch_inverses = []
 
     def serialise_entity_instance(self, element):
         info = element.get_info()
@@ -51,6 +55,21 @@ class Transaction:
 
     def unserialise_value(self, element, value):
         return element.walk(lambda v: isinstance(v, dict), lambda v: self.file.by_id(v["id"]), value)
+
+    def batch(self):
+        self.is_batched = True
+        self.batch_delete_index = len(self.operations)
+        self.batch_delete_ids = set()
+        self.batch_inverses = []
+
+    def unbatch(self):
+        for inverses in self.batch_inverses:
+            if inverses:
+                self.operations.insert(self.batch_delete_index, {"action": "batch_delete", "inverses": inverses})
+        self.is_batched = False
+        self.batch_delete_index = 0
+        self.batch_delete_ids = set()
+        self.batch_inverses = []
 
     def store_create(self, element):
         self.operations.append({"action": "create", "value": self.serialise_entity_instance(element)})
@@ -68,15 +87,25 @@ class Transaction:
 
     def store_delete(self, element):
         inverses = {}
+        if self.is_batched:
+            if element.id() not in self.batch_delete_ids:
+                self.batch_inverses.append(self.get_element_inverses(element))
+            self.batch_delete_ids.add(element.id())
+        else:
+            inverses = self.get_element_inverses(element)
+        self.operations.append(
+            {"action": "delete", "inverses": inverses, "value": self.serialise_entity_instance(element)}
+        )
+
+    def get_element_inverses(self, element):
+        inverses = {}
         for inverse in self.file.get_inverse(element):
             inverse_references = []
             for i, attribute in enumerate(inverse):
                 if self.has_element_reference(attribute, element):
                     inverse_references.append((i, self.serialise_value(inverse, attribute)))
             inverses[inverse.id()] = inverse_references
-        self.operations.append(
-            {"action": "delete", "inverses": inverses, "value": self.serialise_entity_instance(element)}
-        )
+        return inverses
 
     def has_element_reference(self, value, element):
         if isinstance(value, (tuple, list)):
@@ -111,6 +140,11 @@ class Transaction:
                     inverse = self.file.by_id(inverse_id)
                     for index, value in data:
                         inverse[index] = self.unserialise_value(inverse, value)
+            elif operation["action"] == "batch_delete":
+                for inverse_id, data in operation["inverses"].items():
+                    inverse = self.file.by_id(inverse_id)
+                    for index, value in data:
+                        inverse[index] = self.unserialise_value(inverse, value)
 
     def commit(self):
         for operation in self.operations:
@@ -128,6 +162,8 @@ class Transaction:
             elif operation["action"] == "delete":
                 element = self.file.by_id(operation["value"]["id"])
                 self.file.remove(element)
+            elif operation["action"] == "batch_delete":
+                pass
 
 
 class file(object):
@@ -223,8 +259,13 @@ class file(object):
         self.wrapped_data.add(e.wrapped_data, eid)
         e.wrapped_data.this.disown()
         attrs = list(enumerate(args)) + [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
+        if attrs:
+            transaction = self.transaction
+            self.transaction = None
         for idx, arg in attrs:
             e[idx] = arg
+        if attrs:
+            self.transaction = transaction
         if self.transaction:
             self.transaction.store_create(e)
         return e
@@ -325,10 +366,14 @@ class file(object):
 
     def batch(self):
         """Low-level mechanism to speed up deletion of large subgraphs"""
+        if self.transaction:
+            self.transaction.batch()
         return self.wrapped_data.batch()
 
     def unbatch(self):
         """Low-level mechanism to speed up deletion of large subgraphs"""
+        if self.transaction:
+            self.transaction.unbatch()
         return self.wrapped_data.unbatch()
 
     def __iter__(self):
