@@ -9,6 +9,7 @@ from ifcopenshell.api.constraint.data import Data
 class LoadObjectives(bpy.types.Operator):
     bl_idname = "bim.load_objectives"
     bl_label = "Load Objectives"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         props = context.scene.BIMConstraintProperties
@@ -26,6 +27,7 @@ class LoadObjectives(bpy.types.Operator):
 class DisableConstraintEditingUI(bpy.types.Operator):
     bl_idname = "bim.disable_constraint_editing_ui"
     bl_label = "Disable Constraint Editing UI"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         context.scene.BIMConstraintProperties.is_editing = ""
@@ -36,6 +38,7 @@ class DisableConstraintEditingUI(bpy.types.Operator):
 class EnableEditingConstraint(bpy.types.Operator):
     bl_idname = "bim.enable_editing_constraint"
     bl_label = "Enable Editing Constraint"
+    bl_options = {"REGISTER", "UNDO"}
     constraint: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -48,7 +51,7 @@ class EnableEditingConstraint(bpy.types.Operator):
 
         for attribute in IfcStore.get_schema().declaration_by_name(props.is_editing).all_attributes():
             data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
+            if data_type == "entity" or (isinstance(data_type, tuple) and "entity" in ".".join(data_type)):
                 continue
             new = props.constraint_attributes.add()
             new.name = attribute.name()
@@ -68,6 +71,7 @@ class EnableEditingConstraint(bpy.types.Operator):
 class DisableEditingConstraint(bpy.types.Operator):
     bl_idname = "bim.disable_editing_constraint"
     bl_label = "Disable Editing Constraint"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         context.scene.BIMConstraintProperties.active_constraint_id = 0
@@ -77,8 +81,12 @@ class DisableEditingConstraint(bpy.types.Operator):
 class AddObjective(bpy.types.Operator):
     bl_idname = "bim.add_objective"
     bl_label = "Add Objective"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         result = ifcopenshell.api.run("constraint.add_objective", IfcStore.get_file())
         Data.load(IfcStore.get_file())
         bpy.ops.bim.load_objectives()
@@ -89,8 +97,12 @@ class AddObjective(bpy.types.Operator):
 class EditObjective(bpy.types.Operator):
     bl_idname = "bim.edit_objective"
     bl_label = "Edit Objective"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         props = context.scene.BIMConstraintProperties
         attributes = {}
         for attribute in props.constraint_attributes:
@@ -114,9 +126,13 @@ class EditObjective(bpy.types.Operator):
 class RemoveConstraint(bpy.types.Operator):
     bl_idname = "bim.remove_constraint"
     bl_label = "Remove Constraint"
+    bl_options = {"REGISTER", "UNDO"}
     constraint: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         props = context.scene.BIMConstraintProperties
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
@@ -131,6 +147,7 @@ class RemoveConstraint(bpy.types.Operator):
 class EnableAssigningConstraint(bpy.types.Operator):
     bl_idname = "bim.enable_assigning_constraint"
     bl_label = "Enable Assigning Constraint"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -145,6 +162,7 @@ class EnableAssigningConstraint(bpy.types.Operator):
 class DisableAssigningConstraint(bpy.types.Operator):
     bl_idname = "bim.disable_assigning_constraint"
     bl_label = "Disable Assigning Constraint"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -157,10 +175,14 @@ class DisableAssigningConstraint(bpy.types.Operator):
 class AssignConstraint(bpy.types.Operator):
     bl_idname = "bim.assign_constraint"
     bl_label = "Assign Constraint"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     constraint: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
@@ -178,10 +200,14 @@ class AssignConstraint(bpy.types.Operator):
 class UnassignConstraint(bpy.types.Operator):
     bl_idname = "bim.unassign_constraint"
     bl_label = "Unassign Constraint"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     constraint: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(

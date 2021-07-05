@@ -1179,7 +1179,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcDerivedProfileDef* l, TopoDS_S
 	gp_Trsf2d trsf2d;
 	if (convert_face(l->ParentProfile(), f) && IfcGeom::Kernel::convert(l->Operator(), trsf2d)) {
 		gp_Trsf trsf = trsf2d;
-		face = TopoDS::Face(BRepBuilderAPI_Transform(f, trsf));
+		face = BRepBuilderAPI_Transform(f, trsf).Shape();
 		return true;
 	} else {
 		return false;

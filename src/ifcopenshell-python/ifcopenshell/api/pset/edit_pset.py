@@ -1,10 +1,11 @@
 import ifcopenshell
+import ifcopenshell.util.pset
 
 
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
-        self.settings = {"pset": None, "Name": None, "Properties": {}}
+        self.settings = {"pset": None, "name": None, "properties": {}}
         for key, value in settings.items():
             self.settings[key] = value
 
@@ -16,8 +17,8 @@ class Usecase:
         self.extend_pset_with_new_properties(new_properties)
 
     def update_pset_name(self):
-        if self.settings["Name"]:
-            self.settings["pset"].Name = self.settings["Name"]
+        if self.settings["name"]:
+            self.settings["pset"].Name = self.settings["name"]
 
     def load_pset_template(self):
         # TODO: add IFC2X3 PsetQto template support
@@ -29,19 +30,19 @@ class Usecase:
             self.update_existing_property(prop)
 
     def update_existing_property(self, prop):
-        if prop.Name not in self.settings["Properties"]:
+        if prop.Name not in self.settings["properties"]:
             return
-        value = self.settings["Properties"][prop.Name]
+        value = self.settings["properties"][prop.Name]
         if value is None:
             prop.NominalValue = None
         else:
             primary_measure_type = self.get_primary_measure_type(prop.Name, previous_value=prop.NominalValue)
             prop.NominalValue = self.file.create_entity(primary_measure_type, value)
-        del self.settings["Properties"][prop.Name]
+        del self.settings["properties"][prop.Name]
 
     def add_new_properties(self):
         properties = []
-        for name, value in self.settings["Properties"].items():
+        for name, value in self.settings["properties"].items():
             if value is None:
                 continue
             primary_measure_type = self.get_primary_measure_type(name)

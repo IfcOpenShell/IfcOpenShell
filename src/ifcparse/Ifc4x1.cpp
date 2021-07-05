@@ -1216,6 +1216,10 @@ Ifc4x1::IfcActionRequestTypeEnum::Value Ifc4x1::IfcActionRequestTypeEnum::FromSt
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcActionRequestTypeEnum::operator Ifc4x1::IfcActionRequestTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcActionSourceTypeEnum::declaration() const { return *IFC4X1_IfcActionSourceTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcActionSourceTypeEnum::Class() { return *IFC4X1_IfcActionSourceTypeEnum_type; }
 
@@ -1272,6 +1276,10 @@ Ifc4x1::IfcActionSourceTypeEnum::Value Ifc4x1::IfcActionSourceTypeEnum::FromStri
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcActionSourceTypeEnum::operator Ifc4x1::IfcActionSourceTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcActionTypeEnum::declaration() const { return *IFC4X1_IfcActionTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcActionTypeEnum::Class() { return *IFC4X1_IfcActionTypeEnum_type; }
 
@@ -1304,6 +1312,10 @@ Ifc4x1::IfcActionTypeEnum::Value Ifc4x1::IfcActionTypeEnum::FromString(const std
     if (s == "USERDEFINED") return ::Ifc4x1::IfcActionTypeEnum::IfcActionType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcActionTypeEnum::IfcActionType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcActionTypeEnum::operator Ifc4x1::IfcActionTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcActuatorTypeEnum::declaration() const { return *IFC4X1_IfcActuatorTypeEnum_type; }
@@ -1342,6 +1354,10 @@ Ifc4x1::IfcActuatorTypeEnum::Value Ifc4x1::IfcActuatorTypeEnum::FromString(const
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcActuatorTypeEnum::operator Ifc4x1::IfcActuatorTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcAddressTypeEnum::declaration() const { return *IFC4X1_IfcAddressTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcAddressTypeEnum::Class() { return *IFC4X1_IfcAddressTypeEnum_type; }
 
@@ -1374,6 +1390,10 @@ Ifc4x1::IfcAddressTypeEnum::Value Ifc4x1::IfcAddressTypeEnum::FromString(const s
     if (s == "DISTRIBUTIONPOINT") return ::Ifc4x1::IfcAddressTypeEnum::IfcAddressType_DISTRIBUTIONPOINT;
     if (s == "USERDEFINED") return ::Ifc4x1::IfcAddressTypeEnum::IfcAddressType_USERDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcAddressTypeEnum::operator Ifc4x1::IfcAddressTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcAirTerminalBoxTypeEnum::declaration() const { return *IFC4X1_IfcAirTerminalBoxTypeEnum_type; }
@@ -1410,6 +1430,10 @@ Ifc4x1::IfcAirTerminalBoxTypeEnum::Value Ifc4x1::IfcAirTerminalBoxTypeEnum::From
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcAirTerminalBoxTypeEnum::operator Ifc4x1::IfcAirTerminalBoxTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcAirTerminalTypeEnum::declaration() const { return *IFC4X1_IfcAirTerminalTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcAirTerminalTypeEnum::Class() { return *IFC4X1_IfcAirTerminalTypeEnum_type; }
 
@@ -1443,6 +1467,10 @@ Ifc4x1::IfcAirTerminalTypeEnum::Value Ifc4x1::IfcAirTerminalTypeEnum::FromString
     if (s == "USERDEFINED") return ::Ifc4x1::IfcAirTerminalTypeEnum::IfcAirTerminalType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcAirTerminalTypeEnum::IfcAirTerminalType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcAirTerminalTypeEnum::operator Ifc4x1::IfcAirTerminalTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcAirToAirHeatRecoveryTypeEnum::declaration() const { return *IFC4X1_IfcAirToAirHeatRecoveryTypeEnum_type; }
@@ -1485,6 +1513,10 @@ Ifc4x1::IfcAirToAirHeatRecoveryTypeEnum::Value Ifc4x1::IfcAirToAirHeatRecoveryTy
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcAirToAirHeatRecoveryTypeEnum::operator Ifc4x1::IfcAirToAirHeatRecoveryTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcAlarmTypeEnum::declaration() const { return *IFC4X1_IfcAlarmTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcAlarmTypeEnum::Class() { return *IFC4X1_IfcAlarmTypeEnum_type; }
 
@@ -1522,6 +1554,10 @@ Ifc4x1::IfcAlarmTypeEnum::Value Ifc4x1::IfcAlarmTypeEnum::FromString(const std::
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcAlarmTypeEnum::operator Ifc4x1::IfcAlarmTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcAlignmentTypeEnum::declaration() const { return *IFC4X1_IfcAlignmentTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcAlignmentTypeEnum::Class() { return *IFC4X1_IfcAlignmentTypeEnum_type; }
 
@@ -1551,6 +1587,10 @@ Ifc4x1::IfcAlignmentTypeEnum::Value Ifc4x1::IfcAlignmentTypeEnum::FromString(con
     if (s == "USERDEFINED") return ::Ifc4x1::IfcAlignmentTypeEnum::IfcAlignmentType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcAlignmentTypeEnum::IfcAlignmentType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcAlignmentTypeEnum::operator Ifc4x1::IfcAlignmentTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcAnalysisModelTypeEnum::declaration() const { return *IFC4X1_IfcAnalysisModelTypeEnum_type; }
@@ -1585,6 +1625,10 @@ Ifc4x1::IfcAnalysisModelTypeEnum::Value Ifc4x1::IfcAnalysisModelTypeEnum::FromSt
     if (s == "USERDEFINED") return ::Ifc4x1::IfcAnalysisModelTypeEnum::IfcAnalysisModelType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcAnalysisModelTypeEnum::IfcAnalysisModelType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcAnalysisModelTypeEnum::operator Ifc4x1::IfcAnalysisModelTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcAnalysisTheoryTypeEnum::declaration() const { return *IFC4X1_IfcAnalysisTheoryTypeEnum_type; }
@@ -1622,6 +1666,10 @@ Ifc4x1::IfcAnalysisTheoryTypeEnum::Value Ifc4x1::IfcAnalysisTheoryTypeEnum::From
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcAnalysisTheoryTypeEnum::operator Ifc4x1::IfcAnalysisTheoryTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcArithmeticOperatorEnum::declaration() const { return *IFC4X1_IfcArithmeticOperatorEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcArithmeticOperatorEnum::Class() { return *IFC4X1_IfcArithmeticOperatorEnum_type; }
 
@@ -1655,6 +1703,10 @@ Ifc4x1::IfcArithmeticOperatorEnum::Value Ifc4x1::IfcArithmeticOperatorEnum::From
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcArithmeticOperatorEnum::operator Ifc4x1::IfcArithmeticOperatorEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcAssemblyPlaceEnum::declaration() const { return *IFC4X1_IfcAssemblyPlaceEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcAssemblyPlaceEnum::Class() { return *IFC4X1_IfcAssemblyPlaceEnum_type; }
 
@@ -1685,6 +1737,10 @@ Ifc4x1::IfcAssemblyPlaceEnum::Value Ifc4x1::IfcAssemblyPlaceEnum::FromString(con
     if (s == "FACTORY") return ::Ifc4x1::IfcAssemblyPlaceEnum::IfcAssemblyPlace_FACTORY;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcAssemblyPlaceEnum::IfcAssemblyPlace_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcAssemblyPlaceEnum::operator Ifc4x1::IfcAssemblyPlaceEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcAudioVisualApplianceTypeEnum::declaration() const { return *IFC4X1_IfcAudioVisualApplianceTypeEnum_type; }
@@ -1729,6 +1785,10 @@ Ifc4x1::IfcAudioVisualApplianceTypeEnum::Value Ifc4x1::IfcAudioVisualApplianceTy
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcAudioVisualApplianceTypeEnum::operator Ifc4x1::IfcAudioVisualApplianceTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcBSplineCurveForm::declaration() const { return *IFC4X1_IfcBSplineCurveForm_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcBSplineCurveForm::Class() { return *IFC4X1_IfcBSplineCurveForm_type; }
 
@@ -1762,6 +1822,10 @@ Ifc4x1::IfcBSplineCurveForm::Value Ifc4x1::IfcBSplineCurveForm::FromString(const
     if (s == "HYPERBOLIC_ARC") return ::Ifc4x1::IfcBSplineCurveForm::IfcBSplineCurveForm_HYPERBOLIC_ARC;
     if (s == "UNSPECIFIED") return ::Ifc4x1::IfcBSplineCurveForm::IfcBSplineCurveForm_UNSPECIFIED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcBSplineCurveForm::operator Ifc4x1::IfcBSplineCurveForm::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcBSplineSurfaceForm::declaration() const { return *IFC4X1_IfcBSplineSurfaceForm_type; }
@@ -1804,6 +1868,10 @@ Ifc4x1::IfcBSplineSurfaceForm::Value Ifc4x1::IfcBSplineSurfaceForm::FromString(c
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcBSplineSurfaceForm::operator Ifc4x1::IfcBSplineSurfaceForm::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcBeamTypeEnum::declaration() const { return *IFC4X1_IfcBeamTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcBeamTypeEnum::Class() { return *IFC4X1_IfcBeamTypeEnum_type; }
 
@@ -1839,6 +1907,10 @@ Ifc4x1::IfcBeamTypeEnum::Value Ifc4x1::IfcBeamTypeEnum::FromString(const std::st
     if (s == "USERDEFINED") return ::Ifc4x1::IfcBeamTypeEnum::IfcBeamType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcBeamTypeEnum::IfcBeamType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcBeamTypeEnum::operator Ifc4x1::IfcBeamTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcBenchmarkEnum::declaration() const { return *IFC4X1_IfcBenchmarkEnum_type; }
@@ -1880,6 +1952,10 @@ Ifc4x1::IfcBenchmarkEnum::Value Ifc4x1::IfcBenchmarkEnum::FromString(const std::
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcBenchmarkEnum::operator Ifc4x1::IfcBenchmarkEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcBoilerTypeEnum::declaration() const { return *IFC4X1_IfcBoilerTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcBoilerTypeEnum::Class() { return *IFC4X1_IfcBoilerTypeEnum_type; }
 
@@ -1911,6 +1987,10 @@ Ifc4x1::IfcBoilerTypeEnum::Value Ifc4x1::IfcBoilerTypeEnum::FromString(const std
     if (s == "USERDEFINED") return ::Ifc4x1::IfcBoilerTypeEnum::IfcBoilerType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcBoilerTypeEnum::IfcBoilerType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcBoilerTypeEnum::operator Ifc4x1::IfcBoilerTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcBooleanOperator::declaration() const { return *IFC4X1_IfcBooleanOperator_type; }
@@ -1945,6 +2025,10 @@ Ifc4x1::IfcBooleanOperator::Value Ifc4x1::IfcBooleanOperator::FromString(const s
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcBooleanOperator::operator Ifc4x1::IfcBooleanOperator::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcBuildingElementPartTypeEnum::declaration() const { return *IFC4X1_IfcBuildingElementPartTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcBuildingElementPartTypeEnum::Class() { return *IFC4X1_IfcBuildingElementPartTypeEnum_type; }
 
@@ -1976,6 +2060,10 @@ Ifc4x1::IfcBuildingElementPartTypeEnum::Value Ifc4x1::IfcBuildingElementPartType
     if (s == "USERDEFINED") return ::Ifc4x1::IfcBuildingElementPartTypeEnum::IfcBuildingElementPartType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcBuildingElementPartTypeEnum::IfcBuildingElementPartType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcBuildingElementPartTypeEnum::operator Ifc4x1::IfcBuildingElementPartTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcBuildingElementProxyTypeEnum::declaration() const { return *IFC4X1_IfcBuildingElementProxyTypeEnum_type; }
@@ -2012,6 +2100,10 @@ Ifc4x1::IfcBuildingElementProxyTypeEnum::Value Ifc4x1::IfcBuildingElementProxyTy
     if (s == "USERDEFINED") return ::Ifc4x1::IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcBuildingElementProxyTypeEnum::operator Ifc4x1::IfcBuildingElementProxyTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcBuildingSystemTypeEnum::declaration() const { return *IFC4X1_IfcBuildingSystemTypeEnum_type; }
@@ -2051,6 +2143,10 @@ Ifc4x1::IfcBuildingSystemTypeEnum::Value Ifc4x1::IfcBuildingSystemTypeEnum::From
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcBuildingSystemTypeEnum::operator Ifc4x1::IfcBuildingSystemTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcBurnerTypeEnum::declaration() const { return *IFC4X1_IfcBurnerTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcBurnerTypeEnum::Class() { return *IFC4X1_IfcBurnerTypeEnum_type; }
 
@@ -2080,6 +2176,10 @@ Ifc4x1::IfcBurnerTypeEnum::Value Ifc4x1::IfcBurnerTypeEnum::FromString(const std
     if (s == "USERDEFINED") return ::Ifc4x1::IfcBurnerTypeEnum::IfcBurnerType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcBurnerTypeEnum::IfcBurnerType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcBurnerTypeEnum::operator Ifc4x1::IfcBurnerTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcCableCarrierFittingTypeEnum::declaration() const { return *IFC4X1_IfcCableCarrierFittingTypeEnum_type; }
@@ -2117,6 +2217,10 @@ Ifc4x1::IfcCableCarrierFittingTypeEnum::Value Ifc4x1::IfcCableCarrierFittingType
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcCableCarrierFittingTypeEnum::operator Ifc4x1::IfcCableCarrierFittingTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcCableCarrierSegmentTypeEnum::declaration() const { return *IFC4X1_IfcCableCarrierSegmentTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcCableCarrierSegmentTypeEnum::Class() { return *IFC4X1_IfcCableCarrierSegmentTypeEnum_type; }
 
@@ -2150,6 +2254,10 @@ Ifc4x1::IfcCableCarrierSegmentTypeEnum::Value Ifc4x1::IfcCableCarrierSegmentType
     if (s == "USERDEFINED") return ::Ifc4x1::IfcCableCarrierSegmentTypeEnum::IfcCableCarrierSegmentType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcCableCarrierSegmentTypeEnum::IfcCableCarrierSegmentType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcCableCarrierSegmentTypeEnum::operator Ifc4x1::IfcCableCarrierSegmentTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcCableFittingTypeEnum::declaration() const { return *IFC4X1_IfcCableFittingTypeEnum_type; }
@@ -2188,6 +2296,10 @@ Ifc4x1::IfcCableFittingTypeEnum::Value Ifc4x1::IfcCableFittingTypeEnum::FromStri
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcCableFittingTypeEnum::operator Ifc4x1::IfcCableFittingTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcCableSegmentTypeEnum::declaration() const { return *IFC4X1_IfcCableSegmentTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcCableSegmentTypeEnum::Class() { return *IFC4X1_IfcCableSegmentTypeEnum_type; }
 
@@ -2221,6 +2333,10 @@ Ifc4x1::IfcCableSegmentTypeEnum::Value Ifc4x1::IfcCableSegmentTypeEnum::FromStri
     if (s == "USERDEFINED") return ::Ifc4x1::IfcCableSegmentTypeEnum::IfcCableSegmentType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcCableSegmentTypeEnum::IfcCableSegmentType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcCableSegmentTypeEnum::operator Ifc4x1::IfcCableSegmentTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcChangeActionEnum::declaration() const { return *IFC4X1_IfcChangeActionEnum_type; }
@@ -2257,6 +2373,10 @@ Ifc4x1::IfcChangeActionEnum::Value Ifc4x1::IfcChangeActionEnum::FromString(const
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcChangeActionEnum::operator Ifc4x1::IfcChangeActionEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcChillerTypeEnum::declaration() const { return *IFC4X1_IfcChillerTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcChillerTypeEnum::Class() { return *IFC4X1_IfcChillerTypeEnum_type; }
 
@@ -2291,6 +2411,10 @@ Ifc4x1::IfcChillerTypeEnum::Value Ifc4x1::IfcChillerTypeEnum::FromString(const s
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcChillerTypeEnum::operator Ifc4x1::IfcChillerTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcChimneyTypeEnum::declaration() const { return *IFC4X1_IfcChimneyTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcChimneyTypeEnum::Class() { return *IFC4X1_IfcChimneyTypeEnum_type; }
 
@@ -2320,6 +2444,10 @@ Ifc4x1::IfcChimneyTypeEnum::Value Ifc4x1::IfcChimneyTypeEnum::FromString(const s
     if (s == "USERDEFINED") return ::Ifc4x1::IfcChimneyTypeEnum::IfcChimneyType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcChimneyTypeEnum::IfcChimneyType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcChimneyTypeEnum::operator Ifc4x1::IfcChimneyTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcCoilTypeEnum::declaration() const { return *IFC4X1_IfcCoilTypeEnum_type; }
@@ -2360,6 +2488,10 @@ Ifc4x1::IfcCoilTypeEnum::Value Ifc4x1::IfcCoilTypeEnum::FromString(const std::st
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcCoilTypeEnum::operator Ifc4x1::IfcCoilTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcColumnTypeEnum::declaration() const { return *IFC4X1_IfcColumnTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcColumnTypeEnum::Class() { return *IFC4X1_IfcColumnTypeEnum_type; }
 
@@ -2391,6 +2523,10 @@ Ifc4x1::IfcColumnTypeEnum::Value Ifc4x1::IfcColumnTypeEnum::FromString(const std
     if (s == "USERDEFINED") return ::Ifc4x1::IfcColumnTypeEnum::IfcColumnType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcColumnTypeEnum::IfcColumnType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcColumnTypeEnum::operator Ifc4x1::IfcColumnTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcCommunicationsApplianceTypeEnum::declaration() const { return *IFC4X1_IfcCommunicationsApplianceTypeEnum_type; }
@@ -2436,6 +2572,10 @@ Ifc4x1::IfcCommunicationsApplianceTypeEnum::Value Ifc4x1::IfcCommunicationsAppli
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcCommunicationsApplianceTypeEnum::operator Ifc4x1::IfcCommunicationsApplianceTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcComplexPropertyTemplateTypeEnum::declaration() const { return *IFC4X1_IfcComplexPropertyTemplateTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcComplexPropertyTemplateTypeEnum::Class() { return *IFC4X1_IfcComplexPropertyTemplateTypeEnum_type; }
 
@@ -2465,6 +2605,10 @@ Ifc4x1::IfcComplexPropertyTemplateTypeEnum::Value Ifc4x1::IfcComplexPropertyTemp
     if (s == "P_COMPLEX") return ::Ifc4x1::IfcComplexPropertyTemplateTypeEnum::IfcComplexPropertyTemplateType_P_COMPLEX;
     if (s == "Q_COMPLEX") return ::Ifc4x1::IfcComplexPropertyTemplateTypeEnum::IfcComplexPropertyTemplateType_Q_COMPLEX;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcComplexPropertyTemplateTypeEnum::operator Ifc4x1::IfcComplexPropertyTemplateTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcCompressorTypeEnum::declaration() const { return *IFC4X1_IfcCompressorTypeEnum_type; }
@@ -2513,6 +2657,10 @@ Ifc4x1::IfcCompressorTypeEnum::Value Ifc4x1::IfcCompressorTypeEnum::FromString(c
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcCompressorTypeEnum::operator Ifc4x1::IfcCompressorTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcCondenserTypeEnum::declaration() const { return *IFC4X1_IfcCondenserTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcCondenserTypeEnum::Class() { return *IFC4X1_IfcCondenserTypeEnum_type; }
 
@@ -2551,6 +2699,10 @@ Ifc4x1::IfcCondenserTypeEnum::Value Ifc4x1::IfcCondenserTypeEnum::FromString(con
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcCondenserTypeEnum::operator Ifc4x1::IfcCondenserTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcConnectionTypeEnum::declaration() const { return *IFC4X1_IfcConnectionTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcConnectionTypeEnum::Class() { return *IFC4X1_IfcConnectionTypeEnum_type; }
 
@@ -2582,6 +2734,10 @@ Ifc4x1::IfcConnectionTypeEnum::Value Ifc4x1::IfcConnectionTypeEnum::FromString(c
     if (s == "ATEND") return ::Ifc4x1::IfcConnectionTypeEnum::IfcConnectionType_ATEND;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcConnectionTypeEnum::IfcConnectionType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcConnectionTypeEnum::operator Ifc4x1::IfcConnectionTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcConstraintEnum::declaration() const { return *IFC4X1_IfcConstraintEnum_type; }
@@ -2616,6 +2772,10 @@ Ifc4x1::IfcConstraintEnum::Value Ifc4x1::IfcConstraintEnum::FromString(const std
     if (s == "USERDEFINED") return ::Ifc4x1::IfcConstraintEnum::IfcConstraint_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcConstraintEnum::IfcConstraint_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcConstraintEnum::operator Ifc4x1::IfcConstraintEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcConstructionEquipmentResourceTypeEnum::declaration() const { return *IFC4X1_IfcConstructionEquipmentResourceTypeEnum_type; }
@@ -2655,6 +2815,10 @@ Ifc4x1::IfcConstructionEquipmentResourceTypeEnum::Value Ifc4x1::IfcConstructionE
     if (s == "USERDEFINED") return ::Ifc4x1::IfcConstructionEquipmentResourceTypeEnum::IfcConstructionEquipmentResourceType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcConstructionEquipmentResourceTypeEnum::IfcConstructionEquipmentResourceType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcConstructionEquipmentResourceTypeEnum::operator Ifc4x1::IfcConstructionEquipmentResourceTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcConstructionMaterialResourceTypeEnum::declaration() const { return *IFC4X1_IfcConstructionMaterialResourceTypeEnum_type; }
@@ -2697,6 +2861,10 @@ Ifc4x1::IfcConstructionMaterialResourceTypeEnum::Value Ifc4x1::IfcConstructionMa
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcConstructionMaterialResourceTypeEnum::operator Ifc4x1::IfcConstructionMaterialResourceTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcConstructionProductResourceTypeEnum::declaration() const { return *IFC4X1_IfcConstructionProductResourceTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcConstructionProductResourceTypeEnum::Class() { return *IFC4X1_IfcConstructionProductResourceTypeEnum_type; }
 
@@ -2728,6 +2896,10 @@ Ifc4x1::IfcConstructionProductResourceTypeEnum::Value Ifc4x1::IfcConstructionPro
     if (s == "USERDEFINED") return ::Ifc4x1::IfcConstructionProductResourceTypeEnum::IfcConstructionProductResourceType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcConstructionProductResourceTypeEnum::IfcConstructionProductResourceType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcConstructionProductResourceTypeEnum::operator Ifc4x1::IfcConstructionProductResourceTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcControllerTypeEnum::declaration() const { return *IFC4X1_IfcControllerTypeEnum_type; }
@@ -2766,6 +2938,10 @@ Ifc4x1::IfcControllerTypeEnum::Value Ifc4x1::IfcControllerTypeEnum::FromString(c
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcControllerTypeEnum::operator Ifc4x1::IfcControllerTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcCooledBeamTypeEnum::declaration() const { return *IFC4X1_IfcCooledBeamTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcCooledBeamTypeEnum::Class() { return *IFC4X1_IfcCooledBeamTypeEnum_type; }
 
@@ -2797,6 +2973,10 @@ Ifc4x1::IfcCooledBeamTypeEnum::Value Ifc4x1::IfcCooledBeamTypeEnum::FromString(c
     if (s == "USERDEFINED") return ::Ifc4x1::IfcCooledBeamTypeEnum::IfcCooledBeamType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcCooledBeamTypeEnum::IfcCooledBeamType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcCooledBeamTypeEnum::operator Ifc4x1::IfcCooledBeamTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcCoolingTowerTypeEnum::declaration() const { return *IFC4X1_IfcCoolingTowerTypeEnum_type; }
@@ -2833,6 +3013,10 @@ Ifc4x1::IfcCoolingTowerTypeEnum::Value Ifc4x1::IfcCoolingTowerTypeEnum::FromStri
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcCoolingTowerTypeEnum::operator Ifc4x1::IfcCoolingTowerTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcCostItemTypeEnum::declaration() const { return *IFC4X1_IfcCostItemTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcCostItemTypeEnum::Class() { return *IFC4X1_IfcCostItemTypeEnum_type; }
 
@@ -2862,6 +3046,10 @@ Ifc4x1::IfcCostItemTypeEnum::Value Ifc4x1::IfcCostItemTypeEnum::FromString(const
     if (s == "USERDEFINED") return ::Ifc4x1::IfcCostItemTypeEnum::IfcCostItemType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcCostItemTypeEnum::IfcCostItemType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcCostItemTypeEnum::operator Ifc4x1::IfcCostItemTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcCostScheduleTypeEnum::declaration() const { return *IFC4X1_IfcCostScheduleTypeEnum_type; }
@@ -2900,6 +3088,10 @@ Ifc4x1::IfcCostScheduleTypeEnum::Value Ifc4x1::IfcCostScheduleTypeEnum::FromStri
     if (s == "USERDEFINED") return ::Ifc4x1::IfcCostScheduleTypeEnum::IfcCostScheduleType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcCostScheduleTypeEnum::IfcCostScheduleType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcCostScheduleTypeEnum::operator Ifc4x1::IfcCostScheduleTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcCoveringTypeEnum::declaration() const { return *IFC4X1_IfcCoveringTypeEnum_type; }
@@ -2943,6 +3135,10 @@ Ifc4x1::IfcCoveringTypeEnum::Value Ifc4x1::IfcCoveringTypeEnum::FromString(const
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcCoveringTypeEnum::operator Ifc4x1::IfcCoveringTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcCrewResourceTypeEnum::declaration() const { return *IFC4X1_IfcCrewResourceTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcCrewResourceTypeEnum::Class() { return *IFC4X1_IfcCrewResourceTypeEnum_type; }
 
@@ -2976,6 +3172,10 @@ Ifc4x1::IfcCrewResourceTypeEnum::Value Ifc4x1::IfcCrewResourceTypeEnum::FromStri
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcCrewResourceTypeEnum::operator Ifc4x1::IfcCrewResourceTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcCurtainWallTypeEnum::declaration() const { return *IFC4X1_IfcCurtainWallTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcCurtainWallTypeEnum::Class() { return *IFC4X1_IfcCurtainWallTypeEnum_type; }
 
@@ -3005,6 +3205,10 @@ Ifc4x1::IfcCurtainWallTypeEnum::Value Ifc4x1::IfcCurtainWallTypeEnum::FromString
     if (s == "USERDEFINED") return ::Ifc4x1::IfcCurtainWallTypeEnum::IfcCurtainWallType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcCurtainWallTypeEnum::IfcCurtainWallType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcCurtainWallTypeEnum::operator Ifc4x1::IfcCurtainWallTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcCurveInterpolationEnum::declaration() const { return *IFC4X1_IfcCurveInterpolationEnum_type; }
@@ -3038,6 +3242,10 @@ Ifc4x1::IfcCurveInterpolationEnum::Value Ifc4x1::IfcCurveInterpolationEnum::From
     if (s == "LOG_LOG") return ::Ifc4x1::IfcCurveInterpolationEnum::IfcCurveInterpolation_LOG_LOG;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcCurveInterpolationEnum::IfcCurveInterpolation_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcCurveInterpolationEnum::operator Ifc4x1::IfcCurveInterpolationEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcDamperTypeEnum::declaration() const { return *IFC4X1_IfcDamperTypeEnum_type; }
@@ -3082,6 +3290,10 @@ Ifc4x1::IfcDamperTypeEnum::Value Ifc4x1::IfcDamperTypeEnum::FromString(const std
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcDamperTypeEnum::operator Ifc4x1::IfcDamperTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcDataOriginEnum::declaration() const { return *IFC4X1_IfcDataOriginEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcDataOriginEnum::Class() { return *IFC4X1_IfcDataOriginEnum_type; }
 
@@ -3114,6 +3326,10 @@ Ifc4x1::IfcDataOriginEnum::Value Ifc4x1::IfcDataOriginEnum::FromString(const std
     if (s == "USERDEFINED") return ::Ifc4x1::IfcDataOriginEnum::IfcDataOrigin_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcDataOriginEnum::IfcDataOrigin_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcDataOriginEnum::operator Ifc4x1::IfcDataOriginEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcDerivedUnitEnum::declaration() const { return *IFC4X1_IfcDerivedUnitEnum_type; }
@@ -3198,6 +3414,10 @@ Ifc4x1::IfcDerivedUnitEnum::Value Ifc4x1::IfcDerivedUnitEnum::FromString(const s
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcDerivedUnitEnum::operator Ifc4x1::IfcDerivedUnitEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcDirectionSenseEnum::declaration() const { return *IFC4X1_IfcDirectionSenseEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcDirectionSenseEnum::Class() { return *IFC4X1_IfcDirectionSenseEnum_type; }
 
@@ -3227,6 +3447,10 @@ Ifc4x1::IfcDirectionSenseEnum::Value Ifc4x1::IfcDirectionSenseEnum::FromString(c
     if (s == "POSITIVE") return ::Ifc4x1::IfcDirectionSenseEnum::IfcDirectionSense_POSITIVE;
     if (s == "NEGATIVE") return ::Ifc4x1::IfcDirectionSenseEnum::IfcDirectionSense_NEGATIVE;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcDirectionSenseEnum::operator Ifc4x1::IfcDirectionSenseEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcDiscreteAccessoryTypeEnum::declaration() const { return *IFC4X1_IfcDiscreteAccessoryTypeEnum_type; }
@@ -3261,6 +3485,10 @@ Ifc4x1::IfcDiscreteAccessoryTypeEnum::Value Ifc4x1::IfcDiscreteAccessoryTypeEnum
     if (s == "USERDEFINED") return ::Ifc4x1::IfcDiscreteAccessoryTypeEnum::IfcDiscreteAccessoryType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcDiscreteAccessoryTypeEnum::IfcDiscreteAccessoryType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcDiscreteAccessoryTypeEnum::operator Ifc4x1::IfcDiscreteAccessoryTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcDistributionChamberElementTypeEnum::declaration() const { return *IFC4X1_IfcDistributionChamberElementTypeEnum_type; }
@@ -3302,6 +3530,10 @@ Ifc4x1::IfcDistributionChamberElementTypeEnum::Value Ifc4x1::IfcDistributionCham
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcDistributionChamberElementTypeEnum::operator Ifc4x1::IfcDistributionChamberElementTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcDistributionPortTypeEnum::declaration() const { return *IFC4X1_IfcDistributionPortTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcDistributionPortTypeEnum::Class() { return *IFC4X1_IfcDistributionPortTypeEnum_type; }
 
@@ -3335,6 +3567,10 @@ Ifc4x1::IfcDistributionPortTypeEnum::Value Ifc4x1::IfcDistributionPortTypeEnum::
     if (s == "USERDEFINED") return ::Ifc4x1::IfcDistributionPortTypeEnum::IfcDistributionPortType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcDistributionPortTypeEnum::IfcDistributionPortType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcDistributionPortTypeEnum::operator Ifc4x1::IfcDistributionPortTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcDistributionSystemEnum::declaration() const { return *IFC4X1_IfcDistributionSystemEnum_type; }
@@ -3410,6 +3646,10 @@ Ifc4x1::IfcDistributionSystemEnum::Value Ifc4x1::IfcDistributionSystemEnum::From
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcDistributionSystemEnum::operator Ifc4x1::IfcDistributionSystemEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcDocumentConfidentialityEnum::declaration() const { return *IFC4X1_IfcDocumentConfidentialityEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcDocumentConfidentialityEnum::Class() { return *IFC4X1_IfcDocumentConfidentialityEnum_type; }
 
@@ -3445,6 +3685,10 @@ Ifc4x1::IfcDocumentConfidentialityEnum::Value Ifc4x1::IfcDocumentConfidentiality
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcDocumentConfidentialityEnum::operator Ifc4x1::IfcDocumentConfidentialityEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcDocumentStatusEnum::declaration() const { return *IFC4X1_IfcDocumentStatusEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcDocumentStatusEnum::Class() { return *IFC4X1_IfcDocumentStatusEnum_type; }
 
@@ -3477,6 +3721,10 @@ Ifc4x1::IfcDocumentStatusEnum::Value Ifc4x1::IfcDocumentStatusEnum::FromString(c
     if (s == "REVISION") return ::Ifc4x1::IfcDocumentStatusEnum::IfcDocumentStatus_REVISION;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcDocumentStatusEnum::IfcDocumentStatus_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcDocumentStatusEnum::operator Ifc4x1::IfcDocumentStatusEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcDoorPanelOperationEnum::declaration() const { return *IFC4X1_IfcDoorPanelOperationEnum_type; }
@@ -3517,6 +3765,10 @@ Ifc4x1::IfcDoorPanelOperationEnum::Value Ifc4x1::IfcDoorPanelOperationEnum::From
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcDoorPanelOperationEnum::operator Ifc4x1::IfcDoorPanelOperationEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcDoorPanelPositionEnum::declaration() const { return *IFC4X1_IfcDoorPanelPositionEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcDoorPanelPositionEnum::Class() { return *IFC4X1_IfcDoorPanelPositionEnum_type; }
 
@@ -3548,6 +3800,10 @@ Ifc4x1::IfcDoorPanelPositionEnum::Value Ifc4x1::IfcDoorPanelPositionEnum::FromSt
     if (s == "RIGHT") return ::Ifc4x1::IfcDoorPanelPositionEnum::IfcDoorPanelPosition_RIGHT;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcDoorPanelPositionEnum::IfcDoorPanelPosition_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcDoorPanelPositionEnum::operator Ifc4x1::IfcDoorPanelPositionEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcDoorStyleConstructionEnum::declaration() const { return *IFC4X1_IfcDoorStyleConstructionEnum_type; }
@@ -3586,6 +3842,10 @@ Ifc4x1::IfcDoorStyleConstructionEnum::Value Ifc4x1::IfcDoorStyleConstructionEnum
     if (s == "USERDEFINED") return ::Ifc4x1::IfcDoorStyleConstructionEnum::IfcDoorStyleConstruction_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcDoorStyleConstructionEnum::IfcDoorStyleConstruction_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcDoorStyleConstructionEnum::operator Ifc4x1::IfcDoorStyleConstructionEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcDoorStyleOperationEnum::declaration() const { return *IFC4X1_IfcDoorStyleOperationEnum_type; }
@@ -3635,6 +3895,10 @@ Ifc4x1::IfcDoorStyleOperationEnum::Value Ifc4x1::IfcDoorStyleOperationEnum::From
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcDoorStyleOperationEnum::operator Ifc4x1::IfcDoorStyleOperationEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcDoorTypeEnum::declaration() const { return *IFC4X1_IfcDoorTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcDoorTypeEnum::Class() { return *IFC4X1_IfcDoorTypeEnum_type; }
 
@@ -3667,6 +3931,10 @@ Ifc4x1::IfcDoorTypeEnum::Value Ifc4x1::IfcDoorTypeEnum::FromString(const std::st
     if (s == "USERDEFINED") return ::Ifc4x1::IfcDoorTypeEnum::IfcDoorType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcDoorTypeEnum::IfcDoorType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcDoorTypeEnum::operator Ifc4x1::IfcDoorTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcDoorTypeOperationEnum::declaration() const { return *IFC4X1_IfcDoorTypeOperationEnum_type; }
@@ -3718,6 +3986,10 @@ Ifc4x1::IfcDoorTypeOperationEnum::Value Ifc4x1::IfcDoorTypeOperationEnum::FromSt
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcDoorTypeOperationEnum::operator Ifc4x1::IfcDoorTypeOperationEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcDuctFittingTypeEnum::declaration() const { return *IFC4X1_IfcDuctFittingTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcDuctFittingTypeEnum::Class() { return *IFC4X1_IfcDuctFittingTypeEnum_type; }
 
@@ -3756,6 +4028,10 @@ Ifc4x1::IfcDuctFittingTypeEnum::Value Ifc4x1::IfcDuctFittingTypeEnum::FromString
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcDuctFittingTypeEnum::operator Ifc4x1::IfcDuctFittingTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcDuctSegmentTypeEnum::declaration() const { return *IFC4X1_IfcDuctSegmentTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcDuctSegmentTypeEnum::Class() { return *IFC4X1_IfcDuctSegmentTypeEnum_type; }
 
@@ -3787,6 +4063,10 @@ Ifc4x1::IfcDuctSegmentTypeEnum::Value Ifc4x1::IfcDuctSegmentTypeEnum::FromString
     if (s == "USERDEFINED") return ::Ifc4x1::IfcDuctSegmentTypeEnum::IfcDuctSegmentType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcDuctSegmentTypeEnum::IfcDuctSegmentType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcDuctSegmentTypeEnum::operator Ifc4x1::IfcDuctSegmentTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcDuctSilencerTypeEnum::declaration() const { return *IFC4X1_IfcDuctSilencerTypeEnum_type; }
@@ -3821,6 +4101,10 @@ Ifc4x1::IfcDuctSilencerTypeEnum::Value Ifc4x1::IfcDuctSilencerTypeEnum::FromStri
     if (s == "USERDEFINED") return ::Ifc4x1::IfcDuctSilencerTypeEnum::IfcDuctSilencerType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcDuctSilencerTypeEnum::IfcDuctSilencerType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcDuctSilencerTypeEnum::operator Ifc4x1::IfcDuctSilencerTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcElectricApplianceTypeEnum::declaration() const { return *IFC4X1_IfcElectricApplianceTypeEnum_type; }
@@ -3870,6 +4154,10 @@ Ifc4x1::IfcElectricApplianceTypeEnum::Value Ifc4x1::IfcElectricApplianceTypeEnum
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcElectricApplianceTypeEnum::operator Ifc4x1::IfcElectricApplianceTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcElectricDistributionBoardTypeEnum::declaration() const { return *IFC4X1_IfcElectricDistributionBoardTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcElectricDistributionBoardTypeEnum::Class() { return *IFC4X1_IfcElectricDistributionBoardTypeEnum_type; }
 
@@ -3903,6 +4191,10 @@ Ifc4x1::IfcElectricDistributionBoardTypeEnum::Value Ifc4x1::IfcElectricDistribut
     if (s == "USERDEFINED") return ::Ifc4x1::IfcElectricDistributionBoardTypeEnum::IfcElectricDistributionBoardType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcElectricDistributionBoardTypeEnum::IfcElectricDistributionBoardType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcElectricDistributionBoardTypeEnum::operator Ifc4x1::IfcElectricDistributionBoardTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcElectricFlowStorageDeviceTypeEnum::declaration() const { return *IFC4X1_IfcElectricFlowStorageDeviceTypeEnum_type; }
@@ -3941,6 +4233,10 @@ Ifc4x1::IfcElectricFlowStorageDeviceTypeEnum::Value Ifc4x1::IfcElectricFlowStora
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcElectricFlowStorageDeviceTypeEnum::operator Ifc4x1::IfcElectricFlowStorageDeviceTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcElectricGeneratorTypeEnum::declaration() const { return *IFC4X1_IfcElectricGeneratorTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcElectricGeneratorTypeEnum::Class() { return *IFC4X1_IfcElectricGeneratorTypeEnum_type; }
 
@@ -3973,6 +4269,10 @@ Ifc4x1::IfcElectricGeneratorTypeEnum::Value Ifc4x1::IfcElectricGeneratorTypeEnum
     if (s == "USERDEFINED") return ::Ifc4x1::IfcElectricGeneratorTypeEnum::IfcElectricGeneratorType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcElectricGeneratorTypeEnum::IfcElectricGeneratorType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcElectricGeneratorTypeEnum::operator Ifc4x1::IfcElectricGeneratorTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcElectricMotorTypeEnum::declaration() const { return *IFC4X1_IfcElectricMotorTypeEnum_type; }
@@ -4011,6 +4311,10 @@ Ifc4x1::IfcElectricMotorTypeEnum::Value Ifc4x1::IfcElectricMotorTypeEnum::FromSt
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcElectricMotorTypeEnum::operator Ifc4x1::IfcElectricMotorTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcElectricTimeControlTypeEnum::declaration() const { return *IFC4X1_IfcElectricTimeControlTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcElectricTimeControlTypeEnum::Class() { return *IFC4X1_IfcElectricTimeControlTypeEnum_type; }
 
@@ -4043,6 +4347,10 @@ Ifc4x1::IfcElectricTimeControlTypeEnum::Value Ifc4x1::IfcElectricTimeControlType
     if (s == "USERDEFINED") return ::Ifc4x1::IfcElectricTimeControlTypeEnum::IfcElectricTimeControlType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcElectricTimeControlTypeEnum::IfcElectricTimeControlType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcElectricTimeControlTypeEnum::operator Ifc4x1::IfcElectricTimeControlTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcElementAssemblyTypeEnum::declaration() const { return *IFC4X1_IfcElementAssemblyTypeEnum_type; }
@@ -4085,6 +4393,10 @@ Ifc4x1::IfcElementAssemblyTypeEnum::Value Ifc4x1::IfcElementAssemblyTypeEnum::Fr
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcElementAssemblyTypeEnum::operator Ifc4x1::IfcElementAssemblyTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcElementCompositionEnum::declaration() const { return *IFC4X1_IfcElementCompositionEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcElementCompositionEnum::Class() { return *IFC4X1_IfcElementCompositionEnum_type; }
 
@@ -4115,6 +4427,10 @@ Ifc4x1::IfcElementCompositionEnum::Value Ifc4x1::IfcElementCompositionEnum::From
     if (s == "ELEMENT") return ::Ifc4x1::IfcElementCompositionEnum::IfcElementComposition_ELEMENT;
     if (s == "PARTIAL") return ::Ifc4x1::IfcElementCompositionEnum::IfcElementComposition_PARTIAL;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcElementCompositionEnum::operator Ifc4x1::IfcElementCompositionEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcEngineTypeEnum::declaration() const { return *IFC4X1_IfcEngineTypeEnum_type; }
@@ -4148,6 +4464,10 @@ Ifc4x1::IfcEngineTypeEnum::Value Ifc4x1::IfcEngineTypeEnum::FromString(const std
     if (s == "USERDEFINED") return ::Ifc4x1::IfcEngineTypeEnum::IfcEngineType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcEngineTypeEnum::IfcEngineType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcEngineTypeEnum::operator Ifc4x1::IfcEngineTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcEvaporativeCoolerTypeEnum::declaration() const { return *IFC4X1_IfcEvaporativeCoolerTypeEnum_type; }
@@ -4190,6 +4510,10 @@ Ifc4x1::IfcEvaporativeCoolerTypeEnum::Value Ifc4x1::IfcEvaporativeCoolerTypeEnum
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcEvaporativeCoolerTypeEnum::operator Ifc4x1::IfcEvaporativeCoolerTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcEvaporatorTypeEnum::declaration() const { return *IFC4X1_IfcEvaporatorTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcEvaporatorTypeEnum::Class() { return *IFC4X1_IfcEvaporatorTypeEnum_type; }
 
@@ -4227,6 +4551,10 @@ Ifc4x1::IfcEvaporatorTypeEnum::Value Ifc4x1::IfcEvaporatorTypeEnum::FromString(c
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcEvaporatorTypeEnum::operator Ifc4x1::IfcEvaporatorTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcEventTriggerTypeEnum::declaration() const { return *IFC4X1_IfcEventTriggerTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcEventTriggerTypeEnum::Class() { return *IFC4X1_IfcEventTriggerTypeEnum_type; }
 
@@ -4260,6 +4588,10 @@ Ifc4x1::IfcEventTriggerTypeEnum::Value Ifc4x1::IfcEventTriggerTypeEnum::FromStri
     if (s == "USERDEFINED") return ::Ifc4x1::IfcEventTriggerTypeEnum::IfcEventTriggerType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcEventTriggerTypeEnum::IfcEventTriggerType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcEventTriggerTypeEnum::operator Ifc4x1::IfcEventTriggerTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcEventTypeEnum::declaration() const { return *IFC4X1_IfcEventTypeEnum_type; }
@@ -4296,6 +4628,10 @@ Ifc4x1::IfcEventTypeEnum::Value Ifc4x1::IfcEventTypeEnum::FromString(const std::
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcEventTypeEnum::operator Ifc4x1::IfcEventTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcExternalSpatialElementTypeEnum::declaration() const { return *IFC4X1_IfcExternalSpatialElementTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcExternalSpatialElementTypeEnum::Class() { return *IFC4X1_IfcExternalSpatialElementTypeEnum_type; }
 
@@ -4329,6 +4665,10 @@ Ifc4x1::IfcExternalSpatialElementTypeEnum::Value Ifc4x1::IfcExternalSpatialEleme
     if (s == "USERDEFINED") return ::Ifc4x1::IfcExternalSpatialElementTypeEnum::IfcExternalSpatialElementType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcExternalSpatialElementTypeEnum::IfcExternalSpatialElementType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcExternalSpatialElementTypeEnum::operator Ifc4x1::IfcExternalSpatialElementTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcFanTypeEnum::declaration() const { return *IFC4X1_IfcFanTypeEnum_type; }
@@ -4369,6 +4709,10 @@ Ifc4x1::IfcFanTypeEnum::Value Ifc4x1::IfcFanTypeEnum::FromString(const std::stri
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcFanTypeEnum::operator Ifc4x1::IfcFanTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcFastenerTypeEnum::declaration() const { return *IFC4X1_IfcFastenerTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcFastenerTypeEnum::Class() { return *IFC4X1_IfcFastenerTypeEnum_type; }
 
@@ -4401,6 +4745,10 @@ Ifc4x1::IfcFastenerTypeEnum::Value Ifc4x1::IfcFastenerTypeEnum::FromString(const
     if (s == "USERDEFINED") return ::Ifc4x1::IfcFastenerTypeEnum::IfcFastenerType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcFastenerTypeEnum::IfcFastenerType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcFastenerTypeEnum::operator Ifc4x1::IfcFastenerTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcFilterTypeEnum::declaration() const { return *IFC4X1_IfcFilterTypeEnum_type; }
@@ -4440,6 +4788,10 @@ Ifc4x1::IfcFilterTypeEnum::Value Ifc4x1::IfcFilterTypeEnum::FromString(const std
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcFilterTypeEnum::operator Ifc4x1::IfcFilterTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcFireSuppressionTerminalTypeEnum::declaration() const { return *IFC4X1_IfcFireSuppressionTerminalTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcFireSuppressionTerminalTypeEnum::Class() { return *IFC4X1_IfcFireSuppressionTerminalTypeEnum_type; }
 
@@ -4476,6 +4828,10 @@ Ifc4x1::IfcFireSuppressionTerminalTypeEnum::Value Ifc4x1::IfcFireSuppressionTerm
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcFireSuppressionTerminalTypeEnum::operator Ifc4x1::IfcFireSuppressionTerminalTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcFlowDirectionEnum::declaration() const { return *IFC4X1_IfcFlowDirectionEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcFlowDirectionEnum::Class() { return *IFC4X1_IfcFlowDirectionEnum_type; }
 
@@ -4507,6 +4863,10 @@ Ifc4x1::IfcFlowDirectionEnum::Value Ifc4x1::IfcFlowDirectionEnum::FromString(con
     if (s == "SOURCEANDSINK") return ::Ifc4x1::IfcFlowDirectionEnum::IfcFlowDirection_SOURCEANDSINK;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcFlowDirectionEnum::IfcFlowDirection_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcFlowDirectionEnum::operator Ifc4x1::IfcFlowDirectionEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcFlowInstrumentTypeEnum::declaration() const { return *IFC4X1_IfcFlowInstrumentTypeEnum_type; }
@@ -4548,6 +4908,10 @@ Ifc4x1::IfcFlowInstrumentTypeEnum::Value Ifc4x1::IfcFlowInstrumentTypeEnum::From
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcFlowInstrumentTypeEnum::operator Ifc4x1::IfcFlowInstrumentTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcFlowMeterTypeEnum::declaration() const { return *IFC4X1_IfcFlowMeterTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcFlowMeterTypeEnum::Class() { return *IFC4X1_IfcFlowMeterTypeEnum_type; }
 
@@ -4581,6 +4945,10 @@ Ifc4x1::IfcFlowMeterTypeEnum::Value Ifc4x1::IfcFlowMeterTypeEnum::FromString(con
     if (s == "USERDEFINED") return ::Ifc4x1::IfcFlowMeterTypeEnum::IfcFlowMeterType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcFlowMeterTypeEnum::IfcFlowMeterType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcFlowMeterTypeEnum::operator Ifc4x1::IfcFlowMeterTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcFootingTypeEnum::declaration() const { return *IFC4X1_IfcFootingTypeEnum_type; }
@@ -4617,6 +4985,10 @@ Ifc4x1::IfcFootingTypeEnum::Value Ifc4x1::IfcFootingTypeEnum::FromString(const s
     if (s == "USERDEFINED") return ::Ifc4x1::IfcFootingTypeEnum::IfcFootingType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcFootingTypeEnum::IfcFootingType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcFootingTypeEnum::operator Ifc4x1::IfcFootingTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcFurnitureTypeEnum::declaration() const { return *IFC4X1_IfcFurnitureTypeEnum_type; }
@@ -4657,6 +5029,10 @@ Ifc4x1::IfcFurnitureTypeEnum::Value Ifc4x1::IfcFurnitureTypeEnum::FromString(con
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcFurnitureTypeEnum::operator Ifc4x1::IfcFurnitureTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcGeographicElementTypeEnum::declaration() const { return *IFC4X1_IfcGeographicElementTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcGeographicElementTypeEnum::Class() { return *IFC4X1_IfcGeographicElementTypeEnum_type; }
 
@@ -4687,6 +5063,10 @@ Ifc4x1::IfcGeographicElementTypeEnum::Value Ifc4x1::IfcGeographicElementTypeEnum
     if (s == "USERDEFINED") return ::Ifc4x1::IfcGeographicElementTypeEnum::IfcGeographicElementType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcGeographicElementTypeEnum::IfcGeographicElementType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcGeographicElementTypeEnum::operator Ifc4x1::IfcGeographicElementTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcGeometricProjectionEnum::declaration() const { return *IFC4X1_IfcGeometricProjectionEnum_type; }
@@ -4727,6 +5107,10 @@ Ifc4x1::IfcGeometricProjectionEnum::Value Ifc4x1::IfcGeometricProjectionEnum::Fr
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcGeometricProjectionEnum::operator Ifc4x1::IfcGeometricProjectionEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcGlobalOrLocalEnum::declaration() const { return *IFC4X1_IfcGlobalOrLocalEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcGlobalOrLocalEnum::Class() { return *IFC4X1_IfcGlobalOrLocalEnum_type; }
 
@@ -4756,6 +5140,10 @@ Ifc4x1::IfcGlobalOrLocalEnum::Value Ifc4x1::IfcGlobalOrLocalEnum::FromString(con
     if (s == "GLOBAL_COORDS") return ::Ifc4x1::IfcGlobalOrLocalEnum::IfcGlobalOrLocal_GLOBAL_COORDS;
     if (s == "LOCAL_COORDS") return ::Ifc4x1::IfcGlobalOrLocalEnum::IfcGlobalOrLocal_LOCAL_COORDS;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcGlobalOrLocalEnum::operator Ifc4x1::IfcGlobalOrLocalEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcGridTypeEnum::declaration() const { return *IFC4X1_IfcGridTypeEnum_type; }
@@ -4793,6 +5181,10 @@ Ifc4x1::IfcGridTypeEnum::Value Ifc4x1::IfcGridTypeEnum::FromString(const std::st
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcGridTypeEnum::operator Ifc4x1::IfcGridTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcHeatExchangerTypeEnum::declaration() const { return *IFC4X1_IfcHeatExchangerTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcHeatExchangerTypeEnum::Class() { return *IFC4X1_IfcHeatExchangerTypeEnum_type; }
 
@@ -4824,6 +5216,10 @@ Ifc4x1::IfcHeatExchangerTypeEnum::Value Ifc4x1::IfcHeatExchangerTypeEnum::FromSt
     if (s == "USERDEFINED") return ::Ifc4x1::IfcHeatExchangerTypeEnum::IfcHeatExchangerType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcHeatExchangerTypeEnum::IfcHeatExchangerType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcHeatExchangerTypeEnum::operator Ifc4x1::IfcHeatExchangerTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcHumidifierTypeEnum::declaration() const { return *IFC4X1_IfcHumidifierTypeEnum_type; }
@@ -4870,6 +5266,10 @@ Ifc4x1::IfcHumidifierTypeEnum::Value Ifc4x1::IfcHumidifierTypeEnum::FromString(c
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcHumidifierTypeEnum::operator Ifc4x1::IfcHumidifierTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcInterceptorTypeEnum::declaration() const { return *IFC4X1_IfcInterceptorTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcInterceptorTypeEnum::Class() { return *IFC4X1_IfcInterceptorTypeEnum_type; }
 
@@ -4903,6 +5303,10 @@ Ifc4x1::IfcInterceptorTypeEnum::Value Ifc4x1::IfcInterceptorTypeEnum::FromString
     if (s == "USERDEFINED") return ::Ifc4x1::IfcInterceptorTypeEnum::IfcInterceptorType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcInterceptorTypeEnum::IfcInterceptorType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcInterceptorTypeEnum::operator Ifc4x1::IfcInterceptorTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcInternalOrExternalEnum::declaration() const { return *IFC4X1_IfcInternalOrExternalEnum_type; }
@@ -4940,6 +5344,10 @@ Ifc4x1::IfcInternalOrExternalEnum::Value Ifc4x1::IfcInternalOrExternalEnum::From
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcInternalOrExternalEnum::operator Ifc4x1::IfcInternalOrExternalEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcInventoryTypeEnum::declaration() const { return *IFC4X1_IfcInventoryTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcInventoryTypeEnum::Class() { return *IFC4X1_IfcInventoryTypeEnum_type; }
 
@@ -4972,6 +5380,10 @@ Ifc4x1::IfcInventoryTypeEnum::Value Ifc4x1::IfcInventoryTypeEnum::FromString(con
     if (s == "USERDEFINED") return ::Ifc4x1::IfcInventoryTypeEnum::IfcInventoryType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcInventoryTypeEnum::IfcInventoryType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcInventoryTypeEnum::operator Ifc4x1::IfcInventoryTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcJunctionBoxTypeEnum::declaration() const { return *IFC4X1_IfcJunctionBoxTypeEnum_type; }
@@ -5007,6 +5419,10 @@ Ifc4x1::IfcJunctionBoxTypeEnum::Value Ifc4x1::IfcJunctionBoxTypeEnum::FromString
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcJunctionBoxTypeEnum::operator Ifc4x1::IfcJunctionBoxTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcKnotType::declaration() const { return *IFC4X1_IfcKnotType_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcKnotType::Class() { return *IFC4X1_IfcKnotType_type; }
 
@@ -5038,6 +5454,10 @@ Ifc4x1::IfcKnotType::Value Ifc4x1::IfcKnotType::FromString(const std::string& s)
     if (s == "PIECEWISE_BEZIER_KNOTS") return ::Ifc4x1::IfcKnotType::IfcKnotType_PIECEWISE_BEZIER_KNOTS;
     if (s == "UNSPECIFIED") return ::Ifc4x1::IfcKnotType::IfcKnotType_UNSPECIFIED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcKnotType::operator Ifc4x1::IfcKnotType::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcLaborResourceTypeEnum::declaration() const { return *IFC4X1_IfcLaborResourceTypeEnum_type; }
@@ -5090,6 +5510,10 @@ Ifc4x1::IfcLaborResourceTypeEnum::Value Ifc4x1::IfcLaborResourceTypeEnum::FromSt
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcLaborResourceTypeEnum::operator Ifc4x1::IfcLaborResourceTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcLampTypeEnum::declaration() const { return *IFC4X1_IfcLampTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcLampTypeEnum::Class() { return *IFC4X1_IfcLampTypeEnum_type; }
 
@@ -5130,6 +5554,10 @@ Ifc4x1::IfcLampTypeEnum::Value Ifc4x1::IfcLampTypeEnum::FromString(const std::st
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcLampTypeEnum::operator Ifc4x1::IfcLampTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcLayerSetDirectionEnum::declaration() const { return *IFC4X1_IfcLayerSetDirectionEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcLayerSetDirectionEnum::Class() { return *IFC4X1_IfcLayerSetDirectionEnum_type; }
 
@@ -5160,6 +5588,10 @@ Ifc4x1::IfcLayerSetDirectionEnum::Value Ifc4x1::IfcLayerSetDirectionEnum::FromSt
     if (s == "AXIS2") return ::Ifc4x1::IfcLayerSetDirectionEnum::IfcLayerSetDirection_AXIS2;
     if (s == "AXIS3") return ::Ifc4x1::IfcLayerSetDirectionEnum::IfcLayerSetDirection_AXIS3;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcLayerSetDirectionEnum::operator Ifc4x1::IfcLayerSetDirectionEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcLightDistributionCurveEnum::declaration() const { return *IFC4X1_IfcLightDistributionCurveEnum_type; }
@@ -5193,6 +5625,10 @@ Ifc4x1::IfcLightDistributionCurveEnum::Value Ifc4x1::IfcLightDistributionCurveEn
     if (s == "TYPE_C") return ::Ifc4x1::IfcLightDistributionCurveEnum::IfcLightDistributionCurve_TYPE_C;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcLightDistributionCurveEnum::IfcLightDistributionCurve_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcLightDistributionCurveEnum::operator Ifc4x1::IfcLightDistributionCurveEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcLightEmissionSourceEnum::declaration() const { return *IFC4X1_IfcLightEmissionSourceEnum_type; }
@@ -5235,6 +5671,10 @@ Ifc4x1::IfcLightEmissionSourceEnum::Value Ifc4x1::IfcLightEmissionSourceEnum::Fr
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcLightEmissionSourceEnum::operator Ifc4x1::IfcLightEmissionSourceEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcLightFixtureTypeEnum::declaration() const { return *IFC4X1_IfcLightFixtureTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcLightFixtureTypeEnum::Class() { return *IFC4X1_IfcLightFixtureTypeEnum_type; }
 
@@ -5267,6 +5707,10 @@ Ifc4x1::IfcLightFixtureTypeEnum::Value Ifc4x1::IfcLightFixtureTypeEnum::FromStri
     if (s == "USERDEFINED") return ::Ifc4x1::IfcLightFixtureTypeEnum::IfcLightFixtureType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcLightFixtureTypeEnum::IfcLightFixtureType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcLightFixtureTypeEnum::operator Ifc4x1::IfcLightFixtureTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcLoadGroupTypeEnum::declaration() const { return *IFC4X1_IfcLoadGroupTypeEnum_type; }
@@ -5303,6 +5747,10 @@ Ifc4x1::IfcLoadGroupTypeEnum::Value Ifc4x1::IfcLoadGroupTypeEnum::FromString(con
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcLoadGroupTypeEnum::operator Ifc4x1::IfcLoadGroupTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcLogicalOperatorEnum::declaration() const { return *IFC4X1_IfcLogicalOperatorEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcLogicalOperatorEnum::Class() { return *IFC4X1_IfcLogicalOperatorEnum_type; }
 
@@ -5335,6 +5783,10 @@ Ifc4x1::IfcLogicalOperatorEnum::Value Ifc4x1::IfcLogicalOperatorEnum::FromString
     if (s == "LOGICALNOTAND") return ::Ifc4x1::IfcLogicalOperatorEnum::IfcLogicalOperator_LOGICALNOTAND;
     if (s == "LOGICALNOTOR") return ::Ifc4x1::IfcLogicalOperatorEnum::IfcLogicalOperator_LOGICALNOTOR;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcLogicalOperatorEnum::operator Ifc4x1::IfcLogicalOperatorEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcMechanicalFastenerTypeEnum::declaration() const { return *IFC4X1_IfcMechanicalFastenerTypeEnum_type; }
@@ -5378,6 +5830,10 @@ Ifc4x1::IfcMechanicalFastenerTypeEnum::Value Ifc4x1::IfcMechanicalFastenerTypeEn
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcMechanicalFastenerTypeEnum::operator Ifc4x1::IfcMechanicalFastenerTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcMedicalDeviceTypeEnum::declaration() const { return *IFC4X1_IfcMedicalDeviceTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcMedicalDeviceTypeEnum::Class() { return *IFC4X1_IfcMedicalDeviceTypeEnum_type; }
 
@@ -5412,6 +5868,10 @@ Ifc4x1::IfcMedicalDeviceTypeEnum::Value Ifc4x1::IfcMedicalDeviceTypeEnum::FromSt
     if (s == "USERDEFINED") return ::Ifc4x1::IfcMedicalDeviceTypeEnum::IfcMedicalDeviceType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcMedicalDeviceTypeEnum::IfcMedicalDeviceType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcMedicalDeviceTypeEnum::operator Ifc4x1::IfcMedicalDeviceTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcMemberTypeEnum::declaration() const { return *IFC4X1_IfcMemberTypeEnum_type; }
@@ -5457,6 +5917,10 @@ Ifc4x1::IfcMemberTypeEnum::Value Ifc4x1::IfcMemberTypeEnum::FromString(const std
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcMemberTypeEnum::operator Ifc4x1::IfcMemberTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcMotorConnectionTypeEnum::declaration() const { return *IFC4X1_IfcMotorConnectionTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcMotorConnectionTypeEnum::Class() { return *IFC4X1_IfcMotorConnectionTypeEnum_type; }
 
@@ -5491,6 +5955,10 @@ Ifc4x1::IfcMotorConnectionTypeEnum::Value Ifc4x1::IfcMotorConnectionTypeEnum::Fr
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcMotorConnectionTypeEnum::operator Ifc4x1::IfcMotorConnectionTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcNullStyle::declaration() const { return *IFC4X1_IfcNullStyle_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcNullStyle::Class() { return *IFC4X1_IfcNullStyle_type; }
 
@@ -5519,6 +5987,10 @@ const char* Ifc4x1::IfcNullStyle::ToString(Value v) {
 Ifc4x1::IfcNullStyle::Value Ifc4x1::IfcNullStyle::FromString(const std::string& s) {
     if (s == "NULL") return ::Ifc4x1::IfcNullStyle::IfcNullStyle_NULL;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcNullStyle::operator Ifc4x1::IfcNullStyle::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcObjectTypeEnum::declaration() const { return *IFC4X1_IfcObjectTypeEnum_type; }
@@ -5556,6 +6028,10 @@ Ifc4x1::IfcObjectTypeEnum::Value Ifc4x1::IfcObjectTypeEnum::FromString(const std
     if (s == "PROJECT") return ::Ifc4x1::IfcObjectTypeEnum::IfcObjectType_PROJECT;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcObjectTypeEnum::IfcObjectType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcObjectTypeEnum::operator Ifc4x1::IfcObjectTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcObjectiveEnum::declaration() const { return *IFC4X1_IfcObjectiveEnum_type; }
@@ -5600,6 +6076,10 @@ Ifc4x1::IfcObjectiveEnum::Value Ifc4x1::IfcObjectiveEnum::FromString(const std::
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcObjectiveEnum::operator Ifc4x1::IfcObjectiveEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcOccupantTypeEnum::declaration() const { return *IFC4X1_IfcOccupantTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcOccupantTypeEnum::Class() { return *IFC4X1_IfcOccupantTypeEnum_type; }
 
@@ -5638,6 +6118,10 @@ Ifc4x1::IfcOccupantTypeEnum::Value Ifc4x1::IfcOccupantTypeEnum::FromString(const
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcOccupantTypeEnum::operator Ifc4x1::IfcOccupantTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcOpeningElementTypeEnum::declaration() const { return *IFC4X1_IfcOpeningElementTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcOpeningElementTypeEnum::Class() { return *IFC4X1_IfcOpeningElementTypeEnum_type; }
 
@@ -5669,6 +6153,10 @@ Ifc4x1::IfcOpeningElementTypeEnum::Value Ifc4x1::IfcOpeningElementTypeEnum::From
     if (s == "USERDEFINED") return ::Ifc4x1::IfcOpeningElementTypeEnum::IfcOpeningElementType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcOpeningElementTypeEnum::IfcOpeningElementType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcOpeningElementTypeEnum::operator Ifc4x1::IfcOpeningElementTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcOutletTypeEnum::declaration() const { return *IFC4X1_IfcOutletTypeEnum_type; }
@@ -5707,6 +6195,10 @@ Ifc4x1::IfcOutletTypeEnum::Value Ifc4x1::IfcOutletTypeEnum::FromString(const std
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcOutletTypeEnum::operator Ifc4x1::IfcOutletTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcPerformanceHistoryTypeEnum::declaration() const { return *IFC4X1_IfcPerformanceHistoryTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcPerformanceHistoryTypeEnum::Class() { return *IFC4X1_IfcPerformanceHistoryTypeEnum_type; }
 
@@ -5736,6 +6228,10 @@ Ifc4x1::IfcPerformanceHistoryTypeEnum::Value Ifc4x1::IfcPerformanceHistoryTypeEn
     if (s == "USERDEFINED") return ::Ifc4x1::IfcPerformanceHistoryTypeEnum::IfcPerformanceHistoryType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcPerformanceHistoryTypeEnum::IfcPerformanceHistoryType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcPerformanceHistoryTypeEnum::operator Ifc4x1::IfcPerformanceHistoryTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcPermeableCoveringOperationEnum::declaration() const { return *IFC4X1_IfcPermeableCoveringOperationEnum_type; }
@@ -5772,6 +6268,10 @@ Ifc4x1::IfcPermeableCoveringOperationEnum::Value Ifc4x1::IfcPermeableCoveringOpe
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcPermeableCoveringOperationEnum::operator Ifc4x1::IfcPermeableCoveringOperationEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcPermitTypeEnum::declaration() const { return *IFC4X1_IfcPermitTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcPermitTypeEnum::Class() { return *IFC4X1_IfcPermitTypeEnum_type; }
 
@@ -5806,6 +6306,10 @@ Ifc4x1::IfcPermitTypeEnum::Value Ifc4x1::IfcPermitTypeEnum::FromString(const std
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcPermitTypeEnum::operator Ifc4x1::IfcPermitTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcPhysicalOrVirtualEnum::declaration() const { return *IFC4X1_IfcPhysicalOrVirtualEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcPhysicalOrVirtualEnum::Class() { return *IFC4X1_IfcPhysicalOrVirtualEnum_type; }
 
@@ -5836,6 +6340,10 @@ Ifc4x1::IfcPhysicalOrVirtualEnum::Value Ifc4x1::IfcPhysicalOrVirtualEnum::FromSt
     if (s == "VIRTUAL") return ::Ifc4x1::IfcPhysicalOrVirtualEnum::IfcPhysicalOrVirtual_VIRTUAL;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcPhysicalOrVirtualEnum::IfcPhysicalOrVirtual_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcPhysicalOrVirtualEnum::operator Ifc4x1::IfcPhysicalOrVirtualEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcPileConstructionEnum::declaration() const { return *IFC4X1_IfcPileConstructionEnum_type; }
@@ -5873,6 +6381,10 @@ Ifc4x1::IfcPileConstructionEnum::Value Ifc4x1::IfcPileConstructionEnum::FromStri
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcPileConstructionEnum::operator Ifc4x1::IfcPileConstructionEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcPileTypeEnum::declaration() const { return *IFC4X1_IfcPileTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcPileTypeEnum::Class() { return *IFC4X1_IfcPileTypeEnum_type; }
 
@@ -5908,6 +6420,10 @@ Ifc4x1::IfcPileTypeEnum::Value Ifc4x1::IfcPileTypeEnum::FromString(const std::st
     if (s == "USERDEFINED") return ::Ifc4x1::IfcPileTypeEnum::IfcPileType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcPileTypeEnum::IfcPileType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcPileTypeEnum::operator Ifc4x1::IfcPileTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcPipeFittingTypeEnum::declaration() const { return *IFC4X1_IfcPipeFittingTypeEnum_type; }
@@ -5948,6 +6464,10 @@ Ifc4x1::IfcPipeFittingTypeEnum::Value Ifc4x1::IfcPipeFittingTypeEnum::FromString
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcPipeFittingTypeEnum::operator Ifc4x1::IfcPipeFittingTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcPipeSegmentTypeEnum::declaration() const { return *IFC4X1_IfcPipeSegmentTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcPipeSegmentTypeEnum::Class() { return *IFC4X1_IfcPipeSegmentTypeEnum_type; }
 
@@ -5984,6 +6504,10 @@ Ifc4x1::IfcPipeSegmentTypeEnum::Value Ifc4x1::IfcPipeSegmentTypeEnum::FromString
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcPipeSegmentTypeEnum::operator Ifc4x1::IfcPipeSegmentTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcPlateTypeEnum::declaration() const { return *IFC4X1_IfcPlateTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcPlateTypeEnum::Class() { return *IFC4X1_IfcPlateTypeEnum_type; }
 
@@ -6017,6 +6541,10 @@ Ifc4x1::IfcPlateTypeEnum::Value Ifc4x1::IfcPlateTypeEnum::FromString(const std::
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcPlateTypeEnum::operator Ifc4x1::IfcPlateTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcPreferredSurfaceCurveRepresentation::declaration() const { return *IFC4X1_IfcPreferredSurfaceCurveRepresentation_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcPreferredSurfaceCurveRepresentation::Class() { return *IFC4X1_IfcPreferredSurfaceCurveRepresentation_type; }
 
@@ -6047,6 +6575,10 @@ Ifc4x1::IfcPreferredSurfaceCurveRepresentation::Value Ifc4x1::IfcPreferredSurfac
     if (s == "PCURVE_S1") return ::Ifc4x1::IfcPreferredSurfaceCurveRepresentation::IfcPreferredSurfaceCurveRepresentation_PCURVE_S1;
     if (s == "PCURVE_S2") return ::Ifc4x1::IfcPreferredSurfaceCurveRepresentation::IfcPreferredSurfaceCurveRepresentation_PCURVE_S2;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcPreferredSurfaceCurveRepresentation::operator Ifc4x1::IfcPreferredSurfaceCurveRepresentation::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcProcedureTypeEnum::declaration() const { return *IFC4X1_IfcProcedureTypeEnum_type; }
@@ -6087,6 +6619,10 @@ Ifc4x1::IfcProcedureTypeEnum::Value Ifc4x1::IfcProcedureTypeEnum::FromString(con
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcProcedureTypeEnum::operator Ifc4x1::IfcProcedureTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcProfileTypeEnum::declaration() const { return *IFC4X1_IfcProfileTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcProfileTypeEnum::Class() { return *IFC4X1_IfcProfileTypeEnum_type; }
 
@@ -6116,6 +6652,10 @@ Ifc4x1::IfcProfileTypeEnum::Value Ifc4x1::IfcProfileTypeEnum::FromString(const s
     if (s == "CURVE") return ::Ifc4x1::IfcProfileTypeEnum::IfcProfileType_CURVE;
     if (s == "AREA") return ::Ifc4x1::IfcProfileTypeEnum::IfcProfileType_AREA;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcProfileTypeEnum::operator Ifc4x1::IfcProfileTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcProjectOrderTypeEnum::declaration() const { return *IFC4X1_IfcProjectOrderTypeEnum_type; }
@@ -6154,6 +6694,10 @@ Ifc4x1::IfcProjectOrderTypeEnum::Value Ifc4x1::IfcProjectOrderTypeEnum::FromStri
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcProjectOrderTypeEnum::operator Ifc4x1::IfcProjectOrderTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcProjectedOrTrueLengthEnum::declaration() const { return *IFC4X1_IfcProjectedOrTrueLengthEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcProjectedOrTrueLengthEnum::Class() { return *IFC4X1_IfcProjectedOrTrueLengthEnum_type; }
 
@@ -6185,6 +6729,10 @@ Ifc4x1::IfcProjectedOrTrueLengthEnum::Value Ifc4x1::IfcProjectedOrTrueLengthEnum
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcProjectedOrTrueLengthEnum::operator Ifc4x1::IfcProjectedOrTrueLengthEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcProjectionElementTypeEnum::declaration() const { return *IFC4X1_IfcProjectionElementTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcProjectionElementTypeEnum::Class() { return *IFC4X1_IfcProjectionElementTypeEnum_type; }
 
@@ -6214,6 +6762,10 @@ Ifc4x1::IfcProjectionElementTypeEnum::Value Ifc4x1::IfcProjectionElementTypeEnum
     if (s == "USERDEFINED") return ::Ifc4x1::IfcProjectionElementTypeEnum::IfcProjectionElementType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcProjectionElementTypeEnum::IfcProjectionElementType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcProjectionElementTypeEnum::operator Ifc4x1::IfcProjectionElementTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcPropertySetTemplateTypeEnum::declaration() const { return *IFC4X1_IfcPropertySetTemplateTypeEnum_type; }
@@ -6253,6 +6805,10 @@ Ifc4x1::IfcPropertySetTemplateTypeEnum::Value Ifc4x1::IfcPropertySetTemplateType
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcPropertySetTemplateTypeEnum::operator Ifc4x1::IfcPropertySetTemplateTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcProtectiveDeviceTrippingUnitTypeEnum::declaration() const { return *IFC4X1_IfcProtectiveDeviceTrippingUnitTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcProtectiveDeviceTrippingUnitTypeEnum::Class() { return *IFC4X1_IfcProtectiveDeviceTrippingUnitTypeEnum_type; }
 
@@ -6286,6 +6842,10 @@ Ifc4x1::IfcProtectiveDeviceTrippingUnitTypeEnum::Value Ifc4x1::IfcProtectiveDevi
     if (s == "USERDEFINED") return ::Ifc4x1::IfcProtectiveDeviceTrippingUnitTypeEnum::IfcProtectiveDeviceTrippingUnitType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcProtectiveDeviceTrippingUnitTypeEnum::IfcProtectiveDeviceTrippingUnitType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcProtectiveDeviceTrippingUnitTypeEnum::operator Ifc4x1::IfcProtectiveDeviceTrippingUnitTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcProtectiveDeviceTypeEnum::declaration() const { return *IFC4X1_IfcProtectiveDeviceTypeEnum_type; }
@@ -6326,6 +6886,10 @@ Ifc4x1::IfcProtectiveDeviceTypeEnum::Value Ifc4x1::IfcProtectiveDeviceTypeEnum::
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcProtectiveDeviceTypeEnum::operator Ifc4x1::IfcProtectiveDeviceTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcPumpTypeEnum::declaration() const { return *IFC4X1_IfcPumpTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcPumpTypeEnum::Class() { return *IFC4X1_IfcPumpTypeEnum_type; }
 
@@ -6364,6 +6928,10 @@ Ifc4x1::IfcPumpTypeEnum::Value Ifc4x1::IfcPumpTypeEnum::FromString(const std::st
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcPumpTypeEnum::operator Ifc4x1::IfcPumpTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcRailingTypeEnum::declaration() const { return *IFC4X1_IfcRailingTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcRailingTypeEnum::Class() { return *IFC4X1_IfcRailingTypeEnum_type; }
 
@@ -6398,6 +6966,10 @@ Ifc4x1::IfcRailingTypeEnum::Value Ifc4x1::IfcRailingTypeEnum::FromString(const s
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcRailingTypeEnum::operator Ifc4x1::IfcRailingTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcRampFlightTypeEnum::declaration() const { return *IFC4X1_IfcRampFlightTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcRampFlightTypeEnum::Class() { return *IFC4X1_IfcRampFlightTypeEnum_type; }
 
@@ -6429,6 +7001,10 @@ Ifc4x1::IfcRampFlightTypeEnum::Value Ifc4x1::IfcRampFlightTypeEnum::FromString(c
     if (s == "USERDEFINED") return ::Ifc4x1::IfcRampFlightTypeEnum::IfcRampFlightType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcRampFlightTypeEnum::IfcRampFlightType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcRampFlightTypeEnum::operator Ifc4x1::IfcRampFlightTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcRampTypeEnum::declaration() const { return *IFC4X1_IfcRampTypeEnum_type; }
@@ -6468,6 +7044,10 @@ Ifc4x1::IfcRampTypeEnum::Value Ifc4x1::IfcRampTypeEnum::FromString(const std::st
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcRampTypeEnum::operator Ifc4x1::IfcRampTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcRecurrenceTypeEnum::declaration() const { return *IFC4X1_IfcRecurrenceTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcRecurrenceTypeEnum::Class() { return *IFC4X1_IfcRecurrenceTypeEnum_type; }
 
@@ -6505,6 +7085,10 @@ Ifc4x1::IfcRecurrenceTypeEnum::Value Ifc4x1::IfcRecurrenceTypeEnum::FromString(c
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcRecurrenceTypeEnum::operator Ifc4x1::IfcRecurrenceTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcReferentTypeEnum::declaration() const { return *IFC4X1_IfcReferentTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcReferentTypeEnum::Class() { return *IFC4X1_IfcReferentTypeEnum_type; }
 
@@ -6537,6 +7121,10 @@ Ifc4x1::IfcReferentTypeEnum::Value Ifc4x1::IfcReferentTypeEnum::FromString(const
     if (s == "USERDEFINED") return ::Ifc4x1::IfcReferentTypeEnum::IfcReferentType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcReferentTypeEnum::IfcReferentType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcReferentTypeEnum::operator Ifc4x1::IfcReferentTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcReflectanceMethodEnum::declaration() const { return *IFC4X1_IfcReflectanceMethodEnum_type; }
@@ -6578,6 +7166,10 @@ Ifc4x1::IfcReflectanceMethodEnum::Value Ifc4x1::IfcReflectanceMethodEnum::FromSt
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcReflectanceMethodEnum::operator Ifc4x1::IfcReflectanceMethodEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcReinforcingBarRoleEnum::declaration() const { return *IFC4X1_IfcReinforcingBarRoleEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcReinforcingBarRoleEnum::Class() { return *IFC4X1_IfcReinforcingBarRoleEnum_type; }
 
@@ -6617,6 +7209,10 @@ Ifc4x1::IfcReinforcingBarRoleEnum::Value Ifc4x1::IfcReinforcingBarRoleEnum::From
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcReinforcingBarRoleEnum::operator Ifc4x1::IfcReinforcingBarRoleEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcReinforcingBarSurfaceEnum::declaration() const { return *IFC4X1_IfcReinforcingBarSurfaceEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcReinforcingBarSurfaceEnum::Class() { return *IFC4X1_IfcReinforcingBarSurfaceEnum_type; }
 
@@ -6646,6 +7242,10 @@ Ifc4x1::IfcReinforcingBarSurfaceEnum::Value Ifc4x1::IfcReinforcingBarSurfaceEnum
     if (s == "PLAIN") return ::Ifc4x1::IfcReinforcingBarSurfaceEnum::IfcReinforcingBarSurface_PLAIN;
     if (s == "TEXTURED") return ::Ifc4x1::IfcReinforcingBarSurfaceEnum::IfcReinforcingBarSurface_TEXTURED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcReinforcingBarSurfaceEnum::operator Ifc4x1::IfcReinforcingBarSurfaceEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcReinforcingBarTypeEnum::declaration() const { return *IFC4X1_IfcReinforcingBarTypeEnum_type; }
@@ -6687,6 +7287,10 @@ Ifc4x1::IfcReinforcingBarTypeEnum::Value Ifc4x1::IfcReinforcingBarTypeEnum::From
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcReinforcingBarTypeEnum::operator Ifc4x1::IfcReinforcingBarTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcReinforcingMeshTypeEnum::declaration() const { return *IFC4X1_IfcReinforcingMeshTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcReinforcingMeshTypeEnum::Class() { return *IFC4X1_IfcReinforcingMeshTypeEnum_type; }
 
@@ -6716,6 +7320,10 @@ Ifc4x1::IfcReinforcingMeshTypeEnum::Value Ifc4x1::IfcReinforcingMeshTypeEnum::Fr
     if (s == "USERDEFINED") return ::Ifc4x1::IfcReinforcingMeshTypeEnum::IfcReinforcingMeshType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcReinforcingMeshTypeEnum::IfcReinforcingMeshType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcReinforcingMeshTypeEnum::operator Ifc4x1::IfcReinforcingMeshTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcRoleEnum::declaration() const { return *IFC4X1_IfcRoleEnum_type; }
@@ -6770,6 +7378,10 @@ Ifc4x1::IfcRoleEnum::Value Ifc4x1::IfcRoleEnum::FromString(const std::string& s)
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcRoleEnum::operator Ifc4x1::IfcRoleEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcRoofTypeEnum::declaration() const { return *IFC4X1_IfcRoofTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcRoofTypeEnum::Class() { return *IFC4X1_IfcRoofTypeEnum_type; }
 
@@ -6812,6 +7424,10 @@ Ifc4x1::IfcRoofTypeEnum::Value Ifc4x1::IfcRoofTypeEnum::FromString(const std::st
     if (s == "USERDEFINED") return ::Ifc4x1::IfcRoofTypeEnum::IfcRoofType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcRoofTypeEnum::IfcRoofType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcRoofTypeEnum::operator Ifc4x1::IfcRoofTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcSIPrefix::declaration() const { return *IFC4X1_IfcSIPrefix_type; }
@@ -6857,6 +7473,10 @@ Ifc4x1::IfcSIPrefix::Value Ifc4x1::IfcSIPrefix::FromString(const std::string& s)
     if (s == "FEMTO") return ::Ifc4x1::IfcSIPrefix::IfcSIPrefix_FEMTO;
     if (s == "ATTO") return ::Ifc4x1::IfcSIPrefix::IfcSIPrefix_ATTO;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcSIPrefix::operator Ifc4x1::IfcSIPrefix::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcSIUnitName::declaration() const { return *IFC4X1_IfcSIUnitName_type; }
@@ -6918,6 +7538,10 @@ Ifc4x1::IfcSIUnitName::Value Ifc4x1::IfcSIUnitName::FromString(const std::string
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcSIUnitName::operator Ifc4x1::IfcSIUnitName::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcSanitaryTerminalTypeEnum::declaration() const { return *IFC4X1_IfcSanitaryTerminalTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcSanitaryTerminalTypeEnum::Class() { return *IFC4X1_IfcSanitaryTerminalTypeEnum_type; }
 
@@ -6959,6 +7583,10 @@ Ifc4x1::IfcSanitaryTerminalTypeEnum::Value Ifc4x1::IfcSanitaryTerminalTypeEnum::
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcSanitaryTerminalTypeEnum::operator Ifc4x1::IfcSanitaryTerminalTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcSectionTypeEnum::declaration() const { return *IFC4X1_IfcSectionTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcSectionTypeEnum::Class() { return *IFC4X1_IfcSectionTypeEnum_type; }
 
@@ -6988,6 +7616,10 @@ Ifc4x1::IfcSectionTypeEnum::Value Ifc4x1::IfcSectionTypeEnum::FromString(const s
     if (s == "UNIFORM") return ::Ifc4x1::IfcSectionTypeEnum::IfcSectionType_UNIFORM;
     if (s == "TAPERED") return ::Ifc4x1::IfcSectionTypeEnum::IfcSectionType_TAPERED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcSectionTypeEnum::operator Ifc4x1::IfcSectionTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcSensorTypeEnum::declaration() const { return *IFC4X1_IfcSensorTypeEnum_type; }
@@ -7045,6 +7677,10 @@ Ifc4x1::IfcSensorTypeEnum::Value Ifc4x1::IfcSensorTypeEnum::FromString(const std
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcSensorTypeEnum::operator Ifc4x1::IfcSensorTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcSequenceEnum::declaration() const { return *IFC4X1_IfcSequenceEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcSequenceEnum::Class() { return *IFC4X1_IfcSequenceEnum_type; }
 
@@ -7080,6 +7716,10 @@ Ifc4x1::IfcSequenceEnum::Value Ifc4x1::IfcSequenceEnum::FromString(const std::st
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcSequenceEnum::operator Ifc4x1::IfcSequenceEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcShadingDeviceTypeEnum::declaration() const { return *IFC4X1_IfcShadingDeviceTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcShadingDeviceTypeEnum::Class() { return *IFC4X1_IfcShadingDeviceTypeEnum_type; }
 
@@ -7112,6 +7752,10 @@ Ifc4x1::IfcShadingDeviceTypeEnum::Value Ifc4x1::IfcShadingDeviceTypeEnum::FromSt
     if (s == "USERDEFINED") return ::Ifc4x1::IfcShadingDeviceTypeEnum::IfcShadingDeviceType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcShadingDeviceTypeEnum::IfcShadingDeviceType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcShadingDeviceTypeEnum::operator Ifc4x1::IfcShadingDeviceTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcSimplePropertyTemplateTypeEnum::declaration() const { return *IFC4X1_IfcSimplePropertyTemplateTypeEnum_type; }
@@ -7155,6 +7799,10 @@ Ifc4x1::IfcSimplePropertyTemplateTypeEnum::Value Ifc4x1::IfcSimplePropertyTempla
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcSimplePropertyTemplateTypeEnum::operator Ifc4x1::IfcSimplePropertyTemplateTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcSlabTypeEnum::declaration() const { return *IFC4X1_IfcSlabTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcSlabTypeEnum::Class() { return *IFC4X1_IfcSlabTypeEnum_type; }
 
@@ -7190,6 +7838,10 @@ Ifc4x1::IfcSlabTypeEnum::Value Ifc4x1::IfcSlabTypeEnum::FromString(const std::st
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcSlabTypeEnum::operator Ifc4x1::IfcSlabTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcSolarDeviceTypeEnum::declaration() const { return *IFC4X1_IfcSolarDeviceTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcSolarDeviceTypeEnum::Class() { return *IFC4X1_IfcSolarDeviceTypeEnum_type; }
 
@@ -7223,6 +7875,10 @@ Ifc4x1::IfcSolarDeviceTypeEnum::Value Ifc4x1::IfcSolarDeviceTypeEnum::FromString
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcSolarDeviceTypeEnum::operator Ifc4x1::IfcSolarDeviceTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcSpaceHeaterTypeEnum::declaration() const { return *IFC4X1_IfcSpaceHeaterTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcSpaceHeaterTypeEnum::Class() { return *IFC4X1_IfcSpaceHeaterTypeEnum_type; }
 
@@ -7254,6 +7910,10 @@ Ifc4x1::IfcSpaceHeaterTypeEnum::Value Ifc4x1::IfcSpaceHeaterTypeEnum::FromString
     if (s == "USERDEFINED") return ::Ifc4x1::IfcSpaceHeaterTypeEnum::IfcSpaceHeaterType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcSpaceHeaterTypeEnum::IfcSpaceHeaterType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcSpaceHeaterTypeEnum::operator Ifc4x1::IfcSpaceHeaterTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcSpaceTypeEnum::declaration() const { return *IFC4X1_IfcSpaceTypeEnum_type; }
@@ -7290,6 +7950,10 @@ Ifc4x1::IfcSpaceTypeEnum::Value Ifc4x1::IfcSpaceTypeEnum::FromString(const std::
     if (s == "USERDEFINED") return ::Ifc4x1::IfcSpaceTypeEnum::IfcSpaceType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcSpaceTypeEnum::IfcSpaceType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcSpaceTypeEnum::operator Ifc4x1::IfcSpaceTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcSpatialZoneTypeEnum::declaration() const { return *IFC4X1_IfcSpatialZoneTypeEnum_type; }
@@ -7331,6 +7995,10 @@ Ifc4x1::IfcSpatialZoneTypeEnum::Value Ifc4x1::IfcSpatialZoneTypeEnum::FromString
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcSpatialZoneTypeEnum::operator Ifc4x1::IfcSpatialZoneTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcStackTerminalTypeEnum::declaration() const { return *IFC4X1_IfcStackTerminalTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcStackTerminalTypeEnum::Class() { return *IFC4X1_IfcStackTerminalTypeEnum_type; }
 
@@ -7363,6 +8031,10 @@ Ifc4x1::IfcStackTerminalTypeEnum::Value Ifc4x1::IfcStackTerminalTypeEnum::FromSt
     if (s == "USERDEFINED") return ::Ifc4x1::IfcStackTerminalTypeEnum::IfcStackTerminalType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcStackTerminalTypeEnum::IfcStackTerminalType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcStackTerminalTypeEnum::operator Ifc4x1::IfcStackTerminalTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcStairFlightTypeEnum::declaration() const { return *IFC4X1_IfcStairFlightTypeEnum_type; }
@@ -7399,6 +8071,10 @@ Ifc4x1::IfcStairFlightTypeEnum::Value Ifc4x1::IfcStairFlightTypeEnum::FromString
     if (s == "USERDEFINED") return ::Ifc4x1::IfcStairFlightTypeEnum::IfcStairFlightType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcStairFlightTypeEnum::IfcStairFlightType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcStairFlightTypeEnum::operator Ifc4x1::IfcStairFlightTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcStairTypeEnum::declaration() const { return *IFC4X1_IfcStairTypeEnum_type; }
@@ -7446,6 +8122,10 @@ Ifc4x1::IfcStairTypeEnum::Value Ifc4x1::IfcStairTypeEnum::FromString(const std::
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcStairTypeEnum::operator Ifc4x1::IfcStairTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcStateEnum::declaration() const { return *IFC4X1_IfcStateEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcStateEnum::Class() { return *IFC4X1_IfcStateEnum_type; }
 
@@ -7478,6 +8158,10 @@ Ifc4x1::IfcStateEnum::Value Ifc4x1::IfcStateEnum::FromString(const std::string& 
     if (s == "READWRITELOCKED") return ::Ifc4x1::IfcStateEnum::IfcState_READWRITELOCKED;
     if (s == "READONLYLOCKED") return ::Ifc4x1::IfcStateEnum::IfcState_READONLYLOCKED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcStateEnum::operator Ifc4x1::IfcStateEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcStructuralCurveActivityTypeEnum::declaration() const { return *IFC4X1_IfcStructuralCurveActivityTypeEnum_type; }
@@ -7518,6 +8202,10 @@ Ifc4x1::IfcStructuralCurveActivityTypeEnum::Value Ifc4x1::IfcStructuralCurveActi
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcStructuralCurveActivityTypeEnum::operator Ifc4x1::IfcStructuralCurveActivityTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcStructuralCurveMemberTypeEnum::declaration() const { return *IFC4X1_IfcStructuralCurveMemberTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcStructuralCurveMemberTypeEnum::Class() { return *IFC4X1_IfcStructuralCurveMemberTypeEnum_type; }
 
@@ -7552,6 +8240,10 @@ Ifc4x1::IfcStructuralCurveMemberTypeEnum::Value Ifc4x1::IfcStructuralCurveMember
     if (s == "USERDEFINED") return ::Ifc4x1::IfcStructuralCurveMemberTypeEnum::IfcStructuralCurveMemberType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcStructuralCurveMemberTypeEnum::IfcStructuralCurveMemberType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcStructuralCurveMemberTypeEnum::operator Ifc4x1::IfcStructuralCurveMemberTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcStructuralSurfaceActivityTypeEnum::declaration() const { return *IFC4X1_IfcStructuralSurfaceActivityTypeEnum_type; }
@@ -7589,6 +8281,10 @@ Ifc4x1::IfcStructuralSurfaceActivityTypeEnum::Value Ifc4x1::IfcStructuralSurface
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcStructuralSurfaceActivityTypeEnum::operator Ifc4x1::IfcStructuralSurfaceActivityTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcStructuralSurfaceMemberTypeEnum::declaration() const { return *IFC4X1_IfcStructuralSurfaceMemberTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcStructuralSurfaceMemberTypeEnum::Class() { return *IFC4X1_IfcStructuralSurfaceMemberTypeEnum_type; }
 
@@ -7623,6 +8319,10 @@ Ifc4x1::IfcStructuralSurfaceMemberTypeEnum::Value Ifc4x1::IfcStructuralSurfaceMe
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcStructuralSurfaceMemberTypeEnum::operator Ifc4x1::IfcStructuralSurfaceMemberTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcSubContractResourceTypeEnum::declaration() const { return *IFC4X1_IfcSubContractResourceTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcSubContractResourceTypeEnum::Class() { return *IFC4X1_IfcSubContractResourceTypeEnum_type; }
 
@@ -7654,6 +8354,10 @@ Ifc4x1::IfcSubContractResourceTypeEnum::Value Ifc4x1::IfcSubContractResourceType
     if (s == "USERDEFINED") return ::Ifc4x1::IfcSubContractResourceTypeEnum::IfcSubContractResourceType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcSubContractResourceTypeEnum::IfcSubContractResourceType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcSubContractResourceTypeEnum::operator Ifc4x1::IfcSubContractResourceTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcSurfaceFeatureTypeEnum::declaration() const { return *IFC4X1_IfcSurfaceFeatureTypeEnum_type; }
@@ -7690,6 +8394,10 @@ Ifc4x1::IfcSurfaceFeatureTypeEnum::Value Ifc4x1::IfcSurfaceFeatureTypeEnum::From
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcSurfaceFeatureTypeEnum::operator Ifc4x1::IfcSurfaceFeatureTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcSurfaceSide::declaration() const { return *IFC4X1_IfcSurfaceSide_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcSurfaceSide::Class() { return *IFC4X1_IfcSurfaceSide_type; }
 
@@ -7720,6 +8428,10 @@ Ifc4x1::IfcSurfaceSide::Value Ifc4x1::IfcSurfaceSide::FromString(const std::stri
     if (s == "NEGATIVE") return ::Ifc4x1::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE;
     if (s == "BOTH") return ::Ifc4x1::IfcSurfaceSide::IfcSurfaceSide_BOTH;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcSurfaceSide::operator Ifc4x1::IfcSurfaceSide::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcSwitchingDeviceTypeEnum::declaration() const { return *IFC4X1_IfcSwitchingDeviceTypeEnum_type; }
@@ -7762,6 +8474,10 @@ Ifc4x1::IfcSwitchingDeviceTypeEnum::Value Ifc4x1::IfcSwitchingDeviceTypeEnum::Fr
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcSwitchingDeviceTypeEnum::operator Ifc4x1::IfcSwitchingDeviceTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcSystemFurnitureElementTypeEnum::declaration() const { return *IFC4X1_IfcSystemFurnitureElementTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcSystemFurnitureElementTypeEnum::Class() { return *IFC4X1_IfcSystemFurnitureElementTypeEnum_type; }
 
@@ -7793,6 +8509,10 @@ Ifc4x1::IfcSystemFurnitureElementTypeEnum::Value Ifc4x1::IfcSystemFurnitureEleme
     if (s == "USERDEFINED") return ::Ifc4x1::IfcSystemFurnitureElementTypeEnum::IfcSystemFurnitureElementType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcSystemFurnitureElementTypeEnum::IfcSystemFurnitureElementType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcSystemFurnitureElementTypeEnum::operator Ifc4x1::IfcSystemFurnitureElementTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcTankTypeEnum::declaration() const { return *IFC4X1_IfcTankTypeEnum_type; }
@@ -7833,6 +8553,10 @@ Ifc4x1::IfcTankTypeEnum::Value Ifc4x1::IfcTankTypeEnum::FromString(const std::st
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcTankTypeEnum::operator Ifc4x1::IfcTankTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcTaskDurationEnum::declaration() const { return *IFC4X1_IfcTaskDurationEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcTaskDurationEnum::Class() { return *IFC4X1_IfcTaskDurationEnum_type; }
 
@@ -7863,6 +8587,10 @@ Ifc4x1::IfcTaskDurationEnum::Value Ifc4x1::IfcTaskDurationEnum::FromString(const
     if (s == "WORKTIME") return ::Ifc4x1::IfcTaskDurationEnum::IfcTaskDuration_WORKTIME;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcTaskDurationEnum::IfcTaskDuration_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcTaskDurationEnum::operator Ifc4x1::IfcTaskDurationEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcTaskTypeEnum::declaration() const { return *IFC4X1_IfcTaskTypeEnum_type; }
@@ -7908,6 +8636,10 @@ Ifc4x1::IfcTaskTypeEnum::Value Ifc4x1::IfcTaskTypeEnum::FromString(const std::st
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcTaskTypeEnum::operator Ifc4x1::IfcTaskTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcTendonAnchorTypeEnum::declaration() const { return *IFC4X1_IfcTendonAnchorTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcTendonAnchorTypeEnum::Class() { return *IFC4X1_IfcTendonAnchorTypeEnum_type; }
 
@@ -7940,6 +8672,10 @@ Ifc4x1::IfcTendonAnchorTypeEnum::Value Ifc4x1::IfcTendonAnchorTypeEnum::FromStri
     if (s == "USERDEFINED") return ::Ifc4x1::IfcTendonAnchorTypeEnum::IfcTendonAnchorType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcTendonAnchorTypeEnum::IfcTendonAnchorType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcTendonAnchorTypeEnum::operator Ifc4x1::IfcTendonAnchorTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcTendonTypeEnum::declaration() const { return *IFC4X1_IfcTendonTypeEnum_type; }
@@ -7977,6 +8713,10 @@ Ifc4x1::IfcTendonTypeEnum::Value Ifc4x1::IfcTendonTypeEnum::FromString(const std
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcTendonTypeEnum::operator Ifc4x1::IfcTendonTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcTextPath::declaration() const { return *IFC4X1_IfcTextPath_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcTextPath::Class() { return *IFC4X1_IfcTextPath_type; }
 
@@ -8008,6 +8748,10 @@ Ifc4x1::IfcTextPath::Value Ifc4x1::IfcTextPath::FromString(const std::string& s)
     if (s == "UP") return ::Ifc4x1::IfcTextPath::IfcTextPath_UP;
     if (s == "DOWN") return ::Ifc4x1::IfcTextPath::IfcTextPath_DOWN;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcTextPath::operator Ifc4x1::IfcTextPath::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcTimeSeriesDataTypeEnum::declaration() const { return *IFC4X1_IfcTimeSeriesDataTypeEnum_type; }
@@ -8046,6 +8790,10 @@ Ifc4x1::IfcTimeSeriesDataTypeEnum::Value Ifc4x1::IfcTimeSeriesDataTypeEnum::From
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcTimeSeriesDataTypeEnum::operator Ifc4x1::IfcTimeSeriesDataTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcTransformerTypeEnum::declaration() const { return *IFC4X1_IfcTransformerTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcTransformerTypeEnum::Class() { return *IFC4X1_IfcTransformerTypeEnum_type; }
 
@@ -8082,6 +8830,10 @@ Ifc4x1::IfcTransformerTypeEnum::Value Ifc4x1::IfcTransformerTypeEnum::FromString
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcTransformerTypeEnum::operator Ifc4x1::IfcTransformerTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcTransitionCode::declaration() const { return *IFC4X1_IfcTransitionCode_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcTransitionCode::Class() { return *IFC4X1_IfcTransitionCode_type; }
 
@@ -8113,6 +8865,10 @@ Ifc4x1::IfcTransitionCode::Value Ifc4x1::IfcTransitionCode::FromString(const std
     if (s == "CONTSAMEGRADIENT") return ::Ifc4x1::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT;
     if (s == "CONTSAMEGRADIENTSAMECURVATURE") return ::Ifc4x1::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENTSAMECURVATURE;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcTransitionCode::operator Ifc4x1::IfcTransitionCode::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcTransitionCurveType::declaration() const { return *IFC4X1_IfcTransitionCurveType_type; }
@@ -8148,6 +8904,10 @@ Ifc4x1::IfcTransitionCurveType::Value Ifc4x1::IfcTransitionCurveType::FromString
     if (s == "CUBICPARABOLA") return ::Ifc4x1::IfcTransitionCurveType::IfcTransitionCurveType_CUBICPARABOLA;
     if (s == "SINECURVE") return ::Ifc4x1::IfcTransitionCurveType::IfcTransitionCurveType_SINECURVE;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcTransitionCurveType::operator Ifc4x1::IfcTransitionCurveType::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcTransportElementTypeEnum::declaration() const { return *IFC4X1_IfcTransportElementTypeEnum_type; }
@@ -8186,6 +8946,10 @@ Ifc4x1::IfcTransportElementTypeEnum::Value Ifc4x1::IfcTransportElementTypeEnum::
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcTransportElementTypeEnum::operator Ifc4x1::IfcTransportElementTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcTrimmingPreference::declaration() const { return *IFC4X1_IfcTrimmingPreference_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcTrimmingPreference::Class() { return *IFC4X1_IfcTrimmingPreference_type; }
 
@@ -8218,6 +8982,10 @@ Ifc4x1::IfcTrimmingPreference::Value Ifc4x1::IfcTrimmingPreference::FromString(c
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcTrimmingPreference::operator Ifc4x1::IfcTrimmingPreference::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcTubeBundleTypeEnum::declaration() const { return *IFC4X1_IfcTubeBundleTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcTubeBundleTypeEnum::Class() { return *IFC4X1_IfcTubeBundleTypeEnum_type; }
 
@@ -8248,6 +9016,10 @@ Ifc4x1::IfcTubeBundleTypeEnum::Value Ifc4x1::IfcTubeBundleTypeEnum::FromString(c
     if (s == "USERDEFINED") return ::Ifc4x1::IfcTubeBundleTypeEnum::IfcTubeBundleType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcTubeBundleTypeEnum::IfcTubeBundleType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcTubeBundleTypeEnum::operator Ifc4x1::IfcTubeBundleTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcUnitEnum::declaration() const { return *IFC4X1_IfcUnitEnum_type; }
@@ -8309,6 +9081,10 @@ Ifc4x1::IfcUnitEnum::Value Ifc4x1::IfcUnitEnum::FromString(const std::string& s)
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcUnitEnum::operator Ifc4x1::IfcUnitEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcUnitaryControlElementTypeEnum::declaration() const { return *IFC4X1_IfcUnitaryControlElementTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcUnitaryControlElementTypeEnum::Class() { return *IFC4X1_IfcUnitaryControlElementTypeEnum_type; }
 
@@ -8348,6 +9124,10 @@ Ifc4x1::IfcUnitaryControlElementTypeEnum::Value Ifc4x1::IfcUnitaryControlElement
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcUnitaryControlElementTypeEnum::operator Ifc4x1::IfcUnitaryControlElementTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcUnitaryEquipmentTypeEnum::declaration() const { return *IFC4X1_IfcUnitaryEquipmentTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcUnitaryEquipmentTypeEnum::Class() { return *IFC4X1_IfcUnitaryEquipmentTypeEnum_type; }
 
@@ -8382,6 +9162,10 @@ Ifc4x1::IfcUnitaryEquipmentTypeEnum::Value Ifc4x1::IfcUnitaryEquipmentTypeEnum::
     if (s == "USERDEFINED") return ::Ifc4x1::IfcUnitaryEquipmentTypeEnum::IfcUnitaryEquipmentType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcUnitaryEquipmentTypeEnum::IfcUnitaryEquipmentType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcUnitaryEquipmentTypeEnum::operator Ifc4x1::IfcUnitaryEquipmentTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcValveTypeEnum::declaration() const { return *IFC4X1_IfcValveTypeEnum_type; }
@@ -8436,6 +9220,10 @@ Ifc4x1::IfcValveTypeEnum::Value Ifc4x1::IfcValveTypeEnum::FromString(const std::
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcValveTypeEnum::operator Ifc4x1::IfcValveTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcVibrationIsolatorTypeEnum::declaration() const { return *IFC4X1_IfcVibrationIsolatorTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcVibrationIsolatorTypeEnum::Class() { return *IFC4X1_IfcVibrationIsolatorTypeEnum_type; }
 
@@ -8467,6 +9255,10 @@ Ifc4x1::IfcVibrationIsolatorTypeEnum::Value Ifc4x1::IfcVibrationIsolatorTypeEnum
     if (s == "USERDEFINED") return ::Ifc4x1::IfcVibrationIsolatorTypeEnum::IfcVibrationIsolatorType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcVibrationIsolatorTypeEnum::IfcVibrationIsolatorType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcVibrationIsolatorTypeEnum::operator Ifc4x1::IfcVibrationIsolatorTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcVoidingFeatureTypeEnum::declaration() const { return *IFC4X1_IfcVoidingFeatureTypeEnum_type; }
@@ -8504,6 +9296,10 @@ Ifc4x1::IfcVoidingFeatureTypeEnum::Value Ifc4x1::IfcVoidingFeatureTypeEnum::From
     if (s == "USERDEFINED") return ::Ifc4x1::IfcVoidingFeatureTypeEnum::IfcVoidingFeatureType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcVoidingFeatureTypeEnum::IfcVoidingFeatureType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcVoidingFeatureTypeEnum::operator Ifc4x1::IfcVoidingFeatureTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcWallTypeEnum::declaration() const { return *IFC4X1_IfcWallTypeEnum_type; }
@@ -8546,6 +9342,10 @@ Ifc4x1::IfcWallTypeEnum::Value Ifc4x1::IfcWallTypeEnum::FromString(const std::st
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcWallTypeEnum::operator Ifc4x1::IfcWallTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcWasteTerminalTypeEnum::declaration() const { return *IFC4X1_IfcWasteTerminalTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcWasteTerminalTypeEnum::Class() { return *IFC4X1_IfcWasteTerminalTypeEnum_type; }
 
@@ -8582,6 +9382,10 @@ Ifc4x1::IfcWasteTerminalTypeEnum::Value Ifc4x1::IfcWasteTerminalTypeEnum::FromSt
     if (s == "USERDEFINED") return ::Ifc4x1::IfcWasteTerminalTypeEnum::IfcWasteTerminalType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcWasteTerminalTypeEnum::IfcWasteTerminalType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcWasteTerminalTypeEnum::operator Ifc4x1::IfcWasteTerminalTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcWindowPanelOperationEnum::declaration() const { return *IFC4X1_IfcWindowPanelOperationEnum_type; }
@@ -8627,6 +9431,10 @@ Ifc4x1::IfcWindowPanelOperationEnum::Value Ifc4x1::IfcWindowPanelOperationEnum::
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcWindowPanelOperationEnum::operator Ifc4x1::IfcWindowPanelOperationEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcWindowPanelPositionEnum::declaration() const { return *IFC4X1_IfcWindowPanelPositionEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcWindowPanelPositionEnum::Class() { return *IFC4X1_IfcWindowPanelPositionEnum_type; }
 
@@ -8660,6 +9468,10 @@ Ifc4x1::IfcWindowPanelPositionEnum::Value Ifc4x1::IfcWindowPanelPositionEnum::Fr
     if (s == "TOP") return ::Ifc4x1::IfcWindowPanelPositionEnum::IfcWindowPanelPosition_TOP;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcWindowPanelPositionEnum::IfcWindowPanelPosition_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcWindowPanelPositionEnum::operator Ifc4x1::IfcWindowPanelPositionEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcWindowStyleConstructionEnum::declaration() const { return *IFC4X1_IfcWindowStyleConstructionEnum_type; }
@@ -8697,6 +9509,10 @@ Ifc4x1::IfcWindowStyleConstructionEnum::Value Ifc4x1::IfcWindowStyleConstruction
     if (s == "OTHER_CONSTRUCTION") return ::Ifc4x1::IfcWindowStyleConstructionEnum::IfcWindowStyleConstruction_OTHER_CONSTRUCTION;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcWindowStyleConstructionEnum::IfcWindowStyleConstruction_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcWindowStyleConstructionEnum::operator Ifc4x1::IfcWindowStyleConstructionEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcWindowStyleOperationEnum::declaration() const { return *IFC4X1_IfcWindowStyleOperationEnum_type; }
@@ -8739,6 +9555,10 @@ Ifc4x1::IfcWindowStyleOperationEnum::Value Ifc4x1::IfcWindowStyleOperationEnum::
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcWindowStyleOperationEnum::operator Ifc4x1::IfcWindowStyleOperationEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcWindowTypeEnum::declaration() const { return *IFC4X1_IfcWindowTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcWindowTypeEnum::Class() { return *IFC4X1_IfcWindowTypeEnum_type; }
 
@@ -8771,6 +9591,10 @@ Ifc4x1::IfcWindowTypeEnum::Value Ifc4x1::IfcWindowTypeEnum::FromString(const std
     if (s == "USERDEFINED") return ::Ifc4x1::IfcWindowTypeEnum::IfcWindowType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcWindowTypeEnum::IfcWindowType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcWindowTypeEnum::operator Ifc4x1::IfcWindowTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcWindowTypePartitioningEnum::declaration() const { return *IFC4X1_IfcWindowTypePartitioningEnum_type; }
@@ -8813,6 +9637,10 @@ Ifc4x1::IfcWindowTypePartitioningEnum::Value Ifc4x1::IfcWindowTypePartitioningEn
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcWindowTypePartitioningEnum::operator Ifc4x1::IfcWindowTypePartitioningEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcWorkCalendarTypeEnum::declaration() const { return *IFC4X1_IfcWorkCalendarTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcWorkCalendarTypeEnum::Class() { return *IFC4X1_IfcWorkCalendarTypeEnum_type; }
 
@@ -8845,6 +9673,10 @@ Ifc4x1::IfcWorkCalendarTypeEnum::Value Ifc4x1::IfcWorkCalendarTypeEnum::FromStri
     if (s == "USERDEFINED") return ::Ifc4x1::IfcWorkCalendarTypeEnum::IfcWorkCalendarType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcWorkCalendarTypeEnum::IfcWorkCalendarType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcWorkCalendarTypeEnum::operator Ifc4x1::IfcWorkCalendarTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 const IfcParse::enumeration_type& Ifc4x1::IfcWorkPlanTypeEnum::declaration() const { return *IFC4X1_IfcWorkPlanTypeEnum_type; }
@@ -8881,6 +9713,10 @@ Ifc4x1::IfcWorkPlanTypeEnum::Value Ifc4x1::IfcWorkPlanTypeEnum::FromString(const
     throw IfcException("Unable to find find keyword in schema");
 }
 
+Ifc4x1::IfcWorkPlanTypeEnum::operator Ifc4x1::IfcWorkPlanTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
+}
+
 const IfcParse::enumeration_type& Ifc4x1::IfcWorkScheduleTypeEnum::declaration() const { return *IFC4X1_IfcWorkScheduleTypeEnum_type; }
 const IfcParse::enumeration_type& Ifc4x1::IfcWorkScheduleTypeEnum::Class() { return *IFC4X1_IfcWorkScheduleTypeEnum_type; }
 
@@ -8913,6 +9749,10 @@ Ifc4x1::IfcWorkScheduleTypeEnum::Value Ifc4x1::IfcWorkScheduleTypeEnum::FromStri
     if (s == "USERDEFINED") return ::Ifc4x1::IfcWorkScheduleTypeEnum::IfcWorkScheduleType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4x1::IfcWorkScheduleTypeEnum::IfcWorkScheduleType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
+}
+
+Ifc4x1::IfcWorkScheduleTypeEnum::operator Ifc4x1::IfcWorkScheduleTypeEnum::Value() const {
+    return FromString((std::string) *data_->getArgument(0));
 }
 
 

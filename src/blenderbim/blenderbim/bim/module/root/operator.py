@@ -5,12 +5,14 @@ import ifcopenshell.api
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
 from ifcopenshell.api.geometry.data import Data as GeometryData
+from ifcopenshell.api.void.data import Data as VoidData
 from blenderbim.bim.ifc import IfcStore
 
 
 class EnableReassignClass(bpy.types.Operator):
     bl_idname = "bim.enable_reassign_class"
     bl_label = "Enable Reassign IFC Class"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         obj = bpy.context.active_object
@@ -40,6 +42,7 @@ class EnableReassignClass(bpy.types.Operator):
 class DisableReassignClass(bpy.types.Operator):
     bl_idname = "bim.disable_reassign_class"
     bl_label = "Disable Reassign IFC Class"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bpy.context.active_object.BIMObjectProperties.is_reassigning_class = False
@@ -49,9 +52,13 @@ class DisableReassignClass(bpy.types.Operator):
 class ReassignClass(bpy.types.Operator):
     bl_idname = "bim.reassign_class"
     bl_label = "Reassign IFC Class"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         objects = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
         self.file = IfcStore.get_file()
         predefined_type = bpy.context.scene.BIMRootProperties.ifc_predefined_type
@@ -82,8 +89,13 @@ class AssignClass(bpy.types.Operator):
     predefined_type: bpy.props.StringProperty()
     userdefined_type: bpy.props.StringProperty()
     context_id: bpy.props.IntProperty()
+    should_add_representation: bpy.props.BoolProperty(default=True)
+    ifc_representation_class: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         objects = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
         self.file = IfcStore.get_file()
         self.declaration = IfcStore.get_schema().declaration_by_name(self.ifc_class)
@@ -110,7 +122,10 @@ class AssignClass(bpy.types.Operator):
         obj.name = "{}/{}".format(product.is_a(), obj.name)
         IfcStore.link_element(product, obj)
 
-        bpy.ops.bim.add_representation(obj=obj.name, context_id=self.context_id)
+        if self.should_add_representation:
+            bpy.ops.bim.add_representation(
+                obj=obj.name, context_id=self.context_id, ifc_representation_class=self.ifc_representation_class
+            )
 
         if product.is_a("IfcElementType"):
             self.place_in_types_collection(obj)
@@ -169,9 +184,13 @@ class AssignClass(bpy.types.Operator):
 class UnassignClass(bpy.types.Operator):
     bl_idname = "bim.unassign_class"
     bl_label = "Unassign IFC Class"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         if self.obj:
             objects = [bpy.data.objects.get(self.obj)]
@@ -181,21 +200,40 @@ class UnassignClass(bpy.types.Operator):
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            self.remove_voids(product, obj)
             IfcStore.unlink_element(product, obj)
-            ifcopenshell.api.run("root.remove_product", self.file, **{"product": product})
+            if product.is_a("IfcGridAxis"):
+                ifcopenshell.api.run("grid.remove_grid_axis", self.file, **{"axis": product})
+            elif product.is_a("IfcGrid"):
+                grid_collection = bpy.data.collections.get(obj.name)
+                for axis_collection in grid_collection.children:
+                    for axis_obj in axis_collection.objects:
+                        bpy.ops.bim.unassign_class(obj=axis_obj.name)
+            else:
+                ifcopenshell.api.run("root.remove_product", self.file, **{"product": product})
             if "/" in obj.name and obj.name[0:3] == "Ifc":
                 obj.name = "/".join(obj.name.split("/")[1:])
             if obj.data and obj.data.name == "Void":
                 bpy.data.objects.remove(obj)
         return {"FINISHED"}
 
+    def remove_voids(self, product, obj):
+        if product.id() not in VoidData.products:
+            VoidData.load(self.file, product.id())
+        for opening_id in VoidData.products[product.id()]:
+            bpy.ops.bim.remove_opening(opening_id=opening_id, obj=obj.name)
+
 
 class UnlinkObject(bpy.types.Operator):
     bl_idname = "bim.unlink_object"
     bl_label = "Unlink Object"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         if self.obj:
             objects = [bpy.data.objects.get(self.obj)]
@@ -203,7 +241,7 @@ class UnlinkObject(bpy.types.Operator):
             objects = bpy.context.selected_objects
         for obj in objects:
             if obj.BIMObjectProperties.ifc_definition_id:
-                obj.BIMObjectProperties.ifc_definition_id = 0
+                IfcStore.unlink_element(obj=obj)
             if "Ifc" in obj.name and "/" in obj.name:
                 obj.name = "/".join(obj.name.split("/")[1:])
         return {"FINISHED"}
@@ -212,9 +250,13 @@ class UnlinkObject(bpy.types.Operator):
 class CopyClass(bpy.types.Operator):
     bl_idname = "bim.copy_class"
     bl_label = "Copy Class"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         if self.obj:
             objects = [bpy.data.objects.get(self.obj)]
@@ -229,9 +271,7 @@ class CopyClass(bpy.types.Operator):
             IfcStore.link_element(result, obj)
             relating_type = ifcopenshell.util.element.get_type(result)
             if relating_type and relating_type.RepresentationMaps:
-                bpy.ops.bim.map_representations(
-                    product_id=result.id(), type_product_id=ifcopenshell.util.element.get_type(result).id()
-                )
+                bpy.ops.bim.assign_type(relating_type=relating_type.id(), related_object=obj.name)
             else:
                 bpy.ops.bim.add_representation(obj=obj.name)
         return {"FINISHED"}

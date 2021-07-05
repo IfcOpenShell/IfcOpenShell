@@ -7,10 +7,14 @@ from ifcopenshell.api.aggregate.data import Data
 class AssignObject(bpy.types.Operator):
     bl_idname = "bim.assign_object"
     bl_label = "Assign Object"
+    bl_options = {"REGISTER", "UNDO"}
     relating_object: bpy.props.StringProperty()
     related_object: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         related_objects = (
             [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
@@ -45,7 +49,8 @@ class AssignObject(bpy.types.Operator):
                     self.remove_collection(collection, spatial_collection)
             else:
                 for collection in related_object.users_collection:
-                    collection.objects.unlink(related_object)
+                    if collection.name.startswith("Ifc"):
+                        collection.objects.unlink(related_object)
                 relating_collection.objects.link(related_object)
         return {"FINISHED"}
 
@@ -59,6 +64,7 @@ class AssignObject(bpy.types.Operator):
 class EnableEditingAggregate(bpy.types.Operator):
     bl_idname = "bim.enable_editing_aggregate"
     bl_label = "Enable Editing Aggregate"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bpy.context.active_object.BIMObjectProperties.relating_object = None
@@ -70,6 +76,7 @@ class DisableEditingAggregate(bpy.types.Operator):
     bl_idname = "bim.disable_editing_aggregate"
     bl_label = "Disable Editing Aggregate"
     obj: bpy.props.StringProperty()
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
@@ -80,9 +87,13 @@ class DisableEditingAggregate(bpy.types.Operator):
 class AddAggregate(bpy.types.Operator):
     bl_idname = "bim.add_aggregate"
     bl_label = "Add Aggregate"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         aggregate_collection = bpy.data.collections.new("IfcElementAssembly/Assembly")
         bpy.context.scene.collection.children.link(aggregate_collection)

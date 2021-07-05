@@ -25,6 +25,7 @@ class BIM_PT_class(Panel):
                     row = self.layout.row(align=True)
                     row.label(text="IFC Element Not Found")
                     row.operator("bim.unlink_object", icon="UNLINKED", text="")
+                    return
             if props.is_reassigning_class:
                 row = self.layout.row(align=True)
                 row.operator("bim.reassign_class", icon="CHECKMARK")

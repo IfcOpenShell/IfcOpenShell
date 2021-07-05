@@ -11,6 +11,8 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
+        if not hasattr(self.settings["element"], "OwnerHistory"):
+            return
         self.settings["person"] = ifcopenshell.api.owner.settings.get_person(self.file)
         self.settings["organisation"] = ifcopenshell.api.owner.settings.get_organisation(self.file)
         if not self.settings["element"].OwnerHistory:

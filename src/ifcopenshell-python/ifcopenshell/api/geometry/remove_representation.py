@@ -14,12 +14,12 @@ class Usecase:
         return self.remove_entire_representation_tree()
 
     def remove_mapped_representation_portion_only(self):
-        dummy_context = self.file.create_entity("IfcRepresentationContext")
-        dummy_representation_map = self.file.createIfcRepresentationMap()
-        self.settings["representation"].ContextOfItems = dummy_context
         for item in self.settings["representation"].Items:
-            item.MappingSource = dummy_representation_map
-        ifcopenshell.util.element.remove_deep(self.file, self.settings["representation"])
+            if len(self.file.get_inverse(item.MappingTarget)) == 1:
+                ifcopenshell.util.element.remove_deep(self.file, item.MappingTarget)
+                self.file.remove(item.MappingTarget)
+            self.file.remove(item)
+        self.file.remove(self.settings["representation"])
 
     def remove_entire_representation_tree(self):
         dummy_context = self.file.create_entity("IfcRepresentationContext")

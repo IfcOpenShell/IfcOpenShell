@@ -10,8 +10,8 @@ cwd = os.path.dirname(os.path.realpath(__file__))
 
 class IfcSchema:
     def __init__(self):
-        self.schema_dir = Path(cwd).joinpath("schema")  # TODO: make configurable
-        self.data_dir = Path(cwd).joinpath("data")  # TODO: make configurable
+        self.schema_dir = Path(cwd).joinpath("schema")
+        self.data_dir = Path(cwd).joinpath("data")
         # TODO: Make it less troublesome
         self.products = [
             "IfcElement",

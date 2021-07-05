@@ -6,6 +6,8 @@ from blenderbim.bim.ifc import IfcStore
 def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
     box = layout.box()
     row = box.row(align=True)
+    if "is_expanded" not in pset:
+        pset["is_expanded"] = True
     icon = "TRIA_DOWN" if pset["is_expanded"] else "TRIA_RIGHT"
     row.operator("bim.toggle_pset_expansion", icon=icon, text="", emboss=False).pset_id = pset_id
     if not props.active_pset_id:
@@ -29,25 +31,26 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
         op = row.operator("bim.edit_pset", icon="CHECKMARK", text="")
         op.obj = context.active_object.name if obj_type == "Object" else context.active_object.active_material.name
         op.obj_type = obj_type
-        op = row.operator("bim.disable_pset_editing", icon="X", text="")
+        op = row.operator("bim.disable_pset_editing", icon="CANCEL", text="")
         op.obj = context.active_object.name if obj_type == "Object" else context.active_object.active_material.name
         op.obj_type = obj_type
     if pset["is_expanded"]:
         if props.active_pset_id == pset_id:
-            for prop in pset["Properties"]:
+            for prop in props.properties:
                 draw_psetqto_editable_ui(box, props, prop)
         else:
             has_props_displayed = False
-            for prop in pset["Properties"]:
+            for prop_id in pset["Properties"]:
+                prop = Data.properties[prop_id]
                 if context.preferences.addons["blenderbim"].preferences.should_hide_empty_props and (
-                    prop["value"] is None or prop["value"] == ""
+                    prop["NominalValue"] is None or prop["NominalValue"] == ""
                 ):
                     continue
                 has_props_displayed = True
                 row = box.row(align=True)
                 row.scale_y = 0.8
                 row.label(text=prop["Name"])
-                row.label(text=str(prop["value"]))
+                row.label(text=str(prop["NominalValue"]))
             if not has_props_displayed:
                 row = box.row()
                 row.scale_y = 0.8
@@ -56,33 +59,32 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
 
 def draw_psetqto_editable_ui(box, props, prop):
     row = box.row(align=True)
-    blender_prop = props.properties.get(prop["Name"])
-    if prop["type"] == "string":
-        row.prop(blender_prop, "string_value", text=prop["Name"])
-    elif prop["type"] == "integer":
-        row.prop(blender_prop, "int_value", text=prop["Name"])
-    elif prop["type"] == "float":
-        row.prop(blender_prop, "float_value", text=prop["Name"])
-    elif prop["type"] == "boolean":
-        row.prop(blender_prop, "bool_value", text=prop["Name"])
-    elif prop["type"] == "enum":
-        row.prop(blender_prop, "enum_value", text=prop["Name"])
-    row.prop(blender_prop, "is_null", icon="RADIOBUT_OFF" if blender_prop.is_null else "RADIOBUT_ON", text="")
+    if prop.data_type == "string":
+        row.prop(prop, "string_value", text=prop.name)
+    elif prop.data_type == "integer":
+        row.prop(prop, "int_value", text=prop.name)
+    elif prop.data_type == "float":
+        row.prop(prop, "float_value", text=prop.name)
+    elif prop.data_type == "boolean":
+        row.prop(prop, "bool_value", text=prop.name)
+    elif prop.data_type == "enum":
+        row.prop(prop, "enum_value", text=prop.name)
+    row.prop(prop, "is_null", icon="RADIOBUT_OFF" if prop.is_null else "RADIOBUT_ON", text="")
     if (
-        "length" in prop["Name"].lower()
-        or "width" in prop["Name"].lower()
-        or "height" in prop["Name"].lower()
-        or "depth" in prop["Name"].lower()
-        or "perimeter" in prop["Name"].lower()
+        "length" in prop.name.lower()
+        or "width" in prop.name.lower()
+        or "height" in prop.name.lower()
+        or "depth" in prop.name.lower()
+        or "perimeter" in prop.name.lower()
     ):
         op = row.operator("bim.guess_quantity", icon="IPO_EASE_IN_OUT", text="")
-        op.prop = prop["Name"]
-    elif "area" in prop["Name"].lower():
+        op.prop = prop.name
+    elif "area" in prop.name.lower():
         op = row.operator("bim.guess_quantity", icon="MESH_CIRCLE", text="")
-        op.prop = prop["Name"]
-    elif "volume" in prop["Name"].lower():
+        op.prop = prop.name
+    elif "volume" in prop.name.lower():
         op = row.operator("bim.guess_quantity", icon="SPHERE", text="")
-        op.prop = prop["Name"]
+        op.prop = prop.name
 
 
 class BIM_PT_object_psets(Panel):
@@ -98,6 +100,8 @@ class BIM_PT_object_psets(Panel):
             return False
         props = context.active_object.BIMObjectProperties
         if not props.ifc_definition_id:
+            return False
+        if not IfcStore.get_element(props.ifc_definition_id):
             return False
         if props.ifc_definition_id not in Data.products:
             Data.load(IfcStore.get_file(), props.ifc_definition_id)
@@ -141,6 +145,8 @@ class BIM_PT_object_qtos(Panel):
             return False
         props = context.active_object.BIMObjectProperties
         if not props.ifc_definition_id:
+            return False
+        if not IfcStore.get_element(props.ifc_definition_id):
             return False
         if props.ifc_definition_id not in Data.products:
             Data.load(IfcStore.get_file(), props.ifc_definition_id)

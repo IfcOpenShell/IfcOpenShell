@@ -26,8 +26,12 @@ class LoadClassificationLibrary(bpy.types.Operator):
 class AddClassification(bpy.types.Operator):
     bl_idname = "bim.add_classification"
     bl_label = "Add Classification"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         props = context.scene.BIMClassificationProperties
         ifcopenshell.api.run(
             "classification.add_classification",
@@ -41,6 +45,7 @@ class AddClassification(bpy.types.Operator):
 class EnableEditingClassification(bpy.types.Operator):
     bl_idname = "bim.enable_editing_classification"
     bl_label = "Enable Editing Classification"
+    bl_options = {"REGISTER", "UNDO"}
     classification: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -64,6 +69,7 @@ class EnableEditingClassification(bpy.types.Operator):
 class DisableEditingClassification(bpy.types.Operator):
     bl_idname = "bim.disable_editing_classification"
     bl_label = "Disable Editing Classification"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         context.scene.BIMClassificationProperties.active_classification_id = 0
@@ -73,9 +79,13 @@ class DisableEditingClassification(bpy.types.Operator):
 class RemoveClassification(bpy.types.Operator):
     bl_idname = "bim.remove_classification"
     bl_label = "Remove Classification"
+    bl_options = {"REGISTER", "UNDO"}
     classification: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "classification.remove_classification",
@@ -89,8 +99,12 @@ class RemoveClassification(bpy.types.Operator):
 class EditClassification(bpy.types.Operator):
     bl_idname = "bim.edit_classification"
     bl_label = "Edit Classification"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         props = context.scene.BIMClassificationProperties
         attributes = {}
         for attribute in props.classification_attributes:
@@ -114,6 +128,7 @@ class EditClassification(bpy.types.Operator):
 class EnableEditingClassificationReference(bpy.types.Operator):
     bl_idname = "bim.enable_editing_classification_reference"
     bl_label = "Enable Editing Classification Reference"
+    bl_options = {"REGISTER", "UNDO"}
     reference: bpy.props.IntProperty()
     obj: bpy.props.StringProperty()
 
@@ -138,6 +153,7 @@ class EnableEditingClassificationReference(bpy.types.Operator):
 class DisableEditingClassificationReference(bpy.types.Operator):
     bl_idname = "bim.disable_editing_classification_reference"
     bl_label = "Disable Editing Classification Reference"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -149,10 +165,14 @@ class DisableEditingClassificationReference(bpy.types.Operator):
 class RemoveClassificationReference(bpy.types.Operator):
     bl_idname = "bim.remove_classification_reference"
     bl_label = "Remove Classification Reference"
+    bl_options = {"REGISTER", "UNDO"}
     reference: bpy.props.IntProperty()
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
@@ -171,9 +191,13 @@ class RemoveClassificationReference(bpy.types.Operator):
 class EditClassificationReference(bpy.types.Operator):
     bl_idname = "bim.edit_classification_reference"
     bl_label = "Edit Classification Reference"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         props = obj.BIMClassificationReferenceProperties
         attributes = {}
@@ -196,10 +220,14 @@ class EditClassificationReference(bpy.types.Operator):
 class AddClassificationReference(bpy.types.Operator):
     bl_idname = "bim.add_classification_reference"
     bl_label = "Add Classification Reference"
+    bl_options = {"REGISTER", "UNDO"}
     reference: bpy.props.IntProperty()
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
 
@@ -229,6 +257,7 @@ class AddClassificationReference(bpy.types.Operator):
 class ChangeClassificationLevel(bpy.types.Operator):
     bl_idname = "bim.change_classification_level"
     bl_label = "Change Classification Level"
+    bl_options = {"REGISTER", "UNDO"}
     parent_id: bpy.props.IntProperty()
 
     def execute(self, context):

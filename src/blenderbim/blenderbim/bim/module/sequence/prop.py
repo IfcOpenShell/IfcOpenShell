@@ -1,5 +1,6 @@
 import bpy
 import ifcopenshell.api
+import ifcopenshell.util.attribute
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.sequence.data import Data
 from blenderbim.bim.prop import StrProperty, Attribute
@@ -15,6 +16,53 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+
+
+taskcolumns_enum = []
+tasktimecolumns_enum = []
+
+
+def purge():
+    global taskcolumns_enum
+    global tasktimecolumns_enum
+    taskcolumns_enum = []
+    tasktimecolumns_enum = []
+
+
+def getTaskColumns(self, context):
+    global taskcolumns_enum
+    if not len(taskcolumns_enum) and IfcStore.get_schema():
+        taskcolumns_enum.extend(
+            [
+                (a.name() + "/" + ifcopenshell.util.attribute.get_primitive_type(a), a.name(), "")
+                for a in IfcStore.get_schema().declaration_by_name("IfcTask").all_attributes()
+                if ifcopenshell.util.attribute.get_primitive_type(a)
+                in ["string", "float", "integer", "boolean", "enum"]
+            ]
+        )
+    return taskcolumns_enum
+
+
+def getTaskTimeColumns(self, context):
+    global tasktimecolumns_enum
+    if not len(tasktimecolumns_enum) and IfcStore.get_schema():
+        tasktimecolumns_enum.extend(
+            [
+                (a.name() + "/" + ifcopenshell.util.attribute.get_primitive_type(a), a.name(), "")
+                for a in IfcStore.get_schema().declaration_by_name("IfcTaskTime").all_attributes()
+                if ifcopenshell.util.attribute.get_primitive_type(a)
+                in ["string", "float", "integer", "boolean", "enum"]
+            ]
+        )
+    return tasktimecolumns_enum
+
+
+def getWorkSchedules(self, context):
+    return [(str(k), v["Name"], "") for k, v in Data.work_schedules.items()]
+
+
+def getWorkCalendars(self, context):
+    return [(str(k), v["Name"], "") for k, v in Data.work_calendars.items()]
 
 
 def updateTaskName(self, context):
@@ -43,9 +91,9 @@ def updateTaskIdentification(self, context):
         self.file,
         **{"task": self.file.by_id(self.ifc_definition_id), "attributes": {"Identification": self.identification}},
     )
-    Data.load(IfcStore.get_file())
+    Data.load(self.file)
     if props.active_task_id == self.ifc_definition_id:
-        attribute = context.scene.BIMWorkScheduleProperties.task_attributes.get("Identification")
+        attribute = props.task_attributes.get("Identification")
         attribute.string_value = self.identification
 
 
@@ -104,7 +152,32 @@ def updateTaskTimeDateTime(self, context, startfinish):
         **{"task_time": task_time, "attributes": {startfinish_key: startfinish_datetime}},
     )
     Data.load(IfcStore.get_file())
+    bpy.ops.bim.load_task_properties()
     setattr(self, startfinish, canonicalise_time(startfinish_datetime))
+
+
+def updateTaskduration(self, context):
+    props = context.scene.BIMWorkScheduleProperties
+    if not props.is_task_update_enabled:
+        return
+    self.file = IfcStore.get_file()
+    task = self.file.by_id(self.ifc_definition_id)
+    if task.TaskTime:
+        task_time = task.TaskTime
+    else:
+        task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=task)
+        Data.load(IfcStore.get_file())
+    ifcopenshell.api.run(
+        "sequence.edit_task_time",
+        self.file,
+        **{"task_time": task_time, "attributes": {"ScheduleDuration": self.duration}},
+    )
+    Data.load(IfcStore.get_file())
+    if props.active_task_id == self.ifc_definition_id:
+        attribute = props.task_time_attributes.get("Duration")
+        if attribute:
+            attribute.string_value = self.duration
+    bpy.ops.bim.load_task_properties()
 
 
 def updateVisualisationStart(self, context):
@@ -135,31 +208,22 @@ def updateVisualisationStartFinish(self, context, startfinish):
         setattr(self, startfinish, canonical_value)
 
 
-workschedule_enum = []
-
-
-def getWorkSchedules(self, context):
-    return [(str(k), v["Name"], "") for k, v in Data.work_schedules.items()]
-
-
-def getWorkCalendars(self, context):
-    return [(str(k), v["Name"], "") for k, v in Data.work_calendars.items()]
-
-
 class Task(PropertyGroup):
     name: StringProperty(name="Name", update=updateTaskName)
     identification: StringProperty(name="Identification", update=updateTaskIdentification)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     has_children: BoolProperty(name="Has Children")
+    is_selected: BoolProperty(name="Is Selected")
     is_expanded: BoolProperty(name="Is Expanded")
     level_index: IntProperty(name="Level Index")
-    duration: StringProperty(name="Duration")
+    duration: StringProperty(name="Duration", update=updateTaskduration)
     start: StringProperty(name="Start", update=updateTaskTimeStart)
     finish: StringProperty(name="Finish", update=updateTaskTimeFinish)
+    calendar: StringProperty(name="Calendar")
     derived_start: StringProperty(name="Derived Start")
     derived_finish: StringProperty(name="Derived Finish")
     derived_duration: StringProperty(name="Derived Duration")
-    calendar: StringProperty(name="Calendar")
+    derived_calendar: StringProperty(name="Derived Calendar")
     is_predecessor: BoolProperty(name="Is Predecessor")
     is_successor: BoolProperty(name="Is Successor")
 
@@ -189,8 +253,27 @@ class BIMWorkScheduleProperties(PropertyGroup):
     active_task_id: IntProperty(name="Active Task Id")
     task_attributes: CollectionProperty(name="Task Attributes", type=Attribute)
     should_show_visualisation_ui: BoolProperty(name="Should Show Visualisation UI", default=False)
-    should_show_times: BoolProperty(name="Should Show Times", default=False)
-    should_show_calendars: BoolProperty(name="Should Show Calendars", default=False)
+    should_show_column_ui: BoolProperty(name="Should Show Column UI", default=False)
+    columns: CollectionProperty(name="Columns", type=Attribute)
+    active_column_index: IntProperty(name="Active Column Index")
+    sort_column: StringProperty(name="Sort Column")
+    is_sort_reversed: BoolProperty(name="Is Sort Reversed")
+    column_types: EnumProperty(
+        items=[
+            ("IfcTask", "IfcTask", ""),
+            ("IfcTaskTime", "IfcTaskTime", ""),
+            ("Special", "Special", ""),
+        ],
+        name="Column Types",
+    )
+    task_columns: EnumProperty(items=getTaskColumns, name="Task Columns")
+    task_time_columns: EnumProperty(items=getTaskTimeColumns, name="Task Time Columns")
+    other_columns: EnumProperty(
+        items=[
+            ("Controls.Calendar", "Calendar", ""),
+        ],
+        name="Special Columns",
+    )
     active_task_time_id: IntProperty(name="Active Task Id")
     task_time_attributes: CollectionProperty(name="Task Time Attributes", type=Attribute)
     contracted_tasks: StringProperty(name="Contracted Task Items", default="[]")
@@ -218,7 +301,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
 
 class BIMTaskTreeProperties(PropertyGroup):
     # This belongs by itself for performance reasons. https://developer.blender.org/T87737
-    # In Blender if you add thousands of tasks it makes other property access in the same group really slow.
+    # In Blender if you add many collection items it makes other property access in the same group really slow.
     tasks: CollectionProperty(name="Tasks", type=Task)
 
 
@@ -260,3 +343,8 @@ class BIMWorkCalendarProperties(PropertyGroup):
     )
     start_time: StringProperty(name="Start Time")
     end_time: StringProperty(name="End Time")
+
+
+class DatePickerProperties(PropertyGroup):
+    display_date: StringProperty()
+    selected_date: StringProperty()

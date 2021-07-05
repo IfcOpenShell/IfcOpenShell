@@ -13,11 +13,11 @@ class SvIfcCreateShapeRefresh(bpy.types.Operator):
     bl_label = "IFC Create Shape Refresh"
     bl_options = {"UNDO"}
 
-    idtree: StringProperty(default="")
-    idname: StringProperty(default="")
+    tree_name: StringProperty(default="")
+    node_name: StringProperty(default="")
 
     def execute(self, context):
-        node = bpy.data.node_groups[self.idtree].nodes[self.idname]
+        node = bpy.data.node_groups[self.tree_name].nodes[self.node_name]
         node.process()
         return {"FINISHED"}
 

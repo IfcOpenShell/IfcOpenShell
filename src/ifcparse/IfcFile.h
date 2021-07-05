@@ -228,7 +228,9 @@ public:
 
 	unsigned int FreshId() { return ++MaxId; }
 
-	IfcUtil::IfcBaseClass* addEntity(IfcUtil::IfcBaseClass* entity);
+	void recalculate_id_counter();
+
+	IfcUtil::IfcBaseClass* addEntity(IfcUtil::IfcBaseClass* entity, int id=-1);
 	void addEntities(IfcEntityList::ptr es);
 
 	void batch() { batch_mode_ = true; }

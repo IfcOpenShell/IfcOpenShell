@@ -4,7 +4,7 @@ import ifcopenshell
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
-        self.settings = {"qto": None, "Name": None, "Properties": {}}
+        self.settings = {"qto": None, "name": None, "properties": {}}
         for key, value in settings.items():
             self.settings[key] = value
 
@@ -16,8 +16,8 @@ class Usecase:
         self.extend_qto_with_new_properties(new_properties)
 
     def update_qto_name(self):
-        if self.settings["Name"]:
-            self.settings["qto"].Name = self.settings["Name"]
+        if self.settings["name"]:
+            self.settings["qto"].Name = self.settings["name"]
 
     def load_qto_template(self):
         # TODO: add IFC2X3 PsetQto template support
@@ -29,16 +29,19 @@ class Usecase:
             self.update_existing_property(prop)
 
     def update_existing_property(self, prop):
-        if prop.Name not in self.settings["Properties"]:
+        if prop.Name not in self.settings["properties"]:
             return
-        value = self.settings["Properties"][prop.Name]
-        if prop.is_a("IfcPhysicalSimpleQuantity"):
-            prop[3] = float(value) if value else None
-        del self.settings["Properties"][prop.Name]
+        value = self.settings["properties"][prop.Name]
+        name = prop.Name
+        if value is None:
+            self.file.remove(prop)
+        elif prop.is_a("IfcPhysicalSimpleQuantity"):
+            prop[3] = float(value)
+        del self.settings["properties"][name]
 
     def add_new_properties(self):
         properties = []
-        for name, value in self.settings["Properties"].items():
+        for name, value in self.settings["properties"].items():
             if value is None:
                 continue
             property_type = self.get_canonical_property_type(name)

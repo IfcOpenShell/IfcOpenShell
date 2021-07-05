@@ -3,16 +3,18 @@ import os
 import bpy
 import json
 import time
+import calendar
 import isodate
 import pystache
 import webbrowser
 import ifcopenshell.api
 import ifcopenshell.util.date
+import ifcopenshell.util.sequence
 import blenderbim.bim.helper
 import blenderbim.bim.module.sequence.helper as helper
 from datetime import datetime
 from datetime import timedelta
-from dateutil import parser
+from dateutil import parser, relativedelta
 from blenderbim.bim.ifc import IfcStore
 from bpy_extras.io_utils import ImportHelper
 from ifcopenshell.api.sequence.data import Data
@@ -242,10 +244,14 @@ class EnableEditingTasks(bpy.types.Operator):
 
         self.contracted_tasks = json.loads(self.props.contracted_tasks)
         self.sort_keys = {
-            i: Data.tasks[i]["Identification"] or "" for i in Data.work_schedules[self.work_schedule]["RelatedObjects"]
+            i: self.get_sort_key(Data.tasks[i]) for i in Data.work_schedules[self.work_schedule]["RelatedObjects"]
         }
 
-        for related_object_id in sorted(self.sort_keys, key=self.natural_sort_key):
+        related_object_ids = sorted(self.sort_keys, key=self.natural_sort_key)
+        if self.props.is_sort_reversed:
+            related_object_ids.reverse()
+
+        for related_object_id in related_object_ids:
             self.create_new_task_li(related_object_id, 0)
         bpy.ops.bim.load_task_properties()
         self.props.editing_type = "TASKS"
@@ -260,9 +266,26 @@ class EnableEditingTasks(bpy.types.Operator):
         if task["RelatedObjects"]:
             new.has_children = True
             if new.is_expanded:
-                self.sort_keys = {i: Data.tasks[i]["Identification"] or "" for i in task["RelatedObjects"]}
-                for related_object_id in sorted(self.sort_keys, key=self.natural_sort_key):
+                self.sort_keys = {i: self.get_sort_key(Data.tasks[i]) for i in task["RelatedObjects"]}
+                related_object_ids = sorted(self.sort_keys, key=self.natural_sort_key)
+                if self.props.is_sort_reversed:
+                    related_object_ids.reverse()
+                for related_object_id in related_object_ids:
                     self.create_new_task_li(related_object_id, level_index + 1)
+
+    def get_sort_key(self, task):
+        # Sorting only applies to actual tasks, not the WBS
+        if task["RelatedObjects"]:
+            # Sorry for the hack
+            return "0000000000" + (task["Identification"] or "")
+        if not self.props.sort_column:
+            return task["Identification"] or ""
+        column_type, name = self.props.sort_column.split(".")
+        if column_type == "IfcTask":
+            return task.get(name)
+        elif column_type == "IfcTaskTime" and task.get("TaskTime"):
+            task_time = Data.task_times[task.get("TaskTime")].get(name)
+        return task["Identification"] or ""
 
     def natural_sort_key(self, i, _nsre=re.compile("([0-9]+)")):
         s = self.sort_keys[i]
@@ -275,6 +298,7 @@ class LoadTaskProperties(bpy.types.Operator):
     task: bpy.props.IntProperty()
 
     def execute(self, context):
+        self.file = IfcStore.get_file()
         self.props = context.scene.BIMWorkScheduleProperties
         self.tprops = context.scene.BIMTaskTreeProperties
         self.props.is_task_update_enabled = False
@@ -291,6 +315,16 @@ class LoadTaskProperties(bpy.types.Operator):
                 item.is_successor = self.props.active_task_id in [
                     Data.sequences[r]["RelatingProcess"] for r in task["IsSuccessorFrom"]
                 ]
+
+            calendar = ifcopenshell.util.sequence.derive_calendar(self.file.by_id(item.ifc_definition_id))
+            if calendar:
+                calendar = Data.work_calendars[calendar.id()]
+            if task["HasAssignmentsWorkCalendar"]:
+                item.calendar = calendar["Name"] or "Unnamed"
+            else:
+                item.calendar = ""
+                item.derived_calendar = calendar["Name"] or "Unnamed" if calendar else ""
+
             if task["TaskTime"]:
                 task_time = Data.task_times[task["TaskTime"]]
                 item.start = self.canonicalise_time(task_time["ScheduleStart"])
@@ -303,16 +337,15 @@ class LoadTaskProperties(bpy.types.Operator):
                 derived_finish = helper.derive_date(item.ifc_definition_id, "ScheduleFinish", is_latest=True)
                 item.derived_start = self.canonicalise_time(derived_start) if derived_start else ""
                 item.derived_finish = self.canonicalise_time(derived_finish) if derived_finish else ""
-                if derived_start and derived_finish:
-                    derived_duration = ifcopenshell.util.date.timedelta2duration(derived_finish - derived_start)
-                    item.derived_duration = isodate.duration_isoformat(derived_duration)
+                if derived_start and derived_finish and calendar:
+                    derived_duration = ifcopenshell.util.sequence.count_working_days(
+                        derived_start, derived_finish, self.file.by_id(calendar["id"])
+                    )
+                    item.derived_duration = f"P{derived_duration}D"
                 item.start = "-"
                 item.finish = "-"
                 item.duration = "-"
-            if task["HasAssignmentsWorkCalendar"]:
-                item.calendar = Data.work_calendars[task["HasAssignmentsWorkCalendar"][0]]["Name"] or "Unnamed"
-            else:
-                item.calendar = ""
+
         self.props.is_task_update_enabled = True
         return {"FINISHED"}
 
@@ -455,7 +488,6 @@ class EditTaskTime(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMWorkScheduleProperties
         attributes = blenderbim.bim.helper.export_attributes(props.task_time_attributes, self.export_attributes)
-        attributes = self.convert_strings_to_date_times(attributes)
 
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
@@ -470,10 +502,10 @@ class EditTaskTime(bpy.types.Operator):
 
     def export_attributes(self, attributes, prop):
         if "Start" in prop.name or "Finish" in prop.name or prop.name == "StatusTime":
-            attributes[prop.name] = helper.parse_datetime(value)
+            attributes[prop.name] = helper.parse_datetime(prop.string_value)
             return True
         elif prop.name == "ScheduleDuration":
-            attributes[prop.name] = helper.parse_duration(value)
+            attributes[prop.name] = helper.parse_duration(prop.string_value)
             return True
 
 
@@ -511,7 +543,7 @@ class EditTask(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMWorkScheduleProperties
-        attributes = blenderbim.bim.export_attributes(props.task_attributes)
+        attributes = blenderbim.bim.helper.export_attributes(props.task_attributes)
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "sequence.edit_task", self.file, **{"task": self.file.by_id(props.active_task_id), "attributes": attributes}
@@ -519,6 +551,30 @@ class EditTask(bpy.types.Operator):
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_task()
         bpy.ops.bim.load_task_properties(task=props.active_task_id)
+        return {"FINISHED"}
+
+
+class CopyTaskAttribute(bpy.types.Operator):
+    bl_idname = "bim.copy_task_attribute"
+    bl_label = "Copy Task Attribute"
+    data: bpy.props.StringProperty()
+
+    def execute(self, context):
+        data = json.loads(self.data)
+        self.file = IfcStore.get_file()
+        props = context.scene.BIMTaskTreeProperties
+        for task in props.tasks:
+            if task.is_selected:
+                ifcopenshell.api.run(
+                    "sequence.edit_task",
+                    self.file,
+                    **{
+                        "task": self.file.by_id(task.ifc_definition_id),
+                        "attributes": {data["name"]: None if data["is_null"] else data["value"]},
+                    },
+                )
+        Data.load(IfcStore.get_file())
+        bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
 
@@ -530,14 +586,14 @@ class AssignPredecessor(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMWorkScheduleProperties
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
+        rel = ifcopenshell.api.run(
             "sequence.assign_sequence",
             self.file,
             relating_process=IfcStore.get_file().by_id(self.task),
             related_process=IfcStore.get_file().by_id(props.active_task_id),
         )
         Data.load(self.file)
-        bpy.ops.bim.load_task_properties(task=self.task)
+        bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
 
@@ -549,14 +605,14 @@ class AssignSuccessor(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMWorkScheduleProperties
         self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
+        rel = ifcopenshell.api.run(
             "sequence.assign_sequence",
             self.file,
             relating_process=IfcStore.get_file().by_id(props.active_task_id),
             related_process=IfcStore.get_file().by_id(self.task),
         )
         Data.load(self.file)
-        bpy.ops.bim.load_task_properties(task=self.task)
+        bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
 
@@ -575,7 +631,7 @@ class UnassignPredecessor(bpy.types.Operator):
             related_process=IfcStore.get_file().by_id(props.active_task_id),
         )
         Data.load(self.file)
-        bpy.ops.bim.load_task_properties(task=self.task)
+        bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
 
@@ -594,7 +650,7 @@ class UnassignSuccessor(bpy.types.Operator):
             related_process=self.file.by_id(self.task),
         )
         Data.load(self.file)
-        bpy.ops.bim.load_task_properties(task=self.task)
+        bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
 
@@ -602,18 +658,18 @@ class AssignProduct(bpy.types.Operator):
     bl_idname = "bim.assign_product"
     bl_label = "Assign Product"
     task: bpy.props.IntProperty()
-    related_product: bpy.props.StringProperty()
+    relating_product: bpy.props.StringProperty()
 
     def execute(self, context):
-        related_products = (
-            [bpy.data.objects.get(self.related_product)] if self.related_product else bpy.context.selected_objects
+        relating_products = (
+            [bpy.data.objects.get(self.relating_product)] if self.relating_product else bpy.context.selected_objects
         )
-        for related_product in related_products:
+        for relating_product in relating_products:
             self.file = IfcStore.get_file()
             ifcopenshell.api.run(
                 "sequence.assign_product",
                 self.file,
-                relating_product=self.file.by_id(related_product.BIMObjectProperties.ifc_definition_id),
+                relating_product=self.file.by_id(relating_product.BIMObjectProperties.ifc_definition_id),
                 related_object=self.file.by_id(self.task),
             )
         Data.load(self.file)
@@ -624,19 +680,63 @@ class UnassignProduct(bpy.types.Operator):
     bl_idname = "bim.unassign_product"
     bl_label = "Unassign Product"
     task: bpy.props.IntProperty()
-    related_product: bpy.props.StringProperty()
+    relating_product: bpy.props.StringProperty()
 
     def execute(self, context):
-        related_products = (
-            [bpy.data.objects.get(self.related_product)] if self.related_product else bpy.context.selected_objects
+        relating_products = (
+            [bpy.data.objects.get(self.relating_product)] if self.relating_product else bpy.context.selected_objects
         )
-        for related_product in related_products:
+        for relating_product in relating_products:
             self.file = IfcStore.get_file()
             ifcopenshell.api.run(
                 "sequence.unassign_product",
                 self.file,
-                relating_product=self.file.by_id(related_product.BIMObjectProperties.ifc_definition_id),
+                relating_product=self.file.by_id(relating_product.BIMObjectProperties.ifc_definition_id),
                 related_object=self.file.by_id(self.task),
+            )
+        Data.load(self.file)
+        return {"FINISHED"}
+
+
+class AssignProcess(bpy.types.Operator):
+    bl_idname = "bim.assign_process"
+    bl_label = "Assign Process"
+    task: bpy.props.IntProperty()
+    related_object: bpy.props.StringProperty()
+
+    def execute(self, context):
+        related_objects = (
+            [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
+        )
+        for related_object in related_objects:
+            self.file = IfcStore.get_file()
+            ifcopenshell.api.run(
+                "sequence.assign_process",
+                self.file,
+                related_object=self.file.by_id(related_object.BIMObjectProperties.ifc_definition_id),
+                relating_process=self.file.by_id(self.task),
+            )
+        Data.load(self.file)
+        return {"FINISHED"}
+
+
+class UnassignProcess(bpy.types.Operator):
+    bl_idname = "bim.unassign_process"
+    bl_label = "Unassign Process"
+    task: bpy.props.IntProperty()
+    related_object: bpy.props.StringProperty()
+
+    def execute(self, context):
+        related_objects = (
+            [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
+        )
+        for related_object in related_objects:
+            self.file = IfcStore.get_file()
+            ifcopenshell.api.run(
+                "sequence.unassign_process",
+                self.file,
+                related_object=self.file.by_id(related_object.BIMObjectProperties.ifc_definition_id),
+                relating_process=self.file.by_id(self.task),
             )
         Data.load(self.file)
         return {"FINISHED"}
@@ -650,6 +750,15 @@ class GenerateGanttChart(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         self.json = []
+        self.sequence_type_map = {
+            None: "FS",
+            "START_START": "SS",
+            "START_FINISH": "SF",
+            "FINISH_START": "FS",
+            "FINISH_FINISH": "FF",
+            "USERDEFINED": "FS",
+            "NOTDEFINED": "FS",
+        }
         for task_id in Data.work_schedules[self.work_schedule]["RelatedObjects"]:
             self.create_new_task_json(task_id)
         with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"), "w") as f:
@@ -660,23 +769,35 @@ class GenerateGanttChart(bpy.types.Operator):
 
     def create_new_task_json(self, task_id):
         task = self.file.by_id(task_id)
-        self.json.append(
-            {
-                "pID": task.id(),
-                "pName": task.Name,
-                "pStart": task.TaskTime.ScheduleStart if task.TaskTime else "",
-                "pEnd": task.TaskTime.ScheduleFinish if task.TaskTime else "",
-                "pPlanStart": task.TaskTime.ScheduleStart if task.TaskTime else "",
-                "pPlanEnd": task.TaskTime.ScheduleFinish if task.TaskTime else "",
-                "pClass": "ggroupblack",
-                "pMile": 1 if task.IsMilestone else 0,
-                "pComp": 0,
-                "pGroup": 1,
-                "pParent": task.Nests[0].RelatingObject.id() if task.Nests else 0,
-                "pOpen": 1,
-                "pCost": 1,
-            }
+        data = {
+            "pID": task.id(),
+            "pName": task.Name,
+            "pStart": task.TaskTime.ScheduleStart if task.TaskTime else "",
+            "pEnd": task.TaskTime.ScheduleFinish if task.TaskTime else "",
+            "pPlanStart": task.TaskTime.ScheduleStart if task.TaskTime else "",
+            "pPlanEnd": task.TaskTime.ScheduleFinish if task.TaskTime else "",
+            "pMile": 1 if task.IsMilestone else 0,
+            "pComp": 0,
+            "pGroup": 1 if task.IsNestedBy else 0,
+            "pParent": task.Nests[0].RelatingObject.id() if task.Nests else 0,
+            "pOpen": 1,
+            "pCost": 1,
+        }
+        if task.TaskTime and task.TaskTime.IsCritical:
+            data["pClass"] = "gtaskred"
+        elif data["pGroup"]:
+            data["pClass"] = "ggroupblack"
+        elif data["pMile"]:
+            data["pClass"] = "gmilestone"
+        else:
+            data["pClass"] = "gtaskblue"
+        data["pDepend"] = ",".join(
+            [
+                "{}{}".format(rel.RelatingProcess.id(), self.sequence_type_map[rel.SequenceType])
+                for rel in task.IsSuccessorFrom or []
+            ]
         )
+        self.json.append(data)
         for task_id in Data.tasks[task_id]["RelatedObjects"]:
             self.create_new_task_json(task_id)
 
@@ -1060,16 +1181,18 @@ class EditTaskCalendar(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
+        task = self.file.by_id(self.task)
         ifcopenshell.api.run(
             "control.assign_control",
             self.file,
             **{
                 "relating_control": self.file.by_id(self.work_calendar),
-                "related_object": self.file.by_id(self.task),
+                "related_object": task,
             },
         )
+        ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=task)
         Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_task_properties(task=self.task)
+        bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
 
@@ -1081,16 +1204,18 @@ class RemoveTaskCalendar(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
+        task = self.file.by_id(self.task)
         ifcopenshell.api.run(
             "control.unassign_control",
             self.file,
             **{
                 "relating_control": self.file.by_id(self.work_calendar),
-                "related_object": self.file.by_id(self.task),
+                "related_object": task,
             },
         )
+        ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=task)
         Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_task_properties(task=self.task)
+        bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
 
@@ -1182,6 +1307,7 @@ class UnassignLagTime(bpy.types.Operator):
             "sequence.unassign_lag_time", self.file, **{"rel_sequence": self.file.by_id(self.sequence)}
         )
         Data.load(IfcStore.get_file())
+        bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
 
@@ -1216,6 +1342,7 @@ class EditSequenceAttributes(bpy.types.Operator):
         )
         Data.load(self.file)
         bpy.ops.bim.disable_editing_sequence()
+        bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
 
@@ -1235,6 +1362,7 @@ class EditSequenceTimeLag(bpy.types.Operator):
         )
         Data.load(self.file)
         bpy.ops.bim.disable_editing_sequence()
+        bpy.ops.bim.load_task_properties()
         return {"FINISHED"}
 
 
@@ -1336,22 +1464,98 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         for obj in bpy.data.objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
-            product_frames = self.product_frames.get(obj.BIMObjectProperties.ifc_definition_id)
-            if not product_frames:
-                continue
-            obj.hide_viewport = True
-            obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
-            obj.hide_viewport = False
-            obj.color = (0.0, 1.0, 0.0, 1)
-            obj.keyframe_insert(data_path="hide_viewport", frame=product_frames["STARTED"])
-            obj.keyframe_insert(data_path="color", frame=product_frames["STARTED"])
-            obj.color = (1.0, 1.0, 1.0, 1)
-            obj.keyframe_insert(data_path="color", frame=product_frames["COMPLETED"])
+            product_frames = self.product_frames.get(obj.BIMObjectProperties.ifc_definition_id, [])
+            for product_frame in product_frames:
+                if product_frame["relationship"] == "input":
+                    self.animate_input(obj, product_frame)
+                elif product_frame["relationship"] == "output":
+                    self.animate_output(obj, product_frame)
+
         area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].shading.color_type = "OBJECT"
         context.scene.frame_start = self.start_frame
         context.scene.frame_end = self.start_frame + self.total_frames
         return {"FINISHED"}
+
+    def animate_input(self, obj, product_frame):
+        if product_frame["type"] in ["LOGISTIC", "MOVE", "DISPOSAL"]:
+            self.animate_movement_from(obj, product_frame)
+        else:
+            self.animate_consumption(obj, product_frame)
+
+    def animate_output(self, obj, product_frame):
+        if product_frame["type"] in ["CONSTRUCTION", "INSTALLATION"]:
+            self.animate_creation(obj, product_frame)
+        elif product_frame["type"] in ["DEMOLITION", "DISMANTLE", "DISPOSAL", "REMOVAL"]:
+            self.animate_destruction(obj, product_frame)
+        elif product_frame["type"] in ["ATTENDANCE", "MAINTENANCE", "OPERATION", "RENOVATION"]:
+            self.animate_operation(obj, product_frame)
+        elif product_frame["type"] in ["LOGISTIC", "MOVE", "DISPOSAL"]:
+            self.animate_movement_to(obj, product_frame)
+        else:
+            self.animate_operation(obj, product_frame)
+
+    def animate_creation(self, obj, product_frame):
+        obj.hide_viewport = True
+        obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
+        obj.hide_viewport = False
+        obj.color = (0.0, 1.0, 0.0, 1)
+        obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["STARTED"])
+        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
+        obj.color = (1.0, 1.0, 1.0, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
+
+    def animate_destruction(self, obj, product_frame):
+        obj.color = (1.0, 1.0, 1.0, 1)
+        obj.keyframe_insert(data_path="color", frame=self.start_frame)
+        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
+        obj.color = (1.0, 0.0, 0.0, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
+        obj.hide_viewport = True
+        obj.color = (0.0, 0.0, 0.0, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
+        obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["COMPLETED"])
+
+    def animate_operation(self, obj, product_frame):
+        obj.color = (1.0, 1.0, 1.0, 1)
+        obj.keyframe_insert(data_path="color", frame=self.start_frame)
+        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
+        obj.color = (0.0, 0.0, 1.0, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
+        obj.color = (1.0, 1.0, 1.0, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
+
+    def animate_movement_to(self, obj, product_frame):
+        obj.hide_viewport = True
+        obj.keyframe_insert(data_path="hide_viewport", frame=self.start_frame)
+        obj.hide_viewport = False
+        obj.color = (1.0, 1.0, 0.0, 1)
+        obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["STARTED"])
+        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
+        obj.color = (1.0, 1.0, 1.0, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
+
+    def animate_movement_from(self, obj, product_frame):
+        obj.color = (1.0, 1.0, 1.0, 1)
+        obj.keyframe_insert(data_path="color", frame=self.start_frame)
+        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
+        obj.color = (1.0, 0.5, 0.0, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
+        obj.hide_viewport = True
+        obj.color = (0.0, 0.0, 0.0, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
+        obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["COMPLETED"])
+
+    def animate_consumption(self, obj, product_frame):
+        obj.color = (1.0, 1.0, 1.0, 1)
+        obj.keyframe_insert(data_path="color", frame=self.start_frame)
+        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"] - 1)
+        obj.color = (0.0, 1.0, 1.0, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frame["STARTED"])
+        obj.hide_viewport = True
+        obj.color = (0.0, 0.0, 0.0, 1)
+        obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
+        obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["COMPLETED"])
 
     def calculate_total_frames(self):
         if self.props.speed_types == "FRAME_SPEED":
@@ -1402,9 +1606,160 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         finish = helper.derive_date(task.id(), "ScheduleFinish", is_latest=True)
         if not start or not finish:
             return
-        product_ids = [r.RelatingProduct.id() for r in task.HasAssignments or [] if r.is_a("IfcRelAssignsToProduct")]
-        for product_id in product_ids:
-            self.product_frames[product_id] = {
+        output_ids = [r.RelatingProduct.id() for r in task.HasAssignments or [] if r.is_a("IfcRelAssignsToProduct")]
+        for output_id in output_ids:
+            self.add_product_frame(output_id, task, start, finish, "output")
+
+        input_ids = []
+        [input_ids.extend([o.id() for o in r.RelatedObjects]) for r in task.OperatesOn or []]
+        for input_id in input_ids:
+            self.add_product_frame(input_id, task, start, finish, "input")
+
+    def add_product_frame(self, product_id, task, start, finish, relationship):
+        self.product_frames.setdefault(product_id, []).append(
+            {
+                "type": task.PredefinedType,
+                "relationship": relationship,
                 "STARTED": round(self.start_frame + (((start - self.start) / self.duration) * self.total_frames)),
                 "COMPLETED": round(self.start_frame + (((finish - self.start) / self.duration) * self.total_frames)),
             }
+        )
+
+
+class BlenderBIM_DatePicker(bpy.types.Operator):
+    bl_label = "Date Picker"
+    bl_idname = "bim.datepicker"
+    display_date: bpy.props.StringProperty(name="Display Date")
+    selected_date: bpy.props.StringProperty(name="Selected Date")
+    target_prop: bpy.props.StringProperty(name="Target date prop to set")
+
+    def execute(self, context):
+        helper.set_scene_prop(self.target_prop, self.selected_date)
+        return {"FINISHED"}
+
+    def draw(self, context):
+        self.selected_date = helper.get_scene_prop("DatePickerProperties.selected_date") or helper.canonicalise_time(
+            datetime.now()
+        )
+        current_date = parser.parse(context.scene.DatePickerProperties.display_date, dayfirst=True, fuzzy=True)
+        current_month = (current_date.year, current_date.month)
+        lines = calendar.monthcalendar(*current_month)
+        month_title, week_titles = calendar.month(*current_month).splitlines()[:2]
+
+        layout = self.layout
+        row = layout.row()
+        row.prop(self, "selected_date")
+
+        split = layout.split()
+        col = split.row()
+        op = col.operator("bim.redraw_datepicker", icon="TRIA_LEFT", text="")
+        op.action = "previous"
+        col = split.row()
+        col.label(text=month_title.strip())
+        col = split.row()
+        col.alignment = "RIGHT"
+        op = col.operator("bim.redraw_datepicker", icon="TRIA_RIGHT", text="")
+        op.action = "next"
+
+        row = layout.row(align=True)
+        for title in week_titles.split():
+            col = row.column(align=True)
+            col.alignment = "CENTER"
+            col.label(text=title.strip())
+
+        for line in lines:
+            row = layout.row(align=True)
+            for i in line:
+                col = row.column(align=True)
+                if i == 0:
+                    col.label(text="  ")
+                else:
+                    op = col.operator("bim.datepicker_setdate", text="{:2d}".format(i))
+                    selected_date = "{}/{}/{}".format(i, current_date.month, current_date.year)
+                    selected_date = parser.parse(selected_date, dayfirst=True, fuzzy=True)
+                    op.selected_date = helper.canonicalise_time(selected_date)
+
+    def invoke(self, context, event):
+        self.display_date = helper.get_scene_prop(self.target_prop) or helper.canonicalise_time(datetime.now())
+        context.scene.DatePickerProperties.display_date = self.display_date
+        context.scene.DatePickerProperties.selected_date = self.display_date
+        return context.window_manager.invoke_props_dialog(self)
+
+
+class BlenderBIM_DatePickerSetDate(bpy.types.Operator):
+    bl_label = "set date"
+    bl_idname = "bim.datepicker_setdate"
+    selected_date: bpy.props.StringProperty()
+
+    def invoke(self, context, event):
+        context.scene.DatePickerProperties.selected_date = self.selected_date
+        return {"FINISHED"}
+
+
+class BlenderBIM_RedrawDatePicker(bpy.types.Operator):
+    bl_label = "redraw datepicker window"
+    bl_idname = "bim.redraw_datepicker"
+    action: bpy.props.StringProperty()
+
+    def invoke(self, context, event):
+        current_date = parser.parse(context.scene.DatePickerProperties.display_date, dayfirst=True, fuzzy=True)
+
+        if self.action == "previous":
+            date_to_set = current_date - relativedelta.relativedelta(months=1)
+        elif self.action == "next":
+            date_to_set = current_date + relativedelta.relativedelta(months=1)
+
+        context.scene.DatePickerProperties.display_date = helper.canonicalise_time(date_to_set)
+
+        return {"FINISHED"}
+
+
+class RecalculateSchedule(bpy.types.Operator):
+    bl_idname = "bim.recalculate_schedule"
+    bl_label = "Recalculate Schedule"
+    work_schedule: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "sequence.recalculate_schedule", self.file, work_schedule=self.file.by_id(self.work_schedule)
+        )
+        Data.load(self.file)
+        return {"FINISHED"}
+
+
+class AddTaskColumn(bpy.types.Operator):
+    bl_idname = "bim.add_task_column"
+    bl_label = "Add Task Column"
+    column_type: bpy.props.StringProperty()
+    name: bpy.props.StringProperty()
+    data_type: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMWorkScheduleProperties
+        new = self.props.columns.add()
+        new.name = f"{self.column_type}.{self.name}"
+        new.data_type = self.data_type
+        return {"FINISHED"}
+
+
+class RemoveTaskColumn(bpy.types.Operator):
+    bl_idname = "bim.remove_task_column"
+    bl_label = "Remove Task Column"
+
+    def execute(self, context):
+        self.props = context.scene.BIMWorkScheduleProperties
+        self.props.columns.remove(self.props.active_column_index)
+        return {"FINISHED"}
+
+
+class SetTaskSortColumn(bpy.types.Operator):
+    bl_idname = "bim.set_task_sort_column"
+    bl_label = "Set Task Sort Column"
+    column: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMWorkScheduleProperties
+        self.props.sort_column = self.column
+        bpy.ops.bim.enable_editing_tasks(work_schedule=self.props.active_work_schedule_id)
+        return {"FINISHED"}

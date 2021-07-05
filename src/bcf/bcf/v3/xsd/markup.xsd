@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:include schemaLocation="shared-types.xsd"/>
+    <xs:element name="Markup">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="Header" type="Header" minOccurs="0"/>
+                <xs:element name="Topic" type="Topic"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:complexType name="Header">
+        <xs:sequence>
+            <xs:element name="Files" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="File" type="File" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <!-- ISG Jira issue BCF-9. Add support for several viewpoints and snapshots per issue -->
+    <xs:complexType name="ViewPoint">
+        <xs:sequence>
+            <!-- viewpoint file (xml) -->
+            <xs:element name="Viewpoint" type="NonEmptyOrBlankString" minOccurs="0"/>
+            <!-- the snapshot png -->
+            <xs:element name="Snapshot" type="NonEmptyOrBlankString" minOccurs="0"/>
+            <!-- the viewpoint index (sort order) -->
+            <xs:element name="Index" type="xs:int" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute name="Guid" type="Guid" use="required"/>
+        <!-- Guid of the viewpoint -->
+    </xs:complexType>
+    <!-- BimSnippet -->
+    <xs:complexType name="BimSnippet">
+        <xs:sequence>
+            <!--
+        Name of the file in the topic folder containing the snippet or a URL.
+         E.G.- Expresscode containing p.e Issue, Request
+        // Maybe some header infos ?? // IfcEntites // Geometry 
+         -->
+            <!-- Reference (name) to the snippet file -->
+            <xs:element name="Reference" type="NonEmptyOrBlankString"/>
+            <xs:element name="ReferenceSchema" type="NonEmptyOrBlankString"/>
+        </xs:sequence>
+        <xs:attribute name="SnippetType" type="NonEmptyOrBlankString" use="required"/>
+        <xs:attribute name="IsExternal" type="xs:boolean" default="false"/>
+        <!-- This flag is true when the reference is a URL pointing outside of the BCF file-->
+    </xs:complexType>
+    <xs:complexType name="Topic">
+        <xs:sequence>
+            <xs:element name="ReferenceLinks" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="ReferenceLink" type="NonEmptyOrBlankString" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Title" type="NonEmptyOrBlankString"/>
+            <xs:element name="Priority" type="NonEmptyOrBlankString" minOccurs="0"/>
+            <!-- ISG Jira issue BCF-8 Add a way save order the topics -->
+            <!-- This property is deprecated and will be removed in a future release -->
+            <xs:element name="Index" type="xs:int" minOccurs="0"/>
+            <xs:element name="Labels" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="Label" type="NonEmptyOrBlankString" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="CreationDate" type="xs:dateTime"/>
+            <xs:element name="CreationAuthor" type="NonEmptyOrBlankString"/>
+            <xs:element name="ModifiedDate" type="xs:dateTime" minOccurs="0"/>
+            <xs:element name="ModifiedAuthor" type="NonEmptyOrBlankString" minOccurs="0"/>
+            <xs:element name="DueDate" type="xs:dateTime" minOccurs="0"/>
+            <xs:element name="AssignedTo" type="NonEmptyOrBlankString" minOccurs="0"/>
+            <xs:element name="Stage" type="NonEmptyOrBlankString" minOccurs="0"/>
+            <xs:element name="Description" type="NonEmptyOrBlankString" minOccurs="0"/>
+            <xs:element name="BimSnippet" type="BimSnippet" minOccurs="0"/>
+            <xs:element name="DocumentReferences" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="DocumentReference" type="DocumentReference" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="RelatedTopics" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="RelatedTopic" minOccurs="0" maxOccurs="unbounded">
+                            <xs:complexType>
+                                <xs:attribute name="Guid" type="Guid" use="required"/>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Comments" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="Comment" type="Comment" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <!-- ISG Jira issue BCF-9. Add support for several viewpoints and snapshots per issue -->
+            <xs:element name="Viewpoints" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="ViewPoint" type="ViewPoint" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+        <xs:attribute name="Guid" type="Guid" use="required"/>
+        <xs:attribute name="ServerAssignedId" type="NonEmptyOrBlankString" use="optional"/>
+        <xs:attribute name="TopicType" type="NonEmptyOrBlankString" use="required"/>
+        <xs:attribute name="TopicStatus" type="NonEmptyOrBlankString" use="required"/>
+    </xs:complexType>
+    <xs:complexType name="File">
+        <xs:sequence>
+            <xs:element name="Filename" type="NonEmptyOrBlankString" minOccurs="0"/>
+            <xs:element name="Date" type="xs:dateTime" minOccurs="0"/>
+            <!-- Reference (URL) of the file -->
+            <xs:element name="Reference" type="NonEmptyOrBlankString" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attributeGroup ref="FileAttributes"/>
+    </xs:complexType>
+    <xs:attributeGroup name="FileAttributes">
+        <xs:attribute name="IfcProject" type="IfcGuid" use="optional"/>
+        <xs:attribute name="IfcSpatialStructureElement" type="IfcGuid" use="optional"/>
+        <xs:attribute name="IsExternal" type="xs:boolean" default="true"/>
+    </xs:attributeGroup>
+    <!-- Reference to a document inside of the topic folder or a url pointing to the web -->
+    <xs:complexType name="DocumentReference">
+        <xs:sequence>
+            <xs:choice>
+                <!-- Guid of the document: If pointing to an internal document -->
+                <xs:element name="DocumentGuid" type="Guid" minOccurs="0"/>
+                <!-- Url of the reference. If pointing to an external document -->
+                <xs:element name="Url" type="NonEmptyOrBlankString" minOccurs="0"/>
+            </xs:choice>
+            <!-- Human readable description of the document reference -->
+            <xs:element name="Description" type="NonEmptyOrBlankString" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attributeGroup ref="DocumentReferenceAttributes"/>
+    </xs:complexType>
+    <xs:attributeGroup name="DocumentReferenceAttributes">
+        <!-- Guid of the document reference -->
+        <xs:attribute name="Guid" type="Guid" use="required"/>
+    </xs:attributeGroup>
+    <xs:complexType name="Comment">
+        <xs:sequence>
+            <xs:element name="Date" type="xs:dateTime"/>
+            <xs:element name="Author" type="NonEmptyOrBlankString"/>
+            <xs:element name="Comment" minOccurs="0" type="NonEmptyOrBlankString"/>
+            <xs:element name="Viewpoint" minOccurs="0">
+                <xs:complexType>
+                    <xs:attribute name="Guid" type="Guid" use="required"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="ModifiedDate" type="xs:dateTime" minOccurs="0"/>
+            <xs:element name="ModifiedAuthor" type="NonEmptyOrBlankString" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute name="Guid" type="Guid" use="required"/>
+    </xs:complexType>
+    <xs:simpleType name="IfcGuid">
+        <xs:restriction base="xs:string">
+            <xs:length value="22"/>
+            <xs:pattern value="[0-9A-Za-z_$]*"/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
