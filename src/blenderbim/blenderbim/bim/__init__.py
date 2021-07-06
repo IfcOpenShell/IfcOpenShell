@@ -84,7 +84,6 @@ if bpy is not None:
         prop.GlobalId,
         prop.BIMObjectProperties,
         prop.BIMMaterialProperties,
-        prop.ItemSlotMap,
         prop.BIMMeshProperties,
         ui.BIM_PT_section_plane,
         ui.BIM_UL_generic,

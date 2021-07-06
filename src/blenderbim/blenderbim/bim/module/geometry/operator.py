@@ -32,7 +32,7 @@ class EditObjectPlacement(bpy.types.Operator):
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             matrix = np.array(obj.matrix_world)
-            if props.has_blender_offset and props.blender_offset_type == "OBJECT_PLACEMENT":
+            if props.has_blender_offset and obj.BIMObjectProperties.blender_offset_type == "OBJECT_PLACEMENT":
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
                 # TODO: np.array? Why not matrix?
                 matrix = np.array(
@@ -84,7 +84,7 @@ class AddRepresentation(bpy.types.Operator):
 
         gprop = context.scene.BIMGeoreferenceProperties
         coordinate_offset = None
-        if gprop.has_blender_offset and gprop.blender_offset_type == "CARTESIAN_POINT":
+        if gprop.has_blender_offset and obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT":
             coordinate_offset = Vector(
                 (
                     float(gprop.blender_eastings),
@@ -302,7 +302,7 @@ class UpdateRepresentation(bpy.types.Operator):
 
         gprop = context.scene.BIMGeoreferenceProperties
         coordinate_offset = None
-        if gprop.has_blender_offset and gprop.blender_offset_type == "CARTESIAN_POINT":
+        if gprop.has_blender_offset and obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT":
             coordinate_offset = Vector(
                 (
                     float(gprop.blender_eastings),

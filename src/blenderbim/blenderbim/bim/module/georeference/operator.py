@@ -244,11 +244,7 @@ class ConvertLocalToGlobal(bpy.types.Operator):
         props = context.scene.BIMGeoreferenceProperties
         x, y, z = [float(co) for co in props.coordinate_input.split(",")]
 
-        if props.has_blender_offset and props.blender_offset_type == "CARTESIAN_POINT":
-            x -= float(props.blender_eastings)
-            y -= float(props.blender_northings)
-            z -= float(props.blender_orthogonal_height)
-        elif props.has_blender_offset and props.blender_offset_type == "OBJECT_PLACEMENT":
+        if props.has_blender_offset:
             results = ifcopenshell.util.geolocation.xyz2enh(
                 x,
                 y,
@@ -310,11 +306,7 @@ class ConvertGlobalToLocal(bpy.types.Operator):
         else:
             results = (x, y, z)
 
-        if props.has_blender_offset and props.blender_offset_type == "CARTESIAN_POINT":
-            results[0] += float(props.blender_eastings)
-            results[1] += float(props.blender_northings)
-            results[2] += float(props.blender_orthogonal_height)
-        elif props.has_blender_offset and props.blender_offset_type == "OBJECT_PLACEMENT":
+        if props.has_blender_offset:
             results = ifcopenshell.util.geolocation.enh2xyz(
                 results[0],
                 results[1],
