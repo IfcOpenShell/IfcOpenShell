@@ -71,19 +71,19 @@ class IfcStore:
     def add_element_listener(callback):
         IfcStore.element_listeners.add(callback)
 
-    """Keeps track of selected object names, typically during undo and redo
-
-    When any Blender object is stored outside a Blender PointerProperty, such as
-    in a regular Python list, there is the likely probability that the object
-    will be invalidated when undo or redo occurs. Object invalidation seems to
-    only occur for selected objects either pre/post undo/redo event, including
-    selected objects for consecutive undo/redos.
-
-    So if I first select o1, then o2, then o3, then press undo, o3 will be
-    invalidated. If instead I press undo twice, o3 and o2 will be invalidated.
-    """
     @staticmethod
     def update_undo_redo_stack_objects():
+        """Keeps track of selected object names, typically during undo and redo
+
+        When any Blender object is stored outside a Blender PointerProperty, such as
+        in a regular Python list, there is the likely probability that the object
+        will be invalidated when undo or redo occurs. Object invalidation seems to
+        only occur for selected objects either pre/post undo/redo event, including
+        selected objects for consecutive undo/redos.
+
+        So if I first select o1, then o2, then o3, then press undo, o3 will be
+        invalidated. If instead I press undo twice, o3 and o2 will be invalidated.
+        """
         if bpy.context.active_object:
             objects = set([o.name for o in bpy.context.selected_objects + [bpy.context.active_object]])
         else:
@@ -183,21 +183,11 @@ class IfcStore:
         if is_top_level_operator:
             IfcStore.get_file().end_transaction()
             IfcStore.add_transaction_operation(
-                operator, rollback=IfcStore.rollback_ifc_operator, commit=IfcStore.commit_ifc_operator
+                operator, rollback=lambda d: IfcStore.get_file().undo(), commit=lambda d: IfcStore.get_file().redo()
             )
             IfcStore.end_transaction(operator)
 
         return result
-
-    @staticmethod
-    def rollback_ifc_operator(data):
-        IfcStore.get_file().undo()
-        blenderbim.bim.handler.purge_module_data()
-
-    @staticmethod
-    def commit_ifc_operator(data):
-        IfcStore.get_file().redo()
-        blenderbim.bim.handler.purge_module_data()
 
     @staticmethod
     def begin_transaction(operator):

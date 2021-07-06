@@ -64,10 +64,8 @@ class CreateProject(bpy.types.Operator):
 
     def rollback(self, data):
         IfcStore.file = None
-        blenderbim.bim.handler.purge_module_data()
 
     def commit(self, data):
-        blenderbim.bim.handler.purge_module_data()
         IfcStore.file = data["file"]
 
 
@@ -106,10 +104,8 @@ class CreateProjectLibrary(bpy.types.Operator):
 
     def rollback(self, data):
         IfcStore.file = None
-        blenderbim.bim.handler.purge_module_data()
 
     def commit(self, data):
-        blenderbim.bim.handler.purge_module_data()
         IfcStore.file = data["file"]
 
 
@@ -121,10 +117,12 @@ class SelectLibraryFile(bpy.types.Operator):
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
 
     def execute(self, context):
+        IfcStore.begin_transaction(self)
         old_filepath = IfcStore.library_path
         result = self._execute(context)
         self.transaction_data = {"old_filepath": old_filepath, "filepath": self.filepath}
         IfcStore.add_transaction_operation(self)
+        IfcStore.end_transaction(self)
         return result
 
     def _execute(self, context):
@@ -229,10 +227,12 @@ class AssignLibraryDeclaration(bpy.types.Operator):
     definition: bpy.props.IntProperty()
 
     def execute(self, context):
+        IfcStore.begin_transaction(self)
         IfcStore.library_file.begin_transaction()
         result = self._execute(context)
         IfcStore.library_file.end_transaction()
         IfcStore.add_transaction_operation(self)
+        IfcStore.end_transaction(self)
         return result
 
     def _execute(self, context):
@@ -263,10 +263,12 @@ class UnassignLibraryDeclaration(bpy.types.Operator):
     definition: bpy.props.IntProperty()
 
     def execute(self, context):
+        IfcStore.begin_transaction(self)
         IfcStore.library_file.begin_transaction()
         result = self._execute(context)
         IfcStore.library_file.end_transaction()
         IfcStore.add_transaction_operation(self)
+        IfcStore.end_transaction(self)
         return result
 
     def _execute(self, context):
@@ -378,11 +380,13 @@ class EditHeader(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        IfcStore.begin_transaction(self)
         self.transaction_data = {}
         self.transaction_data["old"] = self.record_state()
         result = self._execute(context)
         self.transaction_data["new"] = self.record_state()
         IfcStore.add_transaction_operation(self)
+        IfcStore.end_transaction(self)
         return result
 
     def _execute(self, context):

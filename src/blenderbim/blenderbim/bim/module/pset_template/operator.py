@@ -9,20 +9,46 @@ from blenderbim.bim.ifc import IfcStore
 class AddPsetTemplate(bpy.types.Operator):
     bl_idname = "bim.add_pset_template"
     bl_label = "Add Pset Template"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        IfcStore.begin_transaction(self)
+        IfcStore.pset_template_file.begin_transaction()
+        result = self._execute(context)
+        IfcStore.pset_template_file.end_transaction()
+        IfcStore.add_transaction_operation(self)
+        IfcStore.end_transaction(self)
+        return result
+
+    def _execute(self, context):
         props = context.scene.BIMPsetTemplateProperties
         ifcopenshell.api.run("pset_template.add_pset_template", IfcStore.pset_template_file)
         Data.load(IfcStore.pset_template_file)
         updatePsetTemplates(self, context)
         return {"FINISHED"}
 
+    def rollback(self, data):
+        IfcStore.pset_template_file.undo()
+
+    def commit(self, data):
+        IfcStore.pset_template_file.redo()
+
 
 class RemovePsetTemplate(bpy.types.Operator):
     bl_idname = "bim.remove_pset_template"
     bl_label = "Remove Pset Template"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        IfcStore.begin_transaction(self)
+        IfcStore.pset_template_file.begin_transaction()
+        result = self._execute(context)
+        IfcStore.pset_template_file.end_transaction()
+        IfcStore.add_transaction_operation(self)
+        IfcStore.end_transaction(self)
+        return result
+
+    def _execute(self, context):
         props = context.scene.BIMPsetTemplateProperties
         if props.active_pset_template_id == int(props.pset_templates):
             bpy.ops.bim.disable_editing_pset_template()
@@ -33,10 +59,17 @@ class RemovePsetTemplate(bpy.types.Operator):
         updatePsetTemplates(self, context)
         return {"FINISHED"}
 
+    def rollback(self, data):
+        IfcStore.pset_template_file.undo()
+
+    def commit(self, data):
+        IfcStore.pset_template_file.redo()
+
 
 class EnableEditingPsetTemplate(bpy.types.Operator):
     bl_idname = "bim.enable_editing_pset_template"
     bl_label = "Enable Editing Pset Template"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         props = context.scene.BIMPsetTemplateProperties
@@ -53,6 +86,7 @@ class EnableEditingPsetTemplate(bpy.types.Operator):
 class DisableEditingPsetTemplate(bpy.types.Operator):
     bl_idname = "bim.disable_editing_pset_template"
     bl_label = "Disable Editing Pset Template"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         props = context.scene.BIMPsetTemplateProperties
@@ -63,6 +97,7 @@ class DisableEditingPsetTemplate(bpy.types.Operator):
 class EnableEditingPropTemplate(bpy.types.Operator):
     bl_idname = "bim.enable_editing_prop_template"
     bl_label = "Enable Editing Prop Template"
+    bl_options = {"REGISTER", "UNDO"}
     prop_template: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -78,6 +113,7 @@ class EnableEditingPropTemplate(bpy.types.Operator):
 class DisableEditingPropTemplate(bpy.types.Operator):
     bl_idname = "bim.disable_editing_prop_template"
     bl_label = "Disable Editing Prop Template"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         props = context.scene.BIMPsetTemplateProperties
@@ -88,8 +124,18 @@ class DisableEditingPropTemplate(bpy.types.Operator):
 class EditPsetTemplate(bpy.types.Operator):
     bl_idname = "bim.edit_pset_template"
     bl_label = "Edit Pset Template"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        IfcStore.begin_transaction(self)
+        IfcStore.pset_template_file.begin_transaction()
+        result = self._execute(context)
+        IfcStore.pset_template_file.end_transaction()
+        IfcStore.add_transaction_operation(self)
+        IfcStore.end_transaction(self)
+        return result
+
+    def _execute(self, context):
         props = context.scene.BIMPsetTemplateProperties
         ifcopenshell.api.run("pset_template.edit_pset_template", IfcStore.pset_template_file, **{
             "pset_template": IfcStore.pset_template_file.by_id(props.active_pset_template_id),
@@ -105,6 +151,13 @@ class EditPsetTemplate(bpy.types.Operator):
         bpy.ops.bim.disable_editing_pset_template()
         return {"FINISHED"}
 
+    def rollback(self, data):
+        IfcStore.pset_template_file.undo()
+
+    def commit(self, data):
+        IfcStore.pset_template_file.redo()
+
+
 
 class SavePsetTemplateFile(bpy.types.Operator):
     bl_idname = "bim.save_pset_template_file"
@@ -118,8 +171,18 @@ class SavePsetTemplateFile(bpy.types.Operator):
 class AddPropTemplate(bpy.types.Operator):
     bl_idname = "bim.add_prop_template"
     bl_label = "Add Prop Template"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        IfcStore.begin_transaction(self)
+        IfcStore.pset_template_file.begin_transaction()
+        result = self._execute(context)
+        IfcStore.pset_template_file.end_transaction()
+        IfcStore.add_transaction_operation(self)
+        IfcStore.end_transaction(self)
+        return result
+
+    def _execute(self, context):
         props = context.scene.BIMPsetTemplateProperties
         pset_template_id = props.active_pset_template_id or int(props.pset_templates)
         ifcopenshell.api.run("pset_template.add_prop_template", IfcStore.pset_template_file, **{
@@ -128,13 +191,29 @@ class AddPropTemplate(bpy.types.Operator):
         Data.load(IfcStore.pset_template_file)
         return {"FINISHED"}
 
+    def rollback(self, data):
+        IfcStore.pset_template_file.undo()
+
+    def commit(self, data):
+        IfcStore.pset_template_file.redo()
+
 
 class RemovePropTemplate(bpy.types.Operator):
     bl_idname = "bim.remove_prop_template"
     bl_label = "Remove Prop Template"
+    bl_options = {"REGISTER", "UNDO"}
     prop_template: bpy.props.IntProperty()
 
     def execute(self, context):
+        IfcStore.begin_transaction(self)
+        IfcStore.pset_template_file.begin_transaction()
+        result = self._execute(context)
+        IfcStore.pset_template_file.end_transaction()
+        IfcStore.add_transaction_operation(self)
+        IfcStore.end_transaction(self)
+        return result
+
+    def _execute(self, context):
         props = context.scene.BIMPsetTemplateProperties
         ifcopenshell.api.run("pset_template.remove_prop_template", IfcStore.pset_template_file, **{
             "prop_template": IfcStore.pset_template_file.by_id(self.prop_template)
@@ -142,12 +221,28 @@ class RemovePropTemplate(bpy.types.Operator):
         Data.load(IfcStore.pset_template_file)
         return {"FINISHED"}
 
+    def rollback(self, data):
+        IfcStore.pset_template_file.undo()
+
+    def commit(self, data):
+        IfcStore.pset_template_file.redo()
+
 
 class EditPropTemplate(bpy.types.Operator):
     bl_idname = "bim.edit_prop_template"
     bl_label = "Edit Prop Template"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        IfcStore.begin_transaction(self)
+        IfcStore.pset_template_file.begin_transaction()
+        result = self._execute(context)
+        IfcStore.pset_template_file.end_transaction()
+        IfcStore.add_transaction_operation(self)
+        IfcStore.end_transaction(self)
+        return result
+
+    def _execute(self, context):
         props = context.scene.BIMPsetTemplateProperties
         ifcopenshell.api.run("pset_template.edit_prop_template", IfcStore.pset_template_file, **{
             "prop_template": IfcStore.pset_template_file.by_id(props.active_prop_template_id),
@@ -160,3 +255,9 @@ class EditPropTemplate(bpy.types.Operator):
         Data.load(IfcStore.pset_template_file)
         bpy.ops.bim.disable_editing_prop_template()
         return {"FINISHED"}
+
+    def rollback(self, data):
+        IfcStore.pset_template_file.undo()
+
+    def commit(self, data):
+        IfcStore.pset_template_file.redo()
