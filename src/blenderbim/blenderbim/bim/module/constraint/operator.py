@@ -2,6 +2,7 @@ import bpy
 import json
 import ifcopenshell.api
 import ifcopenshell.util.attribute
+import blenderbim.bim.helper
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.constraint.data import Data
 
@@ -49,21 +50,7 @@ class EnableEditingConstraint(bpy.types.Operator):
         if props.is_editing == "IfcObjective":
             data = Data.objectives[self.constraint]
 
-        for attribute in IfcStore.get_schema().declaration_by_name(props.is_editing).all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity" or (isinstance(data_type, tuple) and "entity" in ".".join(data_type)):
-                continue
-            new = props.constraint_attributes.add()
-            new.name = attribute.name()
-            new.is_null = data[attribute.name()] is None
-            new.is_optional = attribute.optional()
-            new.data_type = data_type
-            if data_type == "string":
-                new.string_value = "" if new.is_null else data[attribute.name()]
-            elif data_type == "enum":
-                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
-                if data[attribute.name()]:
-                    new.enum_value = data[attribute.name()]
+        blenderbim.bim.helper.import_attributes(props.is_editing, props.constraint_attributes, data)
         props.active_constraint_id = self.constraint
         return {"FINISHED"}
 
