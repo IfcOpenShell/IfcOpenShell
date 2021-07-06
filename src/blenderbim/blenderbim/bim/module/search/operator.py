@@ -41,6 +41,7 @@ def does_keyword_exist(pattern, string):
 class SelectGlobalId(bpy.types.Operator):
     bl_idname = "bim.select_global_id"
     bl_label = "Select GlobalId"
+    bl_options = {"REGISTER", "UNDO"}
     global_id: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -60,6 +61,7 @@ class SelectGlobalId(bpy.types.Operator):
 class SelectIfcClass(bpy.types.Operator):
     bl_idname = "bim.select_ifc_class"
     bl_label = "Select IFC Class"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         self.file = IfcStore.get_file()
@@ -76,6 +78,7 @@ class SelectIfcClass(bpy.types.Operator):
 class SelectAttribute(bpy.types.Operator):
     bl_idname = "bim.select_attribute"
     bl_label = "Select Attribute"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         self.file = IfcStore.get_file()
@@ -99,6 +102,7 @@ class SelectAttribute(bpy.types.Operator):
 class SelectPset(bpy.types.Operator):
     bl_idname = "bim.select_pset"
     bl_label = "Select Pset"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         self.file = IfcStore.get_file()
@@ -130,6 +134,7 @@ class SelectPset(bpy.types.Operator):
 class ColourByAttribute(bpy.types.Operator):
     bl_idname = "bim.colour_by_attribute"
     bl_label = "Colour by Attribute"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         self.file = IfcStore.get_file()
@@ -156,6 +161,7 @@ class ColourByAttribute(bpy.types.Operator):
 class ColourByPset(bpy.types.Operator):
     bl_idname = "bim.colour_by_pset"
     bl_label = "Colour by Pset"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         self.file = IfcStore.get_file()
@@ -190,6 +196,7 @@ class ColourByPset(bpy.types.Operator):
 class ColourByClass(bpy.types.Operator):
     bl_idname = "bim.colour_by_class"
     bl_label = "Colour by Class"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         self.file = IfcStore.get_file()
