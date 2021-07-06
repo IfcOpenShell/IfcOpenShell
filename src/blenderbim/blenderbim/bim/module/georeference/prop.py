@@ -36,11 +36,6 @@ class BIMGeoreferenceProperties(PropertyGroup):
     coordinate_input: StringProperty(name="Coordinate Input")
     coordinate_output: StringProperty(name="Coordinate Output")
     has_blender_offset: BoolProperty(name="Has Blender Offset")
-    blender_offset_type: EnumProperty(
-        items=[(o, o, "") for o in ["OBJECT_PLACEMENT", "CARTESIAN_POINT"]],
-        name="Blender Offset",
-        default="OBJECT_PLACEMENT",
-    )
     blender_eastings: StringProperty(name="Blender Eastings", default="0")
     blender_northings: StringProperty(name="Blender Northings", default="0")
     blender_orthogonal_height: StringProperty(name="Blender Orthogonal Height", default="0")

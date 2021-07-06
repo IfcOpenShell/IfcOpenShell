@@ -109,6 +109,10 @@ class BIM_PT_mesh(Panel):
 
 def BIM_PT_transform(self, context):
     if context.active_object and context.active_object.BIMObjectProperties.ifc_definition_id:
+        row = self.layout.row(align=True)
+        row.label(text="Blender Offset")
+        row.label(text=context.active_object.BIMObjectProperties.blender_offset_type)
+
         row = self.layout.row()
         row.operator("bim.edit_object_placement")
 

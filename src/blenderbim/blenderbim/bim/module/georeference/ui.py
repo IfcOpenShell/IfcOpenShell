@@ -90,18 +90,16 @@ class BIM_PT_gis(Panel):
     def draw_ui(self, context):
         props = context.scene.BIMGeoreferenceProperties
 
-        if not Data.projected_crs and IfcStore.get_file().schema != "IFC2X3":
+        if not Data.projected_crs:
             row = self.layout.row(align=True)
             row.label(text="Not Georeferenced")
-            row.operator("bim.add_georeferencing", icon="ADD", text="")
+            if IfcStore.get_file().schema != "IFC2X3":
+                row.operator("bim.add_georeferencing", icon="ADD", text="")
 
         if props.has_blender_offset:
             row = self.layout.row()
             row.label(text="Blender Offset", icon="TRACKING_REFINE_FORWARDS")
 
-            row = self.layout.row(align=True)
-            row.label(text="Type")
-            row.label(text=props.blender_offset_type)
             row = self.layout.row(align=True)
             row.label(text="Eastings")
             row.label(text=props.blender_eastings)

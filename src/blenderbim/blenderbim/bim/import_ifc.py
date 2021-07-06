@@ -229,18 +229,19 @@ class IfcImporter:
         self.set_default_context()
         self.profile_code("Setting default context")
 
-    def is_element_far_away(self, element):
+    def is_element_far_away(self, element, is_meters=True):
         try:
-            return self.is_point_far_away(element.ObjectPlacement.RelativePlacement.Location)
+            return self.is_point_far_away(element.ObjectPlacement.RelativePlacement.Location, is_meters=is_meters)
         except:
             pass
 
-    def is_point_far_away(self, point):
-        # Arbitrary threshold based on experience
+    def is_point_far_away(self, point, is_meters=True):
+        # Locations greater than 1km are not considered "small sites" according to the georeferencing guide
+        limit = 1000 if is_meters else (1000 / self.unit_scale)
         coords = point
         if hasattr(point, "Coordinates"):
             coords = point.Coordinates
-        return abs(coords[0]) > 1000000 or abs(coords[1]) > 1000000 or abs(coords[2]) > 1000000
+        return abs(coords[0]) > limit or abs(coords[1]) > limit or abs(coords[2]) > limit
 
     def process_element_filter(self):
         if not self.ifc_import_settings.ifc_selector:
@@ -340,7 +341,6 @@ class IfcImporter:
             props.blender_x_axis_abscissa = str(placement.RefDirection.DirectionRatios[0])
             props.blender_x_axis_ordinate = str(placement.RefDirection.DirectionRatios[1])
         props.has_blender_offset = True
-        props.blender_offset_type = "OBJECT_PLACEMENT"
 
     def guess_absolute_coordinate(self):
         # Civil BIM applications like to work in absolute coordinates, where the ObjectPlacement is 0,0,0 but each
@@ -353,7 +353,6 @@ class IfcImporter:
         props.blender_northings = str(offset_point[1])
         props.blender_orthogonal_height = str(offset_point[2])
         props.has_blender_offset = True
-        props.blender_offset_type = "CARTESIAN_POINT"
 
     def get_offset_point(self):
         offset_point = None
@@ -370,7 +369,7 @@ class IfcImporter:
             if elements_checked > element_checking_threshold:
                 return
             for i, point in enumerate(point_list.CoordList):
-                if len(point) == 3 and self.is_point_far_away(point):
+                if len(point) == 3 and self.is_point_far_away(point, is_meters=False):
                     return point
 
         for point in self.file.by_type("IfcCartesianPoint"):
@@ -384,22 +383,26 @@ class IfcImporter:
             elements_checked += 1
             if elements_checked > element_checking_threshold:
                 return
-            if len(point.Coordinates) == 3 and self.is_point_far_away(point):
+            if len(point.Coordinates) == 3 and self.is_point_far_away(point, is_meters=False):
                 return point.Coordinates
 
-    def apply_blender_offset_to_matrix(self, matrix):
+    def apply_blender_offset_to_matrix_world(self, obj, matrix):
         props = bpy.context.scene.BIMGeoreferenceProperties
-        if props.has_blender_offset and props.blender_offset_type == "OBJECT_PLACEMENT":
-            return mathutils.Matrix(
-                ifcopenshell.util.geolocation.global2local(
-                    matrix,
-                    float(props.blender_eastings) * self.unit_scale,
-                    float(props.blender_northings) * self.unit_scale,
-                    float(props.blender_orthogonal_height) * self.unit_scale,
-                    float(props.blender_x_axis_abscissa),
-                    float(props.blender_x_axis_ordinate),
-                ).tolist()
-            )
+        if props.has_blender_offset:
+            if self.is_point_far_away((matrix[0, 3], matrix[1, 3], matrix[2, 3])):
+                obj.BIMObjectProperties.blender_offset_type = "OBJECT_PLACEMENT"
+                return mathutils.Matrix(
+                    ifcopenshell.util.geolocation.global2local(
+                        matrix,
+                        float(props.blender_eastings) * self.unit_scale,
+                        float(props.blender_northings) * self.unit_scale,
+                        float(props.blender_orthogonal_height) * self.unit_scale,
+                        float(props.blender_x_axis_abscissa),
+                        float(props.blender_x_axis_ordinate),
+                    ).tolist()
+                )
+            else:
+                obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
         return mathutils.Matrix(matrix.tolist())
 
     def find_decomposed_ifc_class(self, element, ifc_class):
@@ -426,29 +429,25 @@ class IfcImporter:
                 shape = ifcopenshell.geom.create_shape(self.settings_2d, grid)
             grid_obj = self.create_product(grid, shape)
             collection = bpy.data.collections.new(self.get_name(grid))
-            element_matrix = self.get_local_placement(grid.ObjectPlacement)
-            element_matrix[0][3] *= self.unit_scale
-            element_matrix[1][3] *= self.unit_scale
-            element_matrix[2][3] *= self.unit_scale
             u_axes = bpy.data.collections.new("UAxes")
             collection.children.link(u_axes)
             v_axes = bpy.data.collections.new("VAxes")
             collection.children.link(v_axes)
-            self.create_grid_axes(grid.UAxes, u_axes, element_matrix)
-            self.create_grid_axes(grid.VAxes, v_axes, element_matrix)
+            self.create_grid_axes(grid.UAxes, u_axes, grid_obj)
+            self.create_grid_axes(grid.VAxes, v_axes, grid_obj)
             if grid.WAxes:
                 w_axes = bpy.data.collections.new("WAxes")
                 collection.children.link(w_axes)
-                self.create_grid_axes(grid.WAxes, w_axes, element_matrix)
+                self.create_grid_axes(grid.WAxes, w_axes, grid_obj)
 
-    def create_grid_axes(self, axes, grid, matrix_world):
+    def create_grid_axes(self, axes, grid_collection, grid_obj):
         for axis in axes:
             shape = ifcopenshell.geom.create_shape(self.settings_2d, axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(f"IfcGridAxis/{axis.AxisTag}", mesh)
             obj.BIMObjectProperties.ifc_definition_id = axis.id()
-            obj.matrix_world = matrix_world
-            grid.objects.link(obj)
+            obj.matrix_world = grid_obj.matrix_world
+            grid_collection.objects.link(obj)
 
     def create_type_products(self):
         type_products = self.file.by_type("IfcTypeProduct")
@@ -617,7 +616,7 @@ class IfcImporter:
             mesh.from_pydata([mathutils.Vector(vertex) * self.unit_scale], [], [])
 
             obj = bpy.data.objects.new("{}/{}".format(product.is_a(), product.Name), mesh)
-            obj.matrix_world = mathutils.Matrix(placement_matrix.tolist())
+            obj.matrix_world = self.apply_blender_offset_to_matrix_world(placement_matrix)
             self.link_element(product, obj)
 
     def create_curve_products(self, products):
@@ -676,13 +675,13 @@ class IfcImporter:
             mat = np.matrix(
                 ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
             )
-            obj.matrix_world = self.apply_blender_offset_to_matrix(mat)
+            obj.matrix_world = self.apply_blender_offset_to_matrix_world(obj, mat)
             self.material_creator.create(element, obj, mesh)
         elif mesh:
-            obj.matrix_world = self.apply_blender_offset_to_matrix(self.get_element_matrix(element))
+            obj.matrix_world = self.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element))
             self.material_creator.create(element, obj, mesh)
         elif hasattr(element, "ObjectPlacement"):
-            obj.matrix_world = self.apply_blender_offset_to_matrix(self.get_element_matrix(element))
+            obj.matrix_world = self.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element))
 
         self.add_opening_relation(element, obj)
 
@@ -982,6 +981,7 @@ class IfcImporter:
     def create_aggregate(self, rel_aggregate):
         element = rel_aggregate.RelatingObject
         obj = bpy.data.objects.new("{}/{}".format(element.is_a(), element.Name), None)
+        obj.matrix_world = self.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element))
         self.link_element(element, obj)
         collection = bpy.data.collections.new(obj.name)
         collection.objects.link(obj)
@@ -1131,7 +1131,7 @@ class IfcImporter:
             self.ifc_import_settings.logger.warning("Warning: this object is outside the spatial hierarchy %s", element)
             bpy.context.scene.collection.objects.link(obj)
 
-    def get_element_matrix(self, element, mesh_name=None):
+    def get_element_matrix(self, element):
         result = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
         result[0][3] *= self.unit_scale
         result[1][3] *= self.unit_scale
@@ -1265,7 +1265,11 @@ class IfcImporter:
             mesh = bpy.data.meshes.new(self.get_mesh_name(geometry))
 
             props = bpy.context.scene.BIMGeoreferenceProperties
-            if props.has_blender_offset and props.blender_offset_type == "CARTESIAN_POINT":
+            if (
+                props.has_blender_offset
+                and geometry.verts
+                and self.is_point_far_away((geometry.verts[0], geometry.verts[1], geometry.verts[2]))
+            ):
                 ordinate_index = 0
                 verts = [None] * len(geometry.verts)
                 offset_point = (
