@@ -12,7 +12,7 @@ wild for vertical construction.
 
 1. Correctly georeferenced IFC4 with a map conversion transformation
 2. Correctly georeferenced IFC4 without a map conversion transformation
-3. Invalidly georeferenced IFC4
+3. Non-georeferenced georeferenced IFC4
 4. Non-georeferenced IFC2X3
 
 The first scenario is desired for most disciplines, such as architects and all
@@ -23,8 +23,8 @@ offset coordinates to preserve the precision of the model. The first coordinate
 greater than 1km will be detected and used as an offset coordinate. It is
 possible to specify a custom offset coordinate.
 
-Invalid georeferencing
-----------------------
+Non-georeferenced workarounds
+-----------------------------
 
 The unfortunate reality is that IFC2X3 does not support georeferencing, and most
 vendors have poor and inconsistent support for georeferencing, even in IFC4.
@@ -32,21 +32,23 @@ Some users may be under the impression that their file is correctly
 georeferenced, but this is rarely the case. This creates problems. You can see
 whether your file is correctly georeferenced in the ``IFC Georeferencing``
 scene panel. If you see "Not Georeferenced", your file is not correctly
-georeferenced.
+georeferenced. If your file is georeferenced, it is no guarantee that the
+georeferencing data is actually correct, but how to determine this is out of
+scope of this article.
 
-As an invalid workaround for proper georeferencing, many other BIM vendors
+As an invalid workaround for correct georeferencing, many other BIM vendors
 simply offset their object coordinates from local engineering to map coordinates
-without properly storing the required transformation. There are two common
-invalid workarounds that are used.
+without properly storing a projection system and optionally a map
+transformation. There are two common invalid workarounds that are used.
 
-The first invalid workaround is to shift the origin point (known as the Object
-Placement) of objects in the model. We call this the ``OBJECT_PLACEMENT``
-workaround. The second invalid workaround is to shift the coordinates of
-geometry within the objects themselves, and typically leave the object origin
-untouched (such as back at (0, 0, 0)). We call this the ``CARTESIAN_POINT``
-workaround. Sometimes, BIM applications combine both of these invalid
-workarounds. To see which workaround was used on an object, check the "Blender
-Offset" property in the ``Transform`` object panel.
+The first invalid workaround is to shift the origin point of objects in the
+model. We call this the ``OBJECT_PLACEMENT`` workaround. The second invalid
+workaround is to shift the coordinates of geometry within the objects
+themselves, and typically leave the object origin untouched (such as back at (0,
+0, 0)). We call this the ``CARTESIAN_POINT`` workaround. Sometimes, BIM
+applications combine both of these invalid workarounds. To see which workaround
+was used on an object, check the "Blender Offset" property in the ``Transform``
+object panel.
 
 Coordinates and precision limits
 --------------------------------
@@ -56,7 +58,6 @@ coordinate systems. Blender internally uses single precision floating point
 calculations. A full description of the precision implications are described in
 the `Blender working limits documentation
 <https://docs.blender.org/manual/en/latest/advanced/limits.html>`__.
-
 
 From a software perspective, lengths greater than 5,000 meters start to
 accumulate precision errors that affect the nearest millimeter. Therefore, from
