@@ -9,6 +9,7 @@ from blenderbim.bim.ifc import IfcStore
 class SelectDiffJsonFile(bpy.types.Operator):
     bl_idname = "bim.select_diff_json_file"
     bl_label = "Select Diff JSON File"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
@@ -23,6 +24,7 @@ class SelectDiffJsonFile(bpy.types.Operator):
 class VisualiseDiff(bpy.types.Operator):
     bl_idname = "bim.visualise_diff"
     bl_label = "Visualise Diff"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         #ifc_file = IfcStore.get_file() # In case we get from Store
@@ -48,6 +50,7 @@ class VisualiseDiff(bpy.types.Operator):
 class SelectDiffOldFile(bpy.types.Operator):
     bl_idname = "bim.select_diff_old_file"
     bl_label = "Select Diff Old File"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
@@ -62,6 +65,7 @@ class SelectDiffOldFile(bpy.types.Operator):
 class SelectDiffNewFile(bpy.types.Operator):
     bl_idname = "bim.select_diff_new_file"
     bl_label = "Select Diff New File"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
