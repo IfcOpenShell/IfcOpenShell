@@ -43,6 +43,9 @@ class AddWall(bpy.types.Operator):
     join_type: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         props = context.scene.BIMModelProperties
         bpy.ops.bim.add_type_instance(ifc_class="IfcWallType", relating_type=int(props.relating_type))
         return {"FINISHED"}

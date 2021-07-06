@@ -17,6 +17,9 @@ class AddTypeInstance(bpy.types.Operator):
     relating_type: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         tprops = context.scene.BIMTypeProperties
         ifc_class = self.ifc_class or tprops.ifc_class
         relating_type = self.relating_type or tprops.relating_type

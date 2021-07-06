@@ -20,13 +20,6 @@ classes = (
     pie.OpenPieClass,
     pie.PieUpdateContainer,
     pie.PieAddOpening,
-    pie.AssignIfcWall,
-    pie.AssignIfcSlab,
-    pie.AssignIfcStair,
-    pie.AssignIfcDoor,
-    pie.AssignIfcWindow,
-    pie.AssignIfcColumn,
-    pie.AssignIfcBeam,
     pie.VIEW3D_MT_PIE_bim,
     pie.VIEW3D_MT_PIE_bim_class,
 )
