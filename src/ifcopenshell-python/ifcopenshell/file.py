@@ -51,10 +51,18 @@ class Transaction:
         return info
 
     def serialise_value(self, element, value):
-        return element.walk(lambda v: isinstance(v, entity_instance), lambda v: {"id": v.id()}, value)
+        return element.walk(
+            lambda v: isinstance(v, entity_instance),
+            lambda v: {"id": v.id()} if v.id() else {"type": v.is_a(), "value": v.wrappedValue},
+            value,
+        )
 
     def unserialise_value(self, element, value):
-        return element.walk(lambda v: isinstance(v, dict), lambda v: self.file.by_id(v["id"]), value)
+        return element.walk(
+            lambda v: isinstance(v, dict),
+            lambda v: self.file.by_id(v["id"]) if v.get("id") else self.file.create_entity(v["type"], v["value"]),
+            value,
+        )
 
     def batch(self):
         self.is_batched = True

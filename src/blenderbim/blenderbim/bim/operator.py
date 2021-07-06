@@ -20,6 +20,7 @@ from math import radians, degrees, atan, tan, cos, sin
 class ExportIFC(bpy.types.Operator):
     bl_idname = "export_ifc.bim"
     bl_label = "Export IFC"
+    bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcjson", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
@@ -40,10 +41,15 @@ class ExportIFC(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         start = time.time()
         logger = logging.getLogger("ExportIFC")
         logging.basicConfig(
-            filename=os.path.join(context.scene.BIMProperties.data_dir, "process.log"), filemode="a", level=logging.DEBUG
+            filename=os.path.join(context.scene.BIMProperties.data_dir, "process.log"),
+            filemode="a",
+            level=logging.DEBUG,
         )
         extension = self.filepath.split(".")[-1]
         if extension == "ifczip":
@@ -75,6 +81,7 @@ class ExportIFC(bpy.types.Operator):
 class ImportIFC(bpy.types.Operator, ImportHelper):
     bl_idname = "import_ifc.bim"
     bl_label = "Import IFC"
+    bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
 
@@ -102,7 +109,9 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         start = time.time()
         logger = logging.getLogger("ImportIFC")
         logging.basicConfig(
-            filename=os.path.join(bpy.context.scene.BIMProperties.data_dir, "process.log"), filemode="a", level=logging.DEBUG
+            filename=os.path.join(bpy.context.scene.BIMProperties.data_dir, "process.log"),
+            filemode="a",
+            level=logging.DEBUG,
         )
 
         settings = import_ifc.IfcImportSettings.factory(context, self.filepath, logger)
@@ -139,23 +148,10 @@ class OpenUri(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SelectExternalMaterialDir(bpy.types.Operator):
-    bl_idname = "bim.select_external_material_dir"
-    bl_label = "Select Material File"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        bpy.context.active_object.active_material.BIMMaterialProperties.location = self.filepath
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-
 class SelectIfcFile(bpy.types.Operator):
     bl_idname = "bim.select_ifc_file"
     bl_label = "Select IFC File"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
 
@@ -171,6 +167,7 @@ class SelectIfcFile(bpy.types.Operator):
 class SelectDataDir(bpy.types.Operator):
     bl_idname = "bim.select_data_dir"
     bl_label = "Select Data Directory"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
@@ -185,6 +182,7 @@ class SelectDataDir(bpy.types.Operator):
 class SelectSchemaDir(bpy.types.Operator):
     bl_idname = "bim.select_schema_dir"
     bl_label = "Select Schema Directory"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
@@ -194,52 +192,6 @@ class SelectSchemaDir(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
-
-
-class FetchExternalMaterial(bpy.types.Operator):
-    bl_idname = "bim.fetch_external_material"
-    bl_label = "Fetch External Material"
-
-    def execute(self, context):
-        location = bpy.context.active_object.active_material.BIMMaterialProperties.location
-        if location[-6:] != ".mpass":
-            return {"FINISHED"}
-        if not os.path.isabs(location):
-            location = os.path.join(bpy.context.scene.BIMProperties.data_dir, location)
-        with open(location) as f:
-            self.material_pass = json.load(f)
-        if bpy.context.scene.render.engine == "BLENDER_EEVEE" and "eevee" in self.material_pass:
-            self.fetch_eevee_or_cycles("eevee")
-        elif bpy.context.scene.render.engine == "CYCLES" and "cycles" in self.material_pass:
-            self.fetch_eevee_or_cycles("cycles")
-        return {"FINISHED"}
-
-    def fetch_eevee_or_cycles(self, name):
-        identification = bpy.context.active_object.active_material.BIMMaterialProperties.identification
-        uri = self.material_pass[name]["uri"]
-        if not os.path.isabs(uri):
-            uri = os.path.join(bpy.context.scene.BIMProperties.data_dir, uri)
-        bpy.ops.wm.link(filename=identification, directory=os.path.join(uri, "Material"))
-        for material in bpy.data.materials:
-            if material.name == identification and material.library:
-                bpy.context.active_object.material_slots[0].material = material
-                return
-
-
-class FetchObjectPassport(bpy.types.Operator):
-    bl_idname = "bim.fetch_object_passport"
-    bl_label = "Fetch Object Passport"
-
-    def execute(self, context):
-        for reference in bpy.context.active_object.BIMObjectProperties.document_references:
-            reference = bpy.context.scene.BIMProperties.document_references[reference.name]
-            if reference.location[-6:] == ".blend":
-                self.fetch_blender(reference)
-        return {"FINISHED"}
-
-    def fetch_blender(self, reference):
-        bpy.ops.wm.link(filename=reference.name, directory=os.path.join(reference.location, "Mesh"))
-        bpy.context.active_object.data = bpy.data.meshes[reference.name]
 
 
 class OpenUpstream(bpy.types.Operator):
@@ -259,70 +211,10 @@ class OpenUpstream(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class CopyPropertyToSelection(bpy.types.Operator):
-    bl_idname = "bim.copy_property_to_selection"
-    bl_label = "Copy Property To Selection"
-    pset_name: bpy.props.StringProperty()
-    prop_name: bpy.props.StringProperty()
-    prop_value: bpy.props.StringProperty()
-
-    def execute(self, context):
-        for obj in bpy.context.selected_objects:
-            if "/" not in obj.name:
-                continue
-            pset = obj.BIMObjectProperties.psets.get(self.pset_name)
-            if not pset:
-                applicable_psets = schema.ifc.psetqto.get_applicable(obj.name.split("/")[0], pset_only=True)
-                for pset_template in applicable_psets:
-                    if pset_template.Name == self.pset_name:
-                        break
-                else:
-                    continue
-                pset = obj.BIMObjectProperties.psets.add()
-                pset.name = self.pset_name
-                for template_prop_name in (p.Name for p in pset_template.HasPropertyTemplates):
-                    prop = pset.properties.add()
-                    prop.name = template_prop_name
-            prop = pset.properties.get(self.prop_name)
-            if prop:
-                prop.string_value = self.prop_value
-        return {"FINISHED"}
-
-
-class CopyAttributeToSelection(bpy.types.Operator):
-    bl_idname = "bim.copy_attribute_to_selection"
-    bl_label = "Copy Attribute To Selection"
-    attribute_name: bpy.props.StringProperty()
-    attribute_value: bpy.props.StringProperty()
-
-    def execute(self, context):
-        # TODO: reimplement
-        self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(bpy.context.scene.BIMProperties.export_schema)
-        self.applicable_attributes_cache = {}
-        for obj in bpy.context.selected_objects:
-            if "/" not in obj.name:
-                continue
-            attribute = obj.BIMObjectProperties.attributes.get(self.attribute_name)
-            if not attribute:
-                applicable_attributes = self.get_applicable_attributes(obj.name.split("/")[0])
-                if self.attribute_name not in applicable_attributes:
-                    continue
-                attribute = obj.BIMObjectProperties.attributes.add()
-                attribute.name = self.attribute_name
-            attribute.string_value = self.attribute_value
-        return {"FINISHED"}
-
-    def get_applicable_attributes(self, ifc_class):
-        if ifc_class not in self.applicable_attributes_cache:
-            self.applicable_attributes_cache[ifc_class] = [
-                a.name() for a in self.schema.declaration_by_name(ifc_class).all_attributes()
-            ]
-        return self.applicable_attributes_cache[ifc_class]
-
-
 class AddSectionPlane(bpy.types.Operator):
     bl_idname = "bim.add_section_plane"
     bl_label = "Add Temporary Section Cutaway"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         obj = self.create_section_obj()
@@ -490,6 +382,7 @@ class AddSectionPlane(bpy.types.Operator):
 class RemoveSectionPlane(bpy.types.Operator):
     bl_idname = "bim.remove_section_plane"
     bl_label = "Remove Temporary Section Cutaway"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         name = bpy.context.active_object.name
@@ -544,6 +437,7 @@ class RemoveSectionPlane(bpy.types.Operator):
 class ReloadIfcFile(bpy.types.Operator):
     bl_idname = "bim.reload_ifc_file"
     bl_label = "Reload IFC File"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         # TODO: reimplement. See #1222.
@@ -553,6 +447,7 @@ class ReloadIfcFile(bpy.types.Operator):
 class AddIfcFile(bpy.types.Operator):
     bl_idname = "bim.add_ifc_file"
     bl_label = "Add IFC File"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bpy.context.scene.DocProperties.ifc_files.add()
@@ -563,6 +458,7 @@ class RemoveIfcFile(bpy.types.Operator):
     bl_idname = "bim.remove_ifc_file"
     bl_label = "Remove IFC File"
     index: bpy.props.IntProperty()
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bpy.context.scene.DocProperties.ifc_files.remove(self.index)
@@ -572,6 +468,7 @@ class RemoveIfcFile(bpy.types.Operator):
 class SetOverrideColour(bpy.types.Operator):
     bl_idname = "bim.set_override_colour"
     bl_label = "Set Override Colour"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         result = 0
@@ -585,6 +482,7 @@ class SetOverrideColour(bpy.types.Operator):
 class SetViewportShadowFromSun(bpy.types.Operator):
     bl_idname = "bim.set_viewport_shadow_from_sun"
     bl_label = "Set Viewport Shadow from Sun"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         # The vector used for the light direction is a bit funny
@@ -598,6 +496,7 @@ class SetViewportShadowFromSun(bpy.types.Operator):
 class LinkIfc(bpy.types.Operator):
     bl_idname = "bim.link_ifc"
     bl_label = "Link IFC"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
@@ -625,6 +524,7 @@ class LinkIfc(bpy.types.Operator):
 class SnapSpacesTogether(bpy.types.Operator):
     bl_idname = "bim.snap_spaces_together"
     bl_label = "Snap Spaces Together"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         threshold = 0.5
@@ -662,3 +562,128 @@ class SnapSpacesTogether(bpy.types.Operator):
                     for v in polygon.vertices:
                         obj.data.vertices[v].co += offset
         return {"FINISHED"}
+
+
+class SelectExternalMaterialDir(bpy.types.Operator):
+    bl_idname = "bim.select_external_material_dir"
+    bl_label = "Select Material File"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        # TODO: this is dead code, awaiting reimplementation. See #1222.
+        bpy.context.active_object.active_material.BIMMaterialProperties.location = self.filepath
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+
+class FetchExternalMaterial(bpy.types.Operator):
+    bl_idname = "bim.fetch_external_material"
+    bl_label = "Fetch External Material"
+
+    def execute(self, context):
+        # TODO: this is dead code, awaiting reimplementation. See #1222.
+        location = bpy.context.active_object.active_material.BIMMaterialProperties.location
+        if location[-6:] != ".mpass":
+            return {"FINISHED"}
+        if not os.path.isabs(location):
+            location = os.path.join(bpy.context.scene.BIMProperties.data_dir, location)
+        with open(location) as f:
+            self.material_pass = json.load(f)
+        if bpy.context.scene.render.engine == "BLENDER_EEVEE" and "eevee" in self.material_pass:
+            self.fetch_eevee_or_cycles("eevee")
+        elif bpy.context.scene.render.engine == "CYCLES" and "cycles" in self.material_pass:
+            self.fetch_eevee_or_cycles("cycles")
+        return {"FINISHED"}
+
+    def fetch_eevee_or_cycles(self, name):
+        identification = bpy.context.active_object.active_material.BIMMaterialProperties.identification
+        uri = self.material_pass[name]["uri"]
+        if not os.path.isabs(uri):
+            uri = os.path.join(bpy.context.scene.BIMProperties.data_dir, uri)
+        bpy.ops.wm.link(filename=identification, directory=os.path.join(uri, "Material"))
+        for material in bpy.data.materials:
+            if material.name == identification and material.library:
+                bpy.context.active_object.material_slots[0].material = material
+                return
+
+
+class FetchObjectPassport(bpy.types.Operator):
+    bl_idname = "bim.fetch_object_passport"
+    bl_label = "Fetch Object Passport"
+
+    def execute(self, context):
+        # TODO: this is dead code, awaiting reimplementation. See #1222.
+        for reference in bpy.context.active_object.BIMObjectProperties.document_references:
+            reference = bpy.context.scene.BIMProperties.document_references[reference.name]
+            if reference.location[-6:] == ".blend":
+                self.fetch_blender(reference)
+        return {"FINISHED"}
+
+    def fetch_blender(self, reference):
+        bpy.ops.wm.link(filename=reference.name, directory=os.path.join(reference.location, "Mesh"))
+        bpy.context.active_object.data = bpy.data.meshes[reference.name]
+
+
+class CopyPropertyToSelection(bpy.types.Operator):
+    bl_idname = "bim.copy_property_to_selection"
+    bl_label = "Copy Property To Selection"
+    pset_name: bpy.props.StringProperty()
+    prop_name: bpy.props.StringProperty()
+    prop_value: bpy.props.StringProperty()
+
+    def execute(self, context):
+        # TODO: this is dead code, awaiting reimplementation. See #1222.
+        for obj in bpy.context.selected_objects:
+            if "/" not in obj.name:
+                continue
+            pset = obj.BIMObjectProperties.psets.get(self.pset_name)
+            if not pset:
+                applicable_psets = schema.ifc.psetqto.get_applicable(obj.name.split("/")[0], pset_only=True)
+                for pset_template in applicable_psets:
+                    if pset_template.Name == self.pset_name:
+                        break
+                else:
+                    continue
+                pset = obj.BIMObjectProperties.psets.add()
+                pset.name = self.pset_name
+                for template_prop_name in (p.Name for p in pset_template.HasPropertyTemplates):
+                    prop = pset.properties.add()
+                    prop.name = template_prop_name
+            prop = pset.properties.get(self.prop_name)
+            if prop:
+                prop.string_value = self.prop_value
+        return {"FINISHED"}
+
+
+class CopyAttributeToSelection(bpy.types.Operator):
+    bl_idname = "bim.copy_attribute_to_selection"
+    bl_label = "Copy Attribute To Selection"
+    attribute_name: bpy.props.StringProperty()
+    attribute_value: bpy.props.StringProperty()
+
+    def execute(self, context):
+        # TODO: this is dead code, awaiting reimplementation. See #1222.
+        self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(bpy.context.scene.BIMProperties.export_schema)
+        self.applicable_attributes_cache = {}
+        for obj in bpy.context.selected_objects:
+            if "/" not in obj.name:
+                continue
+            attribute = obj.BIMObjectProperties.attributes.get(self.attribute_name)
+            if not attribute:
+                applicable_attributes = self.get_applicable_attributes(obj.name.split("/")[0])
+                if self.attribute_name not in applicable_attributes:
+                    continue
+                attribute = obj.BIMObjectProperties.attributes.add()
+                attribute.name = self.attribute_name
+            attribute.string_value = self.attribute_value
+        return {"FINISHED"}
+
+    def get_applicable_attributes(self, ifc_class):
+        if ifc_class not in self.applicable_attributes_cache:
+            self.applicable_attributes_cache[ifc_class] = [
+                a.name() for a in self.schema.declaration_by_name(ifc_class).all_attributes()
+            ]
+        return self.applicable_attributes_cache[ifc_class]
