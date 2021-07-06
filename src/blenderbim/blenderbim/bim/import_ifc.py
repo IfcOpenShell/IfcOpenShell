@@ -616,7 +616,7 @@ class IfcImporter:
             mesh.from_pydata([mathutils.Vector(vertex) * self.unit_scale], [], [])
 
             obj = bpy.data.objects.new("{}/{}".format(product.is_a(), product.Name), mesh)
-            obj.matrix_world = self.apply_blender_offset_to_matrix_world(placement_matrix)
+            obj.matrix_world = self.apply_blender_offset_to_matrix_world(obj, placement_matrix)
             self.link_element(product, obj)
 
     def create_curve_products(self, products):
