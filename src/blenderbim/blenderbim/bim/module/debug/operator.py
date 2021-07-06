@@ -76,8 +76,12 @@ class CreateAllShapes(bpy.types.Operator):
 class CreateShapeFromStepId(bpy.types.Operator):
     bl_idname = "bim.create_shape_from_step_id"
     bl_label = "Create Shape From STEP ID"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         logger = logging.getLogger("ImportIFC")
         self.ifc_import_settings = import_ifc.IfcImportSettings.factory(bpy.context, IfcStore.path, logger)
         self.file = IfcStore.get_file()
@@ -96,6 +100,7 @@ class CreateShapeFromStepId(bpy.types.Operator):
 class SelectHighPolygonMeshes(bpy.types.Operator):
     bl_idname = "bim.select_high_polygon_meshes"
     bl_label = "Select High Polygon Meshes"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         results = {}
