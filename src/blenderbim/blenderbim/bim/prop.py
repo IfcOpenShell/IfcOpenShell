@@ -4,7 +4,7 @@ import json
 import importlib
 import ifcopenshell
 import ifcopenshell.util.pset
-from blenderbim.bim.handler import purge_module_data
+import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -48,9 +48,7 @@ def updateDataDir(self, context):
 
 def updateIfcFile(self, context):
     if context.scene.BIMProperties.ifc_file:
-        IfcStore.file = None
-        IfcStore.schema = None
-        purge_module_data()
+        blenderbim.bim.handler.loadIfcStore(context.scene)
 
 
 def getMaterialPsetNames(self, context):
