@@ -34,8 +34,12 @@ def open_with_user_command(user_command, path):
 class AddDrawing(bpy.types.Operator):
     bl_idname = "bim.add_drawing"
     bl_label = "Add Drawing"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         new = context.scene.DocProperties.drawings.add()
         new.name = "DRAWING {}".format(len(context.scene.DocProperties.drawings))
@@ -419,10 +423,14 @@ class CreateDrawing(bpy.types.Operator):
 class AddAnnotation(bpy.types.Operator):
     bl_idname = "bim.add_annotation"
     bl_label = "Add Annotation"
+    bl_options = {"REGISTER", "UNDO"}
     obj_name: bpy.props.StringProperty()
     data_type: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         if not bpy.context.scene.camera:
             return {"FINISHED"}
         subcontext = ifcopenshell.util.representation.get_context(
@@ -458,6 +466,8 @@ class AddAnnotation(bpy.types.Operator):
 class AddSheet(bpy.types.Operator):
     bl_idname = "bim.add_sheet"
     bl_label = "Add Sheet"
+    bl_options = {"REGISTER", "UNDO"}
+    # TODO: check undo redo
 
     def execute(self, context):
         new = bpy.context.scene.DocProperties.sheets.add()
@@ -486,6 +496,8 @@ class OpenSheet(bpy.types.Operator):
 class AddDrawingToSheet(bpy.types.Operator):
     bl_idname = "bim.add_drawing_to_sheet"
     bl_label = "Add Drawing To Sheet"
+    bl_options = {"REGISTER", "UNDO"}
+    # TODO: check undo redo
 
     def execute(self, context):
         props = bpy.context.scene.DocProperties
@@ -503,6 +515,7 @@ class AddDrawingToSheet(bpy.types.Operator):
 class CreateSheets(bpy.types.Operator):
     bl_idname = "bim.create_sheets"
     bl_label = "Create Sheets"
+    # TODO: check undo redo
 
     def execute(self, context):
         props = bpy.context.scene.DocProperties
@@ -562,6 +575,7 @@ class OpenView(bpy.types.Operator):
 class OpenViewCamera(bpy.types.Operator):
     bl_idname = "bim.open_view_camera"
     bl_label = "Open View Camera"
+    bl_options = {"REGISTER", "UNDO"}
     view_name: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -581,6 +595,7 @@ class OpenViewCamera(bpy.types.Operator):
 class ActivateView(bpy.types.Operator):
     bl_idname = "bim.activate_view"
     bl_label = "Activate View"
+    bl_options = {"REGISTER", "UNDO"}
     drawing_index: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -619,6 +634,7 @@ class ActivateView(bpy.types.Operator):
 class SelectDocIfcFile(bpy.types.Operator):
     bl_idname = "bim.select_doc_ifc_file"
     bl_label = "Select Documentation IFC File"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     index: bpy.props.IntProperty()
 
@@ -634,6 +650,7 @@ class SelectDocIfcFile(bpy.types.Operator):
 class GenerateReferences(bpy.types.Operator):
     bl_idname = "bim.generate_references"
     bl_label = "Generate References"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         self.camera = bpy.context.scene.camera
@@ -701,6 +718,8 @@ class GenerateReferences(bpy.types.Operator):
 class ResizeText(bpy.types.Operator):
     bl_idname = "bim.resize_text"
     bl_label = "Resize Text"
+    bl_options = {"REGISTER", "UNDO"}
+    # TODO: check undo redo
 
     def execute(self, context):
         for obj in bpy.context.scene.camera.users_collection[0].objects:
@@ -712,6 +731,7 @@ class ResizeText(bpy.types.Operator):
 class AddVariable(bpy.types.Operator):
     bl_idname = "bim.add_variable"
     bl_label = "Add Variable"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bpy.context.active_object.data.BIMTextProperties.variables.add()
@@ -721,6 +741,7 @@ class AddVariable(bpy.types.Operator):
 class RemoveVariable(bpy.types.Operator):
     bl_idname = "bim.remove_variable"
     bl_label = "Remove Variable"
+    bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -731,6 +752,7 @@ class RemoveVariable(bpy.types.Operator):
 class PropagateTextData(bpy.types.Operator):
     bl_idname = "bim.propagate_text_data"
     bl_label = "Propagate Text Data"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         source = bpy.context.active_object
@@ -754,6 +776,7 @@ class PropagateTextData(bpy.types.Operator):
 class RemoveDrawing(bpy.types.Operator):
     bl_idname = "bim.remove_drawing"
     bl_label = "Remove Drawing"
+    bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -770,6 +793,7 @@ class RemoveDrawing(bpy.types.Operator):
 class AddDrawingStyle(bpy.types.Operator):
     bl_idname = "bim.add_drawing_style"
     bl_label = "Add Drawing Style"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         new = bpy.context.scene.DocProperties.drawing_styles.add()
@@ -780,6 +804,7 @@ class AddDrawingStyle(bpy.types.Operator):
 class RemoveDrawingStyle(bpy.types.Operator):
     bl_idname = "bim.remove_drawing_style"
     bl_label = "Remove Drawing Style"
+    bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -790,7 +815,9 @@ class RemoveDrawingStyle(bpy.types.Operator):
 class SaveDrawingStyle(bpy.types.Operator):
     bl_idname = "bim.save_drawing_style"
     bl_label = "Save Drawing Style"
+    bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.StringProperty()
+    # TODO: check undo redo
 
     def execute(self, context):
         space = self.get_view_3d()
@@ -840,6 +867,7 @@ class SaveDrawingStyle(bpy.types.Operator):
 class ActivateDrawingStyle(bpy.types.Operator):
     bl_idname = "bim.activate_drawing_style"
     bl_label = "Activate Drawing Style"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         if context.scene.camera.data.BIMCameraProperties.active_drawing_style_index < len(
@@ -939,6 +967,7 @@ class ActivateDrawingStyle(bpy.types.Operator):
 class EditVectorStyle(bpy.types.Operator):
     bl_idname = "bim.edit_vector_style"
     bl_label = "Edit Vector Style"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         camera = context.scene.camera
@@ -952,6 +981,7 @@ class EditVectorStyle(bpy.types.Operator):
 class RemoveSheet(bpy.types.Operator):
     bl_idname = "bim.remove_sheet"
     bl_label = "Remove Sheet"
+    bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -963,6 +993,7 @@ class RemoveSheet(bpy.types.Operator):
 class AddSchedule(bpy.types.Operator):
     bl_idname = "bim.add_schedule"
     bl_label = "Add Schedule"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         new = bpy.context.scene.DocProperties.schedules.add()
@@ -973,6 +1004,7 @@ class AddSchedule(bpy.types.Operator):
 class RemoveSchedule(bpy.types.Operator):
     bl_idname = "bim.remove_schedule"
     bl_label = "Remove Schedule"
+    bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -984,6 +1016,7 @@ class RemoveSchedule(bpy.types.Operator):
 class SelectScheduleFile(bpy.types.Operator):
     bl_idname = "bim.select_schedule_file"
     bl_label = "Select Documentation IFC File"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ods", options={"HIDDEN"})
     index: bpy.props.IntProperty()
@@ -1015,6 +1048,8 @@ class BuildSchedule(bpy.types.Operator):
 class AddScheduleToSheet(bpy.types.Operator):
     bl_idname = "bim.add_schedule_to_sheet"
     bl_label = "Add Schedule To Sheet"
+    bl_options = {"REGISTER", "UNDO"}
+    # TODO: check undo redo
 
     def execute(self, context):
         props = bpy.context.scene.DocProperties
@@ -1029,6 +1064,7 @@ class AddScheduleToSheet(bpy.types.Operator):
 class AddDrawingStyleAttribute(bpy.types.Operator):
     bl_idname = "bim.add_drawing_style_attribute"
     bl_label = "Add Drawing Style Attribute"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         props = bpy.context.scene.camera.data.BIMCameraProperties
@@ -1039,6 +1075,7 @@ class AddDrawingStyleAttribute(bpy.types.Operator):
 class RemoveDrawingStyleAttribute(bpy.types.Operator):
     bl_idname = "bim.remove_drawing_style_attribute"
     bl_label = "Remove Drawing Style Attribute"
+    bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -1067,6 +1104,7 @@ class RefreshDrawingList(bpy.types.Operator):
 class CleanWireframes(bpy.types.Operator):
     bl_idname = "bim.clean_wireframes"
     bl_label = "Clean Wireframes"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         objects = bpy.data.objects
@@ -1075,8 +1113,7 @@ class CleanWireframes(bpy.types.Operator):
         for obj in objects:
             if not isinstance(obj.data, bpy.types.Mesh):
                 continue
-            # TODO: probably breaks i18n
-            if not obj.modifiers.get("EdgeSplit"):
+            if "EDGE_SPLIT" not in [m.type for m in obj.modifiers]:
                 obj.modifiers.new("EdgeSplit", "EDGE_SPLIT")
         return {"FINISHED"}
 
@@ -1084,7 +1121,7 @@ class CleanWireframes(bpy.types.Operator):
 class CopyGrid(bpy.types.Operator):
     bl_idname = "bim.add_grid"
     bl_label = "Add Grid"
-    bl_options = {"UNDO"}
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         proj_coll = helper.get_project_collection(context.scene)
@@ -1165,7 +1202,7 @@ class CopyGrid(bpy.types.Operator):
 class AddSectionsAnnotations(bpy.types.Operator):
     bl_idname = "bim.add_sections_annotations"
     bl_label = "Add Sections"
-    bl_options = {"UNDO"}
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         scene = context.scene
