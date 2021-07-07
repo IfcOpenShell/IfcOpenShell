@@ -13,6 +13,7 @@ import addon_utils
 class AuginLogin(bpy.types.Operator):
     bl_idname = "bim.augin_login"
     bl_label = "Login to Augin"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         props = bpy.context.scene.AuginProperties
@@ -32,6 +33,7 @@ class AuginLogin(bpy.types.Operator):
 class AuginReset(bpy.types.Operator):
     bl_idname = "bim.augin_reset"
     bl_label = "Upload Another Project"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         props = bpy.context.scene.AuginProperties
@@ -42,6 +44,7 @@ class AuginReset(bpy.types.Operator):
 class AuginCreateNewModel(bpy.types.Operator):
     bl_idname = "bim.augin_create_new_model"
     bl_label = "Create New Augin Model"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         import boto3

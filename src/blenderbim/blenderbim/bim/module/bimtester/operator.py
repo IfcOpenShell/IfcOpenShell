@@ -65,6 +65,7 @@ class BIMTesterPurge(bpy.types.Operator):
 class SelectFeature(bpy.types.Operator):
     bl_idname = "bim.select_feature"
     bl_label = "Select Feature / IDS"
+    bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".feature"
     filter_glob: bpy.props.StringProperty(default="*.feature;*.xml", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
@@ -81,6 +82,7 @@ class SelectFeature(bpy.types.Operator):
 class SelectSteps(bpy.types.Operator):
     bl_idname = "bim.select_steps"
     bl_label = "Select Steps"
+    bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".py"
     filter_glob: bpy.props.StringProperty(default="*.py", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
@@ -97,6 +99,7 @@ class SelectSteps(bpy.types.Operator):
 class SelectBIMTesterIfcFile(bpy.types.Operator):
     bl_idname = "bim.select_bimtester_ifc_file"
     bl_label = "Select BIMTester IFC File"
+    bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
@@ -167,6 +170,7 @@ class RejectClass(bpy.types.Operator):
 class SelectAudited(bpy.types.Operator):
     bl_idname = "bim.select_audited"
     bl_label = "Select Audited"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         audited_global_ids = []
