@@ -11,6 +11,7 @@ from blenderbim.bim.ifc import IfcStore
 class SelectCobieIfcFile(bpy.types.Operator):
     bl_idname = "bim.select_cobie_ifc_file"
     bl_label = "Select COBie IFC File"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
@@ -25,6 +26,7 @@ class SelectCobieIfcFile(bpy.types.Operator):
 class SelectCobieJsonFile(bpy.types.Operator):
     bl_idname = "bim.select_cobie_json_file"
     bl_label = "Select COBie JSON File"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):

@@ -13,6 +13,7 @@ api = Api()
 class Login(bpy.types.Operator):
     bl_idname = "bim.covetool_login"
     bl_label = "Login to cove.tool"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         token = api.login(bpy.context.scene.CoveToolProperties.username, bpy.context.scene.CoveToolProperties.password)

@@ -42,6 +42,7 @@ class ExportClashSets(bpy.types.Operator):
 class ImportClashSets(bpy.types.Operator):
     bl_idname = "bim.import_clash_sets"
     bl_label = "Import Clash Sets"
+    bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".json"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
@@ -77,6 +78,7 @@ class ImportClashSets(bpy.types.Operator):
 class AddClashSet(bpy.types.Operator):
     bl_idname = "bim.add_clash_set"
     bl_label = "Add Clash Set"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         new = bpy.context.scene.BIMClashProperties.clash_sets.add()
@@ -88,6 +90,7 @@ class AddClashSet(bpy.types.Operator):
 class RemoveClashSet(bpy.types.Operator):
     bl_idname = "bim.remove_clash_set"
     bl_label = "Remove Clash Set"
+    bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -98,6 +101,7 @@ class RemoveClashSet(bpy.types.Operator):
 class AddClashSource(bpy.types.Operator):
     bl_idname = "bim.add_clash_source"
     bl_label = "Add Clash Source"
+    bl_options = {"REGISTER", "UNDO"}
     group: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -109,6 +113,7 @@ class AddClashSource(bpy.types.Operator):
 class RemoveClashSource(bpy.types.Operator):
     bl_idname = "bim.remove_clash_source"
     bl_label = "Remove Clash Source"
+    bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
     group: bpy.props.StringProperty()
 
@@ -121,6 +126,7 @@ class RemoveClashSource(bpy.types.Operator):
 class SelectClashSource(bpy.types.Operator):
     bl_idname = "bim.select_clash_source"
     bl_label = "Select Clash Source"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     index: bpy.props.IntProperty()
     group: bpy.props.StringProperty()
@@ -138,6 +144,7 @@ class SelectClashSource(bpy.types.Operator):
 class SelectClashResults(bpy.types.Operator):
     bl_idname = "bim.select_clash_results"
     bl_label = "Select Clash Results"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
@@ -152,6 +159,7 @@ class SelectClashResults(bpy.types.Operator):
 class SelectSmartGroupedClashesPath(bpy.types.Operator):
     bl_idname = "bim.select_smart_grouped_clashes_path"
     bl_label = "Select Smart-Grouped Clashes Path"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
@@ -233,6 +241,7 @@ class ExecuteIfcClash(bpy.types.Operator):
 class SelectIfcClashResults(bpy.types.Operator):
     bl_idname = "bim.select_ifc_clash_results"
     bl_label = "Select IFC Clash Results"
+    bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".json"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
@@ -270,6 +279,7 @@ class SelectIfcClashResults(bpy.types.Operator):
 class SmartClashGroup(bpy.types.Operator):
     bl_idname = "bim.smart_clash_group"
     bl_label = "Smart Group Clashes"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
@@ -322,6 +332,7 @@ class SmartClashGroup(bpy.types.Operator):
 class LoadSmartGroupsForActiveClashSet(bpy.types.Operator):
     bl_idname = "bim.load_smart_groups_for_active_clash_set"
     bl_label = "Load Smart Groups for Active Clash Set"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         smart_groups_path = bpy.path.ensure_ext(bpy.context.scene.BIMClashProperties.smart_grouped_clashes_path, ".json")
@@ -355,6 +366,7 @@ class LoadSmartGroupsForActiveClashSet(bpy.types.Operator):
 class SelectSmartGroup(bpy.types.Operator):
     bl_idname = "bim.select_smart_group"
     bl_label = "Select Smart Group"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         # Select smart group in view
@@ -423,6 +435,7 @@ class BlenderClasher:
 class SetBlenderClashSetA(bpy.types.Operator):
     bl_idname = "bim.set_blender_clash_set_a"
     bl_label = "Set Blender Clash Set A"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         while len(bpy.context.scene.BIMClashProperties.blender_clash_set_a) > 0:
@@ -436,6 +449,7 @@ class SetBlenderClashSetA(bpy.types.Operator):
 class SetBlenderClashSetB(bpy.types.Operator):
     bl_idname = "bim.set_blender_clash_set_b"
     bl_label = "Set Blender Clash Set B"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         while len(bpy.context.scene.BIMClashProperties.blender_clash_set_b) > 0:
