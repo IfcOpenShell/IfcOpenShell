@@ -80,7 +80,9 @@ repository, and see the changes in our Blender installation.
     $ ln -s src/ifcsverchok /path/to/blender/2.XX/scripts/addons/ifcsverchok
     
 On Windows:
+
 ::
+
     $ git clone https://github.com/IfcOpenShell/IfcOpenShell.git
     $ cd IfcOpenShell
 
