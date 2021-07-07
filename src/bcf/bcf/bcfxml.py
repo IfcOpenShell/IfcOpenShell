@@ -16,12 +16,14 @@ def load(filepath):
             bcfxml = BcfXml()
             bcfxml.filepath = filepath
             return bcfxml
-        else:
+        elif version_id == "3.0":
             from bcf.v3.bcfxml import BcfXml
 
             bcfxml = BcfXml()
             bcfxml.filepath = filepath
             return bcfxml
+        else:
+            raise Exception(f"Version {version_id} not supported.")
 
 
 def get_version(version_path):

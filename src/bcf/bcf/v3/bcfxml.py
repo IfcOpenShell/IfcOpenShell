@@ -151,10 +151,10 @@ class BcfXml:
             if value in data["Topic"]:
                 setattr(topic, key, data["Topic"][value])
 
-        if "ReferenceLinks" in data["Topic"]:
+        if data["Topic"].get("ReferenceLinks"):
             topic.reference_links.extend(data["Topic"]["ReferenceLinks"].get("ReferenceLink", []))
 
-        if "Labels" in data["Topic"]:
+        if data["Topic"].get("Labels"):
             topic.labels.extend(data["Topic"]["Labels"].get("Label", []))
 
         if "BimSnippet" in data["Topic"]:
