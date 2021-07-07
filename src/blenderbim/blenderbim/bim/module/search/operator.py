@@ -137,6 +137,14 @@ class ColourByAttribute(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        IfcStore.begin_transaction(self)
+        self.store_state()
+        result = self._execute(context)
+        IfcStore.add_transaction_operation(self)
+        IfcStore.end_transaction(self)
+        return result
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         colours = cycle(colour_list)
         values = {}
@@ -153,9 +161,23 @@ class ColourByAttribute(bpy.types.Operator):
             if value not in values:
                 values[value] = next(colours)
             obj.color = values[value]
-        area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].shading.color_type = "OBJECT"
+        areas = [a for a in bpy.context.screen.areas if a.type == "VIEW_3D"]
+        if areas:
+            areas[0].spaces[0].shading.color_type = "OBJECT"
         return {"FINISHED"}
+
+    def store_state(self):
+        areas = [a for a in bpy.context.screen.areas if a.type == "VIEW_3D"]
+        if areas:
+            self.transaction_data = {"area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
+
+    def rollback(self, data):
+        if data:
+            data["area"].spaces[0].shading.color_type = data["color_type"]
+
+    def commit(self, data):
+        if data:
+            data["area"].spaces[0].shading.color_type = "OBJECT"
 
 
 class ColourByPset(bpy.types.Operator):
@@ -164,6 +186,14 @@ class ColourByPset(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        IfcStore.begin_transaction(self)
+        self.store_state()
+        result = self._execute(context)
+        IfcStore.add_transaction_operation(self)
+        IfcStore.end_transaction(self)
+        return result
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         colours = cycle(colour_list)
         values = {}
@@ -188,9 +218,23 @@ class ColourByPset(bpy.types.Operator):
             if value not in values:
                 values[value] = next(colours)
             obj.color = values[value]
-        area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].shading.color_type = "OBJECT"
+        areas = [a for a in bpy.context.screen.areas if a.type == "VIEW_3D"]
+        if areas:
+            areas[0].spaces[0].shading.color_type = "OBJECT"
         return {"FINISHED"}
+
+    def store_state(self):
+        areas = [a for a in bpy.context.screen.areas if a.type == "VIEW_3D"]
+        if areas:
+            self.transaction_data = {"area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
+
+    def rollback(self, data):
+        if data:
+            data["area"].spaces[0].shading.color_type = data["color_type"]
+
+    def commit(self, data):
+        if data:
+            data["area"].spaces[0].shading.color_type = "OBJECT"
 
 
 class ColourByClass(bpy.types.Operator):
@@ -199,6 +243,14 @@ class ColourByClass(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        IfcStore.begin_transaction(self)
+        self.store_state()
+        result = self._execute(context)
+        IfcStore.add_transaction_operation(self)
+        IfcStore.end_transaction(self)
+        return result
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         colours = cycle(colour_list)
         ifc_classes = {}
@@ -210,9 +262,23 @@ class ColourByClass(bpy.types.Operator):
             if ifc_class not in ifc_classes:
                 ifc_classes[ifc_class] = next(colours)
             obj.color = ifc_classes[ifc_class]
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].shading.color_type = "OBJECT"
+        areas = [a for a in bpy.context.screen.areas if a.type == "VIEW_3D"]
+        if areas:
+            areas[0].spaces[0].shading.color_type = "OBJECT"
         return {"FINISHED"}
+
+    def store_state(self):
+        areas = [a for a in bpy.context.screen.areas if a.type == "VIEW_3D"]
+        if areas:
+            self.transaction_data = {"area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
+
+    def rollback(self, data):
+        if data:
+            data["area"].spaces[0].shading.color_type = data["color_type"]
+
+    def commit(self, data):
+        if data:
+            data["area"].spaces[0].shading.color_type = "OBJECT"
 
 
 class ResetObjectColours(bpy.types.Operator):
