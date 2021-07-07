@@ -198,6 +198,28 @@ changes, you'll need to fix your setup manually. But this is relatively rare.
     $ ln -s src/ifcopenshell-python/ifcopenshell/api /path/to/blender/2.XX/scripts/addons/blenderbim/libs/site/packages/ifcopenshell/api
     $ ln -s src/ifcopenshell-python/ifcopenshell/util /path/to/blender/2.XX/scripts/addons/blenderbim/libs/site/packages/ifcopenshell/util
 
+On Windows:
+
+::
+
+    $ git clone https://github.com/IfcOpenShell/IfcOpenShell.git
+    $ cd IfcOpenShell
+
+    # Remove the Blender add-on Python code
+    $ rd /S /Q "\path\to\blender\2.XX\scripts\addons\blenderbim\bim\"
+
+    # Replace them with links to the Git repository
+    $ mklink /D "\path\to\blender\2.XX\scripts\addons\blenderbim\bim" "src\blenderbim\blenderbim\bim"
+
+    # Remove the IfcOpenShell dependency Python code
+    $ rd \S \Q "\path\to\blender\2.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\api"
+    $ rd \S \Q "\path\to\blender\2.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\util"
+
+    # Replace them with links to the Git repository
+    $ mklink \D "\path\to\blender\2.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\api" "src\ifcopenshell-python\ifcopenshell\api"
+    $ mklink \D "\path\to\blender\2.XX\scripts\addons\blenderbim\libs\site\packages\ifcopenshell\util" "src\ifcopenshell-python\ifcopenshell\util"
+
+
 After you modify your code in the Git repository, you will need to restart
 Blender for the changes to take effect. In ``Edit > Preferences > Add-ons`` you
 will see that the version number of BlenderBIM has changed to ``0.0.999999``,
