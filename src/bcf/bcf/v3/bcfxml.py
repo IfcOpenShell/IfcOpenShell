@@ -189,7 +189,7 @@ class BcfXml:
                 related_topic = bcf.v3.data.RelatedTopic()
                 related_topic.guid = item["@Guid"]
                 topic.related_topics.append(related_topic)
-            return topic
+        return topic
 
     def add_topic(self, topic=None):
         if topic is None:

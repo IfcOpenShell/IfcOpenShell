@@ -11,6 +11,7 @@ from mathutils import Vector, Matrix, Euler, geometry
 class NewBcfProject(bpy.types.Operator):
     bl_idname = "bim.new_bcf_project"
     bl_label = "New BCF Project"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bpy.context.scene.BCFProperties.is_loaded = False
@@ -24,7 +25,9 @@ class NewBcfProject(bpy.types.Operator):
 class LoadBcfProject(bpy.types.Operator):
     bl_idname = "bim.load_bcf_project"
     bl_label = "Load BCF Project"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.bcf;*.bcfzip", options={"HIDDEN"})
 
     def execute(self, context):
         bpy.context.scene.BCFProperties.is_loaded = False
@@ -45,6 +48,7 @@ class LoadBcfProject(bpy.types.Operator):
 class LoadBcfTopics(bpy.types.Operator):
     bl_idname = "bim.load_bcf_topics"
     bl_label = "Load BCF Topics"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -62,6 +66,7 @@ class LoadBcfTopics(bpy.types.Operator):
 class LoadBcfTopic(bpy.types.Operator):
     bl_idname = "bim.load_bcf_topic"
     bl_label = "Load BCF Topics"
+    bl_options = {"REGISTER", "UNDO"}
     topic_guid: bpy.props.StringProperty()
     topic_index: bpy.props.IntProperty()
 
@@ -132,6 +137,7 @@ class LoadBcfTopic(bpy.types.Operator):
 class LoadBcfComments(bpy.types.Operator):
     bl_idname = "bim.load_bcf_comments"
     bl_label = "Load BCF Comments"
+    bl_options = {"REGISTER", "UNDO"}
     topic_guid: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -160,6 +166,7 @@ class LoadBcfComments(bpy.types.Operator):
 class EditBcfProjectName(bpy.types.Operator):
     bl_idname = "bim.edit_bcf_project_name"
     bl_label = "Edit BCF Project Name"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -171,6 +178,7 @@ class EditBcfProjectName(bpy.types.Operator):
 class EditBcfAuthor(bpy.types.Operator):
     bl_idname = "bim.edit_bcf_author"
     bl_label = "Edit BCF Author"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -181,6 +189,7 @@ class EditBcfAuthor(bpy.types.Operator):
 class EditBcfTopicName(bpy.types.Operator):
     bl_idname = "bim.edit_bcf_topic_name"
     bl_label = "Edit BCF Topic Name"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         props = bpy.context.scene.BCFProperties
@@ -195,6 +204,7 @@ class EditBcfTopicName(bpy.types.Operator):
 class EditBcfTopic(bpy.types.Operator):
     bl_idname = "bim.edit_bcf_topic"
     bl_label = "Edit BCF Topic"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         props = bpy.context.scene.BCFProperties
@@ -219,6 +229,7 @@ class EditBcfTopic(bpy.types.Operator):
 class SaveBcfProject(bpy.types.Operator):
     bl_idname = "bim.save_bcf_project"
     bl_label = "Save BCF Project"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
@@ -234,6 +245,7 @@ class SaveBcfProject(bpy.types.Operator):
 class AddBcfTopic(bpy.types.Operator):
     bl_idname = "bim.add_bcf_topic"
     bl_label = "Add BCF Topic"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -247,6 +259,7 @@ class AddBcfTopic(bpy.types.Operator):
 class AddBcfBimSnippet(bpy.types.Operator):
     bl_idname = "bim.add_bcf_bim_snippet"
     bl_label = "Add BCF BIM Snippet"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -265,6 +278,7 @@ class AddBcfBimSnippet(bpy.types.Operator):
 class AddBcfRelatedTopic(bpy.types.Operator):
     bl_idname = "bim.add_bcf_related_topic"
     bl_label = "Add BCF Related Topic"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -288,6 +302,7 @@ class AddBcfRelatedTopic(bpy.types.Operator):
 class AddBcfHeaderFile(bpy.types.Operator):
     bl_idname = "bim.add_bcf_header_file"
     bl_label = "Add BCF Header File"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -310,6 +325,7 @@ class AddBcfHeaderFile(bpy.types.Operator):
 class ViewBcfTopic(bpy.types.Operator):
     bl_idname = "bim.view_bcf_topic"
     bl_label = "Get BCF Topic"
+    bl_options = {"REGISTER", "UNDO"}
     topic_guid: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -322,6 +338,7 @@ class ViewBcfTopic(bpy.types.Operator):
 class AddBcfViewpoint(bpy.types.Operator):
     bl_idname = "bim.add_bcf_viewpoint"
     bl_label = "Add BCF Viewpoint"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         if not bpy.context.scene.camera:
@@ -369,6 +386,7 @@ class AddBcfViewpoint(bpy.types.Operator):
 class RemoveBcfViewpoint(bpy.types.Operator):
     bl_idname = "bim.remove_bcf_viewpoint"
     bl_label = "Remove BCF Viewpoint"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -384,6 +402,7 @@ class RemoveBcfViewpoint(bpy.types.Operator):
 class RemoveBcfFile(bpy.types.Operator):
     bl_idname = "bim.remove_bcf_file"
     bl_label = "Remove BCF File"
+    bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -399,6 +418,7 @@ class RemoveBcfFile(bpy.types.Operator):
 class AddBcfReferenceLink(bpy.types.Operator):
     bl_idname = "bim.add_bcf_reference_link"
     bl_label = "Add BCF Reference Link"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -417,6 +437,7 @@ class AddBcfReferenceLink(bpy.types.Operator):
 class AddBcfDocumentReference(bpy.types.Operator):
     bl_idname = "bim.add_bcf_document_reference"
     bl_label = "Add BCF Document Reference"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -438,6 +459,7 @@ class AddBcfDocumentReference(bpy.types.Operator):
 class AddBcfLabel(bpy.types.Operator):
     bl_idname = "bim.add_bcf_label"
     bl_label = "Add BCF Label"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -457,6 +479,7 @@ class AddBcfLabel(bpy.types.Operator):
 class EditBcfReferenceLinks(bpy.types.Operator):
     bl_idname = "bim.edit_bcf_reference_links"
     bl_label = "Edit BCF Reference Link"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -474,6 +497,7 @@ class EditBcfReferenceLinks(bpy.types.Operator):
 class EditBcfLabels(bpy.types.Operator):
     bl_idname = "bim.edit_bcf_labels"
     bl_label = "Edit BCF Labels"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -491,6 +515,7 @@ class EditBcfLabels(bpy.types.Operator):
 class RemoveBcfReferenceLink(bpy.types.Operator):
     bl_idname = "bim.remove_bcf_reference_link"
     bl_label = "Remove BCF Reference Link"
+    bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -507,6 +532,7 @@ class RemoveBcfReferenceLink(bpy.types.Operator):
 class RemoveBcfLabel(bpy.types.Operator):
     bl_idname = "bim.remove_bcf_label"
     bl_label = "Remove BCF Label"
+    bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -523,6 +549,7 @@ class RemoveBcfLabel(bpy.types.Operator):
 class RemoveBcfBimSnippet(bpy.types.Operator):
     bl_idname = "bim.remove_bcf_bim_snippet"
     bl_label = "Remove BCF BIM Snippet"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -539,6 +566,7 @@ class RemoveBcfBimSnippet(bpy.types.Operator):
 class RemoveBcfDocumentReference(bpy.types.Operator):
     bl_idname = "bim.remove_bcf_document_reference"
     bl_label = "Remove BCF Document Reference"
+    bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -554,6 +582,7 @@ class RemoveBcfDocumentReference(bpy.types.Operator):
 class RemoveBcfRelatedTopic(bpy.types.Operator):
     bl_idname = "bim.remove_bcf_related_topic"
     bl_label = "Remove BCF Related Topic"
+    bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -570,6 +599,7 @@ class RemoveBcfRelatedTopic(bpy.types.Operator):
 class RemoveBcfComment(bpy.types.Operator):
     bl_idname = "bim.remove_bcf_comment"
     bl_label = "Remove BCF Comment"
+    bl_options = {"REGISTER", "UNDO"}
     comment_guid: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -585,6 +615,7 @@ class RemoveBcfComment(bpy.types.Operator):
 class EditBcfComment(bpy.types.Operator):
     bl_idname = "bim.edit_bcf_comment"
     bl_label = "Edit BCF Comment"
+    bl_options = {"REGISTER", "UNDO"}
     comment_guid: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -603,6 +634,7 @@ class EditBcfComment(bpy.types.Operator):
 class AddBcfComment(bpy.types.Operator):
     bl_idname = "bim.add_bcf_comment"
     bl_label = "Add BCF Comment"
+    bl_options = {"REGISTER", "UNDO"}
     comment_guid: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -619,13 +651,13 @@ class AddBcfComment(bpy.types.Operator):
             comment.viewpoint.guid = blender_topic.viewpoints
         bcfxml.add_comment(topic, comment)
         bpy.ops.bim.load_bcf_comments(topic_guid = topic.guid)
-        print(bcfxml.filepath)
         return {"FINISHED"}
 
 
 class ActivateBcfViewpoint(bpy.types.Operator):
     bl_idname = "bim.activate_bcf_viewpoint"
     bl_label = "Activate BCF Viewpoint"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         self.file = IfcStore.get_file()
@@ -835,6 +867,7 @@ class OpenBcfReferenceLink(bpy.types.Operator):
 class SelectBcfHeaderFile(bpy.types.Operator):
     bl_idname = "bim.select_bcf_header_file"
     bl_label = "Select BCF Header File"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
@@ -852,6 +885,7 @@ class SelectBcfHeaderFile(bpy.types.Operator):
 class SelectBcfBimSnippetReference(bpy.types.Operator):
     bl_idname = "bim.select_bcf_bim_snippet_reference"
     bl_label = "Select BCF BIM Snippet Reference"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
@@ -869,6 +903,7 @@ class SelectBcfBimSnippetReference(bpy.types.Operator):
 class SelectBcfDocumentReference(bpy.types.Operator):
     bl_idname = "bim.select_bcf_document_reference"
     bl_label = "Select BCF Document Reference"
+    bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
