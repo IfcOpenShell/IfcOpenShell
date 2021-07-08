@@ -1,9 +1,13 @@
 import operator
 import ifcopenshell.util.element
 import re
-
 from xmlschema import XMLSchema
-from xmlschema.validators import facets, identities
+from xmlschema import etree_tostring
+from xmlschema.validators import facets
+from xmlschema.validators import identities
+
+ids_schema = XMLSchema("http://standards.buildingsmart.org/IDS/ids.xsd")
+
 
 class exception(Exception):
     pass
@@ -412,8 +416,7 @@ class ids:
     """
 
     @staticmethod
-    def parse(fn):
-        ids_schema = XMLSchema("http://standards.buildingsmart.org/IDS/ids.xsd")
+    def parse(fn, ids_schema=ids_schema):
         ids_schema.validate(fn)
         
         ids_content = ids_schema.to_dict(fn)
