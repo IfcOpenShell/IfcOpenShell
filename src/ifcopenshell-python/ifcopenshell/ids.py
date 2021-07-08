@@ -522,6 +522,27 @@ class ids:
         for spec in self.specifications:
             ids_dict['specification'].append(spec.asdict())
         return ids_dict
+
+    def to_xml(self, fn='./', ids_schema=ids_schema):
+        if fn.endswith('/'):
+            fn = fn + 'IDS'
+        if not fn.endswith('.xml'):
+            fn = fn + '.xml'
+
+        ids_dict = self.asdict()
+
+        ids_xml = ids_schema.encode(ids_dict)     #, namespaces='http://standards.buildingsmart.org/IDS')    
+        ids_str = etree_tostring(ids_xml, namespaces={'': 'http://standards.buildingsmart.org/IDS'})  # if restrictions, add also: 'xs': 'http://www.w3.org/2001/XMLSchema'
+        ids_schema.validate(ids_str)
+
+        with open(fn, 'w') as f:
+            f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+            f.write('<!-- IDS (INFORMATION DELIVERY SPECIFICATION) CREATED USING IFCOPENSHELL -->\n')
+            f.write(ids_str)
+
+        ids_schema.validate(fn)
+        return ids_schema.is_valid(fn)
+
     @staticmethod
     def parse(fn, ids_schema=ids_schema):
         ids_schema.validate(fn)
