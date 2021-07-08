@@ -53,8 +53,17 @@ class facet(metaclass=meta_facet):
     conveniently extracting XML child node text content.
     """ 
 
-    def __init__(self, node):
-        self.node = node
+    def __init__(self, node=None, location=None):
+        if node:
+            self.node = node
+            if '@location' in self:
+                self.location = self.node['@location']
+            else:
+                self.location = 'any'
+        if location:
+            self.location = location
+        else:
+            self.location = 'any'
 
     def __getattr__(self, k):
         if k in self.node:
@@ -109,9 +118,8 @@ class classification(facet):
     parameters = ["system", "value", "location"]
     message = "%(location)sclassification reference %(value)s from '%(system)s'"
 
-    def __call__(self, inst, logger):
 
-        self.location = self.node['@location']
+    def __call__(self, inst, logger):
         
         instance_classiciations = inst.HasAssociations
         if ifcopenshell.util.element.get_type(inst):
@@ -137,17 +145,17 @@ class classification(facet):
                 elif hasattr(cref, 'Identification'):   # IFC4
                     refs.append((cref.ReferencedSource.Name, cref.Identification))                    
 
-        self.location = location[self.location]
+        self.location_msg = location[self.location]
 
         if refs:
             return facet_evaluation(
                 (self.system, self.value) in refs,
-                self.message % {"system": refs[0][0], "value": "'"+refs[0][1]+"'", "location": self.location}   # what if not first item of refs?
+                self.message % {"system": refs[0][0], "value": "'"+refs[0][1]+"'", "location": self.location_msg}   # what if not first item of refs?
             )
         else:    
             return facet_evaluation(
                 False,
-                "does not have %sclassification reference" % self.location
+                "does not have %sclassification reference" % self.location_msg
             )
 
 
@@ -181,12 +189,12 @@ class property(facet):
         pset = props.get(self.propertyset)
         val = pset.get(self.name) if pset else None
         
-        self.location = location[self.location]
+        self.location_msg = location[self.location]
         di = {
             "name": self.name,
             "propertyset": self.propertyset,
             "value": "'%s'" % val,
-            "location": self.location
+            "location": self.location_msg
         }
 
         if val is not None:
@@ -254,11 +262,11 @@ class material(facet):
         if not materials:
             materials.append('UNDEFINED')
 
-        self.location = location[self.location]
+        self.location_msg = location[self.location]
 
         return facet_evaluation(
             self.value in materials,
-            self.message % {"value": "'/'".join(materials), "location": self.location},
+            self.message % {"value": "'/'".join(materials), "location": self.location_msg},
         )
 
 
