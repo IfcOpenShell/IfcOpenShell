@@ -62,7 +62,7 @@ class IfcStore:
             map_object = IfcStore.guid_map
         try:
             obj = map_object[id_or_guid]
-            obj.type  # In case the object has been deleted, this triggers an exception
+            obj.name  # In case the object has been deleted, this triggers an exception
         except:
             return
         return obj
