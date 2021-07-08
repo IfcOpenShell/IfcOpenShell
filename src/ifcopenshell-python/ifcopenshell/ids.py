@@ -94,6 +94,13 @@ class entity(facet):
 
     parameters = ["name", "predefinedtype"]
     
+
+    def asdict(self):
+        fac_dict = {'name': self.name}
+        if 'predefinedtype' in self:
+            fac_dict['predefinedtype'] = self.predefinedtype
+        return fac_dict
+
     def __call__(self, inst, logger):
         # @nb with inheritance
         if self.predefinedtype and hasattr(inst, "PredefinedType"):
@@ -118,6 +125,13 @@ class classification(facet):
     parameters = ["system", "value", "location"]
     message = "%(location)sclassification reference %(value)s from '%(system)s'"
 
+    def asdict(self):
+        fac_dict = {
+            '@location': self.location,
+            'value': self.value,
+            'system': self.system
+            }
+        return fac_dict
 
     def __call__(self, inst, logger):
         
@@ -166,6 +180,17 @@ class property(facet):
 
     parameters = ["name", "propertyset", "value", "location"]
     message = "%(location)sproperty '%(name)s' in '%(propertyset)s' with a value %(value)s"
+    def asdict(self):
+        fac_dict = {
+            '@location': self.location,
+            'propertyset': self.propertyset,
+            'name': self.name,
+            'value': self.value,
+            # TODO '@href': 'http://identifier.buildingsmart.org/uri/buildingsmart/ifc-4.3/prop/FireRating', #https://identifier.buildingsmart.org/uri/something
+            # TODO 'instructions': 'Please add the desired rating.'
+            }
+        return fac_dict
+
 
     def __call__(self, inst, logger):
 
@@ -218,6 +243,16 @@ class material(facet):
     """
     parameters = ["value", "location"]
     message = "%(location)smaterial '%(value)s'"
+
+    def asdict(self):
+        fac_dict = {
+            '@location': self.location,
+            'value': self.value,
+            # TODO '@href': 'http://identifier.buildingsmart.org/uri/buildingsmart/ifc-4.3/prop/FireRating', #https://identifier.buildingsmart.org/uri/something
+            # TODO 'instructions': 'Please add the desired rating.'
+            # TODO '@use': 'optional'
+            }
+        return fac_dict
 
     def __call__(self, inst, logger):
 
@@ -391,6 +426,25 @@ class specification:
     """
 
     def __init__(self, node):
+    def asdict(self):
+        spec_dict = {
+            '@name': self.name,
+            'applicability': {},
+            'requirements': {}
+            }
+        for fac in self.applicability.terms:
+            fclass = type(fac).__name__
+            if fclass in spec_dict['applicability']:
+                spec_dict['applicability'][fclass].append(fac.asdict())
+            else:
+                spec_dict['applicability'][fclass] = [fac.asdict()]    
+        for fac in self.requirements.terms:
+            fclass = type(fac).__name__
+            if fclass in spec_dict['requirements']:
+                spec_dict['requirements'][fclass].append(fac.asdict())
+            else:
+                spec_dict['requirements'][fclass] = [fac.asdict()]    
+        return spec_dict
         def parse_rules(node):
             names = [req for req in node for n in node[req]]
             children = [child for req in node for child in node[req]]
@@ -423,6 +477,18 @@ class ids:
     Represents the XML root <ids> node and its <specification> childNodes.
     """
 
+    def asdict(self):
+        ids_dict = {'@xmlns': 'http://standards.buildingsmart.org/IDS',
+        '@xmlns:xs': 'http://www.w3.org/2001/XMLSchema',
+        '@xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+        '@xsi:schemaLocation': 'http://standards.buildingsmart.org/IDS '
+                                'http://standards.buildingsmart.org/IDS/ids.xsd',
+        'specification': [],
+        'info': self.info,
+        }
+        for spec in self.specifications:
+            ids_dict['specification'].append(spec.asdict())
+        return ids_dict
     @staticmethod
     def parse(fn, ids_schema=ids_schema):
         ids_schema.validate(fn)
