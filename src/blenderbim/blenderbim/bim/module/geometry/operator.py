@@ -102,7 +102,7 @@ class AddRepresentation(bpy.types.Operator):
             "should_force_faceted_brep": context.scene.BIMGeometryProperties.should_force_faceted_brep,
             "should_force_triangulation": context.scene.BIMGeometryProperties.should_force_triangulation,
             "ifc_representation_class": self.ifc_representation_class,
-            "profile_set_usage": self.file.by_id(self.profile_set_usage) if self.profile_set_usage else None
+            "profile_set_usage": self.file.by_id(self.profile_set_usage) if self.profile_set_usage else None,
         }
 
         result = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
@@ -323,6 +323,12 @@ class UpdateRepresentation(bpy.types.Operator):
         }
 
         new_representation = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
+
+        [
+            bpy.ops.bim.add_style(material=s.material.name)
+            for s in obj.material_slots
+            if s.material and not s.material.BIMMaterialProperties.ifc_style_id
+        ]
 
         ifcopenshell.api.run(
             "geometry.assign_styles",
