@@ -94,6 +94,10 @@ class entity(facet):
 
     parameters = ["name", "predefinedtype"]
     
+    def create(name=None, predefinedtype=None):
+        inst.name = name
+        inst.predefinedtype = predefinedtype
+        return inst
 
     def asdict(self):
         fac_dict = {'name': self.name}
@@ -124,6 +128,12 @@ class classification(facet):
 
     parameters = ["system", "value", "location"]
     message = "%(location)sclassification reference %(value)s from '%(system)s'"
+
+    def create(location='any', value=None, system=None):
+        inst.location = location
+        inst.value = value
+        inst.system = system
+        return inst
 
     def asdict(self):
         fac_dict = {
@@ -180,6 +190,18 @@ class property(facet):
 
     parameters = ["name", "propertyset", "value", "location"]
     message = "%(location)sproperty '%(name)s' in '%(propertyset)s' with a value %(value)s"
+    
+    def create(location='any', propertyset=None, name=None, value=None):
+        inst = property()
+        inst.location = location
+        inst.propertyset = propertyset
+        inst.name = name
+        inst.value = value
+        # cls.attributes = {'@location': location} # 'type', 'instance', 'any'
+        # BUG '@href': 'http://identifier.buildingsmart.org/uri/buildingsmart/ifc-4.3/prop/FireRating', #https://identifier.buildingsmart.org/uri/something
+        # BUG 'instructions': 'Please add the desired rating.',
+        return inst
+
     def asdict(self):
         fac_dict = {
             '@location': self.location,
@@ -243,6 +265,15 @@ class material(facet):
     """
     parameters = ["value", "location"]
     message = "%(location)smaterial '%(value)s'"
+    
+    def create(location='any', value=None):
+        inst.location = location
+        inst.value = value
+    #     self.attributes = {'@location': location} # 'type', 'instance', 'any'
+    #     # BUG '@use': 'optional'
+    #     # BUG '@href': 'https://identifier.buildingsmart.org/uri/something',
+    #     # BUG 'instructions': 'Please add the desired...',
+        return inst
 
     def asdict(self):
         fac_dict = {
