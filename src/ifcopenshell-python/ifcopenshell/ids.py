@@ -425,7 +425,11 @@ class specification:
     Represents the XML <specification> node and its two children <applicability> and <requirements>
     """
 
-    def __init__(self, node):
+    def __init__(self, name='Specification'):
+        self.name = name
+        self.applicability = None
+        self.requirements = None
+
     def asdict(self):
         spec_dict = {
             '@name': self.name,
@@ -445,14 +449,42 @@ class specification:
             else:
                 spec_dict['requirements'][fclass] = [fac.asdict()]    
         return spec_dict
+
+    @staticmethod
+    def parse(node):
         def parse_rules(node):
             names = [req for req in node for n in node[req]]
             children = [child for req in node for child in node[req]]
             classes = map(meta_facet.facets.__getitem__, names)
-            return [cls(n) for cls, n in zip(classes, children)]
+            # return [cls.parse(n) for cls, n in zip(classes, children)]
+            return [cls(n) for cls, n in zip(classes, children)]    # list of facet objects
+        
+        spec = specification()
+        spec.name = node['@name']
+        spec.applicability = boolean_and(parse_rules(node['applicability']))
+        spec.requirements = boolean_and(parse_rules(node['requirements']))
+        return spec
 
-        self.applicability = boolean_and(parse_rules(node['applicability']))
-        self.requirements = boolean_and(parse_rules(node['requirements']))
+    # TODO adding applicability/requirements to specification. How to avoid repetitions?
+    def add_applicability(self, facet):
+        """
+        Applicability specifies what conditions must be meet for an IFC object to be used for validation.
+        Takes: entity, classification, property or material objects as an input (at least one entity is required).
+        """
+        if self.applicability:
+            self.applicability = boolean_and( self.applicability.terms + [facet] )
+        else:
+            self.applicability = boolean_and([facet])
+        
+    def add_requirement(self, facet):
+        """
+        Requirement is validated on all applicable IFC elements. 
+        Takes: entity, classification, property or material objects as an input (at least one of them is required).
+        """
+        if self.requirements:
+            self.requirements = boolean_and( self.requirements.terms + [facet] )
+        else:
+            self.requirements = boolean_and([facet])
 
     def __call__(self, inst, logger):
         if self.applicability(inst, logger):
@@ -460,10 +492,11 @@ class specification:
             valid = self.requirements(inst, logger)
 
             if valid:
-                logger.info({'guid':inst.GlobalId, 'result':valid.success,'sentence':str(self) + "\n" + inst.is_a() + " '" + str(inst.Name) + "' (#" + str(inst.id()) + ") has " + str(valid) + " so is compliant"})
+                logger.info({'guid':inst.GlobalId, 'result':valid.success,'sentence':str(self) + ".\n" + inst.is_a() + " '" + str(inst.Name) + "' (#" + str(inst.id()) + ") has " + str(valid) + " so is compliant"})
                 return True, True
             else:
-                logger.error({'guid':inst.GlobalId, 'result':valid.success, 'sentence':str(self) + "\n" + inst.is_a() + " '" + str(inst.Name) + "' (#" + str(inst.id()) + ") has " + str(valid) + " so is not compliant"})
+                # BUG "has does not have" 
+                logger.error({'guid':inst.GlobalId, 'result':valid.success, 'sentence':str(self) + ".\n" + inst.is_a() + " '" + str(inst.Name) + "' (#" + str(inst.id()) + ") has " + str(valid) + " so is not compliant"})
                 return True, False
         else:
             return False, False 
