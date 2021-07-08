@@ -541,6 +541,16 @@ class ids:
     Represents the XML root <ids> node and its <specification> childNodes.
     """
 
+    def __init__(self):
+        self.specifications = []
+        self.info = None
+        #self.attributes = {
+        #   '@xmlns:xs': 'http://www.w3.org/2001/XMLSchema',
+        #   '@xmlns': 'http://standards.buildingsmart.org/IDS',
+        #   '@xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+        #   '@xsi:schemaLocation': 'http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/ids.xsd',
+        #   }
+
     def asdict(self):
         ids_dict = {'@xmlns': 'http://standards.buildingsmart.org/IDS',
         '@xmlns:xs': 'http://www.w3.org/2001/XMLSchema',
@@ -577,10 +587,9 @@ class ids:
     @staticmethod
     def parse(fn, ids_schema=ids_schema):
         ids_schema.validate(fn)
-        
-        ids_content = ids_schema.to_dict(fn)
+        ids_content = ids_schema.decode(fn)
         new_ids = ids()
-        new_ids.specifications = [specification(s) for s in ids_content['specification']]
+        new_ids.specifications = [specification.parse(s) for s in ids_content['specification']]
         return new_ids
 
 
