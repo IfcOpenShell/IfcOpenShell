@@ -800,6 +800,8 @@ class IfcImporter:
     def merge_by_class(self):
         merge_set = {}
         for obj in self.added_data.values():
+            if not isinstance(obj, bpy.types.Object):
+                continue
             if "/" not in obj.name or "IfcRelAggregates" in obj.users_collection[0].name:
                 continue
             merge_set.setdefault(obj.name.split("/")[0], []).append(obj)
@@ -808,6 +810,8 @@ class IfcImporter:
     def merge_by_material(self):
         merge_set = {}
         for obj in self.added_data.values():
+            if not isinstance(obj, bpy.types.Object):
+                continue
             if "/" not in obj.name or "IfcRelAggregates" in obj.users_collection[0].name:
                 continue
             if not obj.material_slots:
@@ -834,6 +838,8 @@ class IfcImporter:
             cleaned_material["material"].diffuse_color = cleaned_material["diffuse_color"]
 
         for obj in self.added_data.values():
+            if not isinstance(obj, bpy.types.Object):
+                continue
             if not hasattr(obj, "material_slots") or not obj.material_slots:
                 continue
             for slot in obj.material_slots:
@@ -858,6 +864,8 @@ class IfcImporter:
         obj = None
         last_obj = None
         for obj in self.added_data.values():
+            if not isinstance(obj, bpy.types.Object):
+                continue
             if obj.type == "MESH":
                 obj.select_set(True)
                 last_obj = obj
@@ -1005,7 +1013,7 @@ class IfcImporter:
     def create_materials(self):
         for material in self.file.by_type("IfcMaterial"):
             blender_material = bpy.data.materials.new(material.Name)
-            blender_material.BIMObjectProperties.ifc_definition_id = material.id()
+            self.link_element(material, blender_material)
             self.material_creator.materials[material.id()] = blender_material
             blender_material.use_fake_user = True
 
@@ -1028,6 +1036,11 @@ class IfcImporter:
             self.create_style(style, blender_material)
 
     def create_style(self, style, blender_material):
+        old_definition_id = blender_material.BIMObjectProperties.ifc_definition_id
+        if not old_definition_id:
+            self.link_element(style, blender_material)
+        blender_material.BIMObjectProperties.ifc_definition_id = old_definition_id
+
         blender_material.BIMMaterialProperties.ifc_style_id = style.id()
         self.material_creator.styles[style.id()] = blender_material
         for surface_style in style.Styles:
@@ -1060,7 +1073,8 @@ class IfcImporter:
 
     def place_objects_in_spatial_tree(self):
         for ifc_definition_id, obj in self.added_data.items():
-            self.place_object_in_spatial_tree(self.file.by_id(ifc_definition_id), obj)
+            if isinstance(obj, bpy.types.Object):
+                self.place_object_in_spatial_tree(self.file.by_id(ifc_definition_id), obj)
 
     def place_object_in_spatial_tree(self, element, obj):
         if element.is_a("IfcProject"):

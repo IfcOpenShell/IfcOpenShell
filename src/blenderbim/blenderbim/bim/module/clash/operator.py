@@ -128,6 +128,7 @@ class SelectClashSource(bpy.types.Operator):
     bl_label = "Select Clash Source"
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
     index: bpy.props.IntProperty()
     group: bpy.props.StringProperty()
 

@@ -5,6 +5,7 @@ import ifcopenshell.api.owner.settings
 from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.attribute.data import Data as AttributeData
+from ifcopenshell.api.material.data import Data as MaterialData
 from ifcopenshell.api.type.data import Data as TypeData
 
 
@@ -34,11 +35,23 @@ def mode_callback(obj, data):
 
 def name_callback(obj, data):
     try:
-        oby.type
+        obj.name
     except:
         return  # In case the object RNA is gone during an undo / redo operation
-    # Blender material names are up to 63 UTF-8 bytes
-    if not obj.BIMObjectProperties.ifc_definition_id or "/" not in obj.name or len(bytes(obj.name, "utf-8")) >= 63:
+    # Blender names are up to 63 UTF-8 bytes
+    if len(bytes(obj.name, "utf-8")) >= 63:
+        return
+
+    if isinstance(obj, bpy.types.Material):
+        if obj.BIMObjectProperties.ifc_definition_id:
+            IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id).Name = obj.name
+            AttributeData.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+            MaterialData.load_materials()
+        if obj.BIMMaterialProperties.ifc_style_id:
+            IfcStore.get_file().by_id(obj.BIMMaterialProperties.ifc_style_id).Name = obj.name
+        return
+
+    if not obj.BIMObjectProperties.ifc_definition_id or "/" not in obj.name:
         return
     element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
     if not element.is_a("IfcRoot"):
@@ -73,7 +86,10 @@ def active_object_callback():
 
 
 def subscribe_to(object, data_path, callback):
-    subscribe_to = object.path_resolve(data_path, False)
+    try:
+        subscribe_to = object.path_resolve(data_path, False)
+    except:
+        return
     bpy.msgbus.subscribe_rna(
         key=subscribe_to,
         owner=object,
