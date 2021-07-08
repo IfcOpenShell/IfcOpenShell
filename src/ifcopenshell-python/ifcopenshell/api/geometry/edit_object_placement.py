@@ -7,7 +7,7 @@ import ifcopenshell.util.placement
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
-        self.settings = {"product": None, "matrix": np.eye(4)}
+        self.settings = {"product": None, "matrix": np.eye(4), "should_cascade": True}
         for key, value in settings.items():
             self.settings[key] = value
 
@@ -17,7 +17,7 @@ class Usecase:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
 
         dependent_objects = []
-        if self.settings["product"].ObjectPlacement:
+        if self.settings["should_cascade"] and self.settings["product"].ObjectPlacement:
             for referenced_placement in self.settings["product"].ObjectPlacement.ReferencedByPlacements:
                 for placed_obj in referenced_placement.PlacesObject:
                     dependent_objects.append(
