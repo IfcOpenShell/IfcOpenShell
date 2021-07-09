@@ -95,6 +95,7 @@ class entity(facet):
     parameters = ["name", "predefinedtype"]
     
     def create(name=None, predefinedtype=None):
+        inst = entity()
         inst.name = name
         inst.predefinedtype = predefinedtype
         return inst
@@ -130,6 +131,7 @@ class classification(facet):
     message = "%(location)sclassification reference %(value)s from '%(system)s'"
 
     def create(location='any', value=None, system=None):
+        inst = classification()
         inst.location = location
         inst.value = value
         inst.system = system
@@ -267,6 +269,7 @@ class material(facet):
     message = "%(location)smaterial '%(value)s'"
     
     def create(location='any', value=None):
+        inst = material()
         inst.location = location
         inst.value = value
     #     self.attributes = {'@location': location} # 'type', 'instance', 'any'
@@ -580,6 +583,7 @@ class ids:
             f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
             f.write('<!-- IDS (INFORMATION DELIVERY SPECIFICATION) CREATED USING IFCOPENSHELL -->\n')
             f.write(ids_str)
+            f.close()
 
         ids_schema.validate(fn)
         return ids_schema.is_valid(fn)
