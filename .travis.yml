@@ -23,6 +23,7 @@ addons:
     - opencollada-dev
     - python3-all-dev
     - swig
+    - libhdf5-dev
 
 before_script:
   - if [ $TRAVIS_OS_NAME == "linux" ]; then ccache -z; fi
@@ -41,6 +42,8 @@ script:
     -DPYTHON_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libpython3.8.so \
     -DGLTF_SUPPORT=On \
     -DJSON_INCLUDE_DIR=/usr/include \
+    -DHDF5_INCLUDE_DIR=/usr/include/hdf5/serial \
+    -DHDF5_LIBRARIES=/usr/lib/x86_64-linux-gnu/hdf5/serial \
     ../cmake
 
   # TODO: Drop sudo
