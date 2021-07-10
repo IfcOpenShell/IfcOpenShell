@@ -49,7 +49,6 @@ script:
     -DGLTF_SUPPORT=On \
     -DJSON_INCLUDE_DIR=/usr/include \
     -DHDF5_INCLUDE_DIR=/usr/include/hdf5/serial \
-    -DHDF5_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu/hdf5/serial \
     ../cmake
 
   # TODO: Drop sudo
