@@ -430,10 +430,9 @@ if(HDF5_SUPPORT)
 	    SET(HDF5_LIBRARIES
 	        /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5_cpp.a
 		/usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5.a
-		/usr/lib/x86_64-linux-gnu/libz.a
 		/usr/lib/x86_64-linux-gnu/libsz.a
 		/usr/lib/x86_64-linux-gnu/libaec.a
-		dl
+		z dl
 	    )
 	endif()
         # An additional lib- prefix is added by HDF5 to denote static libraries
