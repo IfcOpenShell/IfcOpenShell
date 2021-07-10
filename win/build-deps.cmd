@@ -187,7 +187,6 @@ ctest -S HDF5config.cmake,BUILD_GENERATOR=VS%VS_VER%%ARCH_BITS_64% -C %BUILD_CFG
 call :ExtractArchive %HDF5_INSTALL_ZIP_NAME%.zip "%INSTALL_DIR%" "%INSTALL_DIR%\%HDF5_INSTALL_ZIP_NAME%"
 echo HDF5_VERSION=%HDF5_VERSION%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 popd
-goto :Successful
 
 :: Note all of the dependencies have appropriate label so that user can easily skip something if wanted
 :: by modifying this file and using goto.
