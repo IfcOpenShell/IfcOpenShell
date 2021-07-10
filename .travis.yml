@@ -44,6 +44,7 @@ script:
     -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3 \
     -DPYTHON_INCLUDE_DIR:PATH=/usr/include/python3.8 \
     -DPYTHON_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libpython3.8.so \
+    "-DSCHEMA_VERSIONS=2x3;4" \
     -DGLTF_SUPPORT=On \
     -DJSON_INCLUDE_DIR=/usr/include \
     ../cmake
