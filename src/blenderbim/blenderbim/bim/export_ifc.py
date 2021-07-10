@@ -68,6 +68,8 @@ class IfcExporter:
 
         for ifc_definition_id, obj in IfcStore.id_map.items():
             try:
+                if isinstance(obj, bpy.types.Material):
+                    continue
                 self.sync_object_placement(obj)
                 self.sync_object_container(ifc_definition_id, obj)
             except ReferenceError:
