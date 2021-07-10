@@ -22,10 +22,15 @@ addons:
     - nlohmann-json3-dev
     - opencollada-dev
     - python3-all-dev
+    - python3-pip
     - swig
 
 before_script:
   - if [ $TRAVIS_OS_NAME == "linux" ]; then ccache -z; fi
+  
+install:
+  # for IDS
+  - python3 -m pip install xmlschema
 
 script:
   - pwd
