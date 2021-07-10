@@ -120,6 +120,7 @@ UNIFY_ENVVARS_AND_CACHE(PCRE_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(PYTHON_EXECUTABLE)
 UNIFY_ENVVARS_AND_CACHE(HDF5_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(HDF5_LIBRARY_DIR)
+UNIFY_ENVVARS_AND_CACHE(HDF5_LIBRARIES)
 UNIFY_ENVVARS_AND_CACHE(BOOST_ROOT)
 UNIFY_ENVVARS_AND_CACHE(BOOST_LIBRARYDIR)
 
@@ -422,16 +423,20 @@ if(HDF5_SUPPORT)
             "${HDF5_LIBRARY_DIR}/libhdf5_cpp.lib"
             "${HDF5_LIBRARY_DIR}/libhdf5.lib"
             "${HDF5_LIBRARY_DIR}/libzlib.lib"
-			"${HDF5_LIBRARY_DIR}/libsz.lib"
-			"${HDF5_LIBRARY_DIR}/libaec.lib")
+            "${HDF5_LIBRARY_DIR}/libsz.lib"
+            "${HDF5_LIBRARY_DIR}/libaec.lib")
     ELSE()
-        SET(HDF5_LIBRARIES 
-            "${HDF5_LIBRARY_DIR}/hdf5_cpp.a"
-            "${HDF5_LIBRARY_DIR}/hdf5.a"
-			"${HDF5_LIBRARY_DIR}/libzlib.a"
-			"${HDF5_LIBRARY_DIR}/libsz.a"
-			"${HDF5_LIBRARY_DIR}/libaec.a"
-            zlib)
+        if (NOT HDF5_LIBRARIES)
+	    SET(HDF5_LIBRARIES
+	        /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5_cpp.a
+		/usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5.a
+		/usr/lib/x86_64-linux-gnu/libz.a
+		/usr/lib/x86_64-linux-gnu/libsz.a
+		/usr/lib/x86_64-linux-gnu/libaec.a
+		dl
+	    )
+	endif()
+        # An additional lib- prefix is added by HDF5 to denote static libraries
     ENDIF()
 endif()
 
