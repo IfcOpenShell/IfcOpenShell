@@ -78,6 +78,9 @@
 
 #include "../ifcparse/IfcGlobalId.h"
 
+#include <boost/format.hpp>
+#include <boost/tokenizer.hpp>
+
 #include "SvgSerializer.h"
 
 const double PI2 = M_PI * 2.;
@@ -86,7 +89,7 @@ bool SvgSerializer::ready() {
 	return true;
 }
 
-void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
+void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire, boost::optional<std::vector<double>> dash_array) {
 	/* ShapeFix_Wire fix;
 	Handle(ShapeExtend_WireData) data = new ShapeExtend_WireData;
 	for (TopExp_Explorer edges(result, TopAbs_EDGE); edges.More(); edges.Next()) {
@@ -132,7 +135,7 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
 		// TODO: ALMOST_THE_SAME utilities in separate header
 		bool closed = fabs((u1 + PI2) - u2) < 1.e-9;
 
-        if (conical && closed) {
+        if (!polygonal_ && (conical && closed)) {
             if (first) {
                 if (ty == STANDARD_TYPE(Geom_Circle)) {
                     Handle(Geom_Circle) circle = Handle(Geom_Circle)::DownCast(curve);
@@ -176,6 +179,9 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
                     path.add(center.X());
                     path.add(" ");
                     path.add(center.Y());
+					// @todo isn't there a ")" missing here?
+					// @todo also X, Y are not added to {x,y}coords vector
+					// @todo also z_rotation is in radians, should be in degrees
 
                     // Bounding box:
                     // More important to have all geometry in bounding box than to be minimal
@@ -216,7 +222,7 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
 		growBoundingBox(p2.X(), p2.Y());
 
 
-		if (ty == STANDARD_TYPE(Geom_Circle) || ty == STANDARD_TYPE(Geom_Ellipse)) {
+		if (!polygonal_ && (ty == STANDARD_TYPE(Geom_Circle) || ty == STANDARD_TYPE(Geom_Ellipse))) {
 			Handle(Geom_Conic) conic = Handle(Geom_Conic)::DownCast(curve);
 			const bool mirrored = conic->Position().Axis().Direction().Z() < 0;
 					
@@ -297,7 +303,22 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
 		first = false;
 	}
 
-	path.add("\"/>\n");
+	path.add("\"");
+
+	if (dash_array) {
+		path.add(" stroke-dasharray=\"");
+		bool first = true;
+		for (auto& d : *dash_array) {
+			if (!first) {
+				path.add(" ");
+			}
+			first = false;
+			radii.push_back(path.add(d));
+		}
+		path.add("\"");
+	}
+
+	path.add("/>\n");
 	p.second.push_back(path);
 }
 
@@ -335,6 +356,8 @@ namespace {
 		return boost::none;
 	}
 
+	typedef std::pair<std::array<double, 3>, std::array<double, 3>> box_t;
+
 	boost::optional<TopoDS_Edge> edge_from_compound(TopoDS_Shape& compound) {
 		TopoDS_Iterator it(compound);
 		if (it.More()) {
@@ -353,6 +376,131 @@ namespace {
 		}
 		return boost::none;
 	}
+
+	class almost {
+	private:
+		double v_, eps_;
+	public:
+		almost(double v, double eps = 1.e-7)
+			: v_(v)
+			, eps_(eps)
+		{}
+
+		bool operator==(double other) const {
+			return std::fabs(other - v_) < eps_;
+		}
+
+		bool operator!=(double other) const {
+			return !(*this == other);
+		}
+	};
+
+	boost::optional<box_t> box_from_compound(TopoDS_Shape& compound) {
+		TopExp_Explorer exp(compound, TopAbs_SHELL);
+		TopoDS_Shell shell;
+		if (exp.More()) {
+			shell = TopoDS::Shell(exp.Current());
+			exp.Next();
+			if (exp.More()) {
+				return boost::none;
+			}
+		}
+		else {
+			return boost::none;
+		}
+
+		if (IfcGeom::Kernel::count(shell, TopAbs_FACE) != 6) {
+			return boost::none;
+		}
+
+		TopoDS_Iterator it(shell);
+		for (; it.More(); it.Next()) {
+			const auto& face = TopoDS::Face(it.Value());
+			auto surf = BRep_Tool::Surface(face);
+			if (surf->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
+				return boost::none;
+			}
+			auto pln = Handle(Geom_Plane)::DownCast(surf);
+			auto dz = std::abs(pln->Position().Direction().Z());
+			if (almost(0.) != dz && almost(1.) != dz) {
+				return boost::none;
+			}
+			auto dy = std::abs(pln->Position().Direction().Y());
+			if (almost(0.) != dy && almost(1.) != dy) {
+				return boost::none;
+			}
+		}
+
+		Bnd_Box b;
+		BRepBndLib::Add(compound, b, false);
+
+		double x0, y0, z0, x1, y1, z1;
+		b.Get(x0, y0, z0, x1, y1, z1);
+
+		return box_t{ {{x0, y0, z0}}, {{x1, y1, z1}} };
+	}
+
+	struct string_property {
+		std::string pset_name, prop_name, value;
+	};
+
+	template <typename It>
+	void enumerate_string_properties(IfcUtil::IfcBaseEntity* product, It output_it) {
+		auto rels = product->get_inverse("IsDefinedBy");
+		for (auto& rel : *rels) {
+			if (rel->declaration().is("IfcRelDefinesByProperties")) {
+				auto pset = (IfcUtil::IfcBaseEntity*) (IfcUtil::IfcBaseClass*) *((IfcUtil::IfcBaseEntity*) rel)->get("RelatingPropertyDefinition");
+				std::string pset_name;
+				if (!pset->get("Name")->isNull()) {
+					pset_name = (std::string) *pset->get("Name");
+				}
+				IfcEntityList::ptr props = *pset->get("HasProperties");
+				for (auto& prop : *props) {
+					if (prop->declaration().is("IfcPropertySingleValue")) {
+						std::string name = *((IfcUtil::IfcBaseEntity*) prop)->get("Name");
+						IfcUtil::IfcBaseClass* v = *((IfcUtil::IfcBaseEntity*) prop)->get("NominalValue");
+						auto value = v->data().getArgument(0);
+						if (value->type() == IfcUtil::Argument_STRING) {
+							std::string v_str = *value;
+							*output_it++ = string_property{ pset_name, name, v_str };
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+namespace {
+	boost::optional<std::string> get_curve_style_name(IfcUtil::IfcBaseEntity* item) {
+		auto refs = item->get_inverse("StyledByItem");
+		for (auto& ref : *refs) {
+			if (ref->declaration().is("IfcStyledItem")) {
+				IfcEntityList::ptr styles = *((IfcUtil::IfcBaseEntity*)ref)->get("Styles");
+				for (auto& s_ : *styles) {
+					auto s = (IfcUtil::IfcBaseEntity*) s_;
+					std::vector<IfcUtil::IfcBaseEntity*> pss;
+					if (s->declaration().is("IfcPresentationStyleAssignment")) {
+						IfcEntityList::ptr pstyles = *s->get("Styles");
+						for (auto& ssss : *pstyles) {
+							pss.push_back((IfcUtil::IfcBaseEntity*) ssss);
+						}
+					} else {
+						pss.push_back(s);
+					}
+					for (auto& ps : pss) {
+						if (ps->declaration().is("IfcCurveStyle")) {
+							auto arg = ps->get("Name");
+							if (!arg->isNull()) {
+								return (std::string) *arg;
+							}
+						}
+					}
+				}
+			}
+		}
+		return boost::none;
+	}
 }
 
 void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
@@ -362,7 +510,36 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 		object_type = static_cast<std::string>(*brep_obj->product()->get("ObjectType"));
 	}
 
+	std::vector<boost::optional<std::vector<double>>> dash_arrays;
+
 	TopoDS_Shape compound_local = brep_obj->geometry().as_compound();
+	for (auto& x : brep_obj->geometry()) {
+		dash_arrays.emplace_back();
+
+		auto item = (IfcUtil::IfcBaseEntity*) this->file->instance_by_id(x.ItemId());
+		auto curve_style_name = get_curve_style_name(item);
+		
+		if (curve_style_name && 
+			(boost::starts_with(*curve_style_name, "LINE_") ||
+			 boost::starts_with(*curve_style_name, "DASH_")))
+		{
+			std::vector<std::string> tokens;
+			boost::split(tokens, *curve_style_name, boost::is_any_of("_"));
+			if (tokens.size() > 1) {
+				dash_arrays.back().emplace();
+				for (auto& tok : tokens) {
+					double d;
+					try {
+						d = boost::lexical_cast<double>(tok);
+					} catch (boost::bad_lexical_cast&) {
+						continue;
+					}
+					dash_arrays.back()->push_back(d / 1000.);
+				}
+			}
+		}
+	}
+
 	const gp_Trsf& trsf = brep_obj->transformation().data();
 
 	const bool is_section = (section_ref_ && object_type && *section_ref_ == *object_type);
@@ -374,7 +551,11 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 		// (When determinant < 0, copy is implied and the input is not mutated.)
 		auto compound_unmirrored = make_transform_global.Shape();
 
+		boost::optional<double> scale;
+		boost::optional<std::pair<double, double>> size;
+
 		auto e = edge_from_compound(compound_unmirrored);
+		boost::optional<gp_Pln> pln;
 		if (e) {
 			TopoDS_Edge global_edge = TopoDS::Edge(e->Moved(trsf));
 			double u0, u1;
@@ -384,43 +565,111 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 				gp_Vec V;
 				crv->D1((u0 + u1) / 2., P, V);
 				auto N = V.Crossed(gp::DZ());
-				gp_Pln pln(gp_Ax3(P, N, V));
-				
-				// Move pln to have projection of origin at plane center.
-				// This is necessary to have Poly and BRep HLR at the same position
-				// (Poly) is wrong otherwise.
-				Extrema_ExtPElS ext;
-				ext.Perform(gp::Origin(), pln, 1.e-5);
-				pln.SetLocation(ext.Point(1).Value());
-
-				if (!deferred_section_data_) {
-					deferred_section_data_.emplace();
-				}
-				std::string name = brep_obj->name();
-				if (name.empty()) {
-					name = boost::lexical_cast<std::string>(brep_obj->id());
-				}
-				if (is_section) {
-					deferred_section_data_->push_back(vertical_section{ pln , "Section " + name, false });
-				}
-				if (is_elevation) {
-					deferred_section_data_->push_back(vertical_section{ pln , "Elevation " + name, true });
-				}
+				pln = gp_Pln(gp_Ax3(P, N, V));
 			}
 		}
+		else if (boost::optional<box_t> b = box_from_compound(compound_local)) {
+			pln = gp_Pln().Transformed(trsf);
+			size = std::make_pair(
+				b->second[0] - b->first[0],
+				b->second[1] - b->first[1]
+			);
+
+#if OCC_VERSION_HEX >= 0x70300
+			view_box_3d_.emplace();
+			BRepBndLib::AddOBB(compound_unmirrored, *view_box_3d_, false, false, false);
+#endif
+		}
+
+		std::vector<string_property> props;
+		enumerate_string_properties(brep_obj->product(), std::back_inserter(props));
+		std::map<std::string, std::string> prop_map;
+		for (auto& p : props) {
+			prop_map[p.pset_name + "." + p.prop_name] = p.value;
+		}
+		auto pit = prop_map.find("EPset_Drawing.Scale");
+		if (pit != prop_map.end()) {
+			typedef boost::tokenizer<boost::char_separator<char>> tokenizer;
+			tokenizer tok{ pit->second };
+			auto tokit = tok.begin();
+			std::string num, denum;
+			if (tokit != tok.end()) {
+				num = *tokit++;
+			}
+			tokit++;
+			if (tokit != tok.end()) {
+				denum = *tokit++;
+			}
+			if (num.size() && denum.size()) {
+				try {
+					scale = (float) boost::lexical_cast<int>(num) / boost::lexical_cast<int>(denum);
+				}
+				catch (boost::bad_lexical_cast&) {}
+			}
+		}
+
+		if (!emit_building_storeys_ && scale && size) {
+			scale_ = scale;
+			size_ = std::make_pair(
+				// The header writes values in mm
+				size->first * 1000 * *scale_,
+				size->second * 1000 * *scale_
+			);
+		}
+
+		if (pln) {
+			// Move pln to have projection of origin at plane center.
+			// This is necessary to have Poly and BRep HLR at the same position
+			// (Poly) is wrong otherwise.
+			Extrema_ExtPElS ext;
+			ext.Perform(gp::Origin(), *pln, 1.e-5);
+			auto P0 = pln->Location();
+			pln->SetLocation(ext.Point(1).Value());
+
+			if (!emit_building_storeys_ && scale && size) {
+				auto P1 = pln->Location();
+				gp_Vec v(P1.XYZ() - P0.XYZ());
+				gp_Trsf pi;
+				pi.SetTransformation(pln->Position());
+				pi.Invert();
+				v.Transform(pi);				
+				offset_2d_ = std::make_pair(
+					(-size->first / 2. - v.X()) * 1000 * *scale_,
+					(-size->second / 2. + v.Y()) * 1000 * *scale_
+				);
+			}
+
+			if (!deferred_section_data_) {
+				deferred_section_data_.emplace();
+			}
+			std::string name = brep_obj->name();
+			if (name.empty()) {
+				name = boost::lexical_cast<std::string>(brep_obj->id());
+			}
+			if (is_section) {
+				deferred_section_data_->push_back(vertical_section{ *pln , "Section " + name, false, scale, size });
+			}
+			if (is_elevation) {
+				deferred_section_data_->push_back(vertical_section{ *pln , "Elevation " + name, true, scale, size });
+			}
+		}
+
 		return;
 	}
 
 	auto p = storey_elevation_from_element(brep_obj);
 	IfcUtil::IfcBaseEntity* storey = p ? p->first : nullptr;
 	double elev = p ? p->second : std::numeric_limits<double>::quiet_NaN();
-	geometry_data data{ compound_local, trsf, brep_obj->product(), storey, elev, brep_obj->name(), nameElement(storey, brep_obj) };
+	// @todo is it correct to call nameElement() here with a single storey (what if this element spans multiple?)
+	geometry_data data{ compound_local, dash_arrays, trsf, brep_obj->product(), storey, elev, brep_obj->name(), nameElement(storey, brep_obj) };
 
 	if (auto_section_ || auto_elevation_ || section_ref_ || elevation_ref_) {
 		element_buffer_.push_back(data);
 	}
 
-	write(data);
+	if (emit_building_storeys_) {
+		write(data);
+	}
 }
 
 namespace {
@@ -467,6 +716,21 @@ void SvgSerializer::write(const geometry_data& data) {
 	make_transform_global.Build();
 	// (When determinant < 0, copy is implied and the input is not mutated.)
 	auto compound_unmirrored = make_transform_global.Shape();
+
+#if OCC_VERSION_HEX >= 0x70300
+	if (view_box_3d_) {
+		Bnd_OBB obb;
+		BRepBndLib::AddOBB(compound_unmirrored, obb, false, false, false);
+		if (view_box_3d_->IsOut(obb)) {
+			Logger::Notice("Not including element due to viewBox", data.product);
+			return;
+		}
+	}
+#endif
+
+	if (is_floor_plan_) {
+		BRepBndLib::Add(compound_unmirrored, bnd_);
+	}
 
 	// SVG has a coordinate system with the origin in the *upper*-left corner
 	// therefore we mirror the shape along the XZ-plane.	
@@ -738,13 +1002,14 @@ void SvgSerializer::write(const geometry_data& data) {
 		}
 
 		TopoDS_Iterator it(compound_to_use);
+		auto dash_it = data.dash_arrays.begin();
 
 		TopoDS_Face largest_closed_wire_face;
 		double largest_closed_wire_area = 0.;
 		path_object* po = nullptr;
 
 		// Iterate over components of compound to have better chance of matching section edges to closed wires
-		for (; it.More(); it.Next()) {
+		for (; it.More(); it.Next(), ++dash_it) {
 
 			const TopoDS_Shape& subshape = it.Value();
 
@@ -791,9 +1056,15 @@ void SvgSerializer::write(const geometry_data& data) {
 				object_type.erase(std::remove_if(object_type.begin(), object_type.end(), [](char c) { return !std::isalnum(c); }), object_type.end());
 			}
 
-			if (data.product->declaration().is("IfcAnnotation") && // is an Annotation
-				(proj.Magnitude() > 1.e-5) && 					   // when projected onto the view has a length
-				zmin >= range.first && zmin <= range.second)	   // the Z-coords are within the range of the building storey
+			auto z_local = gp::DZ().Transformed(data.trsf.Inverted());
+
+			if (data.product->declaration().is("IfcAnnotation") &&     // is an Annotation
+				(proj.Magnitude() > 1.e-5) && 					       // when projected onto the view has a length
+				is_floor_plan_
+					? (zmin >= range.first && zmin < (range.second - 1.e-5)) // the Z-coords are within the range of the building storey,
+				                                                             // this excludes the upper bound with a small tolerance
+					: (projection_direction.Dot(z_local) < -0.99)            // For elevations only include annotations that are "facing" the view direction
+				)
 			{
 				auto svg_name = data.svg_name;
 
@@ -810,9 +1081,24 @@ void SvgSerializer::write(const geometry_data& data) {
 					}
 				}
 
+				auto subshape_to_use = subshape;
+				if (variant.which() == 2) {
+					// @todo remove duplication with code below.
+
+					gp_Trsf trsf;
+					trsf.SetTransformation(gp::XOY(), pln.Position());
+					subshape_to_use.Move(trsf);
+
+					gp_Trsf trsf_mirror;
+					trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
+					BRepBuilderAPI_Transform make_transform_mirror(subshape_to_use, trsf_mirror, true);
+					make_transform_mirror.Build();
+					subshape_to_use = make_transform_mirror.Shape();
+				}
+
 				if (object_type == "Dimension") {
 
-					TopExp_Explorer exp(subshape, TopAbs_EDGE, TopAbs_FACE);
+					TopExp_Explorer exp(subshape_to_use, TopAbs_EDGE, TopAbs_FACE);
 					for (; exp.More(); exp.Next()) {
 						const auto& e = TopoDS::Edge(exp.Current());
 						TopoDS_Vertex v0, v1;
@@ -827,6 +1113,19 @@ void SvgSerializer::write(const geometry_data& data) {
 
 						// @todo should we take the average parameter value instead?
 						gp_XYZ center = (p0.XYZ() + p1.XYZ()) / 2.;
+						double z_rotation = gp_Dir(p0.XYZ() - p1.XYZ()).AngleWithRef(gp_Dir(1., 0., 0.), gp_Dir(0., 0., 1.));
+						z_rotation *= 180. / M_PI;
+						if (z_rotation < -88) {
+							z_rotation += 180;
+						}
+						if (z_rotation > +90) {
+							z_rotation -= 180;
+						}
+
+						std::string text_offset = "8";
+						if (scale_) {
+							text_offset = "1";
+						}
 
 						util::string_buffer path;
 						// dominant-baseline="central" is not well supported in IE.
@@ -835,7 +1134,14 @@ void SvgSerializer::write(const geometry_data& data) {
 						xcoords.push_back(path.add(center.X()));
 						path.add("\" y=\"");
 						ycoords.push_back(path.add(center.Y()));
-						path.add("\">");
+						path.add("\" transform=\"rotate(");
+						path.add(z_rotation);
+						path.add(" ");
+						xcoords.push_back(path.add(center.X()));
+						path.add(" ");
+						ycoords.push_back(path.add(center.Y()));
+						path.add(") translate(0 -" + text_offset + ")\">");
+
 						std::vector<std::string> labels{};
 
 						GProp_GProps prop;
@@ -865,10 +1171,10 @@ void SvgSerializer::write(const geometry_data& data) {
 					
 				} else if (object_type == "Symbol") {
 
-					TopExp_Explorer exp(subshape, TopAbs_WIRE, TopAbs_FACE);
+					TopExp_Explorer exp(subshape_to_use, TopAbs_WIRE, TopAbs_FACE);
 					for (; exp.More(); exp.Next()) {
 						const auto& W = TopoDS::Wire(exp.Current());
-						write(*po, W);
+						write(*po, W, *dash_it);
 					}
 					
 				}
@@ -925,7 +1231,12 @@ void SvgSerializer::write(const geometry_data& data) {
 			gp_Pnt prev;
 
 			for (int i = 1; i <= wires->Length(); ++i) {
-				const TopoDS_Wire& wire = TopoDS::Wire(wires->Value(i));
+				
+				// @nb not const, because in case of storey annotations we might
+				// generate a new wire with fixed length
+
+				TopoDS_Wire wire = TopoDS::Wire(wires->Value(i));
+
 				if (wire.Closed() && (print_space_names_ || print_space_areas_) && data.product->declaration().is("IfcSpace")) {
 					// we explicitly specify the surface here, to later on
 					// simplify the projection from {x,y,z} to {u, v} because
@@ -943,6 +1254,87 @@ void SvgSerializer::write(const geometry_data& data) {
 					}
 
 				}
+				
+				if (data.product->declaration().is("IfcBuildingStorey") && storey_height_display_ != SH_NONE && wires->Length() == 1 && IfcGeom::Kernel::count(wire, TopAbs_EDGE) == 1) {
+					
+					std::string elev_str;
+
+					const double lu = file->getUnit("LENGTHUNIT").second;
+					auto a = data.product->get("Elevation");
+					if (!a->isNull()) {
+						double elev = *a;
+						
+						// @nb we don't actually factor in the length unit.
+						// elev *= lu;
+						
+						if (almost(1.) == lu) {
+							// m
+							elev_str = boost::str(boost::format("%.3f") % elev);
+						}
+						else {
+							elev_str = boost::str(boost::format("%d") % ((int) elev));
+						}
+					}
+
+					std::vector<std::string> labels{ data.ifc_name, elev_str };
+					util::string_buffer path;
+
+					TopExp_Explorer exp(wire, TopAbs_EDGE);
+					auto edge = TopoDS::Edge(exp.Current());
+					TopoDS_Vertex v0, v1;
+					TopExp::Vertices(edge, v0, v1);
+					gp_Pnt p0 = BRep_Tool::Pnt(v0);
+					gp_Pnt p1 = BRep_Tool::Pnt(v1);
+
+					if (p0.X() > p1.X()) {
+						std::swap(p0, p1);
+					}
+
+					// @todo these settings are getting out of hand, how can we
+					// streamline this?
+					std::string anchor;
+					gp_Pnt* anchor_pt;
+					if (storey_height_display_ == SH_FULL) {
+						anchor = "end";
+						anchor_pt = &p1;
+					} else {
+						anchor = "start";
+						anchor_pt = &p0;
+
+						auto d = (p1.XYZ() - p0.XYZ());
+						d.Normalize();
+						const double shll = storey_height_line_length_.get_value_or(2.);
+						d *= shll;
+						gp_Pnt p1x(p0.XYZ() + d);
+
+						wire = BRepBuilderAPI_MakePolygon(p0, p1x).Wire();
+					}
+
+					// dominant-baseline="central" is not well supported in IE.
+					// so we add a 0.35 offset to the dy of the tspans
+					path.add("            <text text-anchor=\"" + anchor + "\" x=\"");
+					xcoords.push_back(path.add(anchor_pt->X()));
+					path.add("\" y=\"");
+					ycoords.push_back(path.add(anchor_pt->Y()));
+					path.add("\">");
+					for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
+						const auto& l = *lit;
+						double dy = labels.begin() == lit
+							? 0.35 - (labels.size() - 1.) / 2.
+							: 1.0; // <- dy is relative to the previous text element, so
+								   //    always 1 for successive spans.
+						path.add("<tspan x=\"");
+						xcoords.push_back(path.add(anchor_pt->X()));
+						path.add("\" dy=\"");
+						path.add(boost::lexical_cast<std::string>(dy));
+						path.add("em\">");
+						path.add(l);
+						path.add("</tspan>");
+					}
+					path.add("</text>");
+					po->second.push_back(path);
+				}
+
 				write(*po, wire);
 			}
 		}
@@ -977,15 +1369,28 @@ void SvgSerializer::write(const geometry_data& data) {
 						10 * ((pa.X() - pb.X()) * (pa.X() - pb.X())) +
 						1 * ((pa.Y() - pb.Y()) * (pa.Y() - pb.Y()))
 					);
-					if (d > furthest_points_distance) {
-						gp_Pnt p3d((pa.XYZ() + pb.XYZ()) / 2.);
-						gp_Pnt2d p2d(p3d.X(), p3d.Y());
 
-						if (fcls.Perform(p2d) == TopAbs_IN) {
+					if (d > furthest_points_distance) {
+						
+						// Sample some points on the line and assure it's inside.
+						bool all_inside = true;
+						for (int i = 5; i < 95; ++i) {
+							gp_Pnt p3d((pa.XYZ() + (pb.XYZ() - pa.XYZ()) * i / 100.));
+							gp_Pnt2d p2d(p3d.X(), p3d.Y());
+
+							if (fcls.Perform(p2d) != TopAbs_IN) {
+								all_inside = false;
+							}
+						}
+
+						if (all_inside) {
+							gp_Pnt p3d((pa.XYZ() + pb.XYZ()) * 0.5);
+							gp_Pnt2d p2d(p3d.X(), p3d.Y());
 							furthest_points = { &pa, &pb };
 							furthest_points_distance = d;
 							center_point = p3d;
 						}
+
 					}
 				}
 			}
@@ -1020,7 +1425,11 @@ void SvgSerializer::write(const geometry_data& data) {
 				xcoords.push_back(path.add(center_point->X()));
 				path.add("\" y=\"");
 				ycoords.push_back(path.add(center_point->Y()));
-				path.add("\">");
+				path.add("\"");
+				if (space_name_transform_) {
+					path.add(" transform=\"" + *space_name_transform_ + "\"");
+				}
+				path.add(">");
 				for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
 					const auto& l = *lit;
 					double dy = labels.begin() == lit
@@ -1051,36 +1460,40 @@ void SvgSerializer::write(const geometry_data& data) {
 }
 
 void SvgSerializer::setBoundingRectangle(double width, double height) {
-	this->width = width;
-	this->height = height;
-	this->rescale = true;
+	size_ = std::make_pair(width, height);
 }
 
 std::array<std::array<double, 3>, 3> SvgSerializer::resize() {
 	// identity matrix;
 	std::array<std::array<double, 3>, 3> m = {{ {{1,0,0}},{{0,1,0}},{{0,0,1}} }};
 
-	if (rescale) {
+	if (size_) {
 		// Scale the resulting image to a bounding rectangle specified by command line arguments
+		// or specified by IfcAnnotation[ObjectType=DRAWING]
 		const double dx = xmax - xmin;
 		const double dy = ymax - ymin;
 
 		double sc, cx, cy;
-		if (scale_) {
+		if (offset_2d_ && scale_) {
+			// offset_2d is the offset in plane u,v coordinates as we want to keep the 
+			// plane coordinates used for HLR close to the model origin.
 			sc = (*scale_) * 1000;
-			cx = (xmax + xmin) / 2. * sc - width * center_x_.get_value_or(0.5);
-			cy = (ymax + ymin) / 2. * sc - height * center_y_.get_value_or(0.5);
-		}
-		else {
+			cx = offset_2d_->first;
+			cy = offset_2d_->second;
+		} else if (scale_) {
+			sc = (*scale_) * 1000;
+			cx = (xmax + xmin) / 2. * sc - size_->first * center_x_.get_value_or(0.5);
+			cy = (ymax + ymin) / 2. * sc - size_->second * center_y_.get_value_or(0.5);
+		} else {
 			if (calculated_scale_) {
 				sc = *calculated_scale_;
 			}
 			else {
-				if (dx / width > dy / height) {
-					sc = width / dx;
+				if (dx / size_->first > dy / size_->second) {
+					sc = size_->first / dx;
 				}
 				else {
-					sc = height / dy;
+					sc = size_->second / dy;
 				}
 				calculated_scale_ = sc;
 			}
@@ -1236,7 +1649,143 @@ void SvgSerializer::resetScale() {
 	ymax = -std::numeric_limits<double>::infinity();
 }
 
+void SvgSerializer::addTextAnnotations(const drawing_key& k) {
+	auto& meta = drawing_metadata[k];
+
+	boost::optional<std::pair<double, double>> range;
+
+	if (k.first && section_data_) {
+		for (auto& sd : *section_data_) {
+			if (sd.which() == 0) {
+				const auto& plan = boost::get<horizontal_plan>(sd);
+				if (k.first == plan.storey) {
+					range = std::make_pair(plan.elevation, plan.next_elevation);
+				}
+			}
+		}
+	}
+
+	auto annotations = file->instances_by_type("IfcAnnotation");
+	if (annotations) {
+		for (auto& ann_ : *annotations) {
+			auto ann = (IfcUtil::IfcBaseEntity*) ann_;
+
+			auto ot = ann->get("ObjectType");
+			auto nm = ann->get("Name");
+			auto ds = ann->get("Description");
+			auto pl = ann->get("ObjectPlacement");
+
+			if (!ot->isNull() && !nm->isNull() && !ds->isNull() && !pl->isNull()) {
+				auto object_type = (std::string) *ot;
+				auto name = (std::string) *nm;
+				auto desc = (std::string) *ds;
+
+				if (object_type == "Text") {
+					IfcGeom::Kernel kernel(file);
+					gp_Trsf trsf;
+					if (kernel.convert_placement(*pl, trsf)) {
+
+						auto v = gp_Pnt(trsf.TranslationPart());
+
+						auto z_local = gp::DZ().Transformed(trsf);
+						auto view_dir = z_local.Dot(meta.pln_3d.Axis().Direction());
+
+						if ((!range || (v.Z() >= range->first && v.Z() < range->second)) && view_dir > 0.99) {
+
+							gp_Trsf trsf_view;
+							trsf_view.SetTransformation(gp::XOY(), meta.pln_3d.Position());
+							v.Transform(trsf_view);
+
+							auto svg_name = nameElement(ann);
+							path_object* po;
+							if (k.first) {
+								po = &start_path(meta.pln_3d, k.first, svg_name);
+							} else {
+								po = &start_path(meta.pln_3d, k.second, svg_name);
+							}
+
+							if (object_type.size()) {
+								// postfix the object_type for CSS matching
+								boost::replace_all(svg_name, "class=\"IfcAnnotation\"", "class=\"IfcAnnotation " + object_type + "\"");
+							}
+
+							boost::optional<double> font_size;
+							std::vector<std::string> tokens;
+							boost::split(tokens, name, boost::is_any_of("_"));
+							if (tokens.size() == 2) {
+								try {
+									font_size = boost::lexical_cast<double>(tokens.back());
+								}
+								catch (...) {}
+							}
+
+							// @todo column or row?
+							double z_rotation = gp::DX().Transformed(trsf).AngleWithRef(
+								meta.pln_3d.Position().XDirection(),
+								meta.pln_3d.Position().Direction()									
+							);
+							z_rotation *= 180. / M_PI;
+
+							auto y = -v.Y();
+
+							util::string_buffer path;
+							// dominant-baseline="central" is not well supported in IE.
+							// so we add a 0.35 offset to the dy of the tspans
+							path.add("            <text text-anchor=\"left\" x=\"");
+							xcoords.push_back(path.add(v.X()));
+							path.add("\" y=\"");
+							ycoords.push_back(path.add(y));
+
+							path.add("\" transform=\"rotate(");
+							path.add(z_rotation);
+							path.add(" ");
+							xcoords.push_back(path.add(v.X()));
+							path.add(" ");
+							ycoords.push_back(path.add(y));
+							path.add(")\"");
+
+							if (font_size) {
+								path.add(" font-size=\"");
+								path.add(*font_size);
+								path.add("\"");
+							}
+							path.add(">");
+
+							std::vector<std::string> labels{ desc };
+
+							for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
+								const auto& l = *lit;
+								double dy = labels.begin() == lit
+									? 0.0  // align bottom
+									: 1.0; // <- dy is relative to the previous text element, so
+											//    always 1 for successive spans.
+								path.add("<tspan x=\"");
+								xcoords.push_back(path.add(v.X()));
+								path.add("\" dy=\"");
+								path.add(boost::lexical_cast<std::string>(dy));
+								path.add("em\">");
+								path.add(l);
+								path.add("</tspan>");
+							}
+
+							path.add("</text>");
+
+							po->second.push_back(path);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 void SvgSerializer::finalize() {
+	doWriteHeader();
+
+	for (auto& p : drawing_metadata) {
+		addTextAnnotations(p.first);
+	}
+
 	for (auto& p : storey_hlr) {
 		draw_hlr(drawing_metadata[{p.first, ""}].pln_3d, { p.first, "" });
 	}
@@ -1311,11 +1860,13 @@ void SvgSerializer::finalize() {
 
 		for (auto& sd : *deferred_section_data_) {
 			bool use_hlr = true;
+			const gp_Pln* pln = nullptr;
 			std::string drawing_name;
 			if (sd.which() == 2) {
 				const auto& section = boost::get<vertical_section>(sd);
 				use_hlr = section.with_projection;
 				drawing_name = section.name;
+				pln = &section.plane;
 			}
 
 			if (use_hlr) {
@@ -1336,6 +1887,48 @@ void SvgSerializer::finalize() {
 				const auto& ax = section.plane.Position();
 				
 				draw_hlr(ax, { nullptr, drawing_name });
+			}
+
+			addTextAnnotations({ nullptr, drawing_name });
+
+			if (storey_height_display_ != SH_NONE && pln && std::abs(pln->Position().Direction().Z()) < 1.e-5) {
+				auto storeys = this->file->instances_by_type("IfcBuildingStorey");
+				if (storeys) {
+					const double lu = file->getUnit("LENGTHUNIT").second;
+					for (auto& s : *storeys) {
+						auto storey = (IfcUtil::IfcBaseEntity*) s;
+						auto a = storey->get("Elevation");
+						if (!a->isNull()) {
+							double elev = *a;
+							elev *= lu;
+							auto svg_name = nameElement(storey);
+
+							gp_Pln elev_pln(gp_Ax3(gp_Pnt(0, 0, elev), gp::DZ(), gp::DX()));
+							//, pln->Position().XDirection()));
+							// auto ref_y = pln->Position().YDirection().XYZ().Dot(pln->Position().Location().XYZ());
+
+							double x0, y0, z0, x1, y1, z1;
+							bnd_.Get(x0, y0, z0, x1, y1, z1);
+
+							const double shll = storey_height_line_length_.get_value_or(2.);
+
+							BRepBuilderAPI_MakeFace mf(elev_pln, x0 - shll, x1 + shll, y0 - shll, y1 + shll);
+							gp_Trsf trsf;
+							TopoDS_Compound C;
+							BRep_Builder B;
+							B.MakeCompound(C);
+							B.Add(C, mf.Face());
+							std::string name;
+							auto a2 = storey->get("Name");
+							if (!a2->isNull()) {
+								name = (std::string) *a2;
+							}
+							write(geometry_data{
+								C,{boost::none},trsf,storey,storey,elev,name,nameElement(storey)
+							});
+						}
+					}
+				}
 			}
 
 			auto m3 = resize();
@@ -1383,15 +1976,20 @@ void SvgSerializer::finalize() {
 }
 
 void SvgSerializer::writeHeader() {
+	// This doesn't do anything anymore because there is now the option that an
+	// IfcAnnotation[ObjectType=DRAWING] defines the SVG viewBox and dimensions
+}
+
+void SvgSerializer::doWriteHeader() {
 	svg_file << "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"";
 	if (use_namespace_) {
 		svg_file << " xmlns:ifc=\"http://www.ifcopenshell.org/ns\"";
 	}
-	if (scale_) {
+	if (scale_ && size_) {
 		svg_file << 
-			" width=\"" << width << "mm\""
-			" height=\"" << height << "mm\"" << 
-			" viewBox=\"0 0 " << width << " " << height << "\"";
+			" width=\"" << size_->first << "mm\""
+			" height=\"" << size_->second << "mm\"" <<
+			" viewBox=\"0 0 " << size_->first << " " << size_->second << "\"";
 	}
 		
 	svg_file << ">\n"
@@ -1409,13 +2007,17 @@ void SvgSerializer::writeHeader() {
 		"            stroke: #222222;\n"
 		"            fill: #444444;\n"
 		"        }\n"
-		"        .IfcDoor path {\n"
+		"        .IfcDoor path,\n"
+		"        .Symbol path {\n"
 		"            fill: none;\n"
+		"        }\n"
+		"        .Symbol path {\n"
+		"            stroke-width: 0.5px;\n"
 		"        }\n"
 		"        .IfcSpace path {\n"
 		"            fill-opacity: .2;\n"
 		"        }\n"
-		"        .dimension path {\n"
+		"        .Dimension path {\n"
 		"            marker-end: url(#arrowend);\n"
 		"            marker-start: url(#arrowstart);\n"
 		"        }\n";

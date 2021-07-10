@@ -370,14 +370,23 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 		return use_radians || use_degrees;
 	}
 
-	
+#ifdef SCHEMA_HAS_IfcSegment
+	// 4x3
+	IfcSchema::IfcSegment::list::ptr segments = l->Segments();
+#else
 	IfcSchema::IfcCompositeCurveSegment::list::ptr segments = l->Segments();
+#endif
 
 	TopTools_ListOfShape converted_segments;
 	
-	for (IfcSchema::IfcCompositeCurveSegment::list::it it = segments->begin(); it != segments->end(); ++it) {
+	for (auto it = segments->begin(); it != segments->end(); ++it) {
 
-		IfcSchema::IfcCurve* curve = (*it)->ParentCurve();
+		if (!(*it)->declaration().is(IfcSchema::IfcCompositeCurveSegment::Class())) {
+			Logger::Error("Not implemented", *it);
+			return false;
+		}
+
+		IfcSchema::IfcCurve* curve = ((IfcSchema::IfcCompositeCurveSegment*)(*it))->ParentCurve();
 
 		// The type of ParentCurve is IfcCurve, but the documentation says:
 		// ParentCurve: The *bounded curve* which defines the geometry of the segment. 
@@ -406,7 +415,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 			continue;
 		}
 
-		if (!(*it)->SameSense()) {
+		if (!((IfcSchema::IfcCompositeCurveSegment*)(*it))->SameSense()) {
 			segment.Reverse();
 		}
 

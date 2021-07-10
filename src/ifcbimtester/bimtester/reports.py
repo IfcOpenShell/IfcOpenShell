@@ -21,12 +21,12 @@ class ReportGenerator:
             self.generate_feature_report(feature, output_file)
 
     def generate_feature_report(self, feature, output_file):
-        file_name = os.path.basename(feature["location"]).split(":")[0]
+        # file_name = os.path.basename(feature["location"]).split(":")[0]
         data = {
-            "file_name": file_name,
+            # "file_name": file_name,
             "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "name": feature["name"],
-            "description": feature["description"],
+            "description": feature.get("description", ""),
             "is_success": feature["status"] == "passed",
             "scenarios": [],
         }
@@ -93,9 +93,7 @@ class ReportGenerator:
             step["result"] = {}
             step["result"]["status"] = "skipped"
             step["result"]["duration"] = 0
-            step["result"][
-                "error_message"
-            ] = "This requirement has been skipped due to a previous failing step."
+            step["result"]["error_message"] = "This requirement has been skipped due to a previous failing step."
         elif step["result"]["status"] == "undefined":
             step["result"] = {}
             step["result"]["status"] = "undefined"
@@ -108,14 +106,12 @@ class ReportGenerator:
             "is_success": step["result"]["status"] == "passed",
             "is_unspecified": step["result"]["status"] == "undefined",
             "is_skipped": step["result"]["status"] == "skipped",
-            "error_message": None
-            if step["result"]["status"] == "passed"
-            else step["result"]["error_message"],
+            "error_message": None if step["result"]["status"] == "passed" else step["result"]["error_message"],
         }
 
-        # TODO: there is probably a better way of doing this
-        if isinstance(data["error_message"], list):
-            data["error_message"] = data["error_message"][1]
+        # Remove the first "Assertion Failed" message
+        if isinstance(data["error_message"], list) and data["error_message"]:
+            data["error_message"].pop(0)
         return data
 
     def get_template_strings(self):

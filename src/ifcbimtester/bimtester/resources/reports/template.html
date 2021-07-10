@@ -35,11 +35,11 @@
         <span class="{{#is_success}}success{{/is_success}}{{^is_success}}failure{{/is_success}}">{{#is_success}}{{_success}}{{/is_success}}{{^is_success}}{{_failure}}{{/is_success}}</span>
         {{_tests_passed}}: <strong>{{total_passes}} / {{total_steps}}</strong> ({{pass_rate}}%)
         <br />
+        {{#description}}
         <p class="description">
-            {{#description}}
             {{.}}<br />
-            {{/description}}
         </p>
+        {{/description}}
         <hr>
     </header>
     {{#scenarios}}

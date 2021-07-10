@@ -310,7 +310,7 @@ def run(cmds, cwd=None):
 BOOST_VERSION_UNDERSCORE=BOOST_VERSION.replace(".", "_")
 
 OCE_LOCATION="https://github.com/tpaviot/oce/archive/OCE-%s.tar.gz" % (OCE_VERSION,)
-BOOST_LOCATION="https://dl.bintray.com/boostorg/release/%s/source/" % (BOOST_VERSION,)
+BOOST_LOCATION="https://boostorg.jfrog.io/artifactory/main/release/%s/source/" % (BOOST_VERSION,)
 
 # Helper functions
 
@@ -336,7 +336,7 @@ def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
     `None`."""
     if not os.path.exists(target_dir):
         logger.info("cloning '%s' into '%s'" % (clone_url, target_dir))
-        run([git, "clone", clone_url, target_dir])
+        run([git, "clone", "--recursive", clone_url, target_dir])
     else:
         logger.info("directory '%s' already cloned. Pulling latest changes." % (target_dir,))
 

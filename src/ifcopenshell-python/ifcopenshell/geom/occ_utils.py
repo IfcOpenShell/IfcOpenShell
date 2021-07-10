@@ -29,7 +29,7 @@ from collections import namedtuple
 
 try:  # python 3.3+
     from collections.abc import Iterable
-except ModuleNotFoundError:  # python 2
+except ImportError:  # python 2
     from collections import Iterable
 
 try:
@@ -41,7 +41,7 @@ except ImportError:
 
     USE_OCCT_HANDLE = True
 
-shape_tuple = namedtuple("shape_tuple", ("data", "geometry", "styles"))
+shape_tuple = namedtuple("shape_tuple", ("data", "geometry", "styles", "style_ids"))
 
 handle, main_loop, add_menu, add_function_to_menu = None, None, None, None
 
@@ -216,16 +216,18 @@ def serialize_shape(shape):
 
 
 def create_shape_from_serialization(brep_object):
-    brep_data, occ_shape, styles = None, None, ()
+    brep_data, occ_shape, styles, style_ids = None, None, (), ()
 
     is_product_shape = True
     try:
         brep_data = brep_object.geometry.brep_data
         styles = brep_object.geometry.surface_styles
+        style_ids = brep_object.geometry.surface_style_ids
     except BaseException:
         try:
             brep_data = brep_object.brep_data
             styles = brep_object.surface_styles
+            style_ids = brep_object.surface_style_ids
             is_product_shape = False
         except BaseException:
             pass
@@ -233,7 +235,7 @@ def create_shape_from_serialization(brep_object):
     styles = tuple(styles[i : i + 4] for i in range(0, len(styles), 4))
 
     if not brep_data:
-        return shape_tuple(brep_object, None, styles)
+        return shape_tuple(brep_object, None, styles, style_ids)
 
     try:
         ss = BRepTools.BRepTools_ShapeSet()
@@ -243,6 +245,6 @@ def create_shape_from_serialization(brep_object):
         pass
 
     if is_product_shape:
-        return shape_tuple(brep_object, occ_shape, styles)
+        return shape_tuple(brep_object, occ_shape, styles, style_ids)
     else:
         return occ_shape

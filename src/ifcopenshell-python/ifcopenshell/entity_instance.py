@@ -48,20 +48,21 @@ class entity_instance(object):
         >>> #423=IfcProductDefinitionShape($,$,(#409,#421))
     """
 
-    def __init__(self, e):
+    def __init__(self, e, file):
         if isinstance(e, tuple):
             e = ifcopenshell_wrapper.new_IfcBaseClass(*e)
         super(entity_instance, self).__setattr__("wrapped_data", e)
+        self.wrapped_data.file = file
 
     def __getattr__(self, name):
         INVALID, FORWARD, INVERSE = range(3)
         attr_cat = self.wrapped_data.get_attribute_category(name)
         if attr_cat == FORWARD:
             return entity_instance.wrap_value(
-                self.wrapped_data.get_argument(self.wrapped_data.get_argument_index(name))
+                self.wrapped_data.get_argument(self.wrapped_data.get_argument_index(name)), self.wrapped_data.file
             )
         elif attr_cat == INVERSE:
-            return entity_instance.wrap_value(self.wrapped_data.get_inverse(name))
+            return entity_instance.wrap_value(self.wrapped_data.get_inverse(name), self.wrapped_data.file)
         else:
             raise AttributeError(
                 "entity instance of type '%s' has no attribute '%s'" % (self.wrapped_data.is_a(), name)
@@ -77,9 +78,9 @@ class entity_instance(object):
             return value
 
     @staticmethod
-    def wrap_value(v):
+    def wrap_value(v, file):
         def wrap(e):
-            return entity_instance(e)
+            return entity_instance(e, file)
 
         def is_instance(e):
             return isinstance(e, ifcopenshell_wrapper.entity_instance)
@@ -116,14 +117,18 @@ class entity_instance(object):
         return self.wrapped_data.get_argument_name(attr_idx)
 
     def __setattr__(self, key, value):
-        self[self.wrapped_data.get_argument_index(key)] = value
+        index = self.wrapped_data.get_argument_index(key)
+        self[index] = value
 
     def __getitem__(self, key):
         if key < 0 or key >= len(self):
             raise IndexError("Attribute index {} out of range for instance of type {}".format(key, self.is_a()))
-        return entity_instance.wrap_value(self.wrapped_data.get_argument(key))
+        return entity_instance.wrap_value(self.wrapped_data.get_argument(key), self.wrapped_data.file)
 
     def __setitem__(self, idx, value):
+        if self.wrapped_data.file.transaction:
+            self.wrapped_data.file.transaction.store_edit(self, idx, value)
+
         attr_type = real_attr_type = self.attribute_type(idx).title().replace(" ", "")
         real_attr_type = real_attr_type.replace("Derived", "None")
         attr_type = attr_type.replace("Binary", "String")
@@ -271,7 +276,7 @@ class entity_instance(object):
         return return_type(_())
 
     __dict__ = property(get_info)
-    
+
     def get_info_2(self, include_identifier=True, recursive=False, return_type=dict, ignore=()):
         assert include_identifier
         assert recursive

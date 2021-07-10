@@ -740,6 +740,7 @@
 #define SCHEMA_IfcBoundaryNodeConditionWarping_HAS_WarpingStiffness
 #define SCHEMA_IfcBoundaryNodeConditionWarping_WarpingStiffness_IS_OPTIONAL
 #define SCHEMA_HAS_IfcBoundedCurve
+#define SCHEMA_IfcBoundedCurve_HAS_PositioningElement
 #define SCHEMA_HAS_IfcBoundedSurface
 #define SCHEMA_HAS_IfcBoundingBox
 #define SCHEMA_IfcBoundingBox_HAS_Corner

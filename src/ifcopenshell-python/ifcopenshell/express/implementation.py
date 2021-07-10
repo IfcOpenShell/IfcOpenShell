@@ -224,6 +224,9 @@ class Implementation(codegen.Base):
             templates.schema_entity_stmt % locals() for name, type in mapping.schema.simpletypes.items()
         ]
         schema_entity_statements += [
+            templates.schema_entity_stmt % locals() for name, type in mapping.schema.enumerations.items()
+        ]
+        schema_entity_statements += [
             templates.schema_entity_stmt % locals() for name, type in mapping.schema.entities.items()
         ]
 
@@ -329,6 +332,8 @@ class Implementation(codegen.Base):
             ("extern entity* %s_%%s_type;" % schema_name_upper) % n for n in mapping.schema.entities.keys()
         ] + [
             ("extern type_declaration* %s_%%s_type;" % schema_name_upper) % n for n in mapping.schema.simpletypes.keys()
+        ] + [
+            ("extern enumeration_type* %s_%%s_type;" % schema_name_upper) % n for n in mapping.schema.enumerations.keys()
         ]
 
         self.str = templates.implementation % {
