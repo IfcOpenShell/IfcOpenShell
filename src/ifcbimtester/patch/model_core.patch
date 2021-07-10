@@ -1,0 +1,14 @@
+--- behave/model_core.py	2018-02-26 02:53:03.000000000 +1100
++++ /home/dion/Projects/IfcOpenShell/src/blenderbim/patch-behave-model_core.py	2021-03-21 11:57:27.625195794 +1100
+@@ -269,7 +269,10 @@
+ class BasicStatement(object):
+     def __init__(self, filename, line, keyword, name):
+         filename = filename or '<string>'
+-        filename = os.path.relpath(filename, os.getcwd())   # -- NEEDS: abspath?
++        try:
++            filename = os.path.relpath(filename, os.getcwd())   # -- NEEDS: abspath?
++        except ValueError:
++            pass
+         self.location = FileLocation(filename, line)
+         assert isinstance(keyword, six.text_type)
+         assert isinstance(name, six.text_type)

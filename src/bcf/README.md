@@ -4,23 +4,26 @@ A simple Python implementation of BCF. The data model is described in `data.py`.
 Manipulation of BCF-XML is available via `bcfxml.py` and manipulation of BCF-API
 is available via `bcfapi.py`.
 
-Currently supports BCF version 2.1.
+ - BCF-XML version 2.1: Fully supported
+ - BCF-API version 2.1: Not supported, will probably tackle this after BCF-API v3.0
+ - BCF-XML version 3.0: Almost fully supported, except for the documents module
+ - BCF-API version 3.0: Not supported, but work underway to support it
 
 ## bcfxml
 
 The `bcfxml` module lets you interact with the BCF-XML standard.
 
 ```
-from bcf.bcfxml import BcfXml
+from bcf import bcfxml
 
-bcfxml = BcfXml()
 
 # Load a project
-project = bcfxml.get_project("/path/to/file.bcf")
+bcfxml = bcfxml.load("/path/to/file.bcf")
+
 
 # The project is also stored in the module
 # project == bcfxml.project
-
+project=bcfxml.get_project()
 print(project.name)
 
 # To edit a project, just modify the object directly

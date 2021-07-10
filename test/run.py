@@ -45,7 +45,7 @@ else:
 test_cases = []
 failed = []
 
-# Create the ouput directory
+# Create the output directory
 cwd = os.path.abspath(os.path.dirname(inspect.getfile(inspect.currentframe())))
 os.chdir(cwd)
 if not os.path.exists("output"): os.mkdir("output")

@@ -1,6 +1,27 @@
 import ifcopenshell
 import ifcopenshell.util.element
+import ifcopenshell.validate
+import json
 from bimtester.lang import _
+
+
+def by_types(ifc, ifc_types):
+    elements = []
+    for ifc_type in ifc_types.split(","):
+        elements += ifc.by_type(ifc_type.strip())
+    return elements
+
+
+def validate(ifc):
+    errors = []
+    logger = ifcopenshell.validate.json_logger()
+    try:
+        ifcopenshell.validate.validate(ifc, logger)
+        if logger.statements:
+            for statement in logger.statements:
+                errors.append(f"{json.dumps(statement, default=str)}")
+    except RuntimeError as error:
+        assert False, str(error)
 
 
 def assert_guid(ifc, guid):

@@ -17,7 +17,9 @@ class IFC2CA:
         self.file = ifcopenshell.open(self.filename)
         for model in self.file.by_type("IfcStructuralAnalysisModel"):
             elements = self.get_structural_items(model, item_type="IfcStructuralMember")
-            connections = self.get_structural_items(model, item_type="IfcStructuralConnection")
+            connections = self.get_structural_items(
+                model, item_type="IfcStructuralConnection"
+            )
 
             materialdb = []
             materials = list(dict.fromkeys([e["material"] for e in elements]))
@@ -25,16 +27,24 @@ class IFC2CA:
                 id = int(mat.split("|")[1])
                 material = self.get_material_properties(self.file.by_id(id))
                 material["relatedElements"] = [
-                    e["ifcName"] for e in elements if "material" in e and e["material"] == mat
+                    e["ifcName"]
+                    for e in elements
+                    if "material" in e and e["material"] == mat
                 ]
                 materialdb.append(material)
 
             profiledb = []
-            profiles = list(dict.fromkeys([e["profile"] for e in elements if "profile" in e]))
+            profiles = list(
+                dict.fromkeys([e["profile"] for e in elements if "profile" in e])
+            )
             for prof in [prof for prof in profiles if prof]:
                 id = int(prof.split("|")[1])
                 profile = self.get_profile_properties(self.file.by_id(id))
-                profile["relatedElements"] = [e["ifcName"] for e in elements if "profile" in e and e["profile"] == prof]
+                profile["relatedElements"] = [
+                    e["ifcName"]
+                    for e in elements
+                    if "profile" in e and e["profile"] == prof
+                ]
                 profiledb.append(profile)
 
             self.result = {
@@ -47,11 +57,11 @@ class IFC2CA:
                 "warnings": self.warnings,
             }
 
-            print('Model "%s" converted' % model.Name)
-            print("Number of elements: ", len(elements))
-            print("Number of connections: ", len(connections))
-            print("Number of materials: ", len(materialdb))
-            print("Number of profiles: ", len(profiledb))
+            print(f"Model {model.Name} converted")
+            print(f"Number of elements: {len(elements)}")
+            print(f"Number of connections: {len(connections)}")
+            print(f"Number of materials: {len(materialdb)}")
+            print(f"Number of profiles: {len(profiledb)}")
             print("")
 
             break
@@ -75,12 +85,19 @@ class IFC2CA:
             material_profile = self.get_material_profile(item)
             if not representation:
                 self.warnings.append(
-                    "No representation defined for %s. Member excluded" % (item.is_a() + "|" + str(item.id()))
+                    "No representation defined for %s. Member excluded"
+                    % (item.is_a() + "|" + str(item.id()))
                 )
                 return
             if not material_profile:
-                self.warnings.append("No material defined for in %s" % (item.is_a() + "|" + str(item.id())))
-                self.warnings.append("No profile defined for in %s" % (item.is_a() + "|" + str(item.id())))
+                self.warnings.append(
+                    "No material defined for in %s"
+                    % (item.is_a() + "|" + str(item.id()))
+                )
+                self.warnings.append(
+                    "No profile defined for in %s"
+                    % (item.is_a() + "|" + str(item.id()))
+                )
                 materialId = None
                 profileId = None
             else:
@@ -99,21 +116,32 @@ class IFC2CA:
             length = np.linalg.norm(np.array(geometry[1]) - np.array(geometry[0]))
             for c in connections:
                 if c["eccentricity"]:
-                    if np.linalg.norm(np.array(c["eccentricity"]["pointOnElement"])) > length + self.tol:
-                        print(np.linalg.norm(np.array(c["eccentricity"]["pointOnElement"])), ">", length)
-                        self.warnings.append("Eccentricity in %s corrected" % (item.is_a() + "|" + str(item.id())))
+                    if (
+                        np.linalg.norm(np.array(c["eccentricity"]["pointOnElement"]))
+                        > length + self.tol
+                    ):
+                        print(
+                            f"{np.linalg.norm(np.array(c['eccentricity']['pointOnElement']))} > {length}"
+                        )
+                        self.warnings.append(
+                            f"Eccentricity in {item.is_a()}|{str(item.id())} corrected"
+                        )
                         c["eccentricity"]["pointOnElement"][0] = length
             # End <--
             if transformation:
                 geometry = self.transform_vectors(geometry, transformation)
-                orientation = self.transform_vectors(orientation, transformation, include_translation=False)
+                orientation = self.transform_vectors(
+                    orientation, transformation, include_translation=False
+                )
                 for c in connections:
                     c["orientation"] = self.transform_vectors(
                         c["orientation"], transformation, include_translation=False
                     )
                     if c["eccentricity"]:
                         c["eccentricity"]["vector"] = self.transform_vectors(
-                            c["eccentricity"]["vector"], transformation, include_translation=False
+                            c["eccentricity"]["vector"],
+                            transformation,
+                            include_translation=False,
                         )
 
             return {
@@ -134,11 +162,15 @@ class IFC2CA:
             material = self.get_material_profile(item)
             if not representation:
                 self.warnings.append(
-                    "No representation defined for %s. Member excluded" % (item.is_a() + "|" + str(item.id()))
+                    "No representation defined for %s. Member excluded"
+                    % (item.is_a() + "|" + str(item.id()))
                 )
                 return
             if not material:
-                self.warnings.append("No material defined for in %s" % (item.is_a() + "|" + str(item.id())))
+                self.warnings.append(
+                    "No material defined for in %s"
+                    % (item.is_a() + "|" + str(item.id()))
+                )
                 materialId = None
             else:
                 materialId = material.is_a() + "|" + str(material.id())
@@ -151,7 +183,9 @@ class IFC2CA:
                     conn["orientation"] = orientation
             if transformation:
                 geometry = self.transform_vectors(geometry, transformation)
-                orientation = self.transform_vectors(orientation, transformation, include_translation=False)
+                orientation = self.transform_vectors(
+                    orientation, transformation, include_translation=False
+                )
                 for c in connections:
                     c["orientation"] = self.transform_vectors(
                         c["orientation"], transformation, include_translation=False
@@ -174,7 +208,8 @@ class IFC2CA:
             representation = self.get_representation(item, "Vertex")
             if not representation:
                 self.warnings.append(
-                    "No representation defined for %s. Connection excluded" % (item.is_a() + "|" + str(item.id()))
+                    "No representation defined for %s. Connection excluded"
+                    % (item.is_a() + "|" + str(item.id()))
                 )
                 return
 
@@ -184,7 +219,9 @@ class IFC2CA:
                 orientation = np.eye(3).tolist()
             if transformation:
                 geometry = self.transform_vectors(geometry, transformation)
-                orientation = self.transform_vectors(orientation, transformation, include_translation=False)
+                orientation = self.transform_vectors(
+                    orientation, transformation, include_translation=False
+                )
 
             return {
                 "ifcName": item.is_a() + "|" + str(item.id()),
@@ -194,14 +231,18 @@ class IFC2CA:
                 "geometry": geometry,
                 "orientation": orientation,
                 "appliedCondition": self.get_connection_input(item, "point"),
-                "relatedElements": [con.is_a() + "|" + str(con.id()) for con in item.ConnectsStructuralMembers],
+                "relatedElements": [
+                    con.is_a() + "|" + str(con.id())
+                    for con in item.ConnectsStructuralMembers
+                ],
             }
 
         elif item.is_a("IfcStructuralCurveConnection"):
             representation = self.get_representation(item, "Edge")
             if not representation:
                 self.warnings.append(
-                    "No representation defined for %s. Connection excluded" % (item.is_a() + "|" + str(item.id()))
+                    "No representation defined for %s. Connection excluded"
+                    % (item.is_a() + "|" + str(item.id()))
                 )
                 return
 
@@ -211,7 +252,9 @@ class IFC2CA:
                 orientation = np.eye(3).tolist()
             if transformation:
                 geometry = self.transform_vectors(geometry, transformation)
-                orientation = self.transform_vectors(orientation, transformation, include_translation=False)
+                orientation = self.transform_vectors(
+                    orientation, transformation, include_translation=False
+                )
 
             return {
                 "ifcName": item.is_a() + "|" + str(item.id()),
@@ -221,7 +264,10 @@ class IFC2CA:
                 "geometry": geometry,
                 "orientation": orientation,
                 "appliedCondition": self.get_connection_input(item, "line"),
-                "relatedElements": [con.is_a() + "|" + str(con.id()) for con in item.ConnectsStructuralMembers],
+                "relatedElements": [
+                    con.is_a() + "|" + str(con.id())
+                    for con in item.ConnectsStructuralMembers
+                ],
             }
 
     def get_transformation(self, placement):
@@ -229,11 +275,15 @@ class IFC2CA:
             return None
         if placement.is_a("IfcLocalPlacement"):
             if placement.PlacementRelTo:
-                print("Warning! Object Placement with PlacementRelTo attribute is not supported and will be neglected")
+                print(
+                    "Warning! Object Placement with PlacementRelTo attribute is not supported and will be neglected"
+                )
             axes = placement.RelativePlacement
             location = np.array(self.get_coordinate(axes.Location))
             if axes.Axis and axes.RefDirection:
-                xAxis = np.array(axes.RefDirection.DirectionRatios)  # this can be not accurate (in the xz plane)
+                xAxis = np.array(
+                    axes.RefDirection.DirectionRatios
+                )  # this can be not accurate (in the xz plane)
                 zAxis = np.array(axes.Axis.DirectionRatios)
                 zAxis /= np.linalg.norm(zAxis)
                 yAxis = np.cross(zAxis, xAxis)
@@ -253,10 +303,13 @@ class IFC2CA:
                 and np.allclose(zAxis, np.array([0.0, 0.0, 1.0]))
             ):
                 return None
-            return {"location": location, "rotationMatrix": np.array([xAxis, yAxis, zAxis]).transpose()}
+            return {
+                "location": location,
+                "rotationMatrix": np.array([xAxis, yAxis, zAxis]).transpose(),
+            }
         else:
             print(
-                "Warning! Object Placement is of type %s, which is not supported. Default considered" % placement.is_a()
+                f"Warning! Object Placement is of type {placement.is_a()}, which is not supported. Default considered"
             )
             return None
 
@@ -264,11 +317,13 @@ class IFC2CA:
         if not element.Representation:
             return None
         for representation in element.Representation.Representations:
-            rep = self.get_specific_representation(representation, "Reference", rep_type)
+            rep = self.get_specific_representation(
+                representation, "Reference", rep_type
+            )
             if rep:
                 return rep
         else:
-            # print('Trying without rep identifier')
+            # print("Trying without rep identifier")
             for representation in element.Representation.Representations:
                 rep = self.get_specific_representation(representation, None, rep_type)
                 if rep:
@@ -281,7 +336,9 @@ class IFC2CA:
             return representation
         if representation.RepresentationType == "MappedRepresentation":
             return self.get_specific_representation(
-                representation.Items[0].MappingSource.MappedRepresentation, rep_id, rep_type
+                representation.Items[0].MappingSource.MappedRepresentation,
+                rep_id,
+                rep_type,
             )
 
     def get_geometry(self, representation):
@@ -299,7 +356,9 @@ class IFC2CA:
             edges = item.Bounds[0].Bound.EdgeList
             coords = []
             for edge in edges:
-                coords.append(self.get_coordinate(edge.EdgeElement.EdgeStart.VertexGeometry))
+                coords.append(
+                    self.get_coordinate(edge.EdgeElement.EdgeStart.VertexGeometry)
+                )
             return coords
 
         elif item.is_a("IfcVertexPoint"):
@@ -328,7 +387,9 @@ class IFC2CA:
     def get_1D_orientation(self, geometry, zAxis):
         xAxis = np.array(geometry[1]) - np.array(geometry[0])
         xAxis /= np.linalg.norm(xAxis)
-        zAxis = np.array(zAxis.DirectionRatios)  # this can be not strictly perpendicular (in the xz plane)
+        zAxis = np.array(
+            zAxis.DirectionRatios
+        )  # this can be not strictly perpendicular (in the xz plane)
         yAxis = np.cross(zAxis, xAxis)
         yAxis /= np.linalg.norm(yAxis)
         zAxis = np.cross(xAxis, yAxis)
@@ -347,7 +408,9 @@ class IFC2CA:
             return orientation
 
     def transform_vectors(self, geometry, trsf, include_translation=True):
-        if not any(isinstance(el, list) for el in geometry):  # single point which contains no list
+        if not any(
+            isinstance(el, list) for el in geometry
+        ):  # single point which contains no list
             geometry = [geometry]
         globalGeometry = []
 
@@ -453,13 +516,18 @@ class IFC2CA:
             {
                 "ifcName": rel.is_a() + "|" + str(rel.id()),
                 "id": rel.GlobalId,
-                "relatingElement": rel.RelatingStructuralMember.is_a() + "|" + str(rel.RelatingStructuralMember.id()),
+                "relatingElement": rel.RelatingStructuralMember.is_a()
+                + "|"
+                + str(rel.RelatingStructuralMember.id()),
                 "relatedConnection": rel.RelatedStructuralConnection.is_a()
                 + "|"
                 + str(rel.RelatedStructuralConnection.id()),
                 "orientation": self.get_0D_orientation(rel.ConditionCoordinateSystem),
                 "appliedCondition": self.get_connection_input(
-                    rel, self.get_geometry_type_from_connection(rel.RelatedStructuralConnection)
+                    rel,
+                    self.get_geometry_type_from_connection(
+                        rel.RelatedStructuralConnection
+                    ),
                 ),
                 "eccentricity": None
                 if not rel.is_a("IfcRelConnectsWithEccentricity")
@@ -475,7 +543,9 @@ class IFC2CA:
                         if not rel.ConnectionConstraint.EccentricityInZ
                         else rel.ConnectionConstraint.EccentricityInZ,
                     ],
-                    "pointOnElement": self.get_coordinate(rel.ConnectionConstraint.PointOnRelatingElement),
+                    "pointOnElement": self.get_coordinate(
+                        rel.ConnectionConstraint.PointOnRelatingElement
+                    ),
                 },
             }
             for rel in itemList
@@ -532,11 +602,23 @@ class IFC2CA:
             Iz = (2 * tf) * (b ** 3) / 12 + (h - 2 * tf) * (tw ** 3) / 12
             Jx = 1 / 3 * ((h - tf) * (tw ** 3) + 2 * b * (tf ** 3))
 
-            return {"crossSectionArea": A, "momentOfInertiaY": Iy, "momentOfInertiaZ": Iz, "torsionalConstantX": Jx}
+            return {
+                "crossSectionArea": A,
+                "momentOfInertiaY": Iy,
+                "momentOfInertiaZ": Iz,
+                "torsionalConstantX": Jx,
+            }
 
 
 if __name__ == "__main__":
-    fileNames = ["cantilever_01", "portal_01", "grid_of_beams", "slab_01", "structure_01"]
+    fileNames = [
+        "cantilever_01",
+        "portal_01",
+        "grid_of_beams",
+        "slab_01",
+        "structure_01",
+        "building_02",
+    ]
     files = fileNames
 
     for fileName in files:
