@@ -2,6 +2,7 @@ import bpy
 import json
 import ifcopenshell.api
 import ifcopenshell.util.attribute
+import ifcopenshell.util.representation
 import blenderbim.bim.helper
 from blenderbim.bim.module.material.prop import purge as material_prop_purge
 from blenderbim.bim.ifc import IfcStore
@@ -53,6 +54,14 @@ class AddMaterial(bpy.types.Operator):
         self.file = IfcStore.get_file()
         result = ifcopenshell.api.run("material.add_material", self.file, **{"name": obj.name})
         obj.BIMObjectProperties.ifc_definition_id = result.id()
+        if obj.BIMMaterialProperties.ifc_style_id:
+            context = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
+            if context:
+                ifcopenshell.api.run("style.assign_material_style", self.file, **{
+                    "material": result,
+                    "style": self.file.by_id(obj.BIMMaterialProperties.ifc_style_id),
+                    "context": context,
+                })
         Data.load(IfcStore.get_file())
         material_prop_purge()
         return {"FINISHED"}
