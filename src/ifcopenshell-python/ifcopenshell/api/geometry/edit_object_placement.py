@@ -7,7 +7,7 @@ import ifcopenshell.util.placement
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
-        self.settings = {"product": None, "matrix": np.eye(4), "should_cascade": True}
+        self.settings = {"product": None, "matrix": np.eye(4), "should_transform_children": False}
         for key, value in settings.items():
             self.settings[key] = value
 
@@ -16,16 +16,9 @@ class Usecase:
             return
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
 
-        dependent_objects = []
-        if self.settings["should_cascade"] and self.settings["product"].ObjectPlacement:
-            for referenced_placement in self.settings["product"].ObjectPlacement.ReferencedByPlacements:
-                for placed_obj in referenced_placement.PlacesObject:
-                    dependent_objects.append(
-                        {
-                            "product": placed_obj,
-                            "matrix": ifcopenshell.util.placement.get_local_placement(referenced_placement),
-                        }
-                    )
+        children_settings = []
+        if not self.settings["should_transform_children"]:
+            children_settings = self.get_children_settings(self.settings["product"].ObjectPlacement)
 
         placement_rel_to = None
         if hasattr(self.settings["product"], "ContainedInStructure") and self.settings["product"].ContainedInStructure:
@@ -45,24 +38,32 @@ class Usecase:
 
         placement = self.file.createIfcLocalPlacement(placement_rel_to, self.get_relative_placement(placement_rel_to))
         if self.settings["product"].ObjectPlacement:
-            for inverse in self.file.get_inverse(self.settings["product"]):
-                ifcopenshell.util.element.replace_attribute(
-                    inverse, self.settings["product"].ObjectPlacement, placement
-                )
-            old = self.settings["product"].ObjectPlacement
-            old.PlacementRelTo = None
+            old_placement = self.settings["product"].ObjectPlacement
+            old_placement.PlacementRelTo = None
             self.settings["product"].ObjectPlacement = None
-            if not self.file.get_inverse(old):
-                ifcopenshell.util.element.remove_deep(self.file, old)
+            for inverse in self.file.get_inverse(old_placement):
+                ifcopenshell.util.element.replace_attribute(inverse, old_placement, placement)
+            ifcopenshell.util.element.remove_deep(self.file, old_placement)
         self.settings["product"].ObjectPlacement = placement
 
         ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": self.settings["product"]})
 
-        for settings in dependent_objects:
+        for settings in children_settings:
             self.settings = settings
             self.execute()
 
         return placement
+
+    def get_children_settings(self, placement):
+        if not placement:
+            return []
+        results = []
+        for referenced_placement in placement.ReferencedByPlacements:
+            matrix = ifcopenshell.util.placement.get_local_placement(referenced_placement)
+            for obj in referenced_placement.PlacesObject:
+                results.append({"product": obj, "matrix": matrix, "should_transform_children": False})
+            results.extend(self.get_children_settings(referenced_placement))
+        return results
 
     def get_relative_placement(self, placement_rel_to):
         if placement_rel_to:
