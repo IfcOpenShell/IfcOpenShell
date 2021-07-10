@@ -24,5 +24,7 @@ class BIM_PT_style(Panel):
             row.operator("bim.edit_style", icon="GREASEPENCIL")
             op = row.operator("bim.unlink_style", icon="UNLINKED", text="")
             op.material = context.active_object.active_material.name
+            op = row.operator("bim.remove_style", icon="X", text="")
+            op.material = context.active_object.active_material.name
         else:
             row.operator("bim.add_style", icon="ADD")
