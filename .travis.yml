@@ -48,6 +48,7 @@ script:
     
   - cd ../test
   - /usr/bin/python tests.py
+  - /usr/bin/python ../src/ifcopenshell-python/ifcopenshell/test_ids.py
 
   - cd input
   
