@@ -1,5 +1,6 @@
 import bpy
 import ifcopenshell.api
+import ifcopenshell.util.representation
 import blenderbim.bim.helper
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.style.data import Data
@@ -74,6 +75,14 @@ class AddStyle(bpy.types.Operator):
         settings["external_definition"] = None  # TODO: Implement. See #1222
         style = ifcopenshell.api.run("style.add_style", self.file, **settings)
         material.BIMMaterialProperties.ifc_style_id = style.id()
+        if material.BIMObjectProperties.ifc_definition_id:
+            context = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
+            if context:
+                ifcopenshell.api.run("style.assign_material_style", self.file, **{
+                    "material": self.file.by_id(material.BIMObjectProperties.ifc_definition_id),
+                    "style": style,
+                    "context": context,
+                })
         return {"FINISHED"}
 
 

@@ -118,7 +118,7 @@ class AddRepresentation(bpy.types.Operator):
         ]
 
         ifcopenshell.api.run(
-            "geometry.assign_styles",
+            "style.assign_representation_styles",
             self.file,
             **{
                 "shape_representation": result,
@@ -331,7 +331,7 @@ class UpdateRepresentation(bpy.types.Operator):
         ]
 
         ifcopenshell.api.run(
-            "geometry.assign_styles",
+            "style.assign_representation_styles",
             self.file,
             **{
                 "shape_representation": new_representation,
