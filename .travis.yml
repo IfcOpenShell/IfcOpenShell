@@ -22,11 +22,16 @@ addons:
     - nlohmann-json3-dev
     - opencollada-dev
     - python3-all-dev
+    - python3-pip
     - swig
     - libhdf5-dev
 
 before_script:
   - if [ $TRAVIS_OS_NAME == "linux" ]; then ccache -z; fi
+  
+install:
+  # for IDS
+  - python3 -m pip install xmlschema
 
 script:
   - pwd
@@ -40,6 +45,7 @@ script:
     -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3 \
     -DPYTHON_INCLUDE_DIR:PATH=/usr/include/python3.8 \
     -DPYTHON_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libpython3.8.so \
+    "-DSCHEMA_VERSIONS=2x3;4" \
     -DGLTF_SUPPORT=On \
     -DJSON_INCLUDE_DIR=/usr/include \
     -DHDF5_INCLUDE_DIR=/usr/include/hdf5/serial \
