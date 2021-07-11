@@ -413,29 +413,37 @@ if(HDF5_SUPPORT)
 	ElSE()
 		SET(HDF5_LIBRARY_DIR "${HDF5_LIBRARY_DIR}" CACHE FILEPATH "HDF5 library files")
 	ENDIF()
-	
-	
-	MESSAGE(STATUS HDF5_INCLUDE_DIR "${HDF5_INCLUDE_DIR}")
-    IF(WIN32)
-        # An additional lib- prefix is added by HDF5 to denote static libraries
-        SET(HDF5_LIBRARIES 
-            "${HDF5_LIBRARY_DIR}/libhdf5_cpp.lib"
-            "${HDF5_LIBRARY_DIR}/libhdf5.lib"
-            "${HDF5_LIBRARY_DIR}/libzlib.lib"
-            "${HDF5_LIBRARY_DIR}/libsz.lib"
-            "${HDF5_LIBRARY_DIR}/libaec.lib")
-    ELSE()
-        if (NOT HDF5_LIBRARIES)
-	    SET(HDF5_LIBRARIES
+
+    if (HDF5_LIBRARY_DIR)
+    	# result of the HDF5 ctest package
+    	
+        if (win32)
+        	set(zlib_post lib)
+        	set(lib_ext lib)
+        else()
+        	set(lib_ext a)
+        endif()
+        
+	SET(HDF5_LIBRARIES 
+            "${HDF5_LIBRARY_DIR}/libhdf5_cpp.${lib_ext}"
+            "${HDF5_LIBRARY_DIR}/libhdf5.${lib_ext}"
+            "${HDF5_LIBRARY_DIR}/libz${zlib_post}.${lib_ext}"
+            "${HDF5_LIBRARY_DIR}/libsz.${lib_ext}"
+            "${HDF5_LIBRARY_DIR}/libaec.${lib_ext}"
+        )
+    endif()
+    
+    if (NOT HDF5_LIBRARIES)
+    	# debian default
+    	
+	SET(HDF5_LIBRARIES
 	        /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5_cpp.a
 		/usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5.a
 		/usr/lib/x86_64-linux-gnu/libsz.a
 		/usr/lib/x86_64-linux-gnu/libaec.a
 		z dl
-	    )
-	endif()
-        # An additional lib- prefix is added by HDF5 to denote static libraries
-    ENDIF()
+	)
+    endif()
 endif()
 
 IF(NOT CMAKE_BUILD_TYPE)
