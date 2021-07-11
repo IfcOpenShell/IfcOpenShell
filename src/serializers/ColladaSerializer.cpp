@@ -179,7 +179,7 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::close() {
 
 void ColladaSerializer::ColladaExporter::ColladaScene::add(
     const std::string& node_id, const std::string& node_name, const std::string& geom_name,
-    const std::vector<std::string>& material_ids, const IfcGeom::Transformation<double>& transformation)
+    const std::vector<std::string>& material_ids, const IfcGeom::Transformation& transformation)
 {
 	if (!scene_opened) {
 		openVisualScene(scene_id);
@@ -194,13 +194,13 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
 	// The matrix attribute of an entity is basically a 4x3 representation of its ObjectPlacement.
 	// Note that this placement is absolute, ie it is multiplied with all parent placements.
 
-	IfcGeom::Transformation<double>* relative_trsf = 0;
-	const IfcGeom::Transformation<double>* transformation_towrite = &transformation;
+	IfcGeom::Transformation* relative_trsf = 0;
+	const IfcGeom::Transformation* transformation_towrite = &transformation;
 	
 	// If this is not the first parent, get the relative placement
 	if (parentNodes.size() > 0)
 	{
-		relative_trsf = new IfcGeom::Transformation<double>(matrixStack.top().multiplied(transformation));
+		relative_trsf = new IfcGeom::Transformation(matrixStack.top().multiplied(transformation));
 		transformation_towrite = relative_trsf;
 	}
 
@@ -231,22 +231,22 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
 	node.end();
 }
 
-void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const IfcGeom::Element<double>& parent){
+void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const IfcGeom::Element& parent){
 	//we open the visual scene tag if it's not.
 	if (!scene_opened) {
 		openVisualScene(scene_id);
 		scene_opened = true;
 	}
 
-	const IfcGeom::Transformation<double>& parent_trsf = parent.transformation();
+	const IfcGeom::Transformation& parent_trsf = parent.transformation();
 
-	IfcGeom::Transformation<double>* relative_trsf = 0;
-	const IfcGeom::Transformation<double>* transformation_towrite = &parent_trsf;
+	IfcGeom::Transformation* relative_trsf = 0;
+	const IfcGeom::Transformation* transformation_towrite = &parent_trsf;
 
 	// If this is not the first parent, get the relative placement
 	if (parentNodes.size() > 0)
 	{
-		relative_trsf = new IfcGeom::Transformation<double>(matrixStack.top().multiplied(parent_trsf));
+		relative_trsf = new IfcGeom::Transformation(matrixStack.top().multiplied(parent_trsf));
 		transformation_towrite = relative_trsf;
 	}
 
@@ -390,9 +390,9 @@ void ColladaSerializer::ColladaExporter::startDocument(const std::string& unit_n
 	asset.add();
 }
 
-void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationElement<double>* o)
+void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationElement* o)
 {
-	const IfcGeom::Representation::Triangulation<double>& mesh = o->geometry();
+	const IfcGeom::Representation::Triangulation& mesh = o->geometry();
 	
     std::string name = serializer->object_id(o);
 	collada_id(name);
@@ -451,7 +451,7 @@ std::string ColladaSerializer::differentiateSlabTypes(const IfcUtil::IfcBaseEnti
 	return result;
 }
 
-std::string ColladaSerializer::object_id(const IfcGeom::Element<double>* o) /*override*/
+std::string ColladaSerializer::object_id(const IfcGeom::Element* o) /*override*/
 {
     if (settings_.get(SerializerSettings::USE_ELEMENT_TYPES)) {
         const std::string slabSuffix = (o->product() && o->product()->declaration().name() == "IfcSlab")
@@ -544,7 +544,7 @@ void ColladaSerializer::writeHeader() {
 	exporter.startDocument(unit_name, unit_magnitude);
 }
 
-void ColladaSerializer::write(const IfcGeom::TriangulationElement<double>* o) {
+void ColladaSerializer::write(const IfcGeom::TriangulationElement* o) {
     exporter.write(o);
 }
 

@@ -434,13 +434,11 @@ public:
 
 	std::pair<std::string, double> initializeUnits(IfcSchema::IfcUnitAssignment*);
 
-    template <typename P, typename PP>
-    IfcGeom::BRepElement<P, PP>* create_brep_for_representation_and_product(
+    IfcGeom::BRepElement* create_brep_for_representation_and_product(
         const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*);
 
-	template <typename P, typename PP>
-    IfcGeom::BRepElement<P, PP>* create_brep_for_processed_representation(
-        const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::BRepElement<P, PP>*);
+    IfcGeom::BRepElement* create_brep_for_processed_representation(
+        const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::BRepElement*);
 
 	const IfcSchema::IfcMaterial* get_single_material_association(const IfcSchema::IfcProduct*);
 	IfcSchema::IfcRepresentation* representation_mapped_to(const IfcSchema::IfcRepresentation* representation);
@@ -543,11 +541,11 @@ public:
 	virtual void setValue(GeomValue var, double value);
 	virtual double getValue(GeomValue var) const;
 
-	virtual IfcGeom::BRepElement<double>* convert(
+	virtual IfcGeom::BRepElement* convert(
 		const IteratorSettings& settings, IfcUtil::IfcBaseClass* representation,
 		IfcUtil::IfcBaseClass* product)
 	{
-		return create_brep_for_representation_and_product<double, double>(settings, (IfcSchema::IfcRepresentation*) representation, (IfcSchema::IfcProduct*) product);
+		return create_brep_for_representation_and_product(settings, (IfcSchema::IfcRepresentation*) representation, (IfcSchema::IfcProduct*) product);
 	}
 
 	virtual IfcRepresentationShapeItems convert(IfcUtil::IfcBaseClass* item) {

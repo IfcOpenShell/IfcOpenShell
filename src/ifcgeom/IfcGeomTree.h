@@ -287,7 +287,7 @@ namespace IfcGeom {
 			add_file(f, settings);
 		}
 
-		tree(IfcGeom::Iterator<double>& it) {
+		tree(IfcGeom::Iterator& it) {
 			add_file(it);
 		}		
 
@@ -297,15 +297,15 @@ namespace IfcGeom {
 			settings_.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, true);
 			settings_.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
 
-			IfcGeom::Iterator<double> it(settings_, &f);
+			IfcGeom::Iterator it(settings_, &f);
 
 			add_file(it);
 		}
 
-		void add_file(IfcGeom::Iterator<double>& it) {
+		void add_file(IfcGeom::Iterator& it) {
 			if (it.initialize()) {
 				do {
-					IfcGeom::BRepElement<double>* elem = (IfcGeom::BRepElement<double>*)it.get();
+					IfcGeom::BRepElement* elem = (IfcGeom::BRepElement*)it.get();
 					auto compound = elem->geometry().as_compound();
 					compound.Move(elem->transformation().data());
 					add((IfcUtil::IfcBaseEntity*)it.file()->instance_by_id(elem->id()), compound);

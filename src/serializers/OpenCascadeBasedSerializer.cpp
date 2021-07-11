@@ -36,7 +36,7 @@ bool OpenCascadeBasedSerializer::ready() {
 	return succeeded;
 }
 
-void OpenCascadeBasedSerializer::write(const IfcGeom::BRepElement<double>* o) {
+void OpenCascadeBasedSerializer::write(const IfcGeom::BRepElement* o) {
 	TopoDS_Shape compound = o->geometry().as_compound();
 	gp_Trsf trsf = o->transformation().data();
 	const IfcGeom::ElementSettings& settings = o->geometry().settings();

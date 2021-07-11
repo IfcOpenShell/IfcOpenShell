@@ -920,7 +920,7 @@ int main(int argc, char** argv) {
 				return EXIT_FAILURE;
 			}
 
-			IfcGeom::Iterator<double> tmp_context_iterator(settings, ifc_file, filter_funcs, num_threads);
+			IfcGeom::Iterator tmp_context_iterator(settings, ifc_file, filter_funcs, num_threads);
 			
 			time_t start, end;
 			time(&start);
@@ -961,7 +961,7 @@ int main(int argc, char** argv) {
         Logger::Notice(msg.str());
     }
 
-	IfcGeom::Iterator<double> context_iterator(settings, ifc_file, filter_funcs, num_threads);
+	IfcGeom::Iterator context_iterator(settings, ifc_file, filter_funcs, num_threads);
     if (!context_iterator.initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
         /// and for a case we found no entities that satisfy our filtering criteria.
@@ -1074,15 +1074,15 @@ int main(int argc, char** argv) {
 	
 	do {
 		
-        IfcGeom::Element<double> *geom_object = context_iterator.get();
+        IfcGeom::Element* geom_object = context_iterator.get();
 
 		if (is_tesselated)
 		{
-			serializer->write(static_cast<const IfcGeom::TriangulationElement<double>*>(geom_object));
+			serializer->write(static_cast<const IfcGeom::TriangulationElement*>(geom_object));
 		}
 		else
 		{
-			serializer->write(static_cast<const IfcGeom::BRepElement<double>*>(geom_object));
+			serializer->write(static_cast<const IfcGeom::BRepElement*>(geom_object));
 		}
 
         if (!no_progress) {
@@ -1485,7 +1485,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS, true);
 	settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 
-	IfcGeom::Iterator<double> context_iterator(settings, &f);
+	IfcGeom::Iterator context_iterator(settings, &f);
 
 	if (!context_iterator.initialize()) {
 		return;
@@ -1526,7 +1526,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 		if (num_created) {
 			has_more = context_iterator.next();
 		}
-		IfcGeom::BRepElement<double>* geom_object = nullptr;
+		IfcGeom::BRepElement* geom_object = nullptr;
 		if (has_more) {
 			geom_object = context_iterator.get_native();
 		}

@@ -70,15 +70,15 @@ public:
 	virtual ~GeometrySerializer() {} 
 
 	virtual bool isTesselated() const = 0;
-	virtual void write(const IfcGeom::TriangulationElement<double>* o) = 0;
-	virtual void write(const IfcGeom::BRepElement<double>* o) = 0;
+	virtual void write(const IfcGeom::TriangulationElement* o) = 0;
+	virtual void write(const IfcGeom::BRepElement* o) = 0;
 	virtual void setUnitNameAndMagnitude(const std::string& name, float magnitude) = 0;
 
     const SerializerSettings& settings() const { return settings_; }
     SerializerSettings& settings() { return settings_; }
 
     /// Returns ID for the object depending on the used setting.
-    virtual std::string object_id(const IfcGeom::Element<double>* o)
+    virtual std::string object_id(const IfcGeom::Element* o)
     {
         if (settings_.get(SerializerSettings::USE_ELEMENT_GUIDS)) return o->guid();
         if (settings_.get(SerializerSettings::USE_ELEMENT_NAMES)) return o->name();

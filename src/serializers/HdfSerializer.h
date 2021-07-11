@@ -46,8 +46,8 @@ public:
 	virtual ~HdfSerializer() {}
 	bool ready();
 	void writeHeader();
-	void write(const IfcGeom::BRepElement<double>* o);
-	void write(const IfcGeom::TriangulationElement<double>* /*o*/) {}
+	void write(const IfcGeom::BRepElement* o);
+	void write(const IfcGeom::TriangulationElement* /*o*/) {}
 	void finalize() {}
 	bool isTesselated() const { return false; }
 	void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
