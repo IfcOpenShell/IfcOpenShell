@@ -1966,7 +1966,7 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and
 		bool caught_error = false;
 		try {
 #if OCC_VERSION_HEX < 0x60900
-            const bool faster_booleans = settings.get(IteratorSettings::FASTER_BOOLEANS);
+            const bool faster_booleans = false;
 #else
 			const bool faster_booleans = true;
 #endif
