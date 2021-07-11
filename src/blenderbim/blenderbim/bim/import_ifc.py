@@ -159,8 +159,16 @@ class IfcImporter:
             self.time = time.time()
         print("{} :: {:.2f}".format(message, time.time() - self.time))
         self.time = time.time()
+        self.update_progress(self.progress + 1)
+
+    def update_progress(self, progress):
+        if progress <= 100:
+            self.progress = progress
+        bpy.context.window_manager.progress_update(self.progress)
 
     def execute(self):
+        bpy.context.window_manager.progress_begin(0, 100)
+        self.progress = 0
         self.profile_code("Starting import process")
         self.load_diff()
         self.profile_code("Load diff")
@@ -228,6 +236,8 @@ class IfcImporter:
             self.profile_code("Mesh cleaning")
         self.set_default_context()
         self.profile_code("Setting default context")
+        self.update_progress(100)
+        bpy.context.window_manager.progress_end()
 
     def is_element_far_away(self, element, is_meters=True):
         try:
@@ -546,12 +556,21 @@ class IfcImporter:
         if not valid_file:
             return False
         checkpoint = time.time()
-        total = 0
+        total_created = 0
+        approx_total_products = len(self.include_elements) or len(self.file.by_type("IfcElement"))
+        start_progress = self.progress
+        progress_range = 85 - start_progress
         while True:
-            total += 1
-            if total % 250 == 0:
-                print("{} elements processed in {:.2f}s ...".format(total, time.time() - checkpoint))
+            if total_created % 250 == 0:
+                print(
+                    "{} / ~{} elements processed in {:.2f}s ...".format(
+                        total_created, approx_total_products, time.time() - checkpoint
+                    )
+                )
                 checkpoint = time.time()
+                self.update_progress(
+                    ((total_created / approx_total_products) * progress_range) + start_progress
+                )
             shape = iterator.get()
             if shape:
                 product = self.file.by_id(shape.guid)
@@ -565,6 +584,7 @@ class IfcImporter:
                     pass
                 else:
                     self.create_product(product, shape)
+                    total_created += 1
             if not iterator.next():
                 break
         print("Done creating geometry")
