@@ -27,7 +27,7 @@
 class SerializerSettings : public IfcGeom::IteratorSettings
 {
 public:
-    enum Setting
+    enum Setting : uint64_t
     {
         /// Use entity names instead of unique IDs for naming elements.
         /// Applicable for OBJ, DAE, and SVG output.
@@ -62,6 +62,42 @@ public:
     short precision;
 
     enum { DEFAULT_PRECISION = 15 };
+};
+
+class stream_or_filename {
+private:
+	std::shared_ptr<std::ofstream> ofs_;
+	std::shared_ptr<std::ostringstream> oss_;
+	boost::optional<std::string> filename_;
+
+public:
+	std::ostream& stream;
+
+	stream_or_filename(const std::string& fn)
+		: ofs_(new std::ofstream(IfcUtil::path::from_utf8(fn).c_str()))
+		, stream(*ofs_)
+	{}
+
+	stream_or_filename()
+		: oss_(new std::ostringstream)
+		, stream(*oss_)
+	{}
+
+	std::string get_value() const {
+		return oss_->str();
+	}
+
+	boost::optional<std::string> filename() const {
+		return filename_;
+	}
+
+	bool is_ready() {
+		if (ofs_) {
+			return ofs_->is_open();
+		} else {
+			return true;
+		}
+	}
 };
 
 class GeometrySerializer : public Serializer {

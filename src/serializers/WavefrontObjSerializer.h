@@ -29,13 +29,12 @@
 // http://people.sc.fsu.edu/~jburkardt/txt/obj_format.txt
 class WaveFrontOBJSerializer : public GeometrySerializer {
 private:
-	const std::string mtl_filename;
-	std::ofstream obj_stream;
-	std::ofstream mtl_stream;
+	stream_or_filename obj_stream;
+	stream_or_filename mtl_stream;
 	unsigned int vcount_total;
 	std::set<std::string> materials;
 public:
-	WaveFrontOBJSerializer(const std::string& obj_filename, const std::string& mtl_filename, const SerializerSettings& settings);
+	WaveFrontOBJSerializer(const stream_or_filename& obj_filename, const stream_or_filename& mtl_filename, const SerializerSettings& settings);
 	virtual ~WaveFrontOBJSerializer() {}
 	bool ready();
 	void writeHeader();
