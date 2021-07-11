@@ -77,6 +77,9 @@
 	#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 	#include "../ifcgeom_schema_agnostic/Serialization.h"
 	#include "../ifcgeom/IfcGeomTree.h"
+
+	#include "../serializers/SvgSerializer.h"
+	#include "../serializers/WavefrontObjSerializer.h"
 	
 #ifdef HAS_SCHEMA_2x3
 	#include "../ifcparse/Ifc2x3.h"
@@ -124,6 +127,9 @@
 	#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 	#include "../ifcgeom_schema_agnostic/Serialization.h"
 	#include "../ifcgeom/IfcGeomTree.h"
+
+	#include "../serializers/SvgSerializer.h"
+	#include "../serializers/WavefrontObjSerializer.h"
 	
 #ifdef HAS_SCHEMA_2x3
 	#include "../ifcparse/Ifc2x3.h"
