@@ -923,7 +923,7 @@ int main(int argc, char** argv) {
 				return EXIT_FAILURE;
 			}
 
-			IfcGeom::Iterator<real_t> tmp_context_iterator(settings, ifc_file, filter_funcs, num_threads);
+			IfcGeom::Iterator<double> tmp_context_iterator(settings, ifc_file, filter_funcs, num_threads);
 			
 			time_t start, end;
 			time(&start);
@@ -964,7 +964,7 @@ int main(int argc, char** argv) {
         Logger::Notice(msg.str());
     }
 
-	IfcGeom::Iterator<real_t> context_iterator(settings, ifc_file, filter_funcs, num_threads);
+	IfcGeom::Iterator<double> context_iterator(settings, ifc_file, filter_funcs, num_threads);
     if (!context_iterator.initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
         /// and for a case we found no entities that satisfy our filtering criteria.
@@ -1077,15 +1077,15 @@ int main(int argc, char** argv) {
 	
 	do {
 		
-        IfcGeom::Element<real_t> *geom_object = context_iterator.get();
+        IfcGeom::Element<double> *geom_object = context_iterator.get();
 
 		if (is_tesselated)
 		{
-			serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom_object));
+			serializer->write(static_cast<const IfcGeom::TriangulationElement<double>*>(geom_object));
 		}
 		else
 		{
-			serializer->write(static_cast<const IfcGeom::BRepElement<real_t>*>(geom_object));
+			serializer->write(static_cast<const IfcGeom::BRepElement<double>*>(geom_object));
 		}
 
         if (!no_progress) {

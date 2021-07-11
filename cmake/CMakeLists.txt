@@ -37,7 +37,6 @@ endforeach()
 OPTION(COLLADA_SUPPORT "Build IfcConvert with COLLADA support (requires OpenCOLLADA)." ON)
 OPTION(IFCXML_SUPPORT "Build IfcParse with ifcXML support (requires libxml2)." ON)
 OPTION(ENABLE_BUILD_OPTIMIZATIONS "Enable certain compiler and linker optimizations on RelWithDebInfo and Release builds." OFF)
-OPTION(IFCCONVERT_DOUBLE_PRECISION "IfcConvert: Use double precision floating-point numbers." ON)
 OPTION(BUILD_PACKAGE "" OFF)
 OPTION(BUILD_IFCGEOM "Build IfcGeom." ON)
 OPTION(BUILD_DOCUMENTATION "Build IfcOpenShell Documentation." OFF)
@@ -520,10 +519,6 @@ ElSE()
         add_definitions(-fPIC)
     endif()
 ENDIF()
-
-if (IFCCONVERT_DOUBLE_PRECISION)
-    SET(CONVERT_PRECISION "-DIFCCONVERT_DOUBLE_PRECISION")
-endif()
 
 INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
 	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIR}

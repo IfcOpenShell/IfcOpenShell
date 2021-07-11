@@ -68,14 +68,14 @@ private:
                 , serializer(_serializer)
 			{}
             void addFloatSource(const std::string& mesh_id, const std::string& suffix,
-                const std::vector<real_t>& floats, const char* coords = "XYZ");
+                const std::vector<double>& floats, const char* coords = "XYZ");
             /// @todo pass simply DeferredObject?
             void write(
                 const std::string &mesh_id, const std::string &default_material_name,
-                const std::vector<real_t>& positions, const std::vector<real_t>& normals,
+                const std::vector<double>& positions, const std::vector<double>& normals,
                 const std::vector<int>& faces, const std::vector<int>& edges,
                 const std::vector<int>& material_ids, const std::vector<IfcGeom::Material>& materials,
-                const std::vector<real_t>& uvs, const std::vector<std::string>& material_references);
+                const std::vector<double>& uvs, const std::vector<std::string>& material_references);
 			void close();
             ColladaSerializer *serializer;
 		};
@@ -88,7 +88,7 @@ private:
 			const std::string scene_id;
 			bool scene_opened;
 			std::stack<COLLADASW::Node*> parentNodes;
-			std::stack<IfcGeom::Transformation<real_t> > matrixStack;
+			std::stack<IfcGeom::Transformation<double> > matrixStack;
 		public:
 			ColladaScene(const std::string& scene_id, COLLADASW::StreamWriter& stream, ColladaSerializer *_serializer)
 				: COLLADASW::LibraryVisualScenes(&stream)
@@ -97,8 +97,8 @@ private:
                 , serializer(_serializer)
 			{}
 			void add(const std::string& node_id, const std::string& node_name, const std::string& geom_name,
-                const std::vector<std::string>& material_ids, const IfcGeom::Transformation<real_t>& matrix);
-			void addParent(const IfcGeom::Element<real_t>& parent);
+                const std::vector<std::string>& material_ids, const IfcGeom::Transformation<double>& matrix);
+			void addParent(const IfcGeom::Element<double>& parent);
 			void closeParent();
 			COLLADASW::Node* GetDirectParent();
 			void write();
@@ -158,21 +158,21 @@ private:
 
 		public:
 			std::string unique_id, representation_id, type;
-			IfcGeom::Transformation<real_t> transformation;
-			std::vector<real_t> vertices;
-			std::vector<real_t> normals;
+			IfcGeom::Transformation<double> transformation;
+			std::vector<double> vertices;
+			std::vector<double> normals;
 			std::vector<int> faces;
 			std::vector<int> edges;
 			std::vector<int> material_ids;
 			std::vector<IfcGeom::Material> materials;
 			std::vector<std::string> material_references;
-            std::vector<real_t> uvs;
-			std::vector<const IfcGeom::Element<real_t>*> parents_;
+            std::vector<double> uvs;
+			std::vector<const IfcGeom::Element<double>*> parents_;
 
-			DeferredObject(const std::string& unique_id, const std::string& representation_id, const std::string& type, const IfcGeom::Transformation<real_t>& transformation,
-				const std::vector<real_t>& vertices, const std::vector<real_t>& normals, const std::vector<int>& faces,
+			DeferredObject(const std::string& unique_id, const std::string& representation_id, const std::string& type, const IfcGeom::Transformation<double>& transformation,
+				const std::vector<double>& vertices, const std::vector<double>& normals, const std::vector<int>& faces,
 				const std::vector<int>& edges, const std::vector<int>& material_ids, const std::vector<IfcGeom::Material>& materials,
-				const std::vector<std::string>& material_references, const std::vector<real_t>& uvs)
+				const std::vector<std::string>& material_references, const std::vector<double>& uvs)
 				: unique_id(unique_id)
 				, representation_id(representation_id)
 				, type(type)
@@ -187,8 +187,8 @@ private:
 				, uvs(uvs)
 			{}
 
-			std::vector<const IfcGeom::Element<real_t>*>& parents() { return parents_; }
-			const std::vector<const IfcGeom::Element<real_t>*>& parents() const { return parents_; }
+			std::vector<const IfcGeom::Element<double>*>& parents() { return parents_; }
+			const std::vector<const IfcGeom::Element<double>*>& parents() const { return parents_; }
 		};
 		COLLADABU::NativeString filename;
 		COLLADASW::StreamWriter stream;
@@ -211,7 +211,7 @@ private:
 		std::vector<DeferredObject> deferreds;
 		virtual ~ColladaExporter() {}
 		void startDocument(const std::string& unit_name, float unit_magnitude);
-		void write(const IfcGeom::TriangulationElement<real_t>* o);
+		void write(const IfcGeom::TriangulationElement<double>* o);
 		void endDocument();
 	};
 	ColladaExporter exporter;
@@ -229,8 +229,8 @@ public:
     }
 	bool ready();
 	void writeHeader();
-	void write(const IfcGeom::TriangulationElement<real_t>* o);
-    void write(const IfcGeom::BRepElement<real_t>* /*o*/) {}
+	void write(const IfcGeom::TriangulationElement<double>* o);
+    void write(const IfcGeom::BRepElement<double>* /*o*/) {}
 	void finalize();
 	bool isTesselated() const { return true; }
 	void setUnitNameAndMagnitude(const std::string& name, float magnitude) {
@@ -239,7 +239,7 @@ public:
 	}
 	void setFile(IfcParse::IfcFile*) {}
 
-    std::string object_id(const IfcGeom::Element<real_t>* o) /*override*/;
+    std::string object_id(const IfcGeom::Element<double>* o) /*override*/;
 
 private:
     static std::string differentiateSlabTypes(const IfcUtil::IfcBaseEntity* slab);

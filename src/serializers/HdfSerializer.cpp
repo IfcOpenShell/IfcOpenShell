@@ -54,7 +54,7 @@ void HdfSerializer::writeHeader() {
 }
 
 
-void HdfSerializer::write(const IfcGeom::BRepElement<real_t>* o) {
+void HdfSerializer::write(const IfcGeom::BRepElement<double>* o) {
 
 	std::string guid = o->guid();
 
@@ -72,8 +72,8 @@ void HdfSerializer::write(const IfcGeom::BRepElement<real_t>* o) {
 	const IfcGeom::Representation::Serialization serialization(brepmesh);
 	std::string brep_data = serialization.brep_data();
 
-	const IfcGeom::TriangulationElement<real_t>triangular_element(*o);
-	const IfcGeom::Representation::Triangulation<real_t>& mesh = triangular_element.geometry();
+	const IfcGeom::TriangulationElement<double>triangular_element(*o);
+	const IfcGeom::Representation::Triangulation<double>& mesh = triangular_element.geometry();
 	const int vcount = (int)mesh.verts().size() / 3;
 	const int fcount = (int)mesh.faces().size() / 3;
 	const bool isyup = settings().get(SerializerSettings::USE_Y_UP);
