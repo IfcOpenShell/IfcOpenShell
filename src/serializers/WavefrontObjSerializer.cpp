@@ -84,7 +84,7 @@ void WaveFrontOBJSerializer::writeMaterial(const IfcGeom::Material& style)
 	}
 }
 
-void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<double>* o)
+void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement* o)
 {
     obj_stream << "g " << object_id(o) << "\n";
 	obj_stream << "s 1" << "\n";

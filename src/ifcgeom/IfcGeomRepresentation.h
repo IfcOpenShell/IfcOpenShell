@@ -101,22 +101,21 @@ namespace IfcGeom {
 			Serialization& operator=(const Serialization&);
 		};
 
-		template <typename P>
 		class Triangulation : public Representation {
 		private:
 			// A nested pair of floats and a material index to be able to store an XYZ coordinate in a map.
 			// TODO: Make this a std::tuple when compilers add support for that.
-			typedef typename std::pair<P, std::pair<P, P> > Coordinate;
+			typedef typename std::pair<double, std::pair<double, double> > Coordinate;
 			typedef typename std::pair<int, Coordinate> VertexKey;
 			typedef std::map<VertexKey, int> VertexKeyMap;
 			typedef std::pair<int, int> Edge;
 
 			std::string id_;
-			std::vector<P> _verts;
+			std::vector<double> _verts;
 			std::vector<int> _faces;
 			std::vector<int> _edges;
-			std::vector<P> _normals;
-            std::vector<P> uvs_;
+			std::vector<double> _normals;
+            std::vector<double> uvs_;
 			std::vector<int> _material_ids;
 			std::vector<Material> _materials;
 			size_t weld_offset_;
@@ -124,11 +123,11 @@ namespace IfcGeom {
 
 		public:
 			const std::string& id() const { return id_; }
-			const std::vector<P>& verts() const { return _verts; }
+			const std::vector<double>& verts() const { return _verts; }
 			const std::vector<int>& faces() const { return _faces; }
 			const std::vector<int>& edges() const { return _edges; }
-			const std::vector<P>& normals() const { return _normals; }
-            const std::vector<P>& uvs() const { return uvs_; }
+			const std::vector<double>& normals() const { return _normals; }
+            const std::vector<double>& uvs() const { return uvs_; }
 			const std::vector<int>& material_ids() const { return _material_ids; }
 			const std::vector<Material>& materials() const { return _materials; }
 
@@ -232,9 +231,9 @@ namespace IfcGeom {
 										}
 										// TODO: Do the same for conical surfaces, but they are rare in IFC.
 									}
-									_normals.push_back(static_cast<P>(normal.X()));
-									_normals.push_back(static_cast<P>(normal.Y()));
-									_normals.push_back(static_cast<P>(normal.Z()));
+									_normals.push_back(normal.X());
+									_normals.push_back(normal.Y());
+									_normals.push_back(normal.Z());
 								}
 							}
 
@@ -336,9 +335,9 @@ namespace IfcGeom {
 									segments.push_back(std::make_pair(right, current));
 								}
 
-								for (auto& s : segments) {
-									_edges.push_back(s.first);
-									_edges.push_back(s.second);
+								for (auto& sgmt : segments) {
+									_edges.push_back(sgmt.first);
+									_edges.push_back(sgmt.second);
 									_material_ids.push_back(surface_style_id);
 								}
 
@@ -354,16 +353,16 @@ namespace IfcGeom {
 
             /// Generates UVs for a single mesh using box projection.
             /// @todo Very simple impl. Assumes that input vertices and normals match 1:1.
-            static std::vector<P> box_project_uvs(const std::vector<P> &vertices, const std::vector<P> &normals)
+            static std::vector<double> box_project_uvs(const std::vector<double> &vertices, const std::vector<double> &normals)
             {
-                std::vector<P> uvs;
+                std::vector<double> uvs;
                 uvs.resize(vertices.size() / 3 * 2);
                 for (size_t uv_idx = 0, v_idx = 0;
                 uv_idx < uvs.size() && v_idx < vertices.size() && v_idx < normals.size();
                     uv_idx += 2, v_idx += 3) {
 
-                    P n_x = normals[v_idx], n_y = normals[v_idx + 1], n_z = normals[v_idx + 2];
-                    P v_x = vertices[v_idx], v_y = vertices[v_idx + 1], v_z = vertices[v_idx + 2];
+                    double n_x = normals[v_idx], n_y = normals[v_idx + 1], n_z = normals[v_idx + 2];
+                    double v_x = vertices[v_idx], v_y = vertices[v_idx + 1], v_z = vertices[v_idx + 2];
 
                     if (std::abs(n_x) > std::abs(n_y) && std::abs(n_x) > std::abs(n_z)) {
                         uvs[uv_idx] = v_z;
@@ -386,15 +385,15 @@ namespace IfcGeom {
 			// Welds vertices that belong to different faces
 			int addVertex(int material_index, const gp_XYZ& p) {
                 const bool convert = settings().get(IteratorSettings::CONVERT_BACK_UNITS);
-				const P X = static_cast<P>(convert ? (p.X() / settings().unit_magnitude()) : p.X());
-				const P Y = static_cast<P>(convert ? (p.Y() / settings().unit_magnitude()) : p.Y());
-				const P Z = static_cast<P>(convert ? (p.Z() / settings().unit_magnitude()) : p.Z());
+				const double X = convert ? (p.X() / settings().unit_magnitude()) : p.X();
+				const double Y = convert ? (p.Y() / settings().unit_magnitude()) : p.Y();
+				const double Z = convert ? (p.Z() / settings().unit_magnitude()) : p.Z();
 				int i = (int) _verts.size() / 3;
 				if (settings().get(IteratorSettings::WELD_VERTICES)) {
 					const VertexKey key = std::make_pair(material_index, std::make_pair(X, std::make_pair(Y, Z)));
 					typename VertexKeyMap::const_iterator it = welds.find(key);
 					if ( it != welds.end() ) return it->second;
-					i = (int) welds.size() + weld_offset_;
+					i = (int) (welds.size() + weld_offset_);
 					welds[key] = i;
 				}
 				_verts.push_back(X);
