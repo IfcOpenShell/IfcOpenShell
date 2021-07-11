@@ -17,7 +17,9 @@
  *                                                                              *
  ********************************************************************************/
 
-%rename("settings") IteratorSettings;
+%rename("buffer") stream_or_filename;
+
+%ignore stream_or_filename::stream;
 
 // This is only used for RGB colours, hence the size of 3
 %typemap(out) const double* {
@@ -62,6 +64,10 @@
 %include "../ifcgeom_schema_agnostic/IfcGeomMaterial.h"
 %include "../ifcgeom/IfcGeomRepresentation.h"
 %include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
+
+%include "../serializers/GeometrySerializer.h"
+%include "../serializers/SvgSerializer.h"
+%include "../serializers/WavefrontObjSerializer.h"
 
 // A Template instantantation should be defined before it is used as a base class. 
 // But frankly I don't care as most methods are subtlely different anyway.
@@ -175,7 +181,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		def d():
 			import numbers
 			for x in dir(self):
-				if x.isupper() and x not in {"NUM_SETTINGS", "USE_PYTHON_OPENCASCADE"}:
+				if x.isupper() and x not in {"NUM_SETTINGS", "USE_PYTHON_OPENCASCADE", "DEFAULT_PRECISION"}:
 					v = getattr(self, x)
 					if isinstance(v, numbers.Integral):
 						yield x
