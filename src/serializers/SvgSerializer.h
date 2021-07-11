@@ -215,8 +215,8 @@ public:
     void writeHeader();
 	void doWriteHeader();
     bool ready();
-    void write(const IfcGeom::TriangulationElement<real_t>* /*o*/) {}
-    void write(const IfcGeom::BRepElement<real_t>* o);
+    void write(const IfcGeom::TriangulationElement<double>* /*o*/) {}
+    void write(const IfcGeom::BRepElement<double>* o);
     void write(path_object& p, const TopoDS_Wire& wire, boost::optional<std::vector<double>> dash_array=boost::none);
 	void write(const geometry_data& data);
     path_object& start_path(const gp_Pln& p, IfcUtil::IfcBaseEntity* storey, const std::string& id);
@@ -279,10 +279,10 @@ public:
 	void setDrawingCenter(double x, double y) {
 		center_x_ = x; center_y_ = y;
 	}
-    std::string nameElement(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element<real_t>* elem);
+    std::string nameElement(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element<double>* elem);
 	std::string nameElement(const IfcUtil::IfcBaseEntity* elem);
 	std::string idElement(const IfcUtil::IfcBaseEntity* elem);
-	std::string object_id(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element<real_t>* o) {
+	std::string object_id(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element<double>* o) {
 		if (storey) {
 			return idElement(storey) + "-" + GeometrySerializer::object_id(o);
 		} else {

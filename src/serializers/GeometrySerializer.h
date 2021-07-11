@@ -20,12 +20,6 @@
 #ifndef GEOMETRYSERIALIZER_H
 #define GEOMETRYSERIALIZER_H
 
-#ifdef IFCCONVERT_DOUBLE_PRECISION
-typedef double real_t;
-#else
-typedef float real_t;
-#endif
-
 #include "../serializers/Serializer.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 #include "../ifcgeom/IfcGeomElement.h"
@@ -76,15 +70,15 @@ public:
 	virtual ~GeometrySerializer() {} 
 
 	virtual bool isTesselated() const = 0;
-	virtual void write(const IfcGeom::TriangulationElement<real_t>* o) = 0;
-	virtual void write(const IfcGeom::BRepElement<real_t>* o) = 0;
+	virtual void write(const IfcGeom::TriangulationElement<double>* o) = 0;
+	virtual void write(const IfcGeom::BRepElement<double>* o) = 0;
 	virtual void setUnitNameAndMagnitude(const std::string& name, float magnitude) = 0;
 
     const SerializerSettings& settings() const { return settings_; }
     SerializerSettings& settings() { return settings_; }
 
     /// Returns ID for the object depending on the used setting.
-    virtual std::string object_id(const IfcGeom::Element<real_t>* o)
+    virtual std::string object_id(const IfcGeom::Element<double>* o)
     {
         if (settings_.get(SerializerSettings::USE_ELEMENT_GUIDS)) return o->guid();
         if (settings_.get(SerializerSettings::USE_ELEMENT_NAMES)) return o->name();

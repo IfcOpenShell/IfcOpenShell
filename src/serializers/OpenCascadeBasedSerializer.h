@@ -39,8 +39,8 @@ public:
 	void writeHeader() {}
 	bool ready();
 	virtual void writeShape(const std::string& name, const TopoDS_Shape& shape) = 0;
-	void write(const IfcGeom::TriangulationElement<real_t>* /*o*/) {}
-	void write(const IfcGeom::BRepElement<real_t>* o);
+	void write(const IfcGeom::TriangulationElement<double>* /*o*/) {}
+	void write(const IfcGeom::BRepElement<double>* o);
 	bool isTesselated() const { return false; }
 	void setFile(IfcParse::IfcFile*) {}
 };

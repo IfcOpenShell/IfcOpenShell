@@ -84,19 +84,19 @@ void WaveFrontOBJSerializer::writeMaterial(const IfcGeom::Material& style)
 	}
 }
 
-void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<real_t>* o)
+void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<double>* o)
 {
     obj_stream << "g " << object_id(o) << "\n";
 	obj_stream << "s 1" << "\n";
 	const bool isyup = settings().get(SerializerSettings::USE_Y_UP);
 
-    const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
+    const IfcGeom::Representation::Triangulation<double>& mesh = o->geometry();
 
 	const int vcount = (int)mesh.verts().size() / 3;
-    for ( std::vector<real_t>::const_iterator it = mesh.verts().begin(); it != mesh.verts().end(); ) {
-        const real_t x = *(it++);
-        const real_t y = *(it++);
-        const real_t z = *(it++);
+    for ( std::vector<double>::const_iterator it = mesh.verts().begin(); it != mesh.verts().end(); ) {
+        const double x = *(it++);
+        const double y = *(it++);
+        const double z = *(it++);
 		
 		if (isyup) {
 			obj_stream << "v " << x << " " << z << " " << -y << "\n";
@@ -105,16 +105,16 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<real_t>* 
 		}
 	}
 
-    for ( std::vector<real_t>::const_iterator it = mesh.normals().begin(); it != mesh.normals().end(); ) {
-        const real_t x = *(it++);
-        const real_t y = *(it++);
-        const real_t z = *(it++);
+    for ( std::vector<double>::const_iterator it = mesh.normals().begin(); it != mesh.normals().end(); ) {
+        const double x = *(it++);
+        const double y = *(it++);
+        const double z = *(it++);
 		obj_stream << "vn " << x << " " << y << " " << z << "\n";
 	}
 
-    for (std::vector<real_t>::const_iterator it = mesh.uvs().begin(); it != mesh.uvs().end();) {
-        const real_t u = *it++;
-        const real_t v = *it++;
+    for (std::vector<double>::const_iterator it = mesh.uvs().begin(); it != mesh.uvs().end();) {
+        const double u = *it++;
+        const double v = *it++;
         obj_stream << "vt " << u << " " << v << "\n";
     }
 

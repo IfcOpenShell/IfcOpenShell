@@ -339,7 +339,7 @@ SvgSerializer::path_object& SvgSerializer::start_path(const gp_Pln& pln, const s
 }
 
 namespace {
-	boost::optional<std::pair<IfcUtil::IfcBaseEntity*, double>> storey_elevation_from_element(const IfcGeom::BRepElement<real_t>* o) {
+	boost::optional<std::pair<IfcUtil::IfcBaseEntity*, double>> storey_elevation_from_element(const IfcGeom::BRepElement<double>* o) {
 		for (const auto& p : o->parents()) {
 			if (p->type() == "IfcBuildingStorey") {
 				try {
@@ -503,7 +503,7 @@ namespace {
 	}
 }
 
-void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
+void SvgSerializer::write(const IfcGeom::BRepElement<double>* brep_obj) {
 
 	boost::optional<std::string> object_type;
 	if (!brep_obj->product()->get("ObjectType")->isNull()) {
@@ -2052,7 +2052,7 @@ return oss.str();
 	}
 }
 
-std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element<real_t>* elem) {
+std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element<double>* elem) {
 	auto n = elem->name();
 	IfcUtil::escape_xml(n);
 
@@ -2178,7 +2178,7 @@ namespace {
 std::string SvgSerializer::writeMetadata(const drawing_meta& m) {
 	gp_Trsf trsf;
 	trsf.SetTransformation(m.pln_3d.Position(), gp::XOY());
-	auto m43 = IfcGeom::Matrix<real_t>(IfcGeom::ElementSettings(IfcGeom::IteratorSettings(), 1., ""), trsf).data();
+	auto m43 = IfcGeom::Matrix<double>(IfcGeom::ElementSettings(IfcGeom::IteratorSettings(), 1., ""), trsf).data();
 	std::array<std::array<double, 4>, 4> m4 = {{
 		{{ (double)m43[0], (double)m43[3], (double)m43[6], (double)m43[9] }},
 		{{ (double)m43[1], (double)m43[4], (double)m43[7], (double)m43[10] }},
