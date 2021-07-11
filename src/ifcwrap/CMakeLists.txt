@@ -98,6 +98,7 @@ IF(PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "")
                 DESTINATION "${python_package_dir}/ifcopenshell")
         INSTALL(TARGETS _ifcopenshell_wrapper
                 DESTINATION "${python_package_dir}/ifcopenshell")
+		install(FILES $<TARGET_PDB_FILE:_ifcopenshell_wrapper> DESTINATION bin OPTIONAL)
     ENDIF()
 ELSE()
     MESSAGE(WARNING "No Python interpreter found, unable to install the Python wrapper")
