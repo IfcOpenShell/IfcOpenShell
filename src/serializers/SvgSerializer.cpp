@@ -1949,30 +1949,30 @@ void SvgSerializer::finalize() {
 	for (it = paths.begin(); it != paths.end(); ++it) {
 		if (!previous || it->first != *previous) {
 			if (previous) {
-				svg_file << "    </g>\n";
+				svg_file.stream << "    </g>\n";
 			}
 			std::ostringstream oss;
 			if (it->first.first) {
-				svg_file << "    <g " << nameElement(it->first.first) << " " << writeMetadata(drawing_metadata[it->first]) << ">\n";
+				svg_file.stream << "    <g " << nameElement(it->first.first) << " " << writeMetadata(drawing_metadata[it->first]) << ">\n";
 			} else {
 				auto n = it->first.second;
 				IfcUtil::escape_xml(n);
-				svg_file << "    <g " << namespace_prefix_  << "name=\"" << n << "\" class=\"section\" " << writeMetadata(drawing_metadata[it->first]) << ">\n";
+				svg_file.stream << "    <g " << namespace_prefix_  << "name=\"" << n << "\" class=\"section\" " << writeMetadata(drawing_metadata[it->first]) << ">\n";
 			}
 		}
-		svg_file << "        <g " << it->second.first << ">\n";
+		svg_file.stream << "        <g " << it->second.first << ">\n";
 		std::vector<util::string_buffer>::const_iterator jt;
 		for (jt = it->second.second.begin(); jt != it->second.second.end(); ++jt) {
-			svg_file << jt->str();
+			svg_file.stream << jt->str();
 		}
-		svg_file << "        </g>\n";
+		svg_file.stream << "        </g>\n";
 		previous = it->first;
 	}
 	
 	if (previous) {
-		svg_file << "    </g>\n";
+		svg_file.stream << "    </g>\n";
 	}
-	svg_file << "</svg>" << std::endl;
+	svg_file.stream << "</svg>" << std::endl;
 }
 
 void SvgSerializer::writeHeader() {
@@ -1981,18 +1981,18 @@ void SvgSerializer::writeHeader() {
 }
 
 void SvgSerializer::doWriteHeader() {
-	svg_file << "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"";
+	svg_file.stream << "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"";
 	if (use_namespace_) {
-		svg_file << " xmlns:ifc=\"http://www.ifcopenshell.org/ns\"";
+		svg_file.stream << " xmlns:ifc=\"http://www.ifcopenshell.org/ns\"";
 	}
 	if (scale_ && size_) {
-		svg_file << 
+		svg_file.stream << 
 			" width=\"" << size_->first << "mm\""
 			" height=\"" << size_->second << "mm\"" <<
 			" viewBox=\"0 0 " << size_->first << " " << size_->second << "\"";
 	}
 		
-	svg_file << ">\n"
+	svg_file.stream << ">\n"
 		"    <defs>\n"
 		"        <marker id=\"arrowend\" markerWidth=\"10\" markerHeight=\"7\" refX=\"10\" refY=\"3.5\" orient=\"auto\">\n"
 		"          <polygon points=\"0 0, 10 3.5, 0 7\" />\n"
@@ -2027,7 +2027,7 @@ void SvgSerializer::doWriteHeader() {
 		//       (pt)  (px)  (in)  (mm)
 		// approx 12 / 0.75 / 96 * 25.4
 
-		svg_file <<
+		svg_file.stream <<
 		"        text {\n"
 		"            font-size: 2;\n" //  (reduced to two).
 		"        }\n"
@@ -2036,7 +2036,7 @@ void SvgSerializer::doWriteHeader() {
 		"        }\n";
 	}
 
-	svg_file << 
+	svg_file.stream << 
 		"    ]]>\n"
 		"    </style>\n";
 }

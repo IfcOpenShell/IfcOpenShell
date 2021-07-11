@@ -137,7 +137,7 @@ public:
 		SH_NONE, SH_FULL, SH_LEFT
 	};
 protected:
-	std::ofstream svg_file;
+	stream_or_filename svg_file;
 	double xmin, ymin, xmax, ymax;
 	boost::optional<std::vector<section_data>> section_data_;
 	boost::optional<std::vector<section_data>> deferred_section_data_;
@@ -182,9 +182,9 @@ protected:
 	void draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name);
 
 public:
-	SvgSerializer(const std::string& out_filename, const SerializerSettings& settings)
+	SvgSerializer(const stream_or_filename& out_filename, const SerializerSettings& settings)
 		: GeometrySerializer(settings)
-		, svg_file(IfcUtil::path::from_utf8(out_filename).c_str())
+		, svg_file(out_filename)
 		, xmin(+std::numeric_limits<double>::infinity())
 		, ymin(+std::numeric_limits<double>::infinity())
 		, xmax(-std::numeric_limits<double>::infinity())
