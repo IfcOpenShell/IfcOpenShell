@@ -50,7 +50,13 @@ class JoinWall(bpy.types.Operator):
             for obj in selected_objs:
                 DumbWallJoiner(obj, obj).unjoin()
             return {"FINISHED"}
-        if len(selected_objs) < 2 or not context.active_object:
+        if not context.active_object:
+            return {"FINISHED"}
+        if len(selected_objs) == 1:
+            DumbWallJoiner(context.active_object, target_coordinate=context.scene.cursor.location).extend()
+            IfcStore.edited_objs.add(context.active_object)
+            return {"FINISHED"}
+        if len(selected_objs) < 2:
             return {"FINISHED"}
         for obj in selected_objs:
             if obj == context.active_object:
@@ -312,16 +318,19 @@ class DumbWallJoiner:
     #  2. Given an "end face", identify a side "target face" of the other wall
     #     to project towards.
     #  3. Project the vertices of an "end face" to the "target face".
-    def __init__(self, wall1, wall2):
+    # Alternatively, a target coordinate may be provided as an imaginary point for the wall to join to
+    def __init__(self, wall1, wall2=None, target_coordinate=None):
         self.wall1 = wall1
         self.wall2 = wall2
+        self.target_coordinate = target_coordinate
         self.should_project_to_frontface = True
         self.should_attempt_v_junction_projection = False
         self.initialise_convenience_variables()
 
     def initialise_convenience_variables(self):
         self.wall1_matrix = self.wall1.matrix_world
-        self.wall2_matrix = self.wall2.matrix_world
+        if self.wall2:
+            self.wall2_matrix = self.wall2.matrix_world
         self.pos_x = self.wall1_matrix.to_quaternion() @ Vector((1, 0, 0))
         self.neg_x = self.wall1_matrix.to_quaternion() @ Vector((-1, 0, 0))
 
@@ -337,6 +346,26 @@ class DumbWallJoiner:
         for face in wall1_max_faces:
             for v in face.vertices:
                 self.wall1.data.vertices[v].co[0] = max_x
+        self.recalculate_origins()
+
+    # An extension is where a single end of wall1 is projected to an imaginary
+    # plane denoted by the target coordinate.
+    def extend(self):
+        wall1_min_faces, wall1_max_faces = self.get_wall_end_faces(self.wall1)
+        ef1_distance = abs(mathutils.geometry.distance_point_to_plane(
+            self.wall1_matrix @ self.wall1.data.vertices[wall1_min_faces[0].vertices[0]].co,
+            self.target_coordinate,
+            self.pos_x,
+        ))
+        ef2_distance = abs(mathutils.geometry.distance_point_to_plane(
+            self.wall1_matrix @ self.wall1.data.vertices[wall1_max_faces[0].vertices[0]].co,
+            self.target_coordinate,
+            self.neg_x,
+        ))
+        if ef1_distance < ef2_distance:
+            self.project_end_faces_to_target(wall1_min_faces)
+        else:
+            self.project_end_faces_to_target(wall1_max_faces)
         self.recalculate_origins()
 
     # A T-junction is an ordered operation where a single end of wall1 is joined
@@ -424,7 +453,8 @@ class DumbWallJoiner:
     def recalculate_origins(self):
         bpy.context.view_layer.update()
         recalculate_dumb_wall_origin(self.wall1)
-        recalculate_dumb_wall_origin(self.wall2)
+        if self.wall2:
+            recalculate_dumb_wall_origin(self.wall2)
 
     def swap_walls(self):
         self.wall1, self.wall2 = self.wall2, self.wall1
@@ -451,6 +481,14 @@ class DumbWallJoiner:
             return
         local_point = wall_matrix.inverted() @ point
         wall.data.vertices[v].co = local_point
+
+    def project_end_faces_to_target(self, end_faces):
+        for end_face in end_faces:
+            for v in end_face.vertices:
+                vertex = self.wall1_matrix @ self.wall1.data.vertices[v].co
+                self.wall1.data.vertices[v].co = self.wall1_matrix.inverted() @ mathutils.geometry.intersect_line_plane(
+                    vertex, vertex + self.pos_x, self.target_coordinate, self.pos_x
+                )
 
     # A projection target face is a side face on the target wall that has a
     # significant local Y component to its normal (i.e. is not pointing up or
