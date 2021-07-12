@@ -1,6 +1,7 @@
 import os
 import bpy
 from bpy.types import WorkSpaceTool
+from blenderbim.bim.ifc import IfcStore
 
 
 class BimTool(WorkSpaceTool):
@@ -16,8 +17,8 @@ class BimTool(WorkSpaceTool):
     bl_keymap = (
         # ("bim.wall_tool_op", {"type": 'MOUSEMOVE', "value": 'ANY'}, {"properties": []}),
         # ("mesh.add_wall", {"type": 'LEFTMOUSE', "value": 'PRESS'}, {"properties": []}),
-        ("bim.add_wall", {"type": "A", "value": "PRESS", "shift": True}, {"properties": []}),
-        ("bim.join_wall", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("join_type", "T")]}),
+        ("bim.add_type_instance", {"type": "A", "value": "PRESS", "shift": True}, {"properties": []}),
+        ("bim.hotkey_e", {"type": "E", "value": "PRESS", "shift": True}, {"properties": []}),
         ("bim.join_wall", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("join_type", "L")]}),
         ("bim.join_wall", {"type": "Y", "value": "PRESS", "shift": True}, {"properties": [("join_type", "V")]}),
         ("bim.flip_wall", {"type": "F", "value": "PRESS", "shift": True}, {"properties": []}),
@@ -40,20 +41,38 @@ class BimTool(WorkSpaceTool):
     )
 
     def draw_settings(context, layout, tool):
-        props = context.scene.BIMModelProperties
         row = layout.row(align=True)
+        props = context.scene.BIMTypeProperties
+        row.prop(props, "ifc_class", text="")
         row.prop(props, "relating_type", text="")
 
         row.label(text="", icon="BLANK1")
 
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="Add", icon="EVENT_A")
-        row.label(text="Extend", icon="EVENT_E")
-        row.label(text="Butt", icon="EVENT_T")
-        row.label(text="Mitre", icon="EVENT_Y")
-        row.label(text="Flip", icon="EVENT_F")
-        row.label(text="Split", icon="EVENT_S")
-        row.label(text="", icon="EVENT_X")
-        row.label(text="", icon="EVENT_C")
-        row.label(text="", icon="EVENT_V")
-        row.label(text="Align")
+
+        if props.ifc_class == "IfcWallType":
+            row.label(text="Extend", icon="EVENT_E")
+            row.label(text="Butt", icon="EVENT_T")
+            row.label(text="Mitre", icon="EVENT_Y")
+            row.label(text="Flip", icon="EVENT_F")
+            row.label(text="Split", icon="EVENT_S")
+            row.label(text="", icon="EVENT_X")
+            row.label(text="", icon="EVENT_C")
+            row.label(text="", icon="EVENT_V")
+            row.label(text="Align")
+
+
+class HotkeyE(bpy.types.Operator):
+    bl_idname = "bim.hotkey_e"
+    bl_label = "Hotkey E"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        props = context.scene.BIMTypeProperties
+        if props.ifc_class == "IfcWallType":
+            bpy.ops.bim.join_wall(join_type="T")
+        return {"FINISHED"}

@@ -36,21 +36,6 @@ def mode_callback(obj, data):
         IfcStore.edited_objs.add(obj)
 
 
-class AddWall(bpy.types.Operator):
-    bl_idname = "bim.add_wall"
-    bl_label = "Add Wall"
-    bl_options = {"REGISTER", "UNDO"}
-    join_type: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
-    def _execute(self, context):
-        props = context.scene.BIMModelProperties
-        bpy.ops.bim.add_type_instance(ifc_class="IfcWallType", relating_type=int(props.relating_type))
-        return {"FINISHED"}
-
-
 class JoinWall(bpy.types.Operator):
     bl_idname = "bim.join_wall"
     bl_label = "Join Wall"
