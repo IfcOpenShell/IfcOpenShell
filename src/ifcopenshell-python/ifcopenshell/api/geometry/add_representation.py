@@ -22,8 +22,6 @@ class Usecase:
             "unit_scale": None,  # A scale factor to apply for all vectors in case the unit is different
             "should_force_faceted_brep": False,  # If we should force faceted breps for meshes
             "should_force_triangulation": False,  # If we should force triangulation for meshes
-            "is_wireframe": False,  # If the geometry is a wireframe
-            "is_curve": False,  # If the geometry is a Blender curve
             "is_point_cloud": False,  # If the geometry is a point cloud
             #  Possible IFC representation classes:
             #  IfcExtrudedAreaSolid/IfcRectangleProfileDef
@@ -204,9 +202,9 @@ class Usecase:
         )
 
     def create_variable_representation(self):
-        if self.settings["is_wireframe"]:
-            return self.create_wireframe_representation()
-        elif self.settings["is_curve"]:
+        if isinstance(self.settings["geometry"], bpy.types.Curve):
+            return self.create_curve3d_representation()
+        elif not len(self.settings["geometry"].polygons):
             return self.create_curve3d_representation()
         elif self.settings["is_point_cloud"]:
             return self.create_point_cloud_representation()
