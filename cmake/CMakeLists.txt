@@ -417,7 +417,7 @@ if(HDF5_SUPPORT)
     if (HDF5_LIBRARY_DIR)
     	# result of the HDF5 ctest package
     	
-        if (win32)
+        if (WIN32)
         	set(zlib_post lib)
         	set(lib_ext lib)
         else()
@@ -474,7 +474,8 @@ if(ENABLE_BUILD_OPTIMIZATIONS)
 endif()
 
 IF(MSVC)
-	add_definitions(/MP)
+	# didn't work well on ifcopenbot, @todo make configurable
+	# add_definitions(/MP)
 
     # Enable solution folders (free VS versions prior to 2012 don't support solution folders)
     if (MSVC_VERSION GREATER 1600)
