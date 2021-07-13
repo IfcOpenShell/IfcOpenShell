@@ -117,19 +117,20 @@ class AddRepresentation(bpy.types.Operator):
             if s.material and not s.material.BIMMaterialProperties.ifc_style_id
         ]
 
-        ifcopenshell.api.run(
-            "style.assign_representation_styles",
-            self.file,
-            **{
-                "shape_representation": result,
-                "styles": [
-                    self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
-                    for s in obj.material_slots
-                    if s.material
-                ],
-                "should_use_presentation_style_assignment": context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
-            },
-        )
+        if isinstance(obj.data, bpy.types.Mesh) and len(obj.data.polygons):
+            ifcopenshell.api.run(
+                "style.assign_representation_styles",
+                self.file,
+                **{
+                    "shape_representation": result,
+                    "styles": [
+                        self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
+                        for s in obj.material_slots
+                        if s.material
+                    ],
+                    "should_use_presentation_style_assignment": context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
+                },
+            )
         ifcopenshell.api.run(
             "geometry.assign_representation", self.file, **{"product": product, "representation": result}
         )
@@ -330,19 +331,20 @@ class UpdateRepresentation(bpy.types.Operator):
             if s.material and not s.material.BIMMaterialProperties.ifc_style_id
         ]
 
-        ifcopenshell.api.run(
-            "style.assign_representation_styles",
-            self.file,
-            **{
-                "shape_representation": new_representation,
-                "styles": [
-                    self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
-                    for s in obj.material_slots
-                    if s.material
-                ],
-                "should_use_presentation_style_assignment": context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
-            },
-        )
+        if isinstance(obj.data, bpy.types.Mesh) and len(obj.data.polygons):
+            ifcopenshell.api.run(
+                "style.assign_representation_styles",
+                self.file,
+                **{
+                    "shape_representation": new_representation,
+                    "styles": [
+                        self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
+                        for s in obj.material_slots
+                        if s.material
+                    ],
+                    "should_use_presentation_style_assignment": context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
+                },
+            )
 
         # TODO: move this into a replace_representation usecase or something
         for inverse in self.file.get_inverse(old_representation):
