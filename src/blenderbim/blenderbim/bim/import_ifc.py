@@ -332,10 +332,10 @@ class IfcImporter:
             return
         project = self.file.by_type("IfcProject")[0]
         site = self.find_decomposed_ifc_class(project, "IfcSite")
-        if site and self.is_element_far_away(site[0]):
+        if site and self.is_element_far_away(site[0], is_meters=False):
             return self.guess_georeferencing(site[0])
         building = self.find_decomposed_ifc_class(project, "IfcBuilding")
-        if building and self.is_element_far_away(building[0]):
+        if building and self.is_element_far_away(building[0], is_meters=False):
             return self.guess_georeferencing(building[0])
         return self.guess_absolute_coordinate()
 
