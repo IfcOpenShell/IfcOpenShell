@@ -98,6 +98,7 @@ def generate_box(usecase_path, ifc_file, settings):
             **{"product": product, "representation": new_box}
         )
 
+
 def regenerate_profile_usage(usecase_path, ifc_file, settings):
     elements = []
     if ifc_file.schema == "IFC2X3":
@@ -117,4 +118,6 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
             continue
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if representation:
-            bpy.ops.bim.switch_representation(obj=obj.name, ifc_definition_id=representation.id(), should_reload=True)
+            bpy.ops.bim.switch_representation(
+                obj=obj.name, ifc_definition_id=representation.id(), should_reload=True, should_switch_all_meshes=True
+            )

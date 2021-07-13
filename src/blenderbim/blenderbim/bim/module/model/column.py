@@ -120,7 +120,9 @@ class DumbColumnGenerator:
             profile_set_usage=profile_set_usage.id(),
         )
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        bpy.ops.bim.switch_representation(obj=obj.name, ifc_definition_id=representation.id(), should_reload=True)
+        bpy.ops.bim.switch_representation(
+            obj=obj.name, ifc_definition_id=representation.id(), should_reload=True, should_switch_all_meshes=True
+        )
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbColumn"})
         MaterialData.load(self.file)
@@ -165,4 +167,6 @@ class DumbColumnRegenerator:
             return
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if representation:
-            bpy.ops.bim.switch_representation(obj=obj.name, ifc_definition_id=representation.id(), should_reload=True)
+            bpy.ops.bim.switch_representation(
+                obj=obj.name, ifc_definition_id=representation.id(), should_reload=True, should_switch_all_meshes=True
+            )
