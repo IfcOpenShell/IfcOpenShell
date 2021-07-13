@@ -40,7 +40,9 @@ class BIM_PT_representations(Panel):
             row.label(text=representation["ContextOfItems"]["ContextIdentifier"])
             row.label(text=representation["ContextOfItems"]["TargetView"])
             row.label(text=representation["RepresentationType"])
-            op = row.operator("bim.switch_representation", icon="OUTLINER_DATA_MESH", text="")
+            op = row.operator(
+                "bim.switch_representation", icon="OUTLINER_DATA_MESH", text="", should_switch_all_meshes=True
+            )
             op.should_reload = True
             op.ifc_definition_id = ifc_definition_id
             op.disable_opening_subtractions = False
@@ -70,11 +72,15 @@ class BIM_PT_mesh(Panel):
         props = context.active_object.data.BIMMeshProperties
 
         row = layout.row(align=True)
-        op = row.operator("bim.switch_representation", text="Bake Voids", icon="SELECT_SUBTRACT")
+        op = row.operator(
+            "bim.switch_representation", text="Bake Voids", icon="SELECT_SUBTRACT", should_switch_all_meshes=True
+        )
         op.should_reload = True
         op.ifc_definition_id = props.ifc_definition_id
         op.disable_opening_subtractions = False
-        op = row.operator("bim.switch_representation", text="Dynamic Voids", icon="SELECT_INTERSECT")
+        op = row.operator(
+            "bim.switch_representation", text="Dynamic Voids", icon="SELECT_INTERSECT", should_switch_all_meshes=True
+        )
         op.should_reload = True
         op.ifc_definition_id = props.ifc_definition_id
         op.disable_opening_subtractions = True

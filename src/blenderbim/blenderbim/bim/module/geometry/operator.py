@@ -161,6 +161,7 @@ class SwitchRepresentation(bpy.types.Operator):
     ifc_definition_id: bpy.props.IntProperty()
     should_reload: bpy.props.BoolProperty()
     disable_opening_subtractions: bpy.props.BoolProperty()
+    should_switch_all_meshes: bpy.props.BoolProperty()
 
     def execute(self, context):
         self.element_obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
@@ -172,10 +173,16 @@ class SwitchRepresentation(bpy.types.Operator):
 
         mesh = bpy.data.meshes.get(self.mesh_name)
         if mesh:
-            self.element_obj.data.user_remap(mesh)
+            self.switch_mesh(mesh)
         if not mesh or self.should_reload:
             self.pull_mesh_from_ifc()
         return {"FINISHED"}
+
+    def switch_mesh(self, mesh):
+        if self.should_switch_all_meshes or self.file.by_id(self.oprops.ifc_definition_id).is_a("IfcTypeProduct"):
+            self.element_obj.data.user_remap(mesh)
+        else:
+            self.element_obj.data = mesh
 
     def get_mesh_name(self):
         representation = self.resolve_mapped_representation(self.file.by_id(self.ifc_definition_id))
@@ -206,7 +213,7 @@ class SwitchRepresentation(bpy.types.Operator):
         mesh = ifc_importer.create_mesh(element, shape)
         mesh.name = self.mesh_name
         mesh.BIMMeshProperties.ifc_definition_id = self.ifc_definition_id
-        self.element_obj.data.user_remap(mesh)
+        self.switch_mesh(mesh)
         material_creator = import_ifc.MaterialCreator(ifc_import_settings, ifc_importer)
         material_creator.load_existing_materials()
         material_creator.create(element, self.element_obj, mesh)
@@ -368,7 +375,9 @@ class UpdateParametricRepresentation(bpy.types.Operator):
         props = obj.data.BIMMeshProperties
         parameter = props.ifc_parameters[self.index]
         element = IfcStore.get_file().by_id(parameter.step_id)[parameter.index] = parameter.value
-        bpy.ops.bim.switch_representation(ifc_definition_id=props.ifc_definition_id, should_reload=True)
+        bpy.ops.bim.switch_representation(
+            ifc_definition_id=props.ifc_definition_id, should_reload=True, should_switch_all_meshes=True
+        )
         return {"FINISHED"}
 
 

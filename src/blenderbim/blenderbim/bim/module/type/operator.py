@@ -22,7 +22,9 @@ class AssignType(bpy.types.Operator):
         self.file = IfcStore.get_file()
         relating_type = self.relating_type or int(context.active_object.BIMTypeProperties.relating_type)
         related_objects = (
-            [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
+            [bpy.data.objects.get(self.related_object)]
+            if self.related_object
+            else bpy.context.selected_objects or [bpy.context.active_object]
         )
         for related_object in related_objects:
             oprops = related_object.BIMObjectProperties
@@ -39,15 +41,19 @@ class AssignType(bpy.types.Operator):
             MaterialData.load(IfcStore.get_file(), oprops.ifc_definition_id)
             representation_ids = GeometryData.products[oprops.ifc_definition_id]
             if not representation_ids:
-                pass # TODO: clear geometry? Make void? Make none type?
+                pass  # TODO: clear geometry? Make void? Make none type?
             has_switched = False
             for representation_id in representation_ids:
                 representation = GeometryData.representations[representation_id]
                 if representation["ContextOfItems"]["ContextIdentifier"] == "Body":
-                    bpy.ops.bim.switch_representation(obj=related_object.name, ifc_definition_id=representation_id)
+                    bpy.ops.bim.switch_representation(
+                        obj=related_object.name, ifc_definition_id=representation_id, should_switch_all_meshes=False
+                    )
                     has_switched = True
             if not has_switched and representation_ids:
-                bpy.ops.bim.switch_representation(obj=related_object.name, ifc_definition_id=representation_id)
+                bpy.ops.bim.switch_representation(
+                    obj=related_object.name, ifc_definition_id=representation_id, should_switch_all_meshes=False
+                )
 
         bpy.ops.bim.disable_editing_type(obj=related_object.name)
         MaterialData.load(self.file)
