@@ -23,7 +23,7 @@ class OAuthReceiver(http.server.BaseHTTPRequestHandler):
 
 
 class Client:
-    def __init__(self):
+    def __init__(self, client_id, client_secret):
         self.baseurl = None
         self.access_token = ""
         self.refresh_token = ""
@@ -69,17 +69,9 @@ class Client:
         )
         return resp.status_code, resp.text
 
-    def load_urls(self, base_url=None, redirect_uri=None):
+    def set_urls(self, base_url=None, redirect_uri=None):
         self.baseurl = base_url
         self.redirect_uri = redirect_uri
-        return None
-
-    def set_urls(self):
-        resp = requests.get(f"{self.baseurl}opencde/1.0/auth")
-        values = resp.json()
-        self.auth_endpoint = values["oauth2_auth_url"]
-        self.token_endpoint = values["oauth2_token_url"]
-        return f"{self.auth_endpoint},    {self.token_endpoint},     {self.baseurl}"
 
     def delete(self, endpoint, params=None):
         headers = {"Authorization": "Bearer " + self.get_access_token()}
@@ -99,10 +91,9 @@ class Client:
             self.login()
         return self.access_token
 
-    def get_auth_method(self):
+    def get_auth_methods(self):
         resp = requests.get(f"{self.baseurl}opencde/1.0/auth")
-        supported_auth_method = resp.json()["supported_oauth2_flows"]
-        return supported_auth_method
+        return resp.json()["supported_oauth2_flows"]
 
     def get_versions(self):
         resp = requests.get(f"{self.baseurl}opencde/versions")
@@ -115,10 +106,13 @@ class Client:
     def set_version(self, version=None):
         self.version = version
         self.api_baseurl = self.version_ids[self.version]
-        return f"Version set to {self.version} , API base url is set to {self.api_baseurl}"
 
     def login(self):
-        self.set_urls()
+        resp = requests.get(f"{self.baseurl}opencde/1.0/auth")
+        values = resp.json()
+        self.auth_endpoint = values["oauth2_auth_url"]
+        self.token_endpoint = values["oauth2_token_url"]
+
         with http.server.HTTPServer(("", 8080), OAuthReceiver) as server:
             state = str(uuid.uuid4())
             query = urllib.parse.urlencode(
@@ -126,11 +120,13 @@ class Client:
                     "client_id": self.client_id,
                     "response_type": "code",
                     "state": state,
-                    "redirect_uri": f"http://localhost:{server.server_address[1]}/lendlease",
-                    "email": "Dion.Moult@lendlease.com",
+                    "redirect_uri": f"http://localhost:{server.server_address[1]}/{self.redirect_uri}",
                 }
             )
-            webbrowser.open(f"{self.auth_endpoint}&{query}")
+            if "?" in self.auth_endpoint:
+                webbrowser.open(f"{self.auth_endpoint}&{query}")
+            else:
+                webbrowser.open(f"{self.auth_endpoint}?{query}")
             server.timeout = 100
             server.state = state
             server.handle_request()
@@ -138,7 +134,7 @@ class Client:
                 data = {
                     "grant_type": "authorization_code",
                     "code": server.auth_code,
-                    "redirect_uri": f"http://localhost:{server.server_address[1]}/lendlease",
+                    "redirect_uri": f"http://localhost:{server.server_address[1]}/{self.redirect_uri}",
                 }
                 auth_string = f"{self.client_id}:{self.client_secret}"
                 header_string = base64.b64encode(auth_string.encode("utf-8")).decode("utf-8")
