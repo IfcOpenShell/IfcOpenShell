@@ -60,3 +60,36 @@ topic = bcfxml.get_topic(guid)
 topic.title = "New title"
 bcfxml.edit_topic(topic)
 ```
+
+## bcfapi
+
+The `bcfapi` module lets you interact with the BCF-API standard.
+
+```
+from bcf.v3.bcfapi import Client
+
+client_id = "YOUR_CLIENT_ID"
+client_secret = "YOUR_CLIENT_SECRET"
+
+client = Client(client_id, client_secret)
+client.set_urls(base_url="OPENCDE_BASEURL")
+auth_methods = client.get_auth_methods()
+
+# Our library currently only implements the authorization_code flow
+if "authorization_code" in auth_methods:
+    client.login()
+
+versions = client.get_versions()
+
+if "3.0" in versions:
+    client.set_version(version="3.0")
+
+data = client.get_projects()
+print(data)
+project_id = data[0]["project_id"]
+print(project_id)
+data = client.get_project(project_id)
+print(data)
+data = client.get_extensions(project_id)
+print(data)
+```
