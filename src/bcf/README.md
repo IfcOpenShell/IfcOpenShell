@@ -13,7 +13,7 @@ is available via `bcfapi.py`.
 
 The `bcfxml` module lets you interact with the BCF-XML standard.
 
-```
+```python
 from bcf import bcfxml
 
 
@@ -65,7 +65,7 @@ bcfxml.edit_topic(topic)
 
 The `bcfapi` module lets you interact with the BCF-API standard.
 
-```
+```python
 from bcf.v3.bcfapi import Client
 
 client_id = "YOUR_CLIENT_ID"
