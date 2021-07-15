@@ -1,6 +1,15 @@
-import operator
-import ifcopenshell.util.element
 import re
+import logging
+import operator
+import os
+import csv
+
+import ifcopenshell.util.element
+
+from bcf.v2.bcfxml import BcfXml
+from bcf.v2.data import Topic, Viewpoint
+from bcf import bcfxml
+
 from xmlschema import XMLSchema
 from xmlschema import etree_tostring
 from xmlschema.validators import facets
@@ -326,7 +335,7 @@ class material(facet):
                 profileSets = rel.RelatingMaterial.ForProfileSet.MaterialProfiles
                 [materials.append(pset.Material.Name) for pset in profileSets]
             else:
-                logger.error({'guid':inst.GlobalId, 'result':'ERROR', 'sentence':'IfcRelAssociatesMaterial not implemented'})
+                print("IfcRelAssociatesMaterial not implemented")
 
         if not materials:
             materials.append('UNDEFINED')
@@ -613,6 +622,49 @@ location = {
     'type': 'a type ',
     'any': 'a '
 }
+class SimpleHandler(logging.StreamHandler):
+    def __init__(self, report_valid=False):
+        logging.StreamHandler.__init__(self)
+        self.statements = []
+        if report_valid:
+            self.setLevel(logging.INFO)
+        else:
+            self.setLevel(logging.ERROR)
+        
+    def emit(self, mymsg):
+        self.statements.append(mymsg.msg)
+
+
+class BcfHandler(logging.StreamHandler):
+    def __init__(self, project_name="Default IDS Project", author="your@email.com", filepath=None, report_valid=False):
+        logging.StreamHandler.__init__(self)
+        if report_valid:
+            self.setLevel(logging.INFO)
+        else:
+            self.setLevel(logging.ERROR)
+        self.bcf = BcfXml()
+        self.bcf.author = author
+        self.bcf.new_project()
+        self.bcf.project.name = project_name
+        self.filepath = filepath
+
+    def emit(self, mymsg):
+        newtopic = Topic()
+        newtopic.title = mymsg.msg['sentence'].split('.\n')[1]
+        newtopic.description = mymsg.msg['sentence'].split('.\n')[0]
+
+        # TODO
+        # newviewpoint = Viewpoint()
+        # TODO add references in Topic
+        self.bcf.add_topic(newtopic)
+        self.bcf.edit_project()
+
+    def flush(self):
+        if not self.filepath:
+            self.filepath = os.getcwd() + r"\IDS_report.bcfzip"
+        if not (self.filepath.endswith(".bcf") or self.filepath.endswith(".bcfzip")):
+            self.filepath = self.filepath + r"\IDS_report.bcfzip"
+        self.bcf.save_project(self.filepath)
 
 
 if __name__ == "__main__":

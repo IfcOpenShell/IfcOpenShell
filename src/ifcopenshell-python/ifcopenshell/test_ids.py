@@ -2,7 +2,10 @@ import unittest
 import ids
 import requests
 import os
+import logging
 # from xmlschema.validators.exceptions import XMLSchemaChildrenValidationError
+import ifcopenshell
+from bcf import bcfxml
 
 
 def read_web_file(URL):
@@ -138,11 +141,44 @@ class TestIfcValidation(unittest.TestCase):
     pass
     # TODO
 
+class TestIdsReporting(unittest.TestCase):
+    
+    TEST_PATH = os.getcwd()
+    IFC_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IFC/IFC4_Wall_3_with_properties.ifc"
+    IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_all_fields.xml"
 
-class TestIdsResults(unittest.TestCase):
-    pass
-    # TODO
+    logger = logging.getLogger("IDS_Logger")
 
+    ids_file = ids.ids.parse(read_web_file(IDS_URL))
+    
+    content = read_web_file(IFC_URL)
+    file = open(TEST_PATH+r"\test.ifc", 'w')
+    file.write(content)
+    file.close()
+    ifc_file = ifcopenshell.open(TEST_PATH+r"\test.ifc")
+    os.remove(TEST_PATH+r"\test.ifc")
+
+    def test_simple_report(self):
+        report = ids.SimpleHandler()
+        self.logger.addHandler(report)
+        self.ids_file.validate(self.ifc_file, self.logger)
+        self.assertEqual(len(report.statements), 5)
+
+    def test_bcf_report(self):
+        
+        bcf_handler = ids.BcfHandler(
+            project_name="Default IDS Project",
+            author="your@email.com",
+            filepath= self.TEST_PATH + r"\bcf_test.bcfzip"
+        )
+        self.logger.addHandler(bcf_handler)
+
+        self.ids_file.validate(self.ifc_file, self.logger)
+
+        my_bcfxml = bcfxml.load(self.TEST_PATH + r"\bcf_test.bcfzip")
+        topics = my_bcfxml.get_topics()  
+        self.assertEqual(len(topics), 5)
+        
 
 if __name__ == "__main__":
     unittest.main()
