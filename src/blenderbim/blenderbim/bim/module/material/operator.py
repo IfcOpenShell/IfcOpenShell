@@ -473,7 +473,6 @@ class EditAssignedMaterial(bpy.types.Operator):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         props = obj.BIMObjectMaterialProperties
         product_data = Data.products[obj.BIMObjectProperties.ifc_definition_id]
-        material_set = self.file.by_id(self.material_set)
 
         if product_data["type"] == "IfcMaterial":
             bpy.ops.bim.unassign_material(obj=obj.name)
@@ -481,6 +480,8 @@ class EditAssignedMaterial(bpy.types.Operator):
             Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
             bpy.ops.bim.disable_editing_assigned_material(obj=obj.name)
             return {"FINISHED"}
+
+        material_set = self.file.by_id(self.material_set)
 
         attributes = {}
         for attribute in props.material_set_attributes:
