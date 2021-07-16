@@ -97,6 +97,8 @@ class BIM_PT_object_material(Panel):
                 self.material_set_data = Data.lists[self.material_set_id]
                 self.set_items = self.material_set_data["Materials"] or []
                 self.set_item_name = "list_item"
+            else:
+                self.material_set_id = 0
             return self.draw_material_ui()
 
         row = self.layout.row(align=True)
