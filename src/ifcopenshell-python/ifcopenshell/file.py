@@ -290,9 +290,6 @@ class file(object):
         if attrs:
             self.transaction = transaction
 
-        if self.transaction:
-            self.transaction.store_create(e)
-
         # Once the values are populated add the instance
         # to the file.
         self.wrapped_data.add(e.wrapped_data, eid)
@@ -301,6 +298,9 @@ class file(object):
         # this instance. Tell SWIG that it is no longer
         # the owner.
         e.wrapped_data.this.disown()
+
+        if self.transaction:
+            self.transaction.store_create(e)
 
         return e
 
