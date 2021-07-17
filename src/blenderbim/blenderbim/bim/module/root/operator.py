@@ -265,13 +265,29 @@ class CopyClass(bpy.types.Operator):
         for obj in objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
-            result = ifcopenshell.api.run(
-                "root.copy_class", self.file, **{"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)}
-            )
+            old_element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            result = ifcopenshell.api.run("root.copy_class", self.file, **{"product": old_element})
             IfcStore.link_element(result, obj)
             relating_type = ifcopenshell.util.element.get_type(result)
             if relating_type and relating_type.RepresentationMaps:
                 bpy.ops.bim.assign_type(relating_type=relating_type.id(), related_object=obj.name)
             else:
                 bpy.ops.bim.add_representation(obj=obj.name)
+            if result.is_a("IfcSpatialElement") or element.is_a("IfcSpatialStructureElement"):
+                self.place_in_spatial_collection(old_element, obj)
         return {"FINISHED"}
+
+    def place_in_spatial_collection(self, old_element, obj):
+        aggregate = ifcopenshell.util.element.get_aggregate(old_element)
+        if not aggregate:
+            return
+        container_obj = IfcStore.get_element(aggregate.id())
+        for collection in obj.users_collection:
+            collection.objects.unlink(obj)
+            if "Ifc" in collection.name:
+                parent_collection = collection
+        for collection in container_obj.users_collection:
+            if collection.name == container_obj.name:
+                new = bpy.data.collections.new(obj.name)
+                new.objects.link(obj)
+                collection.children.link(new)
