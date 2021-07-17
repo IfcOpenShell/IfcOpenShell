@@ -496,16 +496,21 @@ class EditAssignedMaterial(bpy.types.Operator):
         if self.material_set_usage:
             material_set_usage = self.file.by_id(self.material_set_usage)
             attributes = blenderbim.bim.helper.export_attributes(props.material_set_usage_attributes)
-            if attributes.get("CardinalPoint", None):
-                attributes["CardinalPoint"] = int(attributes["CardinalPoint"])
-            ifcopenshell.api.run(
-                "material.edit_profile_usage",
-                self.file,
-                **{"usage": material_set_usage, "attributes": attributes},
-            )
             if material_set_usage.is_a("IfcMaterialLayerSetUsage"):
+                ifcopenshell.api.run(
+                    "material.edit_layer_usage",
+                    self.file,
+                    **{"usage": material_set_usage, "attributes": attributes},
+                )
                 Data.load_layer_usages()
             elif material_set_usage.is_a("IfcMaterialProfileSetUsage"):
+                if attributes.get("CardinalPoint", None):
+                    attributes["CardinalPoint"] = int(attributes["CardinalPoint"])
+                ifcopenshell.api.run(
+                    "material.edit_profile_usage",
+                    self.file,
+                    **{"usage": material_set_usage, "attributes": attributes},
+                )
                 Data.load_profile_usages()
 
         if material_set.is_a("IfcMaterialConstituentSet"):
