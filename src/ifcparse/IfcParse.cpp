@@ -1792,6 +1792,10 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 		build_inverses_(new_entity);
 	}
 
+	// @todo the id isn't actually used here, but instead
+	// clears the entire inverse cache map.
+	mark_entity_as_modified(0);
+
 	return new_entity;
 }
 
