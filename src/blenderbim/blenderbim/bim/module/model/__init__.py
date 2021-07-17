@@ -3,7 +3,8 @@ from . import handler, prop, ui, grid, product, wall, slab, stair, door, window,
 
 classes = (
     product.AddTypeInstance,
-    workspace.HotkeyE,
+    product.AlignProduct,
+    workspace.Hotkey,
     wall.JoinWall,
     wall.AlignWall,
     wall.FlipWall,
