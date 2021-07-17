@@ -745,7 +745,7 @@ int main(int argc, char** argv) {
 		std::uniform_int_distribution<int> index_dist('A', 'Z');
 		{
 			std::string v = ".ifcopenshell.";
-			output_temp_filename += path_t(v.begin(), v.end());
+			output_temp_filename = path_t(v.begin(), v.end());
 		}
 		for (int i = 0; i < 8; ++i) {
 			output_temp_filename.push_back(static_cast<path_t::value_type>(index_dist(rng)));
