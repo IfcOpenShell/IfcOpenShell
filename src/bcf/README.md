@@ -7,7 +7,7 @@ is available via `bcfapi.py`.
  - BCF-XML version 2.1: Fully supported
  - BCF-API version 2.1: Not supported, will probably tackle this after BCF-API v3.0
  - BCF-XML version 3.0: Almost fully supported, except for the documents module
- - BCF-API version 3.0: Not supported, but work underway to support it
+ - BCF-API version 3.0: Almost fully supported, except for two requests.
 
 ## bcfxml
 
@@ -93,3 +93,9 @@ print(data)
 data = client.get_extensions(project_id)
 print(data)
 ```
+
+## Todo List 
+The remaining work that needs to be completed in `bcfxml.py` and `bcfapi.py`.
+  * For `bcfxml.py` two xsds support is remaining namely 'documents.xsd` and `extensions.xsd`.
+  * For `bcfapi.py` two requests that are `get_topics` and `get_comments` are remaining.
+
