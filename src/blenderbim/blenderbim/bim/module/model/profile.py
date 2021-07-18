@@ -31,7 +31,7 @@ def mode_callback(obj, data):
             return
         product = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
         parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-        if not parametric or parametric["Engine"] != "BlenderBIM.DumbColumn":
+        if not parametric or parametric["Engine"] != "BlenderBIM.DumbProfile":
             return
         IfcStore.edited_objs.add(obj)
         bm = bmesh.from_edit_mesh(obj.data)
@@ -43,7 +43,7 @@ def mode_callback(obj, data):
 def ensure_solid(usecase_path, ifc_file, settings):
     product = ifc_file.by_id(settings["blender_object"].BIMObjectProperties.ifc_definition_id)
     parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-    if not parametric or parametric["Engine"] != "BlenderBIM.DumbColumn":
+    if not parametric or parametric["Engine"] != "BlenderBIM.DumbProfile":
         return
     material = ifcopenshell.util.element.get_material(product)
     if material and material.is_a("IfcMaterialProfileSetUsage"):
@@ -53,7 +53,7 @@ def ensure_solid(usecase_path, ifc_file, settings):
     settings["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage"
 
 
-class DumbColumnGenerator:
+class DumbProfileGenerator:
     def __init__(self, relating_type):
         self.relating_type = relating_type
 
@@ -75,9 +75,9 @@ class DumbColumnGenerator:
 
     def derive_from_cursor(self):
         self.location = bpy.context.scene.cursor.location
-        return self.create_column()
+        return self.create_profile()
 
-    def create_column(self):
+    def create_profile(self):
         # A cube
         verts = [
             Vector((-1, -1, -1)),
@@ -99,17 +99,23 @@ class DumbColumnGenerator:
             [0, 2, 6, 4],
         ]
 
-        mesh = bpy.data.meshes.new(name="Dumb Column")
+        mesh = bpy.data.meshes.new(name="Dumb Profile")
         mesh.from_pydata(verts, edges, faces)
-        obj = bpy.data.objects.new("Column", mesh)
-        obj.name = "Column"
+        obj = bpy.data.objects.new("Profile", mesh)
         obj.location = self.location
         if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
             obj.location[2] = self.collection_obj.location[2]
         self.collection.objects.link(obj)
-        bpy.ops.bim.assign_class(
-            obj=obj.name, ifc_class="IfcColumn", predefined_type="COLUMN", should_add_representation=False
-        )
+        if self.relating_type.is_a("IfcColumnType"):
+            obj.name = "Column"
+            bpy.ops.bim.assign_class(
+                obj=obj.name, ifc_class="IfcColumn", predefined_type="COLUMN", should_add_representation=False
+            )
+        elif self.relating_type.is_a("IfcBeamType"):
+            obj.name = "Beam"
+            bpy.ops.bim.assign_class(
+                obj=obj.name, ifc_class="IfcBeam", predefined_type="BEAM", should_add_representation=False
+            )
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         bpy.ops.bim.assign_type(relating_type=self.relating_type.id(), related_object=obj.name)
         profile_set_usage = ifcopenshell.util.element.get_material(element)
@@ -124,13 +130,13 @@ class DumbColumnGenerator:
             obj=obj.name, ifc_definition_id=representation.id(), should_reload=True, should_switch_all_meshes=True
         )
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbColumn"})
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbProfile"})
         MaterialData.load(self.file)
         obj.select_set(True)
         return obj
 
 
-class DumbColumnRegenerator:
+class DumbProfileRegenerator:
     def regenerate_from_profile(self, usecase_path, ifc_file, settings):
         self.file = IfcStore.get_file()
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
