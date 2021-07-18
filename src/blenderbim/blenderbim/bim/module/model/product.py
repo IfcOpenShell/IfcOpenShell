@@ -36,9 +36,8 @@ class AddTypeInstance(bpy.types.Operator):
             obj = slab.DumbSlabGenerator(self.file.by_id(int(relating_type))).generate()
             if obj:
                 return {"FINISHED"}
-        elif ifc_class in ["IfcColumnType", "IfcBeamType"]:
+        elif ifc_class in ["IfcColumnType", "IfcBeamType", "IfcMemberType"]:
             obj = profile.DumbProfileGenerator(self.file.by_id(int(relating_type))).generate()
-            return {"FINISHED"}
             if obj:
                 return {"FINISHED"}
         # A cube
@@ -77,7 +76,7 @@ class AddTypeInstance(bpy.types.Operator):
 
 class AlignProduct(bpy.types.Operator):
     bl_idname = "bim.align_product"
-    bl_label = "Align Wall"
+    bl_label = "Align Product"
     bl_options = {"REGISTER", "UNDO"}
     align_type: bpy.props.StringProperty()
 

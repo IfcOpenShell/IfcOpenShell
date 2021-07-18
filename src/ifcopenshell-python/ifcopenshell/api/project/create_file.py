@@ -3,7 +3,7 @@ import ifcopenshell
 
 
 class Usecase:
-    def __init__(self, foobar: ifcopenshell.entity_instance, version: str = "IFC4", foo: str = None, bar: int = 1, baz: float = 0.5):
+    def __init__(self, version: str = "IFC4"):
         """Create File
 
         Create a new IFC file object
@@ -15,7 +15,6 @@ class Usecase:
 
     def execute(self) -> ifcopenshell.file:
         self.file = ifcopenshell.file(schema=self.settings["version"])
-        # TODO: add all metadata, pending bug #747
         self.file.wrapped_data.header.file_name.name = "/dev/null"  # Hehehe
         self.file.wrapped_data.header.file_name.time_stamp = (
             datetime.datetime.utcnow()
