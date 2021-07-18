@@ -113,8 +113,17 @@ class DumbProfileGenerator:
             )
         elif self.relating_type.is_a("IfcBeamType"):
             obj.name = "Beam"
+            obj.rotation_euler[0] = math.pi / 2
+            obj.rotation_euler[2] = math.pi / 2
             bpy.ops.bim.assign_class(
                 obj=obj.name, ifc_class="IfcBeam", predefined_type="BEAM", should_add_representation=False
+            )
+        elif self.relating_type.is_a("IfcMemberType"):
+            obj.name = "Member"
+            obj.rotation_euler[0] = math.pi / 2
+            obj.rotation_euler[2] = math.pi / 2
+            bpy.ops.bim.assign_class(
+                obj=obj.name, ifc_class="IfcMember", predefined_type="MEMBER", should_add_representation=False
             )
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         bpy.ops.bim.assign_type(relating_type=self.relating_type.id(), related_object=obj.name)
