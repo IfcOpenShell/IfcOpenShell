@@ -4,7 +4,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-from . import wall, slab, column
+from . import wall, slab, profile
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data as PsetData
 from mathutils import Vector, Matrix
@@ -36,8 +36,9 @@ class AddTypeInstance(bpy.types.Operator):
             obj = slab.DumbSlabGenerator(self.file.by_id(int(relating_type))).generate()
             if obj:
                 return {"FINISHED"}
-        elif ifc_class == "IfcColumnType":
-            obj = column.DumbColumnGenerator(self.file.by_id(int(relating_type))).generate()
+        elif ifc_class in ["IfcColumnType", "IfcBeamType"]:
+            obj = profile.DumbProfileGenerator(self.file.by_id(int(relating_type))).generate()
+            return {"FINISHED"}
             if obj:
                 return {"FINISHED"}
         # A cube
