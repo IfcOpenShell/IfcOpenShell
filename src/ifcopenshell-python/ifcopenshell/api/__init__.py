@@ -97,3 +97,53 @@ def remove_post_listener(usecase_path, name, callback):
 def remove_all_listeners():
     pre_listeners.clear()
     post_listeners.clear()
+
+
+def extract_docs(module, usecase):
+    import typing
+    import inspect
+    import collections
+
+    results = []
+
+    inputs = collections.OrderedDict()
+
+    function_init = getattr(getattr(ifcopenshell.api, module), usecase).Usecase.__init__
+    function_execute = getattr(getattr(ifcopenshell.api, module), usecase).Usecase.execute
+
+    node_data = {"module": module, "usecase": usecase}
+
+    signature = inspect.signature(function_init)
+    for name, parameter in signature.parameters.items():
+        if name == "self":
+            continue
+        inputs[name] = {"name": name}
+        if not isinstance(parameter.default, object):
+            inputs[name]["default"] = parameter.default
+
+    type_hints = typing.get_type_hints(function_init)
+    for name, socket_data in inputs.items():
+        type_hint = type_hints[name]
+        if isinstance(type_hint, typing._UnionGenericAlias):
+            inputs[name]["type"] = [t.__name__ for t in typing.get_args(type_hint)]
+        else:
+            inputs[name]["type"] = type_hint.__name__
+
+    description = ""
+    for i, line in enumerate(function_init.__doc__.split("\n")):
+        line = line.strip()
+        if i == 0:
+            node_data["name"] = line
+        elif line.startswith(":return:"):
+            node_data["output"] = {"name": line.split(":")[2].strip(), "description": line.split(":")[3].strip()}
+        elif line.startswith(":param"):
+            param_name = line.split(":")[1].strip().replace("param ", "")
+            inputs[param_name]["description"] = line.split(":")[2].strip()
+        elif i >= 2:
+            description += line
+
+    if "output" in node_data:
+        node_data["output"]["type"] = typing.get_type_hints(function_execute)["return"].__name__
+    node_data["description"] = description.strip()
+    node_data["inputs"] = inputs
+    return node_data
