@@ -62,15 +62,15 @@ class SelectIfcClass(bpy.types.Operator):
     bl_idname = "bim.select_ifc_class"
     bl_label = "Select IFC Class"
     bl_options = {"REGISTER", "UNDO"}
+    ifc_class: bpy.props.StringProperty()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        props = context.scene.BIMSearchProperties
         for obj in context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            if does_keyword_exist(props.ifc_class, element.is_a()):
+            if does_keyword_exist(self.ifc_class, element.is_a()):
                 obj.select_set(True)
         return {"FINISHED"}
 

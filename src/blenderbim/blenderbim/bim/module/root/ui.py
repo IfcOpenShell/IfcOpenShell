@@ -40,6 +40,7 @@ class BIM_PT_class(Panel):
                     name += "[{}]".format(data["PredefinedType"])
                 row = self.layout.row(align=True)
                 row.label(text=name)
+                row.operator("bim.select_ifc_class", text="", icon="RESTRICT_SELECT_OFF").ifc_class = data["type"]
                 row.operator("bim.copy_class", icon="DUPLICATE", text="")
                 row.operator("bim.unlink_object", icon="UNLINKED", text="")
                 if IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcRoot"):
