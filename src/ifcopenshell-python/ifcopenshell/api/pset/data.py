@@ -22,7 +22,7 @@ class Data:
             return
         product = file.by_id(product_id)
         cls.products[product_id] = {"psets": set(), "qtos": set()}
-        if product.is_a("IfcElementType"):
+        if product.is_a("IfcTypeObject"):
             cls.add_type_product_psets(product, product_id)
         elif product.is_a("IfcMaterialDefinition"):
             cls.add_material_psets(product, product_id)
