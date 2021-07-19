@@ -1,6 +1,7 @@
 import bpy
 import logging
 import ifcopenshell
+import ifcopenshell.util.placement
 import blenderbim.bim.import_ifc as import_ifc
 from blenderbim.bim.ifc import IfcStore
 
@@ -190,4 +191,14 @@ class InspectFromObject(bpy.types.Operator):
         if not ifc_definition_id:
             return {"FINISHED"}
         bpy.ops.bim.inspect_from_step_id(step_id=ifc_definition_id)
+        return {"FINISHED"}
+
+
+class PrintObjectPlacement(bpy.types.Operator):
+    bl_idname = "bim.print_object_placement"
+    bl_label = "Print Object Placement"
+    step_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        print(ifcopenshell.util.placement.get_local_placement(IfcStore.get_file().by_id(self.step_id)))
         return {"FINISHED"}

@@ -59,6 +59,9 @@ class BIM_PT_debug(Panel):
             if attribute.name == "GlobalId":
                 op = row.operator("bim.select_global_id", icon="RESTRICT_SELECT_OFF", text="")
                 op.global_id = attribute.string_value
+            if attribute.name == "ObjectPlacement":
+                op = row.operator("bim.print_object_placement", icon="TRACKER", text="")
+                op.step_id = attribute.int_value
             if attribute.int_value:
                 row.operator(
                     "bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text=""
