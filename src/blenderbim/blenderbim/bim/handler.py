@@ -13,6 +13,8 @@ global_subscription_owner = object()
 
 
 def mode_callback(obj, data):
+    if not bpy.context.scene.BIMProjectProperties.is_authoring:
+        return
     objects = bpy.context.selected_objects
     if bpy.context.active_object:
         objects += [bpy.context.active_object]
@@ -22,9 +24,8 @@ def mode_callback(obj, data):
             or not obj.data
             or not isinstance(obj.data, (bpy.types.Mesh, bpy.types.Curve, bpy.types.TextCurve))
             or not obj.BIMObjectProperties.ifc_definition_id
-            or not bpy.context.scene.BIMProjectProperties.is_authoring
         ):
-            return
+            continue
         if obj.data.BIMMeshProperties.ifc_definition_id:
             representation = IfcStore.get_file().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
             if representation.RepresentationType in ["Tessellation", "Brep", "Annotation2D"]:
