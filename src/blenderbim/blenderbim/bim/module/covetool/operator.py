@@ -197,5 +197,4 @@ class RunAnalysis(bpy.types.Operator):
             return True
 
     def is_window_skylight(self, element):
-        predefined_type = element.get_info().get("PredefinedType")
-        return predefined_type and predefined_type.string_value == "SKYLIGHT"
+        return element.get_info().get("PredefinedType") == "SKYLIGHT"
