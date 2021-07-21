@@ -133,3 +133,20 @@ class SelectSimilarType(bpy.types.Operator):
             if obj.BIMObjectProperties.ifc_definition_id in related_objects:
                 obj.select_set(True)
         return {"FINISHED"}
+
+
+class SelectTypeObjects(bpy.types.Operator):
+    bl_idname = "bim.select_type_objects"
+    bl_label = "Select Type Objects"
+    bl_options = {"REGISTER", "UNDO"}
+    relating_type: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        relating_type = bpy.data.objects.get(self.relating_type) if self.relating_type else bpy.context.active_object
+        oprops = relating_type.BIMObjectProperties
+        related_objects = Data.types[oprops.ifc_definition_id]
+        for obj in bpy.context.visible_objects:
+            if obj.BIMObjectProperties.ifc_definition_id in related_objects:
+                obj.select_set(True)
+        return {"FINISHED"}
