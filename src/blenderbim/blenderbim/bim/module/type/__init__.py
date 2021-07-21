@@ -7,6 +7,7 @@ classes = (
     operator.EnableEditingType,
     operator.DisableEditingType,
     operator.SelectSimilarType,
+    operator.SelectTypeObjects,
     prop.BIMTypeProperties,
     prop.BIMTypeObjectProperties,
     ui.BIM_PT_type,
