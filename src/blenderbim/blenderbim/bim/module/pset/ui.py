@@ -122,8 +122,8 @@ class BIM_PT_object_psets(Panel):
         op.obj = context.active_object.name
         op.obj_type = "Object"
 
-        for pset_id in Data.products[oprops.ifc_definition_id]["psets"]:
-            pset = Data.psets[pset_id]
+        psets = [(pset_id, Data.psets[pset_id]) for pset_id in Data.products[oprops.ifc_definition_id]["psets"]]
+        for pset_id, pset in sorted(psets, key = lambda v: v[1]["Name"]):
             draw_psetqto_ui(context, pset_id, pset, props, self.layout, "Object")
 
         # TODO reimplement. See #1222.
@@ -165,8 +165,8 @@ class BIM_PT_object_qtos(Panel):
         row.prop(props, "qto_name", text="")
         row.operator("bim.add_qto", icon="ADD", text="")
 
-        for qto_id in Data.products[oprops.ifc_definition_id]["qtos"]:
-            qto = Data.qtos[qto_id]
+        qtos = [(qto_id, Data.qtos[qto_id]) for qto_id in Data.products[oprops.ifc_definition_id]["qtos"]]
+        for qto_id, qto in sorted(qtos, key = lambda v: v[1]["Name"]):
             draw_psetqto_ui(context, qto_id, qto, props, self.layout, "Object")
 
 
@@ -207,6 +207,6 @@ class BIM_PT_material_psets(Panel):
         op.obj = context.active_object.active_material.name
         op.obj_type = "Material"
 
-        for pset_id in Data.products[oprops.ifc_definition_id]["psets"]:
-            pset = Data.psets[pset_id]
+        psets = [(pset_id, Data.psets[pset_id]) for pset_id in Data.products[oprops.ifc_definition_id]["psets"]]
+        for pset_id, pset in sorted(psets, key = lambda v: v[1]["Name"]):
             draw_psetqto_ui(context, pset_id, pset, props, self.layout, "Material")
