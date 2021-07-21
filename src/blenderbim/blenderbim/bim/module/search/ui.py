@@ -28,7 +28,7 @@ class BIM_PT_search(Panel):
 
         row = self.layout.row(align=True)
         row.prop(props, "global_id", text="", icon="TRACKER")
-        row.operator("bim.select_global_id", text="", icon="VIEWZOOM")
+        row.operator("bim.select_global_id", text="", icon="VIEWZOOM").global_id = props.global_id
 
         row = self.layout.row(align=True)
         row.prop(props, "ifc_class", text="", icon="OBJECT_DATA")
