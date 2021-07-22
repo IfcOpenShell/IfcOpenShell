@@ -5,9 +5,6 @@ import json
 import logging
 import webbrowser
 import ifcopenshell
-
-# Deleting the below drawing import breaks svgwrite's ElementTree appending because ... magic?
-import blenderbim.bim.module.drawing
 from . import export_ifc
 from . import import_ifc
 from . import schema
