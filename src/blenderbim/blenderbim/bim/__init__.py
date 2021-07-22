@@ -29,6 +29,7 @@ if bpy is not None:
         "cost": None,
         "sequence": None,
         "group": None,
+        "system": None,
         "structural": None,
         "boundary": None,
         "material": None,
