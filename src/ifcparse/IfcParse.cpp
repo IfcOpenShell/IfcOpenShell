@@ -1216,8 +1216,10 @@ void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::Argument
 		// Remove leading and trailing '.'
 		enum_literal = enum_literal.substr(1, enum_literal.size() - 2);
 		
-		const IfcParse::enumeration_type* enum_type = type()->as_entity()->
-			attribute_by_index(i)->type_of_attribute()->as_named_type()->declared_type()->as_enumeration_type();
+		const IfcParse::enumeration_type* enum_type = type()->as_enumeration_type()
+			? type()->as_enumeration_type()
+			: type()->as_entity()->attribute_by_index(i)->type_of_attribute()->
+			as_named_type()->declared_type()->as_enumeration_type();
 		
 		std::vector<std::string>::const_iterator it = std::find(
 			enum_type->enumeration_items().begin(), 
