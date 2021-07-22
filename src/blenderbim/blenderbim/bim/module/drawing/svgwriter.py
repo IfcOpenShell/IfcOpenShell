@@ -28,7 +28,7 @@ class External(svgwrite.container.Group):
         # Remove namespace
         ns = u"{http://www.w3.org/2000/svg}"
         nsl = len(ns)
-        for elem in self.xml.getiterator():
+        for elem in self.xml.iter():
             if elem.tag.startswith(ns):
                 elem.tag = elem.tag[nsl:]
 
@@ -85,19 +85,19 @@ class SvgWriter:
     def add_markers(self):
         tree = ET.parse(os.path.join(self.data_dir, "templates", "markers.svg"))
         root = tree.getroot()
-        for child in root.getchildren():
+        for child in root:
             self.svg.defs.add(External(child))
 
     def add_symbols(self):
         tree = ET.parse(os.path.join(self.data_dir, "templates", "symbols.svg"))
         root = tree.getroot()
-        for child in root.getchildren():
+        for child in root:
             self.svg.defs.add(External(child))
 
     def add_patterns(self):
         tree = ET.parse(os.path.join(self.data_dir, "templates", "patterns.svg"))
         root = tree.getroot()
-        for child in root.getchildren():
+        for child in root:
             self.svg.defs.add(External(child))
 
     def draw_background_image(self):
