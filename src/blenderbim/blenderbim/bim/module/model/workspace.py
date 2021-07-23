@@ -26,6 +26,7 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "X", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "X")]}),
         ("bim.hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "C")]}),
         ("bim.hotkey", {"type": "V", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "V")]}),
+        ("bim.hotkey", {"type": "O", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "O")]}),
     )
 
     def draw_settings(context, layout, tool):
@@ -45,6 +46,10 @@ class BimTool(WorkSpaceTool):
             row.label(text="Mitre", icon="EVENT_Y")
             row.label(text="Flip", icon="EVENT_F")
             row.label(text="Split", icon="EVENT_S")
+            row.label(text="Opening", icon="EVENT_O")
+
+        if props.ifc_class == "IfcSlabType":
+            row.label(text="Opening", icon="EVENT_O")
 
         row.label(text="", icon="EVENT_X")
         row.label(text="", icon="EVENT_C")
@@ -87,3 +92,9 @@ class Hotkey(bpy.types.Operator):
             bpy.ops.bim.align_wall(align_type="EXTERIOR")
         else:
             bpy.ops.bim.align_product(align_type="NEGATIVE")
+
+    def hotkey_O(self):
+        if self.props.ifc_class == "IfcWallType":
+            bpy.ops.bim.add_wall_opening()
+        elif self.props.ifc_class == "IfcSlabType":
+            pass
