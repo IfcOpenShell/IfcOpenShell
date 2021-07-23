@@ -36,6 +36,41 @@ def mode_callback(obj, data):
         IfcStore.edited_objs.add(obj)
 
 
+class AddWallOpening(bpy.types.Operator):
+    bl_idname = "bim.add_wall_opening"
+    bl_label = "Add Wall Opening"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        selected_objs = context.selected_objects
+        if len(selected_objs) == 0 or not context.active_object:
+            return {"FINISHED"}
+        wall_obj = context.active_object
+        if not wall_obj.BIMObjectProperties.ifc_definition_id:
+            return {"FINISHED"}
+        wall = IfcStore.get_file().by_id(wall_obj.BIMObjectProperties.ifc_definition_id)
+        if not wall.is_a("IfcWall"):
+            return {"FINISHED"}
+        local_location = wall_obj.matrix_world.inverted() @ context.scene.cursor.location
+        raycast = wall_obj.closest_point_on_mesh(local_location, distance=0.01)
+        if not raycast[0]:
+            return {"FINISHED"}
+        bpy.ops.mesh.primitive_cube_add(size=wall_obj.dimensions[1] * 2)
+        opening = bpy.context.selected_objects[0]
+
+        # Place the opening in the middle of the wall
+        global_location = wall_obj.matrix_world @ raycast[1]
+        normal = raycast[2]
+        normal.negate()
+        global_normal = wall_obj.matrix_world.to_quaternion() @ normal
+        opening.location = global_location + (global_normal * (wall_obj.dimensions[1] / 2))
+
+        opening.rotation_euler = wall_obj.rotation_euler
+        opening.name = "Opening"
+        bpy.ops.bim.add_opening(opening=opening.name, obj=wall_obj.name)
+        return {"FINISHED"}
+
+
 class JoinWall(bpy.types.Operator):
     bl_idname = "bim.join_wall"
     bl_label = "Join Wall"
