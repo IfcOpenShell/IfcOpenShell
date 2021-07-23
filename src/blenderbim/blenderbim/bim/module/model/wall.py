@@ -42,6 +42,9 @@ class AddWallOpening(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         selected_objs = context.selected_objects
         if len(selected_objs) == 0 or not context.active_object:
             return {"FINISHED"}

@@ -97,4 +97,4 @@ class Hotkey(bpy.types.Operator):
         if self.props.ifc_class == "IfcWallType":
             bpy.ops.bim.add_wall_opening()
         elif self.props.ifc_class == "IfcSlabType":
-            pass
+            bpy.ops.bim.add_slab_opening()
