@@ -205,6 +205,7 @@ class AddProfile(bpy.types.Operator):
             },
         )
         Data.load_profiles()
+        ProfileData.load(self.file)
         return {"FINISHED"}
 
 
@@ -223,6 +224,7 @@ class RemoveProfile(bpy.types.Operator):
         self.file = IfcStore.get_file()
         ifcopenshell.api.run("material.remove_profile", self.file, **{"profile": self.file.by_id(self.profile)})
         Data.load_profiles()
+        ProfileData.load(self.file)
         return {"FINISHED"}
 
 
@@ -282,6 +284,7 @@ class ReorderMaterialSetItem(bpy.types.Operator):
             Data.load_layers()
         elif material_set.is_a("IfcMaterialProfileSet"):
             Data.load_profiles()
+            ProfileData.load(self.file)
         elif material_set.is_a("IfcMaterialList"):
             Data.load_lists()
         return {"FINISHED"}
