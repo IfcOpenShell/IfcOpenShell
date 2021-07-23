@@ -1,61 +1,7 @@
 import ifcopenshell.util
+import ifcopenshell.util.fm
 import ifcopenshell.util.element
 import lark
-
-cobie_type_assets = [
-    "IfcDoorStyle",
-    "IfcBuildingElementProxyType",
-    "IfcChimneyType",
-    "IfcCoveringType",
-    "IfcDoorType",
-    "IfcFootingType",
-    "IfcPileType",
-    "IfcRoofType",
-    "IfcShadingDeviceType",
-    "IfcWindowType",
-    "IfcDistributionControlElementType",
-    "IfcDistributionChamberElementType",
-    "IfcEnergyConversionDeviceType",
-    "IfcFlowControllerType",
-    "IfcFlowMovingDeviceType",
-    "IfcFlowStorageDeviceType",
-    "IfcFlowTerminalType",
-    "IfcFlowTreatmentDeviceType",
-    "IfcElementAssemblyType",
-    "IfcBuildingElementPartType",
-    "IfcDiscreteAccessoryType",
-    "IfcMechanicalFastenerType",
-    "IfcReinforcingElementType",
-    "IfcVibrationIsolatorType",
-    "IfcFurnishingElementType",
-    "IfcGeographicElementType",
-    "IfcTransportElementType",
-    "IfcSpatialZoneType",
-    "IfcWindowStyle",
-]
-cobie_component_assets = [
-    "IfcBuildingElementProxy",
-    "IfcChimney",
-    "IfcCovering",
-    "IfcDoor",
-    "IfcShadingDevice",
-    "IfcWindow",
-    "IfcDistributionControlElement",
-    "IfcDistributionChamberElement",
-    "IfcEnergyConversionDevice",
-    "IfcFlowController",
-    "IfcFlowMovingDevice",
-    "IfcFlowStorageDevice",
-    "IfcFlowTerminal",
-    "IfcFlowTreatmentDevice",
-    "IfcDiscreteAccessory",
-    "IfcTendon",
-    "IfcTendonAnchor",
-    "IfcVibrationIsolator",
-    "IfcFurnishingElement",
-    "IfcGeographicElement",
-    "IfcTransportElement",
-]
 
 
 class Selector:
@@ -174,19 +120,11 @@ class Selector:
 
     def get_class_selector(self, class_selector):
         if class_selector.children[0] == "COBie":
-            elements = []
-            for ifc_class in cobie_component_assets:
-                try:
-                    elements += self.file.by_type(ifc_class)
-                except:
-                    pass
+            ifcopenshell.util.fm.get_cobie_components(self.file)
         elif class_selector.children[0] == "COBieType":
-            elements = []
-            for ifc_class in cobie_type_assets:
-                try:
-                    elements += self.file.by_type(ifc_class)
-                except:
-                    pass
+            ifcopenshell.util.fm.get_cobie_types(self.file)
+        elif class_selector.children[0] == "FMHEM":
+            ifcopenshell.util.fm.get_fmhem_types(self.file)
         else:
             elements = self.file.by_type(class_selector.children[0])
         if len(class_selector.children) > 1 and class_selector.children[1].data == "filter":
