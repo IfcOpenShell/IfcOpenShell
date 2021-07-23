@@ -48,42 +48,37 @@ want. Since IfcOpenShell has no interface, you manually run code like
 ``model.undo()`` and ``model.redo()`` to undo and redo.
 
 This scenario where there is pure IfcOpenShell never occurs with the BlenderBIM
-Add-on, so let's put both of them together.
+Add-on. Instead, stuff happens in Blender operators.
 
 .. code-block:: python
-    :emphasize-lines: 5,7,8,10,13
+    :emphasize-lines: 6,7
 
     class Foobar(bpy.types.Operator):
         bl_idname = "foobar"
         bl_label = "Foobar"
         bl_options = {"REGISTER", "UNDO"}
-        transaction_key: bpy.props.StringProperty()
 
         def execute(self, context):
             return IfcStore.execute_ifc_operator(self, context)
 
         def _execute(self, context):
             ifcopenshell.api.run("foo.bar", IfcStore.get_file())
-            context.scene.name = "Foobar"
-            bpy.ops.foobaz(transaction_key=self.transaction_key)
             return {"FINISHED"}
 
 When your operator manipulates (creates, removes, or edits) IFC data directly or
-indirectly (i.e. through calling another operator), your operator must have a
-``transaction_key`` property assigned. The purpose of this transaction key is so
-that if the operator is ever called from another operator, it can identify that
-changes in the IFC data belong to a parent transaction. In this example, it is
-also calling another operator ``bpy.ops.foobaz``, which manipulates IFC as well,
-so we have to pass along the transaction key so ``bpy.ops.foobaz`` gets treated
-as a sub-transaction.
+indirectly (i.e. through calling another operator), your operator must be
+wrapped in an ``IfcStore.execute_ifc_operator`` call. This wrapper will:
 
-In this example, we call ``return IfcStore.execute_ifc_operator(self, context)``
-in the ``execute`` function. This is a special wrapper which begins an IFC
-transaction, runs your operator's ``_execute`` function, then ends the IFC
-transaction. This wrapper ensures that any IFC data manipulations within your
-actual ``_execute`` function gets captured in a single transaction. In addition
-to tracking all changes in the IFC data, it also tracks changes in the
-``id_map`` and ``guid_map``.
+1. Begin a BlenderBIM Add-on transaction
+2. Begin an IfcOpenShell transaction
+3. Runs your operator's ``_execute``.
+4. Ends the IfcOpenShell transaction
+5. Ends the BlenderBIM Add-on transaction
+
+The IfcOpenShell transaction keeps track of IFC data changes, and the BlenderBIM
+Add-on transaction keeps track of all other custom data changes, like changes in
+the ``id_map`` and ``guid_map``. For the vast majority of operations, this
+wrapper provides everything that you need.
 
 If, however, your operator manipulates data that is not tracked by Blender, is
 not tracked in the IFC data, and is not tracked in the element map, then you
@@ -96,14 +91,15 @@ operator. Here is an example.
         bl_idname = "foobar"
         bl_label = "Foobar"
         bl_options = {"REGISTER", "UNDO"}
-        transaction_key: bpy.props.StringProperty()
 
         def execute(self, context):
+            IfcStore.begin_transaction(operator)
             old_value = Foo.bar
             result = self._execute(context)
             new_value = Foo.bar
             self.transaction_data = {"old_value": old_value, "new_value": new_value}
-            IfcStore.add_transaction(self)
+            IfcStore.add_transaction_operation(self)
+            IfcStore.end_transaction(operator)
             return result
 
         def _execute(self, context):
@@ -116,6 +112,6 @@ operator. Here is an example.
         def commit(self, data):
             Foo.baz = data["new_value"]
 
-Note that there is a distinction between ``execute`` and ``_execute``. This
-recommended convention allows you to quickly discern undo state tracking code
-from regular operation code.
+Note that there is still a distinction between ``execute`` and ``_execute``.
+This recommended convention allows you to quickly discern undo state tracking
+code from regular operation code.

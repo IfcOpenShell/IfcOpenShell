@@ -42,10 +42,6 @@ def draw_ui(context, layout, obj_type):
                     icon="RADIOBUT_OFF" if blender_attribute.is_null else "RADIOBUT_ON",
                     text="",
                 )
-            # TODO: reimplement, see #1222
-            # op = row.operator("bim.copy_attribute_to_selection", icon="COPYDOWN", text="")
-            # op.attribute_name = attribute.name
-            # op.attribute_value = attribute.string_value
     else:
         row = layout.row()
         op = row.operator("bim.enable_editing_attributes", icon="GREASEPENCIL", text="Edit")
@@ -87,7 +83,7 @@ class BIM_PT_object_attributes(Panel):
 
 
 class BIM_PT_material_attributes(Panel):
-    bl_label = "IFC Attributes"
+    bl_label = "IFC Material Attributes"
     bl_idname = "BIM_PT_material_attributes"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"

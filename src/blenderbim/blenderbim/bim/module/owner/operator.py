@@ -8,6 +8,7 @@ from ifcopenshell.api.owner.data import Data
 class EnableEditingPerson(bpy.types.Operator):
     bl_idname = "bim.enable_editing_person"
     bl_label = "Enable Editing Person"
+    bl_options = {"REGISTER", "UNDO"}
     person_id: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -28,6 +29,7 @@ class EnableEditingPerson(bpy.types.Operator):
 class DisableEditingPerson(bpy.types.Operator):
     bl_idname = "bim.disable_editing_person"
     bl_label = "Disable Editing Person"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         context.scene.BIMOwnerProperties.active_person_id = 0
@@ -37,8 +39,12 @@ class DisableEditingPerson(bpy.types.Operator):
 class AddPerson(bpy.types.Operator):
     bl_idname = "bim.add_person"
     bl_label = "Add Person"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         ifcopenshell.api.run("owner.add_person", IfcStore.get_file())
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
@@ -47,8 +53,12 @@ class AddPerson(bpy.types.Operator):
 class EditPerson(bpy.types.Operator):
     bl_idname = "bim.edit_person"
     bl_label = "Edit Person"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         props = context.scene.BIMOwnerProperties
         attributes = {
@@ -75,9 +85,13 @@ class EditPerson(bpy.types.Operator):
 class RemovePerson(bpy.types.Operator):
     bl_idname = "bim.remove_person"
     bl_label = "Remove Person"
+    bl_options = {"REGISTER", "UNDO"}
     person_id: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         ifcopenshell.api.run("owner.remove_person", self.file, **{"person": self.file.by_id(self.person_id)})
         Data.load(IfcStore.get_file())
@@ -87,6 +101,7 @@ class RemovePerson(bpy.types.Operator):
 class EnableEditingRole(bpy.types.Operator):
     bl_idname = "bim.enable_editing_role"
     bl_label = "Enable Editing Role"
+    bl_options = {"REGISTER", "UNDO"}
     role_id: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -103,6 +118,7 @@ class EnableEditingRole(bpy.types.Operator):
 class DisableEditingRole(bpy.types.Operator):
     bl_idname = "bim.disable_editing_role"
     bl_label = "Disable Editing Role"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         context.scene.BIMOwnerProperties.active_role_id = 0
@@ -112,9 +128,13 @@ class DisableEditingRole(bpy.types.Operator):
 class AddRole(bpy.types.Operator):
     bl_idname = "bim.add_role"
     bl_label = "Add Role"
+    bl_options = {"REGISTER", "UNDO"}
     assigned_object_id: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "owner.add_role", self.file, **{"assigned_object": self.file.by_id(self.assigned_object_id)}
@@ -126,8 +146,12 @@ class AddRole(bpy.types.Operator):
 class EditRole(bpy.types.Operator):
     bl_idname = "bim.edit_role"
     bl_label = "Edit Role"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         props = context.scene.BIMOwnerProperties
         attributes = {
@@ -146,9 +170,13 @@ class EditRole(bpy.types.Operator):
 class RemoveRole(bpy.types.Operator):
     bl_idname = "bim.remove_role"
     bl_label = "Remove Role"
+    bl_options = {"REGISTER", "UNDO"}
     role_id: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         ifcopenshell.api.run("owner.remove_role", self.file, **{"role": self.file.by_id(self.role_id)})
         Data.load(IfcStore.get_file())
@@ -158,10 +186,14 @@ class RemoveRole(bpy.types.Operator):
 class AddAddress(bpy.types.Operator):
     bl_idname = "bim.add_address"
     bl_label = "Add Address"
+    bl_options = {"REGISTER", "UNDO"}
     assigned_object_id: bpy.props.IntProperty()
     ifc_class: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "owner.add_address",
@@ -175,6 +207,7 @@ class AddAddress(bpy.types.Operator):
 class EnableEditingAddress(bpy.types.Operator):
     bl_idname = "bim.enable_editing_address"
     bl_label = "Enable Editing Address"
+    bl_options = {"REGISTER", "UNDO"}
     address_id: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -211,6 +244,7 @@ class EnableEditingAddress(bpy.types.Operator):
 class DisableEditingAddress(bpy.types.Operator):
     bl_idname = "bim.disable_editing_address"
     bl_label = "Disable Editing Address"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         context.scene.BIMOwnerProperties.active_address_id = 0
@@ -220,8 +254,12 @@ class DisableEditingAddress(bpy.types.Operator):
 class EditAddress(bpy.types.Operator):
     bl_idname = "bim.edit_address"
     bl_label = "Edit Address"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         props = context.scene.BIMOwnerProperties
         attributes = {
@@ -272,9 +310,13 @@ class EditAddress(bpy.types.Operator):
 class RemoveAddress(bpy.types.Operator):
     bl_idname = "bim.remove_address"
     bl_label = "Remove Address"
+    bl_options = {"REGISTER", "UNDO"}
     address_id: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         ifcopenshell.api.run("owner.remove_address", self.file, **{"address": self.file.by_id(self.address_id)})
         Data.load(IfcStore.get_file())
@@ -284,6 +326,7 @@ class RemoveAddress(bpy.types.Operator):
 class EnableEditingOrganisation(bpy.types.Operator):
     bl_idname = "bim.enable_editing_organisation"
     bl_label = "Enable Editing Organisation"
+    bl_options = {"REGISTER", "UNDO"}
     organisation_id: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -301,6 +344,7 @@ class EnableEditingOrganisation(bpy.types.Operator):
 class DisableEditingOrganisation(bpy.types.Operator):
     bl_idname = "bim.disable_editing_organisation"
     bl_label = "Disable Editing Organisation"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         context.scene.BIMOwnerProperties.active_organisation_id = 0
@@ -310,8 +354,12 @@ class DisableEditingOrganisation(bpy.types.Operator):
 class AddOrganisation(bpy.types.Operator):
     bl_idname = "bim.add_organisation"
     bl_label = "Add Organisation"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         ifcopenshell.api.run("owner.add_organisation", IfcStore.get_file())
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
@@ -320,8 +368,12 @@ class AddOrganisation(bpy.types.Operator):
 class EditOrganisation(bpy.types.Operator):
     bl_idname = "bim.edit_organisation"
     bl_label = "Edit Organisation"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         props = context.scene.BIMOwnerProperties
         attributes = {
@@ -345,9 +397,13 @@ class EditOrganisation(bpy.types.Operator):
 class RemoveOrganisation(bpy.types.Operator):
     bl_idname = "bim.remove_organisation"
     bl_label = "Remove Organisation"
+    bl_options = {"REGISTER", "UNDO"}
     organisation_id: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "owner.remove_organisation", self.file, **{"organisation": self.file.by_id(self.organisation_id)}

@@ -4,7 +4,7 @@ import json
 import importlib
 import ifcopenshell
 import ifcopenshell.util.pset
-from blenderbim.bim.handler import purge_module_data
+import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -48,9 +48,7 @@ def updateDataDir(self, context):
 
 def updateIfcFile(self, context):
     if context.scene.BIMProperties.ifc_file:
-        IfcStore.file = None
-        IfcStore.schema = None
-        purge_module_data()
+        blenderbim.bim.handler.loadIfcStore(context.scene)
 
 
 def getMaterialPsetNames(self, context):
@@ -259,6 +257,11 @@ class GlobalId(PropertyGroup):
 
 class BIMObjectProperties(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+    blender_offset_type: EnumProperty(
+        items=[(o, o, "") for o in ["NONE", "OBJECT_PLACEMENT", "CARTESIAN_POINT"]],
+        name="Blender Offset",
+        default="NONE",
+    )
     is_reassigning_class: BoolProperty(name="Is Reassigning Class")
     global_ids: CollectionProperty(name="GlobalIds", type=GlobalId)
     relating_object: PointerProperty(name="Aggregate", type=bpy.types.Object)
@@ -279,11 +282,6 @@ class BIMMaterialProperties(PropertyGroup):
     ifc_style_id: IntProperty(name="IFC Style ID")
 
 
-class ItemSlotMap(PropertyGroup):
-    name: StringProperty(name="Item Element ID")
-    slot_index: IntProperty(name="Material Slot Index")
-
-
 class BIMMeshProperties(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_native: BoolProperty(name="Is Native", default=False)
@@ -291,4 +289,3 @@ class BIMMeshProperties(PropertyGroup):
     is_parametric: BoolProperty(name="Is Parametric", default=False)
     ifc_definition: StringProperty(name="IFC Definition")
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
-    ifc_item_ids: CollectionProperty(name="IFC Item IDs", type=ItemSlotMap)

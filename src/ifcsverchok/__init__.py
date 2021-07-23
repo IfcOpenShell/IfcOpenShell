@@ -43,6 +43,7 @@ def nodes_index():
                 ("ifc.get_property", "SvIfcGetProperty"),
                 ("ifc.get_attribute", "SvIfcGetAttribute"),
                 ("ifc.select_blender_objects", "SvIfcSelectBlenderObjects"),
+                ("ifc.api", "SvIfcApi"),
             ],
         )
     ]

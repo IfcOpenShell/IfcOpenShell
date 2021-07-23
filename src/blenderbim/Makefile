@@ -13,10 +13,10 @@ endif
 
 	# Provides IfcOpenShell Python functionality
 ifeq ($(PYVERSION), py37)
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-37-v0.6.0-2fd2b49-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-37-v0.6.0-f14d349-$(PLATFORM)64.zip
 endif
 ifeq ($(PYVERSION), py39)
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-39-v0.6.0-2fd2b49-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-39-v0.6.0-f14d349-$(PLATFORM)64.zip
 endif
 	cd dist/working && unzip ifcblender*
 	cp -r dist/working/io_import_scene_ifc/ifcopenshell dist/blenderbim/libs/site/packages/
@@ -44,6 +44,8 @@ endif
 	# IfcOpenBot sometimes lags behind, so we hotfix the Python utilities
 	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcopenshell-python/ifcopenshell/util/* dist/blenderbim/libs/site/packages/ifcopenshell/util/
 	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcopenshell-python/ifcopenshell/api/* dist/blenderbim/libs/site/packages/ifcopenshell/api/
+	cp dist/working/IfcOpenShell-0.6.0/src/ifcopenshell-python/ifcopenshell/entity_instance.py dist/blenderbim/libs/site/packages/ifcopenshell/
+	cp dist/working/IfcOpenShell-0.6.0/src/ifcopenshell-python/ifcopenshell/file.py dist/blenderbim/libs/site/packages/ifcopenshell/
 	# Provides bcf functionality
 	cp -r dist/working/IfcOpenShell-0.6.0/src/bcf/bcf dist/blenderbim/libs/site/packages/
 	# Provides IFCClash functionality

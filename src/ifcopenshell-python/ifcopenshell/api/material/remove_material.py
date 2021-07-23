@@ -12,6 +12,7 @@ class Usecase:
         inverse_elements = self.file.get_inverse(self.settings["material"])
         self.file.remove(self.settings["material"])
         # TODO: this is probably not robust enough
+        # TODO: purge material definition representation
         for inverse in inverse_elements:
             if inverse.is_a("IfcMaterialConstituent"):
                 self.file.remove(inverse)

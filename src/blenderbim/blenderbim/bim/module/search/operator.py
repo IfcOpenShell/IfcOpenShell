@@ -41,6 +41,7 @@ def does_keyword_exist(pattern, string):
 class SelectGlobalId(bpy.types.Operator):
     bl_idname = "bim.select_global_id"
     bl_label = "Select GlobalId"
+    bl_options = {"REGISTER", "UNDO"}
     global_id: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -60,15 +61,16 @@ class SelectGlobalId(bpy.types.Operator):
 class SelectIfcClass(bpy.types.Operator):
     bl_idname = "bim.select_ifc_class"
     bl_label = "Select IFC Class"
+    bl_options = {"REGISTER", "UNDO"}
+    ifc_class: bpy.props.StringProperty()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        props = context.scene.BIMSearchProperties
         for obj in context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            if does_keyword_exist(props.ifc_class, element.is_a()):
+            if does_keyword_exist(self.ifc_class, element.is_a()):
                 obj.select_set(True)
         return {"FINISHED"}
 
@@ -76,6 +78,7 @@ class SelectIfcClass(bpy.types.Operator):
 class SelectAttribute(bpy.types.Operator):
     bl_idname = "bim.select_attribute"
     bl_label = "Select Attribute"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         self.file = IfcStore.get_file()
@@ -99,6 +102,7 @@ class SelectAttribute(bpy.types.Operator):
 class SelectPset(bpy.types.Operator):
     bl_idname = "bim.select_pset"
     bl_label = "Select Pset"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         self.file = IfcStore.get_file()
@@ -130,8 +134,17 @@ class SelectPset(bpy.types.Operator):
 class ColourByAttribute(bpy.types.Operator):
     bl_idname = "bim.colour_by_attribute"
     bl_label = "Colour by Attribute"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        IfcStore.begin_transaction(self)
+        self.store_state()
+        result = self._execute(context)
+        IfcStore.add_transaction_operation(self)
+        IfcStore.end_transaction(self)
+        return result
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         colours = cycle(colour_list)
         values = {}
@@ -148,16 +161,39 @@ class ColourByAttribute(bpy.types.Operator):
             if value not in values:
                 values[value] = next(colours)
             obj.color = values[value]
-        area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].shading.color_type = "OBJECT"
+        areas = [a for a in bpy.context.screen.areas if a.type == "VIEW_3D"]
+        if areas:
+            areas[0].spaces[0].shading.color_type = "OBJECT"
         return {"FINISHED"}
+
+    def store_state(self):
+        areas = [a for a in bpy.context.screen.areas if a.type == "VIEW_3D"]
+        if areas:
+            self.transaction_data = {"area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
+
+    def rollback(self, data):
+        if data:
+            data["area"].spaces[0].shading.color_type = data["color_type"]
+
+    def commit(self, data):
+        if data:
+            data["area"].spaces[0].shading.color_type = "OBJECT"
 
 
 class ColourByPset(bpy.types.Operator):
     bl_idname = "bim.colour_by_pset"
     bl_label = "Colour by Pset"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        IfcStore.begin_transaction(self)
+        self.store_state()
+        result = self._execute(context)
+        IfcStore.add_transaction_operation(self)
+        IfcStore.end_transaction(self)
+        return result
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         colours = cycle(colour_list)
         values = {}
@@ -182,16 +218,39 @@ class ColourByPset(bpy.types.Operator):
             if value not in values:
                 values[value] = next(colours)
             obj.color = values[value]
-        area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].shading.color_type = "OBJECT"
+        areas = [a for a in bpy.context.screen.areas if a.type == "VIEW_3D"]
+        if areas:
+            areas[0].spaces[0].shading.color_type = "OBJECT"
         return {"FINISHED"}
+
+    def store_state(self):
+        areas = [a for a in bpy.context.screen.areas if a.type == "VIEW_3D"]
+        if areas:
+            self.transaction_data = {"area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
+
+    def rollback(self, data):
+        if data:
+            data["area"].spaces[0].shading.color_type = data["color_type"]
+
+    def commit(self, data):
+        if data:
+            data["area"].spaces[0].shading.color_type = "OBJECT"
 
 
 class ColourByClass(bpy.types.Operator):
     bl_idname = "bim.colour_by_class"
     bl_label = "Colour by Class"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        IfcStore.begin_transaction(self)
+        self.store_state()
+        result = self._execute(context)
+        IfcStore.add_transaction_operation(self)
+        IfcStore.end_transaction(self)
+        return result
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         colours = cycle(colour_list)
         ifc_classes = {}
@@ -203,9 +262,23 @@ class ColourByClass(bpy.types.Operator):
             if ifc_class not in ifc_classes:
                 ifc_classes[ifc_class] = next(colours)
             obj.color = ifc_classes[ifc_class]
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].shading.color_type = "OBJECT"
+        areas = [a for a in bpy.context.screen.areas if a.type == "VIEW_3D"]
+        if areas:
+            areas[0].spaces[0].shading.color_type = "OBJECT"
         return {"FINISHED"}
+
+    def store_state(self):
+        areas = [a for a in bpy.context.screen.areas if a.type == "VIEW_3D"]
+        if areas:
+            self.transaction_data = {"area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
+
+    def rollback(self, data):
+        if data:
+            data["area"].spaces[0].shading.color_type = data["color_type"]
+
+    def commit(self, data):
+        if data:
+            data["area"].spaces[0].shading.color_type = "OBJECT"
 
 
 class ResetObjectColours(bpy.types.Operator):

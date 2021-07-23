@@ -8,6 +8,7 @@ from ifcopenshell.api.resource.data import Data
 class LoadResources(bpy.types.Operator):
     bl_idname = "bim.load_resources"
     bl_label = "Load Resources"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         self.props = context.scene.BIMResourceProperties
@@ -41,6 +42,7 @@ class LoadResources(bpy.types.Operator):
 class EnableEditingResource(bpy.types.Operator):
     bl_idname = "bim.enable_editing_resource"
     bl_label = "Enable Editing Resource"
+    bl_options = {"REGISTER", "UNDO"}
     resource: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -73,6 +75,7 @@ class EnableEditingResource(bpy.types.Operator):
 class LoadResourceProperties(bpy.types.Operator):
     bl_idname = "bim.load_resource_properties"
     bl_label = "Load Resource Properties"
+    bl_options = {"REGISTER", "UNDO"}
     resource: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -91,6 +94,7 @@ class LoadResourceProperties(bpy.types.Operator):
 class DisableEditingResource(bpy.types.Operator):
     bl_idname = "bim.disable_editing_resource"
     bl_label = "Disable Editing Workplan"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         context.scene.BIMResourceProperties.active_resource_id = 0
@@ -100,6 +104,7 @@ class DisableEditingResource(bpy.types.Operator):
 class DisableResourceEditingUI(bpy.types.Operator):
     bl_idname = "bim.disable_resource_editing_ui"
     bl_label = "Disable Resources Editing UI"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         context.scene.BIMResourceProperties.is_editing = False
@@ -109,10 +114,14 @@ class DisableResourceEditingUI(bpy.types.Operator):
 class AddResource(bpy.types.Operator):
     bl_idname = "bim.add_resource"
     bl_label = "Add resource"
+    bl_options = {"REGISTER", "UNDO"}
     ifc_class: bpy.props.StringProperty()
     resource: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         ifcopenshell.api.run(
             "resource.add_resource",
             IfcStore.get_file(),
@@ -127,8 +136,12 @@ class AddResource(bpy.types.Operator):
 class EditResource(bpy.types.Operator):
     bl_idname = "bim.edit_resource"
     bl_label = "Edit Resource"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         props = context.scene.BIMResourceProperties
         attributes = {}
         for attribute in props.resource_attributes:
@@ -154,9 +167,13 @@ class EditResource(bpy.types.Operator):
 class RemoveResource(bpy.types.Operator):
     bl_idname = "bim.remove_resource"
     bl_label = "Remove Resource"
+    bl_options = {"REGISTER", "UNDO"}
     resource: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         ifcopenshell.api.run(
             "resource.remove_resource",
             IfcStore.get_file(),
@@ -170,6 +187,7 @@ class RemoveResource(bpy.types.Operator):
 class ExpandResource(bpy.types.Operator):
     bl_idname = "bim.expand_resource"
     bl_label = "Expand Resource"
+    bl_options = {"REGISTER", "UNDO"}
     resource: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -186,6 +204,7 @@ class ExpandResource(bpy.types.Operator):
 class ContractResource(bpy.types.Operator):
     bl_idname = "bim.contract_resource"
     bl_label = "Contract Resource"
+    bl_options = {"REGISTER", "UNDO"}
     resource: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -202,10 +221,14 @@ class ContractResource(bpy.types.Operator):
 class AssignResource(bpy.types.Operator):
     bl_idname = "bim.assign_resource"
     bl_label = "Assign Resource"
+    bl_options = {"REGISTER", "UNDO"}
     resource: bpy.props.IntProperty()
     related_object: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         related_objects = (
             [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
         )
@@ -224,6 +247,7 @@ class AssignResource(bpy.types.Operator):
 class UnassignResource(bpy.types.Operator):
     bl_idname = "bim.unassign_resource"
     bl_label = "Unassign Resource"
+    bl_options = {"REGISTER", "UNDO"}
     resource: bpy.props.IntProperty()
     related_object: bpy.props.StringProperty()
 

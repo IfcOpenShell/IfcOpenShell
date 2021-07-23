@@ -41,6 +41,7 @@ class BIM_PT_representations(Panel):
             row.label(text=representation["ContextOfItems"]["TargetView"])
             row.label(text=representation["RepresentationType"])
             op = row.operator("bim.switch_representation", icon="OUTLINER_DATA_MESH", text="")
+            op.should_switch_all_meshes = True
             op.should_reload = True
             op.ifc_definition_id = ifc_definition_id
             op.disable_opening_subtractions = False
@@ -71,10 +72,12 @@ class BIM_PT_mesh(Panel):
 
         row = layout.row(align=True)
         op = row.operator("bim.switch_representation", text="Bake Voids", icon="SELECT_SUBTRACT")
+        op.should_switch_all_meshes=True
         op.should_reload = True
         op.ifc_definition_id = props.ifc_definition_id
         op.disable_opening_subtractions = False
         op = row.operator("bim.switch_representation", text="Dynamic Voids", icon="SELECT_INTERSECT")
+        op.should_switch_all_meshes=True
         op.should_reload = True
         op.ifc_definition_id = props.ifc_definition_id
         op.disable_opening_subtractions = True
@@ -109,6 +112,10 @@ class BIM_PT_mesh(Panel):
 
 def BIM_PT_transform(self, context):
     if context.active_object and context.active_object.BIMObjectProperties.ifc_definition_id:
+        row = self.layout.row(align=True)
+        row.label(text="Blender Offset")
+        row.label(text=context.active_object.BIMObjectProperties.blender_offset_type)
+
         row = self.layout.row()
         row.operator("bim.edit_object_placement")
 

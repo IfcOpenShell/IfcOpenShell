@@ -190,12 +190,16 @@ def add_object(self, context):
 class BIM_OT_add_object(Operator):
     bl_idname = "mesh.add_door"
     bl_label = "Dumb Door"
+    bl_options = {"REGISTER", "UNDO"}
 
     overall_width: FloatProperty(name="Overall Width", default=0.85)
     overall_height: FloatProperty(name="Overall Height", default=2.1)
     depth: FloatProperty(name="Depth", default=0.2)
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         add_object(self, context)
         return {"FINISHED"}
 

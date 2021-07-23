@@ -37,6 +37,12 @@
 #ifdef HAS_SCHEMA_4x3_rc2
 #include "../ifcparse/Ifc4x3_rc2.h"
 #endif
+#ifdef HAS_SCHEMA_4x3_rc3
+#include "../ifcparse/Ifc4x3_rc3.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_rc4
+#include "../ifcparse/Ifc4x3_rc4.h"
+#endif
 
 double IfcParse::IfcSIPrefixToValue(const std::string& v) {
 	if      ( v == "EXA"   ) return 1.e18;
@@ -107,6 +113,12 @@ template double IFC_PARSE_API IfcParse::get_SI_equivalent<Ifc4x3_rc1>(Ifc4x3_rc1
 #ifdef HAS_SCHEMA_4x3_rc2
 template double IFC_PARSE_API IfcParse::get_SI_equivalent<Ifc4x3_rc2>(Ifc4x3_rc2::IfcNamedUnit* named_unit);
 #endif
+#ifdef HAS_SCHEMA_4x3_rc3
+template double IFC_PARSE_API IfcParse::get_SI_equivalent<Ifc4x3_rc3>(Ifc4x3_rc3::IfcNamedUnit* named_unit);
+#endif
+#ifdef HAS_SCHEMA_4x3_rc4
+template double IFC_PARSE_API IfcParse::get_SI_equivalent<Ifc4x3_rc4>(Ifc4x3_rc4::IfcNamedUnit* named_unit);
+#endif
 
 #else
 
@@ -127,6 +139,12 @@ template double IFC_PARSE_API IfcParse::get_SI_equivalent<Ifc4x3_rc1>(typename I
 #endif
 #ifdef HAS_SCHEMA_4x3_rc2
 template double IFC_PARSE_API IfcParse::get_SI_equivalent<Ifc4x3_rc2>(typename Ifc4x3_rc2::IfcNamedUnit* named_unit);
+#endif
+#ifdef HAS_SCHEMA_4x3_rc3
+template double IFC_PARSE_API IfcParse::get_SI_equivalent<Ifc4x3_rc3>(typename Ifc4x3_rc3::IfcNamedUnit* named_unit);
+#endif
+#ifdef HAS_SCHEMA_4x3_rc4
+template double IFC_PARSE_API IfcParse::get_SI_equivalent<Ifc4x3_rc4>(typename Ifc4x3_rc4::IfcNamedUnit* named_unit);
 #endif
 
 #endif

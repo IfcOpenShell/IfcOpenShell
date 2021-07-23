@@ -9,10 +9,14 @@ from blenderbim.bim.module.spatial.prop import getSpatialContainers
 class AssignContainer(bpy.types.Operator):
     bl_idname = "bim.assign_container"
     bl_label = "Assign Container"
+    bl_options = {"REGISTER", "UNDO"}
     relating_structure: bpy.props.IntProperty()
     related_element: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         related_elements = (
             [bpy.data.objects.get(self.related_element)] if self.related_element else bpy.context.selected_objects
@@ -65,6 +69,7 @@ class AssignContainer(bpy.types.Operator):
 class EnableEditingContainer(bpy.types.Operator):
     bl_idname = "bim.enable_editing_container"
     bl_label = "Enable Editing Container"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         bpy.context.active_object.BIMObjectSpatialProperties.is_editing = True
@@ -75,6 +80,7 @@ class EnableEditingContainer(bpy.types.Operator):
 class ChangeSpatialLevel(bpy.types.Operator):
     bl_idname = "bim.change_spatial_level"
     bl_label = "Change Spatial Level"
+    bl_options = {"REGISTER", "UNDO"}
     parent_id: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -85,6 +91,7 @@ class ChangeSpatialLevel(bpy.types.Operator):
 class DisableEditingContainer(bpy.types.Operator):
     bl_idname = "bim.disable_editing_container"
     bl_label = "Disable Editing Container"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -96,9 +103,13 @@ class DisableEditingContainer(bpy.types.Operator):
 class RemoveContainer(bpy.types.Operator):
     bl_idname = "bim.remove_container"
     bl_label = "Remove Container"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         oprops = obj.BIMObjectProperties
         self.file = IfcStore.get_file()
@@ -129,9 +140,13 @@ class RemoveContainer(bpy.types.Operator):
 class CopyToContainer(bpy.types.Operator):
     bl_idname = "bim.copy_to_container"
     bl_label = "Copy To Container"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         objects = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
         sprops = context.scene.BIMSpatialProperties

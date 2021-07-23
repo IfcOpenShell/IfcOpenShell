@@ -13,11 +13,11 @@ class Usecase:
     def execute(self):
         self.settings["person"] = ifcopenshell.api.owner.settings.get_person(self.file)
         self.settings["organisation"] = ifcopenshell.api.owner.settings.get_organisation(self.file)
+        application = ifcopenshell.api.owner.settings.get_application(self.file)
         if self.file.schema != "IFC2X3":
-            if not self.settings["person"] or not self.settings["organisation"]:
+            if not self.settings["person"] or not self.settings["organisation"] or not application:
                 return
         user = self.get_user()
-        application = ifcopenshell.api.owner.settings.get_application(self.file)
         return self.file.create_entity(
             "IfcOwnerHistory",
             **{

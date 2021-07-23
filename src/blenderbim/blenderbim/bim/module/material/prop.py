@@ -49,6 +49,11 @@ def getParameterizedProfileClasses(self, context):
             (t.name(), t.name(), "")
             for t in IfcStore.get_schema().declaration_by_name("IfcParameterizedProfileDef").subtypes()
         ]
+        for ifc_class in parameterizedprofileclasses_enum:
+            parameterizedprofileclasses_enum.extend([
+                (t.name(), t.name(), "")
+                for t in IfcStore.get_schema().declaration_by_name(ifc_class[0]).subtypes() or []
+            ])
     return parameterizedprofileclasses_enum
 
 

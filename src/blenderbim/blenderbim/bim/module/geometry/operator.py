@@ -18,7 +18,6 @@ class EditObjectPlacement(bpy.types.Operator):
     bl_idname = "bim.edit_object_placement"
     bl_label = "Edit Object Placement"
     bl_options = {"REGISTER", "UNDO"}
-    transaction_key: bpy.props.StringProperty()
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -33,7 +32,7 @@ class EditObjectPlacement(bpy.types.Operator):
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             matrix = np.array(obj.matrix_world)
-            if props.has_blender_offset and props.blender_offset_type == "OBJECT_PLACEMENT":
+            if props.has_blender_offset and obj.BIMObjectProperties.blender_offset_type == "OBJECT_PLACEMENT":
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
                 # TODO: np.array? Why not matrix?
                 matrix = np.array(
@@ -60,12 +59,16 @@ class EditObjectPlacement(bpy.types.Operator):
 class AddRepresentation(bpy.types.Operator):
     bl_idname = "bim.add_representation"
     bl_label = "Add Representation"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     context_id: bpy.props.IntProperty()
     ifc_representation_class: bpy.props.StringProperty()
     profile_set_usage: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         self.file = IfcStore.get_file()
 
@@ -81,7 +84,7 @@ class AddRepresentation(bpy.types.Operator):
 
         gprop = context.scene.BIMGeoreferenceProperties
         coordinate_offset = None
-        if gprop.has_blender_offset and gprop.blender_offset_type == "CARTESIAN_POINT":
+        if gprop.has_blender_offset and obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT":
             coordinate_offset = Vector(
                 (
                     float(gprop.blender_eastings),
@@ -99,7 +102,7 @@ class AddRepresentation(bpy.types.Operator):
             "should_force_faceted_brep": context.scene.BIMGeometryProperties.should_force_faceted_brep,
             "should_force_triangulation": context.scene.BIMGeometryProperties.should_force_triangulation,
             "ifc_representation_class": self.ifc_representation_class,
-            "profile_set_usage": self.file.by_id(self.profile_set_usage) if self.profile_set_usage else None
+            "profile_set_usage": self.file.by_id(self.profile_set_usage) if self.profile_set_usage else None,
         }
 
         result = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
@@ -114,19 +117,20 @@ class AddRepresentation(bpy.types.Operator):
             if s.material and not s.material.BIMMaterialProperties.ifc_style_id
         ]
 
-        ifcopenshell.api.run(
-            "geometry.assign_styles",
-            self.file,
-            **{
-                "shape_representation": result,
-                "styles": [
-                    self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
-                    for s in obj.material_slots
-                    if s.material
-                ],
-                "should_use_presentation_style_assignment": context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
-            },
-        )
+        if isinstance(obj.data, bpy.types.Mesh) and len(obj.data.polygons):
+            ifcopenshell.api.run(
+                "style.assign_representation_styles",
+                self.file,
+                **{
+                    "shape_representation": result,
+                    "styles": [
+                        self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
+                        for s in obj.material_slots
+                        if s.material
+                    ],
+                    "should_use_presentation_style_assignment": context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
+                },
+            )
         ifcopenshell.api.run(
             "geometry.assign_representation", self.file, **{"product": product, "representation": result}
         )
@@ -152,10 +156,12 @@ class AddRepresentation(bpy.types.Operator):
 class SwitchRepresentation(bpy.types.Operator):
     bl_idname = "bim.switch_representation"
     bl_label = "Switch Representation"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     ifc_definition_id: bpy.props.IntProperty()
     should_reload: bpy.props.BoolProperty()
     disable_opening_subtractions: bpy.props.BoolProperty()
+    should_switch_all_meshes: bpy.props.BoolProperty()
 
     def execute(self, context):
         self.element_obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
@@ -167,10 +173,16 @@ class SwitchRepresentation(bpy.types.Operator):
 
         mesh = bpy.data.meshes.get(self.mesh_name)
         if mesh:
-            self.element_obj.data.user_remap(mesh)
+            self.switch_mesh(mesh)
         if not mesh or self.should_reload:
             self.pull_mesh_from_ifc()
         return {"FINISHED"}
+
+    def switch_mesh(self, mesh):
+        if self.should_switch_all_meshes or self.file.by_id(self.oprops.ifc_definition_id).is_a("IfcTypeProduct"):
+            self.element_obj.data.user_remap(mesh)
+        else:
+            self.element_obj.data = mesh
 
     def get_mesh_name(self):
         representation = self.resolve_mapped_representation(self.file.by_id(self.ifc_definition_id))
@@ -201,8 +213,9 @@ class SwitchRepresentation(bpy.types.Operator):
         mesh = ifc_importer.create_mesh(element, shape)
         mesh.name = self.mesh_name
         mesh.BIMMeshProperties.ifc_definition_id = self.ifc_definition_id
-        self.element_obj.data.user_remap(mesh)
+        self.switch_mesh(mesh)
         material_creator = import_ifc.MaterialCreator(ifc_import_settings, ifc_importer)
+        material_creator.load_existing_materials()
         material_creator.create(element, self.element_obj, mesh)
 
         if self.disable_opening_subtractions and self.context_of_items.ContextIdentifier == "Body":
@@ -224,10 +237,14 @@ class SwitchRepresentation(bpy.types.Operator):
 class RemoveRepresentation(bpy.types.Operator):
     bl_idname = "bim.remove_representation"
     bl_label = "Remove Representation"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     representation_id: bpy.props.IntProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         representation = self.file.by_id(self.representation_id)
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
@@ -260,10 +277,14 @@ class RemoveRepresentation(bpy.types.Operator):
 class UpdateRepresentation(bpy.types.Operator):
     bl_idname = "bim.update_representation"
     bl_label = "Update Representation"
+    bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     ifc_representation_class: bpy.props.StringProperty()
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         if not ContextData.is_loaded:
             ContextData.load(IfcStore.get_file())
 
@@ -289,7 +310,7 @@ class UpdateRepresentation(bpy.types.Operator):
 
         gprop = context.scene.BIMGeoreferenceProperties
         coordinate_offset = None
-        if gprop.has_blender_offset and gprop.blender_offset_type == "CARTESIAN_POINT":
+        if gprop.has_blender_offset and obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT":
             coordinate_offset = Vector(
                 (
                     float(gprop.blender_eastings),
@@ -311,19 +332,26 @@ class UpdateRepresentation(bpy.types.Operator):
 
         new_representation = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
 
-        ifcopenshell.api.run(
-            "geometry.assign_styles",
-            self.file,
-            **{
-                "shape_representation": new_representation,
-                "styles": [
-                    self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
-                    for s in obj.material_slots
-                    if s.material
-                ],
-                "should_use_presentation_style_assignment": context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
-            },
-        )
+        [
+            bpy.ops.bim.add_style(material=s.material.name)
+            for s in obj.material_slots
+            if s.material and not s.material.BIMMaterialProperties.ifc_style_id
+        ]
+
+        if isinstance(obj.data, bpy.types.Mesh) and len(obj.data.polygons):
+            ifcopenshell.api.run(
+                "style.assign_representation_styles",
+                self.file,
+                **{
+                    "shape_representation": new_representation,
+                    "styles": [
+                        self.file.by_id(s.material.BIMMaterialProperties.ifc_style_id)
+                        for s in obj.material_slots
+                        if s.material
+                    ],
+                    "should_use_presentation_style_assignment": context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
+                },
+            )
 
         # TODO: move this into a replace_representation usecase or something
         for inverse in self.file.get_inverse(old_representation):
@@ -338,6 +366,7 @@ class UpdateRepresentation(bpy.types.Operator):
 class UpdateParametricRepresentation(bpy.types.Operator):
     bl_idname = "bim.update_parametric_representation"
     bl_label = "Update Parametric Representation"
+    bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -346,13 +375,16 @@ class UpdateParametricRepresentation(bpy.types.Operator):
         props = obj.data.BIMMeshProperties
         parameter = props.ifc_parameters[self.index]
         element = IfcStore.get_file().by_id(parameter.step_id)[parameter.index] = parameter.value
-        bpy.ops.bim.switch_representation(ifc_definition_id=props.ifc_definition_id, should_reload=True)
+        bpy.ops.bim.switch_representation(
+            ifc_definition_id=props.ifc_definition_id, should_reload=True, should_switch_all_meshes=True
+        )
         return {"FINISHED"}
 
 
 class GetRepresentationIfcParameters(bpy.types.Operator):
     bl_idname = "bim.get_representation_ifc_parameters"
     bl_label = "Get Representation IFC Parameters"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         self.file = IfcStore.get_file()

@@ -5,6 +5,7 @@ import ifcopenshell.api.owner.settings
 from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.attribute.data import Data as AttributeData
+from ifcopenshell.api.material.data import Data as MaterialData
 from ifcopenshell.api.type.data import Data as TypeData
 
 
@@ -12,6 +13,8 @@ global_subscription_owner = object()
 
 
 def mode_callback(obj, data):
+    if not bpy.context.scene.BIMProjectProperties.is_authoring:
+        return
     objects = bpy.context.selected_objects
     if bpy.context.active_object:
         objects += [bpy.context.active_object]
@@ -21,9 +24,8 @@ def mode_callback(obj, data):
             or not obj.data
             or not isinstance(obj.data, (bpy.types.Mesh, bpy.types.Curve, bpy.types.TextCurve))
             or not obj.BIMObjectProperties.ifc_definition_id
-            or not bpy.context.scene.BIMProjectProperties.is_authoring
         ):
-            return
+            continue
         if obj.data.BIMMeshProperties.ifc_definition_id:
             representation = IfcStore.get_file().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
             if representation.RepresentationType in ["Tessellation", "Brep", "Annotation2D"]:
@@ -33,8 +35,24 @@ def mode_callback(obj, data):
 
 
 def name_callback(obj, data):
-    # Blender material names are up to 63 UTF-8 bytes
-    if not obj.BIMObjectProperties.ifc_definition_id or "/" not in obj.name or len(bytes(obj.name, "utf-8")) >= 63:
+    try:
+        obj.name
+    except:
+        return  # In case the object RNA is gone during an undo / redo operation
+    # Blender names are up to 63 UTF-8 bytes
+    if len(bytes(obj.name, "utf-8")) >= 63:
+        return
+
+    if isinstance(obj, bpy.types.Material):
+        if obj.BIMObjectProperties.ifc_definition_id:
+            IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id).Name = obj.name
+            AttributeData.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+            MaterialData.load_materials()
+        if obj.BIMMaterialProperties.ifc_style_id:
+            IfcStore.get_file().by_id(obj.BIMMaterialProperties.ifc_style_id).Name = obj.name
+        return
+
+    if not obj.BIMObjectProperties.ifc_definition_id or "/" not in obj.name:
         return
     element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
     if not element.is_a("IfcRoot"):
@@ -69,7 +87,10 @@ def active_object_callback():
 
 
 def subscribe_to(object, data_path, callback):
-    subscribe_to = object.path_resolve(data_path, False)
+    try:
+        subscribe_to = object.path_resolve(data_path, False)
+    except:
+        return
     bpy.msgbus.subscribe_rna(
         key=subscribe_to,
         owner=object,
@@ -111,11 +132,23 @@ def loadIfcStore(scene):
 
 
 @persistent
+def undo_pre(scene):
+    IfcStore.update_undo_redo_stack_objects()
+
+
+@persistent
 def undo_post(scene):
     if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
         IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
         IfcStore.undo()
-    IfcStore.reload_linked_elements(should_reload_selected=True)
+        purge_module_data()
+    IfcStore.update_undo_redo_stack_objects()
+    IfcStore.reload_linked_elements(objects=[bpy.data.objects.get(o) for o in IfcStore.undo_redo_stack_objects])
+
+
+@persistent
+def redo_pre(scene):
+    IfcStore.update_undo_redo_stack_objects()
 
 
 @persistent
@@ -123,7 +156,9 @@ def redo_post(scene):
     if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
         IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
         IfcStore.redo()
-    IfcStore.reload_linked_elements(should_reload_selected=True)
+        purge_module_data()
+    IfcStore.update_undo_redo_stack_objects()
+    IfcStore.reload_linked_elements(objects=[bpy.data.objects.get(o) for o in IfcStore.undo_redo_stack_objects])
 
 
 @persistent
@@ -137,14 +172,12 @@ def get_application(ifc):
     for element in ifc.by_type("IfcApplication"):
         if element.ApplicationIdentifier == "BlenderBIM" and element.Version == version:
             return element
-    return ifc.create_entity(
-        "IfcApplication",
-        **{
-            "ApplicationDeveloper": create_application_organisation(ifc),
-            "Version": get_application_version(),
-            "ApplicationFullName": "BlenderBIM Add-on",
-            "ApplicationIdentifier": "BlenderBIM",
-        },
+    return ifcopenshell.api.run(
+        "owner.add_application",
+        ifc,
+        version=get_application_version(),
+        application_full_name="BlenderBIM Add-on",
+        application_identifier="BlenderBIM",
     )
 
 
@@ -158,46 +191,6 @@ def get_application_version():
                 if addon.bl_info["name"] == "BlenderBIM"
             ][0]
         ]
-    )
-
-
-def create_application_organisation(ifc):
-    return ifc.create_entity(
-        "IfcOrganization",
-        **{
-            "Name": "IfcOpenShell",
-            "Description": "IfcOpenShell is an open source (LGPL) software library that helps users and software developers to work with the IFC file format.",
-            "Roles": [ifc.create_entity("IfcActorRole", **{"Role": "USERDEFINED", "UserDefinedRole": "CONTRIBUTOR"})],
-            "Addresses": [
-                ifc.create_entity(
-                    "IfcTelecomAddress",
-                    **{
-                        "Purpose": "USERDEFINED",
-                        "UserDefinedPurpose": "WEBPAGE",
-                        "Description": "The main webpage of the software collection.",
-                        "WWWHomePageURL": "https://ifcopenshell.org",
-                    },
-                ),
-                ifc.create_entity(
-                    "IfcTelecomAddress",
-                    **{
-                        "Purpose": "USERDEFINED",
-                        "UserDefinedPurpose": "WEBPAGE",
-                        "Description": "The BlenderBIM Add-on webpage of the software collection.",
-                        "WWWHomePageURL": "https://blenderbim.org",
-                    },
-                ),
-                ifc.create_entity(
-                    "IfcTelecomAddress",
-                    **{
-                        "Purpose": "USERDEFINED",
-                        "UserDefinedPurpose": "REPOSITORY",
-                        "Description": "The source code repository of the software collection.",
-                        "WWWHomePageURL": "https://github.com/IfcOpenShell/IfcOpenShell.git",
-                    },
-                ),
-            ],
-        },
     )
 
 

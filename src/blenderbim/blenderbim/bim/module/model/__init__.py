@@ -3,7 +3,8 @@ from . import handler, prop, ui, grid, product, wall, slab, stair, door, window,
 
 classes = (
     product.AddTypeInstance,
-    wall.AddWall,
+    product.AlignProduct,
+    workspace.Hotkey,
     wall.JoinWall,
     wall.AlignWall,
     wall.FlipWall,
@@ -20,13 +21,6 @@ classes = (
     pie.OpenPieClass,
     pie.PieUpdateContainer,
     pie.PieAddOpening,
-    pie.AssignIfcWall,
-    pie.AssignIfcSlab,
-    pie.AssignIfcStair,
-    pie.AssignIfcDoor,
-    pie.AssignIfcWindow,
-    pie.AssignIfcColumn,
-    pie.AssignIfcBeam,
     pie.VIEW3D_MT_PIE_bim,
     pie.VIEW3D_MT_PIE_bim_class,
 )

@@ -97,6 +97,8 @@ class BIM_PT_object_material(Panel):
                 self.material_set_data = Data.lists[self.material_set_id]
                 self.set_items = self.material_set_data["Materials"] or []
                 self.set_item_name = "list_item"
+            else:
+                self.material_set_id = 0
             return self.draw_material_ui()
 
         row = self.layout.row(align=True)
@@ -316,11 +318,11 @@ class BIM_PT_object_material(Panel):
                 item_name = item.get("Name", "Unnamed") or "Unnamed"
                 thickness = item.get("LayerThickness")
                 if thickness:
-                    item_name += f" ({thickness})"
+                    item_name += f" ({thickness:.3f})"
                     total_thickness += thickness
                 row.label(text=item_name, icon="ALIGN_CENTER")
                 row.label(text=Data.materials[item["Material"]]["Name"], icon="MATERIAL")
 
         if total_thickness:
             row = self.layout.row(align=True)
-            row.label(text=f"Total Thickness: {total_thickness}")
+            row.label(text=f"Total Thickness: {total_thickness:.3f}")

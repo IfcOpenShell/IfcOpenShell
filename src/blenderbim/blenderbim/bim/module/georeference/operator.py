@@ -12,6 +12,7 @@ from math import radians, degrees, atan, tan, cos, sin
 class EnableEditingGeoreferencing(bpy.types.Operator):
     bl_idname = "bim.enable_editing_georeferencing"
     bl_label = "Enable Editing Georeferencing"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         self.file = IfcStore.get_file()
@@ -55,12 +56,11 @@ class EnableEditingGeoreferencing(bpy.types.Operator):
             data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
             if data_type == "entity" or data_type == "select":
                 continue
-            print(attribute.name(), data_type)
             new = props.map_conversion.add()
             new.name = attribute.name()
             new.is_null = Data.map_conversion[attribute.name()] is None
             new.is_optional = attribute.optional()
-            # Enforce a string data type to prevent data loss in singpe-precision Blender props
+            # Enforce a string data type to prevent data loss in single-precision Blender props
             new.data_type = "string"
             new.string_value = "" if new.is_null else str(Data.map_conversion[attribute.name()])
 
@@ -76,6 +76,7 @@ class EnableEditingGeoreferencing(bpy.types.Operator):
 class DisableEditingGeoreferencing(bpy.types.Operator):
     bl_idname = "bim.disable_editing_georeferencing"
     bl_label = "Disable Editing Georeferencing"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         props = context.scene.BIMGeoreferenceProperties
@@ -86,8 +87,12 @@ class DisableEditingGeoreferencing(bpy.types.Operator):
 class EditGeoreferencing(bpy.types.Operator):
     bl_idname = "bim.edit_georeferencing"
     bl_label = "Edit Georeferencing"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         self.file = IfcStore.get_file()
         props = context.scene.BIMGeoreferenceProperties
 
@@ -149,6 +154,7 @@ class EditGeoreferencing(bpy.types.Operator):
 class SetBlenderGridNorth(bpy.types.Operator):
     bl_idname = "bim.set_blender_grid_north"
     bl_label = "Set Blender Grid North"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         context.scene.sun_pos_properties.north_offset = -radians(
@@ -163,6 +169,7 @@ class SetBlenderGridNorth(bpy.types.Operator):
 class SetIfcGridNorth(bpy.types.Operator):
     bl_idname = "bim.set_ifc_grid_north"
     bl_label = "Set IFC Grid North"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         x_angle = -context.scene.sun_pos_properties.north_offset
@@ -174,6 +181,7 @@ class SetIfcGridNorth(bpy.types.Operator):
 class SetBlenderTrueNorth(bpy.types.Operator):
     bl_idname = "bim.set_blender_true_north"
     bl_label = "Set Blender True North"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         context.scene.sun_pos_properties.north_offset = -radians(
@@ -188,6 +196,7 @@ class SetBlenderTrueNorth(bpy.types.Operator):
 class SetIfcTrueNorth(bpy.types.Operator):
     bl_idname = "bim.set_ifc_true_north"
     bl_label = "Set IFC True North"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         y_angle = -context.scene.sun_pos_properties.north_offset + radians(90)
@@ -199,8 +208,12 @@ class SetIfcTrueNorth(bpy.types.Operator):
 class RemoveGeoreferencing(bpy.types.Operator):
     bl_idname = "bim.remove_georeferencing"
     bl_label = "Remove Georeferencing"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         ifcopenshell.api.run("georeference.remove_georeferencing", IfcStore.get_file())
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
@@ -209,8 +222,12 @@ class RemoveGeoreferencing(bpy.types.Operator):
 class AddGeoreferencing(bpy.types.Operator):
     bl_idname = "bim.add_georeferencing"
     bl_label = "Add Georeferencing"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         ifcopenshell.api.run("georeference.add_georeferencing", IfcStore.get_file())
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
@@ -219,6 +236,7 @@ class AddGeoreferencing(bpy.types.Operator):
 class ConvertLocalToGlobal(bpy.types.Operator):
     bl_idname = "bim.convert_local_to_global"
     bl_label = "Convert Local To Global"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         if not Data.is_loaded:
@@ -226,11 +244,7 @@ class ConvertLocalToGlobal(bpy.types.Operator):
         props = context.scene.BIMGeoreferenceProperties
         x, y, z = [float(co) for co in props.coordinate_input.split(",")]
 
-        if props.has_blender_offset and props.blender_offset_type == "CARTESIAN_POINT":
-            x -= float(props.blender_eastings)
-            y -= float(props.blender_northings)
-            z -= float(props.blender_orthogonal_height)
-        elif props.has_blender_offset and props.blender_offset_type == "OBJECT_PLACEMENT":
+        if props.has_blender_offset:
             results = ifcopenshell.util.geolocation.xyz2enh(
                 x,
                 y,
@@ -269,6 +283,7 @@ class ConvertLocalToGlobal(bpy.types.Operator):
 class ConvertGlobalToLocal(bpy.types.Operator):
     bl_idname = "bim.convert_global_to_local"
     bl_label = "Convert Global To Local"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         if not Data.is_loaded:
@@ -291,11 +306,7 @@ class ConvertGlobalToLocal(bpy.types.Operator):
         else:
             results = (x, y, z)
 
-        if props.has_blender_offset and props.blender_offset_type == "CARTESIAN_POINT":
-            results[0] += float(props.blender_eastings)
-            results[1] += float(props.blender_northings)
-            results[2] += float(props.blender_orthogonal_height)
-        elif props.has_blender_offset and props.blender_offset_type == "OBJECT_PLACEMENT":
+        if props.has_blender_offset:
             results = ifcopenshell.util.geolocation.enh2xyz(
                 results[0],
                 results[1],
@@ -318,6 +329,7 @@ class ConvertGlobalToLocal(bpy.types.Operator):
 class GetCursorLocation(bpy.types.Operator):
     bl_idname = "bim.get_cursor_location"
     bl_label = "Get Cursor Location"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         props = context.scene.BIMGeoreferenceProperties
@@ -330,6 +342,7 @@ class GetCursorLocation(bpy.types.Operator):
 class SetCursorLocation(bpy.types.Operator):
     bl_idname = "bim.set_cursor_location"
     bl_label = "Set Cursor Location"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         props = context.scene.BIMGeoreferenceProperties

@@ -101,6 +101,9 @@ class BIM_OT_add_object(Operator):
     total_v: IntProperty(name="Number of V Grids", default=3)
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         add_object(self, context)
         return {"FINISHED"}
 

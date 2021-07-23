@@ -1,8 +1,18 @@
 import bpy
 import logging
 import ifcopenshell
+import ifcopenshell.util.placement
 import blenderbim.bim.import_ifc as import_ifc
 from blenderbim.bim.ifc import IfcStore
+
+
+class PrintIfcFile(bpy.types.Operator):
+    bl_idname = "bim.print_ifc_file"
+    bl_label = "Print IFC File"
+
+    def execute(self, context):
+        print(IfcStore.get_file().wrapped_data.to_string())
+        return {"FINISHED"}
 
 
 class ValidateIfcFile(bpy.types.Operator):
@@ -67,8 +77,12 @@ class CreateAllShapes(bpy.types.Operator):
 class CreateShapeFromStepId(bpy.types.Operator):
     bl_idname = "bim.create_shape_from_step_id"
     bl_label = "Create Shape From STEP ID"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         logger = logging.getLogger("ImportIFC")
         self.ifc_import_settings = import_ifc.IfcImportSettings.factory(bpy.context, IfcStore.path, logger)
         self.file = IfcStore.get_file()
@@ -87,6 +101,7 @@ class CreateShapeFromStepId(bpy.types.Operator):
 class SelectHighPolygonMeshes(bpy.types.Operator):
     bl_idname = "bim.select_high_polygon_meshes"
     bl_label = "Select High Polygon Meshes"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         results = {}
@@ -176,4 +191,14 @@ class InspectFromObject(bpy.types.Operator):
         if not ifc_definition_id:
             return {"FINISHED"}
         bpy.ops.bim.inspect_from_step_id(step_id=ifc_definition_id)
+        return {"FINISHED"}
+
+
+class PrintObjectPlacement(bpy.types.Operator):
+    bl_idname = "bim.print_object_placement"
+    bl_label = "Print Object Placement"
+    step_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        print(ifcopenshell.util.placement.get_local_placement(IfcStore.get_file().by_id(self.step_id)))
         return {"FINISHED"}

@@ -39,6 +39,10 @@ class Transaction:
     def __init__(self, ifc_file):
         self.file = ifc_file
         self.operations = []
+        self.is_batched = False
+        self.batch_delete_index = 0
+        self.batch_delete_ids = set()
+        self.batch_inverses = []
 
     def serialise_entity_instance(self, element):
         info = element.get_info()
@@ -47,13 +51,37 @@ class Transaction:
         return info
 
     def serialise_value(self, element, value):
-        return element.walk(lambda v: isinstance(v, entity_instance), lambda v: {"id": v.id()}, value)
+        return element.walk(
+            lambda v: isinstance(v, entity_instance),
+            lambda v: {"id": v.id()} if v.id() else {"type": v.is_a(), "value": v.wrappedValue},
+            value,
+        )
 
     def unserialise_value(self, element, value):
-        return element.walk(lambda v: isinstance(v, dict), lambda v: self.file.by_id(v["id"]), value)
+        return element.walk(
+            lambda v: isinstance(v, dict),
+            lambda v: self.file.by_id(v["id"]) if v.get("id") else self.file.create_entity(v["type"], v["value"]),
+            value,
+        )
+
+    def batch(self):
+        self.is_batched = True
+        self.batch_delete_index = len(self.operations)
+        self.batch_delete_ids = set()
+        self.batch_inverses = []
+
+    def unbatch(self):
+        for inverses in self.batch_inverses:
+            if inverses:
+                self.operations.insert(self.batch_delete_index, {"action": "batch_delete", "inverses": inverses})
+        self.is_batched = False
+        self.batch_delete_index = 0
+        self.batch_delete_ids = set()
+        self.batch_inverses = []
 
     def store_create(self, element):
-        self.operations.append({"action": "create", "value": self.serialise_entity_instance(element)})
+        if element.id():
+            self.operations.append({"action": "create", "value": self.serialise_entity_instance(element)})
 
     def store_edit(self, element, index, value):
         self.operations.append(
@@ -68,17 +96,31 @@ class Transaction:
 
     def store_delete(self, element):
         inverses = {}
-        for inverse in self.file.get_inverse(element):
-            inverse_references = []
-            for i, attribute in enumerate(inverse):
-                if attribute == element:
-                    inverse_references.append((i, "single"))
-                elif isinstance(attribute, tuple) and element in attribute:
-                    inverse_references.append((i, "multiple"))
-            inverses[inverse.id()] = inverse_references
+        if self.is_batched:
+            if element.id() not in self.batch_delete_ids:
+                self.batch_inverses.append(self.get_element_inverses(element))
+            self.batch_delete_ids.add(element.id())
+        else:
+            inverses = self.get_element_inverses(element)
         self.operations.append(
             {"action": "delete", "inverses": inverses, "value": self.serialise_entity_instance(element)}
         )
+
+    def get_element_inverses(self, element):
+        inverses = {}
+        for inverse in self.file.get_inverse(element):
+            inverse_references = []
+            for i, attribute in enumerate(inverse):
+                if self.has_element_reference(attribute, element):
+                    inverse_references.append((i, self.serialise_value(inverse, attribute)))
+            inverses[inverse.id()] = inverse_references
+        return inverses
+
+    def has_element_reference(self, value, element):
+        if isinstance(value, (tuple, list)):
+            for v in value:
+                return self.has_element_reference(v, element)
+        return value == element
 
     def rollback(self):
         for operation in self.operations[::-1]:
@@ -105,16 +147,13 @@ class Transaction:
                         pass
                 for inverse_id, data in operation["inverses"].items():
                     inverse = self.file.by_id(inverse_id)
-                    for index, data_type in data:
-                        if data_type == "single":
-                            inverse[index] = e
-                        elif data_type == "multiple":
-                            if inverse[index] is None:
-                                inverse[index] = e
-                            else:
-                                new = list(inverse[index])
-                                new.append(e)
-                                inverse[index] = new
+                    for index, value in data:
+                        inverse[index] = self.unserialise_value(inverse, value)
+            elif operation["action"] == "batch_delete":
+                for inverse_id, data in operation["inverses"].items():
+                    inverse = self.file.by_id(inverse_id)
+                    for index, value in data:
+                        inverse[index] = self.unserialise_value(inverse, value)
 
     def commit(self):
         for operation in self.operations:
@@ -132,6 +171,8 @@ class Transaction:
             elif operation["action"] == "delete":
                 element = self.file.by_id(operation["value"]["id"])
                 self.file.remove(element)
+            elif operation["action"] == "batch_delete":
+                pass
 
 
 class file(object):
@@ -223,14 +264,44 @@ class file(object):
             eid = kwargs.pop("id", -1)
         except:
             pass
+
         e = entity_instance((self.schema, type), self)
-        self.wrapped_data.add(e.wrapped_data, eid)
-        e.wrapped_data.this.disown()
+
+        # Create pairs of {attribute index, attribute value}.
+        # Keyword arguments are mapped to their corresponding
+        # numeric index with get_argument_index().
+
+        # @todo we should probably check that values for
+        # attributes are not passed as duplicates using
+        # both regular arguments and keyword arguments.
         attrs = list(enumerate(args)) + [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
+
+        # Don't store these attributes as transactions
+        # as the creation it self is already stored with
+        # it's arguments
+        if attrs:
+            transaction = self.transaction
+            self.transaction = None
+
         for idx, arg in attrs:
             e[idx] = arg
+
+        # Restore transaction status
+        if attrs:
+            self.transaction = transaction
+
+        # Once the values are populated add the instance
+        # to the file.
+        self.wrapped_data.add(e.wrapped_data, eid)
+
+        # The file container now handles the lifetime of
+        # this instance. Tell SWIG that it is no longer
+        # the owner.
+        e.wrapped_data.this.disown()
+
         if self.transaction:
             self.transaction.store_create(e)
+
         return e
 
     def __getattr__(self, attr):
@@ -329,10 +400,14 @@ class file(object):
 
     def batch(self):
         """Low-level mechanism to speed up deletion of large subgraphs"""
+        if self.transaction:
+            self.transaction.batch()
         return self.wrapped_data.batch()
 
     def unbatch(self):
         """Low-level mechanism to speed up deletion of large subgraphs"""
+        if self.transaction:
+            self.transaction.unbatch()
         return self.wrapped_data.unbatch()
 
     def __iter__(self):

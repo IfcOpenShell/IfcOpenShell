@@ -48,7 +48,7 @@ class entity_instance(object):
         >>> #423=IfcProductDefinitionShape($,$,(#409,#421))
     """
 
-    def __init__(self, e, file):
+    def __init__(self, e, file=None):
         if isinstance(e, tuple):
             e = ifcopenshell_wrapper.new_IfcBaseClass(*e)
         super(entity_instance, self).__setattr__("wrapped_data", e)
@@ -118,8 +118,6 @@ class entity_instance(object):
 
     def __setattr__(self, key, value):
         index = self.wrapped_data.get_argument_index(key)
-        if self.wrapped_data.file.transaction:
-            self.wrapped_data.file.transaction.store_edit(self, index, value)
         self[index] = value
 
     def __getitem__(self, key):
@@ -128,6 +126,9 @@ class entity_instance(object):
         return entity_instance.wrap_value(self.wrapped_data.get_argument(key), self.wrapped_data.file)
 
     def __setitem__(self, idx, value):
+        if self.wrapped_data.file and self.wrapped_data.file.transaction:
+            self.wrapped_data.file.transaction.store_edit(self, idx, value)
+
         attr_type = real_attr_type = self.attribute_type(idx).title().replace(" ", "")
         real_attr_type = real_attr_type.replace("Derived", "None")
         attr_type = attr_type.replace("Binary", "String")

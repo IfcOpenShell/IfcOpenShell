@@ -13,6 +13,7 @@ api = Api()
 class Login(bpy.types.Operator):
     bl_idname = "bim.covetool_login"
     bl_label = "Login to cove.tool"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         token = api.login(bpy.context.scene.CoveToolProperties.username, bpy.context.scene.CoveToolProperties.password)
@@ -196,5 +197,4 @@ class RunAnalysis(bpy.types.Operator):
             return True
 
     def is_window_skylight(self, element):
-        predefined_type = element.get_info().get("PredefinedType")
-        return predefined_type and predefined_type.string_value == "SKYLIGHT"
+        return element.get_info().get("PredefinedType") == "SKYLIGHT"

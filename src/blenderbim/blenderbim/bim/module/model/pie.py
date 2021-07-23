@@ -10,74 +10,15 @@ class OpenPieClass(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AssignIfcWall(bpy.types.Operator):
-    bl_idname = "bim.assign_ifc_wall"
-    bl_label = "IfcWall"
-
-    def execute(self, context):
-        bpy.ops.bim.assign_class(ifc_class="IfcWall")
-        return {"FINISHED"}
-
-
-class AssignIfcSlab(bpy.types.Operator):
-    bl_idname = "bim.assign_ifc_slab"
-    bl_label = "IfcSlab"
-
-    def execute(self, context):
-        bpy.ops.bim.assign_class(ifc_class="IfcSlab")
-        return {"FINISHED"}
-
-
-class AssignIfcStair(bpy.types.Operator):
-    bl_idname = "bim.assign_ifc_stair"
-    bl_label = "IfcStair"
-
-    def execute(self, context):
-        bpy.ops.bim.assign_class(ifc_class="IfcStair")
-        return {"FINISHED"}
-
-
-class AssignIfcDoor(bpy.types.Operator):
-    bl_idname = "bim.assign_ifc_door"
-    bl_label = "IfcDoor"
-
-    def execute(self, context):
-        bpy.ops.bim.assign_class(ifc_class="IfcDoor")
-        return {"FINISHED"}
-
-
-class AssignIfcWindow(bpy.types.Operator):
-    bl_idname = "bim.assign_ifc_window"
-    bl_label = "IfcWindow"
-
-    def execute(self, context):
-        bpy.ops.bim.assign_class(ifc_class="IfcWindow")
-        return {"FINISHED"}
-
-
-class AssignIfcColumn(bpy.types.Operator):
-    bl_idname = "bim.assign_ifc_column"
-    bl_label = "IfcColumn"
-
-    def execute(self, context):
-        bpy.ops.bim.assign_class(ifc_class="IfcColumn")
-        return {"FINISHED"}
-
-
-class AssignIfcBeam(bpy.types.Operator):
-    bl_idname = "bim.assign_ifc_beam"
-    bl_label = "IfcBeam"
-
-    def execute(self, context):
-        bpy.ops.bim.assign_class(ifc_class="IfcBeam")
-        return {"FINISHED"}
-
-
 class PieAddOpening(bpy.types.Operator):
     bl_idname = "bim.pie_add_opening"
     bl_label = "Add Opening"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         if len(context.selected_objects) == 2:
             opening_name = None
             obj_name = None
@@ -95,8 +36,12 @@ class PieAddOpening(bpy.types.Operator):
 class PieUpdateContainer(bpy.types.Operator):
     bl_idname = "bim.pie_update_container"
     bl_label = "Update Spatial Container"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         for obj in context.selected_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
@@ -127,10 +72,10 @@ class VIEW3D_MT_PIE_bim_class(bpy.types.Menu):
 
     def draw(self, context):
         pie = self.layout.menu_pie()
-        pie.operator("bim.assign_ifc_wall")
-        pie.operator("bim.assign_ifc_slab")
-        pie.operator("bim.assign_ifc_stair")
-        pie.operator("bim.assign_ifc_door")
-        pie.operator("bim.assign_ifc_window")
-        pie.operator("bim.assign_ifc_column")
-        pie.operator("bim.assign_ifc_beam")
+        pie.operator("bim.assign_class", text="IfcWall").ifc_class = "IfcWall"
+        pie.operator("bim.assign_class", text="IfcSlab").ifc_class = "IfcSlab"
+        pie.operator("bim.assign_class", text="IfcStair").ifc_class = "IfcStair"
+        pie.operator("bim.assign_class", text="IfcDoor").ifc_class = "IfcDoor"
+        pie.operator("bim.assign_class", text="IfcWindow").ifc_class = "IfcWindow"
+        pie.operator("bim.assign_class", text="IfcColumn").ifc_class = "IfcColumn"
+        pie.operator("bim.assign_class", text="IfcBeam").ifc_class = "IfcBeam"
