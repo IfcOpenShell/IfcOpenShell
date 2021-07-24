@@ -21,3 +21,6 @@ from bimtester.features.steps.project_setup import de, en, fr, it, nl
 
 use_step_matcher("parse")
 from bimtester.features.steps.aggregation import en
+
+use_step_matcher("parse")
+from bimtester.features.steps.attributes_psets import en, de
