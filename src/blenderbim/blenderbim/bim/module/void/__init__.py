@@ -6,6 +6,7 @@ classes = (
     operator.RemoveOpening,
     operator.AddFilling,
     operator.RemoveFilling,
+    operator.ToggleOpeningVisibility,
     prop.VoidProperties,
     ui.BIM_PT_voids,
 )

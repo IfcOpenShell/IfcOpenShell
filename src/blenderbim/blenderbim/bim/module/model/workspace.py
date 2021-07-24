@@ -18,15 +18,16 @@ class BimTool(WorkSpaceTool):
         # ("bim.wall_tool_op", {"type": 'MOUSEMOVE', "value": 'ANY'}, {"properties": []}),
         # ("mesh.add_wall", {"type": 'LEFTMOUSE', "value": 'PRESS'}, {"properties": []}),
         ("bim.add_type_instance", {"type": "A", "value": "PRESS", "shift": True}, {"properties": []}),
-        ("bim.hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "E")]}),
+        ("bim.hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
         ("bim.join_wall", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("join_type", "L")]}),
         ("bim.join_wall", {"type": "Y", "value": "PRESS", "shift": True}, {"properties": [("join_type", "V")]}),
         ("bim.flip_wall", {"type": "F", "value": "PRESS", "shift": True}, {"properties": []}),
         ("bim.split_wall", {"type": "S", "value": "PRESS", "shift": True}, {"properties": []}),
-        ("bim.hotkey", {"type": "X", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "X")]}),
-        ("bim.hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "C")]}),
-        ("bim.hotkey", {"type": "V", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "V")]}),
-        ("bim.hotkey", {"type": "O", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "O")]}),
+        ("bim.hotkey", {"type": "X", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_X")]}),
+        ("bim.hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
+        ("bim.hotkey", {"type": "V", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_V")]}),
+        ("bim.hotkey", {"type": "O", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_O")]}),
+        ("bim.hotkey", {"type": "O", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_O")]}),
     )
 
     def draw_settings(context, layout, tool):
@@ -56,6 +57,8 @@ class BimTool(WorkSpaceTool):
         row.label(text="", icon="EVENT_V")
         row.label(text="Align")
 
+        row.label(text="", icon="EVENT_ALT")
+        row.label(text="Opening", icon="EVENT_O")
 
 class Hotkey(bpy.types.Operator):
     bl_idname = "bim.hotkey"
@@ -71,30 +74,33 @@ class Hotkey(bpy.types.Operator):
         getattr(self, f"hotkey_{self.hotkey}")()
         return {"FINISHED"}
 
-    def hotkey_C(self):
+    def hotkey_S_C(self):
         if self.props.ifc_class == "IfcWallType":
             bpy.ops.bim.align_wall(align_type="CENTERLINE")
         else:
             bpy.ops.bim.align_product(align_type="CENTERLINE")
 
-    def hotkey_E(self):
+    def hotkey_S_E(self):
         if self.props.ifc_class == "IfcWallType":
             bpy.ops.bim.join_wall(join_type="T")
 
-    def hotkey_V(self):
+    def hotkey_S_V(self):
         if self.props.ifc_class == "IfcWallType":
             bpy.ops.bim.align_wall(align_type="INTERIOR")
         else:
             bpy.ops.bim.align_product(align_type="POSITIVE")
 
-    def hotkey_X(self):
+    def hotkey_S_X(self):
         if self.props.ifc_class == "IfcWallType":
             bpy.ops.bim.align_wall(align_type="EXTERIOR")
         else:
             bpy.ops.bim.align_product(align_type="NEGATIVE")
 
-    def hotkey_O(self):
+    def hotkey_S_O(self):
         if self.props.ifc_class == "IfcWallType":
             bpy.ops.bim.add_wall_opening()
         elif self.props.ifc_class == "IfcSlabType":
             bpy.ops.bim.add_slab_opening()
+
+    def hotkey_A_O(self):
+        bpy.ops.bim.toggle_opening_visibility()

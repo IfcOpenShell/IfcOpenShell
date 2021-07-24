@@ -130,3 +130,15 @@ class RemoveFilling(bpy.types.Operator):
         )
         Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
+
+
+class ToggleOpeningVisibility(bpy.types.Operator):
+    bl_idname = "bim.toggle_opening_visibility"
+    bl_label = "Toggle Opening Visibility"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        for project in [c for c in bpy.context.view_layer.layer_collection.children if "IfcProject" in c.name]:
+            for collection in [c for c in project.children if "IfcOpeningElements" in c.name]:
+                collection.hide_viewport = not collection.hide_viewport
+        return {"FINISHED"}
