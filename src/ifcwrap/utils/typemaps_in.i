@@ -240,3 +240,33 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 %typemap(typecheck, precedence=SWIG_TYPECHECK_INTEGER) const Bnd_Box& {
    $1 = check_aggregate_of_aggregate_of_type($input, get_python_type<double>());
 }
+
+%define CREATE_OPTIONAL_TYPEMAP_IN(template_type, express_name, python_name)
+
+	%typemap(in) const boost::optional<template_type>& {
+		if ($input == Py_None) {
+			(*$1) = boost::none;
+		} else if ($input->ob_type != get_python_type<template_type>()) {
+			SWIG_exception(SWIG_TypeError, "Optional " #express_name " needs a " #python_name " or None");
+		} else {
+			(*$1) = cast_pyobject<template_type>($input);
+		}
+	}
+
+	%typemap(typecheck,precedence=SWIG_TYPECHECK_INTEGER) const boost::optional<template_type>& {
+		$1 = ($input == Py_None || $input->ob_type == get_python_type<template_type>()) ? 1 : 0;
+	}
+
+	%typemap(arginit) const boost::optional<template_type>& {
+		$1 = new boost::optional<template_type>();
+	}
+
+	%typemap(freearg) const boost::optional<template_type>& {
+		delete $1;
+	}
+
+%enddef
+
+CREATE_OPTIONAL_TYPEMAP_IN(int, integer, int)
+CREATE_OPTIONAL_TYPEMAP_IN(double, real, float)
+CREATE_OPTIONAL_TYPEMAP_IN(std::string, string, str)
