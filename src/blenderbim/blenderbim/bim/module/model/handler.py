@@ -1,7 +1,7 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
-from blenderbim.bim.module.model import product, wall, slab, profile
+from blenderbim.bim.module.model import product, wall, slab, profile, opening
 from blenderbim.bim.ifc import IfcStore
 from bpy.app.handlers import persistent
 
@@ -16,6 +16,8 @@ def load_post(*args):
         "BlenderBIM.Product.RegenerateProfileUsage",
         product.regenerate_profile_usage,
     )
+
+    IfcStore.add_element_listener(opening.element_listener)
 
     IfcStore.add_element_listener(wall.element_listener)
     ifcopenshell.api.add_pre_listener(

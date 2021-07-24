@@ -1,8 +1,35 @@
 import bpy
 import bmesh
+import blenderbim.bim.handler
+from blenderbim.bim.ifc import IfcStore
+from math import pi
 from bpy.types import Operator
 from bpy.props import FloatProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
+
+
+def element_listener(element, obj):
+    blenderbim.bim.handler.subscribe_to(obj, "mode", mode_callback)
+
+
+def mode_callback(obj, data):
+    for obj in bpy.context.selected_objects + [bpy.context.active_object]:
+        if (
+            obj.mode != "EDIT"
+            or not obj.data
+            or not isinstance(obj.data, (bpy.types.Mesh, bpy.types.Curve, bpy.types.TextCurve))
+            or not obj.BIMObjectProperties.ifc_definition_id
+            or not bpy.context.scene.BIMProjectProperties.is_authoring
+        ):
+            return
+        product = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+        if not product.is_a("IfcOpeningElement"):
+            return
+        IfcStore.edited_objs.add(obj)
+        bm = bmesh.from_edit_mesh(obj.data)
+        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
+        bmesh.update_edit_mesh(obj.data)
+        bm.free()
 
 
 def add_object(self, context):
