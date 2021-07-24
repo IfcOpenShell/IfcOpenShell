@@ -34,7 +34,7 @@ class json_logger:
         self.instance = instance
 
     def log(self, level, message, *args, **kwargs):
-        self.statements.append(log_entry_type(level, message % args, kwargs.get('instance'))._asdict())
+        self.statements.append(log_entry_type(level, message % args, kwargs.get("instance"))._asdict())
 
     def __getattr__(self, level):
         return functools.partial(self.log, level, instance=self.instance)
@@ -75,7 +75,7 @@ def assert_valid(attr, val, schema):
 
     while isinstance(attr_type, type_wrappers):
         attr_type = attr_type.declared_type()
-        
+
     invalid = False
 
     if isinstance(attr_type, simple_type):
@@ -120,10 +120,10 @@ def validate(f, logger):
     numeric identifiers or invalidate entity names are not caught by this function. Some of these might have been
     logged and can be retrieved by calling `ifcopenshell.get_log()`. A verification of the type, entity and global
     WHERE rules is also not implemented.
-    
+
     For every entity instance in the model, it is checked that the entity is not abstract that every attribute value
     is of the correct type and that the inverse attributes are of the correct cardinality.
-    
+
     Express simple types are checked for their valuation type. For select types it is asserted that the value conforms
     to one of the leaves. For enumerations it is checked that the value is indeed on of the items. For aggregations it
     is checked that the elements and the cardinality conforms. Type declarations (IfcInteger which is an integer) are

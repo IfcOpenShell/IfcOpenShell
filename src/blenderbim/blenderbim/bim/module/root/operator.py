@@ -129,6 +129,8 @@ class AssignClass(bpy.types.Operator):
 
         if product.is_a("IfcElementType"):
             self.place_in_types_collection(obj)
+        elif product.is_a("IfcOpeningElement"):
+            self.place_in_openings_collection(obj)
         elif (
             product.is_a("IfcSpatialElement")
             or product.is_a("IfcSpatialStructureElement")
@@ -146,6 +148,18 @@ class AssignClass(bpy.types.Operator):
                 types = bpy.data.collections.new("Types")
                 project.collection.children.link(types)
             for collection in [c for c in project.children if "Types" in c.name]:
+                for user_collection in obj.users_collection:
+                    user_collection.objects.unlink(obj)
+                collection.collection.objects.link(obj)
+                break
+            break
+
+    def place_in_openings_collection(self, obj):
+        for project in [c for c in bpy.context.view_layer.layer_collection.children if "IfcProject" in c.name]:
+            if not [c for c in project.children if "IfcOpeningElements" in c.name]:
+                opening_elements = bpy.data.collections.new("IfcOpeningElements")
+                project.collection.children.link(opening_elements)
+            for collection in [c for c in project.children if "IfcOpeningElements" in c.name]:
                 for user_collection in obj.users_collection:
                     user_collection.objects.unlink(obj)
                 collection.collection.objects.link(obj)
