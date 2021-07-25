@@ -37,26 +37,57 @@ class BimTool(WorkSpaceTool):
         row.prop(props, "relating_type", text="")
 
         row.label(text="", icon="BLANK1")
-
+        row = layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
-        row.label(text="Add", icon="EVENT_A")
+        row.label(text="Add Type Instance", icon="EVENT_A")
 
         if props.ifc_class == "IfcWallType":
+            row = layout.row(align=True)
+            row.label(text="Join")
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
             row.label(text="Extend", icon="EVENT_E")
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
             row.label(text="Butt", icon="EVENT_T")
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
             row.label(text="Mitre", icon="EVENT_Y")
+
+
+
+            row = layout.row(align=True)
+            row.label(text="Wall Tools")
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
             row.label(text="Flip", icon="EVENT_F")
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
             row.label(text="Split", icon="EVENT_S")
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
             row.label(text="Opening", icon="EVENT_O")
 
         if props.ifc_class == "IfcSlabType":
+            row = layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
             row.label(text="Opening", icon="EVENT_O")
 
-        row.label(text="", icon="EVENT_X")
-        row.label(text="", icon="EVENT_C")
-        row.label(text="", icon="EVENT_V")
+        row = layout.row(align=True)
         row.label(text="Align")
+        row = layout.row(align=True)
+        row.label(text="", icon="EVENT_SHIFT")
+        row.label(text="Align Exterior", icon="EVENT_X")
+        row = layout.row(align=True)
+        row.label(text="", icon="EVENT_SHIFT")
+        row.label(text="Align Centerline", icon="EVENT_C")
+        row = layout.row(align=True)
+        row.label(text="", icon="EVENT_SHIFT")
+        row.label(text="Align Interior", icon="EVENT_V")
+        row = layout.row(align=True)
 
+
+        row = layout.row(align=True)
         row.label(text="", icon="EVENT_ALT")
         row.label(text="Opening", icon="EVENT_O")
 
