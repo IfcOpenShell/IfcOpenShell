@@ -37,6 +37,7 @@ class BimTool(WorkSpaceTool):
         row.prop(props, "relating_type", text="")
 
         row.label(text="", icon="BLANK1")
+
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="Add Type Instance", icon="EVENT_A")
@@ -53,8 +54,6 @@ class BimTool(WorkSpaceTool):
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="Mitre", icon="EVENT_Y")
-
-
 
             row = layout.row(align=True)
             row.label(text="Wall Tools")
@@ -86,10 +85,10 @@ class BimTool(WorkSpaceTool):
         row.label(text="Align Interior", icon="EVENT_V")
         row = layout.row(align=True)
 
-
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_ALT")
         row.label(text="Opening", icon="EVENT_O")
+
 
 class Hotkey(bpy.types.Operator):
     bl_idname = "bim.hotkey"
