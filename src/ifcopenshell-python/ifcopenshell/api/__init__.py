@@ -118,7 +118,7 @@ def extract_docs(module, usecase):
         if name == "self":
             continue
         inputs[name] = {"name": name}
-        if not isinstance(parameter.default, object):
+        if isinstance(parameter.default, (str, float, int, bool)):
             inputs[name]["default"] = parameter.default
 
     type_hints = typing.get_type_hints(function_init)
