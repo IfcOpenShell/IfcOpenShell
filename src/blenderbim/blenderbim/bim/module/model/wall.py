@@ -20,7 +20,7 @@ def element_listener(element, obj):
 
 
 def mode_callback(obj, data):
-    for obj in bpy.context.selected_objects + [bpy.context.active_object]:
+    for obj in set(bpy.context.selected_objects + [bpy.context.active_object]):
         if (
             obj.mode != "EDIT"
             or not obj.data
@@ -33,7 +33,28 @@ def mode_callback(obj, data):
         parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
         if not parametric or parametric["Engine"] != "BlenderBIM.DumbWall":
             return
+        if product.HasOpenings:
+            if [m for m in obj.modifiers if m.type == "BOOLEAN"]:
+                continue
+            representation = ifcopenshell.util.representation.get_representation(
+                product, "Model", "Body", "MODEL_VIEW"
+            )
+            if not representation:
+                continue
+            bpy.ops.object.mode_set(mode='OBJECT')
+            bpy.ops.bim.switch_representation(
+                obj=obj.name,
+                should_switch_all_meshes=True,
+                should_reload=True,
+                ifc_definition_id=representation.id(),
+                disable_opening_subtractions=True,
+            )
+            bpy.ops.object.mode_set(mode='EDIT')
         IfcStore.edited_objs.add(obj)
+        bm = bmesh.from_edit_mesh(obj.data)
+        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
+        bmesh.update_edit_mesh(obj.data)
+        bm.free()
 
 
 class AddWallOpening(bpy.types.Operator):
