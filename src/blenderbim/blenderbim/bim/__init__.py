@@ -32,6 +32,7 @@ if bpy is not None:
         "system": None,
         "structural": None,
         "boundary": None,
+        "profile": None,
         "material": None,
         "style": None,
         "layer": None,
