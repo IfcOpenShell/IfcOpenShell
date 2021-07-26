@@ -490,7 +490,7 @@ public:
 					prs_styles.push_back(style_l);
 				}
 			}
-#if defined SCHEMA_HAS_IfcStyleAssignmentSelect or defined SCHEMA_HAS_IfcPresentationStyleAssignment
+#if defined(SCHEMA_HAS_IfcStyleAssignmentSelect) || defined(SCHEMA_HAS_IfcPresentationStyleAssignment)
 	   }
 #endif
 		
