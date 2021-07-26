@@ -20,7 +20,7 @@ def element_listener(element, obj):
 
 
 def mode_callback(obj, data):
-    for obj in bpy.context.selected_objects + [bpy.context.active_object]:
+    for obj in set(bpy.context.selected_objects + [bpy.context.active_object]):
         if (
             obj.mode != "EDIT"
             or not obj.data
@@ -147,30 +147,40 @@ class DumbProfileGenerator:
 
 class DumbProfileRegenerator:
     def regenerate_from_profile(self, usecase_path, ifc_file, settings):
-        self.file = IfcStore.get_file()
-        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        self.file = ifc_file
         profile = settings["profile"].Profile
         if not profile:
             return
+        for element in self.get_elements_using_profile(profile):
+            self.change_profile(element)
+
+    def sync_object_from_profile(self, usecase_path, ifc_file, settings):
+        self.file = ifc_file
+        profile = settings["profile"].Profile
+        if not profile:
+            return
+        for element in self.get_elements_using_profile(profile):
+            self.sync_object(element)
+
+    def get_elements_using_profile(self, profile):
+        results = []
         for profile_set in [
             mp.ToMaterialProfileSet[0] for mp in self.file.get_inverse(profile) if mp.is_a("IfcMaterialProfile")
         ]:
-            for inverse in ifc_file.get_inverse(profile_set):
+            for inverse in self.file.get_inverse(profile_set):
                 if not inverse.is_a("IfcMaterialProfileSetUsage"):
                     continue
-                if ifc_file.schema == "IFC2X3":
-                    for rel in ifc_file.get_inverse(inverse):
+                if self.file.schema == "IFC2X3":
+                    for rel in self.file.get_inverse(inverse):
                         if not rel.is_a("IfcRelAssociatesMaterial"):
                             continue
-                        for element in rel.RelatedObjects:
-                            self.change_profile(element)
+                        results.extend(rel.RelatedObjects)
                 else:
                     for rel in inverse.AssociatedTo:
-                        for element in rel.RelatedObjects:
-                            self.change_profile(element)
+                        results.extend(rel.RelatedObjects)
+        return results
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
-        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         new_material = ifcopenshell.util.element.get_material(settings["relating_type"])
         if not new_material or not new_material.is_a("IfcMaterialProfileSet"):
             return
@@ -185,3 +195,9 @@ class DumbProfileRegenerator:
             bpy.ops.bim.switch_representation(
                 obj=obj.name, ifc_definition_id=representation.id(), should_reload=True, should_switch_all_meshes=True
             )
+
+    def sync_object(self, element):
+        obj = IfcStore.get_element(element.id())
+        if not obj or obj not in IfcStore.edited_objs:
+            return
+        bpy.ops.bim.update_representation(obj=obj.name)
