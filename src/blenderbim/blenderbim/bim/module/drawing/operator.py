@@ -7,6 +7,8 @@ import bmesh
 import shutil
 import subprocess
 import webbrowser
+import ifcopenshell
+import ifcopenshell.geom
 import ifcopenshell.util.selector
 import ifcopenshell.util.representation
 import blenderbim.bim.module.drawing.svgwriter as svgwriter
@@ -231,6 +233,37 @@ class CreateDrawing(bpy.types.Operator):
         svg_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", self.drawing_name + "-linework.svg")
         if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
             return svg_path
+        # This is a work in progress. See #1153 and #1564.
+        # Switch from old to new if you are testing v0.7.0
+        self.generate_linework_old(svg_path)
+        #self.generate_linework_new(svg_path)
+        return svg_path
+
+    def generate_linework_new(self, svg_path):
+        settings = ifcopenshell.geom.settings(
+            APPLY_DEFAULT_MATERIALS=True,
+            DISABLE_TRIANGULATION=True,
+            INCLUDE_CURVES=True,
+            EXCLUDE_SOLIDS_AND_SURFACES=False,
+        )
+        buffer = ifcopenshell.geom.serializers.buffer()
+        serialiser = ifcopenshell.geom.serializers.svg(buffer, settings)
+        serialiser.setFile(self.file)
+        serialiser.setElevationRef("DRAWING")
+        serialiser.setUseNamespace(True)
+        serialiser.setAlwaysProject(True)
+        serialiser.setUseHlrPoly(True)
+        serialiser.setWithoutStoreys(True)
+        excluded_elements = []
+        for ifc_class in ["IfcSpace", "IfcOpeningElement", "IfcDoor", "IfcWindow"]:
+            excluded_elements += self.file.by_type(ifc_class)
+        for element in ifcopenshell.geom.iterate(settings, self.file, exclude=excluded_elements):
+            serialiser.write(element)
+        serialiser.finalize()
+        with open(svg_path, "w") as svg:
+            svg.write(buffer.get_value())
+
+    def generate_linework_old(self, svg_path):
         ifcconvert_path = os.path.join(cwd, "..", "..", "..", "libs", "IfcConvert")
         subprocess.run(
             [
