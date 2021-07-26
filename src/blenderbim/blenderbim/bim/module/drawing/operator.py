@@ -7,6 +7,7 @@ import bmesh
 import shutil
 import subprocess
 import webbrowser
+import multiprocessing
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.selector
@@ -236,7 +237,7 @@ class CreateDrawing(bpy.types.Operator):
         # This is a work in progress. See #1153 and #1564.
         # Switch from old to new if you are testing v0.7.0
         self.generate_linework_old(svg_path)
-        #self.generate_linework_new(svg_path)
+        # self.generate_linework_new(svg_path)
         return svg_path
 
     def generate_linework_new(self, svg_path):
@@ -257,7 +258,9 @@ class CreateDrawing(bpy.types.Operator):
         excluded_elements = []
         for ifc_class in ["IfcSpace", "IfcOpeningElement", "IfcDoor", "IfcWindow"]:
             excluded_elements += self.file.by_type(ifc_class)
-        for element in ifcopenshell.geom.iterate(settings, self.file, exclude=excluded_elements):
+        for element in ifcopenshell.geom.iterate(
+            settings, self.file, multiprocessing.cpu_count(), exclude=excluded_elements
+        ):
             serialiser.write(element)
         serialiser.finalize()
         with open(svg_path, "w") as svg:

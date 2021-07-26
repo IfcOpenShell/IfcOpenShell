@@ -57,6 +57,11 @@ def load_post(*args):
     ifcopenshell.api.add_pre_listener(
         "geometry.add_representation", "BlenderBIM.DumbProfile.EnsureSolid", profile.ensure_solid
     )
+    ifcopenshell.api.add_pre_listener(
+        "material.edit_profile",
+        "BlenderBIM.DumbProfile.SyncObjectFromProfile",
+        profile.DumbProfileRegenerator().sync_object_from_profile,
+    )
     ifcopenshell.api.add_post_listener(
         "material.edit_profile",
         "BlenderBIM.DumbProfile.RegenerateFromProfile",
