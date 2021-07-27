@@ -123,12 +123,12 @@ def purge_module_data():
 @persistent
 def loadIfcStore(scene):
     IfcStore.purge()
+    purge_module_data()
     ifc_file = IfcStore.get_file()
     if not ifc_file:
         return
     IfcStore.get_schema()
     IfcStore.reload_linked_elements()
-    purge_module_data()
 
 
 @persistent
