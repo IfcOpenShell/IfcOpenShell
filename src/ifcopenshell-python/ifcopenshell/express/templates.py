@@ -239,9 +239,9 @@ parent_type_test = " || %s::is(v)"
 
 optional_attr_stmt = "return !data_->getArgument(%(index)d)->isNull();"
 
-get_attr_stmt = "return *data_->getArgument(%(index)d);"
-get_attr_stmt_enum = "return %(type)s::FromString(*data_->getArgument(%(index)d));"
-get_attr_stmt_entity = "return (%(type)s)((IfcUtil::IfcBaseClass*)(*data_->getArgument(%(index)d)));"
+get_attr_stmt = "return (%(non_optional_type)s) *data_->getArgument(%(index)d);"
+get_attr_stmt_enum = "return %(non_optional_type)s::FromString(*data_->getArgument(%(index)d));"
+get_attr_stmt_entity = "return (%(non_optional_type)s)((IfcUtil::IfcBaseClass*)(*data_->getArgument(%(index)d)));"
 get_attr_stmt_array = (
     "IfcEntityList::ptr es = *data_->getArgument(%(index)d); return es->as< %(list_instance_type)s >();"
 )
@@ -255,7 +255,7 @@ set_attr_stmt = (
     "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v"
     + ");data_->setArgument(%(index)d,attr);}"
 )
-set_attr_stmt_enum = "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,%(type)s::ToString(v)));data_->setArgument(%(index)d,attr);}"
+set_attr_stmt_enum = "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(%(star_if_optional)sv,%(non_optional_type)s::ToString(%(star_if_optional)sv)));data_->setArgument(%(index)d,attr);}"
 set_attr_stmt_array = (
     "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize()"
     + ");data_->setArgument(%(index)d,attr);}"

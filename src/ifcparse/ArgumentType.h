@@ -29,6 +29,7 @@ namespace IfcUtil {
 		Argument_DERIVED,
 		Argument_INT,
 		Argument_BOOL,
+		Argument_LOGICAL,
 		Argument_DOUBLE,
 		Argument_STRING,
 		Argument_BINARY,

@@ -74,17 +74,6 @@ class Implementation(codegen.Base):
             write_attr = lambda str, **kwargs: attributes.append(str % kwargs)
             for arg in constructor_arguments:
                 if not arg["is_inherited"] and not arg["is_derived"]:
-                    if arg["is_optional"]:
-                        write_attr(
-                            templates.const_function,
-                            class_name=name,
-                            schema_name=schema_name,
-                            schema_name_upper=schema_name_upper,
-                            name="has%s" % arg["name"],
-                            arguments="",
-                            return_type="bool",
-                            body=templates.optional_attr_stmt % {"index": arg["index"] - 1},
-                        )
 
                     def find_template(arg):
                         simple = mapping.schema.is_simpletype(arg["list_instance_type"])
@@ -111,11 +100,12 @@ class Implementation(codegen.Base):
                         arguments="",
                         schema_name=schema_name,
                         schema_name_upper=schema_name_upper,
-                        return_type=arg["non_optional_type"],
+                        return_type=arg["full_type"],
                         body=tmpl
                         % {
                             "index": arg["index"] - 1,
-                            "type": arg["non_optional_type"].replace("::Value", ""),
+                            "type": arg["full_type"].replace("::Value", ""),
+                            "non_optional_type": arg["non_optional_type"].replace("::Value", ""),
                             "list_instance_type": arg["list_instance_type"],
                         },
                     )
@@ -136,12 +126,17 @@ class Implementation(codegen.Base):
                         templates.function,
                         class_name=name,
                         name="set%s" % arg["name"],
-                        arguments="%s v" % arg["non_optional_type"],
+                        arguments="%s v" % arg["full_type"],
                         return_type="void",
                         schema_name=schema_name,
                         schema_name_upper=schema_name_upper,
                         body=tmpl
-                        % {"index": arg["index"] - 1, "type": arg["non_optional_type"].replace("::Value", "")},
+                        % {
+                            "index": arg["index"] - 1, 
+                            "type": arg["full_type"].replace("::Value", ""),
+                            "non_optional_type": arg["non_optional_type"].replace("::Value", ""),
+                            "star_if_optional": "*" if arg["is_optional"] else ""
+                        },
                     )
 
                 if arg["is_derived"]:

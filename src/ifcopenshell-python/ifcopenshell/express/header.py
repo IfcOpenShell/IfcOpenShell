@@ -77,13 +77,10 @@ class Header(codegen.Base):
                     attr_lines = []
 
                     def write_method(attr):
-                        if attr.optional:
-                            attr_lines.append(templates.optional_attribute_description % (attr.name, name))
-                            attr_lines.append("bool has%s() const;" % (attr.name))
                         attr_lines.extend(
                             ["/// %s" % d for d in documentation.description(".".join((name, attr.name)))]
                         )
-                        type_str = mapping.get_parameter_type(attr, allow_optional=False, allow_entities=False)
+                        type_str = mapping.get_parameter_type(attr)
                         if mapping.make_argument_type(attr) != "IfcUtil::Argument_UNKNOWN":
                             attr_lines.append("%s %s() const;" % (type_str, attr.name))
                             attr_lines.append("void set%s(%s v);" % (attr.name, type_str))
