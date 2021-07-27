@@ -45,7 +45,7 @@
  *                                                                              *
  * IfcGeom::Iterator::get()                                                     *
  *   returns a pointer to the current IfcGeom::Element                          *
- *                                                                              * 
+ *                                                                              *
  * IfcGeom::Iterator::next()                                                    *
  *   returns true iff a following entity is available for a successive call to  *
  *   IfcGeom::Iterator::get()                                                   *
@@ -69,9 +69,9 @@
 #endif
 
 namespace IfcGeom {
-	
+
 	template <typename P = double, typename PP = P>
-	class Iterator {
+	class IFC_GEOM_API Iterator {
 	private:
 		Iterator(const Iterator&); // N/I
 		Iterator& operator=(const Iterator&); // N/I
