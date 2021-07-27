@@ -53,11 +53,10 @@ def step_impl(context, ifc_class, property_path, pattern):
             assert False
         
         prop = pset[property_name]
+        # get_psets returns just strings
 
-        # For now, we only check single values
-        if prop.is_a("IfcPropertySingleValue"):
-            if not (prop.NominalValue and re.search(pattern, prop.NominalValue.wrappedValue)):
-                assert False
+        if not re.search(pattern, prop):
+            assert False
 
 
 def eleclass_has_property_in_pset(
