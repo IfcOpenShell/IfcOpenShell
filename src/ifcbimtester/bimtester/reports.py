@@ -2,6 +2,7 @@ import datetime
 import json
 import os
 import pystache
+import sys
 from bimtester.lang import _
 
 
