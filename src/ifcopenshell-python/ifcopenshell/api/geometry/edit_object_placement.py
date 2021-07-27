@@ -1,5 +1,6 @@
 import numpy as np
 import ifcopenshell.api
+import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 

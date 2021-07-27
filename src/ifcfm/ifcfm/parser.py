@@ -216,7 +216,7 @@ class Parser:
                         continue
                     self.zones[element.Name + space.Name] = {
                         "Name": element.Name,
-                        "AuthorOrganizationName": "Cox Architecture",
+                        "AuthorOrganizationName": element.OwnerHistory.OwningUser.TheOrganization.Name,
                         "AuthorDate": ifcopenshell.util.date.ifc2datetime(
                             element.OwnerHistory.CreationDate
                         ).isoformat(),
@@ -229,13 +229,13 @@ class Parser:
 
     def get_systems(self):
         for discipline, ifc in self.files.items():
-            #if discipline == "arch":
+            # if discipline == "arch":
             #    continue
             for element in ifc.by_type("IfcSystem"):
                 name = element.Name
                 self.systems[name] = {
                     "Name": name,
-                    "AuthorOrganizationName": "Fredon",
+                    "AuthorOrganizationName": element.OwnerHistory.OwningUser.TheOrganization.Name,
                     "AuthorDate": ifcopenshell.util.date.ifc2datetime(element.OwnerHistory.CreationDate).isoformat(),
                     "Category": None,
                     "ModelSoftware": element.OwnerHistory.OwningApplication.ApplicationFullName,
@@ -255,10 +255,17 @@ class Parser:
 
             psets = ifcopenshell.util.element.get_psets(element)
 
+            # Hack
             category = None
-            if "Data" in psets and "COBie.Type.Category" in psets["Data"]:
-                if ":" in psets["Data"]["COBie.Type.Category"]:
-                    category = psets["Data"]["COBie.Type.Category"].replace(" : ", ":")
+            if ifc_file == "arch":
+                #if "Data" in psets and "COBie.Type.Category" in psets["Data"]:
+                #    if ":" in psets["Data"]["COBie.Type.Category"]:
+                #        category = psets["Data"]["COBie.Type.Category"].replace(" : ", ":")
+                if "Data" in psets and "Classification.Uniclass.Pr.Number" in psets["Data"]:
+                    category = f"{psets['Data']['Classification.Uniclass.Pr.Number']}:{psets['Data']['Classification.Uniclass.Pr.Description']}"
+            elif ifc_file == "hyd":
+                if "Data" in psets and "Classification.Uniclass.Pr.Number" in psets["Data"]:
+                    category = f"{psets['Data']['Classification.Uniclass.Pr.Number']}:{psets['Data']['Classification.Uniclass.Pr.Description']}"
 
             self.types[name] = {
                 "Name": name,
@@ -281,7 +288,6 @@ class Parser:
             }
 
     def get_components(self):
-        org_map = {"arch": "Cox Architecture", "arch": "Bates Smart", "elec": "Fredon", "fire": "Premier Fire"}
         for discipline, ifc in self.files.items():
             self.get_components_from_file(discipline)
 
@@ -297,15 +303,17 @@ class Parser:
 
                 space_name = None
 
-                # space = element.ContainedInStructure[0].RelatingStructure
-                # if space.is_a("IfcSpace"):
-                #    space_name = space.Name
-
-                psets = ifcopenshell.util.element.get_psets(element)
-                if "Data" in psets and "COBie.Component.Space" in psets["Data"]:
-                    space_name = psets["Data"]["COBie.Component.Space"]
-                    if space_name not in self.spaces:
-                        space_name = None
+                # Nasty hack
+                if ifc_file == "arch":
+                    psets = ifcopenshell.util.element.get_psets(element)
+                    if "Data" in psets and "COBie.Component.Space" in psets["Data"]:
+                        space_name = psets["Data"]["COBie.Component.Space"]
+                        if space_name not in self.spaces:
+                            space_name = None
+                else:
+                    space = element.ContainedInStructure[0].RelatingStructure
+                    if space.is_a("IfcSpace"):
+                       space_name = space.Name
 
                 self.components[name] = {
                     "Name": name,
