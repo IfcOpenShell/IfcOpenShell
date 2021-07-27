@@ -32,6 +32,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/dynamic_bitset.hpp>
+#include <boost/logic/tribool.hpp>
 
 class Argument;
 class IfcEntityList;
@@ -54,6 +55,7 @@ public:
 	virtual operator int() const;
 	virtual operator bool() const;
 	virtual operator double() const;
+	virtual operator boost::logic::tribool() const;
 	virtual operator std::string() const;
 	virtual operator boost::dynamic_bitset<>() const;
 	virtual operator IfcUtil::IfcBaseClass*() const;
