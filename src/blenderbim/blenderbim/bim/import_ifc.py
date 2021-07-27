@@ -54,8 +54,23 @@ class MaterialCreator:
         if not self.mesh or self.mesh.name in self.parsed_meshes:
             return
         self.parsed_meshes.add(self.mesh.name)
+        self.add_default_material_surface_style(element)
         if self.parse_representations(element):
             self.assign_material_slots_to_faces()
+
+    def add_default_material_surface_style(self, element):
+        element_material = ifcopenshell.util.element.get_material(element)
+        if not element_material:
+            return
+        for material in [m for m in self.ifc_importer.file.traverse(element_material) if m.is_a("IfcMaterial")]:
+            if not material.HasRepresentation:
+                continue
+            surface_style = [
+                s for s in self.ifc_importer.file.traverse(material.HasRepresentation[0]) if s.is_a("IfcSurfaceStyle")
+            ]
+            if surface_style:
+                self.mesh.materials.append(self.styles[surface_style[0].id()])
+                return
 
     def load_existing_materials(self):
         for material in bpy.data.materials:
@@ -568,9 +583,7 @@ class IfcImporter:
                     )
                 )
                 checkpoint = time.time()
-                self.update_progress(
-                    ((total_created / approx_total_products) * progress_range) + start_progress
-                )
+                self.update_progress(((total_created / approx_total_products) * progress_range) + start_progress)
             shape = iterator.get()
             if shape:
                 product = self.file.by_id(shape.guid)
