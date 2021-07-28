@@ -60,8 +60,8 @@ class AssignContainer(bpy.types.Operator):
                 for collection in related_element.users_collection:
                     collection.objects.unlink(related_element)
                 relating_collection.objects.link(related_element)
-            # Restore the active object :
-            context.view_layer.objects.active = active_object
+        # Restore the active object :
+        context.view_layer.objects.active = active_object
         return {"FINISHED"}
 
     def remove_collection(self, parent, child):
