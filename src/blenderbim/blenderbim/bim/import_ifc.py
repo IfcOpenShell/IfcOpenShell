@@ -54,11 +54,11 @@ class MaterialCreator:
         if not self.mesh or self.mesh.name in self.parsed_meshes:
             return
         self.parsed_meshes.add(self.mesh.name)
-        self.add_default_material_surface_style(element)
+        self.add_default_material(element)
         if self.parse_representations(element):
             self.assign_material_slots_to_faces()
 
-    def add_default_material_surface_style(self, element):
+    def add_default_material(self, element):
         element_material = ifcopenshell.util.element.get_material(element)
         if not element_material:
             return
@@ -71,6 +71,10 @@ class MaterialCreator:
             if surface_style:
                 self.mesh.materials.append(self.styles[surface_style[0].id()])
                 return
+        # For authoring convenience, we choose to assign a material, even if it has no surface style. See #1585.
+        for material in [m for m in self.ifc_importer.file.traverse(element_material) if m.is_a("IfcMaterial")]:
+            self.mesh.materials.append(self.materials[material.id()])
+            return
 
     def load_existing_materials(self):
         for material in bpy.data.materials:
