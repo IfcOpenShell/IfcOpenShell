@@ -100,7 +100,7 @@ class AssignClass(bpy.types.Operator):
         self.file = IfcStore.get_file()
         self.declaration = IfcStore.get_schema().declaration_by_name(self.ifc_class)
         if self.predefined_type == "USERDEFINED":
-            self.predefined_type = self.ifc_userdefined_type
+            self.predefined_type = self.userdefined_type
         elif self.predefined_type == "":
             predefined_type = None
         for obj in objects:
