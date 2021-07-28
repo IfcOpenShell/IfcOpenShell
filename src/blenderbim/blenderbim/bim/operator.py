@@ -175,7 +175,7 @@ class SelectDataDir(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        bpy.context.scene.BIMProperties.data_dir = self.filepath
+        bpy.context.scene.BIMProperties.data_dir = os.path.dirname(self.filepath)
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -190,7 +190,7 @@ class SelectSchemaDir(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        bpy.context.scene.BIMProperties.schema_dir = self.filepath
+        bpy.context.scene.BIMProperties.schema_dir = os.path.dirname(self.filepath)
         return {"FINISHED"}
 
     def invoke(self, context, event):
