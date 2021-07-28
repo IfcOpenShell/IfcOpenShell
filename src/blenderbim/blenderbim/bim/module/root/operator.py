@@ -99,6 +99,10 @@ class AssignClass(bpy.types.Operator):
         objects = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
         self.file = IfcStore.get_file()
         self.declaration = IfcStore.get_schema().declaration_by_name(self.ifc_class)
+        if self.predefined_type == "USERDEFINED":
+            self.predefined_type = self.ifc_userdefined_type
+        elif self.predefined_type == "":
+            predefined_type = None
         for obj in objects:
             self.assign_class(context, obj)
         return {"FINISHED"}
@@ -117,15 +121,7 @@ class AssignClass(bpy.types.Operator):
         )
         obj.name = "{}/{}".format(product.is_a(), obj.name)
         IfcStore.link_element(product, obj)
-        if self.predefined_type == "USERDEFINED":
-            ifcopenshell.api.run(
-                "attribute.edit_attributes",
-                self.file,
-                **{
-                    "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                    "attributes": {"ObjectType": self.userdefined_type},
-                },
-            )
+
         if self.should_add_representation:
             bpy.ops.bim.add_representation(
                 obj=obj.name, context_id=self.context_id, ifc_representation_class=self.ifc_representation_class
