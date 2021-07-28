@@ -17,6 +17,9 @@ class AssignContainer(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
+        # The active object pointer is lost when the object is unlinked from all collections in the view layer
+        # We need to store it first, then restore it at the end
+        active_object = context.active_object
         self.file = IfcStore.get_file()
         related_elements = (
             [bpy.data.objects.get(self.related_element)] if self.related_element else bpy.context.selected_objects
@@ -57,6 +60,8 @@ class AssignContainer(bpy.types.Operator):
                 for collection in related_element.users_collection:
                     collection.objects.unlink(related_element)
                 relating_collection.objects.link(related_element)
+        # Restore the active object :
+        context.view_layer.objects.active = active_object
         return {"FINISHED"}
 
     def remove_collection(self, parent, child):
