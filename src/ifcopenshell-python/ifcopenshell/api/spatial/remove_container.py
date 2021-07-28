@@ -11,12 +11,13 @@ class Usecase:
 
     def execute(self):
         contained_in_structure = self.settings["product"].ContainedInStructure
+        if not contained_in_structure:
+            return
 
-        if contained_in_structure:
-            related_elements = list(contained_in_structure[0].RelatedElements)
-            related_elements.remove(self.settings["product"])
-            if related_elements:
-                contained_in_structure[0].RelatedElements = related_elements
-                ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": contained_in_structure[0]})
-            else:
-                self.file.remove(contained_in_structure)
+        related_elements = list(contained_in_structure[0].RelatedElements)
+        related_elements.remove(self.settings["product"])
+        if related_elements:
+            contained_in_structure[0].RelatedElements = related_elements
+            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": contained_in_structure[0]})
+        else:
+            self.file.remove(contained_in_structure[0])
