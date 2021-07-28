@@ -1,6 +1,7 @@
 import bpy
 import json
 import ifcopenshell.api
+import ifcopenshell.util.element
 import ifcopenshell.util.attribute
 import ifcopenshell.util.representation
 import blenderbim.bim.helper
@@ -54,14 +55,19 @@ class AddMaterial(bpy.types.Operator):
         self.file = IfcStore.get_file()
         result = ifcopenshell.api.run("material.add_material", self.file, **{"name": obj.name})
         obj.BIMObjectProperties.ifc_definition_id = result.id()
+        IfcStore.link_element(result, obj)
         if obj.BIMMaterialProperties.ifc_style_id:
             context = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
             if context:
-                ifcopenshell.api.run("style.assign_material_style", self.file, **{
-                    "material": result,
-                    "style": self.file.by_id(obj.BIMMaterialProperties.ifc_style_id),
-                    "context": context,
-                })
+                ifcopenshell.api.run(
+                    "style.assign_material_style",
+                    self.file,
+                    **{
+                        "material": result,
+                        "style": self.file.by_id(obj.BIMMaterialProperties.ifc_style_id),
+                        "context": context,
+                    },
+                )
         Data.load(IfcStore.get_file())
         material_prop_purge()
         return {"FINISHED"}
@@ -103,18 +109,36 @@ class AssignMaterial(bpy.types.Operator):
         obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
         material_type = self.material_type or obj.BIMObjectMaterialProperties.material_type
         self.file = IfcStore.get_file()
+        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         ifcopenshell.api.run(
             "material.assign_material",
             self.file,
             **{
-                "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
+                "product": element,
                 "type": material_type,
                 "material": self.file.by_id(int(obj.BIMObjectMaterialProperties.material)),
             },
         )
         Data.load(IfcStore.get_file())
         Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+        self.set_default_material(obj, element)
         return {"FINISHED"}
+
+    def set_default_material(self, obj, element):
+        element_material = ifcopenshell.util.element.get_material(element)
+        material = [m for m in self.file.traverse(element_material) if m.is_a("IfcMaterial")]
+        if not material:
+            return
+
+        object_material_ids = [
+            om.BIMObjectProperties.ifc_definition_id
+            for om in obj.data.materials
+            if om is not None and om.BIMObjectProperties.ifc_definition_id
+        ]
+
+        if material[0].id() in object_material_ids:
+            return
+        obj.data.materials.append(IfcStore.get_element(material[0].id()))
 
 
 class UnassignMaterial(bpy.types.Operator):
@@ -523,7 +547,24 @@ class EditAssignedMaterial(bpy.types.Operator):
         elif material_set.is_a("IfcMaterialProfileSet"):
             Data.load_profiles()
         bpy.ops.bim.disable_editing_assigned_material(obj=obj.name)
+        self.set_default_material(obj, self.file.by_id(obj.BIMObjectProperties.ifc_definition_id))
         return {"FINISHED"}
+
+    def set_default_material(self, obj, element):
+        element_material = ifcopenshell.util.element.get_material(element)
+        material = [m for m in self.file.traverse(element_material) if m.is_a("IfcMaterial")]
+        if not material:
+            return
+
+        object_material_ids = [
+            om.BIMObjectProperties.ifc_definition_id
+            for om in obj.data.materials
+            if om is not None and om.BIMObjectProperties.ifc_definition_id
+        ]
+
+        if material[0].id() in object_material_ids:
+            return
+        obj.data.materials.append(IfcStore.get_element(material[0].id()))
 
 
 class EnableEditingMaterialSetItem(bpy.types.Operator):
