@@ -2,6 +2,8 @@ import bpy
 import logging
 import ifcopenshell
 import ifcopenshell.util.placement
+import ifcopenshell.util.representation
+import blenderbim.bim.handler
 import blenderbim.bim.import_ifc as import_ifc
 from blenderbim.bim.ifc import IfcStore
 
@@ -12,6 +14,24 @@ class PrintIfcFile(bpy.types.Operator):
 
     def execute(self, context):
         print(IfcStore.get_file().wrapped_data.to_string())
+        return {"FINISHED"}
+
+
+class PurgeIfcLinks(bpy.types.Operator):
+    bl_idname = "bim.purge_ifc_links"
+    bl_label = "Purge IFC Links"
+
+    def execute(self, context):
+        for obj in bpy.data.objects:
+            if obj.type in {"MESH", "EMPTY"}:
+                obj.BIMObjectProperties.ifc_definition_id = 0
+                if obj.data:
+                    obj.data.BIMMeshProperties.ifc_definition_id = 0
+        for material in bpy.data.materials:
+            material.BIMMaterialProperties.ifc_style_id = False
+        bpy.context.scene.BIMProperties.ifc_file = ""
+        IfcStore.purge()
+        blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}
 
 
@@ -37,11 +57,9 @@ class ProfileImportIFC(bpy.types.Operator):
         import pstats
 
         # For Windows
-        filepath = bpy.context.scene.BIMProperties.ifc_file.replace('\\', '\\\\')
+        filepath = bpy.context.scene.BIMProperties.ifc_file.replace("\\", "\\\\")
 
-        cProfile.run(
-            f"import bpy; bpy.ops.import_ifc.bim(filepath='{filepath}')", "blender.prof"
-        )
+        cProfile.run(f"import bpy; bpy.ops.import_ifc.bim(filepath='{filepath}')", "blender.prof")
         p = pstats.Stats("blender.prof")
         p.sort_stats("cumulative").print_stats(50)
         return {"FINISHED"}
@@ -57,18 +75,18 @@ class CreateAllShapes(bpy.types.Operator):
         total = len(elements)
         settings = ifcopenshell.geom.settings()
         failures = []
-        excludes = () # For the developer to debug with
+        excludes = ()  # For the developer to debug with
         for i, element in enumerate(elements):
             if element.GlobalId in excludes:
                 continue
-            print(f'{i}/{total}:', element)
+            print(f"{i}/{total}:", element)
             try:
                 shape = ifcopenshell.geom.create_shape(settings, element)
                 print("Success", len(shape.geometry.verts), len(shape.geometry.edges), len(shape.geometry.faces))
             except:
                 failures.append(element)
-                print('***** FAILURE *****')
-        print('Failures:')
+                print("***** FAILURE *****")
+        print("Failures:")
         for failure in failures:
             print(failure)
         return {"FINISHED"}
