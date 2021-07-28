@@ -36,10 +36,10 @@ class CreateProject(bpy.types.Operator):
         bpy.ops.bim.add_person()
         bpy.ops.bim.add_organisation()
 
-        project = bpy.data.objects.new("My Project", None)
-        site = bpy.data.objects.new("My Site", None)
-        building = bpy.data.objects.new("My Building", None)
-        building_storey = bpy.data.objects.new("Ground Floor", None)
+        project = bpy.data.objects.new(self.get_name("IfcProject", "My Project"), None)
+        site = bpy.data.objects.new(self.get_name("IfcSite", "My Site"), None)
+        building = bpy.data.objects.new(self.get_name("IfcBuilding", "My Building"), None)
+        building_storey = bpy.data.objects.new(self.get_name("IfcBuildingStorey", "My Storey"), None)
 
         bpy.ops.bim.assign_class(obj=project.name, ifc_class="IfcProject")
         bpy.ops.bim.assign_unit()
@@ -61,6 +61,14 @@ class CreateProject(bpy.types.Operator):
         bpy.ops.bim.assign_object(related_object=building_storey.name, relating_object=building.name)
 
         return {"FINISHED"}
+
+    def get_name(self, ifc_class, name):
+        if not bpy.data.objects.get(f"{ifc_class}/{name}"):
+            return name
+        i = 2
+        while bpy.data.objects.get(f"{ifc_class}/{name} {i}"):
+            i += 1
+        return f"{name} {i}"
 
     def rollback(self, data):
         IfcStore.file = None
