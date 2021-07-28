@@ -67,9 +67,9 @@ class IfcExporter:
         to_delete = []
 
         for ifc_definition_id, obj in IfcStore.id_map.items():
+            if isinstance(obj, bpy.types.Material):
+                continue
             try:
-                if isinstance(obj, bpy.types.Material):
-                    continue
                 self.sync_object_placement(obj)
                 self.sync_object_container(ifc_definition_id, obj)
             except ReferenceError:
@@ -89,7 +89,10 @@ class IfcExporter:
             if not obj:
                 continue
             try:
-                bpy.ops.bim.update_representation(obj=obj.name)
+                if isinstance(obj, bpy.types.Material):
+                    bpy.ops.bim.update_style_colours(material=obj.name)
+                else:
+                    bpy.ops.bim.update_representation(obj=obj.name)
             except ReferenceError:
                 pass  # The object is likely deleted
         IfcStore.edited_objs.clear()

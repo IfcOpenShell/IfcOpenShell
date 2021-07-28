@@ -35,6 +35,7 @@ def mode_callback(obj, data):
 
 
 def name_callback(obj, data):
+    # TODO Do we still need this, now that we are monitoring the undo redo objects?
     try:
         obj.name
     except:
@@ -74,6 +75,11 @@ def name_callback(obj, data):
         TypeData.purge()
     element.Name = "/".join(obj.name.split("/")[1:])
     AttributeData.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+
+
+def color_callback(obj, data):
+    if obj.BIMMaterialProperties.ifc_style_id:
+        IfcStore.edited_objs.add(obj)
 
 
 def active_object_callback():
