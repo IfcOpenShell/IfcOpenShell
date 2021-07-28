@@ -154,7 +154,7 @@ class IfcImporter:
         self.exclude_elements = set()
         self.project = None
         self.spatial_structure_elements = {}
-        self.elements = {}
+        self.elements = []
         self.type_collection = None
         self.type_products = {}
         self.openings = {}
@@ -475,7 +475,6 @@ class IfcImporter:
             grid_collection.objects.link(obj)
 
     def create_type_products(self):
-        type_products = self.file.by_type("IfcTypeProduct")
         for collection in self.project["blender"].children:
             if collection.name == "Types":
                 self.type_collection = collection
@@ -483,7 +482,15 @@ class IfcImporter:
         if not self.type_collection:
             self.type_collection = bpy.data.collections.new("Types")
             self.project["blender"].children.link(self.type_collection)
+
+        if self.filter_mode in ["WHITELIST", "BLACKLIST"]:
+            type_products = set([ifcopenshell.util.element.get_type(e) for e in self.elements])
+        else:
+            type_products = self.file.by_type("IfcTypeProduct")
+
         for type_product in type_products:
+            if not type_product:
+                continue
             self.create_type_product(type_product)
 
     def create_type_product(self, element):
@@ -604,7 +611,15 @@ class IfcImporter:
 
     def create_empty_and_2d_elements(self):
         curve_products = []
-        for element in self.file.by_type("IfcElement"):
+
+        if self.filter_mode == "WHITELIST":
+            self.elements = self.include_elements
+        elif self.filter_mode == "BLACKLIST":
+            self.elements = [e for e in self.file.by_type("IfcElement") if e not in self.exclude_elements]
+        else:
+            self.elements = self.file.by_type("IfcElement")
+
+        for element in self.elements:
             if element.id() in self.added_data:
                 continue
             if element.is_a("IfcPort"):
@@ -949,7 +964,6 @@ class IfcImporter:
 
     def set_ifc_file(self):
         bpy.context.scene.BIMProperties.ifc_file = self.ifc_import_settings.input_file
-        IfcStore.file = self.file
         IfcStore.path = self.ifc_import_settings.input_file
 
     def calculate_unit_scale(self):
