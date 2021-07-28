@@ -54,7 +54,6 @@ class AddMaterial(bpy.types.Operator):
         obj = bpy.data.materials.get(self.obj) if self.obj else bpy.context.active_object.active_material
         self.file = IfcStore.get_file()
         result = ifcopenshell.api.run("material.add_material", self.file, **{"name": obj.name})
-        obj.BIMObjectProperties.ifc_definition_id = result.id()
         IfcStore.link_element(result, obj)
         if obj.BIMMaterialProperties.ifc_style_id:
             context = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")

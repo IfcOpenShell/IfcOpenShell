@@ -74,7 +74,7 @@ class AddStyle(bpy.types.Operator):
         settings["name"] = material.name
         settings["external_definition"] = None  # TODO: Implement. See #1222
         style = ifcopenshell.api.run("style.add_style", self.file, **settings)
-        material.BIMMaterialProperties.ifc_style_id = style.id()
+        IfcStore.link_element(style, material)
         if material.BIMObjectProperties.ifc_definition_id:
             context = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
             if context:
