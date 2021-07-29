@@ -186,7 +186,7 @@ class SelectGroupProducts(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        for obj in bpy.context.visible_objects:
+        for obj in context.visible_objects:
             obj.select_set(False)
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue

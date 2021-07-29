@@ -4,8 +4,8 @@ from ifcopenshell.api.owner.data import Data
 from blenderbim.bim.ifc import IfcStore
 
 
-def draw_roles_ui(box, assigned_object_id, roles):
-    props = bpy.context.scene.BIMOwnerProperties
+def draw_roles_ui(box, assigned_object_id, roles, context):
+    props = context.scene.BIMOwnerProperties
     row = box.row(align=True)
     row.label(text="Roles")
     row.operator("bim.add_role", icon="ADD", text="").assigned_object_id = assigned_object_id
@@ -30,8 +30,8 @@ def draw_roles_ui(box, assigned_object_id, roles):
             row.operator("bim.remove_role", icon="X", text="").role_id = role_id
 
 
-def draw_addresses_ui(box, assigned_object_id, addresses, file):
-    props = bpy.context.scene.BIMOwnerProperties
+def draw_addresses_ui(box, assigned_object_id, addresses, file, context):
+    props = context.scene.BIMOwnerProperties
     row = box.row(align=True)
     row.label(text="Addresses")
     op = row.operator("bim.add_address", icon="LINK_BLEND", text="")
@@ -135,8 +135,8 @@ class BIM_PT_people(Panel):
                 row = box.row()
                 row.prop(blender_person, "suffix_titles")
 
-                draw_roles_ui(box, person_id, person["Roles"])
-                draw_addresses_ui(box, person_id, person["Addresses"], self.file)
+                draw_roles_ui(box, person_id, person["Roles"], context)
+                draw_addresses_ui(box, person_id, person["Addresses"], self.file, context)
             else:
                 row = self.layout.row(align=True)
                 name = person["Id"] if self.file.schema == "IFC2X3" else person["Identification"]
@@ -189,8 +189,8 @@ class BIM_PT_organisations(Panel):
                 row = box.row()
                 row.prop(blender_organisation, "description")
 
-                draw_roles_ui(box, organisation_id, organisation["Roles"])
-                draw_addresses_ui(box, organisation_id, organisation["Addresses"], self.file)
+                draw_roles_ui(box, organisation_id, organisation["Roles"], context)
+                draw_addresses_ui(box, organisation_id, organisation["Addresses"], self.file, context)
             else:
                 row = self.layout.row(align=True)
                 row.label(text=organisation["Name"])

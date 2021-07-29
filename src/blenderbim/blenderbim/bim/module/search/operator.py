@@ -22,17 +22,18 @@ colour_list = [
 ]
 
 
-def does_keyword_exist(pattern, string):
+def does_keyword_exist(pattern, string, context):
     string = str(string)
+    props = context.scene.BIMSearchProperties
     if (
-        bpy.context.scene.BIMSearchProperties.should_use_regex
-        and bpy.context.scene.BIMSearchProperties.should_ignorecase
+        props.should_use_regex
+        and props.should_ignorecase
         and re.search(pattern, string, flags=re.IGNORECASE)
     ):
         return True
-    elif bpy.context.scene.BIMSearchProperties.should_use_regex and re.search(pattern, string):
+    elif props.should_use_regex and re.search(pattern, string):
         return True
-    elif bpy.context.scene.BIMSearchProperties.should_ignorecase and string.lower() == pattern.lower():
+    elif props.should_ignorecase and string.lower() == pattern.lower():
         return True
     elif string == pattern:
         return True
@@ -70,7 +71,7 @@ class SelectIfcClass(bpy.types.Operator):
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-            if does_keyword_exist(self.ifc_class, element.is_a()):
+            if does_keyword_exist(self.ifc_class, element.is_a(), context):
                 obj.select_set(True)
         return {"FINISHED"}
 
@@ -94,7 +95,7 @@ class SelectAttribute(bpy.types.Operator):
                 value = next((v for k, v in data.items() if k.lower() == attribute_name.lower()), None)
             else:
                 value = getattr(element, attribute_name, None)
-            if does_keyword_exist(pattern, value):
+            if does_keyword_exist(pattern, value, context):
                 obj.select_set(True)
         return {"FINISHED"}
 
@@ -126,7 +127,7 @@ class SelectPset(bpy.types.Operator):
             else:
                 props = props or psets.get(search_pset_name, {})
                 value = props.get(search_prop_name, None)
-            if does_keyword_exist(pattern, value):
+            if does_keyword_exist(pattern, value, context):
                 obj.select_set(True)
         return {"FINISHED"}
 
@@ -138,7 +139,7 @@ class ColourByAttribute(bpy.types.Operator):
 
     def execute(self, context):
         IfcStore.begin_transaction(self)
-        self.store_state()
+        self.store_state(context)
         result = self._execute(context)
         IfcStore.add_transaction_operation(self)
         IfcStore.end_transaction(self)
@@ -161,13 +162,13 @@ class ColourByAttribute(bpy.types.Operator):
             if value not in values:
                 values[value] = next(colours)
             obj.color = values[value]
-        areas = [a for a in bpy.context.screen.areas if a.type == "VIEW_3D"]
+        areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
         if areas:
             areas[0].spaces[0].shading.color_type = "OBJECT"
         return {"FINISHED"}
 
-    def store_state(self):
-        areas = [a for a in bpy.context.screen.areas if a.type == "VIEW_3D"]
+    def store_state(self, context):
+        areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
         if areas:
             self.transaction_data = {"area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
 
@@ -187,7 +188,7 @@ class ColourByPset(bpy.types.Operator):
 
     def execute(self, context):
         IfcStore.begin_transaction(self)
-        self.store_state()
+        self.store_state(context)
         result = self._execute(context)
         IfcStore.add_transaction_operation(self)
         IfcStore.end_transaction(self)
@@ -218,13 +219,13 @@ class ColourByPset(bpy.types.Operator):
             if value not in values:
                 values[value] = next(colours)
             obj.color = values[value]
-        areas = [a for a in bpy.context.screen.areas if a.type == "VIEW_3D"]
+        areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
         if areas:
             areas[0].spaces[0].shading.color_type = "OBJECT"
         return {"FINISHED"}
 
-    def store_state(self):
-        areas = [a for a in bpy.context.screen.areas if a.type == "VIEW_3D"]
+    def store_state(self, context):
+        areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
         if areas:
             self.transaction_data = {"area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
 
@@ -244,7 +245,7 @@ class ColourByClass(bpy.types.Operator):
 
     def execute(self, context):
         IfcStore.begin_transaction(self)
-        self.store_state()
+        self.store_state(context)
         result = self._execute(context)
         IfcStore.add_transaction_operation(self)
         IfcStore.end_transaction(self)
@@ -254,7 +255,7 @@ class ColourByClass(bpy.types.Operator):
         self.file = IfcStore.get_file()
         colours = cycle(colour_list)
         ifc_classes = {}
-        for obj in bpy.context.visible_objects:
+        for obj in context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
@@ -262,13 +263,13 @@ class ColourByClass(bpy.types.Operator):
             if ifc_class not in ifc_classes:
                 ifc_classes[ifc_class] = next(colours)
             obj.color = ifc_classes[ifc_class]
-        areas = [a for a in bpy.context.screen.areas if a.type == "VIEW_3D"]
+        areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
         if areas:
             areas[0].spaces[0].shading.color_type = "OBJECT"
         return {"FINISHED"}
 
-    def store_state(self):
-        areas = [a for a in bpy.context.screen.areas if a.type == "VIEW_3D"]
+    def store_state(self, context):
+        areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
         if areas:
             self.transaction_data = {"area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
 
@@ -286,6 +287,6 @@ class ResetObjectColours(bpy.types.Operator):
     bl_label = "Reset Colours"
 
     def execute(self, context):
-        for obj in bpy.context.selected_objects:
+        for obj in context.selected_objects:
             obj.color = (1, 1, 1, 1)
         return {"FINISHED"}

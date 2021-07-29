@@ -13,26 +13,27 @@ class AssignUnit(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        ifcopenshell.api.run("unit.assign_unit", IfcStore.get_file(), **self.get_units())
+        ifcopenshell.api.run("unit.assign_unit", IfcStore.get_file(), **self.get_units(context))
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
 
-    def get_units(self):
+    def get_units(self, context):
+        scene = context.scene
         units = {
             "length": {
                 "ifc": None,
-                "is_metric": bpy.context.scene.unit_settings.system != "IMPERIAL",
-                "raw": bpy.context.scene.unit_settings.length_unit,
+                "is_metric": scene.unit_settings.system != "IMPERIAL",
+                "raw": scene.unit_settings.length_unit,
             },
             "area": {
                 "ifc": None,
-                "is_metric": bpy.context.scene.unit_settings.system != "IMPERIAL",
-                "raw": bpy.context.scene.unit_settings.length_unit,
+                "is_metric": scene.unit_settings.system != "IMPERIAL",
+                "raw": scene.unit_settings.length_unit,
             },
             "volume": {
                 "ifc": None,
-                "is_metric": bpy.context.scene.unit_settings.system != "IMPERIAL",
-                "raw": bpy.context.scene.unit_settings.length_unit,
+                "is_metric": scene.unit_settings.system != "IMPERIAL",
+                "raw": scene.unit_settings.length_unit,
             },
         }
         for data in units.values():

@@ -29,7 +29,7 @@ class CreateProject(bpy.types.Operator):
             return {"FINISHED"}
 
         IfcStore.file = ifcopenshell.api.run(
-            "project.create_file", **{"version": bpy.context.scene.BIMProperties.export_schema}
+            "project.create_file", **{"version": context.scene.BIMProperties.export_schema}
         )
         self.file = IfcStore.get_file()
 
@@ -49,7 +49,7 @@ class CreateProject(bpy.types.Operator):
         bpy.ops.bim.add_subcontext(context="Plan")
         bpy.ops.bim.add_subcontext(context="Plan", subcontext="Annotation", target_view="PLAN_VIEW")
 
-        bpy.context.scene.BIMProperties.contexts = str(
+        context.scene.BIMProperties.contexts = str(
             ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW").id()
         )
 
@@ -97,7 +97,7 @@ class CreateProjectLibrary(bpy.types.Operator):
             return {"FINISHED"}
 
         IfcStore.file = ifcopenshell.api.run(
-            "project.create_file", **{"version": bpy.context.scene.BIMProperties.export_schema}
+            "project.create_file", **{"version": context.scene.BIMProperties.export_schema}
         )
         self.file = IfcStore.get_file()
 
@@ -326,14 +326,14 @@ class AppendLibraryElement(bpy.types.Operator):
             library=IfcStore.library_file,
             element=IfcStore.library_file.by_id(self.definition),
         )
-        self.import_type_from_ifc(element)
+        self.import_type_from_ifc(element, context)
         blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}
 
-    def import_type_from_ifc(self, element):
+    def import_type_from_ifc(self, element, context):
         self.file = IfcStore.get_file()
         logger = logging.getLogger("ImportIFC")
-        ifc_import_settings = import_ifc.IfcImportSettings.factory(bpy.context, IfcStore.path, logger)
+        ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
 
         type_collection = bpy.data.collections.get("Types")
         if not type_collection:

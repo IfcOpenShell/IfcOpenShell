@@ -29,7 +29,7 @@ class PurgeIfcLinks(bpy.types.Operator):
                     obj.data.BIMMeshProperties.ifc_definition_id = 0
         for material in bpy.data.materials:
             material.BIMMaterialProperties.ifc_style_id = False
-        bpy.context.scene.BIMProperties.ifc_file = ""
+        context.scene.BIMProperties.ifc_file = ""
         IfcStore.purge()
         blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}
@@ -57,7 +57,7 @@ class ProfileImportIFC(bpy.types.Operator):
         import pstats
 
         # For Windows
-        filepath = bpy.context.scene.BIMProperties.ifc_file.replace("\\", "\\\\")
+        filepath = context.scene.BIMProperties.ifc_file.replace("\\", "\\\\")
 
         cProfile.run(f"import bpy; bpy.ops.import_ifc.bim(filepath='{filepath}')", "blender.prof")
         p = pstats.Stats("blender.prof")
@@ -102,9 +102,9 @@ class CreateShapeFromStepId(bpy.types.Operator):
 
     def _execute(self, context):
         logger = logging.getLogger("ImportIFC")
-        self.ifc_import_settings = import_ifc.IfcImportSettings.factory(bpy.context, IfcStore.path, logger)
+        self.ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
         self.file = IfcStore.get_file()
-        element = self.file.by_id(int(bpy.context.scene.BIMDebugProperties.step_id))
+        element = self.file.by_id(int(context.scene.BIMDebugProperties.step_id))
         settings = ifcopenshell.geom.settings()
         # settings.set(settings.INCLUDE_CURVES, True)
         shape = ifcopenshell.geom.create_shape(settings, element)
@@ -112,7 +112,7 @@ class CreateShapeFromStepId(bpy.types.Operator):
         ifc_importer.file = self.file
         mesh = ifc_importer.create_mesh(element, shape)
         obj = bpy.data.objects.new("Debug", mesh)
-        bpy.context.scene.collection.objects.link(obj)
+        context.scene.collection.objects.link(obj)
         return {"FINISHED"}
 
 
@@ -125,7 +125,7 @@ class SelectHighPolygonMeshes(bpy.types.Operator):
         results = {}
         for obj in bpy.data.objects:
             if not isinstance(obj.data, bpy.types.Mesh) or len(obj.data.polygons) < int(
-                bpy.context.scene.BIMDebugProperties.number_of_polygons
+                context.scene.BIMDebugProperties.number_of_polygons
             ):
                 continue
             try:
@@ -141,7 +141,7 @@ class RewindInspector(bpy.types.Operator):
     bl_label = "Rewind Inspector"
 
     def execute(self, context):
-        props = bpy.context.scene.BIMDebugProperties
+        props = context.scene.BIMDebugProperties
         total_breadcrumbs = len(props.step_id_breadcrumb)
         if total_breadcrumbs < 2:
             return {"FINISHED"}
@@ -159,18 +159,18 @@ class InspectFromStepId(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        bpy.context.scene.BIMDebugProperties.active_step_id = self.step_id
-        crumb = bpy.context.scene.BIMDebugProperties.step_id_breadcrumb.add()
+        context.scene.BIMDebugProperties.active_step_id = self.step_id
+        crumb = context.scene.BIMDebugProperties.step_id_breadcrumb.add()
         crumb.name = str(self.step_id)
         element = self.file.by_id(self.step_id)
-        while len(bpy.context.scene.BIMDebugProperties.attributes) > 0:
-            bpy.context.scene.BIMDebugProperties.attributes.remove(0)
-        while len(bpy.context.scene.BIMDebugProperties.inverse_attributes) > 0:
-            bpy.context.scene.BIMDebugProperties.inverse_attributes.remove(0)
-        while len(bpy.context.scene.BIMDebugProperties.inverse_references) > 0:
-            bpy.context.scene.BIMDebugProperties.inverse_references.remove(0)
+        while len(context.scene.BIMDebugProperties.attributes) > 0:
+            context.scene.BIMDebugProperties.attributes.remove(0)
+        while len(context.scene.BIMDebugProperties.inverse_attributes) > 0:
+            context.scene.BIMDebugProperties.inverse_attributes.remove(0)
+        while len(context.scene.BIMDebugProperties.inverse_references) > 0:
+            context.scene.BIMDebugProperties.inverse_references.remove(0)
         for key, value in element.get_info().items():
-            self.add_attribute(bpy.context.scene.BIMDebugProperties.attributes, key, value)
+            self.add_attribute(context.scene.BIMDebugProperties.attributes, key, value)
         for key in dir(element):
             if (
                 not key[0].isalpha()
@@ -179,9 +179,9 @@ class InspectFromStepId(bpy.types.Operator):
                 or not getattr(element, key)
             ):
                 continue
-            self.add_attribute(bpy.context.scene.BIMDebugProperties.inverse_attributes, key, getattr(element, key))
+            self.add_attribute(context.scene.BIMDebugProperties.inverse_attributes, key, getattr(element, key))
         for inverse in self.file.get_inverse(element):
-            new = bpy.context.scene.BIMDebugProperties.inverse_references.add()
+            new = context.scene.BIMDebugProperties.inverse_references.add()
             new.string_value = str(inverse)
             new.int_value = inverse.id()
         return {"FINISHED"}
@@ -205,7 +205,7 @@ class InspectFromObject(bpy.types.Operator):
     bl_label = "Inspect From Object"
 
     def execute(self, context):
-        ifc_definition_id = bpy.context.active_object.BIMObjectProperties.ifc_definition_id
+        ifc_definition_id = context.active_object.BIMObjectProperties.ifc_definition_id
         if not ifc_definition_id:
             return {"FINISHED"}
         bpy.ops.bim.inspect_from_step_id(step_id=ifc_definition_id)

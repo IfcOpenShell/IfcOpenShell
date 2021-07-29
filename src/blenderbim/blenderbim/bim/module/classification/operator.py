@@ -133,7 +133,7 @@ class EnableEditingClassificationReference(bpy.types.Operator):
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         props = obj.BIMClassificationReferenceProperties
         while len(props.reference_attributes) > 0:
             props.reference_attributes.remove(0)
@@ -157,7 +157,7 @@ class DisableEditingClassificationReference(bpy.types.Operator):
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         obj.BIMClassificationReferenceProperties.active_reference_id = 0
         return {"FINISHED"}
 
@@ -173,7 +173,7 @@ class RemoveClassificationReference(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "classification.remove_reference",
@@ -198,7 +198,7 @@ class EditClassificationReference(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         props = obj.BIMClassificationReferenceProperties
         attributes = {}
         for attribute in props.reference_attributes:
@@ -228,7 +228,7 @@ class AddClassificationReference(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
 
         classification = None

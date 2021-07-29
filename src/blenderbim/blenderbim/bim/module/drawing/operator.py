@@ -467,7 +467,7 @@ class AddAnnotation(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        if not bpy.context.scene.camera:
+        if not context.scene.camera:
             return {"FINISHED"}
         subcontext = ifcopenshell.util.representation.get_context(
             IfcStore.get_file(), "Plan", "Annotation", context.scene.camera.data.BIMCameraProperties.target_view
@@ -475,17 +475,17 @@ class AddAnnotation(bpy.types.Operator):
         if not subcontext:
             return {"FINISHED"}
         if self.data_type == "text":
-            if bpy.context.selected_objects:
-                for selected_object in bpy.context.selected_objects:
-                    obj = annotation.Annotator.add_text(related_element=selected_object)
+            if context.selected_objects:
+                for selected_object in context.selected_objects:
+                    obj = annotation.Annotator.add_text(context, related_element=selected_object)
             else:
-                obj = annotation.Annotator.add_text()
+                obj = annotation.Annotator.add_text(context)
         else:
-            obj = annotation.Annotator.get_annotation_obj(self.obj_name, self.data_type)
+            obj = annotation.Annotator.get_annotation_obj(self.obj_name, self.data_type, context)
             if self.obj_name == "Break":
-                obj = annotation.Annotator.add_plane_to_annotation(obj)
+                obj = annotation.Annotator.add_plane_to_annotation(obj, context)
             else:
-                obj = annotation.Annotator.add_line_to_annotation(obj)
+                obj = annotation.Annotator.add_line_to_annotation(obj, context)
 
         if not obj.BIMObjectProperties.ifc_definition_id:
             bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcAnnotation", context_id=subcontext.id())
@@ -695,10 +695,10 @@ class GenerateReferences(bpy.types.Operator):
             self.generate_grids()
         if self.camera.data.BIMCameraProperties.target_view == "ELEVATION_VIEW":
             self.generate_grids()
-            self.generate_levels()
+            self.generate_levels(context)
         if self.camera.data.BIMCameraProperties.target_view == "SECTION_VIEW":
             self.generate_grids()
-            self.generate_levels()
+            self.generate_levels(context)
         return {"FINISHED"}
 
     def filter_potential_references(self):
@@ -714,7 +714,7 @@ class GenerateReferences(bpy.types.Operator):
         # TODO
         pass
 
-    def generate_levels(self):
+    def generate_levels(self, context):
         if self.camera.data.BIMCameraProperties.raster_x > self.camera.data.BIMCameraProperties.raster_y:
             width = self.camera.data.ortho_scale
             height = (
@@ -725,7 +725,7 @@ class GenerateReferences(bpy.types.Operator):
             width = (
                 height / self.camera.data.BIMCameraProperties.raster_y * self.camera.data.BIMCameraProperties.raster_x
             )
-        level_obj = annotation.Annotator.get_annotation_obj("Section Level", "curve")
+        level_obj = annotation.Annotator.get_annotation_obj("Section Level", "curve", context)
 
         width_in_mm = width * 1000
         if self.camera.data.BIMCameraProperties.diagram_scale == "CUSTOM":
@@ -742,7 +742,7 @@ class GenerateReferences(bpy.types.Operator):
             projection = self.project_point_onto_camera(obj.location)
             co1 = self.camera.matrix_world @ Vector((width / 2 - (offset_percentage * width), projection[1], -1))
             co2 = self.camera.matrix_world @ Vector((-(width / 2), projection[1], -1))
-            annotation.Annotator.add_line_to_annotation(level_obj, co1, co2)
+            annotation.Annotator.add_line_to_annotation(level_obj, context, co1, co2)
 
     def project_point_onto_camera(self, point):
         projection = self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))

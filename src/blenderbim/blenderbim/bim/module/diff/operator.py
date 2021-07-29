@@ -13,7 +13,7 @@ class SelectDiffJsonFile(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        bpy.context.scene.DiffProperties.diff_json_file = self.filepath
+        context.scene.DiffProperties.diff_json_file = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -29,9 +29,9 @@ class VisualiseDiff(bpy.types.Operator):
     def execute(self, context):
         #ifc_file = IfcStore.get_file() # In case we get from Store
         ifc_file = ifcopenshell.open(context.scene.DiffProperties.diff_new_file) # for Now refer to the new file
-        with open(bpy.context.scene.DiffProperties.diff_json_file, "r") as file:
+        with open(context.scene.DiffProperties.diff_json_file, "r") as file:
             diff = json.load(file)
-        for obj in bpy.context.visible_objects:
+        for obj in context.visible_objects:
             obj.color = (1.0, 1.0, 1.0, 0.2)
             global_id = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId
             if not global_id:
@@ -42,7 +42,7 @@ class VisualiseDiff(bpy.types.Operator):
                 obj.color = (0.0, 1.0, 0.0, 0.2)
             elif global_id.string_value in diff["changed"]:
                 obj.color = (0.0, 0.0, 1.0, 0.2)
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].shading.color_type = "OBJECT"
         return {"FINISHED"}
 
@@ -54,7 +54,7 @@ class SelectDiffOldFile(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        bpy.context.scene.DiffProperties.diff_old_file = self.filepath
+        context.scene.DiffProperties.diff_old_file = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -69,7 +69,7 @@ class SelectDiffNewFile(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        bpy.context.scene.DiffProperties.diff_new_file = self.filepath
+        context.scene.DiffProperties.diff_new_file = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -93,12 +93,12 @@ class ExecuteIfcDiff(bpy.types.Operator):
         import ifcdiff
 
         ifc_diff = ifcdiff.IfcDiff(
-            bpy.context.scene.DiffProperties.diff_old_file,
-            bpy.context.scene.DiffProperties.diff_new_file,
+            context.scene.DiffProperties.diff_old_file,
+            context.scene.DiffProperties.diff_new_file,
             self.filepath,
-            bpy.context.scene.DiffProperties.diff_relationships.split(),
+            context.scene.DiffProperties.diff_relationships.split(),
         )
         ifc_diff.diff()
         ifc_diff.export()
-        bpy.context.scene.DiffProperties.diff_json_file = self.filepath
+        context.scene.DiffProperties.diff_json_file = self.filepath
         return {"FINISHED"}

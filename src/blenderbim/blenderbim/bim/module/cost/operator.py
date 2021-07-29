@@ -307,7 +307,7 @@ class AssignCostItemProduct(bpy.types.Operator):
 
     def _execute(self, context):
         related_objects = (
-            [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
+            [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
         )
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
@@ -336,7 +336,7 @@ class UnassignCostItemProduct(bpy.types.Operator):
 
     def _execute(self, context):
         related_objects = (
-            [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
+            [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
         )
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
@@ -621,7 +621,7 @@ class SelectCostItemProducts(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         related_products = Data.cost_items[self.cost_item]["Controls"]
-        for obj in bpy.context.visible_objects:
+        for obj in context.visible_objects:
             obj.select_set(False)
             if obj.BIMObjectProperties.ifc_definition_id in related_products:
                 obj.select_set(True)
@@ -640,7 +640,7 @@ class SelectCostScheduleProducts(bpy.types.Operator):
         for cost_item_id in Data.cost_schedules[self.cost_schedule]["Controls"]:
             self.get_related_products(Data.cost_items[cost_item_id])
         self.related_products = set(self.related_products)
-        for obj in bpy.context.visible_objects:
+        for obj in context.visible_objects:
             obj.select_set(False)
             if obj.BIMObjectProperties.ifc_definition_id in self.related_products:
                 obj.select_set(True)

@@ -29,8 +29,8 @@ class ExportIFC(bpy.types.Operator):
         if not IfcStore.get_file():
             self.report({"ERROR"}, "No IFC project is available for export - create or import a project first.")
             return {"FINISHED"}
-        if bpy.context.scene.BIMProperties.ifc_file:
-            self.filepath = bpy.context.scene.BIMProperties.ifc_file
+        if context.scene.BIMProperties.ifc_file:
+            self.filepath = context.scene.BIMProperties.ifc_file
             return self.execute(context)
         if not self.filepath:
             self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".ifc")
@@ -69,11 +69,12 @@ class ExportIFC(bpy.types.Operator):
         ifc_exporter.export()
         settings.logger.info("Export finished in {:.2f} seconds".format(time.time() - start))
         print("Export finished in {:.2f} seconds".format(time.time() - start))
-        if not bpy.context.scene.DocProperties.ifc_files:
-            new = bpy.context.scene.DocProperties.ifc_files.add()
+        scene = context.scene
+        if not scene.DocProperties.ifc_files:
+            new = scene.DocProperties.ifc_files.add()
             new.name = output_file
-        if not bpy.context.scene.BIMProperties.ifc_file:
-            bpy.context.scene.BIMProperties.ifc_file = output_file
+        if not scene.BIMProperties.ifc_file:
+            scene.BIMProperties.ifc_file = output_file
         if bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath:
             bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
         return {"FINISHED"}
@@ -109,8 +110,8 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
     def execute(self, context):
         start = time.time()
         logger = logging.getLogger("ImportIFC")
-        path_log = os.path.join(bpy.context.scene.BIMProperties.data_dir, "process.log"),
-        if not os.access(bpy.context.scene.BIMProperties.data_dir, os.W_OK):
+        path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log"),
+        if not os.access(context.scene.BIMProperties.data_dir, os.W_OK):
             path_log = os.path.join(tempfile.mkdtemp(), "process.log")
         logging.basicConfig(
             filename=path_log,
@@ -161,7 +162,7 @@ class SelectIfcFile(bpy.types.Operator):
 
     def execute(self, context):
         if os.path.exists(self.filepath) and "ifc" in os.path.splitext(self.filepath)[1]:
-            bpy.context.scene.BIMProperties.ifc_file = self.filepath
+            context.scene.BIMProperties.ifc_file = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -176,7 +177,7 @@ class SelectDataDir(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        bpy.context.scene.BIMProperties.data_dir = os.path.dirname(self.filepath)
+        context.scene.BIMProperties.data_dir = os.path.dirname(self.filepath)
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -191,7 +192,7 @@ class SelectSchemaDir(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        bpy.context.scene.BIMProperties.schema_dir = os.path.dirname(self.filepath)
+        context.scene.BIMProperties.schema_dir = os.path.dirname(self.filepath)
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -222,36 +223,36 @@ class AddSectionPlane(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        obj = self.create_section_obj()
+        obj = self.create_section_obj(context)
         if not self.has_section_override_node():
             self.create_section_compare_node()
-            self.create_section_override_node(obj)
+            self.create_section_override_node(obj, context)
         else:
             self.append_obj_to_section_override_node(obj)
-        self.add_default_material_if_none_exists()
+        self.add_default_material_if_none_exists(context)
         self.override_materials()
         return {"FINISHED"}
 
-    def create_section_obj(self):
+    def create_section_obj(self, context):
         section = bpy.data.objects.new("Section", None)
         section.empty_display_type = "SINGLE_ARROW"
         section.empty_display_size = 5
         section.show_in_front = True
         if (
-            bpy.context.active_object
-            and bpy.context.active_object.select_get()
-            and isinstance(bpy.context.active_object.data, bpy.types.Camera)
+            context.active_object
+            and context.active_object.select_get()
+            and isinstance(context.active_object.data, bpy.types.Camera)
         ):
             section.matrix_world = (
-                bpy.context.active_object.matrix_world @ Euler((radians(180.0), 0.0, 0.0), "XYZ").to_matrix().to_4x4()
+                context.active_object.matrix_world @ Euler((radians(180.0), 0.0, 0.0), "XYZ").to_matrix().to_4x4()
             )
         else:
             section.rotation_euler = Euler((radians(180.0), 0.0, 0.0), "XYZ")
-            section.location = bpy.context.scene.cursor.location
+            section.location = context.scene.cursor.location
         collection = bpy.data.collections.get("Sections")
         if not collection:
             collection = bpy.data.collections.new("Sections")
-            bpy.context.scene.collection.children.link(collection)
+            context.scene.collection.children.link(collection)
         collection.objects.link(section)
         return section
 
@@ -283,7 +284,7 @@ class AddSectionPlane(bpy.types.Operator):
         group.links.new(add.outputs[0], compare.inputs[0])
         group.links.new(compare.outputs[0], group_output.inputs[""])
 
-    def create_section_override_node(self, obj):
+    def create_section_override_node(self, obj, context):
         group = bpy.data.node_groups.new("Section Override", type="ShaderNodeTree")
 
         group_input = group.nodes.new(type="NodeGroupInput")
@@ -292,7 +293,7 @@ class AddSectionPlane(bpy.types.Operator):
         backfacing = group.nodes.new(type="ShaderNodeNewGeometry")
         backfacing_mix = group.nodes.new(type="ShaderNodeMixShader")
         emission = group.nodes.new(type="ShaderNodeEmission")
-        emission.inputs[0].default_value = list(bpy.context.scene.BIMProperties.section_plane_colour) + [1]
+        emission.inputs[0].default_value = list(context.scene.BIMProperties.section_plane_colour) + [1]
 
         group.links.new(backfacing.outputs["Backfacing"], backfacing_mix.inputs[0])
         group.links.new(group_input.outputs[""], backfacing_mix.inputs[1])
@@ -337,16 +338,16 @@ class AddSectionPlane(bpy.types.Operator):
 
         section_compare.name = "Last Section Compare"
 
-    def add_default_material_if_none_exists(self):
+    def add_default_material_if_none_exists(self, context):
         material = bpy.data.materials.get("Section Override")
         if not material:
             material = bpy.data.materials.new("Section Override")
             material.use_nodes = True
 
-        if bpy.context.scene.BIMProperties.should_section_selected_objects:
-            objects = list(bpy.context.selected_objects)
+        if context.scene.BIMProperties.should_section_selected_objects:
+            objects = list(context.selected_objects)
         else:
-            objects = list(bpy.context.visible_objects)
+            objects = list(context.visible_objects)
 
         for obj in objects:
             aggregate = obj.instance_collection
@@ -390,7 +391,7 @@ class RemoveSectionPlane(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        name = bpy.context.active_object.name
+        name = context.active_object.name
         section_override = bpy.data.node_groups.get("Section Override")
         if not section_override:
             return {"FINISHED"}
@@ -406,7 +407,7 @@ class RemoveSectionPlane(bpy.types.Operator):
             else:  # If it links to section_compare.inputs[0]
                 if section_compare.inputs[1].links[0].from_node.name == "Mock Section":
                     # Then it is the very last section. Purge everything.
-                    self.purge_all_section_data()
+                    self.purge_all_section_data(context)
                     return {"FINISHED"}
                 section_override.links.new(
                     section_compare.inputs[1].links[0].from_socket, section_compare.outputs[0].links[0].to_socket
@@ -419,10 +420,10 @@ class RemoveSectionPlane(bpy.types.Operator):
             section_mix = section_override.nodes.get("Section Mix")
             new_last_compare = section_mix.inputs[0].links[0].from_node
             new_last_compare.name = "Last Section Compare"
-        bpy.ops.object.delete({"selected_objects": [bpy.context.active_object]})
+        bpy.ops.object.delete({"selected_objects": [context.active_object]})
         return {"FINISHED"}
 
-    def purge_all_section_data(self):
+    def purge_all_section_data(self, context):
         bpy.data.materials.remove(bpy.data.materials.get("Section Override"))
         for material in bpy.data.materials:
             if not material.node_tree:
@@ -436,7 +437,7 @@ class RemoveSectionPlane(bpy.types.Operator):
             material.node_tree.nodes.remove(override)
         bpy.data.node_groups.remove(bpy.data.node_groups.get("Section Override"))
         bpy.data.node_groups.remove(bpy.data.node_groups.get("Section Compare"))
-        bpy.ops.object.delete({"selected_objects": [bpy.context.active_object]})
+        bpy.ops.object.delete({"selected_objects": [context.active_object]})
 
 
 class ReloadIfcFile(bpy.types.Operator):
@@ -455,7 +456,7 @@ class AddIfcFile(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        bpy.context.scene.DocProperties.ifc_files.add()
+        context.scene.DocProperties.ifc_files.add()
         return {"FINISHED"}
 
 
@@ -466,7 +467,7 @@ class RemoveIfcFile(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        bpy.context.scene.DocProperties.ifc_files.remove(self.index)
+        context.scene.DocProperties.ifc_files.remove(self.index)
         return {"FINISHED"}
 
 
@@ -477,9 +478,9 @@ class SetOverrideColour(bpy.types.Operator):
 
     def execute(self, context):
         result = 0
-        for obj in bpy.context.selected_objects:
-            obj.color = bpy.context.scene.BIMProperties.override_colour
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        for obj in context.selected_objects:
+            obj.color = context.scene.BIMProperties.override_colour
+        area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].shading.color_type = "OBJECT"
         return {"FINISHED"}
 
@@ -505,7 +506,7 @@ class LinkIfc(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        # bpy.context.active_object.active_material.BIMMaterialProperties.location = self.filepath
+        # context.active_object.active_material.BIMMaterialProperties.location = self.filepath
         # coll_name = "MyCollection"
 
         with bpy.data.libraries.load(self.filepath, link=True) as (data_from, data_to):
@@ -534,13 +535,13 @@ class SnapSpacesTogether(bpy.types.Operator):
     def execute(self, context):
         threshold = 0.5
         processed_polygons = set()
-        for obj in bpy.context.selected_objects:
+        for obj in context.selected_objects:
             if obj.type != "MESH":
                 continue
             for polygon in obj.data.polygons:
                 center = obj.matrix_world @ polygon.center
                 distance = None
-                for obj2 in bpy.context.selected_objects:
+                for obj2 in context.selected_objects:
                     if obj2 == obj or obj.type != "MESH":
                         continue
                     result = obj2.ray_cast(obj2.matrix_world.inverted() @ center, polygon.normal, distance=threshold)
@@ -576,7 +577,7 @@ class SelectExternalMaterialDir(bpy.types.Operator):
 
     def execute(self, context):
         # TODO: this is dead code, awaiting reimplementation. See #1222.
-        bpy.context.active_object.active_material.BIMMaterialProperties.location = self.filepath
+        context.active_object.active_material.BIMMaterialProperties.location = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -590,28 +591,28 @@ class FetchExternalMaterial(bpy.types.Operator):
 
     def execute(self, context):
         # TODO: this is dead code, awaiting reimplementation. See #1222.
-        location = bpy.context.active_object.active_material.BIMMaterialProperties.location
+        location = context.active_object.active_material.BIMMaterialProperties.location
         if location[-6:] != ".mpass":
             return {"FINISHED"}
         if not os.path.isabs(location):
-            location = os.path.join(bpy.context.scene.BIMProperties.data_dir, location)
+            location = os.path.join(context.scene.BIMProperties.data_dir, location)
         with open(location) as f:
             self.material_pass = json.load(f)
-        if bpy.context.scene.render.engine == "BLENDER_EEVEE" and "eevee" in self.material_pass:
-            self.fetch_eevee_or_cycles("eevee")
-        elif bpy.context.scene.render.engine == "CYCLES" and "cycles" in self.material_pass:
-            self.fetch_eevee_or_cycles("cycles")
+        if context.scene.render.engine == "BLENDER_EEVEE" and "eevee" in self.material_pass:
+            self.fetch_eevee_or_cycles("eevee", context)
+        elif context.scene.render.engine == "CYCLES" and "cycles" in self.material_pass:
+            self.fetch_eevee_or_cycles("cycles", context)
         return {"FINISHED"}
 
-    def fetch_eevee_or_cycles(self, name):
-        identification = bpy.context.active_object.active_material.BIMMaterialProperties.identification
+    def fetch_eevee_or_cycles(self, name, context):
+        identification = context.active_object.active_material.BIMMaterialProperties.identification
         uri = self.material_pass[name]["uri"]
         if not os.path.isabs(uri):
-            uri = os.path.join(bpy.context.scene.BIMProperties.data_dir, uri)
+            uri = os.path.join(context.scene.BIMProperties.data_dir, uri)
         bpy.ops.wm.link(filename=identification, directory=os.path.join(uri, "Material"))
         for material in bpy.data.materials:
             if material.name == identification and material.library:
-                bpy.context.active_object.material_slots[0].material = material
+                context.active_object.material_slots[0].material = material
                 return
 
 
@@ -621,15 +622,15 @@ class FetchObjectPassport(bpy.types.Operator):
 
     def execute(self, context):
         # TODO: this is dead code, awaiting reimplementation. See #1222.
-        for reference in bpy.context.active_object.BIMObjectProperties.document_references:
-            reference = bpy.context.scene.BIMProperties.document_references[reference.name]
+        for reference in context.active_object.BIMObjectProperties.document_references:
+            reference = context.scene.BIMProperties.document_references[reference.name]
             if reference.location[-6:] == ".blend":
-                self.fetch_blender(reference)
+                self.fetch_blender(reference, context)
         return {"FINISHED"}
 
-    def fetch_blender(self, reference):
+    def fetch_blender(self, reference, context):
         bpy.ops.wm.link(filename=reference.name, directory=os.path.join(reference.location, "Mesh"))
-        bpy.context.active_object.data = bpy.data.meshes[reference.name]
+        context.active_object.data = bpy.data.meshes[reference.name]
 
 
 class CopyPropertyToSelection(bpy.types.Operator):
@@ -641,7 +642,7 @@ class CopyPropertyToSelection(bpy.types.Operator):
 
     def execute(self, context):
         # TODO: this is dead code, awaiting reimplementation. See #1222.
-        for obj in bpy.context.selected_objects:
+        for obj in context.selected_objects:
             if "/" not in obj.name:
                 continue
             pset = obj.BIMObjectProperties.psets.get(self.pset_name)
@@ -671,9 +672,9 @@ class CopyAttributeToSelection(bpy.types.Operator):
 
     def execute(self, context):
         # TODO: this is dead code, awaiting reimplementation. See #1222.
-        self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(bpy.context.scene.BIMProperties.export_schema)
+        self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(context.scene.BIMProperties.export_schema)
         self.applicable_attributes_cache = {}
-        for obj in bpy.context.selected_objects:
+        for obj in context.selected_objects:
             if "/" not in obj.name:
                 continue
             attribute = obj.BIMObjectProperties.attributes.get(self.attribute_name)

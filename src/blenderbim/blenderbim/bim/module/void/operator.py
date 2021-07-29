@@ -16,7 +16,7 @@ class AddOpening(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         opening = bpy.data.objects.get(self.opening)
         opening.display_type = "WIRE"
         if not opening.BIMObjectProperties.ifc_definition_id:
@@ -69,7 +69,7 @@ class RemoveOpening(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
         for modifier in obj.modifiers:
             if modifier.type != "BOOLEAN":
@@ -97,7 +97,7 @@ class AddFilling(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         opening = bpy.data.objects.get(self.opening) if self.opening else context.scene.VoidProperties.desired_opening
         self.file = IfcStore.get_file()
         element_id = obj.BIMObjectProperties.ifc_definition_id
@@ -123,7 +123,7 @@ class RemoveFilling(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "void.remove_filling", self.file, **{"element": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)}
@@ -138,7 +138,7 @@ class ToggleOpeningVisibility(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        for project in [c for c in bpy.context.view_layer.layer_collection.children if "IfcProject" in c.name]:
+        for project in [c for c in context.view_layer.layer_collection.children if "IfcProject" in c.name]:
             for collection in [c for c in project.children if "IfcOpeningElements" in c.name]:
                 collection.hide_viewport = not collection.hide_viewport
         return {"FINISHED"}

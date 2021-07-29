@@ -64,7 +64,7 @@ class AddTypeInstance(bpy.types.Operator):
         mesh.from_pydata(verts, edges, faces)
         obj = bpy.data.objects.new("Instance", mesh)
         obj.location = context.scene.cursor.location
-        collection = bpy.context.view_layer.active_layer_collection.collection
+        collection = context.view_layer.active_layer_collection.collection
         collection.objects.link(obj)
         collection_obj = bpy.data.objects.get(collection.name)
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
@@ -97,8 +97,8 @@ class AlignProduct(bpy.types.Operator):
         active_y_axis = context.active_object.matrix_world.to_quaternion() @ Vector((0, 1, 0))
         active_z_axis = context.active_object.matrix_world.to_quaternion() @ Vector((0, 0, 1))
 
-        x_distances = self.get_axis_distances(point, active_x_axis)
-        y_distances = self.get_axis_distances(point, active_y_axis)
+        x_distances = self.get_axis_distances(point, active_x_axis, context)
+        y_distances = self.get_axis_distances(point, active_y_axis, context)
         if abs(sum(x_distances)) < abs(sum(y_distances)):
             for i, obj in enumerate(selected_objs):
                 obj.matrix_world = Matrix.Translation(active_x_axis * -x_distances[i]) @ obj.matrix_world
@@ -107,9 +107,9 @@ class AlignProduct(bpy.types.Operator):
                 obj.matrix_world = Matrix.Translation(active_y_axis * -y_distances[i]) @ obj.matrix_world
         return {"FINISHED"}
 
-    def get_axis_distances(self, point, axis):
+    def get_axis_distances(self, point, axis, context):
         results = []
-        for obj in bpy.context.selected_objects:
+        for obj in context.selected_objects:
             if self.align_type == "CENTERLINE":
                 obj_point = obj.matrix_world @ (Vector(obj.bound_box[0]) + (obj.dimensions / 2))
             elif self.align_type == "POSITIVE":

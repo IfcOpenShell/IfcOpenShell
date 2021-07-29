@@ -30,7 +30,7 @@ class BIM_PT_representations(Panel):
             layout.label(text="No representations found")
 
         row = layout.row(align=True)
-        row.prop(bpy.context.scene.BIMProperties, "contexts", text="")
+        row.prop(context.scene.BIMProperties, "contexts", text="")
         row.operator("bim.add_representation", icon="ADD", text="")
 
         for ifc_definition_id in representations:

@@ -82,7 +82,7 @@ def add_object(self, context):
     obj = bpy.data.objects.new("Door Profile", mesh)
 
     context.view_layer.active_layer_collection.collection.objects.link(obj)
-    bpy.context.view_layer.objects.active = obj
+    context.view_layer.objects.active = obj
     obj.select_set(True)
     bpy.ops.object.convert(target="CURVE")
 
@@ -100,7 +100,7 @@ def add_object(self, context):
     obj2 = bpy.data.objects.new("Door", mesh)
 
     context.view_layer.active_layer_collection.collection.objects.link(obj2)
-    bpy.context.view_layer.objects.active = obj2
+    context.view_layer.objects.active = obj2
     obj2.select_set(True)
     bpy.ops.object.convert(target="CURVE")
 
@@ -130,11 +130,11 @@ def add_object(self, context):
     modifier.thickness = self.overall_height - 0.045
 
     context.view_layer.active_layer_collection.collection.objects.link(obj3)
-    bpy.context.view_layer.objects.active = obj3
+    context.view_layer.objects.active = obj3
     obj3.select_set(True)
     bpy.ops.object.convert(target="MESH")
 
-    ctx = bpy.context.copy()
+    ctx = context.copy()
     ctx["active_object"] = obj2
     ctx["selected_editable_objects"] = [obj2, obj3]
     bpy.ops.object.join(ctx)
@@ -156,7 +156,7 @@ def add_object(self, context):
     modifier.thickness = self.overall_height + 0.1
 
     context.view_layer.active_layer_collection.collection.objects.link(obj4)
-    bpy.context.view_layer.objects.active = obj4
+    context.view_layer.objects.active = obj4
     obj4.select_set(True)
     bpy.ops.object.convert(target="MESH")
 

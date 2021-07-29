@@ -15,10 +15,10 @@ class EnableReassignClass(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        obj = bpy.context.active_object
+        obj = context.active_object
         self.file = IfcStore.get_file()
         ifc_class = obj.name.split("/")[0]
-        bpy.context.active_object.BIMObjectProperties.is_reassigning_class = True
+        context.active_object.BIMObjectProperties.is_reassigning_class = True
         ifc_products = [
             "IfcElement",
             "IfcElementType",
@@ -31,11 +31,11 @@ class EnableReassignClass(bpy.types.Operator):
         ]
         for ifc_product in ifc_products:
             if ifcopenshell.util.schema.is_a(IfcStore.get_schema().declaration_by_name(ifc_class), ifc_product):
-                bpy.context.scene.BIMRootProperties.ifc_product = ifc_product
+                context.scene.BIMRootProperties.ifc_product = ifc_product
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-        bpy.context.scene.BIMRootProperties.ifc_class = element.is_a()
+        context.scene.BIMRootProperties.ifc_class = element.is_a()
         if hasattr(element, "PredefinedType") and element.PredefinedType:
-            bpy.context.scene.BIMRootProperties.ifc_predefined_type = element.PredefinedType
+            context.scene.BIMRootProperties.ifc_predefined_type = element.PredefinedType
         return {"FINISHED"}
 
 
@@ -45,7 +45,7 @@ class DisableReassignClass(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        bpy.context.active_object.BIMObjectProperties.is_reassigning_class = False
+        context.active_object.BIMObjectProperties.is_reassigning_class = False
         return {"FINISHED"}
 
 
@@ -59,18 +59,18 @@ class ReassignClass(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        objects = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
+        objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
         self.file = IfcStore.get_file()
-        predefined_type = bpy.context.scene.BIMRootProperties.ifc_predefined_type
+        predefined_type = context.scene.BIMRootProperties.ifc_predefined_type
         if predefined_type == "USERDEFINED":
-            predefined_type = bpy.context.scene.BIMRootProperties.ifc_userdefined_type
+            predefined_type = context.scene.BIMRootProperties.ifc_userdefined_type
         for obj in objects:
             product = ifcopenshell.api.run(
                 "root.reassign_class",
                 self.file,
                 **{
                     "product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id),
-                    "ifc_class": bpy.context.scene.BIMRootProperties.ifc_class,
+                    "ifc_class": context.scene.BIMRootProperties.ifc_class,
                     "predefined_type": predefined_type,
                 },
             )
@@ -96,7 +96,7 @@ class AssignClass(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        objects = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
+        objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
         self.file = IfcStore.get_file()
         self.declaration = IfcStore.get_schema().declaration_by_name(self.ifc_class)
         if self.predefined_type == "USERDEFINED":
@@ -128,22 +128,22 @@ class AssignClass(bpy.types.Operator):
             )
 
         if product.is_a("IfcElementType"):
-            self.place_in_types_collection(obj)
+            self.place_in_types_collection(obj, context)
         elif product.is_a("IfcOpeningElement"):
-            self.place_in_openings_collection(obj)
+            self.place_in_openings_collection(obj, context)
         elif (
             product.is_a("IfcSpatialElement")
             or product.is_a("IfcSpatialStructureElement")
             or product.is_a("IfcProject")
             or product.is_a("IfcContext")
         ):
-            self.place_in_spatial_collection(obj)
+            self.place_in_spatial_collection(obj, context)
         else:
             self.assign_potential_spatial_container(obj)
         context.view_layer.objects.active = obj
 
-    def place_in_types_collection(self, obj):
-        for project in [c for c in bpy.context.view_layer.layer_collection.children if "IfcProject" in c.name]:
+    def place_in_types_collection(self, obj, context):
+        for project in [c for c in context.view_layer.layer_collection.children if "IfcProject" in c.name]:
             if not [c for c in project.children if "Types" in c.name]:
                 types = bpy.data.collections.new("Types")
                 project.collection.children.link(types)
@@ -154,8 +154,8 @@ class AssignClass(bpy.types.Operator):
                 break
             break
 
-    def place_in_openings_collection(self, obj):
-        for project in [c for c in bpy.context.view_layer.layer_collection.children if "IfcProject" in c.name]:
+    def place_in_openings_collection(self, obj, context):
+        for project in [c for c in context.view_layer.layer_collection.children if "IfcProject" in c.name]:
             if not [c for c in project.children if "IfcOpeningElements" in c.name]:
                 opening_elements = bpy.data.collections.new("IfcOpeningElements")
                 project.collection.children.link(opening_elements)
@@ -166,7 +166,7 @@ class AssignClass(bpy.types.Operator):
                 break
             break
 
-    def place_in_spatial_collection(self, obj):
+    def place_in_spatial_collection(self, obj, context):
         for collection in obj.users_collection:
             if collection.name == obj.name:
                 return
@@ -181,7 +181,7 @@ class AssignClass(bpy.types.Operator):
             parent_collection.children.link(collection)
             bpy.ops.bim.assign_object(related_object=obj.name, relating_object=parent_collection.name)
         else:
-            bpy.context.scene.collection.children.link(collection)
+            context.scene.collection.children.link(collection)
 
     def assign_potential_spatial_container(self, obj):
         for collection in obj.users_collection:
@@ -209,7 +209,7 @@ class UnassignClass(bpy.types.Operator):
         if self.obj:
             objects = [bpy.data.objects.get(self.obj)]
         else:
-            objects = bpy.context.selected_objects
+            objects = context.selected_objects
         for obj in objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
@@ -252,7 +252,7 @@ class UnlinkObject(bpy.types.Operator):
         if self.obj:
             objects = [bpy.data.objects.get(self.obj)]
         else:
-            objects = bpy.context.selected_objects
+            objects = context.selected_objects
         for obj in objects:
             if obj.BIMObjectProperties.ifc_definition_id:
                 IfcStore.unlink_element(obj=obj)
@@ -275,7 +275,7 @@ class CopyClass(bpy.types.Operator):
         if self.obj:
             objects = [bpy.data.objects.get(self.obj)]
         else:
-            objects = bpy.context.selected_objects
+            objects = context.selected_objects
         for obj in objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
