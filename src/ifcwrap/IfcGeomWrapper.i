@@ -75,15 +75,15 @@
 
 %extend IfcGeom::tree {
 
-	static IfcEntityList::ptr vector_to_list(const std::vector<IfcUtil::IfcBaseEntity*>& ps) {
-		IfcEntityList::ptr r(new IfcEntityList);
+	static aggregate_of_instance::ptr vector_to_list(const std::vector<IfcUtil::IfcBaseEntity*>& ps) {
+		aggregate_of_instance::ptr r(new aggregate_of_instance);
 		for (std::vector<IfcUtil::IfcBaseEntity*>::const_iterator it = ps.begin(); it != ps.end(); ++it) {
 			r->push(*it);
 		}
 		return r;
 	}
 
-	IfcEntityList::ptr select_box(IfcUtil::IfcBaseClass* e, bool completely_within = false, double extend=-1.e-5) const {
+	aggregate_of_instance::ptr select_box(IfcUtil::IfcBaseClass* e, bool completely_within = false, double extend=-1.e-5) const {
 		if (!e->declaration().is("IfcProduct")) {
 			throw IfcParse::IfcException("Instance should be an IfcProduct");
 		}
@@ -91,17 +91,17 @@
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
-	IfcEntityList::ptr select_box(const gp_Pnt& p) const {
+	aggregate_of_instance::ptr select_box(const gp_Pnt& p) const {
 		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select_box(p);
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
-	IfcEntityList::ptr select_box(const Bnd_Box& b, bool completely_within = false) const {
+	aggregate_of_instance::ptr select_box(const Bnd_Box& b, bool completely_within = false) const {
 		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select_box(b, completely_within);
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
-	IfcEntityList::ptr select(IfcUtil::IfcBaseClass* e, bool completely_within = false, double extend = 0.0) const {
+	aggregate_of_instance::ptr select(IfcUtil::IfcBaseClass* e, bool completely_within = false, double extend = 0.0) const {
 		if (!e->declaration().is("IfcProduct")) {
 			throw IfcParse::IfcException("Instance should be an IfcProduct");
 		}
@@ -109,12 +109,12 @@
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
-	IfcEntityList::ptr select(const gp_Pnt& p, double extend=0.0) const {
+	aggregate_of_instance::ptr select(const gp_Pnt& p, double extend=0.0) const {
 		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select(p, extend);
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
-	IfcEntityList::ptr select(const std::string& shape_serialization, bool completely_within = false, double extend = -1.e-5) const {
+	aggregate_of_instance::ptr select(const std::string& shape_serialization, bool completely_within = false, double extend = -1.e-5) const {
 		std::stringstream stream(shape_serialization);
 		BRepTools_ShapeSet shapes;
 		shapes.Read(stream);
@@ -335,7 +335,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		
 			typename Schema::IfcProduct* product = (typename Schema::IfcProduct*) instance;
 
-			if (!representation && !product->hasRepresentation()) {
+			if (!representation && !product->Representation()) {
 				throw IfcParse::IfcException("Representation is NULL");
 			}
 			
@@ -347,17 +347,17 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 				// First, try to find a representation based on the settings
 				for (typename Schema::IfcRepresentation::list::it it = reps->begin(); it != reps->end(); ++it) {
 					typename Schema::IfcRepresentation* rep = *it;
-					if (!rep->hasRepresentationIdentifier()) {
+					if (!rep->RepresentationIdentifier()) {
 						continue;
 					}
 					if (!settings.get(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES)) {
-						if (rep->RepresentationIdentifier() == "Body") {
+						if (*rep->RepresentationIdentifier() == "Body") {
 							ifc_representation = rep;
 							break;
 						}
 					}
 					if (settings.get(IfcGeom::IteratorSettings::INCLUDE_CURVES)) {
-						if (rep->RepresentationIdentifier() == "Plan" || rep->RepresentationIdentifier() == "Axis") {
+						if (*rep->RepresentationIdentifier() == "Plan" || *rep->RepresentationIdentifier() == "Axis") {
 							ifc_representation = rep;
 							break;
 						}
@@ -372,7 +372,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 					typename Schema::IfcRepresentationContext* context = rep->ContextOfItems();
 					
 					// TODO: Remove redundancy with IfcGeomIterator.h
-					if (context->hasContextType()) {
+					if (context->ContextType()) {
 						std::set<std::string> context_types;
 						if (!settings.get(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES)) {
 							context_types.insert("model");
@@ -384,7 +384,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 							context_types.insert("plan");
 						}			
 
-						std::string context_type_lc = context->ContextType();
+						std::string context_type_lc = *context->ContextType();
 						for (std::string::iterator c = context_type_lc.begin(); c != context_type_lc.end(); ++c) {
 							*c = tolower(*c);
 						}

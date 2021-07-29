@@ -85,7 +85,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	IfcUtil::IfcBaseClass* by_guid(const std::string& guid) {
 		return $self->instance_by_guid(guid);
 	}
-	IfcEntityList::ptr get_inverse(IfcUtil::IfcBaseClass* e) {
+	aggregate_of_instance::ptr get_inverse(IfcUtil::IfcBaseClass* e) {
 		return $self->getInverse(e->data().id(), 0, -1);
 	}
 
@@ -268,7 +268,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		}
 	}
 
-	IfcEntityList::ptr get_inverse(const std::string& a) {
+	aggregate_of_instance::ptr get_inverse(const std::string& a) {
 		if ($self->declaration().as_entity()) {
 			return ((IfcUtil::IfcBaseEntity*)$self)->get_inverse(a);
 		} else {
@@ -430,7 +430,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		}
 	}
 
-	void setArgumentAsAggregateOfEntityInstance(unsigned int i, IfcEntityList::ptr v) {
+	void setArgumentAsAggregateOfEntityInstance(unsigned int i, aggregate_of_instance::ptr v) {
 		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
@@ -463,7 +463,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		}
 	}
 
-	void setArgumentAsAggregateOfAggregateOfEntityInstance(unsigned int i, IfcEntityListList::ptr v) {
+	void setArgumentAsAggregateOfAggregateOfEntityInstance(unsigned int i, aggregate_of_aggregate_of_instance::ptr v) {
 		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
@@ -729,7 +729,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 				return get_info_cpp(v);
 			break; }
 			case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
-				IfcEntityList::ptr v = arg;
+				aggregate_of_instance::ptr v = arg;
 				auto r = PyTuple_New(v->size());
 				for (unsigned i = 0; i < v->size(); ++i) {
 					PyTuple_SetItem(r, i, get_info_cpp((*v)[i]));
@@ -749,10 +749,10 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 				return pythonize_vector2(v);
 			break; }
 			case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE: {
-				IfcEntityListList::ptr vs = arg;
+				aggregate_of_aggregate_of_instance::ptr vs = arg;
 				auto rs = PyTuple_New(vs->size());
 				for (auto it = vs->begin(); it != vs->end(); ++it) {
-					IfcEntityList::ptr v_i = arg;
+					aggregate_of_instance::ptr v_i = arg;
 					auto r = PyTuple_New(v_i->size());
 					for (unsigned i = 0; i < v_i->size(); ++i) {
 						PyTuple_SetItem(r, i, get_info_cpp((*v_i)[i]));

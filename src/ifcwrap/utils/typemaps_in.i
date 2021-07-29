@@ -161,9 +161,9 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 	}
 }
 
-%typemap(in) IfcEntityList::ptr {
+%typemap(in) aggregate_of_instance::ptr {
 	if (PySequence_Check($input)) {
-		$1 = IfcEntityList::ptr(new IfcEntityList());
+		$1 = aggregate_of_instance::ptr(new aggregate_of_instance());
 		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
 			PyObject* element = PySequence_GetItem($input, i);
 			IfcUtil::IfcBaseClass* inst = cast_pyobject<IfcUtil::IfcBaseClass*>(element);
@@ -178,9 +178,9 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 	}
 }
 
-%typemap(in) IfcEntityListList::ptr {
+%typemap(in) aggregate_of_aggregate_of_instance::ptr {
 	if (PySequence_Check($input)) {
-		$1 = IfcEntityListList::ptr(new IfcEntityListList());
+		$1 = aggregate_of_aggregate_of_instance::ptr(new aggregate_of_aggregate_of_instance());
 		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
 			PyObject* element = PySequence_GetItem($input, i);
 			if (PySequence_Check(element)) {
