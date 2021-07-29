@@ -139,10 +139,10 @@
 		return pythonize(bitstring);
 	}
 
-	PyObject* pythonize(const IfcEntityList::ptr& t) { 
+	PyObject* pythonize(const aggregate_of_instance::ptr& t) { 
 		unsigned int i = 0;
 		PyObject* pyobj = PyTuple_New(t->size());
-		for (IfcEntityList::it it = t->begin(); it != t->end(); ++it, ++i) {
+		for (aggregate_of_instance::it it = t->begin(); it != t->end(); ++it, ++i) {
 			PyTuple_SetItem(pyobj, i, pythonize(*it));
 		}
 		return pyobj;
@@ -168,10 +168,10 @@
 		return pyobj;
 	}
 
-	PyObject* pythonize(const IfcEntityListList::ptr& t) {
+	PyObject* pythonize(const aggregate_of_aggregate_of_instance::ptr& t) {
 		unsigned int i = 0;
 		PyObject* pyobj = PyTuple_New(t->size());
-		for (IfcEntityListList::outer_it it = t->begin(); it != t->end(); ++it, ++i) {
+		for (aggregate_of_aggregate_of_instance::outer_it it = t->begin(); it != t->end(); ++it, ++i) {
 			PyTuple_SetItem(pyobj, i, pythonize_vector(*it));
 		}
 		return pyobj;
