@@ -153,7 +153,8 @@ class SelectIfcFile(bpy.types.Operator):
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
 
     def execute(self, context):
-        bpy.context.scene.BIMProperties.ifc_file = self.filepath
+        if os.path.exists(self.filepath) and "ifc" in os.path.splitext(self.filepath)[1]:
+            bpy.context.scene.BIMProperties.ifc_file = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
