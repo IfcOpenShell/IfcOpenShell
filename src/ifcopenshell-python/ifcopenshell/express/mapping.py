@@ -173,6 +173,9 @@ class Mapping:
         elif isinstance(type_str, nodes.AggregationType):
             is_nested_list = isinstance(attr_type.type, nodes.AggregationType)
             ty = self.get_parameter_type(attr_type.type if is_nested_list else attr_type)
+            # We do not use pointers in aggregate_of<T>. aggregate_of has member vector<T*>
+            ty = ty.replace("*", "")
+            
             if self.schema.is_select(attr_type.type):
                 type_str = templates.untyped_list
             elif self.schema.is_simpletype(ty) or str(ty) in self.express_to_cpp_typemapping.values():
