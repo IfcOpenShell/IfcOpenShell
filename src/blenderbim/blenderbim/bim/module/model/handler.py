@@ -1,13 +1,17 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
-from blenderbim.bim.module.model import product, wall, slab, profile, opening
+from blenderbim.bim.module.model import root, product, wall, slab, profile, opening
 from blenderbim.bim.ifc import IfcStore
 from bpy.app.handlers import persistent
 
 
 @persistent
 def load_post(*args):
+    ifcopenshell.api.add_pre_listener(
+        "attribute.edit_attributes", "BlenderBIM.Root.SyncName", root.sync_name
+    )
+
     ifcopenshell.api.add_post_listener(
         "geometry.add_representation", "BlenderBIM.Product.GenerateBox", product.generate_box
     )

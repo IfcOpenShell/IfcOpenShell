@@ -104,12 +104,6 @@ class EditAttributes(bpy.types.Operator):
         ifcopenshell.api.run(
             "attribute.edit_attributes", self.file, **{"product": product, "attributes": attributes}
         )
-        if "Name" in attributes:
-            new_name = "{}/{}".format(product.is_a(), product.Name or "Unnamed")
-            collection = bpy.data.collections.get(obj.name)
-            if collection:
-                collection.name = new_name
-            obj.name = new_name
         Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         bpy.ops.bim.disable_editing_attributes(obj=obj.name, obj_type=self.obj_type)
         return {"FINISHED"}
