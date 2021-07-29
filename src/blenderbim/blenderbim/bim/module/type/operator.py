@@ -24,7 +24,7 @@ class AssignType(bpy.types.Operator):
         related_objects = (
             [bpy.data.objects.get(self.related_object)]
             if self.related_object
-            else bpy.context.selected_objects or [bpy.context.active_object]
+            else context.selected_objects or [context.active_object]
         )
         for related_object in related_objects:
             oprops = related_object.BIMObjectProperties
@@ -72,7 +72,7 @@ class UnassignType(bpy.types.Operator):
     def _execute(self, context):
         self.file = IfcStore.get_file()
         related_objects = (
-            [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
+            [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
         )
         for related_object in related_objects:
             oprops = related_object.BIMObjectProperties
@@ -93,7 +93,7 @@ class EnableEditingType(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        bpy.context.active_object.BIMTypeProperties.is_editing_type = True
+        context.active_object.BIMTypeProperties.is_editing_type = True
         return {"FINISHED"}
 
 
@@ -104,7 +104,7 @@ class DisableEditingType(bpy.types.Operator):
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         obj.BIMTypeProperties.is_editing_type = False
         return {"FINISHED"}
 
@@ -117,7 +117,7 @@ class SelectSimilarType(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        related_object = bpy.data.objects.get(self.related_object) if self.related_object else bpy.context.active_object
+        related_object = bpy.data.objects.get(self.related_object) if self.related_object else context.active_object
         oprops = related_object.BIMObjectProperties
         product = self.file.by_id(oprops.ifc_definition_id)
         declaration = IfcStore.get_schema().declaration_by_name(product.is_a())
@@ -129,7 +129,7 @@ class SelectSimilarType(bpy.types.Operator):
             related_objects = ifcopenshell.api.run(
                 "type.get_related_objects", self.file, **{"related_object": self.file.by_id(oprops.ifc_definition_id)}
             )
-        for obj in bpy.context.visible_objects:
+        for obj in context.visible_objects:
             if obj.BIMObjectProperties.ifc_definition_id in related_objects:
                 obj.select_set(True)
         return {"FINISHED"}
@@ -143,10 +143,10 @@ class SelectTypeObjects(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        relating_type = bpy.data.objects.get(self.relating_type) if self.relating_type else bpy.context.active_object
+        relating_type = bpy.data.objects.get(self.relating_type) if self.relating_type else context.active_object
         oprops = relating_type.BIMObjectProperties
         related_objects = Data.types[oprops.ifc_definition_id]
-        for obj in bpy.context.visible_objects:
+        for obj in context.visible_objects:
             if obj.BIMObjectProperties.ifc_definition_id in related_objects:
                 obj.select_set(True)
         return {"FINISHED"}

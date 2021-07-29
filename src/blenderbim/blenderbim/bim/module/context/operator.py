@@ -21,9 +21,9 @@ class AddSubcontext(bpy.types.Operator):
             "context.add_context",
             self.file,
             **{
-                "context": self.context or bpy.context.scene.BIMProperties.available_contexts,
-                "subcontext": self.subcontext or bpy.context.scene.BIMProperties.available_subcontexts,
-                "target_view": self.target_view or bpy.context.scene.BIMProperties.available_target_views,
+                "context": self.context or context.scene.BIMProperties.available_contexts,
+                "subcontext": self.subcontext or context.scene.BIMProperties.available_subcontexts,
+                "target_view": self.target_view or context.scene.BIMProperties.available_target_views,
             },
         )
         Data.load(IfcStore.get_file())

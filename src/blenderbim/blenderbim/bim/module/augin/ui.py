@@ -28,7 +28,7 @@ class BIM_PT_augin(bpy.types.Panel):
         row = layout.row()
         row.label(text="Logged in as " + props.username)
 
-        if not bpy.context.scene.BIMProperties.ifc_file:
+        if not context.scene.BIMProperties.ifc_file:
             row = layout.row()
             row.label(text="No IFC Found")
             return

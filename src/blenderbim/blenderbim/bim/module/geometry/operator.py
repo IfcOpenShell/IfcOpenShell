@@ -24,10 +24,10 @@ class EditObjectPlacement(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        objs = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
         self.file = IfcStore.get_file()
         # TODO: determine how to deal with this module dependency
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = context.scene.BIMGeoreferenceProperties
         for obj in objs:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
@@ -69,7 +69,7 @@ class AddRepresentation(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
 
         bpy.ops.bim.edit_object_placement(obj=obj.name)
@@ -79,7 +79,7 @@ class AddRepresentation(bpy.types.Operator):
 
         product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
 
-        context_id = self.context_id or int(bpy.context.scene.BIMProperties.contexts)
+        context_id = self.context_id or int(context.scene.BIMProperties.contexts)
         context_of_items = self.file.by_id(context_id)
 
         gprop = context.scene.BIMGeoreferenceProperties
@@ -164,7 +164,7 @@ class SwitchRepresentation(bpy.types.Operator):
     should_switch_all_meshes: bpy.props.BoolProperty()
 
     def execute(self, context):
-        self.element_obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        self.element_obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.oprops = self.element_obj.BIMObjectProperties
 
         self.file = IfcStore.get_file()
@@ -175,7 +175,7 @@ class SwitchRepresentation(bpy.types.Operator):
         if mesh:
             self.switch_mesh(mesh)
         if not mesh or self.should_reload:
-            self.pull_mesh_from_ifc()
+            self.pull_mesh_from_ifc(context)
         return {"FINISHED"}
 
     def switch_mesh(self, mesh):
@@ -193,9 +193,9 @@ class SwitchRepresentation(bpy.types.Operator):
             return self.resolve_mapped_representation(representation.Items[0].MappingSource.MappedRepresentation)
         return representation
 
-    def pull_mesh_from_ifc(self):
+    def pull_mesh_from_ifc(self, context):
         logger = logging.getLogger("ImportIFC")
-        ifc_import_settings = import_ifc.IfcImportSettings.factory(bpy.context, IfcStore.path, logger)
+        ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
         element = self.file.by_id(self.oprops.ifc_definition_id)
         settings = ifcopenshell.geom.settings()
 
@@ -247,7 +247,7 @@ class RemoveRepresentation(bpy.types.Operator):
     def _execute(self, context):
         self.file = IfcStore.get_file()
         representation = self.file.by_id(self.representation_id)
-        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         is_mapped_representation = representation.RepresentationType == "MappedRepresentation"
         if is_mapped_representation:
             mesh_name = "{}/{}".format(
@@ -288,7 +288,7 @@ class UpdateRepresentation(bpy.types.Operator):
         if not ContextData.is_loaded:
             ContextData.load(IfcStore.get_file())
 
-        objs = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
         self.file = IfcStore.get_file()
 
         for obj in objs:
@@ -371,7 +371,7 @@ class UpdateParametricRepresentation(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        obj = bpy.context.active_object
+        obj = context.active_object
         props = obj.data.BIMMeshProperties
         parameter = props.ifc_parameters[self.index]
         element = IfcStore.get_file().by_id(parameter.step_id)[parameter.index] = parameter.value
@@ -388,7 +388,7 @@ class GetRepresentationIfcParameters(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        obj = bpy.context.active_object
+        obj = context.active_object
         props = obj.data.BIMMeshProperties
         elements = IfcStore.get_file().traverse(IfcStore.get_file().by_id(props.ifc_definition_id))
         for element in elements:

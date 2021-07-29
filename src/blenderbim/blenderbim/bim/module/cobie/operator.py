@@ -15,7 +15,7 @@ class SelectCobieIfcFile(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        bpy.context.scene.COBieProperties.cobie_ifc_file = self.filepath
+        context.scene.COBieProperties.cobie_ifc_file = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -30,7 +30,7 @@ class SelectCobieJsonFile(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        bpy.context.scene.COBieProperties.cobie_json_file = self.filepath
+        context.scene.COBieProperties.cobie_json_file = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -45,7 +45,7 @@ class ExecuteIfcCobie(bpy.types.Operator):
 
     def execute(self, context):
         from cobie import IfcCobieParser
-        props = bpy.context.scene.COBieProperties
+        props = context.scene.COBieProperties
         
         output_dir = os.path.dirname(props.cobie_ifc_file)
         

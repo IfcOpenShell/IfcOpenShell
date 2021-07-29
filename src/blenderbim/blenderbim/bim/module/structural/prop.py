@@ -31,7 +31,7 @@ def getApplicableStructuralLoadTypes(self, context):
     element_classes = set(
         [
             ifc_file.by_id(o.BIMObjectProperties.ifc_definition_id).is_a()
-            for o in bpy.context.selected_objects
+            for o in context.selected_objects
             if o.BIMObjectProperties.ifc_definition_id
         ]
     )

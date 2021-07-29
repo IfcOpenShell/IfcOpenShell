@@ -230,7 +230,7 @@ class AssignResource(bpy.types.Operator):
 
     def _execute(self, context):
         related_objects = (
-            [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
+            [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
         )
         for related_object in related_objects:
             self.file = IfcStore.get_file()
@@ -253,7 +253,7 @@ class UnassignResource(bpy.types.Operator):
 
     def execute(self, context):
         related_objects = (
-            [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
+            [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
         )
         for related_object in related_objects:
             self.file = IfcStore.get_file()
