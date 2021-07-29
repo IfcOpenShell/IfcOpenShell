@@ -861,6 +861,23 @@ typename Schema::IfcShapeRepresentation* IfcHierarchyHelper<Schema>::addEmptyRep
 	return shape_rep;
 }
 
+namespace {
+	// In IFC4 the IfcContext.RepresentationContexts has been made optional, so we need
+	// some boiler plate to push back to a list that might be optional.
+	template <typename T, typename U>
+	void push_back_to_maybe_optional(boost::optional<typename T::ptr>& t, U* u) {
+		if (!t) {
+			t->emplace(new T);
+		}
+		(*t)->push(u);
+	}
+
+	template <typename T, typename U>
+	void push_back_to_maybe_optional(T& t, U* u) {
+		t->push(u);
+	}
+}
+
 template <typename Schema>
 typename Schema::IfcGeometricRepresentationContext* IfcHierarchyHelper<Schema>::getRepresentationContext(const std::string& s) {
 	typename std::map<std::string, typename Schema::IfcGeometricRepresentationContext*>::const_iterator it = contexts.find(s);
@@ -870,11 +887,12 @@ typename Schema::IfcGeometricRepresentationContext* IfcHierarchyHelper<Schema>::
 		if (!project) {
 			project = addProject();
 		}
-		typename Schema::IfcRepresentationContext::list::ptr project_contexts = project->RepresentationContexts();
+		auto project_contexts = project->RepresentationContexts();
 		typename Schema::IfcGeometricRepresentationContext* context = new typename Schema::IfcGeometricRepresentationContext(
 			boost::none, s, 3, 1e-5, addPlacement3d(), addDoublet<typename Schema::IfcDirection>(0, 1));
 		addEntity(context);
-		project_contexts->push(context);
+		push_back_to_maybe_optional(project_contexts, context);
+		
 		project->setRepresentationContexts(project_contexts);
 		return contexts[s] = context;
 	}
