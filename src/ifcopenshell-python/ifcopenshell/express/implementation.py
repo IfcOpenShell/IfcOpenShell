@@ -92,6 +92,15 @@ class Implementation(codegen.Base):
                         else:
                             return templates.get_attr_stmt
 
+                    null_check = ''
+                    if arg["is_optional"]:
+                        attr_check = "if(!data_->getArgument(%d) || data_->getArgument(%d)->isNull()) { return %%s; }" % (arg["index"] - 1, arg["index"] - 1) 
+                        if "boost::optional" in arg["full_type"]:
+                            null_check = attr_check % "boost::none"
+                        else:
+                            null_check = attr_check % "nullptr"
+                    
+
                     tmpl = find_template(arg)
                     write_attr(
                         templates.const_function,
@@ -107,6 +116,7 @@ class Implementation(codegen.Base):
                             "type": arg["full_type"].replace("::Value", ""),
                             "non_optional_type": arg["non_optional_type"].replace("::Value", ""),
                             "list_instance_type": arg["list_instance_type"],
+                            "null_check": null_check
                         },
                     )
 
@@ -135,7 +145,7 @@ class Implementation(codegen.Base):
                             "index": arg["index"] - 1, 
                             "type": arg["full_type"].replace("::Value", ""),
                             "non_optional_type": arg["non_optional_type"].replace("::Value", ""),
-                            "star_if_optional": "*" if arg["is_optional"] else ""
+                            "star_if_optional": "*" if "boost::optional" in arg["full_type"] else ""
                         },
                     )
 

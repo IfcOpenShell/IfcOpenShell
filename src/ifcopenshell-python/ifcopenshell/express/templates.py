@@ -28,7 +28,7 @@ header = """
 
 #include "../ifcparse/ifc_parse_api.h"
 
-#include "../ifcparse/IfcEntityList.h"
+#include "../ifcparse/aggregate_of_instance.h"
 #include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcSchema.h"
 #include "../ifcparse/IfcException.h"
@@ -132,7 +132,7 @@ simpletype_impl_constructor = (
 simpletype_impl_constructor_templated = "data_ = new IfcEntityInstanceData(%(schema_name_upper)s_%(class_name)s_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v->generalize()); data_->setArgument(0, attr);}"
 simpletype_impl_cast = "return *data_->getArgument(0);"
 simpletype_impl_cast_templated = (
-    "IfcEntityList::ptr es = *data_->getArgument(0); return es->as< %(underlying_type)s >();"
+    "aggregate_of_instance::ptr es = *data_->getArgument(0); return es->as< %(underlying_type)s >();"
 )
 simpletype_impl_declaration = "return *%(schema_name_upper)s_%(class_name)s_type;"
 
@@ -163,7 +163,7 @@ public:
     static const IfcParse::entity& Class();
     %(name)s (IfcEntityInstanceData* e);
     %(name)s (%(constructor_arguments)s);
-    typedef IfcTemplatedEntityList< %(name)s > list;
+    typedef aggregate_of< %(name)s > list;
 };
 """
 
@@ -224,10 +224,10 @@ cast_function = "%(schema_name)s::%(class_name)s::operator %(return_type)s() con
 
 array_type = "std::vector< %(instance_type)s > /*[%(lower)s:%(upper)s]*/"
 nested_array_type = "std::vector< std::vector< %(instance_type)s > >"
-list_type = "IfcTemplatedEntityList< %(instance_type)s >::ptr"
-list_list_type = "IfcTemplatedEntityListList< %(instance_type)s >::ptr"
-untyped_list = "IfcEntityList::ptr"
-inverse_attr = "IfcTemplatedEntityList< %(entity)s >::ptr %(name)s() const; // INVERSE %(entity)s::%(attribute)s"
+list_type = "aggregate_of< %(instance_type)s >::ptr"
+list_list_type = "aggregate_of_aggregate_of< %(instance_type)s >::ptr"
+untyped_list = "aggregate_of_instance::ptr"
+inverse_attr = "aggregate_of< %(entity)s >::ptr %(name)s() const; // INVERSE %(entity)s::%(attribute)s"
 
 enum_from_string_stmt = '    if (s == "%(value)s") return ::%(schema_name)s::%(name)s::%(short_name)s_%(value)s;'
 
@@ -239,25 +239,25 @@ parent_type_test = " || %s::is(v)"
 
 optional_attr_stmt = "return !data_->getArgument(%(index)d)->isNull();"
 
-get_attr_stmt = "return (%(non_optional_type)s) *data_->getArgument(%(index)d);"
-get_attr_stmt_enum = "return %(non_optional_type)s::FromString(*data_->getArgument(%(index)d));"
-get_attr_stmt_entity = "return (%(non_optional_type)s)((IfcUtil::IfcBaseClass*)(*data_->getArgument(%(index)d)));"
+get_attr_stmt = "%(null_check)s %(non_optional_type)s v = *data_->getArgument(%(index)d); return v;"
+get_attr_stmt_enum = "%(null_check)s return %(non_optional_type)s::FromString(*data_->getArgument(%(index)d));"
+get_attr_stmt_entity = "%(null_check)s return (%(non_optional_type)s)((IfcUtil::IfcBaseClass*)(*data_->getArgument(%(index)d)));"
 get_attr_stmt_array = (
-    "IfcEntityList::ptr es = *data_->getArgument(%(index)d); return es->as< %(list_instance_type)s >();"
+    "%(null_check)s aggregate_of_instance::ptr es = *data_->getArgument(%(index)d); return es->as< %(list_instance_type)s >();"
 )
 get_attr_stmt_nested_array = (
-    "IfcEntityListList::ptr es = *data_->getArgument(%(index)d); return es->as< %(list_instance_type)s >();"
+    "%(null_check)s aggregate_of_aggregate_of_instance::ptr es = *data_->getArgument(%(index)d); return es->as< %(list_instance_type)s >();"
 )
 
 get_inverse = "return data_->getInverse(%(schema_name_upper)s_%(type)s_type, %(index)d)->as<%(type)s>();"
 
 set_attr_stmt = (
-    "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v"
+    "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(%(star_if_optional)sv"
     + ");data_->setArgument(%(index)d,attr);}"
 )
 set_attr_stmt_enum = "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(%(star_if_optional)sv,%(non_optional_type)s::ToString(%(star_if_optional)sv)));data_->setArgument(%(index)d,attr);}"
 set_attr_stmt_array = (
-    "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize()"
+    "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((%(star_if_optional)sv)->generalize()"
     + ");data_->setArgument(%(index)d,attr);}"
 )
 
