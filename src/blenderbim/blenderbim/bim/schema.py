@@ -77,3 +77,7 @@ class IfcSchema:
 
 
 ifc = IfcSchema()
+
+def reload():
+    global ifc
+    ifc = IfcSchema()

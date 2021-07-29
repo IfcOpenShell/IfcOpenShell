@@ -195,6 +195,7 @@ class EditPset(bpy.types.Operator):
                     "pset": self.file.by_id(pset_id),
                     "name": props.active_pset_name,
                     "properties": properties,
+                    "pset_template": blenderbim.bim.schema.ifc.psetqto.get_by_name(props.active_pset_name),
                 },
             )
         else:
