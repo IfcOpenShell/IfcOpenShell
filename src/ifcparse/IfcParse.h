@@ -84,7 +84,6 @@ namespace IfcParse {
 		unsigned startPos;
 		TokenType type;
 		union {
-			bool value_bool;      //types: BOOL
 			char value_char;      //types: OPERATOR
 			int value_int;        //types: INT, IDENTIFIER
 			double value_double;  //types: FLOAT
@@ -119,6 +118,8 @@ namespace IfcParse {
 		static bool isInt(const Token& t);
 		/// Returns whether the token can be interpreted as a boolean
 		static bool isBool(const Token& t);
+		/// Returns whether the token can be interpreted as a logical
+		static bool isLogical(const Token& t);
 		/// Returns whether the token can be interpreted as a floating point number
 		static bool isFloat(const Token& t);
 		/// Returns whether the token can be interpreted as a binary type
@@ -129,6 +130,8 @@ namespace IfcParse {
 		static int asIdentifier(const Token& t);
 		/// Returns the token interpreted as an boolean (.T. or .F.)
 		static bool asBool(const Token& t);
+		/// Returns the token interpreted as an logical (.T. or .F. or .U.)
+		static boost::logic::tribool asLogical(const Token& t);
 		/// Returns the token as a floating point number
 		static double asFloat(const Token& t);
 		/// Returns the token as a string (without the dot or apostrophe)
@@ -189,11 +192,11 @@ namespace IfcParse {
 		operator std::vector<double>() const;
 		operator std::vector<std::string>() const;
 		operator std::vector<boost::dynamic_bitset<> >() const;
-		operator IfcEntityList::ptr() const;
+		operator aggregate_of_instance::ptr() const;
 
 		operator std::vector< std::vector<int> >() const;
 		operator std::vector< std::vector<double> >() const;
-		operator IfcEntityListList::ptr() const;
+		operator aggregate_of_aggregate_of_instance::ptr() const;
 
 		bool isNull() const;
 		unsigned int size() const;
@@ -233,6 +236,7 @@ namespace IfcParse {
 
 		operator int() const;
 		operator bool() const;
+		operator boost::logic::tribool() const;
 		operator double() const;
 		operator std::string() const;
 		operator boost::dynamic_bitset<>() const;
@@ -268,7 +272,7 @@ namespace IfcParse {
 	
 	IFC_PARSE_API IfcEntityInstanceData* read(unsigned int i, IfcFile* t, boost::optional<unsigned> offset = boost::none);
 
-	IFC_PARSE_API IfcEntityList::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level = -1);
+	IFC_PARSE_API aggregate_of_instance::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level = -1);
 }
 
 IFC_PARSE_API std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f);

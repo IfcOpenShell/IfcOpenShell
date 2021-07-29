@@ -274,7 +274,7 @@ int convert_to_ifc(const Handle_Geom_Surface& s, IfcSchema::IfcSurface*& surface
 		surface = new IfcSchema::IfcCylindricalSurface(place, cyl->Radius());
 		return 1;
 	} else if (s->DynamicType() == STANDARD_TYPE(Geom_BSplineSurface)) {
-		typedef IfcTemplatedEntityListList<IfcSchema::IfcCartesianPoint> points_t;
+		typedef aggregate_of_aggregate_of<IfcSchema::IfcCartesianPoint> points_t;
 
 		Handle_Geom_BSplineSurface bspline = Handle_Geom_BSplineSurface::DownCast(s);
 		points_t::ptr points(new points_t);
@@ -384,8 +384,8 @@ int convert_to_ifc(const TopoDS_Edge& e, IfcSchema::IfcCurve*& c, bool advanced)
 		return 0;
 	}
 
-	IfcEntityList::ptr trim1(new IfcEntityList);
-	IfcEntityList::ptr trim2(new IfcEntityList);
+	aggregate_of_instance::ptr trim1(new aggregate_of_instance);
+	aggregate_of_instance::ptr trim2(new aggregate_of_instance);
 	trim1->push(new IfcSchema::IfcParameterValue(a));
 	trim2->push(new IfcSchema::IfcParameterValue(b));
 
@@ -552,8 +552,8 @@ int convert_to_ifc(const TopoDS_Shape& s, U*& item, bool advanced) {
 		} else {
 			/// Cleanup:
 			for (IfcSchema::IfcFace::list::it it = faces->begin(); it != faces->end(); ++it) {
-				IfcEntityList::ptr data = IfcParse::traverse(*it)->unique();
-				for (IfcEntityList::it jt = data->begin(); jt != data->end(); ++jt) {
+				aggregate_of_instance::ptr data = IfcParse::traverse(*it)->unique();
+				for (aggregate_of_instance::it jt = data->begin(); jt != data->end(); ++jt) {
 					delete *jt;
 				}
 			}
@@ -647,7 +647,7 @@ IfcUtil::IfcBaseClass* IfcGeom::MAKE_TYPE_NAME(serialise_)(const TopoDS_Shape& s
 				// they are not commonly top-level geometrical descriptions in IFC.
 				// Also note that edges are written as trimmed curves rather than edges.
 
-				IfcEntityList::ptr edges(new IfcEntityList);
+				aggregate_of_instance::ptr edges(new aggregate_of_instance);
 
 				for (TopExp_Explorer exp(shape, TopAbs_EDGE); exp.More(); exp.Next()) {
 					IfcSchema::IfcCurve* c;

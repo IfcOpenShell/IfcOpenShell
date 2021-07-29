@@ -82,8 +82,8 @@ double IfcParse::get_SI_equivalent(typename Schema::IfcNamedUnit* named_unit) {
 		si_unit = named_unit->template as<typename Schema::IfcSIUnit>();
 	}
 	if (si_unit) {
-		if (si_unit->hasPrefix()) {
-			scale *= IfcSIPrefixToValue(Schema::IfcSIPrefix::ToString(si_unit->Prefix()));
+		if (si_unit->Prefix()) {
+			scale *= IfcSIPrefixToValue(Schema::IfcSIPrefix::ToString(*si_unit->Prefix()));
 		}
 	} else {
 		scale = 0.;

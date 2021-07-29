@@ -1432,7 +1432,7 @@ namespace latebound_access {
 
 void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool stderr_progress) {
 	{
-		auto delete_reversed = [&f](const IfcEntityList::ptr& insts) {
+		auto delete_reversed = [&f](const aggregate_of_instance::ptr& insts) {
 			if (!insts) {
 				return;
 			}
@@ -1518,7 +1518,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 	latebound_access::set(ownerhist, "CreationDate", (int)time(0));
 
 	IfcUtil::IfcBaseClass* quantity = nullptr;
-	IfcEntityList::ptr objects;
+	aggregate_of_instance::ptr objects;
 	boost::shared_ptr<IfcGeom::Representation::BRep> previous_geometry_pointer;
 
 	for (;; ++num_created) {
@@ -1545,7 +1545,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 				break;
 			}
 
-			IfcEntityList::ptr quantities(new IfcEntityList);
+			aggregate_of_instance::ptr quantities(new aggregate_of_instance);
 
 			double a, b, c;
 			if (geom_object->geometry().calculate_surface_area(a)) {
@@ -1573,7 +1573,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 			latebound_access::set(quantity_complex, "Name", std::string("Shape Validation Properties"));
 			quantities->push(quantity_complex);
 
-			IfcEntityList::ptr quantities_2(new IfcEntityList);
+			aggregate_of_instance::ptr quantities_2(new aggregate_of_instance);
 
 			for (auto& part : geom_object->geometry()) {				
 				auto quantity_count = latebound_access::create(f, "IfcQuantityCount");
@@ -1592,7 +1592,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 				latebound_access::set(quantity, "Quantities", quantities);
 			}
 
-			objects.reset(new IfcEntityList);
+			objects.reset(new aggregate_of_instance);
 			objects->push(geom_object->product());
 		}
 

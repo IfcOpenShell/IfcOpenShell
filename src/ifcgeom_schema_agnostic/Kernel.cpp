@@ -140,9 +140,9 @@ IfcSchema::IfcObjectDefinition* get_decomposing_entity_impl(IfcSchema::IfcProduc
                                                                                                                  \
 	/* Parent decompositions to the RelatingObject */                                                            \
 	if (!parent) {                                                                                               \
-		IfcEntityList::ptr parents = product->data().getInverse((&IfcSchema::IfcRelAggregates::Class()), -1);    \
+		aggregate_of_instance::ptr parents = product->data().getInverse((&IfcSchema::IfcRelAggregates::Class()), -1);    \
 		parents->push(product->data().getInverse((&IfcSchema::IfcRelNests::Class()), -1));                       \
-		for (IfcEntityList::it it = parents->begin(); it != parents->end(); ++it) {                              \
+		for (aggregate_of_instance::it it = parents->begin(); it != parents->end(); ++it) {                              \
 			IfcSchema::IfcRelDecomposes* decompose = (IfcSchema::IfcRelDecomposes*)*it;                          \
 			IfcUtil::IfcBaseEntity* ifc_objectdef;                                                               \
                  																								 \
@@ -263,8 +263,8 @@ namespace {
 	template <typename Schema>
 	static std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers_impl(typename Schema::IfcProduct* prod) {
 		std::map<std::string, IfcUtil::IfcBaseEntity*> layers;
-		if (prod->hasRepresentation()) {
-			IfcEntityList::ptr r = IfcParse::traverse(prod->Representation());
+		if (prod->Representation()) {
+			aggregate_of_instance::ptr r = IfcParse::traverse(prod->Representation());
 			typename Schema::IfcRepresentation::list::ptr representations = r->as<typename Schema::IfcRepresentation>();
 			for (typename Schema::IfcRepresentation::list::it it = representations->begin(); it != representations->end(); ++it) {
 				typename Schema::IfcPresentationLayerAssignment::list::ptr a = (*it)->LayerAssignments();

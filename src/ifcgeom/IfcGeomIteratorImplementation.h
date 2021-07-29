@@ -294,12 +294,12 @@ namespace IfcGeom {
 					continue;
 				}
 				try {
-					if (context->hasContextType()) {
-						std::string context_type = context->ContextType();
+					if (context->ContextType()) {
+						std::string context_type = *context->ContextType();
 						boost::to_lower(context_type);
 
 						if (allowed_context_types.find(context_type) == allowed_context_types.end()) {
-							Logger::Warning(std::string("ContextType '") + context->ContextType() + "' not allowed:", context);
+							Logger::Warning(std::string("ContextType '") + *context->ContextType() + "' not allowed:", context);
 						}
 						if (context_types.find(context_type) != context_types.end()) {
 							filtered_contexts->push(context);
@@ -326,8 +326,8 @@ namespace IfcGeom {
 
 				representations->push(context->RepresentationsInContext());
 				try {
-					if (context->hasPrecision() && context->Precision() < lowest_precision_encountered) {
-						lowest_precision_encountered = context->Precision();
+					if (context->Precision() && *context->Precision() < lowest_precision_encountered) {
+						lowest_precision_encountered = *context->Precision();
 						any_precision_encountered = true;
 					}
 				} catch (const std::exception& e) {
@@ -522,7 +522,7 @@ namespace IfcGeom {
 				IfcSchema::IfcProduct::list::ptr products = ifc_file->instances_by_type<IfcSchema::IfcProduct>();
 				for (IfcSchema::IfcProduct::list::it iter = products->begin(); iter != products->end(); ++iter) {
 					IfcSchema::IfcProduct* product = *iter;
-					if (product->hasObjectPlacement()) {
+					if (product->ObjectPlacement()) {
 						// Use a fresh trsf every time in order to prevent the result to be concatenated
 						gp_Trsf trsf; 
 						bool success = false;
@@ -890,7 +890,7 @@ namespace IfcGeom {
 				if (ifc_entity->declaration().is(IfcSchema::IfcRoot::Class())) {
 					IfcSchema::IfcRoot* ifc_root = ifc_entity->as<IfcSchema::IfcRoot>();
 					product_guid = ifc_root->GlobalId();
-					product_name = ifc_root->hasName() ? ifc_root->Name() : "";
+					product_name = ifc_root->Name().get_value_or("");
 				}
 
 				if (ifc_entity->declaration().is(IfcSchema::IfcProduct::Class())) {

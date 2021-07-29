@@ -200,9 +200,9 @@ namespace {
 
 				for (it = contexts->begin(); it != contexts->end(); ++it) {
 					IfcSchema::IfcGeometricRepresentationContext* context = *it;
-					if (context->hasPrecision() && context->Precision() < lowest_precision_encountered) {
+					if (context->Precision() && (*context->Precision() * unit_magnitude * 10.) < lowest_precision_encountered) {
 						// Some arbitrary factor that has proven to work better for the models in the set of test files.
-						lowest_precision_encountered = context->Precision() * unit_magnitude * 10.;
+						lowest_precision_encountered = *context->Precision() * unit_magnitude * 10.;
 						any_precision_encountered = true;
 					}
 				}
@@ -749,16 +749,16 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 
 	// Iterate over IfcOpeningElements
 	IfcGeom::IfcRepresentationShapeItems opening_shapes;
-	unsigned int last_size = 0;
+	size_t last_size = 0;
 	for ( IfcSchema::IfcRelVoidsElement::list::it it = openings->begin(); it != openings->end(); ++ it ) {
 		IfcSchema::IfcRelVoidsElement* v = *it;
 		IfcSchema::IfcFeatureElementSubtraction* fes = v->RelatedOpeningElement();
 		if ( fes->declaration().is(IfcSchema::IfcOpeningElement::Class()) ) {
-			if (!fes->hasRepresentation()) continue;
+			if (!fes->Representation()) continue;
 
 			// Convert the IfcRepresentation of the IfcOpeningElement
 			gp_Trsf opening_trsf;
-			if (fes->hasObjectPlacement()) {
+			if (fes->ObjectPlacement()) {
 				try {
 					convert(fes->ObjectPlacement(),opening_trsf);
 				} catch (const std::exception& e) {
@@ -778,8 +778,8 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 				convert_shapes(*it2,opening_shapes);
 			}
 
-			const unsigned int current_size = opening_shapes.size();
-			for ( unsigned int i = last_size; i < current_size; ++ i ) {
+			auto current_size = opening_shapes.size();
+			for ( auto i = last_size; i < current_size; ++ i ) {
 				opening_shapes[i].prepend(opening_trsf);
 			}
 			last_size = current_size;
@@ -1015,11 +1015,11 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 		IfcSchema::IfcRelVoidsElement* v = *it;
 		IfcSchema::IfcFeatureElementSubtraction* fes = v->RelatedOpeningElement();
 		if (fes->declaration().is(IfcSchema::IfcOpeningElement::Class())) {
-			if (!fes->hasRepresentation()) continue;
+			if (!fes->Representation()) continue;
 
 			// Convert the IfcRepresentation of the IfcOpeningElement
 			gp_Trsf opening_trsf;
-			if (fes->hasObjectPlacement()) {
+			if (fes->ObjectPlacement()) {
 				try {
 					convert(fes->ObjectPlacement(), opening_trsf);
 				} catch (const std::exception& e) {
@@ -1795,9 +1795,9 @@ IfcSchema::IfcRelVoidsElement::list::ptr IfcGeom::Kernel::find_openings(IfcSchem
 	// Filter openings in Reference view, solely marked as Reference.
 	IfcSchema::IfcRelVoidsElement::list::ptr openings(new IfcSchema::IfcRelVoidsElement::list);
 	std::for_each(rs.begin(), rs.end(), [&openings](IfcSchema::IfcRelVoidsElement* rel) {
-		if (rel->RelatedOpeningElement()->hasObjectPlacement() && rel->RelatedOpeningElement()->hasRepresentation()) {
+		if (rel->RelatedOpeningElement()->ObjectPlacement() && rel->RelatedOpeningElement()->Representation()) {
 			auto reps = rel->RelatedOpeningElement()->Representation()->Representations();
-			if (!(reps->size() == 1 && (*reps->begin())->RepresentationIdentifier() == "Reference")) {
+			if (!(reps->size() == 1 && (*reps->begin())->RepresentationIdentifier().get_value_or("") == "Reference")) {
 				openings->push(rel);
 			}
 		}
@@ -1819,7 +1819,7 @@ const IfcSchema::IfcMaterial* IfcGeom::Kernel::get_single_material_association(c
 			IfcSchema::IfcMaterialLayerSet* layerset = associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()->ForLayerSet();
 			if (getValue(GV_LAYERSET_FIRST) > 0.0 ? layerset->MaterialLayers()->size() >= 1 : layerset->MaterialLayers()->size() == 1) {
 				IfcSchema::IfcMaterialLayer* layer = (*layerset->MaterialLayers()->begin());
-				if (layer->hasMaterial()) {
+				if (layer->Material()) {
 					single_material = layer->Material();
 				}
 			}
@@ -1936,7 +1936,7 @@ IfcGeom::BRepElement* IfcGeom::Kernel::create_brep_for_representation_and_produc
 		Logger::Error(e);
 	}
 		
-	const std::string name = product->hasName() ? product->Name() : "";
+	const std::string name = product->Name().get_value_or("");
 	const std::string guid = product->GlobalId();
 		
 	gp_Trsf trsf;
@@ -2013,10 +2013,10 @@ IfcGeom::BRepElement* IfcGeom::Kernel::create_brep_for_representation_and_produc
 	}
 
 	std::string context_string = "";
-	if (representation->hasRepresentationIdentifier()) {
-		context_string = representation->RepresentationIdentifier();
-	} else if (representation->ContextOfItems()->hasContextType()) {
-		context_string = representation->ContextOfItems()->ContextType();
+	if (representation->RepresentationIdentifier()) {
+		context_string = *representation->RepresentationIdentifier();
+	} else if (representation->ContextOfItems()->ContextType()) {
+		context_string = *representation->ContextOfItems()->ContextType();
 	}
 
 	auto elem = new BRepElement(
@@ -2075,9 +2075,9 @@ IfcGeom::BRepElement* IfcGeom::Kernel::create_brep_for_representation_and_produc
 								auto qs2 = q->as<IfcSchema::IfcPhysicalComplexQuantity>()->HasQuantities();
 								bool all_succeeded = qs2->size() > 0;
 								for (auto& q2 : *qs2) {
-									if (q2->as<IfcSchema::IfcQuantityCount>() && q2->Name() == "Surface Genus" && q2->hasDescription()) {
-										int item_id = boost::lexical_cast<int>(q2->Description().substr(1));
-										int genus = q2->as<IfcSchema::IfcQuantityCount>()->CountValue();
+									if (q2->as<IfcSchema::IfcQuantityCount>() && q2->Name() == "Surface Genus" && q2->Description()) {
+										int item_id = boost::lexical_cast<int>((*q2->Description()).substr(1));
+										int genus = (int) q2->as<IfcSchema::IfcQuantityCount>()->CountValue();
 										for (auto& part : elem->geometry()) {
 											if (part.ItemId() == item_id) {
 												if (surface_genus(part.Shape()) != genus) {
@@ -2200,7 +2200,7 @@ IfcGeom::BRepElement* IfcGeom::Kernel::create_brep_for_processed_representation(
 		Logger::Error(e);
 	}
 		
-	const std::string name = product->hasName() ? product->Name() : "";
+	const std::string name = product->Name().get_value_or("");
 	const std::string guid = product->GlobalId();
 		
 	gp_Trsf trsf;
@@ -2213,10 +2213,10 @@ IfcGeom::BRepElement* IfcGeom::Kernel::create_brep_for_processed_representation(
 	}
 
 	std::string context_string = "";
-	if (representation->hasRepresentationIdentifier()) {
-		context_string = representation->RepresentationIdentifier();
-	} else if (representation->ContextOfItems()->hasContextType()) {
-		context_string = representation->ContextOfItems()->ContextType();
+	if (representation->RepresentationIdentifier()) {
+		context_string = *representation->RepresentationIdentifier();
+	} else if (representation->ContextOfItems()->ContextType()) {
+		context_string = *representation->ContextOfItems()->ContextType();
 	}
 
 	const std::string product_type = product->declaration().name();
@@ -2245,11 +2245,11 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 	bool length_unit_encountered = false, angle_unit_encountered = false;
 
 	try {
-		IfcEntityList::ptr units = unit_assignment->Units();
+		aggregate_of_instance::ptr units = unit_assignment->Units();
 		if (!units || !units->size()) {
 			Logger::Warning("No unit information found");
 		} else {
-			for (IfcEntityList::it it = units->begin(); it != units->end(); ++it) {
+			for (aggregate_of_instance::it it = units->begin(); it != units->end(); ++it) {
 				IfcUtil::IfcBaseClass* base = *it;
 				if (base->declaration().is(IfcSchema::IfcNamedUnit::Class())) {
 					IfcSchema::IfcNamedUnit* named_unit = base->as<IfcSchema::IfcNamedUnit>();
@@ -2264,8 +2264,8 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 								current_unit_name = u->Name();
 							} else if (named_unit->declaration().is(IfcSchema::IfcSIUnit::Class())) {
 								IfcSchema::IfcSIUnit* si_unit = named_unit->as<IfcSchema::IfcSIUnit>();
-								if (si_unit->hasPrefix()) {
-									current_unit_name = IfcSchema::IfcSIPrefix::ToString(si_unit->Prefix()) + unit_name;
+								if (si_unit->Prefix()) {
+									current_unit_name = IfcSchema::IfcSIPrefix::ToString(*si_unit->Prefix()) + unit_name;
 								}
 								current_unit_name += IfcSchema::IfcSIUnitName::ToString(si_unit->Name());
 							}
@@ -3255,11 +3255,11 @@ bool IfcGeom::Kernel::apply_layerset(const IfcRepresentationShapeItems& items, c
 }
 
 IfcSchema::IfcRepresentation* IfcGeom::Kernel::find_representation(const IfcSchema::IfcProduct* product, const std::string& identifier) {
-	if (!product->hasRepresentation()) return 0;
+	if (!product->Representation()) return 0;
 	IfcSchema::IfcProductRepresentation* prod_rep = product->Representation();
 	IfcSchema::IfcRepresentation::list::ptr reps = prod_rep->Representations();
 	for (IfcSchema::IfcRepresentation::list::it it = reps->begin(); it != reps->end(); ++it) {
-		if ((**it).hasRepresentationIdentifier() && (**it).RepresentationIdentifier() == identifier) {
+		if ((**it).RepresentationIdentifier() && (*(**it).RepresentationIdentifier()) == identifier) {
 			return *it;
 		}
 	}
@@ -3824,7 +3824,7 @@ namespace {
 		bounded_int& operator--() {
 			--i;
 			if (i == -1) {
-				i = n - 1;
+				i = (int) n - 1;
 			}
 			return *this;
 		}
@@ -4310,8 +4310,8 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 				if (op == BOPAlgo_CUT) {
 					TopTools_IndexedMapOfShape edges;
 					TopTools_IndexedDataMapOfShapeListOfShape map;
-					for (TopTools_ListIteratorOfListOfShape it(B); it.More(); it.Next()) {
-						auto& bb = it.Value();
+					for (TopTools_ListIteratorOfListOfShape it2(B); it2.More(); it2.Next()) {
+						auto& bb = it2.Value();
 						TopExp::MapShapes(bb, TopAbs_EDGE, edges);
 						TopExp::MapShapesAndAncestors(bb, TopAbs_EDGE, TopAbs_FACE, map);
 					}
@@ -4321,10 +4321,10 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 					}
 					for (int i = 1; i <= edges.Extent(); ++i) {
 						const TopoDS_Edge& ei = TopoDS::Edge(edges.FindKey(i));
-						Bnd_Box b;
-						BRepBndLib::Add(ei, b);
-						b.Enlarge(fuzziness);
-						auto ii = tree.select_box(b, false);
+						Bnd_Box bb;
+						BRepBndLib::Add(ei, bb);
+						bb.Enlarge(fuzziness);
+						auto ii = tree.select_box(bb, false);
 						for (int j : ii) {
 							if (j != i) {
 								const TopoDS_Edge& ej = TopoDS::Edge(edges.FindKey(j));
@@ -4337,8 +4337,8 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 									auto faces_i = map.FindFromKey(edges.FindKey(i));
 									auto faces_j = map.FindFromKey(edges.FindKey(j));
 									bool overlap = false;
-									for (TopTools_ListIteratorOfListOfShape it(faces_i); it.More(); it.Next()) {
-										auto& fi = it.Value();
+									for (TopTools_ListIteratorOfListOfShape it4(faces_i); it4.More(); it4.Next()) {
+										auto& fi = it4.Value();
 										for (TopTools_ListIteratorOfListOfShape it2(faces_j); it2.More(); it2.Next()) {
 											auto& fj = it2.Value();
 											if (faces_overlap(TopoDS::Face(fi), TopoDS::Face(fj))) {
@@ -4650,7 +4650,7 @@ namespace {
 		return &p;
 	}
 
-	const std::vector<std::vector<double>>* store_cache(const std::vector<const IfcSchema::IfcCartesianPoint*>& p) {
+	const std::vector<std::vector<double>>* store_cache(const std::vector<const IfcSchema::IfcCartesianPoint*>& /*p*/) {
 		return nullptr;
 	}
 }
@@ -4669,8 +4669,6 @@ IfcGeom::Kernel::faceset_helper<CP, LP>::faceset_helper(
 	std::vector<std::unique_ptr<gp_Pnt>> pnts(std::distance(points.begin(), points.end()));
 	std::vector<TopoDS_Vertex> vertices(pnts.size());
 
-	auto LU = kernel_->getValue(GV_LENGTH_UNIT);
-
 	IfcGeom::impl::tree<int> tree;
 
 	BRep_Builder B;
@@ -4681,7 +4679,7 @@ IfcGeom::Kernel::faceset_helper<CP, LP>::faceset_helper(
 		if (construct(points[i], p)) {
 			pnts[i].reset(p);
 			B.MakeVertex(vertices[i], *p, Precision::Confusion());
-			tree.add(i, vertices[i]);
+			tree.add((int) i, vertices[i]);
 			box.Add(*p);
 		} else {
 			delete p;

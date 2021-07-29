@@ -70,8 +70,8 @@ const IfcGeom::SurfaceStyle* IfcGeom::Kernel::internalize_surface_style(const st
 	IfcSchema::IfcSurfaceStyle* style = shading_styles.first->as<IfcSchema::IfcSurfaceStyle>();
 	IfcSchema::IfcSurfaceStyleShading* shading = shading_styles.second->as<IfcSchema::IfcSurfaceStyleShading>();
 
-	if (style->hasName()) {
-		surface_style = SurfaceStyle(surface_style_id, style->Name());
+	if (style->Name()) {
+		surface_style = SurfaceStyle(surface_style_id, *style->Name());
 	} else {
 		surface_style = SurfaceStyle(surface_style_id);
 	}
@@ -81,20 +81,20 @@ const IfcGeom::SurfaceStyle* IfcGeom::Kernel::internalize_surface_style(const st
 	}
 	if (shading_styles.second->declaration().is(IfcSchema::IfcSurfaceStyleRendering::Class())) {
 		IfcSchema::IfcSurfaceStyleRendering* rendering_style = static_cast<IfcSchema::IfcSurfaceStyleRendering*>(shading_styles.second);
-		if (rendering_style->hasDiffuseColour() && process_colour(rendering_style->DiffuseColour(), rgb)) {
+		if (rendering_style->DiffuseColour() && process_colour(rendering_style->DiffuseColour(), rgb)) {
 			SurfaceStyle::ColorComponent diffuse = surface_style.Diffuse().get_value_or(SurfaceStyle::ColorComponent(1,1,1));
 			surface_style.Diffuse().reset(SurfaceStyle::ColorComponent(diffuse.R() * rgb[0], diffuse.G() * rgb[1], diffuse.B() * rgb[2]));
 		}
-		if (rendering_style->hasDiffuseTransmissionColour()) {
+		if (rendering_style->DiffuseTransmissionColour()) {
 			// Not supported
 		}
-		if (rendering_style->hasReflectionColour()) {
+		if (rendering_style->ReflectionColour()) {
 			// Not supported
 		}
-		if (rendering_style->hasSpecularColour() && process_colour(rendering_style->SpecularColour(), rgb)) {
+		if (rendering_style->SpecularColour() && process_colour(rendering_style->SpecularColour(), rgb)) {
 			surface_style.Specular().reset(SurfaceStyle::ColorComponent(rgb[0], rgb[1], rgb[2]));
 		}
-		if (rendering_style->hasSpecularHighlight()) {
+		if (rendering_style->SpecularHighlight()) {
 			IfcSchema::IfcSpecularHighlightSelect* highlight = rendering_style->SpecularHighlight();
 			if (highlight->declaration().is(IfcSchema::IfcSpecularRoughness::Class())) {
 				double roughness = *((IfcSchema::IfcSpecularRoughness*)highlight);
@@ -105,11 +105,11 @@ const IfcGeom::SurfaceStyle* IfcGeom::Kernel::internalize_surface_style(const st
 				surface_style.Specularity().reset(*((IfcSchema::IfcSpecularExponent*)highlight));
 			}
 		}
-		if (rendering_style->hasTransmissionColour()) {
+		if (rendering_style->TransmissionColour()) {
 			// Not supported
 		}
-		if (rendering_style->hasTransparency()) {
-			const double d = rendering_style->Transparency();
+		if (rendering_style->Transparency()) {
+			const double d = *rendering_style->Transparency();
 			surface_style.Transparency().reset(d);
 		}
 	}
