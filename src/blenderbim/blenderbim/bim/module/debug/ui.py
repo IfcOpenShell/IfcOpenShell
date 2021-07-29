@@ -49,7 +49,7 @@ class BIM_PT_debug(Panel):
             row.operator("bim.rewind_inspector", icon="FRAME_PREV", text="")
         row.prop(props, "active_step_id", text="")
         row = layout.row(align=True)
-        row.operator("bim.inspect_from_step_id").step_id = bpy.context.scene.BIMDebugProperties.active_step_id
+        row.operator("bim.inspect_from_step_id").step_id = context.scene.BIMDebugProperties.active_step_id
         row.operator("bim.inspect_from_object")
 
         if props.attributes:

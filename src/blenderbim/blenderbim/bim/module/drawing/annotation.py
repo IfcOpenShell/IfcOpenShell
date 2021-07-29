@@ -16,13 +16,13 @@ class Annotator:
         return float(sizes[str(size)])
 
     @staticmethod
-    def add_text(related_element=None):
+    def add_text(context, related_element=None):
         curve = bpy.data.curves.new(type="FONT", name="Text")
         curve.body = "TEXT"
         obj = bpy.data.objects.new("Text", curve)
-        obj.matrix_world = bpy.context.scene.camera.matrix_world
+        obj.matrix_world = context.scene.camera.matrix_world
         if related_element is None:
-            location, _, _, _ = Annotator.get_placeholder_coords()
+            location, _, _, _ = Annotator.get_placeholder_coords(context)
         else:
             obj.data.BIMTextProperties.related_element = related_element
             location = related_element.location
@@ -31,12 +31,12 @@ class Annotator:
         font = bpy.data.fonts.get("OpenGost TypeB TT")
         if not font:
             font = bpy.data.fonts.load(
-                os.path.join(bpy.context.scene.BIMProperties.data_dir, "fonts", "OpenGost Type B TT.ttf")
+                os.path.join(context.scene.BIMProperties.data_dir, "fonts", "OpenGost Type B TT.ttf")
             )
             font.name = "OpenGost Type B TT"
         obj.data.font = font
         obj.data.BIMTextProperties.font_size = "2.5"
-        collection = bpy.context.scene.camera.users_collection[0]
+        collection = context.scene.camera.users_collection[0]
         collection.objects.link(obj)
         Annotator.resize_text(obj)
         return obj
@@ -64,9 +64,9 @@ class Annotator:
         text_obj.data.size = font_size
 
     @staticmethod
-    def add_line_to_annotation(obj, co1=None, co2=None):
+    def add_line_to_annotation(obj, context, co1=None, co2=None):
         if co1 is None:
-            co1, co2, _, _ = Annotator.get_placeholder_coords()
+            co1, co2, _, _ = Annotator.get_placeholder_coords(context)
         co1 = obj.matrix_world.inverted() @ co1
         co2 = obj.matrix_world.inverted() @ co2
         if isinstance(obj.data, bpy.types.Mesh):
@@ -83,8 +83,8 @@ class Annotator:
         return obj
 
     @staticmethod
-    def add_plane_to_annotation(obj):
-        co1, co2, co3, co4 = Annotator.get_placeholder_coords()
+    def add_plane_to_annotation(obj, context):
+        co1, co2, co3, co4 = Annotator.get_placeholder_coords(context)
         co1 = obj.matrix_world.inverted() @ co1  # bot left
         co2 = obj.matrix_world.inverted() @ co2  # top left
         co3 = obj.matrix_world.inverted() @ co3  # bot right
@@ -132,8 +132,8 @@ class Annotator:
         return obj
 
     @staticmethod
-    def get_annotation_obj(name, data_type):
-        collection = bpy.context.scene.camera.users_collection[0]
+    def get_annotation_obj(name, data_type, context):
+        collection = context.scene.camera.users_collection[0]
         for obj in collection.objects:
             if name in obj.name:
                 return obj
@@ -148,13 +148,13 @@ class Annotator:
         return obj
 
     @staticmethod
-    def get_placeholder_coords():
-        camera = bpy.context.scene.camera
+    def get_placeholder_coords(context):
+        camera = context.scene.camera
         z_offset = camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
-        if bpy.context.scene.render.resolution_x > bpy.context.scene.render.resolution_y:
+        if context.scene.render.resolution_x > context.scene.render.resolution_y:
             y = (
                 camera.data.ortho_scale
-                * (bpy.context.scene.render.resolution_y / bpy.context.scene.render.resolution_x)
+                * (context.scene.render.resolution_y / context.scene.render.resolution_x)
                 / 4
             )
         else:

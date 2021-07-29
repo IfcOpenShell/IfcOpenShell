@@ -20,7 +20,7 @@ class AddStructuralMemberConnection(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.context.active_object
+        obj = context.active_object
         oprops = obj.BIMObjectProperties
         props = obj.BIMStructuralProperties
         file = IfcStore.get_file()
@@ -46,7 +46,7 @@ class EnableEditingStructuralConnectionCondition(bpy.types.Operator):
     connects_structural_member: bpy.props.IntProperty()
 
     def execute(self, context):
-        obj = bpy.context.active_object
+        obj = context.active_object
         oprops = obj.BIMObjectProperties
         props = obj.BIMStructuralProperties
         applied_condition_id = Data.connects_structural_members[self.connects_structural_member]["AppliedCondition"]
@@ -60,7 +60,7 @@ class DisableEditingStructuralConnectionCondition(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        obj = bpy.context.active_object
+        obj = context.active_object
         props = obj.BIMStructuralProperties
         props.active_connects_structural_member = 0
         return {"FINISHED"}
@@ -423,7 +423,7 @@ class EnableEditingStructuralItemAxis(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        obj = bpy.context.active_object
+        obj = context.active_object
         oprops = obj.BIMObjectProperties
         props = obj.BIMStructuralProperties
 
@@ -463,7 +463,7 @@ class DisableEditingStructuralItemAxis(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        obj = bpy.context.active_object
+        obj = context.active_object
         props = obj.BIMStructuralProperties
         props.is_editing_axis = False
         if props.axis_empty:
@@ -479,7 +479,7 @@ class EditStructuralItemAxis(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.context.active_object
+        obj = context.active_object
         oprops = obj.BIMObjectProperties
         props = obj.BIMStructuralProperties
         relative_matrix = props.axis_empty.matrix_world @ obj.matrix_world.inverted()
@@ -501,7 +501,7 @@ class EnableEditingStructuralConnectionCS(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        obj = bpy.context.active_object
+        obj = context.active_object
         oprops = obj.BIMObjectProperties
         props = obj.BIMStructuralProperties
 
@@ -553,7 +553,7 @@ class DisableEditingStructuralConnectionCS(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        obj = bpy.context.active_object
+        obj = context.active_object
         props = obj.BIMStructuralProperties
         props.is_editing_connection_cs = False
         if props.ccs_empty:
@@ -570,7 +570,7 @@ class EditStructuralConnectionCS(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.context.active_object
+        obj = context.active_object
         oprops = obj.BIMObjectProperties
         props = obj.BIMStructuralProperties
         relative_matrix = props.ccs_empty.matrix_world @ obj.matrix_world.inverted()

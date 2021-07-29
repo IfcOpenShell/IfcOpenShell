@@ -218,7 +218,7 @@ class AddSlabOpening(bpy.types.Operator):
         if not raycast[0]:
             return {"FINISHED"}
         bpy.ops.mesh.primitive_cube_add(size=slab_obj.dimensions[2] * 2)
-        opening = bpy.context.selected_objects[0]
+        opening = context.selected_objects[0]
 
         # Place the opening in the middle of the slab
         global_location = slab_obj.matrix_world @ raycast[1]

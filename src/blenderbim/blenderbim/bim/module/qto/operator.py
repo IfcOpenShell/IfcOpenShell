@@ -14,13 +14,13 @@ class CalculateEdgeLengths(bpy.types.Operator):
 
     def execute(self, context):
         result = 0
-        for obj in bpy.context.selected_objects:
+        for obj in context.selected_objects:
             if not obj.data or not obj.data.edges:
                 continue
             for edge in obj.data.edges:
                 if edge.select:
                     result += (obj.data.vertices[edge.vertices[1]].co - obj.data.vertices[edge.vertices[0]].co).length
-        bpy.context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
+        context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
         return {"FINISHED"}
 
 
@@ -31,13 +31,13 @@ class CalculateFaceAreas(bpy.types.Operator):
 
     def execute(self, context):
         result = 0
-        for obj in bpy.context.selected_objects:
+        for obj in context.selected_objects:
             if not obj.data or not obj.data.polygons:
                 continue
             for polygon in obj.data.polygons:
                 if polygon.select:
                     result += polygon.area
-        bpy.context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
+        context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
         return {"FINISHED"}
 
 
@@ -48,14 +48,14 @@ class CalculateObjectVolumes(bpy.types.Operator):
 
     def execute(self, context):
         result = 0
-        for obj in bpy.context.selected_objects:
+        for obj in context.selected_objects:
             if not obj.data or not isinstance(obj.data, bpy.types.Mesh):
                 continue
             bm = bmesh.new()
             bm.from_mesh(obj.data)
             result += bm.calc_volume()
             bm.free()
-        bpy.context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
+        context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
         return {"FINISHED"}
 
 
@@ -65,16 +65,16 @@ class ExecuteQtoMethod(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        props = bpy.context.scene.BIMQtoProperties
+        props = context.scene.BIMQtoProperties
         result = 0
         if props.qto_methods == "HEIGHT":
-            for obj in bpy.context.selected_objects:
+            for obj in context.selected_objects:
                 result += helper.calculate_height(obj)
         elif props.qto_methods == "VOLUME":
-            for obj in bpy.context.selected_objects:
+            for obj in context.selected_objects:
                 result += helper.calculate_volume(obj)
         elif props.qto_methods == "FORMWORK":
-            result = helper.calculate_formwork_area(bpy.context.selected_objects)
+            result = helper.calculate_formwork_area(context.selected_objects, context)
         props.qto_result = str(round(result, 3))
         return {"FINISHED"}
 
@@ -88,9 +88,9 @@ class QuantifyObjects(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        props = bpy.context.scene.BIMQtoProperties
+        props = context.scene.BIMQtoProperties
         self.file = IfcStore.get_file()
-        for obj in bpy.context.selected_objects:
+        for obj in context.selected_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             result = 0
@@ -99,7 +99,7 @@ class QuantifyObjects(bpy.types.Operator):
             elif props.qto_methods == "VOLUME":
                 result = helper.calculate_volume(obj)
             elif props.qto_methods == "FORMWORK":
-                result = helper.calculate_formwork_area([obj])
+                result = helper.calculate_formwork_area([obj], context)
             if not result:
                 continue
             result = round(result, 3)

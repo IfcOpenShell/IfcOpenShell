@@ -14,7 +14,7 @@ def calculate_volume(obj):
     return result
 
 
-def calculate_formwork_area(objs):
+def calculate_formwork_area(objs, context):
     """
     Formwork is defined as the surface area required to cover all exposed
     surfaces of one or more objects, excluding top surfaces (i.e. that have a
@@ -27,7 +27,7 @@ def calculate_formwork_area(objs):
         new_obj = obj.copy()
         new_obj.data = obj.data.copy()
         new_obj.animation_data_clear()
-        bpy.context.collection.objects.link(new_obj)
+        context.collection.objects.link(new_obj)
         copied_objs.append(new_obj)
 
     context_override = {}
@@ -53,7 +53,7 @@ def calculate_formwork_area(objs):
     else:
         modifier.octree_depth = 5
 
-    mesh = copied_objs[0].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+    mesh = copied_objs[0].evaluated_get(context.evaluated_depsgraph_get()).to_mesh()
     for polygon in mesh.polygons:
         if polygon.normal.z > 0.5:
             continue
