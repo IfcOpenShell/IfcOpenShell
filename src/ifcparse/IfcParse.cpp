@@ -1212,6 +1212,11 @@ void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::Argument
 	case IfcUtil::Argument_BOOL:
 		copy->set(static_cast<bool>(*a));
 		break;
+	case IfcUtil::Argument_LOGICAL: {
+		boost::logic::tribool tb = *a;
+		copy->set(tb);
+		break;
+	}
 	case IfcUtil::Argument_DOUBLE:
 		copy->set(static_cast<double>(*a));
 		break;

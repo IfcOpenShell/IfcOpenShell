@@ -326,6 +326,17 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		}
 	}
 
+	void setArgumentAsLogical(unsigned int i, boost::logic::tribool v) {
+		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
+		if (arg_type == IfcUtil::Argument_LOGICAL) {
+			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
+			arg->set(v);
+			self->data().setArgument(i, arg);	
+		} else {
+			throw IfcParse::IfcException("Attribute not set");
+		}
+	}
+
 	void setArgumentAsDouble(unsigned int i, double v) {
 		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_DOUBLE) {
