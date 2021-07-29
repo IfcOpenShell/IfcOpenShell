@@ -454,7 +454,7 @@ namespace {
 				if (!pset->get("Name")->isNull()) {
 					pset_name = (std::string) *pset->get("Name");
 				}
-				IfcEntityList::ptr props = *pset->get("HasProperties");
+				aggregate_of_instance::ptr props = *pset->get("HasProperties");
 				for (auto& prop : *props) {
 					if (prop->declaration().is("IfcPropertySingleValue")) {
 						std::string name = *((IfcUtil::IfcBaseEntity*) prop)->get("Name");
@@ -476,12 +476,12 @@ namespace {
 		auto refs = item->get_inverse("StyledByItem");
 		for (auto& ref : *refs) {
 			if (ref->declaration().is("IfcStyledItem")) {
-				IfcEntityList::ptr styles = *((IfcUtil::IfcBaseEntity*)ref)->get("Styles");
+				aggregate_of_instance::ptr styles = *((IfcUtil::IfcBaseEntity*)ref)->get("Styles");
 				for (auto& s_ : *styles) {
 					auto s = (IfcUtil::IfcBaseEntity*) s_;
 					std::vector<IfcUtil::IfcBaseEntity*> pss;
 					if (s->declaration().is("IfcPresentationStyleAssignment")) {
-						IfcEntityList::ptr pstyles = *s->get("Styles");
+						aggregate_of_instance::ptr pstyles = *s->get("Styles");
 						for (auto& ssss : *pstyles) {
 							pss.push_back((IfcUtil::IfcBaseEntity*) ssss);
 						}
@@ -748,7 +748,7 @@ void SvgSerializer::write(const geometry_data& data) {
 		boost::optional<std::string> operation_type;
 
 		try {
-			IfcEntityList::ptr rels;
+			aggregate_of_instance::ptr rels;
 			if (data.product->declaration().schema()->name() == "IFC2X3") {
 				rels = data.product->get_inverse("IsDefinedBy");
 			} else {
@@ -2107,7 +2107,7 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 		to_derive_from.push_back(f->schema()->declaration_by_name("IfcBuilding"));
 		to_derive_from.push_back(f->schema()->declaration_by_name("IfcSite"));
 		for (auto it = to_derive_from.begin(); it != to_derive_from.end(); ++it) {
-			IfcEntityList::ptr insts = f->instances_by_type(*it);
+			aggregate_of_instance::ptr insts = f->instances_by_type(*it);
 			if (insts) {
 				for (auto jt = insts->begin(); jt != insts->end(); ++jt) {
 					IfcUtil::IfcBaseEntity* product = (IfcUtil::IfcBaseEntity*) *jt;

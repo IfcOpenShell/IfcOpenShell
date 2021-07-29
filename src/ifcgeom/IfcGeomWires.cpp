@@ -436,7 +436,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 
 	TopTools_ListIteratorOfListOfShape it(converted_segments);
 
-	IfcEntityList::ptr profile = l->data().getInverse(&IfcSchema::IfcProfileDef::Class(), -1);
+	aggregate_of_instance::ptr profile = l->data().getInverse(&IfcSchema::IfcProfileDef::Class(), -1);
 	const bool force_close = profile && profile->size() > 0;
 
 	wire_builder bld(getValue(GV_PRECISION), l);
@@ -494,8 +494,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 	}
 	
 	bool trim_cartesian = l->MasterRepresentation() != IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER;
-	IfcEntityList::ptr trims1 = l->Trim1();
-	IfcEntityList::ptr trims2 = l->Trim2();
+	aggregate_of_instance::ptr trims1 = l->Trim1();
+	aggregate_of_instance::ptr trims2 = l->Trim2();
 	
 	unsigned sense_agreement = l->SenseAgreement() ? 0 : 1;
 	double flts[2];
@@ -505,7 +505,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 	
 	TopoDS_Edge e;
 
-	for ( IfcEntityList::it it = trims1->begin(); it != trims1->end(); it ++ ) {
+	for ( aggregate_of_instance::it it = trims1->begin(); it != trims1->end(); it ++ ) {
 		IfcUtil::IfcBaseClass* i = *it;
 		if ( i->declaration().is(IfcSchema::IfcCartesianPoint::Class()) ) {
 			IfcGeom::Kernel::convert((IfcSchema::IfcCartesianPoint*)i, pnts[sense_agreement] );
@@ -517,7 +517,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 		}
 	}
 
-	for ( IfcEntityList::it it = trims2->begin(); it != trims2->end(); it ++ ) {
+	for ( aggregate_of_instance::it it = trims2->begin(); it != trims2->end(); it ++ ) {
 		IfcUtil::IfcBaseClass* i = *it;
 		if ( i->declaration().is(IfcSchema::IfcCartesianPoint::Class()) ) {
 			IfcGeom::Kernel::convert((IfcSchema::IfcCartesianPoint*)i, pnts[1-sense_agreement] );
@@ -1004,8 +1004,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wi
 	BRepBuilderAPI_MakeWire w;
 
 	if(l->hasSegments()) {
-		IfcEntityList::ptr segments = l->Segments();
-		for (IfcEntityList::it it = segments->begin(); it != segments->end(); ++it) {
+		aggregate_of_instance::ptr segments = l->Segments();
+		for (aggregate_of_instance::it it = segments->begin(); it != segments->end(); ++it) {
 			IfcUtil::IfcBaseClass* segment = *it;
 			if (segment->declaration().is(IfcSchema::IfcLineIndex::Class())) {
 				IfcSchema::IfcLineIndex* line = (IfcSchema::IfcLineIndex*) segment;

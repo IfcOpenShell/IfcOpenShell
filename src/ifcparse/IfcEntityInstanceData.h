@@ -28,7 +28,7 @@
 #include <vector>
 
 class Argument;
-class IfcEntityList;
+class aggregate_of_instance;
 namespace IfcParse {
 	class IfcFile;
 }
@@ -62,7 +62,7 @@ public:
 
 	virtual ~IfcEntityInstanceData();
 
-	boost::shared_ptr<IfcEntityList> getInverse (const IfcParse::declaration* type, int attribute_index) const;
+	boost::shared_ptr<aggregate_of_instance> getInverse (const IfcParse::declaration* type, int attribute_index) const;
 
 	Argument* getArgument(size_t i) const;
 

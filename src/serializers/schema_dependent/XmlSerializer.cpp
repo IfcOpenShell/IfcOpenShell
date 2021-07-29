@@ -115,8 +115,8 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 				if (e->declaration().is(IfcSchema::IfcSIUnit::Class())) {
 					IfcSchema::IfcSIUnit* unit = (IfcSchema::IfcSIUnit*) e;
 					unit_name = IfcSchema::IfcSIUnitName::ToString(unit->Name());
-					if (unit->hasPrefix()) {
-						unit_name = IfcSchema::IfcSIPrefix::ToString(unit->Prefix()) + unit_name;
+					if (unit->Prefix()) {
+						unit_name = IfcSchema::IfcSIPrefix::ToString(*unit->Prefix()) + unit_name;
 					}
 				} else {
 					IfcSchema::IfcConversionBasedUnit* unit = (IfcSchema::IfcConversionBasedUnit*) e;
@@ -482,8 +482,8 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 		IfcSchema::IfcTypeObject* type_object = *it;
 		ptree* node = descend(type_object, types);
 		
-		if (node && type_object->hasHasPropertySets()) {
-			IfcSchema::IfcPropertySetDefinition::list::ptr property_sets = type_object->HasPropertySets();
+		if (node && type_object->HasPropertySets()) {
+			IfcSchema::IfcPropertySetDefinition::list::ptr property_sets = *type_object->HasPropertySets();
 			for (IfcSchema::IfcPropertySetDefinition::list::it jt = property_sets->begin(); jt != property_sets->end(); ++jt) {
 				IfcSchema::IfcPropertySetDefinition* pset = *jt;
 				if (pset->declaration().is(IfcSchema::IfcPropertySet::Class())) {
@@ -494,8 +494,8 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 	}
 
 	// Write all assigned units as XML nodes.
-	IfcEntityList::ptr unit_assignments = project->UnitsInContext()->Units();
-	for (IfcEntityList::it it = unit_assignments->begin(); it != unit_assignments->end(); ++it) {
+	aggregate_of_instance::ptr unit_assignments = project->UnitsInContext()->Units();
+	for (aggregate_of_instance::it it = unit_assignments->begin(); it != unit_assignments->end(); ++it) {
 		if ((*it)->declaration().is(IfcSchema::IfcNamedUnit::Class())) {
 			IfcSchema::IfcNamedUnit* named_unit = (*it)->as<IfcSchema::IfcNamedUnit>();
 			ptree* node = format_entity_instance(named_unit, units);
@@ -535,13 +535,13 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 				if (!layerset) {
 					layerset = mat->as<IfcSchema::IfcMaterialLayerSetUsage>()->ForLayerSet();
 				}				
-				if (layerset->hasLayerSetName()) {
-					node.put("<xmlattr>.LayerSetName", layerset->LayerSetName());
+				if (layerset->LayerSetName()) {
+					node.put("<xmlattr>.LayerSetName", *layerset->LayerSetName());
 				}
 				IfcSchema::IfcMaterialLayer::list::ptr ls = layerset->MaterialLayers();
 				for (IfcSchema::IfcMaterialLayer::list::it jt = ls->begin(); jt != ls->end(); ++jt) {
 					ptree subnode;
-					if ((*jt)->hasMaterial()) {
+					if ((*jt)->Material()) {
 						subnode.put("<xmlattr>.Name", (*jt)->Material()->Name());
 					}
 					format_entity_instance(*jt, subnode, node);

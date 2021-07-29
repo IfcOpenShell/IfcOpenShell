@@ -526,9 +526,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalBoundedHalfSpace* l, 
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcShellBasedSurfaceModel* l, IfcRepresentationShapeItems& shapes) {
-	IfcEntityList::ptr shells = l->SbsmBoundary();
+	aggregate_of_instance::ptr shells = l->SbsmBoundary();
 	const SurfaceStyle* collective_style = get_style(l);
-	for( IfcEntityList::it it = shells->begin(); it != shells->end(); ++ it ) {
+	for( aggregate_of_instance::it it = shells->begin(); it != shells->end(); ++ it ) {
 		TopoDS_Shape s;
 		const SurfaceStyle* shell_style = 0;
 		if ((*it)->declaration().is(IfcSchema::IfcRepresentationItem::Class())) {
@@ -890,11 +890,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresenta
 	const bool include_curves = getValue(GV_DIMENSIONALITY) != +1;
 	const bool include_solids_and_surfaces = getValue(GV_DIMENSIONALITY) != -1;
 
-	IfcEntityList::ptr elements = l->Elements();
+	aggregate_of_instance::ptr elements = l->Elements();
 	if ( !elements->size() ) return false;
 	bool part_succes = false;
 	const IfcGeom::SurfaceStyle* parent_style = get_style(l);
-	for (IfcEntityList::it it = elements->begin(); it != elements->end(); ++it) {
+	for (aggregate_of_instance::it it = elements->begin(); it != elements->end(); ++it) {
 		IfcSchema::IfcGeometricSetSelect* element = *it;
 		TopoDS_Shape s;
 		if (shape_type(element) == ST_SHAPELIST) {
@@ -1526,7 +1526,7 @@ namespace {
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shape& shape) {
 	TopoDS_Wire wire, section1, section2;
 
-	bool hasInnerRadius = l->hasInnerRadius();
+	bool hasInnerRadius = !!l->InnerRadius();
 
 	if (!convert_wire(l->Directrix(), wire)) {
 		return false;
@@ -1569,7 +1569,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 
 	if (hasInnerRadius) {
 		// Subtraction of pipes with small radii is unstable.
-		r2 = l->InnerRadius() * getValue(GV_LENGTH_UNIT);
+		r2 = *l->InnerRadius() * getValue(GV_LENGTH_UNIT);
 	}
 
 	if (r2 > getValue(GV_PRECISION) * 10.) {

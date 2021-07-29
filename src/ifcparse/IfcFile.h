@@ -67,11 +67,11 @@ public:
 /// and provide access to the entities in an IFC file
 class IFC_PARSE_API IfcFile {
 public:
-	typedef std::map<const IfcParse::declaration*, IfcEntityList::ptr> entities_by_type_t;
+	typedef std::map<const IfcParse::declaration*, aggregate_of_instance::ptr> entities_by_type_t;
 	typedef boost::unordered_map<unsigned int, IfcUtil::IfcBaseClass*> entity_by_id_t;
 	typedef std::map<std::string, IfcUtil::IfcBaseClass*> entity_by_guid_t;
 	typedef std::map<unsigned int, std::vector<unsigned int> > entities_by_ref_t;
-	typedef std::map<unsigned int, IfcEntityList::ptr> ref_map_t;
+	typedef std::map<unsigned int, aggregate_of_instance::ptr> ref_map_t;
 	typedef entity_by_id_t::const_iterator const_iterator;
 
 	class type_iterator : private entities_by_type_t::const_iterator {
@@ -172,7 +172,7 @@ public:
 	/// IfcWall will also return IfcWallStandardCase entities
 	template <class T>
 	typename T::list::ptr instances_by_type() {
-		IfcEntityList::ptr untyped_list = instances_by_type(&T::Class());
+		aggregate_of_instance::ptr untyped_list = instances_by_type(&T::Class());
 		if (untyped_list) {
 			return untyped_list->as<T>();
 		} else {
@@ -182,7 +182,7 @@ public:
 
 	template <class T>
 	typename T::list::ptr instances_by_type_excl_subtypes() {
-		IfcEntityList::ptr untyped_list = instances_by_type_excl_subtypes(&T::Class());
+		aggregate_of_instance::ptr untyped_list = instances_by_type_excl_subtypes(&T::Class());
 		if (untyped_list) {
 			return untyped_list->as<T>();
 		} else {
@@ -193,21 +193,21 @@ public:
 	/// Returns all entities in the file that match the positional argument.
 	/// NOTE: This also returns subtypes of the requested type, for example:
 	/// IfcWall will also return IfcWallStandardCase entities
-	IfcEntityList::ptr instances_by_type(const IfcParse::declaration*);
+	aggregate_of_instance::ptr instances_by_type(const IfcParse::declaration*);
 
 	/// Returns all entities in the file that match the positional argument.
-	IfcEntityList::ptr instances_by_type_excl_subtypes(const IfcParse::declaration*);
+	aggregate_of_instance::ptr instances_by_type_excl_subtypes(const IfcParse::declaration*);
 
 	/// Returns all entities in the file that match the positional argument.
 	/// NOTE: This also returns subtypes of the requested type, for example:
 	/// IfcWall will also return IfcWallStandardCase entities
-	IfcEntityList::ptr instances_by_type(const std::string& t);
+	aggregate_of_instance::ptr instances_by_type(const std::string& t);
 
 	/// Returns all entities in the file that match the positional argument.
-	IfcEntityList::ptr instances_by_type_excl_subtypes(const std::string& t);
+	aggregate_of_instance::ptr instances_by_type_excl_subtypes(const std::string& t);
 	
 	/// Returns all entities in the file that reference the id
-	IfcEntityList::ptr instances_by_reference(int id);
+	aggregate_of_instance::ptr instances_by_reference(int id);
 
 	/// Returns the entity with the specified id
 	IfcUtil::IfcBaseClass* instance_by_id(int id);
@@ -218,9 +218,9 @@ public:
 	/// Performs a depth-first traversal, returning all entity instance
 	/// attributes as a flat list. NB: includes the root instance specified
 	/// in the first function argument.
-	IfcEntityList::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level=-1);
+	aggregate_of_instance::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level=-1);
 
-	IfcEntityList::ptr getInverse(int instance_id, const IfcParse::declaration* type, int attribute_index);
+	aggregate_of_instance::ptr getInverse(int instance_id, const IfcParse::declaration* type, int attribute_index);
 
 	/// Marks entity as modified so that potential cache for it is invalidated.
 	/// @todo Currently the whole cache is invalidated. Implement more fine-grained invalidation.
@@ -231,7 +231,7 @@ public:
 	void recalculate_id_counter();
 
 	IfcUtil::IfcBaseClass* addEntity(IfcUtil::IfcBaseClass* entity, int id=-1);
-	void addEntities(IfcEntityList::ptr es);
+	void addEntities(aggregate_of_instance::ptr es);
 
 	void batch() { batch_mode_ = true; }
 	void unbatch() { process_deletion_(); batch_mode_ = false; 	}
@@ -240,7 +240,7 @@ public:
 	///
 	/// Attention when running removeEntity inside a loop over a list of entities to be removed. 
 	/// This invalidates the iterator. A workaround is to reverse the loop:
-	/// boost::shared_ptr<IfcEntityList> entities = ...;
+	/// boost::shared_ptr<aggregate_of_instance> entities = ...;
 	/// for (auto it = entities->end() - 1; it >= entities->begin(); --it) {
 	///    IfcUtil::IfcBaseClass *const inst = *it;
 	///    model->removeEntity(inst);

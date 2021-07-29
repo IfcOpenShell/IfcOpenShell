@@ -29,7 +29,7 @@
 #include <boost/shared_ptr.hpp>
 
 class Argument;
-class IfcEntityList;
+class aggregate_of_instance;
 
 namespace IfcUtil {
 
@@ -95,7 +95,7 @@ namespace IfcUtil {
 
 		Argument* get(const std::string& name) const;
 
-		boost::shared_ptr<IfcEntityList> get_inverse(const std::string& a) const;
+		boost::shared_ptr<aggregate_of_instance> get_inverse(const std::string& a) const;
 	};
 
 	// TODO: Investigate whether these should be template classes instead
