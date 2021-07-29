@@ -1,3 +1,28 @@
+/********************************************************************************
+ *                                                                              *
+ * This file is part of IfcOpenShell.                                           *
+ *                                                                              *
+ * IfcOpenShell is free software: you can redistribute it and/or modify         *
+ * it under the terms of the Lesser GNU General Public License as published by  *
+ * the Free Software Foundation, either version 3.0 of the License, or          *
+ * (at your option) any later version.                                          *
+ *                                                                              *
+ * IfcOpenShell is distributed in the hope that it will be useful,              *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of               *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
+ * Lesser GNU General Public License for more details.                          *
+ *                                                                              *
+ * You should have received a copy of the Lesser GNU General Public License     *
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
+ *                                                                              *
+ ********************************************************************************/
+
+/********************************************************************************
+ *                                                                              *
+ * This file has been generated from IFC4x3_RC2.exp. Do not make modifications  *
+ * but instead modify the python script that has been used to generate this.    *
+ *                                                                              *
+ ********************************************************************************/
 
 #define SCHEMA_HAS_IfcAbsorbedDoseMeasure
 #define SCHEMA_HAS_IfcAccelerationMeasure
@@ -262,6 +287,7 @@
 #define SCHEMA_HAS_IfcOutletTypeEnum
 #define SCHEMA_HAS_IfcPHMeasure
 #define SCHEMA_HAS_IfcParameterValue
+#define SCHEMA_HAS_IfcPavementTypeEnum
 #define SCHEMA_HAS_IfcPerformanceHistoryTypeEnum
 #define SCHEMA_HAS_IfcPermeableCoveringOperationEnum
 #define SCHEMA_HAS_IfcPermitTypeEnum
@@ -507,12 +533,8 @@
 #define SCHEMA_IfcAlignmentCantSegment_HAS_StartCantRight
 #define SCHEMA_IfcAlignmentCantSegment_HAS_EndCantRight
 #define SCHEMA_IfcAlignmentCantSegment_EndCantRight_IS_OPTIONAL
-#define SCHEMA_IfcAlignmentCantSegment_HAS_SmoothingLength
-#define SCHEMA_IfcAlignmentCantSegment_SmoothingLength_IS_OPTIONAL
 #define SCHEMA_IfcAlignmentCantSegment_HAS_PredefinedType
 #define SCHEMA_HAS_IfcAlignmentHorizontal
-#define SCHEMA_IfcAlignmentHorizontal_HAS_StartDistAlong
-#define SCHEMA_IfcAlignmentHorizontal_StartDistAlong_IS_OPTIONAL
 #define SCHEMA_HAS_IfcAlignmentHorizontalSegment
 #define SCHEMA_IfcAlignmentHorizontalSegment_HAS_StartPoint
 #define SCHEMA_IfcAlignmentHorizontalSegment_HAS_StartDirection
@@ -1231,6 +1253,7 @@
 #define SCHEMA_IfcDirectrixCurveSweptAreaSolid_StartParam_IS_OPTIONAL
 #define SCHEMA_IfcDirectrixCurveSweptAreaSolid_HAS_EndParam
 #define SCHEMA_IfcDirectrixCurveSweptAreaSolid_EndParam_IS_OPTIONAL
+#define SCHEMA_HAS_IfcDirectrixDerivedReferenceSweptAreaSolid
 #define SCHEMA_HAS_IfcDirectrixDistanceSweptAreaSolid
 #define SCHEMA_IfcDirectrixDistanceSweptAreaSolid_HAS_Directrix
 #define SCHEMA_IfcDirectrixDistanceSweptAreaSolid_HAS_StartDistance
@@ -2217,10 +2240,10 @@
 #define SCHEMA_HAS_IfcPath
 #define SCHEMA_IfcPath_HAS_EdgeList
 #define SCHEMA_HAS_IfcPavement
-#define SCHEMA_IfcPavement_HAS_Flexible
-#define SCHEMA_IfcPavement_Flexible_IS_OPTIONAL
+#define SCHEMA_IfcPavement_HAS_PredefinedType
+#define SCHEMA_IfcPavement_PredefinedType_IS_OPTIONAL
 #define SCHEMA_HAS_IfcPavementType
-#define SCHEMA_IfcPavementType_HAS_Flexible
+#define SCHEMA_IfcPavementType_HAS_PredefinedType
 #define SCHEMA_HAS_IfcPcurve
 #define SCHEMA_IfcPcurve_HAS_BasisSurface
 #define SCHEMA_IfcPcurve_HAS_ReferenceCurve
@@ -3711,6 +3734,8 @@
 #define SCHEMA_IfcThirdOrderPolynomialSpiral_QuadraticTerm_IS_OPTIONAL
 #define SCHEMA_IfcThirdOrderPolynomialSpiral_HAS_LinearTerm
 #define SCHEMA_IfcThirdOrderPolynomialSpiral_LinearTerm_IS_OPTIONAL
+#define SCHEMA_IfcThirdOrderPolynomialSpiral_HAS_ConstantTerm
+#define SCHEMA_IfcThirdOrderPolynomialSpiral_ConstantTerm_IS_OPTIONAL
 #define SCHEMA_HAS_IfcTimePeriod
 #define SCHEMA_IfcTimePeriod_HAS_StartTime
 #define SCHEMA_IfcTimePeriod_HAS_EndTime

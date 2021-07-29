@@ -34,7 +34,7 @@
 
 #include "../ifcparse/ifc_parse_api.h"
 
-#include "../ifcparse/IfcEntityList.h"
+#include "../ifcparse/aggregate_of_instance.h"
 #include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcSchema.h"
 #include "../ifcparse/IfcException.h"
@@ -6486,8 +6486,8 @@ public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
     explicit IfcLogical (IfcEntityInstanceData* e);
-    IfcLogical (bool v);
-    operator bool() const;
+    IfcLogical (boost::logic::tribool v);
+    operator boost::logic::tribool() const;
 };
 /// IfcLuminousFluxMeasure is a measure of the luminous flux.
 /// Usually measured in Lumen (lm, Candela Steradian).
@@ -7545,24 +7545,20 @@ public:
     /// the user defined role shall be provided as a value of the attribute UserDefinedRole.
     ::Ifc2x3::IfcRoleEnum::Value Role() const;
     void setRole(::Ifc2x3::IfcRoleEnum::Value v);
-    /// Whether the optional attribute UserDefinedRole is defined for this IfcActorRole
-    bool hasUserDefinedRole() const;
     /// Allows for specification of user defined roles beyond the 
     /// enumeration values provided by Role attribute of type IfcRoleEnum. 
     /// When a value is provided for attribute UserDefinedRole in parallel 
     /// the attribute Role shall have enumeration value USERDEFINED.
-    std::string UserDefinedRole() const;
-    void setUserDefinedRole(std::string v);
-    /// Whether the optional attribute Description is defined for this IfcActorRole
-    bool hasDescription() const;
+    boost::optional< std::string > UserDefinedRole() const;
+    void setUserDefinedRole(boost::optional< std::string > v);
     /// A textual description relating the nature of the role played by an actor.
-    std::string Description() const;
-    void setDescription(std::string v);
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcActorRole (IfcEntityInstanceData* e);
     IfcActorRole (::Ifc2x3::IfcRoleEnum::Value v1_Role, boost::optional< std::string > v2_UserDefinedRole, boost::optional< std::string > v3_Description);
-    typedef IfcTemplatedEntityList< IfcActorRole > list;
+    typedef aggregate_of< IfcActorRole > list;
 };
 /// Definition: An abstract entity type for various kinds of postal and telecom addresses.
 /// 
@@ -7571,31 +7567,25 @@ public:
 /// HISTORY New entity in IFC Release 1.5.1.
 class IFC_PARSE_API IfcAddress : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute Purpose is defined for this IfcAddress
-    bool hasPurpose() const;
     /// Identifies the logical location of the address.
-    ::Ifc2x3::IfcAddressTypeEnum::Value Purpose() const;
-    void setPurpose(::Ifc2x3::IfcAddressTypeEnum::Value v);
-    /// Whether the optional attribute Description is defined for this IfcAddress
-    bool hasDescription() const;
+    boost::optional< ::Ifc2x3::IfcAddressTypeEnum::Value > Purpose() const;
+    void setPurpose(boost::optional< ::Ifc2x3::IfcAddressTypeEnum::Value > v);
     /// Text that relates the nature of the address.
-    std::string Description() const;
-    void setDescription(std::string v);
-    /// Whether the optional attribute UserDefinedPurpose is defined for this IfcAddress
-    bool hasUserDefinedPurpose() const;
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
     /// Allows for specification of user specific purpose of the address beyond the 
     /// enumeration values provided by Purpose attribute of type IfcAddressTypeEnum. 
     /// When a value is provided for attribute UserDefinedPurpose, in parallel the 
     /// attribute Purpose shall have enumeration value USERDEFINED.
-    std::string UserDefinedPurpose() const;
-    void setUserDefinedPurpose(std::string v);
-        IfcTemplatedEntityList< IfcPerson >::ptr OfPerson() const; // INVERSE IfcPerson::Addresses
-    IfcTemplatedEntityList< IfcOrganization >::ptr OfOrganization() const; // INVERSE IfcOrganization::Addresses
+    boost::optional< std::string > UserDefinedPurpose() const;
+    void setUserDefinedPurpose(boost::optional< std::string > v);
+        aggregate_of< IfcPerson >::ptr OfPerson() const; // INVERSE IfcPerson::Addresses
+    aggregate_of< IfcOrganization >::ptr OfOrganization() const; // INVERSE IfcOrganization::Addresses
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcAddress (IfcEntityInstanceData* e);
     IfcAddress (boost::optional< ::Ifc2x3::IfcAddressTypeEnum::Value > v1_Purpose, boost::optional< std::string > v2_Description, boost::optional< std::string > v3_UserDefinedPurpose);
-    typedef IfcTemplatedEntityList< IfcAddress > list;
+    typedef aggregate_of< IfcAddress > list;
 };
 /// IfcApplication holds the information about an IFC compliant application developed by an application developer. The IfcApplication utilizes a short identifying name as provided by the application developer.
 /// 
@@ -7618,7 +7608,7 @@ public:
     static const IfcParse::entity& Class();
     IfcApplication (IfcEntityInstanceData* e);
     IfcApplication (::Ifc2x3::IfcOrganization* v1_ApplicationDeveloper, std::string v2_Version, std::string v3_ApplicationFullName, std::string v4_ApplicationIdentifier);
-    typedef IfcTemplatedEntityList< IfcApplication > list;
+    typedef aggregate_of< IfcApplication > list;
 };
 /// IfcAppliedValue is an abstract supertype that specifies the common attributes for cost values. 
 /// 
@@ -7636,23 +7626,15 @@ public:
 /// Applied values may be referenced from a document (such as a price list). The relationship between one or more occurrences of IfcAppliedValue (or its subtypes) is achieved through the use of the IfcExternalReferenceRelationship in which the document provides the IfcExternalReferenceRelationship.RelatingExtReference and the value occurrences are the IfcExternalReferenceRelationship.RelatedResourceObjects.
 class IFC_PARSE_API IfcAppliedValue : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute Name is defined for this IfcAppliedValue
-    bool hasName() const;
     /// A name or additional clarification given to a cost value.
-    std::string Name() const;
-    void setName(std::string v);
-    /// Whether the optional attribute Description is defined for this IfcAppliedValue
-    bool hasDescription() const;
+    boost::optional< std::string > Name() const;
+    void setName(boost::optional< std::string > v);
     /// The description that may apply additional information about a cost value.
-    std::string Description() const;
-    void setDescription(std::string v);
-    /// Whether the optional attribute AppliedValue is defined for this IfcAppliedValue
-    bool hasAppliedValue() const;
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
     /// The extent or quantity or amount of an applied value.
     ::Ifc2x3::IfcAppliedValueSelect* AppliedValue() const;
     void setAppliedValue(::Ifc2x3::IfcAppliedValueSelect* v);
-    /// Whether the optional attribute UnitBasis is defined for this IfcAppliedValue
-    bool hasUnitBasis() const;
     /// The number and unit of measure on which the unit cost is based.
     /// 
     /// Note: As well as the normally expected units of measure such as length, area, volume etc., costs may be based on units of measure which need to be defined e.g. sack, drum, pallet, item etc. Unit costs may be based on quantities greater (or lesser) than a unitary value of the basis measure. For instance, timber may have a unit cost rate per X meters where X > 1; similarly for cable, piping and many other items. The basis number may be either an integer or a real value.
@@ -7660,28 +7642,24 @@ public:
     /// Note: This attribute should be asserted for all circumstances where the cost to be applied is per unit quantity. It may be asserted even for circumstances where an item price is used, in which case the unit cost basis should be by item (or equivalent definition).
     ::Ifc2x3::IfcMeasureWithUnit* UnitBasis() const;
     void setUnitBasis(::Ifc2x3::IfcMeasureWithUnit* v);
-    /// Whether the optional attribute ApplicableDate is defined for this IfcAppliedValue
-    bool hasApplicableDate() const;
     /// The date on or from which an applied value is applicable.
     /// 
     /// IFC2x4 CHANGE Type changed from IfcDateTimeSelect.
     ::Ifc2x3::IfcDateTimeSelect* ApplicableDate() const;
     void setApplicableDate(::Ifc2x3::IfcDateTimeSelect* v);
-    /// Whether the optional attribute FixedUntilDate is defined for this IfcAppliedValue
-    bool hasFixedUntilDate() const;
     /// The date until which applied value is applicable.
     /// 
     /// IFC2x4 CHANGE Type changed from IfcDateTimeSelect.
     ::Ifc2x3::IfcDateTimeSelect* FixedUntilDate() const;
     void setFixedUntilDate(::Ifc2x3::IfcDateTimeSelect* v);
-        IfcTemplatedEntityList< IfcReferencesValueDocument >::ptr ValuesReferenced() const; // INVERSE IfcReferencesValueDocument::ReferencingValues
-    IfcTemplatedEntityList< IfcAppliedValueRelationship >::ptr ValueOfComponents() const; // INVERSE IfcAppliedValueRelationship::ComponentOfTotal
-    IfcTemplatedEntityList< IfcAppliedValueRelationship >::ptr IsComponentIn() const; // INVERSE IfcAppliedValueRelationship::Components
+        aggregate_of< IfcReferencesValueDocument >::ptr ValuesReferenced() const; // INVERSE IfcReferencesValueDocument::ReferencingValues
+    aggregate_of< IfcAppliedValueRelationship >::ptr ValueOfComponents() const; // INVERSE IfcAppliedValueRelationship::ComponentOfTotal
+    aggregate_of< IfcAppliedValueRelationship >::ptr IsComponentIn() const; // INVERSE IfcAppliedValueRelationship::Components
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcAppliedValue (IfcEntityInstanceData* e);
     IfcAppliedValue (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcAppliedValueSelect* v3_AppliedValue, ::Ifc2x3::IfcMeasureWithUnit* v4_UnitBasis, ::Ifc2x3::IfcDateTimeSelect* v5_ApplicableDate, ::Ifc2x3::IfcDateTimeSelect* v6_FixedUntilDate);
-    typedef IfcTemplatedEntityList< IfcAppliedValue > list;
+    typedef aggregate_of< IfcAppliedValue > list;
 };
 /// An IfcAppliedValueRelationship is a relationship class that enables cost values to be aggregated together as components of another cost value.
 /// 
@@ -7713,24 +7691,20 @@ public:
     ::Ifc2x3::IfcAppliedValue* ComponentOfTotal() const;
     void setComponentOfTotal(::Ifc2x3::IfcAppliedValue* v);
     /// Applied values that are components of another applied value and from which that applied value may be deduced.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcAppliedValue >::ptr Components() const;
-    void setComponents(IfcTemplatedEntityList< ::Ifc2x3::IfcAppliedValue >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcAppliedValue >::ptr Components() const;
+    void setComponents(aggregate_of< ::Ifc2x3::IfcAppliedValue >::ptr v);
     /// The arithmetic operator applied in an applied value relationship.
     ::Ifc2x3::IfcArithmeticOperatorEnum::Value ArithmeticOperator() const;
     void setArithmeticOperator(::Ifc2x3::IfcArithmeticOperatorEnum::Value v);
-    /// Whether the optional attribute Name is defined for this IfcAppliedValueRelationship
-    bool hasName() const;
-    std::string Name() const;
-    void setName(std::string v);
-    /// Whether the optional attribute Description is defined for this IfcAppliedValueRelationship
-    bool hasDescription() const;
-    std::string Description() const;
-    void setDescription(std::string v);
+    boost::optional< std::string > Name() const;
+    void setName(boost::optional< std::string > v);
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcAppliedValueRelationship (IfcEntityInstanceData* e);
-    IfcAppliedValueRelationship (::Ifc2x3::IfcAppliedValue* v1_ComponentOfTotal, IfcTemplatedEntityList< ::Ifc2x3::IfcAppliedValue >::ptr v2_Components, ::Ifc2x3::IfcArithmeticOperatorEnum::Value v3_ArithmeticOperator, boost::optional< std::string > v4_Name, boost::optional< std::string > v5_Description);
-    typedef IfcTemplatedEntityList< IfcAppliedValueRelationship > list;
+    IfcAppliedValueRelationship (::Ifc2x3::IfcAppliedValue* v1_ComponentOfTotal, aggregate_of< ::Ifc2x3::IfcAppliedValue >::ptr v2_Components, ::Ifc2x3::IfcArithmeticOperatorEnum::Value v3_ArithmeticOperator, boost::optional< std::string > v4_Name, boost::optional< std::string > v5_Description);
+    typedef aggregate_of< IfcAppliedValueRelationship > list;
 };
 /// Definition: An IfcApproval represents information about approval processes such as for a plan, a design, a proposal, or a change order in a construction or facilities management project. IfcApproval is referenced by IfcRelAssociatesApproval in IfcControlExtension schema, and thereby can be related to all subtypes of IfcRoot. An approval may also be given to resource objects using IfcResourceApprovalRelationship
 /// 
@@ -7739,39 +7713,31 @@ public:
 /// IFC2x Edition 4 CHANGE  Attributes Identifier and Name made optional, where rule added to require at least one of them being asserted. Inverse attributes ApprovedObjects, ApprovedResources and HasExternalReferences added. Inverse attribute Properties deleted (more general relationship via inverse ApprovedResources to be used instead).
 class IFC_PARSE_API IfcApproval : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute Description is defined for this IfcApproval
-    bool hasDescription() const;
     /// A general textual description of a design, work task, plan, etc. that is being approved for.
-    std::string Description() const;
-    void setDescription(std::string v);
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
     ::Ifc2x3::IfcDateTimeSelect* ApprovalDateTime() const;
     void setApprovalDateTime(::Ifc2x3::IfcDateTimeSelect* v);
-    /// Whether the optional attribute ApprovalStatus is defined for this IfcApproval
-    bool hasApprovalStatus() const;
-    std::string ApprovalStatus() const;
-    void setApprovalStatus(std::string v);
-    /// Whether the optional attribute ApprovalLevel is defined for this IfcApproval
-    bool hasApprovalLevel() const;
-    std::string ApprovalLevel() const;
-    void setApprovalLevel(std::string v);
-    /// Whether the optional attribute ApprovalQualifier is defined for this IfcApproval
-    bool hasApprovalQualifier() const;
-    std::string ApprovalQualifier() const;
-    void setApprovalQualifier(std::string v);
+    boost::optional< std::string > ApprovalStatus() const;
+    void setApprovalStatus(boost::optional< std::string > v);
+    boost::optional< std::string > ApprovalLevel() const;
+    void setApprovalLevel(boost::optional< std::string > v);
+    boost::optional< std::string > ApprovalQualifier() const;
+    void setApprovalQualifier(boost::optional< std::string > v);
     /// A human readable name given to an approval.
     std::string Name() const;
     void setName(std::string v);
     /// A computer interpretable identifier by which the approval is known.
     std::string Identifier() const;
     void setIdentifier(std::string v);
-        IfcTemplatedEntityList< IfcApprovalActorRelationship >::ptr Actors() const; // INVERSE IfcApprovalActorRelationship::Approval
-    IfcTemplatedEntityList< IfcApprovalRelationship >::ptr IsRelatedWith() const; // INVERSE IfcApprovalRelationship::RelatedApproval
-    IfcTemplatedEntityList< IfcApprovalRelationship >::ptr Relates() const; // INVERSE IfcApprovalRelationship::RelatingApproval
+        aggregate_of< IfcApprovalActorRelationship >::ptr Actors() const; // INVERSE IfcApprovalActorRelationship::Approval
+    aggregate_of< IfcApprovalRelationship >::ptr IsRelatedWith() const; // INVERSE IfcApprovalRelationship::RelatedApproval
+    aggregate_of< IfcApprovalRelationship >::ptr Relates() const; // INVERSE IfcApprovalRelationship::RelatingApproval
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcApproval (IfcEntityInstanceData* e);
     IfcApproval (boost::optional< std::string > v1_Description, ::Ifc2x3::IfcDateTimeSelect* v2_ApprovalDateTime, boost::optional< std::string > v3_ApprovalStatus, boost::optional< std::string > v4_ApprovalLevel, boost::optional< std::string > v5_ApprovalQualifier, std::string v6_Name, std::string v7_Identifier);
-    typedef IfcTemplatedEntityList< IfcApproval > list;
+    typedef aggregate_of< IfcApproval > list;
 };
 
 class IFC_PARSE_API IfcApprovalActorRelationship : public IfcUtil::IfcBaseEntity {
@@ -7786,20 +7752,20 @@ public:
     static const IfcParse::entity& Class();
     IfcApprovalActorRelationship (IfcEntityInstanceData* e);
     IfcApprovalActorRelationship (::Ifc2x3::IfcActorSelect* v1_Actor, ::Ifc2x3::IfcApproval* v2_Approval, ::Ifc2x3::IfcActorRole* v3_Role);
-    typedef IfcTemplatedEntityList< IfcApprovalActorRelationship > list;
+    typedef aggregate_of< IfcApprovalActorRelationship > list;
 };
 
 class IFC_PARSE_API IfcApprovalPropertyRelationship : public IfcUtil::IfcBaseEntity {
 public:
-    IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr ApprovedProperties() const;
-    void setApprovedProperties(IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcProperty >::ptr ApprovedProperties() const;
+    void setApprovedProperties(aggregate_of< ::Ifc2x3::IfcProperty >::ptr v);
     ::Ifc2x3::IfcApproval* Approval() const;
     void setApproval(::Ifc2x3::IfcApproval* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcApprovalPropertyRelationship (IfcEntityInstanceData* e);
-    IfcApprovalPropertyRelationship (IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr v1_ApprovedProperties, ::Ifc2x3::IfcApproval* v2_Approval);
-    typedef IfcTemplatedEntityList< IfcApprovalPropertyRelationship > list;
+    IfcApprovalPropertyRelationship (aggregate_of< ::Ifc2x3::IfcProperty >::ptr v1_ApprovedProperties, ::Ifc2x3::IfcApproval* v2_Approval);
+    typedef aggregate_of< IfcApprovalPropertyRelationship > list;
 };
 /// An IfcApprovalRelationship associates approvals (one
 /// relating approval and one or more related approvals), each having different status or level as the approval process or the approved
@@ -7815,17 +7781,15 @@ public:
     /// The approval that other approval is related to.
     ::Ifc2x3::IfcApproval* RelatingApproval() const;
     void setRelatingApproval(::Ifc2x3::IfcApproval* v);
-    /// Whether the optional attribute Description is defined for this IfcApprovalRelationship
-    bool hasDescription() const;
-    std::string Description() const;
-    void setDescription(std::string v);
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
     std::string Name() const;
     void setName(std::string v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcApprovalRelationship (IfcEntityInstanceData* e);
     IfcApprovalRelationship (::Ifc2x3::IfcApproval* v1_RelatedApproval, ::Ifc2x3::IfcApproval* v2_RelatingApproval, boost::optional< std::string > v3_Description, std::string v4_Name);
-    typedef IfcTemplatedEntityList< IfcApprovalRelationship > list;
+    typedef aggregate_of< IfcApprovalRelationship > list;
 };
 /// Definition
 /// from IAI: The abstract entity IfcBoundaryCondition
@@ -7844,16 +7808,14 @@ public:
 /// 2.
 class IFC_PARSE_API IfcBoundaryCondition : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute Name is defined for this IfcBoundaryCondition
-    bool hasName() const;
     /// Optionally defines a name for this boundary condition.
-    std::string Name() const;
-    void setName(std::string v);
+    boost::optional< std::string > Name() const;
+    void setName(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcBoundaryCondition (IfcEntityInstanceData* e);
     IfcBoundaryCondition (boost::optional< std::string > v1_Name);
-    typedef IfcTemplatedEntityList< IfcBoundaryCondition > list;
+    typedef aggregate_of< IfcBoundaryCondition > list;
 };
 /// Definition from IAI: Describes linearly elastic support conditions or connection conditions.
 /// 
@@ -7867,38 +7829,26 @@ public:
 /// IFC 2x4 change: All attribute data types changed from numeric to SELECT between Boolean and numeric.  Stiffnesses may now also be negative, for example to capture destabilizing effects in boundary conditions.  The IFC 2x3 convention of -1. representing infinite stiffness is no longer valid and must not be used.  Infinite stiffness, i.e. fixed supports, are now modeled by the Boolean value TRUE.
 class IFC_PARSE_API IfcBoundaryEdgeCondition : public IfcBoundaryCondition {
 public:
-    /// Whether the optional attribute LinearStiffnessByLengthX is defined for this IfcBoundaryEdgeCondition
-    bool hasLinearStiffnessByLengthX() const;
-    double LinearStiffnessByLengthX() const;
-    void setLinearStiffnessByLengthX(double v);
-    /// Whether the optional attribute LinearStiffnessByLengthY is defined for this IfcBoundaryEdgeCondition
-    bool hasLinearStiffnessByLengthY() const;
-    double LinearStiffnessByLengthY() const;
-    void setLinearStiffnessByLengthY(double v);
-    /// Whether the optional attribute LinearStiffnessByLengthZ is defined for this IfcBoundaryEdgeCondition
-    bool hasLinearStiffnessByLengthZ() const;
-    double LinearStiffnessByLengthZ() const;
-    void setLinearStiffnessByLengthZ(double v);
-    /// Whether the optional attribute RotationalStiffnessByLengthX is defined for this IfcBoundaryEdgeCondition
-    bool hasRotationalStiffnessByLengthX() const;
+    boost::optional< double > LinearStiffnessByLengthX() const;
+    void setLinearStiffnessByLengthX(boost::optional< double > v);
+    boost::optional< double > LinearStiffnessByLengthY() const;
+    void setLinearStiffnessByLengthY(boost::optional< double > v);
+    boost::optional< double > LinearStiffnessByLengthZ() const;
+    void setLinearStiffnessByLengthZ(boost::optional< double > v);
     /// Rotational stiffness value about the x-axis of the coordinate system defined by the instance which uses this resource object.
-    double RotationalStiffnessByLengthX() const;
-    void setRotationalStiffnessByLengthX(double v);
-    /// Whether the optional attribute RotationalStiffnessByLengthY is defined for this IfcBoundaryEdgeCondition
-    bool hasRotationalStiffnessByLengthY() const;
+    boost::optional< double > RotationalStiffnessByLengthX() const;
+    void setRotationalStiffnessByLengthX(boost::optional< double > v);
     /// Rotational stiffness value about the y-axis of the coordinate system defined by the instance which uses this resource object.
-    double RotationalStiffnessByLengthY() const;
-    void setRotationalStiffnessByLengthY(double v);
-    /// Whether the optional attribute RotationalStiffnessByLengthZ is defined for this IfcBoundaryEdgeCondition
-    bool hasRotationalStiffnessByLengthZ() const;
+    boost::optional< double > RotationalStiffnessByLengthY() const;
+    void setRotationalStiffnessByLengthY(boost::optional< double > v);
     /// Rotational stiffness value about the z-axis of the coordinate system defined by the instance which uses this resource object.
-    double RotationalStiffnessByLengthZ() const;
-    void setRotationalStiffnessByLengthZ(double v);
+    boost::optional< double > RotationalStiffnessByLengthZ() const;
+    void setRotationalStiffnessByLengthZ(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcBoundaryEdgeCondition (IfcEntityInstanceData* e);
     IfcBoundaryEdgeCondition (boost::optional< std::string > v1_Name, boost::optional< double > v2_LinearStiffnessByLengthX, boost::optional< double > v3_LinearStiffnessByLengthY, boost::optional< double > v4_LinearStiffnessByLengthZ, boost::optional< double > v5_RotationalStiffnessByLengthX, boost::optional< double > v6_RotationalStiffnessByLengthY, boost::optional< double > v7_RotationalStiffnessByLengthZ);
-    typedef IfcTemplatedEntityList< IfcBoundaryEdgeCondition > list;
+    typedef aggregate_of< IfcBoundaryEdgeCondition > list;
 };
 /// Definition from IAI: Describes linearly elastic support conditions or connection conditions.
 /// 
@@ -7912,23 +7862,17 @@ public:
 /// IFC 2x4 change: All attribute data types changed from numeric to SELECT between Boolean and numeric.  Stiffnesses may now also be negative, for example to capture destabilizing effects in boundary conditions.  The IFC 2x3 convention of -1. representing infinite stiffness is no longer valid and must not be used.  Infinite stiffness, i.e. fixed supports, are now modeled by the Boolean value TRUE.
 class IFC_PARSE_API IfcBoundaryFaceCondition : public IfcBoundaryCondition {
 public:
-    /// Whether the optional attribute LinearStiffnessByAreaX is defined for this IfcBoundaryFaceCondition
-    bool hasLinearStiffnessByAreaX() const;
-    double LinearStiffnessByAreaX() const;
-    void setLinearStiffnessByAreaX(double v);
-    /// Whether the optional attribute LinearStiffnessByAreaY is defined for this IfcBoundaryFaceCondition
-    bool hasLinearStiffnessByAreaY() const;
-    double LinearStiffnessByAreaY() const;
-    void setLinearStiffnessByAreaY(double v);
-    /// Whether the optional attribute LinearStiffnessByAreaZ is defined for this IfcBoundaryFaceCondition
-    bool hasLinearStiffnessByAreaZ() const;
-    double LinearStiffnessByAreaZ() const;
-    void setLinearStiffnessByAreaZ(double v);
+    boost::optional< double > LinearStiffnessByAreaX() const;
+    void setLinearStiffnessByAreaX(boost::optional< double > v);
+    boost::optional< double > LinearStiffnessByAreaY() const;
+    void setLinearStiffnessByAreaY(boost::optional< double > v);
+    boost::optional< double > LinearStiffnessByAreaZ() const;
+    void setLinearStiffnessByAreaZ(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcBoundaryFaceCondition (IfcEntityInstanceData* e);
     IfcBoundaryFaceCondition (boost::optional< std::string > v1_Name, boost::optional< double > v2_LinearStiffnessByAreaX, boost::optional< double > v3_LinearStiffnessByAreaY, boost::optional< double > v4_LinearStiffnessByAreaZ);
-    typedef IfcTemplatedEntityList< IfcBoundaryFaceCondition > list;
+    typedef aggregate_of< IfcBoundaryFaceCondition > list;
 };
 /// Definition from IAI: Describes linearly elastic support conditions or connection conditions.
 /// 
@@ -7942,38 +7886,26 @@ public:
 /// IFC 2x4 change: All attribute data types changed from numeric to SELECT between Boolean and numeric.  Stiffnesses may now also be negative, for example to capture destabilizing effects in boundary conditions.  The IFC 2x3 convention of -1. representing infinite stiffness is no longer valid and must not be used.  Infinite stiffness, i.e. fixed supports, are now modeled by the Boolean value TRUE.
 class IFC_PARSE_API IfcBoundaryNodeCondition : public IfcBoundaryCondition {
 public:
-    /// Whether the optional attribute LinearStiffnessX is defined for this IfcBoundaryNodeCondition
-    bool hasLinearStiffnessX() const;
-    double LinearStiffnessX() const;
-    void setLinearStiffnessX(double v);
-    /// Whether the optional attribute LinearStiffnessY is defined for this IfcBoundaryNodeCondition
-    bool hasLinearStiffnessY() const;
-    double LinearStiffnessY() const;
-    void setLinearStiffnessY(double v);
-    /// Whether the optional attribute LinearStiffnessZ is defined for this IfcBoundaryNodeCondition
-    bool hasLinearStiffnessZ() const;
-    double LinearStiffnessZ() const;
-    void setLinearStiffnessZ(double v);
-    /// Whether the optional attribute RotationalStiffnessX is defined for this IfcBoundaryNodeCondition
-    bool hasRotationalStiffnessX() const;
+    boost::optional< double > LinearStiffnessX() const;
+    void setLinearStiffnessX(boost::optional< double > v);
+    boost::optional< double > LinearStiffnessY() const;
+    void setLinearStiffnessY(boost::optional< double > v);
+    boost::optional< double > LinearStiffnessZ() const;
+    void setLinearStiffnessZ(boost::optional< double > v);
     /// Rotational stiffness value about the x-axis of the coordinate system defined by the instance which uses this resource object.
-    double RotationalStiffnessX() const;
-    void setRotationalStiffnessX(double v);
-    /// Whether the optional attribute RotationalStiffnessY is defined for this IfcBoundaryNodeCondition
-    bool hasRotationalStiffnessY() const;
+    boost::optional< double > RotationalStiffnessX() const;
+    void setRotationalStiffnessX(boost::optional< double > v);
     /// Rotational stiffness value about the y-axis of the coordinate system defined by the instance which uses this resource object.
-    double RotationalStiffnessY() const;
-    void setRotationalStiffnessY(double v);
-    /// Whether the optional attribute RotationalStiffnessZ is defined for this IfcBoundaryNodeCondition
-    bool hasRotationalStiffnessZ() const;
+    boost::optional< double > RotationalStiffnessY() const;
+    void setRotationalStiffnessY(boost::optional< double > v);
     /// Rotational stiffness value about the z-axis of the coordinate system defined by the instance which uses this resource object.
-    double RotationalStiffnessZ() const;
-    void setRotationalStiffnessZ(double v);
+    boost::optional< double > RotationalStiffnessZ() const;
+    void setRotationalStiffnessZ(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcBoundaryNodeCondition (IfcEntityInstanceData* e);
     IfcBoundaryNodeCondition (boost::optional< std::string > v1_Name, boost::optional< double > v2_LinearStiffnessX, boost::optional< double > v3_LinearStiffnessY, boost::optional< double > v4_LinearStiffnessZ, boost::optional< double > v5_RotationalStiffnessX, boost::optional< double > v6_RotationalStiffnessY, boost::optional< double > v7_RotationalStiffnessZ);
-    typedef IfcTemplatedEntityList< IfcBoundaryNodeCondition > list;
+    typedef aggregate_of< IfcBoundaryNodeCondition > list;
 };
 /// Definition from IAI: Describes linearly elastic support conditions or connection conditions, including linearly elastic warping restraints.
 /// 
@@ -7986,16 +7918,14 @@ public:
 /// IFC 2x4 change: All attribute data types changed from numeric to SELECT between Boolean and numeric.  Stiffnesses may now also be negative, for example to capture destabilizing effects in boundary conditions.  The IFC 2x3 convention of -1. representing infinite stiffness is no longer valid and must not be used.  Infinite stiffness, i.e. fixed supports, are now modeled by the Boolean value TRUE.
 class IFC_PARSE_API IfcBoundaryNodeConditionWarping : public IfcBoundaryNodeCondition {
 public:
-    /// Whether the optional attribute WarpingStiffness is defined for this IfcBoundaryNodeConditionWarping
-    bool hasWarpingStiffness() const;
     /// Defines the warping stiffness value.
-    double WarpingStiffness() const;
-    void setWarpingStiffness(double v);
+    boost::optional< double > WarpingStiffness() const;
+    void setWarpingStiffness(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcBoundaryNodeConditionWarping (IfcEntityInstanceData* e);
     IfcBoundaryNodeConditionWarping (boost::optional< std::string > v1_Name, boost::optional< double > v2_LinearStiffnessX, boost::optional< double > v3_LinearStiffnessY, boost::optional< double > v4_LinearStiffnessZ, boost::optional< double > v5_RotationalStiffnessX, boost::optional< double > v6_RotationalStiffnessY, boost::optional< double > v7_RotationalStiffnessZ, boost::optional< double > v8_WarpingStiffness);
-    typedef IfcTemplatedEntityList< IfcBoundaryNodeConditionWarping > list;
+    typedef aggregate_of< IfcBoundaryNodeConditionWarping > list;
 };
 
 class IFC_PARSE_API IfcCalendarDate : public IfcUtil::IfcBaseEntity {
@@ -8010,7 +7940,7 @@ public:
     static const IfcParse::entity& Class();
     IfcCalendarDate (IfcEntityInstanceData* e);
     IfcCalendarDate (int v1_DayComponent, int v2_MonthComponent, int v3_YearComponent);
-    typedef IfcTemplatedEntityList< IfcCalendarDate > list;
+    typedef aggregate_of< IfcCalendarDate > list;
 };
 /// An IfcClassification is used for the arrangement of objects into a class or category according to a common purpose or their possession of common
 /// characteristics. A classification in the sense of IfcClassification is taxonomy, or taxonomic scheme, arranged in a hierarchical structure. A category of objects relates to other categories in a generalization-specialization relationship. Therefore the classification items in an
@@ -8041,8 +7971,6 @@ public:
     /// IFC2x4 CHANGE The attribute has been changed to be optional.
     std::string Edition() const;
     void setEdition(std::string v);
-    /// Whether the optional attribute EditionDate is defined for this IfcClassification
-    bool hasEditionDate() const;
     /// The date on which the edition of the classification used became valid.
     /// 
     /// NOTE The indication of edition may be sufficient to identify the classification source uniquely but the edition date is provided as an optional attribute to enable more precise identification where required.
@@ -8055,55 +7983,53 @@ public:
     /// NOTE Examples of names include CI/SfB, Masterformat, BSAB, Uniclass, STABU, DIN276, DIN277 etc.
     std::string Name() const;
     void setName(std::string v);
-        IfcTemplatedEntityList< IfcClassificationItem >::ptr Contains() const; // INVERSE IfcClassificationItem::ItemOf
+        aggregate_of< IfcClassificationItem >::ptr Contains() const; // INVERSE IfcClassificationItem::ItemOf
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcClassification (IfcEntityInstanceData* e);
     IfcClassification (std::string v1_Source, std::string v2_Edition, ::Ifc2x3::IfcCalendarDate* v3_EditionDate, std::string v4_Name);
-    typedef IfcTemplatedEntityList< IfcClassification > list;
+    typedef aggregate_of< IfcClassification > list;
 };
 
 class IFC_PARSE_API IfcClassificationItem : public IfcUtil::IfcBaseEntity {
 public:
     ::Ifc2x3::IfcClassificationNotationFacet* Notation() const;
     void setNotation(::Ifc2x3::IfcClassificationNotationFacet* v);
-    /// Whether the optional attribute ItemOf is defined for this IfcClassificationItem
-    bool hasItemOf() const;
     ::Ifc2x3::IfcClassification* ItemOf() const;
     void setItemOf(::Ifc2x3::IfcClassification* v);
     std::string Title() const;
     void setTitle(std::string v);
-        IfcTemplatedEntityList< IfcClassificationItemRelationship >::ptr IsClassifiedItemIn() const; // INVERSE IfcClassificationItemRelationship::RelatedItems
-    IfcTemplatedEntityList< IfcClassificationItemRelationship >::ptr IsClassifyingItemIn() const; // INVERSE IfcClassificationItemRelationship::RelatingItem
+        aggregate_of< IfcClassificationItemRelationship >::ptr IsClassifiedItemIn() const; // INVERSE IfcClassificationItemRelationship::RelatedItems
+    aggregate_of< IfcClassificationItemRelationship >::ptr IsClassifyingItemIn() const; // INVERSE IfcClassificationItemRelationship::RelatingItem
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcClassificationItem (IfcEntityInstanceData* e);
     IfcClassificationItem (::Ifc2x3::IfcClassificationNotationFacet* v1_Notation, ::Ifc2x3::IfcClassification* v2_ItemOf, std::string v3_Title);
-    typedef IfcTemplatedEntityList< IfcClassificationItem > list;
+    typedef aggregate_of< IfcClassificationItem > list;
 };
 
 class IFC_PARSE_API IfcClassificationItemRelationship : public IfcUtil::IfcBaseEntity {
 public:
     ::Ifc2x3::IfcClassificationItem* RelatingItem() const;
     void setRelatingItem(::Ifc2x3::IfcClassificationItem* v);
-    IfcTemplatedEntityList< ::Ifc2x3::IfcClassificationItem >::ptr RelatedItems() const;
-    void setRelatedItems(IfcTemplatedEntityList< ::Ifc2x3::IfcClassificationItem >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcClassificationItem >::ptr RelatedItems() const;
+    void setRelatedItems(aggregate_of< ::Ifc2x3::IfcClassificationItem >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcClassificationItemRelationship (IfcEntityInstanceData* e);
-    IfcClassificationItemRelationship (::Ifc2x3::IfcClassificationItem* v1_RelatingItem, IfcTemplatedEntityList< ::Ifc2x3::IfcClassificationItem >::ptr v2_RelatedItems);
-    typedef IfcTemplatedEntityList< IfcClassificationItemRelationship > list;
+    IfcClassificationItemRelationship (::Ifc2x3::IfcClassificationItem* v1_RelatingItem, aggregate_of< ::Ifc2x3::IfcClassificationItem >::ptr v2_RelatedItems);
+    typedef aggregate_of< IfcClassificationItemRelationship > list;
 };
 
 class IFC_PARSE_API IfcClassificationNotation : public IfcUtil::IfcBaseEntity {
 public:
-    IfcTemplatedEntityList< ::Ifc2x3::IfcClassificationNotationFacet >::ptr NotationFacets() const;
-    void setNotationFacets(IfcTemplatedEntityList< ::Ifc2x3::IfcClassificationNotationFacet >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcClassificationNotationFacet >::ptr NotationFacets() const;
+    void setNotationFacets(aggregate_of< ::Ifc2x3::IfcClassificationNotationFacet >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcClassificationNotation (IfcEntityInstanceData* e);
-    IfcClassificationNotation (IfcTemplatedEntityList< ::Ifc2x3::IfcClassificationNotationFacet >::ptr v1_NotationFacets);
-    typedef IfcTemplatedEntityList< IfcClassificationNotation > list;
+    IfcClassificationNotation (aggregate_of< ::Ifc2x3::IfcClassificationNotationFacet >::ptr v1_NotationFacets);
+    typedef aggregate_of< IfcClassificationNotation > list;
 };
 
 class IFC_PARSE_API IfcClassificationNotationFacet : public IfcUtil::IfcBaseEntity {
@@ -8114,7 +8040,7 @@ public:
     static const IfcParse::entity& Class();
     IfcClassificationNotationFacet (IfcEntityInstanceData* e);
     IfcClassificationNotationFacet (std::string v1_NotationValue);
-    typedef IfcTemplatedEntityList< IfcClassificationNotationFacet > list;
+    typedef aggregate_of< IfcClassificationNotationFacet > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The colour specification entity contains a direct colour definition. Colour component values refer directly to a specific colour space.
 /// 
@@ -8123,19 +8049,17 @@ public:
 /// HISTORY  New entity in IFC2x2.
 class IFC_PARSE_API IfcColourSpecification : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute Name is defined for this IfcColourSpecification
-    bool hasName() const;
     /// Optional name given to a particular colour specification in addition to the colour components (like the RGB values).
     /// 
     /// NOTE  Examples are the names of a industry colour classification, such as RAL.
     /// IFC2x Edition 3 CHANGE  Attribute added.
-    std::string Name() const;
-    void setName(std::string v);
+    boost::optional< std::string > Name() const;
+    void setName(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcColourSpecification (IfcEntityInstanceData* e);
     IfcColourSpecification (boost::optional< std::string > v1_Name);
-    typedef IfcTemplatedEntityList< IfcColourSpecification > list;
+    typedef aggregate_of< IfcColourSpecification > list;
 };
 /// IfcConnectionGeometry is used to describe the geometric and topological constraints that facilitate the physical connection of two objects. It is envisioned as a control that applies to the element connection relationships.
 /// 
@@ -8157,7 +8081,7 @@ public:
     static const IfcParse::entity& Class();
     IfcConnectionGeometry (IfcEntityInstanceData* e);
     IfcConnectionGeometry ();
-    typedef IfcTemplatedEntityList< IfcConnectionGeometry > list;
+    typedef aggregate_of< IfcConnectionGeometry > list;
 };
 /// IfcConnectionPointGeometry
 /// is used to describe the geometric constraints that facilitate the
@@ -8180,8 +8104,6 @@ public:
     /// Point at which the connected object is aligned at the relating element, given in the LCS of the relating element.
     ::Ifc2x3::IfcPointOrVertexPoint* PointOnRelatingElement() const;
     void setPointOnRelatingElement(::Ifc2x3::IfcPointOrVertexPoint* v);
-    /// Whether the optional attribute PointOnRelatedElement is defined for this IfcConnectionPointGeometry
-    bool hasPointOnRelatedElement() const;
     /// Point at which connected objects are aligned at the related element, given in the LCS of the related element. If the information is omitted, then the origin of the related element is used.
     ::Ifc2x3::IfcPointOrVertexPoint* PointOnRelatedElement() const;
     void setPointOnRelatedElement(::Ifc2x3::IfcPointOrVertexPoint* v);
@@ -8189,15 +8111,13 @@ public:
     static const IfcParse::entity& Class();
     IfcConnectionPointGeometry (IfcEntityInstanceData* e);
     IfcConnectionPointGeometry (::Ifc2x3::IfcPointOrVertexPoint* v1_PointOnRelatingElement, ::Ifc2x3::IfcPointOrVertexPoint* v2_PointOnRelatedElement);
-    typedef IfcTemplatedEntityList< IfcConnectionPointGeometry > list;
+    typedef aggregate_of< IfcConnectionPointGeometry > list;
 };
 
 class IFC_PARSE_API IfcConnectionPortGeometry : public IfcConnectionGeometry {
 public:
     ::Ifc2x3::IfcAxis2Placement* LocationAtRelatingElement() const;
     void setLocationAtRelatingElement(::Ifc2x3::IfcAxis2Placement* v);
-    /// Whether the optional attribute LocationAtRelatedElement is defined for this IfcConnectionPortGeometry
-    bool hasLocationAtRelatedElement() const;
     ::Ifc2x3::IfcAxis2Placement* LocationAtRelatedElement() const;
     void setLocationAtRelatedElement(::Ifc2x3::IfcAxis2Placement* v);
     ::Ifc2x3::IfcProfileDef* ProfileOfPort() const;
@@ -8206,7 +8126,7 @@ public:
     static const IfcParse::entity& Class();
     IfcConnectionPortGeometry (IfcEntityInstanceData* e);
     IfcConnectionPortGeometry (::Ifc2x3::IfcAxis2Placement* v1_LocationAtRelatingElement, ::Ifc2x3::IfcAxis2Placement* v2_LocationAtRelatedElement, ::Ifc2x3::IfcProfileDef* v3_ProfileOfPort);
-    typedef IfcTemplatedEntityList< IfcConnectionPortGeometry > list;
+    typedef aggregate_of< IfcConnectionPortGeometry > list;
 };
 /// IfcConnectionSurfaceGeometry is used to describe the geometric constraints that facilitate the physical connection of two objects at a surface or at a face with surface geometry associated. It is envisioned as a control that applies to the element connection relationships. 
 /// 
@@ -8221,8 +8141,6 @@ public:
     /// Surface at which related object is aligned at the relating element, given in the LCS of the relating element.
     ::Ifc2x3::IfcSurfaceOrFaceSurface* SurfaceOnRelatingElement() const;
     void setSurfaceOnRelatingElement(::Ifc2x3::IfcSurfaceOrFaceSurface* v);
-    /// Whether the optional attribute SurfaceOnRelatedElement is defined for this IfcConnectionSurfaceGeometry
-    bool hasSurfaceOnRelatedElement() const;
     /// Surface at which the relating element is aligned at the related element, given in the LCS of the related element. If the information is omitted, then the origin of the related element is used.
     ::Ifc2x3::IfcSurfaceOrFaceSurface* SurfaceOnRelatedElement() const;
     void setSurfaceOnRelatedElement(::Ifc2x3::IfcSurfaceOrFaceSurface* v);
@@ -8230,7 +8148,7 @@ public:
     static const IfcParse::entity& Class();
     IfcConnectionSurfaceGeometry (IfcEntityInstanceData* e);
     IfcConnectionSurfaceGeometry (::Ifc2x3::IfcSurfaceOrFaceSurface* v1_SurfaceOnRelatingElement, ::Ifc2x3::IfcSurfaceOrFaceSurface* v2_SurfaceOnRelatedElement);
-    typedef IfcTemplatedEntityList< IfcConnectionSurfaceGeometry > list;
+    typedef aggregate_of< IfcConnectionSurfaceGeometry > list;
 };
 /// An IfcConstraint is used to define a constraint or limiting value or boundary condition that may be applied to an object or to the value of a property.  
 /// 
@@ -8249,48 +8167,38 @@ public:
     /// A name to be used for the constraint (e.g., ChillerCoefficientOfPerformance).
     std::string Name() const;
     void setName(std::string v);
-    /// Whether the optional attribute Description is defined for this IfcConstraint
-    bool hasDescription() const;
     /// A description that may apply additional information about a constraint.
-    std::string Description() const;
-    void setDescription(std::string v);
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
     /// Enumeration that qualifies the type of constraint.
     ::Ifc2x3::IfcConstraintEnum::Value ConstraintGrade() const;
     void setConstraintGrade(::Ifc2x3::IfcConstraintEnum::Value v);
-    /// Whether the optional attribute ConstraintSource is defined for this IfcConstraint
-    bool hasConstraintSource() const;
     /// Any source material, such as a code or standard, from which the constraint originated.
-    std::string ConstraintSource() const;
-    void setConstraintSource(std::string v);
-    /// Whether the optional attribute CreatingActor is defined for this IfcConstraint
-    bool hasCreatingActor() const;
+    boost::optional< std::string > ConstraintSource() const;
+    void setConstraintSource(boost::optional< std::string > v);
     /// Person and/or organization that has created the constraint.
     ::Ifc2x3::IfcActorSelect* CreatingActor() const;
     void setCreatingActor(::Ifc2x3::IfcActorSelect* v);
-    /// Whether the optional attribute CreationTime is defined for this IfcConstraint
-    bool hasCreationTime() const;
     /// Time when information specifying the constraint instance was created.
     /// 
     /// Note IFC2x4 CHANGE: Attribute data type changed to IfcDateTime using ISO 8601 representation
     ::Ifc2x3::IfcDateTimeSelect* CreationTime() const;
     void setCreationTime(::Ifc2x3::IfcDateTimeSelect* v);
-    /// Whether the optional attribute UserDefinedGrade is defined for this IfcConstraint
-    bool hasUserDefinedGrade() const;
     /// Allows for specification of user defined grade of the constraint  beyond the enumeration values (hard, soft, advisory) provided by ConstraintGrade attribute of type IfcConstraintEnum. 
     /// When a value is provided for attribute UserDefinedGrade in parallel the attribute ConstraintGrade shall have enumeration value USERDEFINED.
-    std::string UserDefinedGrade() const;
-    void setUserDefinedGrade(std::string v);
-        IfcTemplatedEntityList< IfcConstraintClassificationRelationship >::ptr ClassifiedAs() const; // INVERSE IfcConstraintClassificationRelationship::ClassifiedConstraint
-    IfcTemplatedEntityList< IfcConstraintRelationship >::ptr RelatesConstraints() const; // INVERSE IfcConstraintRelationship::RelatingConstraint
-    IfcTemplatedEntityList< IfcConstraintRelationship >::ptr IsRelatedWith() const; // INVERSE IfcConstraintRelationship::RelatedConstraints
-    IfcTemplatedEntityList< IfcPropertyConstraintRelationship >::ptr PropertiesForConstraint() const; // INVERSE IfcPropertyConstraintRelationship::RelatingConstraint
-    IfcTemplatedEntityList< IfcConstraintAggregationRelationship >::ptr Aggregates() const; // INVERSE IfcConstraintAggregationRelationship::RelatingConstraint
-    IfcTemplatedEntityList< IfcConstraintAggregationRelationship >::ptr IsAggregatedIn() const; // INVERSE IfcConstraintAggregationRelationship::RelatedConstraints
+    boost::optional< std::string > UserDefinedGrade() const;
+    void setUserDefinedGrade(boost::optional< std::string > v);
+        aggregate_of< IfcConstraintClassificationRelationship >::ptr ClassifiedAs() const; // INVERSE IfcConstraintClassificationRelationship::ClassifiedConstraint
+    aggregate_of< IfcConstraintRelationship >::ptr RelatesConstraints() const; // INVERSE IfcConstraintRelationship::RelatingConstraint
+    aggregate_of< IfcConstraintRelationship >::ptr IsRelatedWith() const; // INVERSE IfcConstraintRelationship::RelatedConstraints
+    aggregate_of< IfcPropertyConstraintRelationship >::ptr PropertiesForConstraint() const; // INVERSE IfcPropertyConstraintRelationship::RelatingConstraint
+    aggregate_of< IfcConstraintAggregationRelationship >::ptr Aggregates() const; // INVERSE IfcConstraintAggregationRelationship::RelatingConstraint
+    aggregate_of< IfcConstraintAggregationRelationship >::ptr IsAggregatedIn() const; // INVERSE IfcConstraintAggregationRelationship::RelatedConstraints
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcConstraint (IfcEntityInstanceData* e);
     IfcConstraint (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcConstraintEnum::Value v3_ConstraintGrade, boost::optional< std::string > v4_ConstraintSource, ::Ifc2x3::IfcActorSelect* v5_CreatingActor, ::Ifc2x3::IfcDateTimeSelect* v6_CreationTime, boost::optional< std::string > v7_UserDefinedGrade);
-    typedef IfcTemplatedEntityList< IfcConstraint > list;
+    typedef aggregate_of< IfcConstraint > list;
 };
 /// An IfcConstraintAggregationRelationship is an objectified relationship that enables instances of IfcConstraint subtypes to be aggregated together logically. 
 /// 
@@ -8305,39 +8213,35 @@ public:
 /// Figure 237 — Constraint aggregation
 class IFC_PARSE_API IfcConstraintAggregationRelationship : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute Name is defined for this IfcConstraintAggregationRelationship
-    bool hasName() const;
-    std::string Name() const;
-    void setName(std::string v);
-    /// Whether the optional attribute Description is defined for this IfcConstraintAggregationRelationship
-    bool hasDescription() const;
-    std::string Description() const;
-    void setDescription(std::string v);
+    boost::optional< std::string > Name() const;
+    void setName(boost::optional< std::string > v);
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
     ::Ifc2x3::IfcConstraint* RelatingConstraint() const;
     void setRelatingConstraint(::Ifc2x3::IfcConstraint* v);
-    IfcTemplatedEntityList< ::Ifc2x3::IfcConstraint >::ptr RelatedConstraints() const;
-    void setRelatedConstraints(IfcTemplatedEntityList< ::Ifc2x3::IfcConstraint >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcConstraint >::ptr RelatedConstraints() const;
+    void setRelatedConstraints(aggregate_of< ::Ifc2x3::IfcConstraint >::ptr v);
     /// Enumeration that identifies the logical type of aggregation.
     ::Ifc2x3::IfcLogicalOperatorEnum::Value LogicalAggregator() const;
     void setLogicalAggregator(::Ifc2x3::IfcLogicalOperatorEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcConstraintAggregationRelationship (IfcEntityInstanceData* e);
-    IfcConstraintAggregationRelationship (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcConstraint* v3_RelatingConstraint, IfcTemplatedEntityList< ::Ifc2x3::IfcConstraint >::ptr v4_RelatedConstraints, ::Ifc2x3::IfcLogicalOperatorEnum::Value v5_LogicalAggregator);
-    typedef IfcTemplatedEntityList< IfcConstraintAggregationRelationship > list;
+    IfcConstraintAggregationRelationship (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcConstraint* v3_RelatingConstraint, aggregate_of< ::Ifc2x3::IfcConstraint >::ptr v4_RelatedConstraints, ::Ifc2x3::IfcLogicalOperatorEnum::Value v5_LogicalAggregator);
+    typedef aggregate_of< IfcConstraintAggregationRelationship > list;
 };
 
 class IFC_PARSE_API IfcConstraintClassificationRelationship : public IfcUtil::IfcBaseEntity {
 public:
     ::Ifc2x3::IfcConstraint* ClassifiedConstraint() const;
     void setClassifiedConstraint(::Ifc2x3::IfcConstraint* v);
-    IfcEntityList::ptr RelatedClassifications() const;
-    void setRelatedClassifications(IfcEntityList::ptr v);
+    aggregate_of_instance::ptr RelatedClassifications() const;
+    void setRelatedClassifications(aggregate_of_instance::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcConstraintClassificationRelationship (IfcEntityInstanceData* e);
-    IfcConstraintClassificationRelationship (::Ifc2x3::IfcConstraint* v1_ClassifiedConstraint, IfcEntityList::ptr v2_RelatedClassifications);
-    typedef IfcTemplatedEntityList< IfcConstraintClassificationRelationship > list;
+    IfcConstraintClassificationRelationship (::Ifc2x3::IfcConstraint* v1_ClassifiedConstraint, aggregate_of_instance::ptr v2_RelatedClassifications);
+    typedef aggregate_of< IfcConstraintClassificationRelationship > list;
 };
 /// An IfcConstraintRelationship is an objectified relationship that enables instances of IfcConstraint and its
 /// subtypes to be associated to each other. Logical aggregation of instances of IfcConstraint and its subtypes is handled by the subtype IfcConstraintAggregationRelationship.
@@ -8350,42 +8254,36 @@ public:
 /// IFC2x4 CHANGE  Subtyped from IfcResourceLevelRelationship.
 class IFC_PARSE_API IfcConstraintRelationship : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute Name is defined for this IfcConstraintRelationship
-    bool hasName() const;
-    std::string Name() const;
-    void setName(std::string v);
-    /// Whether the optional attribute Description is defined for this IfcConstraintRelationship
-    bool hasDescription() const;
-    std::string Description() const;
-    void setDescription(std::string v);
+    boost::optional< std::string > Name() const;
+    void setName(boost::optional< std::string > v);
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
     /// Constraint with which the other Constraints referenced by attribute RelatedConstraints are related.
     ::Ifc2x3::IfcConstraint* RelatingConstraint() const;
     void setRelatingConstraint(::Ifc2x3::IfcConstraint* v);
     /// Constraints that are related with the one referenced as RelatingConstraint.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcConstraint >::ptr RelatedConstraints() const;
-    void setRelatedConstraints(IfcTemplatedEntityList< ::Ifc2x3::IfcConstraint >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcConstraint >::ptr RelatedConstraints() const;
+    void setRelatedConstraints(aggregate_of< ::Ifc2x3::IfcConstraint >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcConstraintRelationship (IfcEntityInstanceData* e);
-    IfcConstraintRelationship (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcConstraint* v3_RelatingConstraint, IfcTemplatedEntityList< ::Ifc2x3::IfcConstraint >::ptr v4_RelatedConstraints);
-    typedef IfcTemplatedEntityList< IfcConstraintRelationship > list;
+    IfcConstraintRelationship (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcConstraint* v3_RelatingConstraint, aggregate_of< ::Ifc2x3::IfcConstraint >::ptr v4_RelatedConstraints);
+    typedef aggregate_of< IfcConstraintRelationship > list;
 };
 
 class IFC_PARSE_API IfcCoordinatedUniversalTimeOffset : public IfcUtil::IfcBaseEntity {
 public:
     int HourOffset() const;
     void setHourOffset(int v);
-    /// Whether the optional attribute MinuteOffset is defined for this IfcCoordinatedUniversalTimeOffset
-    bool hasMinuteOffset() const;
-    int MinuteOffset() const;
-    void setMinuteOffset(int v);
+    boost::optional< int > MinuteOffset() const;
+    void setMinuteOffset(boost::optional< int > v);
     ::Ifc2x3::IfcAheadOrBehind::Value Sense() const;
     void setSense(::Ifc2x3::IfcAheadOrBehind::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCoordinatedUniversalTimeOffset (IfcEntityInstanceData* e);
     IfcCoordinatedUniversalTimeOffset (int v1_HourOffset, boost::optional< int > v2_MinuteOffset, ::Ifc2x3::IfcAheadOrBehind::Value v3_Sense);
-    typedef IfcTemplatedEntityList< IfcCoordinatedUniversalTimeOffset > list;
+    typedef aggregate_of< IfcCoordinatedUniversalTimeOffset > list;
 };
 /// IfcCostValue is an amount of money or a value that affects an amount of money. 
 /// 
@@ -8438,16 +8336,14 @@ public:
     /// In the absence of any well defined standard, it is recommended that local agreements should be made to define allowable and understandable cost value types within a project or region.
     std::string CostType() const;
     void setCostType(std::string v);
-    /// Whether the optional attribute Condition is defined for this IfcCostValue
-    bool hasCondition() const;
     /// The condition under which a cost value applies.
-    std::string Condition() const;
-    void setCondition(std::string v);
+    boost::optional< std::string > Condition() const;
+    void setCondition(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCostValue (IfcEntityInstanceData* e);
     IfcCostValue (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcAppliedValueSelect* v3_AppliedValue, ::Ifc2x3::IfcMeasureWithUnit* v4_UnitBasis, ::Ifc2x3::IfcDateTimeSelect* v5_ApplicableDate, ::Ifc2x3::IfcDateTimeSelect* v6_FixedUntilDate, std::string v7_CostType, boost::optional< std::string > v8_Condition);
-    typedef IfcTemplatedEntityList< IfcCostValue > list;
+    typedef aggregate_of< IfcCostValue > list;
 };
 /// IfcCurrencyRelationship defines the rate of exchange
 /// that applies between two designated currencies at a particular time
@@ -8476,8 +8372,6 @@ public:
     /// IFC2x4 CHANGE Type changed from IfcDateTimeSelect. Attribute made optional.
     ::Ifc2x3::IfcDateAndTime* RateDateTime() const;
     void setRateDateTime(::Ifc2x3::IfcDateAndTime* v);
-    /// Whether the optional attribute RateSource is defined for this IfcCurrencyRelationship
-    bool hasRateSource() const;
     /// The source from which an exchange rate is obtained.
     ::Ifc2x3::IfcLibraryInformation* RateSource() const;
     void setRateSource(::Ifc2x3::IfcLibraryInformation* v);
@@ -8485,7 +8379,7 @@ public:
     static const IfcParse::entity& Class();
     IfcCurrencyRelationship (IfcEntityInstanceData* e);
     IfcCurrencyRelationship (::Ifc2x3::IfcMonetaryUnit* v1_RelatingMonetaryUnit, ::Ifc2x3::IfcMonetaryUnit* v2_RelatedMonetaryUnit, double v3_ExchangeRate, ::Ifc2x3::IfcDateAndTime* v4_RateDateTime, ::Ifc2x3::IfcLibraryInformation* v5_RateSource);
-    typedef IfcTemplatedEntityList< IfcCurrencyRelationship > list;
+    typedef aggregate_of< IfcCurrencyRelationship > list;
 };
 /// Definition from ISO/CD 10303-46:1992: A curve style font combines several curve style font pattern entities into a more complex pattern. The resulting pattern is repeated along the curve. 
 /// 
@@ -8494,19 +8388,17 @@ public:
 /// HISTORY: New entity in IFC2x2.
 class IFC_PARSE_API IfcCurveStyleFont : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute Name is defined for this IfcCurveStyleFont
-    bool hasName() const;
     /// Name that may be assigned with the curve font.
-    std::string Name() const;
-    void setName(std::string v);
+    boost::optional< std::string > Name() const;
+    void setName(boost::optional< std::string > v);
     /// A list of curve font pattern entities, that contains the simple patterns used for drawing curves. The patterns are applied in the order they occur in the list.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcCurveStyleFontPattern >::ptr PatternList() const;
-    void setPatternList(IfcTemplatedEntityList< ::Ifc2x3::IfcCurveStyleFontPattern >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcCurveStyleFontPattern >::ptr PatternList() const;
+    void setPatternList(aggregate_of< ::Ifc2x3::IfcCurveStyleFontPattern >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCurveStyleFont (IfcEntityInstanceData* e);
-    IfcCurveStyleFont (boost::optional< std::string > v1_Name, IfcTemplatedEntityList< ::Ifc2x3::IfcCurveStyleFontPattern >::ptr v2_PatternList);
-    typedef IfcTemplatedEntityList< IfcCurveStyleFont > list;
+    IfcCurveStyleFont (boost::optional< std::string > v1_Name, aggregate_of< ::Ifc2x3::IfcCurveStyleFontPattern >::ptr v2_PatternList);
+    typedef aggregate_of< IfcCurveStyleFont > list;
 };
 /// Definition from ISO/CD 10303-46:1992: A curve style font and scaling is a curve style font and a scalar factor for that font, so that a given curve style font may be applied at various scales.
 /// 
@@ -8521,11 +8413,9 @@ public:
 /// HISTORY  New entity in IFC2x2.
 class IFC_PARSE_API IfcCurveStyleFontAndScaling : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute Name is defined for this IfcCurveStyleFontAndScaling
-    bool hasName() const;
     /// Name that may be assigned with the scaling of a curve font.
-    std::string Name() const;
-    void setName(std::string v);
+    boost::optional< std::string > Name() const;
+    void setName(boost::optional< std::string > v);
     /// The curve font to be scaled.
     ::Ifc2x3::IfcCurveStyleFontSelect* CurveFont() const;
     void setCurveFont(::Ifc2x3::IfcCurveStyleFontSelect* v);
@@ -8536,7 +8426,7 @@ public:
     static const IfcParse::entity& Class();
     IfcCurveStyleFontAndScaling (IfcEntityInstanceData* e);
     IfcCurveStyleFontAndScaling (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcCurveStyleFontSelect* v2_CurveFont, double v3_CurveFontScaling);
-    typedef IfcTemplatedEntityList< IfcCurveStyleFontAndScaling > list;
+    typedef aggregate_of< IfcCurveStyleFontAndScaling > list;
 };
 /// Definition from ISO/CD 10303-46:1992: A curve style font pattern is a pair of visible and invisible curve segment length measures in presentation area units. 
 /// 
@@ -8559,7 +8449,7 @@ public:
     static const IfcParse::entity& Class();
     IfcCurveStyleFontPattern (IfcEntityInstanceData* e);
     IfcCurveStyleFontPattern (double v1_VisibleSegmentLength, double v2_InvisibleSegmentLength);
-    typedef IfcTemplatedEntityList< IfcCurveStyleFontPattern > list;
+    typedef aggregate_of< IfcCurveStyleFontPattern > list;
 };
 
 class IFC_PARSE_API IfcDateAndTime : public IfcUtil::IfcBaseEntity {
@@ -8572,7 +8462,7 @@ public:
     static const IfcParse::entity& Class();
     IfcDateAndTime (IfcEntityInstanceData* e);
     IfcDateAndTime (::Ifc2x3::IfcCalendarDate* v1_DateComponent, ::Ifc2x3::IfcLocalTime* v2_TimeComponent);
-    typedef IfcTemplatedEntityList< IfcDateAndTime > list;
+    typedef aggregate_of< IfcDateAndTime > list;
 };
 /// Definition from ISO/CD 10303-41:1992: A derived unit is an expression of units.
 /// 
@@ -8584,20 +8474,18 @@ public:
 class IFC_PARSE_API IfcDerivedUnit : public IfcUtil::IfcBaseEntity {
 public:
     /// The group of units and their exponents that define the derived unit.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcDerivedUnitElement >::ptr Elements() const;
-    void setElements(IfcTemplatedEntityList< ::Ifc2x3::IfcDerivedUnitElement >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcDerivedUnitElement >::ptr Elements() const;
+    void setElements(aggregate_of< ::Ifc2x3::IfcDerivedUnitElement >::ptr v);
     /// Name of the derived unit chosen from an enumeration of derived unit types for use in IFC models.
     ::Ifc2x3::IfcDerivedUnitEnum::Value UnitType() const;
     void setUnitType(::Ifc2x3::IfcDerivedUnitEnum::Value v);
-    /// Whether the optional attribute UserDefinedType is defined for this IfcDerivedUnit
-    bool hasUserDefinedType() const;
-    std::string UserDefinedType() const;
-    void setUserDefinedType(std::string v);
+    boost::optional< std::string > UserDefinedType() const;
+    void setUserDefinedType(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDerivedUnit (IfcEntityInstanceData* e);
-    IfcDerivedUnit (IfcTemplatedEntityList< ::Ifc2x3::IfcDerivedUnitElement >::ptr v1_Elements, ::Ifc2x3::IfcDerivedUnitEnum::Value v2_UnitType, boost::optional< std::string > v3_UserDefinedType);
-    typedef IfcTemplatedEntityList< IfcDerivedUnit > list;
+    IfcDerivedUnit (aggregate_of< ::Ifc2x3::IfcDerivedUnitElement >::ptr v1_Elements, ::Ifc2x3::IfcDerivedUnitEnum::Value v2_UnitType, boost::optional< std::string > v3_UserDefinedType);
+    typedef aggregate_of< IfcDerivedUnit > list;
 };
 /// Definition from ISO/CD 10303-41:1992: A derived unit element is one of the unit quantities 
 /// which makes up a derived unit.
@@ -8620,7 +8508,7 @@ public:
     static const IfcParse::entity& Class();
     IfcDerivedUnitElement (IfcEntityInstanceData* e);
     IfcDerivedUnitElement (::Ifc2x3::IfcNamedUnit* v1_Unit, int v2_Exponent);
-    typedef IfcTemplatedEntityList< IfcDerivedUnitElement > list;
+    typedef aggregate_of< IfcDerivedUnitElement > list;
 };
 /// Definition from ISO/CD 10303-41:1992: The dimensionality of any quantity can be expressed as a product of powers of the dimensions of base quantities. 
 /// The dimensional exponents entity defines the powers of the dimensions of the base quantities. All the physical 
@@ -8666,33 +8554,27 @@ public:
     static const IfcParse::entity& Class();
     IfcDimensionalExponents (IfcEntityInstanceData* e);
     IfcDimensionalExponents (int v1_LengthExponent, int v2_MassExponent, int v3_TimeExponent, int v4_ElectricCurrentExponent, int v5_ThermodynamicTemperatureExponent, int v6_AmountOfSubstanceExponent, int v7_LuminousIntensityExponent);
-    typedef IfcTemplatedEntityList< IfcDimensionalExponents > list;
+    typedef aggregate_of< IfcDimensionalExponents > list;
 };
 /// IfcDocumentElectronicFormat captures the type of document being referenced as an external source, and for which metadata is specified by IfcDocumentInformation. 
 /// 
 /// HISTORY: New entity in IFC 2x
 class IFC_PARSE_API IfcDocumentElectronicFormat : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute FileExtension is defined for this IfcDocumentElectronicFormat
-    bool hasFileExtension() const;
     /// File extension of electronic document used by computer operating system.
-    std::string FileExtension() const;
-    void setFileExtension(std::string v);
-    /// Whether the optional attribute MimeContentType is defined for this IfcDocumentElectronicFormat
-    bool hasMimeContentType() const;
+    boost::optional< std::string > FileExtension() const;
+    void setFileExtension(boost::optional< std::string > v);
     /// Main Mime type (as published by W3C or as user defined application type).
-    std::string MimeContentType() const;
-    void setMimeContentType(std::string v);
-    /// Whether the optional attribute MimeSubtype is defined for this IfcDocumentElectronicFormat
-    bool hasMimeSubtype() const;
+    boost::optional< std::string > MimeContentType() const;
+    void setMimeContentType(boost::optional< std::string > v);
     /// Mime subtype information.
-    std::string MimeSubtype() const;
-    void setMimeSubtype(std::string v);
+    boost::optional< std::string > MimeSubtype() const;
+    void setMimeSubtype(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDocumentElectronicFormat (IfcEntityInstanceData* e);
     IfcDocumentElectronicFormat (boost::optional< std::string > v1_FileExtension, boost::optional< std::string > v2_MimeContentType, boost::optional< std::string > v3_MimeSubtype);
-    typedef IfcTemplatedEntityList< IfcDocumentElectronicFormat > list;
+    typedef aggregate_of< IfcDocumentElectronicFormat > list;
 };
 /// IfcDocumentInformation captures "metadata" of an external document. The actual content of the document is not defined in IFC; instead, it can be found following the reference given to IfcDocumentReference. 
 /// 
@@ -8705,99 +8587,69 @@ public:
     /// File name or document name assigned by owner.
     std::string Name() const;
     void setName(std::string v);
-    /// Whether the optional attribute Description is defined for this IfcDocumentInformation
-    bool hasDescription() const;
     /// Description of document and its content.
-    std::string Description() const;
-    void setDescription(std::string v);
-    /// Whether the optional attribute DocumentReferences is defined for this IfcDocumentInformation
-    bool hasDocumentReferences() const;
-    IfcTemplatedEntityList< ::Ifc2x3::IfcDocumentReference >::ptr DocumentReferences() const;
-    void setDocumentReferences(IfcTemplatedEntityList< ::Ifc2x3::IfcDocumentReference >::ptr v);
-    /// Whether the optional attribute Purpose is defined for this IfcDocumentInformation
-    bool hasPurpose() const;
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
+    boost::optional< aggregate_of< ::Ifc2x3::IfcDocumentReference >::ptr > DocumentReferences() const;
+    void setDocumentReferences(boost::optional< aggregate_of< ::Ifc2x3::IfcDocumentReference >::ptr > v);
     /// Purpose for this document.
-    std::string Purpose() const;
-    void setPurpose(std::string v);
-    /// Whether the optional attribute IntendedUse is defined for this IfcDocumentInformation
-    bool hasIntendedUse() const;
+    boost::optional< std::string > Purpose() const;
+    void setPurpose(boost::optional< std::string > v);
     /// Intended use for this document.
-    std::string IntendedUse() const;
-    void setIntendedUse(std::string v);
-    /// Whether the optional attribute Scope is defined for this IfcDocumentInformation
-    bool hasScope() const;
+    boost::optional< std::string > IntendedUse() const;
+    void setIntendedUse(boost::optional< std::string > v);
     /// Scope for this document.
-    std::string Scope() const;
-    void setScope(std::string v);
-    /// Whether the optional attribute Revision is defined for this IfcDocumentInformation
-    bool hasRevision() const;
+    boost::optional< std::string > Scope() const;
+    void setScope(boost::optional< std::string > v);
     /// Document revision designation.
-    std::string Revision() const;
-    void setRevision(std::string v);
-    /// Whether the optional attribute DocumentOwner is defined for this IfcDocumentInformation
-    bool hasDocumentOwner() const;
+    boost::optional< std::string > Revision() const;
+    void setRevision(boost::optional< std::string > v);
     /// Information about the person and/or organization acknowledged as the 'owner' of this document. In some contexts, the document owner determines who has access to or editing right to the document.
     ::Ifc2x3::IfcActorSelect* DocumentOwner() const;
     void setDocumentOwner(::Ifc2x3::IfcActorSelect* v);
-    /// Whether the optional attribute Editors is defined for this IfcDocumentInformation
-    bool hasEditors() const;
     /// The persons and/or organizations who have created this document or contributed to it.
-    IfcEntityList::ptr Editors() const;
-    void setEditors(IfcEntityList::ptr v);
-    /// Whether the optional attribute CreationTime is defined for this IfcDocumentInformation
-    bool hasCreationTime() const;
+    boost::optional< aggregate_of_instance::ptr > Editors() const;
+    void setEditors(boost::optional< aggregate_of_instance::ptr > v);
     /// Date and time stamp when the document was originally created.
     /// 
     /// IFC2x4 CHANGE The data type has been changed to IfcDateTime, the date time string according to ISO8601.
     ::Ifc2x3::IfcDateAndTime* CreationTime() const;
     void setCreationTime(::Ifc2x3::IfcDateAndTime* v);
-    /// Whether the optional attribute LastRevisionTime is defined for this IfcDocumentInformation
-    bool hasLastRevisionTime() const;
     /// Date and time stamp when this document version was created.
     /// 
     /// IFC2x4 CHANGE The data type has been changed to IfcDateTime, the date time string according to ISO8601.
     ::Ifc2x3::IfcDateAndTime* LastRevisionTime() const;
     void setLastRevisionTime(::Ifc2x3::IfcDateAndTime* v);
-    /// Whether the optional attribute ElectronicFormat is defined for this IfcDocumentInformation
-    bool hasElectronicFormat() const;
     /// Describes the electronic format of the document being referenced, providing the file extension and the manner in which the content is provided.
     ::Ifc2x3::IfcDocumentElectronicFormat* ElectronicFormat() const;
     void setElectronicFormat(::Ifc2x3::IfcDocumentElectronicFormat* v);
-    /// Whether the optional attribute ValidFrom is defined for this IfcDocumentInformation
-    bool hasValidFrom() const;
     /// Date when the document becomes valid.
     /// 
     /// IFC2x4 CHANGE The data type has been changed to IfcDate, the date string according to ISO8601.
     ::Ifc2x3::IfcCalendarDate* ValidFrom() const;
     void setValidFrom(::Ifc2x3::IfcCalendarDate* v);
-    /// Whether the optional attribute ValidUntil is defined for this IfcDocumentInformation
-    bool hasValidUntil() const;
     /// Date until which the document remains valid.
     /// 
     /// IFC2x4 CHANGE The data type has been changed to IfcDate, the date string according to ISO8601.
     ::Ifc2x3::IfcCalendarDate* ValidUntil() const;
     void setValidUntil(::Ifc2x3::IfcCalendarDate* v);
-    /// Whether the optional attribute Confidentiality is defined for this IfcDocumentInformation
-    bool hasConfidentiality() const;
     /// The level of confidentiality of the document.
-    ::Ifc2x3::IfcDocumentConfidentialityEnum::Value Confidentiality() const;
-    void setConfidentiality(::Ifc2x3::IfcDocumentConfidentialityEnum::Value v);
-    /// Whether the optional attribute Status is defined for this IfcDocumentInformation
-    bool hasStatus() const;
+    boost::optional< ::Ifc2x3::IfcDocumentConfidentialityEnum::Value > Confidentiality() const;
+    void setConfidentiality(boost::optional< ::Ifc2x3::IfcDocumentConfidentialityEnum::Value > v);
     /// The current status of the document. Examples of status values that might be used for a document information status include:
     /// - DRAFT
     /// - FINAL DRAFT
     /// - FINAL
     /// - REVISION
-    ::Ifc2x3::IfcDocumentStatusEnum::Value Status() const;
-    void setStatus(::Ifc2x3::IfcDocumentStatusEnum::Value v);
-        IfcTemplatedEntityList< IfcDocumentInformationRelationship >::ptr IsPointedTo() const; // INVERSE IfcDocumentInformationRelationship::RelatedDocuments
-    IfcTemplatedEntityList< IfcDocumentInformationRelationship >::ptr IsPointer() const; // INVERSE IfcDocumentInformationRelationship::RelatingDocument
+    boost::optional< ::Ifc2x3::IfcDocumentStatusEnum::Value > Status() const;
+    void setStatus(boost::optional< ::Ifc2x3::IfcDocumentStatusEnum::Value > v);
+        aggregate_of< IfcDocumentInformationRelationship >::ptr IsPointedTo() const; // INVERSE IfcDocumentInformationRelationship::RelatedDocuments
+    aggregate_of< IfcDocumentInformationRelationship >::ptr IsPointer() const; // INVERSE IfcDocumentInformationRelationship::RelatingDocument
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDocumentInformation (IfcEntityInstanceData* e);
-    IfcDocumentInformation (std::string v1_DocumentId, std::string v2_Name, boost::optional< std::string > v3_Description, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcDocumentReference >::ptr > v4_DocumentReferences, boost::optional< std::string > v5_Purpose, boost::optional< std::string > v6_IntendedUse, boost::optional< std::string > v7_Scope, boost::optional< std::string > v8_Revision, ::Ifc2x3::IfcActorSelect* v9_DocumentOwner, boost::optional< IfcEntityList::ptr > v10_Editors, ::Ifc2x3::IfcDateAndTime* v11_CreationTime, ::Ifc2x3::IfcDateAndTime* v12_LastRevisionTime, ::Ifc2x3::IfcDocumentElectronicFormat* v13_ElectronicFormat, ::Ifc2x3::IfcCalendarDate* v14_ValidFrom, ::Ifc2x3::IfcCalendarDate* v15_ValidUntil, boost::optional< ::Ifc2x3::IfcDocumentConfidentialityEnum::Value > v16_Confidentiality, boost::optional< ::Ifc2x3::IfcDocumentStatusEnum::Value > v17_Status);
-    typedef IfcTemplatedEntityList< IfcDocumentInformation > list;
+    IfcDocumentInformation (std::string v1_DocumentId, std::string v2_Name, boost::optional< std::string > v3_Description, boost::optional< aggregate_of< ::Ifc2x3::IfcDocumentReference >::ptr > v4_DocumentReferences, boost::optional< std::string > v5_Purpose, boost::optional< std::string > v6_IntendedUse, boost::optional< std::string > v7_Scope, boost::optional< std::string > v8_Revision, ::Ifc2x3::IfcActorSelect* v9_DocumentOwner, boost::optional< aggregate_of_instance::ptr > v10_Editors, ::Ifc2x3::IfcDateAndTime* v11_CreationTime, ::Ifc2x3::IfcDateAndTime* v12_LastRevisionTime, ::Ifc2x3::IfcDocumentElectronicFormat* v13_ElectronicFormat, ::Ifc2x3::IfcCalendarDate* v14_ValidFrom, ::Ifc2x3::IfcCalendarDate* v15_ValidUntil, boost::optional< ::Ifc2x3::IfcDocumentConfidentialityEnum::Value > v16_Confidentiality, boost::optional< ::Ifc2x3::IfcDocumentStatusEnum::Value > v17_Status);
+    typedef aggregate_of< IfcDocumentInformation > list;
 };
 /// An IfcDocumentInformationRelationship is a relationship class that enables a document to have the ability to reference other documents.
 /// 
@@ -8813,30 +8665,24 @@ public:
     ::Ifc2x3::IfcDocumentInformation* RelatingDocument() const;
     void setRelatingDocument(::Ifc2x3::IfcDocumentInformation* v);
     /// The document that acts as the child, referenced or replacing document in a relationship.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcDocumentInformation >::ptr RelatedDocuments() const;
-    void setRelatedDocuments(IfcTemplatedEntityList< ::Ifc2x3::IfcDocumentInformation >::ptr v);
-    /// Whether the optional attribute RelationshipType is defined for this IfcDocumentInformationRelationship
-    bool hasRelationshipType() const;
+    aggregate_of< ::Ifc2x3::IfcDocumentInformation >::ptr RelatedDocuments() const;
+    void setRelatedDocuments(aggregate_of< ::Ifc2x3::IfcDocumentInformation >::ptr v);
     /// Describes the type of relationship between documents. This could be sub-document, replacement etc. The interpretation has to be established in an application context.
-    std::string RelationshipType() const;
-    void setRelationshipType(std::string v);
+    boost::optional< std::string > RelationshipType() const;
+    void setRelationshipType(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDocumentInformationRelationship (IfcEntityInstanceData* e);
-    IfcDocumentInformationRelationship (::Ifc2x3::IfcDocumentInformation* v1_RelatingDocument, IfcTemplatedEntityList< ::Ifc2x3::IfcDocumentInformation >::ptr v2_RelatedDocuments, boost::optional< std::string > v3_RelationshipType);
-    typedef IfcTemplatedEntityList< IfcDocumentInformationRelationship > list;
+    IfcDocumentInformationRelationship (::Ifc2x3::IfcDocumentInformation* v1_RelatingDocument, aggregate_of< ::Ifc2x3::IfcDocumentInformation >::ptr v2_RelatedDocuments, boost::optional< std::string > v3_RelationshipType);
+    typedef aggregate_of< IfcDocumentInformationRelationship > list;
 };
 
 class IFC_PARSE_API IfcDraughtingCalloutRelationship : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute Name is defined for this IfcDraughtingCalloutRelationship
-    bool hasName() const;
-    std::string Name() const;
-    void setName(std::string v);
-    /// Whether the optional attribute Description is defined for this IfcDraughtingCalloutRelationship
-    bool hasDescription() const;
-    std::string Description() const;
-    void setDescription(std::string v);
+    boost::optional< std::string > Name() const;
+    void setName(boost::optional< std::string > v);
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
     ::Ifc2x3::IfcDraughtingCallout* RelatingDraughtingCallout() const;
     void setRelatingDraughtingCallout(::Ifc2x3::IfcDraughtingCallout* v);
     ::Ifc2x3::IfcDraughtingCallout* RelatedDraughtingCallout() const;
@@ -8845,7 +8691,7 @@ public:
     static const IfcParse::entity& Class();
     IfcDraughtingCalloutRelationship (IfcEntityInstanceData* e);
     IfcDraughtingCalloutRelationship (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcDraughtingCallout* v3_RelatingDraughtingCallout, ::Ifc2x3::IfcDraughtingCallout* v4_RelatedDraughtingCallout);
-    typedef IfcTemplatedEntityList< IfcDraughtingCalloutRelationship > list;
+    typedef aggregate_of< IfcDraughtingCalloutRelationship > list;
 };
 
 class IFC_PARSE_API IfcEnvironmentalImpactValue : public IfcAppliedValue {
@@ -8854,15 +8700,13 @@ public:
     void setImpactType(std::string v);
     ::Ifc2x3::IfcEnvironmentalImpactCategoryEnum::Value Category() const;
     void setCategory(::Ifc2x3::IfcEnvironmentalImpactCategoryEnum::Value v);
-    /// Whether the optional attribute UserDefinedCategory is defined for this IfcEnvironmentalImpactValue
-    bool hasUserDefinedCategory() const;
-    std::string UserDefinedCategory() const;
-    void setUserDefinedCategory(std::string v);
+    boost::optional< std::string > UserDefinedCategory() const;
+    void setUserDefinedCategory(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcEnvironmentalImpactValue (IfcEntityInstanceData* e);
     IfcEnvironmentalImpactValue (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcAppliedValueSelect* v3_AppliedValue, ::Ifc2x3::IfcMeasureWithUnit* v4_UnitBasis, ::Ifc2x3::IfcDateTimeSelect* v5_ApplicableDate, ::Ifc2x3::IfcDateTimeSelect* v6_FixedUntilDate, std::string v7_ImpactType, ::Ifc2x3::IfcEnvironmentalImpactCategoryEnum::Value v8_Category, boost::optional< std::string > v9_UserDefinedCategory);
-    typedef IfcTemplatedEntityList< IfcEnvironmentalImpactValue > list;
+    typedef aggregate_of< IfcEnvironmentalImpactValue > list;
 };
 /// An IfcExternalReference is the identification of information that is not explicitly represented in the current model or in the project database (as an implementation of the current model). Such information may be contained in classifications, documents or libraries. The IfcExternalReference identifies a particular item, such as a
 /// dictionary entry, a classification notation, or a document reference within the external source.
@@ -8875,27 +8719,21 @@ public:
 /// HISTORY New entity in IFC2x.
 class IFC_PARSE_API IfcExternalReference : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute Location is defined for this IfcExternalReference
-    bool hasLocation() const;
     /// Location, where the external source (classification, document or library) can be accessed by electronic means. The electronic location is provided as an URI, and would normally be given as an URL location string.
     /// 
     /// IFC2x4 CHANGE  The data type has been changed from IfcLabel to IfcURIReference.
-    std::string Location() const;
-    void setLocation(std::string v);
-    /// Whether the optional attribute ItemReference is defined for this IfcExternalReference
-    bool hasItemReference() const;
-    std::string ItemReference() const;
-    void setItemReference(std::string v);
-    /// Whether the optional attribute Name is defined for this IfcExternalReference
-    bool hasName() const;
+    boost::optional< std::string > Location() const;
+    void setLocation(boost::optional< std::string > v);
+    boost::optional< std::string > ItemReference() const;
+    void setItemReference(boost::optional< std::string > v);
     /// Optional name to further specify the reference. It can provide a human readable identifier (which does not necessarily need to have a counterpart in the internal structure of the document).
-    std::string Name() const;
-    void setName(std::string v);
+    boost::optional< std::string > Name() const;
+    void setName(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcExternalReference (IfcEntityInstanceData* e);
     IfcExternalReference (boost::optional< std::string > v1_Location, boost::optional< std::string > v2_ItemReference, boost::optional< std::string > v3_Name);
-    typedef IfcTemplatedEntityList< IfcExternalReference > list;
+    typedef aggregate_of< IfcExternalReference > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The externally defined hatch style is an entity which makes an external reference to a hatching style.
 /// 
@@ -8911,7 +8749,7 @@ public:
     static const IfcParse::entity& Class();
     IfcExternallyDefinedHatchStyle (IfcEntityInstanceData* e);
     IfcExternallyDefinedHatchStyle (boost::optional< std::string > v1_Location, boost::optional< std::string > v2_ItemReference, boost::optional< std::string > v3_Name);
-    typedef IfcTemplatedEntityList< IfcExternallyDefinedHatchStyle > list;
+    typedef aggregate_of< IfcExternallyDefinedHatchStyle > list;
 };
 /// IfcExternallyDefinedSurfaceStyle is a definition of a surface style through referencing an external source, such as a material library for rendering information.
 /// 
@@ -8926,7 +8764,7 @@ public:
     static const IfcParse::entity& Class();
     IfcExternallyDefinedSurfaceStyle (IfcEntityInstanceData* e);
     IfcExternallyDefinedSurfaceStyle (boost::optional< std::string > v1_Location, boost::optional< std::string > v2_ItemReference, boost::optional< std::string > v3_Name);
-    typedef IfcTemplatedEntityList< IfcExternallyDefinedSurfaceStyle > list;
+    typedef aggregate_of< IfcExternallyDefinedSurfaceStyle > list;
 };
 /// An externally defined symbol is a symbol that gets its shape information by an agreed reference to an external source.
 /// 
@@ -8943,7 +8781,7 @@ public:
     static const IfcParse::entity& Class();
     IfcExternallyDefinedSymbol (IfcEntityInstanceData* e);
     IfcExternallyDefinedSymbol (boost::optional< std::string > v1_Location, boost::optional< std::string > v2_ItemReference, boost::optional< std::string > v3_Name);
-    typedef IfcTemplatedEntityList< IfcExternallyDefinedSymbol > list;
+    typedef aggregate_of< IfcExternallyDefinedSymbol > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The externally defined text font is an external reference to a text font 
 /// 
@@ -8958,7 +8796,7 @@ public:
     static const IfcParse::entity& Class();
     IfcExternallyDefinedTextFont (IfcEntityInstanceData* e);
     IfcExternallyDefinedTextFont (boost::optional< std::string > v1_Location, boost::optional< std::string > v2_ItemReference, boost::optional< std::string > v3_Name);
-    typedef IfcTemplatedEntityList< IfcExternallyDefinedTextFont > list;
+    typedef aggregate_of< IfcExternallyDefinedTextFont > list;
 };
 /// An individual axis, IfcGridAxis, is defined in the context of a design grid.  The axis definition is based on a curve of dimensionality 2. The grid axis is positioned within the XY plane of the position coordinate system defined by the IfcDesignGrid.
 /// 
@@ -8985,26 +8823,24 @@ public:
 /// Figure 242 — Grid axis
 class IFC_PARSE_API IfcGridAxis : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute AxisTag is defined for this IfcGridAxis
-    bool hasAxisTag() const;
     /// The tag or name for this grid axis.
-    std::string AxisTag() const;
-    void setAxisTag(std::string v);
+    boost::optional< std::string > AxisTag() const;
+    void setAxisTag(boost::optional< std::string > v);
     /// Underlying curve which provides the geometry for this grid axis.
     ::Ifc2x3::IfcCurve* AxisCurve() const;
     void setAxisCurve(::Ifc2x3::IfcCurve* v);
     /// Defines whether the original sense of curve is used or whether it is reversed in the context of the grid axis.
     bool SameSense() const;
     void setSameSense(bool v);
-        IfcTemplatedEntityList< IfcGrid >::ptr PartOfW() const; // INVERSE IfcGrid::WAxes
-    IfcTemplatedEntityList< IfcGrid >::ptr PartOfV() const; // INVERSE IfcGrid::VAxes
-    IfcTemplatedEntityList< IfcGrid >::ptr PartOfU() const; // INVERSE IfcGrid::UAxes
-    IfcTemplatedEntityList< IfcVirtualGridIntersection >::ptr HasIntersections() const; // INVERSE IfcVirtualGridIntersection::IntersectingAxes
+        aggregate_of< IfcGrid >::ptr PartOfW() const; // INVERSE IfcGrid::WAxes
+    aggregate_of< IfcGrid >::ptr PartOfV() const; // INVERSE IfcGrid::VAxes
+    aggregate_of< IfcGrid >::ptr PartOfU() const; // INVERSE IfcGrid::UAxes
+    aggregate_of< IfcVirtualGridIntersection >::ptr HasIntersections() const; // INVERSE IfcVirtualGridIntersection::IntersectingAxes
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcGridAxis (IfcEntityInstanceData* e);
     IfcGridAxis (boost::optional< std::string > v1_AxisTag, ::Ifc2x3::IfcCurve* v2_AxisCurve, bool v3_SameSense);
-    typedef IfcTemplatedEntityList< IfcGridAxis > list;
+    typedef aggregate_of< IfcGridAxis > list;
 };
 /// The IfcIrregularTimeSeriesValue describes a value (or set of values) at a particular time point. 
 /// 
@@ -9015,13 +8851,13 @@ public:
     ::Ifc2x3::IfcDateTimeSelect* TimeStamp() const;
     void setTimeStamp(::Ifc2x3::IfcDateTimeSelect* v);
     /// A list of time-series values. At least one value is required.
-    IfcEntityList::ptr ListValues() const;
-    void setListValues(IfcEntityList::ptr v);
+    aggregate_of_instance::ptr ListValues() const;
+    void setListValues(aggregate_of_instance::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcIrregularTimeSeriesValue (IfcEntityInstanceData* e);
-    IfcIrregularTimeSeriesValue (::Ifc2x3::IfcDateTimeSelect* v1_TimeStamp, IfcEntityList::ptr v2_ListValues);
-    typedef IfcTemplatedEntityList< IfcIrregularTimeSeriesValue > list;
+    IfcIrregularTimeSeriesValue (::Ifc2x3::IfcDateTimeSelect* v1_TimeStamp, aggregate_of_instance::ptr v2_ListValues);
+    typedef aggregate_of< IfcIrregularTimeSeriesValue > list;
 };
 /// An IfcLibraryInformation describes a library where a library is a structured store of information, normally organized in a manner which allows information lookup through an index or reference value. IfcLibraryInformation provides the library Name and optional Version, VersionDate and Publisher attributes. A Location may be added for electronic access to the library.
 /// 
@@ -9036,32 +8872,24 @@ public:
     /// The name which is used to identify the library.
     std::string Name() const;
     void setName(std::string v);
-    /// Whether the optional attribute Version is defined for this IfcLibraryInformation
-    bool hasVersion() const;
     /// Identifier for the library version used for reference.
-    std::string Version() const;
-    void setVersion(std::string v);
-    /// Whether the optional attribute Publisher is defined for this IfcLibraryInformation
-    bool hasPublisher() const;
+    boost::optional< std::string > Version() const;
+    void setVersion(boost::optional< std::string > v);
     /// Information of the organization that acts as the library publisher.
     ::Ifc2x3::IfcOrganization* Publisher() const;
     void setPublisher(::Ifc2x3::IfcOrganization* v);
-    /// Whether the optional attribute VersionDate is defined for this IfcLibraryInformation
-    bool hasVersionDate() const;
     /// Date of the referenced version of the library.
     /// 
     /// IFC2x4 CHANGE  The data type has been changed to IfcDate, the date string according to ISO8601.
     ::Ifc2x3::IfcCalendarDate* VersionDate() const;
     void setVersionDate(::Ifc2x3::IfcCalendarDate* v);
-    /// Whether the optional attribute LibraryReference is defined for this IfcLibraryInformation
-    bool hasLibraryReference() const;
-    IfcTemplatedEntityList< ::Ifc2x3::IfcLibraryReference >::ptr LibraryReference() const;
-    void setLibraryReference(IfcTemplatedEntityList< ::Ifc2x3::IfcLibraryReference >::ptr v);
+    boost::optional< aggregate_of< ::Ifc2x3::IfcLibraryReference >::ptr > LibraryReference() const;
+    void setLibraryReference(boost::optional< aggregate_of< ::Ifc2x3::IfcLibraryReference >::ptr > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcLibraryInformation (IfcEntityInstanceData* e);
-    IfcLibraryInformation (std::string v1_Name, boost::optional< std::string > v2_Version, ::Ifc2x3::IfcOrganization* v3_Publisher, ::Ifc2x3::IfcCalendarDate* v4_VersionDate, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcLibraryReference >::ptr > v5_LibraryReference);
-    typedef IfcTemplatedEntityList< IfcLibraryInformation > list;
+    IfcLibraryInformation (std::string v1_Name, boost::optional< std::string > v2_Version, ::Ifc2x3::IfcOrganization* v3_Publisher, ::Ifc2x3::IfcCalendarDate* v4_VersionDate, boost::optional< aggregate_of< ::Ifc2x3::IfcLibraryReference >::ptr > v5_LibraryReference);
+    typedef aggregate_of< IfcLibraryInformation > list;
 };
 /// An IfcLibraryReference is a reference into a library of information by Location (provided as a URI). It also provides an optional inherited Identification key to allow more specific references to library sections or tables. The inherited Name attribute allows for a human interpretable identification of the library item. Also, general information on the library from which the reference is taken, is given by the ReferencedLibrary relation which identifies the relevant occurrence of IfcLibraryInformation.
 /// 
@@ -9072,12 +8900,12 @@ public:
 /// IFC2x4 CHANGE  Description and Language attribute added; ReferencedLibrary attribute added (reversing previous ReferenceIntoLibrary inverse relationship).
 class IFC_PARSE_API IfcLibraryReference : public IfcExternalReference {
 public:
-        IfcTemplatedEntityList< IfcLibraryInformation >::ptr ReferenceIntoLibrary() const; // INVERSE IfcLibraryInformation::LibraryReference
+        aggregate_of< IfcLibraryInformation >::ptr ReferenceIntoLibrary() const; // INVERSE IfcLibraryInformation::LibraryReference
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcLibraryReference (IfcEntityInstanceData* e);
     IfcLibraryReference (boost::optional< std::string > v1_Location, boost::optional< std::string > v2_ItemReference, boost::optional< std::string > v3_Name);
-    typedef IfcTemplatedEntityList< IfcLibraryReference > list;
+    typedef aggregate_of< IfcLibraryReference > list;
 };
 /// IfcLightDistributionData defines the luminous intensity of a light source given at a particular main plane angle. It is based on some standardized light distribution curves; the MainPlaneAngle is either the 
 /// 
@@ -9111,7 +8939,7 @@ public:
     static const IfcParse::entity& Class();
     IfcLightDistributionData (IfcEntityInstanceData* e);
     IfcLightDistributionData (double v1_MainPlaneAngle, std::vector< double > /*[1:?]*/ v2_SecondaryPlaneAngle, std::vector< double > /*[1:?]*/ v3_LuminousIntensity);
-    typedef IfcTemplatedEntityList< IfcLightDistributionData > list;
+    typedef aggregate_of< IfcLightDistributionData > list;
 };
 /// IfcLightIntensityDistribution defines the the luminous intensity of a light source that changes according to the direction of the ray. It is based on some standardized light distribution curves, which are defined by the LightDistributionCurve attribute. 
 /// 
@@ -9122,40 +8950,32 @@ public:
     ::Ifc2x3::IfcLightDistributionCurveEnum::Value LightDistributionCurve() const;
     void setLightDistributionCurve(::Ifc2x3::IfcLightDistributionCurveEnum::Value v);
     /// Light distribution data applied to the light source. It is defined by a list of main plane angles (B or C according to the light distribution curve chosen) that includes (for each B or C angle) a second list of secondary plane angles (the &#946; or &#947; angles) and the according luminous intensity distribution measures.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcLightDistributionData >::ptr DistributionData() const;
-    void setDistributionData(IfcTemplatedEntityList< ::Ifc2x3::IfcLightDistributionData >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcLightDistributionData >::ptr DistributionData() const;
+    void setDistributionData(aggregate_of< ::Ifc2x3::IfcLightDistributionData >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcLightIntensityDistribution (IfcEntityInstanceData* e);
-    IfcLightIntensityDistribution (::Ifc2x3::IfcLightDistributionCurveEnum::Value v1_LightDistributionCurve, IfcTemplatedEntityList< ::Ifc2x3::IfcLightDistributionData >::ptr v2_DistributionData);
-    typedef IfcTemplatedEntityList< IfcLightIntensityDistribution > list;
+    IfcLightIntensityDistribution (::Ifc2x3::IfcLightDistributionCurveEnum::Value v1_LightDistributionCurve, aggregate_of< ::Ifc2x3::IfcLightDistributionData >::ptr v2_DistributionData);
+    typedef aggregate_of< IfcLightIntensityDistribution > list;
 };
 
 class IFC_PARSE_API IfcLocalTime : public IfcUtil::IfcBaseEntity {
 public:
     int HourComponent() const;
     void setHourComponent(int v);
-    /// Whether the optional attribute MinuteComponent is defined for this IfcLocalTime
-    bool hasMinuteComponent() const;
-    int MinuteComponent() const;
-    void setMinuteComponent(int v);
-    /// Whether the optional attribute SecondComponent is defined for this IfcLocalTime
-    bool hasSecondComponent() const;
-    double SecondComponent() const;
-    void setSecondComponent(double v);
-    /// Whether the optional attribute Zone is defined for this IfcLocalTime
-    bool hasZone() const;
+    boost::optional< int > MinuteComponent() const;
+    void setMinuteComponent(boost::optional< int > v);
+    boost::optional< double > SecondComponent() const;
+    void setSecondComponent(boost::optional< double > v);
     ::Ifc2x3::IfcCoordinatedUniversalTimeOffset* Zone() const;
     void setZone(::Ifc2x3::IfcCoordinatedUniversalTimeOffset* v);
-    /// Whether the optional attribute DaylightSavingOffset is defined for this IfcLocalTime
-    bool hasDaylightSavingOffset() const;
-    int DaylightSavingOffset() const;
-    void setDaylightSavingOffset(int v);
+    boost::optional< int > DaylightSavingOffset() const;
+    void setDaylightSavingOffset(boost::optional< int > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcLocalTime (IfcEntityInstanceData* e);
     IfcLocalTime (int v1_HourComponent, boost::optional< int > v2_MinuteComponent, boost::optional< double > v3_SecondComponent, ::Ifc2x3::IfcCoordinatedUniversalTimeOffset* v4_Zone, boost::optional< int > v5_DaylightSavingOffset);
-    typedef IfcTemplatedEntityList< IfcLocalTime > list;
+    typedef aggregate_of< IfcLocalTime > list;
 };
 /// IfcMaterial is a homogeneous or inhomogeneous
 /// substance that can be used to form elements (physical products or
@@ -9193,13 +9013,13 @@ public:
     /// NOTE Material grade may have diffenrent meaning in different view definitions, e.g. strength grade for structural design and analysis, or visible appearance grade in architectural application. Also, more elaborate material grade definition may be associated as classification via inverse attribute HasExternalReferences.
     std::string Name() const;
     void setName(std::string v);
-        IfcTemplatedEntityList< IfcMaterialDefinitionRepresentation >::ptr HasRepresentation() const; // INVERSE IfcMaterialDefinitionRepresentation::RepresentedMaterial
-    IfcTemplatedEntityList< IfcMaterialClassificationRelationship >::ptr ClassifiedAs() const; // INVERSE IfcMaterialClassificationRelationship::ClassifiedMaterial
+        aggregate_of< IfcMaterialDefinitionRepresentation >::ptr HasRepresentation() const; // INVERSE IfcMaterialDefinitionRepresentation::RepresentedMaterial
+    aggregate_of< IfcMaterialClassificationRelationship >::ptr ClassifiedAs() const; // INVERSE IfcMaterialClassificationRelationship::ClassifiedMaterial
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcMaterial (IfcEntityInstanceData* e);
     IfcMaterial (std::string v1_Name);
-    typedef IfcTemplatedEntityList< IfcMaterial > list;
+    typedef aggregate_of< IfcMaterial > list;
 };
 /// IfcMaterialClassificationRelationship is a relationship assigning classifications to materials.
 /// 
@@ -9209,16 +9029,16 @@ public:
 class IFC_PARSE_API IfcMaterialClassificationRelationship : public IfcUtil::IfcBaseEntity {
 public:
     /// The material classifications identifying the type of material.
-    IfcEntityList::ptr MaterialClassifications() const;
-    void setMaterialClassifications(IfcEntityList::ptr v);
+    aggregate_of_instance::ptr MaterialClassifications() const;
+    void setMaterialClassifications(aggregate_of_instance::ptr v);
     /// Material being classified.
     ::Ifc2x3::IfcMaterial* ClassifiedMaterial() const;
     void setClassifiedMaterial(::Ifc2x3::IfcMaterial* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcMaterialClassificationRelationship (IfcEntityInstanceData* e);
-    IfcMaterialClassificationRelationship (IfcEntityList::ptr v1_MaterialClassifications, ::Ifc2x3::IfcMaterial* v2_ClassifiedMaterial);
-    typedef IfcTemplatedEntityList< IfcMaterialClassificationRelationship > list;
+    IfcMaterialClassificationRelationship (aggregate_of_instance::ptr v1_MaterialClassifications, ::Ifc2x3::IfcMaterial* v2_ClassifiedMaterial);
+    typedef aggregate_of< IfcMaterialClassificationRelationship > list;
 };
 /// IfcMaterialLayer is a single and identifiable part of an element which is constructed of a number of layers (one or more). Each IfcMaterialLayer has a constant thickness and is located relative to the referencing IfcMaterialLayerSet along the MlsBase.
 /// 
@@ -9245,8 +9065,6 @@ public:
 /// IFC2x4 CHANGE  The attributes Name, Description, Category, Priority have been added at the end of attribute list. Data type of LayerThickness relaxed to IfcNonNegativeLengthMeasure.
 class IFC_PARSE_API IfcMaterialLayer : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute Material is defined for this IfcMaterialLayer
-    bool hasMaterial() const;
     /// Optional reference to the material from which the layer is constructed. Note that if this value is not given, it does not denote a layer with no material (an air gap), it only means that the material is not specified at that point.
     ::Ifc2x3::IfcMaterial* Material() const;
     void setMaterial(::Ifc2x3::IfcMaterial* v);
@@ -9257,21 +9075,19 @@ public:
     /// IFC2x4 CHANGE  The attribute datatype has been changed to IfcNonNegativeLengthMeasure allowing for 0. as thickness.
     double LayerThickness() const;
     void setLayerThickness(double v);
-    /// Whether the optional attribute IsVentilated is defined for this IfcMaterialLayer
-    bool hasIsVentilated() const;
     /// Indication of whether the material layer represents an air layer (or cavity). 
     /// 
     /// set to TRUE if the material layer is an air gap and provides air exchange from the layer to the outside air.
     ///   set to UNKNOWN if the material layer is an air gap and does not provide air exchange (or when this information about air exchange of the air gap is not available).
     ///   set to FALSE if the material layer is a solid material layer (the default).
-    bool IsVentilated() const;
-    void setIsVentilated(bool v);
-        IfcTemplatedEntityList< IfcMaterialLayerSet >::ptr ToMaterialLayerSet() const; // INVERSE IfcMaterialLayerSet::MaterialLayers
+    boost::optional< boost::logic::tribool > IsVentilated() const;
+    void setIsVentilated(boost::optional< boost::logic::tribool > v);
+        aggregate_of< IfcMaterialLayerSet >::ptr ToMaterialLayerSet() const; // INVERSE IfcMaterialLayerSet::MaterialLayers
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcMaterialLayer (IfcEntityInstanceData* e);
-    IfcMaterialLayer (::Ifc2x3::IfcMaterial* v1_Material, double v2_LayerThickness, boost::optional< bool > v3_IsVentilated);
-    typedef IfcTemplatedEntityList< IfcMaterialLayer > list;
+    IfcMaterialLayer (::Ifc2x3::IfcMaterial* v1_Material, double v2_LayerThickness, boost::optional< boost::logic::tribool > v3_IsVentilated);
+    typedef aggregate_of< IfcMaterialLayer > list;
 };
 /// IfcMaterialLayerSet is a designation by which materials of an element constructed of a number of material layers is known and through which the relative positioning of individual layers can be expressed.
 /// 
@@ -9309,18 +9125,16 @@ public:
 class IFC_PARSE_API IfcMaterialLayerSet : public IfcUtil::IfcBaseEntity {
 public:
     /// Identification of the layers from which the material layer set is composed.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcMaterialLayer >::ptr MaterialLayers() const;
-    void setMaterialLayers(IfcTemplatedEntityList< ::Ifc2x3::IfcMaterialLayer >::ptr v);
-    /// Whether the optional attribute LayerSetName is defined for this IfcMaterialLayerSet
-    bool hasLayerSetName() const;
+    aggregate_of< ::Ifc2x3::IfcMaterialLayer >::ptr MaterialLayers() const;
+    void setMaterialLayers(aggregate_of< ::Ifc2x3::IfcMaterialLayer >::ptr v);
     /// The name by which the material layer set is known.
-    std::string LayerSetName() const;
-    void setLayerSetName(std::string v);
+    boost::optional< std::string > LayerSetName() const;
+    void setLayerSetName(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcMaterialLayerSet (IfcEntityInstanceData* e);
-    IfcMaterialLayerSet (IfcTemplatedEntityList< ::Ifc2x3::IfcMaterialLayer >::ptr v1_MaterialLayers, boost::optional< std::string > v2_LayerSetName);
-    typedef IfcTemplatedEntityList< IfcMaterialLayerSet > list;
+    IfcMaterialLayerSet (aggregate_of< ::Ifc2x3::IfcMaterialLayer >::ptr v1_MaterialLayers, boost::optional< std::string > v2_LayerSetName);
+    typedef aggregate_of< IfcMaterialLayerSet > list;
 };
 /// IfcMaterialLayerSetUsage determines the usage of
 /// IfcMaterialLayerSet in terms of its location and
@@ -9445,7 +9259,7 @@ public:
     static const IfcParse::entity& Class();
     IfcMaterialLayerSetUsage (IfcEntityInstanceData* e);
     IfcMaterialLayerSetUsage (::Ifc2x3::IfcMaterialLayerSet* v1_ForLayerSet, ::Ifc2x3::IfcLayerSetDirectionEnum::Value v2_LayerSetDirection, ::Ifc2x3::IfcDirectionSenseEnum::Value v3_DirectionSense, double v4_OffsetFromReferenceLine);
-    typedef IfcTemplatedEntityList< IfcMaterialLayerSetUsage > list;
+    typedef aggregate_of< IfcMaterialLayerSetUsage > list;
 };
 /// IfcMaterialList is a list of the different materials
 /// that are used in an element.
@@ -9467,13 +9281,13 @@ public:
 class IFC_PARSE_API IfcMaterialList : public IfcUtil::IfcBaseEntity {
 public:
     /// Materials used in a composition of substances.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcMaterial >::ptr Materials() const;
-    void setMaterials(IfcTemplatedEntityList< ::Ifc2x3::IfcMaterial >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcMaterial >::ptr Materials() const;
+    void setMaterials(aggregate_of< ::Ifc2x3::IfcMaterial >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcMaterialList (IfcEntityInstanceData* e);
-    IfcMaterialList (IfcTemplatedEntityList< ::Ifc2x3::IfcMaterial >::ptr v1_Materials);
-    typedef IfcTemplatedEntityList< IfcMaterialList > list;
+    IfcMaterialList (aggregate_of< ::Ifc2x3::IfcMaterial >::ptr v1_Materials);
+    typedef aggregate_of< IfcMaterialList > list;
 };
 /// IfcMaterialProperties is defined as an abstract
 /// supertype for entities that apply material properties to material
@@ -9508,7 +9322,7 @@ public:
     static const IfcParse::entity& Class();
     IfcMaterialProperties (IfcEntityInstanceData* e);
     IfcMaterialProperties (::Ifc2x3::IfcMaterial* v1_Material);
-    typedef IfcTemplatedEntityList< IfcMaterialProperties > list;
+    typedef aggregate_of< IfcMaterialProperties > list;
 };
 /// Definition from ISO/CD 10303-41:1992: A measure with unit is the specification of a physical quantity  as defined in ISO 31 (clause 2).
 /// 
@@ -9532,73 +9346,49 @@ public:
     static const IfcParse::entity& Class();
     IfcMeasureWithUnit (IfcEntityInstanceData* e);
     IfcMeasureWithUnit (::Ifc2x3::IfcValue* v1_ValueComponent, ::Ifc2x3::IfcUnit* v2_UnitComponent);
-    typedef IfcTemplatedEntityList< IfcMeasureWithUnit > list;
+    typedef aggregate_of< IfcMeasureWithUnit > list;
 };
 
 class IFC_PARSE_API IfcMechanicalMaterialProperties : public IfcMaterialProperties {
 public:
-    /// Whether the optional attribute DynamicViscosity is defined for this IfcMechanicalMaterialProperties
-    bool hasDynamicViscosity() const;
-    double DynamicViscosity() const;
-    void setDynamicViscosity(double v);
-    /// Whether the optional attribute YoungModulus is defined for this IfcMechanicalMaterialProperties
-    bool hasYoungModulus() const;
-    double YoungModulus() const;
-    void setYoungModulus(double v);
-    /// Whether the optional attribute ShearModulus is defined for this IfcMechanicalMaterialProperties
-    bool hasShearModulus() const;
-    double ShearModulus() const;
-    void setShearModulus(double v);
-    /// Whether the optional attribute PoissonRatio is defined for this IfcMechanicalMaterialProperties
-    bool hasPoissonRatio() const;
-    double PoissonRatio() const;
-    void setPoissonRatio(double v);
-    /// Whether the optional attribute ThermalExpansionCoefficient is defined for this IfcMechanicalMaterialProperties
-    bool hasThermalExpansionCoefficient() const;
-    double ThermalExpansionCoefficient() const;
-    void setThermalExpansionCoefficient(double v);
+    boost::optional< double > DynamicViscosity() const;
+    void setDynamicViscosity(boost::optional< double > v);
+    boost::optional< double > YoungModulus() const;
+    void setYoungModulus(boost::optional< double > v);
+    boost::optional< double > ShearModulus() const;
+    void setShearModulus(boost::optional< double > v);
+    boost::optional< double > PoissonRatio() const;
+    void setPoissonRatio(boost::optional< double > v);
+    boost::optional< double > ThermalExpansionCoefficient() const;
+    void setThermalExpansionCoefficient(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcMechanicalMaterialProperties (IfcEntityInstanceData* e);
     IfcMechanicalMaterialProperties (::Ifc2x3::IfcMaterial* v1_Material, boost::optional< double > v2_DynamicViscosity, boost::optional< double > v3_YoungModulus, boost::optional< double > v4_ShearModulus, boost::optional< double > v5_PoissonRatio, boost::optional< double > v6_ThermalExpansionCoefficient);
-    typedef IfcTemplatedEntityList< IfcMechanicalMaterialProperties > list;
+    typedef aggregate_of< IfcMechanicalMaterialProperties > list;
 };
 
 class IFC_PARSE_API IfcMechanicalSteelMaterialProperties : public IfcMechanicalMaterialProperties {
 public:
-    /// Whether the optional attribute YieldStress is defined for this IfcMechanicalSteelMaterialProperties
-    bool hasYieldStress() const;
-    double YieldStress() const;
-    void setYieldStress(double v);
-    /// Whether the optional attribute UltimateStress is defined for this IfcMechanicalSteelMaterialProperties
-    bool hasUltimateStress() const;
-    double UltimateStress() const;
-    void setUltimateStress(double v);
-    /// Whether the optional attribute UltimateStrain is defined for this IfcMechanicalSteelMaterialProperties
-    bool hasUltimateStrain() const;
-    double UltimateStrain() const;
-    void setUltimateStrain(double v);
-    /// Whether the optional attribute HardeningModule is defined for this IfcMechanicalSteelMaterialProperties
-    bool hasHardeningModule() const;
-    double HardeningModule() const;
-    void setHardeningModule(double v);
-    /// Whether the optional attribute ProportionalStress is defined for this IfcMechanicalSteelMaterialProperties
-    bool hasProportionalStress() const;
-    double ProportionalStress() const;
-    void setProportionalStress(double v);
-    /// Whether the optional attribute PlasticStrain is defined for this IfcMechanicalSteelMaterialProperties
-    bool hasPlasticStrain() const;
-    double PlasticStrain() const;
-    void setPlasticStrain(double v);
-    /// Whether the optional attribute Relaxations is defined for this IfcMechanicalSteelMaterialProperties
-    bool hasRelaxations() const;
-    IfcTemplatedEntityList< ::Ifc2x3::IfcRelaxation >::ptr Relaxations() const;
-    void setRelaxations(IfcTemplatedEntityList< ::Ifc2x3::IfcRelaxation >::ptr v);
+    boost::optional< double > YieldStress() const;
+    void setYieldStress(boost::optional< double > v);
+    boost::optional< double > UltimateStress() const;
+    void setUltimateStress(boost::optional< double > v);
+    boost::optional< double > UltimateStrain() const;
+    void setUltimateStrain(boost::optional< double > v);
+    boost::optional< double > HardeningModule() const;
+    void setHardeningModule(boost::optional< double > v);
+    boost::optional< double > ProportionalStress() const;
+    void setProportionalStress(boost::optional< double > v);
+    boost::optional< double > PlasticStrain() const;
+    void setPlasticStrain(boost::optional< double > v);
+    boost::optional< aggregate_of< ::Ifc2x3::IfcRelaxation >::ptr > Relaxations() const;
+    void setRelaxations(boost::optional< aggregate_of< ::Ifc2x3::IfcRelaxation >::ptr > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcMechanicalSteelMaterialProperties (IfcEntityInstanceData* e);
-    IfcMechanicalSteelMaterialProperties (::Ifc2x3::IfcMaterial* v1_Material, boost::optional< double > v2_DynamicViscosity, boost::optional< double > v3_YoungModulus, boost::optional< double > v4_ShearModulus, boost::optional< double > v5_PoissonRatio, boost::optional< double > v6_ThermalExpansionCoefficient, boost::optional< double > v7_YieldStress, boost::optional< double > v8_UltimateStress, boost::optional< double > v9_UltimateStrain, boost::optional< double > v10_HardeningModule, boost::optional< double > v11_ProportionalStress, boost::optional< double > v12_PlasticStrain, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRelaxation >::ptr > v13_Relaxations);
-    typedef IfcTemplatedEntityList< IfcMechanicalSteelMaterialProperties > list;
+    IfcMechanicalSteelMaterialProperties (::Ifc2x3::IfcMaterial* v1_Material, boost::optional< double > v2_DynamicViscosity, boost::optional< double > v3_YoungModulus, boost::optional< double > v4_ShearModulus, boost::optional< double > v5_PoissonRatio, boost::optional< double > v6_ThermalExpansionCoefficient, boost::optional< double > v7_YieldStress, boost::optional< double > v8_UltimateStress, boost::optional< double > v9_UltimateStrain, boost::optional< double > v10_HardeningModule, boost::optional< double > v11_ProportionalStress, boost::optional< double > v12_PlasticStrain, boost::optional< aggregate_of< ::Ifc2x3::IfcRelaxation >::ptr > v13_Relaxations);
+    typedef aggregate_of< IfcMechanicalSteelMaterialProperties > list;
 };
 /// An IfcMetric is used to capture quantitative resultant metrics that can be applied to objectives. 
 /// 
@@ -9657,11 +9447,9 @@ public:
     /// Enumeration that identifies the type of benchmark data.
     ::Ifc2x3::IfcBenchmarkEnum::Value Benchmark() const;
     void setBenchmark(::Ifc2x3::IfcBenchmarkEnum::Value v);
-    /// Whether the optional attribute ValueSource is defined for this IfcMetric
-    bool hasValueSource() const;
     /// Reference source for data values.
-    std::string ValueSource() const;
-    void setValueSource(std::string v);
+    boost::optional< std::string > ValueSource() const;
+    void setValueSource(boost::optional< std::string > v);
     /// The value with data type defined by the underlying type accesses via IfcMetricValueSelect.
     ::Ifc2x3::IfcMetricValueSelect* DataValue() const;
     void setDataValue(::Ifc2x3::IfcMetricValueSelect* v);
@@ -9669,7 +9457,7 @@ public:
     static const IfcParse::entity& Class();
     IfcMetric (IfcEntityInstanceData* e);
     IfcMetric (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcConstraintEnum::Value v3_ConstraintGrade, boost::optional< std::string > v4_ConstraintSource, ::Ifc2x3::IfcActorSelect* v5_CreatingActor, ::Ifc2x3::IfcDateTimeSelect* v6_CreationTime, boost::optional< std::string > v7_UserDefinedGrade, ::Ifc2x3::IfcBenchmarkEnum::Value v8_Benchmark, boost::optional< std::string > v9_ValueSource, ::Ifc2x3::IfcMetricValueSelect* v10_DataValue);
-    typedef IfcTemplatedEntityList< IfcMetric > list;
+    typedef aggregate_of< IfcMetric > list;
 };
 /// IfcMonetaryUnit is a unit to define currency for money.
 /// 
@@ -9685,7 +9473,7 @@ public:
     static const IfcParse::entity& Class();
     IfcMonetaryUnit (IfcEntityInstanceData* e);
     IfcMonetaryUnit (::Ifc2x3::IfcCurrencyEnum::Value v1_Currency);
-    typedef IfcTemplatedEntityList< IfcMonetaryUnit > list;
+    typedef aggregate_of< IfcMonetaryUnit > list;
 };
 /// Definition from ISO/CD 10303-41:1992: A named unit is a unit quantity associated with the word, or group of words, by which the unit is identified.
 /// 
@@ -9704,7 +9492,7 @@ public:
     static const IfcParse::entity& Class();
     IfcNamedUnit (IfcEntityInstanceData* e);
     IfcNamedUnit (::Ifc2x3::IfcDimensionalExponents* v1_Dimensions, ::Ifc2x3::IfcUnitEnum::Value v2_UnitType);
-    typedef IfcTemplatedEntityList< IfcNamedUnit > list;
+    typedef aggregate_of< IfcNamedUnit > list;
 };
 /// IfcObjectPlacement is an abstract supertype for the special types defining the object coordinate system. The
 /// IfcObjectPlacement has to be provided for each product that has a shape representation.
@@ -9719,13 +9507,13 @@ public:
 /// HISTORY New entity in IFC Release 2x.
 class IFC_PARSE_API IfcObjectPlacement : public IfcUtil::IfcBaseEntity {
 public:
-        IfcTemplatedEntityList< IfcProduct >::ptr PlacesObject() const; // INVERSE IfcProduct::ObjectPlacement
-    IfcTemplatedEntityList< IfcLocalPlacement >::ptr ReferencedByPlacements() const; // INVERSE IfcLocalPlacement::PlacementRelTo
+        aggregate_of< IfcProduct >::ptr PlacesObject() const; // INVERSE IfcProduct::ObjectPlacement
+    aggregate_of< IfcLocalPlacement >::ptr ReferencedByPlacements() const; // INVERSE IfcLocalPlacement::PlacementRelTo
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcObjectPlacement (IfcEntityInstanceData* e);
     IfcObjectPlacement ();
-    typedef IfcTemplatedEntityList< IfcObjectPlacement > list;
+    typedef aggregate_of< IfcObjectPlacement > list;
 };
 /// An IfcObjective captures qualitative information for an objective-based constraint. 
 /// 
@@ -9738,74 +9526,50 @@ public:
 /// The aim of IfcObjective is to specify the purpose for which the constraint is applied and to capture the values of the constraint. These may be both the benchmark values that are intended to indicate the constraint extent and the resulting values in use that enable performance comparisons to be applied.
 class IFC_PARSE_API IfcObjective : public IfcConstraint {
 public:
-    /// Whether the optional attribute BenchmarkValues is defined for this IfcObjective
-    bool hasBenchmarkValues() const;
     /// A list of any benchmark values used for comparison purposes.
     ::Ifc2x3::IfcMetric* BenchmarkValues() const;
     void setBenchmarkValues(::Ifc2x3::IfcMetric* v);
-    /// Whether the optional attribute ResultValues is defined for this IfcObjective
-    bool hasResultValues() const;
     /// A list of any resultant values used for comparison purposes.
     ::Ifc2x3::IfcMetric* ResultValues() const;
     void setResultValues(::Ifc2x3::IfcMetric* v);
     /// Enumeration that qualifies the type of objective constraint.
     ::Ifc2x3::IfcObjectiveEnum::Value ObjectiveQualifier() const;
     void setObjectiveQualifier(::Ifc2x3::IfcObjectiveEnum::Value v);
-    /// Whether the optional attribute UserDefinedQualifier is defined for this IfcObjective
-    bool hasUserDefinedQualifier() const;
     /// A user defined value that qualifies the type of objective constraint when ObjectiveQualifier attribute of type IfcObjectiveEnum has value USERDEFINED.
-    std::string UserDefinedQualifier() const;
-    void setUserDefinedQualifier(std::string v);
+    boost::optional< std::string > UserDefinedQualifier() const;
+    void setUserDefinedQualifier(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcObjective (IfcEntityInstanceData* e);
     IfcObjective (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcConstraintEnum::Value v3_ConstraintGrade, boost::optional< std::string > v4_ConstraintSource, ::Ifc2x3::IfcActorSelect* v5_CreatingActor, ::Ifc2x3::IfcDateTimeSelect* v6_CreationTime, boost::optional< std::string > v7_UserDefinedGrade, ::Ifc2x3::IfcMetric* v8_BenchmarkValues, ::Ifc2x3::IfcMetric* v9_ResultValues, ::Ifc2x3::IfcObjectiveEnum::Value v10_ObjectiveQualifier, boost::optional< std::string > v11_UserDefinedQualifier);
-    typedef IfcTemplatedEntityList< IfcObjective > list;
+    typedef aggregate_of< IfcObjective > list;
 };
 
 class IFC_PARSE_API IfcOpticalMaterialProperties : public IfcMaterialProperties {
 public:
-    /// Whether the optional attribute VisibleTransmittance is defined for this IfcOpticalMaterialProperties
-    bool hasVisibleTransmittance() const;
-    double VisibleTransmittance() const;
-    void setVisibleTransmittance(double v);
-    /// Whether the optional attribute SolarTransmittance is defined for this IfcOpticalMaterialProperties
-    bool hasSolarTransmittance() const;
-    double SolarTransmittance() const;
-    void setSolarTransmittance(double v);
-    /// Whether the optional attribute ThermalIrTransmittance is defined for this IfcOpticalMaterialProperties
-    bool hasThermalIrTransmittance() const;
-    double ThermalIrTransmittance() const;
-    void setThermalIrTransmittance(double v);
-    /// Whether the optional attribute ThermalIrEmissivityBack is defined for this IfcOpticalMaterialProperties
-    bool hasThermalIrEmissivityBack() const;
-    double ThermalIrEmissivityBack() const;
-    void setThermalIrEmissivityBack(double v);
-    /// Whether the optional attribute ThermalIrEmissivityFront is defined for this IfcOpticalMaterialProperties
-    bool hasThermalIrEmissivityFront() const;
-    double ThermalIrEmissivityFront() const;
-    void setThermalIrEmissivityFront(double v);
-    /// Whether the optional attribute VisibleReflectanceBack is defined for this IfcOpticalMaterialProperties
-    bool hasVisibleReflectanceBack() const;
-    double VisibleReflectanceBack() const;
-    void setVisibleReflectanceBack(double v);
-    /// Whether the optional attribute VisibleReflectanceFront is defined for this IfcOpticalMaterialProperties
-    bool hasVisibleReflectanceFront() const;
-    double VisibleReflectanceFront() const;
-    void setVisibleReflectanceFront(double v);
-    /// Whether the optional attribute SolarReflectanceFront is defined for this IfcOpticalMaterialProperties
-    bool hasSolarReflectanceFront() const;
-    double SolarReflectanceFront() const;
-    void setSolarReflectanceFront(double v);
-    /// Whether the optional attribute SolarReflectanceBack is defined for this IfcOpticalMaterialProperties
-    bool hasSolarReflectanceBack() const;
-    double SolarReflectanceBack() const;
-    void setSolarReflectanceBack(double v);
+    boost::optional< double > VisibleTransmittance() const;
+    void setVisibleTransmittance(boost::optional< double > v);
+    boost::optional< double > SolarTransmittance() const;
+    void setSolarTransmittance(boost::optional< double > v);
+    boost::optional< double > ThermalIrTransmittance() const;
+    void setThermalIrTransmittance(boost::optional< double > v);
+    boost::optional< double > ThermalIrEmissivityBack() const;
+    void setThermalIrEmissivityBack(boost::optional< double > v);
+    boost::optional< double > ThermalIrEmissivityFront() const;
+    void setThermalIrEmissivityFront(boost::optional< double > v);
+    boost::optional< double > VisibleReflectanceBack() const;
+    void setVisibleReflectanceBack(boost::optional< double > v);
+    boost::optional< double > VisibleReflectanceFront() const;
+    void setVisibleReflectanceFront(boost::optional< double > v);
+    boost::optional< double > SolarReflectanceFront() const;
+    void setSolarReflectanceFront(boost::optional< double > v);
+    boost::optional< double > SolarReflectanceBack() const;
+    void setSolarReflectanceBack(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcOpticalMaterialProperties (IfcEntityInstanceData* e);
     IfcOpticalMaterialProperties (::Ifc2x3::IfcMaterial* v1_Material, boost::optional< double > v2_VisibleTransmittance, boost::optional< double > v3_SolarTransmittance, boost::optional< double > v4_ThermalIrTransmittance, boost::optional< double > v5_ThermalIrEmissivityBack, boost::optional< double > v6_ThermalIrEmissivityFront, boost::optional< double > v7_VisibleReflectanceBack, boost::optional< double > v8_VisibleReflectanceFront, boost::optional< double > v9_SolarReflectanceFront, boost::optional< double > v10_SolarReflectanceBack);
-    typedef IfcTemplatedEntityList< IfcOpticalMaterialProperties > list;
+    typedef aggregate_of< IfcOpticalMaterialProperties > list;
 };
 /// A named and structured grouping with a corporate identity.
 /// 
@@ -9817,37 +9581,29 @@ public:
 /// IFC 2x4 change: attribute Id renamed to Identification.
 class IFC_PARSE_API IfcOrganization : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute Id is defined for this IfcOrganization
-    bool hasId() const;
-    std::string Id() const;
-    void setId(std::string v);
+    boost::optional< std::string > Id() const;
+    void setId(boost::optional< std::string > v);
     /// The word, or group of words, by which the organization is referred to.
     std::string Name() const;
     void setName(std::string v);
-    /// Whether the optional attribute Description is defined for this IfcOrganization
-    bool hasDescription() const;
     /// Text that relates the nature of the organization.
-    std::string Description() const;
-    void setDescription(std::string v);
-    /// Whether the optional attribute Roles is defined for this IfcOrganization
-    bool hasRoles() const;
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
     /// Roles played by the organization.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcActorRole >::ptr Roles() const;
-    void setRoles(IfcTemplatedEntityList< ::Ifc2x3::IfcActorRole >::ptr v);
-    /// Whether the optional attribute Addresses is defined for this IfcOrganization
-    bool hasAddresses() const;
+    boost::optional< aggregate_of< ::Ifc2x3::IfcActorRole >::ptr > Roles() const;
+    void setRoles(boost::optional< aggregate_of< ::Ifc2x3::IfcActorRole >::ptr > v);
     /// Postal and telecom addresses of an organization.
     /// NOTE: There may be several addresses related to an organization.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcAddress >::ptr Addresses() const;
-    void setAddresses(IfcTemplatedEntityList< ::Ifc2x3::IfcAddress >::ptr v);
-        IfcTemplatedEntityList< IfcOrganizationRelationship >::ptr IsRelatedBy() const; // INVERSE IfcOrganizationRelationship::RelatedOrganizations
-    IfcTemplatedEntityList< IfcOrganizationRelationship >::ptr Relates() const; // INVERSE IfcOrganizationRelationship::RelatingOrganization
-    IfcTemplatedEntityList< IfcPersonAndOrganization >::ptr Engages() const; // INVERSE IfcPersonAndOrganization::TheOrganization
+    boost::optional< aggregate_of< ::Ifc2x3::IfcAddress >::ptr > Addresses() const;
+    void setAddresses(boost::optional< aggregate_of< ::Ifc2x3::IfcAddress >::ptr > v);
+        aggregate_of< IfcOrganizationRelationship >::ptr IsRelatedBy() const; // INVERSE IfcOrganizationRelationship::RelatedOrganizations
+    aggregate_of< IfcOrganizationRelationship >::ptr Relates() const; // INVERSE IfcOrganizationRelationship::RelatingOrganization
+    aggregate_of< IfcPersonAndOrganization >::ptr Engages() const; // INVERSE IfcPersonAndOrganization::TheOrganization
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcOrganization (IfcEntityInstanceData* e);
-    IfcOrganization (boost::optional< std::string > v1_Id, std::string v2_Name, boost::optional< std::string > v3_Description, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcActorRole >::ptr > v4_Roles, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcAddress >::ptr > v5_Addresses);
-    typedef IfcTemplatedEntityList< IfcOrganization > list;
+    IfcOrganization (boost::optional< std::string > v1_Id, std::string v2_Name, boost::optional< std::string > v3_Description, boost::optional< aggregate_of< ::Ifc2x3::IfcActorRole >::ptr > v4_Roles, boost::optional< aggregate_of< ::Ifc2x3::IfcAddress >::ptr > v5_Addresses);
+    typedef aggregate_of< IfcOrganization > list;
 };
 /// Definition: establishes an association between one relating organization and one or more related organizations.
 /// 
@@ -9860,22 +9616,20 @@ public:
     /// The word or group of words by which the relationship is referred to.
     std::string Name() const;
     void setName(std::string v);
-    /// Whether the optional attribute Description is defined for this IfcOrganizationRelationship
-    bool hasDescription() const;
     /// Text that relates the nature of the relationship.
-    std::string Description() const;
-    void setDescription(std::string v);
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
     /// Organization which is the relating part of the relationship between organizations.
     ::Ifc2x3::IfcOrganization* RelatingOrganization() const;
     void setRelatingOrganization(::Ifc2x3::IfcOrganization* v);
     /// The other, possibly dependent, organizations which are the related parts of the relationship between organizations.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcOrganization >::ptr RelatedOrganizations() const;
-    void setRelatedOrganizations(IfcTemplatedEntityList< ::Ifc2x3::IfcOrganization >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcOrganization >::ptr RelatedOrganizations() const;
+    void setRelatedOrganizations(aggregate_of< ::Ifc2x3::IfcOrganization >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcOrganizationRelationship (IfcEntityInstanceData* e);
-    IfcOrganizationRelationship (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcOrganization* v3_RelatingOrganization, IfcTemplatedEntityList< ::Ifc2x3::IfcOrganization >::ptr v4_RelatedOrganizations);
-    typedef IfcTemplatedEntityList< IfcOrganizationRelationship > list;
+    IfcOrganizationRelationship (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcOrganization* v3_RelatingOrganization, aggregate_of< ::Ifc2x3::IfcOrganization >::ptr v4_RelatedOrganizations);
+    typedef aggregate_of< IfcOrganizationRelationship > list;
 };
 /// IfcOwnerHistory defines all history and identification related information. In order to provide fast access it is directly attached to all independent objects, relationships and properties.
 /// 
@@ -9895,26 +9649,18 @@ public:
     /// Direct reference to the application which currently "Owns" this object on behalf of the owning user, who uses this application. Note that IFC includes the concept of ownership transfer from one application to another and therefore distinguishes between the Owning Application and Creating Application.
     ::Ifc2x3::IfcApplication* OwningApplication() const;
     void setOwningApplication(::Ifc2x3::IfcApplication* v);
-    /// Whether the optional attribute State is defined for this IfcOwnerHistory
-    bool hasState() const;
     /// Enumeration that defines the current access state of the object.
-    ::Ifc2x3::IfcStateEnum::Value State() const;
-    void setState(::Ifc2x3::IfcStateEnum::Value v);
+    boost::optional< ::Ifc2x3::IfcStateEnum::Value > State() const;
+    void setState(boost::optional< ::Ifc2x3::IfcStateEnum::Value > v);
     /// Enumeration that defines the actions associated with changes made to the object.
     ::Ifc2x3::IfcChangeActionEnum::Value ChangeAction() const;
     void setChangeAction(::Ifc2x3::IfcChangeActionEnum::Value v);
-    /// Whether the optional attribute LastModifiedDate is defined for this IfcOwnerHistory
-    bool hasLastModifiedDate() const;
     /// Date and Time expressed in UTC (Universal Time Coordinated, formerly Greenwich Mean Time or GMT) at which the last modification was made by LastModifyingUser and LastModifyingApplication.
-    int LastModifiedDate() const;
-    void setLastModifiedDate(int v);
-    /// Whether the optional attribute LastModifyingUser is defined for this IfcOwnerHistory
-    bool hasLastModifyingUser() const;
+    boost::optional< int > LastModifiedDate() const;
+    void setLastModifiedDate(boost::optional< int > v);
     /// User who carried out the last modification using LastModifyingApplication.
     ::Ifc2x3::IfcPersonAndOrganization* LastModifyingUser() const;
     void setLastModifyingUser(::Ifc2x3::IfcPersonAndOrganization* v);
-    /// Whether the optional attribute LastModifyingApplication is defined for this IfcOwnerHistory
-    bool hasLastModifyingApplication() const;
     /// Application used to make the last modification.
     ::Ifc2x3::IfcApplication* LastModifyingApplication() const;
     void setLastModifyingApplication(::Ifc2x3::IfcApplication* v);
@@ -9925,7 +9671,7 @@ public:
     static const IfcParse::entity& Class();
     IfcOwnerHistory (IfcEntityInstanceData* e);
     IfcOwnerHistory (::Ifc2x3::IfcPersonAndOrganization* v1_OwningUser, ::Ifc2x3::IfcApplication* v2_OwningApplication, boost::optional< ::Ifc2x3::IfcStateEnum::Value > v3_State, ::Ifc2x3::IfcChangeActionEnum::Value v4_ChangeAction, boost::optional< int > v5_LastModifiedDate, ::Ifc2x3::IfcPersonAndOrganization* v6_LastModifyingUser, ::Ifc2x3::IfcApplication* v7_LastModifyingApplication, int v8_CreationDate);
-    typedef IfcTemplatedEntityList< IfcOwnerHistory > list;
+    typedef aggregate_of< IfcOwnerHistory > list;
 };
 /// Definition: an individual human being.
 /// 
@@ -9938,57 +9684,41 @@ public:
 /// IFC 2x4 change: attribute Id renamed to Identification.  WHERE rule relaxed to allow omission of names if Identification is provided.
 class IFC_PARSE_API IfcPerson : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute Id is defined for this IfcPerson
-    bool hasId() const;
-    std::string Id() const;
-    void setId(std::string v);
-    /// Whether the optional attribute FamilyName is defined for this IfcPerson
-    bool hasFamilyName() const;
+    boost::optional< std::string > Id() const;
+    void setId(boost::optional< std::string > v);
     /// The name by which the family identity of the person may be recognized.
     /// NOTE: Depending on geographical location and culture, family name may appear either as the first or last component of a name.
-    std::string FamilyName() const;
-    void setFamilyName(std::string v);
-    /// Whether the optional attribute GivenName is defined for this IfcPerson
-    bool hasGivenName() const;
+    boost::optional< std::string > FamilyName() const;
+    void setFamilyName(boost::optional< std::string > v);
     /// The name by which a person is known within a family and by which he or she may be familiarly recognized.
     /// NOTE: Depending on geographical location and culture, given name may appear either as the first or last component of a name.
-    std::string GivenName() const;
-    void setGivenName(std::string v);
-    /// Whether the optional attribute MiddleNames is defined for this IfcPerson
-    bool hasMiddleNames() const;
+    boost::optional< std::string > GivenName() const;
+    void setGivenName(boost::optional< std::string > v);
     /// Additional names given to a person that enable their identification apart from others who may have the same or similar family and given names.
     /// NOTE: Middle names are not normally used in familiar communication but may be asserted to provide additional 
     /// identification of a particular person if necessary. They may be particularly useful in situations where the person concerned has a 
     /// family name that occurs commonly in the geographical region.
-    std::vector< std::string > /*[1:?]*/ MiddleNames() const;
-    void setMiddleNames(std::vector< std::string > /*[1:?]*/ v);
-    /// Whether the optional attribute PrefixTitles is defined for this IfcPerson
-    bool hasPrefixTitles() const;
+    boost::optional< std::vector< std::string > /*[1:?]*/ > MiddleNames() const;
+    void setMiddleNames(boost::optional< std::vector< std::string > /*[1:?]*/ > v);
     /// The word, or group of words, which specify the person's social and/or professional standing and appear before his/her names.
-    std::vector< std::string > /*[1:?]*/ PrefixTitles() const;
-    void setPrefixTitles(std::vector< std::string > /*[1:?]*/ v);
-    /// Whether the optional attribute SuffixTitles is defined for this IfcPerson
-    bool hasSuffixTitles() const;
+    boost::optional< std::vector< std::string > /*[1:?]*/ > PrefixTitles() const;
+    void setPrefixTitles(boost::optional< std::vector< std::string > /*[1:?]*/ > v);
     /// The word, or group of words, which specify the person's social and/or professional standing and appear after his/her names.
-    std::vector< std::string > /*[1:?]*/ SuffixTitles() const;
-    void setSuffixTitles(std::vector< std::string > /*[1:?]*/ v);
-    /// Whether the optional attribute Roles is defined for this IfcPerson
-    bool hasRoles() const;
+    boost::optional< std::vector< std::string > /*[1:?]*/ > SuffixTitles() const;
+    void setSuffixTitles(boost::optional< std::vector< std::string > /*[1:?]*/ > v);
     /// Roles played by the person.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcActorRole >::ptr Roles() const;
-    void setRoles(IfcTemplatedEntityList< ::Ifc2x3::IfcActorRole >::ptr v);
-    /// Whether the optional attribute Addresses is defined for this IfcPerson
-    bool hasAddresses() const;
+    boost::optional< aggregate_of< ::Ifc2x3::IfcActorRole >::ptr > Roles() const;
+    void setRoles(boost::optional< aggregate_of< ::Ifc2x3::IfcActorRole >::ptr > v);
     /// Postal and telecommunication addresses of a person.
     /// NOTE - A person may have several addresses.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcAddress >::ptr Addresses() const;
-    void setAddresses(IfcTemplatedEntityList< ::Ifc2x3::IfcAddress >::ptr v);
-        IfcTemplatedEntityList< IfcPersonAndOrganization >::ptr EngagedIn() const; // INVERSE IfcPersonAndOrganization::ThePerson
+    boost::optional< aggregate_of< ::Ifc2x3::IfcAddress >::ptr > Addresses() const;
+    void setAddresses(boost::optional< aggregate_of< ::Ifc2x3::IfcAddress >::ptr > v);
+        aggregate_of< IfcPersonAndOrganization >::ptr EngagedIn() const; // INVERSE IfcPersonAndOrganization::ThePerson
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPerson (IfcEntityInstanceData* e);
-    IfcPerson (boost::optional< std::string > v1_Id, boost::optional< std::string > v2_FamilyName, boost::optional< std::string > v3_GivenName, boost::optional< std::vector< std::string > /*[1:?]*/ > v4_MiddleNames, boost::optional< std::vector< std::string > /*[1:?]*/ > v5_PrefixTitles, boost::optional< std::vector< std::string > /*[1:?]*/ > v6_SuffixTitles, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcActorRole >::ptr > v7_Roles, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcAddress >::ptr > v8_Addresses);
-    typedef IfcTemplatedEntityList< IfcPerson > list;
+    IfcPerson (boost::optional< std::string > v1_Id, boost::optional< std::string > v2_FamilyName, boost::optional< std::string > v3_GivenName, boost::optional< std::vector< std::string > /*[1:?]*/ > v4_MiddleNames, boost::optional< std::vector< std::string > /*[1:?]*/ > v5_PrefixTitles, boost::optional< std::vector< std::string > /*[1:?]*/ > v6_SuffixTitles, boost::optional< aggregate_of< ::Ifc2x3::IfcActorRole >::ptr > v7_Roles, boost::optional< aggregate_of< ::Ifc2x3::IfcAddress >::ptr > v8_Addresses);
+    typedef aggregate_of< IfcPerson > list;
 };
 /// Definition: Identification of a person within an organization.
 /// 
@@ -10003,16 +9733,14 @@ public:
     /// The organization to which the person is related.
     ::Ifc2x3::IfcOrganization* TheOrganization() const;
     void setTheOrganization(::Ifc2x3::IfcOrganization* v);
-    /// Whether the optional attribute Roles is defined for this IfcPersonAndOrganization
-    bool hasRoles() const;
     /// Roles played by the person within the context of an organization.  These may differ from the roles in ThePerson.Roles which may be asserted without organizational context.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcActorRole >::ptr Roles() const;
-    void setRoles(IfcTemplatedEntityList< ::Ifc2x3::IfcActorRole >::ptr v);
+    boost::optional< aggregate_of< ::Ifc2x3::IfcActorRole >::ptr > Roles() const;
+    void setRoles(boost::optional< aggregate_of< ::Ifc2x3::IfcActorRole >::ptr > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPersonAndOrganization (IfcEntityInstanceData* e);
-    IfcPersonAndOrganization (::Ifc2x3::IfcPerson* v1_ThePerson, ::Ifc2x3::IfcOrganization* v2_TheOrganization, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcActorRole >::ptr > v3_Roles);
-    typedef IfcTemplatedEntityList< IfcPersonAndOrganization > list;
+    IfcPersonAndOrganization (::Ifc2x3::IfcPerson* v1_ThePerson, ::Ifc2x3::IfcOrganization* v2_TheOrganization, boost::optional< aggregate_of< ::Ifc2x3::IfcActorRole >::ptr > v3_Roles);
+    typedef aggregate_of< IfcPersonAndOrganization > list;
 };
 /// The physical quantity, IfcPhysicalQuantity, is an abstract entity that holds a complex or simple quantity measure together with a semantic definition of the usage for the single or several measure value. 
 /// 
@@ -10024,17 +9752,15 @@ public:
     /// Name of the element quantity or measure. The name attribute has to be made recognizable by further agreements.
     std::string Name() const;
     void setName(std::string v);
-    /// Whether the optional attribute Description is defined for this IfcPhysicalQuantity
-    bool hasDescription() const;
     /// Further explanation that might be given to the quantity.
-    std::string Description() const;
-    void setDescription(std::string v);
-        IfcTemplatedEntityList< IfcPhysicalComplexQuantity >::ptr PartOfComplex() const; // INVERSE IfcPhysicalComplexQuantity::HasQuantities
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
+        aggregate_of< IfcPhysicalComplexQuantity >::ptr PartOfComplex() const; // INVERSE IfcPhysicalComplexQuantity::HasQuantities
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPhysicalQuantity (IfcEntityInstanceData* e);
     IfcPhysicalQuantity (std::string v1_Name, boost::optional< std::string > v2_Description);
-    typedef IfcTemplatedEntityList< IfcPhysicalQuantity > list;
+    typedef aggregate_of< IfcPhysicalQuantity > list;
 };
 /// The physical quantity, IfcPhysicalSimpleQuantity, is an entity that holds a single quantity measure value (as defined at the subtypes of IfcPhysicalSimpleQuantity) together with a semantic definition of the usage for the measure value. 
 /// 
@@ -10047,8 +9773,6 @@ public:
 /// IFC2x2 ADDENDUM 1 CHANGE  The abstract entity IfcPhysicalSimpleQuantity has been added. Upward compatibility for file based exchange is guaranteed.
 class IFC_PARSE_API IfcPhysicalSimpleQuantity : public IfcPhysicalQuantity {
 public:
-    /// Whether the optional attribute Unit is defined for this IfcPhysicalSimpleQuantity
-    bool hasUnit() const;
     /// Optional assignment of a unit. If no unit is given, then the global unit assignment, as established at the IfcProject, applies to the quantity measures.
     ::Ifc2x3::IfcNamedUnit* Unit() const;
     void setUnit(::Ifc2x3::IfcNamedUnit* v);
@@ -10056,59 +9780,45 @@ public:
     static const IfcParse::entity& Class();
     IfcPhysicalSimpleQuantity (IfcEntityInstanceData* e);
     IfcPhysicalSimpleQuantity (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcNamedUnit* v3_Unit);
-    typedef IfcTemplatedEntityList< IfcPhysicalSimpleQuantity > list;
+    typedef aggregate_of< IfcPhysicalSimpleQuantity > list;
 };
 /// Definition: The address for delivery of paper based mail.
 /// 
 /// HISTORY New entity in IFC Release 2x.
 class IFC_PARSE_API IfcPostalAddress : public IfcAddress {
 public:
-    /// Whether the optional attribute InternalLocation is defined for this IfcPostalAddress
-    bool hasInternalLocation() const;
     /// An organization defined address for internal mail delivery.
-    std::string InternalLocation() const;
-    void setInternalLocation(std::string v);
-    /// Whether the optional attribute AddressLines is defined for this IfcPostalAddress
-    bool hasAddressLines() const;
+    boost::optional< std::string > InternalLocation() const;
+    void setInternalLocation(boost::optional< std::string > v);
     /// The postal address.
     /// NOTE: A postal address may occupy several lines (or elements) when recorded. 
     /// It is expected that normal usage will incorporate relevant elements of the following address concepts: 
     /// A location within a building (e.g. 3rd Floor) Building name (e.g. Interoperability House) Street number 
     /// (e.g. 6400) Street name (e.g. Alliance Boulevard). Typical content of address lines may vary in different 
     /// countries.
-    std::vector< std::string > /*[1:?]*/ AddressLines() const;
-    void setAddressLines(std::vector< std::string > /*[1:?]*/ v);
-    /// Whether the optional attribute PostalBox is defined for this IfcPostalAddress
-    bool hasPostalBox() const;
+    boost::optional< std::vector< std::string > /*[1:?]*/ > AddressLines() const;
+    void setAddressLines(boost::optional< std::vector< std::string > /*[1:?]*/ > v);
     /// An address that is implied by an identifiable mail drop.
-    std::string PostalBox() const;
-    void setPostalBox(std::string v);
-    /// Whether the optional attribute Town is defined for this IfcPostalAddress
-    bool hasTown() const;
+    boost::optional< std::string > PostalBox() const;
+    void setPostalBox(boost::optional< std::string > v);
     /// The name of a town.
-    std::string Town() const;
-    void setTown(std::string v);
-    /// Whether the optional attribute Region is defined for this IfcPostalAddress
-    bool hasRegion() const;
+    boost::optional< std::string > Town() const;
+    void setTown(boost::optional< std::string > v);
     /// The name of a region.
     /// NOTE: The counties of the United Kingdom and the states of North America are examples of regions.
-    std::string Region() const;
-    void setRegion(std::string v);
-    /// Whether the optional attribute PostalCode is defined for this IfcPostalAddress
-    bool hasPostalCode() const;
+    boost::optional< std::string > Region() const;
+    void setRegion(boost::optional< std::string > v);
     /// The code that is used by the country's postal service.
-    std::string PostalCode() const;
-    void setPostalCode(std::string v);
-    /// Whether the optional attribute Country is defined for this IfcPostalAddress
-    bool hasCountry() const;
+    boost::optional< std::string > PostalCode() const;
+    void setPostalCode(boost::optional< std::string > v);
     /// The name of a country.
-    std::string Country() const;
-    void setCountry(std::string v);
+    boost::optional< std::string > Country() const;
+    void setCountry(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPostalAddress (IfcEntityInstanceData* e);
     IfcPostalAddress (boost::optional< ::Ifc2x3::IfcAddressTypeEnum::Value > v1_Purpose, boost::optional< std::string > v2_Description, boost::optional< std::string > v3_UserDefinedPurpose, boost::optional< std::string > v4_InternalLocation, boost::optional< std::vector< std::string > /*[1:?]*/ > v5_AddressLines, boost::optional< std::string > v6_PostalBox, boost::optional< std::string > v7_Town, boost::optional< std::string > v8_Region, boost::optional< std::string > v9_PostalCode, boost::optional< std::string > v10_Country);
-    typedef IfcTemplatedEntityList< IfcPostalAddress > list;
+    typedef aggregate_of< IfcPostalAddress > list;
 };
 /// A pre defined item is a qualified name given to a style or font which is determined within the data exchange specification by convention on using the Name attribute value (in contrary to externally defined items, which are agreed by an external source).
 /// 
@@ -10126,7 +9836,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPreDefinedItem (IfcEntityInstanceData* e);
     IfcPreDefinedItem (std::string v1_Name);
-    typedef IfcTemplatedEntityList< IfcPreDefinedItem > list;
+    typedef aggregate_of< IfcPreDefinedItem > list;
 };
 /// A predefined symbol is a symbol that gets its shape information by a conforming name that is specified within subtypes of the entity.
 /// 
@@ -10141,7 +9851,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPreDefinedSymbol (IfcEntityInstanceData* e);
     IfcPreDefinedSymbol (std::string v1_Name);
-    typedef IfcTemplatedEntityList< IfcPreDefinedSymbol > list;
+    typedef aggregate_of< IfcPreDefinedSymbol > list;
 };
 
 class IFC_PARSE_API IfcPreDefinedTerminatorSymbol : public IfcPreDefinedSymbol {
@@ -10150,7 +9860,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPreDefinedTerminatorSymbol (IfcEntityInstanceData* e);
     IfcPreDefinedTerminatorSymbol (std::string v1_Name);
-    typedef IfcTemplatedEntityList< IfcPreDefinedTerminatorSymbol > list;
+    typedef aggregate_of< IfcPreDefinedTerminatorSymbol > list;
 };
 /// The pre defined text font determines those qualified names which can be used for fonts that are in scope of the current data exchange specification (in contrary to externally defined text fonts). There are two choices:
 /// 
@@ -10169,7 +9879,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPreDefinedTextFont (IfcEntityInstanceData* e);
     IfcPreDefinedTextFont (std::string v1_Name);
-    typedef IfcTemplatedEntityList< IfcPreDefinedTextFont > list;
+    typedef aggregate_of< IfcPreDefinedTextFont > list;
 };
 /// The presentation layer assignment provides the layer name (and optionally a description and an identifier) for a collection of geometric representation items. The IfcPresentationLayerAssignment corresponds to the term "CAD Layer" and is used mainly for grouping and visibility control.
 /// 
@@ -10191,24 +9901,20 @@ public:
     /// Name of the layer.
     std::string Name() const;
     void setName(std::string v);
-    /// Whether the optional attribute Description is defined for this IfcPresentationLayerAssignment
-    bool hasDescription() const;
     /// Additional description of the layer.
-    std::string Description() const;
-    void setDescription(std::string v);
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
     /// The set of layered items, which are assigned to this layer.
-    IfcEntityList::ptr AssignedItems() const;
-    void setAssignedItems(IfcEntityList::ptr v);
-    /// Whether the optional attribute Identifier is defined for this IfcPresentationLayerAssignment
-    bool hasIdentifier() const;
+    aggregate_of_instance::ptr AssignedItems() const;
+    void setAssignedItems(aggregate_of_instance::ptr v);
     /// An (internal) identifier assigned to the layer.
-    std::string Identifier() const;
-    void setIdentifier(std::string v);
+    boost::optional< std::string > Identifier() const;
+    void setIdentifier(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPresentationLayerAssignment (IfcEntityInstanceData* e);
-    IfcPresentationLayerAssignment (std::string v1_Name, boost::optional< std::string > v2_Description, IfcEntityList::ptr v3_AssignedItems, boost::optional< std::string > v4_Identifier);
-    typedef IfcTemplatedEntityList< IfcPresentationLayerAssignment > list;
+    IfcPresentationLayerAssignment (std::string v1_Name, boost::optional< std::string > v2_Description, aggregate_of_instance::ptr v3_AssignedItems, boost::optional< std::string > v4_Identifier);
+    typedef aggregate_of< IfcPresentationLayerAssignment > list;
 };
 /// An IfcPresentationLayerAssignmentWithStyle extends the presentation layer assignment with capabilities to define visibility control, access control and common style information.
 /// 
@@ -10226,26 +9932,26 @@ public:
 class IFC_PARSE_API IfcPresentationLayerWithStyle : public IfcPresentationLayerAssignment {
 public:
     /// A logical setting, TRUE indicates that the layer is set to 'On', FALSE that the layer is set to 'Off', UNKNOWN that such information is not available.
-    bool LayerOn() const;
-    void setLayerOn(bool v);
+    boost::logic::tribool LayerOn() const;
+    void setLayerOn(boost::logic::tribool v);
     /// A logical setting, TRUE indicates that the layer is set to 'Frozen', FALSE that the layer is set to 'Not frozen', UNKNOWN that such information is not available.
-    bool LayerFrozen() const;
-    void setLayerFrozen(bool v);
+    boost::logic::tribool LayerFrozen() const;
+    void setLayerFrozen(boost::logic::tribool v);
     /// A logical setting, TRUE indicates that the layer is set to 'Blocked', FALSE that the layer is set to 'Not blocked', UNKNOWN that such information is not available.
-    bool LayerBlocked() const;
-    void setLayerBlocked(bool v);
+    boost::logic::tribool LayerBlocked() const;
+    void setLayerBlocked(boost::logic::tribool v);
     /// Assignment of presentation styles to the layer to provide a default style for representation items.
     /// 
     /// NOTE  In most cases the assignment of styles to a layer is restricted to an IfcCurveStyle representing the layer curve colour, layer curve thickness, and layer curve type.
     /// 
     /// IFC2x4 CHANGE  The data type has been changed from IfcPresentationStyleSelect (now deprecated) to IfcPresentationStyle.
-    IfcEntityList::ptr LayerStyles() const;
-    void setLayerStyles(IfcEntityList::ptr v);
+    aggregate_of_instance::ptr LayerStyles() const;
+    void setLayerStyles(aggregate_of_instance::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPresentationLayerWithStyle (IfcEntityInstanceData* e);
-    IfcPresentationLayerWithStyle (std::string v1_Name, boost::optional< std::string > v2_Description, IfcEntityList::ptr v3_AssignedItems, boost::optional< std::string > v4_Identifier, bool v5_LayerOn, bool v6_LayerFrozen, bool v7_LayerBlocked, IfcEntityList::ptr v8_LayerStyles);
-    typedef IfcTemplatedEntityList< IfcPresentationLayerWithStyle > list;
+    IfcPresentationLayerWithStyle (std::string v1_Name, boost::optional< std::string > v2_Description, aggregate_of_instance::ptr v3_AssignedItems, boost::optional< std::string > v4_Identifier, boost::logic::tribool v5_LayerOn, boost::logic::tribool v6_LayerFrozen, boost::logic::tribool v7_LayerBlocked, aggregate_of_instance::ptr v8_LayerStyles);
+    typedef aggregate_of< IfcPresentationLayerWithStyle > list;
 };
 /// IfcPresentationStyle is an abstract generalization of style table for presentation information assigned to geometric representation items. It includes styles for curves, areas, surfaces, text and symbols. Style information may include colour, hatching, rendering, and text fonts.
 /// 
@@ -10254,16 +9960,14 @@ public:
 /// HISTORY  New entity in IFC2x3.
 class IFC_PARSE_API IfcPresentationStyle : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute Name is defined for this IfcPresentationStyle
-    bool hasName() const;
     /// Name of the presentation style.
-    std::string Name() const;
-    void setName(std::string v);
+    boost::optional< std::string > Name() const;
+    void setName(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPresentationStyle (IfcEntityInstanceData* e);
     IfcPresentationStyle (boost::optional< std::string > v1_Name);
-    typedef IfcTemplatedEntityList< IfcPresentationStyle > list;
+    typedef aggregate_of< IfcPresentationStyle > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The presentation style assignment is a set of styles which are assigned to styled items for the purpose of presenting these styled items. 
 /// 
@@ -10273,13 +9977,13 @@ public:
 class IFC_PARSE_API IfcPresentationStyleAssignment : public IfcUtil::IfcBaseEntity {
 public:
     /// A set of presentation styles that are assigned to styled items.
-    IfcEntityList::ptr Styles() const;
-    void setStyles(IfcEntityList::ptr v);
+    aggregate_of_instance::ptr Styles() const;
+    void setStyles(aggregate_of_instance::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPresentationStyleAssignment (IfcEntityInstanceData* e);
-    IfcPresentationStyleAssignment (IfcEntityList::ptr v1_Styles);
-    typedef IfcTemplatedEntityList< IfcPresentationStyleAssignment > list;
+    IfcPresentationStyleAssignment (aggregate_of_instance::ptr v1_Styles);
+    typedef aggregate_of< IfcPresentationStyleAssignment > list;
 };
 /// IfcProductRepresentation defines a representation of a
 /// product, including its (geometric or topological) representation.
@@ -10300,49 +10004,37 @@ public:
 /// IFC2x4 CHANGE  Entity made abstract.
 class IFC_PARSE_API IfcProductRepresentation : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute Name is defined for this IfcProductRepresentation
-    bool hasName() const;
     /// The word or group of words by which the product representation is known.
-    std::string Name() const;
-    void setName(std::string v);
-    /// Whether the optional attribute Description is defined for this IfcProductRepresentation
-    bool hasDescription() const;
+    boost::optional< std::string > Name() const;
+    void setName(boost::optional< std::string > v);
     /// The word or group of words that characterize the product representation. It can be used to add additional meaning to the name of the product representation.
-    std::string Description() const;
-    void setDescription(std::string v);
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
     /// Contained list of representations (including shape representations). Each member defines a valid representation of a particular type within a particular representation context.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentation >::ptr Representations() const;
-    void setRepresentations(IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentation >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcRepresentation >::ptr Representations() const;
+    void setRepresentations(aggregate_of< ::Ifc2x3::IfcRepresentation >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcProductRepresentation (IfcEntityInstanceData* e);
-    IfcProductRepresentation (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentation >::ptr v3_Representations);
-    typedef IfcTemplatedEntityList< IfcProductRepresentation > list;
+    IfcProductRepresentation (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, aggregate_of< ::Ifc2x3::IfcRepresentation >::ptr v3_Representations);
+    typedef aggregate_of< IfcProductRepresentation > list;
 };
 
 class IFC_PARSE_API IfcProductsOfCombustionProperties : public IfcMaterialProperties {
 public:
-    /// Whether the optional attribute SpecificHeatCapacity is defined for this IfcProductsOfCombustionProperties
-    bool hasSpecificHeatCapacity() const;
-    double SpecificHeatCapacity() const;
-    void setSpecificHeatCapacity(double v);
-    /// Whether the optional attribute N20Content is defined for this IfcProductsOfCombustionProperties
-    bool hasN20Content() const;
-    double N20Content() const;
-    void setN20Content(double v);
-    /// Whether the optional attribute COContent is defined for this IfcProductsOfCombustionProperties
-    bool hasCOContent() const;
-    double COContent() const;
-    void setCOContent(double v);
-    /// Whether the optional attribute CO2Content is defined for this IfcProductsOfCombustionProperties
-    bool hasCO2Content() const;
-    double CO2Content() const;
-    void setCO2Content(double v);
+    boost::optional< double > SpecificHeatCapacity() const;
+    void setSpecificHeatCapacity(boost::optional< double > v);
+    boost::optional< double > N20Content() const;
+    void setN20Content(boost::optional< double > v);
+    boost::optional< double > COContent() const;
+    void setCOContent(boost::optional< double > v);
+    boost::optional< double > CO2Content() const;
+    void setCO2Content(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcProductsOfCombustionProperties (IfcEntityInstanceData* e);
     IfcProductsOfCombustionProperties (::Ifc2x3::IfcMaterial* v1_Material, boost::optional< double > v2_SpecificHeatCapacity, boost::optional< double > v3_N20Content, boost::optional< double > v4_COContent, boost::optional< double > v5_CO2Content);
-    typedef IfcTemplatedEntityList< IfcProductsOfCombustionProperties > list;
+    typedef aggregate_of< IfcProductsOfCombustionProperties > list;
 };
 /// IfcProfileDef
 /// is the supertype of all definitions of standard and arbitrary profiles
@@ -10519,16 +10211,14 @@ public:
     /// Defines the type of geometry into which this profile definition shall be resolved, either a curve or a surface area. In case of curve the profile should be referenced by a swept surface, in case of area the profile should be referenced by a swept area solid.
     ::Ifc2x3::IfcProfileTypeEnum::Value ProfileType() const;
     void setProfileType(::Ifc2x3::IfcProfileTypeEnum::Value v);
-    /// Whether the optional attribute ProfileName is defined for this IfcProfileDef
-    bool hasProfileName() const;
     /// Human-readable name of the profile, for example according to a standard profile table. As noted above, machine-readable standardized profile designations should be provided in IfcExternalReference.ItemReference.
-    std::string ProfileName() const;
-    void setProfileName(std::string v);
+    boost::optional< std::string > ProfileName() const;
+    void setProfileName(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcProfileDef (IfcEntityInstanceData* e);
     IfcProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName);
-    typedef IfcTemplatedEntityList< IfcProfileDef > list;
+    typedef aggregate_of< IfcProfileDef > list;
 };
 /// This is a collection of properties applicable to section profile definitions.
 /// 
@@ -10543,12 +10233,8 @@ public:
 /// IFC2x4 CHANGE  Entity made non-abstract.  Subtypes IfcGeneralProfileProperties, IfcStructuralProfileProperties, and IfcStructuralSteelProfileProperties deleted. Attribute ProfileName deleted, use ProfileDefinition.ProfileName instead. Attribute ProfileDefinition made mandatory. Attributes Name, Description, and HasProperties added.
 class IFC_PARSE_API IfcProfileProperties : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute ProfileName is defined for this IfcProfileProperties
-    bool hasProfileName() const;
-    std::string ProfileName() const;
-    void setProfileName(std::string v);
-    /// Whether the optional attribute ProfileDefinition is defined for this IfcProfileProperties
-    bool hasProfileDefinition() const;
+    boost::optional< std::string > ProfileName() const;
+    void setProfileName(boost::optional< std::string > v);
     /// Profile definition which is qualified by these properties.
     ::Ifc2x3::IfcProfileDef* ProfileDefinition() const;
     void setProfileDefinition(::Ifc2x3::IfcProfileDef* v);
@@ -10556,7 +10242,7 @@ public:
     static const IfcParse::entity& Class();
     IfcProfileProperties (IfcEntityInstanceData* e);
     IfcProfileProperties (boost::optional< std::string > v1_ProfileName, ::Ifc2x3::IfcProfileDef* v2_ProfileDefinition);
-    typedef IfcTemplatedEntityList< IfcProfileProperties > list;
+    typedef aggregate_of< IfcProfileProperties > list;
 };
 /// IfcProperty is an abstract generalization for all types of properties that can be associated with IFC objects through the property set mechanism. 
 /// 
@@ -10566,40 +10252,34 @@ public:
     /// Name for this property. This label is the significant name string that defines the semantic meaning for the property.
     std::string Name() const;
     void setName(std::string v);
-    /// Whether the optional attribute Description is defined for this IfcProperty
-    bool hasDescription() const;
     /// Informative text to explain the property.
-    std::string Description() const;
-    void setDescription(std::string v);
-        IfcTemplatedEntityList< IfcPropertyDependencyRelationship >::ptr PropertyForDependance() const; // INVERSE IfcPropertyDependencyRelationship::DependingProperty
-    IfcTemplatedEntityList< IfcPropertyDependencyRelationship >::ptr PropertyDependsOn() const; // INVERSE IfcPropertyDependencyRelationship::DependantProperty
-    IfcTemplatedEntityList< IfcComplexProperty >::ptr PartOfComplex() const; // INVERSE IfcComplexProperty::HasProperties
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
+        aggregate_of< IfcPropertyDependencyRelationship >::ptr PropertyForDependance() const; // INVERSE IfcPropertyDependencyRelationship::DependingProperty
+    aggregate_of< IfcPropertyDependencyRelationship >::ptr PropertyDependsOn() const; // INVERSE IfcPropertyDependencyRelationship::DependantProperty
+    aggregate_of< IfcComplexProperty >::ptr PartOfComplex() const; // INVERSE IfcComplexProperty::HasProperties
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcProperty (IfcEntityInstanceData* e);
     IfcProperty (std::string v1_Name, boost::optional< std::string > v2_Description);
-    typedef IfcTemplatedEntityList< IfcProperty > list;
+    typedef aggregate_of< IfcProperty > list;
 };
 
 class IFC_PARSE_API IfcPropertyConstraintRelationship : public IfcUtil::IfcBaseEntity {
 public:
     ::Ifc2x3::IfcConstraint* RelatingConstraint() const;
     void setRelatingConstraint(::Ifc2x3::IfcConstraint* v);
-    IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr RelatedProperties() const;
-    void setRelatedProperties(IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr v);
-    /// Whether the optional attribute Name is defined for this IfcPropertyConstraintRelationship
-    bool hasName() const;
-    std::string Name() const;
-    void setName(std::string v);
-    /// Whether the optional attribute Description is defined for this IfcPropertyConstraintRelationship
-    bool hasDescription() const;
-    std::string Description() const;
-    void setDescription(std::string v);
+    aggregate_of< ::Ifc2x3::IfcProperty >::ptr RelatedProperties() const;
+    void setRelatedProperties(aggregate_of< ::Ifc2x3::IfcProperty >::ptr v);
+    boost::optional< std::string > Name() const;
+    void setName(boost::optional< std::string > v);
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPropertyConstraintRelationship (IfcEntityInstanceData* e);
-    IfcPropertyConstraintRelationship (::Ifc2x3::IfcConstraint* v1_RelatingConstraint, IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr v2_RelatedProperties, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
-    typedef IfcTemplatedEntityList< IfcPropertyConstraintRelationship > list;
+    IfcPropertyConstraintRelationship (::Ifc2x3::IfcConstraint* v1_RelatingConstraint, aggregate_of< ::Ifc2x3::IfcProperty >::ptr v2_RelatedProperties, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
+    typedef aggregate_of< IfcPropertyConstraintRelationship > list;
 };
 /// An IfcPropertyDependencyRelationship describes an identified dependency between the value of one property and that of another.
 /// 
@@ -10617,24 +10297,18 @@ public:
     /// The dependant property.
     ::Ifc2x3::IfcProperty* DependantProperty() const;
     void setDependantProperty(::Ifc2x3::IfcProperty* v);
-    /// Whether the optional attribute Name is defined for this IfcPropertyDependencyRelationship
-    bool hasName() const;
-    std::string Name() const;
-    void setName(std::string v);
-    /// Whether the optional attribute Description is defined for this IfcPropertyDependencyRelationship
-    bool hasDescription() const;
-    std::string Description() const;
-    void setDescription(std::string v);
-    /// Whether the optional attribute Expression is defined for this IfcPropertyDependencyRelationship
-    bool hasExpression() const;
+    boost::optional< std::string > Name() const;
+    void setName(boost::optional< std::string > v);
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
     /// Expression that further describes the nature of the dependency relation.
-    std::string Expression() const;
-    void setExpression(std::string v);
+    boost::optional< std::string > Expression() const;
+    void setExpression(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPropertyDependencyRelationship (IfcEntityInstanceData* e);
     IfcPropertyDependencyRelationship (::Ifc2x3::IfcProperty* v1_DependingProperty, ::Ifc2x3::IfcProperty* v2_DependantProperty, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_Expression);
-    typedef IfcTemplatedEntityList< IfcPropertyDependencyRelationship > list;
+    typedef aggregate_of< IfcPropertyDependencyRelationship > list;
 };
 /// IfcPropertyEnumeration is a collection of simple
 /// or measure values that define a prescribed set of alternatives from
@@ -10688,18 +10362,16 @@ public:
     std::string Name() const;
     void setName(std::string v);
     /// List of values that form the enumeration.
-    IfcEntityList::ptr EnumerationValues() const;
-    void setEnumerationValues(IfcEntityList::ptr v);
-    /// Whether the optional attribute Unit is defined for this IfcPropertyEnumeration
-    bool hasUnit() const;
+    aggregate_of_instance::ptr EnumerationValues() const;
+    void setEnumerationValues(aggregate_of_instance::ptr v);
     /// Unit for the enumerator values, if not given, the default value for the measure type (given by the TYPE of nominal value) is used as defined by the global unit assignment at IfcProject.
     ::Ifc2x3::IfcUnit* Unit() const;
     void setUnit(::Ifc2x3::IfcUnit* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPropertyEnumeration (IfcEntityInstanceData* e);
-    IfcPropertyEnumeration (std::string v1_Name, IfcEntityList::ptr v2_EnumerationValues, ::Ifc2x3::IfcUnit* v3_Unit);
-    typedef IfcTemplatedEntityList< IfcPropertyEnumeration > list;
+    IfcPropertyEnumeration (std::string v1_Name, aggregate_of_instance::ptr v2_EnumerationValues, ::Ifc2x3::IfcUnit* v3_Unit);
+    typedef aggregate_of< IfcPropertyEnumeration > list;
 };
 /// IfcQuantityArea is a physical quantity that defines a derived area measure to provide an element's physical property. It is normally derived from the physical properties of the element under the specific measure rules given by a method of measurement. 
 /// 
@@ -10715,7 +10387,7 @@ public:
     static const IfcParse::entity& Class();
     IfcQuantityArea (IfcEntityInstanceData* e);
     IfcQuantityArea (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcNamedUnit* v3_Unit, double v4_AreaValue);
-    typedef IfcTemplatedEntityList< IfcQuantityArea > list;
+    typedef aggregate_of< IfcQuantityArea > list;
 };
 /// IfcQuantityCount is a physical quantity that defines a derived count measure to provide an element's physical property. It is normally derived from the physical properties of the element under the specific measure rules given by a method of measurement.
 /// 
@@ -10731,7 +10403,7 @@ public:
     static const IfcParse::entity& Class();
     IfcQuantityCount (IfcEntityInstanceData* e);
     IfcQuantityCount (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcNamedUnit* v3_Unit, double v4_CountValue);
-    typedef IfcTemplatedEntityList< IfcQuantityCount > list;
+    typedef aggregate_of< IfcQuantityCount > list;
 };
 /// IfcQuantityLength is a physical quantity that defines a derived length measure to provide an element's physical property. It is normally derived from the physical properties of the element under the specific measure rules given by a method of measurement.
 /// 
@@ -10747,7 +10419,7 @@ public:
     static const IfcParse::entity& Class();
     IfcQuantityLength (IfcEntityInstanceData* e);
     IfcQuantityLength (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcNamedUnit* v3_Unit, double v4_LengthValue);
-    typedef IfcTemplatedEntityList< IfcQuantityLength > list;
+    typedef aggregate_of< IfcQuantityLength > list;
 };
 /// IfcQuantityTime is an element quantity that defines a time measure to provide an property of time related to an element. It is normally given by the recipe information of the element under the specific measure rules given by a method of measurement.
 /// 
@@ -10763,7 +10435,7 @@ public:
     static const IfcParse::entity& Class();
     IfcQuantityTime (IfcEntityInstanceData* e);
     IfcQuantityTime (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcNamedUnit* v3_Unit, double v4_TimeValue);
-    typedef IfcTemplatedEntityList< IfcQuantityTime > list;
+    typedef aggregate_of< IfcQuantityTime > list;
 };
 /// IfcQuantityVolume is a physical quantity that defines a derived volume measure to provide an element's physical property. It is normally derived from the physical properties of the element under the specific measure rules given by a method of measurement. 
 /// 
@@ -10779,7 +10451,7 @@ public:
     static const IfcParse::entity& Class();
     IfcQuantityVolume (IfcEntityInstanceData* e);
     IfcQuantityVolume (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcNamedUnit* v3_Unit, double v4_VolumeValue);
-    typedef IfcTemplatedEntityList< IfcQuantityVolume > list;
+    typedef aggregate_of< IfcQuantityVolume > list;
 };
 /// IfcQuantityWeight is a physical element quantity that defines a derived weight measure to provide an element's physical property. It is normally derived from the physical properties of the element under the specific measure rules given by a method of measurement. 
 /// 
@@ -10795,28 +10467,24 @@ public:
     static const IfcParse::entity& Class();
     IfcQuantityWeight (IfcEntityInstanceData* e);
     IfcQuantityWeight (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcNamedUnit* v3_Unit, double v4_WeightValue);
-    typedef IfcTemplatedEntityList< IfcQuantityWeight > list;
+    typedef aggregate_of< IfcQuantityWeight > list;
 };
 
 class IFC_PARSE_API IfcReferencesValueDocument : public IfcUtil::IfcBaseEntity {
 public:
     ::Ifc2x3::IfcDocumentSelect* ReferencedDocument() const;
     void setReferencedDocument(::Ifc2x3::IfcDocumentSelect* v);
-    IfcTemplatedEntityList< ::Ifc2x3::IfcAppliedValue >::ptr ReferencingValues() const;
-    void setReferencingValues(IfcTemplatedEntityList< ::Ifc2x3::IfcAppliedValue >::ptr v);
-    /// Whether the optional attribute Name is defined for this IfcReferencesValueDocument
-    bool hasName() const;
-    std::string Name() const;
-    void setName(std::string v);
-    /// Whether the optional attribute Description is defined for this IfcReferencesValueDocument
-    bool hasDescription() const;
-    std::string Description() const;
-    void setDescription(std::string v);
+    aggregate_of< ::Ifc2x3::IfcAppliedValue >::ptr ReferencingValues() const;
+    void setReferencingValues(aggregate_of< ::Ifc2x3::IfcAppliedValue >::ptr v);
+    boost::optional< std::string > Name() const;
+    void setName(boost::optional< std::string > v);
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcReferencesValueDocument (IfcEntityInstanceData* e);
-    IfcReferencesValueDocument (::Ifc2x3::IfcDocumentSelect* v1_ReferencedDocument, IfcTemplatedEntityList< ::Ifc2x3::IfcAppliedValue >::ptr v2_ReferencingValues, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
-    typedef IfcTemplatedEntityList< IfcReferencesValueDocument > list;
+    IfcReferencesValueDocument (::Ifc2x3::IfcDocumentSelect* v1_ReferencedDocument, aggregate_of< ::Ifc2x3::IfcAppliedValue >::ptr v2_ReferencingValues, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
+    typedef aggregate_of< IfcReferencesValueDocument > list;
 };
 /// IfcReinforcementProperties defines the set of properties for a specific combination of reinforcement bar steel grade, bar type and effective depth. 
 /// 
@@ -10831,31 +10499,23 @@ public:
     /// The nominal steel grade defined according to local standards.
     std::string SteelGrade() const;
     void setSteelGrade(std::string v);
-    /// Whether the optional attribute BarSurface is defined for this IfcReinforcementBarProperties
-    bool hasBarSurface() const;
     /// Indicator for whether the bar surface is plain or textured.
-    ::Ifc2x3::IfcReinforcingBarSurfaceEnum::Value BarSurface() const;
-    void setBarSurface(::Ifc2x3::IfcReinforcingBarSurfaceEnum::Value v);
-    /// Whether the optional attribute EffectiveDepth is defined for this IfcReinforcementBarProperties
-    bool hasEffectiveDepth() const;
+    boost::optional< ::Ifc2x3::IfcReinforcingBarSurfaceEnum::Value > BarSurface() const;
+    void setBarSurface(boost::optional< ::Ifc2x3::IfcReinforcingBarSurfaceEnum::Value > v);
     /// The effective depth, i.e. the distance of the specific reinforcement cross section area or reinforcement configuration in a row, counted from a common specific reference point. Usually the reference point is the upper surface (for beams and slabs) or a similar projection in a plane (for columns).
-    double EffectiveDepth() const;
-    void setEffectiveDepth(double v);
-    /// Whether the optional attribute NominalBarDiameter is defined for this IfcReinforcementBarProperties
-    bool hasNominalBarDiameter() const;
+    boost::optional< double > EffectiveDepth() const;
+    void setEffectiveDepth(boost::optional< double > v);
     /// The nominal diameter defining the cross-section size of the reinforcing bar. The bar diameter should be identical for all bars included in the specific reinforcement configuration.
-    double NominalBarDiameter() const;
-    void setNominalBarDiameter(double v);
-    /// Whether the optional attribute BarCount is defined for this IfcReinforcementBarProperties
-    bool hasBarCount() const;
+    boost::optional< double > NominalBarDiameter() const;
+    void setNominalBarDiameter(boost::optional< double > v);
     /// The number of bars with identical nominal diameter and steel grade included in the specific reinforcement configuration.
-    double BarCount() const;
-    void setBarCount(double v);
+    boost::optional< double > BarCount() const;
+    void setBarCount(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcReinforcementBarProperties (IfcEntityInstanceData* e);
     IfcReinforcementBarProperties (double v1_TotalCrossSectionArea, std::string v2_SteelGrade, boost::optional< ::Ifc2x3::IfcReinforcingBarSurfaceEnum::Value > v3_BarSurface, boost::optional< double > v4_EffectiveDepth, boost::optional< double > v5_NominalBarDiameter, boost::optional< double > v6_BarCount);
-    typedef IfcTemplatedEntityList< IfcReinforcementBarProperties > list;
+    typedef aggregate_of< IfcReinforcementBarProperties > list;
 };
 
 class IFC_PARSE_API IfcRelaxation : public IfcUtil::IfcBaseEntity {
@@ -10868,7 +10528,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRelaxation (IfcEntityInstanceData* e);
     IfcRelaxation (double v1_RelaxationValue, double v2_InitialStress);
-    typedef IfcTemplatedEntityList< IfcRelaxation > list;
+    typedef aggregate_of< IfcRelaxation > list;
 };
 /// Definition from ISO/CD 10303-43:1992: A
 ///   representation is one or more representation items that are
@@ -10921,28 +10581,24 @@ public:
     /// Definition of the representation context for which the different subtypes of representation are valid.
     ::Ifc2x3::IfcRepresentationContext* ContextOfItems() const;
     void setContextOfItems(::Ifc2x3::IfcRepresentationContext* v);
-    /// Whether the optional attribute RepresentationIdentifier is defined for this IfcRepresentation
-    bool hasRepresentationIdentifier() const;
     /// The optional identifier of the representation as used within a project.
-    std::string RepresentationIdentifier() const;
-    void setRepresentationIdentifier(std::string v);
-    /// Whether the optional attribute RepresentationType is defined for this IfcRepresentation
-    bool hasRepresentationType() const;
+    boost::optional< std::string > RepresentationIdentifier() const;
+    void setRepresentationIdentifier(boost::optional< std::string > v);
     /// The description of the type of a representation context. The representation type defines the type of geometry or topology used for representing the product representation. More information is given at the subtypes IfcShapeRepresentation and IfcTopologyRepresentation.
     /// The supported values for context type are to be specified by implementers agreements.
-    std::string RepresentationType() const;
-    void setRepresentationType(std::string v);
+    boost::optional< std::string > RepresentationType() const;
+    void setRepresentationType(boost::optional< std::string > v);
     /// Set of geometric representation items that are defined for this representation.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationItem >::ptr Items() const;
-    void setItems(IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationItem >::ptr v);
-        IfcTemplatedEntityList< IfcRepresentationMap >::ptr RepresentationMap() const; // INVERSE IfcRepresentationMap::MappedRepresentation
-    IfcTemplatedEntityList< IfcPresentationLayerAssignment >::ptr LayerAssignments() const; // INVERSE IfcPresentationLayerAssignment::AssignedItems
-    IfcTemplatedEntityList< IfcProductRepresentation >::ptr OfProductRepresentation() const; // INVERSE IfcProductRepresentation::Representations
+    aggregate_of< ::Ifc2x3::IfcRepresentationItem >::ptr Items() const;
+    void setItems(aggregate_of< ::Ifc2x3::IfcRepresentationItem >::ptr v);
+        aggregate_of< IfcRepresentationMap >::ptr RepresentationMap() const; // INVERSE IfcRepresentationMap::MappedRepresentation
+    aggregate_of< IfcPresentationLayerAssignment >::ptr LayerAssignments() const; // INVERSE IfcPresentationLayerAssignment::AssignedItems
+    aggregate_of< IfcProductRepresentation >::ptr OfProductRepresentation() const; // INVERSE IfcProductRepresentation::Representations
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRepresentation (IfcEntityInstanceData* e);
-    IfcRepresentation (::Ifc2x3::IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationItem >::ptr v4_Items);
-    typedef IfcTemplatedEntityList< IfcRepresentation > list;
+    IfcRepresentation (::Ifc2x3::IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, aggregate_of< ::Ifc2x3::IfcRepresentationItem >::ptr v4_Items);
+    typedef aggregate_of< IfcRepresentation > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A representation context is a context in which a set of representation items are related.
 /// 
@@ -10956,22 +10612,18 @@ public:
 /// IFC2x2.
 class IFC_PARSE_API IfcRepresentationContext : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute ContextIdentifier is defined for this IfcRepresentationContext
-    bool hasContextIdentifier() const;
     /// The optional identifier of the representation context as used within a project.
-    std::string ContextIdentifier() const;
-    void setContextIdentifier(std::string v);
-    /// Whether the optional attribute ContextType is defined for this IfcRepresentationContext
-    bool hasContextType() const;
+    boost::optional< std::string > ContextIdentifier() const;
+    void setContextIdentifier(boost::optional< std::string > v);
     /// The description of the type of a representation context. The supported values for context type are to be specified by implementers agreements.
-    std::string ContextType() const;
-    void setContextType(std::string v);
-        IfcTemplatedEntityList< IfcRepresentation >::ptr RepresentationsInContext() const; // INVERSE IfcRepresentation::ContextOfItems
+    boost::optional< std::string > ContextType() const;
+    void setContextType(boost::optional< std::string > v);
+        aggregate_of< IfcRepresentation >::ptr RepresentationsInContext() const; // INVERSE IfcRepresentation::ContextOfItems
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRepresentationContext (IfcEntityInstanceData* e);
     IfcRepresentationContext (boost::optional< std::string > v1_ContextIdentifier, boost::optional< std::string > v2_ContextType);
-    typedef IfcTemplatedEntityList< IfcRepresentationContext > list;
+    typedef aggregate_of< IfcRepresentationContext > list;
 };
 /// Definition from ISO/CD
 /// 10303-43:1992: A representation item is an element of
@@ -11007,13 +10659,13 @@ public:
 /// IFC2x3 CHANGE  The inverse attributes StyledByItem and LayerAssignments have been added. Upward compatibility for file based exchange is guaranteed.
 class IFC_PARSE_API IfcRepresentationItem : public IfcUtil::IfcBaseEntity {
 public:
-        IfcTemplatedEntityList< IfcPresentationLayerAssignment >::ptr LayerAssignments() const; // INVERSE IfcPresentationLayerAssignment::AssignedItems
-    IfcTemplatedEntityList< IfcStyledItem >::ptr StyledByItem() const; // INVERSE IfcStyledItem::Item
+        aggregate_of< IfcPresentationLayerAssignment >::ptr LayerAssignments() const; // INVERSE IfcPresentationLayerAssignment::AssignedItems
+    aggregate_of< IfcStyledItem >::ptr StyledByItem() const; // INVERSE IfcStyledItem::Item
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRepresentationItem (IfcEntityInstanceData* e);
     IfcRepresentationItem ();
-    typedef IfcTemplatedEntityList< IfcRepresentationItem > list;
+    typedef aggregate_of< IfcRepresentationItem > list;
 };
 /// Definition from ISO/CD 10303-43:1992: A representation map is the identification of a representation and a representation item in that representation for the purpose of mapping. The representation item defines the origin of the mapping. The representation map is used as the source of a mapping by a mapped item.
 /// 
@@ -11035,39 +10687,31 @@ public:
     /// A representation that is mapped to at least one mapped item.
     ::Ifc2x3::IfcRepresentation* MappedRepresentation() const;
     void setMappedRepresentation(::Ifc2x3::IfcRepresentation* v);
-        IfcTemplatedEntityList< IfcMappedItem >::ptr MapUsage() const; // INVERSE IfcMappedItem::MappingSource
+        aggregate_of< IfcMappedItem >::ptr MapUsage() const; // INVERSE IfcMappedItem::MappingSource
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRepresentationMap (IfcEntityInstanceData* e);
     IfcRepresentationMap (::Ifc2x3::IfcAxis2Placement* v1_MappingOrigin, ::Ifc2x3::IfcRepresentation* v2_MappedRepresentation);
-    typedef IfcTemplatedEntityList< IfcRepresentationMap > list;
+    typedef aggregate_of< IfcRepresentationMap > list;
 };
 
 class IFC_PARSE_API IfcRibPlateProfileProperties : public IfcProfileProperties {
 public:
-    /// Whether the optional attribute Thickness is defined for this IfcRibPlateProfileProperties
-    bool hasThickness() const;
-    double Thickness() const;
-    void setThickness(double v);
-    /// Whether the optional attribute RibHeight is defined for this IfcRibPlateProfileProperties
-    bool hasRibHeight() const;
-    double RibHeight() const;
-    void setRibHeight(double v);
-    /// Whether the optional attribute RibWidth is defined for this IfcRibPlateProfileProperties
-    bool hasRibWidth() const;
-    double RibWidth() const;
-    void setRibWidth(double v);
-    /// Whether the optional attribute RibSpacing is defined for this IfcRibPlateProfileProperties
-    bool hasRibSpacing() const;
-    double RibSpacing() const;
-    void setRibSpacing(double v);
+    boost::optional< double > Thickness() const;
+    void setThickness(boost::optional< double > v);
+    boost::optional< double > RibHeight() const;
+    void setRibHeight(boost::optional< double > v);
+    boost::optional< double > RibWidth() const;
+    void setRibWidth(boost::optional< double > v);
+    boost::optional< double > RibSpacing() const;
+    void setRibSpacing(boost::optional< double > v);
     ::Ifc2x3::IfcRibPlateDirectionEnum::Value Direction() const;
     void setDirection(::Ifc2x3::IfcRibPlateDirectionEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRibPlateProfileProperties (IfcEntityInstanceData* e);
     IfcRibPlateProfileProperties (boost::optional< std::string > v1_ProfileName, ::Ifc2x3::IfcProfileDef* v2_ProfileDefinition, boost::optional< double > v3_Thickness, boost::optional< double > v4_RibHeight, boost::optional< double > v5_RibWidth, boost::optional< double > v6_RibSpacing, ::Ifc2x3::IfcRibPlateDirectionEnum::Value v7_Direction);
-    typedef IfcTemplatedEntityList< IfcRibPlateProfileProperties > list;
+    typedef aggregate_of< IfcRibPlateProfileProperties > list;
 };
 /// IfcRoot is the most abstract and root class for all IFC entity definitions that roots in the kernel or in subsequent layers of the IFC object model. It is therefore the common supertype of all IFC entities, beside those defined in an IFC resource schema. All entities that are subtypes of IfcRoot can be used independently, whereas resource schema entities, that are not subtypes of IfcRoot, are not supposed to be independent entities.
 /// 
@@ -11090,21 +10734,17 @@ public:
     /// IFC2x4 CHANGE  The attribute has been changed to be OPTIONAL.
     ::Ifc2x3::IfcOwnerHistory* OwnerHistory() const;
     void setOwnerHistory(::Ifc2x3::IfcOwnerHistory* v);
-    /// Whether the optional attribute Name is defined for this IfcRoot
-    bool hasName() const;
     /// Optional name for use by the participating software systems or users. For some subtypes of IfcRoot the insertion of the Name attribute may be required. This would be enforced by a where rule.
-    std::string Name() const;
-    void setName(std::string v);
-    /// Whether the optional attribute Description is defined for this IfcRoot
-    bool hasDescription() const;
+    boost::optional< std::string > Name() const;
+    void setName(boost::optional< std::string > v);
     /// Optional description, provided for exchanging informative comments.
-    std::string Description() const;
-    void setDescription(std::string v);
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRoot (IfcEntityInstanceData* e);
     IfcRoot (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
-    typedef IfcTemplatedEntityList< IfcRoot > list;
+    typedef aggregate_of< IfcRoot > list;
 };
 /// Definition from ISO/CD 10303-41:1992: An SI unit is the fixed quantity used as a standard in terms of which items are measured as defined by ISO 1000 (clause 2).
 /// 
@@ -11115,11 +10755,9 @@ public:
 /// HISTORY New entity in IFC Release 1.5.1.
 class IFC_PARSE_API IfcSIUnit : public IfcNamedUnit {
 public:
-    /// Whether the optional attribute Prefix is defined for this IfcSIUnit
-    bool hasPrefix() const;
     /// The SI Prefix for defining decimal multiples and submultiples of the unit.
-    ::Ifc2x3::IfcSIPrefix::Value Prefix() const;
-    void setPrefix(::Ifc2x3::IfcSIPrefix::Value v);
+    boost::optional< ::Ifc2x3::IfcSIPrefix::Value > Prefix() const;
+    void setPrefix(boost::optional< ::Ifc2x3::IfcSIPrefix::Value > v);
     /// The word, or group of words, by which the SI unit is referred to.
     /// 
     /// NOTE  Even though the SI system's base unit for mass is kilogram, the IfcSIUnit for mass is gram if no Prefix is asserted.
@@ -11129,7 +10767,7 @@ public:
     static const IfcParse::entity& Class();
     IfcSIUnit (IfcEntityInstanceData* e);
     IfcSIUnit (::Ifc2x3::IfcUnitEnum::Value v2_UnitType, boost::optional< ::Ifc2x3::IfcSIPrefix::Value > v3_Prefix, ::Ifc2x3::IfcSIUnitName::Value v4_Name);
-    typedef IfcTemplatedEntityList< IfcSIUnit > list;
+    typedef aggregate_of< IfcSIUnit > list;
 };
 /// IfcSectionProperties defines the cross section properties for a single longitudinal piece of a cross section.  It is a special-purpose helper class for IfcSectionReinforcementProperties.
 /// 
@@ -11144,8 +10782,6 @@ public:
     /// The cross section profile at the start point of the longitudinal section.
     ::Ifc2x3::IfcProfileDef* StartProfile() const;
     void setStartProfile(::Ifc2x3::IfcProfileDef* v);
-    /// Whether the optional attribute EndProfile is defined for this IfcSectionProperties
-    bool hasEndProfile() const;
     /// The cross section profile at the end point of the longitudinal section.
     ::Ifc2x3::IfcProfileDef* EndProfile() const;
     void setEndProfile(::Ifc2x3::IfcProfileDef* v);
@@ -11153,7 +10789,7 @@ public:
     static const IfcParse::entity& Class();
     IfcSectionProperties (IfcEntityInstanceData* e);
     IfcSectionProperties (::Ifc2x3::IfcSectionTypeEnum::Value v1_SectionType, ::Ifc2x3::IfcProfileDef* v2_StartProfile, ::Ifc2x3::IfcProfileDef* v3_EndProfile);
-    typedef IfcTemplatedEntityList< IfcSectionProperties > list;
+    typedef aggregate_of< IfcSectionProperties > list;
 };
 /// IfcSectionReinforcementProperties defines the cross section properties of reinforcement for a single longitudinal piece of a cross section with a specific reinforcement usage type.  
 /// 
@@ -11170,11 +10806,9 @@ public:
     /// The end position in longitudinal direction for the section reinforcement properties.
     double LongitudinalEndPosition() const;
     void setLongitudinalEndPosition(double v);
-    /// Whether the optional attribute TransversePosition is defined for this IfcSectionReinforcementProperties
-    bool hasTransversePosition() const;
     /// The position for the section reinforcement properties in transverse direction.
-    double TransversePosition() const;
-    void setTransversePosition(double v);
+    boost::optional< double > TransversePosition() const;
+    void setTransversePosition(boost::optional< double > v);
     /// The role, purpose or usage of the reinforcement, i.e. the kind of loads and stresses it is intended to carry, defined for the section reinforcement properties.
     ::Ifc2x3::IfcReinforcingBarRoleEnum::Value ReinforcementRole() const;
     void setReinforcementRole(::Ifc2x3::IfcReinforcingBarRoleEnum::Value v);
@@ -11182,13 +10816,13 @@ public:
     ::Ifc2x3::IfcSectionProperties* SectionDefinition() const;
     void setSectionDefinition(::Ifc2x3::IfcSectionProperties* v);
     /// The set of reinforcment properties attached to a section reinforcement properties definition.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcReinforcementBarProperties >::ptr CrossSectionReinforcementDefinitions() const;
-    void setCrossSectionReinforcementDefinitions(IfcTemplatedEntityList< ::Ifc2x3::IfcReinforcementBarProperties >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcReinforcementBarProperties >::ptr CrossSectionReinforcementDefinitions() const;
+    void setCrossSectionReinforcementDefinitions(aggregate_of< ::Ifc2x3::IfcReinforcementBarProperties >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSectionReinforcementProperties (IfcEntityInstanceData* e);
-    IfcSectionReinforcementProperties (double v1_LongitudinalStartPosition, double v2_LongitudinalEndPosition, boost::optional< double > v3_TransversePosition, ::Ifc2x3::IfcReinforcingBarRoleEnum::Value v4_ReinforcementRole, ::Ifc2x3::IfcSectionProperties* v5_SectionDefinition, IfcTemplatedEntityList< ::Ifc2x3::IfcReinforcementBarProperties >::ptr v6_CrossSectionReinforcementDefinitions);
-    typedef IfcTemplatedEntityList< IfcSectionReinforcementProperties > list;
+    IfcSectionReinforcementProperties (double v1_LongitudinalStartPosition, double v2_LongitudinalEndPosition, boost::optional< double > v3_TransversePosition, ::Ifc2x3::IfcReinforcingBarRoleEnum::Value v4_ReinforcementRole, ::Ifc2x3::IfcSectionProperties* v5_SectionDefinition, aggregate_of< ::Ifc2x3::IfcReinforcementBarProperties >::ptr v6_CrossSectionReinforcementDefinitions);
+    typedef aggregate_of< IfcSectionReinforcementProperties > list;
 };
 /// Definition from ISO/CD 10303-41:1992: The shape
 ///   aspect is an identifiable element of the shape of a
@@ -11231,32 +10865,28 @@ class IFC_PARSE_API IfcShapeAspect : public IfcUtil::IfcBaseEntity {
 public:
     /// List of shape representations. Each member defines a valid representation of a particular type within a particular representation context as being an aspect (or part) of a product definition.
     /// IFC2x Edition 3 CHANGE  The data type has been changed from IfcShapeRepresentation to IfcShapeModel with upward compatibility
-    IfcTemplatedEntityList< ::Ifc2x3::IfcShapeModel >::ptr ShapeRepresentations() const;
-    void setShapeRepresentations(IfcTemplatedEntityList< ::Ifc2x3::IfcShapeModel >::ptr v);
-    /// Whether the optional attribute Name is defined for this IfcShapeAspect
-    bool hasName() const;
+    aggregate_of< ::Ifc2x3::IfcShapeModel >::ptr ShapeRepresentations() const;
+    void setShapeRepresentations(aggregate_of< ::Ifc2x3::IfcShapeModel >::ptr v);
     /// The word or group of words by which the shape aspect is known. It is a tag to indicate the particular semantic of a component within the product definition shape, used to provide meaning. Example: use the tag "Glazing" to define which component of a window shape defines the glazing area.
-    std::string Name() const;
-    void setName(std::string v);
-    /// Whether the optional attribute Description is defined for this IfcShapeAspect
-    bool hasDescription() const;
+    boost::optional< std::string > Name() const;
+    void setName(boost::optional< std::string > v);
     /// The word or group of words that characterize the shape aspect. It can be used to add additional meaning to the name of the aspect.
-    std::string Description() const;
-    void setDescription(std::string v);
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
     /// An indication that the shape aspect is on the physical boundary of the product definition shape. If the value of this attribute is TRUE, it shall be asserted that the shape aspect being identified is on such a boundary. If the value is FALSE, it shall be asserted that the shape aspect being identified is not on such a boundary. If the value is UNKNOWN, it shall be asserted that it is not known whether or not the shape aspect being identified is on such a boundary. 
     /// ---
     /// EXAMPLE: Would be FALSE for a center line, identified as shape aspect; would be TRUE for a cantilever.
     /// ---
-    bool ProductDefinitional() const;
-    void setProductDefinitional(bool v);
+    boost::logic::tribool ProductDefinitional() const;
+    void setProductDefinitional(boost::logic::tribool v);
     /// Reference to the product definition shape of which this class is an aspect.
     ::Ifc2x3::IfcProductDefinitionShape* PartOfProductDefinitionShape() const;
     void setPartOfProductDefinitionShape(::Ifc2x3::IfcProductDefinitionShape* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcShapeAspect (IfcEntityInstanceData* e);
-    IfcShapeAspect (IfcTemplatedEntityList< ::Ifc2x3::IfcShapeModel >::ptr v1_ShapeRepresentations, boost::optional< std::string > v2_Name, boost::optional< std::string > v3_Description, bool v4_ProductDefinitional, ::Ifc2x3::IfcProductDefinitionShape* v5_PartOfProductDefinitionShape);
-    typedef IfcTemplatedEntityList< IfcShapeAspect > list;
+    IfcShapeAspect (aggregate_of< ::Ifc2x3::IfcShapeModel >::ptr v1_ShapeRepresentations, boost::optional< std::string > v2_Name, boost::optional< std::string > v3_Description, boost::logic::tribool v4_ProductDefinitional, ::Ifc2x3::IfcProductDefinitionShape* v5_PartOfProductDefinitionShape);
+    typedef aggregate_of< IfcShapeAspect > list;
 };
 /// IfcShapeModel represents
 /// the concept of a particular geometric and/or topological
@@ -11278,12 +10908,12 @@ public:
 /// HISTORY  New entity in IFC2x3.
 class IFC_PARSE_API IfcShapeModel : public IfcRepresentation {
 public:
-        IfcTemplatedEntityList< IfcShapeAspect >::ptr OfShapeAspect() const; // INVERSE IfcShapeAspect::ShapeRepresentations
+        aggregate_of< IfcShapeAspect >::ptr OfShapeAspect() const; // INVERSE IfcShapeAspect::ShapeRepresentations
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcShapeModel (IfcEntityInstanceData* e);
-    IfcShapeModel (::Ifc2x3::IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationItem >::ptr v4_Items);
-    typedef IfcTemplatedEntityList< IfcShapeModel > list;
+    IfcShapeModel (::Ifc2x3::IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, aggregate_of< ::Ifc2x3::IfcRepresentationItem >::ptr v4_Items);
+    typedef aggregate_of< IfcShapeModel > list;
 };
 /// The IfcShapeRepresentation represents the concept of a
 /// particular geometric representation of a product or a product
@@ -11425,8 +11055,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcShapeRepresentation (IfcEntityInstanceData* e);
-    IfcShapeRepresentation (::Ifc2x3::IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationItem >::ptr v4_Items);
-    typedef IfcTemplatedEntityList< IfcShapeRepresentation > list;
+    IfcShapeRepresentation (::Ifc2x3::IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, aggregate_of< ::Ifc2x3::IfcRepresentationItem >::ptr v4_Items);
+    typedef aggregate_of< IfcShapeRepresentation > list;
 };
 /// IfcSimpleProperty is a generalization of a single property object. The various subtypes of IfcSimpleProperty establish different ways in which a property value can be set. 
 /// 
@@ -11437,39 +11067,35 @@ public:
     static const IfcParse::entity& Class();
     IfcSimpleProperty (IfcEntityInstanceData* e);
     IfcSimpleProperty (std::string v1_Name, boost::optional< std::string > v2_Description);
-    typedef IfcTemplatedEntityList< IfcSimpleProperty > list;
+    typedef aggregate_of< IfcSimpleProperty > list;
 };
 /// Definition from IAI: Describe more rarely needed connection properties.
 /// 
 /// HISTORY: New entity in IFC 2x2.
 class IFC_PARSE_API IfcStructuralConnectionCondition : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute Name is defined for this IfcStructuralConnectionCondition
-    bool hasName() const;
     /// Optionally defines a name for this connection condition.
-    std::string Name() const;
-    void setName(std::string v);
+    boost::optional< std::string > Name() const;
+    void setName(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuralConnectionCondition (IfcEntityInstanceData* e);
     IfcStructuralConnectionCondition (boost::optional< std::string > v1_Name);
-    typedef IfcTemplatedEntityList< IfcStructuralConnectionCondition > list;
+    typedef aggregate_of< IfcStructuralConnectionCondition > list;
 };
 /// Definition from IAI: The abstract entity IfcStructuralLoadOrResult is the supertype of all loads (actions or reactions) or of certain requirements resulting from structural analysis, or certain provisions which influence structural analysis.
 /// 
 /// HISTORY: New entity in IFC 2x2.
 class IFC_PARSE_API IfcStructuralLoad : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute Name is defined for this IfcStructuralLoad
-    bool hasName() const;
     /// Optionally defines a name for this load.
-    std::string Name() const;
-    void setName(std::string v);
+    boost::optional< std::string > Name() const;
+    void setName(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuralLoad (IfcEntityInstanceData* e);
     IfcStructuralLoad (boost::optional< std::string > v1_Name);
-    typedef IfcTemplatedEntityList< IfcStructuralLoad > list;
+    typedef aggregate_of< IfcStructuralLoad > list;
 };
 /// Definition from IAI: The abstract entity IfcStructuralLoadStatic is the supertype of all static loads (actions or reactions) which can be defined.  Within scope are single i.e. concentrated forces and moments, linear i.e. one-dimensionally distributed forces and moments, planar i.e. two-dimensionally distributed forces, furthermore displacements and temperature loads.
 /// 
@@ -11480,7 +11106,7 @@ public:
     static const IfcParse::entity& Class();
     IfcStructuralLoadStatic (IfcEntityInstanceData* e);
     IfcStructuralLoadStatic (boost::optional< std::string > v1_Name);
-    typedef IfcTemplatedEntityList< IfcStructuralLoadStatic > list;
+    typedef aggregate_of< IfcStructuralLoadStatic > list;
 };
 /// An instance of the entity IfcStructuralLoadTemperature shall be used to define actions which are caused by a temperature change. As shown in Figure 332, the change of temperature is given with a constant value which is applied to the complete section and values for temperature differences between outer fibres of the section.
 /// 
@@ -11489,23 +11115,17 @@ public:
 /// Figure 332 — Structural load temperature
 class IFC_PARSE_API IfcStructuralLoadTemperature : public IfcStructuralLoadStatic {
 public:
-    /// Whether the optional attribute DeltaT_Constant is defined for this IfcStructuralLoadTemperature
-    bool hasDeltaT_Constant() const;
-    double DeltaT_Constant() const;
-    void setDeltaT_Constant(double v);
-    /// Whether the optional attribute DeltaT_Y is defined for this IfcStructuralLoadTemperature
-    bool hasDeltaT_Y() const;
-    double DeltaT_Y() const;
-    void setDeltaT_Y(double v);
-    /// Whether the optional attribute DeltaT_Z is defined for this IfcStructuralLoadTemperature
-    bool hasDeltaT_Z() const;
-    double DeltaT_Z() const;
-    void setDeltaT_Z(double v);
+    boost::optional< double > DeltaT_Constant() const;
+    void setDeltaT_Constant(boost::optional< double > v);
+    boost::optional< double > DeltaT_Y() const;
+    void setDeltaT_Y(boost::optional< double > v);
+    boost::optional< double > DeltaT_Z() const;
+    void setDeltaT_Z(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuralLoadTemperature (IfcEntityInstanceData* e);
     IfcStructuralLoadTemperature (boost::optional< std::string > v1_Name, boost::optional< double > v2_DeltaT_Constant, boost::optional< double > v3_DeltaT_Y, boost::optional< double > v4_DeltaT_Z);
-    typedef IfcTemplatedEntityList< IfcStructuralLoadTemperature > list;
+    typedef aggregate_of< IfcStructuralLoadTemperature > list;
 };
 /// IfcStyleModel represents the concept of a particular presentation style defined for a material (or other characteristic) of a product or a product component within a representation context. This representation context may (but has not to be) a geometric representation context.
 /// 
@@ -11517,8 +11137,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStyleModel (IfcEntityInstanceData* e);
-    IfcStyleModel (::Ifc2x3::IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationItem >::ptr v4_Items);
-    typedef IfcTemplatedEntityList< IfcStyleModel > list;
+    IfcStyleModel (::Ifc2x3::IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, aggregate_of< ::Ifc2x3::IfcRepresentationItem >::ptr v4_Items);
+    typedef aggregate_of< IfcStyleModel > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The styled item is an assignment of style for presentation to a geometric representation item as it is used in a representation.
 /// 
@@ -11550,8 +11170,6 @@ public:
 /// Figure 293 — Styled item
 class IFC_PARSE_API IfcStyledItem : public IfcRepresentationItem {
 public:
-    /// Whether the optional attribute Item is defined for this IfcStyledItem
-    bool hasItem() const;
     /// A geometric representation item to which the style is assigned.
     /// 
     /// IFC2x Edition 2 Addendum 2 CHANGE The attribute Item has been made optional. Upward compatibility for file based exchange is guaranteed.
@@ -11563,18 +11181,16 @@ public:
     /// for file based exchange.
     /// 
     /// NOTE  Only the select item IfcPresentationStyle shall be used from IFC2x4 onwards, the IfcPresentationStyleAssignment has been deprecated.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr Styles() const;
-    void setStyles(IfcTemplatedEntityList< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v);
-    /// Whether the optional attribute Name is defined for this IfcStyledItem
-    bool hasName() const;
+    aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr Styles() const;
+    void setStyles(aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v);
     /// The word, or group of words, by which the styled item is referred to.
-    std::string Name() const;
-    void setName(std::string v);
+    boost::optional< std::string > Name() const;
+    void setName(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStyledItem (IfcEntityInstanceData* e);
-    IfcStyledItem (::Ifc2x3::IfcRepresentationItem* v1_Item, IfcTemplatedEntityList< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
-    typedef IfcTemplatedEntityList< IfcStyledItem > list;
+    IfcStyledItem (::Ifc2x3::IfcRepresentationItem* v1_Item, aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
+    typedef aggregate_of< IfcStyledItem > list;
 };
 /// The IfcStyledRepresentation represents the concept of a styled presentation being a representation of a product or a product component, like material. within a representation context. This representation context does not need to be (but may be) a geometric representation context.
 /// 
@@ -11588,8 +11204,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStyledRepresentation (IfcEntityInstanceData* e);
-    IfcStyledRepresentation (::Ifc2x3::IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationItem >::ptr v4_Items);
-    typedef IfcTemplatedEntityList< IfcStyledRepresentation > list;
+    IfcStyledRepresentation (::Ifc2x3::IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, aggregate_of< ::Ifc2x3::IfcRepresentationItem >::ptr v4_Items);
+    typedef aggregate_of< IfcStyledRepresentation > list;
 };
 /// IfcSurfaceStyle is an assignment of one or many surface style elements to a surface, defined by subtypes of IfcSurface, IfcFaceBasedSurfaceModel, IfcShellBasedSurfaceModel, or by subtypes of IfcSolidModel. The positive direction of the surface normal relates to the positive side. In case of solids the outside of the solid is to be taken as positive side. 
 /// 
@@ -11604,13 +11220,13 @@ public:
     ::Ifc2x3::IfcSurfaceSide::Value Side() const;
     void setSide(::Ifc2x3::IfcSurfaceSide::Value v);
     /// A collection of different surface styles.
-    IfcEntityList::ptr Styles() const;
-    void setStyles(IfcEntityList::ptr v);
+    aggregate_of_instance::ptr Styles() const;
+    void setStyles(aggregate_of_instance::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSurfaceStyle (IfcEntityInstanceData* e);
-    IfcSurfaceStyle (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcSurfaceSide::Value v2_Side, IfcEntityList::ptr v3_Styles);
-    typedef IfcTemplatedEntityList< IfcSurfaceStyle > list;
+    IfcSurfaceStyle (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcSurfaceSide::Value v2_Side, aggregate_of_instance::ptr v3_Styles);
+    typedef aggregate_of< IfcSurfaceStyle > list;
 };
 /// IfcSurfaceStyleLighting is a container class for properties for calculation of physically exact illuminance related to a particular surface style.
 /// 
@@ -11645,7 +11261,7 @@ public:
     static const IfcParse::entity& Class();
     IfcSurfaceStyleLighting (IfcEntityInstanceData* e);
     IfcSurfaceStyleLighting (::Ifc2x3::IfcColourRgb* v1_DiffuseTransmissionColour, ::Ifc2x3::IfcColourRgb* v2_DiffuseReflectionColour, ::Ifc2x3::IfcColourRgb* v3_TransmissionColour, ::Ifc2x3::IfcColourRgb* v4_ReflectanceColour);
-    typedef IfcTemplatedEntityList< IfcSurfaceStyleLighting > list;
+    typedef aggregate_of< IfcSurfaceStyleLighting > list;
 };
 /// IfcSurfaceStyleRefraction extends the surface style lighting, or the surface style rendering definition for properties for calculation of physically exact illuminance by adding seldomly used properties. Currently this includes the refraction index (by which the light ray refracts when passing through a prism) and the dispersion factor (or Abbe constant) which takes into account the wavelength dependency of the refraction.
 /// 
@@ -11654,21 +11270,17 @@ public:
 /// HISTORY: New entity in IFC 2x2.
 class IFC_PARSE_API IfcSurfaceStyleRefraction : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute RefractionIndex is defined for this IfcSurfaceStyleRefraction
-    bool hasRefractionIndex() const;
     /// The index of refraction for all wave lengths of light. The refraction index is the ratio between the speed of light in a vacuum and the speed of light in the medium. E.g. glass has a refraction index of 1.5, whereas water has an index of 1.33
-    double RefractionIndex() const;
-    void setRefractionIndex(double v);
-    /// Whether the optional attribute DispersionFactor is defined for this IfcSurfaceStyleRefraction
-    bool hasDispersionFactor() const;
+    boost::optional< double > RefractionIndex() const;
+    void setRefractionIndex(boost::optional< double > v);
     /// The Abbe constant given as a fixed ratio between the refractive indices of the material at different wavelengths. A low Abbe number means a high dispersive power. In general this translates to a greater angular spread of the emergent spectrum.
-    double DispersionFactor() const;
-    void setDispersionFactor(double v);
+    boost::optional< double > DispersionFactor() const;
+    void setDispersionFactor(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSurfaceStyleRefraction (IfcEntityInstanceData* e);
     IfcSurfaceStyleRefraction (boost::optional< double > v1_RefractionIndex, boost::optional< double > v2_DispersionFactor);
-    typedef IfcTemplatedEntityList< IfcSurfaceStyleRefraction > list;
+    typedef aggregate_of< IfcSurfaceStyleRefraction > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The surface style rendering allows the realistic visualization of surfaces referring to rendering techniques based on the laws of physics and mathematics. 
 /// 
@@ -11686,7 +11298,7 @@ public:
     static const IfcParse::entity& Class();
     IfcSurfaceStyleShading (IfcEntityInstanceData* e);
     IfcSurfaceStyleShading (::Ifc2x3::IfcColourRgb* v1_SurfaceColour);
-    typedef IfcTemplatedEntityList< IfcSurfaceStyleShading > list;
+    typedef aggregate_of< IfcSurfaceStyleShading > list;
 };
 /// The entity IfcSurfaceStyleWithTextures allows to include image textures in surface styles. These image textures can be applied repeating across the surface or mapped with a particular scale upon the surface.
 /// 
@@ -11709,13 +11321,13 @@ public:
 class IFC_PARSE_API IfcSurfaceStyleWithTextures : public IfcUtil::IfcBaseEntity {
 public:
     /// The textures applied to the surface. In case of more than one surface texture is included, the IfcSurfaceStyleWithTexture defines a multi texture.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcSurfaceTexture >::ptr Textures() const;
-    void setTextures(IfcTemplatedEntityList< ::Ifc2x3::IfcSurfaceTexture >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcSurfaceTexture >::ptr Textures() const;
+    void setTextures(aggregate_of< ::Ifc2x3::IfcSurfaceTexture >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSurfaceStyleWithTextures (IfcEntityInstanceData* e);
-    IfcSurfaceStyleWithTextures (IfcTemplatedEntityList< ::Ifc2x3::IfcSurfaceTexture >::ptr v1_Textures);
-    typedef IfcTemplatedEntityList< IfcSurfaceStyleWithTextures > list;
+    IfcSurfaceStyleWithTextures (aggregate_of< ::Ifc2x3::IfcSurfaceTexture >::ptr v1_Textures);
+    typedef aggregate_of< IfcSurfaceStyleWithTextures > list;
 };
 /// An IfcSurfaceTexture provides a 2-dimensional
 /// image-based texture map. It can either be given by referencing an
@@ -11819,8 +11431,6 @@ public:
     void setRepeatT(bool v);
     ::Ifc2x3::IfcSurfaceTextureEnum::Value TextureType() const;
     void setTextureType(::Ifc2x3::IfcSurfaceTextureEnum::Value v);
-    /// Whether the optional attribute TextureTransform is defined for this IfcSurfaceTexture
-    bool hasTextureTransform() const;
     /// The TextureTransform defines a 2D transformation that is applied to the texture coordinates. It affects the way texture coordinates are applied to the surfaces of geometric representation itesm. The 2D transformation supports changes to the size, orientation, and position of textures on shapes. 
     /// 
     /// Mirroring is not allowed to be used in the IfcCarteesianTransformationOperator
@@ -11830,7 +11440,7 @@ public:
     static const IfcParse::entity& Class();
     IfcSurfaceTexture (IfcEntityInstanceData* e);
     IfcSurfaceTexture (bool v1_RepeatS, bool v2_RepeatT, ::Ifc2x3::IfcSurfaceTextureEnum::Value v3_TextureType, ::Ifc2x3::IfcCartesianTransformationOperator2D* v4_TextureTransform);
-    typedef IfcTemplatedEntityList< IfcSurfaceTexture > list;
+    typedef aggregate_of< IfcSurfaceTexture > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The symbol style is the presentation style that indicates the presentation of annotation symbols. 
 /// 
@@ -11846,7 +11456,7 @@ public:
     static const IfcParse::entity& Class();
     IfcSymbolStyle (IfcEntityInstanceData* e);
     IfcSymbolStyle (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcSymbolStyleSelect* v2_StyleOfSymbol);
-    typedef IfcTemplatedEntityList< IfcSymbolStyle > list;
+    typedef aggregate_of< IfcSymbolStyle > list;
 };
 /// An IfcTable is a data structure for the provision of information in the form of rows and columns. Each instance may have IfcTableColumn instances that define the name, description and units for each column. The rows of information are stored as a list of IfcTableRow objects. 
 /// 
@@ -11869,13 +11479,13 @@ public:
     std::string Name() const;
     void setName(std::string v);
     /// Reference to information content of rows.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcTableRow >::ptr Rows() const;
-    void setRows(IfcTemplatedEntityList< ::Ifc2x3::IfcTableRow >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcTableRow >::ptr Rows() const;
+    void setRows(aggregate_of< ::Ifc2x3::IfcTableRow >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTable (IfcEntityInstanceData* e);
-    IfcTable (std::string v1_Name, IfcTemplatedEntityList< ::Ifc2x3::IfcTableRow >::ptr v2_Rows);
-    typedef IfcTemplatedEntityList< IfcTable > list;
+    IfcTable (std::string v1_Name, aggregate_of< ::Ifc2x3::IfcTableRow >::ptr v2_Rows);
+    typedef aggregate_of< IfcTable > list;
 };
 /// IfcTableRow contains data for a single row within an IfcTable. 
 /// 
@@ -11893,17 +11503,17 @@ public:
 class IFC_PARSE_API IfcTableRow : public IfcUtil::IfcBaseEntity {
 public:
     /// The data value of the table cell..
-    IfcEntityList::ptr RowCells() const;
-    void setRowCells(IfcEntityList::ptr v);
+    aggregate_of_instance::ptr RowCells() const;
+    void setRowCells(aggregate_of_instance::ptr v);
     /// Flag which identifies if the row is a heading row or a row which contains row values. NOTE - If the row is a heading, the flag takes the value = TRUE.
     bool IsHeading() const;
     void setIsHeading(bool v);
-        IfcTemplatedEntityList< IfcTable >::ptr OfTable() const; // INVERSE IfcTable::Rows
+        aggregate_of< IfcTable >::ptr OfTable() const; // INVERSE IfcTable::Rows
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTableRow (IfcEntityInstanceData* e);
-    IfcTableRow (IfcEntityList::ptr v1_RowCells, bool v2_IsHeading);
-    typedef IfcTemplatedEntityList< IfcTableRow > list;
+    IfcTableRow (aggregate_of_instance::ptr v1_RowCells, bool v2_IsHeading);
+    typedef aggregate_of< IfcTableRow > list;
 };
 /// Definition: Address to which telephone, electronic mail and other forms of telecommunications should be addressed.
 /// 
@@ -11913,39 +11523,29 @@ public:
 /// Type of attribute WWWHomePageURL compatibly changed from IfcLabel to IfcURIReference.
 class IFC_PARSE_API IfcTelecomAddress : public IfcAddress {
 public:
-    /// Whether the optional attribute TelephoneNumbers is defined for this IfcTelecomAddress
-    bool hasTelephoneNumbers() const;
     /// The list of telephone numbers at which telephone messages may be received.
-    std::vector< std::string > /*[1:?]*/ TelephoneNumbers() const;
-    void setTelephoneNumbers(std::vector< std::string > /*[1:?]*/ v);
-    /// Whether the optional attribute FacsimileNumbers is defined for this IfcTelecomAddress
-    bool hasFacsimileNumbers() const;
+    boost::optional< std::vector< std::string > /*[1:?]*/ > TelephoneNumbers() const;
+    void setTelephoneNumbers(boost::optional< std::vector< std::string > /*[1:?]*/ > v);
     /// The list of fax numbers at which fax messages may be received.
-    std::vector< std::string > /*[1:?]*/ FacsimileNumbers() const;
-    void setFacsimileNumbers(std::vector< std::string > /*[1:?]*/ v);
-    /// Whether the optional attribute PagerNumber is defined for this IfcTelecomAddress
-    bool hasPagerNumber() const;
+    boost::optional< std::vector< std::string > /*[1:?]*/ > FacsimileNumbers() const;
+    void setFacsimileNumbers(boost::optional< std::vector< std::string > /*[1:?]*/ > v);
     /// The pager number at which paging messages may be received.
-    std::string PagerNumber() const;
-    void setPagerNumber(std::string v);
-    /// Whether the optional attribute ElectronicMailAddresses is defined for this IfcTelecomAddress
-    bool hasElectronicMailAddresses() const;
+    boost::optional< std::string > PagerNumber() const;
+    void setPagerNumber(boost::optional< std::string > v);
     /// The list of Email addresses at which Email messages may be received.
-    std::vector< std::string > /*[1:?]*/ ElectronicMailAddresses() const;
-    void setElectronicMailAddresses(std::vector< std::string > /*[1:?]*/ v);
-    /// Whether the optional attribute WWWHomePageURL is defined for this IfcTelecomAddress
-    bool hasWWWHomePageURL() const;
+    boost::optional< std::vector< std::string > /*[1:?]*/ > ElectronicMailAddresses() const;
+    void setElectronicMailAddresses(boost::optional< std::vector< std::string > /*[1:?]*/ > v);
     /// The world wide web address at which the preliminary page of information for the person or organization can be located.
     /// NOTE: Information on the world wide web for a person or organization may be separated 
     /// into a number of pages and across a number of host sites, all of which may be linked together. It is assumed that 
     /// all such information may be referenced from a single page that is termed the home page for that person or organization.
-    std::string WWWHomePageURL() const;
-    void setWWWHomePageURL(std::string v);
+    boost::optional< std::string > WWWHomePageURL() const;
+    void setWWWHomePageURL(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTelecomAddress (IfcEntityInstanceData* e);
     IfcTelecomAddress (boost::optional< ::Ifc2x3::IfcAddressTypeEnum::Value > v1_Purpose, boost::optional< std::string > v2_Description, boost::optional< std::string > v3_UserDefinedPurpose, boost::optional< std::vector< std::string > /*[1:?]*/ > v4_TelephoneNumbers, boost::optional< std::vector< std::string > /*[1:?]*/ > v5_FacsimileNumbers, boost::optional< std::string > v6_PagerNumber, boost::optional< std::vector< std::string > /*[1:?]*/ > v7_ElectronicMailAddresses, boost::optional< std::string > v8_WWWHomePageURL);
-    typedef IfcTemplatedEntityList< IfcTelecomAddress > list;
+    typedef aggregate_of< IfcTelecomAddress > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The text style is a presentation style for annotation text.
 /// 
@@ -11977,13 +11577,9 @@ public:
 /// IFC2x3 CHANGE  The IfcTextStyle has been changed by adding TextFontStyle and different data types for TextStyle and IfcCharacterStyleSelect.
 class IFC_PARSE_API IfcTextStyle : public IfcPresentationStyle {
 public:
-    /// Whether the optional attribute TextCharacterAppearance is defined for this IfcTextStyle
-    bool hasTextCharacterAppearance() const;
     /// A character style to be used for presented text.
     ::Ifc2x3::IfcCharacterStyleSelect* TextCharacterAppearance() const;
     void setTextCharacterAppearance(::Ifc2x3::IfcCharacterStyleSelect* v);
-    /// Whether the optional attribute TextStyle is defined for this IfcTextStyle
-    bool hasTextStyle() const;
     /// The style applied to the text block for its visual appearance.
     /// It defines the text block characteristics, either for vector based or monospace text fonts (see select item IfcTextStyleWithBoxCharacteristics), or for true type text fonts (see select item IfcTextStyleTextModel.
     /// 
@@ -12000,7 +11596,7 @@ public:
     static const IfcParse::entity& Class();
     IfcTextStyle (IfcEntityInstanceData* e);
     IfcTextStyle (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcCharacterStyleSelect* v2_TextCharacterAppearance, ::Ifc2x3::IfcTextStyleSelect* v3_TextStyle, ::Ifc2x3::IfcTextFontSelect* v4_TextFontStyle);
-    typedef IfcTemplatedEntityList< IfcTextStyle > list;
+    typedef aggregate_of< IfcTextStyle > list;
 };
 /// Definition from CSS1 (W3C Recommendation): Setting font properties will be among the most common uses of style sheets. Unfortunately, there exists no well-defined and universally accepted taxonomy for classifying fonts, and terms that apply to one font family may not be appropriate for others. For example, 'italic' is commonly used to label slanted text, but slanted text may also be labeled as being Oblique, Slanted, Incline, Cursive or Kursiv. Therefore it is not a simple problem to map typical font selection properties to a specific font.
 /// 
@@ -12069,28 +11665,20 @@ public:
 /// HISTORY  New entity in IFC2x3.
 class IFC_PARSE_API IfcTextStyleFontModel : public IfcPreDefinedTextFont {
 public:
-    /// Whether the optional attribute FontFamily is defined for this IfcTextStyleFontModel
-    bool hasFontFamily() const;
     /// The value is a prioritized list of font family names and/or generic family names. The first list entry has the highest priority, if this font fails, the next list item shall be used. The last list item should (if possible) be a generic family.
-    std::vector< std::string > /*[1:?]*/ FontFamily() const;
-    void setFontFamily(std::vector< std::string > /*[1:?]*/ v);
-    /// Whether the optional attribute FontStyle is defined for this IfcTextStyleFontModel
-    bool hasFontStyle() const;
+    boost::optional< std::vector< std::string > /*[1:?]*/ > FontFamily() const;
+    void setFontFamily(boost::optional< std::vector< std::string > /*[1:?]*/ > v);
     /// The font style property selects between normal (sometimes referred to as "roman" or "upright"), italic and oblique faces within a font family.
-    std::string FontStyle() const;
-    void setFontStyle(std::string v);
-    /// Whether the optional attribute FontVariant is defined for this IfcTextStyleFontModel
-    bool hasFontVariant() const;
+    boost::optional< std::string > FontStyle() const;
+    void setFontStyle(boost::optional< std::string > v);
     /// The font variant property selects between normal and small-caps.
     ///   NOTE  It has been introduced for later compliance to full CSS1 support.
-    std::string FontVariant() const;
-    void setFontVariant(std::string v);
-    /// Whether the optional attribute FontWeight is defined for this IfcTextStyleFontModel
-    bool hasFontWeight() const;
+    boost::optional< std::string > FontVariant() const;
+    void setFontVariant(boost::optional< std::string > v);
     /// The font weight property selects the weight of the font.
     ///   NOTE  Values other then 'normal' and 'bold' have been introduced for later compliance to full CSS1 support.
-    std::string FontWeight() const;
-    void setFontWeight(std::string v);
+    boost::optional< std::string > FontWeight() const;
+    void setFontWeight(boost::optional< std::string > v);
     /// The font size provides the size or height of the text font.
     ///   NOTE  The following values are allowed, <IfcLengthMeasure, with positive values, the length unit is globally defined at IfcUnitAssignment.
     ::Ifc2x3::IfcSizeSelect* FontSize() const;
@@ -12099,7 +11687,7 @@ public:
     static const IfcParse::entity& Class();
     IfcTextStyleFontModel (IfcEntityInstanceData* e);
     IfcTextStyleFontModel (std::string v1_Name, boost::optional< std::vector< std::string > /*[1:?]*/ > v2_FontFamily, boost::optional< std::string > v3_FontStyle, boost::optional< std::string > v4_FontVariant, boost::optional< std::string > v5_FontWeight, ::Ifc2x3::IfcSizeSelect* v6_FontSize);
-    typedef IfcTemplatedEntityList< IfcTextStyleFontModel > list;
+    typedef aggregate_of< IfcTextStyleFontModel > list;
 };
 /// Definition from ISO/CD 10303-46:1992: A text style for defined font is a character glyph style for pre-defined or externally defined text fonts.
 /// 
@@ -12123,8 +11711,6 @@ public:
     /// This property describes the text color of an element (often referred to as the foreground color).
     ::Ifc2x3::IfcColour* Colour() const;
     void setColour(::Ifc2x3::IfcColour* v);
-    /// Whether the optional attribute BackgroundColour is defined for this IfcTextStyleForDefinedFont
-    bool hasBackgroundColour() const;
     /// This property sets the background color of an element.
     ::Ifc2x3::IfcColour* BackgroundColour() const;
     void setBackgroundColour(::Ifc2x3::IfcColour* v);
@@ -12132,7 +11718,7 @@ public:
     static const IfcParse::entity& Class();
     IfcTextStyleForDefinedFont (IfcEntityInstanceData* e);
     IfcTextStyleForDefinedFont (::Ifc2x3::IfcColour* v1_Colour, ::Ifc2x3::IfcColour* v2_BackgroundColour);
-    typedef IfcTemplatedEntityList< IfcTextStyleForDefinedFont > list;
+    typedef aggregate_of< IfcTextStyleForDefinedFont > list;
 };
 /// Definition from CSS1 (W3C Recommendation): The properties defined in the text model affect the visual presentation of characters, spaces, words, and paragraphs.
 /// 
@@ -12143,42 +11729,28 @@ public:
 /// HISTORY  New entity in IFC2x3.
 class IFC_PARSE_API IfcTextStyleTextModel : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute TextIndent is defined for this IfcTextStyleTextModel
-    bool hasTextIndent() const;
     /// The property specifies the indentation that appears before the first formatted line.
     ///   NOTE  It has been introduced for later compliance to full CSS1 support.
     ::Ifc2x3::IfcSizeSelect* TextIndent() const;
     void setTextIndent(::Ifc2x3::IfcSizeSelect* v);
-    /// Whether the optional attribute TextAlign is defined for this IfcTextStyleTextModel
-    bool hasTextAlign() const;
     /// This property describes how text is aligned horizontally within the element. The actual justification algorithm used is dependent on the rendering algorithm.
-    std::string TextAlign() const;
-    void setTextAlign(std::string v);
-    /// Whether the optional attribute TextDecoration is defined for this IfcTextStyleTextModel
-    bool hasTextDecoration() const;
+    boost::optional< std::string > TextAlign() const;
+    void setTextAlign(boost::optional< std::string > v);
     /// This property describes decorations that are added to the text of an element.
-    std::string TextDecoration() const;
-    void setTextDecoration(std::string v);
-    /// Whether the optional attribute LetterSpacing is defined for this IfcTextStyleTextModel
-    bool hasLetterSpacing() const;
+    boost::optional< std::string > TextDecoration() const;
+    void setTextDecoration(boost::optional< std::string > v);
     /// The length unit indicates an addition to the default space between characters. Values can be negative, but there may be implementation-specific limits. The user agent is free to select the exact spacing algorithm. The letter spacing may also be influenced by justification (which is a value of the 'align' property).
     ///   NOTE  The following values are allowed, IfcDescriptiveMeasure with value='normal', or IfcLengthMeasure, the length unit is globally defined at IfcUnitAssignment.
     ::Ifc2x3::IfcSizeSelect* LetterSpacing() const;
     void setLetterSpacing(::Ifc2x3::IfcSizeSelect* v);
-    /// Whether the optional attribute WordSpacing is defined for this IfcTextStyleTextModel
-    bool hasWordSpacing() const;
     /// The length unit indicates an addition to the default space between words. Values can be negative, but there may be implementation-specific limits. The user agent is free to select the exact spacing algorithm. The word spacing may also be influenced by justification (which is a value of the 'text-align' property).
     ///   NOTE  It has been introduced for later compliance to full CSS1 support.
     ::Ifc2x3::IfcSizeSelect* WordSpacing() const;
     void setWordSpacing(::Ifc2x3::IfcSizeSelect* v);
-    /// Whether the optional attribute TextTransform is defined for this IfcTextStyleTextModel
-    bool hasTextTransform() const;
     /// This property describes how text characters may transform to upper case, lower case, or capitalized case, independent of the character case used in the text literal.
     ///   NOTE  It has been introduced for later compliance to full CSS1 support.
-    std::string TextTransform() const;
-    void setTextTransform(std::string v);
-    /// Whether the optional attribute LineHeight is defined for this IfcTextStyleTextModel
-    bool hasLineHeight() const;
+    boost::optional< std::string > TextTransform() const;
+    void setTextTransform(boost::optional< std::string > v);
     /// The property sets the distance between two adjacent lines' baselines.
     /// When a ratio value is specified, the line height is given by the font size of the current element multiplied with the numerical value. A value of 'normal' sets the line height to a reasonable value for the element's font. It is suggested that user agents set the 'normal' value to be a ratio number in the range of 1.0 to 1.2.
     ///   NOTE  The following values are allowed: IfcDescriptiveMeasure with value='normal', or 
@@ -12189,7 +11761,7 @@ public:
     static const IfcParse::entity& Class();
     IfcTextStyleTextModel (IfcEntityInstanceData* e);
     IfcTextStyleTextModel (::Ifc2x3::IfcSizeSelect* v1_TextIndent, boost::optional< std::string > v2_TextAlign, boost::optional< std::string > v3_TextDecoration, ::Ifc2x3::IfcSizeSelect* v4_LetterSpacing, ::Ifc2x3::IfcSizeSelect* v5_WordSpacing, boost::optional< std::string > v6_TextTransform, ::Ifc2x3::IfcSizeSelect* v7_LineHeight);
-    typedef IfcTemplatedEntityList< IfcTextStyleTextModel > list;
+    typedef aggregate_of< IfcTextStyleTextModel > list;
 };
 /// The text style with box characteristics allows the presentation of annotated text by specifying the characteristics of the character boxes of the text and the spacing between the character boxes.
 /// 
@@ -12210,28 +11782,18 @@ public:
 /// IFC2x3 CHANGE  The attribute item CharacterSpacing has been added.
 class IFC_PARSE_API IfcTextStyleWithBoxCharacteristics : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute BoxHeight is defined for this IfcTextStyleWithBoxCharacteristics
-    bool hasBoxHeight() const;
     /// It is the height scaling factor in the definition of a character glyph.
-    double BoxHeight() const;
-    void setBoxHeight(double v);
-    /// Whether the optional attribute BoxWidth is defined for this IfcTextStyleWithBoxCharacteristics
-    bool hasBoxWidth() const;
+    boost::optional< double > BoxHeight() const;
+    void setBoxHeight(boost::optional< double > v);
     /// It is the width scaling factor in the definition of a character glyph.
-    double BoxWidth() const;
-    void setBoxWidth(double v);
-    /// Whether the optional attribute BoxSlantAngle is defined for this IfcTextStyleWithBoxCharacteristics
-    bool hasBoxSlantAngle() const;
+    boost::optional< double > BoxWidth() const;
+    void setBoxWidth(boost::optional< double > v);
     /// It indicated that the box of a character glyph shall be represented as a parallelogram, with the angle being between the character up line and an axis perpendicular to the character base line.
-    double BoxSlantAngle() const;
-    void setBoxSlantAngle(double v);
-    /// Whether the optional attribute BoxRotateAngle is defined for this IfcTextStyleWithBoxCharacteristics
-    bool hasBoxRotateAngle() const;
+    boost::optional< double > BoxSlantAngle() const;
+    void setBoxSlantAngle(boost::optional< double > v);
     /// It indicated that the box of a character glyph shall be presented at an angle to the base line of a text string within which the glyph occurs, the angle being that between the base line of the glyph and an axis perpendicular to the baseline of the text string.
-    double BoxRotateAngle() const;
-    void setBoxRotateAngle(double v);
-    /// Whether the optional attribute CharacterSpacing is defined for this IfcTextStyleWithBoxCharacteristics
-    bool hasCharacterSpacing() const;
+    boost::optional< double > BoxRotateAngle() const;
+    void setBoxRotateAngle(boost::optional< double > v);
     /// The distance between the character boxes of adjacent characters.
     ::Ifc2x3::IfcSizeSelect* CharacterSpacing() const;
     void setCharacterSpacing(::Ifc2x3::IfcSizeSelect* v);
@@ -12239,7 +11801,7 @@ public:
     static const IfcParse::entity& Class();
     IfcTextStyleWithBoxCharacteristics (IfcEntityInstanceData* e);
     IfcTextStyleWithBoxCharacteristics (boost::optional< double > v1_BoxHeight, boost::optional< double > v2_BoxWidth, boost::optional< double > v3_BoxSlantAngle, boost::optional< double > v4_BoxRotateAngle, ::Ifc2x3::IfcSizeSelect* v5_CharacterSpacing);
-    typedef IfcTemplatedEntityList< IfcTextStyleWithBoxCharacteristics > list;
+    typedef aggregate_of< IfcTextStyleWithBoxCharacteristics > list;
 };
 /// The IfcTextureCoordinate a an abstract supertype of the different kinds to apply texture coordinates to geometries. For vertex based geometries an explicit assignment of 2D texture vertices to the 3D geometry points is supported by the subtype IfcTextureMap, in addition there can be a procedural description of how texture coordinates shall be applied to geometric items. If no IfcTextureCoordinate is provided for the IfcSurfaceTexture, the default mapping shall be used.
 /// 
@@ -12254,12 +11816,12 @@ public:
 /// IFC2x4 CHANGE  The inverse attribute AnnotatedSurface is deleted, and the inverse AppliesTextures is added.
 class IFC_PARSE_API IfcTextureCoordinate : public IfcUtil::IfcBaseEntity {
 public:
-        IfcTemplatedEntityList< IfcAnnotationSurface >::ptr AnnotatedSurface() const; // INVERSE IfcAnnotationSurface::TextureCoordinates
+        aggregate_of< IfcAnnotationSurface >::ptr AnnotatedSurface() const; // INVERSE IfcAnnotationSurface::TextureCoordinates
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTextureCoordinate (IfcEntityInstanceData* e);
     IfcTextureCoordinate ();
-    typedef IfcTemplatedEntityList< IfcTextureCoordinate > list;
+    typedef aggregate_of< IfcTextureCoordinate > list;
 };
 /// The IfcTextureCoordinateGenerator describes a procedurally defined mapping function with input parameter to map 2D texture coordinates to 3D geometry vertices. The allowable Mode values and input Parameter need to be agreed upon in view definitions and implementer agreements.
 /// 
@@ -12297,13 +11859,13 @@ public:
     /// The parameters used as arguments by the function as specified by Mode.
     /// 
     /// IFC2x4 CHANGE  Made optional data type restricted to REAL.
-    IfcEntityList::ptr Parameter() const;
-    void setParameter(IfcEntityList::ptr v);
+    aggregate_of_instance::ptr Parameter() const;
+    void setParameter(aggregate_of_instance::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTextureCoordinateGenerator (IfcEntityInstanceData* e);
-    IfcTextureCoordinateGenerator (std::string v1_Mode, IfcEntityList::ptr v2_Parameter);
-    typedef IfcTemplatedEntityList< IfcTextureCoordinateGenerator > list;
+    IfcTextureCoordinateGenerator (std::string v1_Mode, aggregate_of_instance::ptr v2_Parameter);
+    typedef aggregate_of< IfcTextureCoordinateGenerator > list;
 };
 /// An IfcTextureMap provides the mapping of the
 /// 2-dimensional texture coordinates to the surface onto which it is
@@ -12358,13 +11920,13 @@ public:
 /// The FaceBound referenced in AppliedTo shall be used by the vertex based geometry, to which this texture map is assigned to by through the IfcStyledItem.
 class IFC_PARSE_API IfcTextureMap : public IfcTextureCoordinate {
 public:
-    IfcTemplatedEntityList< ::Ifc2x3::IfcVertexBasedTextureMap >::ptr TextureMaps() const;
-    void setTextureMaps(IfcTemplatedEntityList< ::Ifc2x3::IfcVertexBasedTextureMap >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcVertexBasedTextureMap >::ptr TextureMaps() const;
+    void setTextureMaps(aggregate_of< ::Ifc2x3::IfcVertexBasedTextureMap >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTextureMap (IfcEntityInstanceData* e);
-    IfcTextureMap (IfcTemplatedEntityList< ::Ifc2x3::IfcVertexBasedTextureMap >::ptr v1_TextureMaps);
-    typedef IfcTemplatedEntityList< IfcTextureMap > list;
+    IfcTextureMap (aggregate_of< ::Ifc2x3::IfcVertexBasedTextureMap >::ptr v1_TextureMaps);
+    typedef aggregate_of< IfcTextureMap > list;
 };
 /// An IfcTextureVertex is a list of 2 (S, T) texture coordinates. 
 /// 
@@ -12402,32 +11964,24 @@ public:
     static const IfcParse::entity& Class();
     IfcTextureVertex (IfcEntityInstanceData* e);
     IfcTextureVertex (std::vector< double > /*[2:2]*/ v1_Coordinates);
-    typedef IfcTemplatedEntityList< IfcTextureVertex > list;
+    typedef aggregate_of< IfcTextureVertex > list;
 };
 
 class IFC_PARSE_API IfcThermalMaterialProperties : public IfcMaterialProperties {
 public:
-    /// Whether the optional attribute SpecificHeatCapacity is defined for this IfcThermalMaterialProperties
-    bool hasSpecificHeatCapacity() const;
-    double SpecificHeatCapacity() const;
-    void setSpecificHeatCapacity(double v);
-    /// Whether the optional attribute BoilingPoint is defined for this IfcThermalMaterialProperties
-    bool hasBoilingPoint() const;
-    double BoilingPoint() const;
-    void setBoilingPoint(double v);
-    /// Whether the optional attribute FreezingPoint is defined for this IfcThermalMaterialProperties
-    bool hasFreezingPoint() const;
-    double FreezingPoint() const;
-    void setFreezingPoint(double v);
-    /// Whether the optional attribute ThermalConductivity is defined for this IfcThermalMaterialProperties
-    bool hasThermalConductivity() const;
-    double ThermalConductivity() const;
-    void setThermalConductivity(double v);
+    boost::optional< double > SpecificHeatCapacity() const;
+    void setSpecificHeatCapacity(boost::optional< double > v);
+    boost::optional< double > BoilingPoint() const;
+    void setBoilingPoint(boost::optional< double > v);
+    boost::optional< double > FreezingPoint() const;
+    void setFreezingPoint(boost::optional< double > v);
+    boost::optional< double > ThermalConductivity() const;
+    void setThermalConductivity(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcThermalMaterialProperties (IfcEntityInstanceData* e);
     IfcThermalMaterialProperties (::Ifc2x3::IfcMaterial* v1_Material, boost::optional< double > v2_SpecificHeatCapacity, boost::optional< double > v3_BoilingPoint, boost::optional< double > v4_FreezingPoint, boost::optional< double > v5_ThermalConductivity);
-    typedef IfcTemplatedEntityList< IfcThermalMaterialProperties > list;
+    typedef aggregate_of< IfcThermalMaterialProperties > list;
 };
 /// A time series is a set of a time-stamped data entries. It allows a natural association of data collected over intervals of time. Time series can be regular or irregular. In regular time series data arrive predictably at predefined intervals.  In irregular time series  some or all time stamps do not follow a repetitive pattern and unpredictable bursts of data may arrive at unspecified points in time.
 /// 
@@ -12439,11 +11993,9 @@ public:
     /// An unique name for the time series.
     std::string Name() const;
     void setName(std::string v);
-    /// Whether the optional attribute Description is defined for this IfcTimeSeries
-    bool hasDescription() const;
     /// A text description of the data that the series represents.
-    std::string Description() const;
-    void setDescription(std::string v);
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
     /// The start time of a time series.
     ::Ifc2x3::IfcDateTimeSelect* StartTime() const;
     void setStartTime(::Ifc2x3::IfcDateTimeSelect* v);
@@ -12456,35 +12008,31 @@ public:
     /// The orgin of a time series data.
     ::Ifc2x3::IfcDataOriginEnum::Value DataOrigin() const;
     void setDataOrigin(::Ifc2x3::IfcDataOriginEnum::Value v);
-    /// Whether the optional attribute UserDefinedDataOrigin is defined for this IfcTimeSeries
-    bool hasUserDefinedDataOrigin() const;
     /// Value of the data origin if DataOrigin attribute is USERDEFINED.
-    std::string UserDefinedDataOrigin() const;
-    void setUserDefinedDataOrigin(std::string v);
-    /// Whether the optional attribute Unit is defined for this IfcTimeSeries
-    bool hasUnit() const;
+    boost::optional< std::string > UserDefinedDataOrigin() const;
+    void setUserDefinedDataOrigin(boost::optional< std::string > v);
     /// The unit to be assigned to all values within the time series. Note that mixing units is not allowed. If the value is not given, the global unit for the type of IfcValue, as defined at IfcProject.UnitsInContext is used.
     ::Ifc2x3::IfcUnit* Unit() const;
     void setUnit(::Ifc2x3::IfcUnit* v);
-        IfcTemplatedEntityList< IfcTimeSeriesReferenceRelationship >::ptr DocumentedBy() const; // INVERSE IfcTimeSeriesReferenceRelationship::ReferencedTimeSeries
+        aggregate_of< IfcTimeSeriesReferenceRelationship >::ptr DocumentedBy() const; // INVERSE IfcTimeSeriesReferenceRelationship::ReferencedTimeSeries
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTimeSeries (IfcEntityInstanceData* e);
     IfcTimeSeries (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcDateTimeSelect* v3_StartTime, ::Ifc2x3::IfcDateTimeSelect* v4_EndTime, ::Ifc2x3::IfcTimeSeriesDataTypeEnum::Value v5_TimeSeriesDataType, ::Ifc2x3::IfcDataOriginEnum::Value v6_DataOrigin, boost::optional< std::string > v7_UserDefinedDataOrigin, ::Ifc2x3::IfcUnit* v8_Unit);
-    typedef IfcTemplatedEntityList< IfcTimeSeries > list;
+    typedef aggregate_of< IfcTimeSeries > list;
 };
 
 class IFC_PARSE_API IfcTimeSeriesReferenceRelationship : public IfcUtil::IfcBaseEntity {
 public:
     ::Ifc2x3::IfcTimeSeries* ReferencedTimeSeries() const;
     void setReferencedTimeSeries(::Ifc2x3::IfcTimeSeries* v);
-    IfcEntityList::ptr TimeSeriesReferences() const;
-    void setTimeSeriesReferences(IfcEntityList::ptr v);
+    aggregate_of_instance::ptr TimeSeriesReferences() const;
+    void setTimeSeriesReferences(aggregate_of_instance::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTimeSeriesReferenceRelationship (IfcEntityInstanceData* e);
-    IfcTimeSeriesReferenceRelationship (::Ifc2x3::IfcTimeSeries* v1_ReferencedTimeSeries, IfcEntityList::ptr v2_TimeSeriesReferences);
-    typedef IfcTemplatedEntityList< IfcTimeSeriesReferenceRelationship > list;
+    IfcTimeSeriesReferenceRelationship (::Ifc2x3::IfcTimeSeries* v1_ReferencedTimeSeries, aggregate_of_instance::ptr v2_TimeSeriesReferences);
+    typedef aggregate_of< IfcTimeSeriesReferenceRelationship > list;
 };
 /// A time series value is a list of values that comprise the time series. At least one value must be supplied. Applications are expected to normalize values by applying the following three rules:
 /// 
@@ -12498,13 +12046,13 @@ public:
 class IFC_PARSE_API IfcTimeSeriesValue : public IfcUtil::IfcBaseEntity {
 public:
     /// A list of time-series values. At least one value is required.
-    IfcEntityList::ptr ListValues() const;
-    void setListValues(IfcEntityList::ptr v);
+    aggregate_of_instance::ptr ListValues() const;
+    void setListValues(aggregate_of_instance::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTimeSeriesValue (IfcEntityInstanceData* e);
-    IfcTimeSeriesValue (IfcEntityList::ptr v1_ListValues);
-    typedef IfcTemplatedEntityList< IfcTimeSeriesValue > list;
+    IfcTimeSeriesValue (aggregate_of_instance::ptr v1_ListValues);
+    typedef aggregate_of< IfcTimeSeriesValue > list;
 };
 /// Definition from ISO/CD 10303-42:1992: The topological representation item is the supertype for all the topological representation items in the geometry resource. 
 /// 
@@ -12517,7 +12065,7 @@ public:
     static const IfcParse::entity& Class();
     IfcTopologicalRepresentationItem (IfcEntityInstanceData* e);
     IfcTopologicalRepresentationItem ();
-    typedef IfcTemplatedEntityList< IfcTopologicalRepresentationItem > list;
+    typedef aggregate_of< IfcTopologicalRepresentationItem > list;
 };
 /// IfcTopologyRepresentation
 /// represents the concept of a particular topological representation of a
@@ -12558,8 +12106,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTopologyRepresentation (IfcEntityInstanceData* e);
-    IfcTopologyRepresentation (::Ifc2x3::IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationItem >::ptr v4_Items);
-    typedef IfcTemplatedEntityList< IfcTopologyRepresentation > list;
+    IfcTopologyRepresentation (::Ifc2x3::IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, aggregate_of< ::Ifc2x3::IfcRepresentationItem >::ptr v4_Items);
+    typedef aggregate_of< IfcTopologyRepresentation > list;
 };
 /// IfcUnitAssignment indicates a set of units which may be assigned. Within an IfcUnitAssigment each unit definition shall be unique; that is, there shall be no redundant unit definitions for the same unit type such as length unit or area unit. For currencies, there shall be only a single IfcMonetaryUnit within an IfcUnitAssignment.
 /// 
@@ -12569,13 +12117,13 @@ public:
 class IFC_PARSE_API IfcUnitAssignment : public IfcUtil::IfcBaseEntity {
 public:
     /// Units to be included within a unit assignment.
-    IfcEntityList::ptr Units() const;
-    void setUnits(IfcEntityList::ptr v);
+    aggregate_of_instance::ptr Units() const;
+    void setUnits(aggregate_of_instance::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcUnitAssignment (IfcEntityInstanceData* e);
-    IfcUnitAssignment (IfcEntityList::ptr v1_Units);
-    typedef IfcTemplatedEntityList< IfcUnitAssignment > list;
+    IfcUnitAssignment (aggregate_of_instance::ptr v1_Units);
+    typedef aggregate_of< IfcUnitAssignment > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A vertex is the topological construct corresponding to a point. It has dimensionality 0 and extent 0. The domain of a vertex, if present, is a point in m dimensional real space RM; this is represented by the vertex point subtype. 
 /// 
@@ -12593,20 +12141,20 @@ public:
     static const IfcParse::entity& Class();
     IfcVertex (IfcEntityInstanceData* e);
     IfcVertex ();
-    typedef IfcTemplatedEntityList< IfcVertex > list;
+    typedef aggregate_of< IfcVertex > list;
 };
 
 class IFC_PARSE_API IfcVertexBasedTextureMap : public IfcUtil::IfcBaseEntity {
 public:
-    IfcTemplatedEntityList< ::Ifc2x3::IfcTextureVertex >::ptr TextureVertices() const;
-    void setTextureVertices(IfcTemplatedEntityList< ::Ifc2x3::IfcTextureVertex >::ptr v);
-    IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr TexturePoints() const;
-    void setTexturePoints(IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcTextureVertex >::ptr TextureVertices() const;
+    void setTextureVertices(aggregate_of< ::Ifc2x3::IfcTextureVertex >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcCartesianPoint >::ptr TexturePoints() const;
+    void setTexturePoints(aggregate_of< ::Ifc2x3::IfcCartesianPoint >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcVertexBasedTextureMap (IfcEntityInstanceData* e);
-    IfcVertexBasedTextureMap (IfcTemplatedEntityList< ::Ifc2x3::IfcTextureVertex >::ptr v1_TextureVertices, IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr v2_TexturePoints);
-    typedef IfcTemplatedEntityList< IfcVertexBasedTextureMap > list;
+    IfcVertexBasedTextureMap (aggregate_of< ::Ifc2x3::IfcTextureVertex >::ptr v1_TextureVertices, aggregate_of< ::Ifc2x3::IfcCartesianPoint >::ptr v2_TexturePoints);
+    typedef aggregate_of< IfcVertexBasedTextureMap > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A vertex point is a vertex which has its geometry defined as a point.  
 /// 
@@ -12626,7 +12174,7 @@ public:
     static const IfcParse::entity& Class();
     IfcVertexPoint (IfcEntityInstanceData* e);
     IfcVertexPoint (::Ifc2x3::IfcPoint* v1_VertexGeometry);
-    typedef IfcTemplatedEntityList< IfcVertexPoint > list;
+    typedef aggregate_of< IfcVertexPoint > list;
 };
 /// IfcVirtualGridIntersection defines the derived location of the intersection between two grid axes. Offset values may be given to set an offset distance to the grid axis for the calculation of the virtual grid intersection.
 /// 
@@ -12690,53 +12238,39 @@ public:
 class IFC_PARSE_API IfcVirtualGridIntersection : public IfcUtil::IfcBaseEntity {
 public:
     /// Two grid axes which intersects at exactly one intersection (see also informal proposition at IfcGrid). If attribute OffsetDistances is omitted, the intersection defines the placement or ref direction of a grid placement directly. If OffsetDistances are given, the intersection is defined by the offset curves to the grid axes.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr IntersectingAxes() const;
-    void setIntersectingAxes(IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcGridAxis >::ptr IntersectingAxes() const;
+    void setIntersectingAxes(aggregate_of< ::Ifc2x3::IfcGridAxis >::ptr v);
     /// Offset distances to the grid axes. If given, it defines virtual offset curves to the grid axes. The intersection of the offset curves specify the virtual grid intersection.
     std::vector< double > /*[2:3]*/ OffsetDistances() const;
     void setOffsetDistances(std::vector< double > /*[2:3]*/ v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcVirtualGridIntersection (IfcEntityInstanceData* e);
-    IfcVirtualGridIntersection (IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr v1_IntersectingAxes, std::vector< double > /*[2:3]*/ v2_OffsetDistances);
-    typedef IfcTemplatedEntityList< IfcVirtualGridIntersection > list;
+    IfcVirtualGridIntersection (aggregate_of< ::Ifc2x3::IfcGridAxis >::ptr v1_IntersectingAxes, std::vector< double > /*[2:3]*/ v2_OffsetDistances);
+    typedef aggregate_of< IfcVirtualGridIntersection > list;
 };
 
 class IFC_PARSE_API IfcWaterProperties : public IfcMaterialProperties {
 public:
-    /// Whether the optional attribute IsPotable is defined for this IfcWaterProperties
-    bool hasIsPotable() const;
-    bool IsPotable() const;
-    void setIsPotable(bool v);
-    /// Whether the optional attribute Hardness is defined for this IfcWaterProperties
-    bool hasHardness() const;
-    double Hardness() const;
-    void setHardness(double v);
-    /// Whether the optional attribute AlkalinityConcentration is defined for this IfcWaterProperties
-    bool hasAlkalinityConcentration() const;
-    double AlkalinityConcentration() const;
-    void setAlkalinityConcentration(double v);
-    /// Whether the optional attribute AcidityConcentration is defined for this IfcWaterProperties
-    bool hasAcidityConcentration() const;
-    double AcidityConcentration() const;
-    void setAcidityConcentration(double v);
-    /// Whether the optional attribute ImpuritiesContent is defined for this IfcWaterProperties
-    bool hasImpuritiesContent() const;
-    double ImpuritiesContent() const;
-    void setImpuritiesContent(double v);
-    /// Whether the optional attribute PHLevel is defined for this IfcWaterProperties
-    bool hasPHLevel() const;
-    double PHLevel() const;
-    void setPHLevel(double v);
-    /// Whether the optional attribute DissolvedSolidsContent is defined for this IfcWaterProperties
-    bool hasDissolvedSolidsContent() const;
-    double DissolvedSolidsContent() const;
-    void setDissolvedSolidsContent(double v);
+    boost::optional< bool > IsPotable() const;
+    void setIsPotable(boost::optional< bool > v);
+    boost::optional< double > Hardness() const;
+    void setHardness(boost::optional< double > v);
+    boost::optional< double > AlkalinityConcentration() const;
+    void setAlkalinityConcentration(boost::optional< double > v);
+    boost::optional< double > AcidityConcentration() const;
+    void setAcidityConcentration(boost::optional< double > v);
+    boost::optional< double > ImpuritiesContent() const;
+    void setImpuritiesContent(boost::optional< double > v);
+    boost::optional< double > PHLevel() const;
+    void setPHLevel(boost::optional< double > v);
+    boost::optional< double > DissolvedSolidsContent() const;
+    void setDissolvedSolidsContent(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcWaterProperties (IfcEntityInstanceData* e);
     IfcWaterProperties (::Ifc2x3::IfcMaterial* v1_Material, boost::optional< bool > v2_IsPotable, boost::optional< double > v3_Hardness, boost::optional< double > v4_AlkalinityConcentration, boost::optional< double > v5_AcidityConcentration, boost::optional< double > v6_ImpuritiesContent, boost::optional< double > v7_PHLevel, boost::optional< double > v8_DissolvedSolidsContent);
-    typedef IfcTemplatedEntityList< IfcWaterProperties > list;
+    typedef aggregate_of< IfcWaterProperties > list;
 };
 
 class IFC_PARSE_API IfcAnnotationOccurrence : public IfcStyledItem {
@@ -12744,8 +12278,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcAnnotationOccurrence (IfcEntityInstanceData* e);
-    IfcAnnotationOccurrence (::Ifc2x3::IfcRepresentationItem* v1_Item, IfcTemplatedEntityList< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
-    typedef IfcTemplatedEntityList< IfcAnnotationOccurrence > list;
+    IfcAnnotationOccurrence (::Ifc2x3::IfcRepresentationItem* v1_Item, aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
+    typedef aggregate_of< IfcAnnotationOccurrence > list;
 };
 
 class IFC_PARSE_API IfcAnnotationSurfaceOccurrence : public IfcAnnotationOccurrence {
@@ -12753,8 +12287,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcAnnotationSurfaceOccurrence (IfcEntityInstanceData* e);
-    IfcAnnotationSurfaceOccurrence (::Ifc2x3::IfcRepresentationItem* v1_Item, IfcTemplatedEntityList< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
-    typedef IfcTemplatedEntityList< IfcAnnotationSurfaceOccurrence > list;
+    IfcAnnotationSurfaceOccurrence (::Ifc2x3::IfcRepresentationItem* v1_Item, aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
+    typedef aggregate_of< IfcAnnotationSurfaceOccurrence > list;
 };
 
 class IFC_PARSE_API IfcAnnotationSymbolOccurrence : public IfcAnnotationOccurrence {
@@ -12762,8 +12296,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcAnnotationSymbolOccurrence (IfcEntityInstanceData* e);
-    IfcAnnotationSymbolOccurrence (::Ifc2x3::IfcRepresentationItem* v1_Item, IfcTemplatedEntityList< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
-    typedef IfcTemplatedEntityList< IfcAnnotationSymbolOccurrence > list;
+    IfcAnnotationSymbolOccurrence (::Ifc2x3::IfcRepresentationItem* v1_Item, aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
+    typedef aggregate_of< IfcAnnotationSymbolOccurrence > list;
 };
 
 class IFC_PARSE_API IfcAnnotationTextOccurrence : public IfcAnnotationOccurrence {
@@ -12771,8 +12305,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcAnnotationTextOccurrence (IfcEntityInstanceData* e);
-    IfcAnnotationTextOccurrence (::Ifc2x3::IfcRepresentationItem* v1_Item, IfcTemplatedEntityList< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
-    typedef IfcTemplatedEntityList< IfcAnnotationTextOccurrence > list;
+    IfcAnnotationTextOccurrence (::Ifc2x3::IfcRepresentationItem* v1_Item, aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
+    typedef aggregate_of< IfcAnnotationTextOccurrence > list;
 };
 /// The closed profile IfcArbitraryClosedProfileDef defines an arbitrary two-dimensional profile for the use within the swept surface geometry, the swept area solid or a sectioned spine. It is given by an outer boundary from which the surface or solid can be constructed. 
 /// 
@@ -12801,7 +12335,7 @@ public:
     static const IfcParse::entity& Class();
     IfcArbitraryClosedProfileDef (IfcEntityInstanceData* e);
     IfcArbitraryClosedProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcCurve* v3_OuterCurve);
-    typedef IfcTemplatedEntityList< IfcArbitraryClosedProfileDef > list;
+    typedef aggregate_of< IfcArbitraryClosedProfileDef > list;
 };
 /// The open profile IfcArbitraryOpenProfileDef defines an arbitrary two-dimensional open profile for the use within the swept surface geometry. It is given by an open boundary from with the surface can be constructed. 
 /// 
@@ -12827,7 +12361,7 @@ public:
     static const IfcParse::entity& Class();
     IfcArbitraryOpenProfileDef (IfcEntityInstanceData* e);
     IfcArbitraryOpenProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcBoundedCurve* v3_Curve);
-    typedef IfcTemplatedEntityList< IfcArbitraryOpenProfileDef > list;
+    typedef aggregate_of< IfcArbitraryOpenProfileDef > list;
 };
 /// The IfcArbitraryProfileDefWithVoids defines an arbitrary closed two-dimensional profile with holes defined for the use for the swept area solid or a sectioned spine. It is given by an outer boundary and inner boundaries from with the solid the can be constructed.
 /// 
@@ -12851,13 +12385,13 @@ public:
 class IFC_PARSE_API IfcArbitraryProfileDefWithVoids : public IfcArbitraryClosedProfileDef {
 public:
     /// Set of bounded curves, defining the inner boundaries of the arbitrary profile.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcCurve >::ptr InnerCurves() const;
-    void setInnerCurves(IfcTemplatedEntityList< ::Ifc2x3::IfcCurve >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcCurve >::ptr InnerCurves() const;
+    void setInnerCurves(aggregate_of< ::Ifc2x3::IfcCurve >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcArbitraryProfileDefWithVoids (IfcEntityInstanceData* e);
-    IfcArbitraryProfileDefWithVoids (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcCurve* v3_OuterCurve, IfcTemplatedEntityList< ::Ifc2x3::IfcCurve >::ptr v4_InnerCurves);
-    typedef IfcTemplatedEntityList< IfcArbitraryProfileDefWithVoids > list;
+    IfcArbitraryProfileDefWithVoids (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcCurve* v3_OuterCurve, aggregate_of< ::Ifc2x3::IfcCurve >::ptr v4_InnerCurves);
+    typedef aggregate_of< IfcArbitraryProfileDefWithVoids > list;
 };
 /// An IfcBlobTexture provides a 2-dimensional distribution of the lighting parameters of a surface onto which it is mapped. The texture itself is given as a single binary blob, representing the content of a pixel format file. The file format of the pixel file is given by the RasterFormat attribute and allowable formats are guided by where rule SupportedRasterFormat.
 /// 
@@ -12880,7 +12414,7 @@ public:
     static const IfcParse::entity& Class();
     IfcBlobTexture (IfcEntityInstanceData* e);
     IfcBlobTexture (bool v1_RepeatS, bool v2_RepeatT, ::Ifc2x3::IfcSurfaceTextureEnum::Value v3_TextureType, ::Ifc2x3::IfcCartesianTransformationOperator2D* v4_TextureTransform, std::string v5_RasterFormat, bool v6_RasterCode);
-    typedef IfcTemplatedEntityList< IfcBlobTexture > list;
+    typedef aggregate_of< IfcBlobTexture > list;
 };
 /// The profile IfcCenterLineProfileDef defines an arbitrary two-dimensional open, not self intersecting profile for the use within the swept solid geometry. It is given by an area defined by applying a constant thickness to a centerline, generating an area from which the solid can be constructed.
 /// 
@@ -12920,7 +12454,7 @@ public:
     static const IfcParse::entity& Class();
     IfcCenterLineProfileDef (IfcEntityInstanceData* e);
     IfcCenterLineProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcBoundedCurve* v3_Curve, double v4_Thickness);
-    typedef IfcTemplatedEntityList< IfcCenterLineProfileDef > list;
+    typedef aggregate_of< IfcCenterLineProfileDef > list;
 };
 /// An IfcClassificationReference is a reference into a classification system or source (see IfcClassification) for a specific classification key (or notation).
 /// 
@@ -12945,8 +12479,6 @@ public:
 /// The IfcClassificationReference can be used as a form of 'lightweight' classification through the 'Identification' attribute inherited from the abstract IfcExternalReference class. In this case, the 'Identification' could take (for instance) the Uniclass notation "L6814" which, if the classification was well understood by all parties and was known to be taken from a particular classification source, would be sufficient. The Name attribute could be the title "Tanking". This would remove the need for the overhead of the more complete classification structure of the model.
 class IFC_PARSE_API IfcClassificationReference : public IfcExternalReference {
 public:
-    /// Whether the optional attribute ReferencedSource is defined for this IfcClassificationReference
-    bool hasReferencedSource() const;
     /// The classification system or source that is referenced.
     ::Ifc2x3::IfcClassification* ReferencedSource() const;
     void setReferencedSource(::Ifc2x3::IfcClassification* v);
@@ -12954,7 +12486,7 @@ public:
     static const IfcParse::entity& Class();
     IfcClassificationReference (IfcEntityInstanceData* e);
     IfcClassificationReference (boost::optional< std::string > v1_Location, boost::optional< std::string > v2_ItemReference, boost::optional< std::string > v3_Name, ::Ifc2x3::IfcClassification* v4_ReferencedSource);
-    typedef IfcTemplatedEntityList< IfcClassificationReference > list;
+    typedef aggregate_of< IfcClassificationReference > list;
 };
 /// Definition from ISO/CD 10303-46:1992: A colour rgb as a subtype of colour specifications is defined by three colour component values for red, green, and blue in the RGB colour model.
 /// 
@@ -12985,7 +12517,7 @@ public:
     static const IfcParse::entity& Class();
     IfcColourRgb (IfcEntityInstanceData* e);
     IfcColourRgb (boost::optional< std::string > v1_Name, double v2_Red, double v3_Green, double v4_Blue);
-    typedef IfcTemplatedEntityList< IfcColourRgb > list;
+    typedef aggregate_of< IfcColourRgb > list;
 };
 /// IfcComplexProperty is used to define complex properties to be handled completely within a property set. The included set of properties may be a mixed or consistent collection of IfcProperty subtypes. This enables the definition of a set of properties to be included as a single 'property' entry in an IfcPropertySet. The definition of such an IfcComplexProperty can be reused in many different IfcPropertySet's.
 /// 
@@ -12999,13 +12531,13 @@ public:
     std::string UsageName() const;
     void setUsageName(std::string v);
     /// Set of properties that can be used within this complex property (may include other complex properties).
-    IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr HasProperties() const;
-    void setHasProperties(IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcProperty >::ptr HasProperties() const;
+    void setHasProperties(aggregate_of< ::Ifc2x3::IfcProperty >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcComplexProperty (IfcEntityInstanceData* e);
-    IfcComplexProperty (std::string v1_Name, boost::optional< std::string > v2_Description, std::string v3_UsageName, IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr v4_HasProperties);
-    typedef IfcTemplatedEntityList< IfcComplexProperty > list;
+    IfcComplexProperty (std::string v1_Name, boost::optional< std::string > v2_Description, std::string v3_UsageName, aggregate_of< ::Ifc2x3::IfcProperty >::ptr v4_HasProperties);
+    typedef aggregate_of< IfcComplexProperty > list;
 };
 /// The IfcCompositeProfileDef
 /// defines the profile by composition of other profiles. The composition
@@ -13046,18 +12578,16 @@ public:
 class IFC_PARSE_API IfcCompositeProfileDef : public IfcProfileDef {
 public:
     /// The profiles which are used to define the composite profile.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcProfileDef >::ptr Profiles() const;
-    void setProfiles(IfcTemplatedEntityList< ::Ifc2x3::IfcProfileDef >::ptr v);
-    /// Whether the optional attribute Label is defined for this IfcCompositeProfileDef
-    bool hasLabel() const;
+    aggregate_of< ::Ifc2x3::IfcProfileDef >::ptr Profiles() const;
+    void setProfiles(aggregate_of< ::Ifc2x3::IfcProfileDef >::ptr v);
     /// The name by which the composition may be referred to. The actual meaning of the name has to be defined in the context of applications.
-    std::string Label() const;
-    void setLabel(std::string v);
+    boost::optional< std::string > Label() const;
+    void setLabel(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCompositeProfileDef (IfcEntityInstanceData* e);
-    IfcCompositeProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcTemplatedEntityList< ::Ifc2x3::IfcProfileDef >::ptr v3_Profiles, boost::optional< std::string > v4_Label);
-    typedef IfcTemplatedEntityList< IfcCompositeProfileDef > list;
+    IfcCompositeProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, aggregate_of< ::Ifc2x3::IfcProfileDef >::ptr v3_Profiles, boost::optional< std::string > v4_Label);
+    typedef aggregate_of< IfcCompositeProfileDef > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A connected_face_set is a set of faces such that the domain of faces together with their bounding edges and vertices is connected.  
 /// 
@@ -13071,13 +12601,13 @@ public:
 class IFC_PARSE_API IfcConnectedFaceSet : public IfcTopologicalRepresentationItem {
 public:
     /// The set of faces arcwise connected along common edges or vertices.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcFace >::ptr CfsFaces() const;
-    void setCfsFaces(IfcTemplatedEntityList< ::Ifc2x3::IfcFace >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcFace >::ptr CfsFaces() const;
+    void setCfsFaces(aggregate_of< ::Ifc2x3::IfcFace >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcConnectedFaceSet (IfcEntityInstanceData* e);
-    IfcConnectedFaceSet (IfcTemplatedEntityList< ::Ifc2x3::IfcFace >::ptr v1_CfsFaces);
-    typedef IfcTemplatedEntityList< IfcConnectedFaceSet > list;
+    IfcConnectedFaceSet (aggregate_of< ::Ifc2x3::IfcFace >::ptr v1_CfsFaces);
+    typedef aggregate_of< IfcConnectedFaceSet > list;
 };
 /// IfcConnectionCurveGeometry is used to describe the geometric constraints that facilitate the physical connection of two objects at a curve or at an edge with curve geometry associated. It is envisioned as a control that applies to the element connection relationships. 
 /// 
@@ -13097,8 +12627,6 @@ public:
     /// The bounded curve at which the connected objects are aligned at the relating element, given in the LCS of the relating element.
     ::Ifc2x3::IfcCurveOrEdgeCurve* CurveOnRelatingElement() const;
     void setCurveOnRelatingElement(::Ifc2x3::IfcCurveOrEdgeCurve* v);
-    /// Whether the optional attribute CurveOnRelatedElement is defined for this IfcConnectionCurveGeometry
-    bool hasCurveOnRelatedElement() const;
     /// The bounded curve at which the connected objects are aligned at the related element, given in the LCS of the related element. If the information is omitted, then the origin of the related element is used.
     ::Ifc2x3::IfcCurveOrEdgeCurve* CurveOnRelatedElement() const;
     void setCurveOnRelatedElement(::Ifc2x3::IfcCurveOrEdgeCurve* v);
@@ -13106,7 +12634,7 @@ public:
     static const IfcParse::entity& Class();
     IfcConnectionCurveGeometry (IfcEntityInstanceData* e);
     IfcConnectionCurveGeometry (::Ifc2x3::IfcCurveOrEdgeCurve* v1_CurveOnRelatingElement, ::Ifc2x3::IfcCurveOrEdgeCurve* v2_CurveOnRelatedElement);
-    typedef IfcTemplatedEntityList< IfcConnectionCurveGeometry > list;
+    typedef aggregate_of< IfcConnectionCurveGeometry > list;
 };
 /// IfcConnectionPointEccentricity is used to describe the geometric constraints that facilitate the physical connection of two objects at a point or vertex point with associated point coordinates. There is a physical distance, or eccentricity, etween the connection points of both object. The eccentricity can be either given by:
 /// 
@@ -13129,26 +12657,20 @@ public:
 /// The IfcPoint (or the IfcVertexPoint with an associated IfcPoint) at the PointOnRelatingElement attribute defines the point where the basic geometry items of the connected elements connects. The point coordinates are provided within the local coordinate system of the RelatingElement, as specified at the IfcRelConnects subtype that utilizes the IfcConnectionPointGeometry. Optionally, the same point coordinates can also be provided within the local coordinate system of the RelatedElement by using the PointOnRelatedElement attribute, otherwise the distance to the point at the RelatedElement has to be given by the three eccentricity values.
 class IFC_PARSE_API IfcConnectionPointEccentricity : public IfcConnectionPointGeometry {
 public:
-    /// Whether the optional attribute EccentricityInX is defined for this IfcConnectionPointEccentricity
-    bool hasEccentricityInX() const;
     /// Distance in x direction between the two points (or vertex points) engaged in the point connection.
-    double EccentricityInX() const;
-    void setEccentricityInX(double v);
-    /// Whether the optional attribute EccentricityInY is defined for this IfcConnectionPointEccentricity
-    bool hasEccentricityInY() const;
+    boost::optional< double > EccentricityInX() const;
+    void setEccentricityInX(boost::optional< double > v);
     /// Distance in y direction between the two points (or vertex points) engaged in the point connection.
-    double EccentricityInY() const;
-    void setEccentricityInY(double v);
-    /// Whether the optional attribute EccentricityInZ is defined for this IfcConnectionPointEccentricity
-    bool hasEccentricityInZ() const;
+    boost::optional< double > EccentricityInY() const;
+    void setEccentricityInY(boost::optional< double > v);
     /// Distance in z direction between the two points (or vertex points) engaged in the point connection.
-    double EccentricityInZ() const;
-    void setEccentricityInZ(double v);
+    boost::optional< double > EccentricityInZ() const;
+    void setEccentricityInZ(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcConnectionPointEccentricity (IfcEntityInstanceData* e);
     IfcConnectionPointEccentricity (::Ifc2x3::IfcPointOrVertexPoint* v1_PointOnRelatingElement, ::Ifc2x3::IfcPointOrVertexPoint* v2_PointOnRelatedElement, boost::optional< double > v3_EccentricityInX, boost::optional< double > v4_EccentricityInY, boost::optional< double > v5_EccentricityInZ);
-    typedef IfcTemplatedEntityList< IfcConnectionPointEccentricity > list;
+    typedef aggregate_of< IfcConnectionPointEccentricity > list;
 };
 /// Definition from ISO/CD 10303-41:1992: A context dependent unit is a unit which is not related to the SI system.
 /// 
@@ -13166,7 +12688,7 @@ public:
     static const IfcParse::entity& Class();
     IfcContextDependentUnit (IfcEntityInstanceData* e);
     IfcContextDependentUnit (::Ifc2x3::IfcDimensionalExponents* v1_Dimensions, ::Ifc2x3::IfcUnitEnum::Value v2_UnitType, std::string v3_Name);
-    typedef IfcTemplatedEntityList< IfcContextDependentUnit > list;
+    typedef aggregate_of< IfcContextDependentUnit > list;
 };
 /// Definition from ISO/CD 10303-41:1992: A conversion based unit is a unit that is defined based on a measure with unit.
 /// 
@@ -13227,7 +12749,7 @@ public:
     static const IfcParse::entity& Class();
     IfcConversionBasedUnit (IfcEntityInstanceData* e);
     IfcConversionBasedUnit (::Ifc2x3::IfcDimensionalExponents* v1_Dimensions, ::Ifc2x3::IfcUnitEnum::Value v2_UnitType, std::string v3_Name, ::Ifc2x3::IfcMeasureWithUnit* v4_ConversionFactor);
-    typedef IfcTemplatedEntityList< IfcConversionBasedUnit > list;
+    typedef aggregate_of< IfcConversionBasedUnit > list;
 };
 /// Definition from ISO/CD 10303-46:1992: A curve style specifies the visual appearance of curves.
 /// 
@@ -13248,18 +12770,12 @@ public:
 /// HISTORY  New entity in IFC2x2.
 class IFC_PARSE_API IfcCurveStyle : public IfcPresentationStyle {
 public:
-    /// Whether the optional attribute CurveFont is defined for this IfcCurveStyle
-    bool hasCurveFont() const;
     /// A curve style font which is used to present a curve. It can either be a predefined curve font, or an explicitly defined curve font. Both may be scaled. If not given, then the curve font should be taken from the layer assignment with style, if that is not given either, then the default curve font applies.
     ::Ifc2x3::IfcCurveFontOrScaledCurveFontSelect* CurveFont() const;
     void setCurveFont(::Ifc2x3::IfcCurveFontOrScaledCurveFontSelect* v);
-    /// Whether the optional attribute CurveWidth is defined for this IfcCurveStyle
-    bool hasCurveWidth() const;
     /// A positive length measure in units of the presentation area for the width of a presented curve. If not given, then the style should be taken from the layer assignment with style, if that is not given either, then the default style applies.
     ::Ifc2x3::IfcSizeSelect* CurveWidth() const;
     void setCurveWidth(::Ifc2x3::IfcSizeSelect* v);
-    /// Whether the optional attribute CurveColour is defined for this IfcCurveStyle
-    bool hasCurveColour() const;
     /// The colour of the visible part of the curve. If not given, then the colour should be taken from the layer assignment with style, if that is not given either, then the default colour applies.
     ::Ifc2x3::IfcColour* CurveColour() const;
     void setCurveColour(::Ifc2x3::IfcColour* v);
@@ -13267,7 +12783,7 @@ public:
     static const IfcParse::entity& Class();
     IfcCurveStyle (IfcEntityInstanceData* e);
     IfcCurveStyle (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcCurveFontOrScaledCurveFontSelect* v2_CurveFont, ::Ifc2x3::IfcSizeSelect* v3_CurveWidth, ::Ifc2x3::IfcColour* v4_CurveColour);
-    typedef IfcTemplatedEntityList< IfcCurveStyle > list;
+    typedef aggregate_of< IfcCurveStyle > list;
 };
 /// IfcDerivedProfileDef defines the profile by transformation from the parent profile. The transformation is given by a two dimensional transformation operator. Transformation includes translation, rotation, mirror and scaling. The latter can be uniform or non uniform. The derived profiles may be used to define swept surfaces, swept area solids or sectioned spines.
 /// 
@@ -13361,16 +12877,14 @@ public:
     /// Transformation operator applied to the parent profile.
     ::Ifc2x3::IfcCartesianTransformationOperator2D* Operator() const;
     void setOperator(::Ifc2x3::IfcCartesianTransformationOperator2D* v);
-    /// Whether the optional attribute Label is defined for this IfcDerivedProfileDef
-    bool hasLabel() const;
     /// The name by which the transformation may be referred to. The actual meaning of the name has to be defined in the context of applications.
-    std::string Label() const;
-    void setLabel(std::string v);
+    boost::optional< std::string > Label() const;
+    void setLabel(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDerivedProfileDef (IfcEntityInstanceData* e);
     IfcDerivedProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcProfileDef* v3_ParentProfile, ::Ifc2x3::IfcCartesianTransformationOperator2D* v4_Operator, boost::optional< std::string > v5_Label);
-    typedef IfcTemplatedEntityList< IfcDerivedProfileDef > list;
+    typedef aggregate_of< IfcDerivedProfileDef > list;
 };
 
 class IFC_PARSE_API IfcDimensionCalloutRelationship : public IfcDraughtingCalloutRelationship {
@@ -13379,7 +12893,7 @@ public:
     static const IfcParse::entity& Class();
     IfcDimensionCalloutRelationship (IfcEntityInstanceData* e);
     IfcDimensionCalloutRelationship (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcDraughtingCallout* v3_RelatingDraughtingCallout, ::Ifc2x3::IfcDraughtingCallout* v4_RelatedDraughtingCallout);
-    typedef IfcTemplatedEntityList< IfcDimensionCalloutRelationship > list;
+    typedef aggregate_of< IfcDimensionCalloutRelationship > list;
 };
 
 class IFC_PARSE_API IfcDimensionPair : public IfcDraughtingCalloutRelationship {
@@ -13388,7 +12902,7 @@ public:
     static const IfcParse::entity& Class();
     IfcDimensionPair (IfcEntityInstanceData* e);
     IfcDimensionPair (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcDraughtingCallout* v3_RelatingDraughtingCallout, ::Ifc2x3::IfcDraughtingCallout* v4_RelatedDraughtingCallout);
-    typedef IfcTemplatedEntityList< IfcDimensionPair > list;
+    typedef aggregate_of< IfcDimensionPair > list;
 };
 /// An IfcDocumentReference is a reference 
 /// to the location of a document. The reference is given by a system 
@@ -13403,12 +12917,12 @@ public:
 ///   Modified in IFC 2x.
 class IFC_PARSE_API IfcDocumentReference : public IfcExternalReference {
 public:
-        IfcTemplatedEntityList< IfcDocumentInformation >::ptr ReferenceToDocument() const; // INVERSE IfcDocumentInformation::DocumentReferences
+        aggregate_of< IfcDocumentInformation >::ptr ReferenceToDocument() const; // INVERSE IfcDocumentInformation::DocumentReferences
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDocumentReference (IfcEntityInstanceData* e);
     IfcDocumentReference (boost::optional< std::string > v1_Location, boost::optional< std::string > v2_ItemReference, boost::optional< std::string > v3_Name);
-    typedef IfcTemplatedEntityList< IfcDocumentReference > list;
+    typedef aggregate_of< IfcDocumentReference > list;
 };
 /// The draughting pre defined text font is a pre defined text font for the purpose to identify a font by name. Allowable names are:
 /// 
@@ -13426,7 +12940,7 @@ public:
     static const IfcParse::entity& Class();
     IfcDraughtingPreDefinedTextFont (IfcEntityInstanceData* e);
     IfcDraughtingPreDefinedTextFont (std::string v1_Name);
-    typedef IfcTemplatedEntityList< IfcDraughtingPreDefinedTextFont > list;
+    typedef aggregate_of< IfcDraughtingPreDefinedTextFont > list;
 };
 /// Definition from ISO/CD 10303-42:1992: An edge is the
 /// topological construct corresponding to the connection of two
@@ -13489,7 +13003,7 @@ public:
     static const IfcParse::entity& Class();
     IfcEdge (IfcEntityInstanceData* e);
     IfcEdge (::Ifc2x3::IfcVertex* v1_EdgeStart, ::Ifc2x3::IfcVertex* v2_EdgeEnd);
-    typedef IfcTemplatedEntityList< IfcEdge > list;
+    typedef aggregate_of< IfcEdge > list;
 };
 /// Definition from ISO/CD 10303-42:1992: An edge curve is
 /// a special subtype of edge which has its geometry fully defined.
@@ -13536,7 +13050,7 @@ public:
     static const IfcParse::entity& Class();
     IfcEdgeCurve (IfcEntityInstanceData* e);
     IfcEdgeCurve (::Ifc2x3::IfcVertex* v1_EdgeStart, ::Ifc2x3::IfcVertex* v2_EdgeEnd, ::Ifc2x3::IfcCurve* v3_EdgeGeometry, bool v4_SameSense);
-    typedef IfcTemplatedEntityList< IfcEdgeCurve > list;
+    typedef aggregate_of< IfcEdgeCurve > list;
 };
 /// The IfcExtendedMaterialProperties assign a set of
 /// defined material properties to associated material definitions.
@@ -13575,19 +13089,17 @@ public:
 /// General Energy Calculation Properties
 class IFC_PARSE_API IfcExtendedMaterialProperties : public IfcMaterialProperties {
 public:
-    IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr ExtendedProperties() const;
-    void setExtendedProperties(IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr v);
-    /// Whether the optional attribute Description is defined for this IfcExtendedMaterialProperties
-    bool hasDescription() const;
-    std::string Description() const;
-    void setDescription(std::string v);
+    aggregate_of< ::Ifc2x3::IfcProperty >::ptr ExtendedProperties() const;
+    void setExtendedProperties(aggregate_of< ::Ifc2x3::IfcProperty >::ptr v);
+    boost::optional< std::string > Description() const;
+    void setDescription(boost::optional< std::string > v);
     std::string Name() const;
     void setName(std::string v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcExtendedMaterialProperties (IfcEntityInstanceData* e);
-    IfcExtendedMaterialProperties (::Ifc2x3::IfcMaterial* v1_Material, IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr v2_ExtendedProperties, boost::optional< std::string > v3_Description, std::string v4_Name);
-    typedef IfcTemplatedEntityList< IfcExtendedMaterialProperties > list;
+    IfcExtendedMaterialProperties (::Ifc2x3::IfcMaterial* v1_Material, aggregate_of< ::Ifc2x3::IfcProperty >::ptr v2_ExtendedProperties, boost::optional< std::string > v3_Description, std::string v4_Name);
+    typedef aggregate_of< IfcExtendedMaterialProperties > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A face is a topological
 ///   entity of dimensionality 2 corresponding to the intuitive notion of a piece of
@@ -13636,13 +13148,13 @@ public:
 class IFC_PARSE_API IfcFace : public IfcTopologicalRepresentationItem {
 public:
     /// Boundaries of the face.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcFaceBound >::ptr Bounds() const;
-    void setBounds(IfcTemplatedEntityList< ::Ifc2x3::IfcFaceBound >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcFaceBound >::ptr Bounds() const;
+    void setBounds(aggregate_of< ::Ifc2x3::IfcFaceBound >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFace (IfcEntityInstanceData* e);
-    IfcFace (IfcTemplatedEntityList< ::Ifc2x3::IfcFaceBound >::ptr v1_Bounds);
-    typedef IfcTemplatedEntityList< IfcFace > list;
+    IfcFace (aggregate_of< ::Ifc2x3::IfcFaceBound >::ptr v1_Bounds);
+    typedef aggregate_of< IfcFace > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A face bound is a loop which is intended to be used for bounding a face.  
 /// 
@@ -13661,7 +13173,7 @@ public:
     static const IfcParse::entity& Class();
     IfcFaceBound (IfcEntityInstanceData* e);
     IfcFaceBound (::Ifc2x3::IfcLoop* v1_Bound, bool v2_Orientation);
-    typedef IfcTemplatedEntityList< IfcFaceBound > list;
+    typedef aggregate_of< IfcFaceBound > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A face outer bound is a special subtype of face bound which carries the additional semantics of defining an outer boundary on the face. No more than one boundary of a face shall be of this type.  
 /// 
@@ -13674,7 +13186,7 @@ public:
     static const IfcParse::entity& Class();
     IfcFaceOuterBound (IfcEntityInstanceData* e);
     IfcFaceOuterBound (::Ifc2x3::IfcLoop* v1_Bound, bool v2_Orientation);
-    typedef IfcTemplatedEntityList< IfcFaceOuterBound > list;
+    typedef aggregate_of< IfcFaceOuterBound > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A face surface
 ///   (IfcFaceSurface) is a subtype of face in which the geometry is defined by an
@@ -13723,8 +13235,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFaceSurface (IfcEntityInstanceData* e);
-    IfcFaceSurface (IfcTemplatedEntityList< ::Ifc2x3::IfcFaceBound >::ptr v1_Bounds, ::Ifc2x3::IfcSurface* v2_FaceSurface, bool v3_SameSense);
-    typedef IfcTemplatedEntityList< IfcFaceSurface > list;
+    IfcFaceSurface (aggregate_of< ::Ifc2x3::IfcFaceBound >::ptr v1_Bounds, ::Ifc2x3::IfcSurface* v2_FaceSurface, bool v3_SameSense);
+    typedef aggregate_of< IfcFaceSurface > list;
 };
 /// Definition from IAI: Defines forces at which a support or connection fails.
 /// 
@@ -13735,41 +13247,29 @@ public:
 /// HISTORY: New entity in IFC 2x2.
 class IFC_PARSE_API IfcFailureConnectionCondition : public IfcStructuralConnectionCondition {
 public:
-    /// Whether the optional attribute TensionFailureX is defined for this IfcFailureConnectionCondition
-    bool hasTensionFailureX() const;
     /// Tension force in x-direction leading to failure of the connection.
-    double TensionFailureX() const;
-    void setTensionFailureX(double v);
-    /// Whether the optional attribute TensionFailureY is defined for this IfcFailureConnectionCondition
-    bool hasTensionFailureY() const;
+    boost::optional< double > TensionFailureX() const;
+    void setTensionFailureX(boost::optional< double > v);
     /// Tension force in y-direction leading to failure of the connection.
-    double TensionFailureY() const;
-    void setTensionFailureY(double v);
-    /// Whether the optional attribute TensionFailureZ is defined for this IfcFailureConnectionCondition
-    bool hasTensionFailureZ() const;
+    boost::optional< double > TensionFailureY() const;
+    void setTensionFailureY(boost::optional< double > v);
     /// Tension force in z-direction leading to failure of the connection.
-    double TensionFailureZ() const;
-    void setTensionFailureZ(double v);
-    /// Whether the optional attribute CompressionFailureX is defined for this IfcFailureConnectionCondition
-    bool hasCompressionFailureX() const;
+    boost::optional< double > TensionFailureZ() const;
+    void setTensionFailureZ(boost::optional< double > v);
     /// Compression force in x-direction leading to failure of the connection.
-    double CompressionFailureX() const;
-    void setCompressionFailureX(double v);
-    /// Whether the optional attribute CompressionFailureY is defined for this IfcFailureConnectionCondition
-    bool hasCompressionFailureY() const;
+    boost::optional< double > CompressionFailureX() const;
+    void setCompressionFailureX(boost::optional< double > v);
     /// Compression force in y-direction leading to failure of the connection.
-    double CompressionFailureY() const;
-    void setCompressionFailureY(double v);
-    /// Whether the optional attribute CompressionFailureZ is defined for this IfcFailureConnectionCondition
-    bool hasCompressionFailureZ() const;
+    boost::optional< double > CompressionFailureY() const;
+    void setCompressionFailureY(boost::optional< double > v);
     /// Compression force in z-direction leading to failure of the connection.
-    double CompressionFailureZ() const;
-    void setCompressionFailureZ(double v);
+    boost::optional< double > CompressionFailureZ() const;
+    void setCompressionFailureZ(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFailureConnectionCondition (IfcEntityInstanceData* e);
     IfcFailureConnectionCondition (boost::optional< std::string > v1_Name, boost::optional< double > v2_TensionFailureX, boost::optional< double > v3_TensionFailureY, boost::optional< double > v4_TensionFailureZ, boost::optional< double > v5_CompressionFailureX, boost::optional< double > v6_CompressionFailureY, boost::optional< double > v7_CompressionFailureZ);
-    typedef IfcTemplatedEntityList< IfcFailureConnectionCondition > list;
+    typedef aggregate_of< IfcFailureConnectionCondition > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The style for filling visible curve segments, annotation fill areas or surfaces with tiles or hatches.
 /// 
@@ -13808,88 +13308,64 @@ public:
 class IFC_PARSE_API IfcFillAreaStyle : public IfcPresentationStyle {
 public:
     /// The set of fill area styles to use in presenting visible curve segments, annotation fill areas or surfaces.
-    IfcEntityList::ptr FillStyles() const;
-    void setFillStyles(IfcEntityList::ptr v);
+    aggregate_of_instance::ptr FillStyles() const;
+    void setFillStyles(aggregate_of_instance::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFillAreaStyle (IfcEntityInstanceData* e);
-    IfcFillAreaStyle (boost::optional< std::string > v1_Name, IfcEntityList::ptr v2_FillStyles);
-    typedef IfcTemplatedEntityList< IfcFillAreaStyle > list;
+    IfcFillAreaStyle (boost::optional< std::string > v1_Name, aggregate_of_instance::ptr v2_FillStyles);
+    typedef aggregate_of< IfcFillAreaStyle > list;
 };
 
 class IFC_PARSE_API IfcFuelProperties : public IfcMaterialProperties {
 public:
-    /// Whether the optional attribute CombustionTemperature is defined for this IfcFuelProperties
-    bool hasCombustionTemperature() const;
-    double CombustionTemperature() const;
-    void setCombustionTemperature(double v);
-    /// Whether the optional attribute CarbonContent is defined for this IfcFuelProperties
-    bool hasCarbonContent() const;
-    double CarbonContent() const;
-    void setCarbonContent(double v);
-    /// Whether the optional attribute LowerHeatingValue is defined for this IfcFuelProperties
-    bool hasLowerHeatingValue() const;
-    double LowerHeatingValue() const;
-    void setLowerHeatingValue(double v);
-    /// Whether the optional attribute HigherHeatingValue is defined for this IfcFuelProperties
-    bool hasHigherHeatingValue() const;
-    double HigherHeatingValue() const;
-    void setHigherHeatingValue(double v);
+    boost::optional< double > CombustionTemperature() const;
+    void setCombustionTemperature(boost::optional< double > v);
+    boost::optional< double > CarbonContent() const;
+    void setCarbonContent(boost::optional< double > v);
+    boost::optional< double > LowerHeatingValue() const;
+    void setLowerHeatingValue(boost::optional< double > v);
+    boost::optional< double > HigherHeatingValue() const;
+    void setHigherHeatingValue(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFuelProperties (IfcEntityInstanceData* e);
     IfcFuelProperties (::Ifc2x3::IfcMaterial* v1_Material, boost::optional< double > v2_CombustionTemperature, boost::optional< double > v3_CarbonContent, boost::optional< double > v4_LowerHeatingValue, boost::optional< double > v5_HigherHeatingValue);
-    typedef IfcTemplatedEntityList< IfcFuelProperties > list;
+    typedef aggregate_of< IfcFuelProperties > list;
 };
 
 class IFC_PARSE_API IfcGeneralMaterialProperties : public IfcMaterialProperties {
 public:
-    /// Whether the optional attribute MolecularWeight is defined for this IfcGeneralMaterialProperties
-    bool hasMolecularWeight() const;
-    double MolecularWeight() const;
-    void setMolecularWeight(double v);
-    /// Whether the optional attribute Porosity is defined for this IfcGeneralMaterialProperties
-    bool hasPorosity() const;
-    double Porosity() const;
-    void setPorosity(double v);
-    /// Whether the optional attribute MassDensity is defined for this IfcGeneralMaterialProperties
-    bool hasMassDensity() const;
-    double MassDensity() const;
-    void setMassDensity(double v);
+    boost::optional< double > MolecularWeight() const;
+    void setMolecularWeight(boost::optional< double > v);
+    boost::optional< double > Porosity() const;
+    void setPorosity(boost::optional< double > v);
+    boost::optional< double > MassDensity() const;
+    void setMassDensity(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcGeneralMaterialProperties (IfcEntityInstanceData* e);
     IfcGeneralMaterialProperties (::Ifc2x3::IfcMaterial* v1_Material, boost::optional< double > v2_MolecularWeight, boost::optional< double > v3_Porosity, boost::optional< double > v4_MassDensity);
-    typedef IfcTemplatedEntityList< IfcGeneralMaterialProperties > list;
+    typedef aggregate_of< IfcGeneralMaterialProperties > list;
 };
 
 class IFC_PARSE_API IfcGeneralProfileProperties : public IfcProfileProperties {
 public:
-    /// Whether the optional attribute PhysicalWeight is defined for this IfcGeneralProfileProperties
-    bool hasPhysicalWeight() const;
-    double PhysicalWeight() const;
-    void setPhysicalWeight(double v);
-    /// Whether the optional attribute Perimeter is defined for this IfcGeneralProfileProperties
-    bool hasPerimeter() const;
-    double Perimeter() const;
-    void setPerimeter(double v);
-    /// Whether the optional attribute MinimumPlateThickness is defined for this IfcGeneralProfileProperties
-    bool hasMinimumPlateThickness() const;
-    double MinimumPlateThickness() const;
-    void setMinimumPlateThickness(double v);
-    /// Whether the optional attribute MaximumPlateThickness is defined for this IfcGeneralProfileProperties
-    bool hasMaximumPlateThickness() const;
-    double MaximumPlateThickness() const;
-    void setMaximumPlateThickness(double v);
-    /// Whether the optional attribute CrossSectionArea is defined for this IfcGeneralProfileProperties
-    bool hasCrossSectionArea() const;
-    double CrossSectionArea() const;
-    void setCrossSectionArea(double v);
+    boost::optional< double > PhysicalWeight() const;
+    void setPhysicalWeight(boost::optional< double > v);
+    boost::optional< double > Perimeter() const;
+    void setPerimeter(boost::optional< double > v);
+    boost::optional< double > MinimumPlateThickness() const;
+    void setMinimumPlateThickness(boost::optional< double > v);
+    boost::optional< double > MaximumPlateThickness() const;
+    void setMaximumPlateThickness(boost::optional< double > v);
+    boost::optional< double > CrossSectionArea() const;
+    void setCrossSectionArea(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcGeneralProfileProperties (IfcEntityInstanceData* e);
     IfcGeneralProfileProperties (boost::optional< std::string > v1_ProfileName, ::Ifc2x3::IfcProfileDef* v2_ProfileDefinition, boost::optional< double > v3_PhysicalWeight, boost::optional< double > v4_Perimeter, boost::optional< double > v5_MinimumPlateThickness, boost::optional< double > v6_MaximumPlateThickness, boost::optional< double > v7_CrossSectionArea);
-    typedef IfcTemplatedEntityList< IfcGeneralProfileProperties > list;
+    typedef aggregate_of< IfcGeneralProfileProperties > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A geometric
 /// representation context is a representation context in which the
@@ -13943,27 +13419,23 @@ public:
     /// The integer dimension count of the coordinate space modeled in a geometric representation context.
     int CoordinateSpaceDimension() const;
     void setCoordinateSpaceDimension(int v);
-    /// Whether the optional attribute Precision is defined for this IfcGeometricRepresentationContext
-    bool hasPrecision() const;
     /// Value of the model precision for geometric models. It is a double value (REAL), typically in 1E-5 to 1E-8 range, that indicates the tolerance under which two given points are still assumed to be identical. The value can be used e.g. to sets the maximum distance from an edge curve to the underlying face surface in brep models.
-    double Precision() const;
-    void setPrecision(double v);
+    boost::optional< double > Precision() const;
+    void setPrecision(boost::optional< double > v);
     /// Establishment of the engineering coordinate system (often referred to as the world coordinate system in CAD) for all representation contexts used by the project. 
     /// 
     /// Note  it can be used to provide better numeric stability if the placement of the building(s) is far away from the origin. In most cases however it would be set to origin: (0.,0.,0.) and directions x(1.,0.,0.), y(0.,1.,0.), z(0.,0.,1.).
     ::Ifc2x3::IfcAxis2Placement* WorldCoordinateSystem() const;
     void setWorldCoordinateSystem(::Ifc2x3::IfcAxis2Placement* v);
-    /// Whether the optional attribute TrueNorth is defined for this IfcGeometricRepresentationContext
-    bool hasTrueNorth() const;
     /// Direction of the true north, or geographic northing direction, relative to the underlying project coordinate system. It is given by a 2 dimensional direction within the xy-plane of the project coordinate system. If not resent, it defaults to 0. 1. - i.e. the positive Y axis of the project coordinate system equals the geographic northing direction.
     ::Ifc2x3::IfcDirection* TrueNorth() const;
     void setTrueNorth(::Ifc2x3::IfcDirection* v);
-        IfcTemplatedEntityList< IfcGeometricRepresentationSubContext >::ptr HasSubContexts() const; // INVERSE IfcGeometricRepresentationSubContext::ParentContext
+        aggregate_of< IfcGeometricRepresentationSubContext >::ptr HasSubContexts() const; // INVERSE IfcGeometricRepresentationSubContext::ParentContext
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcGeometricRepresentationContext (IfcEntityInstanceData* e);
     IfcGeometricRepresentationContext (boost::optional< std::string > v1_ContextIdentifier, boost::optional< std::string > v2_ContextType, int v3_CoordinateSpaceDimension, boost::optional< double > v4_Precision, ::Ifc2x3::IfcAxis2Placement* v5_WorldCoordinateSystem, ::Ifc2x3::IfcDirection* v6_TrueNorth);
-    typedef IfcTemplatedEntityList< IfcGeometricRepresentationContext > list;
+    typedef aggregate_of< IfcGeometricRepresentationContext > list;
 };
 /// Definition from ISO/CD 10303-43:1992: An geometric representation item is a representation item that has the additional meaning of having geometric position or orientation or both. This meaning is present by virtue of:  
 /// 
@@ -13990,7 +13462,7 @@ public:
     static const IfcParse::entity& Class();
     IfcGeometricRepresentationItem (IfcEntityInstanceData* e);
     IfcGeometricRepresentationItem ();
-    typedef IfcTemplatedEntityList< IfcGeometricRepresentationItem > list;
+    typedef aggregate_of< IfcGeometricRepresentationItem > list;
 };
 /// IfcGeometricRepresentationSubContext defines the context that applies to several shape representations of a product being a sub context, sharing the WorldCoordinateSystem, CoordinateSpaceDimension, Precision and TrueNorth attributes with the parent IfcGeometricRepresentationContext.
 /// 
@@ -14010,8 +13482,6 @@ public:
     /// Parent context from which the sub context derives its world coordinate system, precision, space coordinate dimension and true north.
     ::Ifc2x3::IfcGeometricRepresentationContext* ParentContext() const;
     void setParentContext(::Ifc2x3::IfcGeometricRepresentationContext* v);
-    /// Whether the optional attribute TargetScale is defined for this IfcGeometricRepresentationSubContext
-    bool hasTargetScale() const;
     /// The target plot scale of the representation 
     /// to which this representation context applies.
     ///   Scale indicates the target plot scale for
@@ -14023,21 +13493,19 @@ public:
     /// 
     /// Note: Scale 1:100 (given as 0.01 within TargetScale)
     /// is bigger then 1:200 (given as 0.005 within TargetScale).
-    double TargetScale() const;
-    void setTargetScale(double v);
+    boost::optional< double > TargetScale() const;
+    void setTargetScale(boost::optional< double > v);
     /// Target view of the representation to which this representation context applies.
     ::Ifc2x3::IfcGeometricProjectionEnum::Value TargetView() const;
     void setTargetView(::Ifc2x3::IfcGeometricProjectionEnum::Value v);
-    /// Whether the optional attribute UserDefinedTargetView is defined for this IfcGeometricRepresentationSubContext
-    bool hasUserDefinedTargetView() const;
     /// User defined target view, this attribute value shall be given, if the TargetView attribute is set to USERDEFINED.
-    std::string UserDefinedTargetView() const;
-    void setUserDefinedTargetView(std::string v);
+    boost::optional< std::string > UserDefinedTargetView() const;
+    void setUserDefinedTargetView(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcGeometricRepresentationSubContext (IfcEntityInstanceData* e);
     IfcGeometricRepresentationSubContext (boost::optional< std::string > v1_ContextIdentifier, boost::optional< std::string > v2_ContextType, ::Ifc2x3::IfcGeometricRepresentationContext* v7_ParentContext, boost::optional< double > v8_TargetScale, ::Ifc2x3::IfcGeometricProjectionEnum::Value v9_TargetView, boost::optional< std::string > v10_UserDefinedTargetView);
-    typedef IfcTemplatedEntityList< IfcGeometricRepresentationSubContext > list;
+    typedef aggregate_of< IfcGeometricRepresentationSubContext > list;
 };
 /// Definition from ISO/CD 10303-42:1992: This entity is intended for the transfer of models when a topological structure is not available. 
 /// 
@@ -14049,13 +13517,13 @@ public:
 class IFC_PARSE_API IfcGeometricSet : public IfcGeometricRepresentationItem {
 public:
     /// The geometric elements which make up the geometric set, these may be points, curves or surfaces; but are required to be of the same coordinate space dimensionality.
-    IfcEntityList::ptr Elements() const;
-    void setElements(IfcEntityList::ptr v);
+    aggregate_of_instance::ptr Elements() const;
+    void setElements(aggregate_of_instance::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcGeometricSet (IfcEntityInstanceData* e);
-    IfcGeometricSet (IfcEntityList::ptr v1_Elements);
-    typedef IfcTemplatedEntityList< IfcGeometricSet > list;
+    IfcGeometricSet (aggregate_of_instance::ptr v1_Elements);
+    typedef aggregate_of< IfcGeometricSet > list;
 };
 /// IfcGridPlacement provides a specialization of IfcObjectPlacement in which
 /// the placement and axis direction of the object coordinate system is defined by a reference to the design grid as defined in IfcGrid.
@@ -14107,8 +13575,6 @@ public:
     /// Placement of the object coordinate system defined by the intersection of two grid axes.
     ::Ifc2x3::IfcVirtualGridIntersection* PlacementLocation() const;
     void setPlacementLocation(::Ifc2x3::IfcVirtualGridIntersection* v);
-    /// Whether the optional attribute PlacementRefDirection is defined for this IfcGridPlacement
-    bool hasPlacementRefDirection() const;
     /// Reference to either an explicit direction, or a second grid axis intersection, which defines the orientation of the grid placement.
     /// 
     /// IFC2x4 CHANGE  The select of an explict direction has been added.
@@ -14118,7 +13584,7 @@ public:
     static const IfcParse::entity& Class();
     IfcGridPlacement (IfcEntityInstanceData* e);
     IfcGridPlacement (::Ifc2x3::IfcVirtualGridIntersection* v1_PlacementLocation, ::Ifc2x3::IfcVirtualGridIntersection* v2_PlacementRefDirection);
-    typedef IfcTemplatedEntityList< IfcGridPlacement > list;
+    typedef aggregate_of< IfcGridPlacement > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A half space solid is defined by the half space which is the regular subset of the domain which lies on one side of an unbounded surface. The side of the surface which is in the half space is determined by the surface normal and the agreement flag. If the agreement flag is TRUE, then the subset is the one the normal points away from. If the agreement flag is FALSE, then the subset is the one the normal points into. For a valid half space solid the surface shall divide the domain into exactly two subsets. Also, within the domain the surface shall be manifold and all surface normals shall point into the same subset.  
 /// 
@@ -14147,36 +13613,26 @@ public:
     static const IfcParse::entity& Class();
     IfcHalfSpaceSolid (IfcEntityInstanceData* e);
     IfcHalfSpaceSolid (::Ifc2x3::IfcSurface* v1_BaseSurface, bool v2_AgreementFlag);
-    typedef IfcTemplatedEntityList< IfcHalfSpaceSolid > list;
+    typedef aggregate_of< IfcHalfSpaceSolid > list;
 };
 
 class IFC_PARSE_API IfcHygroscopicMaterialProperties : public IfcMaterialProperties {
 public:
-    /// Whether the optional attribute UpperVaporResistanceFactor is defined for this IfcHygroscopicMaterialProperties
-    bool hasUpperVaporResistanceFactor() const;
-    double UpperVaporResistanceFactor() const;
-    void setUpperVaporResistanceFactor(double v);
-    /// Whether the optional attribute LowerVaporResistanceFactor is defined for this IfcHygroscopicMaterialProperties
-    bool hasLowerVaporResistanceFactor() const;
-    double LowerVaporResistanceFactor() const;
-    void setLowerVaporResistanceFactor(double v);
-    /// Whether the optional attribute IsothermalMoistureCapacity is defined for this IfcHygroscopicMaterialProperties
-    bool hasIsothermalMoistureCapacity() const;
-    double IsothermalMoistureCapacity() const;
-    void setIsothermalMoistureCapacity(double v);
-    /// Whether the optional attribute VaporPermeability is defined for this IfcHygroscopicMaterialProperties
-    bool hasVaporPermeability() const;
-    double VaporPermeability() const;
-    void setVaporPermeability(double v);
-    /// Whether the optional attribute MoistureDiffusivity is defined for this IfcHygroscopicMaterialProperties
-    bool hasMoistureDiffusivity() const;
-    double MoistureDiffusivity() const;
-    void setMoistureDiffusivity(double v);
+    boost::optional< double > UpperVaporResistanceFactor() const;
+    void setUpperVaporResistanceFactor(boost::optional< double > v);
+    boost::optional< double > LowerVaporResistanceFactor() const;
+    void setLowerVaporResistanceFactor(boost::optional< double > v);
+    boost::optional< double > IsothermalMoistureCapacity() const;
+    void setIsothermalMoistureCapacity(boost::optional< double > v);
+    boost::optional< double > VaporPermeability() const;
+    void setVaporPermeability(boost::optional< double > v);
+    boost::optional< double > MoistureDiffusivity() const;
+    void setMoistureDiffusivity(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcHygroscopicMaterialProperties (IfcEntityInstanceData* e);
     IfcHygroscopicMaterialProperties (::Ifc2x3::IfcMaterial* v1_Material, boost::optional< double > v2_UpperVaporResistanceFactor, boost::optional< double > v3_LowerVaporResistanceFactor, boost::optional< double > v4_IsothermalMoistureCapacity, boost::optional< double > v5_VaporPermeability, boost::optional< double > v6_MoistureDiffusivity);
-    typedef IfcTemplatedEntityList< IfcHygroscopicMaterialProperties > list;
+    typedef aggregate_of< IfcHygroscopicMaterialProperties > list;
 };
 /// An IfcImageTexture provides a 2-dimensional texture that can be applied to a surface of an geometric item and that provides lighting parameters of a surface onto which it is mapped. The texture is provided as an image file at an external location for which an URL is provided.
 /// 
@@ -14222,7 +13678,7 @@ public:
     static const IfcParse::entity& Class();
     IfcImageTexture (IfcEntityInstanceData* e);
     IfcImageTexture (bool v1_RepeatS, bool v2_RepeatT, ::Ifc2x3::IfcSurfaceTextureEnum::Value v3_TextureType, ::Ifc2x3::IfcCartesianTransformationOperator2D* v4_TextureTransform, std::string v5_UrlReference);
-    typedef IfcTemplatedEntityList< IfcImageTexture > list;
+    typedef aggregate_of< IfcImageTexture > list;
 };
 /// In an irregular time series, unpredictable bursts of data arrive at unspecified points in time, or most time stamps cannot be characterized by a repeating pattern.
 /// 
@@ -14232,13 +13688,13 @@ public:
 class IFC_PARSE_API IfcIrregularTimeSeries : public IfcTimeSeries {
 public:
     /// The collection of time series values.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcIrregularTimeSeriesValue >::ptr Values() const;
-    void setValues(IfcTemplatedEntityList< ::Ifc2x3::IfcIrregularTimeSeriesValue >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcIrregularTimeSeriesValue >::ptr Values() const;
+    void setValues(aggregate_of< ::Ifc2x3::IfcIrregularTimeSeriesValue >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcIrregularTimeSeries (IfcEntityInstanceData* e);
-    IfcIrregularTimeSeries (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcDateTimeSelect* v3_StartTime, ::Ifc2x3::IfcDateTimeSelect* v4_EndTime, ::Ifc2x3::IfcTimeSeriesDataTypeEnum::Value v5_TimeSeriesDataType, ::Ifc2x3::IfcDataOriginEnum::Value v6_DataOrigin, boost::optional< std::string > v7_UserDefinedDataOrigin, ::Ifc2x3::IfcUnit* v8_Unit, IfcTemplatedEntityList< ::Ifc2x3::IfcIrregularTimeSeriesValue >::ptr v9_Values);
-    typedef IfcTemplatedEntityList< IfcIrregularTimeSeries > list;
+    IfcIrregularTimeSeries (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcDateTimeSelect* v3_StartTime, ::Ifc2x3::IfcDateTimeSelect* v4_EndTime, ::Ifc2x3::IfcTimeSeriesDataTypeEnum::Value v5_TimeSeriesDataType, ::Ifc2x3::IfcDataOriginEnum::Value v6_DataOrigin, boost::optional< std::string > v7_UserDefinedDataOrigin, ::Ifc2x3::IfcUnit* v8_Unit, aggregate_of< ::Ifc2x3::IfcIrregularTimeSeriesValue >::ptr v9_Values);
+    typedef aggregate_of< IfcIrregularTimeSeries > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The light source entity is determined by the reflectance specified in the surface style rendering. Lighting is applied on a surface by surface basis: no interactions between surfaces such as shadows or reflections are defined. 
 /// 
@@ -14249,30 +13705,24 @@ public:
 /// HISTORY: This is a new Entity in IFC 2x, renamed and enhanced in IFC2x2.
 class IFC_PARSE_API IfcLightSource : public IfcGeometricRepresentationItem {
 public:
-    /// Whether the optional attribute Name is defined for this IfcLightSource
-    bool hasName() const;
     /// The name given to the light source in presentation.
-    std::string Name() const;
-    void setName(std::string v);
+    boost::optional< std::string > Name() const;
+    void setName(boost::optional< std::string > v);
     /// Definition from ISO/CD 10303-46:1992: Based on the current lighting model, the colour of the light to be used for shading.
     /// Definition from VRML97 - ISO/IEC 14772-1:1997: The color field specifies the spectral color properties of both the direct and ambient light emission as an RGB value.
     ::Ifc2x3::IfcColourRgb* LightColour() const;
     void setLightColour(::Ifc2x3::IfcColourRgb* v);
-    /// Whether the optional attribute AmbientIntensity is defined for this IfcLightSource
-    bool hasAmbientIntensity() const;
     /// Definition from VRML97 - ISO/IEC 14772-1:1997: The ambientIntensity specifies the intensity of the ambient emission from the light. Light intensity may range from 0.0 (no light emission) to 1.0 (full intensity).
-    double AmbientIntensity() const;
-    void setAmbientIntensity(double v);
-    /// Whether the optional attribute Intensity is defined for this IfcLightSource
-    bool hasIntensity() const;
+    boost::optional< double > AmbientIntensity() const;
+    void setAmbientIntensity(boost::optional< double > v);
     /// Definition from VRML97 - ISO/IEC 14772-1:1997: The intensity field specifies the brightness of the direct emission from the ligth. Light intensity may range from 0.0 (no light emission) to 1.0 (full intensity).
-    double Intensity() const;
-    void setIntensity(double v);
+    boost::optional< double > Intensity() const;
+    void setIntensity(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcLightSource (IfcEntityInstanceData* e);
     IfcLightSource (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcColourRgb* v2_LightColour, boost::optional< double > v3_AmbientIntensity, boost::optional< double > v4_Intensity);
-    typedef IfcTemplatedEntityList< IfcLightSource > list;
+    typedef aggregate_of< IfcLightSource > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The light source ambient entity is a subtype of light source. It lights a surface independent of the surface's orientation and position. 
 /// 
@@ -14287,7 +13737,7 @@ public:
     static const IfcParse::entity& Class();
     IfcLightSourceAmbient (IfcEntityInstanceData* e);
     IfcLightSourceAmbient (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcColourRgb* v2_LightColour, boost::optional< double > v3_AmbientIntensity, boost::optional< double > v4_Intensity);
-    typedef IfcTemplatedEntityList< IfcLightSourceAmbient > list;
+    typedef aggregate_of< IfcLightSourceAmbient > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The light source directional is a subtype of light source. This entity has a light source direction. With a conceptual origin at infinity, all the rays of the light are parallel to this direction. This kind of light source lights a surface based on the surface's orientation, but not position. 
 /// 
@@ -14308,7 +13758,7 @@ public:
     static const IfcParse::entity& Class();
     IfcLightSourceDirectional (IfcEntityInstanceData* e);
     IfcLightSourceDirectional (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcColourRgb* v2_LightColour, boost::optional< double > v3_AmbientIntensity, boost::optional< double > v4_Intensity, ::Ifc2x3::IfcDirection* v5_Orientation);
-    typedef IfcTemplatedEntityList< IfcLightSourceDirectional > list;
+    typedef aggregate_of< IfcLightSourceDirectional > list;
 };
 /// IfcLightSourceGoniometric defines a light source for which exact lighting data is available. It specifies the type of a light emitter, defines the position and orientation of a light distribution curve and the data concerning lamp and photometric information. 
 /// 
@@ -14322,8 +13772,6 @@ public:
     /// The position of the light source. It is used to orientate the light distribution curves.
     ::Ifc2x3::IfcAxis2Placement3D* Position() const;
     void setPosition(::Ifc2x3::IfcAxis2Placement3D* v);
-    /// Whether the optional attribute ColourAppearance is defined for this IfcLightSourceGoniometric
-    bool hasColourAppearance() const;
     /// Artificial light sources are classified in terms of their color appearance. To the human eye they all appear to be white; the difference can only be detected by direct comparison. Visual performance is not directly affected by differences in color appearance.
     ::Ifc2x3::IfcColourRgb* ColourAppearance() const;
     void setColourAppearance(::Ifc2x3::IfcColourRgb* v);
@@ -14343,7 +13791,7 @@ public:
     static const IfcParse::entity& Class();
     IfcLightSourceGoniometric (IfcEntityInstanceData* e);
     IfcLightSourceGoniometric (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcColourRgb* v2_LightColour, boost::optional< double > v3_AmbientIntensity, boost::optional< double > v4_Intensity, ::Ifc2x3::IfcAxis2Placement3D* v5_Position, ::Ifc2x3::IfcColourRgb* v6_ColourAppearance, double v7_ColourTemperature, double v8_LuminousFlux, ::Ifc2x3::IfcLightEmissionSourceEnum::Value v9_LightEmissionSource, ::Ifc2x3::IfcLightDistributionDataSourceSelect* v10_LightDistributionDataSource);
-    typedef IfcTemplatedEntityList< IfcLightSourceGoniometric > list;
+    typedef aggregate_of< IfcLightSourceGoniometric > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The light source positional entity is a subtype of light source. This entity has a light source position and attenuation coefficients. A positional light source affects a surface based on the surface's orientation and position. 
 /// 
@@ -14383,7 +13831,7 @@ public:
     static const IfcParse::entity& Class();
     IfcLightSourcePositional (IfcEntityInstanceData* e);
     IfcLightSourcePositional (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcColourRgb* v2_LightColour, boost::optional< double > v3_AmbientIntensity, boost::optional< double > v4_Intensity, ::Ifc2x3::IfcCartesianPoint* v5_Position, double v6_Radius, double v7_ConstantAttenuation, double v8_DistanceAttenuation, double v9_QuadricAttenuation);
-    typedef IfcTemplatedEntityList< IfcLightSourcePositional > list;
+    typedef aggregate_of< IfcLightSourcePositional > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The light source spot entity is a subtype of light source. Spot light source entities have a light source colour, position, direction, attenuation coefficients, concentration exponent, and spread angle. If a point lies outside the cone of influence of a light source of this type as determined by the light source position, direction and spread angle its colour is not affected by that light source. 
 /// 
@@ -14406,12 +13854,10 @@ public:
     /// Definition from VRML97 - ISO/IEC 14772-1:1997: The direction field specifies the direction vector of the light's central axis defined in the local coordinate system.
     ::Ifc2x3::IfcDirection* Orientation() const;
     void setOrientation(::Ifc2x3::IfcDirection* v);
-    /// Whether the optional attribute ConcentrationExponent is defined for this IfcLightSourceSpot
-    bool hasConcentrationExponent() const;
     /// Definition from ISO/CD 10303-46:1992: This real is the exponent on the cosine of the angle between the line that starts at the position of the spot light source and is in the direction of the orientation of the spot light source and a line that starts at the position of the spot light source and goes through a point on the surface being shaded.
     /// NOTE: This attribute does not exists in ISO/IEC 14772-1:1997.
-    double ConcentrationExponent() const;
-    void setConcentrationExponent(double v);
+    boost::optional< double > ConcentrationExponent() const;
+    void setConcentrationExponent(boost::optional< double > v);
     /// Definition from ISO/CD 10303-46:1992: This planar angle measure is the angle between the line that starts at the position of the spot light source and is in the direction of the spot light source and any line on the boundary of the cone of influence.
     /// Definition from VRML97 - ISO/IEC 14772-1:1997: The cutOffAngle (name of spread angle in VRML) field specifies the outer bound of the solid angle. The light source does not emit light outside of this solid angle.
     double SpreadAngle() const;
@@ -14423,7 +13869,7 @@ public:
     static const IfcParse::entity& Class();
     IfcLightSourceSpot (IfcEntityInstanceData* e);
     IfcLightSourceSpot (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcColourRgb* v2_LightColour, boost::optional< double > v3_AmbientIntensity, boost::optional< double > v4_Intensity, ::Ifc2x3::IfcCartesianPoint* v5_Position, double v6_Radius, double v7_ConstantAttenuation, double v8_DistanceAttenuation, double v9_QuadricAttenuation, ::Ifc2x3::IfcDirection* v10_Orientation, boost::optional< double > v11_ConcentrationExponent, double v12_SpreadAngle, double v13_BeamWidthAngle);
-    typedef IfcTemplatedEntityList< IfcLightSourceSpot > list;
+    typedef aggregate_of< IfcLightSourceSpot > list;
 };
 /// IfcLocalPlacement defines the relative placement of a product in relation to the
 /// placement of another product or the absolute placement of a product within the geometric representation context of the project. 
@@ -14479,8 +13925,6 @@ public:
 /// coordinate system established by the referenced geometric representation context within the project.
 class IFC_PARSE_API IfcLocalPlacement : public IfcObjectPlacement {
 public:
-    /// Whether the optional attribute PlacementRelTo is defined for this IfcLocalPlacement
-    bool hasPlacementRelTo() const;
     /// Reference to Object that provides the relative placement by its local coordinate system. If it is omitted, then the local placement is given to the WCS, established by the geometric representation context.
     ::Ifc2x3::IfcObjectPlacement* PlacementRelTo() const;
     void setPlacementRelTo(::Ifc2x3::IfcObjectPlacement* v);
@@ -14491,7 +13935,7 @@ public:
     static const IfcParse::entity& Class();
     IfcLocalPlacement (IfcEntityInstanceData* e);
     IfcLocalPlacement (::Ifc2x3::IfcObjectPlacement* v1_PlacementRelTo, ::Ifc2x3::IfcAxis2Placement* v2_RelativePlacement);
-    typedef IfcTemplatedEntityList< IfcLocalPlacement > list;
+    typedef aggregate_of< IfcLocalPlacement > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A loop is a topological
 ///   entity constructed from a single vertex, or by stringing together connected
@@ -14525,7 +13969,7 @@ public:
     static const IfcParse::entity& Class();
     IfcLoop (IfcEntityInstanceData* e);
     IfcLoop ();
-    typedef IfcTemplatedEntityList< IfcLoop > list;
+    typedef aggregate_of< IfcLoop > list;
 };
 /// Definition from ISO/CD 10303-43:1992: A mapped item is the use of an existing representation (the mapping source - mapped representation) as a representation item in a second representation. 
 /// 
@@ -14558,7 +14002,7 @@ public:
     static const IfcParse::entity& Class();
     IfcMappedItem (IfcEntityInstanceData* e);
     IfcMappedItem (::Ifc2x3::IfcRepresentationMap* v1_MappingSource, ::Ifc2x3::IfcCartesianTransformationOperator* v2_MappingTarget);
-    typedef IfcTemplatedEntityList< IfcMappedItem > list;
+    typedef aggregate_of< IfcMappedItem > list;
 };
 /// IfcMaterialDefinitionRepresentation defines presentation information relating to IfcMaterial. It allows for multiple presentations of the same material for different geometric representation contexts.
 /// 
@@ -14598,41 +14042,29 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcMaterialDefinitionRepresentation (IfcEntityInstanceData* e);
-    IfcMaterialDefinitionRepresentation (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentation >::ptr v3_Representations, ::Ifc2x3::IfcMaterial* v4_RepresentedMaterial);
-    typedef IfcTemplatedEntityList< IfcMaterialDefinitionRepresentation > list;
+    IfcMaterialDefinitionRepresentation (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, aggregate_of< ::Ifc2x3::IfcRepresentation >::ptr v3_Representations, ::Ifc2x3::IfcMaterial* v4_RepresentedMaterial);
+    typedef aggregate_of< IfcMaterialDefinitionRepresentation > list;
 };
 
 class IFC_PARSE_API IfcMechanicalConcreteMaterialProperties : public IfcMechanicalMaterialProperties {
 public:
-    /// Whether the optional attribute CompressiveStrength is defined for this IfcMechanicalConcreteMaterialProperties
-    bool hasCompressiveStrength() const;
-    double CompressiveStrength() const;
-    void setCompressiveStrength(double v);
-    /// Whether the optional attribute MaxAggregateSize is defined for this IfcMechanicalConcreteMaterialProperties
-    bool hasMaxAggregateSize() const;
-    double MaxAggregateSize() const;
-    void setMaxAggregateSize(double v);
-    /// Whether the optional attribute AdmixturesDescription is defined for this IfcMechanicalConcreteMaterialProperties
-    bool hasAdmixturesDescription() const;
-    std::string AdmixturesDescription() const;
-    void setAdmixturesDescription(std::string v);
-    /// Whether the optional attribute Workability is defined for this IfcMechanicalConcreteMaterialProperties
-    bool hasWorkability() const;
-    std::string Workability() const;
-    void setWorkability(std::string v);
-    /// Whether the optional attribute ProtectivePoreRatio is defined for this IfcMechanicalConcreteMaterialProperties
-    bool hasProtectivePoreRatio() const;
-    double ProtectivePoreRatio() const;
-    void setProtectivePoreRatio(double v);
-    /// Whether the optional attribute WaterImpermeability is defined for this IfcMechanicalConcreteMaterialProperties
-    bool hasWaterImpermeability() const;
-    std::string WaterImpermeability() const;
-    void setWaterImpermeability(std::string v);
+    boost::optional< double > CompressiveStrength() const;
+    void setCompressiveStrength(boost::optional< double > v);
+    boost::optional< double > MaxAggregateSize() const;
+    void setMaxAggregateSize(boost::optional< double > v);
+    boost::optional< std::string > AdmixturesDescription() const;
+    void setAdmixturesDescription(boost::optional< std::string > v);
+    boost::optional< std::string > Workability() const;
+    void setWorkability(boost::optional< std::string > v);
+    boost::optional< double > ProtectivePoreRatio() const;
+    void setProtectivePoreRatio(boost::optional< double > v);
+    boost::optional< std::string > WaterImpermeability() const;
+    void setWaterImpermeability(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcMechanicalConcreteMaterialProperties (IfcEntityInstanceData* e);
     IfcMechanicalConcreteMaterialProperties (::Ifc2x3::IfcMaterial* v1_Material, boost::optional< double > v2_DynamicViscosity, boost::optional< double > v3_YoungModulus, boost::optional< double > v4_ShearModulus, boost::optional< double > v5_PoissonRatio, boost::optional< double > v6_ThermalExpansionCoefficient, boost::optional< double > v7_CompressiveStrength, boost::optional< double > v8_MaxAggregateSize, boost::optional< std::string > v9_AdmixturesDescription, boost::optional< std::string > v10_Workability, boost::optional< double > v11_ProtectivePoreRatio, boost::optional< std::string > v12_WaterImpermeability);
-    typedef IfcTemplatedEntityList< IfcMechanicalConcreteMaterialProperties > list;
+    typedef aggregate_of< IfcMechanicalConcreteMaterialProperties > list;
 };
 /// An IfcObjectDefinition is the generalization of any
 /// semantically treated thing or process, either being a type or an
@@ -14686,15 +14118,15 @@ public:
 /// IFC2x4 CHANGE The new subtype IfcContext and the relationship to context HasContext has been added . The decomposition relationship is split into ordered nesting (Nests, IsNestedBy) and un-ordered aggregating (Decomposes, IsDecomposedBy).
 class IFC_PARSE_API IfcObjectDefinition : public IfcRoot {
 public:
-        IfcTemplatedEntityList< IfcRelAssigns >::ptr HasAssignments() const; // INVERSE IfcRelAssigns::RelatedObjects
-    IfcTemplatedEntityList< IfcRelDecomposes >::ptr IsDecomposedBy() const; // INVERSE IfcRelDecomposes::RelatingObject
-    IfcTemplatedEntityList< IfcRelDecomposes >::ptr Decomposes() const; // INVERSE IfcRelDecomposes::RelatedObjects
-    IfcTemplatedEntityList< IfcRelAssociates >::ptr HasAssociations() const; // INVERSE IfcRelAssociates::RelatedObjects
+        aggregate_of< IfcRelAssigns >::ptr HasAssignments() const; // INVERSE IfcRelAssigns::RelatedObjects
+    aggregate_of< IfcRelDecomposes >::ptr IsDecomposedBy() const; // INVERSE IfcRelDecomposes::RelatingObject
+    aggregate_of< IfcRelDecomposes >::ptr Decomposes() const; // INVERSE IfcRelDecomposes::RelatedObjects
+    aggregate_of< IfcRelAssociates >::ptr HasAssociations() const; // INVERSE IfcRelAssociates::RelatedObjects
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcObjectDefinition (IfcEntityInstanceData* e);
     IfcObjectDefinition (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
-    typedef IfcTemplatedEntityList< IfcObjectDefinition > list;
+    typedef aggregate_of< IfcObjectDefinition > list;
 };
 /// Definition from ISO/CD 10303-46:1992: A one time repeat factor is a vector used in the fill area style hatching and fill area style tiles entities for determining the origin of the repeated hatch line relative to the origin of the previous hatch line, Given the initial position of any hatch line, the one direction repeat factor determines two new positions according to the equation: 
 /// 
@@ -14712,7 +14144,7 @@ public:
     static const IfcParse::entity& Class();
     IfcOneDirectionRepeatFactor (IfcEntityInstanceData* e);
     IfcOneDirectionRepeatFactor (::Ifc2x3::IfcVector* v1_RepeatFactor);
-    typedef IfcTemplatedEntityList< IfcOneDirectionRepeatFactor > list;
+    typedef aggregate_of< IfcOneDirectionRepeatFactor > list;
 };
 /// Definition from ISO/CD 10303-42:1992: An open shell is a shell of
 ///   the dimensionality 2. Its domain, if present, is a finite, connected, oriented,
@@ -14778,8 +14210,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcOpenShell (IfcEntityInstanceData* e);
-    IfcOpenShell (IfcTemplatedEntityList< ::Ifc2x3::IfcFace >::ptr v1_CfsFaces);
-    typedef IfcTemplatedEntityList< IfcOpenShell > list;
+    IfcOpenShell (aggregate_of< ::Ifc2x3::IfcFace >::ptr v1_CfsFaces);
+    typedef aggregate_of< IfcOpenShell > list;
 };
 /// Definition from ISO/CD 10303-42:1992: An oriented edge is an edge constructed from another edge and contains a BOOLEAN direction flag to indicate whether or not the orientation of the constructed edge agrees with the orientation of the original edge. Except for perhaps orientation, the oriented edge is equivalent to the original edge.  
 /// 
@@ -14800,7 +14232,7 @@ public:
     static const IfcParse::entity& Class();
     IfcOrientedEdge (IfcEntityInstanceData* e);
     IfcOrientedEdge (::Ifc2x3::IfcEdge* v3_EdgeElement, bool v4_Orientation);
-    typedef IfcTemplatedEntityList< IfcOrientedEdge > list;
+    typedef aggregate_of< IfcOrientedEdge > list;
 };
 /// The parameterized profile definition
 /// defines a 2D position coordinate system to which the parameters of the
@@ -14853,7 +14285,7 @@ public:
     static const IfcParse::entity& Class();
     IfcParameterizedProfileDef (IfcEntityInstanceData* e);
     IfcParameterizedProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position);
-    typedef IfcTemplatedEntityList< IfcParameterizedProfileDef > list;
+    typedef aggregate_of< IfcParameterizedProfileDef > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A path is a topological entity consisting of an ordered collection of oriented edges, such that the edge start vertex of each edge coincides with the edge end of its predecessor. The path is ordered from the edge start of the first oriented edge to the edge end of the last edge. The BOOLEAN value sense in the oriented edge indicates whether the edge direction agrees with the direction of the path (TRUE) or is the opposite direction (FALSE).  
 /// 
@@ -14872,13 +14304,13 @@ public:
 class IFC_PARSE_API IfcPath : public IfcTopologicalRepresentationItem {
 public:
     /// The list of oriented edges which are concatenated together to form this path.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcOrientedEdge >::ptr EdgeList() const;
-    void setEdgeList(IfcTemplatedEntityList< ::Ifc2x3::IfcOrientedEdge >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcOrientedEdge >::ptr EdgeList() const;
+    void setEdgeList(aggregate_of< ::Ifc2x3::IfcOrientedEdge >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPath (IfcEntityInstanceData* e);
-    IfcPath (IfcTemplatedEntityList< ::Ifc2x3::IfcOrientedEdge >::ptr v1_EdgeList);
-    typedef IfcTemplatedEntityList< IfcPath > list;
+    IfcPath (aggregate_of< ::Ifc2x3::IfcOrientedEdge >::ptr v1_EdgeList);
+    typedef aggregate_of< IfcPath > list;
 };
 /// The complex physical quantity, IfcPhysicalComplexQuantity, is an entity that holds a set of single quantity measure value (as defined at the subtypes of IfcPhysicalSimpleQuantity), that all apply to a given component or aspect of the element. 
 /// 
@@ -14892,26 +14324,22 @@ public:
 class IFC_PARSE_API IfcPhysicalComplexQuantity : public IfcPhysicalQuantity {
 public:
     /// Set of physical quantities that are grouped by this complex physical quantity according to a given discrimination.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcPhysicalQuantity >::ptr HasQuantities() const;
-    void setHasQuantities(IfcTemplatedEntityList< ::Ifc2x3::IfcPhysicalQuantity >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcPhysicalQuantity >::ptr HasQuantities() const;
+    void setHasQuantities(aggregate_of< ::Ifc2x3::IfcPhysicalQuantity >::ptr v);
     /// Identification of the discrimination by which this physical complex property is distinguished. Examples of discriminations are 'layer', 'steel bar diameter', etc.
     std::string Discrimination() const;
     void setDiscrimination(std::string v);
-    /// Whether the optional attribute Quality is defined for this IfcPhysicalComplexQuantity
-    bool hasQuality() const;
     /// Additional indication of a quality of the quantities that are grouped under this physical complex quantity.
-    std::string Quality() const;
-    void setQuality(std::string v);
-    /// Whether the optional attribute Usage is defined for this IfcPhysicalComplexQuantity
-    bool hasUsage() const;
+    boost::optional< std::string > Quality() const;
+    void setQuality(boost::optional< std::string > v);
     /// Additional indication of a usage type of the quantities that are grouped under this physical complex quantity.
-    std::string Usage() const;
-    void setUsage(std::string v);
+    boost::optional< std::string > Usage() const;
+    void setUsage(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPhysicalComplexQuantity (IfcEntityInstanceData* e);
-    IfcPhysicalComplexQuantity (std::string v1_Name, boost::optional< std::string > v2_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcPhysicalQuantity >::ptr v3_HasQuantities, std::string v4_Discrimination, boost::optional< std::string > v5_Quality, boost::optional< std::string > v6_Usage);
-    typedef IfcTemplatedEntityList< IfcPhysicalComplexQuantity > list;
+    IfcPhysicalComplexQuantity (std::string v1_Name, boost::optional< std::string > v2_Description, aggregate_of< ::Ifc2x3::IfcPhysicalQuantity >::ptr v3_HasQuantities, std::string v4_Discrimination, boost::optional< std::string > v5_Quality, boost::optional< std::string > v6_Usage);
+    typedef aggregate_of< IfcPhysicalComplexQuantity > list;
 };
 /// An IfcPixelTexture provides a 2D image-based texture map as an explicit array of pixel values (list of Pixel binary attributes). In contrary to the IfcImageTexture the IfcPixelTexture holds a 2 dimensional list of pixel color
 /// (and opacity) directly, instead of referencing to an URL.
@@ -14951,7 +14379,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPixelTexture (IfcEntityInstanceData* e);
     IfcPixelTexture (bool v1_RepeatS, bool v2_RepeatT, ::Ifc2x3::IfcSurfaceTextureEnum::Value v3_TextureType, ::Ifc2x3::IfcCartesianTransformationOperator2D* v4_TextureTransform, int v5_Width, int v6_Height, int v7_ColourComponents, std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v8_Pixel);
-    typedef IfcTemplatedEntityList< IfcPixelTexture > list;
+    typedef aggregate_of< IfcPixelTexture > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A placement entity defines the local environment for the definition of a geometry item. It locates the item to be defined and, in the case of the axis placement subtypes, gives its orientation. 
 /// 
@@ -14971,7 +14399,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPlacement (IfcEntityInstanceData* e);
     IfcPlacement (::Ifc2x3::IfcCartesianPoint* v1_Location);
-    typedef IfcTemplatedEntityList< IfcPlacement > list;
+    typedef aggregate_of< IfcPlacement > list;
 };
 /// The planar extent defines the extent along the two axes of the two-dimensional coordinate system, independently of its position.
 /// 
@@ -14990,7 +14418,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPlanarExtent (IfcEntityInstanceData* e);
     IfcPlanarExtent (double v1_SizeInX, double v2_SizeInY);
-    typedef IfcTemplatedEntityList< IfcPlanarExtent > list;
+    typedef aggregate_of< IfcPlanarExtent > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A point is a location in some real Cartesian coordinate space Rm, for m = 1, 2 or 3.  
 /// 
@@ -15003,7 +14431,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPoint (IfcEntityInstanceData* e);
     IfcPoint ();
-    typedef IfcTemplatedEntityList< IfcPoint > list;
+    typedef aggregate_of< IfcPoint > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A point on curve is a point which lies on a curve. The point is determined by evaluating the curve at a specific parameter value. The coordinate space dimensionality of the point is that of the basis curve. 
 /// 
@@ -15026,7 +14454,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPointOnCurve (IfcEntityInstanceData* e);
     IfcPointOnCurve (::Ifc2x3::IfcCurve* v1_BasisCurve, double v2_PointParameter);
-    typedef IfcTemplatedEntityList< IfcPointOnCurve > list;
+    typedef aggregate_of< IfcPointOnCurve > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A point on surface is a point which lies on a parametric surface. The point is determined by evaluating the surface at a particular pair of parameter values. 
 /// 
@@ -15052,7 +14480,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPointOnSurface (IfcEntityInstanceData* e);
     IfcPointOnSurface (::Ifc2x3::IfcSurface* v1_BasisSurface, double v2_PointParameterU, double v3_PointParameterV);
-    typedef IfcTemplatedEntityList< IfcPointOnSurface > list;
+    typedef aggregate_of< IfcPointOnSurface > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A
 /// poly loop is a loop with straight edges bounding a planar region in
@@ -15096,13 +14524,13 @@ public:
 class IFC_PARSE_API IfcPolyLoop : public IfcLoop {
 public:
     /// List of points defining the loop. There are no repeated points in the list.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr Polygon() const;
-    void setPolygon(IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcCartesianPoint >::ptr Polygon() const;
+    void setPolygon(aggregate_of< ::Ifc2x3::IfcCartesianPoint >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPolyLoop (IfcEntityInstanceData* e);
-    IfcPolyLoop (IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr v1_Polygon);
-    typedef IfcTemplatedEntityList< IfcPolyLoop > list;
+    IfcPolyLoop (aggregate_of< ::Ifc2x3::IfcCartesianPoint >::ptr v1_Polygon);
+    typedef aggregate_of< IfcPolyLoop > list;
 };
 /// The polygonal bounded
 /// half space is a special subtype of a half space solid, where the
@@ -15174,7 +14602,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPolygonalBoundedHalfSpace (IfcEntityInstanceData* e);
     IfcPolygonalBoundedHalfSpace (::Ifc2x3::IfcSurface* v1_BaseSurface, bool v2_AgreementFlag, ::Ifc2x3::IfcAxis2Placement3D* v3_Position, ::Ifc2x3::IfcBoundedCurve* v4_PolygonalBoundary);
-    typedef IfcTemplatedEntityList< IfcPolygonalBoundedHalfSpace > list;
+    typedef aggregate_of< IfcPolygonalBoundedHalfSpace > list;
 };
 /// The pre defined colour determines those qualified names which can be used to identify a colour that is in scope of the current data exchange specification (in contrary to colour specification which defines the colour directly by its colour components).
 /// 
@@ -15187,7 +14615,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPreDefinedColour (IfcEntityInstanceData* e);
     IfcPreDefinedColour (std::string v1_Name);
-    typedef IfcTemplatedEntityList< IfcPreDefinedColour > list;
+    typedef aggregate_of< IfcPreDefinedColour > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The predefined curve font type is an abstract supertype provided to define an application specific curve font. The name label shall be constrained in the application protocol to values that are given specific meaning for curve fonts in that application protocol.
 /// 
@@ -15202,7 +14630,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPreDefinedCurveFont (IfcEntityInstanceData* e);
     IfcPreDefinedCurveFont (std::string v1_Name);
-    typedef IfcTemplatedEntityList< IfcPreDefinedCurveFont > list;
+    typedef aggregate_of< IfcPreDefinedCurveFont > list;
 };
 
 class IFC_PARSE_API IfcPreDefinedDimensionSymbol : public IfcPreDefinedSymbol {
@@ -15211,7 +14639,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPreDefinedDimensionSymbol (IfcEntityInstanceData* e);
     IfcPreDefinedDimensionSymbol (std::string v1_Name);
-    typedef IfcTemplatedEntityList< IfcPreDefinedDimensionSymbol > list;
+    typedef aggregate_of< IfcPreDefinedDimensionSymbol > list;
 };
 
 class IFC_PARSE_API IfcPreDefinedPointMarkerSymbol : public IfcPreDefinedSymbol {
@@ -15220,7 +14648,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPreDefinedPointMarkerSymbol (IfcEntityInstanceData* e);
     IfcPreDefinedPointMarkerSymbol (std::string v1_Name);
-    typedef IfcTemplatedEntityList< IfcPreDefinedPointMarkerSymbol > list;
+    typedef aggregate_of< IfcPreDefinedPointMarkerSymbol > list;
 };
 /// The IfcProductDefinitionShape defines all shape relevant information about an IfcProduct. It allows for multiple geometric shape representations of the same product. The shape relevant information includes:
 /// 
@@ -15236,13 +14664,13 @@ public:
 /// HISTORY  New Entity in IFC Release 1.5
 class IFC_PARSE_API IfcProductDefinitionShape : public IfcProductRepresentation {
 public:
-        IfcTemplatedEntityList< IfcProduct >::ptr ShapeOfProduct() const; // INVERSE IfcProduct::Representation
-    IfcTemplatedEntityList< IfcShapeAspect >::ptr HasShapeAspects() const; // INVERSE IfcShapeAspect::PartOfProductDefinitionShape
+        aggregate_of< IfcProduct >::ptr ShapeOfProduct() const; // INVERSE IfcProduct::Representation
+    aggregate_of< IfcShapeAspect >::ptr HasShapeAspects() const; // INVERSE IfcShapeAspect::PartOfProductDefinitionShape
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcProductDefinitionShape (IfcEntityInstanceData* e);
-    IfcProductDefinitionShape (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentation >::ptr v3_Representations);
-    typedef IfcTemplatedEntityList< IfcProductDefinitionShape > list;
+    IfcProductDefinitionShape (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, aggregate_of< ::Ifc2x3::IfcRepresentation >::ptr v3_Representations);
+    typedef aggregate_of< IfcProductDefinitionShape > list;
 };
 /// A property with a bounded
 ///   value, IfcPropertyBoundedValue, defines a property
@@ -15350,18 +14778,12 @@ public:
 ///   UpperBoundValue > LowerBoundValue.
 class IFC_PARSE_API IfcPropertyBoundedValue : public IfcSimpleProperty {
 public:
-    /// Whether the optional attribute UpperBoundValue is defined for this IfcPropertyBoundedValue
-    bool hasUpperBoundValue() const;
     /// Upper bound value for the interval defining the property value. If the value is not given, it indicates an open bound (all values to be greater than or equal to LowerBoundValue).
     ::Ifc2x3::IfcValue* UpperBoundValue() const;
     void setUpperBoundValue(::Ifc2x3::IfcValue* v);
-    /// Whether the optional attribute LowerBoundValue is defined for this IfcPropertyBoundedValue
-    bool hasLowerBoundValue() const;
     /// Lower bound value for the interval defining the property value. If the value is not given, it indicates an open bound (all values to be lower than or equal to UpperBoundValue).
     ::Ifc2x3::IfcValue* LowerBoundValue() const;
     void setLowerBoundValue(::Ifc2x3::IfcValue* v);
-    /// Whether the optional attribute Unit is defined for this IfcPropertyBoundedValue
-    bool hasUnit() const;
     /// Unit for the upper and lower bound values, if not given, the default value for the measure type is used as defined by the global unit assignment at IfcProject.UnitInContext. The applicable unit is then selected by the underlying TYPE of the UpperBoundValue, LowerBoundValue, and SetPointValue)
     ::Ifc2x3::IfcUnit* Unit() const;
     void setUnit(::Ifc2x3::IfcUnit* v);
@@ -15369,7 +14791,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPropertyBoundedValue (IfcEntityInstanceData* e);
     IfcPropertyBoundedValue (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcValue* v3_UpperBoundValue, ::Ifc2x3::IfcValue* v4_LowerBoundValue, ::Ifc2x3::IfcUnit* v5_Unit);
-    typedef IfcTemplatedEntityList< IfcPropertyBoundedValue > list;
+    typedef aggregate_of< IfcPropertyBoundedValue > list;
 };
 /// IfcPropertyDefinition defines the generalization of
 /// all characteristics (i.e. a grouping of individual properties),
@@ -15423,12 +14845,12 @@ public:
 /// IfcPropertyTemplateDefinition for details.
 class IFC_PARSE_API IfcPropertyDefinition : public IfcRoot {
 public:
-        IfcTemplatedEntityList< IfcRelAssociates >::ptr HasAssociations() const; // INVERSE IfcRelAssociates::RelatedObjects
+        aggregate_of< IfcRelAssociates >::ptr HasAssociations() const; // INVERSE IfcRelAssociates::RelatedObjects
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPropertyDefinition (IfcEntityInstanceData* e);
     IfcPropertyDefinition (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
-    typedef IfcTemplatedEntityList< IfcPropertyDefinition > list;
+    typedef aggregate_of< IfcPropertyDefinition > list;
 };
 /// A property with an enumerated
 /// value, IfcPropertyEnumeratedValue, defines a property
@@ -15512,18 +14934,16 @@ public:
     /// Enumeration values, which shall be listed in the referenced IfcPropertyEnumeration, if such a reference is provided.
     /// 
     /// IFC2x4 CHANGE  The attribute has been made optional with upward compatibility for file based exchange.
-    IfcEntityList::ptr EnumerationValues() const;
-    void setEnumerationValues(IfcEntityList::ptr v);
-    /// Whether the optional attribute EnumerationReference is defined for this IfcPropertyEnumeratedValue
-    bool hasEnumerationReference() const;
+    aggregate_of_instance::ptr EnumerationValues() const;
+    void setEnumerationValues(aggregate_of_instance::ptr v);
     /// Enumeration from which a enumeration value has been selected. The referenced enumeration also establishes the unit of the enumeration value.
     ::Ifc2x3::IfcPropertyEnumeration* EnumerationReference() const;
     void setEnumerationReference(::Ifc2x3::IfcPropertyEnumeration* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPropertyEnumeratedValue (IfcEntityInstanceData* e);
-    IfcPropertyEnumeratedValue (std::string v1_Name, boost::optional< std::string > v2_Description, IfcEntityList::ptr v3_EnumerationValues, ::Ifc2x3::IfcPropertyEnumeration* v4_EnumerationReference);
-    typedef IfcTemplatedEntityList< IfcPropertyEnumeratedValue > list;
+    IfcPropertyEnumeratedValue (std::string v1_Name, boost::optional< std::string > v2_Description, aggregate_of_instance::ptr v3_EnumerationValues, ::Ifc2x3::IfcPropertyEnumeration* v4_EnumerationReference);
+    typedef aggregate_of< IfcPropertyEnumeratedValue > list;
 };
 /// An IfcPropertyListValue
 ///   defines a property that has several (numeric or
@@ -15595,18 +15015,16 @@ public:
     /// List of property values.
     /// 
     /// IFC2x4 CHANGE  The attribute has been made optional with upward compatibility for file based exchange.
-    IfcEntityList::ptr ListValues() const;
-    void setListValues(IfcEntityList::ptr v);
-    /// Whether the optional attribute Unit is defined for this IfcPropertyListValue
-    bool hasUnit() const;
+    aggregate_of_instance::ptr ListValues() const;
+    void setListValues(aggregate_of_instance::ptr v);
     /// Unit for the list values, if not given, the default value for the measure type (given by the TYPE of nominal value) is used as defined by the global unit assignment at IfcProject.
     ::Ifc2x3::IfcUnit* Unit() const;
     void setUnit(::Ifc2x3::IfcUnit* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPropertyListValue (IfcEntityInstanceData* e);
-    IfcPropertyListValue (std::string v1_Name, boost::optional< std::string > v2_Description, IfcEntityList::ptr v3_ListValues, ::Ifc2x3::IfcUnit* v4_Unit);
-    typedef IfcTemplatedEntityList< IfcPropertyListValue > list;
+    IfcPropertyListValue (std::string v1_Name, boost::optional< std::string > v2_Description, aggregate_of_instance::ptr v3_ListValues, ::Ifc2x3::IfcUnit* v4_Unit);
+    typedef aggregate_of< IfcPropertyListValue > list;
 };
 /// IfcPropertyReferenceValue allows a property value to
 ///   be given by referencing other entities within the resource
@@ -15625,11 +15043,9 @@ public:
 ///   compatibility for file based exchange.
 class IFC_PARSE_API IfcPropertyReferenceValue : public IfcSimpleProperty {
 public:
-    /// Whether the optional attribute UsageName is defined for this IfcPropertyReferenceValue
-    bool hasUsageName() const;
     /// Description of the use of the referenced value within the property.
-    std::string UsageName() const;
-    void setUsageName(std::string v);
+    boost::optional< std::string > UsageName() const;
+    void setUsageName(boost::optional< std::string > v);
     /// Reference to another property entity through one of the select types in the IfcObjectReferenceSelect.
     /// 
     /// IFC2x4 CHANGE  The attribute has been made optional with upward compatibility for file based exchange.
@@ -15639,7 +15055,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPropertyReferenceValue (IfcEntityInstanceData* e);
     IfcPropertyReferenceValue (std::string v1_Name, boost::optional< std::string > v2_Description, boost::optional< std::string > v3_UsageName, ::Ifc2x3::IfcObjectReferenceSelect* v4_PropertyReference);
-    typedef IfcTemplatedEntityList< IfcPropertyReferenceValue > list;
+    typedef aggregate_of< IfcPropertyReferenceValue > list;
 };
 /// IfcPropertySetDefinition is a generalization of all
 /// individual property sets that can be assigned to an object or type
@@ -15685,13 +15101,13 @@ public:
 /// NOTE  Properties assigned to object occurrences may override properties assigned to the object type. See IfcRelDefinesByType for further information.
 class IFC_PARSE_API IfcPropertySetDefinition : public IfcPropertyDefinition {
 public:
-        IfcTemplatedEntityList< IfcRelDefinesByProperties >::ptr PropertyDefinitionOf() const; // INVERSE IfcRelDefinesByProperties::RelatingPropertyDefinition
-    IfcTemplatedEntityList< IfcTypeObject >::ptr DefinesType() const; // INVERSE IfcTypeObject::HasPropertySets
+        aggregate_of< IfcRelDefinesByProperties >::ptr PropertyDefinitionOf() const; // INVERSE IfcRelDefinesByProperties::RelatingPropertyDefinition
+    aggregate_of< IfcTypeObject >::ptr DefinesType() const; // INVERSE IfcTypeObject::HasPropertySets
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPropertySetDefinition (IfcEntityInstanceData* e);
     IfcPropertySetDefinition (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
-    typedef IfcTemplatedEntityList< IfcPropertySetDefinition > list;
+    typedef aggregate_of< IfcPropertySetDefinition > list;
 };
 /// The property with a single value
 /// IfcPropertySingleValue defines a property object which has
@@ -15739,8 +15155,6 @@ public:
 /// IFC2x3 CHANGE Attribute NominalValue has been made OPTIONAL with upward compatibility for file based exchange.
 class IFC_PARSE_API IfcPropertySingleValue : public IfcSimpleProperty {
 public:
-    /// Whether the optional attribute NominalValue is defined for this IfcPropertySingleValue
-    bool hasNominalValue() const;
     /// Value and measure type of this property. 
     /// 
     /// NOTE  By virtue of the defined data type, that is selected from the SELECT IfcValue, the appropriate unit can be found within the IfcUnitAssignment, defined for the project if no value for the unit attribute is given.
@@ -15748,8 +15162,6 @@ public:
     /// IFC2x3 CHANGE  The attribute has been made optional with upward compatibility for file based exchange.
     ::Ifc2x3::IfcValue* NominalValue() const;
     void setNominalValue(::Ifc2x3::IfcValue* v);
-    /// Whether the optional attribute Unit is defined for this IfcPropertySingleValue
-    bool hasUnit() const;
     /// Unit for the nominal value, if not given, the default value for the measure type (given by the TYPE of nominal value) is used as defined by the global unit assignment at IfcProject.
     ::Ifc2x3::IfcUnit* Unit() const;
     void setUnit(::Ifc2x3::IfcUnit* v);
@@ -15757,7 +15169,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPropertySingleValue (IfcEntityInstanceData* e);
     IfcPropertySingleValue (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcValue* v3_NominalValue, ::Ifc2x3::IfcUnit* v4_Unit);
-    typedef IfcTemplatedEntityList< IfcPropertySingleValue > list;
+    typedef aggregate_of< IfcPropertySingleValue > list;
 };
 /// A property with a range value
 ///   (IfcPropertyTableValue) defines a property object
@@ -15880,33 +15292,27 @@ public:
     /// List of defining values, which determine the defined values. This list shall have unique values only.
     /// 
     /// IFC2x4 CHANGE  The attribute has been made optional with upward compatibility for file based exchange.
-    IfcEntityList::ptr DefiningValues() const;
-    void setDefiningValues(IfcEntityList::ptr v);
+    aggregate_of_instance::ptr DefiningValues() const;
+    void setDefiningValues(aggregate_of_instance::ptr v);
     /// Defined values which are applicable for the scope as defined by the defining values.
     /// 
     /// IFC2x4 CHANGE  The attribute has been made optional with upward compatibility for file based exchange.
-    IfcEntityList::ptr DefinedValues() const;
-    void setDefinedValues(IfcEntityList::ptr v);
-    /// Whether the optional attribute Expression is defined for this IfcPropertyTableValue
-    bool hasExpression() const;
+    aggregate_of_instance::ptr DefinedValues() const;
+    void setDefinedValues(aggregate_of_instance::ptr v);
     /// Expression for the derivation of defined values from the defining values, the expression is given for information only, i.e. no automatic processing can be expected from the expression.
-    std::string Expression() const;
-    void setExpression(std::string v);
-    /// Whether the optional attribute DefiningUnit is defined for this IfcPropertyTableValue
-    bool hasDefiningUnit() const;
+    boost::optional< std::string > Expression() const;
+    void setExpression(boost::optional< std::string > v);
     /// Unit for the defining values, if not given, the default value for the measure type (given by the TYPE of the defining values) is used as defined by the global unit assignment at IfcProject.
     ::Ifc2x3::IfcUnit* DefiningUnit() const;
     void setDefiningUnit(::Ifc2x3::IfcUnit* v);
-    /// Whether the optional attribute DefinedUnit is defined for this IfcPropertyTableValue
-    bool hasDefinedUnit() const;
     /// Unit for the defined values, if not given, the default value for the measure type (given by the TYPE of the defined values) is used as defined by the global unit assignment at IfcProject.
     ::Ifc2x3::IfcUnit* DefinedUnit() const;
     void setDefinedUnit(::Ifc2x3::IfcUnit* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPropertyTableValue (IfcEntityInstanceData* e);
-    IfcPropertyTableValue (std::string v1_Name, boost::optional< std::string > v2_Description, IfcEntityList::ptr v3_DefiningValues, IfcEntityList::ptr v4_DefinedValues, boost::optional< std::string > v5_Expression, ::Ifc2x3::IfcUnit* v6_DefiningUnit, ::Ifc2x3::IfcUnit* v7_DefinedUnit);
-    typedef IfcTemplatedEntityList< IfcPropertyTableValue > list;
+    IfcPropertyTableValue (std::string v1_Name, boost::optional< std::string > v2_Description, aggregate_of_instance::ptr v3_DefiningValues, aggregate_of_instance::ptr v4_DefinedValues, boost::optional< std::string > v5_Expression, ::Ifc2x3::IfcUnit* v6_DefiningUnit, ::Ifc2x3::IfcUnit* v7_DefinedUnit);
+    typedef aggregate_of< IfcPropertyTableValue > list;
 };
 /// IfcRectangleProfileDef defines a rectangle as the profile definition used by the swept surface geometry or the swept area solid. It is given by its X extent and its Y extent, and placed within the 2D position coordinate system, established by the Position attribute. It is placed centric within the position coordinate system. 
 /// 
@@ -15954,7 +15360,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRectangleProfileDef (IfcEntityInstanceData* e);
     IfcRectangleProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_XDim, double v5_YDim);
-    typedef IfcTemplatedEntityList< IfcRectangleProfileDef > list;
+    typedef aggregate_of< IfcRectangleProfileDef > list;
 };
 /// In a regular time series, the data arrives predictably at predefined intervals. In a regular time series there is no need to store multiple time stamps and the algorithms for analyzing the time series are therefore significantly simpler.  Using the start time provided in the supertype, the time step is used to identify the frequency of the occurrences of the list of values.
 /// 
@@ -15967,13 +15373,13 @@ public:
     double TimeStep() const;
     void setTimeStep(double v);
     /// The collection of time series values.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcTimeSeriesValue >::ptr Values() const;
-    void setValues(IfcTemplatedEntityList< ::Ifc2x3::IfcTimeSeriesValue >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcTimeSeriesValue >::ptr Values() const;
+    void setValues(aggregate_of< ::Ifc2x3::IfcTimeSeriesValue >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRegularTimeSeries (IfcEntityInstanceData* e);
-    IfcRegularTimeSeries (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcDateTimeSelect* v3_StartTime, ::Ifc2x3::IfcDateTimeSelect* v4_EndTime, ::Ifc2x3::IfcTimeSeriesDataTypeEnum::Value v5_TimeSeriesDataType, ::Ifc2x3::IfcDataOriginEnum::Value v6_DataOrigin, boost::optional< std::string > v7_UserDefinedDataOrigin, ::Ifc2x3::IfcUnit* v8_Unit, double v9_TimeStep, IfcTemplatedEntityList< ::Ifc2x3::IfcTimeSeriesValue >::ptr v10_Values);
-    typedef IfcTemplatedEntityList< IfcRegularTimeSeries > list;
+    IfcRegularTimeSeries (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcDateTimeSelect* v3_StartTime, ::Ifc2x3::IfcDateTimeSelect* v4_EndTime, ::Ifc2x3::IfcTimeSeriesDataTypeEnum::Value v5_TimeSeriesDataType, ::Ifc2x3::IfcDataOriginEnum::Value v6_DataOrigin, boost::optional< std::string > v7_UserDefinedDataOrigin, ::Ifc2x3::IfcUnit* v8_Unit, double v9_TimeStep, aggregate_of< ::Ifc2x3::IfcTimeSeriesValue >::ptr v10_Values);
+    typedef aggregate_of< IfcRegularTimeSeries > list;
 };
 /// Definition from IAI: An
 ///   IfcReinforcementDefinitionProperties defines the cross section
@@ -16003,19 +15409,17 @@ public:
 ///   bar type.
 class IFC_PARSE_API IfcReinforcementDefinitionProperties : public IfcPropertySetDefinition {
 public:
-    /// Whether the optional attribute DefinitionType is defined for this IfcReinforcementDefinitionProperties
-    bool hasDefinitionType() const;
     /// Descriptive type name applied to reinforcement definition properties.
-    std::string DefinitionType() const;
-    void setDefinitionType(std::string v);
+    boost::optional< std::string > DefinitionType() const;
+    void setDefinitionType(boost::optional< std::string > v);
     /// The list of section reinforcement properties attached to the reinforcement definition properties.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcSectionReinforcementProperties >::ptr ReinforcementSectionDefinitions() const;
-    void setReinforcementSectionDefinitions(IfcTemplatedEntityList< ::Ifc2x3::IfcSectionReinforcementProperties >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcSectionReinforcementProperties >::ptr ReinforcementSectionDefinitions() const;
+    void setReinforcementSectionDefinitions(aggregate_of< ::Ifc2x3::IfcSectionReinforcementProperties >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcReinforcementDefinitionProperties (IfcEntityInstanceData* e);
-    IfcReinforcementDefinitionProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_DefinitionType, IfcTemplatedEntityList< ::Ifc2x3::IfcSectionReinforcementProperties >::ptr v6_ReinforcementSectionDefinitions);
-    typedef IfcTemplatedEntityList< IfcReinforcementDefinitionProperties > list;
+    IfcReinforcementDefinitionProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_DefinitionType, aggregate_of< ::Ifc2x3::IfcSectionReinforcementProperties >::ptr v6_ReinforcementSectionDefinitions);
+    typedef aggregate_of< IfcReinforcementDefinitionProperties > list;
 };
 /// IfcRelationship is the abstract generalization of all objectified relationships in IFC. Objectified relationships are the preferred way to handle relationships among objects. This allows to keep relationship specific properties directly at the relationship and opens the possibility to later handle relationship specific behavior.  
 /// 
@@ -16031,7 +15435,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRelationship (IfcEntityInstanceData* e);
     IfcRelationship (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
-    typedef IfcTemplatedEntityList< IfcRelationship > list;
+    typedef aggregate_of< IfcRelationship > list;
 };
 /// IfcRoundedRectangleProfileDef defines a rectangle with equally rounded corners as the profile definition used by the swept surface geometry or the swept area solid. It is given by the X extent, the Y extent, and the radius for the rounded corners, and placed within the 2D position coordinate system, established by the Position attribute. It is placed centric within the position coordinate system, that is, in the center of the bounding box.
 /// 
@@ -16079,7 +15483,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRoundedRectangleProfileDef (IfcEntityInstanceData* e);
     IfcRoundedRectangleProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_XDim, double v5_YDim, double v6_RoundingRadius);
-    typedef IfcTemplatedEntityList< IfcRoundedRectangleProfileDef > list;
+    typedef aggregate_of< IfcRoundedRectangleProfileDef > list;
 };
 /// Definition from ISO 10303-42:1999: A sectioned
 /// spine is a representation of the shape of a three dimensional
@@ -16140,37 +15544,33 @@ public:
     ::Ifc2x3::IfcCompositeCurve* SpineCurve() const;
     void setSpineCurve(::Ifc2x3::IfcCompositeCurve* v);
     /// A list of at least two cross sections, each defined within the xy plane of the position coordinate system of the cross section. The position coordinate system is given by the corresponding list CrossSectionPositions.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcProfileDef >::ptr CrossSections() const;
-    void setCrossSections(IfcTemplatedEntityList< ::Ifc2x3::IfcProfileDef >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcProfileDef >::ptr CrossSections() const;
+    void setCrossSections(aggregate_of< ::Ifc2x3::IfcProfileDef >::ptr v);
     /// Position coordinate systems for the cross sections that form the sectioned spine. The profiles defining the cross sections are positioned within the xy plane of the corresponding position coordinate system.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcAxis2Placement3D >::ptr CrossSectionPositions() const;
-    void setCrossSectionPositions(IfcTemplatedEntityList< ::Ifc2x3::IfcAxis2Placement3D >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcAxis2Placement3D >::ptr CrossSectionPositions() const;
+    void setCrossSectionPositions(aggregate_of< ::Ifc2x3::IfcAxis2Placement3D >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSectionedSpine (IfcEntityInstanceData* e);
-    IfcSectionedSpine (::Ifc2x3::IfcCompositeCurve* v1_SpineCurve, IfcTemplatedEntityList< ::Ifc2x3::IfcProfileDef >::ptr v2_CrossSections, IfcTemplatedEntityList< ::Ifc2x3::IfcAxis2Placement3D >::ptr v3_CrossSectionPositions);
-    typedef IfcTemplatedEntityList< IfcSectionedSpine > list;
+    IfcSectionedSpine (::Ifc2x3::IfcCompositeCurve* v1_SpineCurve, aggregate_of< ::Ifc2x3::IfcProfileDef >::ptr v2_CrossSections, aggregate_of< ::Ifc2x3::IfcAxis2Placement3D >::ptr v3_CrossSectionPositions);
+    typedef aggregate_of< IfcSectionedSpine > list;
 };
 
 class IFC_PARSE_API IfcServiceLifeFactor : public IfcPropertySetDefinition {
 public:
     ::Ifc2x3::IfcServiceLifeFactorTypeEnum::Value PredefinedType() const;
     void setPredefinedType(::Ifc2x3::IfcServiceLifeFactorTypeEnum::Value v);
-    /// Whether the optional attribute UpperValue is defined for this IfcServiceLifeFactor
-    bool hasUpperValue() const;
     ::Ifc2x3::IfcMeasureValue* UpperValue() const;
     void setUpperValue(::Ifc2x3::IfcMeasureValue* v);
     ::Ifc2x3::IfcMeasureValue* MostUsedValue() const;
     void setMostUsedValue(::Ifc2x3::IfcMeasureValue* v);
-    /// Whether the optional attribute LowerValue is defined for this IfcServiceLifeFactor
-    bool hasLowerValue() const;
     ::Ifc2x3::IfcMeasureValue* LowerValue() const;
     void setLowerValue(::Ifc2x3::IfcMeasureValue* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcServiceLifeFactor (IfcEntityInstanceData* e);
     IfcServiceLifeFactor (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcServiceLifeFactorTypeEnum::Value v5_PredefinedType, ::Ifc2x3::IfcMeasureValue* v6_UpperValue, ::Ifc2x3::IfcMeasureValue* v7_MostUsedValue, ::Ifc2x3::IfcMeasureValue* v8_LowerValue);
-    typedef IfcTemplatedEntityList< IfcServiceLifeFactor > list;
+    typedef aggregate_of< IfcServiceLifeFactor > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A shell based surface model is described by a set of open or closed shells of dimensionality 2. The shells shall not intersect except at edges and vertices. In particular, distinct faces may not intersect. A complete face of one shell may be shared with another shell. Coincident portions of shells shall both reference the same faces, edges and vertices defining the coincident region. There shall be at least one shell. 
 /// 
@@ -16186,13 +15586,13 @@ public:
 /// The shells shall not overlap or intersect except at common faces, edges or vertices.
 class IFC_PARSE_API IfcShellBasedSurfaceModel : public IfcGeometricRepresentationItem {
 public:
-    IfcEntityList::ptr SbsmBoundary() const;
-    void setSbsmBoundary(IfcEntityList::ptr v);
+    aggregate_of_instance::ptr SbsmBoundary() const;
+    void setSbsmBoundary(aggregate_of_instance::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcShellBasedSurfaceModel (IfcEntityInstanceData* e);
-    IfcShellBasedSurfaceModel (IfcEntityList::ptr v1_SbsmBoundary);
-    typedef IfcTemplatedEntityList< IfcShellBasedSurfaceModel > list;
+    IfcShellBasedSurfaceModel (aggregate_of_instance::ptr v1_SbsmBoundary);
+    typedef aggregate_of< IfcShellBasedSurfaceModel > list;
 };
 /// Definition from IAI: Describes slippage in support conditions or connection conditions.  Slippage means that a relative displacement may occur in a support or connection before support or connection reactions are awoken.
 /// 
@@ -16205,26 +15605,20 @@ public:
 /// HISTORY: New entity in IFC 2x2.
 class IFC_PARSE_API IfcSlippageConnectionCondition : public IfcStructuralConnectionCondition {
 public:
-    /// Whether the optional attribute SlippageX is defined for this IfcSlippageConnectionCondition
-    bool hasSlippageX() const;
     /// Slippage in x-direction of the coordinate system defined by the instance which uses this resource object.
-    double SlippageX() const;
-    void setSlippageX(double v);
-    /// Whether the optional attribute SlippageY is defined for this IfcSlippageConnectionCondition
-    bool hasSlippageY() const;
+    boost::optional< double > SlippageX() const;
+    void setSlippageX(boost::optional< double > v);
     /// Slippage in y-direction of the coordinate system defined by the instance which uses this resource object.
-    double SlippageY() const;
-    void setSlippageY(double v);
-    /// Whether the optional attribute SlippageZ is defined for this IfcSlippageConnectionCondition
-    bool hasSlippageZ() const;
+    boost::optional< double > SlippageY() const;
+    void setSlippageY(boost::optional< double > v);
     /// Slippage in z-direction of the coordinate system defined by the instance which uses this resource object.
-    double SlippageZ() const;
-    void setSlippageZ(double v);
+    boost::optional< double > SlippageZ() const;
+    void setSlippageZ(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSlippageConnectionCondition (IfcEntityInstanceData* e);
     IfcSlippageConnectionCondition (boost::optional< std::string > v1_Name, boost::optional< double > v2_SlippageX, boost::optional< double > v3_SlippageY, boost::optional< double > v4_SlippageZ);
-    typedef IfcTemplatedEntityList< IfcSlippageConnectionCondition > list;
+    typedef aggregate_of< IfcSlippageConnectionCondition > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A solid model is a complete representation of the nominal shape of a product such that all points in the interior are connected. Any point can be classified as being inside, outside, or on the boundary of a solid. There are several different types of solid model representations. 
 /// 
@@ -16237,84 +15631,66 @@ public:
     static const IfcParse::entity& Class();
     IfcSolidModel (IfcEntityInstanceData* e);
     IfcSolidModel ();
-    typedef IfcTemplatedEntityList< IfcSolidModel > list;
+    typedef aggregate_of< IfcSolidModel > list;
 };
 
 class IFC_PARSE_API IfcSoundProperties : public IfcPropertySetDefinition {
 public:
     bool IsAttenuating() const;
     void setIsAttenuating(bool v);
-    /// Whether the optional attribute SoundScale is defined for this IfcSoundProperties
-    bool hasSoundScale() const;
-    ::Ifc2x3::IfcSoundScaleEnum::Value SoundScale() const;
-    void setSoundScale(::Ifc2x3::IfcSoundScaleEnum::Value v);
-    IfcTemplatedEntityList< ::Ifc2x3::IfcSoundValue >::ptr SoundValues() const;
-    void setSoundValues(IfcTemplatedEntityList< ::Ifc2x3::IfcSoundValue >::ptr v);
+    boost::optional< ::Ifc2x3::IfcSoundScaleEnum::Value > SoundScale() const;
+    void setSoundScale(boost::optional< ::Ifc2x3::IfcSoundScaleEnum::Value > v);
+    aggregate_of< ::Ifc2x3::IfcSoundValue >::ptr SoundValues() const;
+    void setSoundValues(aggregate_of< ::Ifc2x3::IfcSoundValue >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSoundProperties (IfcEntityInstanceData* e);
-    IfcSoundProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, bool v5_IsAttenuating, boost::optional< ::Ifc2x3::IfcSoundScaleEnum::Value > v6_SoundScale, IfcTemplatedEntityList< ::Ifc2x3::IfcSoundValue >::ptr v7_SoundValues);
-    typedef IfcTemplatedEntityList< IfcSoundProperties > list;
+    IfcSoundProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, bool v5_IsAttenuating, boost::optional< ::Ifc2x3::IfcSoundScaleEnum::Value > v6_SoundScale, aggregate_of< ::Ifc2x3::IfcSoundValue >::ptr v7_SoundValues);
+    typedef aggregate_of< IfcSoundProperties > list;
 };
 
 class IFC_PARSE_API IfcSoundValue : public IfcPropertySetDefinition {
 public:
-    /// Whether the optional attribute SoundLevelTimeSeries is defined for this IfcSoundValue
-    bool hasSoundLevelTimeSeries() const;
     ::Ifc2x3::IfcTimeSeries* SoundLevelTimeSeries() const;
     void setSoundLevelTimeSeries(::Ifc2x3::IfcTimeSeries* v);
     double Frequency() const;
     void setFrequency(double v);
-    /// Whether the optional attribute SoundLevelSingleValue is defined for this IfcSoundValue
-    bool hasSoundLevelSingleValue() const;
     ::Ifc2x3::IfcDerivedMeasureValue* SoundLevelSingleValue() const;
     void setSoundLevelSingleValue(::Ifc2x3::IfcDerivedMeasureValue* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSoundValue (IfcEntityInstanceData* e);
     IfcSoundValue (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcTimeSeries* v5_SoundLevelTimeSeries, double v6_Frequency, ::Ifc2x3::IfcDerivedMeasureValue* v7_SoundLevelSingleValue);
-    typedef IfcTemplatedEntityList< IfcSoundValue > list;
+    typedef aggregate_of< IfcSoundValue > list;
 };
 
 class IFC_PARSE_API IfcSpaceThermalLoadProperties : public IfcPropertySetDefinition {
 public:
-    /// Whether the optional attribute ApplicableValueRatio is defined for this IfcSpaceThermalLoadProperties
-    bool hasApplicableValueRatio() const;
-    double ApplicableValueRatio() const;
-    void setApplicableValueRatio(double v);
+    boost::optional< double > ApplicableValueRatio() const;
+    void setApplicableValueRatio(boost::optional< double > v);
     ::Ifc2x3::IfcThermalLoadSourceEnum::Value ThermalLoadSource() const;
     void setThermalLoadSource(::Ifc2x3::IfcThermalLoadSourceEnum::Value v);
     ::Ifc2x3::IfcPropertySourceEnum::Value PropertySource() const;
     void setPropertySource(::Ifc2x3::IfcPropertySourceEnum::Value v);
-    /// Whether the optional attribute SourceDescription is defined for this IfcSpaceThermalLoadProperties
-    bool hasSourceDescription() const;
-    std::string SourceDescription() const;
-    void setSourceDescription(std::string v);
+    boost::optional< std::string > SourceDescription() const;
+    void setSourceDescription(boost::optional< std::string > v);
     double MaximumValue() const;
     void setMaximumValue(double v);
-    /// Whether the optional attribute MinimumValue is defined for this IfcSpaceThermalLoadProperties
-    bool hasMinimumValue() const;
-    double MinimumValue() const;
-    void setMinimumValue(double v);
-    /// Whether the optional attribute ThermalLoadTimeSeriesValues is defined for this IfcSpaceThermalLoadProperties
-    bool hasThermalLoadTimeSeriesValues() const;
+    boost::optional< double > MinimumValue() const;
+    void setMinimumValue(boost::optional< double > v);
     ::Ifc2x3::IfcTimeSeries* ThermalLoadTimeSeriesValues() const;
     void setThermalLoadTimeSeriesValues(::Ifc2x3::IfcTimeSeries* v);
-    /// Whether the optional attribute UserDefinedThermalLoadSource is defined for this IfcSpaceThermalLoadProperties
-    bool hasUserDefinedThermalLoadSource() const;
-    std::string UserDefinedThermalLoadSource() const;
-    void setUserDefinedThermalLoadSource(std::string v);
-    /// Whether the optional attribute UserDefinedPropertySource is defined for this IfcSpaceThermalLoadProperties
-    bool hasUserDefinedPropertySource() const;
-    std::string UserDefinedPropertySource() const;
-    void setUserDefinedPropertySource(std::string v);
+    boost::optional< std::string > UserDefinedThermalLoadSource() const;
+    void setUserDefinedThermalLoadSource(boost::optional< std::string > v);
+    boost::optional< std::string > UserDefinedPropertySource() const;
+    void setUserDefinedPropertySource(boost::optional< std::string > v);
     ::Ifc2x3::IfcThermalLoadTypeEnum::Value ThermalLoadType() const;
     void setThermalLoadType(::Ifc2x3::IfcThermalLoadTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSpaceThermalLoadProperties (IfcEntityInstanceData* e);
     IfcSpaceThermalLoadProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< double > v5_ApplicableValueRatio, ::Ifc2x3::IfcThermalLoadSourceEnum::Value v6_ThermalLoadSource, ::Ifc2x3::IfcPropertySourceEnum::Value v7_PropertySource, boost::optional< std::string > v8_SourceDescription, double v9_MaximumValue, boost::optional< double > v10_MinimumValue, ::Ifc2x3::IfcTimeSeries* v11_ThermalLoadTimeSeriesValues, boost::optional< std::string > v12_UserDefinedThermalLoadSource, boost::optional< std::string > v13_UserDefinedPropertySource, ::Ifc2x3::IfcThermalLoadTypeEnum::Value v14_ThermalLoadType);
-    typedef IfcTemplatedEntityList< IfcSpaceThermalLoadProperties > list;
+    typedef aggregate_of< IfcSpaceThermalLoadProperties > list;
 };
 /// Definition from IAI: An instance of the entity
 ///   IfcStructuralLoadLinearForce shall be used to define actions on curves.
@@ -16323,41 +15699,29 @@ public:
 ///   edition 2.
 class IFC_PARSE_API IfcStructuralLoadLinearForce : public IfcStructuralLoadStatic {
 public:
-    /// Whether the optional attribute LinearForceX is defined for this IfcStructuralLoadLinearForce
-    bool hasLinearForceX() const;
     /// Linear force value in x-direction.
-    double LinearForceX() const;
-    void setLinearForceX(double v);
-    /// Whether the optional attribute LinearForceY is defined for this IfcStructuralLoadLinearForce
-    bool hasLinearForceY() const;
+    boost::optional< double > LinearForceX() const;
+    void setLinearForceX(boost::optional< double > v);
     /// Linear force value in y-direction.
-    double LinearForceY() const;
-    void setLinearForceY(double v);
-    /// Whether the optional attribute LinearForceZ is defined for this IfcStructuralLoadLinearForce
-    bool hasLinearForceZ() const;
+    boost::optional< double > LinearForceY() const;
+    void setLinearForceY(boost::optional< double > v);
     /// Linear force value in z-direction.
-    double LinearForceZ() const;
-    void setLinearForceZ(double v);
-    /// Whether the optional attribute LinearMomentX is defined for this IfcStructuralLoadLinearForce
-    bool hasLinearMomentX() const;
+    boost::optional< double > LinearForceZ() const;
+    void setLinearForceZ(boost::optional< double > v);
     /// Linear moment about the x-axis.
-    double LinearMomentX() const;
-    void setLinearMomentX(double v);
-    /// Whether the optional attribute LinearMomentY is defined for this IfcStructuralLoadLinearForce
-    bool hasLinearMomentY() const;
+    boost::optional< double > LinearMomentX() const;
+    void setLinearMomentX(boost::optional< double > v);
     /// Linear moment about the y-axis.
-    double LinearMomentY() const;
-    void setLinearMomentY(double v);
-    /// Whether the optional attribute LinearMomentZ is defined for this IfcStructuralLoadLinearForce
-    bool hasLinearMomentZ() const;
+    boost::optional< double > LinearMomentY() const;
+    void setLinearMomentY(boost::optional< double > v);
     /// Linear moment about the z-axis.
-    double LinearMomentZ() const;
-    void setLinearMomentZ(double v);
+    boost::optional< double > LinearMomentZ() const;
+    void setLinearMomentZ(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuralLoadLinearForce (IfcEntityInstanceData* e);
     IfcStructuralLoadLinearForce (boost::optional< std::string > v1_Name, boost::optional< double > v2_LinearForceX, boost::optional< double > v3_LinearForceY, boost::optional< double > v4_LinearForceZ, boost::optional< double > v5_LinearMomentX, boost::optional< double > v6_LinearMomentY, boost::optional< double > v7_LinearMomentZ);
-    typedef IfcTemplatedEntityList< IfcStructuralLoadLinearForce > list;
+    typedef aggregate_of< IfcStructuralLoadLinearForce > list;
 };
 /// Definition from IAI: An instance of the entity
 ///   IfcStructuralLoadPlanarForce shall be used to define actions on faces.
@@ -16366,26 +15730,20 @@ public:
 ///   edition 2.
 class IFC_PARSE_API IfcStructuralLoadPlanarForce : public IfcStructuralLoadStatic {
 public:
-    /// Whether the optional attribute PlanarForceX is defined for this IfcStructuralLoadPlanarForce
-    bool hasPlanarForceX() const;
     /// Planar force value in x-direction.
-    double PlanarForceX() const;
-    void setPlanarForceX(double v);
-    /// Whether the optional attribute PlanarForceY is defined for this IfcStructuralLoadPlanarForce
-    bool hasPlanarForceY() const;
+    boost::optional< double > PlanarForceX() const;
+    void setPlanarForceX(boost::optional< double > v);
     /// Planar force value in y-direction.
-    double PlanarForceY() const;
-    void setPlanarForceY(double v);
-    /// Whether the optional attribute PlanarForceZ is defined for this IfcStructuralLoadPlanarForce
-    bool hasPlanarForceZ() const;
+    boost::optional< double > PlanarForceY() const;
+    void setPlanarForceY(boost::optional< double > v);
     /// Planar force value in z-direction.
-    double PlanarForceZ() const;
-    void setPlanarForceZ(double v);
+    boost::optional< double > PlanarForceZ() const;
+    void setPlanarForceZ(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuralLoadPlanarForce (IfcEntityInstanceData* e);
     IfcStructuralLoadPlanarForce (boost::optional< std::string > v1_Name, boost::optional< double > v2_PlanarForceX, boost::optional< double > v3_PlanarForceY, boost::optional< double > v4_PlanarForceZ);
-    typedef IfcTemplatedEntityList< IfcStructuralLoadPlanarForce > list;
+    typedef aggregate_of< IfcStructuralLoadPlanarForce > list;
 };
 /// Definition from IAI: Instances of the entity
 ///   IfcStructuralLoadSingleDisplacement shall be used to define displacements.
@@ -16394,57 +15752,43 @@ public:
 ///   edition 2.
 class IFC_PARSE_API IfcStructuralLoadSingleDisplacement : public IfcStructuralLoadStatic {
 public:
-    /// Whether the optional attribute DisplacementX is defined for this IfcStructuralLoadSingleDisplacement
-    bool hasDisplacementX() const;
     /// Displacement in x-direction.
-    double DisplacementX() const;
-    void setDisplacementX(double v);
-    /// Whether the optional attribute DisplacementY is defined for this IfcStructuralLoadSingleDisplacement
-    bool hasDisplacementY() const;
+    boost::optional< double > DisplacementX() const;
+    void setDisplacementX(boost::optional< double > v);
     /// Displacement in y-direction.
-    double DisplacementY() const;
-    void setDisplacementY(double v);
-    /// Whether the optional attribute DisplacementZ is defined for this IfcStructuralLoadSingleDisplacement
-    bool hasDisplacementZ() const;
+    boost::optional< double > DisplacementY() const;
+    void setDisplacementY(boost::optional< double > v);
     /// Displacement in z-direction.
-    double DisplacementZ() const;
-    void setDisplacementZ(double v);
-    /// Whether the optional attribute RotationalDisplacementRX is defined for this IfcStructuralLoadSingleDisplacement
-    bool hasRotationalDisplacementRX() const;
+    boost::optional< double > DisplacementZ() const;
+    void setDisplacementZ(boost::optional< double > v);
     /// Rotation about the x-axis.
-    double RotationalDisplacementRX() const;
-    void setRotationalDisplacementRX(double v);
-    /// Whether the optional attribute RotationalDisplacementRY is defined for this IfcStructuralLoadSingleDisplacement
-    bool hasRotationalDisplacementRY() const;
+    boost::optional< double > RotationalDisplacementRX() const;
+    void setRotationalDisplacementRX(boost::optional< double > v);
     /// Rotation about the y-axis.
-    double RotationalDisplacementRY() const;
-    void setRotationalDisplacementRY(double v);
-    /// Whether the optional attribute RotationalDisplacementRZ is defined for this IfcStructuralLoadSingleDisplacement
-    bool hasRotationalDisplacementRZ() const;
+    boost::optional< double > RotationalDisplacementRY() const;
+    void setRotationalDisplacementRY(boost::optional< double > v);
     /// Rotation about the z-axis.
-    double RotationalDisplacementRZ() const;
-    void setRotationalDisplacementRZ(double v);
+    boost::optional< double > RotationalDisplacementRZ() const;
+    void setRotationalDisplacementRZ(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuralLoadSingleDisplacement (IfcEntityInstanceData* e);
     IfcStructuralLoadSingleDisplacement (boost::optional< std::string > v1_Name, boost::optional< double > v2_DisplacementX, boost::optional< double > v3_DisplacementY, boost::optional< double > v4_DisplacementZ, boost::optional< double > v5_RotationalDisplacementRX, boost::optional< double > v6_RotationalDisplacementRY, boost::optional< double > v7_RotationalDisplacementRZ);
-    typedef IfcTemplatedEntityList< IfcStructuralLoadSingleDisplacement > list;
+    typedef aggregate_of< IfcStructuralLoadSingleDisplacement > list;
 };
 /// Definition from IAI: Defines a displacement with warping.
 /// 
 /// HISTORY: New entity in IFC 2x2.
 class IFC_PARSE_API IfcStructuralLoadSingleDisplacementDistortion : public IfcStructuralLoadSingleDisplacement {
 public:
-    /// Whether the optional attribute Distortion is defined for this IfcStructuralLoadSingleDisplacementDistortion
-    bool hasDistortion() const;
     /// The distortion curvature (warping, i.e. a cross-sectional deplanation) given to the displacement load.
-    double Distortion() const;
-    void setDistortion(double v);
+    boost::optional< double > Distortion() const;
+    void setDistortion(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuralLoadSingleDisplacementDistortion (IfcEntityInstanceData* e);
     IfcStructuralLoadSingleDisplacementDistortion (boost::optional< std::string > v1_Name, boost::optional< double > v2_DisplacementX, boost::optional< double > v3_DisplacementY, boost::optional< double > v4_DisplacementZ, boost::optional< double > v5_RotationalDisplacementRX, boost::optional< double > v6_RotationalDisplacementRY, boost::optional< double > v7_RotationalDisplacementRZ, boost::optional< double > v8_Distortion);
-    typedef IfcTemplatedEntityList< IfcStructuralLoadSingleDisplacementDistortion > list;
+    typedef aggregate_of< IfcStructuralLoadSingleDisplacementDistortion > list;
 };
 /// Definition from IAI: Instances of the entity
 ///   IfcStructuralLoadSingleForce shall be used to define the forces and
@@ -16454,41 +15798,29 @@ public:
 ///   edition 2.
 class IFC_PARSE_API IfcStructuralLoadSingleForce : public IfcStructuralLoadStatic {
 public:
-    /// Whether the optional attribute ForceX is defined for this IfcStructuralLoadSingleForce
-    bool hasForceX() const;
     /// Force value in x-direction.
-    double ForceX() const;
-    void setForceX(double v);
-    /// Whether the optional attribute ForceY is defined for this IfcStructuralLoadSingleForce
-    bool hasForceY() const;
+    boost::optional< double > ForceX() const;
+    void setForceX(boost::optional< double > v);
     /// Force value in y-direction.
-    double ForceY() const;
-    void setForceY(double v);
-    /// Whether the optional attribute ForceZ is defined for this IfcStructuralLoadSingleForce
-    bool hasForceZ() const;
+    boost::optional< double > ForceY() const;
+    void setForceY(boost::optional< double > v);
     /// Force value in z-direction.
-    double ForceZ() const;
-    void setForceZ(double v);
-    /// Whether the optional attribute MomentX is defined for this IfcStructuralLoadSingleForce
-    bool hasMomentX() const;
+    boost::optional< double > ForceZ() const;
+    void setForceZ(boost::optional< double > v);
     /// Moment about the x-axis.
-    double MomentX() const;
-    void setMomentX(double v);
-    /// Whether the optional attribute MomentY is defined for this IfcStructuralLoadSingleForce
-    bool hasMomentY() const;
+    boost::optional< double > MomentX() const;
+    void setMomentX(boost::optional< double > v);
     /// Moment about the y-axis.
-    double MomentY() const;
-    void setMomentY(double v);
-    /// Whether the optional attribute MomentZ is defined for this IfcStructuralLoadSingleForce
-    bool hasMomentZ() const;
+    boost::optional< double > MomentY() const;
+    void setMomentY(boost::optional< double > v);
     /// Moment about the z-axis.
-    double MomentZ() const;
-    void setMomentZ(double v);
+    boost::optional< double > MomentZ() const;
+    void setMomentZ(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuralLoadSingleForce (IfcEntityInstanceData* e);
     IfcStructuralLoadSingleForce (boost::optional< std::string > v1_Name, boost::optional< double > v2_ForceX, boost::optional< double > v3_ForceY, boost::optional< double > v4_ForceZ, boost::optional< double > v5_MomentX, boost::optional< double > v6_MomentY, boost::optional< double > v7_MomentZ);
-    typedef IfcTemplatedEntityList< IfcStructuralLoadSingleForce > list;
+    typedef aggregate_of< IfcStructuralLoadSingleForce > list;
 };
 /// Definition from IAI: Instances of the entity
 ///   IfcStructuralLoadSingleForceWarping, as a subtype of
@@ -16500,114 +15832,72 @@ public:
 ///   edition 2.
 class IFC_PARSE_API IfcStructuralLoadSingleForceWarping : public IfcStructuralLoadSingleForce {
 public:
-    /// Whether the optional attribute WarpingMoment is defined for this IfcStructuralLoadSingleForceWarping
-    bool hasWarpingMoment() const;
     /// The warping moment at the point load.
-    double WarpingMoment() const;
-    void setWarpingMoment(double v);
+    boost::optional< double > WarpingMoment() const;
+    void setWarpingMoment(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuralLoadSingleForceWarping (IfcEntityInstanceData* e);
     IfcStructuralLoadSingleForceWarping (boost::optional< std::string > v1_Name, boost::optional< double > v2_ForceX, boost::optional< double > v3_ForceY, boost::optional< double > v4_ForceZ, boost::optional< double > v5_MomentX, boost::optional< double > v6_MomentY, boost::optional< double > v7_MomentZ, boost::optional< double > v8_WarpingMoment);
-    typedef IfcTemplatedEntityList< IfcStructuralLoadSingleForceWarping > list;
+    typedef aggregate_of< IfcStructuralLoadSingleForceWarping > list;
 };
 
 class IFC_PARSE_API IfcStructuralProfileProperties : public IfcGeneralProfileProperties {
 public:
-    /// Whether the optional attribute TorsionalConstantX is defined for this IfcStructuralProfileProperties
-    bool hasTorsionalConstantX() const;
-    double TorsionalConstantX() const;
-    void setTorsionalConstantX(double v);
-    /// Whether the optional attribute MomentOfInertiaYZ is defined for this IfcStructuralProfileProperties
-    bool hasMomentOfInertiaYZ() const;
-    double MomentOfInertiaYZ() const;
-    void setMomentOfInertiaYZ(double v);
-    /// Whether the optional attribute MomentOfInertiaY is defined for this IfcStructuralProfileProperties
-    bool hasMomentOfInertiaY() const;
-    double MomentOfInertiaY() const;
-    void setMomentOfInertiaY(double v);
-    /// Whether the optional attribute MomentOfInertiaZ is defined for this IfcStructuralProfileProperties
-    bool hasMomentOfInertiaZ() const;
-    double MomentOfInertiaZ() const;
-    void setMomentOfInertiaZ(double v);
-    /// Whether the optional attribute WarpingConstant is defined for this IfcStructuralProfileProperties
-    bool hasWarpingConstant() const;
-    double WarpingConstant() const;
-    void setWarpingConstant(double v);
-    /// Whether the optional attribute ShearCentreZ is defined for this IfcStructuralProfileProperties
-    bool hasShearCentreZ() const;
-    double ShearCentreZ() const;
-    void setShearCentreZ(double v);
-    /// Whether the optional attribute ShearCentreY is defined for this IfcStructuralProfileProperties
-    bool hasShearCentreY() const;
-    double ShearCentreY() const;
-    void setShearCentreY(double v);
-    /// Whether the optional attribute ShearDeformationAreaZ is defined for this IfcStructuralProfileProperties
-    bool hasShearDeformationAreaZ() const;
-    double ShearDeformationAreaZ() const;
-    void setShearDeformationAreaZ(double v);
-    /// Whether the optional attribute ShearDeformationAreaY is defined for this IfcStructuralProfileProperties
-    bool hasShearDeformationAreaY() const;
-    double ShearDeformationAreaY() const;
-    void setShearDeformationAreaY(double v);
-    /// Whether the optional attribute MaximumSectionModulusY is defined for this IfcStructuralProfileProperties
-    bool hasMaximumSectionModulusY() const;
-    double MaximumSectionModulusY() const;
-    void setMaximumSectionModulusY(double v);
-    /// Whether the optional attribute MinimumSectionModulusY is defined for this IfcStructuralProfileProperties
-    bool hasMinimumSectionModulusY() const;
-    double MinimumSectionModulusY() const;
-    void setMinimumSectionModulusY(double v);
-    /// Whether the optional attribute MaximumSectionModulusZ is defined for this IfcStructuralProfileProperties
-    bool hasMaximumSectionModulusZ() const;
-    double MaximumSectionModulusZ() const;
-    void setMaximumSectionModulusZ(double v);
-    /// Whether the optional attribute MinimumSectionModulusZ is defined for this IfcStructuralProfileProperties
-    bool hasMinimumSectionModulusZ() const;
-    double MinimumSectionModulusZ() const;
-    void setMinimumSectionModulusZ(double v);
-    /// Whether the optional attribute TorsionalSectionModulus is defined for this IfcStructuralProfileProperties
-    bool hasTorsionalSectionModulus() const;
-    double TorsionalSectionModulus() const;
-    void setTorsionalSectionModulus(double v);
-    /// Whether the optional attribute CentreOfGravityInX is defined for this IfcStructuralProfileProperties
-    bool hasCentreOfGravityInX() const;
-    double CentreOfGravityInX() const;
-    void setCentreOfGravityInX(double v);
-    /// Whether the optional attribute CentreOfGravityInY is defined for this IfcStructuralProfileProperties
-    bool hasCentreOfGravityInY() const;
-    double CentreOfGravityInY() const;
-    void setCentreOfGravityInY(double v);
+    boost::optional< double > TorsionalConstantX() const;
+    void setTorsionalConstantX(boost::optional< double > v);
+    boost::optional< double > MomentOfInertiaYZ() const;
+    void setMomentOfInertiaYZ(boost::optional< double > v);
+    boost::optional< double > MomentOfInertiaY() const;
+    void setMomentOfInertiaY(boost::optional< double > v);
+    boost::optional< double > MomentOfInertiaZ() const;
+    void setMomentOfInertiaZ(boost::optional< double > v);
+    boost::optional< double > WarpingConstant() const;
+    void setWarpingConstant(boost::optional< double > v);
+    boost::optional< double > ShearCentreZ() const;
+    void setShearCentreZ(boost::optional< double > v);
+    boost::optional< double > ShearCentreY() const;
+    void setShearCentreY(boost::optional< double > v);
+    boost::optional< double > ShearDeformationAreaZ() const;
+    void setShearDeformationAreaZ(boost::optional< double > v);
+    boost::optional< double > ShearDeformationAreaY() const;
+    void setShearDeformationAreaY(boost::optional< double > v);
+    boost::optional< double > MaximumSectionModulusY() const;
+    void setMaximumSectionModulusY(boost::optional< double > v);
+    boost::optional< double > MinimumSectionModulusY() const;
+    void setMinimumSectionModulusY(boost::optional< double > v);
+    boost::optional< double > MaximumSectionModulusZ() const;
+    void setMaximumSectionModulusZ(boost::optional< double > v);
+    boost::optional< double > MinimumSectionModulusZ() const;
+    void setMinimumSectionModulusZ(boost::optional< double > v);
+    boost::optional< double > TorsionalSectionModulus() const;
+    void setTorsionalSectionModulus(boost::optional< double > v);
+    boost::optional< double > CentreOfGravityInX() const;
+    void setCentreOfGravityInX(boost::optional< double > v);
+    boost::optional< double > CentreOfGravityInY() const;
+    void setCentreOfGravityInY(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuralProfileProperties (IfcEntityInstanceData* e);
     IfcStructuralProfileProperties (boost::optional< std::string > v1_ProfileName, ::Ifc2x3::IfcProfileDef* v2_ProfileDefinition, boost::optional< double > v3_PhysicalWeight, boost::optional< double > v4_Perimeter, boost::optional< double > v5_MinimumPlateThickness, boost::optional< double > v6_MaximumPlateThickness, boost::optional< double > v7_CrossSectionArea, boost::optional< double > v8_TorsionalConstantX, boost::optional< double > v9_MomentOfInertiaYZ, boost::optional< double > v10_MomentOfInertiaY, boost::optional< double > v11_MomentOfInertiaZ, boost::optional< double > v12_WarpingConstant, boost::optional< double > v13_ShearCentreZ, boost::optional< double > v14_ShearCentreY, boost::optional< double > v15_ShearDeformationAreaZ, boost::optional< double > v16_ShearDeformationAreaY, boost::optional< double > v17_MaximumSectionModulusY, boost::optional< double > v18_MinimumSectionModulusY, boost::optional< double > v19_MaximumSectionModulusZ, boost::optional< double > v20_MinimumSectionModulusZ, boost::optional< double > v21_TorsionalSectionModulus, boost::optional< double > v22_CentreOfGravityInX, boost::optional< double > v23_CentreOfGravityInY);
-    typedef IfcTemplatedEntityList< IfcStructuralProfileProperties > list;
+    typedef aggregate_of< IfcStructuralProfileProperties > list;
 };
 
 class IFC_PARSE_API IfcStructuralSteelProfileProperties : public IfcStructuralProfileProperties {
 public:
-    /// Whether the optional attribute ShearAreaZ is defined for this IfcStructuralSteelProfileProperties
-    bool hasShearAreaZ() const;
-    double ShearAreaZ() const;
-    void setShearAreaZ(double v);
-    /// Whether the optional attribute ShearAreaY is defined for this IfcStructuralSteelProfileProperties
-    bool hasShearAreaY() const;
-    double ShearAreaY() const;
-    void setShearAreaY(double v);
-    /// Whether the optional attribute PlasticShapeFactorY is defined for this IfcStructuralSteelProfileProperties
-    bool hasPlasticShapeFactorY() const;
-    double PlasticShapeFactorY() const;
-    void setPlasticShapeFactorY(double v);
-    /// Whether the optional attribute PlasticShapeFactorZ is defined for this IfcStructuralSteelProfileProperties
-    bool hasPlasticShapeFactorZ() const;
-    double PlasticShapeFactorZ() const;
-    void setPlasticShapeFactorZ(double v);
+    boost::optional< double > ShearAreaZ() const;
+    void setShearAreaZ(boost::optional< double > v);
+    boost::optional< double > ShearAreaY() const;
+    void setShearAreaY(boost::optional< double > v);
+    boost::optional< double > PlasticShapeFactorY() const;
+    void setPlasticShapeFactorY(boost::optional< double > v);
+    boost::optional< double > PlasticShapeFactorZ() const;
+    void setPlasticShapeFactorZ(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuralSteelProfileProperties (IfcEntityInstanceData* e);
     IfcStructuralSteelProfileProperties (boost::optional< std::string > v1_ProfileName, ::Ifc2x3::IfcProfileDef* v2_ProfileDefinition, boost::optional< double > v3_PhysicalWeight, boost::optional< double > v4_Perimeter, boost::optional< double > v5_MinimumPlateThickness, boost::optional< double > v6_MaximumPlateThickness, boost::optional< double > v7_CrossSectionArea, boost::optional< double > v8_TorsionalConstantX, boost::optional< double > v9_MomentOfInertiaYZ, boost::optional< double > v10_MomentOfInertiaY, boost::optional< double > v11_MomentOfInertiaZ, boost::optional< double > v12_WarpingConstant, boost::optional< double > v13_ShearCentreZ, boost::optional< double > v14_ShearCentreY, boost::optional< double > v15_ShearDeformationAreaZ, boost::optional< double > v16_ShearDeformationAreaY, boost::optional< double > v17_MaximumSectionModulusY, boost::optional< double > v18_MinimumSectionModulusY, boost::optional< double > v19_MaximumSectionModulusZ, boost::optional< double > v20_MinimumSectionModulusZ, boost::optional< double > v21_TorsionalSectionModulus, boost::optional< double > v22_CentreOfGravityInX, boost::optional< double > v23_CentreOfGravityInY, boost::optional< double > v24_ShearAreaZ, boost::optional< double > v25_ShearAreaY, boost::optional< double > v26_PlasticShapeFactorY, boost::optional< double > v27_PlasticShapeFactorZ);
-    typedef IfcTemplatedEntityList< IfcStructuralSteelProfileProperties > list;
+    typedef aggregate_of< IfcStructuralSteelProfileProperties > list;
 };
 /// Definition from ISO/DIS 10303-42:1999(E): A subedge is an edge whose domain is a connected portion of the domain of an existing edge. The topological constraints on a subedge are the same as those on an edge. 
 /// 
@@ -16628,7 +15918,7 @@ public:
     static const IfcParse::entity& Class();
     IfcSubedge (IfcEntityInstanceData* e);
     IfcSubedge (::Ifc2x3::IfcVertex* v1_EdgeStart, ::Ifc2x3::IfcVertex* v2_EdgeEnd, ::Ifc2x3::IfcEdge* v3_ParentEdge);
-    typedef IfcTemplatedEntityList< IfcSubedge > list;
+    typedef aggregate_of< IfcSubedge > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A surface can be envisioned as a set of connected points in 3-dimensional space which is always locally 2-dimensional, but need not be a manifold.  
 /// 
@@ -16646,7 +15936,7 @@ public:
     static const IfcParse::entity& Class();
     IfcSurface (IfcEntityInstanceData* e);
     IfcSurface ();
-    typedef IfcTemplatedEntityList< IfcSurface > list;
+    typedef aggregate_of< IfcSurface > list;
 };
 /// IfcSurfaceStyleRendering holds the properties for visualization related to a particular surface side style.  
 /// 
@@ -16695,49 +15985,35 @@ public:
 /// HISTORY: New Entity in IFC 2x.
 class IFC_PARSE_API IfcSurfaceStyleRendering : public IfcSurfaceStyleShading {
 public:
-    /// Whether the optional attribute Transparency is defined for this IfcSurfaceStyleRendering
-    bool hasTransparency() const;
     /// Definition from ISO/CD 10303-46: The degree of transparency is indicated by the percentage of light traversing the surface.
     /// Definition from VRML97 - ISO/IEC 14772-1:1997: The transparency field specifies how "clear" an object is, with 1.0 being completely transparent, and 0.0 completely opaque. If not given, the value 0.0 (opaque) is assumed.
-    double Transparency() const;
-    void setTransparency(double v);
-    /// Whether the optional attribute DiffuseColour is defined for this IfcSurfaceStyleRendering
-    bool hasDiffuseColour() const;
+    boost::optional< double > Transparency() const;
+    void setTransparency(boost::optional< double > v);
     /// The diffuse part of the reflectance equation can be given as either a colour or a scalar factor.
     /// The diffuse colour field reflects all light sources depending on the angle of the surface with respect to the light source. The more directly the surface faces the light, the more diffuse light reflects.
     /// The diffuse factor field specifies how much diffuse light from light sources this surface shall reflect. Diffuse light depends on the angle of the surface with respect to the light source. The more directly the surface faces the light, the more diffuse light reflects. The diffuse colour is then defined by surface colour * diffuse factor.
     ::Ifc2x3::IfcColourOrFactor* DiffuseColour() const;
     void setDiffuseColour(::Ifc2x3::IfcColourOrFactor* v);
-    /// Whether the optional attribute TransmissionColour is defined for this IfcSurfaceStyleRendering
-    bool hasTransmissionColour() const;
     /// The transmissive part of the reflectance equation can be given as either a colour or a scalar factor. It only applies to materials which Transparency field is greater than zero.
     /// The transmissive colour field specifies the colour that passes through a transparant material (like the colour that shines through a glass).
     /// The transmissive factor defines the transmissive part, the transmissive colour is then defined by surface colour * transmissive factor.
     ::Ifc2x3::IfcColourOrFactor* TransmissionColour() const;
     void setTransmissionColour(::Ifc2x3::IfcColourOrFactor* v);
-    /// Whether the optional attribute DiffuseTransmissionColour is defined for this IfcSurfaceStyleRendering
-    bool hasDiffuseTransmissionColour() const;
     /// The diffuse transmission part of the reflectance equation can be given as either a colour or a scalar factor. It only applies to materials whose Transparency field is greater than zero.
     /// The diffuse transmission colour specifies how much diffuse light is reflected at the opposite side of the material surface.
     /// The diffuse transmission factor field specifies how much diffuse light from light sources this surface shall reflect on the opposite side of the material surface. The diffuse transmissive colour is then defined by surface colour * diffuse transmissive factor.
     ::Ifc2x3::IfcColourOrFactor* DiffuseTransmissionColour() const;
     void setDiffuseTransmissionColour(::Ifc2x3::IfcColourOrFactor* v);
-    /// Whether the optional attribute ReflectionColour is defined for this IfcSurfaceStyleRendering
-    bool hasReflectionColour() const;
     /// The reflection (or mirror) part of the reflectance equation can be given as either a colour or a scalar factor. Applies to "glass" and "mirror" reflection models.
     /// The reflection colour specifies the contribution made by light from the mirror direction, i.e. light being reflected from the surface.
     /// The reflection factor specifies the amount of contribution made by light from the mirror direction. The reflection colour is then defined by surface colour * reflection factor.
     ::Ifc2x3::IfcColourOrFactor* ReflectionColour() const;
     void setReflectionColour(::Ifc2x3::IfcColourOrFactor* v);
-    /// Whether the optional attribute SpecularColour is defined for this IfcSurfaceStyleRendering
-    bool hasSpecularColour() const;
     /// The specular part of the reflectance equation can be given as either a colour or a scalar factor.
     /// The specular colour determine the specular highlights (e.g., the shiny spots on an apple). When the angle from the light to the surface is close to the angle from the surface to the viewer, the specular colour is added to the diffuse and ambient colour calculations.
     /// The specular factor defines the specular part, the specular colour is then defined by surface colour * specular factor.
     ::Ifc2x3::IfcColourOrFactor* SpecularColour() const;
     void setSpecularColour(::Ifc2x3::IfcColourOrFactor* v);
-    /// Whether the optional attribute SpecularHighlight is defined for this IfcSurfaceStyleRendering
-    bool hasSpecularHighlight() const;
     /// The exponent or roughness part of the specular reflectance.
     ::Ifc2x3::IfcSpecularHighlightSelect* SpecularHighlight() const;
     void setSpecularHighlight(::Ifc2x3::IfcSpecularHighlightSelect* v);
@@ -16748,7 +16024,7 @@ public:
     static const IfcParse::entity& Class();
     IfcSurfaceStyleRendering (IfcEntityInstanceData* e);
     IfcSurfaceStyleRendering (::Ifc2x3::IfcColourRgb* v1_SurfaceColour, boost::optional< double > v2_Transparency, ::Ifc2x3::IfcColourOrFactor* v3_DiffuseColour, ::Ifc2x3::IfcColourOrFactor* v4_TransmissionColour, ::Ifc2x3::IfcColourOrFactor* v5_DiffuseTransmissionColour, ::Ifc2x3::IfcColourOrFactor* v6_ReflectionColour, ::Ifc2x3::IfcColourOrFactor* v7_SpecularColour, ::Ifc2x3::IfcSpecularHighlightSelect* v8_SpecularHighlight, ::Ifc2x3::IfcReflectanceMethodEnum::Value v9_ReflectanceMethod);
-    typedef IfcTemplatedEntityList< IfcSurfaceStyleRendering > list;
+    typedef aggregate_of< IfcSurfaceStyleRendering > list;
 };
 /// Definition from ISO/CD 10303-42:1992: The swept area
 ///   solid entity collects the entities which are defined
@@ -16780,7 +16056,7 @@ public:
     static const IfcParse::entity& Class();
     IfcSweptAreaSolid (IfcEntityInstanceData* e);
     IfcSweptAreaSolid (::Ifc2x3::IfcProfileDef* v1_SweptArea, ::Ifc2x3::IfcAxis2Placement3D* v2_Position);
-    typedef IfcTemplatedEntityList< IfcSweptAreaSolid > list;
+    typedef aggregate_of< IfcSweptAreaSolid > list;
 };
 /// Definition from ISO 10303-42:2002: A swept
 /// disk solid is the solid produced by sweeping a circular disk
@@ -16843,11 +16119,9 @@ public:
     /// The Radius of the circular disk to be swept along the directrix. Denotes the outer radius, if an InnerRadius is applied.
     double Radius() const;
     void setRadius(double v);
-    /// Whether the optional attribute InnerRadius is defined for this IfcSweptDiskSolid
-    bool hasInnerRadius() const;
     /// This attribute is optional, if present it defines the radius of a circular hole in the centre of the disk.
-    double InnerRadius() const;
-    void setInnerRadius(double v);
+    boost::optional< double > InnerRadius() const;
+    void setInnerRadius(boost::optional< double > v);
     /// The parameter value on the Directrix at which the sweeping operation commences. If no value is provided the start of the sweeping operation is at the start of the Directrix..
     /// 
     /// IFC2x4 CHANGE  The attribute has been changed to OPTIONAL with upward compatibility for file-based exchange.
@@ -16862,7 +16136,7 @@ public:
     static const IfcParse::entity& Class();
     IfcSweptDiskSolid (IfcEntityInstanceData* e);
     IfcSweptDiskSolid (::Ifc2x3::IfcCurve* v1_Directrix, double v2_Radius, boost::optional< double > v3_InnerRadius, double v4_StartParam, double v5_EndParam);
-    typedef IfcTemplatedEntityList< IfcSweptDiskSolid > list;
+    typedef aggregate_of< IfcSweptDiskSolid > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A swept surface is one that is constructed by sweeping a curve along another curve.  
 /// 
@@ -16881,7 +16155,7 @@ public:
     static const IfcParse::entity& Class();
     IfcSweptSurface (IfcEntityInstanceData* e);
     IfcSweptSurface (::Ifc2x3::IfcProfileDef* v1_SweptCurve, ::Ifc2x3::IfcAxis2Placement3D* v2_Position);
-    typedef IfcTemplatedEntityList< IfcSweptSurface > list;
+    typedef aggregate_of< IfcSweptSurface > list;
 };
 /// IfcTShapeProfileDef defines
 /// a section profile that provides the defining parameters of a T-shaped
@@ -16925,40 +16199,28 @@ public:
     /// Constant wall thickness of flange (= tg).
     double FlangeThickness() const;
     void setFlangeThickness(double v);
-    /// Whether the optional attribute FilletRadius is defined for this IfcTShapeProfileDef
-    bool hasFilletRadius() const;
     /// Fillet radius according the above illustration (= r1).
-    double FilletRadius() const;
-    void setFilletRadius(double v);
-    /// Whether the optional attribute FlangeEdgeRadius is defined for this IfcTShapeProfileDef
-    bool hasFlangeEdgeRadius() const;
+    boost::optional< double > FilletRadius() const;
+    void setFilletRadius(boost::optional< double > v);
     /// Edge radius according the above illustration (= r2).
-    double FlangeEdgeRadius() const;
-    void setFlangeEdgeRadius(double v);
-    /// Whether the optional attribute WebEdgeRadius is defined for this IfcTShapeProfileDef
-    bool hasWebEdgeRadius() const;
+    boost::optional< double > FlangeEdgeRadius() const;
+    void setFlangeEdgeRadius(boost::optional< double > v);
     /// Edge radius according the above illustration (= r3).
-    double WebEdgeRadius() const;
-    void setWebEdgeRadius(double v);
-    /// Whether the optional attribute WebSlope is defined for this IfcTShapeProfileDef
-    bool hasWebSlope() const;
+    boost::optional< double > WebEdgeRadius() const;
+    void setWebEdgeRadius(boost::optional< double > v);
     /// Slope of flange of the profile.
-    double WebSlope() const;
-    void setWebSlope(double v);
-    /// Whether the optional attribute FlangeSlope is defined for this IfcTShapeProfileDef
-    bool hasFlangeSlope() const;
+    boost::optional< double > WebSlope() const;
+    void setWebSlope(boost::optional< double > v);
     /// Slope of web of the profile.
-    double FlangeSlope() const;
-    void setFlangeSlope(double v);
-    /// Whether the optional attribute CentreOfGravityInY is defined for this IfcTShapeProfileDef
-    bool hasCentreOfGravityInY() const;
-    double CentreOfGravityInY() const;
-    void setCentreOfGravityInY(double v);
+    boost::optional< double > FlangeSlope() const;
+    void setFlangeSlope(boost::optional< double > v);
+    boost::optional< double > CentreOfGravityInY() const;
+    void setCentreOfGravityInY(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTShapeProfileDef (IfcEntityInstanceData* e);
     IfcTShapeProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_Depth, double v5_FlangeWidth, double v6_WebThickness, double v7_FlangeThickness, boost::optional< double > v8_FilletRadius, boost::optional< double > v9_FlangeEdgeRadius, boost::optional< double > v10_WebEdgeRadius, boost::optional< double > v11_WebSlope, boost::optional< double > v12_FlangeSlope, boost::optional< double > v13_CentreOfGravityInY);
-    typedef IfcTemplatedEntityList< IfcTShapeProfileDef > list;
+    typedef aggregate_of< IfcTShapeProfileDef > list;
 };
 
 class IFC_PARSE_API IfcTerminatorSymbol : public IfcAnnotationSymbolOccurrence {
@@ -16968,8 +16230,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTerminatorSymbol (IfcEntityInstanceData* e);
-    IfcTerminatorSymbol (::Ifc2x3::IfcRepresentationItem* v1_Item, IfcTemplatedEntityList< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name, ::Ifc2x3::IfcAnnotationCurveOccurrence* v4_AnnotatedCurve);
-    typedef IfcTemplatedEntityList< IfcTerminatorSymbol > list;
+    IfcTerminatorSymbol (::Ifc2x3::IfcRepresentationItem* v1_Item, aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name, ::Ifc2x3::IfcAnnotationCurveOccurrence* v4_AnnotatedCurve);
+    typedef aggregate_of< IfcTerminatorSymbol > list;
 };
 /// The text literal is a geometric representation item which describes a text string using a string literal and additional position and path information.
 /// 
@@ -16997,7 +16259,7 @@ public:
     static const IfcParse::entity& Class();
     IfcTextLiteral (IfcEntityInstanceData* e);
     IfcTextLiteral (std::string v1_Literal, ::Ifc2x3::IfcAxis2Placement* v2_Placement, ::Ifc2x3::IfcTextPath::Value v3_Path);
-    typedef IfcTemplatedEntityList< IfcTextLiteral > list;
+    typedef aggregate_of< IfcTextLiteral > list;
 };
 /// The text literal with extent is a text literal with the additional explicit information of the planar extent (or surrounding text box). An alignment attribute defines, how the text box is aligned to the placement and how it may expand.
 /// 
@@ -17020,7 +16282,7 @@ public:
     static const IfcParse::entity& Class();
     IfcTextLiteralWithExtent (IfcEntityInstanceData* e);
     IfcTextLiteralWithExtent (std::string v1_Literal, ::Ifc2x3::IfcAxis2Placement* v2_Placement, ::Ifc2x3::IfcTextPath::Value v3_Path, ::Ifc2x3::IfcPlanarExtent* v4_Extent, std::string v5_BoxAlignment);
-    typedef IfcTemplatedEntityList< IfcTextLiteralWithExtent > list;
+    typedef aggregate_of< IfcTextLiteralWithExtent > list;
 };
 /// IfcTrapeziumProfileDef defines a trapezium as the profile definition used by the swept surface geometry or the swept area solid. It is given by its Top X and Bottom X extent and its Y extent as well as by the offset of the Top X extend, and placed within the 2D position coordinate system, established by the Position attribute. It is placed centric within the position coordinate system, that is, in the center of the bounding box. 
 /// 
@@ -17078,7 +16340,7 @@ public:
     static const IfcParse::entity& Class();
     IfcTrapeziumProfileDef (IfcEntityInstanceData* e);
     IfcTrapeziumProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_BottomXDim, double v5_TopXDim, double v6_YDim, double v7_TopXOffset);
-    typedef IfcTemplatedEntityList< IfcTrapeziumProfileDef > list;
+    typedef aggregate_of< IfcTrapeziumProfileDef > list;
 };
 /// Definition from ISO/CD 10303-46:1992: A two direction repeat factor combines two vectors which are used in the fill area style tiles entity for determining the shape and relative location of tiles. Given the initial position of any tile, the two direction repeat factor determines eight new positions according to the equation:
 /// 
@@ -17097,7 +16359,7 @@ public:
     static const IfcParse::entity& Class();
     IfcTwoDirectionRepeatFactor (IfcEntityInstanceData* e);
     IfcTwoDirectionRepeatFactor (::Ifc2x3::IfcVector* v1_RepeatFactor, ::Ifc2x3::IfcVector* v2_SecondRepeatFactor);
-    typedef IfcTemplatedEntityList< IfcTwoDirectionRepeatFactor > list;
+    typedef aggregate_of< IfcTwoDirectionRepeatFactor > list;
 };
 /// The object type defines the
 /// specific information about a type, being common to all
@@ -17132,8 +16394,6 @@ public:
 /// IFC2x4 CHANGE (1) The entity IfcTypeObject shall not be instantiated from IFC2x4 onwards. It will be changed into an ABSTRACT supertype in future releases of IFC. (2) The inverse attribute Types has been renamed from ObjectTypeOf.
 class IFC_PARSE_API IfcTypeObject : public IfcObjectDefinition {
 public:
-    /// Whether the optional attribute ApplicableOccurrence is defined for this IfcTypeObject
-    bool hasApplicableOccurrence() const;
     /// The attribute optionally defines the data type of the occurrence object, to which the assigned type object can relate. If not present, no instruction is given to which occurrence object the type object is applicable. The following conventions are used:
     /// 
     /// The IFC entity name of the applicable occurrence using the IFC naming convention, CamelCase with IFC prefix
@@ -17141,21 +16401,19 @@ public:
     ///   If one type object is applicable to many occurrence objects, then those occurrence object names should be separate by comma "," forming a comma separated string.
     /// 
     /// EXAMPLE  Refering to a furniture as applicable occurrence entity would be expressed as 'IfcFurnishingElement', refering to a brace as applicable entity would be expressed as 'IfcMember/BRACE', refering to a wall and wall standard case would be expressed as 'IfcWall, IfcWallStandardCase'.
-    std::string ApplicableOccurrence() const;
-    void setApplicableOccurrence(std::string v);
-    /// Whether the optional attribute HasPropertySets is defined for this IfcTypeObject
-    bool hasHasPropertySets() const;
+    boost::optional< std::string > ApplicableOccurrence() const;
+    void setApplicableOccurrence(boost::optional< std::string > v);
     /// Set list of unique property sets, that are associated with the object type and are common to all object occurrences referring to this object type.
     /// 
     /// IFC2x3 CHANGE  The attribute aggregate type has been changed from LIST to SET.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr HasPropertySets() const;
-    void setHasPropertySets(IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr v);
-        IfcTemplatedEntityList< IfcRelDefinesByType >::ptr ObjectTypeOf() const; // INVERSE IfcRelDefinesByType::RelatingType
+    boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > HasPropertySets() const;
+    void setHasPropertySets(boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v);
+        aggregate_of< IfcRelDefinesByType >::ptr ObjectTypeOf() const; // INVERSE IfcRelDefinesByType::RelatingType
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTypeObject (IfcEntityInstanceData* e);
-    IfcTypeObject (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets);
-    typedef IfcTemplatedEntityList< IfcTypeObject > list;
+    IfcTypeObject (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets);
+    typedef aggregate_of< IfcTypeObject > list;
 };
 /// IfcTypeProduct defines a type
 /// definition of a product without being already inserted into a
@@ -17225,21 +16483,17 @@ public:
 /// Figure 11 — Product type geometry with multiple placement
 class IFC_PARSE_API IfcTypeProduct : public IfcTypeObject {
 public:
-    /// Whether the optional attribute RepresentationMaps is defined for this IfcTypeProduct
-    bool hasRepresentationMaps() const;
     /// List of unique representation maps. Each representation map describes a block definition of the shape of the product style. By providing more than one representation map, a multi-view block definition can be given.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr RepresentationMaps() const;
-    void setRepresentationMaps(IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr v);
-    /// Whether the optional attribute Tag is defined for this IfcTypeProduct
-    bool hasTag() const;
+    boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > RepresentationMaps() const;
+    void setRepresentationMaps(boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v);
     /// The tag (or label) identifier at the particular type of a product, e.g. the article number (like the EAN). It is the identifier at the specific level.
-    std::string Tag() const;
-    void setTag(std::string v);
+    boost::optional< std::string > Tag() const;
+    void setTag(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTypeProduct (IfcEntityInstanceData* e);
-    IfcTypeProduct (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcTypeProduct > list;
+    IfcTypeProduct (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag);
+    typedef aggregate_of< IfcTypeProduct > list;
 };
 /// IfcUShapeProfileDef defines
 /// a section profile that provides the defining parameters of a U-shape
@@ -17283,30 +16537,22 @@ public:
     /// Constant wall thickness of flange (= tg).
     double FlangeThickness() const;
     void setFlangeThickness(double v);
-    /// Whether the optional attribute FilletRadius is defined for this IfcUShapeProfileDef
-    bool hasFilletRadius() const;
     /// Fillet radius according the above illustration (= r1).
-    double FilletRadius() const;
-    void setFilletRadius(double v);
-    /// Whether the optional attribute EdgeRadius is defined for this IfcUShapeProfileDef
-    bool hasEdgeRadius() const;
+    boost::optional< double > FilletRadius() const;
+    void setFilletRadius(boost::optional< double > v);
     /// Edge radius according the above illustration (= r2).
-    double EdgeRadius() const;
-    void setEdgeRadius(double v);
-    /// Whether the optional attribute FlangeSlope is defined for this IfcUShapeProfileDef
-    bool hasFlangeSlope() const;
+    boost::optional< double > EdgeRadius() const;
+    void setEdgeRadius(boost::optional< double > v);
     /// Slope of flange of the profile.
-    double FlangeSlope() const;
-    void setFlangeSlope(double v);
-    /// Whether the optional attribute CentreOfGravityInX is defined for this IfcUShapeProfileDef
-    bool hasCentreOfGravityInX() const;
-    double CentreOfGravityInX() const;
-    void setCentreOfGravityInX(double v);
+    boost::optional< double > FlangeSlope() const;
+    void setFlangeSlope(boost::optional< double > v);
+    boost::optional< double > CentreOfGravityInX() const;
+    void setCentreOfGravityInX(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcUShapeProfileDef (IfcEntityInstanceData* e);
     IfcUShapeProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_Depth, double v5_FlangeWidth, double v6_WebThickness, double v7_FlangeThickness, boost::optional< double > v8_FilletRadius, boost::optional< double > v9_EdgeRadius, boost::optional< double > v10_FlangeSlope, boost::optional< double > v11_CentreOfGravityInX);
-    typedef IfcTemplatedEntityList< IfcUShapeProfileDef > list;
+    typedef aggregate_of< IfcUShapeProfileDef > list;
 };
 /// Definition from ISO/CD 10303-42:1992: The vector is defined in terms of the direction and magnitude of the vector. The value of the magnitude attribute defines the magnitude of the vector. 
 /// 
@@ -17327,7 +16573,7 @@ public:
     static const IfcParse::entity& Class();
     IfcVector (IfcEntityInstanceData* e);
     IfcVector (::Ifc2x3::IfcDirection* v1_Orientation, double v2_Magnitude);
-    typedef IfcTemplatedEntityList< IfcVector > list;
+    typedef aggregate_of< IfcVector > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A vertex_loop is a loop of
 ///   zero genus consisting of a single vertex. A vertex can exist independently of a
@@ -17350,7 +16596,7 @@ public:
     static const IfcParse::entity& Class();
     IfcVertexLoop (IfcEntityInstanceData* e);
     IfcVertexLoop (::Ifc2x3::IfcVertex* v1_LoopVertex);
-    typedef IfcTemplatedEntityList< IfcVertexLoop > list;
+    typedef aggregate_of< IfcVertexLoop > list;
 };
 /// The window lining is the outer
 /// frame which enables the window to be fixed in position. The
@@ -17452,48 +16698,30 @@ public:
 /// All offsets are given as a normalized ratio measure.
 class IFC_PARSE_API IfcWindowLiningProperties : public IfcPropertySetDefinition {
 public:
-    /// Whether the optional attribute LiningDepth is defined for this IfcWindowLiningProperties
-    bool hasLiningDepth() const;
     /// Depth of the window lining (dimension measured perpendicular to window elevation plane).
-    double LiningDepth() const;
-    void setLiningDepth(double v);
-    /// Whether the optional attribute LiningThickness is defined for this IfcWindowLiningProperties
-    bool hasLiningThickness() const;
+    boost::optional< double > LiningDepth() const;
+    void setLiningDepth(boost::optional< double > v);
     /// Thickness of the window lining (measured parallel to the window elevation plane).
-    double LiningThickness() const;
-    void setLiningThickness(double v);
-    /// Whether the optional attribute TransomThickness is defined for this IfcWindowLiningProperties
-    bool hasTransomThickness() const;
+    boost::optional< double > LiningThickness() const;
+    void setLiningThickness(boost::optional< double > v);
     /// Thickness of the transom (horizontal separator of window panels within a window), measured parallel to the window elevation plane. The transom is part of the lining and the transom depth is assumed to be identical to the lining depth.
-    double TransomThickness() const;
-    void setTransomThickness(double v);
-    /// Whether the optional attribute MullionThickness is defined for this IfcWindowLiningProperties
-    bool hasMullionThickness() const;
+    boost::optional< double > TransomThickness() const;
+    void setTransomThickness(boost::optional< double > v);
     /// Thickness of the mullion (vertical separator of window panels within a window), measured parallel to the window elevation plane. The mullion is part of the lining and the mullion depth is assumed to be identical to the lining depth.
-    double MullionThickness() const;
-    void setMullionThickness(double v);
-    /// Whether the optional attribute FirstTransomOffset is defined for this IfcWindowLiningProperties
-    bool hasFirstTransomOffset() const;
+    boost::optional< double > MullionThickness() const;
+    void setMullionThickness(boost::optional< double > v);
     /// Offset of the transom centerline, measured along the z-axis of the window placement co-ordinate system. An offset value = 0.5 indicates that the transom is positioned in the middle of the window.
-    double FirstTransomOffset() const;
-    void setFirstTransomOffset(double v);
-    /// Whether the optional attribute SecondTransomOffset is defined for this IfcWindowLiningProperties
-    bool hasSecondTransomOffset() const;
+    boost::optional< double > FirstTransomOffset() const;
+    void setFirstTransomOffset(boost::optional< double > v);
     /// Offset of the transom centerline for the second transom, measured along the x-axis of the window placement co-ordinate system. An offset value = 0.666 indicates that the second transom is positioned at two/third of the window.
-    double SecondTransomOffset() const;
-    void setSecondTransomOffset(double v);
-    /// Whether the optional attribute FirstMullionOffset is defined for this IfcWindowLiningProperties
-    bool hasFirstMullionOffset() const;
+    boost::optional< double > SecondTransomOffset() const;
+    void setSecondTransomOffset(boost::optional< double > v);
     /// Offset of the mullion centerline, measured along the x-axis of the window placement co-ordinate system. An offset value = 0.5 indicates that the mullion is positioned in the middle of the window.
-    double FirstMullionOffset() const;
-    void setFirstMullionOffset(double v);
-    /// Whether the optional attribute SecondMullionOffset is defined for this IfcWindowLiningProperties
-    bool hasSecondMullionOffset() const;
+    boost::optional< double > FirstMullionOffset() const;
+    void setFirstMullionOffset(boost::optional< double > v);
     /// Offset of the mullion centerline for the second mullion, measured along the x-axis of the window placement co-ordinate system. An offset value = 0.666 indicates that the second mullion is positioned at two/third of the window.
-    double SecondMullionOffset() const;
-    void setSecondMullionOffset(double v);
-    /// Whether the optional attribute ShapeAspectStyle is defined for this IfcWindowLiningProperties
-    bool hasShapeAspectStyle() const;
+    boost::optional< double > SecondMullionOffset() const;
+    void setSecondMullionOffset(boost::optional< double > v);
     /// Optional link to a shape aspect definition, which points to the part of the geometric representation of the window style, which is used to represent the lining.
     /// 
     /// IFC2x4 CHANGE The attribute is deprecated and shall no longer be used, i.e. the value shall be NIL ($).
@@ -17503,7 +16731,7 @@ public:
     static const IfcParse::entity& Class();
     IfcWindowLiningProperties (IfcEntityInstanceData* e);
     IfcWindowLiningProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< double > v5_LiningDepth, boost::optional< double > v6_LiningThickness, boost::optional< double > v7_TransomThickness, boost::optional< double > v8_MullionThickness, boost::optional< double > v9_FirstTransomOffset, boost::optional< double > v10_SecondTransomOffset, boost::optional< double > v11_FirstMullionOffset, boost::optional< double > v12_SecondMullionOffset, ::Ifc2x3::IfcShapeAspect* v13_ShapeAspectStyle);
-    typedef IfcTemplatedEntityList< IfcWindowLiningProperties > list;
+    typedef aggregate_of< IfcWindowLiningProperties > list;
 };
 /// A window panel is a casement, that is, a component, fixed or opening,
 /// consisting essentially of a frame and the infilling. The
@@ -17558,18 +16786,12 @@ public:
     /// Position of this panel within the overall window style.
     ::Ifc2x3::IfcWindowPanelPositionEnum::Value PanelPosition() const;
     void setPanelPosition(::Ifc2x3::IfcWindowPanelPositionEnum::Value v);
-    /// Whether the optional attribute FrameDepth is defined for this IfcWindowPanelProperties
-    bool hasFrameDepth() const;
     /// Depth of panel frame, measured from front face to back face horizontally (i.e. perpendicular to the window (elevation) plane.
-    double FrameDepth() const;
-    void setFrameDepth(double v);
-    /// Whether the optional attribute FrameThickness is defined for this IfcWindowPanelProperties
-    bool hasFrameThickness() const;
+    boost::optional< double > FrameDepth() const;
+    void setFrameDepth(boost::optional< double > v);
     /// Width of panel frame, measured from inside of panel (at glazing) to outside of panel (at lining), i.e. parallel to the window (elevation) plane.
-    double FrameThickness() const;
-    void setFrameThickness(double v);
-    /// Whether the optional attribute ShapeAspectStyle is defined for this IfcWindowPanelProperties
-    bool hasShapeAspectStyle() const;
+    boost::optional< double > FrameThickness() const;
+    void setFrameThickness(boost::optional< double > v);
     /// Optional link to a shape aspect definition, which points to the part of the geometric representation of the window style, which is used to represent the panel.
     /// 
     /// IFC2x4 CHANGE The attribute is deprecated and shall no longer be used, i.e. the value shall be NIL ($).
@@ -17579,7 +16801,7 @@ public:
     static const IfcParse::entity& Class();
     IfcWindowPanelProperties (IfcEntityInstanceData* e);
     IfcWindowPanelProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcWindowPanelOperationEnum::Value v5_OperationType, ::Ifc2x3::IfcWindowPanelPositionEnum::Value v6_PanelPosition, boost::optional< double > v7_FrameDepth, boost::optional< double > v8_FrameThickness, ::Ifc2x3::IfcShapeAspect* v9_ShapeAspectStyle);
-    typedef IfcTemplatedEntityList< IfcWindowPanelProperties > list;
+    typedef aggregate_of< IfcWindowPanelProperties > list;
 };
 /// Definition: The window style defines a particular style of windows, which may be included into the spatial context of the building model through instances of IfcWindow. A window style defines the overall parameter of the window style and refers to the particular parameter of the lining and one (or several) panels through IfcWindowLiningProperties and IfcWindowPanelProperties.
 /// 
@@ -17616,8 +16838,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcWindowStyle (IfcEntityInstanceData* e);
-    IfcWindowStyle (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, ::Ifc2x3::IfcWindowStyleConstructionEnum::Value v9_ConstructionType, ::Ifc2x3::IfcWindowStyleOperationEnum::Value v10_OperationType, bool v11_ParameterTakesPrecedence, bool v12_Sizeable);
-    typedef IfcTemplatedEntityList< IfcWindowStyle > list;
+    IfcWindowStyle (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, ::Ifc2x3::IfcWindowStyleConstructionEnum::Value v9_ConstructionType, ::Ifc2x3::IfcWindowStyleOperationEnum::Value v10_OperationType, bool v11_ParameterTakesPrecedence, bool v12_Sizeable);
+    typedef aggregate_of< IfcWindowStyle > list;
 };
 /// IfcZShapeProfileDef defines
 /// a section profile that provides the defining parameters of a Z-shape
@@ -17658,21 +16880,17 @@ public:
     /// Constant wall thickness of flange, see illustration above (= tg).
     double FlangeThickness() const;
     void setFlangeThickness(double v);
-    /// Whether the optional attribute FilletRadius is defined for this IfcZShapeProfileDef
-    bool hasFilletRadius() const;
     /// Fillet radius according the above illustration (= r1).
-    double FilletRadius() const;
-    void setFilletRadius(double v);
-    /// Whether the optional attribute EdgeRadius is defined for this IfcZShapeProfileDef
-    bool hasEdgeRadius() const;
+    boost::optional< double > FilletRadius() const;
+    void setFilletRadius(boost::optional< double > v);
     /// Edge radius according the above illustration (= r2).
-    double EdgeRadius() const;
-    void setEdgeRadius(double v);
+    boost::optional< double > EdgeRadius() const;
+    void setEdgeRadius(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcZShapeProfileDef (IfcEntityInstanceData* e);
     IfcZShapeProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_Depth, double v5_FlangeWidth, double v6_WebThickness, double v7_FlangeThickness, boost::optional< double > v8_FilletRadius, boost::optional< double > v9_EdgeRadius);
-    typedef IfcTemplatedEntityList< IfcZShapeProfileDef > list;
+    typedef aggregate_of< IfcZShapeProfileDef > list;
 };
 
 class IFC_PARSE_API IfcAnnotationCurveOccurrence : public IfcAnnotationOccurrence {
@@ -17680,8 +16898,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcAnnotationCurveOccurrence (IfcEntityInstanceData* e);
-    IfcAnnotationCurveOccurrence (::Ifc2x3::IfcRepresentationItem* v1_Item, IfcTemplatedEntityList< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
-    typedef IfcTemplatedEntityList< IfcAnnotationCurveOccurrence > list;
+    IfcAnnotationCurveOccurrence (::Ifc2x3::IfcRepresentationItem* v1_Item, aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
+    typedef aggregate_of< IfcAnnotationCurveOccurrence > list;
 };
 /// Definition from ISO/CD 10303-46:1992: An annotation fill area is a set of curves that may be filled with hatching, colour or tiling. The annotation fill are is described by boundaries which consist of non-intersecting, non-self-intersecting closed curves. These curves form the boundary of planar areas to be filled according to the style for the annotation fill area.
 /// 
@@ -17710,50 +16928,42 @@ public:
     /// IFC2x Edition 3 CHANGE  The two new attributes OuterBoundary and InnerBoundaries replace the old single attribute Boundaries.
     ::Ifc2x3::IfcCurve* OuterBoundary() const;
     void setOuterBoundary(::Ifc2x3::IfcCurve* v);
-    /// Whether the optional attribute InnerBoundaries is defined for this IfcAnnotationFillArea
-    bool hasInnerBoundaries() const;
     /// A set of inner curves that define the inner boundaries of the fill area. The areas defined by the inner boundaries are excluded from applying the fill area style.
     /// 
     /// IFC2x Edition 3 CHANGE  The two new attributes OuterBoundary and InnerBoundaries replace the old single attribute Boundaries.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcCurve >::ptr InnerBoundaries() const;
-    void setInnerBoundaries(IfcTemplatedEntityList< ::Ifc2x3::IfcCurve >::ptr v);
+    boost::optional< aggregate_of< ::Ifc2x3::IfcCurve >::ptr > InnerBoundaries() const;
+    void setInnerBoundaries(boost::optional< aggregate_of< ::Ifc2x3::IfcCurve >::ptr > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcAnnotationFillArea (IfcEntityInstanceData* e);
-    IfcAnnotationFillArea (::Ifc2x3::IfcCurve* v1_OuterBoundary, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcCurve >::ptr > v2_InnerBoundaries);
-    typedef IfcTemplatedEntityList< IfcAnnotationFillArea > list;
+    IfcAnnotationFillArea (::Ifc2x3::IfcCurve* v1_OuterBoundary, boost::optional< aggregate_of< ::Ifc2x3::IfcCurve >::ptr > v2_InnerBoundaries);
+    typedef aggregate_of< IfcAnnotationFillArea > list;
 };
 
 class IFC_PARSE_API IfcAnnotationFillAreaOccurrence : public IfcAnnotationOccurrence {
 public:
-    /// Whether the optional attribute FillStyleTarget is defined for this IfcAnnotationFillAreaOccurrence
-    bool hasFillStyleTarget() const;
     ::Ifc2x3::IfcPoint* FillStyleTarget() const;
     void setFillStyleTarget(::Ifc2x3::IfcPoint* v);
-    /// Whether the optional attribute GlobalOrLocal is defined for this IfcAnnotationFillAreaOccurrence
-    bool hasGlobalOrLocal() const;
-    ::Ifc2x3::IfcGlobalOrLocalEnum::Value GlobalOrLocal() const;
-    void setGlobalOrLocal(::Ifc2x3::IfcGlobalOrLocalEnum::Value v);
+    boost::optional< ::Ifc2x3::IfcGlobalOrLocalEnum::Value > GlobalOrLocal() const;
+    void setGlobalOrLocal(boost::optional< ::Ifc2x3::IfcGlobalOrLocalEnum::Value > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcAnnotationFillAreaOccurrence (IfcEntityInstanceData* e);
-    IfcAnnotationFillAreaOccurrence (::Ifc2x3::IfcRepresentationItem* v1_Item, IfcTemplatedEntityList< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name, ::Ifc2x3::IfcPoint* v4_FillStyleTarget, boost::optional< ::Ifc2x3::IfcGlobalOrLocalEnum::Value > v5_GlobalOrLocal);
-    typedef IfcTemplatedEntityList< IfcAnnotationFillAreaOccurrence > list;
+    IfcAnnotationFillAreaOccurrence (::Ifc2x3::IfcRepresentationItem* v1_Item, aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name, ::Ifc2x3::IfcPoint* v4_FillStyleTarget, boost::optional< ::Ifc2x3::IfcGlobalOrLocalEnum::Value > v5_GlobalOrLocal);
+    typedef aggregate_of< IfcAnnotationFillAreaOccurrence > list;
 };
 
 class IFC_PARSE_API IfcAnnotationSurface : public IfcGeometricRepresentationItem {
 public:
     ::Ifc2x3::IfcGeometricRepresentationItem* Item() const;
     void setItem(::Ifc2x3::IfcGeometricRepresentationItem* v);
-    /// Whether the optional attribute TextureCoordinates is defined for this IfcAnnotationSurface
-    bool hasTextureCoordinates() const;
     ::Ifc2x3::IfcTextureCoordinate* TextureCoordinates() const;
     void setTextureCoordinates(::Ifc2x3::IfcTextureCoordinate* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcAnnotationSurface (IfcEntityInstanceData* e);
     IfcAnnotationSurface (::Ifc2x3::IfcGeometricRepresentationItem* v1_Item, ::Ifc2x3::IfcTextureCoordinate* v2_TextureCoordinates);
-    typedef IfcTemplatedEntityList< IfcAnnotationSurface > list;
+    typedef aggregate_of< IfcAnnotationSurface > list;
 };
 /// Definition from ISO/CD 10303-42:1992: The direction and location in three dimensional space of a single axis. An axis1_placement is defined in terms of a locating point (inherited from placement supertype) and an axis direction: this is either the direction of axis or defaults to (0.0,0.0,1.0). The actual direction for the axis placement is given by the derived attribute z (Z).  
 /// 
@@ -17766,8 +16976,6 @@ public:
 /// Figure 274 — Axis1 placement
 class IFC_PARSE_API IfcAxis1Placement : public IfcPlacement {
 public:
-    /// Whether the optional attribute Axis is defined for this IfcAxis1Placement
-    bool hasAxis() const;
     /// The direction of the local Z axis.
     ::Ifc2x3::IfcDirection* Axis() const;
     void setAxis(::Ifc2x3::IfcDirection* v);
@@ -17775,7 +16983,7 @@ public:
     static const IfcParse::entity& Class();
     IfcAxis1Placement (IfcEntityInstanceData* e);
     IfcAxis1Placement (::Ifc2x3::IfcCartesianPoint* v1_Location, ::Ifc2x3::IfcDirection* v2_Axis);
-    typedef IfcTemplatedEntityList< IfcAxis1Placement > list;
+    typedef aggregate_of< IfcAxis1Placement > list;
 };
 /// Definition from ISO/CD 10303-42:1992: The location and orientation in two dimensional space of two mutually perpendicular axes. An axis2_placement_2d is defined in terms of a point, (inherited from the placement supertype), and an axis. It can be used to locate and originate an object in two dimensional space and to define a placement coordinate system. The class includes a point which forms the origin of the placement coordinate system. A direction vector is required to complete the definition of the placement coordinate system. The reference direction defines the placement X axis direction, the placement Y axis is derived from this.  
 /// 
@@ -17790,8 +16998,6 @@ public:
 /// Figure 275 — Axis2 placement 2D
 class IFC_PARSE_API IfcAxis2Placement2D : public IfcPlacement {
 public:
-    /// Whether the optional attribute RefDirection is defined for this IfcAxis2Placement2D
-    bool hasRefDirection() const;
     /// The direction used to determine the direction of the local X axis. If a value is omited that it defaults to [1.0, 0.0.].
     ::Ifc2x3::IfcDirection* RefDirection() const;
     void setRefDirection(::Ifc2x3::IfcDirection* v);
@@ -17799,7 +17005,7 @@ public:
     static const IfcParse::entity& Class();
     IfcAxis2Placement2D (IfcEntityInstanceData* e);
     IfcAxis2Placement2D (::Ifc2x3::IfcCartesianPoint* v1_Location, ::Ifc2x3::IfcDirection* v2_RefDirection);
-    typedef IfcTemplatedEntityList< IfcAxis2Placement2D > list;
+    typedef aggregate_of< IfcAxis2Placement2D > list;
 };
 /// Definition from ISO/CD 10303-42:1992: The location and orientation in three dimensional space of three mutually perpendicular axes. An axis2_placement_3D is defined in terms of a point (inherited from placement supertype) and two (ideally orthogonal) axes. It can be used to locate and originate an object in three dimensional space and to define a placement coordinate system. The entity includes a point which forms the origin of the placement coordinate system. Two direction vectors are required to complete the definition of the placement coordinate system. The axis is the placement Z axis direction and the ref_direction is an approximation to the placement X axis direction.
 /// 
@@ -17816,13 +17022,9 @@ public:
 /// Figure 276 — Axis2 placement 3D
 class IFC_PARSE_API IfcAxis2Placement3D : public IfcPlacement {
 public:
-    /// Whether the optional attribute Axis is defined for this IfcAxis2Placement3D
-    bool hasAxis() const;
     /// The exact direction of the local Z Axis.
     ::Ifc2x3::IfcDirection* Axis() const;
     void setAxis(::Ifc2x3::IfcDirection* v);
-    /// Whether the optional attribute RefDirection is defined for this IfcAxis2Placement3D
-    bool hasRefDirection() const;
     /// The direction used to determine the direction of the local X Axis. If necessary an adjustment is made to maintain orthogonality to the Axis direction. If Axis and/or RefDirection is omitted, these directions are taken from the geometric coordinate system.
     ::Ifc2x3::IfcDirection* RefDirection() const;
     void setRefDirection(::Ifc2x3::IfcDirection* v);
@@ -17830,7 +17032,7 @@ public:
     static const IfcParse::entity& Class();
     IfcAxis2Placement3D (IfcEntityInstanceData* e);
     IfcAxis2Placement3D (::Ifc2x3::IfcCartesianPoint* v1_Location, ::Ifc2x3::IfcDirection* v2_Axis, ::Ifc2x3::IfcDirection* v3_RefDirection);
-    typedef IfcTemplatedEntityList< IfcAxis2Placement3D > list;
+    typedef aggregate_of< IfcAxis2Placement3D > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A Boolean result
 /// is the result of a regularized operation on two solids to create
@@ -17873,7 +17075,7 @@ public:
     static const IfcParse::entity& Class();
     IfcBooleanResult (IfcEntityInstanceData* e);
     IfcBooleanResult (::Ifc2x3::IfcBooleanOperator::Value v1_Operator, ::Ifc2x3::IfcBooleanOperand* v2_FirstOperand, ::Ifc2x3::IfcBooleanOperand* v3_SecondOperand);
-    typedef IfcTemplatedEntityList< IfcBooleanResult > list;
+    typedef aggregate_of< IfcBooleanResult > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A bounded surface is a surface of finite area with identifiable boundaries.
 /// 
@@ -17893,7 +17095,7 @@ public:
     static const IfcParse::entity& Class();
     IfcBoundedSurface (IfcEntityInstanceData* e);
     IfcBoundedSurface ();
-    typedef IfcTemplatedEntityList< IfcBoundedSurface > list;
+    typedef aggregate_of< IfcBoundedSurface > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A box domain
 ///   is an orthogonal box parallel to the axes of the geometric
@@ -17935,7 +17137,7 @@ public:
     static const IfcParse::entity& Class();
     IfcBoundingBox (IfcEntityInstanceData* e);
     IfcBoundingBox (::Ifc2x3::IfcCartesianPoint* v1_Corner, double v2_XDim, double v3_YDim, double v4_ZDim);
-    typedef IfcTemplatedEntityList< IfcBoundingBox > list;
+    typedef aggregate_of< IfcBoundingBox > list;
 };
 /// Definition from ISO/CD 10303-42:1992: This entity is a subtype of the half space solid which is trimmed by a surrounding rectangular box. The box has its edges parallel to the coordinate axes of the geometric coordinate system.
 /// 
@@ -17976,7 +17178,7 @@ public:
     static const IfcParse::entity& Class();
     IfcBoxedHalfSpace (IfcEntityInstanceData* e);
     IfcBoxedHalfSpace (::Ifc2x3::IfcSurface* v1_BaseSurface, bool v2_AgreementFlag, ::Ifc2x3::IfcBoundingBox* v3_Enclosure);
-    typedef IfcTemplatedEntityList< IfcBoxedHalfSpace > list;
+    typedef aggregate_of< IfcBoxedHalfSpace > list;
 };
 /// IfcCShapeProfileDef defines
 /// a section profile that provides the defining parameters of a C-shaped
@@ -18014,20 +17216,16 @@ public:
     /// Lengths of girth, see illustration above (= c).
     double Girth() const;
     void setGirth(double v);
-    /// Whether the optional attribute InternalFilletRadius is defined for this IfcCShapeProfileDef
-    bool hasInternalFilletRadius() const;
     /// Internal fillet radius according the above illustration (= r1).
-    double InternalFilletRadius() const;
-    void setInternalFilletRadius(double v);
-    /// Whether the optional attribute CentreOfGravityInX is defined for this IfcCShapeProfileDef
-    bool hasCentreOfGravityInX() const;
-    double CentreOfGravityInX() const;
-    void setCentreOfGravityInX(double v);
+    boost::optional< double > InternalFilletRadius() const;
+    void setInternalFilletRadius(boost::optional< double > v);
+    boost::optional< double > CentreOfGravityInX() const;
+    void setCentreOfGravityInX(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCShapeProfileDef (IfcEntityInstanceData* e);
     IfcCShapeProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_Depth, double v5_Width, double v6_WallThickness, double v7_Girth, boost::optional< double > v8_InternalFilletRadius, boost::optional< double > v9_CentreOfGravityInX);
-    typedef IfcTemplatedEntityList< IfcCShapeProfileDef > list;
+    typedef aggregate_of< IfcCShapeProfileDef > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A point defined by its coordinates in a two or three dimensional rectangular Cartesian coordinate system, or in a two dimensional parameter space. The entity is defined in a two or three dimensional space.  
 /// 
@@ -18045,7 +17243,7 @@ public:
     static const IfcParse::entity& Class();
     IfcCartesianPoint (IfcEntityInstanceData* e);
     IfcCartesianPoint (std::vector< double > /*[1:3]*/ v1_Coordinates);
-    typedef IfcTemplatedEntityList< IfcCartesianPoint > list;
+    typedef aggregate_of< IfcCartesianPoint > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A Cartesian transformation operator defines a geometric transformation composed of translation, rotation, mirroring and uniform scaling. The list of normalized vectors u defines the columns of an orthogonal matrix T. These vectors are computed, by the base axis function, from the direction attributes axis1, axis2 and, in Cartesian transformation operator 3d, axis3. If |T|= -1, the transformation includes mirroring. The local origin point A, the scale value S and the matrix T together define a transformation.  
 /// 
@@ -18079,29 +17277,23 @@ public:
 /// HISTORY: New entity in IFC Release 2x.
 class IFC_PARSE_API IfcCartesianTransformationOperator : public IfcGeometricRepresentationItem {
 public:
-    /// Whether the optional attribute Axis1 is defined for this IfcCartesianTransformationOperator
-    bool hasAxis1() const;
     /// The direction used to determine U[1], the derived X axis direction.
     ::Ifc2x3::IfcDirection* Axis1() const;
     void setAxis1(::Ifc2x3::IfcDirection* v);
-    /// Whether the optional attribute Axis2 is defined for this IfcCartesianTransformationOperator
-    bool hasAxis2() const;
     /// The direction used to determine U[2], the derived Y axis direction.
     ::Ifc2x3::IfcDirection* Axis2() const;
     void setAxis2(::Ifc2x3::IfcDirection* v);
     /// The required translation, specified as a cartesian point. The actual translation included in the transformation is from the geometric origin to the local origin.
     ::Ifc2x3::IfcCartesianPoint* LocalOrigin() const;
     void setLocalOrigin(::Ifc2x3::IfcCartesianPoint* v);
-    /// Whether the optional attribute Scale is defined for this IfcCartesianTransformationOperator
-    bool hasScale() const;
     /// The scaling value specified for the transformation.
-    double Scale() const;
-    void setScale(double v);
+    boost::optional< double > Scale() const;
+    void setScale(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCartesianTransformationOperator (IfcEntityInstanceData* e);
     IfcCartesianTransformationOperator (::Ifc2x3::IfcDirection* v1_Axis1, ::Ifc2x3::IfcDirection* v2_Axis2, ::Ifc2x3::IfcCartesianPoint* v3_LocalOrigin, boost::optional< double > v4_Scale);
-    typedef IfcTemplatedEntityList< IfcCartesianTransformationOperator > list;
+    typedef aggregate_of< IfcCartesianTransformationOperator > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A Cartesian transformation operator 2d defines a geometric transformation in two-dimensional space composed of translation, rotation, mirroring and uniform scaling. The list of normalized vectors u defines the columns of an orthogonal matrix T. These vectors are computed from the direction attributes axis1 and axis2 by the base axis function. If |T|= -1, the transformation includes mirroring.  
 /// 
@@ -18114,7 +17306,7 @@ public:
     static const IfcParse::entity& Class();
     IfcCartesianTransformationOperator2D (IfcEntityInstanceData* e);
     IfcCartesianTransformationOperator2D (::Ifc2x3::IfcDirection* v1_Axis1, ::Ifc2x3::IfcDirection* v2_Axis2, ::Ifc2x3::IfcCartesianPoint* v3_LocalOrigin, boost::optional< double > v4_Scale);
-    typedef IfcTemplatedEntityList< IfcCartesianTransformationOperator2D > list;
+    typedef aggregate_of< IfcCartesianTransformationOperator2D > list;
 };
 /// A Cartesian transformation operator 2d non uniform defines a geometric transformation in two-dimensional space composed of translation, rotation, mirroring and non uniform scaling. Non uniform scaling is given by two different scaling factors: 
 /// 
@@ -18128,16 +17320,14 @@ public:
 /// HISTORY: New entity in IFC Release 2x.
 class IFC_PARSE_API IfcCartesianTransformationOperator2DnonUniform : public IfcCartesianTransformationOperator2D {
 public:
-    /// Whether the optional attribute Scale2 is defined for this IfcCartesianTransformationOperator2DnonUniform
-    bool hasScale2() const;
     /// The scaling value specified for the transformation along the axis 2. This is normally the y scale factor.
-    double Scale2() const;
-    void setScale2(double v);
+    boost::optional< double > Scale2() const;
+    void setScale2(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCartesianTransformationOperator2DnonUniform (IfcEntityInstanceData* e);
     IfcCartesianTransformationOperator2DnonUniform (::Ifc2x3::IfcDirection* v1_Axis1, ::Ifc2x3::IfcDirection* v2_Axis2, ::Ifc2x3::IfcCartesianPoint* v3_LocalOrigin, boost::optional< double > v4_Scale, boost::optional< double > v5_Scale2);
-    typedef IfcTemplatedEntityList< IfcCartesianTransformationOperator2DnonUniform > list;
+    typedef aggregate_of< IfcCartesianTransformationOperator2DnonUniform > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A Cartesian transformation operator 3d defines a geometric transformation in three-dimensional space composed of translation, rotation, mirroring and uniform scaling. The list of normalized vectors u defines the columns of an orthogonal matrix T. These vectors are computed from the direction attributes axis1, axis2 and axis3 by the base axis function. If |T|= -1, the transformation includes mirroring.  
 /// 
@@ -18146,8 +17336,6 @@ public:
 /// HISTORY: New entity in IFC Release 2x.
 class IFC_PARSE_API IfcCartesianTransformationOperator3D : public IfcCartesianTransformationOperator {
 public:
-    /// Whether the optional attribute Axis3 is defined for this IfcCartesianTransformationOperator3D
-    bool hasAxis3() const;
     /// The exact direction of U[3], the derived Z axis direction.
     ::Ifc2x3::IfcDirection* Axis3() const;
     void setAxis3(::Ifc2x3::IfcDirection* v);
@@ -18155,7 +17343,7 @@ public:
     static const IfcParse::entity& Class();
     IfcCartesianTransformationOperator3D (IfcEntityInstanceData* e);
     IfcCartesianTransformationOperator3D (::Ifc2x3::IfcDirection* v1_Axis1, ::Ifc2x3::IfcDirection* v2_Axis2, ::Ifc2x3::IfcCartesianPoint* v3_LocalOrigin, boost::optional< double > v4_Scale, ::Ifc2x3::IfcDirection* v5_Axis3);
-    typedef IfcTemplatedEntityList< IfcCartesianTransformationOperator3D > list;
+    typedef aggregate_of< IfcCartesianTransformationOperator3D > list;
 };
 /// A Cartesian transformation operator 3d non uniform defines a geometric transformation in three-dimensional space composed of translation, rotation, mirroring and non uniform scaling. Non uniform scaling is given by three different scaling factors:
 /// 
@@ -18170,21 +17358,17 @@ public:
 /// HISTORY: New entity in IFC Release 2x.
 class IFC_PARSE_API IfcCartesianTransformationOperator3DnonUniform : public IfcCartesianTransformationOperator3D {
 public:
-    /// Whether the optional attribute Scale2 is defined for this IfcCartesianTransformationOperator3DnonUniform
-    bool hasScale2() const;
     /// The scaling value specified for the transformation along the axis 2. This is normally the y scale factor.
-    double Scale2() const;
-    void setScale2(double v);
-    /// Whether the optional attribute Scale3 is defined for this IfcCartesianTransformationOperator3DnonUniform
-    bool hasScale3() const;
+    boost::optional< double > Scale2() const;
+    void setScale2(boost::optional< double > v);
     /// The scaling value specified for the transformation along the axis 3. This is normally the z scale factor.
-    double Scale3() const;
-    void setScale3(double v);
+    boost::optional< double > Scale3() const;
+    void setScale3(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCartesianTransformationOperator3DnonUniform (IfcEntityInstanceData* e);
     IfcCartesianTransformationOperator3DnonUniform (::Ifc2x3::IfcDirection* v1_Axis1, ::Ifc2x3::IfcDirection* v2_Axis2, ::Ifc2x3::IfcCartesianPoint* v3_LocalOrigin, boost::optional< double > v4_Scale, ::Ifc2x3::IfcDirection* v5_Axis3, boost::optional< double > v6_Scale2, boost::optional< double > v7_Scale3);
-    typedef IfcTemplatedEntityList< IfcCartesianTransformationOperator3DnonUniform > list;
+    typedef aggregate_of< IfcCartesianTransformationOperator3DnonUniform > list;
 };
 /// IfcCircleProfileDef defines a circle as the profile definition used by the swept surface geometry or by the swept area solid. It is given by its Radius attribute and placed within the 2D position coordinate system, established by the Position attribute. 
 /// 
@@ -18207,7 +17391,7 @@ public:
     static const IfcParse::entity& Class();
     IfcCircleProfileDef (IfcEntityInstanceData* e);
     IfcCircleProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_Radius);
-    typedef IfcTemplatedEntityList< IfcCircleProfileDef > list;
+    typedef aggregate_of< IfcCircleProfileDef > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A closed shell is a shell
 ///   of the dimensionality 2 which typically serves as a bound for a region in R3. A
@@ -18263,8 +17447,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcClosedShell (IfcEntityInstanceData* e);
-    IfcClosedShell (IfcTemplatedEntityList< ::Ifc2x3::IfcFace >::ptr v1_CfsFaces);
-    typedef IfcTemplatedEntityList< IfcClosedShell > list;
+    IfcClosedShell (aggregate_of< ::Ifc2x3::IfcFace >::ptr v1_CfsFaces);
+    typedef aggregate_of< IfcClosedShell > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A composite curve segment is a bounded curve together with transition information which is used to construct a composite curve (IfcCompositeCurve).
 /// 
@@ -18286,12 +17470,12 @@ public:
     /// The bounded curve which defines the geometry of the segment.
     ::Ifc2x3::IfcCurve* ParentCurve() const;
     void setParentCurve(::Ifc2x3::IfcCurve* v);
-        IfcTemplatedEntityList< IfcCompositeCurve >::ptr UsingCurves() const; // INVERSE IfcCompositeCurve::Segments
+        aggregate_of< IfcCompositeCurve >::ptr UsingCurves() const; // INVERSE IfcCompositeCurve::Segments
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCompositeCurveSegment (IfcEntityInstanceData* e);
     IfcCompositeCurveSegment (::Ifc2x3::IfcTransitionCode::Value v1_Transition, bool v2_SameSense, ::Ifc2x3::IfcCurve* v3_ParentCurve);
-    typedef IfcTemplatedEntityList< IfcCompositeCurveSegment > list;
+    typedef aggregate_of< IfcCompositeCurveSegment > list;
 };
 
 class IFC_PARSE_API IfcCraneRailAShapeProfileDef : public IfcParameterizedProfileDef {
@@ -18300,10 +17484,8 @@ public:
     void setOverallHeight(double v);
     double BaseWidth2() const;
     void setBaseWidth2(double v);
-    /// Whether the optional attribute Radius is defined for this IfcCraneRailAShapeProfileDef
-    bool hasRadius() const;
-    double Radius() const;
-    void setRadius(double v);
+    boost::optional< double > Radius() const;
+    void setRadius(boost::optional< double > v);
     double HeadWidth() const;
     void setHeadWidth(double v);
     double HeadDepth2() const;
@@ -18320,15 +17502,13 @@ public:
     void setBaseDepth2(double v);
     double BaseDepth3() const;
     void setBaseDepth3(double v);
-    /// Whether the optional attribute CentreOfGravityInY is defined for this IfcCraneRailAShapeProfileDef
-    bool hasCentreOfGravityInY() const;
-    double CentreOfGravityInY() const;
-    void setCentreOfGravityInY(double v);
+    boost::optional< double > CentreOfGravityInY() const;
+    void setCentreOfGravityInY(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCraneRailAShapeProfileDef (IfcEntityInstanceData* e);
     IfcCraneRailAShapeProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_OverallHeight, double v5_BaseWidth2, boost::optional< double > v6_Radius, double v7_HeadWidth, double v8_HeadDepth2, double v9_HeadDepth3, double v10_WebThickness, double v11_BaseWidth4, double v12_BaseDepth1, double v13_BaseDepth2, double v14_BaseDepth3, boost::optional< double > v15_CentreOfGravityInY);
-    typedef IfcTemplatedEntityList< IfcCraneRailAShapeProfileDef > list;
+    typedef aggregate_of< IfcCraneRailAShapeProfileDef > list;
 };
 
 class IFC_PARSE_API IfcCraneRailFShapeProfileDef : public IfcParameterizedProfileDef {
@@ -18337,10 +17517,8 @@ public:
     void setOverallHeight(double v);
     double HeadWidth() const;
     void setHeadWidth(double v);
-    /// Whether the optional attribute Radius is defined for this IfcCraneRailFShapeProfileDef
-    bool hasRadius() const;
-    double Radius() const;
-    void setRadius(double v);
+    boost::optional< double > Radius() const;
+    void setRadius(boost::optional< double > v);
     double HeadDepth2() const;
     void setHeadDepth2(double v);
     double HeadDepth3() const;
@@ -18351,15 +17529,13 @@ public:
     void setBaseDepth1(double v);
     double BaseDepth2() const;
     void setBaseDepth2(double v);
-    /// Whether the optional attribute CentreOfGravityInY is defined for this IfcCraneRailFShapeProfileDef
-    bool hasCentreOfGravityInY() const;
-    double CentreOfGravityInY() const;
-    void setCentreOfGravityInY(double v);
+    boost::optional< double > CentreOfGravityInY() const;
+    void setCentreOfGravityInY(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCraneRailFShapeProfileDef (IfcEntityInstanceData* e);
     IfcCraneRailFShapeProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_OverallHeight, double v5_HeadWidth, boost::optional< double > v6_Radius, double v7_HeadDepth2, double v8_HeadDepth3, double v9_WebThickness, double v10_BaseDepth1, double v11_BaseDepth2, boost::optional< double > v12_CentreOfGravityInY);
-    typedef IfcTemplatedEntityList< IfcCraneRailFShapeProfileDef > list;
+    typedef aggregate_of< IfcCraneRailFShapeProfileDef > list;
 };
 /// IfcCsgPrimitive3D is an abstract supertype of all three dimensional primitives used as either tree root item, or as Boolean results within a CSG solid model. All 3D CSG primitives are defined within a three-dimensional placement coordinate system.
 /// 
@@ -18375,7 +17551,7 @@ public:
     static const IfcParse::entity& Class();
     IfcCsgPrimitive3D (IfcEntityInstanceData* e);
     IfcCsgPrimitive3D (::Ifc2x3::IfcAxis2Placement3D* v1_Position);
-    typedef IfcTemplatedEntityList< IfcCsgPrimitive3D > list;
+    typedef aggregate_of< IfcCsgPrimitive3D > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A solid
 ///   represented as a CSG model is defined by a collection of
@@ -18427,7 +17603,7 @@ public:
     static const IfcParse::entity& Class();
     IfcCsgSolid (IfcEntityInstanceData* e);
     IfcCsgSolid (::Ifc2x3::IfcCsgSelect* v1_TreeRootExpression);
-    typedef IfcTemplatedEntityList< IfcCsgSolid > list;
+    typedef aggregate_of< IfcCsgSolid > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A curve can be envisioned as the path of a point moving in its coordinate space.  
 /// 
@@ -18445,7 +17621,7 @@ public:
     static const IfcParse::entity& Class();
     IfcCurve (IfcEntityInstanceData* e);
     IfcCurve ();
-    typedef IfcTemplatedEntityList< IfcCurve > list;
+    typedef aggregate_of< IfcCurve > list;
 };
 /// Definition from ISO/CD 10303-42:1992: The curve bounded surface is a parametric surface with curved boundaries defined by one or more boundary curves. The bounded surface is defined to be the portion of the basis surface in the direction of N x T from any point on the boundary, where N is the surface normal and T the boundary curve tangent vector at this point. The region so defined shall be arcwise connected. 
 /// 
@@ -18469,13 +17645,13 @@ public:
     ::Ifc2x3::IfcCurve* OuterBoundary() const;
     void setOuterBoundary(::Ifc2x3::IfcCurve* v);
     /// An optional set of inner boundaries. They shall not intersect each other or the outer boundary.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcCurve >::ptr InnerBoundaries() const;
-    void setInnerBoundaries(IfcTemplatedEntityList< ::Ifc2x3::IfcCurve >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcCurve >::ptr InnerBoundaries() const;
+    void setInnerBoundaries(aggregate_of< ::Ifc2x3::IfcCurve >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCurveBoundedPlane (IfcEntityInstanceData* e);
-    IfcCurveBoundedPlane (::Ifc2x3::IfcPlane* v1_BasisSurface, ::Ifc2x3::IfcCurve* v2_OuterBoundary, IfcTemplatedEntityList< ::Ifc2x3::IfcCurve >::ptr v3_InnerBoundaries);
-    typedef IfcTemplatedEntityList< IfcCurveBoundedPlane > list;
+    IfcCurveBoundedPlane (::Ifc2x3::IfcPlane* v1_BasisSurface, ::Ifc2x3::IfcCurve* v2_OuterBoundary, aggregate_of< ::Ifc2x3::IfcCurve >::ptr v3_InnerBoundaries);
+    typedef aggregate_of< IfcCurveBoundedPlane > list;
 };
 /// A defined symbol is a symbolic representation that gets its shape information by an established convention, either through a predefined symbol, or an externally defined symbol.
 /// 
@@ -18496,17 +17672,17 @@ public:
     static const IfcParse::entity& Class();
     IfcDefinedSymbol (IfcEntityInstanceData* e);
     IfcDefinedSymbol (::Ifc2x3::IfcDefinedSymbolSelect* v1_Definition, ::Ifc2x3::IfcCartesianTransformationOperator2D* v2_Target);
-    typedef IfcTemplatedEntityList< IfcDefinedSymbol > list;
+    typedef aggregate_of< IfcDefinedSymbol > list;
 };
 
 class IFC_PARSE_API IfcDimensionCurve : public IfcAnnotationCurveOccurrence {
 public:
-        IfcTemplatedEntityList< IfcTerminatorSymbol >::ptr AnnotatedBySymbols() const; // INVERSE IfcTerminatorSymbol::AnnotatedCurve
+        aggregate_of< IfcTerminatorSymbol >::ptr AnnotatedBySymbols() const; // INVERSE IfcTerminatorSymbol::AnnotatedCurve
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDimensionCurve (IfcEntityInstanceData* e);
-    IfcDimensionCurve (::Ifc2x3::IfcRepresentationItem* v1_Item, IfcTemplatedEntityList< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
-    typedef IfcTemplatedEntityList< IfcDimensionCurve > list;
+    IfcDimensionCurve (::Ifc2x3::IfcRepresentationItem* v1_Item, aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
+    typedef aggregate_of< IfcDimensionCurve > list;
 };
 
 class IFC_PARSE_API IfcDimensionCurveTerminator : public IfcTerminatorSymbol {
@@ -18516,8 +17692,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDimensionCurveTerminator (IfcEntityInstanceData* e);
-    IfcDimensionCurveTerminator (::Ifc2x3::IfcRepresentationItem* v1_Item, IfcTemplatedEntityList< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name, ::Ifc2x3::IfcAnnotationCurveOccurrence* v4_AnnotatedCurve, ::Ifc2x3::IfcDimensionExtentUsage::Value v5_Role);
-    typedef IfcTemplatedEntityList< IfcDimensionCurveTerminator > list;
+    IfcDimensionCurveTerminator (::Ifc2x3::IfcRepresentationItem* v1_Item, aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name, ::Ifc2x3::IfcAnnotationCurveOccurrence* v4_AnnotatedCurve, ::Ifc2x3::IfcDimensionExtentUsage::Value v5_Role);
+    typedef aggregate_of< IfcDimensionCurveTerminator > list;
 };
 /// Definition from ISO/CD 10303-42:1992: This entity defines a general direction vector in two or three dimensional space. The actual magnitudes of the components have no effect upon the direction being defined, only the ratios X:Y:Z or X:Y are significant.  
 /// 
@@ -18535,7 +17711,7 @@ public:
     static const IfcParse::entity& Class();
     IfcDirection (IfcEntityInstanceData* e);
     IfcDirection (std::vector< double > /*[2:3]*/ v1_DirectionRatios);
-    typedef IfcTemplatedEntityList< IfcDirection > list;
+    typedef aggregate_of< IfcDirection > list;
 };
 /// The door lining is the frame which
 /// enables the door leaf to be fixed in position. The door lining is
@@ -18634,58 +17810,36 @@ public:
 /// NOTE LiningDepth describes the length of the lining along the reveal of the door opening. It can be given by an absolute value if the door lining has a specific depth depending on the door style. However often it is equal to the wall thickness. If the same door style is used (like the same type of single swing door), but inserted into different walls with different thicknesses, it would be necessary to create a special door style for each wall thickness. Therefore several CAD systems allow to set the value to "automatically aligned" to wall thickness. This should be exchanged by leaving the optional attribute LiningDepth unassigned. The same agreement applies to ThresholdDepth.
 class IFC_PARSE_API IfcDoorLiningProperties : public IfcPropertySetDefinition {
 public:
-    /// Whether the optional attribute LiningDepth is defined for this IfcDoorLiningProperties
-    bool hasLiningDepth() const;
     /// Depth of the door lining, measured perpendicular to the plane of the door lining. If omitted (and with a given value to lining thickness) it indicates an adjustable depth (i.e. a depth that adjusts to the thickness of the wall into which the occurrence of this door style is inserted).
-    double LiningDepth() const;
-    void setLiningDepth(double v);
-    /// Whether the optional attribute LiningThickness is defined for this IfcDoorLiningProperties
-    bool hasLiningThickness() const;
+    boost::optional< double > LiningDepth() const;
+    void setLiningDepth(boost::optional< double > v);
     /// Thickness (width in plane parallel to door leaf) of the door lining.
-    double LiningThickness() const;
-    void setLiningThickness(double v);
-    /// Whether the optional attribute ThresholdDepth is defined for this IfcDoorLiningProperties
-    bool hasThresholdDepth() const;
+    boost::optional< double > LiningThickness() const;
+    void setLiningThickness(boost::optional< double > v);
     /// Depth (dimension in plane perpendicular to door leaf) of the door threshold. Only given if the door lining includes a threshold. If omitted (and with a given value to threshold thickness) it indicates an adjustable depth (i.e. a depth that adjusts to the thickness of the wall into which the occurrence of this door style is inserted).
-    double ThresholdDepth() const;
-    void setThresholdDepth(double v);
-    /// Whether the optional attribute ThresholdThickness is defined for this IfcDoorLiningProperties
-    bool hasThresholdThickness() const;
+    boost::optional< double > ThresholdDepth() const;
+    void setThresholdDepth(boost::optional< double > v);
     /// Thickness (width in plane parallel to door leaf) of the door threshold. Only given if the door lining includes a threshold and the parameter is known.
-    double ThresholdThickness() const;
-    void setThresholdThickness(double v);
-    /// Whether the optional attribute TransomThickness is defined for this IfcDoorLiningProperties
-    bool hasTransomThickness() const;
+    boost::optional< double > ThresholdThickness() const;
+    void setThresholdThickness(boost::optional< double > v);
     /// Thickness (width in plane parallel to door leaf) of the transom (if given) which divides the door leaf from a glazing (or window) above.
-    double TransomThickness() const;
-    void setTransomThickness(double v);
-    /// Whether the optional attribute TransomOffset is defined for this IfcDoorLiningProperties
-    bool hasTransomOffset() const;
+    boost::optional< double > TransomThickness() const;
+    void setTransomThickness(boost::optional< double > v);
     /// Offset of the transom (if given) which divides the door leaf from a glazing (or window) above. The offset is given from the bottom of the door opening.
-    double TransomOffset() const;
-    void setTransomOffset(double v);
-    /// Whether the optional attribute LiningOffset is defined for this IfcDoorLiningProperties
-    bool hasLiningOffset() const;
+    boost::optional< double > TransomOffset() const;
+    void setTransomOffset(boost::optional< double > v);
     /// Offset (dimension in plane perpendicular to door leaf) of the door lining. The offset is given as distance to the x axis of the local placement.
-    double LiningOffset() const;
-    void setLiningOffset(double v);
-    /// Whether the optional attribute ThresholdOffset is defined for this IfcDoorLiningProperties
-    bool hasThresholdOffset() const;
+    boost::optional< double > LiningOffset() const;
+    void setLiningOffset(boost::optional< double > v);
     /// Offset (dimension in plane perpendicular to door leaf) of the door threshold. The offset is given as distance to the x axis of the local placement. Only given if the door lining includes a threshold and the parameter is known.
-    double ThresholdOffset() const;
-    void setThresholdOffset(double v);
-    /// Whether the optional attribute CasingThickness is defined for this IfcDoorLiningProperties
-    bool hasCasingThickness() const;
+    boost::optional< double > ThresholdOffset() const;
+    void setThresholdOffset(boost::optional< double > v);
     /// Thickness of the casing (dimension in plane of the door leaf). If given it is applied equally to all four sides of the adjacent wall.
-    double CasingThickness() const;
-    void setCasingThickness(double v);
-    /// Whether the optional attribute CasingDepth is defined for this IfcDoorLiningProperties
-    bool hasCasingDepth() const;
+    boost::optional< double > CasingThickness() const;
+    void setCasingThickness(boost::optional< double > v);
     /// Depth of the casing (dimension in plane perpendicular to door leaf). If given it is applied equally to all four sides of the adjacent wall.
-    double CasingDepth() const;
-    void setCasingDepth(double v);
-    /// Whether the optional attribute ShapeAspectStyle is defined for this IfcDoorLiningProperties
-    bool hasShapeAspectStyle() const;
+    boost::optional< double > CasingDepth() const;
+    void setCasingDepth(boost::optional< double > v);
     /// Pointer to the shape aspect, if given. The shape aspect reflects the part of the door shape, which represents the door lining.
     /// 
     /// IFC2x4 CHANGE The attribute is deprecated and shall no longer be used, i.e. the value shall be NIL ($).
@@ -18695,7 +17849,7 @@ public:
     static const IfcParse::entity& Class();
     IfcDoorLiningProperties (IfcEntityInstanceData* e);
     IfcDoorLiningProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< double > v5_LiningDepth, boost::optional< double > v6_LiningThickness, boost::optional< double > v7_ThresholdDepth, boost::optional< double > v8_ThresholdThickness, boost::optional< double > v9_TransomThickness, boost::optional< double > v10_TransomOffset, boost::optional< double > v11_LiningOffset, boost::optional< double > v12_ThresholdOffset, boost::optional< double > v13_CasingThickness, boost::optional< double > v14_CasingDepth, ::Ifc2x3::IfcShapeAspect* v15_ShapeAspectStyle);
-    typedef IfcTemplatedEntityList< IfcDoorLiningProperties > list;
+    typedef aggregate_of< IfcDoorLiningProperties > list;
 };
 /// A door panel is normally a door leaf that opens to allow people or
 /// goods to pass. The parameters of the door panel define the
@@ -18744,24 +17898,18 @@ public:
 /// Figure 173 — Door panel properties
 class IFC_PARSE_API IfcDoorPanelProperties : public IfcPropertySetDefinition {
 public:
-    /// Whether the optional attribute PanelDepth is defined for this IfcDoorPanelProperties
-    bool hasPanelDepth() const;
     /// Depth of the door panel, measured perpendicular to the plane of the door leaf.
-    double PanelDepth() const;
-    void setPanelDepth(double v);
+    boost::optional< double > PanelDepth() const;
+    void setPanelDepth(boost::optional< double > v);
     /// The PanelOperation defines the way of operation of that panel. The PanelOperation of the door panel has to correspond with the OperationType of the IfcDoorStyle by which it is referenced.
     ::Ifc2x3::IfcDoorPanelOperationEnum::Value PanelOperation() const;
     void setPanelOperation(::Ifc2x3::IfcDoorPanelOperationEnum::Value v);
-    /// Whether the optional attribute PanelWidth is defined for this IfcDoorPanelProperties
-    bool hasPanelWidth() const;
     /// Width of this panel, given as ratio relative to the total clear opening width of the door. If omited, it defaults to 1. A value has to be provided for all doors with OperationType's at IfcDoorStyle defining a door with more then one panel.
-    double PanelWidth() const;
-    void setPanelWidth(double v);
+    boost::optional< double > PanelWidth() const;
+    void setPanelWidth(boost::optional< double > v);
     /// Position of this panel within the door. The PanelPosition of the door panel has to correspond with the OperationType of the IfcDoorStyle by which it is referenced.
     ::Ifc2x3::IfcDoorPanelPositionEnum::Value PanelPosition() const;
     void setPanelPosition(::Ifc2x3::IfcDoorPanelPositionEnum::Value v);
-    /// Whether the optional attribute ShapeAspectStyle is defined for this IfcDoorPanelProperties
-    bool hasShapeAspectStyle() const;
     /// Pointer to the shape aspect, if given. The shape aspect reflects the part of the door shape, which represents the door panel.
     /// 
     /// IFC2x4 CHANGE The attribute is deprecated and shall no longer be used, i.e. the value shall be NIL ($).
@@ -18771,7 +17919,7 @@ public:
     static const IfcParse::entity& Class();
     IfcDoorPanelProperties (IfcEntityInstanceData* e);
     IfcDoorPanelProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< double > v5_PanelDepth, ::Ifc2x3::IfcDoorPanelOperationEnum::Value v6_PanelOperation, boost::optional< double > v7_PanelWidth, ::Ifc2x3::IfcDoorPanelPositionEnum::Value v8_PanelPosition, ::Ifc2x3::IfcShapeAspect* v9_ShapeAspectStyle);
-    typedef IfcTemplatedEntityList< IfcDoorPanelProperties > list;
+    typedef aggregate_of< IfcDoorPanelProperties > list;
 };
 /// Definition: The door style, IfcDoorStyle, defines a particular style of doors, which may be included into the spatial context of the building model through instances of IfcDoor. A door style defines the overall parameter of the door style and refers to the particular parameter of the lining and one (or several) panels through the IfcDoorLiningProperties and the IfcDoorPanelProperties.
 /// 
@@ -18816,21 +17964,21 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDoorStyle (IfcEntityInstanceData* e);
-    IfcDoorStyle (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, ::Ifc2x3::IfcDoorStyleOperationEnum::Value v9_OperationType, ::Ifc2x3::IfcDoorStyleConstructionEnum::Value v10_ConstructionType, bool v11_ParameterTakesPrecedence, bool v12_Sizeable);
-    typedef IfcTemplatedEntityList< IfcDoorStyle > list;
+    IfcDoorStyle (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, ::Ifc2x3::IfcDoorStyleOperationEnum::Value v9_OperationType, ::Ifc2x3::IfcDoorStyleConstructionEnum::Value v10_ConstructionType, bool v11_ParameterTakesPrecedence, bool v12_Sizeable);
+    typedef aggregate_of< IfcDoorStyle > list;
 };
 
 class IFC_PARSE_API IfcDraughtingCallout : public IfcGeometricRepresentationItem {
 public:
-    IfcEntityList::ptr Contents() const;
-    void setContents(IfcEntityList::ptr v);
-        IfcTemplatedEntityList< IfcDraughtingCalloutRelationship >::ptr IsRelatedFromCallout() const; // INVERSE IfcDraughtingCalloutRelationship::RelatedDraughtingCallout
-    IfcTemplatedEntityList< IfcDraughtingCalloutRelationship >::ptr IsRelatedToCallout() const; // INVERSE IfcDraughtingCalloutRelationship::RelatingDraughtingCallout
+    aggregate_of_instance::ptr Contents() const;
+    void setContents(aggregate_of_instance::ptr v);
+        aggregate_of< IfcDraughtingCalloutRelationship >::ptr IsRelatedFromCallout() const; // INVERSE IfcDraughtingCalloutRelationship::RelatedDraughtingCallout
+    aggregate_of< IfcDraughtingCalloutRelationship >::ptr IsRelatedToCallout() const; // INVERSE IfcDraughtingCalloutRelationship::RelatingDraughtingCallout
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDraughtingCallout (IfcEntityInstanceData* e);
-    IfcDraughtingCallout (IfcEntityList::ptr v1_Contents);
-    typedef IfcTemplatedEntityList< IfcDraughtingCallout > list;
+    IfcDraughtingCallout (aggregate_of_instance::ptr v1_Contents);
+    typedef aggregate_of< IfcDraughtingCallout > list;
 };
 /// The draughting pre defined colour is a pre defined colour for the purpose to identify a colour by name. Allowable names are:
 /// 
@@ -18910,7 +18058,7 @@ public:
     static const IfcParse::entity& Class();
     IfcDraughtingPreDefinedColour (IfcEntityInstanceData* e);
     IfcDraughtingPreDefinedColour (std::string v1_Name);
-    typedef IfcTemplatedEntityList< IfcDraughtingPreDefinedColour > list;
+    typedef aggregate_of< IfcDraughtingPreDefinedColour > list;
 };
 /// The draughting predefined curve font type defines a selection of widely used curve fonts for draughting purposes by name. 
 /// 
@@ -18931,7 +18079,7 @@ public:
     static const IfcParse::entity& Class();
     IfcDraughtingPreDefinedCurveFont (IfcEntityInstanceData* e);
     IfcDraughtingPreDefinedCurveFont (std::string v1_Name);
-    typedef IfcTemplatedEntityList< IfcDraughtingPreDefinedCurveFont > list;
+    typedef aggregate_of< IfcDraughtingPreDefinedCurveFont > list;
 };
 /// Definition from ISO/CD 10303-42:1992: An edge_loop is a loop with nonzero extent. It is a path in which the start and end vertices are the same. Its domain, if present, is a closed curve. An edge_loop may overlap itself.
 /// 
@@ -18947,13 +18095,13 @@ public:
 class IFC_PARSE_API IfcEdgeLoop : public IfcLoop {
 public:
     /// A list of oriented edge entities which are concatenated together to form this path.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcOrientedEdge >::ptr EdgeList() const;
-    void setEdgeList(IfcTemplatedEntityList< ::Ifc2x3::IfcOrientedEdge >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcOrientedEdge >::ptr EdgeList() const;
+    void setEdgeList(aggregate_of< ::Ifc2x3::IfcOrientedEdge >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcEdgeLoop (IfcEntityInstanceData* e);
-    IfcEdgeLoop (IfcTemplatedEntityList< ::Ifc2x3::IfcOrientedEdge >::ptr v1_EdgeList);
-    typedef IfcTemplatedEntityList< IfcEdgeLoop > list;
+    IfcEdgeLoop (aggregate_of< ::Ifc2x3::IfcOrientedEdge >::ptr v1_EdgeList);
+    typedef aggregate_of< IfcEdgeLoop > list;
 };
 /// Definition from IAI: An IfcElementQuantity
 /// defines a set of derived measures of an element's physical
@@ -19034,21 +18182,19 @@ public:
 /// attribute as published as part of the IFC specifciation.
 class IFC_PARSE_API IfcElementQuantity : public IfcPropertySetDefinition {
 public:
-    /// Whether the optional attribute MethodOfMeasurement is defined for this IfcElementQuantity
-    bool hasMethodOfMeasurement() const;
     /// Name of the method of measurement used to calculate the element quantity. The method of measurement attribute has to be made recognizable by further agreements.
     /// 
     /// IFC2x2 Addendum 1 change: The attribute has been changed to be optional
-    std::string MethodOfMeasurement() const;
-    void setMethodOfMeasurement(std::string v);
+    boost::optional< std::string > MethodOfMeasurement() const;
+    void setMethodOfMeasurement(boost::optional< std::string > v);
     /// The individual quantities for the element, can be a set of length, area, volume, weight or count based quantities.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcPhysicalQuantity >::ptr Quantities() const;
-    void setQuantities(IfcTemplatedEntityList< ::Ifc2x3::IfcPhysicalQuantity >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcPhysicalQuantity >::ptr Quantities() const;
+    void setQuantities(aggregate_of< ::Ifc2x3::IfcPhysicalQuantity >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcElementQuantity (IfcEntityInstanceData* e);
-    IfcElementQuantity (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_MethodOfMeasurement, IfcTemplatedEntityList< ::Ifc2x3::IfcPhysicalQuantity >::ptr v6_Quantities);
-    typedef IfcTemplatedEntityList< IfcElementQuantity > list;
+    IfcElementQuantity (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_MethodOfMeasurement, aggregate_of< ::Ifc2x3::IfcPhysicalQuantity >::ptr v6_Quantities);
+    typedef aggregate_of< IfcElementQuantity > list;
 };
 /// Definition from IAI: The IfcElementType
 ///   defines a list of commonly shared property set definitions
@@ -19074,16 +18220,14 @@ public:
 ///   Release IFC2x Edition 2
 class IFC_PARSE_API IfcElementType : public IfcTypeProduct {
 public:
-    /// Whether the optional attribute ElementType is defined for this IfcElementType
-    bool hasElementType() const;
     /// The type denotes a particular type that indicates the object further. The use has to be established at the level of instantiable subtypes. In particular it holds the user defined type, if the enumeration of the attribute 'PredefinedType' is set to USERDEFINED.
-    std::string ElementType() const;
-    void setElementType(std::string v);
+    boost::optional< std::string > ElementType() const;
+    void setElementType(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcElementType (IfcEntityInstanceData* e);
-    IfcElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
-    typedef IfcTemplatedEntityList< IfcElementType > list;
+    IfcElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
+    typedef aggregate_of< IfcElementType > list;
 };
 /// Definition from ISO/CD 10303-42:1992: An elementary surface (IfcElementarySurface) is a simple analytic surface with defined parametric representation. 
 /// 
@@ -19099,7 +18243,7 @@ public:
     static const IfcParse::entity& Class();
     IfcElementarySurface (IfcEntityInstanceData* e);
     IfcElementarySurface (::Ifc2x3::IfcAxis2Placement3D* v1_Position);
-    typedef IfcTemplatedEntityList< IfcElementarySurface > list;
+    typedef aggregate_of< IfcElementarySurface > list;
 };
 /// IfcEllipseProfileDef defines an ellipse as the profile definition used by the swept surface geometry
 /// or the swept area solid. It is given by its semi axis attributes and placed within the 2D position coordinate system, established by the Position attribute. 
@@ -19129,24 +18273,20 @@ public:
     static const IfcParse::entity& Class();
     IfcEllipseProfileDef (IfcEntityInstanceData* e);
     IfcEllipseProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_SemiAxis1, double v5_SemiAxis2);
-    typedef IfcTemplatedEntityList< IfcEllipseProfileDef > list;
+    typedef aggregate_of< IfcEllipseProfileDef > list;
 };
 
 class IFC_PARSE_API IfcEnergyProperties : public IfcPropertySetDefinition {
 public:
-    /// Whether the optional attribute EnergySequence is defined for this IfcEnergyProperties
-    bool hasEnergySequence() const;
-    ::Ifc2x3::IfcEnergySequenceEnum::Value EnergySequence() const;
-    void setEnergySequence(::Ifc2x3::IfcEnergySequenceEnum::Value v);
-    /// Whether the optional attribute UserDefinedEnergySequence is defined for this IfcEnergyProperties
-    bool hasUserDefinedEnergySequence() const;
-    std::string UserDefinedEnergySequence() const;
-    void setUserDefinedEnergySequence(std::string v);
+    boost::optional< ::Ifc2x3::IfcEnergySequenceEnum::Value > EnergySequence() const;
+    void setEnergySequence(boost::optional< ::Ifc2x3::IfcEnergySequenceEnum::Value > v);
+    boost::optional< std::string > UserDefinedEnergySequence() const;
+    void setUserDefinedEnergySequence(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcEnergyProperties (IfcEntityInstanceData* e);
     IfcEnergyProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< ::Ifc2x3::IfcEnergySequenceEnum::Value > v5_EnergySequence, boost::optional< std::string > v6_UserDefinedEnergySequence);
-    typedef IfcTemplatedEntityList< IfcEnergyProperties > list;
+    typedef aggregate_of< IfcEnergyProperties > list;
 };
 /// The IfcExtrudedAreaSolid is defined by sweeping a cross
 /// section provided by a profile definition. The direction of the
@@ -19229,7 +18369,7 @@ public:
     static const IfcParse::entity& Class();
     IfcExtrudedAreaSolid (IfcEntityInstanceData* e);
     IfcExtrudedAreaSolid (::Ifc2x3::IfcProfileDef* v1_SweptArea, ::Ifc2x3::IfcAxis2Placement3D* v2_Position, ::Ifc2x3::IfcDirection* v3_ExtrudedDirection, double v4_Depth);
-    typedef IfcTemplatedEntityList< IfcExtrudedAreaSolid > list;
+    typedef aggregate_of< IfcExtrudedAreaSolid > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A face based surface model is described by a set of connected face sets of dimensionality 2. The connected face sets shall not intersect except at edges and vertices, except that a face in one connected face set may overlap a face in another connected face set, provided the face boundaries are identical. There shall be at least one connected face set.  
 /// 
@@ -19246,13 +18386,13 @@ public:
 class IFC_PARSE_API IfcFaceBasedSurfaceModel : public IfcGeometricRepresentationItem {
 public:
     /// The set of connected face sets comprising the face based surface model.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcConnectedFaceSet >::ptr FbsmFaces() const;
-    void setFbsmFaces(IfcTemplatedEntityList< ::Ifc2x3::IfcConnectedFaceSet >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcConnectedFaceSet >::ptr FbsmFaces() const;
+    void setFbsmFaces(aggregate_of< ::Ifc2x3::IfcConnectedFaceSet >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFaceBasedSurfaceModel (IfcEntityInstanceData* e);
-    IfcFaceBasedSurfaceModel (IfcTemplatedEntityList< ::Ifc2x3::IfcConnectedFaceSet >::ptr v1_FbsmFaces);
-    typedef IfcTemplatedEntityList< IfcFaceBasedSurfaceModel > list;
+    IfcFaceBasedSurfaceModel (aggregate_of< ::Ifc2x3::IfcConnectedFaceSet >::ptr v1_FbsmFaces);
+    typedef aggregate_of< IfcFaceBasedSurfaceModel > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The fill area style hatching defines a styled pattern of curves for hatching an annotation fill area or a surface.
 /// 
@@ -19311,16 +18451,12 @@ public:
     /// IFC2x Edition 3 CHANGE  The attribute type of StartOfNextHatchLine has changed to a SELECT of IfcPositiveLengthMeasure (new) and IfcOneDirectionRepeatFactor.
     ::Ifc2x3::IfcHatchLineDistanceSelect* StartOfNextHatchLine() const;
     void setStartOfNextHatchLine(::Ifc2x3::IfcHatchLineDistanceSelect* v);
-    /// Whether the optional attribute PointOfReferenceHatchLine is defined for this IfcFillAreaStyleHatching
-    bool hasPointOfReferenceHatchLine() const;
     /// A Cartesian point which defines the offset of the reference hatch line from the origin of the (virtual) hatching coordinate system. The origin is used for mapping the fill area style hatching onto an annotation fill area or surface. The reference hatch line would then appear with this offset from the fill style target point.
     /// If not given the reference hatch lines goes through the origin of the (virtual) hatching coordinate system.
     /// 
     /// IFC2x Edition 3 CHANGE  The usage of the attribute PointOfReferenceHatchLine has changed to not provide the Cartesian point which is the origin for mapping, but to provide an offset to the origin for the mapping. The attribute has been made OPTIONAL.
     ::Ifc2x3::IfcCartesianPoint* PointOfReferenceHatchLine() const;
     void setPointOfReferenceHatchLine(::Ifc2x3::IfcCartesianPoint* v);
-    /// Whether the optional attribute PatternStart is defined for this IfcFillAreaStyleHatching
-    bool hasPatternStart() const;
     /// A distance along the reference hatch line which is the start point for the curve style font pattern of the reference hatch line.
     /// If not given, the start point of the curve style font pattern is at the (virtual) hatching coordinate system.
     /// 
@@ -19334,7 +18470,7 @@ public:
     static const IfcParse::entity& Class();
     IfcFillAreaStyleHatching (IfcEntityInstanceData* e);
     IfcFillAreaStyleHatching (::Ifc2x3::IfcCurveStyle* v1_HatchLineAppearance, ::Ifc2x3::IfcHatchLineDistanceSelect* v2_StartOfNextHatchLine, ::Ifc2x3::IfcCartesianPoint* v3_PointOfReferenceHatchLine, ::Ifc2x3::IfcCartesianPoint* v4_PatternStart, double v5_HatchLineAngle);
-    typedef IfcTemplatedEntityList< IfcFillAreaStyleHatching > list;
+    typedef aggregate_of< IfcFillAreaStyleHatching > list;
 };
 /// The fill area style tile symbol with style is a symbol that is used as a tile within an annotated tiling. 
 /// 
@@ -19356,7 +18492,7 @@ public:
     static const IfcParse::entity& Class();
     IfcFillAreaStyleTileSymbolWithStyle (IfcEntityInstanceData* e);
     IfcFillAreaStyleTileSymbolWithStyle (::Ifc2x3::IfcAnnotationSymbolOccurrence* v1_Symbol);
-    typedef IfcTemplatedEntityList< IfcFillAreaStyleTileSymbolWithStyle > list;
+    typedef aggregate_of< IfcFillAreaStyleTileSymbolWithStyle > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The fill area style tiles defines a two dimensional tile to be used for the filling of annotation fill areas or other closed regions. The content of a tile is defined by the tile set, and the placement of each tile determined by the filling pattern which indicates how to place tiles next to each other. Tiles or parts of tiles outside of the annotation fill area or closed region shall be clipped at the of the area or region. 
 /// 
@@ -19369,81 +18505,55 @@ public:
     ::Ifc2x3::IfcOneDirectionRepeatFactor* TilingPattern() const;
     void setTilingPattern(::Ifc2x3::IfcOneDirectionRepeatFactor* v);
     /// A set of constituents of the tile.
-    IfcEntityList::ptr Tiles() const;
-    void setTiles(IfcEntityList::ptr v);
+    aggregate_of_instance::ptr Tiles() const;
+    void setTiles(aggregate_of_instance::ptr v);
     /// The scale factor applied to each tile as it is placed in the annotation fill area.
     double TilingScale() const;
     void setTilingScale(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFillAreaStyleTiles (IfcEntityInstanceData* e);
-    IfcFillAreaStyleTiles (::Ifc2x3::IfcOneDirectionRepeatFactor* v1_TilingPattern, IfcEntityList::ptr v2_Tiles, double v3_TilingScale);
-    typedef IfcTemplatedEntityList< IfcFillAreaStyleTiles > list;
+    IfcFillAreaStyleTiles (::Ifc2x3::IfcOneDirectionRepeatFactor* v1_TilingPattern, aggregate_of_instance::ptr v2_Tiles, double v3_TilingScale);
+    typedef aggregate_of< IfcFillAreaStyleTiles > list;
 };
 
 class IFC_PARSE_API IfcFluidFlowProperties : public IfcPropertySetDefinition {
 public:
     ::Ifc2x3::IfcPropertySourceEnum::Value PropertySource() const;
     void setPropertySource(::Ifc2x3::IfcPropertySourceEnum::Value v);
-    /// Whether the optional attribute FlowConditionTimeSeries is defined for this IfcFluidFlowProperties
-    bool hasFlowConditionTimeSeries() const;
     ::Ifc2x3::IfcTimeSeries* FlowConditionTimeSeries() const;
     void setFlowConditionTimeSeries(::Ifc2x3::IfcTimeSeries* v);
-    /// Whether the optional attribute VelocityTimeSeries is defined for this IfcFluidFlowProperties
-    bool hasVelocityTimeSeries() const;
     ::Ifc2x3::IfcTimeSeries* VelocityTimeSeries() const;
     void setVelocityTimeSeries(::Ifc2x3::IfcTimeSeries* v);
-    /// Whether the optional attribute FlowrateTimeSeries is defined for this IfcFluidFlowProperties
-    bool hasFlowrateTimeSeries() const;
     ::Ifc2x3::IfcTimeSeries* FlowrateTimeSeries() const;
     void setFlowrateTimeSeries(::Ifc2x3::IfcTimeSeries* v);
     ::Ifc2x3::IfcMaterial* Fluid() const;
     void setFluid(::Ifc2x3::IfcMaterial* v);
-    /// Whether the optional attribute PressureTimeSeries is defined for this IfcFluidFlowProperties
-    bool hasPressureTimeSeries() const;
     ::Ifc2x3::IfcTimeSeries* PressureTimeSeries() const;
     void setPressureTimeSeries(::Ifc2x3::IfcTimeSeries* v);
-    /// Whether the optional attribute UserDefinedPropertySource is defined for this IfcFluidFlowProperties
-    bool hasUserDefinedPropertySource() const;
-    std::string UserDefinedPropertySource() const;
-    void setUserDefinedPropertySource(std::string v);
-    /// Whether the optional attribute TemperatureSingleValue is defined for this IfcFluidFlowProperties
-    bool hasTemperatureSingleValue() const;
-    double TemperatureSingleValue() const;
-    void setTemperatureSingleValue(double v);
-    /// Whether the optional attribute WetBulbTemperatureSingleValue is defined for this IfcFluidFlowProperties
-    bool hasWetBulbTemperatureSingleValue() const;
-    double WetBulbTemperatureSingleValue() const;
-    void setWetBulbTemperatureSingleValue(double v);
-    /// Whether the optional attribute WetBulbTemperatureTimeSeries is defined for this IfcFluidFlowProperties
-    bool hasWetBulbTemperatureTimeSeries() const;
+    boost::optional< std::string > UserDefinedPropertySource() const;
+    void setUserDefinedPropertySource(boost::optional< std::string > v);
+    boost::optional< double > TemperatureSingleValue() const;
+    void setTemperatureSingleValue(boost::optional< double > v);
+    boost::optional< double > WetBulbTemperatureSingleValue() const;
+    void setWetBulbTemperatureSingleValue(boost::optional< double > v);
     ::Ifc2x3::IfcTimeSeries* WetBulbTemperatureTimeSeries() const;
     void setWetBulbTemperatureTimeSeries(::Ifc2x3::IfcTimeSeries* v);
-    /// Whether the optional attribute TemperatureTimeSeries is defined for this IfcFluidFlowProperties
-    bool hasTemperatureTimeSeries() const;
     ::Ifc2x3::IfcTimeSeries* TemperatureTimeSeries() const;
     void setTemperatureTimeSeries(::Ifc2x3::IfcTimeSeries* v);
-    /// Whether the optional attribute FlowrateSingleValue is defined for this IfcFluidFlowProperties
-    bool hasFlowrateSingleValue() const;
     ::Ifc2x3::IfcDerivedMeasureValue* FlowrateSingleValue() const;
     void setFlowrateSingleValue(::Ifc2x3::IfcDerivedMeasureValue* v);
-    /// Whether the optional attribute FlowConditionSingleValue is defined for this IfcFluidFlowProperties
-    bool hasFlowConditionSingleValue() const;
-    double FlowConditionSingleValue() const;
-    void setFlowConditionSingleValue(double v);
-    /// Whether the optional attribute VelocitySingleValue is defined for this IfcFluidFlowProperties
-    bool hasVelocitySingleValue() const;
-    double VelocitySingleValue() const;
-    void setVelocitySingleValue(double v);
-    /// Whether the optional attribute PressureSingleValue is defined for this IfcFluidFlowProperties
-    bool hasPressureSingleValue() const;
-    double PressureSingleValue() const;
-    void setPressureSingleValue(double v);
+    boost::optional< double > FlowConditionSingleValue() const;
+    void setFlowConditionSingleValue(boost::optional< double > v);
+    boost::optional< double > VelocitySingleValue() const;
+    void setVelocitySingleValue(boost::optional< double > v);
+    boost::optional< double > PressureSingleValue() const;
+    void setPressureSingleValue(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFluidFlowProperties (IfcEntityInstanceData* e);
     IfcFluidFlowProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcPropertySourceEnum::Value v5_PropertySource, ::Ifc2x3::IfcTimeSeries* v6_FlowConditionTimeSeries, ::Ifc2x3::IfcTimeSeries* v7_VelocityTimeSeries, ::Ifc2x3::IfcTimeSeries* v8_FlowrateTimeSeries, ::Ifc2x3::IfcMaterial* v9_Fluid, ::Ifc2x3::IfcTimeSeries* v10_PressureTimeSeries, boost::optional< std::string > v11_UserDefinedPropertySource, boost::optional< double > v12_TemperatureSingleValue, boost::optional< double > v13_WetBulbTemperatureSingleValue, ::Ifc2x3::IfcTimeSeries* v14_WetBulbTemperatureTimeSeries, ::Ifc2x3::IfcTimeSeries* v15_TemperatureTimeSeries, ::Ifc2x3::IfcDerivedMeasureValue* v16_FlowrateSingleValue, boost::optional< double > v17_FlowConditionSingleValue, boost::optional< double > v18_VelocitySingleValue, boost::optional< double > v19_PressureSingleValue);
-    typedef IfcTemplatedEntityList< IfcFluidFlowProperties > list;
+    typedef aggregate_of< IfcFluidFlowProperties > list;
 };
 /// Definition from IAI: The
 /// IfcFurnishingElementType defines a list of commonly shared
@@ -19478,8 +18588,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFurnishingElementType (IfcEntityInstanceData* e);
-    IfcFurnishingElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
-    typedef IfcTemplatedEntityList< IfcFurnishingElementType > list;
+    IfcFurnishingElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
+    typedef aggregate_of< IfcFurnishingElementType > list;
 };
 /// The furnishing element type IfcFurnitureType defines commonly shared information for occurrences of furnitures.  The set of shared information may include: 
 /// 
@@ -19526,8 +18636,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFurnitureType (IfcEntityInstanceData* e);
-    IfcFurnitureType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcAssemblyPlaceEnum::Value v10_AssemblyPlace);
-    typedef IfcTemplatedEntityList< IfcFurnitureType > list;
+    IfcFurnitureType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcAssemblyPlaceEnum::Value v10_AssemblyPlace);
+    typedef aggregate_of< IfcFurnitureType > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A geometric curve set is a collection of two or three dimensional points and curves.
 /// 
@@ -19541,8 +18651,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcGeometricCurveSet (IfcEntityInstanceData* e);
-    IfcGeometricCurveSet (IfcEntityList::ptr v1_Elements);
-    typedef IfcTemplatedEntityList< IfcGeometricCurveSet > list;
+    IfcGeometricCurveSet (aggregate_of_instance::ptr v1_Elements);
+    typedef aggregate_of< IfcGeometricCurveSet > list;
 };
 /// IfcIShapeProfileDef
 /// defines a section profile that provides the defining parameters of a
@@ -19621,16 +18731,14 @@ public:
     /// Flange thickness of the I-shape. Both, the upper and the lower flanges have the same thickness and they are centred on the y-axis of the position coordinate system.
     double FlangeThickness() const;
     void setFlangeThickness(double v);
-    /// Whether the optional attribute FilletRadius is defined for this IfcIShapeProfileDef
-    bool hasFilletRadius() const;
     /// The fillet between the web and the flange.
-    double FilletRadius() const;
-    void setFilletRadius(double v);
+    boost::optional< double > FilletRadius() const;
+    void setFilletRadius(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcIShapeProfileDef (IfcEntityInstanceData* e);
     IfcIShapeProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_OverallWidth, double v5_OverallDepth, double v6_WebThickness, double v7_FlangeThickness, boost::optional< double > v8_FilletRadius);
-    typedef IfcTemplatedEntityList< IfcIShapeProfileDef > list;
+    typedef aggregate_of< IfcIShapeProfileDef > list;
 };
 /// IfcLShapeProfileDef
 /// defines a section profile that provides the defining parameters of an
@@ -19688,42 +18796,30 @@ public:
     /// Leg length, see illustration above (= h). Same as the overall depth.
     double Depth() const;
     void setDepth(double v);
-    /// Whether the optional attribute Width is defined for this IfcLShapeProfileDef
-    bool hasWidth() const;
     /// Leg length, see illustration above (= b). Same as the overall width.
-    double Width() const;
-    void setWidth(double v);
+    boost::optional< double > Width() const;
+    void setWidth(boost::optional< double > v);
     /// Constant wall thickness of profile, see illustration above (= ts).
     double Thickness() const;
     void setThickness(double v);
-    /// Whether the optional attribute FilletRadius is defined for this IfcLShapeProfileDef
-    bool hasFilletRadius() const;
     /// Fillet radius according the above illustration (= r1).
-    double FilletRadius() const;
-    void setFilletRadius(double v);
-    /// Whether the optional attribute EdgeRadius is defined for this IfcLShapeProfileDef
-    bool hasEdgeRadius() const;
+    boost::optional< double > FilletRadius() const;
+    void setFilletRadius(boost::optional< double > v);
     /// Edge radius according the above illustration (= r2).
-    double EdgeRadius() const;
-    void setEdgeRadius(double v);
-    /// Whether the optional attribute LegSlope is defined for this IfcLShapeProfileDef
-    bool hasLegSlope() const;
+    boost::optional< double > EdgeRadius() const;
+    void setEdgeRadius(boost::optional< double > v);
     /// Slope of the inner face of each leg of the profile.
-    double LegSlope() const;
-    void setLegSlope(double v);
-    /// Whether the optional attribute CentreOfGravityInX is defined for this IfcLShapeProfileDef
-    bool hasCentreOfGravityInX() const;
-    double CentreOfGravityInX() const;
-    void setCentreOfGravityInX(double v);
-    /// Whether the optional attribute CentreOfGravityInY is defined for this IfcLShapeProfileDef
-    bool hasCentreOfGravityInY() const;
-    double CentreOfGravityInY() const;
-    void setCentreOfGravityInY(double v);
+    boost::optional< double > LegSlope() const;
+    void setLegSlope(boost::optional< double > v);
+    boost::optional< double > CentreOfGravityInX() const;
+    void setCentreOfGravityInX(boost::optional< double > v);
+    boost::optional< double > CentreOfGravityInY() const;
+    void setCentreOfGravityInY(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcLShapeProfileDef (IfcEntityInstanceData* e);
     IfcLShapeProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_Depth, boost::optional< double > v5_Width, double v6_Thickness, boost::optional< double > v7_FilletRadius, boost::optional< double > v8_EdgeRadius, boost::optional< double > v9_LegSlope, boost::optional< double > v10_CentreOfGravityInX, boost::optional< double > v11_CentreOfGravityInY);
-    typedef IfcTemplatedEntityList< IfcLShapeProfileDef > list;
+    typedef aggregate_of< IfcLShapeProfileDef > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A line is an unbounded curve with constant tangent direction. A line is defined by a point and a direction. The positive direction of the line is in the direction of the Dir vector. The line is parameterized as follows:
 /// 
@@ -19750,7 +18846,7 @@ public:
     static const IfcParse::entity& Class();
     IfcLine (IfcEntityInstanceData* e);
     IfcLine (::Ifc2x3::IfcCartesianPoint* v1_Pnt, ::Ifc2x3::IfcVector* v2_Dir);
-    typedef IfcTemplatedEntityList< IfcLine > list;
+    typedef aggregate_of< IfcLine > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A manifold solid
 /// B-rep is a finite, arcwise connected volume bounded by one or
@@ -19824,7 +18920,7 @@ public:
     static const IfcParse::entity& Class();
     IfcManifoldSolidBrep (IfcEntityInstanceData* e);
     IfcManifoldSolidBrep (::Ifc2x3::IfcClosedShell* v1_Outer);
-    typedef IfcTemplatedEntityList< IfcManifoldSolidBrep > list;
+    typedef aggregate_of< IfcManifoldSolidBrep > list;
 };
 /// An IfcObject is the
 /// generalization of any semantically treated thing or process.
@@ -19910,17 +19006,15 @@ public:
 /// IsDecomposedBy, or Decomposes is exerted.
 class IFC_PARSE_API IfcObject : public IfcObjectDefinition {
 public:
-    /// Whether the optional attribute ObjectType is defined for this IfcObject
-    bool hasObjectType() const;
     /// The type denotes a particular type that indicates the object further. The use has to be established at the level of instantiable subtypes. In particular it holds the user defined type, if the enumeration of the attribute PredefinedType is set to USERDEFINED.
-    std::string ObjectType() const;
-    void setObjectType(std::string v);
-        IfcTemplatedEntityList< IfcRelDefines >::ptr IsDefinedBy() const; // INVERSE IfcRelDefines::RelatedObjects
+    boost::optional< std::string > ObjectType() const;
+    void setObjectType(boost::optional< std::string > v);
+        aggregate_of< IfcRelDefines >::ptr IsDefinedBy() const; // INVERSE IfcRelDefines::RelatedObjects
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcObject (IfcEntityInstanceData* e);
     IfcObject (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
-    typedef IfcTemplatedEntityList< IfcObject > list;
+    typedef aggregate_of< IfcObject > list;
 };
 /// Definition from ISO/CD 10303-42:1992: An offset curve 2d (IfcOffsetCurve2d) is a curve at a constant distance from a basis curve in two-dimensional space. This entity defines a simple plane-offset curve by offsetting by distance along the normal to basis curve in the plane of basis curve. The underlying curve shall have a well-defined tangent direction at every point. In the case of a composite curve, the transition code between each segment shall be cont same gradient or cont same gradient same curvature. 
 /// 
@@ -19942,13 +19036,13 @@ public:
     double Distance() const;
     void setDistance(double v);
     /// An indication of whether the offset curve self-intersects; this is for information only.
-    bool SelfIntersect() const;
-    void setSelfIntersect(bool v);
+    boost::logic::tribool SelfIntersect() const;
+    void setSelfIntersect(boost::logic::tribool v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcOffsetCurve2D (IfcEntityInstanceData* e);
-    IfcOffsetCurve2D (::Ifc2x3::IfcCurve* v1_BasisCurve, double v2_Distance, bool v3_SelfIntersect);
-    typedef IfcTemplatedEntityList< IfcOffsetCurve2D > list;
+    IfcOffsetCurve2D (::Ifc2x3::IfcCurve* v1_BasisCurve, double v2_Distance, boost::logic::tribool v3_SelfIntersect);
+    typedef aggregate_of< IfcOffsetCurve2D > list;
 };
 /// Definition from ISO/CD 10303-42:1992: An offset curve 3d is a curve at a constant distance from a basis curve in three-dimensional space. The underlying curve shall have a well-defined tangent direction at every point. In the case of a composite curve the transition code between each segment shall be cont same gradient or cont same gradient same curvature. The offset curve at any point (parameter) on the basis curve is in the direction V x T where V is the fixed reference direction and T is the unit tangent to the basis curve. For the offset direction to be well defined, T shall not at any point of the curve be in the same, or opposite, direction as V. 
 /// 
@@ -19974,16 +19068,16 @@ public:
     double Distance() const;
     void setDistance(double v);
     /// An indication of whether the offset curve self-intersects, this is for information only.
-    bool SelfIntersect() const;
-    void setSelfIntersect(bool v);
+    boost::logic::tribool SelfIntersect() const;
+    void setSelfIntersect(boost::logic::tribool v);
     /// The direction used to define the direction of the offset curve 3d from the basis curve.
     ::Ifc2x3::IfcDirection* RefDirection() const;
     void setRefDirection(::Ifc2x3::IfcDirection* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcOffsetCurve3D (IfcEntityInstanceData* e);
-    IfcOffsetCurve3D (::Ifc2x3::IfcCurve* v1_BasisCurve, double v2_Distance, bool v3_SelfIntersect, ::Ifc2x3::IfcDirection* v4_RefDirection);
-    typedef IfcTemplatedEntityList< IfcOffsetCurve3D > list;
+    IfcOffsetCurve3D (::Ifc2x3::IfcCurve* v1_BasisCurve, double v2_Distance, boost::logic::tribool v3_SelfIntersect, ::Ifc2x3::IfcDirection* v4_RefDirection);
+    typedef aggregate_of< IfcOffsetCurve3D > list;
 };
 /// This entity is a description of a panel within a
 /// door or window (as fillers for opening) which allows for air
@@ -20024,18 +19118,12 @@ public:
     /// Position of this permeable covering panel within the overall window or door type.
     ::Ifc2x3::IfcWindowPanelPositionEnum::Value PanelPosition() const;
     void setPanelPosition(::Ifc2x3::IfcWindowPanelPositionEnum::Value v);
-    /// Whether the optional attribute FrameDepth is defined for this IfcPermeableCoveringProperties
-    bool hasFrameDepth() const;
     /// Depth of panel frame (used to include the permeable covering), measured from front face to back face horizontally (i.e. perpendicular to the window or door (elevation) plane.
-    double FrameDepth() const;
-    void setFrameDepth(double v);
-    /// Whether the optional attribute FrameThickness is defined for this IfcPermeableCoveringProperties
-    bool hasFrameThickness() const;
+    boost::optional< double > FrameDepth() const;
+    void setFrameDepth(boost::optional< double > v);
     /// Width of panel frame (used to include the permeable covering), measured from inside of panel (at permeable covering) to outside of panel (at lining), i.e. parallel to the window or door (elevation) plane.
-    double FrameThickness() const;
-    void setFrameThickness(double v);
-    /// Whether the optional attribute ShapeAspectStyle is defined for this IfcPermeableCoveringProperties
-    bool hasShapeAspectStyle() const;
+    boost::optional< double > FrameThickness() const;
+    void setFrameThickness(boost::optional< double > v);
     /// Optional link to a shape aspect definition, which points to the part of the geometric representation of the window style, which is used to represent the permeable covering.
     ::Ifc2x3::IfcShapeAspect* ShapeAspectStyle() const;
     void setShapeAspectStyle(::Ifc2x3::IfcShapeAspect* v);
@@ -20043,7 +19131,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPermeableCoveringProperties (IfcEntityInstanceData* e);
     IfcPermeableCoveringProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcPermeableCoveringOperationEnum::Value v5_OperationType, ::Ifc2x3::IfcWindowPanelPositionEnum::Value v6_PanelPosition, boost::optional< double > v7_FrameDepth, boost::optional< double > v8_FrameThickness, ::Ifc2x3::IfcShapeAspect* v9_ShapeAspectStyle);
-    typedef IfcTemplatedEntityList< IfcPermeableCoveringProperties > list;
+    typedef aggregate_of< IfcPermeableCoveringProperties > list;
 };
 /// Definition from ISO/CD 10303-46:1992: A planar box specifies an arbitrary rectangular box and its location in a two dimensional Cartesian coordinate system.
 /// 
@@ -20061,7 +19149,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPlanarBox (IfcEntityInstanceData* e);
     IfcPlanarBox (double v1_SizeInX, double v2_SizeInY, ::Ifc2x3::IfcAxis2Placement* v3_Placement);
-    typedef IfcTemplatedEntityList< IfcPlanarBox > list;
+    typedef aggregate_of< IfcPlanarBox > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A plane is an unbounded surface with a constant normal. A plane is defined by a point on the plane and the normal direction to the plane. The data is to be interpreted as follows:
 /// 
@@ -20105,7 +19193,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPlane (IfcEntityInstanceData* e);
     IfcPlane (::Ifc2x3::IfcAxis2Placement3D* v1_Position);
-    typedef IfcTemplatedEntityList< IfcPlane > list;
+    typedef aggregate_of< IfcPlane > list;
 };
 /// Definition from ISO9000: A process is a set of
 /// activities that are interrelated or that interact with one
@@ -20149,14 +19237,14 @@ public:
 /// as a mechanism to a process, such as labor, material and equipment in cost calculations.
 class IFC_PARSE_API IfcProcess : public IfcObject {
 public:
-        IfcTemplatedEntityList< IfcRelAssignsToProcess >::ptr OperatesOn() const; // INVERSE IfcRelAssignsToProcess::RelatingProcess
-    IfcTemplatedEntityList< IfcRelSequence >::ptr IsSuccessorFrom() const; // INVERSE IfcRelSequence::RelatedProcess
-    IfcTemplatedEntityList< IfcRelSequence >::ptr IsPredecessorTo() const; // INVERSE IfcRelSequence::RelatingProcess
+        aggregate_of< IfcRelAssignsToProcess >::ptr OperatesOn() const; // INVERSE IfcRelAssignsToProcess::RelatingProcess
+    aggregate_of< IfcRelSequence >::ptr IsSuccessorFrom() const; // INVERSE IfcRelSequence::RelatedProcess
+    aggregate_of< IfcRelSequence >::ptr IsPredecessorTo() const; // INVERSE IfcRelSequence::RelatingProcess
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcProcess (IfcEntityInstanceData* e);
     IfcProcess (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
-    typedef IfcTemplatedEntityList< IfcProcess > list;
+    typedef aggregate_of< IfcProcess > list;
 };
 /// Any object that relates to a
 /// geometric or spatial context. Subtypes of IfcProduct
@@ -20251,22 +19339,18 @@ public:
 /// underlying geometry of the topological items).
 class IFC_PARSE_API IfcProduct : public IfcObject {
 public:
-    /// Whether the optional attribute ObjectPlacement is defined for this IfcProduct
-    bool hasObjectPlacement() const;
     /// Placement of the product in space, the placement can either be absolute (relative to the world coordinate system), relative (relative to the object placement of another product), or constraint (e.g. relative to grid axes). It is determined by the various subtypes of IfcObjectPlacement, which includes the axis placement information to determine the  transformation for the object coordinate system.
     ::Ifc2x3::IfcObjectPlacement* ObjectPlacement() const;
     void setObjectPlacement(::Ifc2x3::IfcObjectPlacement* v);
-    /// Whether the optional attribute Representation is defined for this IfcProduct
-    bool hasRepresentation() const;
     /// Reference to the representations of the product, being either a representation (IfcProductRepresentation) or as a special case a shape representations (IfcProductDefinitionShape). The product definition shape provides for multiple geometric representations of the shape property of the object within the same object coordinate system, defined by the object placement.
     ::Ifc2x3::IfcProductRepresentation* Representation() const;
     void setRepresentation(::Ifc2x3::IfcProductRepresentation* v);
-        IfcTemplatedEntityList< IfcRelAssignsToProduct >::ptr ReferencedBy() const; // INVERSE IfcRelAssignsToProduct::RelatingProduct
+        aggregate_of< IfcRelAssignsToProduct >::ptr ReferencedBy() const; // INVERSE IfcRelAssignsToProduct::RelatingProduct
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcProduct (IfcEntityInstanceData* e);
     IfcProduct (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation);
-    typedef IfcTemplatedEntityList< IfcProduct > list;
+    typedef aggregate_of< IfcProduct > list;
 };
 /// IfcProject indicates the undertaking of some design, engineering, construction, or
 /// maintenance activities leading towards a product. The project establishes the context for information to be exchanged or shared, and it may represent a construction project but does not have to.  The IfcProject's main purpose in an exchange structure is to provide the root instance and the context for all other information items included.
@@ -20314,23 +19398,19 @@ public:
 /// There shall only be one project within the exchange context. This is enforced by the global rule IfcSingleProjectInstance.
 class IFC_PARSE_API IfcProject : public IfcObject {
 public:
-    /// Whether the optional attribute LongName is defined for this IfcProject
-    bool hasLongName() const;
-    std::string LongName() const;
-    void setLongName(std::string v);
-    /// Whether the optional attribute Phase is defined for this IfcProject
-    bool hasPhase() const;
-    std::string Phase() const;
-    void setPhase(std::string v);
-    IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationContext >::ptr RepresentationContexts() const;
-    void setRepresentationContexts(IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationContext >::ptr v);
+    boost::optional< std::string > LongName() const;
+    void setLongName(boost::optional< std::string > v);
+    boost::optional< std::string > Phase() const;
+    void setPhase(boost::optional< std::string > v);
+    aggregate_of< ::Ifc2x3::IfcRepresentationContext >::ptr RepresentationContexts() const;
+    void setRepresentationContexts(aggregate_of< ::Ifc2x3::IfcRepresentationContext >::ptr v);
     ::Ifc2x3::IfcUnitAssignment* UnitsInContext() const;
     void setUnitsInContext(::Ifc2x3::IfcUnitAssignment* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcProject (IfcEntityInstanceData* e);
-    IfcProject (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_LongName, boost::optional< std::string > v7_Phase, IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationContext >::ptr v8_RepresentationContexts, ::Ifc2x3::IfcUnitAssignment* v9_UnitsInContext);
-    typedef IfcTemplatedEntityList< IfcProject > list;
+    IfcProject (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_LongName, boost::optional< std::string > v7_Phase, aggregate_of< ::Ifc2x3::IfcRepresentationContext >::ptr v8_RepresentationContexts, ::Ifc2x3::IfcUnitAssignment* v9_UnitsInContext);
+    typedef aggregate_of< IfcProject > list;
 };
 
 class IFC_PARSE_API IfcProjectionCurve : public IfcAnnotationCurveOccurrence {
@@ -20338,8 +19418,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcProjectionCurve (IfcEntityInstanceData* e);
-    IfcProjectionCurve (::Ifc2x3::IfcRepresentationItem* v1_Item, IfcTemplatedEntityList< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
-    typedef IfcTemplatedEntityList< IfcProjectionCurve > list;
+    IfcProjectionCurve (::Ifc2x3::IfcRepresentationItem* v1_Item, aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
+    typedef aggregate_of< IfcProjectionCurve > list;
 };
 /// IfcPropertySet defines all dynamically extensible
 /// properties. The property set is a container class that holds
@@ -20397,13 +19477,13 @@ public:
 class IFC_PARSE_API IfcPropertySet : public IfcPropertySetDefinition {
 public:
     /// Contained set of properties. For property sets defined as part of the IFC Object model, the property objects within a property set are defined as part of the standard. If a property is not contained within the set of predefined properties, its value has not been set at this time.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr HasProperties() const;
-    void setHasProperties(IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcProperty >::ptr HasProperties() const;
+    void setHasProperties(aggregate_of< ::Ifc2x3::IfcProperty >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPropertySet (IfcEntityInstanceData* e);
-    IfcPropertySet (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr v5_HasProperties);
-    typedef IfcTemplatedEntityList< IfcPropertySet > list;
+    IfcPropertySet (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcProperty >::ptr v5_HasProperties);
+    typedef aggregate_of< IfcPropertySet > list;
 };
 /// IfcProxy is intended to be a kind of a container for wrapping objects which are defined by associated properties, which may or may not have a geometric representation and placement in space. A proxy may have a semantic meaning, defined by the Name attribute, and property definitions, attached through the property assignment relationship, which definition may be outside of the definitions given by the current release of IFC.
 /// 
@@ -20426,16 +19506,14 @@ public:
     /// High level (and only) semantic meaning attached to the IfcProxy, defining the basic construct type behind the Proxy, e.g. Product or Process.
     ::Ifc2x3::IfcObjectTypeEnum::Value ProxyType() const;
     void setProxyType(::Ifc2x3::IfcObjectTypeEnum::Value v);
-    /// Whether the optional attribute Tag is defined for this IfcProxy
-    bool hasTag() const;
     /// The tag (or label) identifier at the particular instance of a product, e.g. the serial number, or the position number. It is the identifier at the occurrence level.
-    std::string Tag() const;
-    void setTag(std::string v);
+    boost::optional< std::string > Tag() const;
+    void setTag(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcProxy (IfcEntityInstanceData* e);
     IfcProxy (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcObjectTypeEnum::Value v8_ProxyType, boost::optional< std::string > v9_Tag);
-    typedef IfcTemplatedEntityList< IfcProxy > list;
+    typedef aggregate_of< IfcProxy > list;
 };
 /// IfcRectangleHollowProfileDef defines a section profile that provides the defining parameters of a rectangular (or square) hollow section to be used by the swept surface geometry or the swept area solid. Its parameters and orientation relative to the position coordinate system are according to the following illustration. A square hollow section can be defined by equal values for h and b. The centre of the position coordinate system is in the profiles centre of the bounding box (for symmetric profiles identical with the centre of gravity). Normally, the longer sides are parallel to the y-axis, the shorter sides parallel to the x-axis.
 /// 
@@ -20462,21 +19540,17 @@ public:
     /// Thickness of the material.
     double WallThickness() const;
     void setWallThickness(double v);
-    /// Whether the optional attribute InnerFilletRadius is defined for this IfcRectangleHollowProfileDef
-    bool hasInnerFilletRadius() const;
     /// Inner corner radius.
-    double InnerFilletRadius() const;
-    void setInnerFilletRadius(double v);
-    /// Whether the optional attribute OuterFilletRadius is defined for this IfcRectangleHollowProfileDef
-    bool hasOuterFilletRadius() const;
+    boost::optional< double > InnerFilletRadius() const;
+    void setInnerFilletRadius(boost::optional< double > v);
     /// Outer corner radius.
-    double OuterFilletRadius() const;
-    void setOuterFilletRadius(double v);
+    boost::optional< double > OuterFilletRadius() const;
+    void setOuterFilletRadius(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRectangleHollowProfileDef (IfcEntityInstanceData* e);
     IfcRectangleHollowProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_XDim, double v5_YDim, double v6_WallThickness, boost::optional< double > v7_InnerFilletRadius, boost::optional< double > v8_OuterFilletRadius);
-    typedef IfcTemplatedEntityList< IfcRectangleHollowProfileDef > list;
+    typedef aggregate_of< IfcRectangleHollowProfileDef > list;
 };
 /// The IfcRectangularPyramid is a Construction Solid
 /// Geometry (CSG) 3D primitive. It is a solid with a rectangular base and
@@ -20581,7 +19655,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRectangularPyramid (IfcEntityInstanceData* e);
     IfcRectangularPyramid (::Ifc2x3::IfcAxis2Placement3D* v1_Position, double v2_XLength, double v3_YLength, double v4_Height);
-    typedef IfcTemplatedEntityList< IfcRectangularPyramid > list;
+    typedef aggregate_of< IfcRectangularPyramid > list;
 };
 /// Definition from ISO/CD 10303-42:1992: The trimmed surface is a simple bounded surface in which the boundaries are the constant parametric lines u1 = u1, u2 = u2, v1 = v1 and v2 = v2. All these values shall be within the parametric range of the referenced surface. Cyclic properties of the parameter range are assumed.
 /// 
@@ -20625,7 +19699,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRectangularTrimmedSurface (IfcEntityInstanceData* e);
     IfcRectangularTrimmedSurface (::Ifc2x3::IfcSurface* v1_BasisSurface, double v2_U1, double v3_V1, double v4_U2, double v5_V2, bool v6_Usense, bool v7_Vsense);
-    typedef IfcTemplatedEntityList< IfcRectangularTrimmedSurface > list;
+    typedef aggregate_of< IfcRectangularTrimmedSurface > list;
 };
 /// The assignment relationship, IfcRelAssigns, is a generalization of "link" relationships among instances of IfcObject and its various 1st level subtypes. A link denotes the specific association through which one object (the client) applies the services of other objects (the suppliers), or through which one object may navigate to other objects.
 /// 
@@ -20641,19 +19715,17 @@ public:
 class IFC_PARSE_API IfcRelAssigns : public IfcRelationship {
 public:
     /// Related objects, which are assigned to a single object. The type of the single (or relating) object is defined in the subtypes of IfcRelAssigns.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr RelatedObjects() const;
-    void setRelatedObjects(IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr v);
-    /// Whether the optional attribute RelatedObjectsType is defined for this IfcRelAssigns
-    bool hasRelatedObjectsType() const;
+    aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr RelatedObjects() const;
+    void setRelatedObjects(aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v);
     /// Particular type of the assignment relationship. It can constrain the applicable object types, used within the role of RelatedObjects.
     /// IFC2x4 CHANGE  The attribute is deprecated and shall no longer be used. A NIL value should always be assigned.
-    ::Ifc2x3::IfcObjectTypeEnum::Value RelatedObjectsType() const;
-    void setRelatedObjectsType(::Ifc2x3::IfcObjectTypeEnum::Value v);
+    boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > RelatedObjectsType() const;
+    void setRelatedObjectsType(boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelAssigns (IfcEntityInstanceData* e);
-    IfcRelAssigns (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType);
-    typedef IfcTemplatedEntityList< IfcRelAssigns > list;
+    IfcRelAssigns (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType);
+    typedef aggregate_of< IfcRelAssigns > list;
 };
 /// The objectified relationship IfcRelAssignsToActor handles the assignment of objects (subtypes of IfcObject) to an actor (subtypes of IfcActor).
 /// 
@@ -20669,16 +19741,14 @@ public:
     /// Reference to the information about the actor. It comprises the information about the person or organization and its addresses.
     ::Ifc2x3::IfcActor* RelatingActor() const;
     void setRelatingActor(::Ifc2x3::IfcActor* v);
-    /// Whether the optional attribute ActingRole is defined for this IfcRelAssignsToActor
-    bool hasActingRole() const;
     /// Role of the actor played within the context of the assignment to the object(s).
     ::Ifc2x3::IfcActorRole* ActingRole() const;
     void setActingRole(::Ifc2x3::IfcActorRole* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelAssignsToActor (IfcEntityInstanceData* e);
-    IfcRelAssignsToActor (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcActor* v7_RelatingActor, ::Ifc2x3::IfcActorRole* v8_ActingRole);
-    typedef IfcTemplatedEntityList< IfcRelAssignsToActor > list;
+    IfcRelAssignsToActor (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcActor* v7_RelatingActor, ::Ifc2x3::IfcActorRole* v8_ActingRole);
+    typedef aggregate_of< IfcRelAssignsToActor > list;
 };
 /// The objectified relationship IfcRelAssignsToControl handles the assignment of a control (represented by subtypes of IfcControl) to other objects (represented by subtypes of IfcObject, with the exception of controls).
 /// 
@@ -20693,8 +19763,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelAssignsToControl (IfcEntityInstanceData* e);
-    IfcRelAssignsToControl (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcControl* v7_RelatingControl);
-    typedef IfcTemplatedEntityList< IfcRelAssignsToControl > list;
+    IfcRelAssignsToControl (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcControl* v7_RelatingControl);
+    typedef aggregate_of< IfcRelAssignsToControl > list;
 };
 /// The objectified relationship IfcRelAssignsToGroup handles the assignment of object definitions (individual object occurrences as subtypes of IfcObject, and object types as subtypes of IfcTypeObject) to a group (subtypes of IfcGroup).
 /// 
@@ -20717,8 +19787,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelAssignsToGroup (IfcEntityInstanceData* e);
-    IfcRelAssignsToGroup (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcGroup* v7_RelatingGroup);
-    typedef IfcTemplatedEntityList< IfcRelAssignsToGroup > list;
+    IfcRelAssignsToGroup (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcGroup* v7_RelatingGroup);
+    typedef aggregate_of< IfcRelAssignsToGroup > list;
 };
 /// The objectified relationship IfcRelAssignsToProcess handles the assignment of one or many objects to a process or activity. An object can be a product that is the item the process operates on. Processes and activities can operate on things other than products, and can operate in ways other than input and output.
 /// 
@@ -20749,16 +19819,14 @@ public:
     /// IFC2x4 CHANGE Datatype expanded to include IfcProcess and IfcTypeProcess.
     ::Ifc2x3::IfcProcess* RelatingProcess() const;
     void setRelatingProcess(::Ifc2x3::IfcProcess* v);
-    /// Whether the optional attribute QuantityInProcess is defined for this IfcRelAssignsToProcess
-    bool hasQuantityInProcess() const;
     /// Quantity of the object specific for the operation by this process.
     ::Ifc2x3::IfcMeasureWithUnit* QuantityInProcess() const;
     void setQuantityInProcess(::Ifc2x3::IfcMeasureWithUnit* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelAssignsToProcess (IfcEntityInstanceData* e);
-    IfcRelAssignsToProcess (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcProcess* v7_RelatingProcess, ::Ifc2x3::IfcMeasureWithUnit* v8_QuantityInProcess);
-    typedef IfcTemplatedEntityList< IfcRelAssignsToProcess > list;
+    IfcRelAssignsToProcess (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcProcess* v7_RelatingProcess, ::Ifc2x3::IfcMeasureWithUnit* v8_QuantityInProcess);
+    typedef aggregate_of< IfcRelAssignsToProcess > list;
 };
 /// The objectified relationshipIfcRelAssignsToProduct handles the assignment of objects (subtypes of IfcObject) to a product (subtypes of IfcProduct). The Name attribute should be used to classify the usage of the IfcRelAssignsToProduct objectified relationship. The following Name values are proposed:
 /// 
@@ -20778,8 +19846,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelAssignsToProduct (IfcEntityInstanceData* e);
-    IfcRelAssignsToProduct (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcProduct* v7_RelatingProduct);
-    typedef IfcTemplatedEntityList< IfcRelAssignsToProduct > list;
+    IfcRelAssignsToProduct (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcProduct* v7_RelatingProduct);
+    typedef aggregate_of< IfcRelAssignsToProduct > list;
 };
 
 class IFC_PARSE_API IfcRelAssignsToProjectOrder : public IfcRelAssignsToControl {
@@ -20787,8 +19855,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelAssignsToProjectOrder (IfcEntityInstanceData* e);
-    IfcRelAssignsToProjectOrder (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcControl* v7_RelatingControl);
-    typedef IfcTemplatedEntityList< IfcRelAssignsToProjectOrder > list;
+    IfcRelAssignsToProjectOrder (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcControl* v7_RelatingControl);
+    typedef aggregate_of< IfcRelAssignsToProjectOrder > list;
 };
 /// The objectified relationship IfcRelAssignsToResource handles the assignment of objects
 /// (as subtypes of IfcObject), acting as a resource usage or consumption, to a resource (as subtypes of IfcResource).
@@ -20806,8 +19874,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelAssignsToResource (IfcEntityInstanceData* e);
-    IfcRelAssignsToResource (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcResource* v7_RelatingResource);
-    typedef IfcTemplatedEntityList< IfcRelAssignsToResource > list;
+    IfcRelAssignsToResource (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcResource* v7_RelatingResource);
+    typedef aggregate_of< IfcRelAssignsToResource > list;
 };
 /// The association relationship
 ///   IfcRelAssociates refers to external sources of
@@ -20855,13 +19923,13 @@ public:
     /// Set of object or property definitions to which the external references or information is associated. It includes object and type objects, property set templates, property templates and property sets and contexts.
     /// 
     /// IFC2x4 CHANGE  The attribute datatype has been changed from IfcRoot to IfcDefinitionSelect.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcRoot >::ptr RelatedObjects() const;
-    void setRelatedObjects(IfcTemplatedEntityList< ::Ifc2x3::IfcRoot >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcRoot >::ptr RelatedObjects() const;
+    void setRelatedObjects(aggregate_of< ::Ifc2x3::IfcRoot >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelAssociates (IfcEntityInstanceData* e);
-    IfcRelAssociates (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects);
-    typedef IfcTemplatedEntityList< IfcRelAssociates > list;
+    IfcRelAssociates (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects);
+    typedef aggregate_of< IfcRelAssociates > list;
 };
 
 class IFC_PARSE_API IfcRelAssociatesAppliedValue : public IfcRelAssociates {
@@ -20871,8 +19939,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelAssociatesAppliedValue (IfcEntityInstanceData* e);
-    IfcRelAssociatesAppliedValue (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, ::Ifc2x3::IfcAppliedValue* v6_RelatingAppliedValue);
-    typedef IfcTemplatedEntityList< IfcRelAssociatesAppliedValue > list;
+    IfcRelAssociatesAppliedValue (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, ::Ifc2x3::IfcAppliedValue* v6_RelatingAppliedValue);
+    typedef aggregate_of< IfcRelAssociatesAppliedValue > list;
 };
 /// The entity IfcRelAssociatesApproval is used to apply approval information defined by IfcApproval, in IfcApprovalResource schema, to subtypes of IfcRoot.
 /// 
@@ -20885,8 +19953,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelAssociatesApproval (IfcEntityInstanceData* e);
-    IfcRelAssociatesApproval (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, ::Ifc2x3::IfcApproval* v6_RelatingApproval);
-    typedef IfcTemplatedEntityList< IfcRelAssociatesApproval > list;
+    IfcRelAssociatesApproval (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, ::Ifc2x3::IfcApproval* v6_RelatingApproval);
+    typedef aggregate_of< IfcRelAssociatesApproval > list;
 };
 /// The objectified relationship
 /// IfcRelAssociatesClassification handles the assignment of a
@@ -20926,8 +19994,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelAssociatesClassification (IfcEntityInstanceData* e);
-    IfcRelAssociatesClassification (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, ::Ifc2x3::IfcClassificationNotationSelect* v6_RelatingClassification);
-    typedef IfcTemplatedEntityList< IfcRelAssociatesClassification > list;
+    IfcRelAssociatesClassification (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, ::Ifc2x3::IfcClassificationNotationSelect* v6_RelatingClassification);
+    typedef aggregate_of< IfcRelAssociatesClassification > list;
 };
 /// The entity IfcRelAssociatesConstraint is used to apply constraint information defined by IfcConstraint, in the IfcConstraintResource schema, to subtypes of IfcRoot.
 /// 
@@ -20943,8 +20011,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelAssociatesConstraint (IfcEntityInstanceData* e);
-    IfcRelAssociatesConstraint (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, std::string v6_Intent, ::Ifc2x3::IfcConstraint* v7_RelatingConstraint);
-    typedef IfcTemplatedEntityList< IfcRelAssociatesConstraint > list;
+    IfcRelAssociatesConstraint (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, std::string v6_Intent, ::Ifc2x3::IfcConstraint* v7_RelatingConstraint);
+    typedef aggregate_of< IfcRelAssociatesConstraint > list;
 };
 /// The objectified relationship (IfcRelAssociatesDocument) handles the assignment of a document information (items of the select IfcDocumentSelect) to objects occurrences (subtypes of IfcObject) or object types (subtypes of IfcTypeObject).
 /// 
@@ -20961,8 +20029,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelAssociatesDocument (IfcEntityInstanceData* e);
-    IfcRelAssociatesDocument (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, ::Ifc2x3::IfcDocumentSelect* v6_RelatingDocument);
-    typedef IfcTemplatedEntityList< IfcRelAssociatesDocument > list;
+    IfcRelAssociatesDocument (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, ::Ifc2x3::IfcDocumentSelect* v6_RelatingDocument);
+    typedef aggregate_of< IfcRelAssociatesDocument > list;
 };
 /// The objectified relationship (IfcRelAssociatesLibrary) handles the assignment of a library item (items of the select IfcLibrarySelect) to subtypes of IfcObjectDefinition or IfcPropertyDefinition. 
 /// 
@@ -20979,8 +20047,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelAssociatesLibrary (IfcEntityInstanceData* e);
-    IfcRelAssociatesLibrary (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, ::Ifc2x3::IfcLibrarySelect* v6_RelatingLibrary);
-    typedef IfcTemplatedEntityList< IfcRelAssociatesLibrary > list;
+    IfcRelAssociatesLibrary (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, ::Ifc2x3::IfcLibrarySelect* v6_RelatingLibrary);
+    typedef aggregate_of< IfcRelAssociatesLibrary > list;
 };
 /// Definition from IAI: Objectified relationship between a
 /// material definition and elements or element types to which this
@@ -21084,27 +20152,23 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelAssociatesMaterial (IfcEntityInstanceData* e);
-    IfcRelAssociatesMaterial (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, ::Ifc2x3::IfcMaterialSelect* v6_RelatingMaterial);
-    typedef IfcTemplatedEntityList< IfcRelAssociatesMaterial > list;
+    IfcRelAssociatesMaterial (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, ::Ifc2x3::IfcMaterialSelect* v6_RelatingMaterial);
+    typedef aggregate_of< IfcRelAssociatesMaterial > list;
 };
 
 class IFC_PARSE_API IfcRelAssociatesProfileProperties : public IfcRelAssociates {
 public:
     ::Ifc2x3::IfcProfileProperties* RelatingProfileProperties() const;
     void setRelatingProfileProperties(::Ifc2x3::IfcProfileProperties* v);
-    /// Whether the optional attribute ProfileSectionLocation is defined for this IfcRelAssociatesProfileProperties
-    bool hasProfileSectionLocation() const;
     ::Ifc2x3::IfcShapeAspect* ProfileSectionLocation() const;
     void setProfileSectionLocation(::Ifc2x3::IfcShapeAspect* v);
-    /// Whether the optional attribute ProfileOrientation is defined for this IfcRelAssociatesProfileProperties
-    bool hasProfileOrientation() const;
     ::Ifc2x3::IfcOrientationSelect* ProfileOrientation() const;
     void setProfileOrientation(::Ifc2x3::IfcOrientationSelect* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelAssociatesProfileProperties (IfcEntityInstanceData* e);
-    IfcRelAssociatesProfileProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, ::Ifc2x3::IfcProfileProperties* v6_RelatingProfileProperties, ::Ifc2x3::IfcShapeAspect* v7_ProfileSectionLocation, ::Ifc2x3::IfcOrientationSelect* v8_ProfileOrientation);
-    typedef IfcTemplatedEntityList< IfcRelAssociatesProfileProperties > list;
+    IfcRelAssociatesProfileProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, ::Ifc2x3::IfcProfileProperties* v6_RelatingProfileProperties, ::Ifc2x3::IfcShapeAspect* v7_ProfileSectionLocation, ::Ifc2x3::IfcOrientationSelect* v8_ProfileOrientation);
+    typedef aggregate_of< IfcRelAssociatesProfileProperties > list;
 };
 /// IfcRelConnects is a connectivity relationship that connects objects under some criteria. As a general connectivity it does not imply constraints, however subtypes of the relationship define the applicable object types for the connectivity relationship and the semantics of the particular connectivity. 
 /// 
@@ -21115,7 +20179,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRelConnects (IfcEntityInstanceData* e);
     IfcRelConnects (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
-    typedef IfcTemplatedEntityList< IfcRelConnects > list;
+    typedef aggregate_of< IfcRelConnects > list;
 };
 /// Definition from IAI: The
 ///   IfcRelConnectsElements objectified relationship
@@ -21141,8 +20205,6 @@ public:
 ///   Release 1.0.
 class IFC_PARSE_API IfcRelConnectsElements : public IfcRelConnects {
 public:
-    /// Whether the optional attribute ConnectionGeometry is defined for this IfcRelConnectsElements
-    bool hasConnectionGeometry() const;
     /// The geometric shape representation of the connection geometry that is provided in the object coordinate system of the RelatingElement (mandatory) and in the object coordinate system of the RelatedElement (optionally).
     ::Ifc2x3::IfcConnectionGeometry* ConnectionGeometry() const;
     void setConnectionGeometry(::Ifc2x3::IfcConnectionGeometry* v);
@@ -21156,7 +20218,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRelConnectsElements (IfcEntityInstanceData* e);
     IfcRelConnectsElements (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcConnectionGeometry* v5_ConnectionGeometry, ::Ifc2x3::IfcElement* v6_RelatingElement, ::Ifc2x3::IfcElement* v7_RelatedElement);
-    typedef IfcTemplatedEntityList< IfcRelConnectsElements > list;
+    typedef aggregate_of< IfcRelConnectsElements > list;
 };
 /// The
 /// IfcRelConnectsPathElements relationship provides the connectivity information between two elements, which have path information.
@@ -21206,7 +20268,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRelConnectsPathElements (IfcEntityInstanceData* e);
     IfcRelConnectsPathElements (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcConnectionGeometry* v5_ConnectionGeometry, ::Ifc2x3::IfcElement* v6_RelatingElement, ::Ifc2x3::IfcElement* v7_RelatedElement, std::vector< int > /*[0:?]*/ v8_RelatingPriorities, std::vector< int > /*[0:?]*/ v9_RelatedPriorities, ::Ifc2x3::IfcConnectionTypeEnum::Value v10_RelatedConnectionType, ::Ifc2x3::IfcConnectionTypeEnum::Value v11_RelatingConnectionType);
-    typedef IfcTemplatedEntityList< IfcRelConnectsPathElements > list;
+    typedef aggregate_of< IfcRelConnectsPathElements > list;
 };
 /// The objectified relationship
 /// IfcRelConnectsPortToElement defines the relationship that
@@ -21247,7 +20309,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRelConnectsPortToElement (IfcEntityInstanceData* e);
     IfcRelConnectsPortToElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcPort* v5_RelatingPort, ::Ifc2x3::IfcElement* v6_RelatedElement);
-    typedef IfcTemplatedEntityList< IfcRelConnectsPortToElement > list;
+    typedef aggregate_of< IfcRelConnectsPortToElement > list;
 };
 /// Definition from IAI: An IfcRelConnectsPorts
 ///   defines the relationship that is made between two ports at
@@ -21270,8 +20332,6 @@ public:
     /// Reference to the second port that is connected by the objectified relationship.
     ::Ifc2x3::IfcPort* RelatedPort() const;
     void setRelatedPort(::Ifc2x3::IfcPort* v);
-    /// Whether the optional attribute RealizingElement is defined for this IfcRelConnectsPorts
-    bool hasRealizingElement() const;
     /// Defines the element that realizes a port connection relationship.
     ::Ifc2x3::IfcElement* RealizingElement() const;
     void setRealizingElement(::Ifc2x3::IfcElement* v);
@@ -21279,7 +20339,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRelConnectsPorts (IfcEntityInstanceData* e);
     IfcRelConnectsPorts (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcPort* v5_RelatingPort, ::Ifc2x3::IfcPort* v6_RelatedPort, ::Ifc2x3::IfcElement* v7_RealizingElement);
-    typedef IfcTemplatedEntityList< IfcRelConnectsPorts > list;
+    typedef aggregate_of< IfcRelConnectsPorts > list;
 };
 /// Definition from IAI: The IfcRelConnectsStructuralActivity relationship connects a structural activity (either an action or reaction) to a structural member, structural connection, or element.
 /// 
@@ -21296,7 +20356,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRelConnectsStructuralActivity (IfcEntityInstanceData* e);
     IfcRelConnectsStructuralActivity (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcStructuralActivityAssignmentSelect* v5_RelatingElement, ::Ifc2x3::IfcStructuralActivity* v6_RelatedStructuralActivity);
-    typedef IfcTemplatedEntityList< IfcRelConnectsStructuralActivity > list;
+    typedef aggregate_of< IfcRelConnectsStructuralActivity > list;
 };
 
 class IFC_PARSE_API IfcRelConnectsStructuralElement : public IfcRelConnects {
@@ -21309,7 +20369,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRelConnectsStructuralElement (IfcEntityInstanceData* e);
     IfcRelConnectsStructuralElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcElement* v5_RelatingElement, ::Ifc2x3::IfcStructuralMember* v6_RelatedStructuralMember);
-    typedef IfcTemplatedEntityList< IfcRelConnectsStructuralElement > list;
+    typedef aggregate_of< IfcRelConnectsStructuralElement > list;
 };
 /// The entity IfcRelConnectsStructuralMember defines all needed properties describing the connection between structural members and structural connection objects (nodes or supports).
 /// 
@@ -21343,23 +20403,15 @@ public:
     /// Reference to an instance of IfcStructuralConnection (or its subclasses) which is connected to the specified structural member.
     ::Ifc2x3::IfcStructuralConnection* RelatedStructuralConnection() const;
     void setRelatedStructuralConnection(::Ifc2x3::IfcStructuralConnection* v);
-    /// Whether the optional attribute AppliedCondition is defined for this IfcRelConnectsStructuralMember
-    bool hasAppliedCondition() const;
     /// Conditions which define the connections properties.  Connection conditions are often called "release" but are not only used to define mechanisms like hinges but also rigid, elastic, and other conditions.
     ::Ifc2x3::IfcBoundaryCondition* AppliedCondition() const;
     void setAppliedCondition(::Ifc2x3::IfcBoundaryCondition* v);
-    /// Whether the optional attribute AdditionalConditions is defined for this IfcRelConnectsStructuralMember
-    bool hasAdditionalConditions() const;
     /// Describes additional connection properties.
     ::Ifc2x3::IfcStructuralConnectionCondition* AdditionalConditions() const;
     void setAdditionalConditions(::Ifc2x3::IfcStructuralConnectionCondition* v);
-    /// Whether the optional attribute SupportedLength is defined for this IfcRelConnectsStructuralMember
-    bool hasSupportedLength() const;
     /// Defines the 'supported length' of this structural connection. See Fig. for more detail.
-    double SupportedLength() const;
-    void setSupportedLength(double v);
-    /// Whether the optional attribute ConditionCoordinateSystem is defined for this IfcRelConnectsStructuralMember
-    bool hasConditionCoordinateSystem() const;
+    boost::optional< double > SupportedLength() const;
+    void setSupportedLength(boost::optional< double > v);
     /// Defines a coordinate system used for the description of the connection properties in ConnectionCondition relative to the local coordinate system of RelatingStructuralMember.  If left unspecified, the placement IfcAxis2Placement3D((x,y,z), ?, ?) is implied with x,y,z being the local member coordinates where the connection is made and the default axes directions being in parallel with the local axes of RelatingStructuralMember.
     ::Ifc2x3::IfcAxis2Placement3D* ConditionCoordinateSystem() const;
     void setConditionCoordinateSystem(::Ifc2x3::IfcAxis2Placement3D* v);
@@ -21367,7 +20419,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRelConnectsStructuralMember (IfcEntityInstanceData* e);
     IfcRelConnectsStructuralMember (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcStructuralMember* v5_RelatingStructuralMember, ::Ifc2x3::IfcStructuralConnection* v6_RelatedStructuralConnection, ::Ifc2x3::IfcBoundaryCondition* v7_AppliedCondition, ::Ifc2x3::IfcStructuralConnectionCondition* v8_AdditionalConditions, boost::optional< double > v9_SupportedLength, ::Ifc2x3::IfcAxis2Placement3D* v10_ConditionCoordinateSystem);
-    typedef IfcTemplatedEntityList< IfcRelConnectsStructuralMember > list;
+    typedef aggregate_of< IfcRelConnectsStructuralMember > list;
 };
 /// Definition from IAI: The entity IfcRelConnectsWithEccentricity adds the definition of eccentricity to the connection between a structural member and a structural connection (representing either a node or support).
 /// 
@@ -21395,7 +20447,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRelConnectsWithEccentricity (IfcEntityInstanceData* e);
     IfcRelConnectsWithEccentricity (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcStructuralMember* v5_RelatingStructuralMember, ::Ifc2x3::IfcStructuralConnection* v6_RelatedStructuralConnection, ::Ifc2x3::IfcBoundaryCondition* v7_AppliedCondition, ::Ifc2x3::IfcStructuralConnectionCondition* v8_AdditionalConditions, boost::optional< double > v9_SupportedLength, ::Ifc2x3::IfcAxis2Placement3D* v10_ConditionCoordinateSystem, ::Ifc2x3::IfcConnectionGeometry* v11_ConnectionConstraint);
-    typedef IfcTemplatedEntityList< IfcRelConnectsWithEccentricity > list;
+    typedef aggregate_of< IfcRelConnectsWithEccentricity > list;
 };
 /// Definition from IAI:
 ///   IfcRelConnectsWithRealizingElements defines a
@@ -21423,18 +20475,16 @@ public:
 class IFC_PARSE_API IfcRelConnectsWithRealizingElements : public IfcRelConnectsElements {
 public:
     /// Defines the elements that realize a connection relationship.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcElement >::ptr RealizingElements() const;
-    void setRealizingElements(IfcTemplatedEntityList< ::Ifc2x3::IfcElement >::ptr v);
-    /// Whether the optional attribute ConnectionType is defined for this IfcRelConnectsWithRealizingElements
-    bool hasConnectionType() const;
+    aggregate_of< ::Ifc2x3::IfcElement >::ptr RealizingElements() const;
+    void setRealizingElements(aggregate_of< ::Ifc2x3::IfcElement >::ptr v);
     /// The type of the connection given for informal purposes, it may include labels, like 'joint', 'rigid joint', 'flexible joint', etc.
-    std::string ConnectionType() const;
-    void setConnectionType(std::string v);
+    boost::optional< std::string > ConnectionType() const;
+    void setConnectionType(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelConnectsWithRealizingElements (IfcEntityInstanceData* e);
-    IfcRelConnectsWithRealizingElements (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcConnectionGeometry* v5_ConnectionGeometry, ::Ifc2x3::IfcElement* v6_RelatingElement, ::Ifc2x3::IfcElement* v7_RelatedElement, IfcTemplatedEntityList< ::Ifc2x3::IfcElement >::ptr v8_RealizingElements, boost::optional< std::string > v9_ConnectionType);
-    typedef IfcTemplatedEntityList< IfcRelConnectsWithRealizingElements > list;
+    IfcRelConnectsWithRealizingElements (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcConnectionGeometry* v5_ConnectionGeometry, ::Ifc2x3::IfcElement* v6_RelatingElement, ::Ifc2x3::IfcElement* v7_RelatedElement, aggregate_of< ::Ifc2x3::IfcElement >::ptr v8_RealizingElements, boost::optional< std::string > v9_ConnectionType);
+    typedef aggregate_of< IfcRelConnectsWithRealizingElements > list;
 };
 /// This objectified relationship,
 ///   IfcRelContainedInSpatialStructure, is used to assign
@@ -21501,16 +20551,16 @@ public:
     /// Set of elements products, which are contained within this level of the spatial structure hierarchy.
     /// 
     /// IFC2x PLATFORM CHANGE  The data type has been changed from IfcElement to IfcProduct with upward compatibility
-    IfcTemplatedEntityList< ::Ifc2x3::IfcProduct >::ptr RelatedElements() const;
-    void setRelatedElements(IfcTemplatedEntityList< ::Ifc2x3::IfcProduct >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcProduct >::ptr RelatedElements() const;
+    void setRelatedElements(aggregate_of< ::Ifc2x3::IfcProduct >::ptr v);
     /// Spatial structure element, within which the element is contained. Any element can only be contained within one element of the project spatial structure.
     ::Ifc2x3::IfcSpatialStructureElement* RelatingStructure() const;
     void setRelatingStructure(::Ifc2x3::IfcSpatialStructureElement* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelContainedInSpatialStructure (IfcEntityInstanceData* e);
-    IfcRelContainedInSpatialStructure (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcProduct >::ptr v5_RelatedElements, ::Ifc2x3::IfcSpatialStructureElement* v6_RelatingStructure);
-    typedef IfcTemplatedEntityList< IfcRelContainedInSpatialStructure > list;
+    IfcRelContainedInSpatialStructure (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcProduct >::ptr v5_RelatedElements, ::Ifc2x3::IfcSpatialStructureElement* v6_RelatingStructure);
+    typedef aggregate_of< IfcRelContainedInSpatialStructure > list;
 };
 /// Definition from IAI: The
 /// IfcRelCoversBldgElements is an objectified relationship
@@ -21536,13 +20586,13 @@ public:
     ::Ifc2x3::IfcElement* RelatingBuildingElement() const;
     void setRelatingBuildingElement(::Ifc2x3::IfcElement* v);
     /// Relationship to the set of coverings at this element.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcCovering >::ptr RelatedCoverings() const;
-    void setRelatedCoverings(IfcTemplatedEntityList< ::Ifc2x3::IfcCovering >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcCovering >::ptr RelatedCoverings() const;
+    void setRelatedCoverings(aggregate_of< ::Ifc2x3::IfcCovering >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelCoversBldgElements (IfcEntityInstanceData* e);
-    IfcRelCoversBldgElements (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcElement* v5_RelatingBuildingElement, IfcTemplatedEntityList< ::Ifc2x3::IfcCovering >::ptr v6_RelatedCoverings);
-    typedef IfcTemplatedEntityList< IfcRelCoversBldgElements > list;
+    IfcRelCoversBldgElements (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcElement* v5_RelatingBuildingElement, aggregate_of< ::Ifc2x3::IfcCovering >::ptr v6_RelatedCoverings);
+    typedef aggregate_of< IfcRelCoversBldgElements > list;
 };
 /// Definition from IAI: The objectified relationship,
 ///   IfcRelCoversSpace, relatesa space object to one or
@@ -21575,13 +20625,13 @@ public:
     ::Ifc2x3::IfcSpace* RelatedSpace() const;
     void setRelatedSpace(::Ifc2x3::IfcSpace* v);
     /// Relationship to the set of coverings covering this space.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcCovering >::ptr RelatedCoverings() const;
-    void setRelatedCoverings(IfcTemplatedEntityList< ::Ifc2x3::IfcCovering >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcCovering >::ptr RelatedCoverings() const;
+    void setRelatedCoverings(aggregate_of< ::Ifc2x3::IfcCovering >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelCoversSpaces (IfcEntityInstanceData* e);
-    IfcRelCoversSpaces (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcSpace* v5_RelatedSpace, IfcTemplatedEntityList< ::Ifc2x3::IfcCovering >::ptr v6_RelatedCoverings);
-    typedef IfcTemplatedEntityList< IfcRelCoversSpaces > list;
+    IfcRelCoversSpaces (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcSpace* v5_RelatedSpace, aggregate_of< ::Ifc2x3::IfcCovering >::ptr v6_RelatedCoverings);
+    typedef aggregate_of< IfcRelCoversSpaces > list;
 };
 /// The decomposition relationship,
 /// IfcRelDecomposes, defines the general concept of elements
@@ -21617,13 +20667,13 @@ class IFC_PARSE_API IfcRelDecomposes : public IfcRelationship {
 public:
     ::Ifc2x3::IfcObjectDefinition* RelatingObject() const;
     void setRelatingObject(::Ifc2x3::IfcObjectDefinition* v);
-    IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr RelatedObjects() const;
-    void setRelatedObjects(IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr RelatedObjects() const;
+    void setRelatedObjects(aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelDecomposes (IfcEntityInstanceData* e);
-    IfcRelDecomposes (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcObjectDefinition* v5_RelatingObject, IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr v6_RelatedObjects);
-    typedef IfcTemplatedEntityList< IfcRelDecomposes > list;
+    IfcRelDecomposes (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcObjectDefinition* v5_RelatingObject, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v6_RelatedObjects);
+    typedef aggregate_of< IfcRelDecomposes > list;
 };
 /// A generic and abstract relationship which subtypes are used to:
 /// 
@@ -21654,13 +20704,13 @@ public:
 /// IfcRelDefinesByType.
 class IFC_PARSE_API IfcRelDefines : public IfcRelationship {
 public:
-    IfcTemplatedEntityList< ::Ifc2x3::IfcObject >::ptr RelatedObjects() const;
-    void setRelatedObjects(IfcTemplatedEntityList< ::Ifc2x3::IfcObject >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcObject >::ptr RelatedObjects() const;
+    void setRelatedObjects(aggregate_of< ::Ifc2x3::IfcObject >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelDefines (IfcEntityInstanceData* e);
-    IfcRelDefines (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcObject >::ptr v5_RelatedObjects);
-    typedef IfcTemplatedEntityList< IfcRelDefines > list;
+    IfcRelDefines (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObject >::ptr v5_RelatedObjects);
+    typedef aggregate_of< IfcRelDefines > list;
 };
 /// The objectified relationship
 /// IfcRelDefinesByProperties defines the relationships
@@ -21685,8 +20735,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelDefinesByProperties (IfcEntityInstanceData* e);
-    IfcRelDefinesByProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcObject >::ptr v5_RelatedObjects, ::Ifc2x3::IfcPropertySetDefinition* v6_RelatingPropertyDefinition);
-    typedef IfcTemplatedEntityList< IfcRelDefinesByProperties > list;
+    IfcRelDefinesByProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObject >::ptr v5_RelatedObjects, ::Ifc2x3::IfcPropertySetDefinition* v6_RelatingPropertyDefinition);
+    typedef aggregate_of< IfcRelDefinesByProperties > list;
 };
 /// The objectified relationship
 /// IfcRelDefinesByType defines the relationship between an
@@ -21765,8 +20815,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelDefinesByType (IfcEntityInstanceData* e);
-    IfcRelDefinesByType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcObject >::ptr v5_RelatedObjects, ::Ifc2x3::IfcTypeObject* v6_RelatingType);
-    typedef IfcTemplatedEntityList< IfcRelDefinesByType > list;
+    IfcRelDefinesByType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObject >::ptr v5_RelatedObjects, ::Ifc2x3::IfcTypeObject* v6_RelatingType);
+    typedef aggregate_of< IfcRelDefinesByType > list;
 };
 /// IfcRelFillsElement is an objectified relationship between an opening element and an element that fills (or partially fills) the opening element. It is an one-to-one relationship.
 /// 
@@ -21791,7 +20841,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRelFillsElement (IfcEntityInstanceData* e);
     IfcRelFillsElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcOpeningElement* v5_RelatingOpeningElement, ::Ifc2x3::IfcElement* v6_RelatedBuildingElement);
-    typedef IfcTemplatedEntityList< IfcRelFillsElement > list;
+    typedef aggregate_of< IfcRelFillsElement > list;
 };
 /// Objectified relationship between a distribution flow element occurrence instance and one-to-many control element occurrence instances indicating that the control element(s) sense or control some aspect of the flow element. It is applied to IfcDistributionFlowElement and IfcDistributionControlElement.
 /// 
@@ -21803,30 +20853,24 @@ public:
 class IFC_PARSE_API IfcRelFlowControlElements : public IfcRelConnects {
 public:
     /// References control elements which may be used to impart control on the Distribution Element.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcDistributionControlElement >::ptr RelatedControlElements() const;
-    void setRelatedControlElements(IfcTemplatedEntityList< ::Ifc2x3::IfcDistributionControlElement >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcDistributionControlElement >::ptr RelatedControlElements() const;
+    void setRelatedControlElements(aggregate_of< ::Ifc2x3::IfcDistributionControlElement >::ptr v);
     /// Relationship to a distribution flow element
     ::Ifc2x3::IfcDistributionFlowElement* RelatingFlowElement() const;
     void setRelatingFlowElement(::Ifc2x3::IfcDistributionFlowElement* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelFlowControlElements (IfcEntityInstanceData* e);
-    IfcRelFlowControlElements (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcDistributionControlElement >::ptr v5_RelatedControlElements, ::Ifc2x3::IfcDistributionFlowElement* v6_RelatingFlowElement);
-    typedef IfcTemplatedEntityList< IfcRelFlowControlElements > list;
+    IfcRelFlowControlElements (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcDistributionControlElement >::ptr v5_RelatedControlElements, ::Ifc2x3::IfcDistributionFlowElement* v6_RelatingFlowElement);
+    typedef aggregate_of< IfcRelFlowControlElements > list;
 };
 
 class IFC_PARSE_API IfcRelInteractionRequirements : public IfcRelConnects {
 public:
-    /// Whether the optional attribute DailyInteraction is defined for this IfcRelInteractionRequirements
-    bool hasDailyInteraction() const;
-    double DailyInteraction() const;
-    void setDailyInteraction(double v);
-    /// Whether the optional attribute ImportanceRating is defined for this IfcRelInteractionRequirements
-    bool hasImportanceRating() const;
-    double ImportanceRating() const;
-    void setImportanceRating(double v);
-    /// Whether the optional attribute LocationOfInteraction is defined for this IfcRelInteractionRequirements
-    bool hasLocationOfInteraction() const;
+    boost::optional< double > DailyInteraction() const;
+    void setDailyInteraction(boost::optional< double > v);
+    boost::optional< double > ImportanceRating() const;
+    void setImportanceRating(boost::optional< double > v);
     ::Ifc2x3::IfcSpatialStructureElement* LocationOfInteraction() const;
     void setLocationOfInteraction(::Ifc2x3::IfcSpatialStructureElement* v);
     ::Ifc2x3::IfcSpaceProgram* RelatedSpaceProgram() const;
@@ -21837,7 +20881,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRelInteractionRequirements (IfcEntityInstanceData* e);
     IfcRelInteractionRequirements (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< double > v5_DailyInteraction, boost::optional< double > v6_ImportanceRating, ::Ifc2x3::IfcSpatialStructureElement* v7_LocationOfInteraction, ::Ifc2x3::IfcSpaceProgram* v8_RelatedSpaceProgram, ::Ifc2x3::IfcSpaceProgram* v9_RelatingSpaceProgram);
-    typedef IfcTemplatedEntityList< IfcRelInteractionRequirements > list;
+    typedef aggregate_of< IfcRelInteractionRequirements > list;
 };
 /// The nesting relationship
 /// IfcRelNests is a special type of the general
@@ -21869,8 +20913,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelNests (IfcEntityInstanceData* e);
-    IfcRelNests (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcObjectDefinition* v5_RelatingObject, IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr v6_RelatedObjects);
-    typedef IfcTemplatedEntityList< IfcRelNests > list;
+    IfcRelNests (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcObjectDefinition* v5_RelatingObject, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v6_RelatedObjects);
+    typedef aggregate_of< IfcRelNests > list;
 };
 
 class IFC_PARSE_API IfcRelOccupiesSpaces : public IfcRelAssignsToActor {
@@ -21878,19 +20922,19 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelOccupiesSpaces (IfcEntityInstanceData* e);
-    IfcRelOccupiesSpaces (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcActor* v7_RelatingActor, ::Ifc2x3::IfcActorRole* v8_ActingRole);
-    typedef IfcTemplatedEntityList< IfcRelOccupiesSpaces > list;
+    IfcRelOccupiesSpaces (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcActor* v7_RelatingActor, ::Ifc2x3::IfcActorRole* v8_ActingRole);
+    typedef aggregate_of< IfcRelOccupiesSpaces > list;
 };
 
 class IFC_PARSE_API IfcRelOverridesProperties : public IfcRelDefinesByProperties {
 public:
-    IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr OverridingProperties() const;
-    void setOverridingProperties(IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcProperty >::ptr OverridingProperties() const;
+    void setOverridingProperties(aggregate_of< ::Ifc2x3::IfcProperty >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelOverridesProperties (IfcEntityInstanceData* e);
-    IfcRelOverridesProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcObject >::ptr v5_RelatedObjects, ::Ifc2x3::IfcPropertySetDefinition* v6_RelatingPropertyDefinition, IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr v7_OverridingProperties);
-    typedef IfcTemplatedEntityList< IfcRelOverridesProperties > list;
+    IfcRelOverridesProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObject >::ptr v5_RelatedObjects, ::Ifc2x3::IfcPropertySetDefinition* v6_RelatingPropertyDefinition, aggregate_of< ::Ifc2x3::IfcProperty >::ptr v7_OverridingProperties);
+    typedef aggregate_of< IfcRelOverridesProperties > list;
 };
 /// The IfcRelProjectsElement is an objectified relationship
 /// between an element and one projection element that creates a
@@ -21936,7 +20980,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRelProjectsElement (IfcEntityInstanceData* e);
     IfcRelProjectsElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcElement* v5_RelatingElement, ::Ifc2x3::IfcFeatureElementAddition* v6_RelatedFeatureElement);
-    typedef IfcTemplatedEntityList< IfcRelProjectsElement > list;
+    typedef aggregate_of< IfcRelProjectsElement > list;
 };
 /// The objectified relationship,
 ///   IfcRelReferencedInSpatialStructure is used to
@@ -21991,8 +21035,8 @@ class IFC_PARSE_API IfcRelReferencedInSpatialStructure : public IfcRelConnects {
 public:
     /// Set of products, which are referenced within this level of the spatial structure hierarchy.
     /// NOTE  Referenced elements are contained elsewhere within the spatial structure, they are referenced additionally by this spatial structure element, e.g., because they span several stories.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcProduct >::ptr RelatedElements() const;
-    void setRelatedElements(IfcTemplatedEntityList< ::Ifc2x3::IfcProduct >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcProduct >::ptr RelatedElements() const;
+    void setRelatedElements(aggregate_of< ::Ifc2x3::IfcProduct >::ptr v);
     /// Spatial structure element, within which the element is referenced. Any element can be contained within zero, one or many elements of the project spatial and zoning structure.
     /// 
     /// IFC2x Edition 4 CHANGE  The attribute relatingStructure as been promoted to the new supertype IfcSpatialElement with upward compatibility for file based exchange.
@@ -22001,8 +21045,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelReferencedInSpatialStructure (IfcEntityInstanceData* e);
-    IfcRelReferencedInSpatialStructure (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcProduct >::ptr v5_RelatedElements, ::Ifc2x3::IfcSpatialStructureElement* v6_RelatingStructure);
-    typedef IfcTemplatedEntityList< IfcRelReferencedInSpatialStructure > list;
+    IfcRelReferencedInSpatialStructure (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcProduct >::ptr v5_RelatedElements, ::Ifc2x3::IfcSpatialStructureElement* v6_RelatingStructure);
+    typedef aggregate_of< IfcRelReferencedInSpatialStructure > list;
 };
 
 class IFC_PARSE_API IfcRelSchedulesCostItems : public IfcRelAssignsToControl {
@@ -22010,8 +21054,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelSchedulesCostItems (IfcEntityInstanceData* e);
-    IfcRelSchedulesCostItems (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcControl* v7_RelatingControl);
-    typedef IfcTemplatedEntityList< IfcRelSchedulesCostItems > list;
+    IfcRelSchedulesCostItems (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcControl* v7_RelatingControl);
+    typedef aggregate_of< IfcRelSchedulesCostItems > list;
 };
 /// IfcRelSequence is a
 ///   sequential relationship between processes where one process
@@ -22087,7 +21131,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRelSequence (IfcEntityInstanceData* e);
     IfcRelSequence (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcProcess* v5_RelatingProcess, ::Ifc2x3::IfcProcess* v6_RelatedProcess, double v7_TimeLag, ::Ifc2x3::IfcSequenceEnum::Value v8_SequenceType);
-    typedef IfcTemplatedEntityList< IfcRelSequence > list;
+    typedef aggregate_of< IfcRelSequence > list;
 };
 /// Definition from IAI: An objectified relationship
 ///   that defines the relationship between a system and the
@@ -22120,13 +21164,13 @@ public:
     /// IFC2x PLATFORM CHANGE  The data type has been changed from IfcBuilding to IfcSpatialStructureElement with upward compatibility for file based exchange.
     /// 
     /// IFC2x Edition 4 CHANGE  The data type has been changed from IfcSpatialStructureElement to IfcSpatialElement with upward compatibility for file based exchange.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcSpatialStructureElement >::ptr RelatedBuildings() const;
-    void setRelatedBuildings(IfcTemplatedEntityList< ::Ifc2x3::IfcSpatialStructureElement >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcSpatialStructureElement >::ptr RelatedBuildings() const;
+    void setRelatedBuildings(aggregate_of< ::Ifc2x3::IfcSpatialStructureElement >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelServicesBuildings (IfcEntityInstanceData* e);
-    IfcRelServicesBuildings (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcSystem* v5_RelatingSystem, IfcTemplatedEntityList< ::Ifc2x3::IfcSpatialStructureElement >::ptr v6_RelatedBuildings);
-    typedef IfcTemplatedEntityList< IfcRelServicesBuildings > list;
+    IfcRelServicesBuildings (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcSystem* v5_RelatingSystem, aggregate_of< ::Ifc2x3::IfcSpatialStructureElement >::ptr v6_RelatedBuildings);
+    typedef aggregate_of< IfcRelServicesBuildings > list;
 };
 /// The space boundary defines the
 /// physical or virtual delimiter of a space by the relationship
@@ -22295,8 +21339,6 @@ public:
     /// Reference to one spaces that is delimited by this boundary.
     ::Ifc2x3::IfcSpace* RelatingSpace() const;
     void setRelatingSpace(::Ifc2x3::IfcSpace* v);
-    /// Whether the optional attribute RelatedBuildingElement is defined for this IfcRelSpaceBoundary
-    bool hasRelatedBuildingElement() const;
     /// Reference to Building Element, that defines the Space Boundaries.
     /// 
     /// IFC2x PLATFORM CHANGE  The data type has been changed from IfcBuildingElement to IfcElement with upward compatibility for file based exchange.
@@ -22304,8 +21346,6 @@ public:
     /// IFC2x4 CHANGE  The attribute has been changed to be mandatory.
     ::Ifc2x3::IfcElement* RelatedBuildingElement() const;
     void setRelatedBuildingElement(::Ifc2x3::IfcElement* v);
-    /// Whether the optional attribute ConnectionGeometry is defined for this IfcRelSpaceBoundary
-    bool hasConnectionGeometry() const;
     /// Physical representation of the space boundary. Provided as a curve or surface given within the LCS of the space.
     /// 
     /// IFC2x PLATFORM CHANGE  The data type has been changed from IfcConnectionSurfaceGeometry to IfcConnectionGeometry with upward compatibility for file based exchange.
@@ -22321,7 +21361,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRelSpaceBoundary (IfcEntityInstanceData* e);
     IfcRelSpaceBoundary (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcSpace* v5_RelatingSpace, ::Ifc2x3::IfcElement* v6_RelatedBuildingElement, ::Ifc2x3::IfcConnectionGeometry* v7_ConnectionGeometry, ::Ifc2x3::IfcPhysicalOrVirtualEnum::Value v8_PhysicalOrVirtualBoundary, ::Ifc2x3::IfcInternalOrExternalEnum::Value v9_InternalOrExternalBoundary);
-    typedef IfcTemplatedEntityList< IfcRelSpaceBoundary > list;
+    typedef aggregate_of< IfcRelSpaceBoundary > list;
 };
 /// IfcRelVoidsElement is an objectified relationship between a building element and one opening element that creates a void in the element. It is a one-to-one relationship. This relationship implies a Boolean operation of subtraction between the geometric bodies of the element and the opening.
 /// 
@@ -22340,7 +21380,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRelVoidsElement (IfcEntityInstanceData* e);
     IfcRelVoidsElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcElement* v5_RelatingBuildingElement, ::Ifc2x3::IfcFeatureElementSubtraction* v6_RelatedOpeningElement);
-    typedef IfcTemplatedEntityList< IfcRelVoidsElement > list;
+    typedef aggregate_of< IfcRelVoidsElement > list;
 };
 /// IfcResource contains the information needed to represent the costs, schedule, and other impacts from the use of a thing in a process. It is not intended to use IfcResource to model the general properties of the things themselves, while an optional linkage from IfcResource to the things to be used can be specified (specifically, the relationship from subtypes of IfcResource to IfcProduct through the IfcRelAssignsToResource relationship).  
 /// 
@@ -22357,12 +21397,12 @@ public:
 /// IFC2x PLATFORM CHANGE: The attributes BaseUnit and ResourceConsumption have been removed from the abstract entity; they are reintroduced at a lower level in the hierarchy.
 class IFC_PARSE_API IfcResource : public IfcObject {
 public:
-        IfcTemplatedEntityList< IfcRelAssignsToResource >::ptr ResourceOf() const; // INVERSE IfcRelAssignsToResource::RelatingResource
+        aggregate_of< IfcRelAssignsToResource >::ptr ResourceOf() const; // INVERSE IfcRelAssignsToResource::RelatingResource
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcResource (IfcEntityInstanceData* e);
     IfcResource (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
-    typedef IfcTemplatedEntityList< IfcResource > list;
+    typedef aggregate_of< IfcResource > list;
 };
 /// An IfcRevolvedAreaSolid is a solid created by revolving
 /// a cross section provided by a profile definition about an axis. The
@@ -22452,7 +21492,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRevolvedAreaSolid (IfcEntityInstanceData* e);
     IfcRevolvedAreaSolid (::Ifc2x3::IfcProfileDef* v1_SweptArea, ::Ifc2x3::IfcAxis2Placement3D* v2_Position, ::Ifc2x3::IfcAxis1Placement* v3_Axis, double v4_Angle);
-    typedef IfcTemplatedEntityList< IfcRevolvedAreaSolid > list;
+    typedef aggregate_of< IfcRevolvedAreaSolid > list;
 };
 /// The IfcRightCircularCone is a Construction Solid
 /// Geometry (CSG) 3D primitive. It is a solid with a circular base and
@@ -22531,7 +21571,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRightCircularCone (IfcEntityInstanceData* e);
     IfcRightCircularCone (::Ifc2x3::IfcAxis2Placement3D* v1_Position, double v2_Height, double v3_BottomRadius);
-    typedef IfcTemplatedEntityList< IfcRightCircularCone > list;
+    typedef aggregate_of< IfcRightCircularCone > list;
 };
 /// The IfcRightCircularCylinder is a Construction Solid
 /// Geometry (CSG) 3D primitive. It is a solid with a circular base and
@@ -22626,7 +21666,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRightCircularCylinder (IfcEntityInstanceData* e);
     IfcRightCircularCylinder (::Ifc2x3::IfcAxis2Placement3D* v1_Position, double v2_Height, double v3_Radius);
-    typedef IfcTemplatedEntityList< IfcRightCircularCylinder > list;
+    typedef aggregate_of< IfcRightCircularCylinder > list;
 };
 /// A spatial structure element
 /// (IfcSpatialStructureElement) is the generalization of all
@@ -22704,24 +21744,22 @@ public:
 /// Figure 62 — Spatial structure element composition
 class IFC_PARSE_API IfcSpatialStructureElement : public IfcProduct {
 public:
-    /// Whether the optional attribute LongName is defined for this IfcSpatialStructureElement
-    bool hasLongName() const;
-    std::string LongName() const;
-    void setLongName(std::string v);
+    boost::optional< std::string > LongName() const;
+    void setLongName(boost::optional< std::string > v);
     /// Denotes, whether the predefined spatial structure element represents itself, or an aggregate (complex) or a part (part). The interpretation is given separately for each subtype of spatial structure element. If no CompositionType is asserted, the dafault value 'ELEMENT' applies.
     /// 
     /// IFC2x4 CHANGE&nbsp
     ///   Attribute made optional.
     ::Ifc2x3::IfcElementCompositionEnum::Value CompositionType() const;
     void setCompositionType(::Ifc2x3::IfcElementCompositionEnum::Value v);
-        IfcTemplatedEntityList< IfcRelReferencedInSpatialStructure >::ptr ReferencesElements() const; // INVERSE IfcRelReferencedInSpatialStructure::RelatingStructure
-    IfcTemplatedEntityList< IfcRelServicesBuildings >::ptr ServicedBySystems() const; // INVERSE IfcRelServicesBuildings::RelatedBuildings
-    IfcTemplatedEntityList< IfcRelContainedInSpatialStructure >::ptr ContainsElements() const; // INVERSE IfcRelContainedInSpatialStructure::RelatingStructure
+        aggregate_of< IfcRelReferencedInSpatialStructure >::ptr ReferencesElements() const; // INVERSE IfcRelReferencedInSpatialStructure::RelatingStructure
+    aggregate_of< IfcRelServicesBuildings >::ptr ServicedBySystems() const; // INVERSE IfcRelServicesBuildings::RelatedBuildings
+    aggregate_of< IfcRelContainedInSpatialStructure >::ptr ContainsElements() const; // INVERSE IfcRelContainedInSpatialStructure::RelatingStructure
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSpatialStructureElement (IfcEntityInstanceData* e);
     IfcSpatialStructureElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_LongName, ::Ifc2x3::IfcElementCompositionEnum::Value v9_CompositionType);
-    typedef IfcTemplatedEntityList< IfcSpatialStructureElement > list;
+    typedef aggregate_of< IfcSpatialStructureElement > list;
 };
 /// Definition from IAI: The element type
 ///   (IfcSpatialStructureElementType) defines a list of
@@ -22762,8 +21800,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSpatialStructureElementType (IfcEntityInstanceData* e);
-    IfcSpatialStructureElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
-    typedef IfcTemplatedEntityList< IfcSpatialStructureElementType > list;
+    IfcSpatialStructureElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
+    typedef aggregate_of< IfcSpatialStructureElementType > list;
 };
 /// The IfcSphere is a Construction Solid Geometry (CSG) 3D
 /// primitive. It is a solid where all points at the surface have the
@@ -22824,7 +21862,7 @@ public:
     static const IfcParse::entity& Class();
     IfcSphere (IfcEntityInstanceData* e);
     IfcSphere (::Ifc2x3::IfcAxis2Placement3D* v1_Position, double v2_Radius);
-    typedef IfcTemplatedEntityList< IfcSphere > list;
+    typedef aggregate_of< IfcSphere > list;
 };
 /// Definition from IAI: The abstract entity IfcStructuralActivity combines the definition of actions (such as forces, displacements, etc.) and reactions (support reactions, internal forces, deflections, etc.) which are specified by using the basic load definitions from the IfcStructuralLoadResource.
 /// 
@@ -22945,12 +21983,12 @@ public:
     /// as established by subclass-specific geometry use definitions.
     ::Ifc2x3::IfcGlobalOrLocalEnum::Value GlobalOrLocal() const;
     void setGlobalOrLocal(::Ifc2x3::IfcGlobalOrLocalEnum::Value v);
-        IfcTemplatedEntityList< IfcRelConnectsStructuralActivity >::ptr AssignedToStructuralItem() const; // INVERSE IfcRelConnectsStructuralActivity::RelatedStructuralActivity
+        aggregate_of< IfcRelConnectsStructuralActivity >::ptr AssignedToStructuralItem() const; // INVERSE IfcRelConnectsStructuralActivity::RelatedStructuralActivity
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuralActivity (IfcEntityInstanceData* e);
     IfcStructuralActivity (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralLoad* v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal);
-    typedef IfcTemplatedEntityList< IfcStructuralActivity > list;
+    typedef aggregate_of< IfcStructuralActivity > list;
 };
 /// Definition from IAI: The abstract entity IfcStructuralItem is the generalization of structural members and structural connections, i.e. analysis idealizations of elements in the building model.  It defines the relation between structural members and connections with structural activities (actions and reactions).
 /// 
@@ -23041,12 +22079,12 @@ public:
 /// NOTE  A structural item may be grouped into more than one analysis model.  In this case, all these models must use the same instance of IfcObjectPlacement.
 class IFC_PARSE_API IfcStructuralItem : public IfcProduct {
 public:
-        IfcTemplatedEntityList< IfcRelConnectsStructuralActivity >::ptr AssignedStructuralActivity() const; // INVERSE IfcRelConnectsStructuralActivity::RelatingElement
+        aggregate_of< IfcRelConnectsStructuralActivity >::ptr AssignedStructuralActivity() const; // INVERSE IfcRelConnectsStructuralActivity::RelatingElement
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuralItem (IfcEntityInstanceData* e);
     IfcStructuralItem (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation);
-    typedef IfcTemplatedEntityList< IfcStructuralItem > list;
+    typedef aggregate_of< IfcStructuralItem > list;
 };
 /// Definition from IAI: The abstract entity IfcStructuralMember is the superclass of all structural items which represent the idealized structural behavior of building elements.
 /// 
@@ -23054,13 +22092,13 @@ public:
 /// IFC 2x4 change:  Use definitions moved to supertype and subtypes.
 class IFC_PARSE_API IfcStructuralMember : public IfcStructuralItem {
 public:
-        IfcTemplatedEntityList< IfcRelConnectsStructuralElement >::ptr ReferencesElement() const; // INVERSE IfcRelConnectsStructuralElement::RelatedStructuralMember
-    IfcTemplatedEntityList< IfcRelConnectsStructuralMember >::ptr ConnectedBy() const; // INVERSE IfcRelConnectsStructuralMember::RelatingStructuralMember
+        aggregate_of< IfcRelConnectsStructuralElement >::ptr ReferencesElement() const; // INVERSE IfcRelConnectsStructuralElement::RelatedStructuralMember
+    aggregate_of< IfcRelConnectsStructuralMember >::ptr ConnectedBy() const; // INVERSE IfcRelConnectsStructuralMember::RelatingStructuralMember
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuralMember (IfcEntityInstanceData* e);
     IfcStructuralMember (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation);
-    typedef IfcTemplatedEntityList< IfcStructuralMember > list;
+    typedef aggregate_of< IfcStructuralMember > list;
 };
 /// Definition from IAI: A structural reaction is a structural activity that results from a
 /// structural action imposed to a structural item or building element.  Examples are support reactions,
@@ -23084,12 +22122,12 @@ public:
 /// IfcStructuralAction.
 class IFC_PARSE_API IfcStructuralReaction : public IfcStructuralActivity {
 public:
-        IfcTemplatedEntityList< IfcStructuralAction >::ptr Causes() const; // INVERSE IfcStructuralAction::CausedBy
+        aggregate_of< IfcStructuralAction >::ptr Causes() const; // INVERSE IfcStructuralAction::CausedBy
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuralReaction (IfcEntityInstanceData* e);
     IfcStructuralReaction (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralLoad* v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal);
-    typedef IfcTemplatedEntityList< IfcStructuralReaction > list;
+    typedef aggregate_of< IfcStructuralReaction > list;
 };
 /// Definition from IAI: Instances of IfcStructuralSurfaceMember describe face members, i.e. structural analysis idealizations of slabs, walls, shells, etc..  Surface members may be planar or curved.
 /// 
@@ -23116,16 +22154,14 @@ public:
     /// Type of member with respect to its load carrying behavior in this analysis idealization.
     ::Ifc2x3::IfcStructuralSurfaceTypeEnum::Value PredefinedType() const;
     void setPredefinedType(::Ifc2x3::IfcStructuralSurfaceTypeEnum::Value v);
-    /// Whether the optional attribute Thickness is defined for this IfcStructuralSurfaceMember
-    bool hasThickness() const;
     /// Defines the typically understood thickness of the structural surface member, measured normal to its reference surface.
-    double Thickness() const;
-    void setThickness(double v);
+    boost::optional< double > Thickness() const;
+    void setThickness(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuralSurfaceMember (IfcEntityInstanceData* e);
     IfcStructuralSurfaceMember (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralSurfaceTypeEnum::Value v8_PredefinedType, boost::optional< double > v9_Thickness);
-    typedef IfcTemplatedEntityList< IfcStructuralSurfaceMember > list;
+    typedef aggregate_of< IfcStructuralSurfaceMember > list;
 };
 /// Definition from IAI: Describes surface members with varying section properties.  The properties are provided by means of a property set and IfcRelDefinesByProperties or by means of aggregation:  An instance of IfcStructuralSurfaceMemberVarying may be composed of two or more instances of IfcStructuralSurfaceMember with differing section properties.  These subordinate members relate to the instance of IfcStructuralSurfaceMemberVarying by IfcRelAggregates.
 /// 
@@ -23155,7 +22191,7 @@ public:
     static const IfcParse::entity& Class();
     IfcStructuralSurfaceMemberVarying (IfcEntityInstanceData* e);
     IfcStructuralSurfaceMemberVarying (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralSurfaceTypeEnum::Value v8_PredefinedType, boost::optional< double > v9_Thickness, std::vector< double > /*[2:?]*/ v10_SubsequentThickness, ::Ifc2x3::IfcShapeAspect* v11_VaryingThicknessLocation);
-    typedef IfcTemplatedEntityList< IfcStructuralSurfaceMemberVarying > list;
+    typedef aggregate_of< IfcStructuralSurfaceMemberVarying > list;
 };
 
 class IFC_PARSE_API IfcStructuredDimensionCallout : public IfcDraughtingCallout {
@@ -23163,8 +22199,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuredDimensionCallout (IfcEntityInstanceData* e);
-    IfcStructuredDimensionCallout (IfcEntityList::ptr v1_Contents);
-    typedef IfcTemplatedEntityList< IfcStructuredDimensionCallout > list;
+    IfcStructuredDimensionCallout (aggregate_of_instance::ptr v1_Contents);
+    typedef aggregate_of< IfcStructuredDimensionCallout > list;
 };
 /// The IfcSurfaceCurveSweptAreaSolid is the result of
 /// sweeping an area along a directrix that lies on a reference
@@ -23250,7 +22286,7 @@ public:
     static const IfcParse::entity& Class();
     IfcSurfaceCurveSweptAreaSolid (IfcEntityInstanceData* e);
     IfcSurfaceCurveSweptAreaSolid (::Ifc2x3::IfcProfileDef* v1_SweptArea, ::Ifc2x3::IfcAxis2Placement3D* v2_Position, ::Ifc2x3::IfcCurve* v3_Directrix, double v4_StartParam, double v5_EndParam, ::Ifc2x3::IfcSurface* v6_ReferenceSurface);
-    typedef IfcTemplatedEntityList< IfcSurfaceCurveSweptAreaSolid > list;
+    typedef aggregate_of< IfcSurfaceCurveSweptAreaSolid > list;
 };
 /// Definition from ISO/CD 10303-42:1992: This surface is a simple swept surface or a generalized cylinder obtained by sweeping a curve in a given direction. The parameterization is as follows where the curve has a parameterization l(u): 
 /// 
@@ -23277,7 +22313,7 @@ public:
     static const IfcParse::entity& Class();
     IfcSurfaceOfLinearExtrusion (IfcEntityInstanceData* e);
     IfcSurfaceOfLinearExtrusion (::Ifc2x3::IfcProfileDef* v1_SweptCurve, ::Ifc2x3::IfcAxis2Placement3D* v2_Position, ::Ifc2x3::IfcDirection* v3_ExtrudedDirection, double v4_Depth);
-    typedef IfcTemplatedEntityList< IfcSurfaceOfLinearExtrusion > list;
+    typedef aggregate_of< IfcSurfaceOfLinearExtrusion > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A surface of revolution (IfcSurfaceOfRevolution) is the surface obtained by rotating a curve one complete revolution about an axis. The data shall be interpreted as below. 
 /// 
@@ -23305,7 +22341,7 @@ public:
     static const IfcParse::entity& Class();
     IfcSurfaceOfRevolution (IfcEntityInstanceData* e);
     IfcSurfaceOfRevolution (::Ifc2x3::IfcProfileDef* v1_SweptCurve, ::Ifc2x3::IfcAxis2Placement3D* v2_Position, ::Ifc2x3::IfcAxis1Placement* v3_AxisPosition);
-    typedef IfcTemplatedEntityList< IfcSurfaceOfRevolution > list;
+    typedef aggregate_of< IfcSurfaceOfRevolution > list;
 };
 /// The furnishing element type IfcSystemFurnitureElementType defines commonly shared information for occurrences of furniture elements.  The set of shared information may include: 
 /// 
@@ -23342,8 +22378,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSystemFurnitureElementType (IfcEntityInstanceData* e);
-    IfcSystemFurnitureElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
-    typedef IfcTemplatedEntityList< IfcSystemFurnitureElementType > list;
+    IfcSystemFurnitureElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
+    typedef aggregate_of< IfcSystemFurnitureElementType > list;
 };
 /// An IfcTask is an identifiable unit of work to be
 ///   carried out in a construction project.
@@ -23594,25 +22630,21 @@ class IFC_PARSE_API IfcTask : public IfcProcess {
 public:
     std::string TaskId() const;
     void setTaskId(std::string v);
-    /// Whether the optional attribute Status is defined for this IfcTask
-    bool hasStatus() const;
     /// Current status of the task.
     /// 
     /// NOTE: Particular values for status are not
     ///   specified, these should be determined and agreed by local
     ///   usage. Examples of possible status values include 'Not Yet
     ///   Started', 'Started', 'Completed'.
-    std::string Status() const;
-    void setStatus(std::string v);
-    /// Whether the optional attribute WorkMethod is defined for this IfcTask
-    bool hasWorkMethod() const;
+    boost::optional< std::string > Status() const;
+    void setStatus(boost::optional< std::string > v);
     /// The method of work used in carrying out a task.
     /// 
     /// NOTE: This attribute should
     ///   not be used if the work method is specified for the
     ///   IfcTaskType
-    std::string WorkMethod() const;
-    void setWorkMethod(std::string v);
+    boost::optional< std::string > WorkMethod() const;
+    void setWorkMethod(boost::optional< std::string > v);
     /// Identifies whether a task is a milestone task (=TRUE) or not
     ///   (= FALSE).
     /// 
@@ -23622,17 +22654,15 @@ public:
     ///   time.
     bool IsMilestone() const;
     void setIsMilestone(bool v);
-    /// Whether the optional attribute Priority is defined for this IfcTask
-    bool hasPriority() const;
     /// A value that indicates the relative priority of the task (in
     ///   comparison to the priorities of other tasks).
-    int Priority() const;
-    void setPriority(int v);
+    boost::optional< int > Priority() const;
+    void setPriority(boost::optional< int > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTask (IfcEntityInstanceData* e);
     IfcTask (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_TaskId, boost::optional< std::string > v7_Status, boost::optional< std::string > v8_WorkMethod, bool v9_IsMilestone, boost::optional< int > v10_Priority);
-    typedef IfcTemplatedEntityList< IfcTask > list;
+    typedef aggregate_of< IfcTask > list;
 };
 /// Definition from IAI: The element type
 /// IfcTransportElementType defines commonly shared
@@ -23705,8 +22735,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTransportElementType (IfcEntityInstanceData* e);
-    IfcTransportElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcTransportElementTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcTransportElementType > list;
+    IfcTransportElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcTransportElementTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcTransportElementType > list;
 };
 /// The IfcActor defines all actors or human agents involved in a project during its full life cycle. It facilitates the use of person and organization definitions in the resource part of the IFC object model. This includes name, address, telecommunication addresses, and roles.
 /// 
@@ -23728,12 +22758,12 @@ public:
     /// Information about the actor.
     ::Ifc2x3::IfcActorSelect* TheActor() const;
     void setTheActor(::Ifc2x3::IfcActorSelect* v);
-        IfcTemplatedEntityList< IfcRelAssignsToActor >::ptr IsActingUpon() const; // INVERSE IfcRelAssignsToActor::RelatingActor
+        aggregate_of< IfcRelAssignsToActor >::ptr IsActingUpon() const; // INVERSE IfcRelAssignsToActor::RelatingActor
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcActor (IfcEntityInstanceData* e);
     IfcActor (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcActorSelect* v6_TheActor);
-    typedef IfcTemplatedEntityList< IfcActor > list;
+    typedef aggregate_of< IfcActor > list;
 };
 /// Definition from IAI: An annotation is a graphical
 ///   representation within the geometric (and spatial) context
@@ -23910,12 +22940,12 @@ public:
 /// RepresentationType : 'GeometricSet'
 class IFC_PARSE_API IfcAnnotation : public IfcProduct {
 public:
-        IfcTemplatedEntityList< IfcRelContainedInSpatialStructure >::ptr ContainedInStructure() const; // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
+        aggregate_of< IfcRelContainedInSpatialStructure >::ptr ContainedInStructure() const; // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcAnnotation (IfcEntityInstanceData* e);
     IfcAnnotation (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation);
-    typedef IfcTemplatedEntityList< IfcAnnotation > list;
+    typedef aggregate_of< IfcAnnotation > list;
 };
 /// IfcAsymmetricIShapeProfileDef
 /// defines a section profile that provides the defining parameters of a
@@ -23959,25 +22989,19 @@ public:
     /// Extent of the top flange, defined parallel to the x axis of the position coordinate system.
     double TopFlangeWidth() const;
     void setTopFlangeWidth(double v);
-    /// Whether the optional attribute TopFlangeThickness is defined for this IfcAsymmetricIShapeProfileDef
-    bool hasTopFlangeThickness() const;
     /// Flange thickness of the top flange of the I-shape.
-    double TopFlangeThickness() const;
-    void setTopFlangeThickness(double v);
-    /// Whether the optional attribute TopFlangeFilletRadius is defined for this IfcAsymmetricIShapeProfileDef
-    bool hasTopFlangeFilletRadius() const;
+    boost::optional< double > TopFlangeThickness() const;
+    void setTopFlangeThickness(boost::optional< double > v);
     /// The fillet between the web and the top flange of the I-shape.
-    double TopFlangeFilletRadius() const;
-    void setTopFlangeFilletRadius(double v);
-    /// Whether the optional attribute CentreOfGravityInY is defined for this IfcAsymmetricIShapeProfileDef
-    bool hasCentreOfGravityInY() const;
-    double CentreOfGravityInY() const;
-    void setCentreOfGravityInY(double v);
+    boost::optional< double > TopFlangeFilletRadius() const;
+    void setTopFlangeFilletRadius(boost::optional< double > v);
+    boost::optional< double > CentreOfGravityInY() const;
+    void setCentreOfGravityInY(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcAsymmetricIShapeProfileDef (IfcEntityInstanceData* e);
     IfcAsymmetricIShapeProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_OverallWidth, double v5_OverallDepth, double v6_WebThickness, double v7_FlangeThickness, boost::optional< double > v8_FilletRadius, double v9_TopFlangeWidth, boost::optional< double > v10_TopFlangeThickness, boost::optional< double > v11_TopFlangeFilletRadius, boost::optional< double > v12_CentreOfGravityInY);
-    typedef IfcTemplatedEntityList< IfcAsymmetricIShapeProfileDef > list;
+    typedef aggregate_of< IfcAsymmetricIShapeProfileDef > list;
 };
 /// The IfcBlock is a Construction Solid Geometry (CSG) 3D
 /// primitive. It is defined by a position and a positve distance along
@@ -24091,7 +23115,7 @@ public:
     static const IfcParse::entity& Class();
     IfcBlock (IfcEntityInstanceData* e);
     IfcBlock (::Ifc2x3::IfcAxis2Placement3D* v1_Position, double v2_XLength, double v3_YLength, double v4_ZLength);
-    typedef IfcTemplatedEntityList< IfcBlock > list;
+    typedef aggregate_of< IfcBlock > list;
 };
 /// A clipping result is defined as a special subtype of the general Boolean result (IfcBooleanResult). It constrains the operands and the operator of the Boolean result. 
 /// 
@@ -24106,7 +23130,7 @@ public:
     static const IfcParse::entity& Class();
     IfcBooleanClippingResult (IfcEntityInstanceData* e);
     IfcBooleanClippingResult (::Ifc2x3::IfcBooleanOperator::Value v1_Operator, ::Ifc2x3::IfcBooleanOperand* v2_FirstOperand, ::Ifc2x3::IfcBooleanOperand* v3_SecondOperand);
-    typedef IfcTemplatedEntityList< IfcBooleanClippingResult > list;
+    typedef aggregate_of< IfcBooleanClippingResult > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A bounded curve is a curve of finite arc length with identifiable end points. 
 /// 
@@ -24124,7 +23148,7 @@ public:
     static const IfcParse::entity& Class();
     IfcBoundedCurve (IfcEntityInstanceData* e);
     IfcBoundedCurve ();
-    typedef IfcTemplatedEntityList< IfcBoundedCurve > list;
+    typedef aggregate_of< IfcBoundedCurve > list;
 };
 /// Definition from ISO 6707-1:1989: Construction work that
 /// has the provision of shelter for its occupants or contents as one
@@ -24302,18 +23326,12 @@ public:
 /// constituting elements.
 class IFC_PARSE_API IfcBuilding : public IfcSpatialStructureElement {
 public:
-    /// Whether the optional attribute ElevationOfRefHeight is defined for this IfcBuilding
-    bool hasElevationOfRefHeight() const;
     /// Elevation above sea level of the reference height used for all storey elevation measures, equals to height 0.0. It is usually the ground floor level.
-    double ElevationOfRefHeight() const;
-    void setElevationOfRefHeight(double v);
-    /// Whether the optional attribute ElevationOfTerrain is defined for this IfcBuilding
-    bool hasElevationOfTerrain() const;
+    boost::optional< double > ElevationOfRefHeight() const;
+    void setElevationOfRefHeight(boost::optional< double > v);
     /// Elevation above the minimal terrain level around the foot print of the building, given in elevation above sea level.
-    double ElevationOfTerrain() const;
-    void setElevationOfTerrain(double v);
-    /// Whether the optional attribute BuildingAddress is defined for this IfcBuilding
-    bool hasBuildingAddress() const;
+    boost::optional< double > ElevationOfTerrain() const;
+    void setElevationOfTerrain(boost::optional< double > v);
     /// Address given to the building for postal purposes.
     ::Ifc2x3::IfcPostalAddress* BuildingAddress() const;
     void setBuildingAddress(::Ifc2x3::IfcPostalAddress* v);
@@ -24321,7 +23339,7 @@ public:
     static const IfcParse::entity& Class();
     IfcBuilding (IfcEntityInstanceData* e);
     IfcBuilding (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_LongName, ::Ifc2x3::IfcElementCompositionEnum::Value v9_CompositionType, boost::optional< double > v10_ElevationOfRefHeight, boost::optional< double > v11_ElevationOfTerrain, ::Ifc2x3::IfcPostalAddress* v12_BuildingAddress);
-    typedef IfcTemplatedEntityList< IfcBuilding > list;
+    typedef aggregate_of< IfcBuilding > list;
 };
 /// Definition from IAI: The element type
 ///   (IfcBuildingElementType) defines a list of commonly
@@ -24357,8 +23375,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcBuildingElementType (IfcEntityInstanceData* e);
-    IfcBuildingElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
-    typedef IfcTemplatedEntityList< IfcBuildingElementType > list;
+    IfcBuildingElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
+    typedef aggregate_of< IfcBuildingElementType > list;
 };
 /// The building storey has an
 /// elevation and typically represents a (nearly) horizontal
@@ -24539,16 +23557,14 @@ public:
 /// independently from its constituting elements.
 class IFC_PARSE_API IfcBuildingStorey : public IfcSpatialStructureElement {
 public:
-    /// Whether the optional attribute Elevation is defined for this IfcBuildingStorey
-    bool hasElevation() const;
     /// Elevation of the base of this storey, relative to the 0,00 internal reference height of the building. The 0.00 level is given by the absolute above sea level height by the ElevationOfRefHeight attribute given at IfcBuilding.
-    double Elevation() const;
-    void setElevation(double v);
+    boost::optional< double > Elevation() const;
+    void setElevation(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcBuildingStorey (IfcEntityInstanceData* e);
     IfcBuildingStorey (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_LongName, ::Ifc2x3::IfcElementCompositionEnum::Value v9_CompositionType, boost::optional< double > v10_Elevation);
-    typedef IfcTemplatedEntityList< IfcBuildingStorey > list;
+    typedef aggregate_of< IfcBuildingStorey > list;
 };
 /// IfcCircleHollowProfileDef
 /// defines a section profile that provides the defining parameters of a
@@ -24577,7 +23593,7 @@ public:
     static const IfcParse::entity& Class();
     IfcCircleHollowProfileDef (IfcEntityInstanceData* e);
     IfcCircleHollowProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_Radius, double v5_WallThickness);
-    typedef IfcTemplatedEntityList< IfcCircleHollowProfileDef > list;
+    typedef aggregate_of< IfcCircleHollowProfileDef > list;
 };
 /// Definition from IAI: The element type
 /// IfcColumnType defines commonly shared information for
@@ -24685,8 +23701,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcColumnType (IfcEntityInstanceData* e);
-    IfcColumnType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcColumnTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcColumnType > list;
+    IfcColumnType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcColumnTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcColumnType > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A composite
 ///   curve is a collection of curves joined end-to-end. The
@@ -24757,16 +23773,16 @@ public:
 class IFC_PARSE_API IfcCompositeCurve : public IfcBoundedCurve {
 public:
     /// The component bounded curves, their transitions and senses. The transition attribute for the last segment defines the transition between the end of the last segment and the start of the first; this transition attribute may take the value discontinuous, which indicates an open curve.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcCompositeCurveSegment >::ptr Segments() const;
-    void setSegments(IfcTemplatedEntityList< ::Ifc2x3::IfcCompositeCurveSegment >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcCompositeCurveSegment >::ptr Segments() const;
+    void setSegments(aggregate_of< ::Ifc2x3::IfcCompositeCurveSegment >::ptr v);
     /// Indication of whether the curve intersects itself or not; this is for information only.
-    bool SelfIntersect() const;
-    void setSelfIntersect(bool v);
+    boost::logic::tribool SelfIntersect() const;
+    void setSelfIntersect(boost::logic::tribool v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCompositeCurve (IfcEntityInstanceData* e);
-    IfcCompositeCurve (IfcTemplatedEntityList< ::Ifc2x3::IfcCompositeCurveSegment >::ptr v1_Segments, bool v2_SelfIntersect);
-    typedef IfcTemplatedEntityList< IfcCompositeCurve > list;
+    IfcCompositeCurve (aggregate_of< ::Ifc2x3::IfcCompositeCurveSegment >::ptr v1_Segments, boost::logic::tribool v2_SelfIntersect);
+    typedef aggregate_of< IfcCompositeCurve > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A conic (IfcConic) is a planar curve which could be produced by intersecting a plane with a cone. A conic is defined in terms of its intrinsic geometric properties rather than being described in terms of other geometry. A conic class always has a placement coordinate system defined by a two or three dimensional placement. The parametric representation is defined in terms of this placement coordinate system.
 /// 
@@ -24782,7 +23798,7 @@ public:
     static const IfcParse::entity& Class();
     IfcConic (IfcEntityInstanceData* e);
     IfcConic (::Ifc2x3::IfcAxis2Placement* v1_Position);
-    typedef IfcTemplatedEntityList< IfcConic > list;
+    typedef aggregate_of< IfcConic > list;
 };
 /// IfcConstructionResource is an abstract generalization of the different resources used in
 /// construction projects, mainly labor, material, equipment and product resources, plus subcontracted resources and aggregations such as a crew resource.
@@ -24858,28 +23874,20 @@ public:
 /// Figure 192 — Construction resource baseline use
 class IFC_PARSE_API IfcConstructionResource : public IfcResource {
 public:
-    /// Whether the optional attribute ResourceIdentifier is defined for this IfcConstructionResource
-    bool hasResourceIdentifier() const;
-    std::string ResourceIdentifier() const;
-    void setResourceIdentifier(std::string v);
-    /// Whether the optional attribute ResourceGroup is defined for this IfcConstructionResource
-    bool hasResourceGroup() const;
-    std::string ResourceGroup() const;
-    void setResourceGroup(std::string v);
-    /// Whether the optional attribute ResourceConsumption is defined for this IfcConstructionResource
-    bool hasResourceConsumption() const;
+    boost::optional< std::string > ResourceIdentifier() const;
+    void setResourceIdentifier(boost::optional< std::string > v);
+    boost::optional< std::string > ResourceGroup() const;
+    void setResourceGroup(boost::optional< std::string > v);
     /// Indicates how the resource is consumed or occupied during its use in a process.  Production-based consumption is indicated by CONSUMED, PARTIALLYCONSUMED, or NOTCONSUMED, where QuantityProduced refers to a quantity on the IfcProduct to which the assigned IfcProcess is assigned.  Duration-based occupation is indicated by OCCUPIED, PARTIALLYOCCUPIED, or NOTOCCUPIED, where QuantityProduced refers to a quantity on the IfcProcess to which the resource is assigned.
-    ::Ifc2x3::IfcResourceConsumptionEnum::Value ResourceConsumption() const;
-    void setResourceConsumption(::Ifc2x3::IfcResourceConsumptionEnum::Value v);
-    /// Whether the optional attribute BaseQuantity is defined for this IfcConstructionResource
-    bool hasBaseQuantity() const;
+    boost::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > ResourceConsumption() const;
+    void setResourceConsumption(boost::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v);
     ::Ifc2x3::IfcMeasureWithUnit* BaseQuantity() const;
     void setBaseQuantity(::Ifc2x3::IfcMeasureWithUnit* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcConstructionResource (IfcEntityInstanceData* e);
     IfcConstructionResource (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_ResourceIdentifier, boost::optional< std::string > v7_ResourceGroup, boost::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit* v9_BaseQuantity);
-    typedef IfcTemplatedEntityList< IfcConstructionResource > list;
+    typedef aggregate_of< IfcConstructionResource > list;
 };
 /// IfcControl is the abstract generalization of all concepts that control or constrain the utilization of products, processes, or resources in general. It can be seen as a regulation, cost schedule, request or order, or other requirements applied to a product, process or resource whose requirements and provisions must be fulfilled.
 /// 
@@ -24893,12 +23901,12 @@ public:
 /// Controls have assignments from products, processes, or other objects by using the relationship object IfcRelAssignsToControl.
 class IFC_PARSE_API IfcControl : public IfcObject {
 public:
-        IfcTemplatedEntityList< IfcRelAssignsToControl >::ptr Controls() const; // INVERSE IfcRelAssignsToControl::RelatingControl
+        aggregate_of< IfcRelAssignsToControl >::ptr Controls() const; // INVERSE IfcRelAssignsToControl::RelatingControl
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcControl (IfcEntityInstanceData* e);
     IfcControl (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
-    typedef IfcTemplatedEntityList< IfcControl > list;
+    typedef aggregate_of< IfcControl > list;
 };
 /// An IfcCostItem describes a cost or financial value together with descriptive information that describes its context in a form that enables it to be used within a cost schedule. An IfcCostItem can be used to represent the cost of goods and services, the execution of works by a process, lifecycle cost and more.
 /// 
@@ -24942,7 +23950,7 @@ public:
     static const IfcParse::entity& Class();
     IfcCostItem (IfcEntityInstanceData* e);
     IfcCostItem (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
-    typedef IfcTemplatedEntityList< IfcCostItem > list;
+    typedef aggregate_of< IfcCostItem > list;
 };
 /// An IfcCostSchedule brings together instances of IfcCostItem either for the purpose of identifying purely cost information as in an estimate for constructions costs or for including cost information within another presentation form such as a work order.
 /// 
@@ -24969,23 +23977,15 @@ public:
 /// Approvals may be associated to indicate the status of acceptance or rejection using the IfcRelAssociatesApproval relationship where RelatingApproval refers to an IfcApproval and RelatedObjects contains the IfcCostSchedule.  Approvals may be split into sub-approvals using IfcApprovalRelationship to track approval status separately for each party where RelatingApproval refers to the higher-level approval and RelatedApprovals contains one or more lower-level approvals.  The hierarchy of approvals implies sequencing such that a higher-level approval is not executed until all of its lower-level approvals have been accepted.
 class IFC_PARSE_API IfcCostSchedule : public IfcControl {
 public:
-    /// Whether the optional attribute SubmittedBy is defined for this IfcCostSchedule
-    bool hasSubmittedBy() const;
     ::Ifc2x3::IfcActorSelect* SubmittedBy() const;
     void setSubmittedBy(::Ifc2x3::IfcActorSelect* v);
-    /// Whether the optional attribute PreparedBy is defined for this IfcCostSchedule
-    bool hasPreparedBy() const;
     ::Ifc2x3::IfcActorSelect* PreparedBy() const;
     void setPreparedBy(::Ifc2x3::IfcActorSelect* v);
-    /// Whether the optional attribute SubmittedOn is defined for this IfcCostSchedule
-    bool hasSubmittedOn() const;
     /// The date and time on which the cost schedule was submitted.
     /// 
     /// IFC2x4 CHANGE Type changed from IfcDateTimeSelect.
     ::Ifc2x3::IfcDateTimeSelect* SubmittedOn() const;
     void setSubmittedOn(::Ifc2x3::IfcDateTimeSelect* v);
-    /// Whether the optional attribute Status is defined for this IfcCostSchedule
-    bool hasStatus() const;
     /// The current status of a cost schedule. Examples of status values that might be used for a cost schedule status include:
     /// 
     /// PLANNED 
@@ -24993,14 +23993,10 @@ public:
     ///   AGREED 
     ///   ISSUED 
     ///   STARTED
-    std::string Status() const;
-    void setStatus(std::string v);
-    /// Whether the optional attribute TargetUsers is defined for this IfcCostSchedule
-    bool hasTargetUsers() const;
-    IfcEntityList::ptr TargetUsers() const;
-    void setTargetUsers(IfcEntityList::ptr v);
-    /// Whether the optional attribute UpdateDate is defined for this IfcCostSchedule
-    bool hasUpdateDate() const;
+    boost::optional< std::string > Status() const;
+    void setStatus(boost::optional< std::string > v);
+    boost::optional< aggregate_of_instance::ptr > TargetUsers() const;
+    void setTargetUsers(boost::optional< aggregate_of_instance::ptr > v);
     /// The date and time that this cost schedule is updated; this allows tracking the schedule history.
     /// 
     /// IFC2x4 CHANGE Type changed from IfcDateTimeSelect.
@@ -25016,8 +24012,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCostSchedule (IfcEntityInstanceData* e);
-    IfcCostSchedule (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcActorSelect* v6_SubmittedBy, ::Ifc2x3::IfcActorSelect* v7_PreparedBy, ::Ifc2x3::IfcDateTimeSelect* v8_SubmittedOn, boost::optional< std::string > v9_Status, boost::optional< IfcEntityList::ptr > v10_TargetUsers, ::Ifc2x3::IfcDateTimeSelect* v11_UpdateDate, std::string v12_ID, ::Ifc2x3::IfcCostScheduleTypeEnum::Value v13_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcCostSchedule > list;
+    IfcCostSchedule (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcActorSelect* v6_SubmittedBy, ::Ifc2x3::IfcActorSelect* v7_PreparedBy, ::Ifc2x3::IfcDateTimeSelect* v8_SubmittedOn, boost::optional< std::string > v9_Status, boost::optional< aggregate_of_instance::ptr > v10_TargetUsers, ::Ifc2x3::IfcDateTimeSelect* v11_UpdateDate, std::string v12_ID, ::Ifc2x3::IfcCostScheduleTypeEnum::Value v13_PredefinedType);
+    typedef aggregate_of< IfcCostSchedule > list;
 };
 /// Definition from IAI: The element type
 /// IfcCoveringType defines commonly shared information for
@@ -25106,8 +24102,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCoveringType (IfcEntityInstanceData* e);
-    IfcCoveringType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCoveringTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcCoveringType > list;
+    IfcCoveringType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCoveringTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcCoveringType > list;
 };
 /// IfcCrewResource represents a collection of internal resources used in construction processes. 
 /// 
@@ -25125,7 +24121,7 @@ public:
     static const IfcParse::entity& Class();
     IfcCrewResource (IfcEntityInstanceData* e);
     IfcCrewResource (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_ResourceIdentifier, boost::optional< std::string > v7_ResourceGroup, boost::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit* v9_BaseQuantity);
-    typedef IfcTemplatedEntityList< IfcCrewResource > list;
+    typedef aggregate_of< IfcCrewResource > list;
 };
 /// Definition from IAI: The element type (IfcCurtainWallType)
 /// defines a list of commonly shared property set definitions of a curtain
@@ -25156,8 +24152,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCurtainWallType (IfcEntityInstanceData* e);
-    IfcCurtainWallType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCurtainWallTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcCurtainWallType > list;
+    IfcCurtainWallType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCurtainWallTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcCurtainWallType > list;
 };
 
 class IFC_PARSE_API IfcDimensionCurveDirectedCallout : public IfcDraughtingCallout {
@@ -25165,8 +24161,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDimensionCurveDirectedCallout (IfcEntityInstanceData* e);
-    IfcDimensionCurveDirectedCallout (IfcEntityList::ptr v1_Contents);
-    typedef IfcTemplatedEntityList< IfcDimensionCurveDirectedCallout > list;
+    IfcDimensionCurveDirectedCallout (aggregate_of_instance::ptr v1_Contents);
+    typedef aggregate_of< IfcDimensionCurveDirectedCallout > list;
 };
 /// Definition from IAI: The
 /// IfcDistributionElementType defines a list of commonly
@@ -25201,8 +24197,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDistributionElementType (IfcEntityInstanceData* e);
-    IfcDistributionElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
-    typedef IfcTemplatedEntityList< IfcDistributionElementType > list;
+    IfcDistributionElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
+    typedef aggregate_of< IfcDistributionElementType > list;
 };
 /// The element type IfcDistributionFlowElementType defines a list of commonly shared property set definitions of an element and an optional set of product representations.  It is used to define an element specification (the specific product information that is common to all occurrences of that product type). 
 /// 
@@ -25274,43 +24270,33 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDistributionFlowElementType (IfcEntityInstanceData* e);
-    IfcDistributionFlowElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
-    typedef IfcTemplatedEntityList< IfcDistributionFlowElementType > list;
+    IfcDistributionFlowElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
+    typedef aggregate_of< IfcDistributionFlowElementType > list;
 };
 
 class IFC_PARSE_API IfcElectricalBaseProperties : public IfcEnergyProperties {
 public:
-    /// Whether the optional attribute ElectricCurrentType is defined for this IfcElectricalBaseProperties
-    bool hasElectricCurrentType() const;
-    ::Ifc2x3::IfcElectricCurrentEnum::Value ElectricCurrentType() const;
-    void setElectricCurrentType(::Ifc2x3::IfcElectricCurrentEnum::Value v);
+    boost::optional< ::Ifc2x3::IfcElectricCurrentEnum::Value > ElectricCurrentType() const;
+    void setElectricCurrentType(boost::optional< ::Ifc2x3::IfcElectricCurrentEnum::Value > v);
     double InputVoltage() const;
     void setInputVoltage(double v);
     double InputFrequency() const;
     void setInputFrequency(double v);
-    /// Whether the optional attribute FullLoadCurrent is defined for this IfcElectricalBaseProperties
-    bool hasFullLoadCurrent() const;
-    double FullLoadCurrent() const;
-    void setFullLoadCurrent(double v);
-    /// Whether the optional attribute MinimumCircuitCurrent is defined for this IfcElectricalBaseProperties
-    bool hasMinimumCircuitCurrent() const;
-    double MinimumCircuitCurrent() const;
-    void setMinimumCircuitCurrent(double v);
-    /// Whether the optional attribute MaximumPowerInput is defined for this IfcElectricalBaseProperties
-    bool hasMaximumPowerInput() const;
-    double MaximumPowerInput() const;
-    void setMaximumPowerInput(double v);
-    /// Whether the optional attribute RatedPowerInput is defined for this IfcElectricalBaseProperties
-    bool hasRatedPowerInput() const;
-    double RatedPowerInput() const;
-    void setRatedPowerInput(double v);
+    boost::optional< double > FullLoadCurrent() const;
+    void setFullLoadCurrent(boost::optional< double > v);
+    boost::optional< double > MinimumCircuitCurrent() const;
+    void setMinimumCircuitCurrent(boost::optional< double > v);
+    boost::optional< double > MaximumPowerInput() const;
+    void setMaximumPowerInput(boost::optional< double > v);
+    boost::optional< double > RatedPowerInput() const;
+    void setRatedPowerInput(boost::optional< double > v);
     int InputPhase() const;
     void setInputPhase(int v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcElectricalBaseProperties (IfcEntityInstanceData* e);
     IfcElectricalBaseProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< ::Ifc2x3::IfcEnergySequenceEnum::Value > v5_EnergySequence, boost::optional< std::string > v6_UserDefinedEnergySequence, boost::optional< ::Ifc2x3::IfcElectricCurrentEnum::Value > v7_ElectricCurrentType, double v8_InputVoltage, double v9_InputFrequency, boost::optional< double > v10_FullLoadCurrent, boost::optional< double > v11_MinimumCircuitCurrent, boost::optional< double > v12_MaximumPowerInput, boost::optional< double > v13_RatedPowerInput, int v14_InputPhase);
-    typedef IfcTemplatedEntityList< IfcElectricalBaseProperties > list;
+    typedef aggregate_of< IfcElectricalBaseProperties > list;
 };
 /// Definition from IAI: Generalization of all components
 /// that make up an AEC product. Those elements can be logically
@@ -25367,28 +24353,26 @@ public:
 /// IfcElement.
 class IFC_PARSE_API IfcElement : public IfcProduct {
 public:
-    /// Whether the optional attribute Tag is defined for this IfcElement
-    bool hasTag() const;
     /// The tag (or label) identifier at the particular instance of a product, e.g. the serial number, or the position number. It is the identifier at the occurrence level.
-    std::string Tag() const;
-    void setTag(std::string v);
-        IfcTemplatedEntityList< IfcRelConnectsStructuralElement >::ptr HasStructuralMember() const; // INVERSE IfcRelConnectsStructuralElement::RelatingElement
-    IfcTemplatedEntityList< IfcRelFillsElement >::ptr FillsVoids() const; // INVERSE IfcRelFillsElement::RelatedBuildingElement
-    IfcTemplatedEntityList< IfcRelConnectsElements >::ptr ConnectedTo() const; // INVERSE IfcRelConnectsElements::RelatingElement
-    IfcTemplatedEntityList< IfcRelCoversBldgElements >::ptr HasCoverings() const; // INVERSE IfcRelCoversBldgElements::RelatingBuildingElement
-    IfcTemplatedEntityList< IfcRelProjectsElement >::ptr HasProjections() const; // INVERSE IfcRelProjectsElement::RelatingElement
-    IfcTemplatedEntityList< IfcRelReferencedInSpatialStructure >::ptr ReferencedInStructures() const; // INVERSE IfcRelReferencedInSpatialStructure::RelatedElements
-    IfcTemplatedEntityList< IfcRelConnectsPortToElement >::ptr HasPorts() const; // INVERSE IfcRelConnectsPortToElement::RelatedElement
-    IfcTemplatedEntityList< IfcRelVoidsElement >::ptr HasOpenings() const; // INVERSE IfcRelVoidsElement::RelatingBuildingElement
-    IfcTemplatedEntityList< IfcRelConnectsWithRealizingElements >::ptr IsConnectionRealization() const; // INVERSE IfcRelConnectsWithRealizingElements::RealizingElements
-    IfcTemplatedEntityList< IfcRelSpaceBoundary >::ptr ProvidesBoundaries() const; // INVERSE IfcRelSpaceBoundary::RelatedBuildingElement
-    IfcTemplatedEntityList< IfcRelConnectsElements >::ptr ConnectedFrom() const; // INVERSE IfcRelConnectsElements::RelatedElement
-    IfcTemplatedEntityList< IfcRelContainedInSpatialStructure >::ptr ContainedInStructure() const; // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
+    boost::optional< std::string > Tag() const;
+    void setTag(boost::optional< std::string > v);
+        aggregate_of< IfcRelConnectsStructuralElement >::ptr HasStructuralMember() const; // INVERSE IfcRelConnectsStructuralElement::RelatingElement
+    aggregate_of< IfcRelFillsElement >::ptr FillsVoids() const; // INVERSE IfcRelFillsElement::RelatedBuildingElement
+    aggregate_of< IfcRelConnectsElements >::ptr ConnectedTo() const; // INVERSE IfcRelConnectsElements::RelatingElement
+    aggregate_of< IfcRelCoversBldgElements >::ptr HasCoverings() const; // INVERSE IfcRelCoversBldgElements::RelatingBuildingElement
+    aggregate_of< IfcRelProjectsElement >::ptr HasProjections() const; // INVERSE IfcRelProjectsElement::RelatingElement
+    aggregate_of< IfcRelReferencedInSpatialStructure >::ptr ReferencedInStructures() const; // INVERSE IfcRelReferencedInSpatialStructure::RelatedElements
+    aggregate_of< IfcRelConnectsPortToElement >::ptr HasPorts() const; // INVERSE IfcRelConnectsPortToElement::RelatedElement
+    aggregate_of< IfcRelVoidsElement >::ptr HasOpenings() const; // INVERSE IfcRelVoidsElement::RelatingBuildingElement
+    aggregate_of< IfcRelConnectsWithRealizingElements >::ptr IsConnectionRealization() const; // INVERSE IfcRelConnectsWithRealizingElements::RealizingElements
+    aggregate_of< IfcRelSpaceBoundary >::ptr ProvidesBoundaries() const; // INVERSE IfcRelSpaceBoundary::RelatedBuildingElement
+    aggregate_of< IfcRelConnectsElements >::ptr ConnectedFrom() const; // INVERSE IfcRelConnectsElements::RelatedElement
+    aggregate_of< IfcRelContainedInSpatialStructure >::ptr ContainedInStructure() const; // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcElement (IfcEntityInstanceData* e);
     IfcElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcElement > list;
+    typedef aggregate_of< IfcElement > list;
 };
 /// The IfcElementAssembly
 /// represents complex element assemblies aggregated from several
@@ -25486,11 +24470,9 @@ public:
 /// IsDecomposedBy relationship shall be utilzed.
 class IFC_PARSE_API IfcElementAssembly : public IfcElement {
 public:
-    /// Whether the optional attribute AssemblyPlace is defined for this IfcElementAssembly
-    bool hasAssemblyPlace() const;
     /// A designation of where the assembly is intended to take place defined by an Enum.
-    ::Ifc2x3::IfcAssemblyPlaceEnum::Value AssemblyPlace() const;
-    void setAssemblyPlace(::Ifc2x3::IfcAssemblyPlaceEnum::Value v);
+    boost::optional< ::Ifc2x3::IfcAssemblyPlaceEnum::Value > AssemblyPlace() const;
+    void setAssemblyPlace(boost::optional< ::Ifc2x3::IfcAssemblyPlaceEnum::Value > v);
     /// Predefined generic types for a element assembly that are specified in an enumeration. There might be property sets defined specifically for each predefined type.
     /// 
     /// IFC2x4 CHANGE  The attribute has been changed to be optional.
@@ -25500,7 +24482,7 @@ public:
     static const IfcParse::entity& Class();
     IfcElementAssembly (IfcEntityInstanceData* e);
     IfcElementAssembly (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< ::Ifc2x3::IfcAssemblyPlaceEnum::Value > v9_AssemblyPlace, ::Ifc2x3::IfcElementAssemblyTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcElementAssembly > list;
+    typedef aggregate_of< IfcElementAssembly > list;
 };
 /// An element component is a representation for minor items included in, added to or connecting to or between
 ///   elements, which usually are not of interest from the overall building structure viewpoint.
@@ -25585,7 +24567,7 @@ public:
     static const IfcParse::entity& Class();
     IfcElementComponent (IfcEntityInstanceData* e);
     IfcElementComponent (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcElementComponent > list;
+    typedef aggregate_of< IfcElementComponent > list;
 };
 /// Definition from IAI:
 ///   The element type (IfcElementComponentType) represents the supertype for element 
@@ -25601,8 +24583,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcElementComponentType (IfcEntityInstanceData* e);
-    IfcElementComponentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
-    typedef IfcTemplatedEntityList< IfcElementComponentType > list;
+    IfcElementComponentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
+    typedef aggregate_of< IfcElementComponentType > list;
 };
 /// Definition from ISO/CD 10303-42:1992: An ellipse (IfcEllipse) is a conic section defined by the lengths of the semi-major and semi-minor diameters and the position (center or mid point of the line joining the foci) and orientation of the curve. Interpretation of the data shall be as follows:
 /// 
@@ -25643,7 +24625,7 @@ public:
     static const IfcParse::entity& Class();
     IfcEllipse (IfcEntityInstanceData* e);
     IfcEllipse (::Ifc2x3::IfcAxis2Placement* v1_Position, double v2_SemiAxis1, double v3_SemiAxis2);
-    typedef IfcTemplatedEntityList< IfcEllipse > list;
+    typedef aggregate_of< IfcEllipse > list;
 };
 /// The element type IfcEnergyConversionType defines a list of commonly shared property
 ///   set definitions of an energy conversion device and an optional set of product representations.
@@ -25673,8 +24655,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcEnergyConversionDeviceType (IfcEntityInstanceData* e);
-    IfcEnergyConversionDeviceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
-    typedef IfcTemplatedEntityList< IfcEnergyConversionDeviceType > list;
+    IfcEnergyConversionDeviceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
+    typedef aggregate_of< IfcEnergyConversionDeviceType > list;
 };
 
 class IFC_PARSE_API IfcEquipmentElement : public IfcElement {
@@ -25683,7 +24665,7 @@ public:
     static const IfcParse::entity& Class();
     IfcEquipmentElement (IfcEntityInstanceData* e);
     IfcEquipmentElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcEquipmentElement > list;
+    typedef aggregate_of< IfcEquipmentElement > list;
 };
 
 class IFC_PARSE_API IfcEquipmentStandard : public IfcControl {
@@ -25692,7 +24674,7 @@ public:
     static const IfcParse::entity& Class();
     IfcEquipmentStandard (IfcEntityInstanceData* e);
     IfcEquipmentStandard (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
-    typedef IfcTemplatedEntityList< IfcEquipmentStandard > list;
+    typedef aggregate_of< IfcEquipmentStandard > list;
 };
 /// The energy conversion device type IfcEvaporativeCoolerType defines commonly shared information for occurrences of evaporative coolers.  The set of shared information may include: 
 /// 
@@ -25728,8 +24710,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcEvaporativeCoolerType (IfcEntityInstanceData* e);
-    IfcEvaporativeCoolerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcEvaporativeCoolerTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcEvaporativeCoolerType > list;
+    IfcEvaporativeCoolerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcEvaporativeCoolerTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcEvaporativeCoolerType > list;
 };
 /// The energy conversion device type IfcEvaporatorType defines commonly shared information for occurrences of evaporators.  The set of shared information may include: 
 /// 
@@ -25765,8 +24747,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcEvaporatorType (IfcEntityInstanceData* e);
-    IfcEvaporatorType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcEvaporatorTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcEvaporatorType > list;
+    IfcEvaporatorType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcEvaporatorTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcEvaporatorType > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A faceted B-rep
 /// is a simple form of boundary representation model in which all
@@ -25798,7 +24780,7 @@ public:
     static const IfcParse::entity& Class();
     IfcFacetedBrep (IfcEntityInstanceData* e);
     IfcFacetedBrep (::Ifc2x3::IfcClosedShell* v1_Outer);
-    typedef IfcTemplatedEntityList< IfcFacetedBrep > list;
+    typedef aggregate_of< IfcFacetedBrep > list;
 };
 /// The IfcFacetedBrepWithVoids
 /// is a specialization of a faceted B-rep which contains one or more
@@ -25827,13 +24809,13 @@ public:
 class IFC_PARSE_API IfcFacetedBrepWithVoids : public IfcManifoldSolidBrep {
 public:
     /// Set of closed shells defining voids within the solid.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcClosedShell >::ptr Voids() const;
-    void setVoids(IfcTemplatedEntityList< ::Ifc2x3::IfcClosedShell >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcClosedShell >::ptr Voids() const;
+    void setVoids(aggregate_of< ::Ifc2x3::IfcClosedShell >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFacetedBrepWithVoids (IfcEntityInstanceData* e);
-    IfcFacetedBrepWithVoids (::Ifc2x3::IfcClosedShell* v1_Outer, IfcTemplatedEntityList< ::Ifc2x3::IfcClosedShell >::ptr v2_Voids);
-    typedef IfcTemplatedEntityList< IfcFacetedBrepWithVoids > list;
+    IfcFacetedBrepWithVoids (::Ifc2x3::IfcClosedShell* v1_Outer, aggregate_of< ::Ifc2x3::IfcClosedShell >::ptr v2_Voids);
+    typedef aggregate_of< IfcFacetedBrepWithVoids > list;
 };
 /// Definition from IAI:
 ///   Representations of fixing parts which are used as fasteners to connect or join elements with 
@@ -25849,7 +24831,7 @@ public:
     static const IfcParse::entity& Class();
     IfcFastener (IfcEntityInstanceData* e);
     IfcFastener (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcFastener > list;
+    typedef aggregate_of< IfcFastener > list;
 };
 /// Definition from IAI:
 ///   The element type (IfcFastenerType) defines a list of commonly shared
@@ -25879,8 +24861,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFastenerType (IfcEntityInstanceData* e);
-    IfcFastenerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
-    typedef IfcTemplatedEntityList< IfcFastenerType > list;
+    IfcFastenerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
+    typedef aggregate_of< IfcFastenerType > list;
 };
 /// Definition from IAI: Generalization of all existence
 /// dependent elements which modify the shape and appearance of the
@@ -25982,7 +24964,7 @@ public:
     static const IfcParse::entity& Class();
     IfcFeatureElement (IfcEntityInstanceData* e);
     IfcFeatureElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcFeatureElement > list;
+    typedef aggregate_of< IfcFeatureElement > list;
 };
 /// Definition from IAI: A specialization of the general
 ///   feature element, that represents an existence dependent
@@ -26041,12 +25023,12 @@ public:
 ///   level of its subtypes.
 class IFC_PARSE_API IfcFeatureElementAddition : public IfcFeatureElement {
 public:
-        IfcTemplatedEntityList< IfcRelProjectsElement >::ptr ProjectsElements() const; // INVERSE IfcRelProjectsElement::RelatedFeatureElement
+        aggregate_of< IfcRelProjectsElement >::ptr ProjectsElements() const; // INVERSE IfcRelProjectsElement::RelatedFeatureElement
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFeatureElementAddition (IfcEntityInstanceData* e);
     IfcFeatureElementAddition (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcFeatureElementAddition > list;
+    typedef aggregate_of< IfcFeatureElementAddition > list;
 };
 /// The IfcFeatureElementSubtraction is specialization of
 /// the general feature element, that represents an existence dependent
@@ -26100,12 +25082,12 @@ public:
 /// subtypes.
 class IFC_PARSE_API IfcFeatureElementSubtraction : public IfcFeatureElement {
 public:
-        IfcTemplatedEntityList< IfcRelVoidsElement >::ptr VoidsElements() const; // INVERSE IfcRelVoidsElement::RelatedOpeningElement
+        aggregate_of< IfcRelVoidsElement >::ptr VoidsElements() const; // INVERSE IfcRelVoidsElement::RelatedOpeningElement
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFeatureElementSubtraction (IfcEntityInstanceData* e);
     IfcFeatureElementSubtraction (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcFeatureElementSubtraction > list;
+    typedef aggregate_of< IfcFeatureElementSubtraction > list;
 };
 /// The element type IfcFlowControllerType defines a list of commonly shared property
 ///   set definitions of a flow controller and an optional set of product representations.
@@ -26134,8 +25116,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFlowControllerType (IfcEntityInstanceData* e);
-    IfcFlowControllerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
-    typedef IfcTemplatedEntityList< IfcFlowControllerType > list;
+    IfcFlowControllerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
+    typedef aggregate_of< IfcFlowControllerType > list;
 };
 /// The element type IfcFlowFittingType defines a list of commonly shared property
 ///   set definitions of a flow fitting and an optional set of product representations.
@@ -26165,8 +25147,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFlowFittingType (IfcEntityInstanceData* e);
-    IfcFlowFittingType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
-    typedef IfcTemplatedEntityList< IfcFlowFittingType > list;
+    IfcFlowFittingType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
+    typedef aggregate_of< IfcFlowFittingType > list;
 };
 /// The flow controller type IfcFlowMeterType defines commonly shared information for occurrences of flow meters.  The set of shared information may include: 
 /// 
@@ -26208,8 +25190,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFlowMeterType (IfcEntityInstanceData* e);
-    IfcFlowMeterType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcFlowMeterTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcFlowMeterType > list;
+    IfcFlowMeterType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcFlowMeterTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcFlowMeterType > list;
 };
 /// The element type IfcFlowMovingDeviceType defines a list of commonly shared property
 ///   set definitions of a flow moving device and an optional set of product representations.
@@ -26238,8 +25220,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFlowMovingDeviceType (IfcEntityInstanceData* e);
-    IfcFlowMovingDeviceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
-    typedef IfcTemplatedEntityList< IfcFlowMovingDeviceType > list;
+    IfcFlowMovingDeviceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
+    typedef aggregate_of< IfcFlowMovingDeviceType > list;
 };
 /// The element type IfcFlowSegmentType defines a list of commonly shared property
 ///   set definitions of a flow segment and an optional set of product representations.
@@ -26277,8 +25259,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFlowSegmentType (IfcEntityInstanceData* e);
-    IfcFlowSegmentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
-    typedef IfcTemplatedEntityList< IfcFlowSegmentType > list;
+    IfcFlowSegmentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
+    typedef aggregate_of< IfcFlowSegmentType > list;
 };
 /// The element type IfcFlowStorageDeviceType defines a list of commonly shared property set definitions of a flow storage device and an optional set of product representations.  It is used to define a flow storage device specification (the specific product information that is common to all occurrences of that product type). 
 /// 
@@ -26292,8 +25274,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFlowStorageDeviceType (IfcEntityInstanceData* e);
-    IfcFlowStorageDeviceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
-    typedef IfcTemplatedEntityList< IfcFlowStorageDeviceType > list;
+    IfcFlowStorageDeviceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
+    typedef aggregate_of< IfcFlowStorageDeviceType > list;
 };
 /// The element type IfcFlowTerminalType defines a list of commonly shared property set definitions of a flow terminal and an optional set of product representations.  It is used to define a flow terminal specification (the specific product information that is common to all occurrences of that product type). 
 /// 
@@ -26307,8 +25289,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFlowTerminalType (IfcEntityInstanceData* e);
-    IfcFlowTerminalType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
-    typedef IfcTemplatedEntityList< IfcFlowTerminalType > list;
+    IfcFlowTerminalType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
+    typedef aggregate_of< IfcFlowTerminalType > list;
 };
 /// The element type IfcFlowTreatmentDeviceType defines a list of commonly shared property set definitions of a flow treatment device and an optional set of product representations. It is used to define a flow treatment device specification (the specific product information that is common to all occurrences of that product type). 
 /// 
@@ -26323,8 +25305,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFlowTreatmentDeviceType (IfcEntityInstanceData* e);
-    IfcFlowTreatmentDeviceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
-    typedef IfcTemplatedEntityList< IfcFlowTreatmentDeviceType > list;
+    IfcFlowTreatmentDeviceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
+    typedef aggregate_of< IfcFlowTreatmentDeviceType > list;
 };
 /// Definition from IAI: Generalization of all furniture
 /// related objects. Furnishing objects are characterized as
@@ -26436,7 +25418,7 @@ public:
     static const IfcParse::entity& Class();
     IfcFurnishingElement (IfcEntityInstanceData* e);
     IfcFurnishingElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcFurnishingElement > list;
+    typedef aggregate_of< IfcFurnishingElement > list;
 };
 
 class IFC_PARSE_API IfcFurnitureStandard : public IfcControl {
@@ -26445,7 +25427,7 @@ public:
     static const IfcParse::entity& Class();
     IfcFurnitureStandard (IfcEntityInstanceData* e);
     IfcFurnitureStandard (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
-    typedef IfcTemplatedEntityList< IfcFurnitureStandard > list;
+    typedef aggregate_of< IfcFurnitureStandard > list;
 };
 
 class IFC_PARSE_API IfcGasTerminalType : public IfcFlowTerminalType {
@@ -26455,8 +25437,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcGasTerminalType (IfcEntityInstanceData* e);
-    IfcGasTerminalType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcGasTerminalTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcGasTerminalType > list;
+    IfcGasTerminalType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcGasTerminalTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcGasTerminalType > list;
 };
 /// IfcGrid ia a planar design
 /// grid defined in 3D space used as an aid in locating structural and
@@ -26557,22 +25539,20 @@ public:
 class IFC_PARSE_API IfcGrid : public IfcProduct {
 public:
     /// List of grid axes defining the first row of grid lines.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr UAxes() const;
-    void setUAxes(IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcGridAxis >::ptr UAxes() const;
+    void setUAxes(aggregate_of< ::Ifc2x3::IfcGridAxis >::ptr v);
     /// List of grid axes defining the second row of grid lines.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr VAxes() const;
-    void setVAxes(IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr v);
-    /// Whether the optional attribute WAxes is defined for this IfcGrid
-    bool hasWAxes() const;
+    aggregate_of< ::Ifc2x3::IfcGridAxis >::ptr VAxes() const;
+    void setVAxes(aggregate_of< ::Ifc2x3::IfcGridAxis >::ptr v);
     /// List of grid axes defining the third row of grid lines. It may be given in the case of a triangular grid.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr WAxes() const;
-    void setWAxes(IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr v);
-        IfcTemplatedEntityList< IfcRelContainedInSpatialStructure >::ptr ContainedInStructure() const; // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
+    boost::optional< aggregate_of< ::Ifc2x3::IfcGridAxis >::ptr > WAxes() const;
+    void setWAxes(boost::optional< aggregate_of< ::Ifc2x3::IfcGridAxis >::ptr > v);
+        aggregate_of< IfcRelContainedInSpatialStructure >::ptr ContainedInStructure() const; // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcGrid (IfcEntityInstanceData* e);
-    IfcGrid (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr v8_UAxes, IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr v9_VAxes, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr > v10_WAxes);
-    typedef IfcTemplatedEntityList< IfcGrid > list;
+    IfcGrid (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, aggregate_of< ::Ifc2x3::IfcGridAxis >::ptr v8_UAxes, aggregate_of< ::Ifc2x3::IfcGridAxis >::ptr v9_VAxes, boost::optional< aggregate_of< ::Ifc2x3::IfcGridAxis >::ptr > v10_WAxes);
+    typedef aggregate_of< IfcGrid > list;
 };
 /// IfcGroup is an generalization of any arbitrary group. A group is a logical collection of objects. It does not have its own position, nor can it hold its own shape representation. Therefore a group is an aggregation under some non-geometrical / topological grouping aspects.
 /// 
@@ -26606,12 +25586,12 @@ public:
 /// Controls: affecting the group using IfcRelAssignsToControl
 class IFC_PARSE_API IfcGroup : public IfcObject {
 public:
-        IfcTemplatedEntityList< IfcRelAssignsToGroup >::ptr IsGroupedBy() const; // INVERSE IfcRelAssignsToGroup::RelatingGroup
+        aggregate_of< IfcRelAssignsToGroup >::ptr IsGroupedBy() const; // INVERSE IfcRelAssignsToGroup::RelatingGroup
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcGroup (IfcEntityInstanceData* e);
     IfcGroup (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
-    typedef IfcTemplatedEntityList< IfcGroup > list;
+    typedef aggregate_of< IfcGroup > list;
 };
 /// The energy conversion device type IfcHeatExchangerType defines commonly shared information for occurrences of heat exchangers.  The set of shared information may include: 
 /// 
@@ -26650,8 +25630,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcHeatExchangerType (IfcEntityInstanceData* e);
-    IfcHeatExchangerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcHeatExchangerTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcHeatExchangerType > list;
+    IfcHeatExchangerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcHeatExchangerTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcHeatExchangerType > list;
 };
 /// The energy conversion device type IfcHumidifierType defines commonly shared information for occurrences of humidifiers.  The set of shared information may include: 
 /// 
@@ -26687,8 +25667,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcHumidifierType (IfcEntityInstanceData* e);
-    IfcHumidifierType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcHumidifierTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcHumidifierType > list;
+    IfcHumidifierType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcHumidifierTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcHumidifierType > list;
 };
 /// An inventory is a list of items within an enterprise. 
 /// 
@@ -26709,28 +25689,24 @@ public:
     ::Ifc2x3::IfcActorSelect* Jurisdiction() const;
     void setJurisdiction(::Ifc2x3::IfcActorSelect* v);
     /// Persons who are responsible for the inventory.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcPerson >::ptr ResponsiblePersons() const;
-    void setResponsiblePersons(IfcTemplatedEntityList< ::Ifc2x3::IfcPerson >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcPerson >::ptr ResponsiblePersons() const;
+    void setResponsiblePersons(aggregate_of< ::Ifc2x3::IfcPerson >::ptr v);
     /// The date on which the last update of the inventory was carried out.
     /// 
     /// IFC2x4 CHANGE Type changed from IfcDateTimeSelect.
     ::Ifc2x3::IfcCalendarDate* LastUpdateDate() const;
     void setLastUpdateDate(::Ifc2x3::IfcCalendarDate* v);
-    /// Whether the optional attribute CurrentValue is defined for this IfcInventory
-    bool hasCurrentValue() const;
     /// An estimate of the current cost value of the inventory.
     ::Ifc2x3::IfcCostValue* CurrentValue() const;
     void setCurrentValue(::Ifc2x3::IfcCostValue* v);
-    /// Whether the optional attribute OriginalValue is defined for this IfcInventory
-    bool hasOriginalValue() const;
     /// An estimate of the original cost value of the inventory.
     ::Ifc2x3::IfcCostValue* OriginalValue() const;
     void setOriginalValue(::Ifc2x3::IfcCostValue* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcInventory (IfcEntityInstanceData* e);
-    IfcInventory (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcInventoryTypeEnum::Value v6_InventoryType, ::Ifc2x3::IfcActorSelect* v7_Jurisdiction, IfcTemplatedEntityList< ::Ifc2x3::IfcPerson >::ptr v8_ResponsiblePersons, ::Ifc2x3::IfcCalendarDate* v9_LastUpdateDate, ::Ifc2x3::IfcCostValue* v10_CurrentValue, ::Ifc2x3::IfcCostValue* v11_OriginalValue);
-    typedef IfcTemplatedEntityList< IfcInventory > list;
+    IfcInventory (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcInventoryTypeEnum::Value v6_InventoryType, ::Ifc2x3::IfcActorSelect* v7_Jurisdiction, aggregate_of< ::Ifc2x3::IfcPerson >::ptr v8_ResponsiblePersons, ::Ifc2x3::IfcCalendarDate* v9_LastUpdateDate, ::Ifc2x3::IfcCostValue* v10_CurrentValue, ::Ifc2x3::IfcCostValue* v11_OriginalValue);
+    typedef aggregate_of< IfcInventory > list;
 };
 /// The flow fitting type IfcJunctionBoxType defines commonly shared information for occurrences of junction boxs.  The set of shared information may include: 
 /// 
@@ -26767,8 +25743,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcJunctionBoxType (IfcEntityInstanceData* e);
-    IfcJunctionBoxType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcJunctionBoxTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcJunctionBoxType > list;
+    IfcJunctionBoxType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcJunctionBoxTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcJunctionBoxType > list;
 };
 /// An IfcLaborResource is used in construction with particular skills or crafts required to perform certain types of construction or management related work.  
 /// 
@@ -26796,15 +25772,13 @@ public:
 /// Figure 194 — Labor resource assignment use
 class IFC_PARSE_API IfcLaborResource : public IfcConstructionResource {
 public:
-    /// Whether the optional attribute SkillSet is defined for this IfcLaborResource
-    bool hasSkillSet() const;
-    std::string SkillSet() const;
-    void setSkillSet(std::string v);
+    boost::optional< std::string > SkillSet() const;
+    void setSkillSet(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcLaborResource (IfcEntityInstanceData* e);
     IfcLaborResource (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_ResourceIdentifier, boost::optional< std::string > v7_ResourceGroup, boost::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit* v9_BaseQuantity, boost::optional< std::string > v10_SkillSet);
-    typedef IfcTemplatedEntityList< IfcLaborResource > list;
+    typedef aggregate_of< IfcLaborResource > list;
 };
 /// The flow terminal type IfcLampType defines commonly shared information for occurrences of lamps.  The set of shared information may include: 
 /// 
@@ -26843,8 +25817,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcLampType (IfcEntityInstanceData* e);
-    IfcLampType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcLampTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcLampType > list;
+    IfcLampType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcLampTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcLampType > list;
 };
 /// The flow terminal type IfcLightFixtureType defines commonly shared information for occurrences of light fixtures.  The set of shared information may include: 
 /// 
@@ -26885,8 +25859,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcLightFixtureType (IfcEntityInstanceData* e);
-    IfcLightFixtureType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcLightFixtureTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcLightFixtureType > list;
+    IfcLightFixtureType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcLightFixtureTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcLightFixtureType > list;
 };
 
 class IFC_PARSE_API IfcLinearDimension : public IfcDimensionCurveDirectedCallout {
@@ -26894,8 +25868,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcLinearDimension (IfcEntityInstanceData* e);
-    IfcLinearDimension (IfcEntityList::ptr v1_Contents);
-    typedef IfcTemplatedEntityList< IfcLinearDimension > list;
+    IfcLinearDimension (aggregate_of_instance::ptr v1_Contents);
+    typedef aggregate_of< IfcLinearDimension > list;
 };
 /// Definition from IAI: Fasteners connecting building elements mechanically.  A single instance of this class may represent one or many of actual mechanical fasteners, for example an array of bolts or a row of nails.
 /// 
@@ -26928,19 +25902,15 @@ public:
 /// named 'Spacing' which expresses the center-to-center distances of fasteners.
 class IFC_PARSE_API IfcMechanicalFastener : public IfcFastener {
 public:
-    /// Whether the optional attribute NominalDiameter is defined for this IfcMechanicalFastener
-    bool hasNominalDiameter() const;
-    double NominalDiameter() const;
-    void setNominalDiameter(double v);
-    /// Whether the optional attribute NominalLength is defined for this IfcMechanicalFastener
-    bool hasNominalLength() const;
-    double NominalLength() const;
-    void setNominalLength(double v);
+    boost::optional< double > NominalDiameter() const;
+    void setNominalDiameter(boost::optional< double > v);
+    boost::optional< double > NominalLength() const;
+    void setNominalLength(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcMechanicalFastener (IfcEntityInstanceData* e);
     IfcMechanicalFastener (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< double > v9_NominalDiameter, boost::optional< double > v10_NominalLength);
-    typedef IfcTemplatedEntityList< IfcMechanicalFastener > list;
+    typedef aggregate_of< IfcMechanicalFastener > list;
 };
 /// Definition from IAI: The element type (IfcMechanicalFastenerType) defines a list of commonly shared property set definitions of a fastener and an optional set of product representations. It is used to define mechanical fasteners mainly within structural and building services domains (i.e. the specific type information common to all occurrences of that type). 
 /// 
@@ -26982,8 +25952,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcMechanicalFastenerType (IfcEntityInstanceData* e);
-    IfcMechanicalFastenerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
-    typedef IfcTemplatedEntityList< IfcMechanicalFastenerType > list;
+    IfcMechanicalFastenerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
+    typedef aggregate_of< IfcMechanicalFastenerType > list;
 };
 /// Definition from IAI: The element type
 /// IfcMemberType defines commonly shared information for
@@ -27094,8 +26064,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcMemberType (IfcEntityInstanceData* e);
-    IfcMemberType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcMemberTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcMemberType > list;
+    IfcMemberType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcMemberTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcMemberType > list;
 };
 /// The energy conversion device type IfcMotorConnectionType defines commonly shared information for occurrences of motor connections.  The set of shared information may include: 
 /// 
@@ -27132,8 +26102,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcMotorConnectionType (IfcEntityInstanceData* e);
-    IfcMotorConnectionType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcMotorConnectionTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcMotorConnectionType > list;
+    IfcMotorConnectionType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcMotorConnectionTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcMotorConnectionType > list;
 };
 
 class IFC_PARSE_API IfcMove : public IfcTask {
@@ -27142,15 +26112,13 @@ public:
     void setMoveFrom(::Ifc2x3::IfcSpatialStructureElement* v);
     ::Ifc2x3::IfcSpatialStructureElement* MoveTo() const;
     void setMoveTo(::Ifc2x3::IfcSpatialStructureElement* v);
-    /// Whether the optional attribute PunchList is defined for this IfcMove
-    bool hasPunchList() const;
-    std::vector< std::string > /*[1:?]*/ PunchList() const;
-    void setPunchList(std::vector< std::string > /*[1:?]*/ v);
+    boost::optional< std::vector< std::string > /*[1:?]*/ > PunchList() const;
+    void setPunchList(boost::optional< std::vector< std::string > /*[1:?]*/ > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcMove (IfcEntityInstanceData* e);
     IfcMove (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_TaskId, boost::optional< std::string > v7_Status, boost::optional< std::string > v8_WorkMethod, bool v9_IsMilestone, boost::optional< int > v10_Priority, ::Ifc2x3::IfcSpatialStructureElement* v11_MoveFrom, ::Ifc2x3::IfcSpatialStructureElement* v12_MoveTo, boost::optional< std::vector< std::string > /*[1:?]*/ > v13_PunchList);
-    typedef IfcTemplatedEntityList< IfcMove > list;
+    typedef aggregate_of< IfcMove > list;
 };
 /// An occupant is a type of actor that defines the form of occupancy of a property. 
 /// 
@@ -27170,7 +26138,7 @@ public:
     static const IfcParse::entity& Class();
     IfcOccupant (IfcEntityInstanceData* e);
     IfcOccupant (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcActorSelect* v6_TheActor, ::Ifc2x3::IfcOccupantTypeEnum::Value v7_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcOccupant > list;
+    typedef aggregate_of< IfcOccupant > list;
 };
 /// The opening element stands for
 /// opening, recess or chase, all reflecting voids. It represents a
@@ -27376,12 +26344,12 @@ public:
 /// Figure 36 — Opening with multiple extrusions
 class IFC_PARSE_API IfcOpeningElement : public IfcFeatureElementSubtraction {
 public:
-        IfcTemplatedEntityList< IfcRelFillsElement >::ptr HasFillings() const; // INVERSE IfcRelFillsElement::RelatingOpeningElement
+        aggregate_of< IfcRelFillsElement >::ptr HasFillings() const; // INVERSE IfcRelFillsElement::RelatingOpeningElement
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcOpeningElement (IfcEntityInstanceData* e);
     IfcOpeningElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcOpeningElement > list;
+    typedef aggregate_of< IfcOpeningElement > list;
 };
 
 class IFC_PARSE_API IfcOrderAction : public IfcTask {
@@ -27392,7 +26360,7 @@ public:
     static const IfcParse::entity& Class();
     IfcOrderAction (IfcEntityInstanceData* e);
     IfcOrderAction (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_TaskId, boost::optional< std::string > v7_Status, boost::optional< std::string > v8_WorkMethod, bool v9_IsMilestone, boost::optional< int > v10_Priority, std::string v11_ActionID);
-    typedef IfcTemplatedEntityList< IfcOrderAction > list;
+    typedef aggregate_of< IfcOrderAction > list;
 };
 /// The flow terminal type IfcOutletType defines commonly shared information for occurrences of outlets.  The set of shared information may include: 
 /// 
@@ -27431,8 +26399,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcOutletType (IfcEntityInstanceData* e);
-    IfcOutletType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcOutletTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcOutletType > list;
+    IfcOutletType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcOutletTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcOutletType > list;
 };
 /// IfcPerformanceHistory is used to document the actual performance of an occurrence instance over time. In practice, performance-related data are generally not easy to obtain as they can originate from different sources (predicted, simulated, or measured) and occur during different stages of the building life-cycle. Such time-related data cover a large spectrum, including meteorological data, schedules, operational status measurements, trend reports, etc.
 /// 
@@ -27448,7 +26416,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPerformanceHistory (IfcEntityInstanceData* e);
     IfcPerformanceHistory (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_LifeCyclePhase);
-    typedef IfcTemplatedEntityList< IfcPerformanceHistory > list;
+    typedef aggregate_of< IfcPerformanceHistory > list;
 };
 /// A permit is a permission to perform work in places and on artifacts where regulatory, security or other access restrictions apply. 
 /// 
@@ -27495,7 +26463,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPermit (IfcEntityInstanceData* e);
     IfcPermit (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_PermitID);
-    typedef IfcTemplatedEntityList< IfcPermit > list;
+    typedef aggregate_of< IfcPermit > list;
 };
 /// The flow fitting type IfcPipeFittingType defines commonly shared information for occurrences of pipe fittings.  The set of shared information may include: 
 /// 
@@ -27534,8 +26502,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPipeFittingType (IfcEntityInstanceData* e);
-    IfcPipeFittingType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcPipeFittingTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcPipeFittingType > list;
+    IfcPipeFittingType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcPipeFittingTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcPipeFittingType > list;
 };
 /// The flow segment type IfcPipeSegmentType defines commonly shared information for occurrences of pipe segments.  The set of shared information may include: 
 /// 
@@ -27578,8 +26546,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPipeSegmentType (IfcEntityInstanceData* e);
-    IfcPipeSegmentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcPipeSegmentTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcPipeSegmentType > list;
+    IfcPipeSegmentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcPipeSegmentTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcPipeSegmentType > list;
 };
 /// The element type IfcPlateType defines commonly shared
 /// information for occurrences of plates. The set of shared
@@ -27666,8 +26634,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPlateType (IfcEntityInstanceData* e);
-    IfcPlateType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcPlateTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcPlateType > list;
+    IfcPlateType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcPlateTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcPlateType > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A polyline
 ///   is a bounded curve of n - 1 linear segments, defined by a
@@ -27686,13 +26654,13 @@ public:
 class IFC_PARSE_API IfcPolyline : public IfcBoundedCurve {
 public:
     /// The points defining the polyline.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr Points() const;
-    void setPoints(IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcCartesianPoint >::ptr Points() const;
+    void setPoints(aggregate_of< ::Ifc2x3::IfcCartesianPoint >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPolyline (IfcEntityInstanceData* e);
-    IfcPolyline (IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr v1_Points);
-    typedef IfcTemplatedEntityList< IfcPolyline > list;
+    IfcPolyline (aggregate_of< ::Ifc2x3::IfcCartesianPoint >::ptr v1_Points);
+    typedef aggregate_of< IfcPolyline > list;
 };
 /// Definition from IAI: An IfcPort provides the
 ///   means for an element to connect to other elements.
@@ -27749,14 +26717,14 @@ public:
 ///   its subtypes.
 class IFC_PARSE_API IfcPort : public IfcProduct {
 public:
-        IfcTemplatedEntityList< IfcRelConnectsPortToElement >::ptr ContainedIn() const; // INVERSE IfcRelConnectsPortToElement::RelatingPort
-    IfcTemplatedEntityList< IfcRelConnectsPorts >::ptr ConnectedFrom() const; // INVERSE IfcRelConnectsPorts::RelatedPort
-    IfcTemplatedEntityList< IfcRelConnectsPorts >::ptr ConnectedTo() const; // INVERSE IfcRelConnectsPorts::RelatingPort
+        aggregate_of< IfcRelConnectsPortToElement >::ptr ContainedIn() const; // INVERSE IfcRelConnectsPortToElement::RelatingPort
+    aggregate_of< IfcRelConnectsPorts >::ptr ConnectedFrom() const; // INVERSE IfcRelConnectsPorts::RelatedPort
+    aggregate_of< IfcRelConnectsPorts >::ptr ConnectedTo() const; // INVERSE IfcRelConnectsPorts::RelatingPort
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPort (IfcEntityInstanceData* e);
     IfcPort (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation);
-    typedef IfcTemplatedEntityList< IfcPort > list;
+    typedef aggregate_of< IfcPort > list;
 };
 /// An IfcProcedure is a
 ///   logical set of actions to be taken in response to an event
@@ -27868,15 +26836,13 @@ public:
     void setProcedureID(std::string v);
     ::Ifc2x3::IfcProcedureTypeEnum::Value ProcedureType() const;
     void setProcedureType(::Ifc2x3::IfcProcedureTypeEnum::Value v);
-    /// Whether the optional attribute UserDefinedProcedureType is defined for this IfcProcedure
-    bool hasUserDefinedProcedureType() const;
-    std::string UserDefinedProcedureType() const;
-    void setUserDefinedProcedureType(std::string v);
+    boost::optional< std::string > UserDefinedProcedureType() const;
+    void setUserDefinedProcedureType(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcProcedure (IfcEntityInstanceData* e);
     IfcProcedure (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_ProcedureID, ::Ifc2x3::IfcProcedureTypeEnum::Value v7_ProcedureType, boost::optional< std::string > v8_UserDefinedProcedureType);
-    typedef IfcTemplatedEntityList< IfcProcedure > list;
+    typedef aggregate_of< IfcProcedure > list;
 };
 /// A project order is a directive to purchase products and/or perform work, such as for construction or facilities management. 
 /// 
@@ -27930,8 +26896,6 @@ public:
     /// IFC2x4 CHANGE  The attribute has been made optional.
     ::Ifc2x3::IfcProjectOrderTypeEnum::Value PredefinedType() const;
     void setPredefinedType(::Ifc2x3::IfcProjectOrderTypeEnum::Value v);
-    /// Whether the optional attribute Status is defined for this IfcProjectOrder
-    bool hasStatus() const;
     /// The current status of a project order.Examples of status values that might be used for a project order status include:
     /// 
     /// PLANNED
@@ -27941,26 +26905,26 @@ public:
     /// STARTED
     /// DELAYED
     /// DONE
-    std::string Status() const;
-    void setStatus(std::string v);
+    boost::optional< std::string > Status() const;
+    void setStatus(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcProjectOrder (IfcEntityInstanceData* e);
     IfcProjectOrder (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_ID, ::Ifc2x3::IfcProjectOrderTypeEnum::Value v7_PredefinedType, boost::optional< std::string > v8_Status);
-    typedef IfcTemplatedEntityList< IfcProjectOrder > list;
+    typedef aggregate_of< IfcProjectOrder > list;
 };
 
 class IFC_PARSE_API IfcProjectOrderRecord : public IfcControl {
 public:
-    IfcTemplatedEntityList< ::Ifc2x3::IfcRelAssignsToProjectOrder >::ptr Records() const;
-    void setRecords(IfcTemplatedEntityList< ::Ifc2x3::IfcRelAssignsToProjectOrder >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcRelAssignsToProjectOrder >::ptr Records() const;
+    void setRecords(aggregate_of< ::Ifc2x3::IfcRelAssignsToProjectOrder >::ptr v);
     ::Ifc2x3::IfcProjectOrderRecordTypeEnum::Value PredefinedType() const;
     void setPredefinedType(::Ifc2x3::IfcProjectOrderRecordTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcProjectOrderRecord (IfcEntityInstanceData* e);
-    IfcProjectOrderRecord (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcTemplatedEntityList< ::Ifc2x3::IfcRelAssignsToProjectOrder >::ptr v6_Records, ::Ifc2x3::IfcProjectOrderRecordTypeEnum::Value v7_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcProjectOrderRecord > list;
+    IfcProjectOrderRecord (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, aggregate_of< ::Ifc2x3::IfcRelAssignsToProjectOrder >::ptr v6_Records, ::Ifc2x3::IfcProjectOrderRecordTypeEnum::Value v7_PredefinedType);
+    typedef aggregate_of< IfcProjectOrderRecord > list;
 };
 /// The projection element is a
 /// specialization of the general feature element to represent
@@ -28075,7 +27039,7 @@ public:
     static const IfcParse::entity& Class();
     IfcProjectionElement (IfcEntityInstanceData* e);
     IfcProjectionElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcProjectionElement > list;
+    typedef aggregate_of< IfcProjectionElement > list;
 };
 /// The flow controller type IfcProtectiveDeviceType defines commonly shared information for occurrences of protective devices.  The set of shared information may include: 
 /// 
@@ -28120,8 +27084,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcProtectiveDeviceType (IfcEntityInstanceData* e);
-    IfcProtectiveDeviceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcProtectiveDeviceTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcProtectiveDeviceType > list;
+    IfcProtectiveDeviceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcProtectiveDeviceTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcProtectiveDeviceType > list;
 };
 /// The flow moving device type IfcPumpType defines commonly shared information for occurrences of pumps.  The set of shared information may include: 
 /// 
@@ -28159,8 +27123,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPumpType (IfcEntityInstanceData* e);
-    IfcPumpType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcPumpTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcPumpType > list;
+    IfcPumpType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcPumpTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcPumpType > list;
 };
 
 class IFC_PARSE_API IfcRadiusDimension : public IfcDimensionCurveDirectedCallout {
@@ -28168,8 +27132,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRadiusDimension (IfcEntityInstanceData* e);
-    IfcRadiusDimension (IfcEntityList::ptr v1_Contents);
-    typedef IfcTemplatedEntityList< IfcRadiusDimension > list;
+    IfcRadiusDimension (aggregate_of_instance::ptr v1_Contents);
+    typedef aggregate_of< IfcRadiusDimension > list;
 };
 /// Definition from IAI: The element type (IfcRailingType)
 ///   defines a list of commonly shared property set definitions of a railing element
@@ -28199,8 +27163,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRailingType (IfcEntityInstanceData* e);
-    IfcRailingType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcRailingTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcRailingType > list;
+    IfcRailingType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcRailingTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcRailingType > list;
 };
 /// Definition from IAI: The element type (IfcRampFlightType)
 ///   defines a list of commonly shared property set definitions of a ramp flight and
@@ -28230,8 +27194,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRampFlightType (IfcEntityInstanceData* e);
-    IfcRampFlightType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcRampFlightTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcRampFlightType > list;
+    IfcRampFlightType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcRampFlightTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcRampFlightType > list;
 };
 /// The aggregation relationship
 /// IfcRelAggregates is a special type of the general
@@ -28260,21 +27224,19 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelAggregates (IfcEntityInstanceData* e);
-    IfcRelAggregates (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcObjectDefinition* v5_RelatingObject, IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr v6_RelatedObjects);
-    typedef IfcTemplatedEntityList< IfcRelAggregates > list;
+    IfcRelAggregates (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcObjectDefinition* v5_RelatingObject, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v6_RelatedObjects);
+    typedef aggregate_of< IfcRelAggregates > list;
 };
 
 class IFC_PARSE_API IfcRelAssignsTasks : public IfcRelAssignsToControl {
 public:
-    /// Whether the optional attribute TimeForTask is defined for this IfcRelAssignsTasks
-    bool hasTimeForTask() const;
     ::Ifc2x3::IfcScheduleTimeControl* TimeForTask() const;
     void setTimeForTask(::Ifc2x3::IfcScheduleTimeControl* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRelAssignsTasks (IfcEntityInstanceData* e);
-    IfcRelAssignsTasks (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcControl* v7_RelatingControl, ::Ifc2x3::IfcScheduleTimeControl* v8_TimeForTask);
-    typedef IfcTemplatedEntityList< IfcRelAssignsTasks > list;
+    IfcRelAssignsTasks (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcControl* v7_RelatingControl, ::Ifc2x3::IfcScheduleTimeControl* v8_TimeForTask);
+    typedef aggregate_of< IfcRelAssignsTasks > list;
 };
 /// The flow terminal type IfcSanitaryTerminalType defines commonly shared information for occurrences of sanitary terminals.  The set of shared information may include: 
 /// 
@@ -28321,90 +27283,54 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSanitaryTerminalType (IfcEntityInstanceData* e);
-    IfcSanitaryTerminalType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSanitaryTerminalTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcSanitaryTerminalType > list;
+    IfcSanitaryTerminalType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSanitaryTerminalTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcSanitaryTerminalType > list;
 };
 
 class IFC_PARSE_API IfcScheduleTimeControl : public IfcControl {
 public:
-    /// Whether the optional attribute ActualStart is defined for this IfcScheduleTimeControl
-    bool hasActualStart() const;
     ::Ifc2x3::IfcDateTimeSelect* ActualStart() const;
     void setActualStart(::Ifc2x3::IfcDateTimeSelect* v);
-    /// Whether the optional attribute EarlyStart is defined for this IfcScheduleTimeControl
-    bool hasEarlyStart() const;
     ::Ifc2x3::IfcDateTimeSelect* EarlyStart() const;
     void setEarlyStart(::Ifc2x3::IfcDateTimeSelect* v);
-    /// Whether the optional attribute LateStart is defined for this IfcScheduleTimeControl
-    bool hasLateStart() const;
     ::Ifc2x3::IfcDateTimeSelect* LateStart() const;
     void setLateStart(::Ifc2x3::IfcDateTimeSelect* v);
-    /// Whether the optional attribute ScheduleStart is defined for this IfcScheduleTimeControl
-    bool hasScheduleStart() const;
     ::Ifc2x3::IfcDateTimeSelect* ScheduleStart() const;
     void setScheduleStart(::Ifc2x3::IfcDateTimeSelect* v);
-    /// Whether the optional attribute ActualFinish is defined for this IfcScheduleTimeControl
-    bool hasActualFinish() const;
     ::Ifc2x3::IfcDateTimeSelect* ActualFinish() const;
     void setActualFinish(::Ifc2x3::IfcDateTimeSelect* v);
-    /// Whether the optional attribute EarlyFinish is defined for this IfcScheduleTimeControl
-    bool hasEarlyFinish() const;
     ::Ifc2x3::IfcDateTimeSelect* EarlyFinish() const;
     void setEarlyFinish(::Ifc2x3::IfcDateTimeSelect* v);
-    /// Whether the optional attribute LateFinish is defined for this IfcScheduleTimeControl
-    bool hasLateFinish() const;
     ::Ifc2x3::IfcDateTimeSelect* LateFinish() const;
     void setLateFinish(::Ifc2x3::IfcDateTimeSelect* v);
-    /// Whether the optional attribute ScheduleFinish is defined for this IfcScheduleTimeControl
-    bool hasScheduleFinish() const;
     ::Ifc2x3::IfcDateTimeSelect* ScheduleFinish() const;
     void setScheduleFinish(::Ifc2x3::IfcDateTimeSelect* v);
-    /// Whether the optional attribute ScheduleDuration is defined for this IfcScheduleTimeControl
-    bool hasScheduleDuration() const;
-    double ScheduleDuration() const;
-    void setScheduleDuration(double v);
-    /// Whether the optional attribute ActualDuration is defined for this IfcScheduleTimeControl
-    bool hasActualDuration() const;
-    double ActualDuration() const;
-    void setActualDuration(double v);
-    /// Whether the optional attribute RemainingTime is defined for this IfcScheduleTimeControl
-    bool hasRemainingTime() const;
-    double RemainingTime() const;
-    void setRemainingTime(double v);
-    /// Whether the optional attribute FreeFloat is defined for this IfcScheduleTimeControl
-    bool hasFreeFloat() const;
-    double FreeFloat() const;
-    void setFreeFloat(double v);
-    /// Whether the optional attribute TotalFloat is defined for this IfcScheduleTimeControl
-    bool hasTotalFloat() const;
-    double TotalFloat() const;
-    void setTotalFloat(double v);
-    /// Whether the optional attribute IsCritical is defined for this IfcScheduleTimeControl
-    bool hasIsCritical() const;
-    bool IsCritical() const;
-    void setIsCritical(bool v);
-    /// Whether the optional attribute StatusTime is defined for this IfcScheduleTimeControl
-    bool hasStatusTime() const;
+    boost::optional< double > ScheduleDuration() const;
+    void setScheduleDuration(boost::optional< double > v);
+    boost::optional< double > ActualDuration() const;
+    void setActualDuration(boost::optional< double > v);
+    boost::optional< double > RemainingTime() const;
+    void setRemainingTime(boost::optional< double > v);
+    boost::optional< double > FreeFloat() const;
+    void setFreeFloat(boost::optional< double > v);
+    boost::optional< double > TotalFloat() const;
+    void setTotalFloat(boost::optional< double > v);
+    boost::optional< bool > IsCritical() const;
+    void setIsCritical(boost::optional< bool > v);
     ::Ifc2x3::IfcDateTimeSelect* StatusTime() const;
     void setStatusTime(::Ifc2x3::IfcDateTimeSelect* v);
-    /// Whether the optional attribute StartFloat is defined for this IfcScheduleTimeControl
-    bool hasStartFloat() const;
-    double StartFloat() const;
-    void setStartFloat(double v);
-    /// Whether the optional attribute FinishFloat is defined for this IfcScheduleTimeControl
-    bool hasFinishFloat() const;
-    double FinishFloat() const;
-    void setFinishFloat(double v);
-    /// Whether the optional attribute Completion is defined for this IfcScheduleTimeControl
-    bool hasCompletion() const;
-    double Completion() const;
-    void setCompletion(double v);
-        IfcTemplatedEntityList< IfcRelAssignsTasks >::ptr ScheduleTimeControlAssigned() const; // INVERSE IfcRelAssignsTasks::TimeForTask
+    boost::optional< double > StartFloat() const;
+    void setStartFloat(boost::optional< double > v);
+    boost::optional< double > FinishFloat() const;
+    void setFinishFloat(boost::optional< double > v);
+    boost::optional< double > Completion() const;
+    void setCompletion(boost::optional< double > v);
+        aggregate_of< IfcRelAssignsTasks >::ptr ScheduleTimeControlAssigned() const; // INVERSE IfcRelAssignsTasks::TimeForTask
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcScheduleTimeControl (IfcEntityInstanceData* e);
     IfcScheduleTimeControl (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcDateTimeSelect* v6_ActualStart, ::Ifc2x3::IfcDateTimeSelect* v7_EarlyStart, ::Ifc2x3::IfcDateTimeSelect* v8_LateStart, ::Ifc2x3::IfcDateTimeSelect* v9_ScheduleStart, ::Ifc2x3::IfcDateTimeSelect* v10_ActualFinish, ::Ifc2x3::IfcDateTimeSelect* v11_EarlyFinish, ::Ifc2x3::IfcDateTimeSelect* v12_LateFinish, ::Ifc2x3::IfcDateTimeSelect* v13_ScheduleFinish, boost::optional< double > v14_ScheduleDuration, boost::optional< double > v15_ActualDuration, boost::optional< double > v16_RemainingTime, boost::optional< double > v17_FreeFloat, boost::optional< double > v18_TotalFloat, boost::optional< bool > v19_IsCritical, ::Ifc2x3::IfcDateTimeSelect* v20_StatusTime, boost::optional< double > v21_StartFloat, boost::optional< double > v22_FinishFloat, boost::optional< double > v23_Completion);
-    typedef IfcTemplatedEntityList< IfcScheduleTimeControl > list;
+    typedef aggregate_of< IfcScheduleTimeControl > list;
 };
 
 class IFC_PARSE_API IfcServiceLife : public IfcControl {
@@ -28417,7 +27343,7 @@ public:
     static const IfcParse::entity& Class();
     IfcServiceLife (IfcEntityInstanceData* e);
     IfcServiceLife (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcServiceLifeTypeEnum::Value v6_ServiceLifeType, double v7_ServiceLifeDuration);
-    typedef IfcTemplatedEntityList< IfcServiceLife > list;
+    typedef aggregate_of< IfcServiceLife > list;
 };
 /// Definition from ISO 6707-1:1989: Area where construction
 /// works are undertaken.
@@ -28610,31 +27536,21 @@ public:
 /// 'SurfaceModel'
 class IFC_PARSE_API IfcSite : public IfcSpatialStructureElement {
 public:
-    /// Whether the optional attribute RefLatitude is defined for this IfcSite
-    bool hasRefLatitude() const;
     /// World Latitude at reference point (most likely defined in legal description). Defined as integer values for degrees, minutes, seconds, and, optionally, millionths of seconds with respect to the world geodetic system WGS84.
     ///   Latitudes are measured relative to the geodetic equator, north of the equator by positive values - from 0 till +90,   south of the equator by negative values - from 0 till  -90.
-    std::vector< int > /*[3:4]*/ RefLatitude() const;
-    void setRefLatitude(std::vector< int > /*[3:4]*/ v);
-    /// Whether the optional attribute RefLongitude is defined for this IfcSite
-    bool hasRefLongitude() const;
+    boost::optional< std::vector< int > /*[3:4]*/ > RefLatitude() const;
+    void setRefLatitude(boost::optional< std::vector< int > /*[3:4]*/ > v);
     /// World Longitude at reference point (most likely defined in legal description). Defined as integer values for degrees, minutes, seconds, and, optionally, millionths of seconds with respect to the world geodetic system WGS84.
     ///   Longitudes are measured relative to the geodetic zero meridian, nominally the same as the Greenwich prime meridian: longitudes west of the zero meridian have negative values - from 0 till -180, longitudes east of the zero meridian have positive values - from 0 till -180.
     /// Example: Chicago Harbor Light has according to WGS84 a longitude -87.35.40 (or 87.35.40W) and a latitude 41.53.30 (or 41.53.30N).
-    std::vector< int > /*[3:4]*/ RefLongitude() const;
-    void setRefLongitude(std::vector< int > /*[3:4]*/ v);
-    /// Whether the optional attribute RefElevation is defined for this IfcSite
-    bool hasRefElevation() const;
+    boost::optional< std::vector< int > /*[3:4]*/ > RefLongitude() const;
+    void setRefLongitude(boost::optional< std::vector< int > /*[3:4]*/ > v);
     /// Datum elevation relative to sea level.
-    double RefElevation() const;
-    void setRefElevation(double v);
-    /// Whether the optional attribute LandTitleNumber is defined for this IfcSite
-    bool hasLandTitleNumber() const;
+    boost::optional< double > RefElevation() const;
+    void setRefElevation(boost::optional< double > v);
     /// The land title number (designation of the site within a regional system).
-    std::string LandTitleNumber() const;
-    void setLandTitleNumber(std::string v);
-    /// Whether the optional attribute SiteAddress is defined for this IfcSite
-    bool hasSiteAddress() const;
+    boost::optional< std::string > LandTitleNumber() const;
+    void setLandTitleNumber(boost::optional< std::string > v);
     /// Address given to the site for postal purposes.
     ::Ifc2x3::IfcPostalAddress* SiteAddress() const;
     void setSiteAddress(::Ifc2x3::IfcPostalAddress* v);
@@ -28642,7 +27558,7 @@ public:
     static const IfcParse::entity& Class();
     IfcSite (IfcEntityInstanceData* e);
     IfcSite (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_LongName, ::Ifc2x3::IfcElementCompositionEnum::Value v9_CompositionType, boost::optional< std::vector< int > /*[3:4]*/ > v10_RefLatitude, boost::optional< std::vector< int > /*[3:4]*/ > v11_RefLongitude, boost::optional< double > v12_RefElevation, boost::optional< std::string > v13_LandTitleNumber, ::Ifc2x3::IfcPostalAddress* v14_SiteAddress);
-    typedef IfcTemplatedEntityList< IfcSite > list;
+    typedef aggregate_of< IfcSite > list;
 };
 /// The element type IfcSlabType defines commonly shared
 /// information for occurrences of slabs. The set of shared information
@@ -28729,8 +27645,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSlabType (IfcEntityInstanceData* e);
-    IfcSlabType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSlabTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcSlabType > list;
+    IfcSlabType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSlabTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcSlabType > list;
 };
 /// A space represents an area or volume
 /// bounded actually or theoretically. Spaces are areas or volumes that
@@ -28986,18 +27902,16 @@ class IFC_PARSE_API IfcSpace : public IfcSpatialStructureElement {
 public:
     ::Ifc2x3::IfcInternalOrExternalEnum::Value InteriorOrExteriorSpace() const;
     void setInteriorOrExteriorSpace(::Ifc2x3::IfcInternalOrExternalEnum::Value v);
-    /// Whether the optional attribute ElevationWithFlooring is defined for this IfcSpace
-    bool hasElevationWithFlooring() const;
     /// Level of flooring of this space; the average shall be taken, if the space ground surface is sloping or if there are level differences within this space.
-    double ElevationWithFlooring() const;
-    void setElevationWithFlooring(double v);
-        IfcTemplatedEntityList< IfcRelCoversSpaces >::ptr HasCoverings() const; // INVERSE IfcRelCoversSpaces::RelatedSpace
-    IfcTemplatedEntityList< IfcRelSpaceBoundary >::ptr BoundedBy() const; // INVERSE IfcRelSpaceBoundary::RelatingSpace
+    boost::optional< double > ElevationWithFlooring() const;
+    void setElevationWithFlooring(boost::optional< double > v);
+        aggregate_of< IfcRelCoversSpaces >::ptr HasCoverings() const; // INVERSE IfcRelCoversSpaces::RelatedSpace
+    aggregate_of< IfcRelSpaceBoundary >::ptr BoundedBy() const; // INVERSE IfcRelSpaceBoundary::RelatingSpace
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSpace (IfcEntityInstanceData* e);
     IfcSpace (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_LongName, ::Ifc2x3::IfcElementCompositionEnum::Value v9_CompositionType, ::Ifc2x3::IfcInternalOrExternalEnum::Value v10_InteriorOrExteriorSpace, boost::optional< double > v11_ElevationWithFlooring);
-    typedef IfcTemplatedEntityList< IfcSpace > list;
+    typedef aggregate_of< IfcSpace > list;
 };
 /// The energy conversion device type IfcSpaceHeaterType defines commonly shared information for occurrences of space heaters.  The set of shared information may include: 
 /// 
@@ -29037,35 +27951,29 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSpaceHeaterType (IfcEntityInstanceData* e);
-    IfcSpaceHeaterType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSpaceHeaterTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcSpaceHeaterType > list;
+    IfcSpaceHeaterType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSpaceHeaterTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcSpaceHeaterType > list;
 };
 
 class IFC_PARSE_API IfcSpaceProgram : public IfcControl {
 public:
     std::string SpaceProgramIdentifier() const;
     void setSpaceProgramIdentifier(std::string v);
-    /// Whether the optional attribute MaxRequiredArea is defined for this IfcSpaceProgram
-    bool hasMaxRequiredArea() const;
-    double MaxRequiredArea() const;
-    void setMaxRequiredArea(double v);
-    /// Whether the optional attribute MinRequiredArea is defined for this IfcSpaceProgram
-    bool hasMinRequiredArea() const;
-    double MinRequiredArea() const;
-    void setMinRequiredArea(double v);
-    /// Whether the optional attribute RequestedLocation is defined for this IfcSpaceProgram
-    bool hasRequestedLocation() const;
+    boost::optional< double > MaxRequiredArea() const;
+    void setMaxRequiredArea(boost::optional< double > v);
+    boost::optional< double > MinRequiredArea() const;
+    void setMinRequiredArea(boost::optional< double > v);
     ::Ifc2x3::IfcSpatialStructureElement* RequestedLocation() const;
     void setRequestedLocation(::Ifc2x3::IfcSpatialStructureElement* v);
     double StandardRequiredArea() const;
     void setStandardRequiredArea(double v);
-        IfcTemplatedEntityList< IfcRelInteractionRequirements >::ptr HasInteractionReqsFrom() const; // INVERSE IfcRelInteractionRequirements::RelatedSpaceProgram
-    IfcTemplatedEntityList< IfcRelInteractionRequirements >::ptr HasInteractionReqsTo() const; // INVERSE IfcRelInteractionRequirements::RelatingSpaceProgram
+        aggregate_of< IfcRelInteractionRequirements >::ptr HasInteractionReqsFrom() const; // INVERSE IfcRelInteractionRequirements::RelatedSpaceProgram
+    aggregate_of< IfcRelInteractionRequirements >::ptr HasInteractionReqsTo() const; // INVERSE IfcRelInteractionRequirements::RelatingSpaceProgram
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSpaceProgram (IfcEntityInstanceData* e);
     IfcSpaceProgram (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_SpaceProgramIdentifier, boost::optional< double > v7_MaxRequiredArea, boost::optional< double > v8_MinRequiredArea, ::Ifc2x3::IfcSpatialStructureElement* v9_RequestedLocation, double v10_StandardRequiredArea);
-    typedef IfcTemplatedEntityList< IfcSpaceProgram > list;
+    typedef aggregate_of< IfcSpaceProgram > list;
 };
 /// Definition from IAI: A space represents an area or
 /// volume bounded actually or theoretically. Spaces are areas or
@@ -29156,8 +28064,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSpaceType (IfcEntityInstanceData* e);
-    IfcSpaceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSpaceTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcSpaceType > list;
+    IfcSpaceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSpaceTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcSpaceType > list;
 };
 /// The flow terminal type IfcStackTerminalType defines commonly shared information for occurrences of stack terminals.  The set of shared information may include: 
 /// 
@@ -29193,8 +28101,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStackTerminalType (IfcEntityInstanceData* e);
-    IfcStackTerminalType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcStackTerminalTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcStackTerminalType > list;
+    IfcStackTerminalType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcStackTerminalTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcStackTerminalType > list;
 };
 /// Definition from IAI: The element type (IfcStairFlightType)
 ///   defines a list of commonly shared property set definitions of a stair flight
@@ -29224,8 +28132,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStairFlightType (IfcEntityInstanceData* e);
-    IfcStairFlightType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcStairFlightTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcStairFlightType > list;
+    IfcStairFlightType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcStairFlightTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcStairFlightType > list;
 };
 /// Definition from IAI: A structural action is a structural activity that acts upon
 /// a structural item or building element.
@@ -29251,32 +28159,28 @@ public:
     /// Indicates if this action may cause a stability problem. If it is 'FALSE', no further investigations regarding stability problems are necessary.
     bool DestabilizingLoad() const;
     void setDestabilizingLoad(bool v);
-    /// Whether the optional attribute CausedBy is defined for this IfcStructuralAction
-    bool hasCausedBy() const;
     ::Ifc2x3::IfcStructuralReaction* CausedBy() const;
     void setCausedBy(::Ifc2x3::IfcStructuralReaction* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuralAction (IfcEntityInstanceData* e);
     IfcStructuralAction (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralLoad* v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal, bool v10_DestabilizingLoad, ::Ifc2x3::IfcStructuralReaction* v11_CausedBy);
-    typedef IfcTemplatedEntityList< IfcStructuralAction > list;
+    typedef aggregate_of< IfcStructuralAction > list;
 };
 /// Definition from IAI: An IfcStructuralConnection represents a structural connection object (node i.e. vertex connection, or edge connection, or surface connection) or supports.
 /// 
 /// HISTORY: New entity in IFC 2x2.
 class IFC_PARSE_API IfcStructuralConnection : public IfcStructuralItem {
 public:
-    /// Whether the optional attribute AppliedCondition is defined for this IfcStructuralConnection
-    bool hasAppliedCondition() const;
     /// Optional boundary conditions which define support conditions of this connection object, given in local coordinate directions of the connection object.  If left unspecified, the connection object is assumed to have no supports besides being connected with members.
     ::Ifc2x3::IfcBoundaryCondition* AppliedCondition() const;
     void setAppliedCondition(::Ifc2x3::IfcBoundaryCondition* v);
-        IfcTemplatedEntityList< IfcRelConnectsStructuralMember >::ptr ConnectsStructuralMembers() const; // INVERSE IfcRelConnectsStructuralMember::RelatedStructuralConnection
+        aggregate_of< IfcRelConnectsStructuralMember >::ptr ConnectsStructuralMembers() const; // INVERSE IfcRelConnectsStructuralMember::RelatedStructuralConnection
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuralConnection (IfcEntityInstanceData* e);
     IfcStructuralConnection (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcBoundaryCondition* v8_AppliedCondition);
-    typedef IfcTemplatedEntityList< IfcStructuralConnection > list;
+    typedef aggregate_of< IfcStructuralConnection > list;
 };
 /// Definition from IAI: Instances of IfcStructuralCurveConnection describe edge 'nodes', i.e. edges where two or more surface members are joined, or edge supports.  Edge curves may be straight or curved.
 /// 
@@ -29301,7 +28205,7 @@ public:
     static const IfcParse::entity& Class();
     IfcStructuralCurveConnection (IfcEntityInstanceData* e);
     IfcStructuralCurveConnection (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcBoundaryCondition* v8_AppliedCondition);
-    typedef IfcTemplatedEntityList< IfcStructuralCurveConnection > list;
+    typedef aggregate_of< IfcStructuralCurveConnection > list;
 };
 /// Definition from IAI: Instances of IfcStructuralCurveMember describe edge members, i.e. structural analysis idealizations of beams, columns, rods etc..  Curve members may be straight or curved.
 /// 
@@ -29349,7 +28253,7 @@ public:
     static const IfcParse::entity& Class();
     IfcStructuralCurveMember (IfcEntityInstanceData* e);
     IfcStructuralCurveMember (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralCurveTypeEnum::Value v8_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcStructuralCurveMember > list;
+    typedef aggregate_of< IfcStructuralCurveMember > list;
 };
 /// Definition from IAI: Describes edge members with varying profile properties.  Each instance of IfcStructuralCurveMemberVarying is composed of two or more instances of IfcStructuralCurveMember with differing profile properties.  These subordinate members relate to the instance of IfcStructuralCurveMemberVarying by IfcRelAggregates.
 /// 
@@ -29377,7 +28281,7 @@ public:
     static const IfcParse::entity& Class();
     IfcStructuralCurveMemberVarying (IfcEntityInstanceData* e);
     IfcStructuralCurveMemberVarying (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralCurveTypeEnum::Value v8_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcStructuralCurveMemberVarying > list;
+    typedef aggregate_of< IfcStructuralCurveMemberVarying > list;
 };
 /// Definition from IAI: Defines an action with constant value which is distributed over a curve.
 /// 
@@ -29394,20 +28298,20 @@ public:
     static const IfcParse::entity& Class();
     IfcStructuralLinearAction (IfcEntityInstanceData* e);
     IfcStructuralLinearAction (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralLoad* v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal, bool v10_DestabilizingLoad, ::Ifc2x3::IfcStructuralReaction* v11_CausedBy, ::Ifc2x3::IfcProjectedOrTrueLengthEnum::Value v12_ProjectedOrTrue);
-    typedef IfcTemplatedEntityList< IfcStructuralLinearAction > list;
+    typedef aggregate_of< IfcStructuralLinearAction > list;
 };
 
 class IFC_PARSE_API IfcStructuralLinearActionVarying : public IfcStructuralLinearAction {
 public:
     ::Ifc2x3::IfcShapeAspect* VaryingAppliedLoadLocation() const;
     void setVaryingAppliedLoadLocation(::Ifc2x3::IfcShapeAspect* v);
-    IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralLoad >::ptr SubsequentAppliedLoads() const;
-    void setSubsequentAppliedLoads(IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralLoad >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcStructuralLoad >::ptr SubsequentAppliedLoads() const;
+    void setSubsequentAppliedLoads(aggregate_of< ::Ifc2x3::IfcStructuralLoad >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuralLinearActionVarying (IfcEntityInstanceData* e);
-    IfcStructuralLinearActionVarying (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralLoad* v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal, bool v10_DestabilizingLoad, ::Ifc2x3::IfcStructuralReaction* v11_CausedBy, ::Ifc2x3::IfcProjectedOrTrueLengthEnum::Value v12_ProjectedOrTrue, ::Ifc2x3::IfcShapeAspect* v13_VaryingAppliedLoadLocation, IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralLoad >::ptr v14_SubsequentAppliedLoads);
-    typedef IfcTemplatedEntityList< IfcStructuralLinearActionVarying > list;
+    IfcStructuralLinearActionVarying (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralLoad* v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal, bool v10_DestabilizingLoad, ::Ifc2x3::IfcStructuralReaction* v11_CausedBy, ::Ifc2x3::IfcProjectedOrTrueLengthEnum::Value v12_ProjectedOrTrue, ::Ifc2x3::IfcShapeAspect* v13_VaryingAppliedLoadLocation, aggregate_of< ::Ifc2x3::IfcStructuralLoad >::ptr v14_SubsequentAppliedLoads);
+    typedef aggregate_of< IfcStructuralLinearActionVarying > list;
 };
 /// Definition from IAI: The entity IfcStructuralLoadGroup is used to structure the
 /// physical impacts.  By using the grouping features inherited from IfcGroup, instances of
@@ -29453,23 +28357,19 @@ public:
     /// Source of actions in the group. Normally needed if 'PredefinedType' specifies a LOAD_CASE.
     ::Ifc2x3::IfcActionSourceTypeEnum::Value ActionSource() const;
     void setActionSource(::Ifc2x3::IfcActionSourceTypeEnum::Value v);
-    /// Whether the optional attribute Coefficient is defined for this IfcStructuralLoadGroup
-    bool hasCoefficient() const;
     /// Load factor. If omitted, a factor is not yet known or not specified. A load factor of 1.0 shall be explicitly exported as Coefficient = 1.0.
-    double Coefficient() const;
-    void setCoefficient(double v);
-    /// Whether the optional attribute Purpose is defined for this IfcStructuralLoadGroup
-    bool hasPurpose() const;
+    boost::optional< double > Coefficient() const;
+    void setCoefficient(boost::optional< double > v);
     /// Description of the purpose of this instance. Among else, possible values of the Purpose of load combinations are 'SLS', 'ULS', 'ALS' to indicate serviceability, ultimate, or accidental limit state.
-    std::string Purpose() const;
-    void setPurpose(std::string v);
-        IfcTemplatedEntityList< IfcStructuralResultGroup >::ptr SourceOfResultGroup() const; // INVERSE IfcStructuralResultGroup::ResultForLoadGroup
-    IfcTemplatedEntityList< IfcStructuralAnalysisModel >::ptr LoadGroupFor() const; // INVERSE IfcStructuralAnalysisModel::LoadedBy
+    boost::optional< std::string > Purpose() const;
+    void setPurpose(boost::optional< std::string > v);
+        aggregate_of< IfcStructuralResultGroup >::ptr SourceOfResultGroup() const; // INVERSE IfcStructuralResultGroup::ResultForLoadGroup
+    aggregate_of< IfcStructuralAnalysisModel >::ptr LoadGroupFor() const; // INVERSE IfcStructuralAnalysisModel::LoadedBy
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuralLoadGroup (IfcEntityInstanceData* e);
     IfcStructuralLoadGroup (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcLoadGroupTypeEnum::Value v6_PredefinedType, ::Ifc2x3::IfcActionTypeEnum::Value v7_ActionType, ::Ifc2x3::IfcActionSourceTypeEnum::Value v8_ActionSource, boost::optional< double > v9_Coefficient, boost::optional< std::string > v10_Purpose);
-    typedef IfcTemplatedEntityList< IfcStructuralLoadGroup > list;
+    typedef aggregate_of< IfcStructuralLoadGroup > list;
 };
 /// Definition from IAI: Defines an action with constant value which is distributed over a surface.
 /// 
@@ -29486,20 +28386,20 @@ public:
     static const IfcParse::entity& Class();
     IfcStructuralPlanarAction (IfcEntityInstanceData* e);
     IfcStructuralPlanarAction (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralLoad* v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal, bool v10_DestabilizingLoad, ::Ifc2x3::IfcStructuralReaction* v11_CausedBy, ::Ifc2x3::IfcProjectedOrTrueLengthEnum::Value v12_ProjectedOrTrue);
-    typedef IfcTemplatedEntityList< IfcStructuralPlanarAction > list;
+    typedef aggregate_of< IfcStructuralPlanarAction > list;
 };
 
 class IFC_PARSE_API IfcStructuralPlanarActionVarying : public IfcStructuralPlanarAction {
 public:
     ::Ifc2x3::IfcShapeAspect* VaryingAppliedLoadLocation() const;
     void setVaryingAppliedLoadLocation(::Ifc2x3::IfcShapeAspect* v);
-    IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralLoad >::ptr SubsequentAppliedLoads() const;
-    void setSubsequentAppliedLoads(IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralLoad >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcStructuralLoad >::ptr SubsequentAppliedLoads() const;
+    void setSubsequentAppliedLoads(aggregate_of< ::Ifc2x3::IfcStructuralLoad >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuralPlanarActionVarying (IfcEntityInstanceData* e);
-    IfcStructuralPlanarActionVarying (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralLoad* v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal, bool v10_DestabilizingLoad, ::Ifc2x3::IfcStructuralReaction* v11_CausedBy, ::Ifc2x3::IfcProjectedOrTrueLengthEnum::Value v12_ProjectedOrTrue, ::Ifc2x3::IfcShapeAspect* v13_VaryingAppliedLoadLocation, IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralLoad >::ptr v14_SubsequentAppliedLoads);
-    typedef IfcTemplatedEntityList< IfcStructuralPlanarActionVarying > list;
+    IfcStructuralPlanarActionVarying (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralLoad* v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal, bool v10_DestabilizingLoad, ::Ifc2x3::IfcStructuralReaction* v11_CausedBy, ::Ifc2x3::IfcProjectedOrTrueLengthEnum::Value v12_ProjectedOrTrue, ::Ifc2x3::IfcShapeAspect* v13_VaryingAppliedLoadLocation, aggregate_of< ::Ifc2x3::IfcStructuralLoad >::ptr v14_SubsequentAppliedLoads);
+    typedef aggregate_of< IfcStructuralPlanarActionVarying > list;
 };
 /// Definition from IAI: Defines an action which acts on a point.
 /// A point action is typically connected with a point connection.
@@ -29552,7 +28452,7 @@ public:
     static const IfcParse::entity& Class();
     IfcStructuralPointAction (IfcEntityInstanceData* e);
     IfcStructuralPointAction (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralLoad* v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal, bool v10_DestabilizingLoad, ::Ifc2x3::IfcStructuralReaction* v11_CausedBy);
-    typedef IfcTemplatedEntityList< IfcStructuralPointAction > list;
+    typedef aggregate_of< IfcStructuralPointAction > list;
 };
 /// Definition from IAI: Instances of IfcStructuralPointConnection describe structural nodes or point supports.
 /// 
@@ -29573,7 +28473,7 @@ public:
     static const IfcParse::entity& Class();
     IfcStructuralPointConnection (IfcEntityInstanceData* e);
     IfcStructuralPointConnection (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcBoundaryCondition* v8_AppliedCondition);
-    typedef IfcTemplatedEntityList< IfcStructuralPointConnection > list;
+    typedef aggregate_of< IfcStructuralPointConnection > list;
 };
 /// Definition from IAI: Defines a reaction which occurs at a point.
 /// A point reaction is typically connected with a point connection.
@@ -29624,7 +28524,7 @@ public:
     static const IfcParse::entity& Class();
     IfcStructuralPointReaction (IfcEntityInstanceData* e);
     IfcStructuralPointReaction (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralLoad* v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal);
-    typedef IfcTemplatedEntityList< IfcStructuralPointReaction > list;
+    typedef aggregate_of< IfcStructuralPointReaction > list;
 };
 /// Definition from IAI: Instances of the entity IfcStructuralResultGroup are used to group results of structural analysis calculations and to capture the connection to the underlying basic load group.  The basic functionality for grouping inherited from IfcGroup is used to collect instances from IfcStructuralReaction or its respective subclasses.
 /// 
@@ -29635,20 +28535,18 @@ public:
     /// Specifies the analysis theory used to obtain the respective results.
     ::Ifc2x3::IfcAnalysisTheoryTypeEnum::Value TheoryType() const;
     void setTheoryType(::Ifc2x3::IfcAnalysisTheoryTypeEnum::Value v);
-    /// Whether the optional attribute ResultForLoadGroup is defined for this IfcStructuralResultGroup
-    bool hasResultForLoadGroup() const;
     /// Reference to an instance of IfcStructuralLoadGroup for which this instance represents the result.
     ::Ifc2x3::IfcStructuralLoadGroup* ResultForLoadGroup() const;
     void setResultForLoadGroup(::Ifc2x3::IfcStructuralLoadGroup* v);
     /// This value allows to easily recognize whether a linear analysis has been applied (allowing the superposition of analysis results).
     bool IsLinear() const;
     void setIsLinear(bool v);
-        IfcTemplatedEntityList< IfcStructuralAnalysisModel >::ptr ResultGroupFor() const; // INVERSE IfcStructuralAnalysisModel::HasResults
+        aggregate_of< IfcStructuralAnalysisModel >::ptr ResultGroupFor() const; // INVERSE IfcStructuralAnalysisModel::HasResults
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuralResultGroup (IfcEntityInstanceData* e);
     IfcStructuralResultGroup (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcAnalysisTheoryTypeEnum::Value v6_TheoryType, ::Ifc2x3::IfcStructuralLoadGroup* v7_ResultForLoadGroup, bool v8_IsLinear);
-    typedef IfcTemplatedEntityList< IfcStructuralResultGroup > list;
+    typedef aggregate_of< IfcStructuralResultGroup > list;
 };
 /// Definition from IAI: Instances of IfcStructuralSurfaceConnection describe face 'nodes', i.e. faces where two or more surface members are joined, or face supports.  Face surfaces may be planar or curved.
 /// 
@@ -29668,7 +28566,7 @@ public:
     static const IfcParse::entity& Class();
     IfcStructuralSurfaceConnection (IfcEntityInstanceData* e);
     IfcStructuralSurfaceConnection (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcBoundaryCondition* v8_AppliedCondition);
-    typedef IfcTemplatedEntityList< IfcStructuralSurfaceConnection > list;
+    typedef aggregate_of< IfcStructuralSurfaceConnection > list;
 };
 /// IfcSubContractResource is a construction resource needed in a construction process that represents a sub-contractor.  
 /// 
@@ -29696,19 +28594,15 @@ public:
 /// Figure 195 — Subcontract assignment use
 class IFC_PARSE_API IfcSubContractResource : public IfcConstructionResource {
 public:
-    /// Whether the optional attribute SubContractor is defined for this IfcSubContractResource
-    bool hasSubContractor() const;
     ::Ifc2x3::IfcActorSelect* SubContractor() const;
     void setSubContractor(::Ifc2x3::IfcActorSelect* v);
-    /// Whether the optional attribute JobDescription is defined for this IfcSubContractResource
-    bool hasJobDescription() const;
-    std::string JobDescription() const;
-    void setJobDescription(std::string v);
+    boost::optional< std::string > JobDescription() const;
+    void setJobDescription(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSubContractResource (IfcEntityInstanceData* e);
     IfcSubContractResource (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_ResourceIdentifier, boost::optional< std::string > v7_ResourceGroup, boost::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit* v9_BaseQuantity, ::Ifc2x3::IfcActorSelect* v10_SubContractor, boost::optional< std::string > v11_JobDescription);
-    typedef IfcTemplatedEntityList< IfcSubContractResource > list;
+    typedef aggregate_of< IfcSubContractResource > list;
 };
 /// The flow controller type IfcSwitchingDeviceType defines commonly shared information for occurrences of switching devices.  The set of shared information may include: 
 /// 
@@ -29758,8 +28652,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSwitchingDeviceType (IfcEntityInstanceData* e);
-    IfcSwitchingDeviceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSwitchingDeviceTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcSwitchingDeviceType > list;
+    IfcSwitchingDeviceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSwitchingDeviceTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcSwitchingDeviceType > list;
 };
 /// Definition from IAI: Organized combination of
 ///   related parts within an AEC product, composed for a common
@@ -29780,12 +28674,12 @@ public:
 ///   IFC Release 1.0
 class IFC_PARSE_API IfcSystem : public IfcGroup {
 public:
-        IfcTemplatedEntityList< IfcRelServicesBuildings >::ptr ServicesBuildings() const; // INVERSE IfcRelServicesBuildings::RelatingSystem
+        aggregate_of< IfcRelServicesBuildings >::ptr ServicesBuildings() const; // INVERSE IfcRelServicesBuildings::RelatingSystem
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSystem (IfcEntityInstanceData* e);
     IfcSystem (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
-    typedef IfcTemplatedEntityList< IfcSystem > list;
+    typedef aggregate_of< IfcSystem > list;
 };
 /// The flow storage device type IfcTankType defines commonly shared information for occurrences of tanks.  The set of shared information may include: 
 /// 
@@ -29827,16 +28721,14 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTankType (IfcEntityInstanceData* e);
-    IfcTankType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcTankTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcTankType > list;
+    IfcTankType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcTankTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcTankType > list;
 };
 
 class IFC_PARSE_API IfcTimeSeriesSchedule : public IfcControl {
 public:
-    /// Whether the optional attribute ApplicableDates is defined for this IfcTimeSeriesSchedule
-    bool hasApplicableDates() const;
-    IfcEntityList::ptr ApplicableDates() const;
-    void setApplicableDates(IfcEntityList::ptr v);
+    boost::optional< aggregate_of_instance::ptr > ApplicableDates() const;
+    void setApplicableDates(boost::optional< aggregate_of_instance::ptr > v);
     ::Ifc2x3::IfcTimeSeriesScheduleTypeEnum::Value TimeSeriesScheduleType() const;
     void setTimeSeriesScheduleType(::Ifc2x3::IfcTimeSeriesScheduleTypeEnum::Value v);
     ::Ifc2x3::IfcTimeSeries* TimeSeries() const;
@@ -29844,8 +28736,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTimeSeriesSchedule (IfcEntityInstanceData* e);
-    IfcTimeSeriesSchedule (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< IfcEntityList::ptr > v6_ApplicableDates, ::Ifc2x3::IfcTimeSeriesScheduleTypeEnum::Value v7_TimeSeriesScheduleType, ::Ifc2x3::IfcTimeSeries* v8_TimeSeries);
-    typedef IfcTemplatedEntityList< IfcTimeSeriesSchedule > list;
+    IfcTimeSeriesSchedule (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< aggregate_of_instance::ptr > v6_ApplicableDates, ::Ifc2x3::IfcTimeSeriesScheduleTypeEnum::Value v7_TimeSeriesScheduleType, ::Ifc2x3::IfcTimeSeries* v8_TimeSeries);
+    typedef aggregate_of< IfcTimeSeriesSchedule > list;
 };
 /// The energy conversion device type IfcTransformerType defines commonly shared information for occurrences of transformers.  The set of shared information may include: 
 /// 
@@ -29882,8 +28774,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTransformerType (IfcEntityInstanceData* e);
-    IfcTransformerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcTransformerTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcTransformerType > list;
+    IfcTransformerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcTransformerTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcTransformerType > list;
 };
 /// Definition from IAI: Generalization of all transport
 /// related objects that move people, animals or goods within a
@@ -30003,25 +28895,19 @@ public:
 /// RepresentationType : 'MappedRepresentation'
 class IFC_PARSE_API IfcTransportElement : public IfcElement {
 public:
-    /// Whether the optional attribute OperationType is defined for this IfcTransportElement
-    bool hasOperationType() const;
-    ::Ifc2x3::IfcTransportElementTypeEnum::Value OperationType() const;
-    void setOperationType(::Ifc2x3::IfcTransportElementTypeEnum::Value v);
-    /// Whether the optional attribute CapacityByWeight is defined for this IfcTransportElement
-    bool hasCapacityByWeight() const;
+    boost::optional< ::Ifc2x3::IfcTransportElementTypeEnum::Value > OperationType() const;
+    void setOperationType(boost::optional< ::Ifc2x3::IfcTransportElementTypeEnum::Value > v);
     /// Capacity of the transport element measured by weight.
-    double CapacityByWeight() const;
-    void setCapacityByWeight(double v);
-    /// Whether the optional attribute CapacityByNumber is defined for this IfcTransportElement
-    bool hasCapacityByNumber() const;
+    boost::optional< double > CapacityByWeight() const;
+    void setCapacityByWeight(boost::optional< double > v);
     /// Capacity of the transportation element measured in numbers of person.
-    double CapacityByNumber() const;
-    void setCapacityByNumber(double v);
+    boost::optional< double > CapacityByNumber() const;
+    void setCapacityByNumber(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTransportElement (IfcEntityInstanceData* e);
     IfcTransportElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< ::Ifc2x3::IfcTransportElementTypeEnum::Value > v9_OperationType, boost::optional< double > v10_CapacityByWeight, boost::optional< double > v11_CapacityByNumber);
-    typedef IfcTemplatedEntityList< IfcTransportElement > list;
+    typedef aggregate_of< IfcTransportElement > list;
 };
 /// Definition from ISO/CD 10303-42:1992:
 /// A trimmed curve is a bounded curve which is created by taking a selected
@@ -30107,11 +28993,11 @@ public:
     ::Ifc2x3::IfcCurve* BasisCurve() const;
     void setBasisCurve(::Ifc2x3::IfcCurve* v);
     /// The first trimming point which may be specified as a Cartesian point, as a real parameter or both.
-    IfcEntityList::ptr Trim1() const;
-    void setTrim1(IfcEntityList::ptr v);
+    aggregate_of_instance::ptr Trim1() const;
+    void setTrim1(aggregate_of_instance::ptr v);
     /// The second trimming point which may be specified as a Cartesian point, as a real parameter or both.
-    IfcEntityList::ptr Trim2() const;
-    void setTrim2(IfcEntityList::ptr v);
+    aggregate_of_instance::ptr Trim2() const;
+    void setTrim2(aggregate_of_instance::ptr v);
     /// Flag to indicate whether the direction of the trimmed curve agrees with or is opposed to the direction of the basis curve.
     bool SenseAgreement() const;
     void setSenseAgreement(bool v);
@@ -30121,8 +29007,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTrimmedCurve (IfcEntityInstanceData* e);
-    IfcTrimmedCurve (::Ifc2x3::IfcCurve* v1_BasisCurve, IfcEntityList::ptr v2_Trim1, IfcEntityList::ptr v3_Trim2, bool v4_SenseAgreement, ::Ifc2x3::IfcTrimmingPreference::Value v5_MasterRepresentation);
-    typedef IfcTemplatedEntityList< IfcTrimmedCurve > list;
+    IfcTrimmedCurve (::Ifc2x3::IfcCurve* v1_BasisCurve, aggregate_of_instance::ptr v2_Trim1, aggregate_of_instance::ptr v3_Trim2, bool v4_SenseAgreement, ::Ifc2x3::IfcTrimmingPreference::Value v5_MasterRepresentation);
+    typedef aggregate_of< IfcTrimmedCurve > list;
 };
 /// The energy conversion device type IfcTubeBundleType defines commonly shared information for occurrences of tube bundles.  The set of shared information may include: 
 /// 
@@ -30161,8 +29047,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTubeBundleType (IfcEntityInstanceData* e);
-    IfcTubeBundleType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcTubeBundleTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcTubeBundleType > list;
+    IfcTubeBundleType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcTubeBundleTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcTubeBundleType > list;
 };
 /// The energy conversion device type IfcUnitaryEquipmentType defines commonly shared information for occurrences of unitary equipments.  The set of shared information may include: 
 /// 
@@ -30200,8 +29086,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcUnitaryEquipmentType (IfcEntityInstanceData* e);
-    IfcUnitaryEquipmentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcUnitaryEquipmentTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcUnitaryEquipmentType > list;
+    IfcUnitaryEquipmentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcUnitaryEquipmentTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcUnitaryEquipmentType > list;
 };
 /// The flow controller type IfcValveType defines commonly shared information for occurrences of valves.  The set of shared information may include: 
 /// 
@@ -30249,8 +29135,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcValveType (IfcEntityInstanceData* e);
-    IfcValveType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcValveTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcValveType > list;
+    IfcValveType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcValveTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcValveType > list;
 };
 /// A virtual element is a special element used to provide imaginary boundaries, such as between two adjacent, but not separated, spaces. Virtual elements are usually not displayed and does not have quantities and other measures. Therefore IfcVirtualElement does not have material information and quantities attached.
 /// 
@@ -30344,7 +29230,7 @@ public:
     static const IfcParse::entity& Class();
     IfcVirtualElement (IfcEntityInstanceData* e);
     IfcVirtualElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcVirtualElement > list;
+    typedef aggregate_of< IfcVirtualElement > list;
 };
 /// Definition from IAI: The element type
 /// IfcWallType defines commonly shared information for
@@ -30438,8 +29324,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcWallType (IfcEntityInstanceData* e);
-    IfcWallType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcWallTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcWallType > list;
+    IfcWallType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcWallTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcWallType > list;
 };
 /// The flow terminal type IfcWasteTerminalType defines commonly shared information for occurrences of waste terminals.  The set of shared information may include: 
 /// 
@@ -30485,8 +29371,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcWasteTerminalType (IfcEntityInstanceData* e);
-    IfcWasteTerminalType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcWasteTerminalTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcWasteTerminalType > list;
+    IfcWasteTerminalType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcWasteTerminalTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcWasteTerminalType > list;
 };
 /// An IfcWorkControl is an abstract supertype which captures information that is common to both IfcWorkPlan and IfcWorkSchedule.
 /// 
@@ -30539,47 +29425,33 @@ public:
     /// The date that the plan is created.
     ::Ifc2x3::IfcDateTimeSelect* CreationDate() const;
     void setCreationDate(::Ifc2x3::IfcDateTimeSelect* v);
-    /// Whether the optional attribute Creators is defined for this IfcWorkControl
-    bool hasCreators() const;
     /// The authors of the work plan.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcPerson >::ptr Creators() const;
-    void setCreators(IfcTemplatedEntityList< ::Ifc2x3::IfcPerson >::ptr v);
-    /// Whether the optional attribute Purpose is defined for this IfcWorkControl
-    bool hasPurpose() const;
+    boost::optional< aggregate_of< ::Ifc2x3::IfcPerson >::ptr > Creators() const;
+    void setCreators(boost::optional< aggregate_of< ::Ifc2x3::IfcPerson >::ptr > v);
     /// A description of the purpose of the work schedule.
-    std::string Purpose() const;
-    void setPurpose(std::string v);
-    /// Whether the optional attribute Duration is defined for this IfcWorkControl
-    bool hasDuration() const;
+    boost::optional< std::string > Purpose() const;
+    void setPurpose(boost::optional< std::string > v);
     /// The total duration of the entire work schedule.
-    double Duration() const;
-    void setDuration(double v);
-    /// Whether the optional attribute TotalFloat is defined for this IfcWorkControl
-    bool hasTotalFloat() const;
+    boost::optional< double > Duration() const;
+    void setDuration(boost::optional< double > v);
     /// The total time float of the entire work schedule.
-    double TotalFloat() const;
-    void setTotalFloat(double v);
+    boost::optional< double > TotalFloat() const;
+    void setTotalFloat(boost::optional< double > v);
     /// The start time of the schedule.
     ::Ifc2x3::IfcDateTimeSelect* StartTime() const;
     void setStartTime(::Ifc2x3::IfcDateTimeSelect* v);
-    /// Whether the optional attribute FinishTime is defined for this IfcWorkControl
-    bool hasFinishTime() const;
     /// The finish time of the schedule.
     ::Ifc2x3::IfcDateTimeSelect* FinishTime() const;
     void setFinishTime(::Ifc2x3::IfcDateTimeSelect* v);
-    /// Whether the optional attribute WorkControlType is defined for this IfcWorkControl
-    bool hasWorkControlType() const;
-    ::Ifc2x3::IfcWorkControlTypeEnum::Value WorkControlType() const;
-    void setWorkControlType(::Ifc2x3::IfcWorkControlTypeEnum::Value v);
-    /// Whether the optional attribute UserDefinedControlType is defined for this IfcWorkControl
-    bool hasUserDefinedControlType() const;
-    std::string UserDefinedControlType() const;
-    void setUserDefinedControlType(std::string v);
+    boost::optional< ::Ifc2x3::IfcWorkControlTypeEnum::Value > WorkControlType() const;
+    void setWorkControlType(boost::optional< ::Ifc2x3::IfcWorkControlTypeEnum::Value > v);
+    boost::optional< std::string > UserDefinedControlType() const;
+    void setUserDefinedControlType(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcWorkControl (IfcEntityInstanceData* e);
-    IfcWorkControl (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_Identifier, ::Ifc2x3::IfcDateTimeSelect* v7_CreationDate, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPerson >::ptr > v8_Creators, boost::optional< std::string > v9_Purpose, boost::optional< double > v10_Duration, boost::optional< double > v11_TotalFloat, ::Ifc2x3::IfcDateTimeSelect* v12_StartTime, ::Ifc2x3::IfcDateTimeSelect* v13_FinishTime, boost::optional< ::Ifc2x3::IfcWorkControlTypeEnum::Value > v14_WorkControlType, boost::optional< std::string > v15_UserDefinedControlType);
-    typedef IfcTemplatedEntityList< IfcWorkControl > list;
+    IfcWorkControl (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_Identifier, ::Ifc2x3::IfcDateTimeSelect* v7_CreationDate, boost::optional< aggregate_of< ::Ifc2x3::IfcPerson >::ptr > v8_Creators, boost::optional< std::string > v9_Purpose, boost::optional< double > v10_Duration, boost::optional< double > v11_TotalFloat, ::Ifc2x3::IfcDateTimeSelect* v12_StartTime, ::Ifc2x3::IfcDateTimeSelect* v13_FinishTime, boost::optional< ::Ifc2x3::IfcWorkControlTypeEnum::Value > v14_WorkControlType, boost::optional< std::string > v15_UserDefinedControlType);
+    typedef aggregate_of< IfcWorkControl > list;
 };
 /// An IfcWorkPlan represents work plans in a construction or a facilities management project.
 /// 
@@ -30611,8 +29483,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcWorkPlan (IfcEntityInstanceData* e);
-    IfcWorkPlan (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_Identifier, ::Ifc2x3::IfcDateTimeSelect* v7_CreationDate, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPerson >::ptr > v8_Creators, boost::optional< std::string > v9_Purpose, boost::optional< double > v10_Duration, boost::optional< double > v11_TotalFloat, ::Ifc2x3::IfcDateTimeSelect* v12_StartTime, ::Ifc2x3::IfcDateTimeSelect* v13_FinishTime, boost::optional< ::Ifc2x3::IfcWorkControlTypeEnum::Value > v14_WorkControlType, boost::optional< std::string > v15_UserDefinedControlType);
-    typedef IfcTemplatedEntityList< IfcWorkPlan > list;
+    IfcWorkPlan (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_Identifier, ::Ifc2x3::IfcDateTimeSelect* v7_CreationDate, boost::optional< aggregate_of< ::Ifc2x3::IfcPerson >::ptr > v8_Creators, boost::optional< std::string > v9_Purpose, boost::optional< double > v10_Duration, boost::optional< double > v11_TotalFloat, ::Ifc2x3::IfcDateTimeSelect* v12_StartTime, ::Ifc2x3::IfcDateTimeSelect* v13_FinishTime, boost::optional< ::Ifc2x3::IfcWorkControlTypeEnum::Value > v14_WorkControlType, boost::optional< std::string > v15_UserDefinedControlType);
+    typedef aggregate_of< IfcWorkPlan > list;
 };
 /// An IfcWorkSchedule
 ///   represents a task schedule of a work plan, which in turn
@@ -30659,8 +29531,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcWorkSchedule (IfcEntityInstanceData* e);
-    IfcWorkSchedule (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_Identifier, ::Ifc2x3::IfcDateTimeSelect* v7_CreationDate, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPerson >::ptr > v8_Creators, boost::optional< std::string > v9_Purpose, boost::optional< double > v10_Duration, boost::optional< double > v11_TotalFloat, ::Ifc2x3::IfcDateTimeSelect* v12_StartTime, ::Ifc2x3::IfcDateTimeSelect* v13_FinishTime, boost::optional< ::Ifc2x3::IfcWorkControlTypeEnum::Value > v14_WorkControlType, boost::optional< std::string > v15_UserDefinedControlType);
-    typedef IfcTemplatedEntityList< IfcWorkSchedule > list;
+    IfcWorkSchedule (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_Identifier, ::Ifc2x3::IfcDateTimeSelect* v7_CreationDate, boost::optional< aggregate_of< ::Ifc2x3::IfcPerson >::ptr > v8_Creators, boost::optional< std::string > v9_Purpose, boost::optional< double > v10_Duration, boost::optional< double > v11_TotalFloat, ::Ifc2x3::IfcDateTimeSelect* v12_StartTime, ::Ifc2x3::IfcDateTimeSelect* v13_FinishTime, boost::optional< ::Ifc2x3::IfcWorkControlTypeEnum::Value > v14_WorkControlType, boost::optional< std::string > v15_UserDefinedControlType);
+    typedef aggregate_of< IfcWorkSchedule > list;
 };
 /// Definition from IAI: A zone isa group of spaces,
 /// partial spaces or other zones. Zone structures may not be
@@ -30753,7 +29625,7 @@ public:
     static const IfcParse::entity& Class();
     IfcZone (IfcEntityInstanceData* e);
     IfcZone (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
-    typedef IfcTemplatedEntityList< IfcZone > list;
+    typedef aggregate_of< IfcZone > list;
 };
 
 class IFC_PARSE_API Ifc2DCompositeCurve : public IfcCompositeCurve {
@@ -30761,8 +29633,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     Ifc2DCompositeCurve (IfcEntityInstanceData* e);
-    Ifc2DCompositeCurve (IfcTemplatedEntityList< ::Ifc2x3::IfcCompositeCurveSegment >::ptr v1_Segments, bool v2_SelfIntersect);
-    typedef IfcTemplatedEntityList< Ifc2DCompositeCurve > list;
+    Ifc2DCompositeCurve (aggregate_of< ::Ifc2x3::IfcCompositeCurveSegment >::ptr v1_Segments, boost::logic::tribool v2_SelfIntersect);
+    typedef aggregate_of< Ifc2DCompositeCurve > list;
 };
 /// A request is the act or instance of asking for something, such as a request for information, bid submission, or performance of work. 
 /// 
@@ -30810,7 +29682,7 @@ public:
     static const IfcParse::entity& Class();
     IfcActionRequest (IfcEntityInstanceData* e);
     IfcActionRequest (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_RequestID);
-    typedef IfcTemplatedEntityList< IfcActionRequest > list;
+    typedef aggregate_of< IfcActionRequest > list;
 };
 /// The flow controller type IfcAirTerminalBoxType defines commonly shared information for occurrences of air boxes.  The set of shared information may include: 
 /// 
@@ -30846,8 +29718,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcAirTerminalBoxType (IfcEntityInstanceData* e);
-    IfcAirTerminalBoxType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcAirTerminalBoxTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcAirTerminalBoxType > list;
+    IfcAirTerminalBoxType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcAirTerminalBoxTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcAirTerminalBoxType > list;
 };
 /// The flow terminal type IfcAirTerminalType defines commonly shared information for occurrences of air terminals.  The set of shared information may include: 
 /// 
@@ -30882,8 +29754,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcAirTerminalType (IfcEntityInstanceData* e);
-    IfcAirTerminalType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcAirTerminalTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcAirTerminalType > list;
+    IfcAirTerminalType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcAirTerminalTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcAirTerminalType > list;
 };
 /// The energy conversion device type IfcAirToAirHeatRecoveryType defines commonly shared information for occurrences of air-to-air heat recovery devices.  The set of shared information may include: 
 /// 
@@ -30919,8 +29791,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcAirToAirHeatRecoveryType (IfcEntityInstanceData* e);
-    IfcAirToAirHeatRecoveryType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcAirToAirHeatRecoveryTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcAirToAirHeatRecoveryType > list;
+    IfcAirToAirHeatRecoveryType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcAirToAirHeatRecoveryTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcAirToAirHeatRecoveryType > list;
 };
 
 class IFC_PARSE_API IfcAngularDimension : public IfcDimensionCurveDirectedCallout {
@@ -30928,8 +29800,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcAngularDimension (IfcEntityInstanceData* e);
-    IfcAngularDimension (IfcEntityList::ptr v1_Contents);
-    typedef IfcTemplatedEntityList< IfcAngularDimension > list;
+    IfcAngularDimension (aggregate_of_instance::ptr v1_Contents);
+    typedef aggregate_of< IfcAngularDimension > list;
 };
 /// An asset is a uniquely identifiable grouping of elements acting as a single entity that has a financial value or that can be operated on as a single unit. 
 /// 
@@ -30991,7 +29863,7 @@ public:
     static const IfcParse::entity& Class();
     IfcAsset (IfcEntityInstanceData* e);
     IfcAsset (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_AssetID, ::Ifc2x3::IfcCostValue* v7_OriginalValue, ::Ifc2x3::IfcCostValue* v8_CurrentValue, ::Ifc2x3::IfcCostValue* v9_TotalReplacementCost, ::Ifc2x3::IfcActorSelect* v10_Owner, ::Ifc2x3::IfcActorSelect* v11_User, ::Ifc2x3::IfcPerson* v12_ResponsiblePerson, ::Ifc2x3::IfcCalendarDate* v13_IncorporationDate, ::Ifc2x3::IfcCostValue* v14_DepreciatedValue);
-    typedef IfcTemplatedEntityList< IfcAsset > list;
+    typedef aggregate_of< IfcAsset > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A B-spline curve is a piecewise parametric polynomial or rational curve described in terms of control points and basis functions. The B-spline curve has been selected as the most stable format to represent all types of polynomial or rational parametric curves. With appropriate attribute values it is capable of representing single span or spline curves of explicit polynomial, rational, Bezier or B-spline type. 
 /// 
@@ -31048,22 +29920,22 @@ public:
     int Degree() const;
     void setDegree(int v);
     /// The list of control points for the curve.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr ControlPointsList() const;
-    void setControlPointsList(IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr v);
+    aggregate_of< ::Ifc2x3::IfcCartesianPoint >::ptr ControlPointsList() const;
+    void setControlPointsList(aggregate_of< ::Ifc2x3::IfcCartesianPoint >::ptr v);
     /// Used to identify particular types of curve; it is for information only.
     ::Ifc2x3::IfcBSplineCurveForm::Value CurveForm() const;
     void setCurveForm(::Ifc2x3::IfcBSplineCurveForm::Value v);
     /// Indication of whether the curve is closed; it is for information only.
-    bool ClosedCurve() const;
-    void setClosedCurve(bool v);
+    boost::logic::tribool ClosedCurve() const;
+    void setClosedCurve(boost::logic::tribool v);
     /// Indication whether the curve self-intersects or not; it is for information only.
-    bool SelfIntersect() const;
-    void setSelfIntersect(bool v);
+    boost::logic::tribool SelfIntersect() const;
+    void setSelfIntersect(boost::logic::tribool v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcBSplineCurve (IfcEntityInstanceData* e);
-    IfcBSplineCurve (int v1_Degree, IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, bool v4_ClosedCurve, bool v5_SelfIntersect);
-    typedef IfcTemplatedEntityList< IfcBSplineCurve > list;
+    IfcBSplineCurve (int v1_Degree, aggregate_of< ::Ifc2x3::IfcCartesianPoint >::ptr v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect);
+    typedef aggregate_of< IfcBSplineCurve > list;
 };
 /// Definition from IAI: The element type
 /// IfcBeamType defines commonly shared information for
@@ -31171,8 +30043,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcBeamType (IfcEntityInstanceData* e);
-    IfcBeamType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcBeamTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcBeamType > list;
+    IfcBeamType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcBeamTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcBeamType > list;
 };
 
 class IFC_PARSE_API IfcBezierCurve : public IfcBSplineCurve {
@@ -31180,8 +30052,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcBezierCurve (IfcEntityInstanceData* e);
-    IfcBezierCurve (int v1_Degree, IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, bool v4_ClosedCurve, bool v5_SelfIntersect);
-    typedef IfcTemplatedEntityList< IfcBezierCurve > list;
+    IfcBezierCurve (int v1_Degree, aggregate_of< ::Ifc2x3::IfcCartesianPoint >::ptr v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect);
+    typedef aggregate_of< IfcBezierCurve > list;
 };
 /// The energy conversion device type IfcBoilerType defines commonly shared information for occurrences of boilers.  The set of shared information may include: 
 /// 
@@ -31220,8 +30092,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcBoilerType (IfcEntityInstanceData* e);
-    IfcBoilerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcBoilerTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcBoilerType > list;
+    IfcBoilerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcBoilerTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcBoilerType > list;
 };
 /// Definition from ISO 6707-1:1989: Major functional part
 /// of a building, examples are foundation, floor, roof, wall.
@@ -31592,7 +30464,7 @@ public:
     static const IfcParse::entity& Class();
     IfcBuildingElement (IfcEntityInstanceData* e);
     IfcBuildingElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcBuildingElement > list;
+    typedef aggregate_of< IfcBuildingElement > list;
 };
 
 class IFC_PARSE_API IfcBuildingElementComponent : public IfcBuildingElement {
@@ -31601,7 +30473,7 @@ public:
     static const IfcParse::entity& Class();
     IfcBuildingElementComponent (IfcEntityInstanceData* e);
     IfcBuildingElementComponent (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcBuildingElementComponent > list;
+    typedef aggregate_of< IfcBuildingElementComponent > list;
 };
 /// Definition from IAI: Layers or major components as subordinate
 /// parts of a building element. Typical usage examples include precast concrete
@@ -31626,7 +30498,7 @@ public:
     static const IfcParse::entity& Class();
     IfcBuildingElementPart (IfcEntityInstanceData* e);
     IfcBuildingElementPart (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcBuildingElementPart > list;
+    typedef aggregate_of< IfcBuildingElementPart > list;
 };
 /// Definition from IAI: The IfcBuildingElementProxy
 /// is a proxy definition that provides the same functionality as an
@@ -31820,15 +30692,13 @@ public:
 /// are defined at this level.
 class IFC_PARSE_API IfcBuildingElementProxy : public IfcBuildingElement {
 public:
-    /// Whether the optional attribute CompositionType is defined for this IfcBuildingElementProxy
-    bool hasCompositionType() const;
-    ::Ifc2x3::IfcElementCompositionEnum::Value CompositionType() const;
-    void setCompositionType(::Ifc2x3::IfcElementCompositionEnum::Value v);
+    boost::optional< ::Ifc2x3::IfcElementCompositionEnum::Value > CompositionType() const;
+    void setCompositionType(boost::optional< ::Ifc2x3::IfcElementCompositionEnum::Value > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcBuildingElementProxy (IfcEntityInstanceData* e);
     IfcBuildingElementProxy (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< ::Ifc2x3::IfcElementCompositionEnum::Value > v9_CompositionType);
-    typedef IfcTemplatedEntityList< IfcBuildingElementProxy > list;
+    typedef aggregate_of< IfcBuildingElementProxy > list;
 };
 /// Definition from IAI:
 ///   TheIfcBuildingElementProxyType defines a list of
@@ -31872,8 +30742,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcBuildingElementProxyType (IfcEntityInstanceData* e);
-    IfcBuildingElementProxyType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcBuildingElementProxyTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcBuildingElementProxyType > list;
+    IfcBuildingElementProxyType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcBuildingElementProxyTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcBuildingElementProxyType > list;
 };
 /// The flow fitting type IfcCableCarrierFittingType defines commonly shared information for occurrences of cable carrier fittings.  The set of shared information may include: 
 /// 
@@ -31909,8 +30779,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCableCarrierFittingType (IfcEntityInstanceData* e);
-    IfcCableCarrierFittingType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCableCarrierFittingTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcCableCarrierFittingType > list;
+    IfcCableCarrierFittingType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCableCarrierFittingTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcCableCarrierFittingType > list;
 };
 /// The flow segment type IfcCableCarrierSegmentType defines commonly shared information for occurrences of cable carrier segments.  The set of shared information may include: 
 /// 
@@ -31952,8 +30822,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCableCarrierSegmentType (IfcEntityInstanceData* e);
-    IfcCableCarrierSegmentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCableCarrierSegmentTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcCableCarrierSegmentType > list;
+    IfcCableCarrierSegmentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCableCarrierSegmentTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcCableCarrierSegmentType > list;
 };
 /// The flow segment type IfcCableSegmentType defines commonly shared information for occurrences of cable segments.  The set of shared information may include: 
 /// 
@@ -32004,8 +30874,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCableSegmentType (IfcEntityInstanceData* e);
-    IfcCableSegmentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCableSegmentTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcCableSegmentType > list;
+    IfcCableSegmentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCableSegmentTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcCableSegmentType > list;
 };
 /// The energy conversion device type IfcChillerType defines commonly shared information for occurrences of chillers.  The set of shared information may include: 
 /// 
@@ -32047,8 +30917,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcChillerType (IfcEntityInstanceData* e);
-    IfcChillerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcChillerTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcChillerType > list;
+    IfcChillerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcChillerTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcChillerType > list;
 };
 /// Definition from ISO/CD 10303-42:1992: An IfcCircle is defined by a radius and the location and orientation of the circle. Interpretation of data should be as follows: 
 /// 
@@ -32086,7 +30956,7 @@ public:
     static const IfcParse::entity& Class();
     IfcCircle (IfcEntityInstanceData* e);
     IfcCircle (::Ifc2x3::IfcAxis2Placement* v1_Position, double v2_Radius);
-    typedef IfcTemplatedEntityList< IfcCircle > list;
+    typedef aggregate_of< IfcCircle > list;
 };
 /// The energy conversion device type IfcCoilType defines commonly shared information for occurrences of coils.  The set of shared information may include: 
 /// 
@@ -32123,8 +30993,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCoilType (IfcEntityInstanceData* e);
-    IfcCoilType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCoilTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcCoilType > list;
+    IfcCoilType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCoilTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcCoilType > list;
 };
 /// Definition from ISO 6707-1:1989: Structural member of
 /// slender form, usually vertical, that transmits to its base the
@@ -32403,7 +31273,7 @@ public:
     static const IfcParse::entity& Class();
     IfcColumn (IfcEntityInstanceData* e);
     IfcColumn (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcColumn > list;
+    typedef aggregate_of< IfcColumn > list;
 };
 /// The flow moving device type IfcCompressorType defines commonly shared information for occurrences of compressors.  The set of shared information may include: 
 /// 
@@ -32440,8 +31310,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCompressorType (IfcEntityInstanceData* e);
-    IfcCompressorType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCompressorTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcCompressorType > list;
+    IfcCompressorType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCompressorTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcCompressorType > list;
 };
 /// The energy conversion device type IfcCondenserType defines commonly shared information for occurrences of condensers.  The set of shared information may include: 
 /// 
@@ -32478,8 +31348,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCondenserType (IfcEntityInstanceData* e);
-    IfcCondenserType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCondenserTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcCondenserType > list;
+    IfcCondenserType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCondenserTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcCondenserType > list;
 };
 
 class IFC_PARSE_API IfcCondition : public IfcGroup {
@@ -32488,7 +31358,7 @@ public:
     static const IfcParse::entity& Class();
     IfcCondition (IfcEntityInstanceData* e);
     IfcCondition (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
-    typedef IfcTemplatedEntityList< IfcCondition > list;
+    typedef aggregate_of< IfcCondition > list;
 };
 
 class IFC_PARSE_API IfcConditionCriterion : public IfcControl {
@@ -32501,7 +31371,7 @@ public:
     static const IfcParse::entity& Class();
     IfcConditionCriterion (IfcEntityInstanceData* e);
     IfcConditionCriterion (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcConditionCriterionSelect* v6_Criterion, ::Ifc2x3::IfcDateTimeSelect* v7_CriterionDateTime);
-    typedef IfcTemplatedEntityList< IfcConditionCriterion > list;
+    typedef aggregate_of< IfcConditionCriterion > list;
 };
 /// IfcConstructionEquipmentResource is usage of construction equipment to assist in the performance of construction. Construction Equipment resources are wholly or partially consumed or occupied in the performance of construction.
 /// 
@@ -32531,7 +31401,7 @@ public:
     static const IfcParse::entity& Class();
     IfcConstructionEquipmentResource (IfcEntityInstanceData* e);
     IfcConstructionEquipmentResource (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_ResourceIdentifier, boost::optional< std::string > v7_ResourceGroup, boost::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit* v9_BaseQuantity);
-    typedef IfcTemplatedEntityList< IfcConstructionEquipmentResource > list;
+    typedef aggregate_of< IfcConstructionEquipmentResource > list;
 };
 /// IfcConstructionMaterialResource identifies a material resource type in a construction project. 
 /// 
@@ -32561,19 +31431,15 @@ public:
 /// Figure 184 — Construction material resource assignment
 class IFC_PARSE_API IfcConstructionMaterialResource : public IfcConstructionResource {
 public:
-    /// Whether the optional attribute Suppliers is defined for this IfcConstructionMaterialResource
-    bool hasSuppliers() const;
-    IfcEntityList::ptr Suppliers() const;
-    void setSuppliers(IfcEntityList::ptr v);
-    /// Whether the optional attribute UsageRatio is defined for this IfcConstructionMaterialResource
-    bool hasUsageRatio() const;
-    double UsageRatio() const;
-    void setUsageRatio(double v);
+    boost::optional< aggregate_of_instance::ptr > Suppliers() const;
+    void setSuppliers(boost::optional< aggregate_of_instance::ptr > v);
+    boost::optional< double > UsageRatio() const;
+    void setUsageRatio(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcConstructionMaterialResource (IfcEntityInstanceData* e);
-    IfcConstructionMaterialResource (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_ResourceIdentifier, boost::optional< std::string > v7_ResourceGroup, boost::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit* v9_BaseQuantity, boost::optional< IfcEntityList::ptr > v10_Suppliers, boost::optional< double > v11_UsageRatio);
-    typedef IfcTemplatedEntityList< IfcConstructionMaterialResource > list;
+    IfcConstructionMaterialResource (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_ResourceIdentifier, boost::optional< std::string > v7_ResourceGroup, boost::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit* v9_BaseQuantity, boost::optional< aggregate_of_instance::ptr > v10_Suppliers, boost::optional< double > v11_UsageRatio);
+    typedef aggregate_of< IfcConstructionMaterialResource > list;
 };
 /// IfcConstructionProductResource defines the role of a product that is consumed (wholly or partially), or occupied in the performance of construction. 
 /// 
@@ -32596,7 +31462,7 @@ public:
     static const IfcParse::entity& Class();
     IfcConstructionProductResource (IfcEntityInstanceData* e);
     IfcConstructionProductResource (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_ResourceIdentifier, boost::optional< std::string > v7_ResourceGroup, boost::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit* v9_BaseQuantity);
-    typedef IfcTemplatedEntityList< IfcConstructionProductResource > list;
+    typedef aggregate_of< IfcConstructionProductResource > list;
 };
 /// The energy conversion device type IfcCooledBeamType defines commonly shared information for occurrences of cooled beams.  The set of shared information may include: 
 /// 
@@ -32635,8 +31501,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCooledBeamType (IfcEntityInstanceData* e);
-    IfcCooledBeamType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCooledBeamTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcCooledBeamType > list;
+    IfcCooledBeamType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCooledBeamTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcCooledBeamType > list;
 };
 /// The energy conversion device type IfcCoolingTowerType defines commonly shared information for occurrences of cooling towers.  The set of shared information may include: 
 /// 
@@ -32679,8 +31545,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCoolingTowerType (IfcEntityInstanceData* e);
-    IfcCoolingTowerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCoolingTowerTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcCoolingTowerType > list;
+    IfcCoolingTowerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCoolingTowerTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcCoolingTowerType > list;
 };
 /// Definition from ISO 6707-1:1989: term used: Finishing -
 /// final coverings and treatments of surfaces and their
@@ -32908,18 +31774,16 @@ public:
 /// Figure 95 — Covering body circular
 class IFC_PARSE_API IfcCovering : public IfcBuildingElement {
 public:
-    /// Whether the optional attribute PredefinedType is defined for this IfcCovering
-    bool hasPredefinedType() const;
     /// Predefined types to define the particular type of the covering. There may be property set definitions available for each predefined type.
-    ::Ifc2x3::IfcCoveringTypeEnum::Value PredefinedType() const;
-    void setPredefinedType(::Ifc2x3::IfcCoveringTypeEnum::Value v);
-        IfcTemplatedEntityList< IfcRelCoversSpaces >::ptr CoversSpaces() const; // INVERSE IfcRelCoversSpaces::RelatedCoverings
-    IfcTemplatedEntityList< IfcRelCoversBldgElements >::ptr Covers() const; // INVERSE IfcRelCoversBldgElements::RelatedCoverings
+    boost::optional< ::Ifc2x3::IfcCoveringTypeEnum::Value > PredefinedType() const;
+    void setPredefinedType(boost::optional< ::Ifc2x3::IfcCoveringTypeEnum::Value > v);
+        aggregate_of< IfcRelCoversSpaces >::ptr CoversSpaces() const; // INVERSE IfcRelCoversSpaces::RelatedCoverings
+    aggregate_of< IfcRelCoversBldgElements >::ptr Covers() const; // INVERSE IfcRelCoversBldgElements::RelatedCoverings
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcCovering (IfcEntityInstanceData* e);
     IfcCovering (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< ::Ifc2x3::IfcCoveringTypeEnum::Value > v9_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcCovering > list;
+    typedef aggregate_of< IfcCovering > list;
 };
 /// Definition from ISO 6707-1:1989: Non load bearing wall
 /// positioned on the outside of a building and enclosing it.
@@ -33065,7 +31929,7 @@ public:
     static const IfcParse::entity& Class();
     IfcCurtainWall (IfcEntityInstanceData* e);
     IfcCurtainWall (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcCurtainWall > list;
+    typedef aggregate_of< IfcCurtainWall > list;
 };
 /// The flow controller type IfcDamperType defines commonly shared information for occurrences of dampers.  The set of shared information may include: 
 /// 
@@ -33109,8 +31973,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDamperType (IfcEntityInstanceData* e);
-    IfcDamperType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcDamperTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcDamperType > list;
+    IfcDamperType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcDamperTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcDamperType > list;
 };
 
 class IFC_PARSE_API IfcDiameterDimension : public IfcDimensionCurveDirectedCallout {
@@ -33118,8 +31982,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDiameterDimension (IfcEntityInstanceData* e);
-    IfcDiameterDimension (IfcEntityList::ptr v1_Contents);
-    typedef IfcTemplatedEntityList< IfcDiameterDimension > list;
+    IfcDiameterDimension (aggregate_of_instance::ptr v1_Contents);
+    typedef aggregate_of< IfcDiameterDimension > list;
 };
 /// Definition from IAI: Representation of different kinds of
 ///   accessories included in or added to elements.  
@@ -33300,7 +32164,7 @@ public:
     static const IfcParse::entity& Class();
     IfcDiscreteAccessory (IfcEntityInstanceData* e);
     IfcDiscreteAccessory (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcDiscreteAccessory > list;
+    typedef aggregate_of< IfcDiscreteAccessory > list;
 };
 /// Definition from IAI: The element type
 ///   (IfcDiscreteAccessoryType) defines a list of commonly shared property
@@ -33495,8 +32359,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDiscreteAccessoryType (IfcEntityInstanceData* e);
-    IfcDiscreteAccessoryType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
-    typedef IfcTemplatedEntityList< IfcDiscreteAccessoryType > list;
+    IfcDiscreteAccessoryType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
+    typedef aggregate_of< IfcDiscreteAccessoryType > list;
 };
 /// The distribution flow element type IfcDistributionChamberElementType defines commonly shared information for occurrences of distribution chamber elements.  The set of shared information may include:
 /// 
@@ -33543,8 +32407,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDistributionChamberElementType (IfcEntityInstanceData* e);
-    IfcDistributionChamberElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcDistributionChamberElementTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcDistributionChamberElementType > list;
+    IfcDistributionChamberElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcDistributionChamberElementTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcDistributionChamberElementType > list;
 };
 /// The element type IfcDistributionControlElementType defines a list of commonly shared property set definitions of an element and an optional set of product representations.  It is used to define an element specification (the specific product information that is common to all occurrences of that product type). 
 /// 
@@ -33605,8 +32469,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDistributionControlElementType (IfcEntityInstanceData* e);
-    IfcDistributionControlElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
-    typedef IfcTemplatedEntityList< IfcDistributionControlElementType > list;
+    IfcDistributionControlElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
+    typedef aggregate_of< IfcDistributionControlElementType > list;
 };
 /// Definition from IAI: Generalization of all elements
 /// that participate in a distribution system. Typical examples of
@@ -33776,7 +32640,7 @@ public:
     static const IfcParse::entity& Class();
     IfcDistributionElement (IfcEntityInstanceData* e);
     IfcDistributionElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcDistributionElement > list;
+    typedef aggregate_of< IfcDistributionElement > list;
 };
 /// The distribution element IfcDistributionFlowElement defines occurrence elements of a distribution system that facilitate the distribution of energy or matter, such as air, water or power.
 /// 
@@ -33848,12 +32712,12 @@ public:
 /// Representations are further defined at subtypes; for example, parametric flow segments align material profiles with the 'Axis' representation.
 class IFC_PARSE_API IfcDistributionFlowElement : public IfcDistributionElement {
 public:
-        IfcTemplatedEntityList< IfcRelFlowControlElements >::ptr HasControlElements() const; // INVERSE IfcRelFlowControlElements::RelatingFlowElement
+        aggregate_of< IfcRelFlowControlElements >::ptr HasControlElements() const; // INVERSE IfcRelFlowControlElements::RelatingFlowElement
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDistributionFlowElement (IfcEntityInstanceData* e);
     IfcDistributionFlowElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcDistributionFlowElement > list;
+    typedef aggregate_of< IfcDistributionFlowElement > list;
 };
 /// A distribution port is an inlet or outlet of a product through which a particular substance may flow.
 /// 
@@ -33939,16 +32803,14 @@ public:
 /// 'Body': The shape of the port.
 class IFC_PARSE_API IfcDistributionPort : public IfcPort {
 public:
-    /// Whether the optional attribute FlowDirection is defined for this IfcDistributionPort
-    bool hasFlowDirection() const;
     /// Enumeration that identifies if this port is a Sink (inlet), a Source (outlet) or both a SinkAndSource.
-    ::Ifc2x3::IfcFlowDirectionEnum::Value FlowDirection() const;
-    void setFlowDirection(::Ifc2x3::IfcFlowDirectionEnum::Value v);
+    boost::optional< ::Ifc2x3::IfcFlowDirectionEnum::Value > FlowDirection() const;
+    void setFlowDirection(boost::optional< ::Ifc2x3::IfcFlowDirectionEnum::Value > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDistributionPort (IfcEntityInstanceData* e);
     IfcDistributionPort (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< ::Ifc2x3::IfcFlowDirectionEnum::Value > v8_FlowDirection);
-    typedef IfcTemplatedEntityList< IfcDistributionPort > list;
+    typedef aggregate_of< IfcDistributionPort > list;
 };
 /// Definition from ISO 6707-1:1989: Construction for
 /// closing an opening, intended primarily for access with hinged,
@@ -34308,25 +33170,21 @@ public:
 /// Figure 97 — Door swing
 class IFC_PARSE_API IfcDoor : public IfcBuildingElement {
 public:
-    /// Whether the optional attribute OverallHeight is defined for this IfcDoor
-    bool hasOverallHeight() const;
     /// Overall measure of the height, it reflects the Z Dimension of a bounding box, enclosing the body of the door opening. If omitted, the OverallHeight should be taken from the geometric representation of the IfcOpening in which the door is inserted. 
     /// 
     /// NOTE  The body of the door might be taller then the door opening (e.g. in cases where the door lining includes a casing). In these cases the OverallHeight shall still be given as the door opening height, and not as the total height of the door lining.
-    double OverallHeight() const;
-    void setOverallHeight(double v);
-    /// Whether the optional attribute OverallWidth is defined for this IfcDoor
-    bool hasOverallWidth() const;
+    boost::optional< double > OverallHeight() const;
+    void setOverallHeight(boost::optional< double > v);
     /// Overall measure of the width, it reflects the X Dimension of a bounding box, enclosing the body of the door opening. If omitted, the OverallWidth should be taken from the geometric representation of the IfcOpening in which the door is inserted. 
     /// 
     /// NOTE  The body of the door might be wider then the door opening (e.g. in cases where the door lining includes a casing). In these cases the OverallWidth shall still be given as the door opening width, and not as the total width of the door lining.
-    double OverallWidth() const;
-    void setOverallWidth(double v);
+    boost::optional< double > OverallWidth() const;
+    void setOverallWidth(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDoor (IfcEntityInstanceData* e);
     IfcDoor (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< double > v9_OverallHeight, boost::optional< double > v10_OverallWidth);
-    typedef IfcTemplatedEntityList< IfcDoor > list;
+    typedef aggregate_of< IfcDoor > list;
 };
 /// The flow fitting type IfcDuctFittingType defines commonly shared information for occurrences of duct fittings.  The set of shared information may include: 
 /// 
@@ -34365,8 +33223,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDuctFittingType (IfcEntityInstanceData* e);
-    IfcDuctFittingType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcDuctFittingTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcDuctFittingType > list;
+    IfcDuctFittingType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcDuctFittingTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcDuctFittingType > list;
 };
 /// The flow segment type IfcDuctSegmentType defines commonly shared information for occurrences of duct segments.  The set of shared information may include: 
 /// 
@@ -34405,8 +33263,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDuctSegmentType (IfcEntityInstanceData* e);
-    IfcDuctSegmentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcDuctSegmentTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcDuctSegmentType > list;
+    IfcDuctSegmentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcDuctSegmentTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcDuctSegmentType > list;
 };
 /// The flow treatment device type IfcDuctSilencerType defines commonly shared information for occurrences of duct silencers.  The set of shared information may include: 
 /// 
@@ -34442,21 +33300,19 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDuctSilencerType (IfcEntityInstanceData* e);
-    IfcDuctSilencerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcDuctSilencerTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcDuctSilencerType > list;
+    IfcDuctSilencerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcDuctSilencerTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcDuctSilencerType > list;
 };
 
 class IFC_PARSE_API IfcEdgeFeature : public IfcFeatureElementSubtraction {
 public:
-    /// Whether the optional attribute FeatureLength is defined for this IfcEdgeFeature
-    bool hasFeatureLength() const;
-    double FeatureLength() const;
-    void setFeatureLength(double v);
+    boost::optional< double > FeatureLength() const;
+    void setFeatureLength(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcEdgeFeature (IfcEntityInstanceData* e);
     IfcEdgeFeature (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< double > v9_FeatureLength);
-    typedef IfcTemplatedEntityList< IfcEdgeFeature > list;
+    typedef aggregate_of< IfcEdgeFeature > list;
 };
 /// The flow terminal type IfcElectricApplianceType defines commonly shared information for occurrences of electric appliances.  The set of shared information may include: 
 /// 
@@ -34495,8 +33351,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcElectricApplianceType (IfcEntityInstanceData* e);
-    IfcElectricApplianceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricApplianceTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcElectricApplianceType > list;
+    IfcElectricApplianceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricApplianceTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcElectricApplianceType > list;
 };
 /// The flow storage device type IfcElectricFlowStorageDeviceType defines commonly shared information for occurrences of electric flow storage devices.  The set of shared information may include: 
 /// 
@@ -34533,8 +33389,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcElectricFlowStorageDeviceType (IfcEntityInstanceData* e);
-    IfcElectricFlowStorageDeviceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricFlowStorageDeviceTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcElectricFlowStorageDeviceType > list;
+    IfcElectricFlowStorageDeviceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricFlowStorageDeviceTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcElectricFlowStorageDeviceType > list;
 };
 /// The energy conversion device type IfcElectricGeneratorType defines commonly shared information for occurrences of electric generators.  The set of shared information may include: 
 /// 
@@ -34576,8 +33432,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcElectricGeneratorType (IfcEntityInstanceData* e);
-    IfcElectricGeneratorType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricGeneratorTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcElectricGeneratorType > list;
+    IfcElectricGeneratorType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricGeneratorTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcElectricGeneratorType > list;
 };
 
 class IFC_PARSE_API IfcElectricHeaterType : public IfcFlowTerminalType {
@@ -34587,8 +33443,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcElectricHeaterType (IfcEntityInstanceData* e);
-    IfcElectricHeaterType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricHeaterTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcElectricHeaterType > list;
+    IfcElectricHeaterType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricHeaterTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcElectricHeaterType > list;
 };
 /// The energy conversion device type IfcElectricMotorType defines commonly shared information for occurrences of electric motors.  The set of shared information may include: 
 /// 
@@ -34625,8 +33481,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcElectricMotorType (IfcEntityInstanceData* e);
-    IfcElectricMotorType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricMotorTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcElectricMotorType > list;
+    IfcElectricMotorType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricMotorTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcElectricMotorType > list;
 };
 /// The flow controller type IfcElectricTimeControlType defines commonly shared information for occurrences of electric time controls.  The set of shared information may include: 
 /// 
@@ -34663,8 +33519,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcElectricTimeControlType (IfcEntityInstanceData* e);
-    IfcElectricTimeControlType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricTimeControlTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcElectricTimeControlType > list;
+    IfcElectricTimeControlType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricTimeControlTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcElectricTimeControlType > list;
 };
 
 class IFC_PARSE_API IfcElectricalCircuit : public IfcSystem {
@@ -34673,7 +33529,7 @@ public:
     static const IfcParse::entity& Class();
     IfcElectricalCircuit (IfcEntityInstanceData* e);
     IfcElectricalCircuit (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
-    typedef IfcTemplatedEntityList< IfcElectricalCircuit > list;
+    typedef aggregate_of< IfcElectricalCircuit > list;
 };
 
 class IFC_PARSE_API IfcElectricalElement : public IfcElement {
@@ -34682,7 +33538,7 @@ public:
     static const IfcParse::entity& Class();
     IfcElectricalElement (IfcEntityInstanceData* e);
     IfcElectricalElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcElectricalElement > list;
+    typedef aggregate_of< IfcElectricalElement > list;
 };
 /// The distribution flow element IfcEnergyConversionDevice defines 
 ///   the occurrence of a device used to perform
@@ -34699,7 +33555,7 @@ public:
     static const IfcParse::entity& Class();
     IfcEnergyConversionDevice (IfcEntityInstanceData* e);
     IfcEnergyConversionDevice (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcEnergyConversionDevice > list;
+    typedef aggregate_of< IfcEnergyConversionDevice > list;
 };
 /// The flow moving device type IfcFanType defines commonly shared information for occurrences of fans.  The set of shared information may include: 
 /// 
@@ -34737,8 +33593,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFanType (IfcEntityInstanceData* e);
-    IfcFanType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcFanTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcFanType > list;
+    IfcFanType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcFanTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcFanType > list;
 };
 /// The flow treatment device type IfcFilterType defines commonly shared information for occurrences of filters.  The set of shared information may include: 
 /// 
@@ -34777,8 +33633,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFilterType (IfcEntityInstanceData* e);
-    IfcFilterType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcFilterTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcFilterType > list;
+    IfcFilterType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcFilterTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcFilterType > list;
 };
 /// The flow terminal type IfcFireSuppressionTerminalType defines commonly shared information for occurrences of fire suppression terminals.  The set of shared information may include: 
 /// 
@@ -34821,8 +33677,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFireSuppressionTerminalType (IfcEntityInstanceData* e);
-    IfcFireSuppressionTerminalType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcFireSuppressionTerminalTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcFireSuppressionTerminalType > list;
+    IfcFireSuppressionTerminalType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcFireSuppressionTerminalTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcFireSuppressionTerminalType > list;
 };
 /// The distribution flow element IfcFlowController defines
 ///   the occurrence of elements of a distribution system that 
@@ -34839,7 +33695,7 @@ public:
     static const IfcParse::entity& Class();
     IfcFlowController (IfcEntityInstanceData* e);
     IfcFlowController (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcFlowController > list;
+    typedef aggregate_of< IfcFlowController > list;
 };
 /// The distribution flow element IfcFlowFitting defines the occurrence of a junction or transition in a flow distribution system, such as an elbow or tee. Its type is defined by IfcFlowFittingType or its subtypes.
 /// 
@@ -34852,7 +33708,7 @@ public:
     static const IfcParse::entity& Class();
     IfcFlowFitting (IfcEntityInstanceData* e);
     IfcFlowFitting (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcFlowFitting > list;
+    typedef aggregate_of< IfcFlowFitting > list;
 };
 /// The distribution control element type IfcFlowInstrumentType defines commonly shared information for occurrences of flow instruments.  The set of shared information may include: 
 /// 
@@ -34892,8 +33748,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcFlowInstrumentType (IfcEntityInstanceData* e);
-    IfcFlowInstrumentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcFlowInstrumentTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcFlowInstrumentType > list;
+    IfcFlowInstrumentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcFlowInstrumentTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcFlowInstrumentType > list;
 };
 /// The distribution flow element IfcFlowMovingDevice defines the occurrence of an apparatus used to distribute, circulate or perform conveyance of fluids, including liquids and gases (such as a pump or fan), and typically participates in a flow distribution system. Its type is defined by IfcFlowMovingDeviceType or its subtypes.
 /// 
@@ -34906,7 +33762,7 @@ public:
     static const IfcParse::entity& Class();
     IfcFlowMovingDevice (IfcEntityInstanceData* e);
     IfcFlowMovingDevice (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcFlowMovingDevice > list;
+    typedef aggregate_of< IfcFlowMovingDevice > list;
 };
 /// The distribution flow element IfcFlowSegment defines the occurrence of a segment of a flow distribution system.
 /// 
@@ -34937,7 +33793,7 @@ public:
     static const IfcParse::entity& Class();
     IfcFlowSegment (IfcEntityInstanceData* e);
     IfcFlowSegment (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcFlowSegment > list;
+    typedef aggregate_of< IfcFlowSegment > list;
 };
 /// The distribution flow element IfcFlowStorageDevice defines
 ///   the occurrence of a device that participates in a distribution
@@ -34954,7 +33810,7 @@ public:
     static const IfcParse::entity& Class();
     IfcFlowStorageDevice (IfcEntityInstanceData* e);
     IfcFlowStorageDevice (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcFlowStorageDevice > list;
+    typedef aggregate_of< IfcFlowStorageDevice > list;
 };
 /// The distribution flow element IfcFlowTerminal defines the
 ///   occurrence of a permanently attached element that acts as a terminus or 
@@ -34973,7 +33829,7 @@ public:
     static const IfcParse::entity& Class();
     IfcFlowTerminal (IfcEntityInstanceData* e);
     IfcFlowTerminal (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcFlowTerminal > list;
+    typedef aggregate_of< IfcFlowTerminal > list;
 };
 /// The distribution flow element IfcFlowTreatmentDevice defines the occurrence of a device typically used to remove unwanted matter from a fluid, either liquid or gas, and typically participates in a flow distribution system.  Its type is defined by IfcFlowTreatmentDeviceType or its subtypes.
 /// 
@@ -34986,7 +33842,7 @@ public:
     static const IfcParse::entity& Class();
     IfcFlowTreatmentDevice (IfcEntityInstanceData* e);
     IfcFlowTreatmentDevice (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcFlowTreatmentDevice > list;
+    typedef aggregate_of< IfcFlowTreatmentDevice > list;
 };
 /// A footing is a part of the foundation of a structure that spreads and transmits the load to the soil, either directly or via piles.
 /// 
@@ -35021,7 +33877,7 @@ public:
     static const IfcParse::entity& Class();
     IfcFooting (IfcEntityInstanceData* e);
     IfcFooting (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, ::Ifc2x3::IfcFootingTypeEnum::Value v9_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcFooting > list;
+    typedef aggregate_of< IfcFooting > list;
 };
 /// An IfcMember is a
 /// structural member designed to carry loads between or beyond
@@ -35279,7 +34135,7 @@ public:
     static const IfcParse::entity& Class();
     IfcMember (IfcEntityInstanceData* e);
     IfcMember (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcMember > list;
+    typedef aggregate_of< IfcMember > list;
 };
 /// A pile is a slender timber, concrete, or steel structural element, driven, jetted, or otherwise embedded on end in the ground for the purpose of supporting a load.
 /// 
@@ -35306,18 +34162,16 @@ public:
     /// IFC 2x4 change:  Attribute made optional.  Type information can be provided by IfcRelDefinesByType and IfcPileType.
     ::Ifc2x3::IfcPileTypeEnum::Value PredefinedType() const;
     void setPredefinedType(::Ifc2x3::IfcPileTypeEnum::Value v);
-    /// Whether the optional attribute ConstructionType is defined for this IfcPile
-    bool hasConstructionType() const;
     /// General designator for how the pile is constructed.
     /// 
     /// IFC 2x4 change:  Material profile association capability by means of IfcRelAssociatesMaterial has been added.  The attribute ConstructionType should not be used whenever its information can be provided by a material profile set, either associated with the IfcPile object or, if present, with a corresponding instance of IfcPileType.
-    ::Ifc2x3::IfcPileConstructionEnum::Value ConstructionType() const;
-    void setConstructionType(::Ifc2x3::IfcPileConstructionEnum::Value v);
+    boost::optional< ::Ifc2x3::IfcPileConstructionEnum::Value > ConstructionType() const;
+    void setConstructionType(boost::optional< ::Ifc2x3::IfcPileConstructionEnum::Value > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcPile (IfcEntityInstanceData* e);
     IfcPile (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, ::Ifc2x3::IfcPileTypeEnum::Value v9_PredefinedType, boost::optional< ::Ifc2x3::IfcPileConstructionEnum::Value > v10_ConstructionType);
-    typedef IfcTemplatedEntityList< IfcPile > list;
+    typedef aggregate_of< IfcPile > list;
 };
 /// Definition from IAI: An IfcPlate is a planar and
 /// often flat part with constant thickness. A plate can be a
@@ -35553,7 +34407,7 @@ public:
     static const IfcParse::entity& Class();
     IfcPlate (IfcEntityInstanceData* e);
     IfcPlate (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcPlate > list;
+    typedef aggregate_of< IfcPlate > list;
 };
 /// Definition of IAI: The railing is a frame assembly
 /// adjacent to human circulation spaces and at some space boundaries
@@ -35689,18 +34543,16 @@ public:
 /// 'MappedRepresentation'
 class IFC_PARSE_API IfcRailing : public IfcBuildingElement {
 public:
-    /// Whether the optional attribute PredefinedType is defined for this IfcRailing
-    bool hasPredefinedType() const;
     /// Predefined generic types for a railing that are specified in an enumeration. There may be a property set given for the predefined types.
     ///   NOTE: The use of the predefined type directly at the occurrence object level of IfcRailing is only permitted, if no type object IfcRailingType is assigned.
     ///   IFC2x PLATFORM CHANGE: The attribute has been changed into an OPTIONAL attribute.
-    ::Ifc2x3::IfcRailingTypeEnum::Value PredefinedType() const;
-    void setPredefinedType(::Ifc2x3::IfcRailingTypeEnum::Value v);
+    boost::optional< ::Ifc2x3::IfcRailingTypeEnum::Value > PredefinedType() const;
+    void setPredefinedType(boost::optional< ::Ifc2x3::IfcRailingTypeEnum::Value > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRailing (IfcEntityInstanceData* e);
     IfcRailing (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< ::Ifc2x3::IfcRailingTypeEnum::Value > v9_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcRailing > list;
+    typedef aggregate_of< IfcRailing > list;
 };
 /// Definition from ISO 6707-1:1989: Inclined way or floor
 /// joining two surfaces at different levels.
@@ -35843,7 +34695,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRamp (IfcEntityInstanceData* e);
     IfcRamp (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, ::Ifc2x3::IfcRampTypeEnum::Value v9_ShapeType);
-    typedef IfcTemplatedEntityList< IfcRamp > list;
+    typedef aggregate_of< IfcRamp > list;
 };
 /// A ramp is an inclined slab segment, normally
 /// providing a human circulation link between two landings, floors or
@@ -36039,7 +34891,7 @@ public:
     static const IfcParse::entity& Class();
     IfcRampFlight (IfcEntityInstanceData* e);
     IfcRampFlight (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcRampFlight > list;
+    typedef aggregate_of< IfcRampFlight > list;
 };
 
 class IFC_PARSE_API IfcRationalBezierCurve : public IfcBezierCurve {
@@ -36049,8 +34901,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRationalBezierCurve (IfcEntityInstanceData* e);
-    IfcRationalBezierCurve (int v1_Degree, IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, bool v4_ClosedCurve, bool v5_SelfIntersect, std::vector< double > /*[2:?]*/ v6_WeightsData);
-    typedef IfcTemplatedEntityList< IfcRationalBezierCurve > list;
+    IfcRationalBezierCurve (int v1_Degree, aggregate_of< ::Ifc2x3::IfcCartesianPoint >::ptr v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect, std::vector< double > /*[2:?]*/ v6_WeightsData);
+    typedef aggregate_of< IfcRationalBezierCurve > list;
 };
 /// Definition from IAI: Bars, wires, strands, meshes, tendons, and other components embedded in concrete in such a manner that the reinforcement and the concrete act together in resisting forces.
 /// 
@@ -36062,15 +34914,13 @@ public:
 /// Attributes PredefinedType and Role added.
 class IFC_PARSE_API IfcReinforcingElement : public IfcBuildingElementComponent {
 public:
-    /// Whether the optional attribute SteelGrade is defined for this IfcReinforcingElement
-    bool hasSteelGrade() const;
-    std::string SteelGrade() const;
-    void setSteelGrade(std::string v);
+    boost::optional< std::string > SteelGrade() const;
+    void setSteelGrade(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcReinforcingElement (IfcEntityInstanceData* e);
     IfcReinforcingElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_SteelGrade);
-    typedef IfcTemplatedEntityList< IfcReinforcingElement > list;
+    typedef aggregate_of< IfcReinforcingElement > list;
 };
 /// Definition from IAI: A series of longitudinal and transverse wires or bars of various gauges, arranged at right angles to each other and welded at all points of intersection; usually used for concrete slab reinforcement. Also known as welded wire fabric.
 /// 
@@ -36098,14 +34948,10 @@ public:
 /// Simplified geometric representations may be used based on local agreements.
 class IFC_PARSE_API IfcReinforcingMesh : public IfcReinforcingElement {
 public:
-    /// Whether the optional attribute MeshLength is defined for this IfcReinforcingMesh
-    bool hasMeshLength() const;
-    double MeshLength() const;
-    void setMeshLength(double v);
-    /// Whether the optional attribute MeshWidth is defined for this IfcReinforcingMesh
-    bool hasMeshWidth() const;
-    double MeshWidth() const;
-    void setMeshWidth(double v);
+    boost::optional< double > MeshLength() const;
+    void setMeshLength(boost::optional< double > v);
+    boost::optional< double > MeshWidth() const;
+    void setMeshWidth(boost::optional< double > v);
     double LongitudinalBarNominalDiameter() const;
     void setLongitudinalBarNominalDiameter(double v);
     double TransverseBarNominalDiameter() const;
@@ -36122,7 +34968,7 @@ public:
     static const IfcParse::entity& Class();
     IfcReinforcingMesh (IfcEntityInstanceData* e);
     IfcReinforcingMesh (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_SteelGrade, boost::optional< double > v10_MeshLength, boost::optional< double > v11_MeshWidth, double v12_LongitudinalBarNominalDiameter, double v13_TransverseBarNominalDiameter, double v14_LongitudinalBarCrossSectionArea, double v15_TransverseBarCrossSectionArea, double v16_LongitudinalBarSpacing, double v17_TransverseBarSpacing);
-    typedef IfcTemplatedEntityList< IfcReinforcingMesh > list;
+    typedef aggregate_of< IfcReinforcingMesh > list;
 };
 /// Definition from ISO 6707-1:1989: Construction enclosing the building from above.
 /// The IfcRoof is a description of the total roof. It acts as a container entity, that aggregates all components of the roof, it represents. The aggregation is handled via the IfcRelAggregates relationship, relating an IfcRoof with the related roof elements, like slabs (represented by IfcSlab), rafters and purlins (represented by IfcBeam), or other included roofs, such as dormers (represented by IfcRoof).
@@ -36277,20 +35123,18 @@ public:
     static const IfcParse::entity& Class();
     IfcRoof (IfcEntityInstanceData* e);
     IfcRoof (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, ::Ifc2x3::IfcRoofTypeEnum::Value v9_ShapeType);
-    typedef IfcTemplatedEntityList< IfcRoof > list;
+    typedef aggregate_of< IfcRoof > list;
 };
 
 class IFC_PARSE_API IfcRoundedEdgeFeature : public IfcEdgeFeature {
 public:
-    /// Whether the optional attribute Radius is defined for this IfcRoundedEdgeFeature
-    bool hasRadius() const;
-    double Radius() const;
-    void setRadius(double v);
+    boost::optional< double > Radius() const;
+    void setRadius(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcRoundedEdgeFeature (IfcEntityInstanceData* e);
     IfcRoundedEdgeFeature (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< double > v9_FeatureLength, boost::optional< double > v10_Radius);
-    typedef IfcTemplatedEntityList< IfcRoundedEdgeFeature > list;
+    typedef aggregate_of< IfcRoundedEdgeFeature > list;
 };
 /// The distribution control element type IfcSensorType defines commonly shared information for occurrences of sensors.  The set of shared information may include: 
 /// 
@@ -36348,8 +35192,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSensorType (IfcEntityInstanceData* e);
-    IfcSensorType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSensorTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcSensorType > list;
+    IfcSensorType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSensorTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcSensorType > list;
 };
 /// A slab is a component of the
 /// construction that normally encloses a space vertically. The slab
@@ -36613,19 +35457,17 @@ public:
 /// Figure 121 — Slab body clipping
 class IFC_PARSE_API IfcSlab : public IfcBuildingElement {
 public:
-    /// Whether the optional attribute PredefinedType is defined for this IfcSlab
-    bool hasPredefinedType() const;
     /// Predefined generic type for a slab that is specified in an enumeration. There may be a property set given specifically for the predefined types.
     ///   NOTE The PredefinedType shall only be used, if no type object IfcSlabType is assigned, providing its own IfcSlabType.PredefinedType.
     /// 
     /// FC2x PLATFORM CHANGE: The attribute has been changed into an OPTIONAL attribute.
-    ::Ifc2x3::IfcSlabTypeEnum::Value PredefinedType() const;
-    void setPredefinedType(::Ifc2x3::IfcSlabTypeEnum::Value v);
+    boost::optional< ::Ifc2x3::IfcSlabTypeEnum::Value > PredefinedType() const;
+    void setPredefinedType(boost::optional< ::Ifc2x3::IfcSlabTypeEnum::Value > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcSlab (IfcEntityInstanceData* e);
     IfcSlab (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< ::Ifc2x3::IfcSlabTypeEnum::Value > v9_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcSlab > list;
+    typedef aggregate_of< IfcSlab > list;
 };
 /// Definition from ISO 6707-1:1989: Construction comprising
 /// a succession of horizontal stages (steps or landings) that make it
@@ -36800,7 +35642,7 @@ public:
     static const IfcParse::entity& Class();
     IfcStair (IfcEntityInstanceData* e);
     IfcStair (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, ::Ifc2x3::IfcStairTypeEnum::Value v9_ShapeType);
-    typedef IfcTemplatedEntityList< IfcStair > list;
+    typedef aggregate_of< IfcStair > list;
 };
 /// A stair flight is an assembly of
 /// building components in a single "run" of stair steps (not
@@ -36971,39 +35813,31 @@ public:
 /// Figure 131 — Stair flight body
 class IFC_PARSE_API IfcStairFlight : public IfcBuildingElement {
 public:
-    /// Whether the optional attribute NumberOfRiser is defined for this IfcStairFlight
-    bool hasNumberOfRiser() const;
     /// Number of the risers included in the stair flight
     /// 
     /// IFC2x4 CHANGE  The attribute has been deprecated it shall only be exposed with a NIL value. Use Pset_StairFlightCommon.NumberOfRisers instead.
-    int NumberOfRiser() const;
-    void setNumberOfRiser(int v);
-    /// Whether the optional attribute NumberOfTreads is defined for this IfcStairFlight
-    bool hasNumberOfTreads() const;
+    boost::optional< int > NumberOfRiser() const;
+    void setNumberOfRiser(boost::optional< int > v);
     /// Number of treads included in the stair flight.
     /// 
     /// IFC2x4 CHANGE  The attribute has been deprecated it shall only be exposed with a NIL value. Use Pset_StairFlightCommon.NumberOfTreads instead.
-    int NumberOfTreads() const;
-    void setNumberOfTreads(int v);
-    /// Whether the optional attribute RiserHeight is defined for this IfcStairFlight
-    bool hasRiserHeight() const;
+    boost::optional< int > NumberOfTreads() const;
+    void setNumberOfTreads(boost::optional< int > v);
     /// Vertical distance from tread to tread. The riser height is supposed to be equal for all stairs in a stair flight.
     /// 
     /// IFC2x4 CHANGE  The attribute has been deprecated it shall only be exposed with a NIL value. Use Pset_StairFlightCommon.RiserHeight instead.
-    double RiserHeight() const;
-    void setRiserHeight(double v);
-    /// Whether the optional attribute TreadLength is defined for this IfcStairFlight
-    bool hasTreadLength() const;
+    boost::optional< double > RiserHeight() const;
+    void setRiserHeight(boost::optional< double > v);
     /// Horizontal distance from the front to the back of the tread. The tread length is supposed to be equal for all steps of the stair flight.
     /// 
     /// IFC2x4 CHANGE  The attribute has been deprecated it shall only be exposed with a NIL value. Use Pset_StairFlightCommon.TreadLength instead.
-    double TreadLength() const;
-    void setTreadLength(double v);
+    boost::optional< double > TreadLength() const;
+    void setTreadLength(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStairFlight (IfcEntityInstanceData* e);
     IfcStairFlight (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< int > v9_NumberOfRiser, boost::optional< int > v10_NumberOfTreads, boost::optional< double > v11_RiserHeight, boost::optional< double > v12_TreadLength);
-    typedef IfcTemplatedEntityList< IfcStairFlight > list;
+    typedef aggregate_of< IfcStairFlight > list;
 };
 /// Definition from IAI: The IfcStructuralAnalysisModel is used to assemble all information needed to represent a structural analysis model.  It encompasses certain general properties (such as analysis type), references to all contained structural members, structural supports or connections, as well as loads and the respective load results.
 /// 
@@ -37033,8 +35867,6 @@ public:
     /// Defines the type of the structural analysis model.
     ::Ifc2x3::IfcAnalysisModelTypeEnum::Value PredefinedType() const;
     void setPredefinedType(::Ifc2x3::IfcAnalysisModelTypeEnum::Value v);
-    /// Whether the optional attribute OrientationOf2DPlane is defined for this IfcStructuralAnalysisModel
-    bool hasOrientationOf2DPlane() const;
     /// If the selected model type (PredefinedType) describes a 2D system, the orientation defines
     /// the analysis plane (P[1], P[2]) and the normal to the analysis plane (P[3]).  This is needed because
     /// structural items and activities are always defined in three-dimensional space even if they are
@@ -37047,21 +35879,17 @@ public:
     /// In case of predefined type LOADING_3D, OrientationOf2DPlane shall be omitted.
     ::Ifc2x3::IfcAxis2Placement3D* OrientationOf2DPlane() const;
     void setOrientationOf2DPlane(::Ifc2x3::IfcAxis2Placement3D* v);
-    /// Whether the optional attribute LoadedBy is defined for this IfcStructuralAnalysisModel
-    bool hasLoadedBy() const;
     /// References to all load groups to be analyzed.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralLoadGroup >::ptr LoadedBy() const;
-    void setLoadedBy(IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralLoadGroup >::ptr v);
-    /// Whether the optional attribute HasResults is defined for this IfcStructuralAnalysisModel
-    bool hasHasResults() const;
+    boost::optional< aggregate_of< ::Ifc2x3::IfcStructuralLoadGroup >::ptr > LoadedBy() const;
+    void setLoadedBy(boost::optional< aggregate_of< ::Ifc2x3::IfcStructuralLoadGroup >::ptr > v);
     /// References to all result groups available for this structural analysis model.
-    IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralResultGroup >::ptr HasResults() const;
-    void setHasResults(IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralResultGroup >::ptr v);
+    boost::optional< aggregate_of< ::Ifc2x3::IfcStructuralResultGroup >::ptr > HasResults() const;
+    void setHasResults(boost::optional< aggregate_of< ::Ifc2x3::IfcStructuralResultGroup >::ptr > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcStructuralAnalysisModel (IfcEntityInstanceData* e);
-    IfcStructuralAnalysisModel (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcAnalysisModelTypeEnum::Value v6_PredefinedType, ::Ifc2x3::IfcAxis2Placement3D* v7_OrientationOf2DPlane, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralLoadGroup >::ptr > v8_LoadedBy, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralResultGroup >::ptr > v9_HasResults);
-    typedef IfcTemplatedEntityList< IfcStructuralAnalysisModel > list;
+    IfcStructuralAnalysisModel (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcAnalysisModelTypeEnum::Value v6_PredefinedType, ::Ifc2x3::IfcAxis2Placement3D* v7_OrientationOf2DPlane, boost::optional< aggregate_of< ::Ifc2x3::IfcStructuralLoadGroup >::ptr > v8_LoadedBy, boost::optional< aggregate_of< ::Ifc2x3::IfcStructuralResultGroup >::ptr > v9_HasResults);
+    typedef aggregate_of< IfcStructuralAnalysisModel > list;
 };
 
 class IFC_PARSE_API IfcTendon : public IfcReinforcingElement {
@@ -37072,31 +35900,21 @@ public:
     void setNominalDiameter(double v);
     double CrossSectionArea() const;
     void setCrossSectionArea(double v);
-    /// Whether the optional attribute TensionForce is defined for this IfcTendon
-    bool hasTensionForce() const;
-    double TensionForce() const;
-    void setTensionForce(double v);
-    /// Whether the optional attribute PreStress is defined for this IfcTendon
-    bool hasPreStress() const;
-    double PreStress() const;
-    void setPreStress(double v);
-    /// Whether the optional attribute FrictionCoefficient is defined for this IfcTendon
-    bool hasFrictionCoefficient() const;
-    double FrictionCoefficient() const;
-    void setFrictionCoefficient(double v);
-    /// Whether the optional attribute AnchorageSlip is defined for this IfcTendon
-    bool hasAnchorageSlip() const;
-    double AnchorageSlip() const;
-    void setAnchorageSlip(double v);
-    /// Whether the optional attribute MinCurvatureRadius is defined for this IfcTendon
-    bool hasMinCurvatureRadius() const;
-    double MinCurvatureRadius() const;
-    void setMinCurvatureRadius(double v);
+    boost::optional< double > TensionForce() const;
+    void setTensionForce(boost::optional< double > v);
+    boost::optional< double > PreStress() const;
+    void setPreStress(boost::optional< double > v);
+    boost::optional< double > FrictionCoefficient() const;
+    void setFrictionCoefficient(boost::optional< double > v);
+    boost::optional< double > AnchorageSlip() const;
+    void setAnchorageSlip(boost::optional< double > v);
+    boost::optional< double > MinCurvatureRadius() const;
+    void setMinCurvatureRadius(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcTendon (IfcEntityInstanceData* e);
     IfcTendon (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_SteelGrade, ::Ifc2x3::IfcTendonTypeEnum::Value v10_PredefinedType, double v11_NominalDiameter, double v12_CrossSectionArea, boost::optional< double > v13_TensionForce, boost::optional< double > v14_PreStress, boost::optional< double > v15_FrictionCoefficient, boost::optional< double > v16_AnchorageSlip, boost::optional< double > v17_MinCurvatureRadius);
-    typedef IfcTemplatedEntityList< IfcTendon > list;
+    typedef aggregate_of< IfcTendon > list;
 };
 
 class IFC_PARSE_API IfcTendonAnchor : public IfcReinforcingElement {
@@ -37105,7 +35923,7 @@ public:
     static const IfcParse::entity& Class();
     IfcTendonAnchor (IfcEntityInstanceData* e);
     IfcTendonAnchor (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_SteelGrade);
-    typedef IfcTemplatedEntityList< IfcTendonAnchor > list;
+    typedef aggregate_of< IfcTendonAnchor > list;
 };
 /// The element component type IfcVibrationIsolatorType defines commonly shared information for occurrences of vibration isolators.  The set of shared information may include: 
 /// 
@@ -37137,8 +35955,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcVibrationIsolatorType (IfcEntityInstanceData* e);
-    IfcVibrationIsolatorType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcVibrationIsolatorTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcVibrationIsolatorType > list;
+    IfcVibrationIsolatorType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcVibrationIsolatorTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcVibrationIsolatorType > list;
 };
 /// Definition from ISO 6707-1:1989: Vertical construction
 /// usually in masonry or in concrete which bounds or subdivides a
@@ -37388,7 +36206,7 @@ public:
     static const IfcParse::entity& Class();
     IfcWall (IfcEntityInstanceData* e);
     IfcWall (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcWall > list;
+    typedef aggregate_of< IfcWall > list;
 };
 /// The IfcWallStandardCase defines a wall with certain
 /// constraints for the provision of parameters and with certain
@@ -37598,7 +36416,7 @@ public:
     static const IfcParse::entity& Class();
     IfcWallStandardCase (IfcEntityInstanceData* e);
     IfcWallStandardCase (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcWallStandardCase > list;
+    typedef aggregate_of< IfcWallStandardCase > list;
 };
 /// Definition form ISO 6707-1:1989: Construction for
 /// closing a vertical or near vertical opening in a wall or pitched
@@ -37960,25 +36778,21 @@ public:
 /// Figure 144 — Window operations
 class IFC_PARSE_API IfcWindow : public IfcBuildingElement {
 public:
-    /// Whether the optional attribute OverallHeight is defined for this IfcWindow
-    bool hasOverallHeight() const;
     /// Overall measure of the height, it reflects the Z Dimension of a bounding box, enclosing the body of the window opening. If omitted, the OverallHeight should be taken from the geometric representation of the IfcOpening in which the window is inserted. 
     /// 
     /// NOTE  The body of the window might be taller then the window opening (e.g. in cases where the window lining includes a casing). In these cases the OverallHeight shall still be given as the window opening height, and not as the total height of the window lining.
-    double OverallHeight() const;
-    void setOverallHeight(double v);
-    /// Whether the optional attribute OverallWidth is defined for this IfcWindow
-    bool hasOverallWidth() const;
+    boost::optional< double > OverallHeight() const;
+    void setOverallHeight(boost::optional< double > v);
     /// Overall measure of the width, it reflects the X Dimension of a bounding box, enclosing the body of the window opening. If omitted, the OverallWidth should be taken from the geometric representation of the IfcOpening in which the window is inserted. 
     /// 
     /// NOTE  The body of the window might be wider then the window opening (e.g. in cases where the window lining includes a casing). In these cases the OverallWidth shall still be given as the window opening width, and not as the total width of the window lining.
-    double OverallWidth() const;
-    void setOverallWidth(double v);
+    boost::optional< double > OverallWidth() const;
+    void setOverallWidth(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcWindow (IfcEntityInstanceData* e);
     IfcWindow (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< double > v9_OverallHeight, boost::optional< double > v10_OverallWidth);
-    typedef IfcTemplatedEntityList< IfcWindow > list;
+    typedef aggregate_of< IfcWindow > list;
 };
 /// The distribution control element type IfcActuatorType defines commonly shared information for occurrences of actuators.  The set of shared information may include: 
 /// 
@@ -38019,8 +36833,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcActuatorType (IfcEntityInstanceData* e);
-    IfcActuatorType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcActuatorTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcActuatorType > list;
+    IfcActuatorType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcActuatorTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcActuatorType > list;
 };
 /// The distribution control element type IfcAlarmType defines commonly shared information for occurrences of alarms.  The set of shared information may include: 
 /// 
@@ -38056,8 +36870,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcAlarmType (IfcEntityInstanceData* e);
-    IfcAlarmType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcAlarmTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcAlarmType > list;
+    IfcAlarmType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcAlarmTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcAlarmType > list;
 };
 /// Definition from ISO 6707-1:1989: Structural member designed to carry loads between or beyond points of support, usually narrow in relation to its length and horizontal or nearly so.
 /// 
@@ -38302,24 +37116,20 @@ public:
     static const IfcParse::entity& Class();
     IfcBeam (IfcEntityInstanceData* e);
     IfcBeam (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcBeam > list;
+    typedef aggregate_of< IfcBeam > list;
 };
 
 class IFC_PARSE_API IfcChamferEdgeFeature : public IfcEdgeFeature {
 public:
-    /// Whether the optional attribute Width is defined for this IfcChamferEdgeFeature
-    bool hasWidth() const;
-    double Width() const;
-    void setWidth(double v);
-    /// Whether the optional attribute Height is defined for this IfcChamferEdgeFeature
-    bool hasHeight() const;
-    double Height() const;
-    void setHeight(double v);
+    boost::optional< double > Width() const;
+    void setWidth(boost::optional< double > v);
+    boost::optional< double > Height() const;
+    void setHeight(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcChamferEdgeFeature (IfcEntityInstanceData* e);
     IfcChamferEdgeFeature (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< double > v9_FeatureLength, boost::optional< double > v10_Width, boost::optional< double > v11_Height);
-    typedef IfcTemplatedEntityList< IfcChamferEdgeFeature > list;
+    typedef aggregate_of< IfcChamferEdgeFeature > list;
 };
 /// The distribution control element type IfcControllerType defines commonly shared information for occurrences of controllers.  The set of shared information may include: 
 /// 
@@ -38365,8 +37175,8 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcControllerType (IfcEntityInstanceData* e);
-    IfcControllerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcControllerTypeEnum::Value v10_PredefinedType);
-    typedef IfcTemplatedEntityList< IfcControllerType > list;
+    IfcControllerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcControllerTypeEnum::Value v10_PredefinedType);
+    typedef aggregate_of< IfcControllerType > list;
 };
 /// A distribution chamber element defines a place at which distribution systems and their constituent elements may be inspected or through which they may travel.
 /// 
@@ -38405,7 +37215,7 @@ public:
     static const IfcParse::entity& Class();
     IfcDistributionChamberElement (IfcEntityInstanceData* e);
     IfcDistributionChamberElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
-    typedef IfcTemplatedEntityList< IfcDistributionChamberElement > list;
+    typedef aggregate_of< IfcDistributionChamberElement > list;
 };
 /// The distribution element IfcDistributionControlElement defines occurrence elements of a building automation control system that are used to impart control over elements of a distribution system.
 /// 
@@ -38487,31 +37297,27 @@ public:
 /// If materials are defined, geometry of each representation (most typically the 'Body' representation) may be organized into shape aspects where styles may be derived by correlating IfcShapeAspect.Name to a corresponding material (IfcMaterialConstituent.Name).
 class IFC_PARSE_API IfcDistributionControlElement : public IfcDistributionElement {
 public:
-    /// Whether the optional attribute ControlElementId is defined for this IfcDistributionControlElement
-    bool hasControlElementId() const;
-    std::string ControlElementId() const;
-    void setControlElementId(std::string v);
-        IfcTemplatedEntityList< IfcRelFlowControlElements >::ptr AssignedToFlowElement() const; // INVERSE IfcRelFlowControlElements::RelatedControlElements
+    boost::optional< std::string > ControlElementId() const;
+    void setControlElementId(boost::optional< std::string > v);
+        aggregate_of< IfcRelFlowControlElements >::ptr AssignedToFlowElement() const; // INVERSE IfcRelFlowControlElements::RelatedControlElements
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcDistributionControlElement (IfcEntityInstanceData* e);
     IfcDistributionControlElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ControlElementId);
-    typedef IfcTemplatedEntityList< IfcDistributionControlElement > list;
+    typedef aggregate_of< IfcDistributionControlElement > list;
 };
 
 class IFC_PARSE_API IfcElectricDistributionPoint : public IfcFlowController {
 public:
     ::Ifc2x3::IfcElectricDistributionPointFunctionEnum::Value DistributionPointFunction() const;
     void setDistributionPointFunction(::Ifc2x3::IfcElectricDistributionPointFunctionEnum::Value v);
-    /// Whether the optional attribute UserDefinedFunction is defined for this IfcElectricDistributionPoint
-    bool hasUserDefinedFunction() const;
-    std::string UserDefinedFunction() const;
-    void setUserDefinedFunction(std::string v);
+    boost::optional< std::string > UserDefinedFunction() const;
+    void setUserDefinedFunction(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcElectricDistributionPoint (IfcEntityInstanceData* e);
     IfcElectricDistributionPoint (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, ::Ifc2x3::IfcElectricDistributionPointFunctionEnum::Value v9_DistributionPointFunction, boost::optional< std::string > v10_UserDefinedFunction);
-    typedef IfcTemplatedEntityList< IfcElectricDistributionPoint > list;
+    typedef aggregate_of< IfcElectricDistributionPoint > list;
 };
 /// Definition from IAI: A steel bar, usually with manufactured deformations in the surface,
 /// used in concrete and masonry construction to provide additional strength.  A single instance
@@ -38547,21 +37353,17 @@ public:
     void setNominalDiameter(double v);
     double CrossSectionArea() const;
     void setCrossSectionArea(double v);
-    /// Whether the optional attribute BarLength is defined for this IfcReinforcingBar
-    bool hasBarLength() const;
-    double BarLength() const;
-    void setBarLength(double v);
+    boost::optional< double > BarLength() const;
+    void setBarLength(boost::optional< double > v);
     ::Ifc2x3::IfcReinforcingBarRoleEnum::Value BarRole() const;
     void setBarRole(::Ifc2x3::IfcReinforcingBarRoleEnum::Value v);
-    /// Whether the optional attribute BarSurface is defined for this IfcReinforcingBar
-    bool hasBarSurface() const;
-    ::Ifc2x3::IfcReinforcingBarSurfaceEnum::Value BarSurface() const;
-    void setBarSurface(::Ifc2x3::IfcReinforcingBarSurfaceEnum::Value v);
+    boost::optional< ::Ifc2x3::IfcReinforcingBarSurfaceEnum::Value > BarSurface() const;
+    void setBarSurface(boost::optional< ::Ifc2x3::IfcReinforcingBarSurfaceEnum::Value > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     IfcReinforcingBar (IfcEntityInstanceData* e);
     IfcReinforcingBar (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_SteelGrade, double v10_NominalDiameter, double v11_CrossSectionArea, boost::optional< double > v12_BarLength, ::Ifc2x3::IfcReinforcingBarRoleEnum::Value v13_BarRole, boost::optional< ::Ifc2x3::IfcReinforcingBarSurfaceEnum::Value > v14_BarSurface);
-    typedef IfcTemplatedEntityList< IfcReinforcingBar > list;
+    typedef aggregate_of< IfcReinforcingBar > list;
 };
 
 };
