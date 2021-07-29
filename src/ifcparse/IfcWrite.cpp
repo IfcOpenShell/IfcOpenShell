@@ -229,6 +229,7 @@ void StringBuilderVisitor::operator()(const std::vector< std::vector<double> >& 
 
 IfcWriteArgument::operator int() const { return as<int>(); }
 IfcWriteArgument::operator bool() const { return as<bool>(); }
+IfcWriteArgument::operator boost::logic::tribool() const { return as<boost::logic::tribool>(); }
 IfcWriteArgument::operator double() const { return as<double>(); }
 IfcWriteArgument::operator std::string() const { 
 	if (type() == IfcUtil::Argument_ENUMERATION) {

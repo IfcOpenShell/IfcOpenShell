@@ -123,6 +123,7 @@
 	PyObject* pythonize(const int& t)                   { return PyInt_FromLong(t);                                                                  }
 	PyObject* pythonize(const unsigned int& t)          { return PyInt_FromLong(t);                                                                  }
 	PyObject* pythonize(const bool& t)                  { return PyBool_FromLong(t);                                                                 }
+	PyObject* pythonize(const boost::logic::tribool& t) { return boost::logic::indeterminate(t) ? PyUnicode_FromString("UNKNOWN") : PyBool_FromLong((bool)t) ;}
 	PyObject* pythonize(const double& t)                { return PyFloat_FromDouble(t);                                                              }
 	PyObject* pythonize(const std::string& t)           { return PyUnicode_FromString(t.c_str());                                                    }
 	PyObject* pythonize(const IfcUtil::IfcBaseClass* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcUtil__IfcBaseClass, 0);        }

@@ -241,6 +241,28 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
    $1 = check_aggregate_of_aggregate_of_type($input, get_python_type<double>());
 }
 
+%typemap(in) boost::logic::tribool {
+	if (PyBool_Check($input)) {
+		$1 = $input == Py_True;
+	} else if (PyUnicode_Check($input)) {
+		// we already checked the value of the string in the typecheck typemap
+		$1 = boost::logic::indeterminate;
+	} else {
+		SWIG_exception(SWIG_TypeError, "Logical needs boolean or \"UNKOWN\"");
+	}
+}
+
+%typemap(typecheck, precedence=SWIG_TYPECHECK_INTEGER) boost::logic::tribool {
+    $1 = PyBool_Check($input);
+	if (!$1 && PyUnicode_Check($input)) {
+		PyObject * ascii = PyUnicode_AsEncodedString(result, "UTF-8", "strict");
+		if (ascii) {
+			$1 = strcmp(PyBytes_AS_STRING(ascii), "UNKNOWN") == 0;
+			Py_DECREF(ascii);
+		}	
+	}
+}
+
 %define CREATE_OPTIONAL_TYPEMAP_IN(template_type, express_name, python_name)
 
 	%typemap(in) const boost::optional<template_type>& {

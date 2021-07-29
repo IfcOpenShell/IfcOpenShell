@@ -145,6 +145,8 @@ namespace IfcWrite {
 		
 		operator int() const;
 		operator bool() const;
+		operator boost::logic::tribool() const;
+
 		operator double() const;
 		operator std::string() const;
 		operator boost::dynamic_bitset<>() const;

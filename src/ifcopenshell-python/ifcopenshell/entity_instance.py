@@ -152,6 +152,8 @@ class entity_instance(object):
                             idx, entity_instance.unwrap_value(value)
                         )
                 except BaseException as e:
+                    import traceback
+                    traceback.print_exc()
                     valid = False
 
             if not valid:

@@ -51,6 +51,10 @@
 			bool v = arg;
 			$result = pythonize(v);
 		break; }
+		case IfcUtil::Argument_LOGICAL: {
+			boost::logic::tribool v = arg;
+			$result = pythonize(v);
+		break; }
 		case IfcUtil::Argument_DOUBLE: {
 			double v = arg;
 			$result = pythonize(v);
