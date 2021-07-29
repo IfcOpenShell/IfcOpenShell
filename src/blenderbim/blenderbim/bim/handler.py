@@ -6,6 +6,7 @@ from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.attribute.data import Data as AttributeData
 from ifcopenshell.api.material.data import Data as MaterialData
+from ifcopenshell.api.style.data import Data as StyleData
 from ifcopenshell.api.type.data import Data as TypeData
 
 
@@ -51,6 +52,7 @@ def name_callback(obj, data):
             MaterialData.load_materials()
         if obj.BIMMaterialProperties.ifc_style_id:
             IfcStore.get_file().by_id(obj.BIMMaterialProperties.ifc_style_id).Name = obj.name
+            StyleData.load(IfcStore.get_file(), obj.BIMMaterialProperties.ifc_style_id)
         return
 
     if not obj.BIMObjectProperties.ifc_definition_id or "/" not in obj.name:
