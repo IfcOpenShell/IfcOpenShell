@@ -2,6 +2,7 @@ import os
 import bpy
 import time
 import json
+import tempfile
 import logging
 import webbrowser
 import ifcopenshell
@@ -43,8 +44,11 @@ class ExportIFC(bpy.types.Operator):
     def _execute(self, context):
         start = time.time()
         logger = logging.getLogger("ExportIFC")
+        path_log = os.path.join(bpy.context.scene.BIMProperties.data_dir, "process.log"),
+        if not os.access(bpy.context.scene.BIMProperties.data_dir, os.W_OK):
+            path_log = os.path.join(tempfile.mkdtemp(), "process.log")
         logging.basicConfig(
-            filename=os.path.join(context.scene.BIMProperties.data_dir, "process.log"),
+            filename=path_log,
             filemode="a",
             level=logging.DEBUG,
         )
@@ -106,8 +110,11 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
     def execute(self, context):
         start = time.time()
         logger = logging.getLogger("ImportIFC")
+        path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log"),
+        if not os.access(context.scene.BIMProperties.data_dir, os.W_OK):
+            path_log = os.path.join(tempfile.mkdtemp(), "process.log")
         logging.basicConfig(
-            filename=os.path.join(context.scene.BIMProperties.data_dir, "process.log"),
+            filename=path_log,
             filemode="a",
             level=logging.DEBUG,
         )
@@ -170,7 +177,7 @@ class SelectDataDir(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        context.scene.BIMProperties.data_dir = self.filepath
+        context.scene.BIMProperties.data_dir = os.path.dirname(self.filepath)
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -185,7 +192,7 @@ class SelectSchemaDir(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        context.scene.BIMProperties.schema_dir = self.filepath
+        context.scene.BIMProperties.schema_dir = os.path.dirname(self.filepath)
         return {"FINISHED"}
 
     def invoke(self, context, event):

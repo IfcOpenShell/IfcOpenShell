@@ -67,9 +67,9 @@ class IfcExporter:
         to_delete = []
 
         for ifc_definition_id, obj in IfcStore.id_map.items():
-            if isinstance(obj, bpy.types.Material):
-                continue
             try:
+                if isinstance(obj, bpy.types.Material):
+                    continue
                 self.sync_object_placement(obj)
                 self.sync_object_container(ifc_definition_id, obj)
             except ReferenceError:

@@ -594,7 +594,8 @@ class IfcImporter:
                     )
                 )
                 checkpoint = time.time()
-                self.update_progress(((total_created / approx_total_products) * progress_range) + start_progress)
+                if approx_total_products:
+                    self.update_progress(((total_created / approx_total_products) * progress_range) + start_progress)
             shape = iterator.get()
             if shape:
                 product = self.file.by_id(shape.guid)
