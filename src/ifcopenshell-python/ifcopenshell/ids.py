@@ -11,11 +11,13 @@ from bcf.v2.data import Topic, Viewpoint
 from bcf import bcfxml
 
 from xmlschema import XMLSchema
+from xmlschema import XMLSchemaConverter
 from xmlschema import etree_tostring
+from lxml import etree as ElementTree
 from xmlschema.validators import facets
 from xmlschema.validators import identities
 
-ids_schema = XMLSchema("http://standards.buildingsmart.org/IDS/ids.xsd")
+ids_schema = XMLSchema("http://standards.buildingsmart.org/IDS/ids_04.xsd")
 
 
 class exception(Exception):
@@ -77,10 +79,11 @@ class facet(metaclass=meta_facet):
     def __getattr__(self, k):
         if k in self.node:
             v = self.node[k]
-            if isinstance(v, dict):  # is restriction?
-                return restriction(v["xs:restriction"][0])
-            else:
-                return v
+            if 'simpleValue' in v.keys():
+                return v['simpleValue']
+            else:   # is restriction
+                return restriction( v["restriction"][0] )
+                # TODO handle more than one restriction: return [restriction(r) for r in v["restriction"]]
         else:
             return None
 
@@ -103,6 +106,7 @@ class entity(facet):
 
     parameters = ["name", "predefinedtype"]
 
+    @staticmethod
     def create(name=None, predefinedtype=None):
         inst = entity()
         inst.name = name
@@ -110,7 +114,7 @@ class entity(facet):
         return inst
 
     def asdict(self):
-        fac_dict = {"name": self.name}
+        fac_dict = {"name": {'simpleValue': self.name}}
         if "predefinedtype" in self:
             fac_dict["predefinedtype"] = self.predefinedtype
         return fac_dict
@@ -136,6 +140,7 @@ class classification(facet):
     parameters = ["system", "value", "location"]
     message = "%(location)sclassification reference %(value)s from '%(system)s'"
 
+    @staticmethod
     def create(location="any", value=None, system=None):
         inst = classification()
         inst.location = location
@@ -144,7 +149,12 @@ class classification(facet):
         return inst
 
     def asdict(self):
-        fac_dict = {"@location": self.location, "value": self.value, "system": self.system}
+        fac_dict = {
+            "value": {'simpleValue': self.value}, 
+            "system": {'simpleValue': self.system},
+            "@location": self.location, 
+            # "instructions": "SAMPLE_INSTRUCTIONS",
+            }
         return fac_dict
 
     def __call__(self, inst, logger):
@@ -197,6 +207,7 @@ class property(facet):
     parameters = ["name", "propertyset", "value", "location"]
     message = "%(location)sproperty '%(name)s' in '%(propertyset)s' with a value %(value)s"
 
+    @staticmethod
     def create(location="any", propertyset=None, name=None, value=None):
         inst = property()
         inst.location = location
@@ -211,11 +222,11 @@ class property(facet):
     def asdict(self):
         fac_dict = {
             "@location": self.location,
-            "propertyset": self.propertyset,
-            "name": self.name,
-            "value": self.value,
+            "propertyset": {'simpleValue': self.propertyset},
+            "name": {'simpleValue': self.name},
+            "value": {'simpleValue': self.value},
+            # "instructions": "SAMPLE_INSTRUCTIONS",
             # TODO '@href': 'http://identifier.buildingsmart.org/uri/buildingsmart/ifc-4.3/prop/FireRating', #https://identifier.buildingsmart.org/uri/something
-            # TODO 'instructions': 'Please add the desired rating.'
         }
         return fac_dict
 
@@ -264,6 +275,7 @@ class material(facet):
     parameters = ["value", "location"]
     message = "%(location)smaterial '%(value)s'"
 
+    @staticmethod
     def create(location="any", value=None):
         inst = material()
         inst.location = location
@@ -276,10 +288,10 @@ class material(facet):
 
     def asdict(self):
         fac_dict = {
+            "value": {'simpleValue': self.value},
             "@location": self.location,
-            "value": self.value,
+            # "instructions": "SAMPLE_INSTRUCTIONS",
             # TODO '@href': 'http://identifier.buildingsmart.org/uri/buildingsmart/ifc-4.3/prop/FireRating', #https://identifier.buildingsmart.org/uri/something
-            # TODO 'instructions': 'Please add the desired rating.'
             # TODO '@use': 'optional'
         }
         return fac_dict
@@ -369,27 +381,22 @@ class restriction:
     The value restriction from XSD implemented as a list of values and a containment test
     """
 
-    def __init__(self, node):
+    def __init__(self, node=None):
 
         self.restriction_on = node["@base"][3:]
         self.type = ""
         self.options = []
 
-        for n in node:
-            if n[0:3] == "xs:":
-                if n[3:] == "enumeration":
+        if node:
+            self.restriction_on = node["@base"][3:]
+            for n in node:
+                if n == "enumeration":
                     self.type = "enumeration"
                     for x in node[n]:
                         self.options.append(x["@value"])
-                elif n[8:] == "clusive":
+                elif n[-7:] == "clusive":
                     self.type = "bounds"
-                    if n[3:6] == "min":
-                        self.options.insert(0, ">")
-                    else:
-                        self.options.insert(0, "<")
-                    if n[6:9] == "Inc":
-                        self.options[0] += "="
-                    self.options[0] += node[n]["@value"]
+                    self.options.append( {n: node[n]['@value']} )
                 elif n[-5:] == "ength":
                     self.type = "length"
                     if n[3:6] == "min":
@@ -399,19 +406,21 @@ class restriction:
                     else:
                         self.options.append("==")
                     self.options[-1] += str(node[n]["@value"])
-                elif n[3:] == "pattern":
+                elif n == "pattern":
                     self.type = "pattern"
                     self.options.append(node[n]["@value"])
                 # TODO add fractionDigits
                 # TODO add totalDigits
                 # TODO add whiteSpace
+                elif n == "@base":
+                    pass
                 else:
                     print("Error! Restriction not implemented")
 
     def __eq__(self, other):
         result = False
         # TODO implement data type comparison
-        if self and other:
+        if self and (other or other == 0):
             if self.type == "enumeration" and self.restriction_on == "bool":
                 self.options = [x.lower() for x in self.options]
                 result = str(other).lower() in self.options
@@ -458,43 +467,45 @@ class specification:
     Represents the XML <specification> node and its two children <applicability> and <requirements>
     """
 
-    def __init__(self, name="Specification"):
+    def __init__(self, name="Specification", necessity='required'):
         self.name = name
         self.applicability = None
         self.requirements = None
+        self.necessity = necessity
 
     def asdict(self):
-        spec_dict = {"@name": self.name, "applicability": {}, "requirements": {}}
-        for fac in self.applicability.terms:
-            fclass = type(fac).__name__
-            if fclass in spec_dict["applicability"]:
-                spec_dict["applicability"][fclass].append(fac.asdict())
-            else:
-                spec_dict["applicability"][fclass] = [fac.asdict()]
-        for fac in self.requirements.terms:
-            fclass = type(fac).__name__
-            if fclass in spec_dict["requirements"]:
-                spec_dict["requirements"][fclass].append(fac.asdict())
-            else:
-                spec_dict["requirements"][fclass] = [fac.asdict()]
+        # if older python collections.OrderedDict() 
+        spec_dict = {
+            "@name": self.name, 
+            "@necessity": self.necessity, 
+            "applicability": {},
+            "requirements": {},
+            }
+        for x in ['applicability','requirements']:
+            for fac in (getattr(self, x)).terms:
+                fclass = type(fac).__name__
+                if fclass in spec_dict[x]:
+                    spec_dict[x][fclass].append(fac.asdict())
+                else:
+                    spec_dict[x][fclass] = [fac.asdict()]
         return spec_dict
 
     @staticmethod
-    def parse(node):
-        def parse_rules(node):
-            names = [req for req in node for n in node[req]]
-            children = [child for req in node for child in node[req]]
-            classes = map(meta_facet.facets.__getitem__, names)
-            # return [cls.parse(n) for cls, n in zip(classes, children)]
-            return [cls(n) for cls, n in zip(classes, children)]  # list of facet objects
+    def parse(ids_dict):
+        def parse_rules(dict):
+            facet_names = list(dict.keys())
+            facet_properties = [v[0] if isinstance(v, list) else v for v in list(dict.values())]
+            classes = [meta_facet.facets.__getitem__(f) for f in facet_names]
+            facets = [cls(n) for cls, n in zip(classes, facet_properties)]
+            return facets
 
         spec = specification()
-        spec.name = node["@name"]
-        spec.applicability = boolean_and(parse_rules(node["applicability"]))
-        spec.requirements = boolean_and(parse_rules(node["requirements"]))
+        spec.name = ids_dict["@name"]
+        spec.necessity = ids_dict["@necessity"]
+        spec.applicability = boolean_and(parse_rules(ids_dict["applicability"]))
+        spec.requirements = boolean_and(parse_rules(ids_dict["requirements"]))
         return spec
 
-    # TODO adding applicability/requirements to specification. How to avoid repetitions?
     def add_applicability(self, facet):
         """
         Applicability specifies what conditions must be meet for an IFC object to be used for validation.
@@ -571,15 +582,14 @@ class ids:
 
     def __init__(self):
         self.specifications = []
-        self.info = None
+        self.info = None    # TODO ifcversion, description, author, copyright, version, date, purpose, milestone
 
     def asdict(self):
         ids_dict = {
-            "@xmlns": "http://standards.buildingsmart.org/IDS",
-            "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
-            "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS "
-            "http://standards.buildingsmart.org/IDS/ids.xsd",
+            '@xmlns': 'http://standards.buildingsmart.org/IDS',
+            '@xmlns:xs': 'http://www.w3.org/2001/XMLSchema',
+            '@xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+            '@xsi:schemaLocation': 'http://standards.buildingsmart.org/IDS/ids_04.xsd',
             "specification": [],
             "info": self.info,
         }
@@ -595,11 +605,20 @@ class ids:
 
         ids_dict = self.asdict()
 
-        ids_xml = ids_schema.encode(ids_dict)  # , namespaces='http://standards.buildingsmart.org/IDS')
+        ids_xml = ids_schema.encode(ids_dict, namespaces={
+            "": "http://standards.buildingsmart.org/IDS",
+            'xs': 'http://www.w3.org/2001/XMLSchema',
+            'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+            'xsi:schemaLocation': "http://standards.buildingsmart.org/IDS/ids_04.xsd"
+            })  #validation='skip', 
+
         ids_str = etree_tostring(
-            ids_xml, namespaces={"": "http://standards.buildingsmart.org/IDS"}
-        )  # if restrictions, add also: 'xs': 'http://www.w3.org/2001/XMLSchema'
-        ids_schema.validate(ids_str)
+            ids_xml, namespaces={  
+            "": "http://standards.buildingsmart.org/IDS",
+            # 'xs': 'http://www.w3.org/2001/XMLSchema',
+            # 'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+            # 'xsi:schemaLocation': "http://standards.buildingsmart.org/IDS/ids_04.xsd"
+            })
 
         with open(fn, "w") as f:
             f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
@@ -607,13 +626,13 @@ class ids:
             f.write(ids_str)
             f.close()
 
-        ids_schema.validate(fn)
+        # ids_schema.validate(fn)
         return ids_schema.is_valid(fn)
 
     @staticmethod
     def parse(fn, ids_schema=ids_schema):
         ids_schema.validate(fn)
-        ids_content = ids_schema.decode(fn)
+        ids_content = ids_schema.decode(fn, strip_namespaces=True, namespaces={"": "http://standards.buildingsmart.org/IDS"})
         new_ids = ids()
         new_ids.specifications = [specification.parse(s) for s in ids_content["specification"]]
         return new_ids
@@ -681,7 +700,7 @@ class BcfHandler(logging.StreamHandler):
 
 
 location = {"instance": "an instance ", "type": "a type ", "any": "a "}
-
+bounds = {'minInclusive': 'larger or equal ', 'maxInclusive': 'smaller or equal ', 'minExclusive': 'larger than ', 'maxExclusive': 'smaller than '}
 
 if __name__ == "__main__":
     import time
@@ -703,10 +722,7 @@ if __name__ == "__main__":
     logging.basicConfig(filename=filename, level=logging.INFO, format="%(message)s")
     logging.FileHandler(filename, mode='w')
 
-    ifc_file = ifcopenshell.open(sys.argv[2])
     ids_file = ids.parse(sys.argv[1])
+    ifc_file = ifcopenshell.open(sys.argv[2])
 
     ids_file.validate(ifc_file, logger)
-    
-    print("Out of %s IFC elements, %s were checked against %s requirements in %s specification(s) and %s of them passed (%s).\nRuntime=%ss. Results saved to %s" 
-    % (len(ifc_file.by_type('IfcProduct')), ids_file.ifc_checked, len(ids_file.specifications[0].requirements.terms), len(ids_file.specifications), ids_file.ifc_passed, str(ids_file.ifc_passed/ids_file.ifc_checked*100)+'%', round(time.time() - start_time, 2), filename))
