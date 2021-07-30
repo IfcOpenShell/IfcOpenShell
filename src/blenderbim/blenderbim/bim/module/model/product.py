@@ -22,8 +22,9 @@ class AddTypeInstance(bpy.types.Operator):
 
     def _execute(self, context):
         tprops = context.scene.BIMTypeProperties
-        ifc_class = self.ifc_class or tprops.ifc_class
-        relating_type = self.relating_type or tprops.relating_type
+        ifc_class = self.ifc_class or (len(tprops.bl_rna.properties["ifc_class"].enum_items) > 0 and tprops.ifc_class)
+        relating_type = self.relating_type or \
+            (len(tprops.bl_rna.properties["relating_type"].enum_items) > 0 and tprops.relating_type)
         if not ifc_class or not relating_type:
             return {"FINISHED"}
         self.file = IfcStore.get_file()
