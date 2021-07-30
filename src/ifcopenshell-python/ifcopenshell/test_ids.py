@@ -1,8 +1,11 @@
 import unittest
 import ids
+
+# from ids import ids
 import requests
 import os
 import logging
+
 # from xmlschema.validators.exceptions import XMLSchemaChildrenValidationError
 import ifcopenshell
 from bcf import bcfxml
@@ -14,42 +17,50 @@ def read_web_file(URL):
 
 class TestIdsParsing(unittest.TestCase):
 
-    def test_basic_ids_parse(self):
+    """Parsing basic IDS files"""
+
+    def test_parse_basic_ids(self):
         IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_all_fields.xml"
         ids_file = ids.ids.parse(read_web_file(IDS_URL))
         self.assertEqual(type(ids_file).__name__, "ids")
 
-    def test_entity_facet(self):
+    def test_parse_entity_facet(self):
         IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_entity.xml"
         ids_file = ids.ids.parse(read_web_file(IDS_URL))
-        self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"], "IfcWall")
+        self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"]["simpleValue"], "IfcWall")
 
-    def test_predefinedtype_facet(self):
+    def test_parse_predefinedtype_facet(self):
         IDS_URL = (
             "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_predefinedtype.xml"
         )
         ids_file = ids.ids.parse(read_web_file(IDS_URL))
-        self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["predefinedtype"], "CLADDING")
+        self.assertEqual(
+            ids_file.specifications[0].requirements.terms[0].node["predefinedtype"]["simpleValue"], "CLADDING"
+        )
 
-    def test_property_facet(self):
+    def test_parse_property_facet(self):
         IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_property.xml"
         ids_file = ids.ids.parse(read_web_file(IDS_URL))
-        self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["propertyset"], "Test_PropertySet")
-        self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"], "Test_Parameter")
-        self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["value"], "Test_Value")
+        self.assertEqual(
+            ids_file.specifications[0].requirements.terms[0].node["propertyset"]["simpleValue"], "Test_PropertySet"
+        )
+        self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"]["simpleValue"], "Test_Parameter")
+        self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["value"]["simpleValue"], "Test_Value")
 
-    def test_material_facet(self):
+    def test_parse_material_facet(self):
         IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_material.xml"
         ids_file = ids.ids.parse(read_web_file(IDS_URL))
-        self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["value"], "Test_Material")
+        self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["value"]["simpleValue"], "Test_Material")
 
-    def test_classification_facet(self):
+    def test_parse_classification_facet(self):
         IDS_URL = (
             "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_classification.xml"
         )
         ids_file = ids.ids.parse(read_web_file(IDS_URL))
-        self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["value"], "Test_Classification")
-        self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["system"], "Test_System")
+        self.assertEqual(
+            ids_file.specifications[0].requirements.terms[0].node["value"]["simpleValue"], "Test_Classification"
+        )
+        self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["system"]["simpleValue"], "Test_System")
 
     """ Parsing invalid IDS.xml """
     # TODO
@@ -67,8 +78,42 @@ class TestIdsParsing(unittest.TestCase):
         os.remove(fn)
         self.assertTrue(result)
 
+    """ Parsing IDS files with restrictions """
+
+    def test_parse_restrictions_enumeration(self):
+        IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_property_with_restriction_enumeration.xml"
+        ids_file = ids.ids.parse(read_web_file(IDS_URL))
+        self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"]["simpleValue"], "Test_Parameter")
+        self.assertEqual(
+            [
+                x["@value"]
+                for x in ids_file.specifications[0].requirements.terms[0].node["value"]["restriction"][0]["enumeration"]
+            ],
+            ["testA", "testB"],
+        )
+
+    def test_parse_restrictions_bounds(self):
+        IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_property_with_restriction_bounds.xml"
+        ids_file = ids.ids.parse(read_web_file(IDS_URL))
+        self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"]["simpleValue"], "Test_Parameter")
+        self.assertEqual(
+            ids_file.specifications[0].requirements.terms[0].node["value"]["restriction"][0]["minInclusive"]["@value"],
+            "0",
+        )
+
+    def test_parse_restrictions_pattern_simple(self):
+        IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_property_with_restriction_pattern.xml"
+        ids_file = ids.ids.parse(read_web_file(IDS_URL))
+        self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"]["simpleValue"], "Test_Parameter")
+        self.assertEqual(
+            ids_file.specifications[0].requirements.terms[0].node["value"]["restriction"][0]["pattern"]["@value"],
+            "[A-Z]{2,4}",
+        )
+
 
 class TestIdsAuthoring(unittest.TestCase):
+
+    """Creating basic IDS"""
 
     def test_entity_create(self):
         e = ids.entity.create(name="Test_Name", predefinedtype="Test_PredefinedType")
@@ -126,7 +171,9 @@ class TestIdsAuthoring(unittest.TestCase):
         e = ids.entity.create(name="Test_Name", predefinedtype="Test_PredefinedType")
         c = ids.classification.create(location="any", value="Test_Value", system="Test_System")
         m = ids.material.create(location="any", value="Test_Value")
-        p = ids.property.create(location="any", propertyset="Test_PropertySet", name="Test_Parameter", value="Test_Value")
+        p = ids.property.create(
+            location="any", propertyset="Test_PropertySet", name="Test_Parameter", value="Test_Value"
+        )
         i.specifications[0].add_applicability(e)
         i.specifications[0].add_applicability(m)
         i.specifications[0].add_requirement(c)
@@ -136,27 +183,119 @@ class TestIdsAuthoring(unittest.TestCase):
         os.remove(fn)
         self.assertTrue(result)
 
+    """ Creating IDS with restrictions """
+
+    def test_create_restrictions_enumeration(self):
+        i = ids.ids()
+        i.specifications.append(ids.specification(name="Test_Specification"))
+        i.specifications[0].add_applicability(ids.entity.create(name="Test_Name"))
+        r = ids.restriction.create(options=["testA", "testB"], type="enumeration", restriction_on="string")
+        m = ids.material.create(location="any", value=r)
+        i.specifications[0].add_requirement(m)
+        self.assertEqual(i.specifications[0].requirements.terms[0].value, "testA")
+        self.assertEqual(i.specifications[0].requirements.terms[0].value, "testB")
+        self.assertNotEqual(i.specifications[0].requirements.terms[0].value, "testC")
+
+    def test_create_restrictions_bounds(self):
+        i = ids.ids()
+        i.specifications.append(ids.specification(name="Test_Specification"))
+        i.specifications[0].add_applicability(ids.entity.create(name="Test_Name"))
+        r = ids.restriction.create(
+            options={"minInclusive": 0, "maxExclusive": 10}, type="bounds", restriction_on="integer"
+        )
+        p = ids.property.create(location="any", propertyset="Test", name="Test", value=r)
+        i.specifications[0].add_requirement(p)
+        self.assertEqual(i.specifications[0].requirements.terms[0].value, 0)
+        self.assertEqual(i.specifications[0].requirements.terms[0].value, 5)
+        self.assertNotEqual(i.specifications[0].requirements.terms[0].value, -1)
+        self.assertNotEqual(i.specifications[0].requirements.terms[0].value, 10)
+
+    def test_create_restrictions_pattern_simple(self):
+        i = ids.ids()
+        i.specifications.append(ids.specification(name="Test_Specification"))
+        i.specifications[0].add_applicability(ids.entity.create(name="Test_Name"))
+        r = ids.restriction.create(options="[A-Z]{2,4}", type="pattern", restriction_on="string")
+        p = ids.property.create(location="any", propertyset="Test", name="Test", value=r)
+        i.specifications[0].add_requirement(p)
+        self.assertEqual(i.specifications[0].requirements.terms[0].value, "XYZ")
+        self.assertNotEqual(i.specifications[0].requirements.terms[0].value, "abc")
+        self.assertNotEqual(i.specifications[0].requirements.terms[0].value, "ABCDE")
+        self.assertNotEqual(i.specifications[0].requirements.terms[0].value, "A")
+
+    def test_create_restrictions_pattern_advanced(self):
+        i = ids.ids()
+        i.specifications.append(ids.specification(name="Test_Specification"))
+        i.specifications[0].add_applicability(ids.entity.create(name="Test_Name"))
+        # r = ids.restriction.create(options="^(Wanddurchbruch.*|Deckendurchbruch.*)", type="pattern", restriction_on="string")
+        r = ids.restriction.create(
+            options="(Wanddurchbruch|Deckendurchbruch).*", type="pattern", restriction_on="string"
+        )
+        p = ids.property.create(location="any", propertyset="Test", name="Test", value=r)
+        i.specifications[0].add_requirement(p)
+        self.assertEqual(i.specifications[0].requirements.terms[0].value, "Wanddurchbruch")
+        self.assertEqual(i.specifications[0].requirements.terms[0].value, "Deckendurchbruch")
+        self.assertNotEqual(i.specifications[0].requirements.terms[0].value, "Deeckendurchbruch")
+
 
 class TestIfcValidation(unittest.TestCase):
-    pass
-    # TODO
+    
+    def test_validate_simple(self):
+        # TODO
+        pass
+
+    def test_validate_all_facets(self):
+        # TODO
+        pass
+
+    """ Validating IDS files with restrictions """
+
+    # def test_validate_restrictions_enumeration(self):
+    #     IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_property_with_restriction_enumeration.xml"
+    #     ids_file = ids.ids.parse(read_web_file(IDS_URL))
+    #     self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"]['simpleValue'], "Test_Parameter")
+    #     self.assertEqual( [x['@value'] for x in ids_file.specifications[0].requirements.terms[0].node["value"]['restriction'][0]['enumeration'] ], ['testA', 'testB'])
+    #     # TODO actual test of validation result
+    #     # self.assertTrue(   )
+
+    # def test_validate_restrictions_boundsInclusive(self):
+    #     IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_property_with_restriction_bounds.xml"
+    #     ids_file = ids.ids.parse(read_web_file(IDS_URL))
+    #     self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"]['simpleValue'], "Test_Parameter")
+    #     self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["value"]['restriction'][0]['minInclusive']['@value'], '0')
+    #     # TODO actual test of validation result
+    #     # self.assertTrue(   )
+
+    # def test_validate_restrictions_boundsExclusive(self):
+    #     #TODO
+    #     pass
+
+    # def test_validate_restrictions_pattern_simple(self):
+    #     IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_property_with_restriction_pattern.xml"
+    #     ids_file = ids.ids.parse(read_web_file(IDS_URL))
+    #     self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"]['simpleValue'], "Test_Parameter")
+    #     self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["value"]['restriction'][0]['pattern']['@value'], '[A-Z]{2,4}')
+    #     # TODO actual test of validation result
+    #     # self.assertTrue(   )
+
 
 class TestIdsReporting(unittest.TestCase):
-    
+
     TEST_PATH = os.getcwd()
     IFC_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IFC/IFC4_Wall_3_with_properties.ifc"
     IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_all_fields.xml"
 
     logger = logging.getLogger("IDS_Logger")
+    # logging.basicConfig(level=logging.INFO, format="%(message)s")
+    # logging.basicConfig(filename=TEST_PATH+r"\log.txt", level=logging.INFO, format="%(message)s")
 
     ids_file = ids.ids.parse(read_web_file(IDS_URL))
-    
+
     content = read_web_file(IFC_URL)
-    file = open(TEST_PATH+r"\test.ifc", 'w')
+    file = open(TEST_PATH + r"\test.ifc", "w")
     file.write(content)
     file.close()
-    ifc_file = ifcopenshell.open(TEST_PATH+r"\test.ifc")
-    os.remove(TEST_PATH+r"\test.ifc")
+    ifc_file = ifcopenshell.open(TEST_PATH + r"\test.ifc")
+    os.remove(TEST_PATH + r"\test.ifc")
 
     def test_simple_report(self):
         report = ids.SimpleHandler()
@@ -165,20 +304,18 @@ class TestIdsReporting(unittest.TestCase):
         self.assertEqual(len(report.statements), 5)
 
     def test_bcf_report(self):
-        
+
         bcf_handler = ids.BcfHandler(
-            project_name="Default IDS Project",
-            author="your@email.com",
-            filepath= self.TEST_PATH + r"\bcf_test.bcfzip"
+            project_name="Default IDS Project", author="your@email.com", filepath=self.TEST_PATH + r"\bcf_test.bcfzip"
         )
         self.logger.addHandler(bcf_handler)
 
         self.ids_file.validate(self.ifc_file, self.logger)
 
         my_bcfxml = bcfxml.load(self.TEST_PATH + r"\bcf_test.bcfzip")
-        topics = my_bcfxml.get_topics()  
+        topics = my_bcfxml.get_topics()
         self.assertEqual(len(topics), 5)
-        
+
 
 if __name__ == "__main__":
     unittest.main()
