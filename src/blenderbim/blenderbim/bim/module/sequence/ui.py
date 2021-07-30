@@ -17,7 +17,8 @@ class BIM_PT_work_plans(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        file = IfcStore.get_file()
+        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         if not Data.is_loaded:
@@ -88,7 +89,8 @@ class BIM_PT_work_schedules(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        file = IfcStore.get_file()
+        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         self.props = context.scene.BIMWorkScheduleProperties
@@ -429,7 +431,8 @@ class BIM_PT_work_calendars(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        file = IfcStore.get_file()
+        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         if not Data.is_loaded:

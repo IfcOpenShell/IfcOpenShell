@@ -13,7 +13,8 @@ class BIM_PT_cost_schedules(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        file = IfcStore.get_file()
+        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         self.props = context.scene.BIMCostProperties
