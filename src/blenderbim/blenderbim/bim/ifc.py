@@ -184,13 +184,9 @@ class IfcStore:
     def execute_ifc_operator(operator, context):
         is_top_level_operator = not bool(IfcStore.current_transaction)
 
-        file = IfcStore.get_file()
-        if not file:
-            return {'FINISHED'}
-
         if is_top_level_operator:
             IfcStore.begin_transaction(operator)
-            file.begin_transaction()
+            IfcStore.get_file().begin_transaction()
             # This empty transaction ensures that each operator has at least one transaction
             IfcStore.add_transaction_operation(operator, rollback=lambda data: True, commit=lambda data: True)
         else:
@@ -199,9 +195,9 @@ class IfcStore:
         result = getattr(operator, "_execute")(context)
 
         if is_top_level_operator:
-            file.end_transaction()
+            IfcStore.get_file().end_transaction()
             IfcStore.add_transaction_operation(
-                operator, rollback=lambda d: file.undo(), commit=lambda d: file.redo()
+                operator, rollback=lambda d: IfcStore.get_file().undo(), commit=lambda d: IfcStore.get_file().redo()
             )
             IfcStore.end_transaction(operator)
 
