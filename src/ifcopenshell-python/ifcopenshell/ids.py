@@ -383,7 +383,6 @@ class restriction:
 
     def __init__(self, node=None):
 
-        self.restriction_on = node["@base"][3:]
         self.type = ""
         self.options = []
 
@@ -417,6 +416,34 @@ class restriction:
                 else:
                     print("Error! Restriction not implemented")
 
+    @staticmethod
+    def create(options, type='', restriction_on='string'):
+        """ 
+        type:           enumeration/pattern/bounds
+        restriction_on: string/boolean/decimal/integer
+        options:        list if enumeration
+                        regex string if pattern
+                        if bounds dict with possible keys: minInclusive, maxInclusive, minExclusive, maxExclusive
+        """
+        rest = restriction()
+        if type in ['enumeration', 'pattern', 'bounds']:
+            rest.type = type
+            rest.restriction_on = restriction_on
+            if type == 'enumeration' and isinstance(options, list):
+                rest.options = options
+            elif type == 'pattern' and isinstance(options, str):
+                rest.options = options
+            elif type == 'bounds' and isinstance(options, dict):
+                for option in options:
+                    if option in ['minInclusive', 'maxInclusive', 'minExclusive', 'maxExclusive']:
+                        rest.options.append( {option: options[option]} )
+            else:
+                Exception("Options were not properly defined.")
+            return rest
+        else:
+            raise Exception("Such restriction not implemented. Try: 'enumeration', 'pattern' or 'min/maxInclusive' or 'min/maxExclusive'.")
+
+
     def __eq__(self, other):
         result = False
         # TODO implement data type comparison
@@ -427,18 +454,23 @@ class restriction:
             elif self.type == "enumeration":
                 result = other in self.options
             elif self.type == "bounds":
-                for op in self.options:
-                    if eval(str(other) + op):  # TODO eval not safe?
-                        result = True
+                result = True
+                for option in self.options:
+                    sign = list(option.keys())[0]
+                    if sign == 'minInclusive' and other < option[sign]:
+                        result = False
+                    elif sign == 'maxInclusive' and other > option[sign]:
+                        result = False
+                    elif sign == 'minExclusive' and other <= option[sign]:
+                        result = False
+                    elif sign == 'maxExclusive' and other >= option[sign]:
+                        result = False
             elif self.type == "length":
                 for op in self.options:
                     if eval(str(len(other)) + op):  # TODO eval not safe?
                         result = True
             elif self.type == "pattern":
-                self.options
-                translated_pattern = identities.translate_pattern(
-                    r"[A-Z]{1,3}"
-                )  # Between one and three capital letters
+                translated_pattern = identities.translate_pattern( self.options )  # r"[A-Z]{1,3}" = Between one and three capital letters
                 regex_pattern = re.compile(translated_pattern)
                 if regex_pattern.fullmatch(other) is not None:
                     result = True
@@ -451,8 +483,7 @@ class restriction:
         if self.type == "enumeration":
             return "'%s'" % "' or '".join(self.options)
         elif self.type == "bounds":
-            self.options.sort()
-            return "of type '%s', having a value %s" % (self.restriction_on, " and ".join(self.options))
+            return "of type '%s', having a value %s" % (self.restriction_on, " and ".join([bounds[list(x.keys())[0]] + str( x[list(x.keys())[0]] ) for x in self.options]))
         elif self.type == "length":
             return "of type '%s' with %s letters" % (self.restriction_on, " and ".join(self.options))
         elif self.type == "pattern":
