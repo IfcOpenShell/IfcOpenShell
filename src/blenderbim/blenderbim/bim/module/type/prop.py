@@ -43,8 +43,10 @@ def getIfcTypes(self, context):
 def getAvailableTypes(self, context):
     global available_types_enum
     if len(available_types_enum) < 1:
-        elements = IfcStore.get_file().by_type(self.ifc_class)
-        available_types_enum.extend((str(e.id()), e.Name, "") for e in elements)
+        file = IfcStore.get_file()
+        if file:
+            elements = file.by_type(self.ifc_class)
+            available_types_enum.extend((str(e.id()), e.Name, "") for e in elements)
     return available_types_enum
 
 
@@ -58,17 +60,21 @@ def updateTypeInstanceIfcClass(self, context):
 def getApplicableTypes(self, context):
     global applicable_types_enum
     if len(applicable_types_enum) < 1:
-        element = IfcStore.get_file().by_id(context.active_object.BIMObjectProperties.ifc_definition_id)
-        types = ifcopenshell.util.type.get_applicable_types(element.is_a(), schema=IfcStore.get_file().schema)
-        applicable_types_enum.extend((t, t, "") for t in types)
+        file = IfcStore.get_file()
+        if file:
+            element = file.by_id(context.active_object.BIMObjectProperties.ifc_definition_id)
+            types = ifcopenshell.util.type.get_applicable_types(element.is_a(), schema=IfcStore.get_file().schema)
+            applicable_types_enum.extend((t, t, "") for t in types)
     return applicable_types_enum
 
 
 def getRelatingTypes(self, context):
     global relating_types_enum
     if len(relating_types_enum) < 1:
-        elements = IfcStore.get_file().by_type(context.active_object.BIMTypeProperties.relating_type_class)
-        relating_types_enum.extend((str(e.id()), e.Name, "") for e in elements)
+        file = IfcStore.get_file()
+        if file:
+            elements = file.by_type(context.active_object.BIMTypeProperties.relating_type_class)
+            relating_types_enum.extend((str(e.id()), e.Name, "") for e in elements)
     return relating_types_enum
 
 
