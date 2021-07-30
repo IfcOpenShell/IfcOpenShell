@@ -33,8 +33,10 @@ class BimTool(WorkSpaceTool):
     def draw_settings(context, layout, tool):
         row = layout.row(align=True)
         props = context.scene.BIMTypeProperties
-        row.prop(props, "ifc_class", text="")
-        row.prop(props, "relating_type", text="")
+        if len(props.bl_rna.properties["ifc_class"].enum_items) > 0:
+            row.prop(props, "ifc_class", text="")            
+        if len(props.bl_rna.properties["relating_type"].enum_items) > 0:
+            row.prop(props, "relating_type", text="")
 
         row.label(text="", icon="BLANK1")
 

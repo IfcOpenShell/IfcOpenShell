@@ -12,8 +12,10 @@ class BIM_PT_authoring(Panel):
     def draw(self, context):
         tprops = context.scene.BIMTypeProperties
         col = self.layout.column(align=True)
-        col.prop(tprops, "ifc_class", text="", icon="FILE_VOLUME")
-        col.prop(tprops, "relating_type", text="", icon="FILE_3D")
+        if len(tprops.bl_rna.properties["ifc_class"].enum_items) > 0:
+            col.prop(tprops, "ifc_class", text="", icon="FILE_VOLUME")
+        if len(tprops.bl_rna.properties["relating_type"].enum_items) > 0:
+            col.prop(tprops, "relating_type", text="", icon="FILE_3D")
         col.operator("bim.add_type_instance", icon="ADD")
 
 
