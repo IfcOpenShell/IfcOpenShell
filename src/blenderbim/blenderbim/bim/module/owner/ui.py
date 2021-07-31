@@ -10,15 +10,14 @@ def draw_string_collection(layout, owner, collection_name):
     row = sub_box.row(align=True)
     collection = getattr(owner, collection_name)
     row.prop(owner, collection_name)
-    add_op = row.operator(AddOrRemoveElementFromCollection.bl_idname, icon="ADD")
+    add_op = row.operator(AddOrRemoveElementFromCollection.bl_idname, icon="ADD", text="")
     add_op.operation = "+"
     add_op.collection_path = collection.path_from_id()
     for i in range(len(collection)):
-        row = sub_box.row(align=True)
-        row.prop(collection[i], "name", text=f"#{i + 1}")
-        if i == 0 and len(collection) == 1:
+        row = draw_prop_on_new_row(sub_box, collection[i], "name", align=True, text=f"#{i + 1}")
+        if len(collection) == 1:
             continue
-        rem_op = row.operator(AddOrRemoveElementFromCollection.bl_idname, icon="X")
+        rem_op = row.operator(AddOrRemoveElementFromCollection.bl_idname, icon="X", text="")
         rem_op.operation = "-"
         rem_op.collection_path = add_op.collection_path
         rem_op.selected_item_idx = i

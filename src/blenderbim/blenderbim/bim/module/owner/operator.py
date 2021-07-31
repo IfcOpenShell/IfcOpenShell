@@ -18,15 +18,15 @@ def populate_collection(collection, collection_data):
 
 
 class AddOrRemoveElementFromCollection(bpy.types.Operator):
-    bl_idname = "bim.add_or_remove_element_form_collection"
-    bl_label = ""
+    bl_idname = "bim.add_or_remove_element_from_collection"
+    bl_label = "Add or Remove Element From Collection"
     bl_options = {"REGISTER", "UNDO"}
     operation : bpy.props.EnumProperty(
         items=(
             ("+", 'Add', "Add item to collection"),
             ("-", 'Remove', "Remove item from collection")
         ),
-        default="+"
+        default="+",
     )
     collection_path : bpy.props.StringProperty()
     selected_item_idx : bpy.props.IntProperty(default=-1)
