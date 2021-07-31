@@ -24,6 +24,12 @@ def draw_string_collection(layout, owner, collection_name):
         rem_op.selected_item_idx = i
 
 
+def draw_prop_on_new_row(layout, owner, attribute, align=False, **kwargs):    
+    row = layout.row(align=align)
+    row.prop(owner, attribute, **kwargs)
+    return row
+
+
 def draw_roles_ui(box, assigned_object_id, roles, context):
     props = context.scene.BIMOwnerProperties
     row = box.row(align=True)
@@ -34,15 +40,12 @@ def draw_roles_ui(box, assigned_object_id, roles, context):
         if props.active_role_id == role_id:
             blender_role = props.role
             box2 = box.box()
-            row = box2.row(align=True)
-            row.prop(blender_role, "name", icon="MOD_CLOTH", text="")
+            row = draw_prop_on_new_row(box2, blender_role, "name", align=True, icon="MOD_CLOTH", text="")
             row.operator("bim.edit_role", icon="CHECKMARK", text="")
             row.operator("bim.disable_editing_role", icon="X", text="")
             if blender_role.name == "USERDEFINED":
-                row = box2.row()
-                row.prop(blender_role, "user_defined_role")
-            row = box2.row()
-            row.prop(blender_role, "description")
+                draw_prop_on_new_row(box2, blender_role, "user_defined_role")
+            draw_prop_on_new_row(box2, blender_role, "description")
         else:
             row = box.row(align=True)
             row.label(text=role["UserDefinedRole"] or role["Role"])
@@ -65,24 +68,29 @@ def draw_addresses_ui(box, assigned_object_id, addresses, file, context):
         if props.active_address_id == address_id:
             blender_address = props.address
             box2 = box.box()
-            row = box2.row(align=True)
-            row.prop(blender_address, "purpose", icon="MOD_CLOTH", text="")
+            row = draw_prop_on_new_row(box2, blender_address, "purpose", align=True, icon="MOD_CLOTH", text="")
             row.operator("bim.edit_address", icon="CHECKMARK", text="")
             row.operator("bim.disable_editing_address", icon="X", text="")
             if blender_address.purpose == "USERDEFINED":
-                row = box2.row()
-                row.prop(blender_address, "user_defined_purpose")
-            row = box2.row()
-            row.prop(blender_address, "description")
+                draw_prop_on_new_row(box2, blender_address, "user_defined_purpose")
+            draw_prop_on_new_row(box2, blender_address, "description")
 
             if address["type"] == "IfcTelecomAddress":
                 draw_string_collection(box2, blender_address, "telephone_numbers")
                 draw_string_collection(box2, blender_address, "facsimile_numbers")
+                draw_prop_on_new_row(box2, blender_address, "pager_number")
                 draw_string_collection(box2, blender_address, "electronic_mail_addresses")
-                if file.schema != "IFC2X3":
+                draw_prop_on_new_row(box2, blender_address, "www_home_page_url")
+                if file.schema != "IFC2X3":                    
                     draw_string_collection(box2, blender_address, "messaging_ids")
             elif address["type"] == "IfcPostalAddress":
+                draw_prop_on_new_row(box2, blender_address, "internal_location")
                 draw_string_collection(box2, blender_address, "address_lines")
+                draw_prop_on_new_row(box2, blender_address, "postal_box")
+                draw_prop_on_new_row(box2, blender_address, "town")
+                draw_prop_on_new_row(box2, blender_address, "region")
+                draw_prop_on_new_row(box2, blender_address, "postal_code")
+                draw_prop_on_new_row(box2, blender_address, "country")
         else:
             row = box.row(align=True)
             row.label(text=address["type"])
@@ -118,10 +126,11 @@ class BIM_PT_people(Panel):
             if props.active_person_id == person_id:
                 blender_person = props.person
                 box = self.layout.box()
-                row = box.row(align=True)
-                row.prop(blender_person, "name", icon="USER", text="")
+                row = draw_prop_on_new_row(box, blender_person, "name", align=True, icon="USER", text="")
                 row.operator("bim.edit_person", icon="CHECKMARK", text="")
                 row.operator("bim.disable_editing_person", icon="X", text="")
+                draw_prop_on_new_row(box, blender_person, "family_name")                
+                draw_prop_on_new_row(box, blender_person, "given_name")
                 draw_string_collection(box, blender_person, "middle_names")
                 draw_string_collection(box, blender_person, "prefix_titles")
                 draw_string_collection(box, blender_person, "suffix_titles")
@@ -173,11 +182,9 @@ class BIM_PT_organisations(Panel):
                 row = box.row(align=True)
                 row.prop(blender_organisation, "name", icon="USER", text="")
                 row.operator("bim.edit_organisation", icon="CHECKMARK", text="")
-                row.operator("bim.disable_editing_organisation", icon="X", text="")
-                row = box.row()
-                row.prop(blender_organisation, "identification")
-                row = box.row()
-                row.prop(blender_organisation, "description")
+                row.operator("bim.disable_editing_organisation", icon="X", text="")                
+                draw_prop_on_new_row(box, blender_organisation, "identification")           
+                draw_prop_on_new_row(box, blender_organisation, "description")
 
                 draw_roles_ui(box, organisation_id, organisation["Roles"], context)
                 draw_addresses_ui(box, organisation_id, organisation["Addresses"], self.file, context)
@@ -214,11 +221,9 @@ class BIM_PT_owner(Panel):
         if not Data.people:
             self.layout.label(text="No people found.")
         else:
-            row = self.layout.row()
-            row.prop(props, "user_person")
+            draw_prop_on_new_row(self.layout, props, "user_person")
 
         if not Data.organisations:
             self.layout.label(text="No organisations found.")
         else:
-            row = self.layout.row()
-            row.prop(props, "user_organisation")
+            draw_prop_on_new_row(self.layout, props, "user_organisation")
