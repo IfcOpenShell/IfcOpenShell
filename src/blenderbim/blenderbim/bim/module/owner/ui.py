@@ -2,6 +2,26 @@ import bpy
 from bpy.types import Panel
 from ifcopenshell.api.owner.data import Data
 from blenderbim.bim.ifc import IfcStore
+from .operator import AddOrRemoveElementFromCollection
+
+
+def draw_string_collection(layout, owner, collection_name):
+    sub_box = layout.box()
+    row = sub_box.row(align=True)
+    collection = getattr(owner, collection_name)
+    row.prop(owner, collection_name)
+    add_op = row.operator(AddOrRemoveElementFromCollection.bl_idname, icon="ADD")
+    add_op.operation = "+"
+    add_op.collection_path = collection.path_from_id()
+    for i in range(len(collection)):
+        row = sub_box.row(align=True)
+        row.prop(collection[i], "name", text=f"#{i + 1}")
+        if i == 0 and len(collection) == 1:
+            continue
+        rem_op = row.operator(AddOrRemoveElementFromCollection.bl_idname, icon="X")
+        rem_op.operation = "-"
+        rem_op.collection_path = add_op.collection_path
+        rem_op.selected_item_idx = i
 
 
 def draw_roles_ui(box, assigned_object_id, roles, context):
@@ -56,40 +76,18 @@ def draw_addresses_ui(box, assigned_object_id, addresses, file, context):
             row.prop(blender_address, "description")
 
             if address["type"] == "IfcTelecomAddress":
-                row = box2.row()
-                row.prop(blender_address, "telephone_numbers")
-                row = box2.row()
-                row.prop(blender_address, "facsimile_numbers")
-                row = box2.row()
-                row.prop(blender_address, "pager_number")
-                row = box2.row()
-                row.prop(blender_address, "electronic_mail_addresses")
-                row = box2.row()
-                row.prop(blender_address, "www_home_page_url")
+                draw_string_collection(box2, blender_address, "telephone_numbers")
+                draw_string_collection(box2, blender_address, "facsimile_numbers")
+                draw_string_collection(box2, blender_address, "electronic_mail_addresses")
                 if file.schema != "IFC2X3":
-                    row = box2.row()
-                    row.prop(blender_address, "messaging_ids")
+                    draw_string_collection(box2, blender_address, "messaging_ids")
             elif address["type"] == "IfcPostalAddress":
-                row = box2.row()
-                row.prop(blender_address, "internal_location")
-                row = box2.row()
-                row.prop(blender_address, "address_lines")
-                row = box2.row()
-                row.prop(blender_address, "postal_box")
-                row = box2.row()
-                row.prop(blender_address, "town")
-                row = box2.row()
-                row.prop(blender_address, "region")
-                row = box2.row()
-                row.prop(blender_address, "postal_code")
-                row = box2.row()
-                row.prop(blender_address, "country")
+                draw_string_collection(box2, blender_address, "address_lines")
         else:
             row = box.row(align=True)
             row.label(text=address["type"])
             row.operator("bim.enable_editing_address", icon="GREASEPENCIL", text="").address_id = address_id
             row.operator("bim.remove_address", icon="X", text="").address_id = address_id
-
 
 
 class BIM_PT_people(Panel):
@@ -124,17 +122,9 @@ class BIM_PT_people(Panel):
                 row.prop(blender_person, "name", icon="USER", text="")
                 row.operator("bim.edit_person", icon="CHECKMARK", text="")
                 row.operator("bim.disable_editing_person", icon="X", text="")
-                row = box.row()
-                row.prop(blender_person, "family_name")
-                row = box.row()
-                row.prop(blender_person, "given_name")
-                row = box.row()
-                row.prop(blender_person, "middle_names")
-                row = box.row()
-                row.prop(blender_person, "prefix_titles")
-                row = box.row()
-                row.prop(blender_person, "suffix_titles")
-
+                draw_string_collection(box, blender_person, "middle_names")
+                draw_string_collection(box, blender_person, "prefix_titles")
+                draw_string_collection(box, blender_person, "suffix_titles")
                 draw_roles_ui(box, person_id, person["Roles"], context)
                 draw_addresses_ui(box, person_id, person["Addresses"], self.file, context)
             else:

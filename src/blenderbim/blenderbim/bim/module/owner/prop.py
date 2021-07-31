@@ -54,19 +54,19 @@ class Address(PropertyGroup):
     user_defined_purpose: StringProperty(name="Custom Purpose")
 
     internal_location: StringProperty(name="Internal Location")
-    address_lines: StringProperty(name="Address")
+    address_lines: CollectionProperty(type=StrProperty, name="Address")
     postal_box: StringProperty(name="Postal Box")
     town: StringProperty(name="Town")
     region: StringProperty(name="Region")
     postal_code: StringProperty(name="Postal Code")
     country: StringProperty(name="Country")
 
-    telephone_numbers: StringProperty(name="Telephone Numbers")
-    facsimile_numbers: StringProperty(name="Facsimile Numbers")
+    telephone_numbers: CollectionProperty(type=StrProperty, name="Telephone Numbers")
+    facsimile_numbers: CollectionProperty(type=StrProperty, name="Facsimile Numbers")
     pager_number: StringProperty(name="Pager Number")
-    electronic_mail_addresses: StringProperty(name="Emails")
-    www_home_page_url: StringProperty(name="Websites")
-    messaging_ids: StringProperty(name="IMs")
+    electronic_mail_addresses: CollectionProperty(type=StrProperty, name="Emails")
+    www_home_page_url: StringProperty(name="Website")
+    messaging_ids: CollectionProperty(type=StrProperty, name="IMs")
 
 
 class Role(PropertyGroup):
@@ -112,9 +112,9 @@ class Person(PropertyGroup):
     name: StringProperty(name="Identification")
     family_name: StringProperty(name="Family Name")
     given_name: StringProperty(name="Given Name")
-    middle_names: StringProperty(name="Middle Names")
-    prefix_titles: StringProperty(name="Prefixes")
-    suffix_titles: StringProperty(name="Suffixes")
+    middle_names: CollectionProperty(type=StrProperty, name="Middle Names")
+    prefix_titles: CollectionProperty(type=StrProperty, name="Prefixes")
+    suffix_titles: CollectionProperty(type=StrProperty, name="Suffixes")
 
 
 class BIMOwnerProperties(PropertyGroup):
