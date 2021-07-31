@@ -36,11 +36,11 @@ class VisualiseDiff(bpy.types.Operator):
             global_id = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId
             if not global_id:
                 continue
-            if global_id.string_value in diff["deleted"]:
+            if global_id in diff["deleted"]:
                 obj.color = (1.0, 0.0, 0.0, 0.2)
-            elif global_id.string_value in diff["added"]:
+            elif global_id in diff["added"]:
                 obj.color = (0.0, 1.0, 0.0, 0.2)
-            elif global_id.string_value in diff["changed"]:
+            elif global_id in diff["changed"]:
                 obj.color = (0.0, 0.0, 1.0, 0.2)
         area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].shading.color_type = "OBJECT"
