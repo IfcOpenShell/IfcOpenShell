@@ -5,6 +5,34 @@ from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.owner.data import Data
 
 
+
+class AddOrRemoveElementFromCollection(bpy.types.Operator):
+    bl_idname = "bim.add_or_remove_element_form_collection"
+    bl_label = ""
+    bl_options = {"REGISTER", "UNDO"}
+    operation : bpy.props.EnumProperty(
+        items=(
+            ("+", 'Add', "Add item to collection"),
+            ("-", 'Remove', "Remove item from collection")
+        ),
+        default="+"
+    )
+    collection_path : bpy.props.StringProperty()
+    selected_item_idx : bpy.props.IntProperty(default=-1)
+
+    def execute(self, context):
+        # Ugly but I hate using eval()
+        collection = context.scene
+        for attr in self.collection_path.split("."):
+            if hasattr(collection, attr):
+                collection = getattr(collection, attr)
+        if self.operation == "+" and hasattr(collection, "add"):
+            collection.add()
+        elif hasattr(collection, "remove") and 0 <= self.selected_item_idx < len(collection):
+            collection.remove(self.selected_item_idx)
+        return {"FINISHED"}
+
+
 class EnableEditingPerson(bpy.types.Operator):
     bl_idname = "bim.enable_editing_person"
     bl_label = "Enable Editing Person"
