@@ -6,21 +6,25 @@ from .operator import AddOrRemoveElementFromCollection
 
 
 def draw_string_collection(layout, owner, collection_name):
-    sub_box = layout.box()
-    row = sub_box.row(align=True)
+    column = layout.column(align=True)
     collection = getattr(owner, collection_name)
-    row.prop(owner, collection_name)
-    add_op = row.operator(AddOrRemoveElementFromCollection.bl_idname, icon="ADD", text="")
-    add_op.operation = "+"
-    add_op.collection_path = collection.path_from_id()
     for i in range(len(collection)):
-        row = draw_prop_on_new_row(sub_box, collection[i], "name", align=True, text=f"#{i + 1}")
-        if len(collection) == 1:
-            continue
-        rem_op = row.operator(AddOrRemoveElementFromCollection.bl_idname, icon="X", text="")
-        rem_op.operation = "-"
-        rem_op.collection_path = add_op.collection_path
-        rem_op.selected_item_idx = i
+        if i == 0:
+            row = draw_prop_on_new_row(
+                column, 
+                collection[i], 
+                "name", 
+                align=True, 
+                text=f"{owner.bl_rna.properties[collection_name].name}")
+            add_op = row.operator(AddOrRemoveElementFromCollection.bl_idname, icon="ADD", text="")
+            add_op.operation = "+"
+            add_op.collection_path = collection.path_from_id()
+        else:
+            row = draw_prop_on_new_row(column, collection[i], "name", align=True, text=f"#{i + 1}")
+            rem_op = row.operator(AddOrRemoveElementFromCollection.bl_idname, icon="REMOVE", text="")
+            rem_op.operation = "-"
+            rem_op.collection_path = collection.path_from_id()
+            rem_op.selected_item_idx = i
 
 
 def draw_prop_on_new_row(layout, owner, attribute, align=False, **kwargs):    
