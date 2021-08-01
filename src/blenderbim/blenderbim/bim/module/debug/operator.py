@@ -122,17 +122,9 @@ class SelectHighPolygonMeshes(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        results = {}
-        for obj in bpy.data.objects:
-            if not isinstance(obj.data, bpy.types.Mesh) or len(obj.data.polygons) < int(
-                context.scene.BIMDebugProperties.number_of_polygons
-            ):
-                continue
-            try:
-                obj.select_set(True)
-            except:
-                # If it is not in the view layer
-                pass
+        [o.select_set(True) for o in context.view_layer.objects
+            if o.type == 'MESH'
+            and len(o.data.polygons) > context.scene.BIMDebugProperties.number_of_polygons]
         return {"FINISHED"}
 
 
