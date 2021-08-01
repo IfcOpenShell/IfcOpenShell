@@ -137,7 +137,7 @@ class SelectPset(bpy.types.Operator):
 
 
 class ColourByAttribute(bpy.types.Operator):
-    """Click to color different objects according to given Attribute Name"""
+    """Click to colour different objects according to given Attribute Name"""
     bl_idname = "bim.colour_by_attribute"
     bl_label = "Colour by Attribute"
     bl_options = {"REGISTER", "UNDO"}
@@ -187,7 +187,7 @@ class ColourByAttribute(bpy.types.Operator):
 
 
 class ColourByPset(bpy.types.Operator):
-    """Click to color different objects according to given Prop Name"""
+    """Click to colour different objects according to given Prop Name"""
     bl_idname = "bim.colour_by_pset"
     bl_label = "Colour by Pset"
     bl_options = {"REGISTER", "UNDO"}
@@ -245,7 +245,7 @@ class ColourByPset(bpy.types.Operator):
 
 
 class ColourByClass(bpy.types.Operator):
-    """Click to color different objects according to their IFC Classes"""
+    """Click to colour different objects according to their IFC Classes"""
     bl_idname = "bim.colour_by_class"
     bl_label = "Colour by Class"
     bl_options = {"REGISTER", "UNDO"}
