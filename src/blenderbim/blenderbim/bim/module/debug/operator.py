@@ -63,7 +63,7 @@ class ProfileImportIFC(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return IfcStore.get_file() and context.scene.BIMProperties.ifc_file
 
     def execute(self, context):
         import cProfile
