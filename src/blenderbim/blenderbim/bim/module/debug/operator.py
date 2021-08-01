@@ -12,6 +12,10 @@ class PrintIfcFile(bpy.types.Operator):
     bl_idname = "bim.print_ifc_file"
     bl_label = "Print IFC File"
 
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
     def execute(self, context):
         print(IfcStore.get_file().wrapped_data.to_string())
         return {"FINISHED"}
@@ -40,6 +44,10 @@ class ValidateIfcFile(bpy.types.Operator):
     bl_idname = "bim.validate_ifc_file"
     bl_label = "Validate IFC File"
 
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
     def execute(self, context):
         import ifcopenshell.validate
 
@@ -52,6 +60,10 @@ class ValidateIfcFile(bpy.types.Operator):
 class ProfileImportIFC(bpy.types.Operator):
     bl_idname = "bim.profile_import_ifc"
     bl_label = "Profile Import IFC"
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
 
     def execute(self, context):
         import cProfile
@@ -69,6 +81,10 @@ class ProfileImportIFC(bpy.types.Operator):
 class CreateAllShapes(bpy.types.Operator):
     bl_idname = "bim.create_all_shapes"
     bl_label = "Create All Shapes"
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
@@ -97,6 +113,10 @@ class CreateShapeFromStepId(bpy.types.Operator):
     bl_idname = "bim.create_shape_from_step_id"
     bl_label = "Create Shape From STEP ID"
     bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
@@ -148,7 +168,11 @@ class RewindInspector(bpy.types.Operator):
 class InspectFromStepId(bpy.types.Operator):
     bl_idname = "bim.inspect_from_step_id"
     bl_label = "Inspect From STEP ID"
-    step_id: bpy.props.IntProperty()
+    step_id: bpy.props.IntProperty()   
+    
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
