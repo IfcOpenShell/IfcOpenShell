@@ -42,7 +42,7 @@ def getIfcTypes(self, context):
 
 def getAvailableTypes(self, context):
     global available_types_enum
-    if len(available_types_enum) < 1:
+    if len(available_types_enum) < 1 and getIfcTypes(self, context):
         elements = IfcStore.get_file().by_type(self.ifc_class)
         available_types_enum.extend((str(e.id()), e.Name, "") for e in elements)
     return available_types_enum
