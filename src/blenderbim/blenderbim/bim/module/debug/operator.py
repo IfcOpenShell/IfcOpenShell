@@ -168,8 +168,8 @@ class RewindInspector(bpy.types.Operator):
 class InspectFromStepId(bpy.types.Operator):
     bl_idname = "bim.inspect_from_step_id"
     bl_label = "Inspect From STEP ID"
-    step_id: bpy.props.IntProperty()   
-    
+    step_id: bpy.props.IntProperty()
+
     @classmethod
     def poll(cls, context):
         return IfcStore.get_file()
