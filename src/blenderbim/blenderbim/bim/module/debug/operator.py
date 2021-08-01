@@ -30,6 +30,7 @@ class PurgeIfcLinks(bpy.types.Operator):
         for material in bpy.data.materials:
             material.BIMMaterialProperties.ifc_style_id = False
         context.scene.BIMProperties.ifc_file = ""
+        context.scene.BIMDebugProperties.attributes.clear()
         IfcStore.purge()
         blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}
