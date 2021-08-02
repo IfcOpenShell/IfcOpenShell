@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 
-import ifcopenshell
-import ifcopenshell.geom
-import ifcopenshell.util.selector
-import multiprocessing
 import numpy as np
 import json
 import sys
 import argparse
 import logging
+import multiprocessing
+import ifcopenshell
+import ifcopenshell.geom
+import ifcopenshell.util.selector
 from . import collider
 
 
 class Clasher:
     def __init__(self, settings):
         self.settings = settings
-        self.geom_settings = ifcopenshell.geom.settings()
+        self.geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True)
         self.clash_sets = []
         self.collider = collider.Collider()
         self.selector = ifcopenshell.util.selector.Selector()
@@ -23,36 +23,45 @@ class Clasher:
 
     def clash(self):
         existing_limit = sys.getrecursionlimit()
-        sys.setrecursionlimit(100000)
         for clash_set in self.clash_sets:
             self.process_clash_set(clash_set)
-        sys.setrecursionlimit(existing_limit)
 
     def process_clash_set(self, clash_set):
-        print("proccessings", clash_set)
         self.collider.create_group("a")
         for source in clash_set["a"]:
-            self.add_collision_objects(
-                "a", self.load_ifc(source["file"]), source.get("mode", None), source.get("selector", None)
-            )
+            source["ifc"] = self.load_ifc(source["file"])
+            self.add_collision_objects("a", source["ifc"], source.get("mode", None), source.get("selector", None))
 
         if "b" in clash_set:
             self.collider.create_group("b")
             for source in clash_set["b"]:
-                self.add_collision_objects(
-                    "b", self.load_ifc(source["file"]), source.get("mode", None), source.get("selector", None)
-                )
+                source["ifc"] = self.load_ifc(source["file"])
+                self.add_collision_objects("b", source["ifc"], source.get("mode", None), source.get("selector", None))
             results = self.collider.collide_group("a", "b")
         else:
             results = self.collider.collide_internal("a")
 
+        processed_results = {}
         for result in results:
-            print("*" * 10)
-            print("Is Collision:", result["collision"].isCollision())
-            print(result["id1"], result["id2"])
-            print("Number of contacts:", result["collision"].numContacts())
-            for contact in result["collision"].getContacts():
-                print(contact)
+            element1 = self.get_element(clash_set["a"], result["id1"])
+            if "b" in clash_set:
+                element2 = self.get_element(clash_set["b"], result["id2"])
+            else:
+                element2 = self.get_element(clash_set["1"], result["id2"])
+
+            contact = result["collision"].getContacts()[0]
+            processed_results[f"{result['id1']}-{result['id2']}"] = {
+                "a_global_id": result["id1"],
+                "b_global_id": result["id2"],
+                "a_ifc_class": element1.is_a(),
+                "b_ifc_class": element2.is_a(),
+                "a_name": element1.Name,
+                "b_name": element2.Name,
+                "normal": list(contact.normal),
+                "position": list(contact.pos),
+                "penetration_depth": contact.penetration_depth,
+            }
+        clash_set["clashes"] = processed_results
 
     def load_ifc(self, path):
         ifc = self.ifcs.get(path, None)
@@ -62,37 +71,17 @@ class Clasher:
         return ifc
 
     def add_collision_objects(self, name, ifc_file, mode=None, selector=None):
-        print('adding collision objects', name)
         if not mode:
-            iterator = ifcopenshell.geom.iterator(
-                self.geom_settings,
-                ifc_file,
-                multiprocessing.cpu_count(),
-                exclude=(ifc_file.by_type("IfcSpatialStructureElement")),
-            )
+            elements = ifc_file.by_type("IfcElement")
         elif mode == "e":
-            iterator = ifcopenshell.geom.iterator(
-                self.geom_settings,
-                ifc_file,
-                multiprocessing.cpu_count(),
-                exclude=selector.parse(ifc_file, selector),
-            )
+            exclude = self.selector.parse(ifc_file, selector)
+            elements = [e for e in ifc_file.by_type("IfcElement") if e not in exclude]
         elif mode == "i":
-            iterator = ifcopenshell.geom.iterator(
-                self.geom_settings,
-                ifc_file,
-                multiprocessing.cpu_count(),
-                include=selector.parse(ifc_file, selector),
-            )
-        valid_file = iterator.initialize()
-        if not valid_file:
-            return False
-        old_progress = -1
-        while True:
-            shape = iterator.get()
-            self.collider.create_object(name, shape.guid, shape)
-            if not iterator.next():
-                break
+            elements = self.selector.parse(ifc_file, selector)
+        iterator = ifcopenshell.geom.iterator(
+            self.geom_settings, ifc_file, multiprocessing.cpu_count(), include=elements
+        )
+        self.collider.create_objects(name, ifc_file, iterator, elements)
 
     def export(self):
         if len(self.settings.output) > 4 and self.settings.output[-4:] == ".bcf":
@@ -101,23 +90,23 @@ class Clasher:
 
     def export_bcfxml(self):
         import bcf
-        import bcf.bcfxml
+        import bcf.v2.bcfxml
 
         for i, clash_set in enumerate(self.clash_sets):
-            bcfxml = bcf.bcfxml.BcfXml()
+            bcfxml = bcf.v2.bcfxml.BcfXml()
             bcfxml.new_project()
             bcfxml.project.name = clash_set["name"]
             bcfxml.edit_project()
             for key, clash in clash_set["clashes"].items():
-                topic = bcf.data.Topic()
+                topic = bcf.v2.data.Topic()
                 topic.title = "{}/{} and {}/{}".format(
                     clash["a_ifc_class"], clash["a_name"], clash["b_ifc_class"], clash["b_name"]
                 )
                 topic = bcfxml.add_topic(topic)
-                viewpoint = bcf.data.Viewpoint()
-                viewpoint.perspective_camera = bcf.data.PerspectiveCamera()
+                viewpoint = bcf.v2.data.Viewpoint()
+                viewpoint.perspective_camera = bcf.v2.data.PerspectiveCamera()
                 position = np.array(clash["position"])
-                point = position + np.array((5, 5, 5))  # Dumb, but works!
+                point = position + np.array((5, 5, 5))  # Dumb, but works (for now)!
                 viewpoint.perspective_camera.camera_view_point.x = point[0]
                 viewpoint.perspective_camera.camera_view_point.y = point[1]
                 viewpoint.perspective_camera.camera_view_point.z = point[2]
@@ -128,14 +117,14 @@ class Clasher:
                 viewpoint.perspective_camera.camera_up_vector.x = mat[0][1]
                 viewpoint.perspective_camera.camera_up_vector.y = mat[1][1]
                 viewpoint.perspective_camera.camera_up_vector.z = mat[2][1]
-                viewpoint.components = bcf.data.Components()
-                c1 = bcf.data.Component()
+                viewpoint.components = bcf.v2.data.Components()
+                c1 = bcf.v2.data.Component()
                 c1.ifc_guid = clash["a_global_id"]
-                c2 = bcf.data.Component()
+                c2 = bcf.v2.data.Component()
                 c2.ifc_guid = clash["b_global_id"]
                 viewpoint.components.selection.append(c1)
                 viewpoint.components.selection.append(c2)
-                viewpoint.components.visibility = bcf.data.ComponentVisibility()
+                viewpoint.components.visibility = bcf.v2.data.ComponentVisibility()
                 viewpoint.components.visibility.default_visibility = True
                 viewpoint.snapshot = self.get_viewpoint_snapshot(viewpoint, mat)
                 bcfxml.add_viewpoint(topic, viewpoint)
@@ -168,8 +157,6 @@ class Clasher:
     def export_json(self):
         results = self.clash_sets.copy()
         for result in results:
-            del result["a_cm"]
-            del result["b_cm"]
             for ab in ["a", "b"]:
                 for data in result[ab]:
                     if "ifc" in data:
@@ -177,10 +164,10 @@ class Clasher:
         with open(self.settings.output, "w", encoding="utf-8") as clashes_file:
             json.dump(results, clashes_file, indent=4)
 
-    def get_element(self, clash_group, global_id):
-        for data in clash_group:
+    def get_element(self, clash_set, global_id):
+        for source in clash_set:
             try:
-                element = data["ifc"].by_guid(global_id)
+                element = source["ifc"].by_guid(global_id)
                 if element:
                     return element
             except:
