@@ -163,33 +163,13 @@ class TestIdsAuthoring(unittest.TestCase):
         i.specifications[0].add_requirement(m)
         self.assertEqual(i.specifications[0].requirements.terms[1].value, "Test_Value")
 
-    """ Saving created IDS to IDS.xml """
-
-    def test_created_ids_to_xml(self):
-        i = ids.ids()
-        i.specifications.append(ids.specification(name="Test_Specification"))
-        e = ids.entity.create(name="Test_Name", predefinedtype="Test_PredefinedType")
-        c = ids.classification.create(location="any", value="Test_Value", system="Test_System")
-        m = ids.material.create(location="any", value="Test_Value")
-        p = ids.property.create(
-            location="any", propertyset="Test_PropertySet", name="Test_Parameter", value="Test_Value"
-        )
-        i.specifications[0].add_applicability(e)
-        i.specifications[0].add_applicability(m)
-        i.specifications[0].add_requirement(c)
-        i.specifications[0].add_requirement(p)
-        fn = "TEST_FILE.xml"
-        result = i.to_xml(fn)
-        os.remove(fn)
-        self.assertTrue(result)
-
     """ Creating IDS with restrictions """
 
     def test_create_restrictions_enumeration(self):
         i = ids.ids()
         i.specifications.append(ids.specification(name="Test_Specification"))
         i.specifications[0].add_applicability(ids.entity.create(name="Test_Name"))
-        r = ids.restriction.create(options=["testA", "testB"], type="enumeration", restriction_on="string")
+        r = ids.restriction.create(options=["testA", "testB"], type="enumeration", base="string")
         m = ids.material.create(location="any", value=r)
         i.specifications[0].add_requirement(m)
         self.assertEqual(i.specifications[0].requirements.terms[0].value, "testA")
@@ -201,7 +181,7 @@ class TestIdsAuthoring(unittest.TestCase):
         i.specifications.append(ids.specification(name="Test_Specification"))
         i.specifications[0].add_applicability(ids.entity.create(name="Test_Name"))
         r = ids.restriction.create(
-            options={"minInclusive": 0, "maxExclusive": 10}, type="bounds", restriction_on="integer"
+            options={"minInclusive": 0, "maxExclusive": 10}, type="bounds", base="integer"
         )
         p = ids.property.create(location="any", propertyset="Test", name="Test", value=r)
         i.specifications[0].add_requirement(p)
@@ -214,7 +194,7 @@ class TestIdsAuthoring(unittest.TestCase):
         i = ids.ids()
         i.specifications.append(ids.specification(name="Test_Specification"))
         i.specifications[0].add_applicability(ids.entity.create(name="Test_Name"))
-        r = ids.restriction.create(options="[A-Z]{2,4}", type="pattern", restriction_on="string")
+        r = ids.restriction.create(options="[A-Z]{2,4}", type="pattern", base="string")
         p = ids.property.create(location="any", propertyset="Test", name="Test", value=r)
         i.specifications[0].add_requirement(p)
         self.assertEqual(i.specifications[0].requirements.terms[0].value, "XYZ")
@@ -226,9 +206,9 @@ class TestIdsAuthoring(unittest.TestCase):
         i = ids.ids()
         i.specifications.append(ids.specification(name="Test_Specification"))
         i.specifications[0].add_applicability(ids.entity.create(name="Test_Name"))
-        # r = ids.restriction.create(options="^(Wanddurchbruch.*|Deckendurchbruch.*)", type="pattern", restriction_on="string")
+        # r = ids.restriction.create(options="^(Wanddurchbruch.*|Deckendurchbruch.*)", type="pattern", base="string")
         r = ids.restriction.create(
-            options="(Wanddurchbruch|Deckendurchbruch).*", type="pattern", restriction_on="string"
+            options="(Wanddurchbruch|Deckendurchbruch).*", type="pattern", base="string"
         )
         p = ids.property.create(location="any", propertyset="Test", name="Test", value=r)
         i.specifications[0].add_requirement(p)
@@ -236,9 +216,35 @@ class TestIdsAuthoring(unittest.TestCase):
         self.assertEqual(i.specifications[0].requirements.terms[0].value, "Deckendurchbruch")
         self.assertNotEqual(i.specifications[0].requirements.terms[0].value, "Deeckendurchbruch")
 
+    """ Saving created IDS to IDS.xml """
+
+    def test_created_ids_to_xml(self):
+        i = ids.ids()
+        i.specifications.append(ids.specification(name="Test_Specification"))
+        e = ids.entity.create(name="Test_Name", predefinedtype="Test_PredefinedType")
+        c = ids.classification.create(location="any", value="Test_Value", system="Test_System")
+        m = ids.material.create(location="any", value="Test_Value")
+        re = ids.restriction.create(options=["testA", "testB"], type="enumeration", base="string")
+        rb = ids.restriction.create(options={"minInclusive": 0, "maxExclusive": 10}, type="bounds", base="integer")
+        rp = ids.restriction.create(options="[A-Z]{2,4}", type="pattern", base="string")
+        p1 = ids.property.create(location="any", propertyset="Test_PropertySet", name="Test_Parameter", value=re)
+        p2 = ids.property.create(location="any", propertyset="Test_PropertySet", name="Test_Parameter", value=rb)
+        p3 = ids.property.create(location="any", propertyset="Test_PropertySet", name="Test_Parameter", value=rp)
+        p4 = ids.property.create(location="any", propertyset="Test_PropertySet", name="Test_Parameter", value=[re,rb,rp])
+        i.specifications[0].add_applicability(e)
+        i.specifications[0].add_applicability(m)
+        i.specifications[0].add_requirement(c)
+        i.specifications[0].add_requirement(p1)
+        i.specifications[0].add_requirement(p2)
+        i.specifications[0].add_requirement(p3)
+        i.specifications[0].add_requirement(p4)
+        fn = "TEST_FILE.xml"
+        result = i.to_xml(fn)
+        os.remove(fn)
+        self.assertTrue(result)
+
 
 class TestIfcValidation(unittest.TestCase):
-    
     def test_validate_simple(self):
         # TODO
         pass
@@ -288,8 +294,6 @@ class TestIdsReporting(unittest.TestCase):
     # logging.basicConfig(level=logging.INFO, format="%(message)s")
     # logging.basicConfig(filename=TEST_PATH+r"\log.txt", level=logging.INFO, format="%(message)s")
 
-    ids_file = ids.ids.parse(read_web_file(IDS_URL))
-
     content = read_web_file(IFC_URL)
     file = open(TEST_PATH + r"\test.ifc", "w")
     file.write(content)
@@ -298,19 +302,21 @@ class TestIdsReporting(unittest.TestCase):
     os.remove(TEST_PATH + r"\test.ifc")
 
     def test_simple_report(self):
+        ids_file = ids.ids.parse(read_web_file(self.IDS_URL))
         report = ids.SimpleHandler()
         self.logger.addHandler(report)
-        self.ids_file.validate(self.ifc_file, self.logger)
+        ids_file.validate(self.ifc_file, self.logger)
         self.assertEqual(len(report.statements), 5)
 
     def test_bcf_report(self):
+        ids_file = ids.ids.parse(read_web_file(self.IDS_URL))
 
         bcf_handler = ids.BcfHandler(
             project_name="Default IDS Project", author="your@email.com", filepath=self.TEST_PATH + r"\bcf_test.bcfzip"
         )
         self.logger.addHandler(bcf_handler)
 
-        self.ids_file.validate(self.ifc_file, self.logger)
+        ids_file.validate(self.ifc_file, self.logger)
 
         my_bcfxml = bcfxml.load(self.TEST_PATH + r"\bcf_test.bcfzip")
         topics = my_bcfxml.get_topics()
