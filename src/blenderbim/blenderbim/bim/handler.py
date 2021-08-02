@@ -4,6 +4,7 @@ import addon_utils
 import ifcopenshell.api.owner.settings
 from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.owner.prop import getPersons, getOrganisations
 from ifcopenshell.api.attribute.data import Data as AttributeData
 from ifcopenshell.api.material.data import Data as MaterialData
 from ifcopenshell.api.style.data import Data as StyleData
@@ -211,12 +212,12 @@ def setDefaultProperties(scene):
     )
     ifcopenshell.api.owner.settings.get_person = (
         lambda ifc: ifc.by_id(int(bpy.context.scene.BIMOwnerProperties.user_person))
-        if bpy.context.scene.BIMOwnerProperties.user_person
+        if getPersons(None, bpy.context) and bpy.context.scene.BIMOwnerProperties.user_person
         else None
     )
     ifcopenshell.api.owner.settings.get_organisation = (
         lambda ifc: ifc.by_id(int(bpy.context.scene.BIMOwnerProperties.user_organisation))
-        if bpy.context.scene.BIMOwnerProperties.user_organisation
+        if getOrganisations(None, bpy.context) and bpy.context.scene.BIMOwnerProperties.user_organisation
         else None
     )
     ifcopenshell.api.owner.settings.get_application = get_application
