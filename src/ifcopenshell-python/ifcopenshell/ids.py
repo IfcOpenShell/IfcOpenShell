@@ -20,12 +20,8 @@ from xmlschema.validators import identities
 ids_schema = XMLSchema("http://standards.buildingsmart.org/IDS/ids_04.xsd")
 
 
-class exception(Exception):
-    pass
-
-
 def error(msg):
-    raise exception(msg)
+    raise Exception(msg)
 
 
 class facet_evaluation:
@@ -154,7 +150,7 @@ class classification(facet):
             "system": {'simpleValue': self.system},
             "@location": self.location, 
             # "instructions": "SAMPLE_INSTRUCTIONS",
-            }
+        }
         return fac_dict
 
     def __call__(self, inst, logger):
@@ -395,7 +391,7 @@ class restriction:
                         self.options.append(x["@value"])
                 elif n[-7:] == "clusive":
                     self.type = "bounds"
-                    self.options.append( {n: node[n]['@value']} )
+                    self.options.append({n: node[n]["@value"]})
                 elif n[-5:] == "ength":
                     self.type = "length"
                     if n[3:6] == "min":
@@ -426,7 +422,7 @@ class restriction:
                         if bounds dict with possible keys: minInclusive, maxInclusive, minExclusive, maxExclusive
         """
         rest = restriction()
-        if type in ['enumeration', 'pattern', 'bounds']:
+        if type in ["enumeration", "pattern", "bounds"]:
             rest.type = type
             rest.restriction_on = restriction_on
             if type == 'enumeration' and isinstance(options, list):
@@ -470,7 +466,7 @@ class restriction:
                     if eval(str(len(other)) + op):  # TODO eval not safe?
                         result = True
             elif self.type == "pattern":
-                translated_pattern = identities.translate_pattern( self.options )  # r"[A-Z]{1,3}" = Between one and three capital letters
+                translated_pattern = identities.translate_pattern(self.options)
                 regex_pattern = re.compile(translated_pattern)
                 if regex_pattern.fullmatch(other) is not None:
                     result = True
@@ -498,21 +494,21 @@ class specification:
     Represents the XML <specification> node and its two children <applicability> and <requirements>
     """
 
-    def __init__(self, name="Specification", necessity='required'):
+    def __init__(self, name="Specification", necessity="required"):
         self.name = name
         self.applicability = None
         self.requirements = None
         self.necessity = necessity
 
     def asdict(self):
-        # if older python collections.OrderedDict() 
+        # if older python collections.OrderedDict()
         spec_dict = {
-            "@name": self.name, 
-            "@necessity": self.necessity, 
+            "@name": self.name,
+            "@necessity": self.necessity,
             "applicability": {},
             "requirements": {},
-            }
-        for x in ['applicability','requirements']:
+        }
+        for x in ["applicability", "requirements"]:
             for fac in (getattr(self, x)).terms:
                 fclass = type(fac).__name__
                 if fclass in spec_dict[x]:
@@ -613,14 +609,14 @@ class ids:
 
     def __init__(self):
         self.specifications = []
-        self.info = None    # TODO ifcversion, description, author, copyright, version, date, purpose, milestone
+        self.info = None  # TODO ifcversion, description, author, copyright, version, date, purpose, milestone
 
     def asdict(self):
         ids_dict = {
-            '@xmlns': 'http://standards.buildingsmart.org/IDS',
-            '@xmlns:xs': 'http://www.w3.org/2001/XMLSchema',
-            '@xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
-            '@xsi:schemaLocation': 'http://standards.buildingsmart.org/IDS/ids_04.xsd',
+            "@xmlns": "http://standards.buildingsmart.org/IDS",
+            "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
+            "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS/ids_04.xsd",
             "specification": [],
             "info": self.info,
         }
@@ -636,20 +632,25 @@ class ids:
 
         ids_dict = self.asdict()
 
-        ids_xml = ids_schema.encode(ids_dict, namespaces={
-            "": "http://standards.buildingsmart.org/IDS",
-            'xs': 'http://www.w3.org/2001/XMLSchema',
-            'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
-            'xsi:schemaLocation': "http://standards.buildingsmart.org/IDS/ids_04.xsd"
-            })  #validation='skip', 
+        ids_xml = ids_schema.encode(
+            ids_dict,
+            namespaces={
+                "": "http://standards.buildingsmart.org/IDS",
+                "xs": "http://www.w3.org/2001/XMLSchema",
+                "xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                "xsi:schemaLocation": "http://standards.buildingsmart.org/IDS/ids_04.xsd",
+            },
+        )  # validation='skip',
 
         ids_str = etree_tostring(
-            ids_xml, namespaces={  
-            "": "http://standards.buildingsmart.org/IDS",
-            # 'xs': 'http://www.w3.org/2001/XMLSchema',
-            # 'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
-            # 'xsi:schemaLocation': "http://standards.buildingsmart.org/IDS/ids_04.xsd"
-            })
+            ids_xml,
+            namespaces={
+                "": "http://standards.buildingsmart.org/IDS",
+                # 'xs': 'http://www.w3.org/2001/XMLSchema',
+                # 'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+                # 'xsi:schemaLocation': "http://standards.buildingsmart.org/IDS/ids_04.xsd"
+            },
+        )
 
         with open(fn, "w") as f:
             f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
@@ -674,7 +675,6 @@ class ids:
         self.ifc_passed = 0
         for spec in self.specifications:
             for elem in ifc_file.by_type("IfcObject"):
-                # TODO add BCF toggle
                 apply, comply = spec(elem, logger)
                 if apply:
                     self.ifc_checked += 1
@@ -692,7 +692,7 @@ class SimpleHandler(logging.StreamHandler):
             self.setLevel(logging.INFO)
         else:
             self.setLevel(logging.ERROR)
-        
+
     def emit(self, mymsg):
         self.statements.append(mymsg.msg)
 
@@ -712,8 +712,8 @@ class BcfHandler(logging.StreamHandler):
 
     def emit(self, mymsg):
         newtopic = Topic()
-        newtopic.title = mymsg.msg['sentence'].split('.\n')[1]
-        newtopic.description = mymsg.msg['sentence'].split('.\n')[0]
+        newtopic.title = mymsg.msg["sentence"].split(".\n")[1]
+        newtopic.description = mymsg.msg["sentence"].split(".\n")[0]
 
         # TODO
         # newviewpoint = Viewpoint()
@@ -731,7 +731,12 @@ class BcfHandler(logging.StreamHandler):
 
 
 location = {"instance": "an instance ", "type": "a type ", "any": "a "}
-bounds = {'minInclusive': 'larger or equal ', 'maxInclusive': 'smaller or equal ', 'minExclusive': 'larger than ', 'maxExclusive': 'smaller than '}
+bounds = {
+    "minInclusive": "larger or equal ",
+    "maxInclusive": "smaller or equal ",
+    "minExclusive": "larger than ",
+    "maxExclusive": "smaller than ",
+}
 
 if __name__ == "__main__":
     import time
