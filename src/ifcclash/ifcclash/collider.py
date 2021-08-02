@@ -1,77 +1,73 @@
 import hppfcl
 import numpy as np
-from aabbtree import AABB
-from aabbtree import AABBTree
+import ifcopenshell
 
 
 class Collider:
     def __init__(self):
         self.groups = {}
+        self.tree = ifcopenshell.geom.tree()
 
     def create_group(self, name):
-        self.groups[name] = {"tree": AABBTree(), "objects": {}}
+        self.groups[name] = {"elements": {}, "objects": {}}
+
+    def create_objects(self, name, ifc_file, iterator, elements):
+        self.tree.add_iterator(iterator)
+        self.groups[name]["elements"].update({e.GlobalId: e for e in elements})
+
+        # Temporary hack. See #1357.
+        import multiprocessing
+
+        iterator = ifcopenshell.geom.iterator(
+            ifcopenshell.geom.settings(), ifc_file, multiprocessing.cpu_count(), include=elements
+        )
+        valid_file = iterator.initialize()
+        if not valid_file:
+            return False
+        while True:
+            shape = iterator.get()
+            self.create_object(name, shape.guid, shape)
+            if not iterator.next():
+                break
 
     def create_object(self, group_name, id, shape):
         obj = hppfcl.CollisionObject(
             self.create_bvh(shape.geometry), self.create_transform(shape.transformation.matrix.data)
         )
-        aabb = obj.getAABB()
-        c = aabb.center()
-        x = aabb.width()
-        y = aabb.height()
-        z = aabb.depth()
-        aabb = AABB([(c[0] - x / 2, c[0] + x / 2), (c[1] - y / 2, c[1] + y / 2), (c[2] - z / 2, c[2] + z / 2)])
-        self.groups[group_name]["tree"].add(aabb, id)
-        self.groups[group_name]["objects"][id] = (aabb, obj)
+        self.groups[group_name]["objects"][id] = obj
 
     def collide_internal(self, name):
-        print('starting internal collision')
-        return self.collide_narrowphase(self.collide_broadphase(name, name))
+        return self.collide_narrowphase(name, name, self.collide_broadphase(name, name))
 
     def collide_group(self, name1, name2):
-        print('starting group collision')
-        return self.collide_narrowphase(self.collide_broadphase(name1, name2))
+        return self.collide_narrowphase(name1, name2, self.collide_broadphase(name1, name2))
 
     def collide_broadphase(self, name1, name2):
-        print('Begin broad phase')
         potential_collisions = []
         checked_collisions = set()
-        i = 0
-        for id, obj_data in self.groups[name1]["objects"].items():
-            aabb, obj = obj_data
-            collision_stack = [self.groups[name2]["tree"]]
+        for id, element in self.groups[name1]["elements"].items():
             checked_collisions.add(id)
-            i += 1
-            while i % 1000 == 0:
-                print(i, '...')
-            while collision_stack:
-                node = collision_stack.pop()
-                if node.value == id or node.value in checked_collisions:
-                    continue
-                if node.does_overlap(aabb):
-                    if node.is_leaf:
-                        potential_collisions.append(
-                            {
-                                "id1": id,
-                                "obj1": obj,
-                                "id2": node.value,
-                                "obj2": self.groups[name2]["objects"][node.value][1],
-                            }
-                        )
-                    else:
-                        collision_stack.append(node.left)
-                        collision_stack.append(node.right)
+            box_filter = self.tree.select_box(element)
+            pairs = [
+                {"id1": id, "id2": e.GlobalId}
+                for e in box_filter
+                if e.GlobalId not in checked_collisions and e.GlobalId in self.groups[name2]["elements"]
+            ]
+            potential_collisions.extend(pairs)
         return potential_collisions
 
-    def collide_narrowphase(self, potential_collisions):
-        print('Begin narrow phase')
+    def collide_narrowphase(self, name1, name2, potential_collisions):
         collisions = []
         for data in potential_collisions:
             result = hppfcl.CollisionResult()
-            hppfcl.collide(data["obj1"], data["obj2"], hppfcl.CollisionRequest(), result)
+            hppfcl.collide(
+                self.groups[name1]["objects"][data["id1"]],
+                self.groups[name2]["objects"][data["id2"]],
+                hppfcl.CollisionRequest(),
+                result,
+            )
             if result.isCollision():
                 collisions.append({"id1": data["id1"], "id2": data["id2"], "collision": result})
-                print({"id1": data["id1"], "id2": data["id2"], "collision": result})
         return collisions
 
     def create_transform(self, m):
