@@ -12,6 +12,10 @@ class PrintIfcFile(bpy.types.Operator):
     bl_idname = "bim.print_ifc_file"
     bl_label = "Print IFC File"
 
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
     def execute(self, context):
         print(IfcStore.get_file().wrapped_data.to_string())
         return {"FINISHED"}
@@ -30,6 +34,7 @@ class PurgeIfcLinks(bpy.types.Operator):
         for material in bpy.data.materials:
             material.BIMMaterialProperties.ifc_style_id = False
         context.scene.BIMProperties.ifc_file = ""
+        context.scene.BIMDebugProperties.attributes.clear()
         IfcStore.purge()
         blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}
@@ -38,6 +43,10 @@ class PurgeIfcLinks(bpy.types.Operator):
 class ValidateIfcFile(bpy.types.Operator):
     bl_idname = "bim.validate_ifc_file"
     bl_label = "Validate IFC File"
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
 
     def execute(self, context):
         import ifcopenshell.validate
@@ -51,6 +60,10 @@ class ValidateIfcFile(bpy.types.Operator):
 class ProfileImportIFC(bpy.types.Operator):
     bl_idname = "bim.profile_import_ifc"
     bl_label = "Profile Import IFC"
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file() and context.scene.BIMProperties.ifc_file
 
     def execute(self, context):
         import cProfile
@@ -68,6 +81,10 @@ class ProfileImportIFC(bpy.types.Operator):
 class CreateAllShapes(bpy.types.Operator):
     bl_idname = "bim.create_all_shapes"
     bl_label = "Create All Shapes"
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
@@ -97,6 +114,10 @@ class CreateShapeFromStepId(bpy.types.Operator):
     bl_label = "Create Shape From STEP ID"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 
@@ -122,17 +143,9 @@ class SelectHighPolygonMeshes(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        results = {}
-        for obj in bpy.data.objects:
-            if not isinstance(obj.data, bpy.types.Mesh) or len(obj.data.polygons) < int(
-                context.scene.BIMDebugProperties.number_of_polygons
-            ):
-                continue
-            try:
-                obj.select_set(True)
-            except:
-                # If it is not in the view layer
-                pass
+        [o.select_set(True) for o in context.view_layer.objects
+            if o.type == 'MESH'
+            and len(o.data.polygons) > context.scene.BIMDebugProperties.number_of_polygons]
         return {"FINISHED"}
 
 
@@ -156,6 +169,10 @@ class InspectFromStepId(bpy.types.Operator):
     bl_idname = "bim.inspect_from_step_id"
     bl_label = "Inspect From STEP ID"
     step_id: bpy.props.IntProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
