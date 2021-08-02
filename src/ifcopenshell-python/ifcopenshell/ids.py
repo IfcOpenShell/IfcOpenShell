@@ -75,11 +75,16 @@ class facet(metaclass=meta_facet):
     def __getattr__(self, k):
         if k in self.node:
             v = self.node[k]
-            if 'simpleValue' in v.keys():
-                return v['simpleValue']
-            else:   # is restriction
-                return restriction( v["restriction"][0] )
+            #TODO rare case with list of dictionaries should not happen
+            if isinstance(v, list):
+                v = v[0]
+            if "simpleValue" in list(v):
+                return v["simpleValue"]
+            elif "restriction" in list(v):
+                return restriction(v["restriction"][0])
                 # TODO handle more than one restriction: return [restriction(r) for r in v["restriction"]]
+            else:
+                raise Exception("Unknown value declaration.")
         else:
             return None
 
@@ -110,9 +115,9 @@ class entity(facet):
         return inst
 
     def asdict(self):
-        fac_dict = {"name": {'simpleValue': self.name}}
+        fac_dict = {"name": parameter_asdict(self.name)}
         if "predefinedtype" in self:
-            fac_dict["predefinedtype"] = self.predefinedtype
+            fac_dict["predefinedtype"] = parameter_asdict(self.predefinedtype)
         return fac_dict
 
     def __call__(self, inst, logger):
@@ -146,9 +151,9 @@ class classification(facet):
 
     def asdict(self):
         fac_dict = {
-            "value": {'simpleValue': self.value}, 
-            "system": {'simpleValue': self.system},
-            "@location": self.location, 
+            "value": parameter_asdict(self.value),
+            "system": parameter_asdict(self.system),
+            "@location": self.location,
             # "instructions": "SAMPLE_INSTRUCTIONS",
         }
         return fac_dict
@@ -218,9 +223,9 @@ class property(facet):
     def asdict(self):
         fac_dict = {
             "@location": self.location,
-            "propertyset": {'simpleValue': self.propertyset},
-            "name": {'simpleValue': self.name},
-            "value": {'simpleValue': self.value},
+            "propertyset": parameter_asdict(self.propertyset),
+            "name": parameter_asdict(self.name),
+            "value": parameter_asdict(self.value),
             # "instructions": "SAMPLE_INSTRUCTIONS",
             # TODO '@href': 'http://identifier.buildingsmart.org/uri/buildingsmart/ifc-4.3/prop/FireRating', #https://identifier.buildingsmart.org/uri/something
         }
@@ -230,6 +235,7 @@ class property(facet):
 
         self.location = self.node["@location"]
 
+        # TODO sometimes AttributeError: 'str' object has no attribute 'wrappedValue'
         instance_props = ifcopenshell.util.element.get_psets(inst)
 
         if ifcopenshell.util.element.get_type(inst):
@@ -260,6 +266,17 @@ class property(facet):
             else:
                 msg = "does not have %(location)sset '%(propertyset)s'" % di
 
+        # TODO implement data type comparison
+        # xs:string
+        # xs:decimal
+        # xs:integer
+        # xs:boolean
+        # xs:anyURI
+        # xs:date 		YYYY-MM-DD
+        # xs:time 		hh:mm:ss
+        # xs:dateTime 	YYYY-MM-DDThh:mm:ss
+        # xs:duration	PnYnMnDTnHnMnS
+
         return facet_evaluation(val == self.value, msg)
 
 
@@ -284,7 +301,7 @@ class material(facet):
 
     def asdict(self):
         fac_dict = {
-            "value": {'simpleValue': self.value},
+            "value": parameter_asdict(self.value),
             "@location": self.location,
             # "instructions": "SAMPLE_INSTRUCTIONS",
             # TODO '@href': 'http://identifier.buildingsmart.org/uri/buildingsmart/ifc-4.3/prop/FireRating', #https://identifier.buildingsmart.org/uri/something
@@ -347,6 +364,20 @@ class material(facet):
         )
 
 
+def parameter_asdict(parameter):
+    if isinstance(parameter, str):
+        parameter_dict = {"simpleValue": parameter}
+    elif isinstance(parameter, restriction):
+        parameter_dict = {"xs:restriction": [parameter.asdict()]}
+    elif isinstance(parameter, list):
+        restrictions = {'@base':'xs:'+parameter[0].base}
+        for p in parameter:
+            x = p.asdict()
+            restrictions[list(x)[1]] = x[list(x)[1]]
+        parameter_dict = {'xs:restriction': [restrictions]}
+    return parameter_dict
+
+
 class boolean_logic:
     """
     Boolean conjunction over a collection of functions
@@ -383,7 +414,8 @@ class restriction:
         self.options = []
 
         if node:
-            self.restriction_on = node["@base"][3:]
+            # TODO 'base' missing in some IDS?!
+            self.base = node["@base"][3:]
             for n in node:
                 if n == "enumeration":
                     self.type = "enumeration"
@@ -412,54 +444,70 @@ class restriction:
                 else:
                     print("Error! Restriction not implemented")
 
+    def asdict(self):
+        rest_dict = {'@base': 'xs:'+self.base}
+        if self.type == 'enumeration':
+            for option in self.options:
+                if 'xs:enumeration' not in rest_dict:
+                    rest_dict['xs:enumeration'] = [{'@value': option}]
+                else:
+                    rest_dict['xs:enumeration'].append({'@value': option})
+        elif self.type == 'bounds':
+            for option in self.options:
+                if 'xs:option' not in rest_dict:
+                    rest_dict['xs:'+option] = [{'@value': option}]
+                else:
+                    rest_dict['xs:'+option].append({'@value': self.options[option], '@fixed': False})
+        elif self.type == 'pattern':
+            if 'xs:pattern' not in rest_dict:
+                rest_dict['xs:pattern'] = [{'@value': self.options}]
+            else:
+                rest_dict['xs:pattern'].append({'@value': self.options})
+        return rest_dict
+
     @staticmethod
-    def create(options, type='', restriction_on='string'):
-        """ 
-        type:           enumeration/pattern/bounds
-        restriction_on: string/boolean/decimal/integer
-        options:        list if enumeration
-                        regex string if pattern
-                        if bounds dict with possible keys: minInclusive, maxInclusive, minExclusive, maxExclusive
+    def create(options, type="", base="string"):
+        """
+        type:       enumeration/pattern/bounds
+        base:       string/boolean/decimal/integer
+        options:    list if enumeration
+                    regex string if pattern
+                    if bounds dict with possible keys: minInclusive, maxInclusive, minExclusive, maxExclusive
         """
         rest = restriction()
         if type in ["enumeration", "pattern", "bounds"]:
             rest.type = type
-            rest.restriction_on = restriction_on
-            if type == 'enumeration' and isinstance(options, list):
+            rest.base = base
+            rest.options = options
+            if (type == "enumeration" and isinstance(options, list)) or (type == "bounds" and isinstance(options, dict)) or (type == "pattern" and isinstance(options, str)):
                 rest.options = options
-            elif type == 'pattern' and isinstance(options, str):
-                rest.options = options
-            elif type == 'bounds' and isinstance(options, dict):
-                for option in options:
-                    if option in ['minInclusive', 'maxInclusive', 'minExclusive', 'maxExclusive']:
-                        rest.options.append( {option: options[option]} )
             else:
                 Exception("Options were not properly defined.")
             return rest
         else:
-            raise Exception("Such restriction not implemented. Try: 'enumeration', 'pattern' or 'min/maxInclusive' or 'min/maxExclusive'.")
-
+            raise Exception(
+                "Such restriction not implemented. Try: 'enumeration', 'pattern' or 'min/maxInclusive' or 'min/maxExclusive'."
+            )
 
     def __eq__(self, other):
         result = False
         # TODO implement data type comparison
         if self and (other or other == 0):
-            if self.type == "enumeration" and self.restriction_on == "bool":
+            if self.type == "enumeration" and self.base == "bool":
                 self.options = [x.lower() for x in self.options]
                 result = str(other).lower() in self.options
             elif self.type == "enumeration":
                 result = other in self.options
             elif self.type == "bounds":
                 result = True
-                for option in self.options:
-                    sign = list(option.keys())[0]
-                    if sign == 'minInclusive' and other < option[sign]:
+                for sign in self.options.keys():
+                    if sign == "minInclusive" and other < self.options[sign]:
                         result = False
-                    elif sign == 'maxInclusive' and other > option[sign]:
+                    elif sign == "maxInclusive" and other > self.options[sign]:
                         result = False
-                    elif sign == 'minExclusive' and other <= option[sign]:
+                    elif sign == "minExclusive" and other <= self.options[sign]:
                         result = False
-                    elif sign == 'maxExclusive' and other >= option[sign]:
+                    elif sign == "maxExclusive" and other >= self.options[sign]:
                         result = False
             elif self.type == "length":
                 for op in self.options:
@@ -476,17 +524,19 @@ class restriction:
         return result
 
     def __repr__(self):
+        msg = "of type '%s', " % (self.base)
         if self.type == "enumeration":
-            return "'%s'" % "' or '".join(self.options)
+            msg = msg + "of value: '%s'" % "' or '".join(self.options)
         elif self.type == "bounds":
-            return "of type '%s', having a value %s" % (self.restriction_on, " and ".join([bounds[list(x.keys())[0]] + str( x[list(x.keys())[0]] ) for x in self.options]))
+            msg = msg + "of value %s" % ", and ".join( [bounds[x] + str(self.options[x]) for x in self.options] )
         elif self.type == "length":
-            return "of type '%s' with %s letters" % (self.restriction_on, " and ".join(self.options))
+            msg = msg + "with %s letters" % " and ".join(self.options)
         elif self.type == "pattern":
-            return "of type '%s' respecting pattern '%s'" % (self.restriction_on, " and ".join(self.options))
+            msg = msg + "respecting the pattern '%s'" % self.options
         # TODO add fractionDigits
         # TODO add totalDigits
         # TODO add whiteSpace
+        return msg
 
 
 class specification:
@@ -664,22 +714,33 @@ class ids:
     @staticmethod
     def parse(fn, ids_schema=ids_schema):
         ids_schema.validate(fn)
-        ids_content = ids_schema.decode(fn, strip_namespaces=True, namespaces={"": "http://standards.buildingsmart.org/IDS"})
+        ids_content = ids_schema.decode(
+            fn, strip_namespaces=True, namespaces={"": "http://standards.buildingsmart.org/IDS"}
+        )
         new_ids = ids()
         new_ids.specifications = [specification.parse(s) for s in ids_content["specification"]]
         return new_ids
 
     def validate(self, ifc_file, logger):
         # TODO should we do other way around: for elem, for spec so we can see if an element pass all IDSes?
-        self.ifc_checked = 0
-        self.ifc_passed = 0
         for spec in self.specifications:
+            self.ifc_applicable = 0
+            self.ifc_passed = 0
             for elem in ifc_file.by_type("IfcObject"):
                 apply, comply = spec(elem, logger)
                 if apply:
-                    self.ifc_checked += 1
+                    self.ifc_applicable += 1
                 if comply:
                     self.ifc_passed += 1
+            if self.ifc_applicable == 0:            
+                logger.error('No applicable elements')
+            logger.debug(
+                "Out of %s IFC elements, %s were applicable and %s of them passed (%s)." % (
+                    len(ifc_file.by_type("IfcProduct")),
+                    self.ifc_applicable,
+                    self.ifc_passed,
+                    str(self.ifc_passed / self.ifc_applicable * 100) + "%"
+                ))
         for h in logger.handlers:
             h.flush()
 
