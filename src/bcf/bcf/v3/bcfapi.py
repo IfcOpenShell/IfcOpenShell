@@ -76,7 +76,7 @@ class Client:
     def delete(self, endpoint, params=None):
         headers = {"Authorization": "Bearer " + self.get_access_token()}
         resp = requests.put(
-            f"{self.baseurl}{endpoint}",
+            f"{self.api_baseurl}{endpoint}",
             headers=headers,
             params=params or None,
         )
@@ -92,11 +92,11 @@ class Client:
         return self.access_token
 
     def get_auth_methods(self):
-        resp = requests.get(f"{self.baseurl}opencde/1.0/auth")
+        resp = requests.get(f"{self.baseurl}foundation/1.0/auth")
         return resp.json()["supported_oauth2_flows"]
 
     def get_versions(self):
-        resp = requests.get(f"{self.baseurl}opencde/versions")
+        resp = requests.get(f"{self.baseurl}foundation/versions")
         resp_values = resp.json()["versions"]
         for version in resp_values:
             if "api_base_url" in version:
@@ -108,7 +108,7 @@ class Client:
         self.api_baseurl = self.version_ids[self.version]
 
     def login(self):
-        resp = requests.get(f"{self.baseurl}opencde/1.0/auth")
+        resp = requests.get(f"{self.baseurl}foundation/1.0/auth")
         values = resp.json()
         self.auth_endpoint = values["oauth2_auth_url"]
         self.token_endpoint = values["oauth2_token_url"]
