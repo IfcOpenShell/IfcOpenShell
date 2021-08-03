@@ -287,7 +287,7 @@ class CopyClass(bpy.types.Operator):
                 bpy.ops.bim.assign_type(relating_type=relating_type.id(), related_object=obj.name)
             else:
                 bpy.ops.bim.add_representation(obj=obj.name)
-            if result.is_a("IfcSpatialElement") or element.is_a("IfcSpatialStructureElement"):
+            if result.is_a("IfcSpatialElement") or result.is_a("IfcSpatialStructureElement"):
                 self.place_in_spatial_collection(old_element, obj)
         return {"FINISHED"}
 
