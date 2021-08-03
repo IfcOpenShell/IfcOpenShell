@@ -59,8 +59,10 @@ $ ifcpatch -i input.ifc -o output.ifc -r ExtractElements -a ".IfcWall"
 
 You can also use it as a library.
 
-```
+```python
 import ifcpatch
+
+
 ifcpatch.execute({
     "input": "input.ifc",
     "output": "output.ifc",
