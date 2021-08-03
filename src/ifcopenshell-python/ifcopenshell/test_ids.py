@@ -21,26 +21,26 @@ class TestIdsParsing(unittest.TestCase):
 
     def test_parse_basic_ids(self):
         IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_all_fields.xml"
-        ids_file = ids.ids.parse(read_web_file(IDS_URL))
+        ids_file = ids.ids.open(read_web_file(IDS_URL))
         self.assertEqual(type(ids_file).__name__, "ids")
 
     def test_parse_entity_facet(self):
         IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_entity.xml"
-        ids_file = ids.ids.parse(read_web_file(IDS_URL))
+        ids_file = ids.ids.open(read_web_file(IDS_URL))
         self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"]["simpleValue"], "IfcWall")
 
     def test_parse_predefinedtype_facet(self):
         IDS_URL = (
             "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_predefinedtype.xml"
         )
-        ids_file = ids.ids.parse(read_web_file(IDS_URL))
+        ids_file = ids.ids.open(read_web_file(IDS_URL))
         self.assertEqual(
             ids_file.specifications[0].requirements.terms[0].node["predefinedtype"]["simpleValue"], "CLADDING"
         )
 
     def test_parse_property_facet(self):
         IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_property.xml"
-        ids_file = ids.ids.parse(read_web_file(IDS_URL))
+        ids_file = ids.ids.open(read_web_file(IDS_URL))
         self.assertEqual(
             ids_file.specifications[0].requirements.terms[0].node["propertyset"]["simpleValue"], "Test_PropertySet"
         )
@@ -49,14 +49,14 @@ class TestIdsParsing(unittest.TestCase):
 
     def test_parse_material_facet(self):
         IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_material.xml"
-        ids_file = ids.ids.parse(read_web_file(IDS_URL))
+        ids_file = ids.ids.open(read_web_file(IDS_URL))
         self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["value"]["simpleValue"], "Test_Material")
 
     def test_parse_classification_facet(self):
         IDS_URL = (
             "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_classification.xml"
         )
-        ids_file = ids.ids.parse(read_web_file(IDS_URL))
+        ids_file = ids.ids.open(read_web_file(IDS_URL))
         self.assertEqual(
             ids_file.specifications[0].requirements.terms[0].node["value"]["simpleValue"], "Test_Classification"
         )
@@ -66,13 +66,13 @@ class TestIdsParsing(unittest.TestCase):
     # TODO
     # def test_invalid_classification_facet(self):
     #     IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/Invalid_IDS_Wall_needs_classification.xml"
-    #     self.assertRaises( XMLSchemaChildrenValidationError, ids.parse(read_web_file(IDS_URL)) )
+    #     self.assertRaises( XMLSchemaChildrenValidationError, ids.open(read_web_file(IDS_URL)) )
 
     """ Saving parsed IDS to IDS.xml """
 
     def test_parsed_ids_to_xml(self):
         IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_all_fields.xml"
-        ids_file = ids.ids.parse(read_web_file(IDS_URL))
+        ids_file = ids.ids.open(read_web_file(IDS_URL))
         fn = "TEST_FILE.xml"
         result = ids_file.to_xml(fn)
         os.remove(fn)
@@ -82,7 +82,7 @@ class TestIdsParsing(unittest.TestCase):
 
     def test_parse_restrictions_enumeration(self):
         IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_property_with_restriction_enumeration.xml"
-        ids_file = ids.ids.parse(read_web_file(IDS_URL))
+        ids_file = ids.ids.open(read_web_file(IDS_URL))
         self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"]["simpleValue"], "Test_Parameter")
         self.assertEqual(
             [
@@ -94,7 +94,7 @@ class TestIdsParsing(unittest.TestCase):
 
     def test_parse_restrictions_bounds(self):
         IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_property_with_restriction_bounds.xml"
-        ids_file = ids.ids.parse(read_web_file(IDS_URL))
+        ids_file = ids.ids.open(read_web_file(IDS_URL))
         self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"]["simpleValue"], "Test_Parameter")
         self.assertEqual(
             ids_file.specifications[0].requirements.terms[0].node["value"]["restriction"][0]["minInclusive"]["@value"],
@@ -103,7 +103,7 @@ class TestIdsParsing(unittest.TestCase):
 
     def test_parse_restrictions_pattern_simple(self):
         IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_property_with_restriction_pattern.xml"
-        ids_file = ids.ids.parse(read_web_file(IDS_URL))
+        ids_file = ids.ids.open(read_web_file(IDS_URL))
         self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"]["simpleValue"], "Test_Parameter")
         self.assertEqual(
             ids_file.specifications[0].requirements.terms[0].node["value"]["restriction"][0]["pattern"]["@value"],
@@ -257,7 +257,7 @@ class TestIfcValidation(unittest.TestCase):
 
     # def test_validate_restrictions_enumeration(self):
     #     IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_property_with_restriction_enumeration.xml"
-    #     ids_file = ids.ids.parse(read_web_file(IDS_URL))
+    #     ids_file = ids.ids.open(read_web_file(IDS_URL))
     #     self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"]['simpleValue'], "Test_Parameter")
     #     self.assertEqual( [x['@value'] for x in ids_file.specifications[0].requirements.terms[0].node["value"]['restriction'][0]['enumeration'] ], ['testA', 'testB'])
     #     # TODO actual test of validation result
@@ -265,7 +265,7 @@ class TestIfcValidation(unittest.TestCase):
 
     # def test_validate_restrictions_boundsInclusive(self):
     #     IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_property_with_restriction_bounds.xml"
-    #     ids_file = ids.ids.parse(read_web_file(IDS_URL))
+    #     ids_file = ids.ids.open(read_web_file(IDS_URL))
     #     self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"]['simpleValue'], "Test_Parameter")
     #     self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["value"]['restriction'][0]['minInclusive']['@value'], '0')
     #     # TODO actual test of validation result
@@ -277,7 +277,7 @@ class TestIfcValidation(unittest.TestCase):
 
     # def test_validate_restrictions_pattern_simple(self):
     #     IDS_URL = "https://raw.githubusercontent.com/atomczak/Sample-BIM-Files/main/IDS/IDS_Wall_needs_property_with_restriction_pattern.xml"
-    #     ids_file = ids.ids.parse(read_web_file(IDS_URL))
+    #     ids_file = ids.ids.open(read_web_file(IDS_URL))
     #     self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["name"]['simpleValue'], "Test_Parameter")
     #     self.assertEqual(ids_file.specifications[0].requirements.terms[0].node["value"]['restriction'][0]['pattern']['@value'], '[A-Z]{2,4}')
     #     # TODO actual test of validation result
@@ -302,14 +302,14 @@ class TestIdsReporting(unittest.TestCase):
     os.remove(TEST_PATH + r"\test.ifc")
 
     def test_simple_report(self):
-        ids_file = ids.ids.parse(read_web_file(self.IDS_URL))
+        ids_file = ids.ids.open(read_web_file(self.IDS_URL))
         report = ids.SimpleHandler()
         self.logger.addHandler(report)
         ids_file.validate(self.ifc_file, self.logger)
         self.assertEqual(len(report.statements), 5)
 
     def test_bcf_report(self):
-        ids_file = ids.ids.parse(read_web_file(self.IDS_URL))
+        ids_file = ids.ids.open(read_web_file(self.IDS_URL))
 
         bcf_handler = ids.BcfHandler(
             project_name="Default IDS Project", author="your@email.com", filepath=self.TEST_PATH + r"\bcf_test.bcfzip"
