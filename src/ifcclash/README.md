@@ -21,6 +21,13 @@ If you want something more Unix-like ...
 $ alias ifcclash='python -m ifcclash'
 ```
 
+Alternatively, you can package it as a distributable.
+
+```
+$ python make.py
+$ ./dist/ifcclash
+```
+
 ## Usage
 
 Instructions on what clashes to perform are structured in terms of clash sets.
