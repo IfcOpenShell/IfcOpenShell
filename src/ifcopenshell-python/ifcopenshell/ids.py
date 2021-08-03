@@ -712,7 +712,7 @@ class ids:
         return ids_schema.is_valid(fn)
 
     @staticmethod
-    def parse(fn, ids_schema=ids_schema):
+    def open(fn, ids_schema=ids_schema):
         ids_schema.validate(fn)
         ids_content = ids_schema.decode(
             fn, strip_namespaces=True, namespaces={"": "http://standards.buildingsmart.org/IDS"}
