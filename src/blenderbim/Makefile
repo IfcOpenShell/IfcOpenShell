@@ -21,6 +21,7 @@ BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/linux-64/boost
 endif
 ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/linux-64/assimp-5.0.1-hedfc422_6.tar.bz2
 OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.7/download/linux-64/octomap-1.9.7-h4bd325d_0.tar.bz2
+ZLIB_URL:=https://anaconda.org/conda-forge/zlib/1.2.11/download/linux-64/zlib-1.2.11-h516909a_1010.tar.bz2
 endif
 
 ifeq ($(PLATFORM), macos)
@@ -36,6 +37,7 @@ BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/osx-64/boost-1
 endif
 ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/osx-64/assimp-5.0.1-h1224e73_6.tar.bz2
 OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.7/download/osx-64/octomap-1.9.7-h940c156_0.tar.bz2
+ZLIB_URL:=https://anaconda.org/conda-forge/zlib/1.2.11/download/osx-64/zlib-1.2.11-h7795811_1010.tar.bz2
 endif
 
 ifeq ($(PLATFORM), win)
@@ -51,6 +53,7 @@ BOOST_URL:=https://anaconda.org/conda-forge/boost/1.74.0/download/win-64/boost-1
 endif
 ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/win-64/assimp-5.0.1-hc2aa0de_6.tar.bz2
 OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.7/download/win-64/octomap-1.9.7-h5362a0b_0.tar.bz2
+ZLIB_URL:=https://anaconda.org/conda-forge/zlib/1.2.11/download/win-64/zlib-1.2.11-h62dcd97_1010.tar.bz2
 endif
 
 .PHONY: dist
@@ -229,15 +232,16 @@ endif
 	mkdir dist/working
 	cd dist/working && wget $(HPPFCL_URL)
 	cd dist/working && tar -xf hpp-fcl*
-	cp -r dist/working/lib/$(PYLIBDIR)/site-packages/hppfcl dist/blenderbim/libs/site/packages/
 ifeq ($(PLATFORM), linux)
+	cp -r dist/working/lib/$(PYLIBDIR)/site-packages/hppfcl dist/blenderbim/libs/site/packages/
 	cp -r dist/working/lib/*.so* dist/blenderbim/libs/
 endif
 ifeq ($(PLATFORM), macos)
+	cp -r dist/working/lib/$(PYLIBDIR)/site-packages/hppfcl dist/blenderbim/libs/site/packages/
 	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
 endif
 ifeq ($(PLATFORM), win)
-	cp -r dist/working/Library/lib/*.lib dist/blenderbim/libs/site/packages/hppfcl/
+	cp -r dist/working/Lib/site-packages/hppfcl dist/blenderbim/libs/site/packages/
 	cp -r dist/working/Library/bin/*.dll dist/blenderbim/libs/site/packages/hppfcl/
 endif
 	rm -rf dist/working
@@ -253,7 +257,6 @@ ifeq ($(PLATFORM), macos)
 	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
 endif
 ifeq ($(PLATFORM), win)
-	cp -r dist/working/Library/bin/*.lib dist/blenderbim/libs/site/packages/hppfcl/
 	cp -r dist/working/Library/bin/*.dll dist/blenderbim/libs/site/packages/hppfcl/
 endif
 	rm -rf dist/working
@@ -269,7 +272,6 @@ ifeq ($(PLATFORM), macos)
 	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
 endif
 ifeq ($(PLATFORM), win)
-	cp -r dist/working/Library/bin/*.lib dist/blenderbim/libs/site/packages/hppfcl/
 	cp -r dist/working/Library/bin/*.dll dist/blenderbim/libs/site/packages/hppfcl/
 endif
 	rm -rf dist/working
@@ -285,8 +287,7 @@ ifeq ($(PLATFORM), macos)
 	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
 endif
 ifeq ($(PLATFORM), win)
-	cp -r dist/working/Library/bin/*.lib dist/blenderbim/libs/site/packages/hppfcl/
-	cp -r dist/working/Library/bin/*.dll dist/blenderbim/libs/site/packages/hppfcl/
+	# Uh, do nothing, apparently? No DLLs are shipped.
 endif
 	rm -rf dist/working
 
@@ -301,7 +302,21 @@ ifeq ($(PLATFORM), macos)
 	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
 endif
 ifeq ($(PLATFORM), win)
-	cp -r dist/working/Library/bin/*.lib dist/blenderbim/libs/site/packages/hppfcl/
+	cp -r dist/working/Library/bin/*.dll dist/blenderbim/libs/site/packages/hppfcl/
+endif
+	rm -rf dist/working
+
+	# Required by hpp-fcl
+	mkdir dist/working
+	cd dist/working && wget $(ZLIB_URL)
+	cd dist/working && tar -xf zlib*
+ifeq ($(PLATFORM), linux)
+	cp -r dist/working/lib/*.so* dist/blenderbim/libs/
+endif
+ifeq ($(PLATFORM), macos)
+	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
+endif
+ifeq ($(PLATFORM), win)
 	cp -r dist/working/Library/bin/*.dll dist/blenderbim/libs/site/packages/hppfcl/
 endif
 	rm -rf dist/working

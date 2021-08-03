@@ -82,7 +82,7 @@ class Collider:
         mesh_faces = [(int(f[i]), int(f[i + 1]), int(f[i + 2])) for i in range(0, len(f), 3)]
 
         bvh = hppfcl.BVHModelOBB()
-        bvh.beginModel(num_tris=len(mesh.faces), num_vertices=len(mesh_verts))
+        bvh.beginModel(len(mesh_faces), len(mesh_verts))
         vertices = hppfcl.StdVec_Vec3f()
         [vertices.append(v) for v in mesh_verts]
         triangles = hppfcl.StdVec_Triangle()

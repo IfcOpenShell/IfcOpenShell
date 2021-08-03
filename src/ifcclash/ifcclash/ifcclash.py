@@ -155,14 +155,14 @@ class Clasher:
         return np.linalg.inv(look_at_transform)
 
     def export_json(self):
-        results = self.clash_sets.copy()
-        for result in results:
-            for ab in ["a", "b"]:
-                for data in result[ab]:
-                    if "ifc" in data:
-                        del data["ifc"]
+        clash_sets = self.clash_sets.copy()
+        for clash_set in clash_sets:
+            for source in clash_set["a"]:
+                del source["ifc"]
+            for source in clash_set.get("b", []):
+                del source["ifc"]
         with open(self.settings.output, "w", encoding="utf-8") as clashes_file:
-            json.dump(results, clashes_file, indent=4)
+            json.dump(clash_sets, clashes_file, indent=4)
 
     def get_element(self, clash_set, global_id):
         for source in clash_set:
