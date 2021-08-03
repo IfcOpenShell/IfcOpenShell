@@ -186,19 +186,19 @@ class ExecuteIfcClash(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
     def execute(self, context):
-        import ifcclash
+        from ifcclash import ifcclash
 
-        settings = ifcclash.IfcClashSettings()
+        settings = ifcclash.ClashSettings()
         if ".json" not in self.filepath:
             self.filepath = bpy.path.ensure_ext(self.filepath, ".bcf")
         settings.output = self.filepath
         settings.logger = logging.getLogger("Clash")
         settings.logger.setLevel(logging.DEBUG)
-        ifc_clasher = ifcclash.IfcClasher(settings)
+        clasher = ifcclash.Clasher(settings)
 
         if context.scene.BIMClashProperties.should_create_clash_snapshots:
 
-            def get_viewpoint_snapshot(self, viewpoint, mat):
+            def get_viewpoint_snapshot(viewpoint, mat):
                 camera = bpy.data.objects.get("IFC Clash Camera")
                 if not camera:
                     camera = bpy.data.objects.new("IFC Clash Camera", bpy.data.cameras.new("IFC Clash Camera"))
@@ -218,9 +218,9 @@ class ExecuteIfcClash(bpy.types.Operator):
                 bpy.ops.render.opengl(write_still=True)
                 return context.scene.render.filepath
 
-            ifcclash.IfcClasher.get_viewpoint_snapshot = get_viewpoint_snapshot
+            clasher.get_viewpoint_snapshot = get_viewpoint_snapshot
 
-        ifc_clasher.clash_sets = []
+        clasher.clash_sets = []
         for clash_set in context.scene.BIMClashProperties.clash_sets:
             self.a = []
             self.b = []
@@ -231,11 +231,12 @@ class ExecuteIfcClash(bpy.types.Operator):
                         clash_source["selector"] = data.selector
                         clash_source["mode"] = data.mode
                     getattr(self, ab).append(clash_source)
-            ifc_clasher.clash_sets.append(
-                {"name": clash_set.name, "tolerance": clash_set.tolerance, "a": self.a, "b": self.b}
-            )
-        ifc_clasher.clash()
-        ifc_clasher.export()
+            clash_set_data = {"name": clash_set.name, "tolerance": clash_set.tolerance, "a": self.a}
+            if self.b:
+                clash_set_data["b"] = self.b
+            clasher.clash_sets.append(clash_set_data)
+        clasher.clash()
+        clasher.export()
         return {"FINISHED"}
 
 

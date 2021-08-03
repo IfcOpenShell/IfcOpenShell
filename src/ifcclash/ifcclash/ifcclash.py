@@ -47,7 +47,7 @@ class Clasher:
             if "b" in clash_set:
                 element2 = self.get_element(clash_set["b"], result["id2"])
             else:
-                element2 = self.get_element(clash_set["1"], result["id2"])
+                element2 = self.get_element(clash_set["a"], result["id2"])
 
             contact = result["collision"].getContacts()[0]
             processed_results[f"{result['id1']}-{result['id2']}"] = {
