@@ -14,27 +14,37 @@ from bpy.props import (
     CollectionProperty,
 )
 
+_persons_enum = []
+_organisations_enum = []
+
+def purge():
+    global _persons_enum
+    global _organisations_enum
+    _persons_enum.clear()
+    _organisations_enum.clear()
 
 def getPersons(self, context):
+    global _persons_enum
     if not Data.is_loaded:
         Data.load(IfcStore.get_file())
-    results = []
+    _persons_enum.clear()
     for ifc_id, person in Data.people.items():
         if "Id" in person:
             identifier = person["Id"] or ""
         else:
             identifier = person["Identification"] or ""
-        results.append((str(ifc_id), identifier, ""))
-    return results
+        _persons_enum.append((str(ifc_id), identifier, ""))
+    return _persons_enum
 
 
 def getOrganisations(self, context):
+    global _organisations_enum
     if not Data.is_loaded:
         Data.load(IfcStore.get_file())
-    results = []
+    _organisations_enum.clear()
     for ifc_id, organisation in Data.organisations.items():
-        results.append((str(ifc_id), organisation["Name"], ""))
-    return results
+        _organisations_enum.append((str(ifc_id), organisation["Name"], ""))
+    return _organisations_enum
 
 
 class Address(PropertyGroup):
