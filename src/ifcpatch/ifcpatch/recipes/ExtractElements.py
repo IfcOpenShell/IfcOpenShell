@@ -3,11 +3,17 @@ import ifcopenshell.util.selector
 
 
 class Patcher:
-    def __init__(self, src, file, logger, args=None):
+    def __init__(self, src, file, logger, query: str = ".IfcWall"):
+        """Extract Elements
+
+        Extract a subset of elements from an existing IFC data set and save it to a new IFC file.
+
+        :param query: A query to select the subset of IFC elements.
+        """
         self.src = src
         self.file = file
         self.logger = logger
-        self.args = args
+        self.query = query
 
     def patch(self):
         self.contained_ins = {}
@@ -18,7 +24,7 @@ class Patcher:
             self.owner_history = self.new.add(owner_history)
             break
         selector = ifcopenshell.util.selector.Selector()
-        for element in selector.parse(self.file, self.args[0]):
+        for element in selector.parse(self.file, self.query):
             self.add_element(element)
         self.create_spatial_tree()
         self.file = self.new
