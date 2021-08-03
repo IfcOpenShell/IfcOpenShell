@@ -55,13 +55,12 @@ defined with data sources.
         ],
         "b": [
             {
-                "file": "/path/to/two.ifc"
+                "file": "/path/to/two.ifc",
                 "selector": ".IfcWall",
                 "mode": "i"
             }
         ]
-    },
-    ...
+    }
 ]
 ```
 

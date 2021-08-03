@@ -21,6 +21,13 @@ If you want something more Unix-like ...
 $ alias ifcpatch='python -m ifcpatch'
 ```
 
+Alternatively, you can package it as a distributable.
+
+```
+$ python make.py
+$ ./dist/ifcpatch
+```
+
 ## Usage
 
 Usage is like any other CLI app.
