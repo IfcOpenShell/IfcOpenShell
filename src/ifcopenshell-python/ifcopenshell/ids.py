@@ -675,6 +675,11 @@ class ids:
         return ids_dict
 
     def to_xml(self, fn="./", ids_schema=ids_schema):
+        """
+        Save IDS as .xml file
+        fn          - path for the new file 
+        ids_schema  - schema address, by default buildingSMART's standards website
+        """
         if fn.endswith("/"):
             fn = fn + "IDS"
         if not fn.endswith(".xml"):
@@ -713,6 +718,11 @@ class ids:
 
     @staticmethod
     def open(fn, ids_schema=ids_schema):
+        """
+        Use to open ids.xml files
+        fn          - ids file path
+        ids_schema  - schema address, by default buildingSMART's standards website
+        """
         ids_schema.validate(fn)
         ids_content = ids_schema.decode(
             fn, strip_namespaces=True, namespaces={"": "http://standards.buildingsmart.org/IDS"}
@@ -721,7 +731,17 @@ class ids:
         new_ids.specifications = [specification.parse(s) for s in ids_content["specification"]]
         return new_ids
 
-    def validate(self, ifc_file, logger):
+    def validate(self, ifc_file, logger=None):
+        """
+        Use to validate IFC model against IDS specifications.
+        ifc_file    - path to ifc mode.
+        logger      - logger object with handlers (BcfHandler, CsvHandler, etc.) 
+        """
+        if not isinstance(logger, logging.Logger):
+            logger = logging.getLogger("IDS_Logger")
+            logging.basicConfig(level=logging.INFO, format="%(message)s")
+            logger.setLevel(logging.INFO)
+
         # TODO should we do other way around: for elem, for spec so we can see if an element pass all IDSes?
         for spec in self.specifications:
             self.ifc_applicable = 0
