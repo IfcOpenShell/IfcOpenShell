@@ -33,23 +33,7 @@ def mode_callback(obj, data):
         parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
         if not parametric or parametric["Engine"] != "BlenderBIM.DumbWall":
             return
-        if product.HasOpenings:
-            if [m for m in obj.modifiers if m.type == "BOOLEAN"]:
-                continue
-            representation = ifcopenshell.util.representation.get_representation(
-                product, "Model", "Body", "MODEL_VIEW"
-            )
-            if not representation:
-                continue
-            bpy.ops.object.mode_set(mode='OBJECT')
-            bpy.ops.bim.switch_representation(
-                obj=obj.name,
-                should_switch_all_meshes=True,
-                should_reload=True,
-                ifc_definition_id=representation.id(),
-                disable_opening_subtractions=True,
-            )
-            bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.bim.dynamically_void_product(obj=obj.name)
         IfcStore.edited_objs.add(obj)
         bm = bmesh.from_edit_mesh(obj.data)
         bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
@@ -103,6 +87,8 @@ class JoinWall(bpy.types.Operator):
 
     def execute(self, context):
         selected_objs = context.selected_objects
+        for obj in selected_objs:
+            bpy.ops.bim.dynamically_void_product(obj=obj.name)
         if len(selected_objs) == 0:
             return {"FINISHED"}
         if not self.join_type:
