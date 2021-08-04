@@ -27,12 +27,10 @@ class BIM_PT_patch(bpy.types.Panel):
         recipe = props.ifc_patch_recipes
 
         docs = extract_docs(ifcpatch, recipe, "Patcher", "__init__", ("src", "file", "logger", "args"))
-                    for line in docs["description"].split("\n"):
-                        layout.label(text=line)
-            except AttributeError as e:
-                print(e)
-        except ModuleNotFoundError as e:
-            print("Error : " + str(e) + "in " + str(patcher))
+        if "description" in docs:
+            col = layout.column(align=True)
+            for line in docs["description"].split("\n"):
+                    col.label(text=line)
 
         row = layout.row(align=True)
         row.prop(props, "ifc_patch_input")
@@ -44,7 +42,7 @@ class BIM_PT_patch(bpy.types.Panel):
 
         op = layout.operator(PopulatePatchArguments.bl_idname)
         op.recipe = recipe
-        if props.ifc_patch_args_attr:
+        if props.ifc_patch_args_attr and bool(docs["inputs"]):
             for attr in props.ifc_patch_args_attr:
                 if attr.data_type == "string":
                     layout.row().prop(attr, "string_value", text=attr.description if attr.description else attr.name)
