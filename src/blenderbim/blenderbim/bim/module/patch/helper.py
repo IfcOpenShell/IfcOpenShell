@@ -38,8 +38,10 @@ def extract_docs(patcher, boilerplate_args=None):
             elif line.startswith(":param"):
                 param_name = line.split(":")[1].strip().replace("param ", "")
                 inputs[param_name]["description"] = line.split(":")[2].strip()
-            elif i >= 2:
+            elif i == 2:
                 description += line
+            elif i > 2:
+                description += "\n" + line
             
         node_data["description"] = description.strip()
     node_data["inputs"] = inputs

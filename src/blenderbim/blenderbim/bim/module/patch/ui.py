@@ -17,6 +17,7 @@ class BIM_PT_patch(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
+        layout.use_property_decorate = False
 
         scene = context.scene
         props = scene.BIMPatchProperties
@@ -44,6 +45,7 @@ class BIM_PT_patch(bpy.types.Panel):
         row = layout.row(align=True)
         row.prop(props, "ifc_patch_input")
         row.operator("bim.select_ifc_patch_input", icon="FILE_FOLDER", text="")
+
         row = layout.row(align=True)
         row.prop(props, "ifc_patch_output")
         row.operator("bim.select_ifc_patch_output", icon="FILE_FOLDER", text="")
@@ -53,12 +55,13 @@ class BIM_PT_patch(bpy.types.Panel):
         if props.ifc_patch_args_attr:
             for attr in props.ifc_patch_args_attr:
                 if attr.data_type == "string":
-                    box = layout.box()
-                    box.row().prop(attr, "string_value", text=attr.name)
-                    if attr.description != "":
-                        row = box.row(align=True)
-                        row.label(text="Description")
-                        row.label(text = attr.description)
+                    layout.row().prop(attr, "string_value", text=attr.description if attr.description else attr.name)
+                elif attr.data_type == "float":
+                    layout.row().prop(attr, "float_value", text=attr.description if attr.description else attr.name)
+                elif attr.data_type == "boolean":
+                    layout.row().prop(attr, "bool_value", text=attr.description if attr.description else attr.name)
+                elif attr.data_type == "integer":
+                    layout.row().prop(attr, "int_value", text=attr.description if attr.description else attr.name)
         else:
             row = layout.row()
             row.prop(props, "ifc_patch_args")

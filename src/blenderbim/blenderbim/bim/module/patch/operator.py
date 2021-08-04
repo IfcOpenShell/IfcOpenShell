@@ -66,7 +66,9 @@ class PopulatePatchArguments(bpy.types.Operator):
     bl_label = "Update IFC Patch arguments"
     TYPE_BINDINGS = {
         "str": "string",
-    
+        "float": "float",
+        "int": "integer",
+        "bool": "boolean"
     }
     recipe: bpy.props.StringProperty()
 
