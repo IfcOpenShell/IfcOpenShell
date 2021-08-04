@@ -22,9 +22,9 @@ class OAuthReceiver(http.server.BaseHTTPRequestHandler):
         self.wfile.write("You have now authenticated :) You may now close this browser window.".encode("utf-8"))
 
 
-class Client:
-    def __init__(self, client_id, client_secret):
-        self.baseurl = None
+class FoundationClient:
+    def __init__(self, client_id, client_secret, base_url=None, redirect_subdir=None):
+        self.baseurl = base_url
         self.access_token = ""
         self.refresh_token = ""
         self.access_token_expires_on = time.time()
@@ -33,54 +33,8 @@ class Client:
         self.token_endpoint = None
         self.client_id = client_id
         self.client_secret = client_secret
-        self.version_ids = {}
-        self.version = None
         self.auth_method = None
-        self.redirect_uri = None
-        self.api_baseurl = None
-
-    def get(self, endpoint, params=None, is_auth_required=False):
-        headers = {"Authorization": "Bearer " + self.get_access_token()}
-        return requests.get(f"{self.api_baseurl}{endpoint}", headers=headers, params=params or None).json()
-
-    def post(self, endpoint, data=None, params=None):
-        headers = {
-            "Authorization": "Bearer " + self.get_access_token(),
-            "Content-type": "application/json",
-        }
-        resp = requests.post(
-            f"{self.api_baseurl}{endpoint}",
-            headers=headers,
-            params=params or None,
-            data=data or None,
-        )
-        return resp.status_code, resp.text
-
-    def put(self, endpoint, data=None, params=None):
-        headers = {
-            "Authorization": "Bearer " + self.get_access_token(),
-            "Content-type": "application/json",
-        }
-        resp = requests.put(
-            f"{self.baseurl}{endpoint}",
-            headers=headers,
-            params=params or None,
-            data=data or None,
-        )
-        return resp.status_code, resp.text
-
-    def set_urls(self, base_url=None, redirect_uri=None):
-        self.baseurl = base_url
-        self.redirect_uri = redirect_uri
-
-    def delete(self, endpoint, params=None):
-        headers = {"Authorization": "Bearer " + self.get_access_token()}
-        resp = requests.put(
-            f"{self.api_baseurl}{endpoint}",
-            headers=headers,
-            params=params or None,
-        )
-        return resp.status_code
+        self.redirect_subdir = redirect_subdir
 
     def get_access_token(self):
         if self.access_token and self.access_token_expires_on > time.time():
@@ -97,15 +51,7 @@ class Client:
 
     def get_versions(self):
         resp = requests.get(f"{self.baseurl}foundation/versions")
-        resp_values = resp.json()["versions"]
-        for version in resp_values:
-            if "api_base_url" in version:
-                self.version_ids.update({version["version_id"]: version["api_base_url"]})
-        return self.version_ids
-
-    def set_version(self, version=None):
-        self.version = version
-        self.api_baseurl = self.version_ids[self.version]
+        return resp.json()["versions"]
 
     def login(self):
         resp = requests.get(f"{self.baseurl}foundation/1.0/auth")
@@ -120,7 +66,7 @@ class Client:
                     "client_id": self.client_id,
                     "response_type": "code",
                     "state": state,
-                    "redirect_uri": f"http://localhost:{server.server_address[1]}/{self.redirect_uri}",
+                    "redirect_uri": f"http://localhost:{server.server_address[1]}/{self.redirect_subdir}",
                 }
             )
             if "?" in self.auth_endpoint:
@@ -134,7 +80,7 @@ class Client:
                 data = {
                     "grant_type": "authorization_code",
                     "code": server.auth_code,
-                    "redirect_uri": f"http://localhost:{server.server_address[1]}/{self.redirect_uri}",
+                    "redirect_uri": f"http://localhost:{server.server_address[1]}/{self.redirect_subdir}",
                 }
                 auth_string = f"{self.client_id}:{self.client_secret}"
                 header_string = base64.b64encode(auth_string.encode("utf-8")).decode("utf-8")
@@ -181,6 +127,56 @@ class Client:
         if "refresh_token_expires_in" in response:
             self.refresh_token_expires_on = time.time() + response["refresh_token_expires_in"]
 
+
+class BcfClient:
+    def __init__(self, foundation_client):
+        self.foundation_client = foundation_client
+        self.version_id = None
+        self.baseurl = None
+
+    def set_version(self, version):
+        self.version_id = version["version_id"]
+        self.baseurl = version["api_base_url"]
+
+    def get(self, endpoint, params=None, is_auth_required=False):
+        headers = {"Authorization": "Bearer " + self.foundation_client.get_access_token()}
+        return requests.get(f"{self.baseurl}{endpoint}", headers=headers, params=params or None).json()
+
+    def post(self, endpoint, data=None, params=None):
+        headers = {
+            "Authorization": "Bearer " + self.foundation_client.get_access_token(),
+            "Content-type": "application/json",
+        }
+        resp = requests.post(
+            f"{self.baseurl}{endpoint}",
+            headers=headers,
+            params=params or None,
+            data=data or None,
+        )
+        return resp.status_code, resp.text
+
+    def put(self, endpoint, data=None, params=None):
+        headers = {
+            "Authorization": "Bearer " + self.foundation_client.get_access_token(),
+            "Content-type": "application/json",
+        }
+        resp = requests.put(
+            f"{self.baseurl}{endpoint}",
+            headers=headers,
+            params=params or None,
+            data=data or None,
+        )
+        return resp.status_code, resp.text
+
+    def delete(self, endpoint, params=None):
+        headers = {"Authorization": "Bearer " + self.foundation_client.get_access_token()}
+        resp = requests.put(
+            f"{self.baseurl}{endpoint}",
+            headers=headers,
+            params=params or None,
+        )
+        return resp.status_code
+
     def get_projects(self) -> list:
         return self.get(
             f"/projects",
@@ -199,7 +195,7 @@ class Client:
 
     def update_project(self, project_id="", data=None) -> dict:
         url = f"{self.baseurl}/projects/{project_id}"
-        headers = {"Authorization": "Bearer " + self.get_access_token()}
+        headers = {"Authorization": "Bearer " + self.foundation_client.get_access_token()}
         resp = requests.put(url, headers=headers, data=data)
         return resp.status_code, resp.text
 
@@ -484,7 +480,7 @@ class Client:
         data=None,
     ):
         headers = {
-            "Authorization": "Bearer " + self.get_access_token(),
+            "Authorization": "Bearer " + self.foundation_client.get_access_token(),
             "Content-type": "application/octet-stream",
         }
         response = requests.post(

@@ -35,39 +35,21 @@ Pipfile.lock
 # Vim
 *.swp
 
-### Flask ###
+# Flask
 instance/*
 !instance/.gitignore
 .webassets-cache
 .env
 *.db
 
-
-### Flask.Python Stack ###
 # Byte-compiled / optimized / DLL files
-__pycache__/
 *.py[cod]
 *$py.class
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-
-### Database ###
-*.accdb
-*.db
-*.dbf
-*.mdb
-*.pdb
-*.sqlite3
-
-# Environments
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+# pipenv
 Pipfile
 Pipfile.lock
+
+# Database
+*.db
+
