@@ -41,3 +41,4 @@ class BIMPatchProperties(PropertyGroup):
     ifc_patch_input: StringProperty(default="", name="IFC Patch Input IFC")
     ifc_patch_output: StringProperty(default="", name="IFC Patch Output IFC")
     ifc_patch_args: StringProperty(default="", name="Arguments")
+    ifc_patch_args_attr: CollectionProperty(type=Attribute, name="Arguments")

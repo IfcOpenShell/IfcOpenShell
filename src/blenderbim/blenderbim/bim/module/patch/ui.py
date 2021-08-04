@@ -1,8 +1,12 @@
 import bpy
-from bpy.types import Panel
+import importlib
+import importlib.util
+import ifcpatch
+from .helper import extract_docs
+from .operator import PopulatePatchArguments
 
 
-class BIM_PT_patch(Panel):
+class BIM_PT_patch(bpy.types.Panel):
     bl_label = "IFC Patch"
     bl_idname = "BIM_PT_patch"
     bl_options = {"DEFAULT_CLOSED"}
@@ -16,17 +20,48 @@ class BIM_PT_patch(Panel):
 
         scene = context.scene
         props = scene.BIMPatchProperties
-
         row = layout.row()
-        row.prop(props, "ifc_patch_recipes")
+        row.prop(props, "ifc_patch_recipes")      
+        
+        recipe = props.ifc_patch_recipes
+
+        spec = importlib.util.spec_from_file_location(recipe, f"{ifcpatch.__path__[0]}/recipes/{recipe}.py")
+        patcher = importlib.util.module_from_spec(spec)
+        try:
+            spec.loader.exec_module(patcher)
+            try:
+                docs = extract_docs(patcher.Patcher, boilerplate_args=("src", "file", "logger", "args"))
+                if "name" in docs:
+                    layout.label(text=docs["name"])
+                if "description" in docs:
+                    for line in docs["description"].split("\n"):
+                        layout.label(text=line)
+            except AttributeError as e:
+                print(e)
+        except ModuleNotFoundError as e:
+            print("Error : " + str(e) + "in " + str(patcher))
+
         row = layout.row(align=True)
         row.prop(props, "ifc_patch_input")
         row.operator("bim.select_ifc_patch_input", icon="FILE_FOLDER", text="")
         row = layout.row(align=True)
         row.prop(props, "ifc_patch_output")
         row.operator("bim.select_ifc_patch_output", icon="FILE_FOLDER", text="")
-        row = layout.row()
-        row.prop(props, "ifc_patch_args")
+
+        op = layout.operator(PopulatePatchArguments.bl_idname)
+        op.recipe = recipe
+        if props.ifc_patch_args_attr:
+            for attr in props.ifc_patch_args_attr:
+                if attr.data_type == "string":
+                    box = layout.box()
+                    box.row().prop(attr, "string_value", text=attr.name)
+                    if attr.description != "":
+                        row = box.row(align=True)
+                        row.label(text="Description")
+                        row.label(text = attr.description)
+        else:
+            row = layout.row()
+            row.prop(props, "ifc_patch_args")
 
         row = layout.row()
         op = row.operator("bim.execute_ifc_patch")
