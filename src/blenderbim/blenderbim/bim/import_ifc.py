@@ -1069,10 +1069,14 @@ class IfcImporter:
 
     def create_materials(self):
         for material in self.file.by_type("IfcMaterial"):
-            blender_material = bpy.data.materials.new(material.Name)
-            self.link_element(material, blender_material)
-            self.material_creator.materials[material.id()] = blender_material
-            blender_material.use_fake_user = True
+            self.create_material(material)
+
+    def create_material(self, material):
+        blender_material = bpy.data.materials.new(material.Name)
+        self.link_element(material, blender_material)
+        self.material_creator.materials[material.id()] = blender_material
+        blender_material.use_fake_user = True
+        return blender_material
 
     def create_styles(self):
         parsed_styles = set()
@@ -1088,11 +1092,13 @@ class IfcImporter:
         for style in self.file.by_type("IfcSurfaceStyle"):
             if style.id() in parsed_styles:
                 continue
+            self.create_style(style)
+
+    def create_style(self, style, blender_material=None):
+        if not blender_material:
             name = style.Name or str(style.id())
             blender_material = bpy.data.materials.new(name)
-            self.create_style(style, blender_material)
 
-    def create_style(self, style, blender_material):
         old_definition_id = blender_material.BIMObjectProperties.ifc_definition_id
         if not old_definition_id:
             self.link_element(style, blender_material)

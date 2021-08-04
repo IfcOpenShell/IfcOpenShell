@@ -346,8 +346,36 @@ class AppendLibraryElement(bpy.types.Operator):
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = self.file
         ifc_importer.type_collection = type_collection
+        self.import_type_materials(element, ifc_importer)
+        self.import_type_styles(element, ifc_importer)
         ifc_importer.create_type_product(element)
         ifc_importer.place_objects_in_spatial_tree()
+
+    def import_type_materials(self, element, ifc_importer):
+        for rel in element.HasAssociations:
+            if not rel.is_a("IfcRelAssociatesMaterial"):
+                continue
+            for material in [e for e in self.file.traverse(rel) if e.is_a("IfcMaterial")]:
+                if IfcStore.get_element(material.id()):
+                    continue
+                blender_material = ifc_importer.create_material(material)
+                self.import_material_styles(blender_material, material, ifc_importer)
+
+    def import_type_styles(self, element, ifc_importer):
+        for representation_map in element.RepresentationMaps or []:
+            for element in self.file.traverse(representation_map):
+                if not element.is_a("IfcRepresentationItem") or not element.StyledByItem:
+                    continue
+                for element2 in self.file.traverse(element.StyledByItem[0]):
+                    if element2.is_a("IfcSurfaceStyle") and not IfcStore.get_element(element2.id()):
+                        ifc_importer.create_style(element2)
+
+    def import_material_styles(self, blender_material, material, ifc_importer):
+        if not material.HasRepresentation:
+            return
+        for element in self.file.traverse(material.HasRepresentation[0]):
+            if element.is_a("IfcSurfaceStyle") and not IfcStore.get_element(element.id()):
+                ifc_importer.create_style(element, blender_material)
 
 
 class EnableEditingHeader(bpy.types.Operator):
