@@ -48,14 +48,26 @@ class ExecuteIfcPatch(bpy.types.Operator):
         return os.path.isfile(input_file) and "ifc" in os.path.splitext(input_file)[1]
 
     def execute(self, context):
-        
+        if context.scene.BIMPatchProperties.ifc_patch_args_attr:
+            arguments = []
+            for arg in context.scene.BIMPatchProperties.ifc_patch_args_attr:
+                if arg.data_type == "string":
+                    arguments.append(arg.string_value)
+                if arg.data_type == "boolean":
+                    arguments.append(arg.bool_value)
+                if arg.data_type == "integer":
+                    arguments.append(arg.int_value)
+                if arg.data_type == "float":
+                    arguments.append(arg.float_value)
+        else:
+            arguments = json.loads(context.scene.BIMPatchProperties.ifc_patch_args or "[]")
 
         ifcpatch.execute(
             {
                 "input": context.scene.BIMPatchProperties.ifc_patch_input,
                 "output": context.scene.BIMPatchProperties.ifc_patch_output,
                 "recipe": context.scene.BIMPatchProperties.ifc_patch_recipes,
-                "arguments": json.loads(context.scene.BIMPatchProperties.ifc_patch_args or "[]"),
+                "arguments": arguments,
                 "log": os.path.join(context.scene.BIMProperties.data_dir, "process.log"),
             }
         )
