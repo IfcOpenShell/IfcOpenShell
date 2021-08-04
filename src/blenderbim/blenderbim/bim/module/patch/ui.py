@@ -26,15 +26,7 @@ class BIM_PT_patch(bpy.types.Panel):
         
         recipe = props.ifc_patch_recipes
 
-        spec = importlib.util.spec_from_file_location(recipe, f"{ifcpatch.__path__[0]}/recipes/{recipe}.py")
-        patcher = importlib.util.module_from_spec(spec)
-        try:
-            spec.loader.exec_module(patcher)
-            try:
-                docs = extract_docs(patcher.Patcher, boilerplate_args=("src", "file", "logger", "args"))
-                if "name" in docs:
-                    layout.label(text=docs["name"])
-                if "description" in docs:
+        docs = extract_docs(ifcpatch, recipe, "Patcher", "__init__", ("src", "file", "logger", "args"))
                     for line in docs["description"].split("\n"):
                         layout.label(text=line)
             except AttributeError as e:

@@ -1,14 +1,40 @@
 import typing
 import inspect
 import collections
+import importlib
+from types import ModuleType
 
+def extract_docs(
+    module: ModuleType,
+    submodule_name: str,
+    cls_name: str,
+    method_name: str,
+    boilerplate_args : typing.Iterable[str]=None):
+    """Extract class docstrings and method arguments
+    
+    :param module: Parent module from which to extract the submodule class
+    :param submodule_name: Submodule from which to extract the class
+    :param cls_name: Class from which to extract the docstring and method arguments
+    :param method_name: Class Method name from which to extract arguments
+    :param boilerplate_args: String iterable containing arguments that shall not be parsed
+    """
+    spec = importlib.util.spec_from_file_location(submodule_name, f"{module.__path__[0]}/recipes/{submodule_name}.py")
+    submodule = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(submodule)
+        try:
+            return _extract_docs(getattr(submodule, cls_name), method_name, boilerplate_args)
+        except AttributeError as e:
+            print(e)
+    except ModuleNotFoundError as e:
+        print("Error : " + str(e) + "in " + str(submodule))
 
-def extract_docs(patcher, boilerplate_args=None):
+def _extract_docs(cls, method_name, boilerplate_args):
     inputs = collections.OrderedDict()
-    function_init = patcher.__init__
-    node_data = {"patcher": patcher}
+    method = getattr(cls, method_name)
+    node_data = {"class": cls}
 
-    signature = inspect.signature(function_init)
+    signature = inspect.signature(method)
     for name, parameter in signature.parameters.items():
         if name == "self":
             continue
@@ -16,7 +42,7 @@ def extract_docs(patcher, boilerplate_args=None):
         if isinstance(parameter.default, (str, float, int, bool)):
             inputs[name]["default"] = parameter.default
 
-    type_hints = typing.get_type_hints(function_init)
+    type_hints = typing.get_type_hints(method)
     for name, socket_data in inputs.items():
         type_hint = type_hints.get(name, None)
         if type_hint is None: # The argument is not type-hinted. (Or hinted to None ??)
@@ -27,7 +53,7 @@ def extract_docs(patcher, boilerplate_args=None):
             inputs[name]["type"] = type_hint.__name__
 
     description = ""
-    doc = function_init.__doc__
+    doc = method.__doc__
     if doc is not None:
         for i, line in enumerate(doc.split("\n")):
             line = line.strip()
