@@ -4,6 +4,7 @@ from . import handler, prop, ui, grid, product, wall, slab, stair, door, window,
 classes = (
     product.AddTypeInstance,
     product.AlignProduct,
+    product.DynamicallyVoidProduct,
     workspace.Hotkey,
     wall.JoinWall,
     wall.AlignWall,

@@ -120,6 +120,37 @@ class AlignProduct(bpy.types.Operator):
         return results
 
 
+class DynamicallyVoidProduct(bpy.types.Operator):
+    bl_idname = "bim.dynamically_void_product"
+    bl_label = "Dynamically Void Product"
+    bl_options = {"REGISTER", "UNDO"}
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        obj = bpy.data.objects.get(self.obj)
+        product = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+        if not product.HasOpenings:
+            return {"FINISHED"}
+        if [m for m in obj.modifiers if m.type == "BOOLEAN"]:
+            return {"FINISHED"}
+        representation = ifcopenshell.util.representation.get_representation(product, "Model", "Body", "MODEL_VIEW")
+        if not representation:
+            return {"FINISHED"}
+        was_edit_mode = obj.mode == "EDIT"
+        if was_edit_mode:
+            bpy.ops.object.mode_set(mode="OBJECT")
+        bpy.ops.bim.switch_representation(
+            obj=obj.name,
+            should_switch_all_meshes=True,
+            should_reload=True,
+            ifc_definition_id=representation.id(),
+            disable_opening_subtractions=True,
+        )
+        if was_edit_mode:
+            bpy.ops.object.mode_set(mode="EDIT")
+        return {"FINISHED"}
+
+
 def generate_box(usecase_path, ifc_file, settings):
     box_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Box", "MODEL_VIEW")
     if not box_context:
