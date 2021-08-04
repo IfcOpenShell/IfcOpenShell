@@ -20,9 +20,10 @@ class Selector:
                     filter_value: ESCAPED_STRING
                     pset_or_qto: /[A-Za-z0-9_]+/ "." /[A-Za-z0-9_]+/
                     lfunction: and | or
-                    inverse_relationship: types | contains_elements
+                    inverse_relationship: types | contains_elements | boundedby
                     types: "*"
                     contains_elements: "@"
+                    boundedby: "@@"
                     and: "&"
                     or: "|"
                     comparison: contains | morethanequalto | lessthanequalto | equal | morethan | lessthan
@@ -116,6 +117,9 @@ class Selector:
             elif inverse_relationship == "contains_elements" and hasattr(element, "ContainsElements"):
                 for relationship in element.ContainsElements:
                     results.extend(relationship.RelatedElements)
+            elif inverse_relationship == "boundedby" and hasattr(element, "BoundedBy"):
+                for relationship in element.BoundedBy:
+                    results.append(relationship.RelatedBuildingElement)
         return results
 
     def get_class_selector(self, class_selector):
