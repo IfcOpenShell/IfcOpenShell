@@ -51,3 +51,4 @@ class BIM_PT_patch(bpy.types.Panel):
 
         row = layout.row()
         op = row.operator("bim.execute_ifc_patch")
+        op.use_json_for_args = not bool(docs["inputs"])

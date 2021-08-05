@@ -41,6 +41,7 @@ class ExecuteIfcPatch(bpy.types.Operator):
     bl_idname = "bim.execute_ifc_patch"
     bl_label = "Execute IFCPatch"
     file_format: bpy.props.StringProperty()
+    use_json_for_args: bpy.props.BoolProperty()
 
     @classmethod
     def poll(cls, context):
@@ -48,18 +49,7 @@ class ExecuteIfcPatch(bpy.types.Operator):
         return os.path.isfile(input_file) and "ifc" in os.path.splitext(input_file)[1]
 
     def execute(self, context):
-        if context.scene.BIMPatchProperties.ifc_patch_args_attr:
-            arguments = []
-            for arg in context.scene.BIMPatchProperties.ifc_patch_args_attr:
-                if arg.data_type == "string":
-                    arguments.append(arg.string_value)
-                if arg.data_type == "boolean":
-                    arguments.append(arg.bool_value)
-                if arg.data_type == "integer":
-                    arguments.append(arg.int_value)
-                if arg.data_type == "float":
-                    arguments.append(arg.float_value)
-        else:
+        if self.use_json_for_args or not context.scene.BIMPatchProperties.ifc_patch_args_attr:
             arguments = json.loads(context.scene.BIMPatchProperties.ifc_patch_args or "[]")
         else:
             arguments = [arg.get_value() for arg in context.scene.BIMPatchProperties.ifc_patch_args_attr]
