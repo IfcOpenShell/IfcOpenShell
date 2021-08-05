@@ -282,7 +282,7 @@ class property(facet):
 
 class material(facet):
     """
-    The IDS material facet by traversing the HasAssociations inverse attribute
+    The IDS material facet used to traverse the HasAssociations inverse attribute.
     """
 
     parameters = ["value", "location"]
@@ -293,17 +293,16 @@ class material(facet):
         inst = material()
         inst.location = location
         inst.value = value
-        #     self.attributes = {'@location': location} # 'type', 'instance', 'any'
-        #     # BUG '@use': 'optional'
-        #     # BUG '@href': 'https://identifier.buildingsmart.org/uri/something',
-        #     # BUG 'instructions': 'Please add the desired...',
+        # TODO '@use': 'optional'
+        # TODO '@href': 'https://identifier.buildingsmart.org/uri/something',
+        # TODO 'instructions': 'Please add the desired...',
         return inst
 
     def asdict(self):
         fac_dict = {
             "value": parameter_asdict(self.value),
             "@location": self.location,
-            # "instructions": "SAMPLE_INSTRUCTIONS",
+            # TODO "instructions": "SAMPLE_INSTRUCTIONS",
             # TODO '@href': 'http://identifier.buildingsmart.org/uri/buildingsmart/ifc-4.3/prop/FireRating', #https://identifier.buildingsmart.org/uri/something
             # TODO '@use': 'optional'
         }
@@ -351,7 +350,7 @@ class material(facet):
                 profileSets = rel.RelatingMaterial.ForProfileSet.MaterialProfiles
                 [materials.append(pset.Material.Name) for pset in profileSets]
             else:
-                print("IfcRelAssociatesMaterial not implemented")
+                raise Exception("IfcRelAssociatesMaterial not implemented")
 
         if not materials:
             materials.append("UNDEFINED")
