@@ -27,7 +27,7 @@ def extract_docs(
         except AttributeError as e:
             print(e)
     except ModuleNotFoundError as e:
-        print("Error : " + str(e) + "in " + str(submodule))
+        print(f"Error : IFCPatch {str(submodule)} could not complete because : {str(e)}")
 
 def _extract_docs(cls, method_name, boilerplate_args):
     inputs = collections.OrderedDict()

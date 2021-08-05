@@ -27,12 +27,6 @@ class BIM_PT_patch(bpy.types.Panel):
         
         recipe = props.ifc_patch_recipes
 
-        docs = extract_docs(ifcpatch, recipe, "Patcher", "__init__", ("src", "file", "logger", "args"))
-        if "description" in docs:
-            col = layout.column(align=True)
-            for line in docs["description"].split("\n"):
-                    col.label(text=line)
-
         row = layout.row(align=True)
         row.prop(props, "ifc_patch_input")
         row.operator("bim.select_ifc_patch_input", icon="FILE_FOLDER", text="")
@@ -43,12 +37,11 @@ class BIM_PT_patch(bpy.types.Panel):
 
         op = layout.operator(PopulatePatchArguments.bl_idname)
         op.recipe = recipe
-        if props.ifc_patch_args_attr and bool(docs["inputs"]):
+        if props.ifc_patch_args_attr:
             draw_attributes(props.ifc_patch_args_attr, layout, show_description=True)
         else:
             row = layout.row()
             row.prop(props, "ifc_patch_args")
-
         row = layout.row()
         op = row.operator("bim.execute_ifc_patch")
-        op.use_json_for_args = not bool(docs["inputs"])
+        op.use_json_for_args = bool(props.ifc_patch_args_attr)
