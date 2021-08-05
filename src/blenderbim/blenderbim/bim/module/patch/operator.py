@@ -2,7 +2,6 @@ import os
 import bpy
 import json
 import ifcpatch
-from .helper import extract_docs
 
 
 class SelectIfcPatchInput(bpy.types.Operator):
@@ -69,23 +68,21 @@ class ExecuteIfcPatch(bpy.types.Operator):
 class PopulatePatchArguments(bpy.types.Operator):
     bl_idname = "bim.populate_patch_arguments"
     bl_label = "Update IFC Patch arguments"
-    recipe: bpy.props.StringProperty()
+    inputs: bpy.props.StringProperty()
 
     def execute(self, context):
         patch_args = context.scene.BIMPatchProperties.ifc_patch_args_attr
         patch_args.clear()
-        docs = extract_docs(ifcpatch, self.recipe, "Patcher", "__init__",  ("src", "file", "logger", "args"))
-        if "inputs" in docs:
-            for arg_name in docs["inputs"]:
-                arg_info = docs["inputs"][arg_name]
-                new_attr = patch_args.add()
-                new_attr.data_type = {
-                    "str": "string",
-                    "float": "float",
-                    "int": "integer",
-                    "bool": "boolean",
-                }[arg_info["type"]]
-                new_attr.name = arg_name
-                new_attr.set_value(arg_info.get("default", new_attr.get_value_default()))
-                new_attr.description = arg_info.get("description", "")
+        for name, _type, default, description in json.loads(self.inputs):
+            new_attr = patch_args.add()
+            new_attr.data_type = {
+                "str": "string",
+                "float": "float",
+                "int": "integer",
+                "bool": "boolean",
+            }[_type]
+            new_attr.name = name
+            if default is not None:
+                new_attr.set_value(default)
+            new_attr.description = description
         return {"FINISHED"}

@@ -1,10 +1,9 @@
 import bpy
-import importlib
-import importlib.util
 import ifcpatch
 from blenderbim.bim.helper import draw_attributes
 from .helper import extract_docs
 from .operator import PopulatePatchArguments
+import json
 
 
 class BIM_PT_patch(bpy.types.Panel):
@@ -23,7 +22,7 @@ class BIM_PT_patch(bpy.types.Panel):
         scene = context.scene
         props = scene.BIMPatchProperties
         row = layout.row()
-        row.prop(props, "ifc_patch_recipes")      
+        row.prop(props, "ifc_patch_recipes")
         
         recipe = props.ifc_patch_recipes
 
@@ -41,9 +40,16 @@ class BIM_PT_patch(bpy.types.Panel):
         row.prop(props, "ifc_patch_output")
         row.operator("bim.select_ifc_patch_output", icon="FILE_FOLDER", text="")
 
-        op = layout.operator(PopulatePatchArguments.bl_idname)
-        op.recipe = recipe
-        if props.ifc_patch_args_attr and bool(docs["inputs"]):
+        update_args_op = layout.operator(PopulatePatchArguments.bl_idname)
+        update_args_op.inputs = json.dumps([
+            (
+                v["name"], 
+                v["type"], 
+                v.get("default", None), 
+                v.get("description", "")
+            ) 
+            for v in docs.get("inputs", {}).values()])
+        if props.ifc_patch_args_attr and update_args_op.inputs:
             draw_attributes(props.ifc_patch_args_attr, layout, show_description=True)
         else:
             row = layout.row()
@@ -51,4 +57,4 @@ class BIM_PT_patch(bpy.types.Panel):
 
         row = layout.row()
         op = row.operator("bim.execute_ifc_patch")
-        op.use_json_for_args = not bool(docs["inputs"])
+        op.use_json_for_args = not update_args_op.inputs
