@@ -28,6 +28,7 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "V", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_V")]}),
         ("bim.hotkey", {"type": "O", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_O")]}),
         ("bim.hotkey", {"type": "O", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_O")]}),
+        ("bim.hotkey", {"type": "D", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_D")]}),
     )
 
     def draw_settings(context, layout, tool):
@@ -88,6 +89,9 @@ class BimTool(WorkSpaceTool):
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_ALT")
         row.label(text="Opening", icon="EVENT_O")
+        row = layout.row(align=True)
+        row.label(text="", icon="EVENT_ALT")
+        row.label(text="Decomposition", icon="EVENT_D")
 
 
 class Hotkey(bpy.types.Operator):
@@ -131,6 +135,9 @@ class Hotkey(bpy.types.Operator):
             bpy.ops.bim.add_wall_opening()
         elif self.props.ifc_class == "IfcSlabType":
             bpy.ops.bim.add_slab_opening()
+
+    def hotkey_A_D(self):
+        bpy.ops.bim.toggle_decomposition_parenting()
 
     def hotkey_A_O(self):
         bpy.ops.bim.toggle_opening_visibility()
