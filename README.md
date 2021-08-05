@@ -230,6 +230,7 @@ bcf | LGPL-3.0-or-later
 blenderbim | GPL-3.0-or-later
 bsdd | LGPL-3.0-or-later
 ifc2ca | LGPL-3.0-or-later
+ifc4d | LGPL-3.0-or-later
 ifcbimtester | LGPL-3.0-or-later
 ifcblender | LGPL-3.0-or-later\*
 ifccityjson | LGPL-3.0-or-later
@@ -245,7 +246,6 @@ ifcgeomserver | LGPL-3.0-or-later\*
 ifcjni | LGPL-3.0-or-later\*
 ifcmax | LGPL-3.0-or-later\*
 ifcopenshell-python | LGPL-3.0-or-later\*
-ifcp6 | LGPL-3.0-or-later
 ifcparse | LGPL-3.0-or-later\*
 ifcpatch | LGPL-3.0-or-later
 ifcsverchok | GPL-3.0-or-later

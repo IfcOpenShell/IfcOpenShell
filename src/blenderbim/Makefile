@@ -119,8 +119,8 @@ endif
 	cp -r dist/working/IfcOpenShell-0.6.0/src/ifccsv/* dist/blenderbim/libs/site/packages/
 	# Provides IFCPatch functionality
 	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcpatch/ifcpatch dist/blenderbim/libs/site/packages/
-	# Provides IFCP6 functionality
-	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcp6/ifcp6 dist/blenderbim/libs/site/packages/
+	# Provides IFC4D functionality
+	cp -r dist/working/IfcOpenShell-0.6.0/src/ifc4d/ifc4d dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Provides Mustache templating in construction documentation

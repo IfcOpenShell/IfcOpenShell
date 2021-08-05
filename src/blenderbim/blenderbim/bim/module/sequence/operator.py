@@ -996,7 +996,7 @@ class ImportP6(bpy.types.Operator, ImportHelper):
     filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
 
     def execute(self, context):
-        from ifcp6.p62ifc import P62Ifc
+        from ifc4d.p62ifc import P62Ifc
 
         self.file = IfcStore.get_file()
         start = time.time()
@@ -1018,7 +1018,7 @@ class ImportMSP(bpy.types.Operator, ImportHelper):
     filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
 
     def execute(self, context):
-        from ifcp6.msp2ifc import MSP2Ifc
+        from ifc4d.msp2ifc import MSP2Ifc
 
         self.file = IfcStore.get_file()
         start = time.time()
