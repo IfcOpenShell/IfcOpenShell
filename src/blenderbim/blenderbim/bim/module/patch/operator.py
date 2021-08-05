@@ -49,16 +49,17 @@ class ExecuteIfcPatch(bpy.types.Operator):
         return os.path.isfile(input_file) and "ifc" in os.path.splitext(input_file)[1]
 
     def execute(self, context):
-        if self.use_json_for_args or not context.scene.BIMPatchProperties.ifc_patch_args_attr:
-            arguments = json.loads(context.scene.BIMPatchProperties.ifc_patch_args or "[]")
+        props = context.scene.BIMPatchProperties
+        if self.use_json_for_args or not props.ifc_patch_args_attr:
+            arguments = json.loads(props.ifc_patch_args or "[]")
         else:
-            arguments = [arg.get_value() for arg in context.scene.BIMPatchProperties.ifc_patch_args_attr]
+            arguments = [arg.get_value() for arg in props.ifc_patch_args_attr]
 
         ifcpatch.execute(
             {
-                "input": context.scene.BIMPatchProperties.ifc_patch_input,
-                "output": context.scene.BIMPatchProperties.ifc_patch_output,
-                "recipe": context.scene.BIMPatchProperties.ifc_patch_recipes,
+                "input": props.ifc_patch_input,
+                "output": props.ifc_patch_output,
+                "recipe": props.ifc_patch_recipes,
                 "arguments": arguments,
                 "log": os.path.join(context.scene.BIMProperties.data_dir, "process.log"),
             }
@@ -75,7 +76,7 @@ class PopulatePatchArguments(bpy.types.Operator):
         patch_args = context.scene.BIMPatchProperties.ifc_patch_args_attr
         patch_args.clear()
         docs = extract_docs(ifcpatch, self.recipe, "Patcher", "__init__",  ("src", "file", "logger", "args"))
-        if "inputs" in docs:
+        if docs and "inputs" in docs:
             for arg_name in docs["inputs"]:
                 arg_info = docs["inputs"][arg_name]
                 new_attr = patch_args.add()
