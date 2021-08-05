@@ -1,4 +1,4 @@
-from website import db, bcrypt, login_manager
+from bcfserver import db, bcrypt, login_manager
 import time
 from authlib.integrations.sqla_oauth2 import (
     OAuth2ClientMixin,

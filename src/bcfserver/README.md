@@ -1,35 +1,29 @@
 # Server-Test
 
-## Set up the server by installing the dependencies
+1. Set up the server by installing the dependencies
 
-### run `pip install -r requirements.txt` to install the dependencies
+2. Cd to the server directory i.e `cd IfcOpenShell\src\bcfserver`
+3. Run `pip install -r requirements.txt` to install the dependencies
 
-#### setup the database by running `db.create_all()` in python shell by importing db from website
+4. In Python Shell, do the following
 
-### run `set FLASK_APP=app.py` to set the environment variable
+   - `from bcfserver import db`
+   - `db.create_all()` to create the database
 
-### run `flask run` to start the server
+5. Run `flask run` to start the server
 
-### Go to [http://localhost:5000](http://localhost:5000) to see the server
+Go to [http://localhost:5000](http://localhost:5000) to see the server in action.
 
 # Register the user
 
-#### Go to [http://localhost:5000/register](http://localhost:5000/register) to register the user
-
-# Create the client
-
-#### For `grant type` enter `authorization_code`
-
-#### For `response_type` enter `code secret`
-
-### Enter the scope and create the client
+1. Go to [http://localhost:5000/register](http://localhost:5000/register) to register the user
+2. Create the client
+3. For `grant type` enter `authorization_code`
+4. For `response_type` enter `code secret`
+5. Enter the scope and create the client
 
 ### You will be redirected to the page with the details of your client id and secret
 
-### Use the bcf/v3/api.py to get the access token
+# Foundation API
 
-#### For authentication endpoint use `http://localhost:5000/oauth/authorize`
-
-### For token endpoint use `http://localhost:5000/oauth/token`
-
-### Base URL will be `http://localhost:5000/`
+In foundation api, set base URL as `http://127.0.0.1:5000/` .
