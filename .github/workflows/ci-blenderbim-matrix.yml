@@ -59,8 +59,8 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: src/blenderbim_${{ matrix.config.short_name }}_${{ matrix.pyver }}/dist/blender28-bim-${{steps.date.outputs.date}}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
-          asset_name: blender28-bim-${{steps.date.outputs.date}}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
+          file: src/blenderbim_${{ matrix.config.short_name }}_${{ matrix.pyver }}/dist/blenderbim-${{steps.date.outputs.date}}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
+          asset_name: blenderbim-${{steps.date.outputs.date}}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
           tag: "blenderbim-${{steps.date.outputs.date}}"
           overwrite: true
           body: "Daily developer testing build blenderbim-${{steps.date.outputs.date}}"

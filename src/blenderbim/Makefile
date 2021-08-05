@@ -404,7 +404,7 @@ endif
 	rm -rf dist/working
 
 	cd dist/blenderbim && sed -i "s/999999/$(VERSION)/" __init__.py
-	cd dist && zip -r blender28-bim-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ./*
+	cd dist && zip -r blenderbim-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ./*
 	rm -rf dist/blenderbim
 
 .PHONY: clean
