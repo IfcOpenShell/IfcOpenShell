@@ -61,6 +61,8 @@ class ExecuteIfcPatch(bpy.types.Operator):
                     arguments.append(arg.float_value)
         else:
             arguments = json.loads(context.scene.BIMPatchProperties.ifc_patch_args or "[]")
+        else:
+            arguments = [arg.get_value() for arg in context.scene.BIMPatchProperties.ifc_patch_args_attr]
 
         ifcpatch.execute(
             {
@@ -77,12 +79,6 @@ class ExecuteIfcPatch(bpy.types.Operator):
 class PopulatePatchArguments(bpy.types.Operator):
     bl_idname = "bim.populate_patch_arguments"
     bl_label = "Update IFC Patch arguments"
-    TYPE_BINDINGS = {
-        "str": "string",
-        "float": "float",
-        "int": "integer",
-        "bool": "boolean"
-    }
     recipe: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -93,15 +89,13 @@ class PopulatePatchArguments(bpy.types.Operator):
             for arg_name in docs["inputs"]:
                 arg_info = docs["inputs"][arg_name]
                 new_attr = patch_args.add()
-                new_attr.data_type = self.TYPE_BINDINGS[arg_info["type"]]
+                new_attr.data_type = {
+                    "str": "string",
+                    "float": "float",
+                    "int": "integer",
+                    "bool": "boolean",
+                }[arg_info["type"]]
                 new_attr.name = arg_name
-                if new_attr.data_type == "string":
-                    new_attr.string_value = arg_info.get("default", "")
-                elif new_attr.data_type == "float":
-                    new_attr.float_value = arg_info.get("default", 0)
-                elif new_attr.data_type == "integer":
-                    new_attr.int_value = arg_info.get("default", 0)
-                elif new_attr.data_type == "boolean":
-                    new_attr.bool_value = arg_info.get("default", False)
+                new_attr.set_value(arg_info.get("default", new_attr.get_value_default()))
                 new_attr.description = arg_info.get("description", "")
         return {"FINISHED"}

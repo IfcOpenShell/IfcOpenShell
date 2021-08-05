@@ -8,30 +8,26 @@ from mathutils import Vector
 from blenderbim.bim.ifc import IfcStore
 
 
-def draw_attributes(props, layout, copy_operator=None):
+def draw_attributes(props, layout, copy_operator=None, show_description=False):
     for attribute in props:
         row = layout.row(align=True)
-        value = None
-        if attribute.data_type == "string":
-            row.prop(attribute, "string_value", text=attribute.name)
-            value = attribute.string_value
-        elif attribute.data_type == "boolean":
-            row.prop(attribute, "bool_value", text=attribute.name)
-            value = attribute.bool_value
-        elif attribute.data_type == "integer":
-            row.prop(attribute, "int_value", text=attribute.name)
-            value = attribute.int_value
-        elif attribute.data_type == "float":
-            row.prop(attribute, "float_value", text=attribute.name)
-            value = attribute.float_value
-        elif attribute.data_type == "enum":
-            row.prop(attribute, "enum_value", text=attribute.name)
-            value = attribute.enum_value
+        draw_attribute(attribute, row, show_description)
+        value = attribute.get_value()
         if attribute.is_optional:
             row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
         if copy_operator:
             op = row.operator(f"{copy_operator}", text="", icon="COPYDOWN")
             op.data = json.dumps({"name": attribute.name, "value": value, "is_null": attribute.is_null})
+
+
+def draw_attribute(attribute, layout, show_description=False):
+    if not attribute.get_value_attr():
+        layout.label(text=attribute.name)
+    else:
+        layout.prop(
+            attribute, 
+            attribute.get_value_attr(), 
+            text=attribute.description if show_description and attribute.description else attribute.name)
 
 
 def import_attributes(ifc_class, props, data, callback=None):
@@ -71,14 +67,6 @@ def export_attributes(props, callback=None):
             attributes[attribute.name] = None
         elif is_handled_by_callback:
             pass  # Our job is done
-        elif attribute.data_type == "string":
-            attributes[attribute.name] = attribute.string_value
-        elif attribute.data_type == "boolean":
-            attributes[attribute.name] = attribute.bool_value
-        elif attribute.data_type == "integer":
-            attributes[attribute.name] = attribute.int_value
-        elif attribute.data_type == "float":
-            attributes[attribute.name] = attribute.float_value
-        elif attribute.data_type == "enum":
-            attributes[attribute.name] = attribute.enum_value
+        else:
+            attributes[attribute.name] = attribute.get_value()
     return attributes

@@ -143,15 +143,7 @@ class EditResource(bpy.types.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMResourceProperties
-        attributes = {}
-        for attribute in props.resource_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                if attribute.data_type == "string":
-                    attributes[attribute.name] = attribute.string_value
-                elif attribute.data_type == "enum":
-                    attributes[attribute.name] = attribute.enum_value
+        attributes = {attribute.name: attribute.get_value() for attribute in props.resource_attributes}
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "resource.edit_resource",

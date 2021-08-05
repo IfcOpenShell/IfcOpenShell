@@ -2,6 +2,7 @@ import bpy
 import importlib
 import importlib.util
 import ifcpatch
+from blenderbim.bim.helper import draw_attributes
 from .helper import extract_docs
 from .operator import PopulatePatchArguments
 
@@ -43,15 +44,7 @@ class BIM_PT_patch(bpy.types.Panel):
         op = layout.operator(PopulatePatchArguments.bl_idname)
         op.recipe = recipe
         if props.ifc_patch_args_attr and bool(docs["inputs"]):
-            for attr in props.ifc_patch_args_attr:
-                if attr.data_type == "string":
-                    layout.row().prop(attr, "string_value", text=attr.description if attr.description else attr.name)
-                elif attr.data_type == "float":
-                    layout.row().prop(attr, "float_value", text=attr.description if attr.description else attr.name)
-                elif attr.data_type == "boolean":
-                    layout.row().prop(attr, "bool_value", text=attr.description if attr.description else attr.name)
-                elif attr.data_type == "integer":
-                    layout.row().prop(attr, "int_value", text=attr.description if attr.description else attr.name)
+            draw_attributes(props.ifc_patch_args_attr, layout, show_description=True)
         else:
             row = layout.row()
             row.prop(props, "ifc_patch_args")

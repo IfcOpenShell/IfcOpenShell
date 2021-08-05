@@ -102,31 +102,11 @@ class EnablePsetEditing(bpy.types.Operator):
             prop = Data.properties[prop_id]
 
             value = prop["NominalValue"]
-            if isinstance(value, str):
-                data_type = "string"
-            elif isinstance(value, float):
-                data_type = "float"
-            elif isinstance(value, bool):
-                data_type = "boolean"
-            elif isinstance(value, int):
-                data_type = "integer"
-            else:
-                data_type = "string"
-                value = str(value)
-
             new = self.props.properties.add()
+            new.set_value(value)
             new.name = prop["Name"]
-            new.is_null = prop["NominalValue"] is None
-            new.data_type = data_type
-
-            if data_type == "string":
-                new.string_value = "" if new.is_null else value
-            elif data_type == "integer":
-                new.int_value = 0 if new.is_null else value
-            elif data_type == "float":
-                new.float_value = 0.0 if new.is_null else value
-            elif data_type == "boolean":
-                new.bool_value = False if new.is_null else value
+            new.is_null = value is None
+            new.set_value(new.get_value_default() if new.is_null else value)
 
 
 class DisablePsetEditing(bpy.types.Operator):
@@ -174,18 +154,7 @@ class EditPset(bpy.types.Operator):
         else:
             data = Data.psets if pset_id in Data.psets else Data.qtos
             for prop in props.properties:
-                if prop.is_null:
-                    properties[prop.name] = None
-                elif prop.data_type == "string":
-                    properties[prop.name] = prop.string_value
-                elif prop.data_type == "boolean":
-                    properties[prop.name] = prop.bool_value
-                elif prop.data_type == "integer":
-                    properties[prop.name] = prop.int_value
-                elif prop.data_type == "float":
-                    properties[prop.name] = prop.float_value
-                elif prop.data_type == "enum":
-                    properties[prop.name] = prop.enum_value
+                properties[prop.name] = prop.get_value()
 
         if pset_id in Data.psets:
             ifcopenshell.api.run(

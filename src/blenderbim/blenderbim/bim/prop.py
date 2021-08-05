@@ -127,7 +127,7 @@ class StrProperty(PropertyGroup):
 
 
 def updateAttributeValue(self, context):
-    if getattr(self, self.get_value_attr(), None):  # Do not use get_value since it returns None if is_null is True
+    if getattr(self, str(self.get_value_attr()), None):  # Do not use get_value since it returns None if is_null is True
         self.is_null = False
 
 
@@ -147,7 +147,7 @@ class Attribute(PropertyGroup):
     def get_value(self):
         if self.is_null:
             return None
-        return getattr(self, self.get_value_attr(), None)
+        return getattr(self, str(self.get_value_attr()), None)
     
     def get_value_default(self):
         if self.data_type == "string":
@@ -176,14 +176,14 @@ class Attribute(PropertyGroup):
     def set_value(self, value):
         if isinstance(value, str):
             self.data_type = "string"
+        elif isinstance(value, float):
+            self.data_type = "float"
         elif isinstance(value, bool): # Make sure this is evaluated BEFORE integer
             self.data_type = "boolean"
         elif isinstance(value, int):
             self.data_type = "integer"
-        elif isinstance(value, float):
-            self.data_type = "float"
         else:
-            self.data_type = "enum"
+            self.data_type = "string"
             value = str(value)
         setattr(self, self.get_value_attr(), value)
     
