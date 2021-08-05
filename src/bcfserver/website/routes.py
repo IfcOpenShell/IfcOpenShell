@@ -1,28 +1,34 @@
-from os import supports_bytes_environ
-from website import app
-from flask import render_template, redirect, url_for, flash, request, jsonify
-from website.models import User
-from website.forms import RegisterForm, LoginForm, OauthForm
-from website import db
+from flask.blueprints import Blueprint
+from flask import render_template, redirect, url_for, flash, request
+from werkzeug import datastructures
+from .forms import RegisterForm, LoginForm, OauthForm
 from flask_login import login_user, logout_user, login_required, current_user
-from .models import db, User, OAuth2Client, OAuth2AuthorizationCode, OAuth2Token
+from .models import User, OAuth2Client, OAuth2AuthorizationCode, OAuth2Token
 import base64
 from werkzeug.security import gen_salt
 import time
 import urllib
 import json
+from run import db, app
+
+website_obj = Blueprint(
+    "website_obj",
+    __name__,
+    template_folder="templates",
+)
 
 
 def split_by_crlf(s):
     return [v for v in s.splitlines() if v]
 
 
-@app.route("/")
+@website_obj.route("/")
 def homepage():
     return render_template("index.html")
+    # return "homepage"
 
 
-@app.route("/register", methods=["GET", "POST"])
+@website_obj.route("/register", methods=["GET", "POST"])
 def register_page():
     form = RegisterForm()
     if form.validate_on_submit():
@@ -39,7 +45,7 @@ def register_page():
             f"Account created successfully! {user_to_create.username}",
             category="success",
         )
-        return redirect(url_for("homepage"))
+        return redirect(url_for("website_obj.homepage"))
     if form.errors != {}:
         for err_msg in form.errors.values():
             flash(
@@ -49,7 +55,7 @@ def register_page():
     return render_template("register.html", form=form)
 
 
-@app.route("/createclient", methods=["GET", "POST"])
+@website_obj.route("/createclient", methods=["GET", "POST"])
 @login_required
 def create_client():
     grants = [
@@ -93,7 +99,7 @@ def create_client():
     return render_template("createclient.html", form=form, grants=grants)
 
 
-@app.route("/login", methods=["GET", "POST"])
+@website_obj.route("/login", methods=["GET", "POST"])
 def login_page():
     form = LoginForm()
     if form.validate_on_submit():
@@ -102,7 +108,7 @@ def login_page():
             attempted_password=form.password.data
         ):
             login_user(attempted_user)
-            return redirect(url_for("homepage"))
+            return redirect(url_for("website_obj.homepage"))
         else:
             flash(
                 "Invalid Credentials",
@@ -112,27 +118,27 @@ def login_page():
     return render_template("login.html", form=form)
 
 
-@app.route("/logout")
+@website_obj.route("/logout")
 def logoutpage():
     logout_user()
     flash("You have been logged out!", category="info")
-    return redirect(url_for("homepage"))
+    return redirect(url_for("website_obj.homepage"))
 
 
-@app.route("/foundation/1.0/auth")
+@website_obj.route("/foundation/1.0/auth")
 def foundation_auth():
     data = {
         "oauth2_auth_url": "http://127.0.0.1:5000/oauth/authorize",
         "oauth2_token_url": "http://127.0.0.1:5000/oauth/token",
         "supported_oauth2_flows": ["authorization_code"],
     }
-    response = app.response_class(
-        response=json.dumps(data), status=200, mimetype="application/json"
+    response = website_obj.response_class(
+        data=json.dumps(data), status=200, mimetype="application/json"
     )
     return response
 
 
-@app.route("/foundation/versions")
+@website_obj.route("/foundation/versions")
 def foundation_versions():
     Body = {
         "versions": [
@@ -155,13 +161,13 @@ def foundation_versions():
             },
         ]
     }
-    response = app.response_class(
-        response=json.dumps(Body), status=200, mimetype="application/json"
+    response = website_obj.response_class(
+        data=json.dumps(Body), status=200, mimetype="application/json"
     )
     return response
 
 
-@app.route("/outh/login", methods=["GET", "POST"])
+@website_obj.route("/outh/login", methods=["GET", "POST"])
 def oauth_login():
     form = LoginForm()
     if form.validate_on_submit():
@@ -179,7 +185,7 @@ def oauth_login():
             state = request.args.get("state")
             return redirect(
                 url_for(
-                    "authorize",
+                    "website_obj.authorize",
                     client_id=client_id,
                     redirect_uri=redirect_uri,
                     state=state,
@@ -193,7 +199,7 @@ def oauth_login():
     return render_template("ologin.html", form=form)
 
 
-@app.route("/oauth/authorize", methods=["GET", "POST"])
+@website_obj.route("/oauth/authorize", methods=["GET", "POST"])
 def authorize():
     client_id = request.args.get("client_id")
     redirect_uri = request.args.get("redirect_uri")
@@ -203,7 +209,7 @@ def authorize():
         query = request.query_string
         return redirect(
             url_for(
-                "oauth_login",
+                "website_obj.oauth_login",
                 client_id=client_id,
                 redirect_uri=redirect_uri,
                 state=state,
@@ -246,7 +252,7 @@ def authorize():
     return render_template("oauth.html")
 
 
-@app.route("/oauth/token", methods=["POST"])
+@website_obj.route("/oauth/token", methods=["POST"])
 def issue_token():
     try:
         code = request.form["code"]
@@ -254,6 +260,7 @@ def issue_token():
         decode_header = base64.b64decode(Headers[1]).decode("utf-8")
         creds = decode_header.split(":")
         client_id = creds[0]
+        # print(code, Headers, decode_header, creds, client_id)
         auth_code = OAuth2AuthorizationCode.query.filter_by(code=code).first()
         if auth_code:
             if auth_code.client_id == client_id:
@@ -275,11 +282,13 @@ def issue_token():
                     "access_token": access_token,
                     "refresh_token": refresh_token,
                     "expires_in": expires_in,
-                    "auth_code": auth_code.scope,
                 }
                 response = app.response_class(
-                    response=json.dumps(query), status=200, mimetype="application/json"
+                    response=json.dumps(query),
+                    status=200,
+                    mimetype="application/json",
                 )
+                print(query)
                 return response
             else:
                 flash(
