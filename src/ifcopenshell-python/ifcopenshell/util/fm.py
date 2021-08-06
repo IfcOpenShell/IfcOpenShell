@@ -78,7 +78,7 @@ def get_cobie_types(ifc_file):
     elements = []
     for ifc_class in cobie_type_classes:
         try:
-            elements += self.file.by_type(ifc_class)
+            elements += ifc_file.by_type(ifc_class)
         except:
             pass
     return elements
@@ -88,7 +88,7 @@ def get_cobie_components(ifc_file):
     elements = []
     for ifc_class in cobie_component_classes:
         try:
-            elements += self.file.by_type(ifc_class)
+            elements += ifc_file.by_type(ifc_class)
         except:
             pass
     return elements
