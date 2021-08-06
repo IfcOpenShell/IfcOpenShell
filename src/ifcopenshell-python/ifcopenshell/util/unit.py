@@ -83,7 +83,7 @@ si_dimensions = {
     "BECQUEREL": (0, 0, -1, 0, 0, 0, 0),
     "GRAY": (2, 0, -2, 0, 0, 0, 0),
     "SIEVERT": (2, 0, -2, 0, 0, 0, 0),
-    "OTHERWISE": (0, 0, 0, 0, 0, 0, 0)
+    "OTHERWISE": (0, 0, 0, 0, 0, 0, 0),
 }
 
 si_conversions = {
@@ -139,13 +139,34 @@ def get_prefix_multiplier(text):
 
 
 def get_unit_name(text):
+    text = text.upper().replace("METER", "METRE")
     for name in unit_names:
-        if name in text.upper().replace("METER", "METRE"):
+        if name in text:
             return name
 
 
 def get_si_dimensions(name):
     return si_dimensions.get(name, si_dimensions["OTHERWISE"])
+
+
+def get_property_unit(prop, ifc_file):
+    unit = getattr(prop, "Unit", None)
+    if unit:
+        return unit
+    unit_assignment = ifc_file.by_type("IfcUnitAssignment")
+    if not unit_assignment:
+        return
+    entity = prop.wrapped_data.declaration().as_entity()
+    if prop.is_a("IfcPhysicalSimpleQuantity"):
+        measure_type = entity.attribute_by_index(3).type_of_attribute().declared_type().name()
+    elif prop.is_a("IfcPropertySingleValue") and prop.NominalValue:
+        measure_type = prop.NominalValue.is_a()
+    for text in ("Ifc", "Measure", "Non", "Positive", "Negative"):
+        measure_type = measure_type.replace(text, "")
+    measure_type = measure_type.upper() + "UNIT"
+    units = [u for u in unit_assignment[0].Units if getattr(u, "UnitType", None) == measure_type]
+    if units:
+        return units[0]
 
 
 def convert(value, from_prefix, from_unit, to_prefix, to_unit):
@@ -193,6 +214,8 @@ Example::
 :returns: The scale factor
 :rtype: float
 """
+
+
 def calculate_unit_scale(file):
     units = file.by_type("IfcUnitAssignment")[0]
     unit_scale = 1
