@@ -184,6 +184,8 @@ def recalculate_dumb_wall_origin(wall, new_origin=None):
         )
     )
     wall.matrix_world.translation = new_origin
+    for child in wall.children:
+        child.matrix_parent_inverse = wall.matrix_world.inverted()
 
 
 class DumbWallSplitter:
@@ -259,6 +261,9 @@ class DumbWallFlipper:
         ).length < 0.001:
             recalculate_dumb_wall_origin(self.wall, self.wall.matrix_world @ Vector(self.wall.bound_box[7]))
             self.rotate_wall_180()
+            bpy.context.view_layer.update()
+            for child in self.wall.children:
+                child.matrix_parent_inverse = self.wall.matrix_world.inverted()
         else:
             recalculate_dumb_wall_origin(self.wall)
 
