@@ -30,7 +30,7 @@
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav mr-auto">
           <li class="nav-item active">
-            <a class="nav-link" href="{{ url_for('homepage') }}"
+            <a class="nav-link" href="{{ url_for('website_obj.homepage') }}"
               >Home <span class="sr-only">(current)</span></a
             >
           </li>
@@ -47,10 +47,14 @@
             <a class="nav-link">Welcome, {{ current_user.username }}</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('logoutpage') }}">Logout</a>
+            <a class="nav-link" href="{{ url_for('website_obj.logoutpage') }}"
+              >Logout</a
+            >
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('create_client') }}"
+            <a
+              class="nav-link"
+              href="{{ url_for('website_obj.create_client') }}"
               >Create Client</a
             >
           </li>
@@ -58,10 +62,14 @@
         {% else %}
         <ul class="navbar-nav">
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('login_page') }}">Login</a>
+            <a class="nav-link" href="{{ url_for('website_obj.login_page') }}"
+              >Login</a
+            >
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('register_page') }}"
+            <a
+              class="nav-link"
+              href="{{ url_for('website_obj.register_page') }}"
               >Register</a
             >
           </li>
