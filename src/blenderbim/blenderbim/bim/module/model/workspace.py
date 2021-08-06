@@ -87,6 +87,8 @@ class BimTool(WorkSpaceTool):
         row = layout.row(align=True)
 
         row = layout.row(align=True)
+        row.label(text="Mode")
+        row = layout.row(align=True)
         row.label(text="", icon="EVENT_ALT")
         row.label(text="Opening", icon="EVENT_O")
         row = layout.row(align=True)

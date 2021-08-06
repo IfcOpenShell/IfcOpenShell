@@ -18,7 +18,7 @@ class BIM_PT_work_plans(Panel):
     @classmethod
     def poll(cls, context):
         file = IfcStore.get_file()
-        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
+        return file and file.schema != "IFC2X3"
 
     def draw(self, context):
         if not Data.is_loaded:
