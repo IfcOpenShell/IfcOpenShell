@@ -420,7 +420,7 @@ class AddCostItemQuantity(bpy.types.Operator):
 
 class RemoveCostItemQuantity(bpy.types.Operator):
     bl_idname = "bim.remove_cost_item_quantity"
-    bl_label = "Add Cost Item Quantity"
+    bl_label = "Remove Cost Item Quantity"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
     physical_quantity: bpy.props.IntProperty()
