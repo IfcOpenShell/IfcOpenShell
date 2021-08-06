@@ -1,14 +1,19 @@
 import bpy
-from . import ui, operator
+from . import ui, prop, operator
 
 classes = (
     operator.AssignUnit,
+    operator.LoadUnits,
+    prop.Unit,
+    prop.BIMUnitProperties,
+    ui.BIM_PT_units,
+    ui.BIM_UL_units,
 )
 
 
 def register():
-    pass
+    bpy.types.Scene.BIMUnitProperties = bpy.props.PointerProperty(type=prop.BIMUnitProperties)
 
 
 def unregister():
-    pass
+    del bpy.types.Scene.BIMUnitProperties

@@ -43,3 +43,48 @@ class AssignUnit(bpy.types.Operator):
                 else:
                     data["raw"] = "FEET"
         return units
+
+
+class LoadUnits(bpy.types.Operator):
+    bl_idname = "bim.load_units"
+    bl_label = "Load Units"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.BIMUnitProperties
+        while len(props.units) > 0:
+            props.units.remove(0)
+
+        for ifc_definition_id in Data.unit_assignment:
+            unit = Data.units[ifc_definition_id]
+            name = unit.get("Name", "")
+
+            if unit["type"] == "IfcMonetaryUnit":
+                name = unit["Currency"]
+
+            if unit["type"] == "IfcSIUnit" and unit["Prefix"]:
+                if "_" in name:
+                    name_components = name.split("_")
+                    name = f"{name_components[0]} {unit['Prefix']}{name_components[1]}"
+                else:
+                    name = f"{unit['Prefix']}{name}"
+
+            icon = "MOD_MESHDEFORM"
+            if unit["type"] == "IfcSIUnit":
+                icon = "SNAP_GRID"
+            elif unit["type"] == "IfcMonetaryUnit":
+                icon = "COPY_ID"
+
+            unit_type = unit.get("UserDefinedType", None)
+            if not unit_type:
+                unit_type = unit.get("UnitType", None)
+
+            new = props.units.add()
+            new.ifc_definition_id = ifc_definition_id
+            new.name = name
+            new.unit_type = unit_type
+            new.icon = icon
+
+        props.is_editing = True
+        # bpy.ops.bim.disable_editing_unit()
+        return {"FINISHED"}
