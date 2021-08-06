@@ -1,4 +1,5 @@
 import ifcopenshell.util.date
+import ifcopenshell.util.unit
 
 
 class Data:
@@ -63,6 +64,13 @@ class Data:
             del quantity_data["Unit"]
             cls.physical_quantities[quantity.id()] = quantity_data
             data["CostQuantities"].append(quantity.id())
+        data["Unit"] = None
+        data["UnitSymbol"] = "?"
+        if cost_item.CostQuantities:
+            quantity = cost_item.CostQuantities[0]
+            unit = ifcopenshell.util.unit.get_property_unit(quantity, cls.file)
+            data["Unit"] = unit.id()
+            data["UnitSymbol"] = ifcopenshell.util.unit.get_unit_symbol(unit)
 
     @classmethod
     def load_cost_item_values(cls, cost_item, data):

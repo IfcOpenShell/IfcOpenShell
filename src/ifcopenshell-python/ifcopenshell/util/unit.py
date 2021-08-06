@@ -52,6 +52,7 @@ unit_names = [
     "WEBER",
 ]
 
+
 si_dimensions = {
     "METRE": (1, 0, 0, 0, 0, 0, 0),
     "SQUARE_METRE": (2, 0, 0, 0, 0, 0, 0),
@@ -121,6 +122,33 @@ si_conversions = {
     "btu": 1055.056,
 }
 
+prefix_symbols = {
+    "EXA": "E",
+    "PETA": "P",
+    "TERA": "T",
+    "GIGA": "G",
+    "MEGA": "M",
+    "KILO": "k",
+    "HECTO": "h",
+    "DECA": "da",
+    "DECI": "d",
+    "CENTI": "c",
+    "MILLI": "m",
+    "MICRO": "μ",
+    "NANO": "n",
+    "PICO": "p",
+    "FEMTO": "f",
+    "ATTO": "a",
+}
+
+unit_symbols = {
+    "CUBIC_METRE": "m3",
+    "GRAM": "g",
+    "SECOND": "s",
+    "SQUARE_METRE": "m2",
+    "METRE": "m",
+}
+
 
 def get_prefix(text):
     if text:
@@ -167,6 +195,15 @@ def get_property_unit(prop, ifc_file):
     units = [u for u in unit_assignment[0].Units if getattr(u, "UnitType", None) == measure_type]
     if units:
         return units[0]
+
+
+def get_unit_symbol(unit):
+    if unit.is_a("IfcSIUnit"):
+        symbol = ""
+        symbol += prefix_symbols.get(unit.Prefix, "")
+        symbol += unit_symbols.get(unit.Name.replace("METER", "METRE"), "?")
+        return symbol
+    return "?"
 
 
 def convert(value, from_prefix, from_unit, to_prefix, to_unit):

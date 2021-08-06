@@ -84,7 +84,7 @@ class BIMCostProperties(PropertyGroup):
     cost_schedule_attributes: CollectionProperty(name="Cost Schedule Attributes", type=Attribute)
     is_editing: StringProperty(name="Is Editing")
     active_cost_schedule_id: IntProperty(name="Active Cost Schedule Id")
-    cost_items: CollectionProperty(name="Work Calendar", type=CostItem)
+    cost_items: CollectionProperty(name="Cost Items", type=CostItem)
     active_cost_item_id: IntProperty(name="Active Cost Id")
     cost_item_editing_type: StringProperty(name="Cost Item Editing Type")
     active_cost_item_index: IntProperty(name="Active Cost Item Index")

@@ -165,7 +165,6 @@ class BIM_PT_cost_schedules(Panel):
             box = self.layout.box()
             self.draw_editable_cost_value_ui(box, Data.cost_values[self.props.active_cost_item_value_id])
 
-
     def draw_readonly_cost_value_ui(self, layout, cost_value_id):
         cost_value = Data.cost_values[cost_value_id]
         cost_value_label = "{0:.2f}".format(cost_value["AppliedValue"])
@@ -236,7 +235,6 @@ class BIM_PT_cost_schedules(Panel):
                 row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
 
-
 class BIM_UL_cost_items(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
@@ -263,7 +261,7 @@ class BIM_UL_cost_items(UIList):
 
             op = row.operator("bim.enable_editing_cost_item_quantities", text="", icon="PROPERTIES")
             op.cost_item = item.ifc_definition_id
-            row.label(text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + " (M3)")
+            row.label(text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" ({cost_item['UnitSymbol']})")
 
             op = row.operator("bim.enable_editing_cost_item_values", text="", icon="DISC")
             op.cost_item = item.ifc_definition_id
