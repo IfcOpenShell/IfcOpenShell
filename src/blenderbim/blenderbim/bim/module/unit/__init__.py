@@ -4,6 +4,8 @@ from . import ui, prop, operator
 classes = (
     operator.AssignUnit,
     operator.LoadUnits,
+    operator.DisableUnitEditingUI,
+    operator.RemoveUnit,
     prop.Unit,
     prop.BIMUnitProperties,
     ui.BIM_PT_units,
