@@ -52,6 +52,40 @@ unit_names = [
     "WEBER",
 ]
 
+si_dimensions = {
+    "METRE": (1, 0, 0, 0, 0, 0, 0),
+    "SQUARE_METRE": (2, 0, 0, 0, 0, 0, 0),
+    "CUBIC_METRE": (3, 0, 0, 0, 0, 0, 0),
+    "GRAM": (0, 1, 0, 0, 0, 0, 0),
+    "SECOND": (0, 0, 1, 0, 0, 0, 0),
+    "AMPERE": (0, 0, 0, 1, 0, 0, 0),
+    "KELVIN": (0, 0, 0, 0, 1, 0, 0),
+    "MOLE": (0, 0, 0, 0, 0, 1, 0),
+    "CANDELA": (0, 0, 0, 0, 0, 0, 1),
+    "RADIAN": (0, 0, 0, 0, 0, 0, 0),
+    "STERADIAN": (0, 0, 0, 0, 0, 0, 0),
+    "HERTZ": (0, 0, -1, 0, 0, 0, 0),
+    "NEWTON": (1, 1, -2, 0, 0, 0, 0),
+    "PASCAL": (-1, 1, -2, 0, 0, 0, 0),
+    "JOULE": (2, 1, -2, 0, 0, 0, 0),
+    "WATT": (2, 1, -3, 0, 0, 0, 0),
+    "COULOMB": (0, 0, 1, 1, 0, 0, 0),
+    "VOLT": (2, 1, -3, -1, 0, 0, 0),
+    "FARAD": (-2, -1, 4, 2, 0, 0, 0),
+    "OHM": (2, 1, -3, -2, 0, 0, 0),
+    "SIEMENS": (-2, -1, 3, 2, 0, 0, 0),
+    "WEBER": (2, 1, -2, -1, 0, 0, 0),
+    "TESLA": (0, 1, -2, -1, 0, 0, 0),
+    "HENRY": (2, 1, -2, -2, 0, 0, 0),
+    "DEGREE_CELSIUS": (0, 0, 0, 0, 1, 0, 0),
+    "LUMEN": (0, 0, 0, 0, 0, 0, 1),
+    "LUX": (-2, 0, 0, 0, 0, 0, 1),
+    "BECQUEREL": (0, 0, -1, 0, 0, 0, 0),
+    "GRAY": (2, 0, -2, 0, 0, 0, 0),
+    "SIEVERT": (2, 0, -2, 0, 0, 0, 0),
+    "OTHERWISE": (0, 0, 0, 0, 0, 0, 0)
+}
+
 si_conversions = {
     "inch": 0.0254,
     "foot": 0.3048,
@@ -108,6 +142,10 @@ def get_unit_name(text):
     for name in unit_names:
         if name in text.upper().replace("METER", "METRE"):
             return name
+
+
+def get_si_dimensions(name):
+    return si_dimensions.get(name, si_dimensions["OTHERWISE"])
 
 
 def convert(value, from_prefix, from_unit, to_prefix, to_unit):
