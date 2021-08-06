@@ -79,15 +79,18 @@ class IfcStore:
         in a regular Python list, there is the likely probability that the object
         will be invalidated when undo or redo occurs. Object invalidation seems to
         only occur for selected objects either pre/post undo/redo event, including
-        selected objects for consecutive undo/redos.
+        selected objects for consecutive undo/redos, and all children.
 
         So if I first select o1, then o2, then o3, then press undo, o3 will be
         invalidated. If instead I press undo twice, o3 and o2 will be invalidated.
         """
         if bpy.context.active_object:
             objects = set([o.name for o in bpy.context.selected_objects + [bpy.context.active_object]])
+            objects.update([o.name for o in bpy.context.active_object.children])
         else:
             objects = set([o.name for o in bpy.context.selected_objects])
+        for obj in bpy.context.selected_objects:
+            objects.update([o.name for o in obj.children])
         IfcStore.undo_redo_stack_objects |= objects
 
     @staticmethod
