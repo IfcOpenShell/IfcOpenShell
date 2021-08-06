@@ -26,8 +26,8 @@ class BIM_PT_units(Panel):
         row = self.layout.row(align=True)
         row.label(text="{} Units Found".format(len(Data.unit_assignment)), icon="SNAP_GRID")
         if self.props.is_editing:
-            row.operator("bim.add_group", text="", icon="ADD")
-            row.operator("bim.disable_group_editing_ui", text="", icon="CANCEL")
+            # row.operator("bim.add_unit", text="", icon="ADD")
+            row.operator("bim.disable_unit_editing_ui", text="", icon="CANCEL")
         else:
             row.operator("bim.load_units", text="", icon="GREASEPENCIL")
 
@@ -49,3 +49,4 @@ class BIM_UL_units(UIList):
             row = layout.row(align=True)
             row.label(text=item.unit_type or "No Type", icon=item.icon)
             row.label(text=item.name or "Unnamed")
+            row.operator("bim.remove_unit", text="", icon="X").unit = item.ifc_definition_id

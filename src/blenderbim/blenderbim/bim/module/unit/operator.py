@@ -88,3 +88,31 @@ class LoadUnits(bpy.types.Operator):
         props.is_editing = True
         # bpy.ops.bim.disable_editing_unit()
         return {"FINISHED"}
+
+
+class DisableUnitEditingUI(bpy.types.Operator):
+    bl_idname = "bim.disable_unit_editing_ui"
+    bl_label = "Disable Unit Editing UI"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        context.scene.BIMUnitProperties.is_editing = False
+        return {"FINISHED"}
+
+
+class RemoveUnit(bpy.types.Operator):
+    bl_idname = "bim.remove_unit"
+    bl_label = "Remove Unit"
+    bl_options = {"REGISTER", "UNDO"}
+    unit: bpy.props.IntProperty()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        props = context.scene.BIMUnitProperties
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run("unit.remove_unit", self.file, **{"unit": self.file.by_id(self.unit)})
+        Data.load(self.file)
+        bpy.ops.bim.load_units()
+        return {"FINISHED"}

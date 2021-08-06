@@ -17,6 +17,8 @@ class Data:
         if not file:
             return
         cls.file = file
+        cls.unit_assignment = []
+        cls.units = {}
         unit_assignment = cls.file.by_type("IfcUnitAssignment")
         if not unit_assignment:
             return
