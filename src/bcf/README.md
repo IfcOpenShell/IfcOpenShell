@@ -66,7 +66,7 @@ bcfxml.edit_topic(topic)
 The `bcfapi` module lets you interact with the BCF-API standard.
 
 ```python
-from bcf.v3.bcfapi import AuthClient, BcfClient
+from bcf.v3.bcfapi import FoundationClient, BcfClient
 
 foundation_client = FoundationClient("YOUR_CLIENT_ID", "YOUR_CLIENT_SECRET", "OPENCDE_BASEURL")
 auth_methods = foundation_client.get_auth_methods()

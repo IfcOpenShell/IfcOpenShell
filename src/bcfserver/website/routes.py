@@ -132,8 +132,8 @@ def foundation_auth():
         "oauth2_token_url": "http://127.0.0.1:5000/oauth/token",
         "supported_oauth2_flows": ["authorization_code"],
     }
-    response = website_obj.response_class(
-        data=json.dumps(data), status=200, mimetype="application/json"
+    response = app.response_class(
+        response=json.dumps(data), status=200, mimetype="application/json"
     )
     return response
 
@@ -161,8 +161,8 @@ def foundation_versions():
             },
         ]
     }
-    response = website_obj.response_class(
-        data=json.dumps(Body), status=200, mimetype="application/json"
+    response = app.response_class(
+        response=json.dumps(Body), status=200, mimetype="application/json"
     )
     return response
 
