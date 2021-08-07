@@ -1003,8 +1003,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wi
 
 	BRepBuilderAPI_MakeWire w;
 
-	if(l->hasSegments()) {
-		aggregate_of_instance::ptr segments = l->Segments();
+	if(l->Segments()) {
+		aggregate_of_instance::ptr segments = *l->Segments();
 		for (aggregate_of_instance::it it = segments->begin(); it != segments->end(); ++it) {
 			IfcUtil::IfcBaseClass* segment = *it;
 			if (segment->declaration().is(IfcSchema::IfcLineIndex::Class())) {
