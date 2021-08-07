@@ -2391,7 +2391,7 @@ bool IfcGeom::Kernel::convert_layerset(const IfcSchema::IfcProduct* product, std
 
 		bool has_position = true;
 #ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
-		has_position = extrusion->hasPosition();
+		has_position = extrusion->Position() != nullptr;
 #endif
 		if (has_position) {
 			if (!convert(extrusion->Position(), extrusion_position)) {
