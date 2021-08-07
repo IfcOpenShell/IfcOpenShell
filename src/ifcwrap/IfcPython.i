@@ -48,6 +48,7 @@
 %}
 
 %include "std_array.i"
+%include "std_vector.i"
 %include "std_string.i"
 %include "exception.i"
 
@@ -111,6 +112,8 @@
 	#include "../ifcparse/IfcSchema.h"
 	#include "../ifcparse/utils.h"
 
+	#include "../svgfill/src/svgfill.h"
+
 	#include <BRepTools_ShapeSet.hxx>
 %}
 
@@ -154,6 +157,8 @@
 	#include "../ifcparse/IfcFile.h"
 	#include "../ifcparse/IfcSchema.h"
 	#include "../ifcparse/utils.h"
+
+	#include "../svgfill/src/svgfill.h"
 
 	#include <BRepTools_ShapeSet.hxx>
 %}

@@ -502,3 +502,42 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		return IfcGeom::tesselate(schema_name, shp, d);
 	}
 %}
+
+%ignore svgfill::svg_to_line_segments;
+%ignore svgfill::line_segments_to_polygons;
+
+%template(svg_line_segments) std::vector<std::array<svgfill::point_2, 2>>;
+%template(svg_groups_of_line_segments) std::vector<std::vector<std::array<svgfill::point_2, 2>>>;
+%template(svg_point) std::array<double, 2>;
+%template(line_segment) std::array<svgfill::point_2, 2>;
+%template(svg_polygons) std::vector<svgfill::polygon_2>;
+%template(svg_groups_of_polygons) std::vector<std::vector<svgfill::polygon_2>>;
+%template(svg_loop) std::vector<std::array<double, 2>>;
+%template(svg_loops) std::vector<std::vector<std::array<double, 2>>>;
+
+%naturalvar svgfill::polygon_2::boundary;
+%naturalvar svgfill::polygon_2::inner_boundaries;
+%naturalvar svgfill::polygon_2::point_inside;
+
+%include "../svgfill/src/svgfill.h"
+
+%inline %{
+	std::vector<std::vector<svgfill::line_segment_2>> svg_to_line_segments(const std::string& data, const boost::optional<std::string>& class_name) {
+		std::vector<std::vector<svgfill::line_segment_2>> r;
+		if (svgfill::svg_to_line_segments(data, class_name, r)) {
+			return r;
+		} else {
+			throw std::runtime_error("Failed to read SVG");
+		}
+	}
+
+	std::vector<std::vector<svgfill::polygon_2>> line_segments_to_polygons(svgfill::solver s, double eps, const std::vector<std::vector<svgfill::line_segment_2>>& segments) {
+		std::vector<std::vector<svgfill::polygon_2>> r;
+		if (svgfill::line_segments_to_polygons(s, eps, segments, r)) {
+			return r;
+		} else {
+			throw std::runtime_error("Failed to read SVG");
+		}
+	}
+%}
+
