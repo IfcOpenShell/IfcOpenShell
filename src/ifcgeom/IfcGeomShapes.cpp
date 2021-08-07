@@ -1666,7 +1666,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS
 	faceset_helper<
 		std::vector<double>,
 		std::vector<int>
-	> helper(this, coord_list, indices, l->hasClosed() ? l->Closed() : false);
+	> helper(this, coord_list, indices, l->Closed().get_value_or(false));
 
 	TopTools_ListOfShape faces;
 
@@ -1722,7 +1722,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
 	faceset_helper<
 		std::vector<double>,
 		std::vector<int>
-	> helper(this, coord_list, indices, pfs->hasClosed() ? pfs->Closed() : false);
+	> helper(this, coord_list, indices, pfs->Closed().get_value_or(false));
 
 	TopTools_ListOfShape faces;
 
