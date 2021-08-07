@@ -1,0 +1,13 @@
+diff --git a/msvc/mpir_release_lib.props b/msvc/mpir_release_lib.props
+index d46f9649..832c6937 100644
+--- a/msvc/mpir_release_lib.props
++++ b/msvc/mpir_release_lib.props
+@@ -9,7 +9,7 @@
+   <ItemDefinitionGroup>
+     <ClCompile>
+       <ObjectFileName>$(IntDir)du\m\my\%(RelativeDir)</ObjectFileName>
+-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
++      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+       <ProgramDataBaseFileName>$(TargetDir)$(TargetName).pdb</ProgramDataBaseFileName>
+     </ClCompile>
+     <Link>

@@ -1,0 +1,13 @@
+diff --git a/Installation/cmake/modules/CGAL_SetupCGAL_ImageIODependencies.cmake b/Installation/cmake/modules/CGAL_SetupCGAL_ImageIODependencies.cmake
+index 8ac856d037..742fa8df69 100644
+--- a/Installation/cmake/modules/CGAL_SetupCGAL_ImageIODependencies.cmake
++++ b/Installation/cmake/modules/CGAL_SetupCGAL_ImageIODependencies.cmake
+@@ -23,7 +23,7 @@ set(CGAL_SetupCGAL_ImageIODependencies_included TRUE)
+ # Used Modules
+ # ^^^^^^^^^^^^
+ #   - :module:`FindZLIB`
+-find_package( ZLIB )
++# find_package( ZLIB )
+ 
+ define_property(TARGET PROPERTY CGAL_TARGET_USES_ZLIB
+   BRIEF_DOCS "Tells if the target uses ZLIB as a dependency"

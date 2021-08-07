@@ -116,6 +116,11 @@ if "%CMAKE_VERSION%" LSS "cmake version 3.11.4" (
     goto :ErrorAndPrintUsage
 )
 
+:: NOTE Boost < 1.64 doesn't work without tricks if the user has only VS 2017 installed and no earlier versions.
+set BOOST_VERSION=1.74.0
+:: Version string with underscores instead of dots.
+set BOOST_VER=%BOOST_VERSION:.=_%
+
 :: Print build configuration information
 
 call cecho.cmd 0 10 "Script configuration:"
@@ -191,10 +196,6 @@ popd
 :: Note all of the dependencies have appropriate label so that user can easily skip something if wanted
 :: by modifying this file and using goto.
 :Boost
-:: NOTE Boost < 1.64 doesn't work without tricks if the user has only VS 2017 installed and no earlier versions.
-set BOOST_VERSION=1.74.0
-:: Version string with underscores instead of dots.
-set BOOST_VER=%BOOST_VERSION:.=_%
 :: DEPENDENCY_NAME is used for logging and DEPENDENCY_DIR for saving from some redundant typing
 set DEPENDENCY_NAME=Boost %BOOST_VERSION%
 set DEPENDENCY_DIR=%DEPS_DIR%\boost_%BOOST_VER%
@@ -428,6 +429,68 @@ IF EXIST "%DEPS_DIR%\swigwin-%SWIG_VERSION%". (
 )
 IF EXIST "%DEPS_DIR%\swigwin\". robocopy "%DEPS_DIR%\swigwin" "%INSTALL_DIR%\swigwin" /E /IS /MOVE /njh /njs
 
+:mpir
+set DEPENDENCY_NAME=mpir
+set DEPENDENCY_DIR=%DEPS_DIR%\mpir
+call :GitCloneAndCheckoutRevision https://github.com/BrianGladman/mpir.git "%DEPENDENCY_DIR%"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd "%DEPENDENCY_DIR%"
+git reset --hard
+REM There probably need to be quotes here around the filename
+powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_cxx\"}" | git apply --unidiff-zero
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_gc\"}" | git apply --unidiff-zero
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpir_runtime.patch" --unidiff-zero
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd msvc
+cd vs%VS_VER:~2,2%
+call .\msbuild.bat gc LIB %VS_PLATFORM% Release
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+IF NOT EXIST "%INSTALL_DIR%\mpir". mkdir "%INSTALL_DIR%\mpir"
+copy ..\..\lib\%VS_PLATFORM%\Release\* "%INSTALL_DIR%\mpir"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
+:mpfr
+set DEPENDENCY_NAME=mpfr
+set DEPENDENCY_DIR=%DEPS_DIR%\mpfr
+call :GitCloneAndCheckoutRevision https://github.com/BrianGladman/mpfr.git "%DEPENDENCY_DIR%" 2ebbe10fd029a480cf6e8a64c493afa9f3654251
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd "%DEPENDENCY_DIR%"
+git reset --hard
+powershell -c "get-content %~dp0patches\mpfr.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpfr\"}" | git apply --unidiff-zero
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpfr_runtime.patch" --unidiff-zero
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :BuildSolution "%DEPENDENCY_DIR%\build.vc15\lib_mpfr.sln" %DEBUG_OR_RELEASE% lib_mpfr
+REM This command fails because not all msvc projects are patched with the right sdk version
+IF NOT EXIST lib\%VS_PLATFORM%\Release\mpfr.lib GOTO :Error
+IF NOT EXIST "%INSTALL_DIR%\mpfr". mkdir "%INSTALL_DIR%\mpfr"
+copy lib\%VS_PLATFORM%\Release\* "%INSTALL_DIR%\mpfr"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
+:cgal
+set DEPENDENCY_NAME=cgal
+set DEPENDENCY_DIR=%DEPS_DIR%\cgal
+call :GitCloneAndCheckoutRevision https://github.com/CGAL/cgal.git "%DEPENDENCY_DIR%" v5.2.3
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd "%DEPENDENCY_DIR%"
+git reset --hard
+git apply "%~dp0patches\cgal_no_zlib.patch"
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\cgal"    ^
+               -DBOOST_ROOT="%DEPS_DIR%\boost_%BOOST_VER%"    ^
+               -DGMP_INCLUDE_DIR="%INSTALL_DIR%\mpir"         ^
+               -DGMP_LIBRARIES="%INSTALL_DIR%\mpir\mpir.lib"  ^
+               -DMPFR_INCLUDE_DIR="%INSTALL_DIR%\mpfr"        ^
+               -DMPFR_LIBRARIES="%INSTALL_DIR%\mpfr\mpfr.lib" ^
+               -DBUILD_SHARED_LIBS=On                         ^
+               -DBOOST_LIBRARYDIR="%DEPS_DIR%\boost_%BOOST_VER%\stage\vs%VS_VER%-%VS_PLATFORM%\lib"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\CGAL.sln" %BUILD_CFG%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
 :Successful
 echo.
 call "%~dp0\utils\cecho.cmd" 0 10 "%PROJECT_NAME% dependencies built."
@@ -504,6 +567,7 @@ if not exist "%~2". (
     set RET=%ERRORLEVEL%
 ) else (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already cloned. Pulling latest changes."
+    git reset --hard
     pushd %2
     call git pull
     set RET=0
@@ -520,7 +584,7 @@ if not exist "%~2". (
     pushd "%DEPS_DIR%"
     call git clone %1 %2
     set RET=%ERRORLEVEL%
-    if not %RET%==0 exit /b %RET%
+    if not "%RET%"=="0" exit /b %RET%
     popd
 ) else (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already cloned."
