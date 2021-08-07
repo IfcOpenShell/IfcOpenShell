@@ -25,7 +25,10 @@ class Usecase:
                     element.PredefinedType = self.settings["predefined_type"]
                 except:
                     element.PredefinedType = "USERDEFINED"
-                    element.ObjectType = self.settings["predefined_type"]
+                    if hasattr(element, "ObjectType"):
+                        element.ObjectType = self.settings["predefined_type"]
+                    elif hasattr(element, "ElementType"):
+                        element.ElementType = self.settings["predefined_type"]
             elif hasattr(element, "ObjectType"):
                 element.ObjectType = self.settings["predefined_type"]
         if self.file.schema == "IFC2X3":

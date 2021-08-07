@@ -35,7 +35,10 @@ class BIM_PT_class(Panel):
                 data = Data.products[props.ifc_definition_id]
                 name = data["type"]
                 if data["PredefinedType"] and data["PredefinedType"] == "USERDEFINED":
-                    name += "[{}]".format(data["ObjectType"])
+                    if data["ObjectType"]:
+                        name += "[{}]".format(data["ObjectType"])
+                    elif data["ElementType"]:
+                        name += "[{}]".format(data["ElementType"])
                 elif data["PredefinedType"]:
                     name += "[{}]".format(data["PredefinedType"])
                 row = self.layout.row(align=True)
