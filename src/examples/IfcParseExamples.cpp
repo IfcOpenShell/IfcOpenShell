@@ -71,8 +71,8 @@ int main(int argc, char** argv) {
 		
 		const IfcSchema::IfcWindow* window;
 		if ((window = element->as<IfcSchema::IfcWindow>()) != 0) {
-			if (window->hasOverallWidth() && window->hasOverallHeight()) {
-				const double area = window->OverallWidth()*window->OverallHeight();
+			if (window->OverallWidth() && window->OverallHeight()) {
+				const double area = *window->OverallWidth() * *window->OverallHeight();
 				std::cout << "The area of this window is " << area << std::endl;
 			}
 		}
