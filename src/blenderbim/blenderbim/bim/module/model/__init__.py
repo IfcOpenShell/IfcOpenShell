@@ -12,6 +12,7 @@ classes = (
     wall.SplitWall,
     wall.AddWallOpening,
     slab.AddSlabOpening,
+    profile.ExtendProfile,
     prop.BIMModelProperties,
     ui.BIM_PT_authoring,
     ui.BIM_PT_authoring_architectural,
