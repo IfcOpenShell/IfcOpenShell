@@ -55,6 +55,8 @@
 #include <vld.h>
 #endif
 
+using namespace std::string_literals;
+
 // The creation of Nurbs-surface for the IfcSite mesh, to be implemented lateron
 void createGroundShape(TopoDS_Shape& shape);
 
@@ -71,7 +73,7 @@ int main() {
 
 	// Lateron changing the name of the IfcProject can be done by obtaining a reference to the 
 	// project, which has been created automatically.
-	file.getSingle<IfcSchema::IfcProject>()->setName("IfcOpenHouse");
+	file.getSingle<IfcSchema::IfcProject>()->setName("IfcOpenHouse"s);
 
 	// To demonstrate the ability to serialize arbitrary opencascade solids a building envelope is
 	// constructed by applying boolean operations. Naturally, in IFC, building elements should be 
