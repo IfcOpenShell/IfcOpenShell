@@ -862,6 +862,11 @@ typename Schema::IfcShapeRepresentation* IfcHierarchyHelper<Schema>::addEmptyRep
 }
 
 namespace {
+	template <typename T, typename U>
+	void push_back_to_maybe_optional(T& t, U* u) {
+		t->push(u);
+	}
+
 	// In IFC4 the IfcContext.RepresentationContexts has been made optional, so we need
 	// some boiler plate to push back to a list that might be optional.
 	template <typename T, typename U>
@@ -870,11 +875,6 @@ namespace {
 			t->emplace(new T);
 		}
 		(*t)->push(u);
-	}
-
-	template <typename T, typename U>
-	void push_back_to_maybe_optional(T& t, U* u) {
-		t->push(u);
 	}
 }
 
