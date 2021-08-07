@@ -927,11 +927,11 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 		IfcSchema::IfcRelVoidsElement* v = *it;
 		IfcSchema::IfcFeatureElementSubtraction* fes = v->RelatedOpeningElement();
 		if ( fes->declaration().is(IfcSchema::IfcOpeningElement::Class()) ) {
-			if (!fes->hasRepresentation()) continue;
+			if (!fes->Representation()) continue;
 
 			// Convert the IfcRepresentation of the IfcOpeningElement
 			gp_Trsf opening_trsf;
-			if (fes->hasObjectPlacement()) {
+			if (fes->ObjectPlacement()) {
 				try {
 					convert(fes->ObjectPlacement(),opening_trsf);
 				} catch (const std::exception& e) {
