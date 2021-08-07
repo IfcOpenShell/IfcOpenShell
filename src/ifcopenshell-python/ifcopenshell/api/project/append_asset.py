@@ -11,7 +11,7 @@ class Usecase:
 
     def execute(self):
         self.added_elements = set()
-        if self.settings["element"].is_a("IfcTypeProduct"):
+        if self.settings["element"].is_a("IfcTypeProduct") and not self.file.by_guid(self.settings["element"].GlobalId):
             return self.append_type_product()
 
     def append_type_product(self):

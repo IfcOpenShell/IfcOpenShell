@@ -326,6 +326,8 @@ class AppendLibraryElement(bpy.types.Operator):
             library=IfcStore.library_file,
             element=IfcStore.library_file.by_id(self.definition),
         )
+        if not element:
+            return {"FINISHED"}
         self.import_type_from_ifc(element, context)
         blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}

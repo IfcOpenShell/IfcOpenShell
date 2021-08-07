@@ -153,7 +153,7 @@ class IfcImporter:
         self.settings_native.set(self.settings_native.INCLUDE_CURVES, True)
         self.settings_2d = ifcopenshell.geom.settings()
         self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
-        self.filter_mode = "BLACKLIST"
+        self.filter_mode = None
         self.include_elements = set()
         self.exclude_elements = set()
         self.project = None
