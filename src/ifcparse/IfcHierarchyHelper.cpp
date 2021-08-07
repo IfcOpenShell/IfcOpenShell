@@ -872,7 +872,7 @@ namespace {
 	template <typename T, typename U>
 	void push_back_to_maybe_optional(boost::optional<boost::shared_ptr<T>>& t, U* u) {
 		if (!t) {
-			t->emplace(new T);
+			t = boost::shared_ptr<T>(new T);
 		}
 		(*t)->push(u);
 	}
