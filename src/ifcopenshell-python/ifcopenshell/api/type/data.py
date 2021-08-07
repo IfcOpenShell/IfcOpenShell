@@ -23,10 +23,10 @@ class Data:
         product = cls.file.by_id(product_id)
         cls.types[product_id] = None
         if cls.file.schema == "IFC2X3":
-            if hasattr(product, "ObjectTypeOf"):
+            if getattr(product, "ObjectTypeOf", None):
                 cls.types[product_id] = [o.id() for o in product.ObjectTypeOf[0].RelatedObjects]
         else:
-            if hasattr(product, "Types"):
+            if getattr(product, "Types", None):
                 cls.types[product_id] = [o.id() for o in product.Types[0].RelatedObjects]
 
     @classmethod

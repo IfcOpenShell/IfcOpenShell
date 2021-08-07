@@ -349,7 +349,10 @@ class IfcImporter:
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset:
             return
-        project = self.file.by_type("IfcProject")[0]
+        if self.file.schema == "IFC2X3":
+            project = self.file.by_type("IfcProject")[0]
+        else:
+            project = self.file.by_type("IfcContext")[0]
         site = self.find_decomposed_ifc_class(project, "IfcSite")
         if site and self.is_element_far_away(site[0], is_meters=False):
             return self.guess_georeferencing(site[0])
@@ -1004,8 +1007,13 @@ class IfcImporter:
                 )
 
     def create_project(self):
-        self.project = {"ifc": self.file.by_type("IfcProject")[0]}
-        self.project["blender"] = bpy.data.collections.new("IfcProject/{}".format(self.project["ifc"].Name))
+        if self.file.schema == "IFC2X3":
+            self.project = {"ifc": self.file.by_type("IfcProject")[0]}
+        else:
+            self.project = {"ifc": self.file.by_type("IfcContext")[0]}
+        self.project["blender"] = bpy.data.collections.new(
+            "{}/{}".format(self.project["ifc"].is_a(), self.project["ifc"].Name)
+        )
         obj = self.create_product(self.project["ifc"])
         if obj:
             self.project["blender"].objects.link(obj)
@@ -1140,7 +1148,7 @@ class IfcImporter:
                 self.place_object_in_spatial_tree(self.file.by_id(ifc_definition_id), obj)
 
     def place_object_in_spatial_tree(self, element, obj):
-        if element.is_a("IfcProject"):
+        if element.is_a() in ["IfcProject", "IfcProjectLibrary"]:
             return
         elif element.is_a("IfcTypeObject"):
             self.type_collection.objects.link(obj)
