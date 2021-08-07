@@ -609,6 +609,8 @@ class DumbWallJoiner:
         min_x = min([v[0] for v in wall.bound_box])
         max_x = max([v[0] for v in wall.bound_box])
         for f in wall.data.polygons:
+            if abs(f.normal.x) < 0.1:
+                continue
             end_face_index = self.get_wall_face_end(wall, f, min_x, max_x)
             if end_face_index == 1:
                 min_faces.append(f)
@@ -619,9 +621,9 @@ class DumbWallJoiner:
     # 1 is the leftmost (minimum local X axis) end, and 2 is the rightmost end
     def get_wall_face_end(self, wall, face, min_x, max_x):
         for v in face.vertices:
-            if wall.data.vertices[v].co.x == min_x and abs(face.normal.x) > 0.1:
+            if wall.data.vertices[v].co.x == min_x:
                 return 1
-            if wall.data.vertices[v].co.x == max_x and abs(face.normal.x) > 0.1:
+            if wall.data.vertices[v].co.x == max_x:
                 return 2
 
 
