@@ -1531,8 +1531,18 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 	if (!convert_wire(l->Directrix(), wire)) {
 		return false;
 	}
+	
+	// Start- EndParam became optional in IFC4
+#ifdef SCHEMA_IfcSweptDiskSolid_StartParam_IS_OPTIONAL
+	auto sp = l->StartParam();
+	auto ep = l->EndParam();
+#else
+	boost::optional<double> sp, ep;
+	sp = l->StartParam();
+	ep = l->EndParam();
+#endif
 
-	if (count(wire, TopAbs_EDGE) == 1) {
+	if (count(wire, TopAbs_EDGE) == 1 && sp && ep) {
 		TopoDS_Vertex v0, v1;
 		TopExp::Vertices(wire, v0, v1);
 		if (v0.IsSame(v1)) {
@@ -1543,7 +1553,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 			if ((crv->DynamicType() == STANDARD_TYPE(Geom_Circle)) ||
 				(crv->DynamicType() == STANDARD_TYPE(Geom_Ellipse))) 
 			{
-				BRepBuilderAPI_MakeEdge me(crv, l->StartParam(), l->EndParam());
+				BRepBuilderAPI_MakeEdge me(crv, *sp, *ep);
 				if (me.IsDone()) {
 					auto e2 = me.Edge();
 					BRep_Builder B;
