@@ -142,7 +142,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_S
 	gp_Trsf trsf;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
-	has_position = l->hasPosition();
+	has_position = l->Position() != nullptr;
 #endif
 	if (has_position) {
 		IfcGeom::Kernel::convert(l->Position(), trsf);
@@ -206,7 +206,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* l, T
 	gp_Trsf trsf;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
-	has_position = l->hasPosition();
+	has_position = l->Position() != nullptr;
 #endif
 	if (has_position) {
 		IfcGeom::Kernel::convert(l->Position(), trsf);
@@ -308,7 +308,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceOfLinearExtrusion* l, T
 	gp_Trsf trsf;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptSurface_Position_IS_OPTIONAL
-	has_position = l->hasPosition();
+	has_position = l->Position() != nullptr;
 #endif
 	if (has_position) {
 		IfcGeom::Kernel::convert(l->Position(), trsf);
@@ -343,7 +343,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceOfRevolution* l, TopoDS
 	gp_Trsf trsf;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptSurface_Position_IS_OPTIONAL
-	has_position = l->hasPosition();
+	has_position = l->Position() != nullptr;
 #endif
 	if (has_position) {
 		IfcGeom::Kernel::convert(l->Position(), trsf);
@@ -372,7 +372,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRevolvedAreaSolid* l, TopoDS_S
 	gp_Trsf trsf;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
-	has_position = l->hasPosition();
+	has_position = l->Position() != nullptr;
 #endif
 	if (has_position) {
 		IfcGeom::Kernel::convert(l->Position(), trsf);
@@ -1092,7 +1092,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 	gp_Trsf trsf;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
-	has_position = l->hasPosition();
+	has_position = l->Position() != nullptr;
 #endif
 	if (has_position) {
 		IfcGeom::Kernel::convert(l->Position(), trsf);
