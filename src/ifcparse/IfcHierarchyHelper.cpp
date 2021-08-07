@@ -870,7 +870,7 @@ namespace {
 	// In IFC4 the IfcContext.RepresentationContexts has been made optional, so we need
 	// some boiler plate to push back to a list that might be optional.
 	template <typename T, typename U>
-	void push_back_to_maybe_optional(boost::optional<typename T::ptr>& t, U* u) {
+	void push_back_to_maybe_optional(boost::optional<boost::shared_ptr<T>>& t, U* u) {
 		if (!t) {
 			t->emplace(new T);
 		}
