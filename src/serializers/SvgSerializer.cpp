@@ -543,7 +543,12 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 	const gp_Trsf& trsf = brep_obj->transformation().data();
 
 	const bool is_section = (section_ref_ && object_type && *section_ref_ == *object_type);
-	const bool is_elevation = (elevation_ref_ && object_type && *elevation_ref_ == *object_type);
+	bool is_elevation = false;
+	if (elevation_ref_ && object_type) {
+		is_elevation = *elevation_ref_ == *object_type;
+	} else if (elevation_ref_guid_) {
+		is_elevation = *elevation_ref_guid_ == brep_obj->guid();
+	}
 
 	if (is_section || is_elevation) {
 		BRepBuilderAPI_Transform make_transform_global(compound_local, trsf, true);
