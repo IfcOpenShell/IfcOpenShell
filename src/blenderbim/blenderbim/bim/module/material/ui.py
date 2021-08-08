@@ -118,6 +118,8 @@ class BIM_PT_object_material(Panel):
                 op.material_set_usage = self.product_data["id"]
             row.operator("bim.disable_editing_assigned_material", icon="CANCEL", text="")
         else:
+            if self.product_data["type"] == "IfcMaterial":
+                row.operator("bim.copy_material", icon="COPYDOWN", text="")
             row.operator("bim.enable_editing_assigned_material", icon="GREASEPENCIL", text="")
             row.operator("bim.unassign_material", icon="X", text="")
 
@@ -200,7 +202,9 @@ class BIM_PT_object_material(Panel):
         row.prop(self.props, "profile_classes", text="")
         if self.props.profile_classes == "IfcParameterizedProfileDef":
             row.prop(self.props, "parameterized_profile_classes", text="")
-            op = row.operator("bim.assign_parameterized_profile", icon="GREASEPENCIL" if item["Profile"] else "ADD", text="")
+            op = row.operator(
+                "bim.assign_parameterized_profile", icon="GREASEPENCIL" if item["Profile"] else "ADD", text=""
+            )
             op.ifc_class = self.props.parameterized_profile_classes
             op.material_profile = item["id"]
         else:
