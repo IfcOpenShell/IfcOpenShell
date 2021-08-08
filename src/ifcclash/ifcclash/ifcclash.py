@@ -36,7 +36,7 @@ class Clasher:
         self.settings = settings
         self.geom_settings = ifcopenshell.geom.settings()
         self.clash_sets = []
-        self.collider = collider.Collider()
+        self.collider = collider.Collider(self.settings.logger)
         self.selector = ifcopenshell.util.selector.Selector()
         self.ifcs = {}
 
@@ -83,23 +83,32 @@ class Clasher:
         clash_set["clashes"] = processed_results
 
     def load_ifc(self, path):
+        import time
+
+        start = time.time()
+        self.settings.logger.info(f"Loading IFC {path}")
         ifc = self.ifcs.get(path, None)
         if not ifc:
             ifc = ifcopenshell.open(path)
             self.ifcs[path] = ifc
+        self.settings.logger.info(f"Loading finished {time.time() - start}")
         return ifc
 
     def add_collision_objects(self, name, ifc_file, mode=None, selector=None):
+        import time
+
+        start = time.time()
+        self.settings.logger.info("Creating iterator")
         if not mode:
             elements = ifc_file.by_type("IfcElement")
         elif mode == "e":
-            exclude = self.selector.parse(ifc_file, selector)
-            elements = [e for e in ifc_file.by_type("IfcElement") if e not in exclude]
+            elements = set(ifc_file.by_type("IfcElement")) - set(self.selector.parse(ifc_file, selector))
         elif mode == "i":
             elements = self.selector.parse(ifc_file, selector)
         iterator = ifcopenshell.geom.iterator(
             self.geom_settings, ifc_file, multiprocessing.cpu_count(), include=elements
         )
+        self.settings.logger.info(f"Iterator creation finished {time.time() - start}")
         self.collider.create_objects(name, ifc_file, iterator, elements)
 
     def export(self):
@@ -205,11 +214,15 @@ class Clasher:
 
         for clash_set in clash_sets:
             if not "clashes" in clash_set.keys():
-                print(f"Skipping clash set [{clash_set['name']}] since it contains no clash results.")
+                self.settings.logger.info(
+                    f"Skipping clash set [{clash_set['name']}] since it contains no clash results."
+                )
                 continue
             clashes = clash_set["clashes"]
             if len(clashes) == 0:
-                print(f"Skipping clash set [{clash_set['name']}] since it contains no clash results.")
+                self.settings.logger.info(
+                    f"Skipping clash set [{clash_set['name']}] since it contains no clash results."
+                )
                 continue
 
             count_of_input_clashes += len(clashes)
@@ -272,9 +285,8 @@ class Clasher:
                 i += 1
 
         count_of_final_clash_sets = len(output_clash_sets)
-        print(
-            f"Took {count_of_input_clashes} clashes in {count_of_clash_sets} clash sets and turned",
-            f"them into {count_of_smart_groups} smart groups in {count_of_final_clash_sets} clash sets",
+        self.settings.logger.info(
+            f"Took {count_of_input_clashes} clashes in {count_of_clash_sets} clash sets and turned them into {count_of_smart_groups} smart groups in {count_of_final_clash_sets} clash sets"
         )
 
         return output_clash_sets
