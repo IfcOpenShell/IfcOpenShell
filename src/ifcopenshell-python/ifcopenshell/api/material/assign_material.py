@@ -16,13 +16,13 @@ class Usecase:
         if material:
             ifcopenshell.api.run("material.unassign_material", self.file, product=self.settings["product"])
         if self.settings["type"] == "IfcMaterial":
-            self.assign_ifc_material()
+            return self.assign_ifc_material()
         elif self.settings["type"] == "IfcMaterialConstituentSet":
             material_set = self.file.create_entity(self.settings["type"])
-            self.create_material_association(material_set)
+            return self.create_material_association(material_set)
         elif self.settings["type"] == "IfcMaterialLayerSet":
             material_set = self.file.create_entity(self.settings["type"])
-            self.create_material_association(material_set)
+            return self.create_material_association(material_set)
         elif self.settings["type"] == "IfcMaterialLayerSetUsage":
             element_type = ifcopenshell.util.element.get_type(self.settings["product"])
             if element_type:
@@ -34,10 +34,10 @@ class Usecase:
             else:
                 material_set = self.file.create_entity("IfcMaterialLayerSet")
             material_set_usage = self.create_layer_set_usage(material_set)
-            self.create_material_association(material_set_usage)
+            return self.create_material_association(material_set_usage)
         elif self.settings["type"] == "IfcMaterialProfileSet":
             material_set = self.file.create_entity(self.settings["type"])
-            self.create_material_association(material_set)
+            return self.create_material_association(material_set)
         elif self.settings["type"] == "IfcMaterialProfileSetUsage":
             element_type = ifcopenshell.util.element.get_type(self.settings["product"])
             if element_type:
@@ -51,11 +51,11 @@ class Usecase:
 
             self.update_representation_profile(material_set)
             material_set_usage = self.create_profile_set_usage(material_set)
-            self.create_material_association(material_set_usage)
+            return self.create_material_association(material_set_usage)
         elif self.settings["type"] == "IfcMaterialList":
             material_set = self.file.create_entity(self.settings["type"])
             material_set.Materials = [self.settings["material"]]
-            self.create_material_association(material_set)
+            return self.create_material_association(material_set)
 
     def update_representation_profile(self, material_set):
         profile = material_set.CompositeProfile
@@ -93,6 +93,7 @@ class Usecase:
         related_objects = list(rel.RelatedObjects)
         related_objects.append(self.settings["product"])
         rel.RelatedObjects = related_objects
+        return rel
 
     def create_material_association(self, relating_material):
         return self.file.create_entity(
