@@ -3,9 +3,11 @@ PYVERSION:=py37
 
 ifeq ($(PYVERSION), py37)
 PYLIBDIR:=python3.7
+PYNUMBER:=37
 endif
 ifeq ($(PYVERSION), py39)
 PYLIBDIR:=python3.9
+PYNUMBER:=39
 endif
 
 ifeq ($(PLATFORM), linux)
@@ -67,12 +69,7 @@ endif
 	cp -r blenderbim/* dist/blenderbim/
 
 	# Provides IfcOpenShell Python functionality
-ifeq ($(PYVERSION), py37)
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-37-v0.6.0-f14d349-$(PLATFORM)64.zip
-endif
-ifeq ($(PYVERSION), py39)
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-39-v0.6.0-f14d349-$(PLATFORM)64.zip
-endif
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-$(PYNUMBER)-v0.6.0-0087fa8-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcblender*
 	cp -r dist/working/io_import_scene_ifc/ifcopenshell dist/blenderbim/libs/site/packages/
 

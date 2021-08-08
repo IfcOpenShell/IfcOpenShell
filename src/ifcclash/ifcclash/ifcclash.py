@@ -34,7 +34,7 @@ from . import collider
 class Clasher:
     def __init__(self, settings):
         self.settings = settings
-        self.geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True)
+        self.geom_settings = ifcopenshell.geom.settings()
         self.clash_sets = []
         self.collider = collider.Collider()
         self.selector = ifcopenshell.util.selector.Selector()
