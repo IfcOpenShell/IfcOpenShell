@@ -21,11 +21,15 @@ import logging
 import operator
 import os
 import csv
+import numpy as np
+from datetime import date
 
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
 
 from bcf.v2.bcfxml import BcfXml
-from bcf.v2.data import Topic, Viewpoint
+from bcf.v2 import data as bcf
+# .data import Topic, Viewpoint, PerspectiveCamera
 from bcf import bcfxml
 
 from xmlschema import XMLSchema
@@ -674,10 +678,24 @@ class ids:
     Represents the XML root <ids> node and its <specification> childNodes.
     """
 
-    def __init__(self):
+    def __init__(self, ifcversion=None, description=None, author=None, copyright=None, version=None, creation_date=None, purpose=None, milestone=None):
         self.specifications = []
-        self.info = None  # TODO ifcversion, description, author, copyright, version, date, purpose, milestone
-
+        self.info = {}
+        if ifcversion:
+            if ifcversion in ['2.3.0.1', '4.0.2.1', '4.3.0.0']:
+                self.info['ifcversion'] = ifcversion
+        if author: 
+            if '@' in author: self.info['author'] = author
+        if description: self.info['description'] = description
+        if copyright: self.info['copyright'] = copyright
+        if version: self.info['version'] = version
+        if creation_date:
+            if re.match('\d\d\d\d-\d\d-\d\d', creation_date): 
+                self.info['date'] = creation_date  # date.fromisoformat(creation_date).isoformat()
+        if 'date' in self.info: self.info['date'] = date.today().isoformat()
+        if purpose: self.info['purpose'] = purpose
+        if milestone: self.info['milestone'] = milestone
+         
     def asdict(self):
         ids_dict = {
             "@xmlns": "http://standards.buildingsmart.org/IDS",
