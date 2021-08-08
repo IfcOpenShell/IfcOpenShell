@@ -41,7 +41,7 @@ class BIMClashProperties(PropertyGroup):
     blender_clash_set_a: CollectionProperty(name="Blender Clash Set A", type=StrProperty)
     blender_clash_set_b: CollectionProperty(name="Blender Clash Set B", type=StrProperty)
     clash_sets: CollectionProperty(name="Clash Sets", type=ClashSet)
-    should_create_clash_snapshots: BoolProperty(name="Create Snapshots", default=True)
+    should_create_clash_snapshots: BoolProperty(name="Create Snapshots", default=False)
     clash_results_path: StringProperty(name="Clash Results Path")
     smart_grouped_clashes_path: StringProperty(name="Smart Grouped Clashes Path")
     active_clash_set_index: IntProperty(name="Active Clash Set Index")

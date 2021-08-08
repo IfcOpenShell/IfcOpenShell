@@ -1,4 +1,3 @@
-
 # IfcClash - IFC-based clash detection.
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -23,14 +22,20 @@ import ifcopenshell
 
 
 class Collider:
-    def __init__(self):
+    def __init__(self, logger):
+        self.logger = logger
         self.groups = {}
         self.tree = ifcopenshell.geom.tree()
 
     def create_group(self, name):
+        self.logger.info(f"Creating group {name}")
         self.groups[name] = {"elements": {}, "objects": {}}
 
     def create_objects(self, name, ifc_file, iterator, elements):
+        import time
+
+        start = time.time()
+        self.logger.info(f"Adding objects {name}")
         assert iterator.initialize()
         while True:
             self.tree.add_element(iterator.get_native())
@@ -38,7 +43,11 @@ class Collider:
             self.create_object(name, shape.guid, shape)
             if not iterator.next():
                 break
+        self.logger.info(f"Tree finished {time.time() - start}")
+        start = time.time()
         self.groups[name]["elements"].update({e.GlobalId: e for e in elements})
+        self.logger.info(f"Element metadata finished {time.time() - start}")
+        start = time.time()
 
     def create_object(self, group_name, id, shape):
         obj = hppfcl.CollisionObject(
@@ -53,6 +62,10 @@ class Collider:
         return self.collide_narrowphase(name1, name2, self.collide_broadphase(name1, name2))
 
     def collide_broadphase(self, name1, name2):
+        import time
+
+        start = time.time()
+        self.logger.info("Starting broadphase")
         potential_collisions = []
         checked_collisions = set()
         for id, element in self.groups[name1]["elements"].items():
@@ -64,9 +77,14 @@ class Collider:
                 if e.GlobalId not in checked_collisions and e.GlobalId in self.groups[name2]["elements"]
             ]
             potential_collisions.extend(pairs)
+        self.logger.info(f"Finished broadphase {time.time() - start}")
         return potential_collisions
 
     def collide_narrowphase(self, name1, name2, potential_collisions):
+        import time
+
+        start = time.time()
+        self.logger.info("Starting narrowphase")
         collisions = []
         for data in potential_collisions:
             result = hppfcl.CollisionResult()
@@ -78,6 +96,7 @@ class Collider:
             )
             if result.isCollision():
                 collisions.append({"id1": data["id1"], "id2": data["id2"], "collision": result})
+        self.logger.info(f"Finished narrowphase {time.time() - start}")
         return collisions
 
     def create_transform(self, m):
