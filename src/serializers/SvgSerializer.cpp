@@ -1965,6 +1965,11 @@ void SvgSerializer::finalize() {
 				svg_file << "    <g " << namespace_prefix_  << "name=\"" << n << "\" class=\"section\" " << writeMetadata(drawing_metadata[it->first]) << ">\n";
 			}
 		}
+
+		if (it->second.second.empty()) {
+			continue;
+		}
+
 		svg_file << "        <g " << it->second.first << ">\n";
 		std::vector<util::string_buffer>::const_iterator jt;
 		for (jt = it->second.second.begin(); jt != it->second.second.end(); ++jt) {
