@@ -144,11 +144,6 @@ class TestIdsAuthoring(unittest.TestCase):
         s = ids.specification(name="Test_Specification")
         self.assertEqual(s.name, "Test_Specification")
 
-    def test_ids_create(self):
-        i = ids.ids()
-        self.assertEqual(i.specifications, [])
-        self.assertEqual(i.info, None)
-
     def test_ids_add_content(self):
         i = ids.ids()
         i.specifications.append(ids.specification(name="Test_Specification"))
@@ -243,6 +238,19 @@ class TestIdsAuthoring(unittest.TestCase):
         os.remove(fn)
         self.assertTrue(result)
 
+    """ IDS information """
+
+    def test_create_full_information(self):
+        i = ids.ids(
+            ifcversion='2.3.0.1', 
+            description='test', author='test@test.com', 
+            copyright='test', 
+            version=1.23, 
+            creation_date='2021-01-01', 
+            purpose='test', 
+            milestone='test')
+        self.assertEqual(i.info['version'], 1.23)
+       
 
 class TestIfcValidation(unittest.TestCase):
     def test_validate_simple(self):
