@@ -157,7 +157,7 @@ class UnassignMaterial(bpy.types.Operator):
             self.file,
             **{"product": self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)},
         )
-        Data.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+        Data.purge()
         return {"FINISHED"}
 
 
