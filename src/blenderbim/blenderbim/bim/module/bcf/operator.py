@@ -3,6 +3,9 @@ import bpy
 import bcf
 import bcf.bcfxml
 import bcf.v2.data
+import numpy as np
+import ifcopenshell
+import ifcopenshell.util.unit
 from . import bcfstore
 from blenderbim.bim.ifc import IfcStore
 from math import radians, degrees, atan, tan, cos, sin
@@ -700,20 +703,8 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].region_3d.view_perspective = "CAMERA"
 
-        if viewpoint.orthogonal_camera:
-            camera = viewpoint.orthogonal_camera
-            obj.data.type = "ORTHO"
-            obj.data.ortho_scale = viewpoint.orthogonal_camera.view_to_world_scale
-        elif viewpoint.perspective_camera:
-            camera = viewpoint.perspective_camera
-            obj.data.type = "PERSP"
-            if cam_aspect >= 1:
-                obj.data.angle = radians(camera.field_of_view)
-            else:
-                # https://blender.stackexchange.com/questions/23431/how-to-set-camera-horizontal-and-vertical-fov
-                obj.data.angle = 2 * atan((0.5 * cam_height) / (0.5 * cam_width / tan(radians(camera.field_of_view) / 2)))
-
-        self.set_viewpoint_components(viewpoint)
+        if self.file:
+            self.set_viewpoint_components(viewpoint)
 
         gp = bpy.data.grease_pencils.get("BCF")
         if gp:
@@ -729,15 +720,46 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         if viewpoint.bitmaps:
             self.create_bitmaps(bcfxml, viewpoint, topic)
 
+        self.setup_camera(viewpoint, obj, cam_aspect)
+        return {"FINISHED"}
+
+    def setup_camera(self, viewpoint, obj, cam_aspect):
+        if viewpoint.orthogonal_camera:
+            camera = viewpoint.orthogonal_camera
+            obj.data.type = "ORTHO"
+            obj.data.ortho_scale = viewpoint.orthogonal_camera.view_to_world_scale
+        elif viewpoint.perspective_camera:
+            camera = viewpoint.perspective_camera
+            obj.data.type = "PERSP"
+            if cam_aspect >= 1:
+                obj.data.angle = radians(camera.field_of_view)
+            else:
+                # https://blender.stackexchange.com/questions/23431/how-to-set-camera-horizontal-and-vertical-fov
+                obj.data.angle = 2 * atan((0.5 * cam_height) / (0.5 * cam_width / tan(radians(camera.field_of_view) / 2)))
+
         z_axis = Vector((-camera.camera_direction.x, -camera.camera_direction.y, -camera.camera_direction.z)).normalized()
         y_axis = Vector((camera.camera_up_vector.x, camera.camera_up_vector.y, camera.camera_up_vector.z)).normalized()
         x_axis = y_axis.cross(z_axis).normalized()
         rotation = Matrix((x_axis, y_axis, z_axis))
         rotation.invert()
-        location = Vector((camera.camera_view_point.x, camera.camera_view_point.y, camera.camera_view_point.z))
-        obj.matrix_world = rotation.to_4x4()
-        obj.location = location
-        return {"FINISHED"}
+        matrix = np.matrix((
+            [x_axis[0], y_axis[0], z_axis[0], camera.camera_view_point.x],
+            [x_axis[1], y_axis[1], z_axis[1], camera.camera_view_point.y],
+            [x_axis[2], y_axis[2], z_axis[2], camera.camera_view_point.z],
+            [0, 0, 0, 1],
+        ))
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        if props.has_blender_offset:
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
+            matrix = ifcopenshell.util.geolocation.global2local(
+                matrix,
+                float(props.blender_eastings) * unit_scale,
+                float(props.blender_northings) * unit_scale,
+                float(props.blender_orthogonal_height) * unit_scale,
+                float(props.blender_x_axis_abscissa),
+                float(props.blender_x_axis_ordinate),
+            )
+        obj.matrix_world = Matrix(matrix.tolist())
 
     def set_viewpoint_components(self, viewpoint):
         if not viewpoint.components:
