@@ -31,23 +31,14 @@ class Collider:
         self.groups[name] = {"elements": {}, "objects": {}}
 
     def create_objects(self, name, ifc_file, iterator, elements):
-        self.tree.add_iterator(iterator)
-        self.groups[name]["elements"].update({e.GlobalId: e for e in elements})
-
-        # Temporary hack. See #1357.
-        import multiprocessing
-
-        iterator = ifcopenshell.geom.iterator(
-            ifcopenshell.geom.settings(), ifc_file, multiprocessing.cpu_count(), include=elements
-        )
-        valid_file = iterator.initialize()
-        if not valid_file:
-            return False
+        assert iterator.initialize()
         while True:
+            self.tree.add_element(iterator.get_native())
             shape = iterator.get()
             self.create_object(name, shape.guid, shape)
             if not iterator.next():
                 break
+        self.groups[name]["elements"].update({e.GlobalId: e for e in elements})
 
     def create_object(self, group_name, id, shape):
         obj = hppfcl.CollisionObject(
