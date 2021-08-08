@@ -2,6 +2,7 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.CopyMaterial,
     operator.AddMaterial,
     operator.RemoveMaterial,
     operator.AssignMaterial,
