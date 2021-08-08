@@ -157,6 +157,7 @@ protected:
 	bool auto_section_, auto_elevation_;
 	bool use_namespace_, use_hlr_poly_, always_project_, polygonal_;
 	bool emit_building_storeys_;
+	bool no_css_;
 
 	IfcParse::IfcFile* file;
 	IfcUtil::IfcBaseEntity* storey_;
@@ -201,6 +202,7 @@ public:
 		, always_project_(false)
 		, polygonal_(false)
 		, emit_building_storeys_(true)
+		, no_css_(false)
 		, file(0)
 		, storey_(0)
 		, xcoords_begin(0)
@@ -280,6 +282,10 @@ public:
 
 	void setWithoutStoreys(bool b) {
 		emit_building_storeys_ = !b;
+	}
+
+	void setNoCSS(bool b) {
+		no_css_ = b;
 	}
 
 	void setScale(double s) { scale_ = s; }

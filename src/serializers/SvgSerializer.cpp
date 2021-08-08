@@ -2005,45 +2005,49 @@ void SvgSerializer::doWriteHeader() {
 		"        <marker id=\"arrowstart\" markerWidth=\"10\" markerHeight=\"7\" refX=\"0\" refY=\"3.5\" orient=\"auto\">\n"
 		"          <polygon points=\"10 0, 0 3.5, 10 7\" />\n"
 		"        </marker>\n"
-		"    </defs>\n"
-		"    <style type=\"text/css\" >\n"
-		"    <![CDATA[\n"
-		"        path {\n"
-		"            stroke: #222222;\n"
-		"            fill: #444444;\n"
-		"        }\n"
-		"        .IfcDoor path,\n"
-		"        .Symbol path {\n"
-		"            fill: none;\n"
-		"        }\n"
-		"        .Symbol path {\n"
-		"            stroke-width: 0.5px;\n"
-		"        }\n"
-		"        .IfcSpace path {\n"
-		"            fill-opacity: .2;\n"
-		"        }\n"
-		"        .Dimension path {\n"
-		"            marker-end: url(#arrowend);\n"
-		"            marker-start: url(#arrowstart);\n"
-		"        }\n";
-	
-	if (scale_) {
-		// previously:
-		//       (pt)  (px)  (in)  (mm)
-		// approx 12 / 0.75 / 96 * 25.4
+		"    </defs>\n";
+
+	if (!no_css_) {
+		svg_file <<
+			"    <style type=\"text/css\" >\n"
+			"    <![CDATA[\n"
+			"        path {\n"
+			"            stroke: #222222;\n"
+			"            fill: #444444;\n"
+			"        }\n"
+			"        .IfcDoor path,\n"
+			"        .Symbol path {\n"
+			"            fill: none;\n"
+			"        }\n"
+			"        .Symbol path {\n"
+			"            stroke-width: 0.5px;\n"
+			"        }\n"
+			"        .IfcSpace path {\n"
+			"            fill-opacity: .2;\n"
+			"        }\n"
+			"        .Dimension path {\n"
+			"            marker-end: url(#arrowend);\n"
+			"            marker-start: url(#arrowstart);\n"
+			"        }\n";
+
+		if (scale_) {
+			// previously:
+			//       (pt)  (px)  (in)  (mm)
+			// approx 12 / 0.75 / 96 * 25.4
+
+			svg_file <<
+				"        text {\n"
+				"            font-size: 2;\n" //  (reduced to two).
+				"        }\n"
+				"        path {\n"
+				"            stroke-width: 0.3;\n"
+				"        }\n";
+		}
 
 		svg_file <<
-		"        text {\n"
-		"            font-size: 2;\n" //  (reduced to two).
-		"        }\n"
-		"        path {\n"
-		"            stroke-width: 0.3;\n"
-		"        }\n";
+			"    ]]>\n"
+			"    </style>\n";
 	}
-
-	svg_file << 
-		"    ]]>\n"
-		"    </style>\n";
 }
 
 namespace {
