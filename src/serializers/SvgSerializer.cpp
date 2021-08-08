@@ -1201,11 +1201,17 @@ void SvgSerializer::write(const geometry_data& data) {
 
 			emitted = true;
 
+			auto svg_name = data.svg_name;
+			if (object_type.size()) {
+				// prefix class to indicate this is a cut element
+				boost::replace_all(svg_name, "class=\"", "class=\"cut ");
+			}
+
 			if (po == nullptr) {
 				if (storey) {
-					po = &start_path(pln, storey, data.svg_name);
+					po = &start_path(pln, storey, svg_name);
 				} else {
-					po = &start_path(pln, drawing_name, data.svg_name);
+					po = &start_path(pln, drawing_name, svg_name);
 				}
 			}
 
