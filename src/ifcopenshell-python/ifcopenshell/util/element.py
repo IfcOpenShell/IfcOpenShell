@@ -73,7 +73,7 @@ def get_material(element, should_skip_usage=False):
                         return relationship.RelatingMaterial.ForProfileSet
                 return relationship.RelatingMaterial
     relating_type = get_type(element)
-    if hasattr(relating_type, "HasAssociations") and relating_type.HasAssociations:
+    if relating_type != element and hasattr(relating_type, "HasAssociations") and relating_type.HasAssociations:
         return get_material(relating_type, should_skip_usage)
 
 
