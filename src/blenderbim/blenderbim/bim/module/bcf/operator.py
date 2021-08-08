@@ -764,39 +764,84 @@ class ActivateBcfViewpoint(bpy.types.Operator):
     def set_viewpoint_components(self, viewpoint):
         if not viewpoint.components:
             return
-        selected_global_ids = [s.ifc_guid for s in viewpoint.components.selection]
+
+        # Operators with context overrides are used because they are
+        # significantly faster than looping through all objects
+
         exception_global_ids = [v.ifc_guid for v in viewpoint.components.visibility.exceptions]
+
+        if viewpoint.components.visibility.default_visibility:
+            old = bpy.context.area.type
+            bpy.context.area.type = "VIEW_3D"
+            bpy.ops.object.hide_view_clear()
+            bpy.context.area.type = old
+            for global_id in exception_global_ids:
+                obj = IfcStore.get_element(global_id)
+                if obj:
+                    obj.hide_set(True)
+        else:
+            objs = []
+            for global_id in exception_global_ids:
+                obj = IfcStore.get_element(global_id)
+                if obj:
+                    objs.append(obj)
+            if objs:
+                old = bpy.context.area.type
+                bpy.context.area.type = "VIEW_3D"
+                context_override = {}
+                context_override["object"] = context_override["active_object"] = objs[0]
+                context_override["selected_objects"] = context_override["selected_editable_objects"] = objs
+                bpy.ops.object.hide_view_set(context_override, unselected=True)
+                bpy.context.area.type = old
+
+        if viewpoint.components.view_setup_hints:
+            if not viewpoint.components.view_setup_hints.spaces_visible:
+                self.hide_spaces()
+            if viewpoint.components.view_setup_hints.openings_visible is not None:
+                self.set_openings_visibility(viewpoint.components.view_setup_hints.openings_visible)
+        else:
+            self.hide_spaces()
+            self.set_openings_visibility(False)
+
+        self.set_selection(viewpoint)
+        self.set_colours(viewpoint)
+
+    def hide_spaces(self):
+        old = bpy.context.area.type
+        bpy.context.area.type = "VIEW_3D"
+        bpy.ops.object.select_pattern(pattern="IfcSpace/*")
+        bpy.ops.object.hide_view_set({})
+        bpy.context.area.type = old
+
+    def set_openings_visibility(self, is_visible):
+        for collection in self.get_opening_collections():
+            collection.hide_viewport = not is_visible
+
+    def set_selection(self, viewpoint):
+        selected_global_ids = [s.ifc_guid for s in viewpoint.components.selection]
+        bpy.ops.object.select_all(action="DESELECT")
+        for global_id in selected_global_ids:
+            obj = IfcStore.get_element(global_id)
+            if obj:
+                obj.select_set(True)
+
+    def set_colours(self, viewpoint):
         global_id_colours = {}
         for coloring in viewpoint.components.coloring:
             for component in coloring.components:
                 global_id_colours.setdefault(component.ifc_guid, coloring.color)
+        for global_id, color in global_id_colours.items():
+            obj = IfcStore.get_element(global_id)
+            if obj:
+                obj.color = self.hex_to_rgb(color)
 
-        for obj in bpy.data.objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                continue
-            global_id = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId
-            is_visible = viewpoint.components.visibility.default_visibility
-            if global_id in exception_global_ids:
-                is_visible = not is_visible
-            if not is_visible:
-                obj.hide_set(True)
-                continue
-            if "IfcSpace" in obj.name:
-                if viewpoint.components.view_setup_hints:
-                    is_visible = viewpoint.components.view_setup_hints.spaces_visible
-                else:
-                    is_visible = False
-            elif "IfcOpeningElement" in obj.name:
-                if viewpoint.components.view_setup_hints:
-                    is_visible = viewpoint.components.view_setup_hints.openings_visible
-                else:
-                    is_visible = False
-            obj.hide_set(not is_visible)
-            if not is_visible:
-                continue
-            obj.select_set(global_id in selected_global_ids)
-            if global_id in global_id_colours:
-                obj.color = self.hex_to_rgb(global_id_colours[global_id])
+    def get_opening_collections(self):
+        collections = []
+        for collection in bpy.context.view_layer.layer_collection.children:
+            opening_collection = collection.children.get("IfcOpeningElements")
+            if opening_collection:
+                collections.append(opening_collection)
+        return collections
 
     def draw_lines(self, viewpoint, context):
         gp = bpy.data.grease_pencils.new("BCF")
