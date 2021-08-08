@@ -167,7 +167,7 @@ protected:
 	float_item_list xcoords, ycoords, radii;
 	size_t xcoords_begin, ycoords_begin, radii_begin;
 
-	boost::optional<std::string> section_ref_, elevation_ref_;
+	boost::optional<std::string> section_ref_, elevation_ref_, elevation_ref_guid_;
 	
 	std::list<geometry_data> element_buffer_;
 
@@ -242,8 +242,15 @@ public:
 	void setSectionRef(const boost::optional<std::string>& s) { 
 		section_ref_ = s; 
 	}
+
 	void setElevationRef(const boost::optional<std::string>& s) {
 		elevation_ref_ = s; 
+		elevation_ref_guid_ = boost::none;
+	}
+
+	void setElevationRefGuid(const boost::optional<std::string>& s) {
+		elevation_ref_ = boost::none;
+		elevation_ref_guid_ = s;
 	}
 
 	void setAutoSection(bool b) {

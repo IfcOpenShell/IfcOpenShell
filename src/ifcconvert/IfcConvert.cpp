@@ -354,7 +354,7 @@ int main(int argc, char** argv) {
     short precision;
 	double section_height;
 	std::string svg_scale, svg_center;
-	std::string section_ref, elevation_ref;
+	std::string section_ref, elevation_ref, elevation_ref_guid;
 	// "none", "full" or "left"
 	std::string storey_height_display;
 	SvgSerializer::storey_height_display_types svg_storey_height_display = SvgSerializer::SH_NONE;
@@ -376,9 +376,11 @@ int main(int argc, char** argv) {
 			"When using --scale, specifies the location in the range [0 1]x[0 1] around which"
 			"to center the drawings. Example 0.5x0.5 (default).")
 		("section-ref", po::value<std::string>(&section_ref),
-			"Element at which vertical cross sections should be created")
+			"Element at which cross sections should be created")
 		("elevation-ref", po::value<std::string>(&elevation_ref),
-			"Element at which vertical elevations should be created")
+			"Element at which drawings should be created")
+		("elevation-ref-guid", po::value<std::string>(&elevation_ref_guid),
+			"Element guids at which drawings should be created")
 		("auto-section",
 			"Creates SVG cross section drawings automatically based on model extents")
 		("auto-elevation",
@@ -1002,6 +1004,9 @@ int main(int argc, char** argv) {
 		}
 		if (vmap.count("elevation-ref")) {
 			static_cast<SvgSerializer*>(serializer.get())->setElevationRef(elevation_ref);
+		}
+		if (vmap.count("elevation-ref-guid")) {
+			static_cast<SvgSerializer*>(serializer.get())->setElevationRefGuid(elevation_ref_guid);
 		}
 		if (vmap.count("auto-section")) {
 			static_cast<SvgSerializer*>(serializer.get())->setAutoSection(true);
