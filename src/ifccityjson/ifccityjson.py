@@ -25,6 +25,7 @@ from cityjson2ifc import Cityjson2ifc
 if __name__ == '__main__':
     # Example:
     # python ifccityjson.py -i example/3DBAG_example.json -o example/output.ifc -n identificatie
+    # python ifccityjson.py -i example/geometries.json -o example/geometry_output.ifc
     parser = argparse.ArgumentParser(description="")
     parser.add_argument("-i", "--input", type=str, help="input CityJSON file", required=True)
     parser.add_argument("-o", "--output", type=str, help="output IFC file. Standard is output.ifc")

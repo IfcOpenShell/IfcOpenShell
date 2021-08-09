@@ -106,15 +106,14 @@ class Cityjson2ifc:
     def create_new_file(self):
         self.IFC_model = ifcopenshell.api.run("project.create_file")
         self.IFC_project = ifcopenshell.api.run("root.create_entity", self.IFC_model, **{"ifc_class": "IfcProject"})
+        ifcopenshell.api.run("unit.assign_unit", self.IFC_model, length={"is_metric": True, "raw": "METERS"})
         self.properties["owner_history"] = self.create_owner_history()
-        ifcopenshell.api.run("unit.assign_unit", self.IFC_model)
         self.IFC_representation_context = ifcopenshell.api.run("context.add_context", self.IFC_model,
                                                                **{"context": "Model"})
         self.IFC_representation_sub_context = ifcopenshell.api.run("context.add_context", self.IFC_model,
                                                                 **{"context": "Model",
                                                                    "subcontext": "Body", # LODs as subcontext
                                                                    "target_view": "MODEL_VIEW"})
-
         self.IFC_site = ifcopenshell.api.run("root.create_entity", self.IFC_model,
                                                                 **{"ifc_class": "IfcSite",
                                                                    "name": "My Site"})
@@ -150,7 +149,7 @@ class Cityjson2ifc:
                 data.update(mapping[1])
 
             # attributes
-            IFC_name = None
+            IFC_name = obj_id
             if "name_attribute" in self.properties and self.properties["name_attribute"] in obj.attributes:
                 IFC_name = obj.attributes[self.properties["name_attribute"]]
 
@@ -175,25 +174,26 @@ class Cityjson2ifc:
                     child_data = {"GlobalId": ifcopenshell.guid.new(),
                                   "Name": IFC_child_class
                                   }
+
                     # CREATE ENTITY
                     surface_geometry = self.geometry.create_IFC_surface(self.IFC_model, geometry, surface_id)
                     if surface_geometry:
-                        child_data["Representation"] = self.create_IFC_representation(surface_geometry)
+                        child_data["Representation"] = self.create_IFC_representation(surface_geometry, 'brep')
                     IFC_children.append(self.IFC_model.create_entity(IFC_child_class, **child_data))
 
             else:
-                IFC_geometry = self.geometry.create_IFC_geometry(self.IFC_model, geometry)
+                IFC_geometry, shape_representation_type = self.geometry.create_IFC_geometry(self.IFC_model, geometry)
                 if IFC_geometry:
-                    data["Representation"] = self.create_IFC_representation(IFC_geometry)
+                    data["Representation"] = self.create_IFC_representation(IFC_geometry, shape_representation_type)
             data["GlobalId"] = ifcopenshell.guid.new()
             data["Name"] = IFC_name
 
             IFC_object = self.IFC_model.create_entity(IFC_class, **data)
             # Define aggregation
-            self.IFC_model.create_entity("IfcRelAggregates",
+            self.IFC_model.create_entity("IfcRelContainedInSpatialStructure",
                                          **{"GlobalId": ifcopenshell.guid.new(),
-                                            "RelatedObjects": [IFC_object],
-                                            "RelatingObject": self.IFC_site}
+                                            "RelatedElements": [IFC_object],
+                                            "RelatingStructure": self.IFC_site}
                                          )
             if IFC_children:
                 self.IFC_model.create_entity("IfcRelAggregates",
@@ -203,10 +203,13 @@ class Cityjson2ifc:
 
             self.create_property_set(obj.attributes, IFC_object)
 
-    def create_IFC_representation(self, IFC_geometry):
+    def create_IFC_representation(self, IFC_geometry, shape_representation_type):
+        if not isinstance(IFC_geometry, list):
+            IFC_geometry = [IFC_geometry]
+
         shape_representation = self.IFC_model.create_entity("IfcShapeRepresentation",
-                                                            self.IFC_representation_sub_context, 'Body', 'Brep',
-                                                            [IFC_geometry])
+                                                            self.IFC_representation_sub_context, 'Body', shape_representation_type,
+                                                            IFC_geometry)
         product_representation = self.IFC_model.create_entity("IfcProductDefinitionShape",
                                                               Representations=[shape_representation])
         return product_representation
