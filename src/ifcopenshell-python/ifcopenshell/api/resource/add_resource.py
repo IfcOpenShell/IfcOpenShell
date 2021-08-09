@@ -19,7 +19,7 @@ class Usecase:
             self.file,
             ifc_class=self.settings["ifc_class"],
             predefined_type=self.settings["predefined_type"],
-            name=self.settings["name"],
+            name=self.settings["name"] or "Unammed",
         )
         # TODO: this is an ambiguity by buildingSMART: Can we nest an IfcCrewResource under an IfcCrewResource ?
         # https://forums.buildingsmart.org/t/what-are-allowed-to-be-root-level-construction-resources/3550

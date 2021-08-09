@@ -18,6 +18,7 @@ from dateutil import parser, relativedelta
 from blenderbim.bim.ifc import IfcStore
 from bpy_extras.io_utils import ImportHelper
 from ifcopenshell.api.sequence.data import Data
+from ifcopenshell.api.resource.data import Data as ResourceData
 
 
 class AddWorkPlan(bpy.types.Operator):
@@ -534,7 +535,7 @@ class EnableEditingTaskTime(bpy.types.Operator):
 
     def add_task_time(self):
         task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=self.file.by_id(self.task))
-        Data.load(IfcStore.get_file())
+        Data.load(self.file)
         return task_time
 
 
@@ -1957,4 +1958,80 @@ class SetTaskSortColumn(bpy.types.Operator):
         self.props = context.scene.BIMWorkScheduleProperties
         self.props.sort_column = self.column
         bpy.ops.bim.enable_editing_tasks(work_schedule=self.props.active_work_schedule_id)
+        return {"FINISHED"}
+
+
+class EnableAssigningResources(bpy.types.Operator):
+    bl_idname = "bim.enable_assigning_resources"
+    bl_label = "Enable Assigning Resources To Tasks"
+    bl_options = {"REGISTER", "UNDO"}
+    task: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMWorkScheduleProperties
+        self.props.active_task_id = self.task
+        self.props.editing_task_type = "RESOURCES"
+        return {"FINISHED"}
+
+
+class AssignResource(bpy.types.Operator):
+    bl_idname = "bim.assign_resource"
+    bl_label = "Assign Resource"
+    bl_options = {"REGISTER", "UNDO"}
+    task: bpy.props.IntProperty()
+    parent_resource: bpy.props.IntProperty()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        self.file = IfcStore.get_file()
+        resource = ifcopenshell.api.run(
+            "resource.add_resource",
+            self.file,
+            **{
+                "parent_resource": self.file.by_id(self.parent_resource),
+                "ifc_class": self.file.by_id(self.parent_resource).is_a(),
+                "name": self.file.by_id(self.parent_resource).Name + ": " + self.file.by_id(self.task).Name,
+            },
+        )
+        ifcopenshell.api.run(
+            "sequence.assign_process",
+            self.file,
+            **{
+                "related_object": resource,
+                "relating_process": self.file.by_id(self.task),
+            },
+        )
+        Data.load(self.file)
+        ResourceData.load(self.file)
+        bpy.ops.bim.load_resources()
+        return {"FINISHED"}
+
+class UnassignResource(bpy.types.Operator):
+    bl_idname = "bim.unassign_resource"
+    bl_label = "Unassign Resource"
+    bl_options = {"REGISTER", "UNDO"}
+    task: bpy.props.IntProperty()
+    resource: bpy.props.IntProperty()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "sequence.unassign_process",
+            self.file,
+            related_object=self.file.by_id(self.resource),
+            relating_process=self.file.by_id(self.task),
+        )
+        ifcopenshell.api.run(
+            "resource.remove_resource",
+            self.file,
+            resource=self.file.by_id(self.resource),
+        )
+        Data.load(self.file)
+        ResourceData.load(self.file)
+        bpy.ops.bim.load_resources()
         return {"FINISHED"}
