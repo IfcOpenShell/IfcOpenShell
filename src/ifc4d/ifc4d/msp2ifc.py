@@ -1,10 +1,29 @@
+
+# Ifc4D - IFC scheduling utility
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of Ifc4D.
+#
+# Ifc4D is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Ifc4D is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Ifc4D.  If not, see <http://www.gnu.org/licenses/>.
+
 import datetime
 from datetime import timedelta
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.date
 import xml.etree.ElementTree as ET
-import blenderbim.bim.ifc
+
 
 class MSP2Ifc:
     def __init__(self):
@@ -18,15 +37,6 @@ class MSP2Ifc:
         self.root_activites = []
         self.tasks = {}
         self.relationships = {}
-        self.day_map = {
-            "1": 1,
-            "2": 2,
-            "3": 3,
-            "4": 4,
-            "5": 5,
-            "6": 6,
-            "7": 7,
-        }
 
     def execute(self):
         self.parse_xml()
@@ -42,7 +52,6 @@ class MSP2Ifc:
         self.parse_task_xml(project)
         self.parse_calendar_xml(project)
 
-
     def parse_relationship_xml(self, task):
         relationships = {}
         id = 0
@@ -50,7 +59,7 @@ class MSP2Ifc:
             for relationship in task.findall("pr:PredecessorLink", self.ns):
                 relationships[id] = {
                     "PredecessorTask": relationship.find("pr:PredecessorUID", self.ns).text,
-                    "Type": relationship.find("pr:Type", self.ns).text
+                    "Type": relationship.find("pr:Type", self.ns).text,
                 }
                 id += 1
         return relationships
@@ -64,7 +73,7 @@ class MSP2Ifc:
             outline_level = int(task.find("pr:OutlineLevel", self.ns).text)
 
             if outline_level != 0:
-                parent_task = self.tasks[self.outline_parents[outline_level-1]]
+                parent_task = self.tasks[self.outline_parents[outline_level - 1]]
                 parent_task["subtasks"].append(task_id)
             self.outline_level = outline_level
             self.outline_parents[outline_level] = task_id
@@ -75,7 +84,7 @@ class MSP2Ifc:
                 "OutlineLevel": outline_level,
                 "Start": datetime.datetime.fromisoformat(task.find("pr:Start", self.ns).text),
                 "Finish": datetime.datetime.fromisoformat(task.find("pr:Finish", self.ns).text),
-                "Duration":  ifcopenshell.util.date.ifc2datetime(task.find("pr:Duration", self.ns).text),
+                "Duration": ifcopenshell.util.date.ifc2datetime(task.find("pr:Duration", self.ns).text),
                 "Priority": task.find("pr:Priority", self.ns).text,
                 "CalendarUID": task.find("pr:CalendarUID", self.ns).text,
                 "PredecessorTasks": relationships if relationships else None,
@@ -83,14 +92,11 @@ class MSP2Ifc:
                 "ifc": None,
             }
 
-
     def parse_calendar_xml(self, project):
         for calendar in project.find("pr:Calendars", self.ns).findall("pr:Calendar", self.ns):
             calendar_id = calendar.find("pr:UID", self.ns).text
             week_days = []
-            for week_day in calendar.find("pr:WeekDays", self.ns).findall(
-                "pr:WeekDay", self.ns
-            ):
+            for week_day in calendar.find("pr:WeekDays", self.ns).findall("pr:WeekDay", self.ns):
                 working_times = []
                 if week_day.find("pr:WorkingTimes", self.ns):
                     for working_time in week_day.find("pr:WorkingTimes", self.ns).findall("pr:WorkingTime", self.ns):
@@ -117,7 +123,7 @@ class MSP2Ifc:
 
     def create_ifc(self):
         if not self.file:
-            self.file = self.create_boilerplate_ifc()
+            self.create_boilerplate_ifc()
         if not self.work_plan:
             self.work_plan = ifcopenshell.api.run("sequence.add_work_plan", self.file)
         work_schedule = self.create_work_schedule()
@@ -142,9 +148,7 @@ class MSP2Ifc:
 
     def create_calendars(self):
         for calendar in self.calendars.values():
-            calendar["ifc"] = ifcopenshell.api.run(
-                "sequence.add_work_calendar", self.file, name=calendar["Name"]
-            )
+            calendar["ifc"] = ifcopenshell.api.run("sequence.add_work_calendar", self.file, name=calendar["Name"])
             self.process_working_week(calendar["StandardWorkWeek"], calendar["ifc"])
 
     def create_task(self, task, work_schedule=None, parent_task=None):
@@ -188,12 +192,12 @@ class MSP2Ifc:
                 "sequence.add_work_time", self.file, work_calendar=calendar, time_type="WorkingTimes"
             )
 
-            weekday_component = [self.day_map[day["DayType"]]]
+            weekday_component = [int(day["DayType"])]
             for day2 in week:
                 if day["DayType"] == day2["DayType"]:
                     continue
                 if day["WorkingTimes"] == day2["WorkingTimes"]:
-                    weekday_component.append(self.day_map[day2["DayType"]])
+                    weekday_component.append(int(day2["DayType"]))
                     # Don't process the next day, as we can group it
                     day2["ifc"] = day["ifc"]
 
@@ -238,13 +242,13 @@ class MSP2Ifc:
                 rel_sequence = ifcopenshell.api.run(
                     "sequence.assign_sequence",
                     self.file,
-                    related_process = task["ifc"],
-                    relating_process = self.tasks[predecessor["PredecessorTask"]]["ifc"]
+                    related_process=task["ifc"],
+                    relating_process=self.tasks[predecessor["PredecessorTask"]]["ifc"],
                 )
                 if predecessor["Type"]:
                     ifcopenshell.api.run(
                         "sequence.edit_sequence",
                         self.file,
                         rel_sequence=rel_sequence,
-                        attributes={"SequenceType": self.sequence_type_map[predecessor["Type"]]}
+                        attributes={"SequenceType": self.sequence_type_map[predecessor["Type"]]},
                     )

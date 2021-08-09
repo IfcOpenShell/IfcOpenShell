@@ -197,6 +197,22 @@ def get_property_unit(prop, ifc_file):
         return units[0]
 
 
+def get_symbol_quantity_class(symbol):
+    if not symbol:
+        return "IfcQuantityCount"
+    elif symbol[-1:] == "g":
+        return "IfcQuantityWeight"
+    elif symbol[-1:] == "s" or symbol == "hr":
+        return "IfcQuantityTime"
+    elif symbol[-1:] == "3":
+        return "IfcQuantityVolume"
+    elif symbol[-1:] == "2":
+        return "IfcQuantityArea"
+    elif symbol[-1:] == "m" or symbol in ["in", "ft", "yd"]:
+        return "IfcQuantityLength"
+    return "IfcQuantityCount"
+
+
 def get_unit_symbol(unit):
     if unit.is_a("IfcSIUnit"):
         symbol = ""

@@ -231,6 +231,7 @@ blenderbim | GPL-3.0-or-later
 bsdd | LGPL-3.0-or-later
 ifc2ca | LGPL-3.0-or-later
 ifc4d | LGPL-3.0-or-later
+ifc5d | LGPL-3.0-or-later
 ifcbimtester | LGPL-3.0-or-later
 ifcblender | LGPL-3.0-or-later\*
 ifccityjson | LGPL-3.0-or-later
