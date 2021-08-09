@@ -18,6 +18,13 @@ class Usecase:
             except:
                 pass
             return self.append_type_product()
+        elif self.settings["element"].is_a("IfcMaterial"):
+            if [e for e in self.file.by_type("IfcMaterial") if e.Name == self.settings["element"].Name]:
+                return
+            return self.append_material()
+
+    def append_material(self):
+        return self.file.add(self.settings["element"])
 
     def append_type_product(self):
         self.whitelisted_inverse_attributes = {
