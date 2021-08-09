@@ -198,17 +198,19 @@ def get_property_unit(prop, ifc_file):
 
 
 def get_symbol_quantity_class(symbol):
+    # Dumb, but everybody gets it, unlike regex golf
     if not symbol:
         return "IfcQuantityCount"
-    elif symbol[-1:] == "g":
+    symbol = symbol.lower()
+    if symbol in ["kg", "g", "mt", "kt", "t"]:
         return "IfcQuantityWeight"
-    elif symbol[-1:] == "s" or symbol == "hr":
+    elif symbol in ["day", "d", "hour", "hr", "h", "minute", "min", "m", "second", "sec", "s"]:
         return "IfcQuantityTime"
-    elif symbol[-1:] == "3":
+    elif symbol in ["km3", "m3", "cm3", "mm3", "cy", "cft", "cin"]:
         return "IfcQuantityVolume"
-    elif symbol[-1:] == "2":
+    elif symbol in ["km2", "m2", "cm2", "mm2", "sqy", "sqft", "sqin"]:
         return "IfcQuantityArea"
-    elif symbol[-1:] == "m" or symbol in ["in", "ft", "yd"]:
+    elif symbol in ["km", "m", "cm", "mm", "ly", "lf", "lin", "yd", "ft", "in"]:
         return "IfcQuantityLength"
     return "IfcQuantityCount"
 
