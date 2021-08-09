@@ -69,8 +69,12 @@ class Data:
         if cost_item.CostQuantities:
             quantity = cost_item.CostQuantities[0]
             unit = ifcopenshell.util.unit.get_property_unit(quantity, cls.file)
-            data["Unit"] = unit.id()
-            data["UnitSymbol"] = ifcopenshell.util.unit.get_unit_symbol(unit)
+            if unit:
+                data["Unit"] = unit.id()
+                data["UnitSymbol"] = ifcopenshell.util.unit.get_unit_symbol(unit)
+            else:
+                data["Unit"] = None
+                data["UnitSymbol"] = None
 
     @classmethod
     def load_cost_item_values(cls, cost_item, data):

@@ -1,10 +1,12 @@
 import os
 import bpy
 import json
+import time
 import ifcopenshell.api
 import blenderbim.bim.helper
 from blenderbim.bim.module.cost.prop import purge
 from blenderbim.bim.ifc import IfcStore
+from bpy_extras.io_utils import ImportHelper
 from ifcopenshell.api.cost.data import Data
 
 
@@ -650,3 +652,24 @@ class SelectCostScheduleProducts(bpy.types.Operator):
         self.related_products.extend(cost_item["Controls"])
         for child_id in cost_item["IsNestedBy"]:
             self.get_related_products(Data.cost_items[child_id])
+
+
+class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper):
+    bl_idname = "import_cost_schedule_csv.bim"
+    bl_label = "Import Cost Schedule CSV"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".csv"
+    filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
+
+    def execute(self, context):
+        from ifc5d.csv2ifc import Csv2Ifc
+
+        self.file = IfcStore.get_file()
+        start = time.time()
+        csv2ifc = Csv2Ifc()
+        csv2ifc.csv = self.filepath
+        csv2ifc.file = self.file
+        csv2ifc.execute()
+        Data.load(IfcStore.get_file())
+        print("Import finished in {:.2f} seconds".format(time.time() - start))
+        return {"FINISHED"}

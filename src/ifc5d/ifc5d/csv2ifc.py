@@ -77,6 +77,9 @@ class Csv2Ifc:
             if cost_item["CostValues"]:
                 cost_value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=cost_item["ifc"])
                 cost_value.AppliedValue = self.file.createIfcReal(cost_item["CostValues"])
+            else:
+                cost_value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=cost_item["ifc"])
+                cost_value.Category = "*"
             if cost_item["CostQuantities"]:
                 quantity_class = ifcopenshell.util.unit.get_symbol_quantity_class(cost_item["CostQuantitiesUnit"])
                 quantity = ifcopenshell.api.run(
