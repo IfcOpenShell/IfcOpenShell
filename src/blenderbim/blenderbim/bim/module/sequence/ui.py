@@ -316,7 +316,7 @@ class BIM_UL_task_columns(UIList):
             row.prop(item, "name", emboss=False, text="")
             if props.sort_column == item.name:
                 row.label(text="", icon="SORTALPHA")
-            row.operator("bim.remove_task_column", text="", icon="X")
+            row.operator("bim.remove_task_column", text="", icon="X").name = item.name
 
 
 class BIM_UL_tasks(UIList):
