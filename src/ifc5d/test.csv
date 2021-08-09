@@ -1,0 +1,10 @@
+1,"Demolition",,,
+2,"Building A",,,
+3,"Soft strip",1,"m",5
+3,"Hard Strip",2,"m2",6
+3,"Hazmat",3,"m3",7
+,,,,
+2,"Building B",,,
+3,"Soft strip",4,"hr",8
+3,"Hard Strip",5,,9
+3,"Hazmat",6,"kg",10
