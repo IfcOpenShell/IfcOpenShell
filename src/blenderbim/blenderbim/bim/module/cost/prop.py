@@ -105,3 +105,7 @@ class BIMCostProperties(PropertyGroup):
     cost_category: StringProperty(name="Cost Category")
     active_cost_item_value_id: IntProperty(name="Active Cost Item Value Id")
     cost_value_attributes: CollectionProperty(name="Cost Value Attributes", type=Attribute)
+    cost_column: StringProperty(name="Cost Column")
+    should_show_column_ui: BoolProperty(name="Should Show Column UI", default=False)
+    columns: CollectionProperty(name="Columns", type=StrProperty)
+    active_column_index: IntProperty(name="Active Column Index")
