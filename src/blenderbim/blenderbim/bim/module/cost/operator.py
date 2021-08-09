@@ -673,3 +673,32 @@ class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper):
         Data.load(IfcStore.get_file())
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
+
+
+class AddCostColumn(bpy.types.Operator):
+    bl_idname = "bim.add_cost_column"
+    bl_label = "Add Cost Column"
+    bl_options = {"REGISTER", "UNDO"}
+    name: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMCostProperties
+        new = self.props.columns.add()
+        new.name = self.name
+        Data.set_categories([c.name for c in self.props.columns])
+        Data.load(IfcStore.get_file())
+        return {"FINISHED"}
+
+
+class RemoveCostColumn(bpy.types.Operator):
+    bl_idname = "bim.remove_cost_column"
+    bl_label = "Remove Cost Column"
+    bl_options = {"REGISTER", "UNDO"}
+    name: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMCostProperties
+        self.props.columns.remove(self.props.columns.find(self.name))
+        Data.set_categories([c.name for c in self.props.columns])
+        Data.load(IfcStore.get_file())
+        return {"FINISHED"}
