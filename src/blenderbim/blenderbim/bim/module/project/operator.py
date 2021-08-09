@@ -172,7 +172,7 @@ class RefreshLibrary(bpy.types.Operator):
         self.props.active_library_element = ""
 
         types = IfcStore.library_file.wrapped_data.types_with_super()
-        for importable_type in ["IfcTypeProduct", "IfcMaterial"]:
+        for importable_type in ["IfcTypeProduct", "IfcMaterial", "IfcCostSchedule"]:
             if importable_type in types:
                 new = self.props.library_elements.add()
                 new.name = importable_type
