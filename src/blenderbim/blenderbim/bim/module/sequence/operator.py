@@ -1941,10 +1941,11 @@ class RemoveTaskColumn(bpy.types.Operator):
     bl_idname = "bim.remove_task_column"
     bl_label = "Remove Task Column"
     bl_options = {"REGISTER", "UNDO"}
+    name: bpy.props.StringProperty()
 
     def execute(self, context):
         self.props = context.scene.BIMWorkScheduleProperties
-        self.props.columns.remove(self.props.active_column_index)
+        self.props.columns.remove(self.props.columns.find(self.name))
         return {"FINISHED"}
 
 
