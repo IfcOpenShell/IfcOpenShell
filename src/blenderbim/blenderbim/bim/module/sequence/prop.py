@@ -3,6 +3,7 @@ import ifcopenshell.api
 import ifcopenshell.util.attribute
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.sequence.data import Data
+from ifcopenshell.api.resource.data import Data as ResourceData
 from blenderbim.bim.prop import StrProperty, Attribute
 from dateutil import parser
 from bpy.types import PropertyGroup
@@ -208,6 +209,13 @@ def updateVisualisationStartFinish(self, context, startfinish):
         setattr(self, startfinish, canonical_value)
 
 
+def getResources(self, context):
+    self.file = IfcStore.get_file()
+    return [(str(k), v["Name"], "") for k, v in ResourceData.resources.items()
+    if self.file.by_id(k).Nests and self.file.by_id(k).Nests[0].RelatingObject.HasContext
+    ]
+
+
 class Task(PropertyGroup):
     name: StringProperty(name="Name", update=updateTaskName)
     identification: StringProperty(name="Identification", update=updateTaskIdentification)
@@ -297,6 +305,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
         name="Speed Type",
         default="FRAME_SPEED",
     )
+    resources: EnumProperty(items=getResources, name="Resources")
 
 
 class BIMTaskTreeProperties(PropertyGroup):
