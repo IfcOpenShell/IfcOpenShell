@@ -1,4 +1,3 @@
-
 # Ifc5D - IFC costing utility
 # Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -36,10 +35,20 @@ class Csv2Ifc:
 
     def parse_csv(self):
         self.parents = {}
+        self.headers = {}
         with open(self.csv, "r") as csv_file:
             reader = csv.reader(csv_file)
             for row in reader:
                 if not row[0]:
+                    continue
+                if row[0] == "Hierarchy":
+                    self.has_categories = True
+                    for i, col in enumerate(row):
+                        if not col:
+                            continue
+                        if col == "Value":
+                            self.has_categories = False
+                        self.headers[col] = i
                     continue
                 cost_data = self.get_row_cost_data(row)
                 hierarchy_key = int(row[0])
@@ -50,11 +59,23 @@ class Csv2Ifc:
                 self.parents[hierarchy_key] = cost_data
 
     def get_row_cost_data(self, row):
+        name = row[self.headers["Name"]]
+        cost_quantities = row[self.headers["Quantity"]]
+        cost_quantities_unit = row[self.headers["Unit"]]
+        if self.has_categories:
+            cost_values = {
+                k: float(row[v])
+                for k, v in self.headers.items()
+                if k not in ["Hierarchy", "Name", "Quantity", "Unit", "Subtotal"] and row[v]
+            }
+        else:
+            cost_values = row[self.headers["Value"]]
+            cost_values = float(cost_values) if cost_values else None
         return {
-            "Name": str(row[1]) if row[1] else None,
-            "CostQuantities": float(row[2]) if row[2] else None,
-            "CostQuantitiesUnit": str(row[3]) if row[3] else None,
-            "CostValues": float(row[4]) if row[4] else None,
+            "Name": str(name) if name else None,
+            "CostQuantities": float(cost_quantities) if cost_quantities else None,
+            "CostQuantitiesUnit": str(cost_quantities_unit) if cost_quantities_unit else None,
+            "CostValues": cost_values,
             "children": [],
         }
 
@@ -67,26 +88,37 @@ class Csv2Ifc:
 
     def create_cost_items(self, cost_items, parent=None):
         for cost_item in cost_items:
-            if parent is None:
-                cost_item["ifc"] = ifcopenshell.api.run(
-                    "cost.add_cost_item", self.file, cost_schedule=self.cost_schedule
-                )
-            else:
-                cost_item["ifc"] = ifcopenshell.api.run("cost.add_cost_item", self.file, cost_item=parent)
-            cost_item["ifc"].Name = cost_item["Name"]
-            if cost_item["CostValues"]:
+            self.create_cost_item(cost_item, parent)
+
+    def create_cost_item(self, cost_item, parent):
+        if parent is None:
+            cost_item["ifc"] = ifcopenshell.api.run(
+                "cost.add_cost_item", self.file, cost_schedule=self.cost_schedule
+            )
+        else:
+            cost_item["ifc"] = ifcopenshell.api.run("cost.add_cost_item", self.file, cost_item=parent)
+
+        cost_item["ifc"].Name = cost_item["Name"]
+
+        if not cost_item["CostValues"]:
+            cost_value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=cost_item["ifc"])
+            cost_value.Category = "*"
+        elif self.has_categories:
+            for category, value in cost_item["CostValues"].items():
                 cost_value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=cost_item["ifc"])
-                cost_value.AppliedValue = self.file.createIfcReal(cost_item["CostValues"])
-            else:
-                cost_value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=cost_item["ifc"])
-                cost_value.Category = "*"
-            if cost_item["CostQuantities"]:
-                quantity_class = ifcopenshell.util.unit.get_symbol_quantity_class(cost_item["CostQuantitiesUnit"])
-                quantity = ifcopenshell.api.run(
-                    "cost.add_cost_item_quantity", self.file, cost_item=cost_item["ifc"], ifc_class=quantity_class
-                )
-                quantity[3] = cost_item["CostQuantities"]
-            self.create_cost_items(cost_item["children"], cost_item["ifc"])
+                cost_value.AppliedValue = self.file.createIfcReal(value)
+                cost_value.Category = category
+        else:
+            cost_value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=cost_item["ifc"])
+            cost_value.AppliedValue = self.file.createIfcReal(cost_item["CostValues"])
+
+        if cost_item["CostQuantities"]:
+            quantity_class = ifcopenshell.util.unit.get_symbol_quantity_class(cost_item["CostQuantitiesUnit"])
+            quantity = ifcopenshell.api.run(
+                "cost.add_cost_item_quantity", self.file, cost_item=cost_item["ifc"], ifc_class=quantity_class
+            )
+            quantity[3] = cost_item["CostQuantities"]
+        self.create_cost_items(cost_item["children"], cost_item["ifc"])
 
     def create_boilerplate_ifc(self):
         self.file = ifcopenshell.file(schema="IFC4")
