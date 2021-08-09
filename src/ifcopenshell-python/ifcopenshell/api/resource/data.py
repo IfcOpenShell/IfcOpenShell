@@ -1,11 +1,13 @@
 class Data:
     is_loaded = False
     resources = {}
+    resource_times = {}
 
     @classmethod
     def purge(cls):
         cls.is_loaded = False
         cls.resources = {}
+        cls.resource_times = {}
 
     @classmethod
     def load(cls, file):
@@ -13,6 +15,7 @@ class Data:
         if not cls._file:
             return
         cls.load_resources()
+        cls.load_resource_times()
         cls.is_loaded=True
 
     @classmethod
@@ -31,4 +34,20 @@ class Data:
             for rel in resource.ResourceOf:
                 [data["ResourceOf"].append(o.id()) for o in rel.RelatedObjects]
             data["HasContext"] = resource.HasContext[0].RelatingContext.id() if resource.HasContext else None
+            if resource.Usage:
+                data["Usage"] = data["Usage"].id()
             cls.resources[resource.id()] = data
+
+    @classmethod
+    def load_resource_times(cls):
+        cls.resource_times = {}
+        for resource_time in cls._file.by_type("IfcResourceTime"):
+            data = resource_time.get_info()
+            for key, value in data.items():
+                if not value:
+                    continue
+                if "Start" in key or "Finish" in key or key == "StatusTime":
+                    data[key] = ifcopenshell.util.date.ifc2datetime(value)
+                elif "Work" in key or key =="LevelingDelay":
+                    data[key] = ifcopenshell.util.date.ifc2datetime(value)
+            cls.resource_times[resource_time.id()] = data
