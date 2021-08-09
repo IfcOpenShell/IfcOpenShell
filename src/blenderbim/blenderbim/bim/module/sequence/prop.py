@@ -282,7 +282,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
         ],
         name="Special Columns",
     )
-    active_task_time_id: IntProperty(name="Active Task Id")
+    active_task_time_id: IntProperty(name="Active Task Time Id")
     task_time_attributes: CollectionProperty(name="Task Time Attributes", type=Attribute)
     contracted_tasks: StringProperty(name="Contracted Task Items", default="[]")
     is_task_update_enabled: BoolProperty(name="Is Task Update Enabled", default=True)

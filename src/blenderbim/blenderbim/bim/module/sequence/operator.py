@@ -498,7 +498,7 @@ class RemoveTask(bpy.types.Operator):
 
 class EnableEditingTaskTime(bpy.types.Operator):
     bl_idname = "bim.enable_editing_task_time"
-    bl_label = "Enable Editing Task"
+    bl_label = "Enable Editing Task Time"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
 
