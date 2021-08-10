@@ -5,12 +5,11 @@ import numpy as np
 import datetime
 import zipfile
 import tempfile
-import ifcopenshell
-import ifcopenshell.util.placement
-import ifcopenshell.api
-from ifcopenshell.api.spatial.data import Data as SpatialData
-from blenderbim.bim.ifc import IfcStore
 import addon_utils
+import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.placement
+from blenderbim.bim.ifc import IfcStore
 
 
 class IfcExporter:
@@ -68,14 +67,14 @@ class IfcExporter:
 
         for ifc_definition_id, obj in IfcStore.id_map.items():
             try:
+                if isinstance(obj, bpy.types.Material):
+                    continue
                 self.sync_object_placement(obj)
                 self.sync_object_container(ifc_definition_id, obj)
             except ReferenceError:
                 pass  # The object is likely deleted
             if self.should_delete(obj):
                 to_delete.append(ifc_definition_id)
-
-        SpatialData.purge()
 
         for ifc_definition_id in to_delete:
             product = self.file.by_id(ifc_definition_id)
@@ -87,7 +86,10 @@ class IfcExporter:
             if not obj:
                 continue
             try:
-                bpy.ops.bim.update_representation(obj=obj.name)
+                if isinstance(obj, bpy.types.Material):
+                    bpy.ops.bim.update_style_colours(material=obj.name)
+                else:
+                    bpy.ops.bim.update_representation(obj=obj.name)
             except ReferenceError:
                 pass  # The object is likely deleted
         IfcStore.edited_objs.clear()

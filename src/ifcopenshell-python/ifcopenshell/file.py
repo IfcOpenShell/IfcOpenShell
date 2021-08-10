@@ -264,19 +264,44 @@ class file(object):
             eid = kwargs.pop("id", -1)
         except:
             pass
+
         e = entity_instance((self.schema, type), self)
-        self.wrapped_data.add(e.wrapped_data, eid)
-        e.wrapped_data.this.disown()
+
+        # Create pairs of {attribute index, attribute value}.
+        # Keyword arguments are mapped to their corresponding
+        # numeric index with get_argument_index().
+
+        # @todo we should probably check that values for
+        # attributes are not passed as duplicates using
+        # both regular arguments and keyword arguments.
         attrs = list(enumerate(args)) + [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
+
+        # Don't store these attributes as transactions
+        # as the creation it self is already stored with
+        # it's arguments
         if attrs:
             transaction = self.transaction
             self.transaction = None
+
         for idx, arg in attrs:
             e[idx] = arg
+
+        # Restore transaction status
         if attrs:
             self.transaction = transaction
+
+        # Once the values are populated add the instance
+        # to the file.
+        self.wrapped_data.add(e.wrapped_data, eid)
+
+        # The file container now handles the lifetime of
+        # this instance. Tell SWIG that it is no longer
+        # the owner.
+        e.wrapped_data.this.disown()
+
         if self.transaction:
             self.transaction.store_create(e)
+
         return e
 
     def __getattr__(self, attr):

@@ -19,6 +19,8 @@ classes = (
     operator.DisableEditingCostSchedule,
     operator.DisableEditingCostItemQuantity,
     operator.DisableEditingCostItemValue,
+    operator.AddCostColumn,
+    operator.RemoveCostColumn,
     operator.AddCostItem,
     operator.AddSummaryCostItem,
     operator.ExpandCostItem,
@@ -33,16 +35,24 @@ classes = (
     operator.CopyCostItemValues,
     operator.SelectCostItemProducts,
     operator.SelectCostScheduleProducts,
+    operator.ImportCostScheduleCsv,
     prop.CostItem,
     prop.BIMCostProperties,
     ui.BIM_PT_cost_schedules,
     ui.BIM_UL_cost_items,
+    ui.BIM_UL_cost_columns,
 )
+
+
+def menu_func_import(self, context):
+    self.layout.operator(operator.ImportCostScheduleCsv.bl_idname, text="Cost Schedule (.csv)")
 
 
 def register():
     bpy.types.Scene.BIMCostProperties = bpy.props.PointerProperty(type=prop.BIMCostProperties)
+    bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
 
 
 def unregister():
     del bpy.types.Scene.BIMCostProperties
+    bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)

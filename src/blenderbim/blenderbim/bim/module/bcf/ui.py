@@ -17,7 +17,7 @@ class BIM_PT_bcf(Panel):
         layout.use_property_decorate = False
 
         scene = context.scene
-        props = bpy.context.scene.BCFProperties
+        props = scene.BCFProperties
 
         row = layout.row(align=True)
         row.operator("bim.new_bcf_project", text="New Project")
@@ -34,7 +34,7 @@ class BIM_PT_bcf(Panel):
         row = layout.row()
         row.prop(props, "author")
 
-        props = bpy.context.scene.BCFProperties
+        props = context.scene.BCFProperties
         row = layout.row()
         row.template_list("BIM_UL_topics", "", props, "topics", props, "active_topic_index")
         col = row.column(align=True)
@@ -93,7 +93,7 @@ class BIM_PT_bcf_metadata(Panel):
         layout.use_property_decorate = False
 
         scene = context.scene
-        props = bpy.context.scene.BCFProperties
+        props = scene.BCFProperties
 
         if props.active_topic_index >= len(props.topics):
             layout.label(text="No BCF project is loaded")
@@ -236,7 +236,7 @@ class BIM_PT_bcf_comments(Panel):
         layout.use_property_decorate = False
 
         scene = context.scene
-        props = bpy.context.scene.BCFProperties
+        props = scene.BCFProperties
 
         if props.active_topic_index >= len(props.topics):
             layout.label(text="No BCF project is loaded")

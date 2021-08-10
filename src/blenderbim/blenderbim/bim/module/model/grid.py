@@ -12,7 +12,7 @@ def add_object(self, context):
 
     collection = bpy.data.collections.new(obj.name)
     has_site_collection = False
-    for child in bpy.context.view_layer.layer_collection.children:
+    for child in context.view_layer.layer_collection.children:
         if "IfcProject/" not in child.name:
             continue
         for grandchild in child.children:
@@ -22,7 +22,7 @@ def add_object(self, context):
             grandchild.collection.children.link(collection)
             break
     if not has_site_collection:
-        bpy.context.view_layer.active_layer_collection.collection.children.link(collection)
+        context.view_layer.active_layer_collection.collection.children.link(collection)
     collection.objects.link(obj)
 
     self.file = IfcStore.get_file()

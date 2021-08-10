@@ -31,4 +31,21 @@ Pipfile.lock
 # Vim
 *.swp
 
+# Flask
+instance/*
+!instance/.gitignore
+.webassets-cache
+.env
+*.db
+
+# Byte-compiled / optimized / DLL files
+*.py[cod]
+*$py.class
+
+# pipenv
+Pipfile
+Pipfile.lock
+
+# Database
+*.db
 

@@ -184,6 +184,9 @@ def create_shape(settings, inst, repr=None):
     or
     Return an OpenCASCADE BRep if settings.USE_PYTHON_OPENCASCADE == True
 
+    Note that in Python, you must store a reference to the element returned by this function to prevent garbage
+    collection when you access its children. See #1124.
+
     example:
 
     settings = ifcopenshell.geom.settings()
@@ -195,9 +198,12 @@ def create_shape(settings, inst, repr=None):
     for i, product in enumerate(products):
         if product.Representation is not None:
             try:
-                shape = geom.create_shape(settings, inst=product).geometry
+                created_shape = geom.create_shape(settings, inst=product)
+                shape = created_shape.geometry # see #1124
                 shape_gpXYZ = shape.Location().Transformation().TranslationPart() # These are methods of the TopoDS_Shape class from pythonOCC
                 print(shape_gpXYZ.X(), shape_gpXYZ.Y(), shape_gpXYZ.Z()) # These are methods of the gpXYZ class from pythonOCC
+            except:
+                print("Shape creation failed")
     """
     return wrap_shape_creation(
         settings,

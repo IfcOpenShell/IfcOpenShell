@@ -17,20 +17,32 @@ class BIM_PT_type(Panel):
             return False
         if not IfcStore.get_element(props.ifc_definition_id):
             return False
-        if props.ifc_definition_id not in Data.products:
+        if props.ifc_definition_id not in Data.products and props.ifc_definition_id not in Data.types:
             Data.load(IfcStore.get_file(), props.ifc_definition_id)
-        if not Data.products[props.ifc_definition_id]:
+        if props.ifc_definition_id not in Data.products and props.ifc_definition_id not in Data.types:
+            return False
+        if not Data.products.get(props.ifc_definition_id, None) and not Data.types.get(props.ifc_definition_id, None):
             return False
         return True
 
-
     def draw(self, context):
+        oprops = context.active_object.BIMObjectProperties
+
+        if oprops.ifc_definition_id in Data.products:
+            self.draw_product_ui(context)
+        else:
+            self.draw_type_ui(context)
+
+    def draw_type_ui(self, context):
         props = context.active_object.BIMTypeProperties
         oprops = context.active_object.BIMObjectProperties
-        if not oprops.ifc_definition_id:
-            return
-        if oprops.ifc_definition_id not in Data.products:
-            Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
+        row = self.layout.row(align=True)
+        row.label(text=f"{len(Data.types[oprops.ifc_definition_id])} Typed Objects")
+        row.operator("bim.select_type_objects", icon="RESTRICT_SELECT_OFF", text="")
+
+    def draw_product_ui(self, context):
+        props = context.active_object.BIMTypeProperties
+        oprops = context.active_object.BIMObjectProperties
 
         if props.is_editing_type:
             row = self.layout.row(align=True)

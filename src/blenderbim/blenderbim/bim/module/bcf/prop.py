@@ -23,37 +23,37 @@ def purge():
 
 
 def updateBcfReferenceLink(self, context):
-    if bpy.context.scene.BCFProperties.is_loaded:
+    if context.scene.BCFProperties.is_loaded:
         bpy.ops.bim.edit_bcf_reference_links()
 
 
 def updateBcfLabel(self, context):
-    if bpy.context.scene.BCFProperties.is_loaded:
+    if context.scene.BCFProperties.is_loaded:
         bpy.ops.bim.edit_bcf_labels()
 
 
 def updateBcfProjectName(self, context):
-    if bpy.context.scene.BCFProperties.is_loaded:
+    if context.scene.BCFProperties.is_loaded:
         bpy.ops.bim.edit_bcf_project_name()
 
 
 def updateBcfAuthor(self, context):
-    if bpy.context.scene.BCFProperties.is_loaded:
+    if context.scene.BCFProperties.is_loaded:
         bpy.ops.bim.edit_bcf_author()
 
 
 def updateBcfTopicName(self, context):
-    if bpy.context.scene.BCFProperties.is_loaded:
+    if context.scene.BCFProperties.is_loaded:
         bpy.ops.bim.edit_bcf_topic_name()
 
 
 def updateBcfTopicIsEditable(self, context):
-    if bpy.context.scene.BCFProperties.is_loaded and not self.is_editable:
+    if context.scene.BCFProperties.is_loaded and not self.is_editable:
         bpy.ops.bim.edit_bcf_topic()
 
 
 def updateBcfCommentIsEditable(self, context):
-    if bpy.context.scene.BCFProperties.is_loaded and not self.is_editable:
+    if context.scene.BCFProperties.is_loaded and not self.is_editable:
         bpy.ops.bim.edit_bcf_comment(comment_guid = self.name)
 
 
@@ -61,7 +61,7 @@ def refreshBcfTopic(self, context):
     global bcfviewpoints_enum
     bcfviewpoints_enum = None
 
-    props = bpy.context.scene.BCFProperties
+    props = context.scene.BCFProperties
     bcfxml = bcfstore.BcfStore.get_bcfxml()
     topic = props.topics[props.active_topic_index]
     header = bcfxml.get_header(topic.name)
@@ -80,7 +80,7 @@ def getBcfViewpoints(self, context):
     global bcfviewpoints_enum
     if bcfviewpoints_enum is None:
         bcfviewpoints_enum = []
-        props = bpy.context.scene.BCFProperties
+        props = context.scene.BCFProperties
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         topic = props.topics[props.active_topic_index]
         viewpoints = bcfxml.get_viewpoints(topic.name)

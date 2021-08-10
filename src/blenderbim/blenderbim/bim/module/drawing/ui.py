@@ -24,7 +24,7 @@ class BIM_PT_camera(Panel):
             return
 
         layout.use_property_split = True
-        dprops = bpy.context.scene.DocProperties
+        dprops = context.scene.DocProperties
         props = context.active_object.data.BIMCameraProperties
 
         col = layout.column(align=True)
@@ -92,7 +92,7 @@ class BIM_PT_drawing_underlay(Panel):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
-        dprops = bpy.context.scene.DocProperties
+        dprops = context.scene.DocProperties
         props = context.active_object.data.BIMCameraProperties
 
         row = layout.row(align=True)
@@ -142,7 +142,7 @@ class BIM_PT_drawings(Panel):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
-        props = bpy.context.scene.DocProperties
+        props = context.scene.DocProperties
 
         row = layout.row(align=True)
         row.operator("bim.add_drawing")
@@ -175,7 +175,7 @@ class BIM_PT_schedules(Panel):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
-        props = bpy.context.scene.DocProperties
+        props = context.scene.DocProperties
 
         row = layout.row(align=True)
         row.operator("bim.add_schedule")
@@ -200,7 +200,7 @@ class BIM_PT_sheets(Panel):
 
     def draw(self, context):
         layout = self.layout
-        props = bpy.context.scene.DocProperties
+        props = context.scene.DocProperties
 
         row = layout.row(align=True)
         row.prop(props, "titleblock", text="")
@@ -315,7 +315,7 @@ class BIM_PT_annotation_utilities(Panel):
         op.obj_name = "Misc"
         op.data_type = "mesh"
 
-        props = bpy.context.scene.DocProperties
+        props = context.scene.DocProperties
 
         row = layout.row(align=True)
         row.operator("bim.add_drawing")

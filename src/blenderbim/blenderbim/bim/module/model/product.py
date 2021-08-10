@@ -1,12 +1,13 @@
 import bpy
+import mathutils
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-from . import wall, slab, column
+from . import wall, slab, profile
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data as PsetData
-from mathutils import Vector
+from mathutils import Vector, Matrix
 
 
 class AddTypeInstance(bpy.types.Operator):
@@ -22,21 +23,22 @@ class AddTypeInstance(bpy.types.Operator):
     def _execute(self, context):
         tprops = context.scene.BIMTypeProperties
         ifc_class = self.ifc_class or tprops.ifc_class
-        relating_type = self.relating_type or tprops.relating_type
-        if not ifc_class or not relating_type:
+        relating_type_id = self.relating_type or tprops.relating_type
+        if not ifc_class or not relating_type_id:
             return {"FINISHED"}
         self.file = IfcStore.get_file()
         instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema)[0]
-        if ifc_class == "IfcWallType":
-            obj = wall.DumbWallGenerator(self.file.by_id(int(relating_type))).generate()
+        relating_type = self.file.by_id(int(relating_type_id))
+        material = ifcopenshell.util.element.get_material(relating_type)
+        if material.is_a("IfcMaterialProfileSet"):
+            obj = profile.DumbProfileGenerator(relating_type).generate()
             if obj:
                 return {"FINISHED"}
-        elif ifc_class == "IfcSlabType":
-            obj = slab.DumbSlabGenerator(self.file.by_id(int(relating_type))).generate()
-            if obj:
-                return {"FINISHED"}
-        elif ifc_class == "IfcColumnType":
-            obj = column.DumbColumnGenerator(self.file.by_id(int(relating_type))).generate()
+        elif material.is_a("IfcMaterialLayerSet"):
+            if ifc_class in ["IfcSlabType", "IfcRoofType", "IfcRampType", "IfcPlateType"]:
+                obj = slab.DumbSlabGenerator(relating_type).generate()
+            else:
+                obj = wall.DumbWallGenerator(relating_type).generate()
             if obj:
                 return {"FINISHED"}
         # A cube
@@ -63,13 +65,90 @@ class AddTypeInstance(bpy.types.Operator):
         mesh.from_pydata(verts, edges, faces)
         obj = bpy.data.objects.new("Instance", mesh)
         obj.location = context.scene.cursor.location
-        collection = bpy.context.view_layer.active_layer_collection.collection
+        collection = context.view_layer.active_layer_collection.collection
         collection.objects.link(obj)
         collection_obj = bpy.data.objects.get(collection.name)
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
         bpy.ops.bim.assign_type(relating_type=int(tprops.relating_type), related_object=obj.name)
         if collection_obj and collection_obj.BIMObjectProperties.ifc_definition_id:
             obj.location[2] = collection_obj.location[2] - min([v[2] for v in obj.bound_box])
+        return {"FINISHED"}
+
+
+class AlignProduct(bpy.types.Operator):
+    bl_idname = "bim.align_product"
+    bl_label = "Align Product"
+    bl_options = {"REGISTER", "UNDO"}
+    align_type: bpy.props.StringProperty()
+
+    def execute(self, context):
+        selected_objs = context.selected_objects
+        if len(selected_objs) < 2 or not context.active_object:
+            return {"FINISHED"}
+        if self.align_type == "CENTERLINE":
+            point = context.active_object.matrix_world @ (
+                Vector(context.active_object.bound_box[0]) + (context.active_object.dimensions / 2)
+            )
+        elif self.align_type == "POSITIVE":
+            point = context.active_object.matrix_world @ Vector(context.active_object.bound_box[6])
+        elif self.align_type == "NEGATIVE":
+            point = context.active_object.matrix_world @ Vector(context.active_object.bound_box[0])
+
+        active_x_axis = context.active_object.matrix_world.to_quaternion() @ Vector((1, 0, 0))
+        active_y_axis = context.active_object.matrix_world.to_quaternion() @ Vector((0, 1, 0))
+        active_z_axis = context.active_object.matrix_world.to_quaternion() @ Vector((0, 0, 1))
+
+        x_distances = self.get_axis_distances(point, active_x_axis, context)
+        y_distances = self.get_axis_distances(point, active_y_axis, context)
+        if abs(sum(x_distances)) < abs(sum(y_distances)):
+            for i, obj in enumerate(selected_objs):
+                obj.matrix_world = Matrix.Translation(active_x_axis * -x_distances[i]) @ obj.matrix_world
+        else:
+            for i, obj in enumerate(selected_objs):
+                obj.matrix_world = Matrix.Translation(active_y_axis * -y_distances[i]) @ obj.matrix_world
+        return {"FINISHED"}
+
+    def get_axis_distances(self, point, axis, context):
+        results = []
+        for obj in context.selected_objects:
+            if self.align_type == "CENTERLINE":
+                obj_point = obj.matrix_world @ (Vector(obj.bound_box[0]) + (obj.dimensions / 2))
+            elif self.align_type == "POSITIVE":
+                obj_point = obj.matrix_world @ Vector(obj.bound_box[6])
+            elif self.align_type == "NEGATIVE":
+                obj_point = obj.matrix_world @ Vector(obj.bound_box[0])
+            results.append(mathutils.geometry.distance_point_to_plane(obj_point, point, axis))
+        return results
+
+
+class DynamicallyVoidProduct(bpy.types.Operator):
+    bl_idname = "bim.dynamically_void_product"
+    bl_label = "Dynamically Void Product"
+    bl_options = {"REGISTER", "UNDO"}
+    obj: bpy.props.StringProperty()
+
+    def execute(self, context):
+        obj = bpy.data.objects.get(self.obj)
+        product = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+        if not product.HasOpenings:
+            return {"FINISHED"}
+        if [m for m in obj.modifiers if m.type == "BOOLEAN"]:
+            return {"FINISHED"}
+        representation = ifcopenshell.util.representation.get_representation(product, "Model", "Body", "MODEL_VIEW")
+        if not representation:
+            return {"FINISHED"}
+        was_edit_mode = obj.mode == "EDIT"
+        if was_edit_mode:
+            bpy.ops.object.mode_set(mode="OBJECT")
+        bpy.ops.bim.switch_representation(
+            obj=obj.name,
+            should_switch_all_meshes=True,
+            should_reload=True,
+            ifc_definition_id=representation.id(),
+            disable_opening_subtractions=True,
+        )
+        if was_edit_mode:
+            bpy.ops.object.mode_set(mode="EDIT")
         return {"FINISHED"}
 
 
@@ -98,6 +177,7 @@ def generate_box(usecase_path, ifc_file, settings):
             **{"product": product, "representation": new_box}
         )
 
+
 def regenerate_profile_usage(usecase_path, ifc_file, settings):
     elements = []
     if ifc_file.schema == "IFC2X3":
@@ -117,4 +197,6 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
             continue
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if representation:
-            bpy.ops.bim.switch_representation(obj=obj.name, ifc_definition_id=representation.id(), should_reload=True)
+            bpy.ops.bim.switch_representation(
+                obj=obj.name, ifc_definition_id=representation.id(), should_reload=True, should_switch_all_meshes=True
+            )

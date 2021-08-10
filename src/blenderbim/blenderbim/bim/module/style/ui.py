@@ -20,14 +20,13 @@ class BIM_PT_style(Panel):
         )
 
     def draw(self, context):
-        props = context.active_object.active_material.BIMMaterialProperties
+        material = context.active_object.active_material
+        props = material.BIMMaterialProperties
         row = self.layout.row(align=True)
         if props.ifc_style_id:
-            row.operator("bim.update_style_colours", icon="GREASEPENCIL")
-            op = row.operator("bim.unlink_style", icon="UNLINKED", text="")
-            op.material = context.active_object.active_material.name
-            op = row.operator("bim.remove_style", icon="X", text="")
-            op.material = context.active_object.active_material.name
+            row.operator("bim.update_style_colours", icon="GREASEPENCIL").material = material.name
+            row.operator("bim.unlink_style", icon="UNLINKED", text="").material = material.name
+            row.operator("bim.remove_style", icon="X", text="").material = material.name
         else:
             row.operator("bim.add_style", icon="ADD")
 

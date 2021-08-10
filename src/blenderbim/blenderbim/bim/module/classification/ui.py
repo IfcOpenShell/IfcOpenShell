@@ -41,7 +41,7 @@ class BIM_PT_classifications(Panel):
         row = self.layout.row(align=True)
         row.prop(self.props.classification_attributes.get("Name"), "string_value", text="", icon="ASSET_MANAGER")
         row.operator("bim.edit_classification", text="", icon="CHECKMARK")
-        row.operator("bim.disable_editing_classification", text="", icon="X")
+        row.operator("bim.disable_editing_classification", text="", icon="CANCEL")
 
         for attribute in self.props.classification_attributes:
             if attribute.name == "Name":

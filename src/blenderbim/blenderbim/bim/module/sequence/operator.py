@@ -18,6 +18,7 @@ from dateutil import parser, relativedelta
 from blenderbim.bim.ifc import IfcStore
 from bpy_extras.io_utils import ImportHelper
 from ifcopenshell.api.sequence.data import Data
+from ifcopenshell.api.resource.data import Data as ResourceData
 
 
 class AddWorkPlan(bpy.types.Operator):
@@ -497,7 +498,7 @@ class RemoveTask(bpy.types.Operator):
 
 class EnableEditingTaskTime(bpy.types.Operator):
     bl_idname = "bim.enable_editing_task_time"
-    bl_label = "Enable Editing Task"
+    bl_label = "Enable Editing Task Time"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
 
@@ -534,7 +535,7 @@ class EnableEditingTaskTime(bpy.types.Operator):
 
     def add_task_time(self):
         task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=self.file.by_id(self.task))
-        Data.load(IfcStore.get_file())
+        Data.load(self.file)
         return task_time
 
 
@@ -753,7 +754,7 @@ class AssignProduct(bpy.types.Operator):
 
     def _execute(self, context):
         relating_products = (
-            [bpy.data.objects.get(self.relating_product)] if self.relating_product else bpy.context.selected_objects
+            [bpy.data.objects.get(self.relating_product)] if self.relating_product else context.selected_objects
         )
         for relating_product in relating_products:
             self.file = IfcStore.get_file()
@@ -779,7 +780,7 @@ class UnassignProduct(bpy.types.Operator):
 
     def _execute(self, context):
         relating_products = (
-            [bpy.data.objects.get(self.relating_product)] if self.relating_product else bpy.context.selected_objects
+            [bpy.data.objects.get(self.relating_product)] if self.relating_product else context.selected_objects
         )
         for relating_product in relating_products:
             self.file = IfcStore.get_file()
@@ -805,7 +806,7 @@ class AssignProcess(bpy.types.Operator):
 
     def _execute(self, context):
         related_objects = (
-            [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
+            [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
         )
         for related_object in related_objects:
             self.file = IfcStore.get_file()
@@ -831,7 +832,7 @@ class UnassignProcess(bpy.types.Operator):
 
     def _execute(self, context):
         related_objects = (
-            [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
+            [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
         )
         for related_object in related_objects:
             self.file = IfcStore.get_file()
@@ -864,10 +865,10 @@ class GenerateGanttChart(bpy.types.Operator):
         }
         for task_id in Data.work_schedules[self.work_schedule]["RelatedObjects"]:
             self.create_new_task_json(task_id)
-        with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"), "w") as f:
-            with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.mustache"), "r") as t:
+        with open(os.path.join(context.scene.BIMProperties.data_dir, "gantt", "index.html"), "w") as f:
+            with open(os.path.join(context.scene.BIMProperties.data_dir, "gantt", "index.mustache"), "r") as t:
                 f.write(pystache.render(t.read(), {"json_data": json.dumps(self.json)}))
-        webbrowser.open("file://" + os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"))
+        webbrowser.open("file://" + os.path.join(context.scene.BIMProperties.data_dir, "gantt", "index.html"))
         return {"FINISHED"}
 
     def create_new_task_json(self, task_id):
@@ -996,7 +997,7 @@ class ImportP6(bpy.types.Operator, ImportHelper):
     filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
 
     def execute(self, context):
-        from ifcp6.p62ifc import P62Ifc
+        from ifc4d.p62ifc import P62Ifc
 
         self.file = IfcStore.get_file()
         start = time.time()
@@ -1018,7 +1019,7 @@ class ImportMSP(bpy.types.Operator, ImportHelper):
     filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
 
     def execute(self, context):
-        from ifcp6.msp2ifc import MSP2Ifc
+        from ifc4d.msp2ifc import MSP2Ifc
 
         self.file = IfcStore.get_file()
         start = time.time()
@@ -1568,7 +1569,7 @@ class SelectTaskRelatedProducts(bpy.types.Operator):
         related_products = ifcopenshell.api.run(
             "sequence.get_related_products", self.file, **{"related_object": self.file.by_id(self.task)}
         )
-        for obj in bpy.context.visible_objects:
+        for obj in context.visible_objects:
             obj.select_set(False)
             if obj.BIMObjectProperties.ifc_definition_id in related_products:
                 obj.select_set(True)
@@ -1644,7 +1645,7 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         self.finish = parser.parse(self.props.visualisation_finish, dayfirst=True, fuzzy=True)
         self.duration = self.finish - self.start
         self.start_frame = 1
-        self.total_frames = self.calculate_total_frames()
+        self.total_frames = self.calculate_total_frames(context)
         self.preprocess_tasks()
         for obj in bpy.data.objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
@@ -1742,7 +1743,7 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
         obj.keyframe_insert(data_path="hide_viewport", frame=product_frame["COMPLETED"])
 
-    def calculate_total_frames(self):
+    def calculate_total_frames(self, context):
         if self.props.speed_types == "FRAME_SPEED":
             return self.calculate_using_frames(
                 self.start,
@@ -1754,7 +1755,7 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
             return self.calculate_using_duration(
                 self.start,
                 self.finish,
-                bpy.context.scene.render.fps,
+                context.scene.render.fps,
                 isodate.parse_duration(self.props.speed_animation_duration),
                 isodate.parse_duration(self.props.speed_real_duration),
             )
@@ -1762,7 +1763,7 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
             return self.calculate_using_multiplier(
                 self.start,
                 self.finish,
-                bpy.context.scene.render.fps,
+                context.scene.render.fps,
                 self.props.speed_multiplier,
             )
 
@@ -1940,10 +1941,11 @@ class RemoveTaskColumn(bpy.types.Operator):
     bl_idname = "bim.remove_task_column"
     bl_label = "Remove Task Column"
     bl_options = {"REGISTER", "UNDO"}
+    name: bpy.props.StringProperty()
 
     def execute(self, context):
         self.props = context.scene.BIMWorkScheduleProperties
-        self.props.columns.remove(self.props.active_column_index)
+        self.props.columns.remove(self.props.columns.find(self.name))
         return {"FINISHED"}
 
 
@@ -1957,4 +1959,80 @@ class SetTaskSortColumn(bpy.types.Operator):
         self.props = context.scene.BIMWorkScheduleProperties
         self.props.sort_column = self.column
         bpy.ops.bim.enable_editing_tasks(work_schedule=self.props.active_work_schedule_id)
+        return {"FINISHED"}
+
+
+class EnableAssigningResources(bpy.types.Operator):
+    bl_idname = "bim.enable_assigning_resources"
+    bl_label = "Enable Assigning Resources To Tasks"
+    bl_options = {"REGISTER", "UNDO"}
+    task: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMWorkScheduleProperties
+        self.props.active_task_id = self.task
+        self.props.editing_task_type = "RESOURCES"
+        return {"FINISHED"}
+
+
+class AssignResource(bpy.types.Operator):
+    bl_idname = "bim.assign_resource"
+    bl_label = "Assign Resource"
+    bl_options = {"REGISTER", "UNDO"}
+    task: bpy.props.IntProperty()
+    parent_resource: bpy.props.IntProperty()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        self.file = IfcStore.get_file()
+        resource = ifcopenshell.api.run(
+            "resource.add_resource",
+            self.file,
+            **{
+                "parent_resource": self.file.by_id(self.parent_resource),
+                "ifc_class": self.file.by_id(self.parent_resource).is_a(),
+                "name": self.file.by_id(self.parent_resource).Name + ": " + self.file.by_id(self.task).Name,
+            },
+        )
+        ifcopenshell.api.run(
+            "sequence.assign_process",
+            self.file,
+            **{
+                "related_object": resource,
+                "relating_process": self.file.by_id(self.task),
+            },
+        )
+        Data.load(self.file)
+        ResourceData.load(self.file)
+        bpy.ops.bim.load_resources()
+        return {"FINISHED"}
+
+class UnassignResource(bpy.types.Operator):
+    bl_idname = "bim.unassign_resource"
+    bl_label = "Unassign Resource"
+    bl_options = {"REGISTER", "UNDO"}
+    task: bpy.props.IntProperty()
+    resource: bpy.props.IntProperty()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run(
+            "sequence.unassign_process",
+            self.file,
+            related_object=self.file.by_id(self.resource),
+            relating_process=self.file.by_id(self.task),
+        )
+        ifcopenshell.api.run(
+            "resource.remove_resource",
+            self.file,
+            resource=self.file.by_id(self.resource),
+        )
+        Data.load(self.file)
+        ResourceData.load(self.file)
+        bpy.ops.bim.load_resources()
         return {"FINISHED"}

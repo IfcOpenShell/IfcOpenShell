@@ -54,8 +54,27 @@ class MaterialCreator:
         if not self.mesh or self.mesh.name in self.parsed_meshes:
             return
         self.parsed_meshes.add(self.mesh.name)
+        self.add_default_material(element)
         if self.parse_representations(element):
             self.assign_material_slots_to_faces()
+
+    def add_default_material(self, element):
+        element_material = ifcopenshell.util.element.get_material(element)
+        if not element_material:
+            return
+        for material in [m for m in self.ifc_importer.file.traverse(element_material) if m.is_a("IfcMaterial")]:
+            if not material.HasRepresentation:
+                continue
+            surface_style = [
+                s for s in self.ifc_importer.file.traverse(material.HasRepresentation[0]) if s.is_a("IfcSurfaceStyle")
+            ]
+            if surface_style:
+                self.mesh.materials.append(self.styles[surface_style[0].id()])
+                return
+        # For authoring convenience, we choose to assign a material, even if it has no surface style. See #1585.
+        for material in [m for m in self.ifc_importer.file.traverse(element_material) if m.is_a("IfcMaterial")]:
+            self.mesh.materials.append(self.materials[material.id()])
+            return
 
     def load_existing_materials(self):
         for material in bpy.data.materials:
@@ -134,12 +153,12 @@ class IfcImporter:
         self.settings_native.set(self.settings_native.INCLUDE_CURVES, True)
         self.settings_2d = ifcopenshell.geom.settings()
         self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
-        self.filter_mode = "BLACKLIST"
+        self.filter_mode = None
         self.include_elements = set()
         self.exclude_elements = set()
         self.project = None
         self.spatial_structure_elements = {}
-        self.elements = {}
+        self.elements = []
         self.type_collection = None
         self.type_products = {}
         self.openings = {}
@@ -159,8 +178,16 @@ class IfcImporter:
             self.time = time.time()
         print("{} :: {:.2f}".format(message, time.time() - self.time))
         self.time = time.time()
+        self.update_progress(self.progress + 1)
+
+    def update_progress(self, progress):
+        if progress <= 100:
+            self.progress = progress
+        bpy.context.window_manager.progress_update(self.progress)
 
     def execute(self):
+        bpy.context.window_manager.progress_begin(0, 100)
+        self.progress = 0
         self.profile_code("Starting import process")
         self.load_diff()
         self.profile_code("Load diff")
@@ -200,7 +227,7 @@ class IfcImporter:
         self.profile_code("Create native products")
         self.create_products()
         self.profile_code("Create products")
-        self.create_empty_products()
+        self.create_empty_and_2d_elements()
         self.profile_code("Create empty products")
         self.create_type_products()
         self.profile_code("Create type products")
@@ -228,6 +255,8 @@ class IfcImporter:
             self.profile_code("Mesh cleaning")
         self.set_default_context()
         self.profile_code("Setting default context")
+        self.update_progress(100)
+        bpy.context.window_manager.progress_end()
 
     def is_element_far_away(self, element, is_meters=True):
         try:
@@ -320,12 +349,15 @@ class IfcImporter:
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset:
             return
-        project = self.file.by_type("IfcProject")[0]
+        if self.file.schema == "IFC2X3":
+            project = self.file.by_type("IfcProject")[0]
+        else:
+            project = self.file.by_type("IfcContext")[0]
         site = self.find_decomposed_ifc_class(project, "IfcSite")
-        if site and self.is_element_far_away(site[0]):
+        if site and self.is_element_far_away(site[0], is_meters=False):
             return self.guess_georeferencing(site[0])
         building = self.find_decomposed_ifc_class(project, "IfcBuilding")
-        if building and self.is_element_far_away(building[0]):
+        if building and self.is_element_far_away(building[0], is_meters=False):
             return self.guess_georeferencing(building[0])
         return self.guess_absolute_coordinate()
 
@@ -450,7 +482,6 @@ class IfcImporter:
             grid_collection.objects.link(obj)
 
     def create_type_products(self):
-        type_products = self.file.by_type("IfcTypeProduct")
         for collection in self.project["blender"].children:
             if collection.name == "Types":
                 self.type_collection = collection
@@ -458,7 +489,15 @@ class IfcImporter:
         if not self.type_collection:
             self.type_collection = bpy.data.collections.new("Types")
             self.project["blender"].children.link(self.type_collection)
+
+        if self.filter_mode in ["WHITELIST", "BLACKLIST"]:
+            type_products = set([ifcopenshell.util.element.get_type(e) for e in self.elements])
+        else:
+            type_products = self.file.by_type("IfcTypeProduct")
+
         for type_product in type_products:
+            if not type_product:
+                continue
             self.create_type_product(type_product)
 
     def create_type_product(self, element):
@@ -546,12 +585,20 @@ class IfcImporter:
         if not valid_file:
             return False
         checkpoint = time.time()
-        total = 0
+        total_created = 0
+        approx_total_products = len(self.include_elements) or len(self.file.by_type("IfcElement"))
+        start_progress = self.progress
+        progress_range = 85 - start_progress
         while True:
-            total += 1
-            if total % 250 == 0:
-                print("{} elements processed in {:.2f}s ...".format(total, time.time() - checkpoint))
+            if total_created % 250 == 0:
+                print(
+                    "{} / ~{} elements processed in {:.2f}s ...".format(
+                        total_created, approx_total_products, time.time() - checkpoint
+                    )
+                )
                 checkpoint = time.time()
+                if approx_total_products:
+                    self.update_progress(((total_created / approx_total_products) * progress_range) + start_progress)
             shape = iterator.get()
             if shape:
                 product = self.file.by_id(shape.guid)
@@ -565,18 +612,32 @@ class IfcImporter:
                     pass
                 else:
                     self.create_product(product, shape)
+                    total_created += 1
             if not iterator.next():
                 break
         print("Done creating geometry")
 
-    def create_empty_products(self):
-        for element in self.file.by_type("IfcProduct"):
+    def create_empty_and_2d_elements(self):
+        curve_products = []
+
+        if self.filter_mode == "WHITELIST":
+            self.elements = self.include_elements
+        elif self.filter_mode == "BLACKLIST":
+            self.elements = [e for e in self.file.by_type("IfcElement") if e not in self.exclude_elements]
+        else:
+            self.elements = self.file.by_type("IfcElement")
+
+        for element in self.elements:
             if element.id() in self.added_data:
                 continue
             if element.is_a("IfcPort"):
                 continue
             if not element.Representation:
                 self.create_product(element)
+            else:
+                curve_products.append(element)
+        if curve_products:
+            self.create_curve_products(curve_products)
 
     def create_annotation(self):
         self.create_curve_products(self.file.by_type("IfcAnnotation"))
@@ -911,7 +972,6 @@ class IfcImporter:
 
     def set_ifc_file(self):
         bpy.context.scene.BIMProperties.ifc_file = self.ifc_import_settings.input_file
-        IfcStore.file = self.file
         IfcStore.path = self.ifc_import_settings.input_file
 
     def calculate_unit_scale(self):
@@ -947,8 +1007,13 @@ class IfcImporter:
                 )
 
     def create_project(self):
-        self.project = {"ifc": self.file.by_type("IfcProject")[0]}
-        self.project["blender"] = bpy.data.collections.new("IfcProject/{}".format(self.project["ifc"].Name))
+        if self.file.schema == "IFC2X3":
+            self.project = {"ifc": self.file.by_type("IfcProject")[0]}
+        else:
+            self.project = {"ifc": self.file.by_type("IfcContext")[0]}
+        self.project["blender"] = bpy.data.collections.new(
+            "{}/{}".format(self.project["ifc"].is_a(), self.project["ifc"].Name)
+        )
         obj = self.create_product(self.project["ifc"])
         if obj:
             self.project["blender"].objects.link(obj)
@@ -1012,10 +1077,14 @@ class IfcImporter:
 
     def create_materials(self):
         for material in self.file.by_type("IfcMaterial"):
-            blender_material = bpy.data.materials.new(material.Name)
-            self.link_element(material, blender_material)
-            self.material_creator.materials[material.id()] = blender_material
-            blender_material.use_fake_user = True
+            self.create_material(material)
+
+    def create_material(self, material):
+        blender_material = bpy.data.materials.new(material.Name)
+        self.link_element(material, blender_material)
+        self.material_creator.materials[material.id()] = blender_material
+        blender_material.use_fake_user = True
+        return blender_material
 
     def create_styles(self):
         parsed_styles = set()
@@ -1031,11 +1100,13 @@ class IfcImporter:
         for style in self.file.by_type("IfcSurfaceStyle"):
             if style.id() in parsed_styles:
                 continue
+            self.create_style(style)
+
+    def create_style(self, style, blender_material=None):
+        if not blender_material:
             name = style.Name or str(style.id())
             blender_material = bpy.data.materials.new(name)
-            self.create_style(style, blender_material)
 
-    def create_style(self, style, blender_material):
         old_definition_id = blender_material.BIMObjectProperties.ifc_definition_id
         if not old_definition_id:
             self.link_element(style, blender_material)
@@ -1077,7 +1148,7 @@ class IfcImporter:
                 self.place_object_in_spatial_tree(self.file.by_id(ifc_definition_id), obj)
 
     def place_object_in_spatial_tree(self, element, obj):
-        if element.is_a("IfcProject"):
+        if element.is_a() in ["IfcProject", "IfcProjectLibrary"]:
             return
         elif element.is_a("IfcTypeObject"):
             self.type_collection.objects.link(obj)

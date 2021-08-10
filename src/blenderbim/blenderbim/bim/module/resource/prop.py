@@ -52,3 +52,6 @@ class BIMResourceProperties(PropertyGroup):
     contracted_resources: StringProperty(name="Contracted Resources", default="[]")
     is_resource_update_enabled: BoolProperty(name="Is Resource Update Enabled", default=True)
     is_loaded: BoolProperty(name="Is Editing")
+    active_resource_time_id: IntProperty(name="Active Resource Usage Id")
+    resource_time_attributes: CollectionProperty(name="Resource Usage Attributes", type=Attribute)
+    editing_resource_type: StringProperty(name="Editing Resource Type")

@@ -104,12 +104,6 @@ class EditAttributes(bpy.types.Operator):
         ifcopenshell.api.run(
             "attribute.edit_attributes", self.file, **{"product": product, "attributes": attributes}
         )
-        if "Name" in attributes:
-            new_name = "{}/{}".format(product.is_a(), product.Name or "Unnamed")
-            collection = bpy.data.collections.get(obj.name)
-            if collection:
-                collection.name = new_name
-            obj.name = new_name
         Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         bpy.ops.bim.disable_editing_attributes(obj=obj.name, obj_type=self.obj_type)
         return {"FINISHED"}
@@ -121,11 +115,11 @@ class GenerateGlobalId(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        index = bpy.context.active_object.BIMAttributeProperties.attributes.find("GlobalId")
+        index = context.active_object.BIMAttributeProperties.attributes.find("GlobalId")
         if index >= 0:
-            global_id = bpy.context.active_object.BIMAttributeProperties.attributes[index]
+            global_id = context.active_object.BIMAttributeProperties.attributes[index]
         else:
-            global_id = bpy.context.active_object.BIMAttributeProperties.attributes.add()
+            global_id = context.active_object.BIMAttributeProperties.attributes.add()
         global_id.name = "GlobalId"
         global_id.data_type = "string"
         global_id.string_value = ifcopenshell.guid.new()

@@ -3,6 +3,8 @@ from . import ui, prop, operator
 
 classes = (
     operator.PrintIfcFile,
+    operator.PurgeIfcLinks,
+    operator.PrintObjectPlacement,
     operator.ValidateIfcFile,
     operator.ProfileImportIFC,
     operator.CreateAllShapes,

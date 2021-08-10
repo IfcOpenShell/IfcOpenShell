@@ -1160,12 +1160,14 @@ Ifc4::IfcActionRequestTypeEnum::IfcActionRequestTypeEnum(IfcEntityInstanceData* 
 }
 
 Ifc4::IfcActionRequestTypeEnum::IfcActionRequestTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcActionRequestTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcActionRequestTypeEnum::IfcActionRequestTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcActionRequestTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -1200,12 +1202,14 @@ Ifc4::IfcActionSourceTypeEnum::IfcActionSourceTypeEnum(IfcEntityInstanceData* e)
 }
 
 Ifc4::IfcActionSourceTypeEnum::IfcActionSourceTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcActionSourceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcActionSourceTypeEnum::IfcActionSourceTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcActionSourceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -1260,12 +1264,14 @@ Ifc4::IfcActionTypeEnum::IfcActionTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcActionTypeEnum::IfcActionTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcActionTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcActionTypeEnum::IfcActionTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcActionTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -1298,12 +1304,14 @@ Ifc4::IfcActuatorTypeEnum::IfcActuatorTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcActuatorTypeEnum::IfcActuatorTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcActuatorTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcActuatorTypeEnum::IfcActuatorTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcActuatorTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -1338,12 +1346,14 @@ Ifc4::IfcAddressTypeEnum::IfcAddressTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcAddressTypeEnum::IfcAddressTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcAddressTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcAddressTypeEnum::IfcAddressTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcAddressTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -1376,12 +1386,14 @@ Ifc4::IfcAirTerminalBoxTypeEnum::IfcAirTerminalBoxTypeEnum(IfcEntityInstanceData
 }
 
 Ifc4::IfcAirTerminalBoxTypeEnum::IfcAirTerminalBoxTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcAirTerminalBoxTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcAirTerminalBoxTypeEnum::IfcAirTerminalBoxTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcAirTerminalBoxTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -1414,12 +1426,14 @@ Ifc4::IfcAirTerminalTypeEnum::IfcAirTerminalTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcAirTerminalTypeEnum::IfcAirTerminalTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcAirTerminalTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcAirTerminalTypeEnum::IfcAirTerminalTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcAirTerminalTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -1453,12 +1467,14 @@ Ifc4::IfcAirToAirHeatRecoveryTypeEnum::IfcAirToAirHeatRecoveryTypeEnum(IfcEntity
 }
 
 Ifc4::IfcAirToAirHeatRecoveryTypeEnum::IfcAirToAirHeatRecoveryTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcAirToAirHeatRecoveryTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcAirToAirHeatRecoveryTypeEnum::IfcAirToAirHeatRecoveryTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcAirToAirHeatRecoveryTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -1497,12 +1513,14 @@ Ifc4::IfcAlarmTypeEnum::IfcAlarmTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcAlarmTypeEnum::IfcAlarmTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcAlarmTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcAlarmTypeEnum::IfcAlarmTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcAlarmTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -1538,12 +1556,14 @@ Ifc4::IfcAnalysisModelTypeEnum::IfcAnalysisModelTypeEnum(IfcEntityInstanceData* 
 }
 
 Ifc4::IfcAnalysisModelTypeEnum::IfcAnalysisModelTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcAnalysisModelTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcAnalysisModelTypeEnum::IfcAnalysisModelTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcAnalysisModelTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -1576,12 +1596,14 @@ Ifc4::IfcAnalysisTheoryTypeEnum::IfcAnalysisTheoryTypeEnum(IfcEntityInstanceData
 }
 
 Ifc4::IfcAnalysisTheoryTypeEnum::IfcAnalysisTheoryTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcAnalysisTheoryTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcAnalysisTheoryTypeEnum::IfcAnalysisTheoryTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcAnalysisTheoryTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -1615,12 +1637,14 @@ Ifc4::IfcArithmeticOperatorEnum::IfcArithmeticOperatorEnum(IfcEntityInstanceData
 }
 
 Ifc4::IfcArithmeticOperatorEnum::IfcArithmeticOperatorEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcArithmeticOperatorEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcArithmeticOperatorEnum::IfcArithmeticOperatorEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcArithmeticOperatorEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -1652,12 +1676,14 @@ Ifc4::IfcAssemblyPlaceEnum::IfcAssemblyPlaceEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcAssemblyPlaceEnum::IfcAssemblyPlaceEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcAssemblyPlaceEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcAssemblyPlaceEnum::IfcAssemblyPlaceEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcAssemblyPlaceEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -1688,12 +1714,14 @@ Ifc4::IfcAudioVisualApplianceTypeEnum::IfcAudioVisualApplianceTypeEnum(IfcEntity
 }
 
 Ifc4::IfcAudioVisualApplianceTypeEnum::IfcAudioVisualApplianceTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcAudioVisualApplianceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcAudioVisualApplianceTypeEnum::IfcAudioVisualApplianceTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcAudioVisualApplianceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -1734,12 +1762,14 @@ Ifc4::IfcBSplineCurveForm::IfcBSplineCurveForm(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcBSplineCurveForm::IfcBSplineCurveForm(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcBSplineCurveForm_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcBSplineCurveForm::IfcBSplineCurveForm(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcBSplineCurveForm_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -1773,12 +1803,14 @@ Ifc4::IfcBSplineSurfaceForm::IfcBSplineSurfaceForm(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcBSplineSurfaceForm::IfcBSplineSurfaceForm(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcBSplineSurfaceForm_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcBSplineSurfaceForm::IfcBSplineSurfaceForm(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcBSplineSurfaceForm_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -1817,12 +1849,14 @@ Ifc4::IfcBeamTypeEnum::IfcBeamTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcBeamTypeEnum::IfcBeamTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcBeamTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcBeamTypeEnum::IfcBeamTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcBeamTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -1858,12 +1892,14 @@ Ifc4::IfcBenchmarkEnum::IfcBenchmarkEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcBenchmarkEnum::IfcBenchmarkEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcBenchmarkEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcBenchmarkEnum::IfcBenchmarkEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcBenchmarkEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -1901,12 +1937,14 @@ Ifc4::IfcBoilerTypeEnum::IfcBoilerTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcBoilerTypeEnum::IfcBoilerTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcBoilerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcBoilerTypeEnum::IfcBoilerTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcBoilerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -1938,12 +1976,14 @@ Ifc4::IfcBooleanOperator::IfcBooleanOperator(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcBooleanOperator::IfcBooleanOperator(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcBooleanOperator_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcBooleanOperator::IfcBooleanOperator(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcBooleanOperator_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -1974,12 +2014,14 @@ Ifc4::IfcBuildingElementPartTypeEnum::IfcBuildingElementPartTypeEnum(IfcEntityIn
 }
 
 Ifc4::IfcBuildingElementPartTypeEnum::IfcBuildingElementPartTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcBuildingElementPartTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcBuildingElementPartTypeEnum::IfcBuildingElementPartTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcBuildingElementPartTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2011,12 +2053,14 @@ Ifc4::IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyTypeEnum(IfcEntity
 }
 
 Ifc4::IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcBuildingElementProxyTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcBuildingElementProxyTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2051,12 +2095,14 @@ Ifc4::IfcBuildingSystemTypeEnum::IfcBuildingSystemTypeEnum(IfcEntityInstanceData
 }
 
 Ifc4::IfcBuildingSystemTypeEnum::IfcBuildingSystemTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcBuildingSystemTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcBuildingSystemTypeEnum::IfcBuildingSystemTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcBuildingSystemTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2092,12 +2138,14 @@ Ifc4::IfcBurnerTypeEnum::IfcBurnerTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcBurnerTypeEnum::IfcBurnerTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcBurnerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcBurnerTypeEnum::IfcBurnerTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcBurnerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2127,12 +2175,14 @@ Ifc4::IfcCableCarrierFittingTypeEnum::IfcCableCarrierFittingTypeEnum(IfcEntityIn
 }
 
 Ifc4::IfcCableCarrierFittingTypeEnum::IfcCableCarrierFittingTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCableCarrierFittingTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcCableCarrierFittingTypeEnum::IfcCableCarrierFittingTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCableCarrierFittingTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2166,12 +2216,14 @@ Ifc4::IfcCableCarrierSegmentTypeEnum::IfcCableCarrierSegmentTypeEnum(IfcEntityIn
 }
 
 Ifc4::IfcCableCarrierSegmentTypeEnum::IfcCableCarrierSegmentTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCableCarrierSegmentTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcCableCarrierSegmentTypeEnum::IfcCableCarrierSegmentTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCableCarrierSegmentTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2205,12 +2257,14 @@ Ifc4::IfcCableFittingTypeEnum::IfcCableFittingTypeEnum(IfcEntityInstanceData* e)
 }
 
 Ifc4::IfcCableFittingTypeEnum::IfcCableFittingTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCableFittingTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcCableFittingTypeEnum::IfcCableFittingTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCableFittingTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2245,12 +2299,14 @@ Ifc4::IfcCableSegmentTypeEnum::IfcCableSegmentTypeEnum(IfcEntityInstanceData* e)
 }
 
 Ifc4::IfcCableSegmentTypeEnum::IfcCableSegmentTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCableSegmentTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcCableSegmentTypeEnum::IfcCableSegmentTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCableSegmentTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2284,12 +2340,14 @@ Ifc4::IfcChangeActionEnum::IfcChangeActionEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcChangeActionEnum::IfcChangeActionEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcChangeActionEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcChangeActionEnum::IfcChangeActionEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcChangeActionEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2322,12 +2380,14 @@ Ifc4::IfcChillerTypeEnum::IfcChillerTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcChillerTypeEnum::IfcChillerTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcChillerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcChillerTypeEnum::IfcChillerTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcChillerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2360,12 +2420,14 @@ Ifc4::IfcChimneyTypeEnum::IfcChimneyTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcChimneyTypeEnum::IfcChimneyTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcChimneyTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcChimneyTypeEnum::IfcChimneyTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcChimneyTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2395,12 +2457,14 @@ Ifc4::IfcCoilTypeEnum::IfcCoilTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcCoilTypeEnum::IfcCoilTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCoilTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcCoilTypeEnum::IfcCoilTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCoilTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2437,12 +2501,14 @@ Ifc4::IfcColumnTypeEnum::IfcColumnTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcColumnTypeEnum::IfcColumnTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcColumnTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcColumnTypeEnum::IfcColumnTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcColumnTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2474,12 +2540,14 @@ Ifc4::IfcCommunicationsApplianceTypeEnum::IfcCommunicationsApplianceTypeEnum(Ifc
 }
 
 Ifc4::IfcCommunicationsApplianceTypeEnum::IfcCommunicationsApplianceTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCommunicationsApplianceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcCommunicationsApplianceTypeEnum::IfcCommunicationsApplianceTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCommunicationsApplianceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2521,12 +2589,14 @@ Ifc4::IfcComplexPropertyTemplateTypeEnum::IfcComplexPropertyTemplateTypeEnum(Ifc
 }
 
 Ifc4::IfcComplexPropertyTemplateTypeEnum::IfcComplexPropertyTemplateTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcComplexPropertyTemplateTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcComplexPropertyTemplateTypeEnum::IfcComplexPropertyTemplateTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcComplexPropertyTemplateTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2556,12 +2626,14 @@ Ifc4::IfcCompressorTypeEnum::IfcCompressorTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcCompressorTypeEnum::IfcCompressorTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCompressorTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcCompressorTypeEnum::IfcCompressorTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCompressorTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2606,12 +2678,14 @@ Ifc4::IfcCondenserTypeEnum::IfcCondenserTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcCondenserTypeEnum::IfcCondenserTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCondenserTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcCondenserTypeEnum::IfcCondenserTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCondenserTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2648,12 +2722,14 @@ Ifc4::IfcConnectionTypeEnum::IfcConnectionTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcConnectionTypeEnum::IfcConnectionTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcConnectionTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcConnectionTypeEnum::IfcConnectionTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcConnectionTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2685,12 +2761,14 @@ Ifc4::IfcConstraintEnum::IfcConstraintEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcConstraintEnum::IfcConstraintEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcConstraintEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcConstraintEnum::IfcConstraintEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcConstraintEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2723,12 +2801,14 @@ Ifc4::IfcConstructionEquipmentResourceTypeEnum::IfcConstructionEquipmentResource
 }
 
 Ifc4::IfcConstructionEquipmentResourceTypeEnum::IfcConstructionEquipmentResourceTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcConstructionEquipmentResourceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcConstructionEquipmentResourceTypeEnum::IfcConstructionEquipmentResourceTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcConstructionEquipmentResourceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2766,12 +2846,14 @@ Ifc4::IfcConstructionMaterialResourceTypeEnum::IfcConstructionMaterialResourceTy
 }
 
 Ifc4::IfcConstructionMaterialResourceTypeEnum::IfcConstructionMaterialResourceTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcConstructionMaterialResourceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcConstructionMaterialResourceTypeEnum::IfcConstructionMaterialResourceTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcConstructionMaterialResourceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2810,12 +2892,14 @@ Ifc4::IfcConstructionProductResourceTypeEnum::IfcConstructionProductResourceType
 }
 
 Ifc4::IfcConstructionProductResourceTypeEnum::IfcConstructionProductResourceTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcConstructionProductResourceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcConstructionProductResourceTypeEnum::IfcConstructionProductResourceTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcConstructionProductResourceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2847,12 +2931,14 @@ Ifc4::IfcControllerTypeEnum::IfcControllerTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcControllerTypeEnum::IfcControllerTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcControllerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcControllerTypeEnum::IfcControllerTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcControllerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2887,12 +2973,14 @@ Ifc4::IfcCooledBeamTypeEnum::IfcCooledBeamTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcCooledBeamTypeEnum::IfcCooledBeamTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCooledBeamTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcCooledBeamTypeEnum::IfcCooledBeamTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCooledBeamTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2924,12 +3012,14 @@ Ifc4::IfcCoolingTowerTypeEnum::IfcCoolingTowerTypeEnum(IfcEntityInstanceData* e)
 }
 
 Ifc4::IfcCoolingTowerTypeEnum::IfcCoolingTowerTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCoolingTowerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcCoolingTowerTypeEnum::IfcCoolingTowerTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCoolingTowerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2962,12 +3052,14 @@ Ifc4::IfcCostItemTypeEnum::IfcCostItemTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcCostItemTypeEnum::IfcCostItemTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCostItemTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcCostItemTypeEnum::IfcCostItemTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCostItemTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -2997,12 +3089,14 @@ Ifc4::IfcCostScheduleTypeEnum::IfcCostScheduleTypeEnum(IfcEntityInstanceData* e)
 }
 
 Ifc4::IfcCostScheduleTypeEnum::IfcCostScheduleTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCostScheduleTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcCostScheduleTypeEnum::IfcCostScheduleTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCostScheduleTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -3039,12 +3133,14 @@ Ifc4::IfcCoveringTypeEnum::IfcCoveringTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcCoveringTypeEnum::IfcCoveringTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCoveringTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcCoveringTypeEnum::IfcCoveringTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCoveringTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -3084,12 +3180,14 @@ Ifc4::IfcCrewResourceTypeEnum::IfcCrewResourceTypeEnum(IfcEntityInstanceData* e)
 }
 
 Ifc4::IfcCrewResourceTypeEnum::IfcCrewResourceTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCrewResourceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcCrewResourceTypeEnum::IfcCrewResourceTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCrewResourceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -3121,12 +3219,14 @@ Ifc4::IfcCurtainWallTypeEnum::IfcCurtainWallTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcCurtainWallTypeEnum::IfcCurtainWallTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCurtainWallTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcCurtainWallTypeEnum::IfcCurtainWallTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCurtainWallTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -3156,12 +3256,14 @@ Ifc4::IfcCurveInterpolationEnum::IfcCurveInterpolationEnum(IfcEntityInstanceData
 }
 
 Ifc4::IfcCurveInterpolationEnum::IfcCurveInterpolationEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCurveInterpolationEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcCurveInterpolationEnum::IfcCurveInterpolationEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcCurveInterpolationEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -3193,12 +3295,14 @@ Ifc4::IfcDamperTypeEnum::IfcDamperTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcDamperTypeEnum::IfcDamperTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDamperTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcDamperTypeEnum::IfcDamperTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDamperTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -3239,12 +3343,14 @@ Ifc4::IfcDataOriginEnum::IfcDataOriginEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcDataOriginEnum::IfcDataOriginEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDataOriginEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcDataOriginEnum::IfcDataOriginEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDataOriginEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -3277,12 +3383,14 @@ Ifc4::IfcDerivedUnitEnum::IfcDerivedUnitEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcDerivedUnitEnum::IfcDerivedUnitEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDerivedUnitEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcDerivedUnitEnum::IfcDerivedUnitEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDerivedUnitEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -3363,12 +3471,14 @@ Ifc4::IfcDirectionSenseEnum::IfcDirectionSenseEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcDirectionSenseEnum::IfcDirectionSenseEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDirectionSenseEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcDirectionSenseEnum::IfcDirectionSenseEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDirectionSenseEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -3398,12 +3508,14 @@ Ifc4::IfcDiscreteAccessoryTypeEnum::IfcDiscreteAccessoryTypeEnum(IfcEntityInstan
 }
 
 Ifc4::IfcDiscreteAccessoryTypeEnum::IfcDiscreteAccessoryTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDiscreteAccessoryTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcDiscreteAccessoryTypeEnum::IfcDiscreteAccessoryTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDiscreteAccessoryTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -3436,12 +3548,14 @@ Ifc4::IfcDistributionChamberElementTypeEnum::IfcDistributionChamberElementTypeEn
 }
 
 Ifc4::IfcDistributionChamberElementTypeEnum::IfcDistributionChamberElementTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDistributionChamberElementTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcDistributionChamberElementTypeEnum::IfcDistributionChamberElementTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDistributionChamberElementTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -3479,12 +3593,14 @@ Ifc4::IfcDistributionPortTypeEnum::IfcDistributionPortTypeEnum(IfcEntityInstance
 }
 
 Ifc4::IfcDistributionPortTypeEnum::IfcDistributionPortTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDistributionPortTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcDistributionPortTypeEnum::IfcDistributionPortTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDistributionPortTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -3518,12 +3634,14 @@ Ifc4::IfcDistributionSystemEnum::IfcDistributionSystemEnum(IfcEntityInstanceData
 }
 
 Ifc4::IfcDistributionSystemEnum::IfcDistributionSystemEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDistributionSystemEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcDistributionSystemEnum::IfcDistributionSystemEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDistributionSystemEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -3595,12 +3713,14 @@ Ifc4::IfcDocumentConfidentialityEnum::IfcDocumentConfidentialityEnum(IfcEntityIn
 }
 
 Ifc4::IfcDocumentConfidentialityEnum::IfcDocumentConfidentialityEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDocumentConfidentialityEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcDocumentConfidentialityEnum::IfcDocumentConfidentialityEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDocumentConfidentialityEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -3634,12 +3754,14 @@ Ifc4::IfcDocumentStatusEnum::IfcDocumentStatusEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcDocumentStatusEnum::IfcDocumentStatusEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDocumentStatusEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcDocumentStatusEnum::IfcDocumentStatusEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDocumentStatusEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -3672,12 +3794,14 @@ Ifc4::IfcDoorPanelOperationEnum::IfcDoorPanelOperationEnum(IfcEntityInstanceData
 }
 
 Ifc4::IfcDoorPanelOperationEnum::IfcDoorPanelOperationEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDoorPanelOperationEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcDoorPanelOperationEnum::IfcDoorPanelOperationEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDoorPanelOperationEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -3714,12 +3838,14 @@ Ifc4::IfcDoorPanelPositionEnum::IfcDoorPanelPositionEnum(IfcEntityInstanceData* 
 }
 
 Ifc4::IfcDoorPanelPositionEnum::IfcDoorPanelPositionEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDoorPanelPositionEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcDoorPanelPositionEnum::IfcDoorPanelPositionEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDoorPanelPositionEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -3751,12 +3877,14 @@ Ifc4::IfcDoorStyleConstructionEnum::IfcDoorStyleConstructionEnum(IfcEntityInstan
 }
 
 Ifc4::IfcDoorStyleConstructionEnum::IfcDoorStyleConstructionEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDoorStyleConstructionEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcDoorStyleConstructionEnum::IfcDoorStyleConstructionEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDoorStyleConstructionEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -3793,12 +3921,14 @@ Ifc4::IfcDoorStyleOperationEnum::IfcDoorStyleOperationEnum(IfcEntityInstanceData
 }
 
 Ifc4::IfcDoorStyleOperationEnum::IfcDoorStyleOperationEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDoorStyleOperationEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcDoorStyleOperationEnum::IfcDoorStyleOperationEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDoorStyleOperationEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -3844,12 +3974,14 @@ Ifc4::IfcDoorTypeEnum::IfcDoorTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcDoorTypeEnum::IfcDoorTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDoorTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcDoorTypeEnum::IfcDoorTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDoorTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -3882,12 +4014,14 @@ Ifc4::IfcDoorTypeOperationEnum::IfcDoorTypeOperationEnum(IfcEntityInstanceData* 
 }
 
 Ifc4::IfcDoorTypeOperationEnum::IfcDoorTypeOperationEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDoorTypeOperationEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcDoorTypeOperationEnum::IfcDoorTypeOperationEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDoorTypeOperationEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -3935,12 +4069,14 @@ Ifc4::IfcDuctFittingTypeEnum::IfcDuctFittingTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcDuctFittingTypeEnum::IfcDuctFittingTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDuctFittingTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcDuctFittingTypeEnum::IfcDuctFittingTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDuctFittingTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -3977,12 +4113,14 @@ Ifc4::IfcDuctSegmentTypeEnum::IfcDuctSegmentTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcDuctSegmentTypeEnum::IfcDuctSegmentTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDuctSegmentTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcDuctSegmentTypeEnum::IfcDuctSegmentTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDuctSegmentTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4014,12 +4152,14 @@ Ifc4::IfcDuctSilencerTypeEnum::IfcDuctSilencerTypeEnum(IfcEntityInstanceData* e)
 }
 
 Ifc4::IfcDuctSilencerTypeEnum::IfcDuctSilencerTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDuctSilencerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcDuctSilencerTypeEnum::IfcDuctSilencerTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcDuctSilencerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4052,12 +4192,14 @@ Ifc4::IfcElectricApplianceTypeEnum::IfcElectricApplianceTypeEnum(IfcEntityInstan
 }
 
 Ifc4::IfcElectricApplianceTypeEnum::IfcElectricApplianceTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcElectricApplianceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcElectricApplianceTypeEnum::IfcElectricApplianceTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcElectricApplianceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4103,12 +4245,14 @@ Ifc4::IfcElectricDistributionBoardTypeEnum::IfcElectricDistributionBoardTypeEnum
 }
 
 Ifc4::IfcElectricDistributionBoardTypeEnum::IfcElectricDistributionBoardTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcElectricDistributionBoardTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcElectricDistributionBoardTypeEnum::IfcElectricDistributionBoardTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcElectricDistributionBoardTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4142,12 +4286,14 @@ Ifc4::IfcElectricFlowStorageDeviceTypeEnum::IfcElectricFlowStorageDeviceTypeEnum
 }
 
 Ifc4::IfcElectricFlowStorageDeviceTypeEnum::IfcElectricFlowStorageDeviceTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcElectricFlowStorageDeviceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcElectricFlowStorageDeviceTypeEnum::IfcElectricFlowStorageDeviceTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcElectricFlowStorageDeviceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4182,12 +4328,14 @@ Ifc4::IfcElectricGeneratorTypeEnum::IfcElectricGeneratorTypeEnum(IfcEntityInstan
 }
 
 Ifc4::IfcElectricGeneratorTypeEnum::IfcElectricGeneratorTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcElectricGeneratorTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcElectricGeneratorTypeEnum::IfcElectricGeneratorTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcElectricGeneratorTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4220,12 +4368,14 @@ Ifc4::IfcElectricMotorTypeEnum::IfcElectricMotorTypeEnum(IfcEntityInstanceData* 
 }
 
 Ifc4::IfcElectricMotorTypeEnum::IfcElectricMotorTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcElectricMotorTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcElectricMotorTypeEnum::IfcElectricMotorTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcElectricMotorTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4260,12 +4410,14 @@ Ifc4::IfcElectricTimeControlTypeEnum::IfcElectricTimeControlTypeEnum(IfcEntityIn
 }
 
 Ifc4::IfcElectricTimeControlTypeEnum::IfcElectricTimeControlTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcElectricTimeControlTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcElectricTimeControlTypeEnum::IfcElectricTimeControlTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcElectricTimeControlTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4298,12 +4450,14 @@ Ifc4::IfcElementAssemblyTypeEnum::IfcElementAssemblyTypeEnum(IfcEntityInstanceDa
 }
 
 Ifc4::IfcElementAssemblyTypeEnum::IfcElementAssemblyTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcElementAssemblyTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcElementAssemblyTypeEnum::IfcElementAssemblyTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcElementAssemblyTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4342,12 +4496,14 @@ Ifc4::IfcElementCompositionEnum::IfcElementCompositionEnum(IfcEntityInstanceData
 }
 
 Ifc4::IfcElementCompositionEnum::IfcElementCompositionEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcElementCompositionEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcElementCompositionEnum::IfcElementCompositionEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcElementCompositionEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4378,12 +4534,14 @@ Ifc4::IfcEngineTypeEnum::IfcEngineTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcEngineTypeEnum::IfcEngineTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcEngineTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcEngineTypeEnum::IfcEngineTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcEngineTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4415,12 +4573,14 @@ Ifc4::IfcEvaporativeCoolerTypeEnum::IfcEvaporativeCoolerTypeEnum(IfcEntityInstan
 }
 
 Ifc4::IfcEvaporativeCoolerTypeEnum::IfcEvaporativeCoolerTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcEvaporativeCoolerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcEvaporativeCoolerTypeEnum::IfcEvaporativeCoolerTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcEvaporativeCoolerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4459,12 +4619,14 @@ Ifc4::IfcEvaporatorTypeEnum::IfcEvaporatorTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcEvaporatorTypeEnum::IfcEvaporatorTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcEvaporatorTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcEvaporatorTypeEnum::IfcEvaporatorTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcEvaporatorTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4500,12 +4662,14 @@ Ifc4::IfcEventTriggerTypeEnum::IfcEventTriggerTypeEnum(IfcEntityInstanceData* e)
 }
 
 Ifc4::IfcEventTriggerTypeEnum::IfcEventTriggerTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcEventTriggerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcEventTriggerTypeEnum::IfcEventTriggerTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcEventTriggerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4539,12 +4703,14 @@ Ifc4::IfcEventTypeEnum::IfcEventTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcEventTypeEnum::IfcEventTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcEventTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcEventTypeEnum::IfcEventTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcEventTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4577,12 +4743,14 @@ Ifc4::IfcExternalSpatialElementTypeEnum::IfcExternalSpatialElementTypeEnum(IfcEn
 }
 
 Ifc4::IfcExternalSpatialElementTypeEnum::IfcExternalSpatialElementTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcExternalSpatialElementTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcExternalSpatialElementTypeEnum::IfcExternalSpatialElementTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcExternalSpatialElementTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4616,12 +4784,14 @@ Ifc4::IfcFanTypeEnum::IfcFanTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcFanTypeEnum::IfcFanTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcFanTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcFanTypeEnum::IfcFanTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcFanTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4658,12 +4828,14 @@ Ifc4::IfcFastenerTypeEnum::IfcFastenerTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcFastenerTypeEnum::IfcFastenerTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcFastenerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcFastenerTypeEnum::IfcFastenerTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcFastenerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4696,12 +4868,14 @@ Ifc4::IfcFilterTypeEnum::IfcFilterTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcFilterTypeEnum::IfcFilterTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcFilterTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcFilterTypeEnum::IfcFilterTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcFilterTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4737,12 +4911,14 @@ Ifc4::IfcFireSuppressionTerminalTypeEnum::IfcFireSuppressionTerminalTypeEnum(Ifc
 }
 
 Ifc4::IfcFireSuppressionTerminalTypeEnum::IfcFireSuppressionTerminalTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcFireSuppressionTerminalTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcFireSuppressionTerminalTypeEnum::IfcFireSuppressionTerminalTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcFireSuppressionTerminalTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4777,12 +4953,14 @@ Ifc4::IfcFlowDirectionEnum::IfcFlowDirectionEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcFlowDirectionEnum::IfcFlowDirectionEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcFlowDirectionEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcFlowDirectionEnum::IfcFlowDirectionEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcFlowDirectionEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4814,12 +4992,14 @@ Ifc4::IfcFlowInstrumentTypeEnum::IfcFlowInstrumentTypeEnum(IfcEntityInstanceData
 }
 
 Ifc4::IfcFlowInstrumentTypeEnum::IfcFlowInstrumentTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcFlowInstrumentTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcFlowInstrumentTypeEnum::IfcFlowInstrumentTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcFlowInstrumentTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4857,12 +5037,14 @@ Ifc4::IfcFlowMeterTypeEnum::IfcFlowMeterTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcFlowMeterTypeEnum::IfcFlowMeterTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcFlowMeterTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcFlowMeterTypeEnum::IfcFlowMeterTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcFlowMeterTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4896,12 +5078,14 @@ Ifc4::IfcFootingTypeEnum::IfcFootingTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcFootingTypeEnum::IfcFootingTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcFootingTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcFootingTypeEnum::IfcFootingTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcFootingTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4936,12 +5120,14 @@ Ifc4::IfcFurnitureTypeEnum::IfcFurnitureTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcFurnitureTypeEnum::IfcFurnitureTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcFurnitureTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcFurnitureTypeEnum::IfcFurnitureTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcFurnitureTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -4978,12 +5164,14 @@ Ifc4::IfcGeographicElementTypeEnum::IfcGeographicElementTypeEnum(IfcEntityInstan
 }
 
 Ifc4::IfcGeographicElementTypeEnum::IfcGeographicElementTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcGeographicElementTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcGeographicElementTypeEnum::IfcGeographicElementTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcGeographicElementTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5014,12 +5202,14 @@ Ifc4::IfcGeometricProjectionEnum::IfcGeometricProjectionEnum(IfcEntityInstanceDa
 }
 
 Ifc4::IfcGeometricProjectionEnum::IfcGeometricProjectionEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcGeometricProjectionEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcGeometricProjectionEnum::IfcGeometricProjectionEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcGeometricProjectionEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5056,12 +5246,14 @@ Ifc4::IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcGlobalOrLocalEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcGlobalOrLocalEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5091,12 +5283,14 @@ Ifc4::IfcGridTypeEnum::IfcGridTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcGridTypeEnum::IfcGridTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcGridTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcGridTypeEnum::IfcGridTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcGridTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5130,12 +5324,14 @@ Ifc4::IfcHeatExchangerTypeEnum::IfcHeatExchangerTypeEnum(IfcEntityInstanceData* 
 }
 
 Ifc4::IfcHeatExchangerTypeEnum::IfcHeatExchangerTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcHeatExchangerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcHeatExchangerTypeEnum::IfcHeatExchangerTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcHeatExchangerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5167,12 +5363,14 @@ Ifc4::IfcHumidifierTypeEnum::IfcHumidifierTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcHumidifierTypeEnum::IfcHumidifierTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcHumidifierTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcHumidifierTypeEnum::IfcHumidifierTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcHumidifierTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5215,12 +5413,14 @@ Ifc4::IfcInterceptorTypeEnum::IfcInterceptorTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcInterceptorTypeEnum::IfcInterceptorTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcInterceptorTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcInterceptorTypeEnum::IfcInterceptorTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcInterceptorTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5254,12 +5454,14 @@ Ifc4::IfcInternalOrExternalEnum::IfcInternalOrExternalEnum(IfcEntityInstanceData
 }
 
 Ifc4::IfcInternalOrExternalEnum::IfcInternalOrExternalEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcInternalOrExternalEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcInternalOrExternalEnum::IfcInternalOrExternalEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcInternalOrExternalEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5293,12 +5495,14 @@ Ifc4::IfcInventoryTypeEnum::IfcInventoryTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcInventoryTypeEnum::IfcInventoryTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcInventoryTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcInventoryTypeEnum::IfcInventoryTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcInventoryTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5331,12 +5535,14 @@ Ifc4::IfcJunctionBoxTypeEnum::IfcJunctionBoxTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcJunctionBoxTypeEnum::IfcJunctionBoxTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcJunctionBoxTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcJunctionBoxTypeEnum::IfcJunctionBoxTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcJunctionBoxTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5368,12 +5574,14 @@ Ifc4::IfcKnotType::IfcKnotType(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcKnotType::IfcKnotType(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcKnotType_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcKnotType::IfcKnotType(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcKnotType_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5405,12 +5613,14 @@ Ifc4::IfcLaborResourceTypeEnum::IfcLaborResourceTypeEnum(IfcEntityInstanceData* 
 }
 
 Ifc4::IfcLaborResourceTypeEnum::IfcLaborResourceTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcLaborResourceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcLaborResourceTypeEnum::IfcLaborResourceTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcLaborResourceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5459,12 +5669,14 @@ Ifc4::IfcLampTypeEnum::IfcLampTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcLampTypeEnum::IfcLampTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcLampTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcLampTypeEnum::IfcLampTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcLampTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5503,12 +5715,14 @@ Ifc4::IfcLayerSetDirectionEnum::IfcLayerSetDirectionEnum(IfcEntityInstanceData* 
 }
 
 Ifc4::IfcLayerSetDirectionEnum::IfcLayerSetDirectionEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcLayerSetDirectionEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcLayerSetDirectionEnum::IfcLayerSetDirectionEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcLayerSetDirectionEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5539,12 +5753,14 @@ Ifc4::IfcLightDistributionCurveEnum::IfcLightDistributionCurveEnum(IfcEntityInst
 }
 
 Ifc4::IfcLightDistributionCurveEnum::IfcLightDistributionCurveEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcLightDistributionCurveEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcLightDistributionCurveEnum::IfcLightDistributionCurveEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcLightDistributionCurveEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5576,12 +5792,14 @@ Ifc4::IfcLightEmissionSourceEnum::IfcLightEmissionSourceEnum(IfcEntityInstanceDa
 }
 
 Ifc4::IfcLightEmissionSourceEnum::IfcLightEmissionSourceEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcLightEmissionSourceEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcLightEmissionSourceEnum::IfcLightEmissionSourceEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcLightEmissionSourceEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5620,12 +5838,14 @@ Ifc4::IfcLightFixtureTypeEnum::IfcLightFixtureTypeEnum(IfcEntityInstanceData* e)
 }
 
 Ifc4::IfcLightFixtureTypeEnum::IfcLightFixtureTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcLightFixtureTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcLightFixtureTypeEnum::IfcLightFixtureTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcLightFixtureTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5658,12 +5878,14 @@ Ifc4::IfcLoadGroupTypeEnum::IfcLoadGroupTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcLoadGroupTypeEnum::IfcLoadGroupTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcLoadGroupTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcLoadGroupTypeEnum::IfcLoadGroupTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcLoadGroupTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5696,12 +5918,14 @@ Ifc4::IfcLogicalOperatorEnum::IfcLogicalOperatorEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcLogicalOperatorEnum::IfcLogicalOperatorEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcLogicalOperatorEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcLogicalOperatorEnum::IfcLogicalOperatorEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcLogicalOperatorEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5734,12 +5958,14 @@ Ifc4::IfcMechanicalFastenerTypeEnum::IfcMechanicalFastenerTypeEnum(IfcEntityInst
 }
 
 Ifc4::IfcMechanicalFastenerTypeEnum::IfcMechanicalFastenerTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcMechanicalFastenerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcMechanicalFastenerTypeEnum::IfcMechanicalFastenerTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcMechanicalFastenerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5779,12 +6005,14 @@ Ifc4::IfcMedicalDeviceTypeEnum::IfcMedicalDeviceTypeEnum(IfcEntityInstanceData* 
 }
 
 Ifc4::IfcMedicalDeviceTypeEnum::IfcMedicalDeviceTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcMedicalDeviceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcMedicalDeviceTypeEnum::IfcMedicalDeviceTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcMedicalDeviceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5819,12 +6047,14 @@ Ifc4::IfcMemberTypeEnum::IfcMemberTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcMemberTypeEnum::IfcMemberTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcMemberTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcMemberTypeEnum::IfcMemberTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcMemberTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5866,12 +6096,14 @@ Ifc4::IfcMotorConnectionTypeEnum::IfcMotorConnectionTypeEnum(IfcEntityInstanceDa
 }
 
 Ifc4::IfcMotorConnectionTypeEnum::IfcMotorConnectionTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcMotorConnectionTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcMotorConnectionTypeEnum::IfcMotorConnectionTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcMotorConnectionTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5904,12 +6136,14 @@ Ifc4::IfcNullStyle::IfcNullStyle(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcNullStyle::IfcNullStyle(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcNullStyle_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcNullStyle::IfcNullStyle(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcNullStyle_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5938,12 +6172,14 @@ Ifc4::IfcObjectTypeEnum::IfcObjectTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcObjectTypeEnum::IfcObjectTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcObjectTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcObjectTypeEnum::IfcObjectTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcObjectTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -5979,12 +6215,14 @@ Ifc4::IfcObjectiveEnum::IfcObjectiveEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcObjectiveEnum::IfcObjectiveEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcObjectiveEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcObjectiveEnum::IfcObjectiveEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcObjectiveEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6025,12 +6263,14 @@ Ifc4::IfcOccupantTypeEnum::IfcOccupantTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcOccupantTypeEnum::IfcOccupantTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcOccupantTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcOccupantTypeEnum::IfcOccupantTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcOccupantTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6067,12 +6307,14 @@ Ifc4::IfcOpeningElementTypeEnum::IfcOpeningElementTypeEnum(IfcEntityInstanceData
 }
 
 Ifc4::IfcOpeningElementTypeEnum::IfcOpeningElementTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcOpeningElementTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcOpeningElementTypeEnum::IfcOpeningElementTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcOpeningElementTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6104,12 +6346,14 @@ Ifc4::IfcOutletTypeEnum::IfcOutletTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcOutletTypeEnum::IfcOutletTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcOutletTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcOutletTypeEnum::IfcOutletTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcOutletTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6144,12 +6388,14 @@ Ifc4::IfcPerformanceHistoryTypeEnum::IfcPerformanceHistoryTypeEnum(IfcEntityInst
 }
 
 Ifc4::IfcPerformanceHistoryTypeEnum::IfcPerformanceHistoryTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPerformanceHistoryTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcPerformanceHistoryTypeEnum::IfcPerformanceHistoryTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPerformanceHistoryTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6179,12 +6425,14 @@ Ifc4::IfcPermeableCoveringOperationEnum::IfcPermeableCoveringOperationEnum(IfcEn
 }
 
 Ifc4::IfcPermeableCoveringOperationEnum::IfcPermeableCoveringOperationEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPermeableCoveringOperationEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcPermeableCoveringOperationEnum::IfcPermeableCoveringOperationEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPermeableCoveringOperationEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6217,12 +6465,14 @@ Ifc4::IfcPermitTypeEnum::IfcPermitTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcPermitTypeEnum::IfcPermitTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPermitTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcPermitTypeEnum::IfcPermitTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPermitTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6255,12 +6505,14 @@ Ifc4::IfcPhysicalOrVirtualEnum::IfcPhysicalOrVirtualEnum(IfcEntityInstanceData* 
 }
 
 Ifc4::IfcPhysicalOrVirtualEnum::IfcPhysicalOrVirtualEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPhysicalOrVirtualEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcPhysicalOrVirtualEnum::IfcPhysicalOrVirtualEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPhysicalOrVirtualEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6291,12 +6543,14 @@ Ifc4::IfcPileConstructionEnum::IfcPileConstructionEnum(IfcEntityInstanceData* e)
 }
 
 Ifc4::IfcPileConstructionEnum::IfcPileConstructionEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPileConstructionEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcPileConstructionEnum::IfcPileConstructionEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPileConstructionEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6330,12 +6584,14 @@ Ifc4::IfcPileTypeEnum::IfcPileTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcPileTypeEnum::IfcPileTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPileTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcPileTypeEnum::IfcPileTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPileTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6371,12 +6627,14 @@ Ifc4::IfcPipeFittingTypeEnum::IfcPipeFittingTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcPipeFittingTypeEnum::IfcPipeFittingTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPipeFittingTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcPipeFittingTypeEnum::IfcPipeFittingTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPipeFittingTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6413,12 +6671,14 @@ Ifc4::IfcPipeSegmentTypeEnum::IfcPipeSegmentTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcPipeSegmentTypeEnum::IfcPipeSegmentTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPipeSegmentTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcPipeSegmentTypeEnum::IfcPipeSegmentTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPipeSegmentTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6453,12 +6713,14 @@ Ifc4::IfcPlateTypeEnum::IfcPlateTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcPlateTypeEnum::IfcPlateTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPlateTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcPlateTypeEnum::IfcPlateTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPlateTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6490,12 +6752,14 @@ Ifc4::IfcPreferredSurfaceCurveRepresentation::IfcPreferredSurfaceCurveRepresenta
 }
 
 Ifc4::IfcPreferredSurfaceCurveRepresentation::IfcPreferredSurfaceCurveRepresentation(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPreferredSurfaceCurveRepresentation_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcPreferredSurfaceCurveRepresentation::IfcPreferredSurfaceCurveRepresentation(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPreferredSurfaceCurveRepresentation_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6526,12 +6790,14 @@ Ifc4::IfcProcedureTypeEnum::IfcProcedureTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcProcedureTypeEnum::IfcProcedureTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcProcedureTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcProcedureTypeEnum::IfcProcedureTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcProcedureTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6568,12 +6834,14 @@ Ifc4::IfcProfileTypeEnum::IfcProfileTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcProfileTypeEnum::IfcProfileTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcProfileTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcProfileTypeEnum::IfcProfileTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcProfileTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6603,12 +6871,14 @@ Ifc4::IfcProjectOrderTypeEnum::IfcProjectOrderTypeEnum(IfcEntityInstanceData* e)
 }
 
 Ifc4::IfcProjectOrderTypeEnum::IfcProjectOrderTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcProjectOrderTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcProjectOrderTypeEnum::IfcProjectOrderTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcProjectOrderTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6643,12 +6913,14 @@ Ifc4::IfcProjectedOrTrueLengthEnum::IfcProjectedOrTrueLengthEnum(IfcEntityInstan
 }
 
 Ifc4::IfcProjectedOrTrueLengthEnum::IfcProjectedOrTrueLengthEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcProjectedOrTrueLengthEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcProjectedOrTrueLengthEnum::IfcProjectedOrTrueLengthEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcProjectedOrTrueLengthEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6678,12 +6950,14 @@ Ifc4::IfcProjectionElementTypeEnum::IfcProjectionElementTypeEnum(IfcEntityInstan
 }
 
 Ifc4::IfcProjectionElementTypeEnum::IfcProjectionElementTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcProjectionElementTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcProjectionElementTypeEnum::IfcProjectionElementTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcProjectionElementTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6713,12 +6987,14 @@ Ifc4::IfcPropertySetTemplateTypeEnum::IfcPropertySetTemplateTypeEnum(IfcEntityIn
 }
 
 Ifc4::IfcPropertySetTemplateTypeEnum::IfcPropertySetTemplateTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPropertySetTemplateTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcPropertySetTemplateTypeEnum::IfcPropertySetTemplateTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPropertySetTemplateTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6754,12 +7030,14 @@ Ifc4::IfcProtectiveDeviceTrippingUnitTypeEnum::IfcProtectiveDeviceTrippingUnitTy
 }
 
 Ifc4::IfcProtectiveDeviceTrippingUnitTypeEnum::IfcProtectiveDeviceTrippingUnitTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcProtectiveDeviceTrippingUnitTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcProtectiveDeviceTrippingUnitTypeEnum::IfcProtectiveDeviceTrippingUnitTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcProtectiveDeviceTrippingUnitTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6793,12 +7071,14 @@ Ifc4::IfcProtectiveDeviceTypeEnum::IfcProtectiveDeviceTypeEnum(IfcEntityInstance
 }
 
 Ifc4::IfcProtectiveDeviceTypeEnum::IfcProtectiveDeviceTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcProtectiveDeviceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcProtectiveDeviceTypeEnum::IfcProtectiveDeviceTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcProtectiveDeviceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6835,12 +7115,14 @@ Ifc4::IfcPumpTypeEnum::IfcPumpTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcPumpTypeEnum::IfcPumpTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPumpTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcPumpTypeEnum::IfcPumpTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcPumpTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6877,12 +7159,14 @@ Ifc4::IfcRailingTypeEnum::IfcRailingTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcRailingTypeEnum::IfcRailingTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcRailingTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcRailingTypeEnum::IfcRailingTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcRailingTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6915,12 +7199,14 @@ Ifc4::IfcRampFlightTypeEnum::IfcRampFlightTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcRampFlightTypeEnum::IfcRampFlightTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcRampFlightTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcRampFlightTypeEnum::IfcRampFlightTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcRampFlightTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6952,12 +7238,14 @@ Ifc4::IfcRampTypeEnum::IfcRampTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcRampTypeEnum::IfcRampTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcRampTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcRampTypeEnum::IfcRampTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcRampTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -6993,12 +7281,14 @@ Ifc4::IfcRecurrenceTypeEnum::IfcRecurrenceTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcRecurrenceTypeEnum::IfcRecurrenceTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcRecurrenceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcRecurrenceTypeEnum::IfcRecurrenceTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcRecurrenceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -7034,12 +7324,14 @@ Ifc4::IfcReflectanceMethodEnum::IfcReflectanceMethodEnum(IfcEntityInstanceData* 
 }
 
 Ifc4::IfcReflectanceMethodEnum::IfcReflectanceMethodEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcReflectanceMethodEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcReflectanceMethodEnum::IfcReflectanceMethodEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcReflectanceMethodEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -7077,12 +7369,14 @@ Ifc4::IfcReinforcingBarRoleEnum::IfcReinforcingBarRoleEnum(IfcEntityInstanceData
 }
 
 Ifc4::IfcReinforcingBarRoleEnum::IfcReinforcingBarRoleEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcReinforcingBarRoleEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcReinforcingBarRoleEnum::IfcReinforcingBarRoleEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcReinforcingBarRoleEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -7120,12 +7414,14 @@ Ifc4::IfcReinforcingBarSurfaceEnum::IfcReinforcingBarSurfaceEnum(IfcEntityInstan
 }
 
 Ifc4::IfcReinforcingBarSurfaceEnum::IfcReinforcingBarSurfaceEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcReinforcingBarSurfaceEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcReinforcingBarSurfaceEnum::IfcReinforcingBarSurfaceEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcReinforcingBarSurfaceEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -7155,12 +7451,14 @@ Ifc4::IfcReinforcingBarTypeEnum::IfcReinforcingBarTypeEnum(IfcEntityInstanceData
 }
 
 Ifc4::IfcReinforcingBarTypeEnum::IfcReinforcingBarTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcReinforcingBarTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcReinforcingBarTypeEnum::IfcReinforcingBarTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcReinforcingBarTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -7198,12 +7496,14 @@ Ifc4::IfcReinforcingMeshTypeEnum::IfcReinforcingMeshTypeEnum(IfcEntityInstanceDa
 }
 
 Ifc4::IfcReinforcingMeshTypeEnum::IfcReinforcingMeshTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcReinforcingMeshTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcReinforcingMeshTypeEnum::IfcReinforcingMeshTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcReinforcingMeshTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -7233,12 +7533,14 @@ Ifc4::IfcRoleEnum::IfcRoleEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcRoleEnum::IfcRoleEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcRoleEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcRoleEnum::IfcRoleEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcRoleEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -7289,12 +7591,14 @@ Ifc4::IfcRoofTypeEnum::IfcRoofTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcRoofTypeEnum::IfcRoofTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcRoofTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcRoofTypeEnum::IfcRoofTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcRoofTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -7337,12 +7641,14 @@ Ifc4::IfcSIPrefix::IfcSIPrefix(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcSIPrefix::IfcSIPrefix(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSIPrefix_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcSIPrefix::IfcSIPrefix(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSIPrefix_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -7386,12 +7692,14 @@ Ifc4::IfcSIUnitName::IfcSIUnitName(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcSIUnitName::IfcSIUnitName(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSIUnitName_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcSIUnitName::IfcSIUnitName(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSIUnitName_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -7449,12 +7757,14 @@ Ifc4::IfcSanitaryTerminalTypeEnum::IfcSanitaryTerminalTypeEnum(IfcEntityInstance
 }
 
 Ifc4::IfcSanitaryTerminalTypeEnum::IfcSanitaryTerminalTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSanitaryTerminalTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcSanitaryTerminalTypeEnum::IfcSanitaryTerminalTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSanitaryTerminalTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -7494,12 +7804,14 @@ Ifc4::IfcSectionTypeEnum::IfcSectionTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcSectionTypeEnum::IfcSectionTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSectionTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcSectionTypeEnum::IfcSectionTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSectionTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -7529,12 +7841,14 @@ Ifc4::IfcSensorTypeEnum::IfcSensorTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcSensorTypeEnum::IfcSensorTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSensorTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcSensorTypeEnum::IfcSensorTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSensorTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -7588,12 +7902,14 @@ Ifc4::IfcSequenceEnum::IfcSequenceEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcSequenceEnum::IfcSequenceEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSequenceEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcSequenceEnum::IfcSequenceEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSequenceEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -7627,12 +7943,14 @@ Ifc4::IfcShadingDeviceTypeEnum::IfcShadingDeviceTypeEnum(IfcEntityInstanceData* 
 }
 
 Ifc4::IfcShadingDeviceTypeEnum::IfcShadingDeviceTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcShadingDeviceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcShadingDeviceTypeEnum::IfcShadingDeviceTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcShadingDeviceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -7665,12 +7983,14 @@ Ifc4::IfcSimplePropertyTemplateTypeEnum::IfcSimplePropertyTemplateTypeEnum(IfcEn
 }
 
 Ifc4::IfcSimplePropertyTemplateTypeEnum::IfcSimplePropertyTemplateTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSimplePropertyTemplateTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcSimplePropertyTemplateTypeEnum::IfcSimplePropertyTemplateTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSimplePropertyTemplateTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -7710,12 +8030,14 @@ Ifc4::IfcSlabTypeEnum::IfcSlabTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcSlabTypeEnum::IfcSlabTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSlabTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcSlabTypeEnum::IfcSlabTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSlabTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -7749,12 +8071,14 @@ Ifc4::IfcSolarDeviceTypeEnum::IfcSolarDeviceTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcSolarDeviceTypeEnum::IfcSolarDeviceTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSolarDeviceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcSolarDeviceTypeEnum::IfcSolarDeviceTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSolarDeviceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -7786,12 +8110,14 @@ Ifc4::IfcSpaceHeaterTypeEnum::IfcSpaceHeaterTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcSpaceHeaterTypeEnum::IfcSpaceHeaterTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSpaceHeaterTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcSpaceHeaterTypeEnum::IfcSpaceHeaterTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSpaceHeaterTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -7823,12 +8149,14 @@ Ifc4::IfcSpaceTypeEnum::IfcSpaceTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcSpaceTypeEnum::IfcSpaceTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSpaceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcSpaceTypeEnum::IfcSpaceTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSpaceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -7863,12 +8191,14 @@ Ifc4::IfcSpatialZoneTypeEnum::IfcSpatialZoneTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcSpatialZoneTypeEnum::IfcSpatialZoneTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSpatialZoneTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcSpatialZoneTypeEnum::IfcSpatialZoneTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSpatialZoneTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -7906,12 +8236,14 @@ Ifc4::IfcStackTerminalTypeEnum::IfcStackTerminalTypeEnum(IfcEntityInstanceData* 
 }
 
 Ifc4::IfcStackTerminalTypeEnum::IfcStackTerminalTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcStackTerminalTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcStackTerminalTypeEnum::IfcStackTerminalTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcStackTerminalTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -7944,12 +8276,14 @@ Ifc4::IfcStairFlightTypeEnum::IfcStairFlightTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcStairFlightTypeEnum::IfcStairFlightTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcStairFlightTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcStairFlightTypeEnum::IfcStairFlightTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcStairFlightTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -7984,12 +8318,14 @@ Ifc4::IfcStairTypeEnum::IfcStairTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcStairTypeEnum::IfcStairTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcStairTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcStairTypeEnum::IfcStairTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcStairTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8033,12 +8369,14 @@ Ifc4::IfcStateEnum::IfcStateEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcStateEnum::IfcStateEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcStateEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcStateEnum::IfcStateEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcStateEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8071,12 +8409,14 @@ Ifc4::IfcStructuralCurveActivityTypeEnum::IfcStructuralCurveActivityTypeEnum(Ifc
 }
 
 Ifc4::IfcStructuralCurveActivityTypeEnum::IfcStructuralCurveActivityTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcStructuralCurveActivityTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcStructuralCurveActivityTypeEnum::IfcStructuralCurveActivityTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcStructuralCurveActivityTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8113,12 +8453,14 @@ Ifc4::IfcStructuralCurveMemberTypeEnum::IfcStructuralCurveMemberTypeEnum(IfcEnti
 }
 
 Ifc4::IfcStructuralCurveMemberTypeEnum::IfcStructuralCurveMemberTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcStructuralCurveMemberTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcStructuralCurveMemberTypeEnum::IfcStructuralCurveMemberTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcStructuralCurveMemberTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8153,12 +8495,14 @@ Ifc4::IfcStructuralSurfaceActivityTypeEnum::IfcStructuralSurfaceActivityTypeEnum
 }
 
 Ifc4::IfcStructuralSurfaceActivityTypeEnum::IfcStructuralSurfaceActivityTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcStructuralSurfaceActivityTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcStructuralSurfaceActivityTypeEnum::IfcStructuralSurfaceActivityTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcStructuralSurfaceActivityTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8192,12 +8536,14 @@ Ifc4::IfcStructuralSurfaceMemberTypeEnum::IfcStructuralSurfaceMemberTypeEnum(Ifc
 }
 
 Ifc4::IfcStructuralSurfaceMemberTypeEnum::IfcStructuralSurfaceMemberTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcStructuralSurfaceMemberTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcStructuralSurfaceMemberTypeEnum::IfcStructuralSurfaceMemberTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcStructuralSurfaceMemberTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8230,12 +8576,14 @@ Ifc4::IfcSubContractResourceTypeEnum::IfcSubContractResourceTypeEnum(IfcEntityIn
 }
 
 Ifc4::IfcSubContractResourceTypeEnum::IfcSubContractResourceTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSubContractResourceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcSubContractResourceTypeEnum::IfcSubContractResourceTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSubContractResourceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8267,12 +8615,14 @@ Ifc4::IfcSurfaceFeatureTypeEnum::IfcSurfaceFeatureTypeEnum(IfcEntityInstanceData
 }
 
 Ifc4::IfcSurfaceFeatureTypeEnum::IfcSurfaceFeatureTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSurfaceFeatureTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcSurfaceFeatureTypeEnum::IfcSurfaceFeatureTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSurfaceFeatureTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8305,12 +8655,14 @@ Ifc4::IfcSurfaceSide::IfcSurfaceSide(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcSurfaceSide::IfcSurfaceSide(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSurfaceSide_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcSurfaceSide::IfcSurfaceSide(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSurfaceSide_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8341,12 +8693,14 @@ Ifc4::IfcSwitchingDeviceTypeEnum::IfcSwitchingDeviceTypeEnum(IfcEntityInstanceDa
 }
 
 Ifc4::IfcSwitchingDeviceTypeEnum::IfcSwitchingDeviceTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSwitchingDeviceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcSwitchingDeviceTypeEnum::IfcSwitchingDeviceTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSwitchingDeviceTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8385,12 +8739,14 @@ Ifc4::IfcSystemFurnitureElementTypeEnum::IfcSystemFurnitureElementTypeEnum(IfcEn
 }
 
 Ifc4::IfcSystemFurnitureElementTypeEnum::IfcSystemFurnitureElementTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSystemFurnitureElementTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcSystemFurnitureElementTypeEnum::IfcSystemFurnitureElementTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcSystemFurnitureElementTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8422,12 +8778,14 @@ Ifc4::IfcTankTypeEnum::IfcTankTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcTankTypeEnum::IfcTankTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTankTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcTankTypeEnum::IfcTankTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTankTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8464,12 +8822,14 @@ Ifc4::IfcTaskDurationEnum::IfcTaskDurationEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcTaskDurationEnum::IfcTaskDurationEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTaskDurationEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcTaskDurationEnum::IfcTaskDurationEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTaskDurationEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8500,12 +8860,14 @@ Ifc4::IfcTaskTypeEnum::IfcTaskTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcTaskTypeEnum::IfcTaskTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTaskTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcTaskTypeEnum::IfcTaskTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTaskTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8547,12 +8909,14 @@ Ifc4::IfcTendonAnchorTypeEnum::IfcTendonAnchorTypeEnum(IfcEntityInstanceData* e)
 }
 
 Ifc4::IfcTendonAnchorTypeEnum::IfcTendonAnchorTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTendonAnchorTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcTendonAnchorTypeEnum::IfcTendonAnchorTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTendonAnchorTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8585,12 +8949,14 @@ Ifc4::IfcTendonTypeEnum::IfcTendonTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcTendonTypeEnum::IfcTendonTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTendonTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcTendonTypeEnum::IfcTendonTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTendonTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8624,12 +8990,14 @@ Ifc4::IfcTextPath::IfcTextPath(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcTextPath::IfcTextPath(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTextPath_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcTextPath::IfcTextPath(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTextPath_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8661,12 +9029,14 @@ Ifc4::IfcTimeSeriesDataTypeEnum::IfcTimeSeriesDataTypeEnum(IfcEntityInstanceData
 }
 
 Ifc4::IfcTimeSeriesDataTypeEnum::IfcTimeSeriesDataTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTimeSeriesDataTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcTimeSeriesDataTypeEnum::IfcTimeSeriesDataTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTimeSeriesDataTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8701,12 +9071,14 @@ Ifc4::IfcTransformerTypeEnum::IfcTransformerTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcTransformerTypeEnum::IfcTransformerTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTransformerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcTransformerTypeEnum::IfcTransformerTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTransformerTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8741,12 +9113,14 @@ Ifc4::IfcTransitionCode::IfcTransitionCode(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcTransitionCode::IfcTransitionCode(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTransitionCode_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcTransitionCode::IfcTransitionCode(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTransitionCode_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8778,12 +9152,14 @@ Ifc4::IfcTransportElementTypeEnum::IfcTransportElementTypeEnum(IfcEntityInstance
 }
 
 Ifc4::IfcTransportElementTypeEnum::IfcTransportElementTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTransportElementTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcTransportElementTypeEnum::IfcTransportElementTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTransportElementTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8818,12 +9194,14 @@ Ifc4::IfcTrimmingPreference::IfcTrimmingPreference(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcTrimmingPreference::IfcTrimmingPreference(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTrimmingPreference_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcTrimmingPreference::IfcTrimmingPreference(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTrimmingPreference_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8854,12 +9232,14 @@ Ifc4::IfcTubeBundleTypeEnum::IfcTubeBundleTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcTubeBundleTypeEnum::IfcTubeBundleTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTubeBundleTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcTubeBundleTypeEnum::IfcTubeBundleTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcTubeBundleTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8890,12 +9270,14 @@ Ifc4::IfcUnitEnum::IfcUnitEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcUnitEnum::IfcUnitEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcUnitEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcUnitEnum::IfcUnitEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcUnitEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8953,12 +9335,14 @@ Ifc4::IfcUnitaryControlElementTypeEnum::IfcUnitaryControlElementTypeEnum(IfcEnti
 }
 
 Ifc4::IfcUnitaryControlElementTypeEnum::IfcUnitaryControlElementTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcUnitaryControlElementTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcUnitaryControlElementTypeEnum::IfcUnitaryControlElementTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcUnitaryControlElementTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -8996,12 +9380,14 @@ Ifc4::IfcUnitaryEquipmentTypeEnum::IfcUnitaryEquipmentTypeEnum(IfcEntityInstance
 }
 
 Ifc4::IfcUnitaryEquipmentTypeEnum::IfcUnitaryEquipmentTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcUnitaryEquipmentTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcUnitaryEquipmentTypeEnum::IfcUnitaryEquipmentTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcUnitaryEquipmentTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -9036,12 +9422,14 @@ Ifc4::IfcValveTypeEnum::IfcValveTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcValveTypeEnum::IfcValveTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcValveTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcValveTypeEnum::IfcValveTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcValveTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -9092,12 +9480,14 @@ Ifc4::IfcVibrationIsolatorTypeEnum::IfcVibrationIsolatorTypeEnum(IfcEntityInstan
 }
 
 Ifc4::IfcVibrationIsolatorTypeEnum::IfcVibrationIsolatorTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcVibrationIsolatorTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcVibrationIsolatorTypeEnum::IfcVibrationIsolatorTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcVibrationIsolatorTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -9129,12 +9519,14 @@ Ifc4::IfcVoidingFeatureTypeEnum::IfcVoidingFeatureTypeEnum(IfcEntityInstanceData
 }
 
 Ifc4::IfcVoidingFeatureTypeEnum::IfcVoidingFeatureTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcVoidingFeatureTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcVoidingFeatureTypeEnum::IfcVoidingFeatureTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcVoidingFeatureTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -9170,12 +9562,14 @@ Ifc4::IfcWallTypeEnum::IfcWallTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcWallTypeEnum::IfcWallTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcWallTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcWallTypeEnum::IfcWallTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcWallTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -9214,12 +9608,14 @@ Ifc4::IfcWasteTerminalTypeEnum::IfcWasteTerminalTypeEnum(IfcEntityInstanceData* 
 }
 
 Ifc4::IfcWasteTerminalTypeEnum::IfcWasteTerminalTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcWasteTerminalTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcWasteTerminalTypeEnum::IfcWasteTerminalTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcWasteTerminalTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -9256,12 +9652,14 @@ Ifc4::IfcWindowPanelOperationEnum::IfcWindowPanelOperationEnum(IfcEntityInstance
 }
 
 Ifc4::IfcWindowPanelOperationEnum::IfcWindowPanelOperationEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcWindowPanelOperationEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcWindowPanelOperationEnum::IfcWindowPanelOperationEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcWindowPanelOperationEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -9303,12 +9701,14 @@ Ifc4::IfcWindowPanelPositionEnum::IfcWindowPanelPositionEnum(IfcEntityInstanceDa
 }
 
 Ifc4::IfcWindowPanelPositionEnum::IfcWindowPanelPositionEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcWindowPanelPositionEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcWindowPanelPositionEnum::IfcWindowPanelPositionEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcWindowPanelPositionEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -9342,12 +9742,14 @@ Ifc4::IfcWindowStyleConstructionEnum::IfcWindowStyleConstructionEnum(IfcEntityIn
 }
 
 Ifc4::IfcWindowStyleConstructionEnum::IfcWindowStyleConstructionEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcWindowStyleConstructionEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcWindowStyleConstructionEnum::IfcWindowStyleConstructionEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcWindowStyleConstructionEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -9383,12 +9785,14 @@ Ifc4::IfcWindowStyleOperationEnum::IfcWindowStyleOperationEnum(IfcEntityInstance
 }
 
 Ifc4::IfcWindowStyleOperationEnum::IfcWindowStyleOperationEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcWindowStyleOperationEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcWindowStyleOperationEnum::IfcWindowStyleOperationEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcWindowStyleOperationEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -9427,12 +9831,14 @@ Ifc4::IfcWindowTypeEnum::IfcWindowTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcWindowTypeEnum::IfcWindowTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcWindowTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcWindowTypeEnum::IfcWindowTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcWindowTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -9465,12 +9871,14 @@ Ifc4::IfcWindowTypePartitioningEnum::IfcWindowTypePartitioningEnum(IfcEntityInst
 }
 
 Ifc4::IfcWindowTypePartitioningEnum::IfcWindowTypePartitioningEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcWindowTypePartitioningEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcWindowTypePartitioningEnum::IfcWindowTypePartitioningEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcWindowTypePartitioningEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -9509,12 +9917,14 @@ Ifc4::IfcWorkCalendarTypeEnum::IfcWorkCalendarTypeEnum(IfcEntityInstanceData* e)
 }
 
 Ifc4::IfcWorkCalendarTypeEnum::IfcWorkCalendarTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcWorkCalendarTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcWorkCalendarTypeEnum::IfcWorkCalendarTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcWorkCalendarTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -9547,12 +9957,14 @@ Ifc4::IfcWorkPlanTypeEnum::IfcWorkPlanTypeEnum(IfcEntityInstanceData* e) {
 }
 
 Ifc4::IfcWorkPlanTypeEnum::IfcWorkPlanTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcWorkPlanTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcWorkPlanTypeEnum::IfcWorkPlanTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcWorkPlanTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -9585,12 +9997,14 @@ Ifc4::IfcWorkScheduleTypeEnum::IfcWorkScheduleTypeEnum(IfcEntityInstanceData* e)
 }
 
 Ifc4::IfcWorkScheduleTypeEnum::IfcWorkScheduleTypeEnum(Value v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcWorkScheduleTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 Ifc4::IfcWorkScheduleTypeEnum::IfcWorkScheduleTypeEnum(const std::string& v) {
+    data_ = new IfcEntityInstanceData(IFC4_IfcWorkScheduleTypeEnum_type);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);

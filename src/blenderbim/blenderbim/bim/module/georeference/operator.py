@@ -276,7 +276,7 @@ class ConvertLocalToGlobal(bpy.types.Operator):
             results = (x, y, z)
 
         props.coordinate_output = ",".join([str(r) for r in results])
-        bpy.context.scene.cursor.location = results
+        context.scene.cursor.location = results
         return {"FINISHED"}
 
 
@@ -322,7 +322,7 @@ class ConvertGlobalToLocal(bpy.types.Operator):
         props.coordinate_output = ",".join([str(r) for r in results])
 
         scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
-        bpy.context.scene.cursor.location = [o * scale for o in results]
+        context.scene.cursor.location = [o * scale for o in results]
         return {"FINISHED"}
 
 
@@ -334,7 +334,7 @@ class GetCursorLocation(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMGeoreferenceProperties
         scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
-        project_coordinates = [o / scale for o in bpy.context.scene.cursor.location]
+        project_coordinates = [o / scale for o in context.scene.cursor.location]
         props.coordinate_input = ",".join([str(o) for o in project_coordinates])
         return {"FINISHED"}
 
@@ -347,5 +347,5 @@ class SetCursorLocation(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMGeoreferenceProperties
         scale = ifcopenshell.util.unit.calculate_unit_scale(IfcStore.get_file())
-        bpy.context.scene.cursor.location = [float(co) * scale for co in props.coordinate_output.split(",")]
+        context.scene.cursor.location = [float(co) * scale for co in props.coordinate_output.split(",")]
         return {"FINISHED"}

@@ -1,4 +1,5 @@
 import ifcopenshell.util.date
+import ifcopenshell.util.unit
 
 
 class Data:
@@ -7,6 +8,7 @@ class Data:
     cost_items = {}
     physical_quantities = {}
     cost_values = {}
+    categories = []
 
     @classmethod
     def purge(cls):
@@ -15,6 +17,11 @@ class Data:
         cls.cost_items = {}
         cls.physical_quantities = {}
         cls.cost_values = {}
+        cls.categories = []
+
+    @classmethod
+    def set_categories(cls, categories):
+        cls.categories = categories
 
     @classmethod
     def load(cls, file):
@@ -63,20 +70,32 @@ class Data:
             del quantity_data["Unit"]
             cls.physical_quantities[quantity.id()] = quantity_data
             data["CostQuantities"].append(quantity.id())
+        data["Unit"] = None
+        data["UnitSymbol"] = "?"
+        if cost_item.CostQuantities:
+            quantity = cost_item.CostQuantities[0]
+            unit = ifcopenshell.util.unit.get_property_unit(quantity, cls.file)
+            if unit:
+                data["Unit"] = unit.id()
+                data["UnitSymbol"] = ifcopenshell.util.unit.get_unit_symbol(unit)
+            else:
+                data["Unit"] = None
+                data["UnitSymbol"] = None
 
     @classmethod
     def load_cost_item_values(cls, cost_item, data):
         data["CostValues"] = []
         data["TotalCostValue"] = 0.0
         data["TotalAppliedValue"] = 0.0
+        data["CategoryValues"] = {}
         for cost_value in cost_item.CostValues or []:
-            cls.load_cost_item_value(cost_item, cost_value)
+            cls.load_cost_item_value(data, cost_item, cost_value)
             data["CostValues"].append(cost_value.id())
             data["TotalAppliedValue"] += cls.cost_values[cost_value.id()]["AppliedValue"]
         data["TotalCostValue"] = data["TotalCostQuantity"] * data["TotalAppliedValue"]
 
     @classmethod
-    def load_cost_item_value(cls, cost_item, cost_value):
+    def load_cost_item_value(cls, cost_item_data, cost_item, cost_value):
         value_data = cost_value.get_info()
         del value_data["AppliedValue"]
         del value_data["UnitBasis"]
@@ -86,9 +105,14 @@ class Data:
             value_data["FixedUntilDate"] = ifcopenshell.util.date.ifc2datetime(value_data["FixedUntilDate"])
         value_data["Components"] = [c.id() for c in value_data["Components"] or []]
         value_data["AppliedValue"] = cls.calculate_applied_value(cost_item, cost_value)
+
+        if cost_value.Category not in [None, "*"]:
+            cost_item_data["CategoryValues"].setdefault(cost_value.Category, 0)
+            cost_item_data["CategoryValues"][cost_value.Category] += value_data["AppliedValue"]
+
         cls.cost_values[cost_value.id()] = value_data
         for component in cost_value.Components or []:
-            cls.load_cost_item_value(cost_item, component)
+            cls.load_cost_item_value(cost_item_data, cost_item, component)
 
     @classmethod
     def calculate_applied_value(cls, cost_item, cost_value, category_filter=None):

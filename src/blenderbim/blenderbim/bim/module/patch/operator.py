@@ -40,6 +40,11 @@ class ExecuteIfcPatch(bpy.types.Operator):
     bl_label = "Execute IFCPatch"
     file_format: bpy.props.StringProperty()
 
+    @classmethod
+    def poll(cls, context):
+        input_file = context.scene.BIMPatchProperties.ifc_patch_input
+        return os.path.isfile(input_file) and "ifc" in os.path.splitext(input_file)[1]
+
     def execute(self, context):
         import ifcpatch
 

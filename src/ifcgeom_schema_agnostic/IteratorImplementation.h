@@ -22,7 +22,7 @@ namespace IfcGeom {
 
 typedef boost::function4<IfcGeom::IteratorImplementation*, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*, const std::vector<IfcGeom::filter_t>&, int> iterator_fn;
 
-class IteratorFactoryImplementation : public std::map<std::string, iterator_fn> {
+class IFC_GEOM_API IteratorFactoryImplementation : public std::map<std::string, iterator_fn> {
 public:
 	IteratorFactoryImplementation();
 	void bind(const std::string& schema_name, iterator_fn fn);

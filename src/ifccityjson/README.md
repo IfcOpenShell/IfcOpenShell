@@ -19,8 +19,8 @@ The example file that could be used is example/3D_BAG_example.json
     python ifccityjson.py -i example/3DBAG_example.json -o example/3DBAG_example.ifc -n identificatie
 
 ## Implemented geometries
-- [ ] "MultiPoint"
-- [ ] "MultiLineString"
+- [x] "MultiPoint"
+- [x] "MultiLineString"
 - [x] "MultiSurface"
 - [x] "CompositeSurface"
 - [x] "Solid": exterior shell
@@ -34,5 +34,5 @@ The example file that could be used is example/3D_BAG_example.json
 - [x] Implement georeferencing
 - [x] Do not use template IFC for new IFC file, but make IFC file from scratch
 - [x] Create mapping to IFC for all CityJSON object types & semantic surfaces
-- [ ] Implement conversion of all geometries
-- [ ] Implement conversion of all LODs instead of online the most detailed
+- [ ] Implement conversion of all CitYJSON geometries
+- [ ] Implement conversion of all LODs instead of only the most detailed

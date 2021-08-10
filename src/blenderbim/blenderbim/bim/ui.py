@@ -15,7 +15,7 @@ class BIM_PT_section_plane(Panel):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
-        props = bpy.context.scene.BIMProperties
+        props = context.scene.BIMProperties
 
         row = layout.row()
         row.prop(props, "should_section_selected_objects")
@@ -91,7 +91,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
 
 def ifc_units(self, context):
     scene = context.scene
-    props = context.scene.BIMProperties
+    props = scene.BIMProperties
     layout = self.layout
     layout.use_property_decorate = False
     layout.use_property_split = True
@@ -100,7 +100,7 @@ def ifc_units(self, context):
     row = layout.row()
     row.prop(props, "volume_unit")
     row = layout.row()
-    if bpy.context.scene.unit_settings.system == "IMPERIAL":
+    if scene.unit_settings.system == "IMPERIAL":
         row.prop(props, "imperial_precision")
     else:
         row.prop(props, "metric_precision")

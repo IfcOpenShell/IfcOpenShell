@@ -195,6 +195,42 @@ def calculate_quantities(usecase_path, ifc_file, settings):
     PsetData.load(ifc_file, obj.BIMObjectProperties.ifc_definition_id)
 
 
+class AddSlabOpening(bpy.types.Operator):
+    bl_idname = "bim.add_slab_opening"
+    bl_label = "Add Slab Opening"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        selected_objs = context.selected_objects
+        if len(selected_objs) == 0 or not context.active_object:
+            return {"FINISHED"}
+        slab_obj = context.active_object
+        if not slab_obj.BIMObjectProperties.ifc_definition_id:
+            return {"FINISHED"}
+        slab = IfcStore.get_file().by_id(slab_obj.BIMObjectProperties.ifc_definition_id)
+        local_location = slab_obj.matrix_world.inverted() @ context.scene.cursor.location
+        raycast = slab_obj.closest_point_on_mesh(local_location, distance=0.01)
+        if not raycast[0]:
+            return {"FINISHED"}
+        bpy.ops.mesh.primitive_cube_add(size=slab_obj.dimensions[2] * 2)
+        opening = context.selected_objects[0]
+
+        # Place the opening in the middle of the slab
+        global_location = slab_obj.matrix_world @ raycast[1]
+        normal = raycast[2]
+        normal.negate()
+        global_normal = slab_obj.matrix_world.to_quaternion() @ normal
+        opening.location = global_location + (global_normal * (slab_obj.dimensions[2] / 2))
+
+        opening.rotation_euler = slab_obj.rotation_euler
+        opening.name = "Opening"
+        bpy.ops.bim.add_opening(opening=opening.name, obj=slab_obj.name)
+        return {"FINISHED"}
+
+
 class DumbSlabGenerator:
     def __init__(self, relating_type):
         self.relating_type = relating_type
@@ -242,7 +278,12 @@ class DumbSlabGenerator:
         modifier.use_even_offset = True
         modifier.offset = 1
         modifier.thickness = self.depth
-        obj.name = "Slab"
+
+        ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
+        # Standard cases are deprecated, so let's cull them
+        ifc_class = [c for c in ifc_classes if "StandardCase" not in c][0]
+
+        obj.name = ifc_class[3:]
         obj.location = self.location
         if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
             obj.location[2] = self.collection_obj.location[2] - self.depth
@@ -251,8 +292,7 @@ class DumbSlabGenerator:
         self.collection.objects.link(obj)
         bpy.ops.bim.assign_class(
             obj=obj.name,
-            ifc_class="IfcSlab",
-            predefined_type="FLOOR",
+            ifc_class=ifc_class,
             ifc_representation_class="IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids",
         )
         bpy.ops.bim.assign_type(relating_type=self.relating_type.id(), related_object=obj.name)

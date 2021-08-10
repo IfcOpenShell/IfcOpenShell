@@ -13,8 +13,32 @@ class Usecase:
         self.added_elements = set()
         if self.settings["element"].is_a("IfcTypeProduct"):
             return self.append_type_product()
+        elif self.settings["element"].is_a("IfcMaterial"):
+            return self.append_material()
+        elif self.settings["element"].is_a("IfcCostSchedule"):
+            return self.append_cost_schedule()
+
+    def is_already_appended(self):
+        try:
+            self.file.by_guid(self.settings["element"].GlobalId)
+            return True
+        except:
+            return False
+
+    def append_material(self):
+        if [e for e in self.file.by_type("IfcMaterial") if e.Name == self.settings["element"].Name]:
+            return
+        return self.file.add(self.settings["element"])
+
+    def append_cost_schedule(self):
+        if self.is_already_appended():
+            return
+        self.whitelisted_inverse_attributes = {"IfcCostSchedule": ["Controls"], "IfcCostItem": ["IsNestedBy"]}
+        return self.add_element(self.settings["element"])
 
     def append_type_product(self):
+        if self.is_already_appended():
+            return
         self.whitelisted_inverse_attributes = {
             "IfcObjectDefinition": ["HasAssociations"],
             "IfcMaterialDefinition": ["HasExternalReferences", "HasProperties"],

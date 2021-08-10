@@ -9,6 +9,10 @@ class BIM_PT_authoring(Panel):
     bl_region_type = "UI"
     bl_category = "BlenderBIM"
 
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
     def draw(self, context):
         tprops = context.scene.BIMTypeProperties
         col = self.layout.column(align=True)

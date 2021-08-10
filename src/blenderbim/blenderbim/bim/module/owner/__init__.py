@@ -2,6 +2,7 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.AddOrRemoveElementFromCollection,
     operator.EnableEditingPerson,
     operator.DisableEditingPerson,
     operator.AddPerson,

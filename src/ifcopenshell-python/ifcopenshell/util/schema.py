@@ -18,6 +18,17 @@ def is_a(entity, ifc_class):
     return False
 
 
+def get_subtypes(entity):
+    def get_classes(declaration):
+        results = []
+        if not declaration.is_abstract():
+            results.append(declaration)
+        for subtype in declaration.subtypes():
+            results.extend(get_classes(subtype))
+        return results
+    return get_classes(entity)
+
+
 def reassign_class(ifc_file, element, new_class):
     try:
         new_element = ifc_file.create_entity(new_class)

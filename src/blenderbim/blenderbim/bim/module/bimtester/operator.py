@@ -52,11 +52,11 @@ class BIMTesterPurge(bpy.types.Operator):
 
     def execute(self, context):
         filename = os.path.join(
-            bpy.context.scene.BimTesterProperties.features_dir,
-            bpy.context.scene.BimTesterProperties.features_file + ".feature",
+            context.scene.BimTesterProperties.features_dir,
+            context.scene.BimTesterProperties.features_file + ".feature",
         )
         cwd = os.getcwd()
-        os.chdir(bpy.context.scene.BimTesterProperties.features_dir)
+        os.chdir(context.scene.BimTesterProperties.features_dir)
         bimtester.clean.TestPurger().purge()
         os.chdir(cwd)
         return {"FINISHED"}
@@ -71,7 +71,7 @@ class SelectFeature(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        bpy.context.scene.BimTesterProperties.feature = self.filepath
+        context.scene.BimTesterProperties.feature = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -88,7 +88,7 @@ class SelectSteps(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        bpy.context.scene.BimTesterProperties.steps = self.filepath
+        context.scene.BimTesterProperties.steps = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -120,14 +120,14 @@ class RejectElement(bpy.types.Operator):
     def execute(self, context):
         lines = []
         self.file = IfcStore.get_file()
-        for obj in bpy.context.selected_objects:
+        for obj in context.selected_objects:
             lines.append(
                 " * The element {} should not exist because {}".format(
                     self.file.by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId,
-                    bpy.context.scene.BimTesterProperties.qa_reject_element_reason,
+                    context.scene.BimTesterProperties.qa_reject_element_reason,
                 )
             )
-        QAHelper.append_to_scenario(lines)
+        QAHelper.append_to_scenario(lines, context)
         return {"FINISHED"}
 
 
@@ -138,12 +138,12 @@ class ApproveClass(bpy.types.Operator):
     def execute(self, context):
         lines = []
         self.file = IfcStore.get_file()
-        for obj in bpy.context.selected_objects:
+        for obj in context.selected_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
             lines.append(" * The element {} is an {}".format(element.GlobalId, element.is_a()))
-        QAHelper.append_to_scenario(lines)
+        QAHelper.append_to_scenario(lines, context)
         return {"FINISHED"}
 
 
@@ -154,16 +154,16 @@ class RejectClass(bpy.types.Operator):
     def execute(self, context):
         lines = []
         self.file = IfcStore.get_file()
-        for obj in bpy.context.selected_objects:
+        for obj in context.selected_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             lines.append(
                 " * The element {} is an {}".format(
                     self.file.by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId,
-                    bpy.context.scene.BimTesterProperties.audit_ifc_class,
+                    context.scene.BimTesterProperties.audit_ifc_class,
                 )
             )
-        QAHelper.append_to_scenario(lines)
+        QAHelper.append_to_scenario(lines, context)
         return {"FINISHED"}
 
 
@@ -175,7 +175,7 @@ class SelectAudited(bpy.types.Operator):
     def execute(self, context):
         audited_global_ids = []
         self.file = IfcStore.get_file()
-        for filename in Path(bpy.context.scene.BimTesterProperties.features_dir).glob("*.feature"):
+        for filename in Path(context.scene.BimTesterProperties.features_dir).glob("*.feature"):
             with open(filename, "r") as feature_file:
                 lines = feature_file.readlines()
                 for line in lines:
@@ -183,7 +183,7 @@ class SelectAudited(bpy.types.Operator):
                     for word in words:
                         if self.is_a_global_id(word):
                             audited_global_ids.append(word)
-        for obj in bpy.context.visible_objects:
+        for obj in context.visible_objects:
             if not obj.BIMObjectProperties.ifc_definition_id:
                 continue
             if self.file.by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId in audited_global_ids:
@@ -196,10 +196,10 @@ class SelectAudited(bpy.types.Operator):
 
 class QAHelper:
     @classmethod
-    def append_to_scenario(cls, lines):
+    def append_to_scenario(cls, lines, context):
         filename = os.path.join(
-            bpy.context.scene.BimTesterProperties.features_dir,
-            bpy.context.scene.BimTesterProperties.features_file + ".feature",
+            context.scene.BimTesterProperties.features_dir,
+            context.scene.BimTesterProperties.features_file + ".feature",
         )
         if os.path.exists(filename + "~"):
             os.remove(filename + "~")
@@ -210,7 +210,7 @@ class QAHelper:
                 for source_line in source:
                     if (
                         "Scenario: " in source_line
-                        and bpy.context.scene.BimTesterProperties.scenario == source_line.strip()[len("Scenario: ") :]
+                        and context.scene.BimTesterProperties.scenario == source_line.strip()[len("Scenario: ") :]
                     ):
                         is_in_scenario = True
                     elif is_in_scenario:

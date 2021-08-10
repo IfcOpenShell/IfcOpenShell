@@ -1,13 +1,17 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
-from blenderbim.bim.module.model import product, wall, slab, column
+from blenderbim.bim.module.model import root, product, wall, slab, profile, opening
 from blenderbim.bim.ifc import IfcStore
 from bpy.app.handlers import persistent
 
 
 @persistent
 def load_post(*args):
+    ifcopenshell.api.add_pre_listener(
+        "attribute.edit_attributes", "BlenderBIM.Root.SyncName", root.sync_name
+    )
+
     ifcopenshell.api.add_post_listener(
         "geometry.add_representation", "BlenderBIM.Product.GenerateBox", product.generate_box
     )
@@ -16,6 +20,8 @@ def load_post(*args):
         "BlenderBIM.Product.RegenerateProfileUsage",
         product.regenerate_profile_usage,
     )
+
+    IfcStore.add_element_listener(opening.element_listener)
 
     IfcStore.add_element_listener(wall.element_listener)
     ifcopenshell.api.add_pre_listener(
@@ -51,17 +57,22 @@ def load_post(*args):
         "type.assign_type", "BlenderBIM.DumbSlab.RegenerateFromType", slab.DumbSlabPlaner().regenerate_from_type
     )
 
-    IfcStore.add_element_listener(column.element_listener)
+    IfcStore.add_element_listener(profile.element_listener)
     ifcopenshell.api.add_pre_listener(
-        "geometry.add_representation", "BlenderBIM.DumbColumn.EnsureSolid", column.ensure_solid
+        "geometry.add_representation", "BlenderBIM.DumbProfile.EnsureSolid", profile.ensure_solid
+    )
+    ifcopenshell.api.add_pre_listener(
+        "material.edit_profile",
+        "BlenderBIM.DumbProfile.SyncObjectFromProfile",
+        profile.DumbProfileRegenerator().sync_object_from_profile,
     )
     ifcopenshell.api.add_post_listener(
         "material.edit_profile",
-        "BlenderBIM.DumbColumn.RegenerateFromProfile",
-        column.DumbColumnRegenerator().regenerate_from_profile,
+        "BlenderBIM.DumbProfile.RegenerateFromProfile",
+        profile.DumbProfileRegenerator().regenerate_from_profile,
     )
     ifcopenshell.api.add_post_listener(
         "type.assign_type",
-        "BlenderBIM.DumbColumn.RegenerateFromType",
-        column.DumbColumnRegenerator().regenerate_from_type,
+        "BlenderBIM.DumbProfile.RegenerateFromType",
+        profile.DumbProfileRegenerator().regenerate_from_type,
     )
