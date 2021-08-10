@@ -117,7 +117,6 @@ def updateTaskTimeDateTime(self, context, startfinish):
             return "-"
         return time.strftime("%d/%m/%y")
 
-    startfinish_key = "Schedule" + startfinish.capitalize()
     startfinish_value = getattr(self, startfinish)
 
     if startfinish_value == "-":
@@ -141,6 +140,7 @@ def updateTaskTimeDateTime(self, context, startfinish):
         task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=task)
         Data.load(IfcStore.get_file())
 
+    startfinish_key = "Schedule" + startfinish.capitalize()
     if Data.task_times[task_time.id()][startfinish_key] == startfinish_datetime:
         canonical_startfinish_value = canonicalise_time(startfinish_datetime)
         if startfinish_value != canonical_startfinish_value:
@@ -154,10 +154,9 @@ def updateTaskTimeDateTime(self, context, startfinish):
     )
     Data.load(IfcStore.get_file())
     bpy.ops.bim.load_task_properties()
-    setattr(self, startfinish, canonicalise_time(startfinish_datetime))
 
 
-def updateTaskduration(self, context):
+def updateTaskDuration(self, context):
     props = context.scene.BIMWorkScheduleProperties
     if not props.is_task_update_enabled:
         return
@@ -224,7 +223,7 @@ class Task(PropertyGroup):
     is_selected: BoolProperty(name="Is Selected")
     is_expanded: BoolProperty(name="Is Expanded")
     level_index: IntProperty(name="Level Index")
-    duration: StringProperty(name="Duration", update=updateTaskduration)
+    duration: StringProperty(name="Duration", update=updateTaskDuration)
     start: StringProperty(name="Start", update=updateTaskTimeStart)
     finish: StringProperty(name="Finish", update=updateTaskTimeFinish)
     calendar: StringProperty(name="Calendar")
