@@ -305,12 +305,18 @@ namespace IfcGeom {
 		void add_file(IfcGeom::Iterator& it) {
 			if (it.initialize()) {
 				do {
-					IfcGeom::BRepElement* elem = (IfcGeom::BRepElement*)it.get();
-					auto compound = elem->geometry().as_compound();
-					compound.Move(elem->transformation().data());
-					add((IfcUtil::IfcBaseEntity*)it.file()->instance_by_id(elem->id()), compound);
+					add_element(dynamic_cast<IfcGeom::BRepElement*>(it.get()));
 				} while (it.next());
 			}
+		}
+
+		void add_element(IfcGeom::BRepElement* elem) {
+			if (!elem) {
+				return;
+			}
+			auto compound = elem->geometry().as_compound();
+			compound.Move(elem->transformation().data());
+			add(elem->product(), compound);
 		}
 	};
 

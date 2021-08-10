@@ -17,9 +17,12 @@ class AssignContainer(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
+        # The active object pointer is lost when the object is unlinked from all collections in the view layer
+        # We need to store it first, then restore it at the end
+        active_object = context.active_object
         self.file = IfcStore.get_file()
         related_elements = (
-            [bpy.data.objects.get(self.related_element)] if self.related_element else bpy.context.selected_objects
+            [bpy.data.objects.get(self.related_element)] if self.related_element else context.selected_objects
         )
         sprops = context.scene.BIMSpatialProperties
         relating_structure = (
@@ -49,7 +52,7 @@ class AssignContainer(bpy.types.Operator):
                 relating_collection = bpy.data.collections.get(relating_structure_obj.name)
 
             if aggregate_collection:
-                self.remove_collection(bpy.context.scene.collection, aggregate_collection)
+                self.remove_collection(context.scene.collection, aggregate_collection)
                 for collection in bpy.data.collections:
                     self.remove_collection(collection, aggregate_collection)
                 relating_collection.children.link(aggregate_collection)
@@ -57,6 +60,8 @@ class AssignContainer(bpy.types.Operator):
                 for collection in related_element.users_collection:
                     collection.objects.unlink(related_element)
                 relating_collection.objects.link(related_element)
+        # Restore the active object :
+        context.view_layer.objects.active = active_object
         return {"FINISHED"}
 
     def remove_collection(self, parent, child):
@@ -72,7 +77,7 @@ class EnableEditingContainer(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        bpy.context.active_object.BIMObjectSpatialProperties.is_editing = True
+        context.active_object.BIMObjectSpatialProperties.is_editing = True
         getSpatialContainers(self, context)
         return {"FINISHED"}
 
@@ -95,7 +100,7 @@ class DisableEditingContainer(bpy.types.Operator):
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         obj.BIMObjectSpatialProperties.is_editing = False
         return {"FINISHED"}
 
@@ -110,7 +115,7 @@ class RemoveContainer(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         oprops = obj.BIMObjectProperties
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
@@ -120,14 +125,14 @@ class RemoveContainer(bpy.types.Operator):
 
         aggregate_collection = bpy.data.collections.get(obj.name)
         if aggregate_collection:
-            self.remove_collection(bpy.context.scene.collection, aggregate_collection)
+            self.remove_collection(context.scene.collection, aggregate_collection)
             for collection in bpy.data.collections:
                 self.remove_collection(collection, spatial_collection)
-            bpy.context.scene.collection.children.link(aggregate_collection)
+            context.scene.collection.children.link(aggregate_collection)
         else:
             for collection in obj.users_collection:
                 collection.objects.unlink(obj)
-            bpy.context.scene.collection.objects.link(obj)
+            context.scene.collection.objects.link(obj)
         return {"FINISHED"}
 
     def remove_collection(self, parent, child):
@@ -148,7 +153,7 @@ class CopyToContainer(bpy.types.Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        objects = [bpy.data.objects.get(self.obj)] if self.obj else bpy.context.selected_objects
+        objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
         sprops = context.scene.BIMSpatialProperties
         container_ids = [c.ifc_definition_id for c in sprops.spatial_elements if c.is_selected]
         for obj in objects:

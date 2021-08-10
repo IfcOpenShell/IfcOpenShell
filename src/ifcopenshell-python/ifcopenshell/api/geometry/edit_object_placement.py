@@ -1,5 +1,6 @@
 import numpy as np
 import ifcopenshell.api
+import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 
@@ -37,12 +38,10 @@ class Usecase:
             placement_rel_to = relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None
 
         placement = self.file.createIfcLocalPlacement(placement_rel_to, self.get_relative_placement(placement_rel_to))
-        if self.settings["product"].ObjectPlacement:
-            old_placement = self.settings["product"].ObjectPlacement
+        old_placement = self.settings["product"].ObjectPlacement
+        if old_placement and len(self.file.get_inverse(old_placement)) == 1:
             old_placement.PlacementRelTo = None
             self.settings["product"].ObjectPlacement = None
-            for inverse in self.file.get_inverse(old_placement):
-                ifcopenshell.util.element.replace_attribute(inverse, old_placement, placement)
             ifcopenshell.util.element.remove_deep(self.file, old_placement)
         self.settings["product"].ObjectPlacement = placement
 

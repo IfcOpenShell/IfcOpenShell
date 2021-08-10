@@ -22,7 +22,9 @@ class AssignType(bpy.types.Operator):
         self.file = IfcStore.get_file()
         relating_type = self.relating_type or int(context.active_object.BIMTypeProperties.relating_type)
         related_objects = (
-            [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
+            [bpy.data.objects.get(self.related_object)]
+            if self.related_object
+            else context.selected_objects or [context.active_object]
         )
         for related_object in related_objects:
             oprops = related_object.BIMObjectProperties
@@ -39,15 +41,19 @@ class AssignType(bpy.types.Operator):
             MaterialData.load(IfcStore.get_file(), oprops.ifc_definition_id)
             representation_ids = GeometryData.products[oprops.ifc_definition_id]
             if not representation_ids:
-                pass # TODO: clear geometry? Make void? Make none type?
+                pass  # TODO: clear geometry? Make void? Make none type?
             has_switched = False
             for representation_id in representation_ids:
                 representation = GeometryData.representations[representation_id]
                 if representation["ContextOfItems"]["ContextIdentifier"] == "Body":
-                    bpy.ops.bim.switch_representation(obj=related_object.name, ifc_definition_id=representation_id)
+                    bpy.ops.bim.switch_representation(
+                        obj=related_object.name, ifc_definition_id=representation_id, should_switch_all_meshes=False
+                    )
                     has_switched = True
             if not has_switched and representation_ids:
-                bpy.ops.bim.switch_representation(obj=related_object.name, ifc_definition_id=representation_id)
+                bpy.ops.bim.switch_representation(
+                    obj=related_object.name, ifc_definition_id=representation_id, should_switch_all_meshes=False
+                )
 
         bpy.ops.bim.disable_editing_type(obj=related_object.name)
         MaterialData.load(self.file)
@@ -66,7 +72,7 @@ class UnassignType(bpy.types.Operator):
     def _execute(self, context):
         self.file = IfcStore.get_file()
         related_objects = (
-            [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
+            [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
         )
         for related_object in related_objects:
             oprops = related_object.BIMObjectProperties
@@ -87,7 +93,7 @@ class EnableEditingType(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        bpy.context.active_object.BIMTypeProperties.is_editing_type = True
+        context.active_object.BIMTypeProperties.is_editing_type = True
         return {"FINISHED"}
 
 
@@ -98,7 +104,7 @@ class DisableEditingType(bpy.types.Operator):
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else bpy.context.active_object
+        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         obj.BIMTypeProperties.is_editing_type = False
         return {"FINISHED"}
 
@@ -111,7 +117,7 @@ class SelectSimilarType(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        related_object = bpy.data.objects.get(self.related_object) if self.related_object else bpy.context.active_object
+        related_object = bpy.data.objects.get(self.related_object) if self.related_object else context.active_object
         oprops = related_object.BIMObjectProperties
         product = self.file.by_id(oprops.ifc_definition_id)
         declaration = IfcStore.get_schema().declaration_by_name(product.is_a())
@@ -123,7 +129,24 @@ class SelectSimilarType(bpy.types.Operator):
             related_objects = ifcopenshell.api.run(
                 "type.get_related_objects", self.file, **{"related_object": self.file.by_id(oprops.ifc_definition_id)}
             )
-        for obj in bpy.context.visible_objects:
+        for obj in context.visible_objects:
+            if obj.BIMObjectProperties.ifc_definition_id in related_objects:
+                obj.select_set(True)
+        return {"FINISHED"}
+
+
+class SelectTypeObjects(bpy.types.Operator):
+    bl_idname = "bim.select_type_objects"
+    bl_label = "Select Type Objects"
+    bl_options = {"REGISTER", "UNDO"}
+    relating_type: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        relating_type = bpy.data.objects.get(self.relating_type) if self.relating_type else context.active_object
+        oprops = relating_type.BIMObjectProperties
+        related_objects = Data.types[oprops.ifc_definition_id]
+        for obj in context.visible_objects:
             if obj.BIMObjectProperties.ifc_definition_id in related_objects:
                 obj.select_set(True)
         return {"FINISHED"}

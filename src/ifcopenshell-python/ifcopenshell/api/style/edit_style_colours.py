@@ -23,7 +23,7 @@ class Usecase:
                     self.update_colour_rgb(element.SurfaceColour, self.settings["surface_colour"])
                 else:
                     element.SurfaceColour = self.create_colour_rgb(self.settings["surface_colour"])
-                element.Transparency = (self.settings["transparency"] - 1) * -1
+                element.Transparency = self.settings["transparency"]
             if element.is_a("IfcSurfaceStyleRendering"):
                 if element.DiffuseColour:
                     self.update_colour_rgb(element.DiffuseColour, self.settings["diffuse_colour"])
@@ -44,7 +44,7 @@ class Usecase:
     def create_surface_style_rendering(self):
         return self.file.create_entity("IfcSurfaceStyleRendering", **{
             "SurfaceColour": self.create_colour_rgb(self.settings["surface_colour"]),
-            "Transparency": (self.settings["transparency"] - 1) * -1,
+            "Transparency": self.settings["transparency"],
             "ReflectanceMethod": "NOTDEFINED",
             "DiffuseColour": self.create_colour_rgb(self.settings["diffuse_colour"])
         })

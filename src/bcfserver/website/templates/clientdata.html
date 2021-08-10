@@ -1,0 +1,17 @@
+{%extends 'base.html'%} {%block content%} {% if user %}
+<style>
+  pre {
+    white-space: wrap;
+  }
+</style>
+<div>Logged in as <strong>{{user}}</strong></div>
+
+{% for client in clients %}
+<pre>
+{{ client.client_info|tojson }}
+{{ client.client_metadata|tojson }}
+</pre>
+<hr />
+{% endfor %} {% else %}
+<div>Not logged in</div>
+{% endif %} {% endblock %}

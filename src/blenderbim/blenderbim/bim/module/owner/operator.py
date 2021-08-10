@@ -1,8 +1,47 @@
 import bpy
-import json
 import ifcopenshell.api
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.owner.data import Data
+
+
+def flatten_collection(collection):
+    return [v.name for v in collection] if collection else None
+
+
+def populate_collection(collection, collection_data):
+    collection.clear()
+    if collection_data:
+        for value in collection_data:
+            collection.add().name = value
+    else:
+        collection.add()
+
+
+class AddOrRemoveElementFromCollection(bpy.types.Operator):
+    bl_idname = "bim.add_or_remove_element_from_collection"
+    bl_label = "Add or Remove Element From Collection"
+    bl_options = {"REGISTER", "UNDO"}
+    operation : bpy.props.EnumProperty(
+        items=(
+            ("+", 'Add', "Add item to collection"),
+            ("-", 'Remove', "Remove item from collection")
+        ),
+        default="+",
+    )
+    collection_path : bpy.props.StringProperty()
+    selected_item_idx : bpy.props.IntProperty(default=-1)
+
+    def execute(self, context):
+        # Ugly but I hate using eval()
+        collection = context.scene
+        for attr in self.collection_path.split("."):
+            if hasattr(collection, attr):
+                collection = getattr(collection, attr)
+        if self.operation == "+" and hasattr(collection, "add"):
+            collection.add()
+        elif hasattr(collection, "remove") and 0 <= self.selected_item_idx < len(collection):
+            collection.remove(self.selected_item_idx)
+        return {"FINISHED"}
 
 
 class EnableEditingPerson(bpy.types.Operator):
@@ -17,12 +56,13 @@ class EnableEditingPerson(bpy.types.Operator):
         props.active_person_id = self.person_id
         data = Data.people[self.person_id]
         name = data["Id"] if self.file.schema == "IFC2X3" else data["Identification"]
-        props.person.name = name or ""
-        props.person.family_name = data["FamilyName"] or ""
-        props.person.given_name = data["GivenName"] or ""
-        props.person.middle_names = json.dumps(data["MiddleNames"]) if data["MiddleNames"] else ""
-        props.person.prefix_titles = json.dumps(data["PrefixTitles"]) if data["PrefixTitles"] else ""
-        props.person.suffix_titles = json.dumps(data["SuffixTitles"]) if data["SuffixTitles"] else ""
+        person = props.person
+        person.name = name or ""
+        person.family_name = data["FamilyName"] or ""
+        person.given_name = data["GivenName"] or ""
+        populate_collection(person.middle_names, data.get("MiddleNames", None))
+        populate_collection(person.prefix_titles, data.get("PrefixTitles", None))
+        populate_collection(person.suffix_titles, data.get("SuffixTitles", None))
         return {"FINISHED"}
 
 
@@ -61,13 +101,14 @@ class EditPerson(bpy.types.Operator):
     def _execute(self, context):
         self.file = IfcStore.get_file()
         props = context.scene.BIMOwnerProperties
+        person = props.person
         attributes = {
-            "Identification": props.person.name or None,
-            "FamilyName": props.person.family_name or None,
-            "GivenName": props.person.given_name or None,
-            "MiddleNames": json.loads(props.person.middle_names) if props.person.middle_names else None,
-            "PrefixTitles": json.loads(props.person.prefix_titles) if props.person.prefix_titles else None,
-            "SuffixTitles": json.loads(props.person.suffix_titles) if props.person.suffix_titles else None,
+            "Identification": person.name or None,
+            "FamilyName": person.family_name or None,
+            "GivenName": person.given_name or None,
+            "MiddleNames": flatten_collection(person.middle_names),
+            "PrefixTitles": flatten_collection(person.prefix_titles),
+            "SuffixTitles": flatten_collection(person.suffix_titles),
         }
         if self.file.schema == "IFC2X3":
             attributes["Id"] = attributes["Identification"]
@@ -215,29 +256,28 @@ class EnableEditingAddress(bpy.types.Operator):
         props = context.scene.BIMOwnerProperties
         props.active_address_id = self.address_id
         data = Data.addresses[self.address_id]
-        props.address.name = data["type"]
-        props.address.purpose = data["Purpose"] or "None"
-        props.address.description = data["Description"] or ""
-        props.address.user_defined_purpose = data["UserDefinedPurpose"] or ""
+        address = props.address
+        address.name = data["type"]
+        address.purpose = data["Purpose"] or "None"
+        address.description = data["Description"] or ""
+        address.user_defined_purpose = data["UserDefinedPurpose"] or ""
 
-        if data["type"] == "IfcTelecomAddress":
-            props.address.telephone_numbers = json.dumps(data["TelephoneNumbers"]) if data["TelephoneNumbers"] else ""
-            props.address.facsimile_numbers = json.dumps(data["FacsimileNumbers"]) if data["FacsimileNumbers"] else ""
-            props.address.pager_number = data["PagerNumber"] or ""
-            props.address.electronic_mail_addresses = (
-                json.dumps(data["ElectronicMailAddresses"]) if data["ElectronicMailAddresses"] else ""
-            )
-            props.address.www_home_page_url = data["WWWHomePageURL"] or ""
+        if data["type"] == "IfcTelecomAddress":            
+            populate_collection(address.telephone_numbers, data.get("TelephoneNumbers", None))
+            populate_collection(address.facsimile_numbers, data.get("FacsimileNumbers", None))
+            address.pager_number = data["PagerNumber"] or ""
+            populate_collection(address.electronic_mail_addresses, data.get("ElectronicMailAddresses", None))
+            address.www_home_page_url = data["WWWHomePageURL"] or ""
             if self.file.schema != "IFC2X3":
-                props.address.messaging_ids = json.dumps(data["MessagingIDs"]) if data["MessagingIDs"] else ""
+                populate_collection(address.messaging_ids, data.get("MessagingIDs", None))
         elif data["type"] == "IfcPostalAddress":
-            props.address.internal_location = data["InternalLocation"] or ""
-            props.address.address_lines = json.dumps(data["AddressLines"]) if data["AddressLines"] else ""
-            props.address.postal_box = data["PostalBox"] or ""
-            props.address.town = data["Town"] or ""
-            props.address.region = data["Region"] or ""
-            props.address.postal_code = data["PostalCode"] or ""
-            props.address.country = data["Country"] or ""
+            address.internal_location = data["InternalLocation"] or ""
+            populate_collection(address.address_lines, data.get("AddressLines", None))
+            address.postal_box = data["PostalBox"] or ""
+            address.town = data["Town"] or ""
+            address.region = data["Region"] or ""
+            address.postal_code = data["PostalCode"] or ""
+            address.country = data["Country"] or ""
         return {"FINISHED"}
 
 
@@ -273,18 +313,12 @@ class EditAddress(bpy.types.Operator):
         if address.is_a("IfcTelecomAddress"):
             attributes.update(
                 {
-                    "TelephoneNumbers": json.loads(props.address.telephone_numbers)
-                    if props.address.telephone_numbers
-                    else None,
-                    "FacsimileNumbers": json.loads(props.address.facsimile_numbers)
-                    if props.address.facsimile_numbers
-                    else None,
+                    "TelephoneNumbers": flatten_collection(props.address.telephone_numbers),
+                    "FacsimileNumbers": flatten_collection(props.address.facsimile_numbers),
                     "PagerNumber": props.address.pager_number or None,
-                    "ElectronicMailAddresses": json.loads(props.address.electronic_mail_addresses)
-                    if props.address.electronic_mail_addresses
-                    else None,
+                    "ElectronicMailAddresses": flatten_collection(props.address.electronic_mail_addresses),
                     "WWWHomePageURL": props.address.www_home_page_url or None,
-                    "MessagingIDs": json.loads(props.address.messaging_ids) if props.address.messaging_ids else None,
+                    "MessagingIDs": flatten_collection(props.address.messaging_ids),
                 }
             )
             if self.file.schema == "IFC2X3":
@@ -293,7 +327,7 @@ class EditAddress(bpy.types.Operator):
             attributes.update(
                 {
                     "InternalLocation": props.address.internal_location or None,
-                    "AddressLines": json.loads(props.address.address_lines) if props.address.address_lines else None,
+                    "AddressLines": flatten_collection(props.address.address_lines),
                     "PostalBox": props.address.postal_box or None,
                     "Town": props.address.town or None,
                     "Region": props.address.region or None,

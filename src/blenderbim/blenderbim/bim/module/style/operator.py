@@ -32,7 +32,7 @@ class UpdateStyleColours(bpy.types.Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        material = bpy.data.materials.get(self.material) if self.material else bpy.context.active_object.active_material
+        material = bpy.data.materials.get(self.material) if self.material else context.active_object.active_material
         settings = get_colour_settings(material)
         settings["style"] = self.file.by_id(material.BIMMaterialProperties.ifc_style_id)
         ifcopenshell.api.run("style.edit_style_colours", self.file, **settings)
@@ -50,7 +50,7 @@ class RemoveStyle(bpy.types.Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        material = bpy.data.materials.get(self.material) if self.material else bpy.context.active_object.active_material
+        material = bpy.data.materials.get(self.material) if self.material else context.active_object.active_material
         ifcopenshell.api.run(
             "style.remove_style", self.file, style=self.file.by_id(material.BIMMaterialProperties.ifc_style_id)
         )
@@ -69,12 +69,12 @@ class AddStyle(bpy.types.Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        material = bpy.data.materials.get(self.material) if self.material else bpy.context.active_object.active_material
+        material = bpy.data.materials.get(self.material) if self.material else context.active_object.active_material
         settings = get_colour_settings(material)
         settings["name"] = material.name
         settings["external_definition"] = None  # TODO: Implement. See #1222
         style = ifcopenshell.api.run("style.add_style", self.file, **settings)
-        material.BIMMaterialProperties.ifc_style_id = style.id()
+        IfcStore.link_element(style, material)
         if material.BIMObjectProperties.ifc_definition_id:
             context = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
             if context:
@@ -108,7 +108,7 @@ class EnableEditingStyle(bpy.types.Operator):
     material: bpy.props.StringProperty()
 
     def execute(self, context):
-        material = bpy.data.materials.get(self.material) if self.material else bpy.context.active_object.active_material
+        material = bpy.data.materials.get(self.material) if self.material else context.active_object.active_material
         props = material.BIMStyleProperties
         while len(props.attributes) > 0:
             props.attributes.remove(0)
@@ -126,7 +126,7 @@ class DisableEditingStyle(bpy.types.Operator):
     material: bpy.props.StringProperty()
 
     def execute(self, context):
-        material = bpy.data.materials.get(self.material) if self.material else bpy.context.active_object.active_material
+        material = bpy.data.materials.get(self.material) if self.material else context.active_object.active_material
         props = material.BIMStyleProperties
         props.is_editing_attributes = False
         return {"FINISHED"}
@@ -141,7 +141,7 @@ class EditStyle(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        material = bpy.context.active_object.active_material
+        material = context.active_object.active_material
         props = material.BIMStyleProperties
         attributes = blenderbim.bim.helper.export_attributes(props.attributes)
         self.file = IfcStore.get_file()

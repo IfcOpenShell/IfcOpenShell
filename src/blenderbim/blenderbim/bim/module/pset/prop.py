@@ -1,7 +1,8 @@
 import bpy
+import blenderbim.bim.schema
 from blenderbim.bim.prop import Attribute
 from ifcopenshell.api.pset.data import Data
-import blenderbim.bim.schema
+from blenderbim.bim.ifc import IfcStore
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -29,16 +30,17 @@ def purge():
 def getPsetNames(self, context):
     global psetnames
     obj = context.active_object
-    if "/" in obj.name:
-        ifc_class = obj.name.split("/")[0]
-        if ifc_class not in psetnames:
-            psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
-            psetnames[ifc_class] = [(p.Name, p.Name, "") for p in psets]
-        assigned_names = [
-            Data.psets[p]["Name"] for p in Data.products[obj.BIMObjectProperties.ifc_definition_id]["psets"]
-        ]
-        return [p for p in psetnames[ifc_class] if p[0] not in assigned_names]
-    return []
+    if not obj.BIMObjectProperties.ifc_definition_id:
+        return []
+    element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+    ifc_class = element.is_a()
+    if ifc_class not in psetnames:
+        psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
+        psetnames[ifc_class] = [(p.Name, p.Name, "") for p in psets]
+    assigned_names = [
+        Data.psets[p]["Name"] for p in Data.products[obj.BIMObjectProperties.ifc_definition_id]["psets"]
+    ]
+    return [p for p in psetnames[ifc_class] if p[0] not in assigned_names]
 
 
 def getMaterialPsetNames(self, context):

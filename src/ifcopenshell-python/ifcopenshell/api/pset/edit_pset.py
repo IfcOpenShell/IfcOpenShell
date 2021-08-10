@@ -5,7 +5,7 @@ import ifcopenshell.util.pset
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
-        self.settings = {"pset": None, "name": None, "properties": {}}
+        self.settings = {"pset": None, "name": None, "properties": {}, "pset_template": None}
         for key, value in settings.items():
             self.settings[key] = value
 
@@ -21,9 +21,12 @@ class Usecase:
             self.settings["pset"].Name = self.settings["name"]
 
     def load_pset_template(self):
-        # TODO: add IFC2X3 PsetQto template support
-        self.psetqto = ifcopenshell.util.pset.get_template("IFC4")
-        self.pset_template = self.psetqto.get_by_name(self.settings["pset"].Name)
+        if self.settings["pset_template"]:
+            self.pset_template = self.settings["pset_template"]
+        else:
+            # TODO: add IFC2X3 PsetQto template support
+            self.psetqto = ifcopenshell.util.pset.get_template("IFC4")
+            self.pset_template = self.psetqto.get_by_name(self.settings["pset"].Name)
 
     def update_existing_properties(self):
         for prop in self.get_properties():

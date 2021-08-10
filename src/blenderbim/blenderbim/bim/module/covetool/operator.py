@@ -16,13 +16,13 @@ class Login(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        token = api.login(bpy.context.scene.CoveToolProperties.username, bpy.context.scene.CoveToolProperties.password)
+        token = api.login(context.scene.CoveToolProperties.username, context.scene.CoveToolProperties.password)
         if token:
-            bpy.context.scene.CoveToolProperties.token = token
+            context.scene.CoveToolProperties.token = token
 
             projects = api.get_request("projects")
             for project in projects:
-                new_project = bpy.context.scene.CoveToolProperties.projects.add()
+                new_project = context.scene.CoveToolProperties.projects.add()
                 new_project.name = project["name"]
                 new_project.run_set = project["run_set"][0]
                 new_project.url = project["url"]
@@ -36,10 +36,10 @@ class RunSimpleAnalysis(bpy.types.Operator):
     bl_label = "Run Simple Analysis"
 
     def execute(self, context):
-        simple_analysis = bpy.context.scene.CoveToolProperties.simple_analysis
+        simple_analysis = context.scene.CoveToolProperties.simple_analysis
         data = {
-            "run": bpy.context.scene.CoveToolProperties.projects[
-                bpy.context.scene.CoveToolProperties.active_project_index
+            "run": context.scene.CoveToolProperties.projects[
+                context.scene.CoveToolProperties.active_project_index
             ].run_set,
             "si_units": simple_analysis.si_units,
             "building_height": simple_analysis.building_height,
@@ -84,10 +84,10 @@ class RunAnalysis(bpy.types.Operator):
             "roofs": [],
             "shading_devices": [],
         }
-        self.parse_objects()
+        self.parse_objects(context)
         data = {
-            "run": bpy.context.scene.CoveToolProperties.projects[
-                bpy.context.scene.CoveToolProperties.active_project_index
+            "run": context.scene.CoveToolProperties.projects[
+                context.scene.CoveToolProperties.active_project_index
             ].run_set,
             "source": "BlenderBIM",
             "rotation_angle": self.get_rotation_angle(),
@@ -112,14 +112,14 @@ class RunAnalysis(bpy.types.Operator):
             rotation = 360 - rotation
         return rotation
 
-    def parse_objects(self):
-        for obj in bpy.context.visible_objects:
+    def parse_objects(self, context):
+        for obj in context.visible_objects:
             covetool_category = self.get_covetool_category(obj)
             if not covetool_category:
                 continue
             if not self.has_triangulate_modifier(obj):
                 obj.modifiers.new(name="Triangulate", type="TRIANGULATE")
-            mesh = obj.evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+            mesh = obj.evaluated_get(context.evaluated_depsgraph_get()).to_mesh()
             meshes = {}
             for polygon in mesh.polygons:
                 normal = "{}|{}|{}".format(
@@ -197,5 +197,4 @@ class RunAnalysis(bpy.types.Operator):
             return True
 
     def is_window_skylight(self, element):
-        predefined_type = element.get_info().get("PredefinedType")
-        return predefined_type and predefined_type.string_value == "SKYLIGHT"
+        return element.get_info().get("PredefinedType") == "SKYLIGHT"

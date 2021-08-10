@@ -1248,8 +1248,10 @@ void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::Argument
 		// Remove leading and trailing '.'
 		enum_literal = enum_literal.substr(1, enum_literal.size() - 2);
 		
-		const IfcParse::enumeration_type* enum_type = type()->as_entity()->
-			attribute_by_index(i)->type_of_attribute()->as_named_type()->declared_type()->as_enumeration_type();
+		const IfcParse::enumeration_type* enum_type = type()->as_enumeration_type()
+			? type()->as_enumeration_type()
+			: type()->as_entity()->attribute_by_index(i)->type_of_attribute()->
+			as_named_type()->declared_type()->as_enumeration_type();
 		
 		std::vector<std::string>::const_iterator it = std::find(
 			enum_type->enumeration_items().begin(), 
@@ -1823,6 +1825,10 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 	if (parsing_complete_ && ty->as_entity()) {
 		build_inverses_(new_entity);
 	}
+
+	// @todo the id isn't actually used here, but instead
+	// clears the entire inverse cache map.
+	mark_entity_as_modified(0);
 
 	return new_entity;
 }

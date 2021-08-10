@@ -261,7 +261,8 @@ class BIM_PT_structural_analysis_models(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        file = IfcStore.get_file()
+        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         if not Data.is_loaded:
@@ -345,7 +346,8 @@ class BIM_PT_structural_load_cases(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        file = IfcStore.get_file()
+        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         self.props = context.scene.BIMStructuralProperties
@@ -449,7 +451,8 @@ class BIM_PT_structural_loads(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        file = IfcStore.get_file()
+        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         if not Data.is_loaded:
@@ -516,7 +519,8 @@ class BIM_PT_boundary_conditions(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        file = IfcStore.get_file()
+        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         if not Data.is_loaded:

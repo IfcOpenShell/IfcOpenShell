@@ -7,6 +7,7 @@ import ifcopenshell.util.attribute
 import blenderbim.bim.schema
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data
+from ifcopenshell.api.cost.data import Data as CostData
 from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
 
 
@@ -16,7 +17,7 @@ class TogglePsetExpansion(bpy.types.Operator):
     pset_id: bpy.props.IntProperty()
 
     def execute(self, context):
-        obj = bpy.context.active_object
+        obj = context.active_object
         data = Data.psets if self.pset_id in Data.psets else Data.qtos
         data[self.pset_id]["is_expanded"] = not data[self.pset_id]["is_expanded"]
         return {"FINISHED"}
@@ -195,6 +196,7 @@ class EditPset(bpy.types.Operator):
                     "pset": self.file.by_id(pset_id),
                     "name": props.active_pset_name,
                     "properties": properties,
+                    "pset_template": blenderbim.bim.schema.ifc.psetqto.get_by_name(props.active_pset_name),
                 },
             )
         else:
@@ -210,6 +212,7 @@ class EditPset(bpy.types.Operator):
                     "properties": properties,
                 },
             )
+            CostData.purge()
         Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         bpy.ops.bim.disable_pset_editing(obj=self.obj, obj_type=self.obj_type)
         return {"FINISHED"}
@@ -294,7 +297,7 @@ class AddQto(bpy.types.Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        obj = bpy.context.active_object
+        obj = context.active_object
         oprops = obj.BIMObjectProperties
         props = obj.PsetProperties
         ifcopenshell.api.run(
@@ -317,23 +320,23 @@ class GuessQuantity(bpy.types.Operator):
 
     def execute(self, context):
         self.qto_calculator = QtoCalculator()
-        obj = bpy.context.active_object
+        obj = context.active_object
         prop = obj.PsetProperties.properties.get(self.prop)
-        prop.float_value = self.guess_quantity(obj)
+        prop.float_value = self.guess_quantity(obj, context)
         return {"FINISHED"}
 
-    def guess_quantity(self, obj):
+    def guess_quantity(self, obj, context):
         quantity = self.qto_calculator.guess_quantity(self.prop, [p.name for p in obj.PsetProperties.properties], obj)
         if "area" in self.prop.lower():
-            if bpy.context.scene.BIMProperties.area_unit:
-                prefix, name = self.get_prefix_name(bpy.context.scene.BIMProperties.area_unit)
+            if context.scene.BIMProperties.area_unit:
+                prefix, name = self.get_prefix_name(context.scene.BIMProperties.area_unit)
                 quantity = ifcopenshell.util.unit.convert(quantity, None, "SQUARE_METRE", prefix, name)
         elif "volume" in self.prop.lower():
-            if bpy.context.scene.BIMProperties.volume_unit:
-                prefix, name = self.get_prefix_name(bpy.context.scene.BIMProperties.volume_unit)
+            if context.scene.BIMProperties.volume_unit:
+                prefix, name = self.get_prefix_name(context.scene.BIMProperties.volume_unit)
                 quantity = ifcopenshell.util.unit.convert(quantity, None, "CUBIC_METRE", prefix, name)
         else:
-            prefix, name = self.get_blender_prefix_name()
+            prefix, name = self.get_blender_prefix_name(context)
             quantity = ifcopenshell.util.unit.convert(quantity, None, "METRE", prefix, name)
         return round(quantity, 3)
 
@@ -342,13 +345,14 @@ class GuessQuantity(bpy.types.Operator):
             return value.split("/")
         return None, value
 
-    def get_blender_prefix_name(self):
-        if bpy.context.scene.unit_settings.system == "IMPERIAL":
-            if bpy.context.scene.unit_settings.length_unit == "INCHES":
+    def get_blender_prefix_name(self, context):
+        unit_settings = context.scene.unit_settings
+        if unit_settings.system == "IMPERIAL":
+            if unit_settings.length_unit == "INCHES":
                 return None, "inch"
-            elif bpy.context.scene.unit_settings.length_unit == "FEET":
+            elif unit_settings.length_unit == "FEET":
                 return None, "foot"
-        elif bpy.context.scene.unit_settings.system == "METRIC":
-            if bpy.context.scene.unit_settings.length_unit == "METERS":
+        elif unit_settings.system == "METRIC":
+            if unit_settings.length_unit == "METERS":
                 return None, "METRE"
-            return bpy.context.scene.unit_settings.length_unit[0 : -len("METERS")], "METRE"
+            return unit_settings.length_unit[0 : -len("METERS")], "METRE"

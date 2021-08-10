@@ -24,20 +24,22 @@ class BIM_PT_debug(Panel):
         row.operator("bim.print_ifc_file")
 
         row = layout.row()
+        row.operator("bim.purge_ifc_links")
+
+        row = layout.row()
         row.operator("bim.create_all_shapes")
 
         row = layout.row()
         row.operator("bim.profile_import_ifc")
 
-        row = layout.row()
+        row = layout.split(factor=0.5, align=True)
+        row.operator("bim.create_shape_from_step_id").should_include_curves = False
+        row.operator("bim.create_shape_from_step_id", text="", icon="IPO_ELASTIC").should_include_curves = True
         row.prop(props, "step_id", text="")
-        row = layout.row()
-        row.operator("bim.create_shape_from_step_id")
 
-        row = layout.row()
-        row.prop(props, "number_of_polygons", text="")
-        row = layout.row()
+        row = layout.split(factor=0.7, align=True)
         row.operator("bim.select_high_polygon_meshes")
+        row.prop(props, "number_of_polygons", text="")
 
         layout.label(text="Inspector:")
 
@@ -46,7 +48,7 @@ class BIM_PT_debug(Panel):
             row.operator("bim.rewind_inspector", icon="FRAME_PREV", text="")
         row.prop(props, "active_step_id", text="")
         row = layout.row(align=True)
-        row.operator("bim.inspect_from_step_id").step_id = bpy.context.scene.BIMDebugProperties.active_step_id
+        row.operator("bim.inspect_from_step_id").step_id = context.scene.BIMDebugProperties.active_step_id
         row.operator("bim.inspect_from_object")
 
         if props.attributes:
@@ -59,6 +61,9 @@ class BIM_PT_debug(Panel):
             if attribute.name == "GlobalId":
                 op = row.operator("bim.select_global_id", icon="RESTRICT_SELECT_OFF", text="")
                 op.global_id = attribute.string_value
+            if attribute.name == "ObjectPlacement":
+                op = row.operator("bim.print_object_placement", icon="TRACKER", text="")
+                op.step_id = attribute.int_value
             if attribute.int_value:
                 row.operator(
                     "bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text=""

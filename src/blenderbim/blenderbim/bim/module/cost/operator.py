@@ -1,10 +1,12 @@
 import os
 import bpy
 import json
+import time
 import ifcopenshell.api
 import blenderbim.bim.helper
 from blenderbim.bim.module.cost.prop import purge
 from blenderbim.bim.ifc import IfcStore
+from bpy_extras.io_utils import ImportHelper
 from ifcopenshell.api.cost.data import Data
 
 
@@ -307,7 +309,7 @@ class AssignCostItemProduct(bpy.types.Operator):
 
     def _execute(self, context):
         related_objects = (
-            [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
+            [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
         )
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
@@ -336,7 +338,7 @@ class UnassignCostItemProduct(bpy.types.Operator):
 
     def _execute(self, context):
         related_objects = (
-            [bpy.data.objects.get(self.related_object)] if self.related_object else bpy.context.selected_objects
+            [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
         )
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
@@ -420,7 +422,7 @@ class AddCostItemQuantity(bpy.types.Operator):
 
 class RemoveCostItemQuantity(bpy.types.Operator):
     bl_idname = "bim.remove_cost_item_quantity"
-    bl_label = "Add Cost Item Quantity"
+    bl_label = "Remove Cost Item Quantity"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
     physical_quantity: bpy.props.IntProperty()
@@ -621,7 +623,7 @@ class SelectCostItemProducts(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         related_products = Data.cost_items[self.cost_item]["Controls"]
-        for obj in bpy.context.visible_objects:
+        for obj in context.visible_objects:
             obj.select_set(False)
             if obj.BIMObjectProperties.ifc_definition_id in related_products:
                 obj.select_set(True)
@@ -640,7 +642,7 @@ class SelectCostScheduleProducts(bpy.types.Operator):
         for cost_item_id in Data.cost_schedules[self.cost_schedule]["Controls"]:
             self.get_related_products(Data.cost_items[cost_item_id])
         self.related_products = set(self.related_products)
-        for obj in bpy.context.visible_objects:
+        for obj in context.visible_objects:
             obj.select_set(False)
             if obj.BIMObjectProperties.ifc_definition_id in self.related_products:
                 obj.select_set(True)
@@ -650,3 +652,53 @@ class SelectCostScheduleProducts(bpy.types.Operator):
         self.related_products.extend(cost_item["Controls"])
         for child_id in cost_item["IsNestedBy"]:
             self.get_related_products(Data.cost_items[child_id])
+
+
+class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper):
+    bl_idname = "import_cost_schedule_csv.bim"
+    bl_label = "Import Cost Schedule CSV"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".csv"
+    filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
+
+    def execute(self, context):
+        from ifc5d.csv2ifc import Csv2Ifc
+
+        self.file = IfcStore.get_file()
+        start = time.time()
+        csv2ifc = Csv2Ifc()
+        csv2ifc.csv = self.filepath
+        csv2ifc.file = self.file
+        csv2ifc.execute()
+        Data.load(IfcStore.get_file())
+        print("Import finished in {:.2f} seconds".format(time.time() - start))
+        return {"FINISHED"}
+
+
+class AddCostColumn(bpy.types.Operator):
+    bl_idname = "bim.add_cost_column"
+    bl_label = "Add Cost Column"
+    bl_options = {"REGISTER", "UNDO"}
+    name: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMCostProperties
+        new = self.props.columns.add()
+        new.name = self.name
+        Data.set_categories([c.name for c in self.props.columns])
+        Data.load(IfcStore.get_file())
+        return {"FINISHED"}
+
+
+class RemoveCostColumn(bpy.types.Operator):
+    bl_idname = "bim.remove_cost_column"
+    bl_label = "Remove Cost Column"
+    bl_options = {"REGISTER", "UNDO"}
+    name: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMCostProperties
+        self.props.columns.remove(self.props.columns.find(self.name))
+        Data.set_categories([c.name for c in self.props.columns])
+        Data.load(IfcStore.get_file())
+        return {"FINISHED"}

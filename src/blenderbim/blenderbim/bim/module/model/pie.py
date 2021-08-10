@@ -1,5 +1,5 @@
 import bpy
-
+from blenderbim.bim.ifc import IfcStore
 
 class OpenPieClass(bpy.types.Operator):
     bl_idname = "bim.open_pie_class"

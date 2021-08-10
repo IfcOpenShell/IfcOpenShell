@@ -2,7 +2,7 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 
-IteratorFactoryImplementation& iterator_implementations() {
+IFC_GEOM_API IteratorFactoryImplementation& iterator_implementations() {
 	static IteratorFactoryImplementation impl;
 	return impl;
 }
@@ -34,19 +34,19 @@ extern void init_IteratorImplementation_Ifc4x3_rc2(IteratorFactoryImplementation
 IteratorFactoryImplementation::IteratorFactoryImplementation() {
 #ifdef HAS_SCHEMA_2x3
 	init_IteratorImplementation_Ifc2x3(this);
-#endif	
+#endif
 #ifdef HAS_SCHEMA_4
 	init_IteratorImplementation_Ifc4(this);
-#endif	
+#endif
 #ifdef HAS_SCHEMA_4x1
 	init_IteratorImplementation_Ifc4x1(this);
-#endif	
+#endif
 #ifdef HAS_SCHEMA_4x2
 	init_IteratorImplementation_Ifc4x2(this);
-#endif	
+#endif
 #ifdef HAS_SCHEMA_4x3_rc1
 	init_IteratorImplementation_Ifc4x3_rc1(this);
-#endif	
+#endif
 #ifdef HAS_SCHEMA_4x3_rc2
 	init_IteratorImplementation_Ifc4x3_rc2(this);
 #endif

@@ -20,7 +20,7 @@ def element_listener(element, obj):
 
 
 def mode_callback(obj, data):
-    for obj in bpy.context.selected_objects + [bpy.context.active_object]:
+    for obj in set(bpy.context.selected_objects + [bpy.context.active_object]):
         if (
             obj.mode != "EDIT"
             or not obj.data
@@ -33,21 +33,47 @@ def mode_callback(obj, data):
         parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
         if not parametric or parametric["Engine"] != "BlenderBIM.DumbWall":
             return
+        bpy.ops.bim.dynamically_void_product(obj=obj.name)
         IfcStore.edited_objs.add(obj)
+        bm = bmesh.from_edit_mesh(obj.data)
+        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
+        bmesh.update_edit_mesh(obj.data)
+        bm.free()
 
 
-class AddWall(bpy.types.Operator):
-    bl_idname = "bim.add_wall"
-    bl_label = "Add Wall"
+class AddWallOpening(bpy.types.Operator):
+    bl_idname = "bim.add_wall_opening"
+    bl_label = "Add Wall Opening"
     bl_options = {"REGISTER", "UNDO"}
-    join_type: bpy.props.StringProperty()
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        props = context.scene.BIMModelProperties
-        bpy.ops.bim.add_type_instance(ifc_class="IfcWallType", relating_type=int(props.relating_type))
+        selected_objs = context.selected_objects
+        if len(selected_objs) == 0 or not context.active_object:
+            return {"FINISHED"}
+        wall_obj = context.active_object
+        if not wall_obj.BIMObjectProperties.ifc_definition_id:
+            return {"FINISHED"}
+        wall = IfcStore.get_file().by_id(wall_obj.BIMObjectProperties.ifc_definition_id)
+        local_location = wall_obj.matrix_world.inverted() @ context.scene.cursor.location
+        raycast = wall_obj.closest_point_on_mesh(local_location, distance=0.01)
+        if not raycast[0]:
+            return {"FINISHED"}
+        bpy.ops.mesh.primitive_cube_add(size=wall_obj.dimensions[1] * 2)
+        opening = bpy.context.selected_objects[0]
+
+        # Place the opening in the middle of the wall
+        global_location = wall_obj.matrix_world @ raycast[1]
+        normal = raycast[2]
+        normal.negate()
+        global_normal = wall_obj.matrix_world.to_quaternion() @ normal
+        opening.location = global_location + (global_normal * (wall_obj.dimensions[1] / 2))
+
+        opening.rotation_euler = wall_obj.rotation_euler
+        opening.name = "Opening"
+        bpy.ops.bim.add_opening(opening=opening.name, obj=wall_obj.name)
         return {"FINISHED"}
 
 
@@ -59,13 +85,21 @@ class JoinWall(bpy.types.Operator):
 
     def execute(self, context):
         selected_objs = context.selected_objects
+        for obj in selected_objs:
+            bpy.ops.bim.dynamically_void_product(obj=obj.name)
         if len(selected_objs) == 0:
             return {"FINISHED"}
         if not self.join_type:
             for obj in selected_objs:
                 DumbWallJoiner(obj, obj).unjoin()
             return {"FINISHED"}
-        if len(selected_objs) < 2 or not context.active_object:
+        if not context.active_object:
+            return {"FINISHED"}
+        if len(selected_objs) == 1:
+            DumbWallJoiner(context.active_object, target_coordinate=context.scene.cursor.location).extend()
+            IfcStore.edited_objs.add(context.active_object)
+            return {"FINISHED"}
+        if len(selected_objs) < 2:
             return {"FINISHED"}
         for obj in selected_objs:
             if obj == context.active_object:
@@ -148,6 +182,8 @@ def recalculate_dumb_wall_origin(wall, new_origin=None):
         )
     )
     wall.matrix_world.translation = new_origin
+    for child in wall.children:
+        child.matrix_parent_inverse = wall.matrix_world.inverted()
 
 
 class DumbWallSplitter:
@@ -223,6 +259,9 @@ class DumbWallFlipper:
         ).length < 0.001:
             recalculate_dumb_wall_origin(self.wall, self.wall.matrix_world @ Vector(self.wall.bound_box[7]))
             self.rotate_wall_180()
+            bpy.context.view_layer.update()
+            for child in self.wall.children:
+                child.matrix_parent_inverse = self.wall.matrix_world.inverted()
         else:
             recalculate_dumb_wall_origin(self.wall)
 
@@ -327,16 +366,19 @@ class DumbWallJoiner:
     #  2. Given an "end face", identify a side "target face" of the other wall
     #     to project towards.
     #  3. Project the vertices of an "end face" to the "target face".
-    def __init__(self, wall1, wall2):
+    # Alternatively, a target coordinate may be provided as an imaginary point for the wall to join to
+    def __init__(self, wall1, wall2=None, target_coordinate=None):
         self.wall1 = wall1
         self.wall2 = wall2
+        self.target_coordinate = target_coordinate
         self.should_project_to_frontface = True
         self.should_attempt_v_junction_projection = False
         self.initialise_convenience_variables()
 
     def initialise_convenience_variables(self):
         self.wall1_matrix = self.wall1.matrix_world
-        self.wall2_matrix = self.wall2.matrix_world
+        if self.wall2:
+            self.wall2_matrix = self.wall2.matrix_world
         self.pos_x = self.wall1_matrix.to_quaternion() @ Vector((1, 0, 0))
         self.neg_x = self.wall1_matrix.to_quaternion() @ Vector((-1, 0, 0))
 
@@ -352,6 +394,26 @@ class DumbWallJoiner:
         for face in wall1_max_faces:
             for v in face.vertices:
                 self.wall1.data.vertices[v].co[0] = max_x
+        self.recalculate_origins()
+
+    # An extension is where a single end of wall1 is projected to an imaginary
+    # plane denoted by the target coordinate.
+    def extend(self):
+        wall1_min_faces, wall1_max_faces = self.get_wall_end_faces(self.wall1)
+        ef1_distance = abs(mathutils.geometry.distance_point_to_plane(
+            self.wall1_matrix @ self.wall1.data.vertices[wall1_min_faces[0].vertices[0]].co,
+            self.target_coordinate,
+            self.pos_x,
+        ))
+        ef2_distance = abs(mathutils.geometry.distance_point_to_plane(
+            self.wall1_matrix @ self.wall1.data.vertices[wall1_max_faces[0].vertices[0]].co,
+            self.target_coordinate,
+            self.neg_x,
+        ))
+        if ef1_distance < ef2_distance:
+            self.project_end_faces_to_target(wall1_min_faces)
+        else:
+            self.project_end_faces_to_target(wall1_max_faces)
         self.recalculate_origins()
 
     # A T-junction is an ordered operation where a single end of wall1 is joined
@@ -439,7 +501,8 @@ class DumbWallJoiner:
     def recalculate_origins(self):
         bpy.context.view_layer.update()
         recalculate_dumb_wall_origin(self.wall1)
-        recalculate_dumb_wall_origin(self.wall2)
+        if self.wall2:
+            recalculate_dumb_wall_origin(self.wall2)
 
     def swap_walls(self):
         self.wall1, self.wall2 = self.wall2, self.wall1
@@ -466,6 +529,14 @@ class DumbWallJoiner:
             return
         local_point = wall_matrix.inverted() @ point
         wall.data.vertices[v].co = local_point
+
+    def project_end_faces_to_target(self, end_faces):
+        for end_face in end_faces:
+            for v in end_face.vertices:
+                vertex = self.wall1_matrix @ self.wall1.data.vertices[v].co
+                self.wall1.data.vertices[v].co = self.wall1_matrix.inverted() @ mathutils.geometry.intersect_line_plane(
+                    vertex, vertex + self.pos_x, self.target_coordinate, self.pos_x
+                )
 
     # A projection target face is a side face on the target wall that has a
     # significant local Y component to its normal (i.e. is not pointing up or
@@ -536,6 +607,8 @@ class DumbWallJoiner:
         min_x = min([v[0] for v in wall.bound_box])
         max_x = max([v[0] for v in wall.bound_box])
         for f in wall.data.polygons:
+            if abs(f.normal.x) < 0.1:
+                continue
             end_face_index = self.get_wall_face_end(wall, f, min_x, max_x)
             if end_face_index == 1:
                 min_faces.append(f)
@@ -546,9 +619,9 @@ class DumbWallJoiner:
     # 1 is the leftmost (minimum local X axis) end, and 2 is the rightmost end
     def get_wall_face_end(self, wall, face, min_x, max_x):
         for v in face.vertices:
-            if wall.data.vertices[v].co.x == min_x and abs(face.normal.x) > 0.1:
+            if wall.data.vertices[v].co.x == min_x:
                 return 1
-            if wall.data.vertices[v].co.x == max_x and abs(face.normal.x) > 0.1:
+            if wall.data.vertices[v].co.x == max_x:
                 return 2
 
 
@@ -698,17 +771,24 @@ class DumbWallGenerator:
         ]
         mesh = bpy.data.meshes.new(name="Wall")
         mesh.from_pydata(verts, [], faces)
-        obj = bpy.data.objects.new("Wall", mesh)
+
+        ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
+        # Standard cases are deprecated, so let's cull them
+        ifc_class = [c for c in ifc_classes if "StandardCase" not in c][0]
+
+        obj = bpy.data.objects.new(ifc_class[3:], mesh)
         obj.location = self.location
         obj.rotation_euler[2] = self.rotation
         if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
             obj.location[2] = self.collection_obj.location[2]
         self.collection.objects.link(obj)
+
         bpy.ops.bim.assign_class(
             obj=obj.name,
-            ifc_class="IfcWall",
+            ifc_class=ifc_class,
             ifc_representation_class="IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef",
         )
+
         bpy.ops.bim.assign_type(relating_type=self.relating_type.id(), related_object=obj.name)
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
