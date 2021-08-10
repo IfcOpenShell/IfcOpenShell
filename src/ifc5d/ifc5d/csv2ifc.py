@@ -106,11 +106,11 @@ class Csv2Ifc:
         elif self.has_categories:
             for category, value in cost_item["CostValues"].items():
                 cost_value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=cost_item["ifc"])
-                cost_value.AppliedValue = self.file.createIfcReal(value)
+                cost_value.AppliedValue = self.file.createIfcMonetaryMeasure(value)
                 cost_value.Category = category
         else:
             cost_value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=cost_item["ifc"])
-            cost_value.AppliedValue = self.file.createIfcReal(cost_item["CostValues"])
+            cost_value.AppliedValue = self.file.createIfcMonetaryMeasure(cost_item["CostValues"])
 
         if cost_item["CostQuantities"]:
             quantity_class = ifcopenshell.util.unit.get_symbol_quantity_class(cost_item["CostQuantitiesUnit"])
