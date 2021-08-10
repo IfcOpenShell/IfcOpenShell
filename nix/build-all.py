@@ -25,6 +25,9 @@
 # Prerequisites for this script to function correctly:                        #
 #     * cmake * git * bzip2 * tar * c(++) compilers * yacc * autoconf         #
 #                                                                             #
+#   additionally:                                                             #
+#     * cgal (libcgal-dev; to be made configurable)                           #
+#                                                                             #
 #   if building with USE_OCCT additionally:                                   #
 #     * freetype * glx.h                                                      #
 #                                                                             #
@@ -223,8 +226,8 @@ cecho(""" - How many compiler processes may be run in parallel.
 
 dependency_tree = {
     'IfcParse': ('boost',  'libxml2', 'hdf5'),
-    'IfcGeom': ('IfcParse',  'occ'),
-    'IfcConvert': ('IfcGeom',  'OpenCOLLADA', 'json'),
+    'IfcGeom': ('IfcParse',  'occ', 'OpenCOLLADA', 'json'),
+    'IfcConvert': ('IfcGeom', ),
     'OpenCOLLADA': ('libxml2',  'pcre'),
     'IfcGeomServer': ('IfcGeom',),
     'IfcOpenShell-Python': ('python',  'swig',  'IfcGeom'),
@@ -699,13 +702,21 @@ exec_args=[
 ]
 
 cmake_args=[
+    "-DSCHEMA_VERSIONS=2x3",
     "-DUSE_MMAP="                      "OFF",
     "-DBUILD_EXAMPLES="                "OFF",
     "-DBUILD_SHARED_LIBS="            +OFF_ON[not BUILD_STATIC],
     "-DBOOST_ROOT="                    "{DEPS_DIR}/install/boost-{BOOST_VERSION}".format(**locals()),
     "-DGLTF_SUPPORT="                  "ON",
     "-DJSON_INCLUDE_DIR="              "{DEPS_DIR}/install/json".format(**locals()),
-    "-DBoost_NO_BOOST_CMAKE="          "On"
+    "-DBoost_NO_BOOST_CMAKE="          "On",
+    
+    "-DCGAL_INCLUDE_DIR="              "/usr/include",
+    "-DGMP_INCLUDE_DIR="               "/usr/include",
+    "-DMPFR_INCLUDE_DIR="              "/usr/include",
+    "-DGMP_LIBRARY_DIR="               "/usr/lib/x86_64-linux-gnu",
+    "-DMPFR_LIBRARY_DIR="              "/usr/lib/x86_64-linux-gnu",
+    
 ]
 
 if "occ" in targets and USE_OCCT:
