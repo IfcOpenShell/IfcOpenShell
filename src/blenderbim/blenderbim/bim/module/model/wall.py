@@ -57,8 +57,6 @@ class AddWallOpening(bpy.types.Operator):
         if not wall_obj.BIMObjectProperties.ifc_definition_id:
             return {"FINISHED"}
         wall = IfcStore.get_file().by_id(wall_obj.BIMObjectProperties.ifc_definition_id)
-        if not wall.is_a("IfcWall"):
-            return {"FINISHED"}
         local_location = wall_obj.matrix_world.inverted() @ context.scene.cursor.location
         raycast = wall_obj.closest_point_on_mesh(local_location, distance=0.01)
         if not raycast[0]:
@@ -773,17 +771,24 @@ class DumbWallGenerator:
         ]
         mesh = bpy.data.meshes.new(name="Wall")
         mesh.from_pydata(verts, [], faces)
-        obj = bpy.data.objects.new("Wall", mesh)
+
+        ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
+        # Standard cases are deprecated, so let's cull them
+        ifc_class = [c for c in ifc_classes if "StandardCase" not in c][0]
+
+        obj = bpy.data.objects.new(ifc_class[3:], mesh)
         obj.location = self.location
         obj.rotation_euler[2] = self.rotation
         if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
             obj.location[2] = self.collection_obj.location[2]
         self.collection.objects.link(obj)
+
         bpy.ops.bim.assign_class(
             obj=obj.name,
-            ifc_class="IfcWall",
+            ifc_class=ifc_class,
             ifc_representation_class="IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef",
         )
+
         bpy.ops.bim.assign_type(relating_type=self.relating_type.id(), related_object=obj.name)
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
