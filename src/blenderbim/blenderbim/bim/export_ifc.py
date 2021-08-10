@@ -5,12 +5,11 @@ import numpy as np
 import datetime
 import zipfile
 import tempfile
-import ifcopenshell
-import ifcopenshell.util.placement
-import ifcopenshell.api
-from ifcopenshell.api.spatial.data import Data as SpatialData
-from blenderbim.bim.ifc import IfcStore
 import addon_utils
+import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.placement
+from blenderbim.bim.ifc import IfcStore
 
 
 class IfcExporter:
@@ -76,8 +75,6 @@ class IfcExporter:
                 pass  # The object is likely deleted
             if self.should_delete(obj):
                 to_delete.append(ifc_definition_id)
-
-        SpatialData.purge()
 
         for ifc_definition_id in to_delete:
             product = self.file.by_id(ifc_definition_id)

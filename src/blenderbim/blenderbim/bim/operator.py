@@ -6,6 +6,7 @@ import tempfile
 import logging
 import webbrowser
 import ifcopenshell
+import blenderbim.bim.handler
 from . import export_ifc
 from . import import_ifc
 from . import schema
@@ -77,6 +78,7 @@ class ExportIFC(bpy.types.Operator):
             scene.BIMProperties.ifc_file = output_file
         if bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath:
             bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
+        blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}
 
 
