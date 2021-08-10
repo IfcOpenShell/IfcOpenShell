@@ -137,25 +137,17 @@ class DumbProfileGenerator:
         if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
             obj.location[2] = self.collection_obj.location[2]
         self.collection.objects.link(obj)
-        if self.relating_type.is_a("IfcColumnType"):
-            obj.name = "Column"
-            bpy.ops.bim.assign_class(
-                obj=obj.name, ifc_class="IfcColumn", predefined_type="COLUMN", should_add_representation=False
-            )
-        elif self.relating_type.is_a("IfcBeamType"):
-            obj.name = "Beam"
+
+        ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
+        # Standard cases are deprecated, so let's cull them
+        ifc_class = [c for c in ifc_classes if "StandardCase" not in c][0]
+        obj.name = ifc_class[3:]
+        bpy.ops.bim.assign_class(obj=obj.name, ifc_class=ifc_class, should_add_representation=False)
+
+        if self.relating_type.is_a() in ["IfcBeamType", "IfcMemberType"]:
             obj.rotation_euler[0] = math.pi / 2
             obj.rotation_euler[2] = math.pi / 2
-            bpy.ops.bim.assign_class(
-                obj=obj.name, ifc_class="IfcBeam", predefined_type="BEAM", should_add_representation=False
-            )
-        elif self.relating_type.is_a("IfcMemberType"):
-            obj.name = "Member"
-            obj.rotation_euler[0] = math.pi / 2
-            obj.rotation_euler[2] = math.pi / 2
-            bpy.ops.bim.assign_class(
-                obj=obj.name, ifc_class="IfcMember", predefined_type="MEMBER", should_add_representation=False
-            )
+
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         bpy.ops.bim.assign_type(relating_type=self.relating_type.id(), related_object=obj.name)
         profile_set_usage = ifcopenshell.util.element.get_material(element)

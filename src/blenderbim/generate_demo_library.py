@@ -17,6 +17,14 @@ class LibraryGenerator:
         self.create_layer_type("IfcWallType", "DEMO200", 0.2)
         self.create_layer_type("IfcWallType", "DEMO300", 0.3)
 
+        self.create_layer_type("IfcCoveringType", "DEMO20", 0.02)
+        self.create_layer_type("IfcRampType", "DEMO200", 0.2)
+
+        profile = self.file.create_entity(
+            "IfcCircleProfileDef", ProfileType="AREA", Radius=0.3
+        )
+        self.create_profile_type("IfcPileType", "DEMO1", profile)
+
         self.create_layer_type("IfcSlabType", "DEMO150", 0.2)
         self.create_layer_type("IfcSlabType", "DEMO250", 0.3)
 

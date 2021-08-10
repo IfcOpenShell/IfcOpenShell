@@ -23,21 +23,22 @@ class AddTypeInstance(bpy.types.Operator):
     def _execute(self, context):
         tprops = context.scene.BIMTypeProperties
         ifc_class = self.ifc_class or tprops.ifc_class
-        relating_type = self.relating_type or tprops.relating_type
-        if not ifc_class or not relating_type:
+        relating_type_id = self.relating_type or tprops.relating_type
+        if not ifc_class or not relating_type_id:
             return {"FINISHED"}
         self.file = IfcStore.get_file()
         instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema)[0]
-        if ifc_class == "IfcWallType":
-            obj = wall.DumbWallGenerator(self.file.by_id(int(relating_type))).generate()
+        relating_type = self.file.by_id(int(relating_type_id))
+        material = ifcopenshell.util.element.get_material(relating_type)
+        if material.is_a("IfcMaterialProfileSet"):
+            obj = profile.DumbProfileGenerator(relating_type).generate()
             if obj:
                 return {"FINISHED"}
-        elif ifc_class == "IfcSlabType":
-            obj = slab.DumbSlabGenerator(self.file.by_id(int(relating_type))).generate()
-            if obj:
-                return {"FINISHED"}
-        elif ifc_class in ["IfcColumnType", "IfcBeamType", "IfcMemberType"]:
-            obj = profile.DumbProfileGenerator(self.file.by_id(int(relating_type))).generate()
+        elif material.is_a("IfcMaterialLayerSet"):
+            if ifc_class in ["IfcSlabType", "IfcRoofType", "IfcRampType", "IfcPlateType"]:
+                obj = slab.DumbSlabGenerator(relating_type).generate()
+            else:
+                obj = wall.DumbWallGenerator(relating_type).generate()
             if obj:
                 return {"FINISHED"}
         # A cube

@@ -211,8 +211,6 @@ class AddSlabOpening(bpy.types.Operator):
         if not slab_obj.BIMObjectProperties.ifc_definition_id:
             return {"FINISHED"}
         slab = IfcStore.get_file().by_id(slab_obj.BIMObjectProperties.ifc_definition_id)
-        if not slab.is_a("IfcSlab"):
-            return {"FINISHED"}
         local_location = slab_obj.matrix_world.inverted() @ context.scene.cursor.location
         raycast = slab_obj.closest_point_on_mesh(local_location, distance=0.01)
         if not raycast[0]:
@@ -280,7 +278,12 @@ class DumbSlabGenerator:
         modifier.use_even_offset = True
         modifier.offset = 1
         modifier.thickness = self.depth
-        obj.name = "Slab"
+
+        ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
+        # Standard cases are deprecated, so let's cull them
+        ifc_class = [c for c in ifc_classes if "StandardCase" not in c][0]
+
+        obj.name = ifc_class[3:]
         obj.location = self.location
         if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
             obj.location[2] = self.collection_obj.location[2] - self.depth
@@ -289,8 +292,7 @@ class DumbSlabGenerator:
         self.collection.objects.link(obj)
         bpy.ops.bim.assign_class(
             obj=obj.name,
-            ifc_class="IfcSlab",
-            predefined_type="FLOOR",
+            ifc_class=ifc_class,
             ifc_representation_class="IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids",
         )
         bpy.ops.bim.assign_type(relating_type=self.relating_type.id(), related_object=obj.name)
