@@ -117,7 +117,10 @@ def copy(ifc_file, element):
     for i, attribute in enumerate(element):
         if attribute is None:
             continue
-        new[i] = attribute
+        if new.attribute_name(i) == "GlobalId":
+            new[i] = ifcopenshell.guid.new()
+        else:
+            new[i] = attribute
     return new
 
 

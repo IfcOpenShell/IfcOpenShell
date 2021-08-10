@@ -1,4 +1,5 @@
 import ifcopenshell
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -9,29 +10,33 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        result = self.file.create_entity(self.settings["product"].is_a())
         self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.file.schema)
-        self.copy_attributes(self.settings["product"], result)
-        for inverse in self.file.get_inverse(self.settings["product"]):
-            for i, value in enumerate(inverse):
-                if value == self.settings["product"]:
-                    new_inverse = self.file.create_entity(inverse.is_a())
-                    self.copy_attributes(inverse, new_inverse)
-                    new_inverse[i] = result
-                elif isinstance(value, (tuple, list)) and self.settings["product"] in value:
-                    new_value = list(value)
-                    new_value.append(result)
-                    inverse[i] = new_value
-        if result.is_a("IfcProduct"):
-            result.Representation = None
-        elif result.is_a("IfcTypeProduct"):
-            result.RepresentationMaps = None
+        result = ifcopenshell.util.element.copy(self.file, self.settings["product"])
+        self.copy_indirect_attributes(self.settings["product"], result)
+        # Copying representations is too hard, so for now we just don't do it.
+        self.remove_representations(result)
         return result
 
-    def copy_attributes(self, from_element, to_element):
-        declaration = self.schema.declaration_by_name(from_element.is_a())
-        for attribute in declaration.all_attributes():
-            if attribute.name() == "GlobalId":
-                setattr(to_element, attribute.name(), ifcopenshell.guid.new())
+    def copy_indirect_attributes(self, from_element, to_element):
+        for inverse in self.file.get_inverse(from_element):
+            if inverse.is_a("IfcRelDefinesByProperties"):
+                inverse = ifcopenshell.util.element.copy(self.file, inverse)
+                inverse.RelatedObjects = [to_element]
+                pset = ifcopenshell.util.element.copy_deep(self.file, inverse.RelatingPropertyDefinition)
+                inverse.RelatingPropertyDefinition = pset
             else:
-                setattr(to_element, attribute.name(), getattr(from_element, attribute.name()))
+                # TODO: Consider whether this general approach is good or not. Maybe it isn't.
+                for i, value in enumerate(inverse):
+                    if value == from_element:
+                        new_inverse = ifcopenshell.util.element.copy(self.file, inverse)
+                        new_inverse[i] = to_element
+                    elif isinstance(value, (tuple, list)) and from_element in value:
+                        new_value = list(value)
+                        new_value.append(to_element)
+                        inverse[i] = new_value
+
+    def remove_representations(self, element):
+        if element.is_a("IfcProduct"):
+            element.Representation = None
+        elif element.is_a("IfcTypeProduct"):
+            element.RepresentationMaps = None
