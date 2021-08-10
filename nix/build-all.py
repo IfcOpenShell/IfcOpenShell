@@ -25,9 +25,6 @@
 # Prerequisites for this script to function correctly:                        #
 #     * cmake * git * bzip2 * tar * c(++) compilers * yacc * autoconf         #
 #                                                                             #
-#   additionally:                                                             #
-#     * cgal (libcgal-dev; to be made configurable)                           #
-#                                                                             #
 #   if building with USE_OCCT additionally:                                   #
 #     * freetype * glx.h                                                      #
 #                                                                             #
@@ -100,6 +97,10 @@ SWIG_VERSION="3.0.12"
 #OPENCOLLADA_VERSION="v1.6.63"
 OPENCOLLADA_VERSION="v1.6.68"
 HDF5_VERSION="1.8.22"
+
+GMP_VERSION="6.1.2"
+MPFR_VERSION="3.1.5"
+CGAL_VERSION="5.2"
 
 # binaries
 cp="cp"
@@ -226,7 +227,7 @@ cecho(""" - How many compiler processes may be run in parallel.
 
 dependency_tree = {
     'IfcParse': ('boost',  'libxml2', 'hdf5'),
-    'IfcGeom': ('IfcParse',  'occ', 'OpenCOLLADA', 'json'),
+    'IfcGeom': ('IfcParse',  'occ', 'OpenCOLLADA', 'json', 'cgal'),
     'IfcConvert': ('IfcGeom', ),
     'OpenCOLLADA': ('libxml2',  'pcre'),
     'IfcGeomServer': ('IfcGeom',),
@@ -238,7 +239,8 @@ dependency_tree = {
     'occ': (),
     'pcre': (),
     'json': (),
-    'hdf5': ()
+    'hdf5': (),
+    'cgal': ()
 }
 
 def v(dep):
@@ -678,6 +680,42 @@ if "boost" in targets:
         download_name="boost_{BOOST_VERSION_UNDERSCORE}.tar.bz2".format(**locals())
     )
     
+if "cgal" in targets:
+    build_dependency(
+        name="gmp-%s" % (GMP_VERSION,),
+        mode="autoconf",
+        build_tool_args=["--disable-shared", "--with-pic"],
+        download_url="https://ftp.gnu.org/gnu/gmp/",
+        download_name="gmp-{GMP_VERSION}.tar.bz2".format(**locals())
+    )
+    
+    build_dependency(
+        name="mpfr-%s" % (MPFR_VERSION,),
+        mode="autoconf",
+        build_tool_args=["--disable-shared", "--with-gmp={DEPS_DIR}/install/gmp-{GMP_VERSION}".format(**locals())],
+        download_url="http://www.mpfr.org/mpfr-{MPFR_VERSION}/".format(**locals()),
+        download_name="mpfr-{MPFR_VERSION}.tar.bz2".format(**locals())
+    )
+    
+    build_dependency(
+        name="cgal-{CGAL_VERSION}".format(**locals()),
+        mode="cmake",
+        build_tool_args=[
+            "-DGMP_LIBRARIES=%s/install/gmp-%s/lib/libgmp.a" % (DEPS_DIR, GMP_VERSION),
+            "-DGMP_INCLUDE_DIR=%s/install/gmp-%s/include" % (DEPS_DIR, GMP_VERSION),
+            "-DMPFR_LIBRARIES=%s/install/mpfr-%s/lib/libmpfr.a" % (DEPS_DIR, MPFR_VERSION),
+            "-DMPFR_INCLUDE_DIR=%s/install/mpfr-%s/include" % (DEPS_DIR, MPFR_VERSION),
+            "-DBoost_INCLUDE_DIR=%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION),
+            "-DCMAKE_INSTALL_PREFIX=%s/install/cgal-%s/" % (DEPS_DIR, CGAL_VERSION),
+            "-DCGAL_HEADER_ONLY=On",            
+            "-DBUILD_SHARED_LIBS=Off"
+        ],
+        download_url="https://github.com/CGAL/cgal.git",
+        download_name="cgal",
+        download_tool=download_tool_git,
+        revision="v{CGAL_VERSION}".format(**locals())
+    )
+    
 cecho("Building IfcOpenShell:", GREEN)
 
 IFCOS_DIR=os.path.join(DEPS_DIR, "build", "ifcopenshell")
@@ -710,14 +748,16 @@ cmake_args=[
     "-DGLTF_SUPPORT="                  "ON",
     "-DJSON_INCLUDE_DIR="              "{DEPS_DIR}/install/json".format(**locals()),
     "-DBoost_NO_BOOST_CMAKE="          "On",
-    
-    "-DCGAL_INCLUDE_DIR="              "/usr/include",
-    "-DGMP_INCLUDE_DIR="               "/usr/include",
-    "-DMPFR_INCLUDE_DIR="              "/usr/include",
-    "-DGMP_LIBRARY_DIR="               "/usr/lib/x86_64-linux-gnu",
-    "-DMPFR_LIBRARY_DIR="              "/usr/lib/x86_64-linux-gnu",
-    
 ]
+
+if "cgal" in targets:
+    cmake_args.extend([
+        "-DCGAL_INCLUDE_DIR="          "{DEPS_DIR}/install/cgal-{CGAL_VERSION}/include".format(**locals()),
+        "-DGMP_INCLUDE_DIR="           "{DEPS_DIR}/install/gmp-{GMP_VERSION}/include".format(**locals()),
+        "-DGMP_LIBRARY_DIR="           "{DEPS_DIR}/install/gmp-{GMP_VERSION}/lib".format(**locals()),
+        "-DMPFR_INCLUDE_DIR="          "{DEPS_DIR}/install/mpfr-{MPFR_VERSION}/include".format(**locals()),
+        "-DMPFR_LIBRARY_DIR="          "{DEPS_DIR}/install/mpfr-{MPFR_VERSION}/lib".format(**locals()),
+    ])
 
 if "occ" in targets and USE_OCCT:
     occ_include_dir =                  "{DEPS_DIR}/install/occt-{OCCT_VERSION}/include/opencascade".format(**locals())
