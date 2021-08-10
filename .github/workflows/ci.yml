@@ -29,7 +29,7 @@ jobs:
         sudo apt-get install --no-install-recommends \
         git cmake gcc g++ libboost1.67-all-dev python3-all-dev swig libpcre3-dev libxml2-dev \
         liboce-foundation-dev liboce-modeling-dev liboce-ocaf-dev liboce-visualization-dev liboce-ocaf-lite-dev \
-        libhdf5-dev
+        libhdf5-dev libcgal-dev
 
     -
       name: ccache
@@ -55,6 +55,13 @@ jobs:
          -DCOLLADA_SUPPORT=Off \
          -DLIBXML2_INCLUDE_DIR=/usr/include/libxml2 \
          -DLIBXML2_LIBRARIES=/usr/lib/x86_64-linux-gnu/libxml2.so \
+         \
+         -DCGAL_INCLUDE_DIR=/usr/include \
+         -DGMP_INCLUDE_DIR=/usr/include \
+         -DMPFR_INCLUDE_DIR=/usr/include \
+         -DGMP_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
+         -DMFRP_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
+         \
          "-DSCHEMA_VERSIONS=2x3;4" \
          -DHDF5_INCLUDE_DIR=/usr/include/hdf5/serial \
          ../cmake
