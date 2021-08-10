@@ -31,7 +31,7 @@ def mode_callback(obj, data):
             return
         product = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
         parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-        if not parametric or parametric["Engine"] != "BlenderBIM.DumbWall":
+        if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer2":
             return
         bpy.ops.bim.dynamically_void_product(obj=obj.name)
         IfcStore.edited_objs.add(obj)
@@ -400,16 +400,20 @@ class DumbWallJoiner:
     # plane denoted by the target coordinate.
     def extend(self):
         wall1_min_faces, wall1_max_faces = self.get_wall_end_faces(self.wall1)
-        ef1_distance = abs(mathutils.geometry.distance_point_to_plane(
-            self.wall1_matrix @ self.wall1.data.vertices[wall1_min_faces[0].vertices[0]].co,
-            self.target_coordinate,
-            self.pos_x,
-        ))
-        ef2_distance = abs(mathutils.geometry.distance_point_to_plane(
-            self.wall1_matrix @ self.wall1.data.vertices[wall1_max_faces[0].vertices[0]].co,
-            self.target_coordinate,
-            self.neg_x,
-        ))
+        ef1_distance = abs(
+            mathutils.geometry.distance_point_to_plane(
+                self.wall1_matrix @ self.wall1.data.vertices[wall1_min_faces[0].vertices[0]].co,
+                self.target_coordinate,
+                self.pos_x,
+            )
+        )
+        ef2_distance = abs(
+            mathutils.geometry.distance_point_to_plane(
+                self.wall1_matrix @ self.wall1.data.vertices[wall1_max_faces[0].vertices[0]].co,
+                self.target_coordinate,
+                self.neg_x,
+            )
+        )
         if ef1_distance < ef2_distance:
             self.project_end_faces_to_target(wall1_min_faces)
         else:
@@ -792,7 +796,7 @@ class DumbWallGenerator:
         bpy.ops.bim.assign_type(relating_type=self.relating_type.id(), related_object=obj.name)
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbWall"})
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbLayer2"})
         MaterialData.load(self.file)
         obj.select_set(True)
         return obj
@@ -801,7 +805,7 @@ class DumbWallGenerator:
 def ensure_solid(usecase_path, ifc_file, settings):
     product = ifc_file.by_id(settings["blender_object"].BIMObjectProperties.ifc_definition_id)
     parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-    if not parametric or parametric["Engine"] != "BlenderBIM.DumbWall":
+    if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer2":
         return
     settings["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef"
 
@@ -813,7 +817,7 @@ def generate_axis(usecase_path, ifc_file, settings):
     obj = settings["blender_object"]
     product = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
     parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-    if not parametric or parametric["Engine"] != "BlenderBIM.DumbWall":
+    if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer2":
         return
     old_axis = ifcopenshell.util.representation.get_representation(product, "Model", "Axis", "GRAPH_VIEW")
     if settings["context"].ContextType == "Model" and getattr(settings["context"], "ContextIdentifier") == "Body":
@@ -846,7 +850,7 @@ def calculate_quantities(usecase_path, ifc_file, settings):
     obj = settings["blender_object"]
     product = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
     parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-    if not parametric or parametric["Engine"] != "BlenderBIM.DumbWall":
+    if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer2":
         return
     qto = ifcopenshell.api.run(
         "pset.add_qto", ifc_file, should_run_listeners=False, product=product, name="Qto_WallBaseQuantities"
@@ -930,7 +934,7 @@ class DumbWallPlaner:
 
     def change_thickness(self, element, thickness):
         parametric = ifcopenshell.util.element.get_psets(element).get("EPset_Parametric")
-        if not parametric or parametric["Engine"] != "BlenderBIM.DumbWall":
+        if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer2":
             return
 
         obj = IfcStore.get_element(element.id())

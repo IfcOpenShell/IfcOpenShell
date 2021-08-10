@@ -17,7 +17,16 @@ class LibraryGenerator:
         self.create_layer_type("IfcWallType", "DEMO200", 0.2)
         self.create_layer_type("IfcWallType", "DEMO300", 0.3)
 
-        self.create_layer_type("IfcCoveringType", "DEMO20", 0.02)
+        self.create_layer_type("IfcCoveringType", "DEMO10", 0.01)
+
+        product = self.create_layer_type("IfcCoveringType", "DEMO20", 0.02)
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=product, name="EPset_Parametric")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"LayerSetDirection": "AXIS2"})
+
+        product = self.create_layer_type("IfcCoveringType", "DEMO30", 0.03)
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=product, name="EPset_Parametric")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"LayerSetDirection": "AXIS3"})
+
         self.create_layer_type("IfcRampType", "DEMO200", 0.2)
 
         profile = self.file.create_entity(
@@ -78,6 +87,7 @@ class LibraryGenerator:
         layer = ifcopenshell.api.run("material.add_layer", self.file, layer_set=layer_set, material=self.material)
         layer.LayerThickness = thickness
         ifcopenshell.api.run("project.assign_declaration", self.file, definition=element, relating_context=self.project)
+        return element
 
     def create_profile_type(self, ifc_class, name, profile):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)

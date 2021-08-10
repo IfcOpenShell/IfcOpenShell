@@ -31,7 +31,7 @@ def mode_callback(obj, data):
             return
         product = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
         parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-        if not parametric or parametric["Engine"] != "BlenderBIM.DumbSlab":
+        if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer3":
             return
         IfcStore.edited_objs.add(obj)
         modifier = [m for m in obj.modifiers if m.type == "SOLIDIFY"]
@@ -59,7 +59,7 @@ def mode_callback(obj, data):
 def ensure_solid(usecase_path, ifc_file, settings):
     product = ifc_file.by_id(settings["blender_object"].BIMObjectProperties.ifc_definition_id)
     parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-    if not parametric or parametric["Engine"] != "BlenderBIM.DumbSlab":
+    if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer3":
         return
     settings["ifc_representation_class"] = "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
 
@@ -71,7 +71,7 @@ def generate_footprint(usecase_path, ifc_file, settings):
     obj = settings["blender_object"]
     product = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
     parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-    if not parametric or parametric["Engine"] != "BlenderBIM.DumbSlab":
+    if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer3":
         return
     old_footprint = ifcopenshell.util.representation.get_representation(product, "Plan", "FootPrint", "SKETCH_VIEW")
     if settings["context"].ContextType == "Model" and getattr(settings["context"], "ContextIdentifier") == "Body":
@@ -89,7 +89,7 @@ def generate_footprint(usecase_path, ifc_file, settings):
         profile_edges = []
 
         def append_profile_edges(profile_edges, indices):
-            indices.append(indices[0]) # Close the loop
+            indices.append(indices[0])  # Close the loop
             edge_vert_pairs = list(zip(indices, indices[1:]))
             for p in edge_vert_pairs:
                 profile_edges.append(
@@ -127,7 +127,7 @@ def calculate_quantities(usecase_path, ifc_file, settings):
     obj = settings["blender_object"]
     product = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
     parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-    if not parametric or parametric["Engine"] != "BlenderBIM.DumbSlab":
+    if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer3":
         return
     qto = ifcopenshell.api.run(
         "pset.add_qto", ifc_file, should_run_listeners=False, product=product, name="Qto_SlabBaseQuantities"
@@ -145,7 +145,7 @@ def calculate_quantities(usecase_path, ifc_file, settings):
     bm.verts.ensure_lookup_table()
 
     def calculate_profile_length(indices):
-        indices.append(indices[0]) # Close the loop
+        indices.append(indices[0])  # Close the loop
         edge_vert_pairs = list(zip(indices, indices[1:]))
         return sum([(bm.verts[p[1]].co - bm.verts[p[0]].co).length for p in edge_vert_pairs])
 
@@ -171,7 +171,7 @@ def calculate_quantities(usecase_path, ifc_file, settings):
         net_volume = gross_volume
         bm.free()
 
-    properties={
+    properties = {
         "Depth": round(depth, 2),
         "Perimeter": round(perimeter, 2),
         "GrossArea": round(gross_area, 2),
@@ -181,17 +181,21 @@ def calculate_quantities(usecase_path, ifc_file, settings):
     }
 
     if round(obj.dimensions[0] * obj.dimensions[1] * obj.dimensions[2], 2) == round(gross_volume, 2):
-        properties.update({
-            "Length": round(length, 2),
-            "Width": round(width, 2),
-        })
+        properties.update(
+            {
+                "Length": round(length, 2),
+                "Width": round(width, 2),
+            }
+        )
     else:
-        properties.update({
-            "Length": None,
-            "Width": None,
-        })
+        properties.update(
+            {
+                "Length": None,
+                "Width": None,
+            }
+        )
 
-    ifcopenshell.api.run( "pset.edit_qto", ifc_file, should_run_listeners=False, qto=qto, properties=properties)
+    ifcopenshell.api.run("pset.edit_qto", ifc_file, should_run_listeners=False, qto=qto, properties=properties)
     PsetData.load(ifc_file, obj.BIMObjectProperties.ifc_definition_id)
 
 
@@ -298,7 +302,7 @@ class DumbSlabGenerator:
         bpy.ops.bim.assign_type(relating_type=self.relating_type.id(), related_object=obj.name)
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbSlab"})
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbLayer3"})
         MaterialData.load(self.file)
         obj.select_set(True)
         return obj
@@ -339,7 +343,7 @@ class DumbSlabPlaner:
 
     def change_thickness(self, element, thickness):
         parametric = ifcopenshell.util.element.get_psets(element).get("EPset_Parametric")
-        if not parametric or parametric["Engine"] != "BlenderBIM.DumbSlab":
+        if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer3":
             return
 
         obj = IfcStore.get_element(element.id())
