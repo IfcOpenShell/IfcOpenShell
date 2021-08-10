@@ -1,3 +1,28 @@
+/********************************************************************************
+ *                                                                              *
+ * This file is part of IfcOpenShell.                                           *
+ *                                                                              *
+ * IfcOpenShell is free software: you can redistribute it and/or modify         *
+ * it under the terms of the Lesser GNU General Public License as published by  *
+ * the Free Software Foundation, either version 3.0 of the License, or          *
+ * (at your option) any later version.                                          *
+ *                                                                              *
+ * IfcOpenShell is distributed in the hope that it will be useful,              *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of               *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
+ * Lesser GNU General Public License for more details.                          *
+ *                                                                              *
+ * You should have received a copy of the Lesser GNU General Public License     *
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
+ *                                                                              *
+ ********************************************************************************/
+
+/********************************************************************************
+ *                                                                              *
+ * This file has been generated from IFC4x3_RC2.exp. Do not make modifications  *
+ * but instead modify the python script that has been used to generate this.    *
+ *                                                                              *
+ ********************************************************************************/
 
 #define SCHEMA_HAS_IfcAbsorbedDoseMeasure
 #define SCHEMA_HAS_IfcAccelerationMeasure
@@ -1104,6 +1129,7 @@
 #define SCHEMA_HAS_IfcCosine
 #define SCHEMA_IfcCosine_HAS_CosineTerm
 #define SCHEMA_IfcCosine_HAS_ConstantTerm
+#define SCHEMA_IfcCosine_ConstantTerm_IS_OPTIONAL
 #define SCHEMA_HAS_IfcCostItem
 #define SCHEMA_IfcCostItem_HAS_PredefinedType
 #define SCHEMA_IfcCostItem_PredefinedType_IS_OPTIONAL
@@ -1229,12 +1255,6 @@
 #define SCHEMA_IfcDirectrixCurveSweptAreaSolid_HAS_EndParam
 #define SCHEMA_IfcDirectrixCurveSweptAreaSolid_EndParam_IS_OPTIONAL
 #define SCHEMA_HAS_IfcDirectrixDerivedReferenceSweptAreaSolid
-#define SCHEMA_HAS_IfcDirectrixDistanceSweptAreaSolid
-#define SCHEMA_IfcDirectrixDistanceSweptAreaSolid_HAS_Directrix
-#define SCHEMA_IfcDirectrixDistanceSweptAreaSolid_HAS_StartDistance
-#define SCHEMA_IfcDirectrixDistanceSweptAreaSolid_StartDistance_IS_OPTIONAL
-#define SCHEMA_IfcDirectrixDistanceSweptAreaSolid_HAS_EndDistance
-#define SCHEMA_IfcDirectrixDistanceSweptAreaSolid_EndDistance_IS_OPTIONAL
 #define SCHEMA_HAS_IfcDiscreteAccessory
 #define SCHEMA_IfcDiscreteAccessory_HAS_PredefinedType
 #define SCHEMA_IfcDiscreteAccessory_PredefinedType_IS_OPTIONAL
@@ -1461,6 +1481,7 @@
 #define SCHEMA_IfcElement_HAS_ConnectedFrom
 #define SCHEMA_IfcElement_HAS_ContainedInStructure
 #define SCHEMA_IfcElement_HAS_HasCoverings
+#define SCHEMA_IfcElement_HAS_HasSurfaceFeatures
 #define SCHEMA_HAS_IfcElementAssembly
 #define SCHEMA_IfcElementAssembly_HAS_AssemblyPlace
 #define SCHEMA_IfcElementAssembly_AssemblyPlace_IS_OPTIONAL
@@ -1756,9 +1777,6 @@
 #define SCHEMA_IfcImpactProtectionDevice_PredefinedType_IS_OPTIONAL
 #define SCHEMA_HAS_IfcImpactProtectionDeviceType
 #define SCHEMA_IfcImpactProtectionDeviceType_HAS_PredefinedType
-#define SCHEMA_HAS_IfcInclinedReferenceSweptAreaSolid
-#define SCHEMA_IfcInclinedReferenceSweptAreaSolid_HAS_FixedAxisVertical
-#define SCHEMA_IfcInclinedReferenceSweptAreaSolid_FixedAxisVertical_IS_OPTIONAL
 #define SCHEMA_HAS_IfcIndexedColourMap
 #define SCHEMA_IfcIndexedColourMap_HAS_MappedTo
 #define SCHEMA_IfcIndexedColourMap_HAS_Opacity
@@ -2757,6 +2775,9 @@
 #define SCHEMA_IfcReinforcingMeshType_BendingShapeCode_IS_OPTIONAL
 #define SCHEMA_IfcReinforcingMeshType_HAS_BendingParameters
 #define SCHEMA_IfcReinforcingMeshType_BendingParameters_IS_OPTIONAL
+#define SCHEMA_HAS_IfcRelAdheresToElement
+#define SCHEMA_IfcRelAdheresToElement_HAS_RelatingElement
+#define SCHEMA_IfcRelAdheresToElement_HAS_RelatedSurfaceFeatures
 #define SCHEMA_HAS_IfcRelAggregates
 #define SCHEMA_IfcRelAggregates_HAS_RelatingObject
 #define SCHEMA_IfcRelAggregates_HAS_RelatedObjects
@@ -2876,6 +2897,8 @@
 #define SCHEMA_IfcRelInterferesElements_HAS_RelatedElement
 #define SCHEMA_IfcRelInterferesElements_HAS_InterferenceGeometry
 #define SCHEMA_IfcRelInterferesElements_InterferenceGeometry_IS_OPTIONAL
+#define SCHEMA_IfcRelInterferesElements_HAS_InterferenceSpace
+#define SCHEMA_IfcRelInterferesElements_InterferenceSpace_IS_OPTIONAL
 #define SCHEMA_IfcRelInterferesElements_HAS_InterferenceType
 #define SCHEMA_IfcRelInterferesElements_InterferenceType_IS_OPTIONAL
 #define SCHEMA_IfcRelInterferesElements_HAS_ImpliedOrder
@@ -3155,6 +3178,9 @@
 #define SCHEMA_HAS_IfcSine
 #define SCHEMA_IfcSine_HAS_SineTerm
 #define SCHEMA_IfcSine_HAS_LinearTerm
+#define SCHEMA_IfcSine_LinearTerm_IS_OPTIONAL
+#define SCHEMA_IfcSine_HAS_ConstantTerm
+#define SCHEMA_IfcSine_ConstantTerm_IS_OPTIONAL
 #define SCHEMA_HAS_IfcSite
 #define SCHEMA_IfcSite_HAS_RefLatitude
 #define SCHEMA_IfcSite_RefLatitude_IS_OPTIONAL
@@ -3425,6 +3451,7 @@
 #define SCHEMA_HAS_IfcSurfaceFeature
 #define SCHEMA_IfcSurfaceFeature_HAS_PredefinedType
 #define SCHEMA_IfcSurfaceFeature_PredefinedType_IS_OPTIONAL
+#define SCHEMA_IfcSurfaceFeature_HAS_AdheresToElement
 #define SCHEMA_HAS_IfcSurfaceOfLinearExtrusion
 #define SCHEMA_IfcSurfaceOfLinearExtrusion_HAS_ExtrudedDirection
 #define SCHEMA_IfcSurfaceOfLinearExtrusion_HAS_Depth
@@ -3720,7 +3747,7 @@
 #define SCHEMA_HAS_IfcTextureVertexList
 #define SCHEMA_IfcTextureVertexList_HAS_TexCoordsList
 #define SCHEMA_HAS_IfcThirdOrderPolynomialSpiral
-#define SCHEMA_IfcThirdOrderPolynomialSpiral_HAS_QubicTerm
+#define SCHEMA_IfcThirdOrderPolynomialSpiral_HAS_CubicTerm
 #define SCHEMA_IfcThirdOrderPolynomialSpiral_HAS_QuadraticTerm
 #define SCHEMA_IfcThirdOrderPolynomialSpiral_QuadraticTerm_IS_OPTIONAL
 #define SCHEMA_IfcThirdOrderPolynomialSpiral_HAS_LinearTerm
