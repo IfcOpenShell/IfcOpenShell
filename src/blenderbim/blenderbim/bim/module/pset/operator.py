@@ -7,6 +7,7 @@ import ifcopenshell.util.attribute
 import blenderbim.bim.schema
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data
+from ifcopenshell.api.cost.data import Data as CostData
 from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
 
 
@@ -211,6 +212,7 @@ class EditPset(bpy.types.Operator):
                     "properties": properties,
                 },
             )
+            CostData.purge()
         Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         bpy.ops.bim.disable_pset_editing(obj=self.obj, obj_type=self.obj_type)
         return {"FINISHED"}
