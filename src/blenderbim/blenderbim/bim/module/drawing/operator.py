@@ -236,7 +236,7 @@ class CreateDrawing(bpy.types.Operator):
             return svg_path
         # This is a work in progress. See #1153 and #1564.
         # Switch from old to new if you are testing v0.7.0
-        self.generate_linework_old(svg_path)
+        self.generate_linework_old(context, svg_path)
         # self.generate_linework_new(svg_path)
         return svg_path
 
@@ -266,7 +266,7 @@ class CreateDrawing(bpy.types.Operator):
         with open(svg_path, "w") as svg:
             svg.write(buffer.get_value())
 
-    def generate_linework_old(self, svg_path):
+    def generate_linework_old(self, context, svg_path):
         ifcconvert_path = os.path.join(cwd, "..", "..", "..", "libs", "IfcConvert")
         subprocess.run(
             [

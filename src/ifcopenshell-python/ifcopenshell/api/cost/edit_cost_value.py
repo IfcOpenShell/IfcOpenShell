@@ -9,5 +9,5 @@ class Usecase:
         for name, value in self.settings["attributes"].items():
             if name == "AppliedValue" and value is not None:
                 # TODO: support all applied value select types
-                value = self.file.createIfcReal(value)
+                value = self.file.createIfcMonetaryMeasure(value)
             setattr(self.settings["cost_value"], name, value)
