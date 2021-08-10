@@ -1,3 +1,7 @@
+import ifcopenshell
+import ifcopenshell.util.date
+
+
 class Data:
     is_loaded = False
     resources = {}
