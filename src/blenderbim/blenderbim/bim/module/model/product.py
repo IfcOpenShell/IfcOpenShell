@@ -35,10 +35,24 @@ class AddTypeInstance(bpy.types.Operator):
             if obj:
                 return {"FINISHED"}
         elif material.is_a("IfcMaterialLayerSet"):
-            if ifc_class in ["IfcSlabType", "IfcRoofType", "IfcRampType", "IfcPlateType"]:
+            layer_set_direction = None
+
+            parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
+            if parametric:
+                layer_set_direction = parametric.get("LayerSetDirection", layer_set_direction)
+            if layer_set_direction is None:
+                if ifc_class in ["IfcSlabType", "IfcRoofType", "IfcRampType", "IfcPlateType"]:
+                    layer_set_direction = "AXIS3"
+                else:
+                    layer_set_direction = "AXIS2"
+
+            if layer_set_direction == "AXIS3":
                 obj = slab.DumbSlabGenerator(relating_type).generate()
-            else:
+            elif layer_set_direction == "AXIS2":
                 obj = wall.DumbWallGenerator(relating_type).generate()
+            else:
+                obj = None  # Dumb block generator? Eh? :)
+
             if obj:
                 return {"FINISHED"}
         # A cube
