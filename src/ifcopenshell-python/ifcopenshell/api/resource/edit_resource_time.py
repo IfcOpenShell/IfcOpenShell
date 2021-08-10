@@ -14,12 +14,12 @@ class Usecase:
 
         # If the user specifies both an end date and a duration, the duration takes priority
         if (
-            "ScheduleWork" in self.settings["attributes"].keys()
+            self.settings["attributes"].get("ScheduleWork", None)
             and "ScheduleFinish" in self.settings["attributes"].keys()
         ):
             del self.settings["attributes"]["ScheduleFinish"]
         if (
-            "ActualWork" in self.settings["attributes"].keys()
+            self.settings["attributes"].get("ActualWork", None)
             and "ActualFinish" in self.settings["attributes"].keys()
         ):
             del self.settings["attributes"]["ActualFinish"]
