@@ -398,6 +398,7 @@ class BIM_UL_cost_item_products(UIList):
         if item:
             row = layout.row(align=True)
             row.prop(item, "name", emboss=False, text="")
+            row.label(text="{0:.2f}".format(item.total_quantity))
             op = row.operator("bim.unassign_cost_item_product", text="", icon="X")
             op.cost_item = cost_item.ifc_definition_id
             op.related_object = item.ifc_definition_id

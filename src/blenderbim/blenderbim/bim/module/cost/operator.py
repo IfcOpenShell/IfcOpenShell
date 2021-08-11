@@ -608,7 +608,7 @@ class SelectCostItemProducts(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        related_products = Data.cost_items[self.cost_item]["Controls"]
+        related_products = Data.cost_items[self.cost_item]["Controls"].keys()
         for obj in context.visible_objects:
             obj.select_set(False)
             if obj.BIMObjectProperties.ifc_definition_id in related_products:
@@ -635,7 +635,7 @@ class SelectCostScheduleProducts(bpy.types.Operator):
         return {"FINISHED"}
 
     def get_related_products(self, cost_item):
-        self.related_products.extend(cost_item["Controls"])
+        self.related_products.extend(cost_item["Controls"].keys())
         for child_id in cost_item["IsNestedBy"]:
             self.get_related_products(Data.cost_items[child_id])
 
@@ -696,18 +696,21 @@ class LoadCostItemQuantities(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        print('EXECUTING')
         self.props = context.scene.BIMCostProperties
         self.file = IfcStore.get_file()
         while len(self.props.cost_item_products) > 0:
             self.props.cost_item_products.remove(0)
         ifc_definition_id = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
-        for control in Data.cost_items[ifc_definition_id]["Controls"]:
-            related_object = self.file.by_id(control)
+        for control_id, quantity_ids in Data.cost_items[ifc_definition_id]["Controls"].items():
+            related_object = self.file.by_id(control_id)
             if related_object.is_a("IfcProduct"):
                 new = self.props.cost_item_products.add()
-                new.ifc_definition_id = control
+                new.ifc_definition_id = control_id
                 new.name = related_object.Name or "Unnamed"
+                total_quantity = 0
+                for quantity_id in quantity_ids:
+                    total_quantity += self.file.by_id(quantity_id)[3]
+                new.total_quantity = total_quantity
             elif related_object.is_a("IfcProduct"):
                 pass
             elif related_object.is_a("IfcResource"):
