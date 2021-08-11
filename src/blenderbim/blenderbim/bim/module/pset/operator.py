@@ -11,6 +11,30 @@ from ifcopenshell.api.cost.data import Data as CostData
 from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
 
 
+def get_pset_props(context, obj, obj_type):
+    if obj_type == "Object":
+        obj = bpy.data.objects.get(obj)
+        return obj.PsetProperties
+    elif obj_type == "Material":
+        obj = bpy.data.materials.get(obj)
+        return obj.PsetProperties
+    elif obj_type == "Task":
+        return context.scene.TaskPsetProperties
+
+
+def get_pset_obj_ifc_definition_id(context, obj, obj_type):
+    if obj_type == "Object":
+        obj = bpy.data.objects.get(obj)
+        return obj.BIMObjectProperties.ifc_definition_id
+    elif obj_type == "Material":
+        obj = bpy.data.materials.get(obj)
+        return obj.BIMObjectProperties.ifc_definition_id
+    elif obj_type == "Task":
+        return context.scene.BIMTaskTreeProperties.tasks[
+            context.scene.BIMWorkScheduleProperties.active_task_index
+        ].ifc_definition_id
+
+
 class TogglePsetExpansion(bpy.types.Operator):
     bl_idname = "bim.toggle_pset_expansion"
     bl_label = "Toggle Pset Expansion"
@@ -32,11 +56,7 @@ class EnablePsetEditing(bpy.types.Operator):
     obj_type: bpy.props.StringProperty()
 
     def execute(self, context):
-        if self.obj_type == "Object":
-            obj = bpy.data.objects.get(self.obj)
-        elif self.obj_type == "Material":
-            obj = bpy.data.materials.get(self.obj)
-        self.props = obj.PsetProperties
+        self.props = get_pset_props(context, self.obj, self.obj_type)
 
         while len(self.props.properties) > 0:
             self.props.properties.remove(0)
@@ -138,11 +158,7 @@ class DisablePsetEditing(bpy.types.Operator):
     obj_type: bpy.props.StringProperty()
 
     def execute(self, context):
-        if self.obj_type == "Object":
-            obj = bpy.data.objects.get(self.obj)
-        elif self.obj_type == "Material":
-            obj = bpy.data.materials.get(self.obj)
-        props = obj.PsetProperties
+        props = get_pset_props(context, self.obj, self.obj_type)
         props.active_pset_id = 0
         return {"FINISHED"}
 
@@ -161,12 +177,8 @@ class EditPset(bpy.types.Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        if self.obj_type == "Object":
-            obj = bpy.data.objects.get(self.obj)
-        elif self.obj_type == "Material":
-            obj = bpy.data.materials.get(self.obj)
-        oprops = obj.BIMObjectProperties
-        props = obj.PsetProperties
+        props = get_pset_props(context, self.obj, self.obj_type)
+        ifc_definition_id = get_pset_obj_ifc_definition_id(context, self.obj, self.obj_type)
         properties = {}
 
         pset_id = self.pset_id or props.active_pset_id
@@ -213,7 +225,7 @@ class EditPset(bpy.types.Operator):
                 },
             )
             CostData.purge()
-        Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
+        Data.load(IfcStore.get_file(), ifc_definition_id)
         bpy.ops.bim.disable_pset_editing(obj=self.obj, obj_type=self.obj_type)
         return {"FINISHED"}
 
@@ -231,20 +243,17 @@ class RemovePset(bpy.types.Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        if self.obj_type == "Object":
-            obj = bpy.data.objects.get(self.obj)
-        elif self.obj_type == "Material":
-            obj = bpy.data.materials.get(self.obj)
-        props = obj.BIMObjectProperties
+        props = get_pset_props(context, self.obj, self.obj_type)
+        ifc_definition_id = get_pset_obj_ifc_definition_id(context, self.obj, self.obj_type)
         ifcopenshell.api.run(
             "pset.remove_pset",
             self.file,
             **{
-                "product": self.file.by_id(props.ifc_definition_id),
+                "product": self.file.by_id(ifc_definition_id),
                 "pset": self.file.by_id(self.pset_id),
             },
         )
-        Data.load(IfcStore.get_file(), props.ifc_definition_id)
+        Data.load(IfcStore.get_file(), ifc_definition_id)
         return {"FINISHED"}
 
 
@@ -254,36 +263,24 @@ class AddPset(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
-    pset_name: bpy.props.StringProperty()
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        if self.obj_type == "Object":
-            obj = bpy.data.objects.get(self.obj)
-        elif self.obj_type == "Material":
-            obj = bpy.data.materials.get(self.obj)
-        oprops = obj.BIMObjectProperties
-        props = obj.PsetProperties
-
-        if self.pset_name:
-            pset_name = self.pset_name
-        elif self.obj_type == "Object":
-            pset_name = props.pset_name
-        elif self.obj_type == "Material":
-            pset_name = props.material_pset_name
+        props = get_pset_props(context, self.obj, self.obj_type)
+        ifc_definition_id = get_pset_obj_ifc_definition_id(context, self.obj, self.obj_type)
 
         ifcopenshell.api.run(
             "pset.add_pset",
             self.file,
             **{
-                "product": self.file.by_id(oprops.ifc_definition_id),
-                "name": pset_name,
+                "product": self.file.by_id(ifc_definition_id),
+                "name": props.pset_name,
             },
         )
-        Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
+        Data.load(IfcStore.get_file(), ifc_definition_id)
         return {"FINISHED"}
 
 
@@ -291,24 +288,25 @@ class AddQto(bpy.types.Operator):
     bl_idname = "bim.add_qto"
     bl_label = "Add Qto"
     bl_options = {"REGISTER", "UNDO"}
+    obj: bpy.props.StringProperty()
+    obj_type: bpy.props.StringProperty()
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        obj = context.active_object
-        oprops = obj.BIMObjectProperties
-        props = obj.PsetProperties
+        props = get_pset_props(context, self.obj, self.obj_type)
+        ifc_definition_id = get_pset_obj_ifc_definition_id(context, self.obj, self.obj_type)
         ifcopenshell.api.run(
             "pset.add_qto",
             self.file,
             **{
-                "product": self.file.by_id(oprops.ifc_definition_id),
+                "product": self.file.by_id(ifc_definition_id),
                 "name": props.qto_name,
             },
         )
-        Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
+        Data.load(IfcStore.get_file(), ifc_definition_id)
         return {"FINISHED"}
 
 
