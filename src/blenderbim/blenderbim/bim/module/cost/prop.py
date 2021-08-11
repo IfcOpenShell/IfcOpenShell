@@ -34,7 +34,7 @@ def purge():
 def getQuantityTypes(self, context):
     global quantitytypes_enum
     if len(quantitytypes_enum) == 0 and IfcStore.get_schema():
-        quantitytypes_enum = [("QTO", "Qto", "Derive quantities from IFC quantity sets")]
+        quantitytypes_enum = []
         quantitytypes_enum.extend(
             [
                 (t.name(), t.name(), "")
@@ -69,7 +69,7 @@ def getQuantityNames(self, context):
 
 
 def update_cost_item_index(self, context):
-    bpy.ops.bim.load_cost_item_products()
+    bpy.ops.bim.load_cost_item_quantities()
 
 
 def updateCostItemName(self, context):

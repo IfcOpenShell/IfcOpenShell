@@ -400,3 +400,4 @@ class BIM_UL_cost_item_products(UIList):
             row.prop(item, "name", emboss=False, text="")
             op = row.operator("bim.unassign_cost_item_product", text="", icon="X")
             op.cost_item = cost_item.ifc_definition_id
+            op.related_object = item.ifc_definition_id
