@@ -124,6 +124,9 @@ class AssignMaterial(bpy.types.Operator):
         return {"FINISHED"}
 
     def set_default_material(self, obj, element):
+        if not obj.data:
+            return
+
         element_material = ifcopenshell.util.element.get_material(element)
         material = [m for m in self.file.traverse(element_material) if m.is_a("IfcMaterial")]
         if not material:
@@ -550,6 +553,9 @@ class EditAssignedMaterial(bpy.types.Operator):
         return {"FINISHED"}
 
     def set_default_material(self, obj, element):
+        if not obj.data:
+            return
+
         element_material = ifcopenshell.util.element.get_material(element)
         material = [m for m in self.file.traverse(element_material) if m.is_a("IfcMaterial")]
         if not material:
