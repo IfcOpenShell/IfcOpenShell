@@ -24,15 +24,20 @@ from datetime import datetime
 
 JSON_TO_IFC = {
     "Building": ["IfcBuilding"],
-    "BuildingPart": ["IfcBuilding", {"CompositionType": "Partial"}],  # CompositionType: Partial
-    "BuildingInstallation": ["IfcDistributionElement"],
-    "Road": ["IfcCivilElement"],
-    "TransportSquare": ["IfcSpace"],
-    "TINRelief": ["IfcGeographicElement"],
-    "WaterBody": ["IfcGeographicElement"],  # Update for IFC4.3
-    "LandUse": ["IfcGeographicElement"],
-    "PlantCover": ["IfcGeographicElement"],
-    "SolitaryVegetationObject": ["IfcGeographicElement"],
+    "BuildingPart": ["IfcBuilding", {"CompositionType": "Partial"}],
+    "BuildingInstallation": ["IfcBuildingElementProxy"],
+    "Road": ["IfcCivilElement"], # Update for IFC4.3
+    "Railway": ["IfcCivilElement"], # Update for IFC4.3
+    "TransportSquare": ["IfcCivilElement"], # Update for IFC4.3
+    "TINRelief": ["IfcGeographicElement", {"PredefinedType": "TERRAIN"}],
+    "WaterBody": ["IfcGeographicElement", {"PredefinedType": "USERDEFINED",
+                                           "ObjectType": "WaterBody"}],  # Update for IFC4.3
+    "LandUse": ["IfcGeographicElement", {"PredefinedType": "USERDEFINED",
+                                         "ObjectType": "LandUse"}],
+    "PlantCover": ["IfcGeographicElement", {"PredefinedType": "USERDEFINED",
+                                            "ObjectType": "Plantcover"}],
+    "SolitaryVegetationObject": ["IfcGeographicElement", {"PredefinedType": "USERDEFINED",
+                                                          "ObjectType": "SolitaryVegetationObject"}],
     "CityFurniture": ["IfcFurnishingElement"],
     "GenericCityObject": ["IfcCivilElement"],
     "Bridge": ["IfcCivilElement"],  # Update for IFC4.3
@@ -42,7 +47,7 @@ JSON_TO_IFC = {
     "Tunnel": ["IfcCivilElement"],  # Update for IFC4.3
     "TunnelPart": ["IfcCivilElement"],  # Update for IFC4.3
     "TunnelInstallation": ["IfcCivilElement"],  # Update for IFC4.3
-    "CityObjectGroup": ["IfcCivilElement"],
+    "CityObjectGroup": ["IfcBuilding"],  # Update for IFC4.3
     "GroundSurface": ["IfcSlab", {"PredefinedType": "BASESLAB"}],
     "RoofSurface": ["IfcRoof"],
     "WallSurface": ["IfcWall"],
@@ -51,9 +56,12 @@ JSON_TO_IFC = {
     "OuterFloorSurface": ["IfcSlab", {"PredefinedType": "FLOOR"}],
     "Window": ["IfcWindow"],
     "Door": ["IfcDoor"],
-    "WaterSurface": ["IfcGeographicElement"],  # Update for IFC4.3
-    "WaterGroundSurface": ["IfcGeographicElement"],  # Update for IFC4.3
-    "WaterClosureSurface": ["IfcGeographicElement"],  # Update for IFC4.3
+    "WaterSurface": ["IfcGeographicElement", {"PredefinedType": "USERDEFINED",
+                                              "ObjectType": "WaterSurface"}],  # Update for IFC4.3
+    "WaterGroundSurface": ["IfcGeographicElement", {"PredefinedType": "USERDEFINED",
+                                                    "ObjectType": "WaterGroundSurface"}],  # Update for IFC4.3
+    "WaterClosureSurface": ["IfcGeographicElement", {"PredefinedType": "USERDEFINED",
+                                                     "ObjectType": "WaterClosureSurface"}],  # Update for IFC4.3
     "TrafficArea": ["IfcCivilElement"],  # Update for IFC4.3
     "AuxiliaryTrafficArea": ["IfcCivilElement"]  # Update for IFC4.3
 }
