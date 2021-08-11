@@ -24,7 +24,7 @@ from datetime import datetime
 
 JSON_TO_IFC = {
     "Building": ["IfcBuilding"],
-    "BuildingPart": ["IfcBuilding", {"CompositionType": "Partial"}],
+    "BuildingPart": ["IfcBuilding", {"CompositionType": "PARTIAL"}],
     "BuildingInstallation": ["IfcBuildingElementProxy"],
     "Road": ["IfcCivilElement"], # Update for IFC4.3
     "Railway": ["IfcCivilElement"], # Update for IFC4.3
@@ -145,6 +145,7 @@ class Cityjson2ifc:
         self.IFC_model.write(self.properties["file_destination"])
 
     def create_IFC_classes(self):
+        parents_children_relations = {"IfcSite": {'Parent': self.IFC_site, 'Children': []}}
         for obj_id, obj in self.city_model.get_cityobjects().items():
 
             # CityJSON type to class
@@ -161,22 +162,19 @@ class Cityjson2ifc:
             if "name_attribute" in self.properties and self.properties["name_attribute"] in obj.attributes:
                 IFC_name = obj.attributes[self.properties["name_attribute"]]
 
-            # TODO children
-
-            # TODO parents
-
-            # TODO geometry_type
-
             # geometry_lod
             lod = 0
             geometry = None
+            if len(obj.geometry) == 0:
+                print(f"Warning: Object {obj_id} has no geometry.")
+
             for geom in obj.geometry:
                 if geom.lod > lod:
                     geometry = geom
                     lod = geom.lod
 
-            IFC_children = []
-            if geometry.surfaces:
+            IFC_semantic_surface_children = []
+            if geometry and geometry.surfaces:
                 for surface_id in geometry.surfaces:
                     IFC_child_class = JSON_TO_IFC[geometry.surfaces[surface_id]["type"]][0]
                     child_data = {"GlobalId": ifcopenshell.guid.new(),
@@ -187,9 +185,9 @@ class Cityjson2ifc:
                     surface_geometry = self.geometry.create_IFC_surface(self.IFC_model, geometry, surface_id)
                     if surface_geometry:
                         child_data["Representation"] = self.create_IFC_representation(surface_geometry, 'brep')
-                    IFC_children.append(self.IFC_model.create_entity(IFC_child_class, **child_data))
+                    IFC_semantic_surface_children.append(self.IFC_model.create_entity(IFC_child_class, **child_data))
 
-            else:
+            elif geometry:
                 IFC_geometry, shape_representation_type = self.geometry.create_IFC_geometry(self.IFC_model, geometry)
                 if IFC_geometry:
                     data["Representation"] = self.create_IFC_representation(IFC_geometry, shape_representation_type)
@@ -197,19 +195,35 @@ class Cityjson2ifc:
             data["Name"] = IFC_name
 
             IFC_object = self.IFC_model.create_entity(IFC_class, **data)
+
             # Define aggregation
-            self.IFC_model.create_entity("IfcRelContainedInSpatialStructure",
-                                         **{"GlobalId": ifcopenshell.guid.new(),
-                                            "RelatedElements": [IFC_object],
-                                            "RelatingStructure": self.IFC_site}
-                                         )
-            if IFC_children:
+            if len(obj.parents) == 0:
+                parents_children_relations["IfcSite"]['Children'].append(IFC_object)
+
+            for parent in obj.parents:
+                if parent not in parents_children_relations:
+                    parents_children_relations[parent] = {'Parent': None, 'Children': []}
+                parents_children_relations[parent]['Children'].append(IFC_object)
+
+            if len(obj.children) > 0:
+                if obj_id not in parents_children_relations:
+                    parents_children_relations[obj_id] = {'Parent': None, 'Children': []}
+                parents_children_relations[obj_id]['Parent'] = IFC_object
+
+            if IFC_semantic_surface_children:
                 self.IFC_model.create_entity("IfcRelAggregates",
                                          **{"GlobalId": ifcopenshell.guid.new(),
-                                            "RelatedObjects": IFC_children,
+                                            "RelatedObjects": IFC_semantic_surface_children,
                                             "RelatingObject": IFC_object})
 
             self.create_property_set(obj.attributes, IFC_object)
+
+        for parent_children in parents_children_relations.values():
+            self.IFC_model.create_entity("IfcRelContainedInSpatialStructure",
+                                         **{"GlobalId": ifcopenshell.guid.new(),
+                                            "RelatedElements": parent_children['Children'],
+                                            "RelatingStructure": parent_children['Parent']}
+                                         )
 
     def create_IFC_representation(self, IFC_geometry, shape_representation_type):
         if not isinstance(IFC_geometry, list):
