@@ -36,11 +36,15 @@ classes = (
     operator.SelectCostItemProducts,
     operator.SelectCostScheduleProducts,
     operator.ImportCostScheduleCsv,
+    operator.LoadCostItemProducts,
     prop.CostItem,
+    prop.CostItemProduct,
     prop.BIMCostProperties,
     ui.BIM_PT_cost_schedules,
+    ui.BIM_PT_cost_item_quantities,
     ui.BIM_UL_cost_items,
     ui.BIM_UL_cost_columns,
+    ui.BIM_UL_cost_item_products,
 )
 
 

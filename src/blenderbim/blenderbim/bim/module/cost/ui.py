@@ -244,6 +244,87 @@ class BIM_PT_cost_schedules(Panel):
                 row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
 
+class BIM_PT_cost_item_quantities(Panel):
+    bl_label = "IFC Cost Item Quantities"
+    bl_idname = "BIM_PT_cost_item_quantities"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_cost_schedules"
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BIMCostProperties
+        total_cost_items = len(props.cost_items)
+        if total_cost_items > 0 and props.active_cost_item_index < total_cost_items:
+            return True
+        return False
+
+    def draw(self, context):
+        self.props = context.scene.BIMCostProperties
+
+        cost_item = self.props.cost_items[self.props.active_cost_item_index]
+
+        row = self.layout.row(align=True)
+
+        row2 = row.row(align=True)
+        row2.label(text="Elements")
+        op = row.operator("bim.select_cost_item_products", icon="RESTRICT_SELECT_OFF", text="")
+        op.cost_item = cost_item.ifc_definition_id
+
+        row2 = row.row(align=True)
+        row2.label(text="Tasks")
+        op = row.operator("bim.select_cost_item_products", icon="RESTRICT_SELECT_OFF", text="")
+        op.cost_item = cost_item.ifc_definition_id
+
+        row2 = row.row(align=True)
+        row2.label(text="Resources")
+        op = row.operator("bim.select_cost_item_products", icon="RESTRICT_SELECT_OFF", text="")
+        op.cost_item = cost_item.ifc_definition_id
+
+        row = self.layout.row(align=True)
+        row.template_list(
+            "BIM_UL_cost_item_products",
+            "",
+            self.props,
+            "cost_item_products",
+            self.props,
+            "active_cost_item_product_index",
+        )
+        row.template_list(
+            "BIM_UL_cost_item_products",
+            "",
+            self.props,
+            "cost_item_products",
+            self.props,
+            "active_cost_item_product_index",
+        )
+        row.template_list(
+            "BIM_UL_cost_item_products",
+            "",
+            self.props,
+            "cost_item_products",
+            self.props,
+            "active_cost_item_product_index",
+        )
+
+        row = self.layout.row(align=True)
+
+        row2 = row.row(align=True)
+        row2.prop(self.props, "quantity_names", text="")
+        op = row.operator("bim.assign_cost_item_product", text="", icon="ADD")
+        op.cost_item = cost_item.ifc_definition_id
+
+        row2 = row.row(align=True)
+        row2.prop(self.props, "quantity_names", text="")
+        row2.operator("bim.unassign_cost_item_product", text="", icon="ADD")
+
+        row2 = row.row(align=True)
+        row2.prop(self.props, "quantity_names", text="")
+        row2.operator("bim.unassign_cost_item_product", text="", icon="ADD")
+
+
 class BIM_UL_cost_items(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
@@ -281,16 +362,6 @@ class BIM_UL_cost_items(UIList):
 
             row.label(text="{0:.2f}".format(cost_item["TotalCostValue"]), icon="CON_TRANSLIKE")
 
-            if context.active_object:
-                oprops = context.active_object.BIMObjectProperties
-                row = layout.row(align=True)
-                if oprops.ifc_definition_id in cost_item["Controls"]:
-                    op = row.operator("bim.unassign_cost_item_product", text="", icon="KEYFRAME_HLT", emboss=False)
-                    op.cost_item = item.ifc_definition_id
-                else:
-                    op = row.operator("bim.assign_cost_item_product", text="", icon="KEYFRAME", emboss=False)
-                    op.cost_item = item.ifc_definition_id
-
             if props.active_cost_item_id == item.ifc_definition_id:
                 if props.cost_item_editing_type == "ATTRIBUTES":
                     row.operator("bim.edit_cost_item", text="", icon="CHECKMARK")
@@ -303,8 +374,6 @@ class BIM_UL_cost_items(UIList):
                 row.operator("bim.add_cost_item", text="", icon="ADD").cost_item = item.ifc_definition_id
                 row.operator("bim.remove_cost_item", text="", icon="X").cost_item = item.ifc_definition_id
             else:
-                op = row.operator("bim.select_cost_item_products", icon="RESTRICT_SELECT_OFF", text="")
-                op.cost_item = item.ifc_definition_id
                 row.operator(
                     "bim.enable_editing_cost_item", text="", icon="GREASEPENCIL"
                 ).cost_item = item.ifc_definition_id
@@ -319,3 +388,15 @@ class BIM_UL_cost_columns(UIList):
             row = layout.row(align=True)
             row.prop(item, "name", emboss=False, text="")
             row.operator("bim.remove_cost_column", text="", icon="X").name = item.name
+
+
+class BIM_UL_cost_item_products(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        props = context.scene.BIMCostProperties
+        cost_item = props.cost_items[props.active_cost_item_index]
+
+        if item:
+            row = layout.row(align=True)
+            row.prop(item, "name", emboss=False, text="")
+            op = row.operator("bim.unassign_cost_item_product", text="", icon="X")
+            op.cost_item = cost_item.ifc_definition_id
