@@ -20,6 +20,8 @@ def get_pset_props(context, obj, obj_type):
         return obj.PsetProperties
     elif obj_type == "Task":
         return context.scene.TaskPsetProperties
+    elif obj_type == "Resource":
+        return context.scene.ResourcePsetProperties
 
 
 def get_pset_obj_ifc_definition_id(context, obj, obj_type):
@@ -32,6 +34,10 @@ def get_pset_obj_ifc_definition_id(context, obj, obj_type):
     elif obj_type == "Task":
         return context.scene.BIMTaskTreeProperties.tasks[
             context.scene.BIMWorkScheduleProperties.active_task_index
+        ].ifc_definition_id
+    elif obj_type == "Resource":
+        return context.scene.BIMResourceTreeProperties.resources[
+            context.scene.BIMResourceProperties.active_resource_index
         ].ifc_definition_id
 
 
