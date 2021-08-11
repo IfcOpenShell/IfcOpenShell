@@ -19,13 +19,16 @@ from bpy.props import (
 
 quantitytypes_enum = []
 quantitynames_enum = []
+quantitynames_count = []
 
 
 def purge():
     global quantitytypes_enum
     global quantitynames_enum
+    global quantitynames_count
     quantitytypes_enum = []
     quantitynames_enum = []
+    quantitynames_count = []
 
 
 def getQuantityTypes(self, context):
@@ -43,17 +46,30 @@ def getQuantityTypes(self, context):
 
 def getQuantityNames(self, context):
     global quantitynames_enum
+    global quantitynames_count
     ifc_file = IfcStore.get_file()
-    if len(quantitynames_enum) == 0 and ifc_file:
+    total_selected_objects = len(context.selected_objects)
+    if total_selected_objects != quantitynames_count or total_selected_objects == 1:
+        quantitynames_enum = []
+        quantitynames_count = total_selected_objects
         names = set()
-        for element_id in Data.cost_items[self.active_cost_item_id]["Controls"]:
+        for obj in context.selected_objects:
+            element_id = obj.BIMObjectProperties.ifc_definition_id
+            if not element_id:
+                continue
+            potential_names = set()
             if element_id not in PsetData.products:
-                PsetData.load(IfcStore.get_file(), element_id)
+                PsetData.load(ifc_file, element_id)
             for qto_id in PsetData.products[element_id]["qtos"]:
                 qto = PsetData.qtos[qto_id]
-                [names.add(PsetData.properties[p]["Name"]) for p in qto["Properties"]]
+                [potential_names.add(PsetData.properties[p]["Name"]) for p in qto["Properties"]]
+            names = names.intersection(potential_names) if names else potential_names
         quantitynames_enum.extend([(n, n, "") for n in names])
     return quantitynames_enum
+
+
+def update_cost_item_index(self, context):
+    bpy.ops.bim.load_cost_item_products()
 
 
 def updateCostItemName(self, context):
@@ -80,6 +96,11 @@ class CostItem(PropertyGroup):
     level_index: IntProperty(name="Level Index")
 
 
+class CostItemProduct(PropertyGroup):
+    name: StringProperty(name="Name")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+
 class BIMCostProperties(PropertyGroup):
     cost_schedule_attributes: CollectionProperty(name="Cost Schedule Attributes", type=Attribute)
     is_editing: StringProperty(name="Is Editing")
@@ -87,7 +108,7 @@ class BIMCostProperties(PropertyGroup):
     cost_items: CollectionProperty(name="Cost Items", type=CostItem)
     active_cost_item_id: IntProperty(name="Active Cost Id")
     cost_item_editing_type: StringProperty(name="Cost Item Editing Type")
-    active_cost_item_index: IntProperty(name="Active Cost Item Index")
+    active_cost_item_index: IntProperty(name="Active Cost Item Index", update=update_cost_item_index)
     cost_item_attributes: CollectionProperty(name="Task Attributes", type=Attribute)
     contracted_cost_items: StringProperty(name="Contracted Cost Items", default="[]")
     quantity_types: EnumProperty(items=getQuantityTypes, name="Quantity Types")
@@ -109,3 +130,5 @@ class BIMCostProperties(PropertyGroup):
     should_show_column_ui: BoolProperty(name="Should Show Column UI", default=False)
     columns: CollectionProperty(name="Columns", type=StrProperty)
     active_column_index: IntProperty(name="Active Column Index")
+    cost_item_products: CollectionProperty(name="Cost Item Products", type=CostItemProduct)
+    active_cost_item_product_index: IntProperty(name="Active Cost Item Product Index")

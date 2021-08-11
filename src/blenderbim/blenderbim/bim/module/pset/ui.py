@@ -132,7 +132,7 @@ class BIM_PT_object_psets(Panel):
         op.obj_type = "Object"
 
         psets = [(pset_id, Data.psets[pset_id]) for pset_id in Data.products[oprops.ifc_definition_id]["psets"]]
-        for pset_id, pset in sorted(psets, key = lambda v: v[1]["Name"]):
+        for pset_id, pset in sorted(psets, key=lambda v: v[1]["Name"]):
             draw_psetqto_ui(context, pset_id, pset, props, self.layout, "Object")
 
         # TODO reimplement. See #1222.
@@ -177,7 +177,7 @@ class BIM_PT_object_qtos(Panel):
         op.obj_type = "Object"
 
         qtos = [(qto_id, Data.qtos[qto_id]) for qto_id in Data.products[oprops.ifc_definition_id]["qtos"]]
-        for qto_id, qto in sorted(qtos, key = lambda v: v[1]["Name"]):
+        for qto_id, qto in sorted(qtos, key=lambda v: v[1]["Name"]):
             draw_psetqto_ui(context, qto_id, qto, props, self.layout, "Object")
 
 
@@ -219,7 +219,7 @@ class BIM_PT_material_psets(Panel):
         op.obj_type = "Material"
 
         psets = [(pset_id, Data.psets[pset_id]) for pset_id in Data.products[oprops.ifc_definition_id]["psets"]]
-        for pset_id, pset in sorted(psets, key = lambda v: v[1]["Name"]):
+        for pset_id, pset in sorted(psets, key=lambda v: v[1]["Name"]):
             draw_psetqto_ui(context, pset_id, pset, props, self.layout, "Material")
 
 
@@ -252,7 +252,7 @@ class BIM_PT_task_qtos(Panel):
         op.obj_type = "Task"
 
         qtos = [(qto_id, Data.qtos[qto_id]) for qto_id in Data.products[ifc_definition_id]["qtos"]]
-        for qto_id, qto in sorted(qtos, key = lambda v: v[1]["Name"]):
+        for qto_id, qto in sorted(qtos, key=lambda v: v[1]["Name"]):
             draw_psetqto_ui(context, qto_id, qto, props, self.layout, "Task")
 
 
@@ -285,5 +285,5 @@ class BIM_PT_resource_qtos(Panel):
         op.obj_type = "Resource"
 
         qtos = [(qto_id, Data.qtos[qto_id]) for qto_id in Data.products[ifc_definition_id]["qtos"]]
-        for qto_id, qto in sorted(qtos, key = lambda v: v[1]["Name"]):
+        for qto_id, qto in sorted(qtos, key=lambda v: v[1]["Name"]):
             draw_psetqto_ui(context, qto_id, qto, props, self.layout, "Resource")

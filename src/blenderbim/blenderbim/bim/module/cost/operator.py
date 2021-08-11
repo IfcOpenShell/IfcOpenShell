@@ -702,3 +702,27 @@ class RemoveCostColumn(bpy.types.Operator):
         Data.set_categories([c.name for c in self.props.columns])
         Data.load(IfcStore.get_file())
         return {"FINISHED"}
+
+
+class LoadCostItemProducts(bpy.types.Operator):
+    bl_idname = "bim.load_cost_item_products"
+    bl_label = "Load Cost Item Products"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        self.props = context.scene.BIMCostProperties
+        self.file = IfcStore.get_file()
+        while len(self.props.cost_item_products) > 0:
+            self.props.cost_item_products.remove(0)
+        ifc_definition_id = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
+        for control in Data.cost_items[ifc_definition_id]["Controls"]:
+            related_object = self.file.by_id(control)
+            if related_object.is_a("IfcProduct"):
+                new = self.props.cost_item_products.add()
+                new.ifc_definition_id = control
+                new.name = related_object.Name or "Unnamed"
+            elif related_object.is_a("IfcProduct"):
+                pass
+            elif related_object.is_a("IfcResource"):
+                pass
+        return {"FINISHED"}
