@@ -483,7 +483,7 @@ call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\cgal"    ^
                -DGMP_LIBRARIES="%INSTALL_DIR%\mpir\mpir.lib"  ^
                -DMPFR_INCLUDE_DIR="%INSTALL_DIR%\mpfr"        ^
                -DMPFR_LIBRARIES="%INSTALL_DIR%\mpfr\mpfr.lib" ^
-               -DBUILD_SHARED_LIBS=On                         ^
+               -DCGAL_HEADER_ONLY=On                          ^
                -DBOOST_LIBRARYDIR="%DEPS_DIR%\boost_%BOOST_VER%\stage\vs%VS_VER%-%VS_PLATFORM%\lib"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\CGAL.sln" %BUILD_CFG%
