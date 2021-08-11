@@ -312,6 +312,7 @@ class AssignCostItemProduct(bpy.types.Operator):
             [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
         )
         self.file = IfcStore.get_file()
+        self.props = context.scene.BIMCostProperties
         ifcopenshell.api.run(
             "cost.assign_cost_item_product",
             self.file,
@@ -321,8 +322,10 @@ class AssignCostItemProduct(bpy.types.Operator):
                 for o in related_objects
                 if o.BIMObjectProperties.ifc_definition_id
             ],
+            prop_name=self.props.quantity_names,
         )
         Data.load(self.file)
+        bpy.ops.bim.load_cost_item_quantities()
         return {"FINISHED"}
 
 
@@ -331,27 +334,21 @@ class UnassignCostItemProduct(bpy.types.Operator):
     bl_label = "Unassign Control"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
-    related_object: bpy.props.StringProperty()
+    related_object: bpy.props.IntProperty()
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        related_objects = (
-            [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
-        )
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "cost.unassign_cost_item_product",
             self.file,
             cost_item=self.file.by_id(self.cost_item),
-            products=[
-                self.file.by_id(o.BIMObjectProperties.ifc_definition_id)
-                for o in related_objects
-                if o.BIMObjectProperties.ifc_definition_id
-            ],
+            products=[self.file.by_id(self.related_object)],
         )
         Data.load(self.file)
+        bpy.ops.bim.load_cost_item_quantities()
         return {"FINISHED"}
 
 
@@ -396,20 +393,9 @@ class AddCostItemQuantity(bpy.types.Operator):
     def _execute(self, context):
         self.file = IfcStore.get_file()
         self.props = context.scene.BIMCostProperties
-        if self.props.quantity_types == "QTO":
-            self.add_quantities_from_qto_filter()
-        else:
-            self.add_manual_quantity()
+        self.add_manual_quantity()
         Data.load(self.file)
         return {"FINISHED"}
-
-    def add_quantities_from_qto_filter(self):
-        ifcopenshell.api.run(
-            "cost.assign_cost_item_product_quantities",
-            self.file,
-            cost_item=self.file.by_id(self.cost_item),
-            prop_name=self.props.quantity_names,
-        )
 
     def add_manual_quantity(self):
         ifcopenshell.api.run(
@@ -704,12 +690,13 @@ class RemoveCostColumn(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class LoadCostItemProducts(bpy.types.Operator):
-    bl_idname = "bim.load_cost_item_products"
-    bl_label = "Load Cost Item Products"
+class LoadCostItemQuantities(bpy.types.Operator):
+    bl_idname = "bim.load_cost_item_quantities"
+    bl_label = "Load Cost Item Quantities"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        print('EXECUTING')
         self.props = context.scene.BIMCostProperties
         self.file = IfcStore.get_file()
         while len(self.props.cost_item_products) > 0:

@@ -36,7 +36,7 @@ classes = (
     operator.SelectCostItemProducts,
     operator.SelectCostScheduleProducts,
     operator.ImportCostScheduleCsv,
-    operator.LoadCostItemProducts,
+    operator.LoadCostItemQuantities,
     prop.CostItem,
     prop.CostItemProduct,
     prop.BIMCostProperties,
