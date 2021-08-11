@@ -11,8 +11,8 @@ import urllib
 import json
 from run import db, app
 
-website_obj = Blueprint(
-    "website_obj",
+foundation_obj = Blueprint(
+    "foundation_obj",
     __name__,
     template_folder="templates",
 )
@@ -22,13 +22,13 @@ def split_by_crlf(s):
     return [v for v in s.splitlines() if v]
 
 
-@website_obj.route("/")
+@foundation_obj.route("/")
 def homepage():
     return render_template("index.html")
     # return "homepage"
 
 
-@website_obj.route("/register", methods=["GET", "POST"])
+@foundation_obj.route("/register", methods=["GET", "POST"])
 def register_page():
     form = RegisterForm()
     if form.validate_on_submit():
@@ -45,7 +45,7 @@ def register_page():
             f"Account created successfully! {user_to_create.username}",
             category="success",
         )
-        return redirect(url_for("website_obj.homepage"))
+        return redirect(url_for("foundation_obj.homepage"))
     if form.errors != {}:
         for err_msg in form.errors.values():
             flash(
@@ -55,7 +55,7 @@ def register_page():
     return render_template("register.html", form=form)
 
 
-@website_obj.route("/createclient", methods=["GET", "POST"])
+@foundation_obj.route("/createclient", methods=["GET", "POST"])
 @login_required
 def create_client():
     grants = [
@@ -99,7 +99,7 @@ def create_client():
     return render_template("createclient.html", form=form, grants=grants)
 
 
-@website_obj.route("/login", methods=["GET", "POST"])
+@foundation_obj.route("/login", methods=["GET", "POST"])
 def login_page():
     form = LoginForm()
     if form.validate_on_submit():
@@ -108,7 +108,7 @@ def login_page():
             attempted_password=form.password.data
         ):
             login_user(attempted_user)
-            return redirect(url_for("website_obj.homepage"))
+            return redirect(url_for("foundation_obj.homepage"))
         else:
             flash(
                 "Invalid Credentials",
@@ -118,14 +118,14 @@ def login_page():
     return render_template("login.html", form=form)
 
 
-@website_obj.route("/logout")
+@foundation_obj.route("/logout")
 def logoutpage():
     logout_user()
     flash("You have been logged out!", category="info")
-    return redirect(url_for("website_obj.homepage"))
+    return redirect(url_for("foundation_obj.homepage"))
 
 
-@website_obj.route("/foundation/1.0/auth")
+@foundation_obj.route("/foundation/1.0/auth")
 def foundation_auth():
     data = {
         "oauth2_auth_url": "http://127.0.0.1:5000/oauth/authorize",
@@ -138,7 +138,7 @@ def foundation_auth():
     return response
 
 
-@website_obj.route("/foundation/versions")
+@foundation_obj.route("/foundation/versions")
 def foundation_versions():
     Body = {
         "versions": [
@@ -167,7 +167,7 @@ def foundation_versions():
     return response
 
 
-@website_obj.route("/outh/login", methods=["GET", "POST"])
+@foundation_obj.route("/outh/login", methods=["GET", "POST"])
 def oauth_login():
     form = LoginForm()
     if form.validate_on_submit():
@@ -185,7 +185,7 @@ def oauth_login():
             state = request.args.get("state")
             return redirect(
                 url_for(
-                    "website_obj.authorize",
+                    "foundation_obj.authorize",
                     client_id=client_id,
                     redirect_uri=redirect_uri,
                     state=state,
@@ -199,7 +199,7 @@ def oauth_login():
     return render_template("ologin.html", form=form)
 
 
-@website_obj.route("/oauth/authorize", methods=["GET", "POST"])
+@foundation_obj.route("/oauth/authorize", methods=["GET", "POST"])
 def authorize():
     client_id = request.args.get("client_id")
     redirect_uri = request.args.get("redirect_uri")
@@ -209,7 +209,7 @@ def authorize():
         query = request.query_string
         return redirect(
             url_for(
-                "website_obj.oauth_login",
+                "foundation_obj.oauth_login",
                 client_id=client_id,
                 redirect_uri=redirect_uri,
                 state=state,
@@ -252,7 +252,7 @@ def authorize():
     return render_template("oauth.html")
 
 
-@website_obj.route("/oauth/token", methods=["POST"])
+@foundation_obj.route("/oauth/token", methods=["POST"])
 def issue_token():
     try:
         code = request.form["code"]
