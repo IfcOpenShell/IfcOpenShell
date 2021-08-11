@@ -99,6 +99,7 @@ class CostItem(PropertyGroup):
 class CostItemProduct(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+    total_quantity: FloatProperty(name="Total Quantity")
 
 
 class BIMCostProperties(PropertyGroup):

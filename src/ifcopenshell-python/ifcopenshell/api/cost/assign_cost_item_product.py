@@ -21,13 +21,11 @@ class Usecase:
         self.settings["cost_item"].CostQuantities = list(self.quantities)
 
     def add_quantity_from_related_object(self, element):
-        if element.is_a("IfcTypeObject"):
-            for definition in element.HasPropertySets or []:
-                self.add_quantity_from_qto(definition)
-        else:
-            for relationship in element.IsDefinedBy:
-                if relationship.is_a("IfcRelDefinesByProperties"):
-                    self.add_quantity_from_qto(relationship.RelatingPropertyDefinition)
+        if not element.is_a("IfcObject"):
+            return
+        for relationship in element.IsDefinedBy:
+            if relationship.is_a("IfcRelDefinesByProperties"):
+                self.add_quantity_from_qto(relationship.RelatingPropertyDefinition)
 
     def add_quantity_from_qto(self, qto):
         if not qto.is_a("IfcElementQuantity"):
