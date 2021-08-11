@@ -254,3 +254,36 @@ class BIM_PT_task_qtos(Panel):
         qtos = [(qto_id, Data.qtos[qto_id]) for qto_id in Data.products[ifc_definition_id]["qtos"]]
         for qto_id, qto in sorted(qtos, key = lambda v: v[1]["Name"]):
             draw_psetqto_ui(context, qto_id, qto, props, self.layout, "Task")
+
+
+class BIM_PT_resource_qtos(Panel):
+    bl_label = "IFC Resource Quantity Sets"
+    bl_idname = "BIM_PT_resource_qtos"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_resources"
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BIMResourceProperties
+        total_resources = len(context.scene.BIMResourceTreeProperties.resources)
+        if total_resources > 0 and props.active_resource_index < total_resources:
+            return True
+        return False
+
+    def draw(self, context):
+        props = context.scene.ResourcePsetProperties
+        rprops = context.scene.BIMResourceProperties
+        rtprops = context.scene.BIMResourceTreeProperties
+        ifc_definition_id = rtprops.resources[rprops.active_resource_index].ifc_definition_id
+        if ifc_definition_id not in Data.products:
+            Data.load(IfcStore.get_file(), ifc_definition_id)
+        row = self.layout.row(align=True)
+        row.prop(props, "qto_name", text="")
+        op = row.operator("bim.add_qto", icon="ADD", text="")
+        op.obj_type = "Resource"
+
+        qtos = [(qto_id, Data.qtos[qto_id]) for qto_id in Data.products[ifc_definition_id]["qtos"]]
+        for qto_id, qto in sorted(qtos, key = lambda v: v[1]["Name"]):
+            draw_psetqto_ui(context, qto_id, qto, props, self.layout, "Resource")
