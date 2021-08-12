@@ -324,6 +324,14 @@ class AssignCostItemQuantity(bpy.types.Operator):
                     ].ifc_definition_id
                 )
             ]
+        elif self.related_object_type == "RESOURCE":
+            products = [
+                self.file.by_id(
+                    context.scene.BIMResourceTreeProperties.resources[
+                        context.scene.BIMResourceProperties.active_resource_index
+                    ].ifc_definition_id
+                )
+            ]
         ifcopenshell.api.run(
             "cost.assign_cost_item_quantity",
             self.file,
@@ -717,6 +725,8 @@ class LoadCostItemQuantities(bpy.types.Operator):
             self.props.cost_item_products.remove(0)
         while len(self.props.cost_item_processes) > 0:
             self.props.cost_item_processes.remove(0)
+        while len(self.props.cost_item_resources) > 0:
+            self.props.cost_item_resources.remove(0)
         ifc_definition_id = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
         for control_id, quantity_ids in Data.cost_items[ifc_definition_id]["Controls"].items():
             related_object = self.file.by_id(control_id)
@@ -725,7 +735,7 @@ class LoadCostItemQuantities(bpy.types.Operator):
             elif related_object.is_a("IfcProcess"):
                 new = self.props.cost_item_processes.add()
             elif related_object.is_a("IfcResource"):
-                pass
+                new = self.props.cost_item_resources.add()
             new.ifc_definition_id = control_id
             new.name = related_object.Name or "Unnamed"
             total_quantity = 0

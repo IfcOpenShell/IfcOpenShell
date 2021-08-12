@@ -22,6 +22,8 @@ productquantitynames_enum = []
 productquantitynames_count = []
 processquantitynames_enum = []
 processquantitynames_id = 0
+resourcequantitynames_enum = []
+resourcequantitynames_id = 0
 
 
 def purge():
@@ -30,11 +32,15 @@ def purge():
     global productquantitynames_count
     global processquantitynames_enum
     global processquantitynames_id
+    global resourcequantitynames_enum
+    global resourcequantitynames_id
     quantitytypes_enum = []
     productquantitynames_enum = []
     productquantitynames_count = []
     processquantitynames_enum = []
     processquantitynames_id = 0
+    resourcequantitynames_enum = []
+    resourcequantitynames_id = 0
 
 
 def getQuantityTypes(self, context):
@@ -79,12 +85,10 @@ def getProcessQuantityNames(self, context):
     global processquantitynames_id
     ifc_file = IfcStore.get_file()
     active_task_index = context.scene.BIMWorkScheduleProperties.active_task_index
-    if not active_task_index:
+    total_tasks = len(context.scene.BIMTaskTreeProperties.tasks)
+    if not total_tasks or active_task_index >= total_tasks:
         return []
-    try:
-        ifc_definition_id = context.scene.BIMTaskTreeProperties.tasks[active_task_index].ifc_definition_id
-    except:
-        return []
+    ifc_definition_id = context.scene.BIMTaskTreeProperties.tasks[active_task_index].ifc_definition_id
     if processquantitynames_id != ifc_definition_id:
         processquantitynames_enum = []
         processquantitynames_id = ifc_definition_id
@@ -96,6 +100,28 @@ def getProcessQuantityNames(self, context):
             [names.add(PsetData.properties[p]["Name"]) for p in qto["Properties"]]
         processquantitynames_enum.extend([(n, n, "") for n in names])
     return processquantitynames_enum
+
+
+def getResourceQuantityNames(self, context):
+    global resourcequantitynames_enum
+    global resourcequantitynames_id
+    ifc_file = IfcStore.get_file()
+    active_resource_index = context.scene.BIMResourceProperties.active_resource_index
+    total_resources = len(context.scene.BIMResourceTreeProperties.resources)
+    if not total_resources or active_resource_index >= total_resources:
+        return []
+    ifc_definition_id = context.scene.BIMResourceTreeProperties.resources[active_resource_index].ifc_definition_id
+    if resourcequantitynames_id != ifc_definition_id:
+        resourcequantitynames_enum = []
+        resourcequantitynames_id = ifc_definition_id
+        names = set()
+        if ifc_definition_id not in PsetData.products:
+            PsetData.load(ifc_file, ifc_definition_id)
+        for qto_id in PsetData.products[ifc_definition_id]["qtos"]:
+            qto = PsetData.qtos[qto_id]
+            [names.add(PsetData.properties[p]["Name"]) for p in qto["Properties"]]
+        resourcequantitynames_enum.extend([(n, n, "") for n in names])
+    return resourcequantitynames_enum
 
 
 def update_cost_item_index(self, context):
@@ -145,6 +171,7 @@ class BIMCostProperties(PropertyGroup):
     quantity_types: EnumProperty(items=getQuantityTypes, name="Quantity Types")
     product_quantity_names: EnumProperty(items=getProductQuantityNames, name="Product Quantity Names")
     process_quantity_names: EnumProperty(items=getProcessQuantityNames, name="Process Quantity Names")
+    resource_quantity_names: EnumProperty(items=getResourceQuantityNames, name="Resource Quantity Names")
     active_cost_item_quantity_id: IntProperty(name="Active Cost Item Quantity Id")
     quantity_attributes: CollectionProperty(name="Quantity Attributes", type=Attribute)
     cost_types: EnumProperty(
@@ -166,3 +193,5 @@ class BIMCostProperties(PropertyGroup):
     active_cost_item_product_index: IntProperty(name="Active Cost Item Product Index")
     cost_item_processes: CollectionProperty(name="Cost Item Processes", type=CostItemQuantity)
     active_cost_item_process_index: IntProperty(name="Active Cost Item Process Index")
+    cost_item_resources: CollectionProperty(name="Cost Item Resources", type=CostItemQuantity)
+    active_cost_item_resource_index: IntProperty(name="Active Cost Item Resource Index")
