@@ -26,38 +26,23 @@ def validate_client(request):
 
 
 def invalid_user():
-    message = {"error": "User not recognized"}
-    response = app.response_class(
-        response=json.dumps(message),
-        status=200,
-        mimetype="application/json",
-    )
+    response = jsonify({"error": "User not recognized"})
+    response.status = 401
     return response
 
 
 def invalid_project():
-    message = {"error": "Project not found"}
-    response = app.response_class(
-        response=json.dumps(message),
-        status=400,
-        mimetype="application/json",
-    )
+    response = jsonify({"message": "Project not found"})
+    response.status = 404
     return response
 
 
 @bcf.route("/projects")
 def projects():
-    access_token = validate_client(request)
-    if access_token:
-        response = app.response_class(
-            response=jdata["Projects"],
-            status=200,
-            mimetype="application/json",
-        )
-        return response
-    else:
-        response = invalid_user()
-        return response
+    return invalid_user()
+    if validate_client(request):
+        return jsonify(jdata["Projects"])
+    return invalid_user()
 
 
 @bcf.route("/")
@@ -68,21 +53,12 @@ def bcf_3():
 
 @bcf.route("/projects/<project_id>")
 def project_details(project_id):
-    access_token = validate_client(request)
-    if access_token:
-        for i in jdata["Projects"]:
-            if (i["project_id"]) == project_id:
-                response = app.response_class(
-                    response=i,
-                    status=200,
-                    mimetype="application/json",
-                )
-                return response
-        response = invalid_project()
-        return response
-    else:
-        response = invalid_user()
-        return response
+    if validate_client(request):
+        for project in jdata["Projects"]:
+            if project["project_id"] == project_id:
+                return jsonify(project)
+        return invalid_project()
+    return invalid_user()
 
 
 @bcf.route("/projects/<project_id>", methods=["PUT"])
@@ -107,24 +83,15 @@ def update_project(project_id):
 
 @bcf.route("/projects/<project_id>/extensions")
 def extensions(project_id):
-    access_token = validate_client(request)
-    if access_token:
-        for i in jdata["Projects"]:
-            if (i["project_id"]) == project_id:
-                response = app.response_class(
-                    response=jdata["Extensions"],
-                    status=200,
-                    mimetype="application/json",
-                )
-                return response
-        response = invalid_project()
-        return response
-    else:
-        response = invalid_user()
-        return response
+    if validate_client(request):
+        for project in jdata["Projects"]:
+            if project["project_id"] == project_id:
+                return jsonify(jdata["Extensions"])
+        return invalid_project()
+    return invalid_user()
 
 
-@bcf.routes("/projects/<project_id>/topics")
+@bcf.route("/projects/<project_id>/topics")
 def topics(project_id):
     access_token = validate_client(request)
     if access_token:
@@ -143,8 +110,8 @@ def topics(project_id):
         return response
 
 
-@bcf.routes("/projects/<project_id>/topics/<topic_id>", methods=["POST"])
-def topic_details(project_id, topic_id):
+@bcf.route("/projects/<project_id>/topics/<topic_id>", methods=["POST"])
+def create_topic(project_id, topic_id):
     access_token = validate_client(request)
     if access_token and request.method == "POST":
         body = request.form["data"]
@@ -165,7 +132,7 @@ def topic_details(project_id, topic_id):
         return response
 
 
-@bcf.routes("/projects/<project_id>/topics/<topic_id>")
+@bcf.route("/projects/<project_id>/topics/<topic_id>")
 def topic_details(project_id, topic_id):
     access_token = validate_client(request)
     if access_token:
@@ -598,7 +565,7 @@ def get_documents(project_id, topic_id):
         return response
 
 
-@bcf.routes("/projects/<project_id>/topics/<topic_id>/documents", methods=["POST"])
+@bcf.route("/projects/<project_id>/topics/<topic_id>/documents", methods=["POST"])
 def create_documents(project_id, topic_id):
     access_token = validate_client(request)
     if access_token and request.method == "POST":
