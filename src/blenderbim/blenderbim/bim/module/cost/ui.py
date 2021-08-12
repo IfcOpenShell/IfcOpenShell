@@ -301,8 +301,6 @@ class BIM_PT_cost_item_quantities(Panel):
 
         row2 = col.row(align=True)
         row2.label(text="Tasks")
-        op = row2.operator("bim.select_cost_item_products", icon="RESTRICT_SELECT_OFF", text="")
-        op.cost_item = cost_item.ifc_definition_id
 
         row2 = col.row()
         row2.template_list(
@@ -327,22 +325,24 @@ class BIM_PT_cost_item_quantities(Panel):
 
         row2 = col.row(align=True)
         row2.label(text="Resources")
-        op = row2.operator("bim.select_cost_item_products", icon="RESTRICT_SELECT_OFF", text="")
-        op.cost_item = cost_item.ifc_definition_id
 
         row2 = col.row()
         row2.template_list(
             "BIM_UL_cost_item_quantities",
             "",
             self.props,
-            "cost_item_products",
+            "cost_item_resources",
             self.props,
-            "active_cost_item_product_index",
+            "active_cost_item_resource_index",
         )
 
         row2 = col.row(align=True)
-        row2.prop(self.props, "process_quantity_names", text="")
-        op = row2.operator("bim.assign_cost_item_quantity", text="", icon="ADD")
+        row2.prop(self.props, "resource_quantity_names", text="")
+        if CostProp.resourcequantitynames_enum:
+            op = row2.operator("bim.assign_cost_item_quantity", text="", icon="ADD")
+            op.related_object_type = "RESOURCE"
+            op.cost_item = cost_item.ifc_definition_id
+            op.prop_name = self.props.resource_quantity_names
 
 
 class BIM_UL_cost_items(UIList):
