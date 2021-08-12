@@ -341,11 +341,19 @@ class UnassignCostItemProduct(bpy.types.Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
+        if self.related_object:
+            products = [self.file.by_id(self.related_object)]
+        else:
+            products = [
+                self.file.by_id(o.BIMObjectProperties.ifc_definition_id)
+                for o in bpy.context.selected_objects
+                if o.BIMObjectProperties.ifc_definition_id
+            ]
         ifcopenshell.api.run(
             "cost.unassign_cost_item_product",
             self.file,
             cost_item=self.file.by_id(self.cost_item),
-            products=[self.file.by_id(self.related_object)],
+            products=products,
         )
         Data.load(self.file)
         bpy.ops.bim.load_cost_item_quantities()

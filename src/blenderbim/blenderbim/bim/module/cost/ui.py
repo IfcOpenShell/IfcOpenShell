@@ -309,11 +309,14 @@ class BIM_PT_cost_item_quantities(Panel):
             "active_cost_item_product_index",
         )
 
-        row = self.layout.row(align=True)
+        row = self.layout.row()
 
         row2 = row.row(align=True)
         row2.prop(self.props, "quantity_names", text="")
-        op = row.operator("bim.assign_cost_item_product", text="", icon="ADD")
+        op = row2.operator("bim.unassign_cost_item_product", text="", icon="REMOVE")
+        op.cost_item = cost_item.ifc_definition_id
+        op.related_object = 0
+        op = row2.operator("bim.assign_cost_item_product", text="", icon="ADD")
         op.cost_item = cost_item.ifc_definition_id
 
         row2 = row.row(align=True)
