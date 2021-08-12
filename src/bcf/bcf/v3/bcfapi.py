@@ -139,6 +139,7 @@ class BcfClient:
         self.baseurl = version["api_base_url"]
 
     def get(self, endpoint, params=None, is_auth_required=False):
+        # TODO: handle error http status codes and raise exception. Follow error.json standard.
         headers = {"Authorization": "Bearer " + self.foundation_client.get_access_token()}
         return requests.get(f"{self.baseurl}{endpoint}", headers=headers, params=params or None).json()
 
