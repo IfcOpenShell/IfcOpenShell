@@ -269,6 +269,8 @@ namespace IfcParse {
 	IFC_PARSE_API IfcEntityInstanceData* read(unsigned int i, IfcFile* t, boost::optional<unsigned> offset = boost::none);
 
 	IFC_PARSE_API IfcEntityList::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level = -1);
+
+	IFC_PARSE_API IfcEntityList::ptr traverse_breadth_first(IfcUtil::IfcBaseClass* instance, int max_level = -1);
 }
 
 IFC_PARSE_API std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f);
