@@ -297,41 +297,48 @@ class EditCostItem(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AssignCostItemProduct(bpy.types.Operator):
-    bl_idname = "bim.assign_cost_item_product"
-    bl_label = "Assign Control"
+class AssignCostItemQuantity(bpy.types.Operator):
+    bl_idname = "bim.assign_cost_item_quantity"
+    bl_label = "Assign Cost Item Quantity"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
-    related_object: bpy.props.StringProperty()
+    related_object_type: bpy.props.StringProperty()
+    prop_name: bpy.props.StringProperty()
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        related_objects = (
-            [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
-        )
         self.file = IfcStore.get_file()
-        self.props = context.scene.BIMCostProperties
+        if self.related_object_type == "PRODUCT":
+            products = [
+                self.file.by_id(o.BIMObjectProperties.ifc_definition_id)
+                for o in context.selected_objects
+                if o.BIMObjectProperties.ifc_definition_id
+            ]
+        elif self.related_object_type == "PROCESS":
+            products = [
+                self.file.by_id(
+                    context.scene.BIMTaskTreeProperties.tasks[
+                        context.scene.BIMWorkScheduleProperties.active_task_index
+                    ].ifc_definition_id
+                )
+            ]
         ifcopenshell.api.run(
-            "cost.assign_cost_item_product",
+            "cost.assign_cost_item_quantity",
             self.file,
             cost_item=self.file.by_id(self.cost_item),
-            products=[
-                self.file.by_id(o.BIMObjectProperties.ifc_definition_id)
-                for o in related_objects
-                if o.BIMObjectProperties.ifc_definition_id
-            ],
-            prop_name=self.props.quantity_names,
+            products=products,
+            prop_name=self.prop_name,
         )
         Data.load(self.file)
         bpy.ops.bim.load_cost_item_quantities()
         return {"FINISHED"}
 
 
-class UnassignCostItemProduct(bpy.types.Operator):
-    bl_idname = "bim.unassign_cost_item_product"
-    bl_label = "Unassign Control"
+class UnassignCostItemQuantity(bpy.types.Operator):
+    bl_idname = "bim.unassign_cost_item_quantity"
+    bl_label = "Unassign Cost Item Quantity"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
     related_object: bpy.props.IntProperty()
@@ -350,7 +357,7 @@ class UnassignCostItemProduct(bpy.types.Operator):
                 if o.BIMObjectProperties.ifc_definition_id
             ]
         ifcopenshell.api.run(
-            "cost.unassign_cost_item_product",
+            "cost.unassign_cost_item_quantity",
             self.file,
             cost_item=self.file.by_id(self.cost_item),
             products=products,
@@ -708,19 +715,21 @@ class LoadCostItemQuantities(bpy.types.Operator):
         self.file = IfcStore.get_file()
         while len(self.props.cost_item_products) > 0:
             self.props.cost_item_products.remove(0)
+        while len(self.props.cost_item_processes) > 0:
+            self.props.cost_item_processes.remove(0)
         ifc_definition_id = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
         for control_id, quantity_ids in Data.cost_items[ifc_definition_id]["Controls"].items():
             related_object = self.file.by_id(control_id)
             if related_object.is_a("IfcProduct"):
                 new = self.props.cost_item_products.add()
-                new.ifc_definition_id = control_id
-                new.name = related_object.Name or "Unnamed"
-                total_quantity = 0
-                for quantity_id in quantity_ids:
-                    total_quantity += self.file.by_id(quantity_id)[3]
-                new.total_quantity = total_quantity
-            elif related_object.is_a("IfcProduct"):
-                pass
+            elif related_object.is_a("IfcProcess"):
+                new = self.props.cost_item_processes.add()
             elif related_object.is_a("IfcResource"):
                 pass
+            new.ifc_definition_id = control_id
+            new.name = related_object.Name or "Unnamed"
+            total_quantity = 0
+            for quantity_id in quantity_ids:
+                total_quantity += self.file.by_id(quantity_id)[3]
+            new.total_quantity = total_quantity
         return {"FINISHED"}

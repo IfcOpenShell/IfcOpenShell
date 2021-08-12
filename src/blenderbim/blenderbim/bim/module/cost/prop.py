@@ -18,17 +18,23 @@ from bpy.props import (
 
 
 quantitytypes_enum = []
-quantitynames_enum = []
-quantitynames_count = []
+productquantitynames_enum = []
+productquantitynames_count = []
+processquantitynames_enum = []
+processquantitynames_id = 0
 
 
 def purge():
     global quantitytypes_enum
-    global quantitynames_enum
-    global quantitynames_count
+    global productquantitynames_enum
+    global productquantitynames_count
+    global processquantitynames_enum
+    global processquantitynames_id
     quantitytypes_enum = []
-    quantitynames_enum = []
-    quantitynames_count = []
+    productquantitynames_enum = []
+    productquantitynames_count = []
+    processquantitynames_enum = []
+    processquantitynames_id = 0
 
 
 def getQuantityTypes(self, context):
@@ -44,14 +50,14 @@ def getQuantityTypes(self, context):
     return quantitytypes_enum
 
 
-def getQuantityNames(self, context):
-    global quantitynames_enum
-    global quantitynames_count
+def getProductQuantityNames(self, context):
+    global productquantitynames_enum
+    global productquantitynames_count
     ifc_file = IfcStore.get_file()
     total_selected_objects = len(context.selected_objects)
-    if total_selected_objects != quantitynames_count or total_selected_objects == 1:
-        quantitynames_enum = []
-        quantitynames_count = total_selected_objects
+    if total_selected_objects != productquantitynames_count or total_selected_objects == 1:
+        productquantitynames_enum = []
+        productquantitynames_count = total_selected_objects
         names = set()
         for obj in context.selected_objects:
             element_id = obj.BIMObjectProperties.ifc_definition_id
@@ -64,8 +70,32 @@ def getQuantityNames(self, context):
                 qto = PsetData.qtos[qto_id]
                 [potential_names.add(PsetData.properties[p]["Name"]) for p in qto["Properties"]]
             names = names.intersection(potential_names) if names else potential_names
-        quantitynames_enum.extend([(n, n, "") for n in names])
-    return quantitynames_enum
+        productquantitynames_enum.extend([(n, n, "") for n in names])
+    return productquantitynames_enum
+
+
+def getProcessQuantityNames(self, context):
+    global processquantitynames_enum
+    global processquantitynames_id
+    ifc_file = IfcStore.get_file()
+    active_task_index = context.scene.BIMWorkScheduleProperties.active_task_index
+    if not active_task_index:
+        return []
+    try:
+        ifc_definition_id = context.scene.BIMTaskTreeProperties.tasks[active_task_index].ifc_definition_id
+    except:
+        return []
+    if processquantitynames_id != ifc_definition_id:
+        processquantitynames_enum = []
+        processquantitynames_id = ifc_definition_id
+        names = set()
+        if ifc_definition_id not in PsetData.products:
+            PsetData.load(ifc_file, ifc_definition_id)
+        for qto_id in PsetData.products[ifc_definition_id]["qtos"]:
+            qto = PsetData.qtos[qto_id]
+            [names.add(PsetData.properties[p]["Name"]) for p in qto["Properties"]]
+        processquantitynames_enum.extend([(n, n, "") for n in names])
+    return processquantitynames_enum
 
 
 def update_cost_item_index(self, context):
@@ -96,7 +126,7 @@ class CostItem(PropertyGroup):
     level_index: IntProperty(name="Level Index")
 
 
-class CostItemProduct(PropertyGroup):
+class CostItemQuantity(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     total_quantity: FloatProperty(name="Total Quantity")
@@ -113,7 +143,8 @@ class BIMCostProperties(PropertyGroup):
     cost_item_attributes: CollectionProperty(name="Task Attributes", type=Attribute)
     contracted_cost_items: StringProperty(name="Contracted Cost Items", default="[]")
     quantity_types: EnumProperty(items=getQuantityTypes, name="Quantity Types")
-    quantity_names: EnumProperty(items=getQuantityNames, name="Quantity Names")
+    product_quantity_names: EnumProperty(items=getProductQuantityNames, name="Product Quantity Names")
+    process_quantity_names: EnumProperty(items=getProcessQuantityNames, name="Process Quantity Names")
     active_cost_item_quantity_id: IntProperty(name="Active Cost Item Quantity Id")
     quantity_attributes: CollectionProperty(name="Quantity Attributes", type=Attribute)
     cost_types: EnumProperty(
@@ -131,5 +162,7 @@ class BIMCostProperties(PropertyGroup):
     should_show_column_ui: BoolProperty(name="Should Show Column UI", default=False)
     columns: CollectionProperty(name="Columns", type=StrProperty)
     active_column_index: IntProperty(name="Active Column Index")
-    cost_item_products: CollectionProperty(name="Cost Item Products", type=CostItemProduct)
+    cost_item_products: CollectionProperty(name="Cost Item Products", type=CostItemQuantity)
     active_cost_item_product_index: IntProperty(name="Active Cost Item Product Index")
+    cost_item_processes: CollectionProperty(name="Cost Item Processes", type=CostItemQuantity)
+    active_cost_item_process_index: IntProperty(name="Active Cost Item Process Index")

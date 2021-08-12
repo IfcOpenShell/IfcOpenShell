@@ -1,3 +1,4 @@
+import blenderbim.bim.module.cost.prop as CostProp
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.cost.data import Data
@@ -108,8 +109,6 @@ class BIM_PT_cost_schedules(Panel):
     def draw_editable_cost_item_quantities_ui(self):
         row = self.layout.row(align=True)
         row.prop(self.props, "quantity_types", text="")
-        if self.props.quantity_types == "QTO":
-            row.prop(self.props, "quantity_names", text="")
         op = row.operator("bim.add_cost_item_quantity", text="", icon="ADD")
         op.cost_item = self.props.active_cost_item_id
         op.ifc_class = self.props.quantity_types
@@ -266,42 +265,19 @@ class BIM_PT_cost_item_quantities(Panel):
 
         cost_item = self.props.cost_items[self.props.active_cost_item_index]
 
-        row = self.layout.row(align=True)
+        grid = self.layout.grid_flow(columns=3, even_columns=True)
 
-        row2 = row.row(align=True)
+        # Column1
+        col = grid.column()
+
+        row2 = col.row(align=True)
         row2.label(text="Elements")
-        op = row.operator("bim.select_cost_item_products", icon="RESTRICT_SELECT_OFF", text="")
+        op = row2.operator("bim.select_cost_item_products", icon="RESTRICT_SELECT_OFF", text="")
         op.cost_item = cost_item.ifc_definition_id
 
-        row2 = row.row(align=True)
-        row2.label(text="Tasks")
-        op = row.operator("bim.select_cost_item_products", icon="RESTRICT_SELECT_OFF", text="")
-        op.cost_item = cost_item.ifc_definition_id
-
-        row2 = row.row(align=True)
-        row2.label(text="Resources")
-        op = row.operator("bim.select_cost_item_products", icon="RESTRICT_SELECT_OFF", text="")
-        op.cost_item = cost_item.ifc_definition_id
-
-        row = self.layout.row(align=True)
-        row.template_list(
-            "BIM_UL_cost_item_products",
-            "",
-            self.props,
-            "cost_item_products",
-            self.props,
-            "active_cost_item_product_index",
-        )
-        row.template_list(
-            "BIM_UL_cost_item_products",
-            "",
-            self.props,
-            "cost_item_products",
-            self.props,
-            "active_cost_item_product_index",
-        )
-        row.template_list(
-            "BIM_UL_cost_item_products",
+        row2 = col.row()
+        row2.template_list(
+            "BIM_UL_cost_item_quantities",
             "",
             self.props,
             "cost_item_products",
@@ -309,23 +285,64 @@ class BIM_PT_cost_item_quantities(Panel):
             "active_cost_item_product_index",
         )
 
-        row = self.layout.row()
-
-        row2 = row.row(align=True)
-        row2.prop(self.props, "quantity_names", text="")
-        op = row2.operator("bim.unassign_cost_item_product", text="", icon="REMOVE")
+        row2 = col.row(align=True)
+        row2.prop(self.props, "product_quantity_names", text="")
+        op = row2.operator("bim.unassign_cost_item_quantity", text="", icon="REMOVE")
         op.cost_item = cost_item.ifc_definition_id
         op.related_object = 0
-        op = row2.operator("bim.assign_cost_item_product", text="", icon="ADD")
+        if CostProp.productquantitynames_enum:
+            op = row2.operator("bim.assign_cost_item_quantity", text="", icon="ADD")
+            op.related_object_type = "PRODUCT"
+            op.cost_item = cost_item.ifc_definition_id
+            op.prop_name = self.props.product_quantity_names
+
+        # Column2
+        col = grid.column()
+
+        row2 = col.row(align=True)
+        row2.label(text="Tasks")
+        op = row2.operator("bim.select_cost_item_products", icon="RESTRICT_SELECT_OFF", text="")
         op.cost_item = cost_item.ifc_definition_id
 
-        row2 = row.row(align=True)
-        row2.prop(self.props, "quantity_names", text="")
-        row2.operator("bim.unassign_cost_item_product", text="", icon="ADD")
+        row2 = col.row()
+        row2.template_list(
+            "BIM_UL_cost_item_quantities",
+            "",
+            self.props,
+            "cost_item_processes",
+            self.props,
+            "active_cost_item_process_index",
+        )
 
-        row2 = row.row(align=True)
-        row2.prop(self.props, "quantity_names", text="")
-        row2.operator("bim.unassign_cost_item_product", text="", icon="ADD")
+        row2 = col.row(align=True)
+        row2.prop(self.props, "process_quantity_names", text="")
+        if CostProp.processquantitynames_enum:
+            op = row2.operator("bim.assign_cost_item_quantity", text="", icon="ADD")
+            op.related_object_type = "PROCESS"
+            op.cost_item = cost_item.ifc_definition_id
+            op.prop_name = self.props.process_quantity_names
+
+        # Column3
+        col = grid.column()
+
+        row2 = col.row(align=True)
+        row2.label(text="Resources")
+        op = row2.operator("bim.select_cost_item_products", icon="RESTRICT_SELECT_OFF", text="")
+        op.cost_item = cost_item.ifc_definition_id
+
+        row2 = col.row()
+        row2.template_list(
+            "BIM_UL_cost_item_quantities",
+            "",
+            self.props,
+            "cost_item_products",
+            self.props,
+            "active_cost_item_product_index",
+        )
+
+        row2 = col.row(align=True)
+        row2.prop(self.props, "process_quantity_names", text="")
+        op = row2.operator("bim.assign_cost_item_quantity", text="", icon="ADD")
 
 
 class BIM_UL_cost_items(UIList):
@@ -393,15 +410,16 @@ class BIM_UL_cost_columns(UIList):
             row.operator("bim.remove_cost_column", text="", icon="X").name = item.name
 
 
-class BIM_UL_cost_item_products(UIList):
+class BIM_UL_cost_item_quantities(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         props = context.scene.BIMCostProperties
         cost_item = props.cost_items[props.active_cost_item_index]
 
         if item:
             row = layout.row(align=True)
-            row.prop(item, "name", emboss=False, text="")
+            row.split(factor=0.8)
+            row.label(text=item.name)
             row.label(text="{0:.2f}".format(item.total_quantity))
-            op = row.operator("bim.unassign_cost_item_product", text="", icon="X")
+            op = row.operator("bim.unassign_cost_item_quantity", text="", icon="X")
             op.cost_item = cost_item.ifc_definition_id
             op.related_object = item.ifc_definition_id
