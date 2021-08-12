@@ -4,10 +4,10 @@ A simple Python implementation of BCF. The data model is described in `data.py`.
 Manipulation of BCF-XML is available via `bcfxml.py` and manipulation of BCF-API
 is available via `bcfapi.py`.
 
- - BCF-XML version 2.1: Fully supported
- - BCF-API version 2.1: Not supported, will probably tackle this after BCF-API v3.0
- - BCF-XML version 3.0: Almost fully supported, except for the documents module
- - BCF-API version 3.0: Almost fully supported, except for two requests.
+- BCF-XML version 2.1: Fully supported
+- BCF-API version 2.1: Not supported, will probably tackle this after BCF-API v3.0
+- BCF-XML version 3.0: Almost fully supported, except for the documents module
+- BCF-API version 3.0: Almost fully supported, except for two requests.
 
 ## bcfxml
 
@@ -73,9 +73,9 @@ auth_methods = foundation_client.get_auth_methods()
 
 # Our library currently only implements the authorization_code flow
 if "authorization_code" in auth_methods:
-    auth_client.login()
+    foundation_client.login()
 
-bcf_client = BcfClient()
+bcf_client = BcfClient(foundation_client)
 
 versions = foundation_client.get_versions()
 for version in versions:
@@ -94,7 +94,8 @@ print(data)
 ```
 
 ## Todo List
-The remaining work that needs to be completed in `bcfxml.py` and `bcfapi.py`.
-  * For `bcfxml.py` two xsds support is remaining namely 'documents.xsd` and `extensions.xsd`.
-  * For `bcfapi.py` two requests that are `get_topics` and `get_comments` are remaining.
 
+The remaining work that needs to be completed in `bcfxml.py` and `bcfapi.py`.
+
+- For `bcfxml.py` two xsds support is remaining namely 'documents.xsd`and`extensions.xsd`.
+- For `bcfapi.py` two requests that are `get_topics` and `get_comments` are remaining.
