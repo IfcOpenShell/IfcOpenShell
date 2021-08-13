@@ -25,7 +25,7 @@ unit_names = [
     "CANDELA",
     "COULOMB",
     "CUBIC_METRE",
-    "DEGREE CELSIUS",
+    "DEGREE_CELSIUS",
     "FARAD",
     "GRAM",
     "GRAY",
@@ -43,7 +43,7 @@ unit_names = [
     "SECOND",
     "SIEMENS",
     "SIEVERT",
-    "SQUARE METRE",
+    "SQUARE_METRE",
     "METRE",
     "STERADIAN",
     "TESLA",
@@ -51,7 +51,6 @@ unit_names = [
     "WATT",
     "WEBER",
 ]
-
 
 si_dimensions = {
     "METRE": (1, 0, 0, 0, 0, 0, 0),
@@ -85,6 +84,39 @@ si_dimensions = {
     "GRAY": (2, 0, -2, 0, 0, 0, 0),
     "SIEVERT": (2, 0, -2, 0, 0, 0, 0),
     "OTHERWISE": (0, 0, 0, 0, 0, 0, 0),
+}
+
+# See https://github.com/buildingSMART/IFC4.3.x-development/issues/72
+si_type_names = {
+    "ABSORBEDDOSEUNIT": "GRAY",
+    "AMOUNTOFSUBSTANCEUNIT": "MOLE",
+    "AREAUNIT": "SQUARE_METRE",
+    "DOSEEQUIVALENTUNIT": "SIEVERT",
+    "ELECTRICCAPACITANCEUNIT": "FARAD",
+    "ELECTRICCHARGEUNIT": "COULOMB",
+    "ELECTRICCONDUCTANCEUNIT": "SIEMENS",
+    "ELECTRICCURRENTUNIT": "AMPERE",
+    "ELECTRICRESISTANCEUNIT": "OHM",
+    "ELECTRICVOLTAGEUNIT": "VOLT",
+    "ENERGYUNIT": "JOULE",
+    "FORCEUNIT": "NEWTON",
+    "FREQUENCYUNIT": "HERTZ",
+    "ILLUMINANCEUNIT": "LUX",
+    "INDUCTANCEUNIT": "HENRY",
+    "LENGTHUNIT": "METRE",
+    "LUMINOUSFLUXUNIT": "LUMEN",
+    "LUMINOUSINTENSITYUNIT": "CANDELA",
+    "MAGNETICFLUXDENSITYUNIT": "TESLA",
+    "MAGNETICFLUXUNIT": "WEBER",
+    "MASSUNIT": "GRAM",
+    "PLANEANGLEUNIT": "RADIAN",
+    "POWERUNIT": "WATT",
+    "PRESSUREUNIT": "PASCAL",
+    "RADIOACTIVITYUNIT": "BECQUEREL",
+    "SOLIDANGLEUNIT": "STERADIAN",
+    "THERMODYNAMICTEMPERATUREUNIT": "KELVIN", # Or, DEGREE_CELSIUS, but this is a quirk of IFC
+    "TIMEUNIT": "SECOND",
+    "VOLUMEUNIT": "CUBIC_METRE",
 }
 
 si_conversions = {
@@ -169,7 +201,7 @@ def get_prefix_multiplier(text):
 def get_unit_name(text):
     text = text.upper().replace("METER", "METRE")
     for name in unit_names:
-        if name in text:
+        if name.replace("_", " ") in text:
             return name
 
 
@@ -263,19 +295,17 @@ def convert(value, from_prefix, from_unit, to_prefix, to_unit):
     return value
 
 
-"""Returns a unit scale factor to convert to and from IFC project length units and SI meters
-
-Example::
-
-    ifc_project_length * unit_scale = si_meters
-    si_meters / unit_scale = ifc_project_length
-
-:returns: The scale factor
-:rtype: float
-"""
-
-
 def calculate_unit_scale(file):
+    """Returns a unit scale factor to convert to and from IFC project length units and SI meters
+
+    Example::
+
+        ifc_project_length * unit_scale = si_meters
+        si_meters / unit_scale = ifc_project_length
+
+    :returns: The scale factor
+    :rtype: float
+    """
     units = file.by_type("IfcUnitAssignment")[0]
     unit_scale = 1
     for unit in units.Units:

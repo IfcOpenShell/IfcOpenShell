@@ -40,8 +40,11 @@ class BIM_PT_units(Panel):
             row.operator("bim.add_monetary_unit", text="", icon="ADD")
         elif self.props.unit_classes == "IfcDerivedUnit":
             pass  # TODO
+        elif self.props.unit_classes == "IfcSIUnit":
+            row.prop(self.props, "named_unit_types", text="")
+            row.operator("bim.add_si_unit", text="", icon="ADD")
         else:
-            pass  # TODO
+            row.prop(self.props, "named_unit_types", text="")
 
         self.layout.template_list(
             "BIM_UL_units",

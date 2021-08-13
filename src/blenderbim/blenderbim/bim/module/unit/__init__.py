@@ -8,6 +8,7 @@ classes = (
     operator.DisableUnitEditingUI,
     operator.RemoveUnit,
     operator.AddMonetaryUnit,
+    operator.AddSIUnit,
     operator.EnableEditingUnit,
     operator.DisableEditingUnit,
     operator.EditUnit,
