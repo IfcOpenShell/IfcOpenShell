@@ -119,6 +119,39 @@ si_type_names = {
     "VOLUMEUNIT": "CUBIC_METRE",
 }
 
+# Are you good at physics? Want to help fill these in? :)
+named_dimensions = {
+    # "ABSORBEDDOSEUNIT": (0, 0, 0, 0, 0, 0, 0),
+    "AMOUNTOFSUBSTANCEUNIT": (0, 0, 0, 0, 0, 1, 0),
+    "AREAUNIT": (2, 0, 0, 0, 0, 0, 0),
+    # "DOSEEQUIVALENTUNIT": (0, 0, 0, 0, 0, 0, 0),
+    # "ELECTRICCAPACITANCEUNIT": (0, 0, 0, 0, 0, 0, 0),
+    # "ELECTRICCHARGEUNIT": (0, 0, 0, 0, 0, 0, 0),
+    # "ELECTRICCONDUCTANCEUNIT": (0, 0, 0, 0, 0, 0, 0),
+    "ELECTRICCURRENTUNIT": (0, 0, 0, 1, 0, 0, 0),
+    # "ELECTRICRESISTANCEUNIT": (0, 0, 0, 0, 0, 0, 0),
+    # "ELECTRICVOLTAGEUNIT": (0, 0, 0, 0, 0, 0, 0),
+    # "ENERGYUNIT": (0, 0, 0, 0, 0, 0, 0),
+    # "FORCEUNIT": (0, 0, 0, 0, 0, 0, 0),
+    # "FREQUENCYUNIT": (0, 0, 0, 0, 0, 0, 0),
+    # "ILLUMINANCEUNIT": (0, 0, 0, 0, 0, 0, 0),
+    # "INDUCTANCEUNIT": (0, 0, 0, 0, 0, 0, 0),
+    "LENGTHUNIT": (1, 0, 0, 0, 0, 0, 0),
+    # "LUMINOUSFLUXUNIT": (0, 0, 0, 0, 0, 0, 0),
+    "LUMINOUSINTENSITYUNIT": (0, 0, 0, 0, 0, 0, 1),
+    # "MAGNETICFLUXDENSITYUNIT": (0, 0, 0, 0, 0, 0, 0),
+    # "MAGNETICFLUXUNIT": (0, 0, 0, 0, 0, 0, 0),
+    "MASSUNIT": (0, 1, 0, 0, 0, 0, 0),
+    # "PLANEANGLEUNIT": (0, 0, 0, 0, 0, 0, 0),
+    # "POWERUNIT": (0, 0, 0, 0, 0, 0, 0),
+    # "PRESSUREUNIT": (0, 0, 0, 0, 0, 0, 0),
+    # "RADIOACTIVITYUNIT": (0, 0, 0, 0, 0, 0, 0),
+    # "SOLIDANGLEUNIT": (0, 0, 0, 0, 0, 0, 0),
+    "THERMODYNAMICTEMPERATUREUNIT": (0, 0, 0, 0, 1, 0, 0),
+    "TIMEUNIT": (0, 0, 1, 0, 0, 0, 0),
+    "VOLUMEUNIT": (3, 0, 0, 0, 0, 0, 0),
+}
+
 si_conversions = {
     "inch": 0.0254,
     "foot": 0.3048,
@@ -207,6 +240,10 @@ def get_unit_name(text):
 
 def get_si_dimensions(name):
     return si_dimensions.get(name, si_dimensions["OTHERWISE"])
+
+
+def get_named_dimensions(name):
+    return named_dimensions.get(name, (0, 0, 0, 0, 0, 0, 0))
 
 
 def get_property_unit(prop, ifc_file):
