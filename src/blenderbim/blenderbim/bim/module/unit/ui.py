@@ -67,6 +67,13 @@ class BIM_UL_units(UIList):
             row.label(text=item.unit_type or "No Type", icon=item.icon)
             row.label(text=item.name or "Unnamed")
 
+            if item.is_assigned:
+                op = row.operator("bim.unassign_unit", text="", icon="KEYFRAME_HLT", emboss=False)
+                op.unit = item.ifc_definition_id
+            else:
+                op = row.operator("bim.assign_unit", text="", icon="KEYFRAME", emboss=False)
+                op.unit = item.ifc_definition_id
+
             if props.active_unit_id == item.ifc_definition_id:
                 row.operator("bim.edit_unit", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_unit", text="", icon="CANCEL")
