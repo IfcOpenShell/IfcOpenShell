@@ -128,11 +128,27 @@ def update_cost_item_index(self, context):
     bpy.ops.bim.load_cost_item_quantities()
 
 
-def updateCostItemName(self, context):
-    if self.name == "Unnamed":
+def updateCostItemIdentification(self, context):
+    props = context.scene.BIMCostProperties
+    if not props.is_cost_update_enabled or self.identification == "XXX":
         return
     self.file = IfcStore.get_file()
+    ifcopenshell.api.run(
+        "cost.edit_cost_item",
+        self.file,
+        **{"cost_item": self.file.by_id(self.ifc_definition_id), "attributes": {"Identification": self.identification}},
+    )
+    Data.load(self.file)
+    if props.active_cost_item_id == self.ifc_definition_id:
+        attribute = props.cost_item_attributes.get("Identification")
+        attribute.string_value = self.identification
+
+
+def updateCostItemName(self, context):
     props = context.scene.BIMCostProperties
+    if not props.is_cost_update_enabled or self.name == "Unnamed":
+        return
+    self.file = IfcStore.get_file()
     ifcopenshell.api.run(
         "cost.edit_cost_item",
         self.file,
@@ -146,6 +162,7 @@ def updateCostItemName(self, context):
 
 class CostItem(PropertyGroup):
     name: StringProperty(name="Name", update=updateCostItemName)
+    identification: StringProperty(name="Identification", update=updateCostItemIdentification)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     has_children: BoolProperty(name="Has Children")
     is_expanded: BoolProperty(name="Is Expanded")
@@ -159,6 +176,7 @@ class CostItemQuantity(PropertyGroup):
 
 
 class BIMCostProperties(PropertyGroup):
+    is_cost_update_enabled: BoolProperty(name="Is Cost Update Enabled", default=True)
     cost_schedule_attributes: CollectionProperty(name="Cost Schedule Attributes", type=Attribute)
     is_editing: StringProperty(name="Is Editing")
     active_cost_schedule_id: IntProperty(name="Active Cost Schedule Id")

@@ -103,6 +103,7 @@ class EnableEditingCostItems(bpy.types.Operator):
         if context.preferences.addons["blenderbim"].preferences.should_play_chaching_sound:
             self.play_chaching_sound()  # lol
         self.props = context.scene.BIMCostProperties
+        self.props.is_cost_update_enabled = False
         self.props.active_cost_schedule_id = self.cost_schedule
         while len(self.props.cost_items) > 0:
             self.props.cost_items.remove(0)
@@ -111,6 +112,7 @@ class EnableEditingCostItems(bpy.types.Operator):
         for related_object_id in Data.cost_schedules[self.cost_schedule]["Controls"]:
             self.create_new_cost_item_li(related_object_id, 0)
         self.props.is_editing = "COST_ITEMS"
+        self.props.is_cost_update_enabled = True
         return {"FINISHED"}
 
     def play_chaching_sound(self):
@@ -134,6 +136,7 @@ class EnableEditingCostItems(bpy.types.Operator):
         new = self.props.cost_items.add()
         new.ifc_definition_id = related_object_id
         new.name = cost_item["Name"] or "Unnamed"
+        new.identification = cost_item["Identification"] or "XXX"
         new.is_expanded = related_object_id not in self.contracted_cost_items
         new.level_index = level_index
         if cost_item["IsNestedBy"]:
