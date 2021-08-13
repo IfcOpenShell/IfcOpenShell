@@ -9,13 +9,20 @@ class AssignUnit(bpy.types.Operator):
     bl_idname = "bim.assign_unit"
     bl_label = "Assign Unit"
     bl_options = {"REGISTER", "UNDO"}
+    unit: bpy.props.IntProperty()
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        ifcopenshell.api.run("unit.assign_unit", IfcStore.get_file(), **self.get_units(context))
-        Data.load(IfcStore.get_file())
+        self.file = IfcStore.get_file()
+        if self.unit:
+            ifcopenshell.api.run("unit.assign_unit", self.file, units=[self.file.by_id(self.unit)])
+        else:
+            ifcopenshell.api.run("unit.assign_unit", self.file, **self.get_units(context))
+        Data.load(self.file)
+        if self.unit:
+            bpy.ops.bim.load_units()
         return {"FINISHED"}
 
     def get_units(self, context):
@@ -46,6 +53,23 @@ class AssignUnit(bpy.types.Operator):
         return units
 
 
+class UnassignUnit(bpy.types.Operator):
+    bl_idname = "bim.unassign_unit"
+    bl_label = "Unassign Unit"
+    bl_options = {"REGISTER", "UNDO"}
+    unit: bpy.props.IntProperty()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        self.file = IfcStore.get_file()
+        ifcopenshell.api.run("unit.unassign_unit", IfcStore.get_file(), units=[self.file.by_id(self.unit)])
+        Data.load(self.file)
+        bpy.ops.bim.load_units()
+        return {"FINISHED"}
+
+
 class LoadUnits(bpy.types.Operator):
     bl_idname = "bim.load_units"
     bl_label = "Load Units"
@@ -56,8 +80,7 @@ class LoadUnits(bpy.types.Operator):
         while len(props.units) > 0:
             props.units.remove(0)
 
-        for ifc_definition_id in Data.unit_assignment:
-            unit = Data.units[ifc_definition_id]
+        for ifc_definition_id, unit in Data.units.items():
             name = unit.get("Name", "")
 
             if unit["type"] == "IfcMonetaryUnit":
@@ -86,6 +109,7 @@ class LoadUnits(bpy.types.Operator):
             new.ifc_definition_id = ifc_definition_id
             new.name = name
             new.unit_type = unit_type
+            new.is_assigned = ifc_definition_id in Data.unit_assignment
             new.icon = icon
 
         props.is_editing = True

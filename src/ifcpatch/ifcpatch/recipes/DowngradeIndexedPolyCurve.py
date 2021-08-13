@@ -29,6 +29,8 @@ class Patcher:
         self.args = args
 
     def patch(self):
+        if self.file.schema == "IFC2X3":
+            return
         curve_map = {}
 
         for curve in self.file.by_type("IfcIndexedPolyCurve"):

@@ -36,6 +36,7 @@ def getUnitClasses(self, context):
 class Unit(PropertyGroup):
     name: StringProperty(name="Name")
     unit_type: StringProperty(name="Unit Type")
+    is_assigned: BoolProperty(name="Is Assigned")
     icon: StringProperty(name="Icon")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 

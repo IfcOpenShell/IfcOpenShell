@@ -38,6 +38,7 @@ def import_attributes(ifc_class, props, data, callback=None):
     for attribute in IfcStore.get_schema().declaration_by_name(ifc_class).all_attributes():
         data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
         if data_type == "entity" or (isinstance(data_type, tuple) and "entity" in ".".join(data_type)):
+            callback(attribute.name(), None, data) if callback else None
             continue
         new = props.add()
         new.name = attribute.name()
@@ -65,20 +66,21 @@ def import_attributes(ifc_class, props, data, callback=None):
 
 def export_attributes(props, callback=None):
     attributes = {}
-    for attribute in props:
-        is_handled_by_callback = callback(attributes, attribute) if callback else False
-        if attribute.is_null:
-            attributes[attribute.name] = None
-        elif is_handled_by_callback:
-            pass  # Our job is done
-        elif attribute.data_type == "string":
-            attributes[attribute.name] = attribute.string_value
-        elif attribute.data_type == "boolean":
-            attributes[attribute.name] = attribute.bool_value
-        elif attribute.data_type == "integer":
-            attributes[attribute.name] = attribute.int_value
-        elif attribute.data_type == "float":
-            attributes[attribute.name] = attribute.float_value
-        elif attribute.data_type == "enum":
-            attributes[attribute.name] = attribute.enum_value
+    for prop in props:
+        is_handled_by_callback = callback(attributes, prop) if callback else False
+        if is_handled_by_callback:
+            continue # Our job is done
+
+        if prop.is_null:
+            attributes[prop.name] = None
+        elif prop.data_type == "string":
+            attributes[prop.name] = prop.string_value
+        elif prop.data_type == "boolean":
+            attributes[prop.name] = prop.bool_value
+        elif prop.data_type == "integer":
+            attributes[prop.name] = prop.int_value
+        elif prop.data_type == "float":
+            attributes[prop.name] = prop.float_value
+        elif prop.data_type == "enum":
+            attributes[prop.name] = prop.enum_value
     return attributes
