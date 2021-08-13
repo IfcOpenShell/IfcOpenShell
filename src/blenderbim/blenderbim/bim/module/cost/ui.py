@@ -76,6 +76,32 @@ class BIM_PT_cost_schedules(Panel):
                 row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
     def draw_editable_cost_item_ui(self, cost_schedule_id):
+        row = self.layout.row(align=True)
+        row.alignment = "RIGHT"
+        ifc_definition_id = None
+        if self.props.cost_items and self.props.active_cost_item_index < len(self.props.cost_items):
+            ifc_definition_id = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
+        if ifc_definition_id:
+
+            if Data.cost_schedules[self.props.active_cost_schedule_id]["PredefinedType"] != "SCHEDULEOFRATES":
+                op = row.operator("bim.enable_editing_cost_item_quantities", text="", icon="PROPERTIES")
+                op.cost_item = ifc_definition_id
+
+            op = row.operator("bim.enable_editing_cost_item_values", text="", icon="DISC")
+            op.cost_item = ifc_definition_id
+
+            row.operator("bim.add_cost_item", text="", icon="ADD").cost_item = ifc_definition_id
+
+            if self.props.active_cost_item_id == ifc_definition_id:
+                if self.props.cost_item_editing_type == "ATTRIBUTES":
+                    row.operator("bim.edit_cost_item", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_cost_item", text="", icon="CANCEL")
+            else:
+                op = row.operator("bim.enable_editing_cost_item", text="", icon="GREASEPENCIL")
+                op.cost_item = ifc_definition_id
+
+            row.operator("bim.remove_cost_item", text="", icon="X").cost_item = ifc_definition_id
+
         self.layout.template_list(
             "BIM_UL_cost_items",
             "",
@@ -348,7 +374,7 @@ class BIM_PT_cost_item_quantities(Panel):
 class BIM_UL_cost_items(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
-            props = context.scene.BIMCostProperties
+            self.props = context.scene.BIMCostProperties
             cost_item = Data.cost_items[item.ifc_definition_id]
             row = layout.row(align=True)
 
@@ -366,40 +392,30 @@ class BIM_UL_cost_items(UIList):
             else:
                 row.label(text="", icon="DOT")
 
-            split1 = row.split(factor=0.7)
-            split1.prop(item, "name", emboss=False, text="")
+            split1 = row.split(factor=0.1)
+            split1.prop(item, "identification", emboss=False, text="")
+            split2 = split1.split(factor=0.5)
+            split2.alignment = "RIGHT"
+            split2.prop(item, "name", emboss=False, text="")
 
-            if Data.cost_schedules[props.active_cost_schedule_id]["PredefinedType"] != "SCHEDULEOFRATES":
-                op = row.operator("bim.enable_editing_cost_item_quantities", text="", icon="PROPERTIES")
-                op.cost_item = item.ifc_definition_id
-                row.label(text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" ({cost_item['UnitSymbol']})")
+            if Data.cost_schedules[self.props.active_cost_schedule_id]["PredefinedType"] != "SCHEDULEOFRATES":
+                split2.label(text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" ({cost_item['UnitSymbol'] or '?'})")
 
-            op = row.operator("bim.enable_editing_cost_item_values", text="", icon="DISC")
-            op.cost_item = item.ifc_definition_id
-            row.label(text="{0:.2f}".format(cost_item["TotalAppliedValue"]))
+            split2.label(text="{0:.2f}".format(cost_item["TotalAppliedValue"]))
 
-            for column in props.columns:
-                row.label(text=str(cost_item["CategoryValues"].get(column.name, "-")))
+            for column in self.props.columns:
+                split2.label(text=str(cost_item["CategoryValues"].get(column.name, "-")))
 
-            row.label(text="{0:.2f}".format(cost_item["TotalCostValue"]), icon="CON_TRANSLIKE")
+            split2.label(text="{0:.2f}".format(cost_item["TotalCostValue"]))
+            self.draw_buttons(split2, item, cost_item)
 
-            if props.active_cost_item_id == item.ifc_definition_id:
-                if props.cost_item_editing_type == "ATTRIBUTES":
-                    row.operator("bim.edit_cost_item", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_cost_item", text="", icon="CANCEL")
-            elif props.active_cost_item_id:
-                if props.cost_item_editing_type == "VALUES":
-                    op = row.operator("bim.copy_cost_item_values", text="", icon="COPYDOWN")
-                    op.source = props.active_cost_item_id
-                    op.destination = item.ifc_definition_id
-                row.operator("bim.add_cost_item", text="", icon="ADD").cost_item = item.ifc_definition_id
-                row.operator("bim.remove_cost_item", text="", icon="X").cost_item = item.ifc_definition_id
-            else:
-                row.operator(
-                    "bim.enable_editing_cost_item", text="", icon="GREASEPENCIL"
-                ).cost_item = item.ifc_definition_id
-                row.operator("bim.add_cost_item", text="", icon="ADD").cost_item = item.ifc_definition_id
-                row.operator("bim.remove_cost_item", text="", icon="X").cost_item = item.ifc_definition_id
+    def draw_buttons(self, row, item, cost_item):
+        pass  # TODO: reimplement somewhere with better UX
+        # elif self.props.active_cost_item_id:
+        #    if self.props.cost_item_editing_type == "VALUES":
+        #        op = row.operator("bim.copy_cost_item_values", text="", icon="COPYDOWN")
+        #        op.source = self.props.active_cost_item_id
+        #        op.destination = item.ifc_definition_id
 
 
 class BIM_UL_cost_columns(UIList):
