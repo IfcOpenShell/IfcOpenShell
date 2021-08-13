@@ -369,9 +369,10 @@ class BIM_UL_cost_items(UIList):
             split1 = row.split(factor=0.7)
             split1.prop(item, "name", emboss=False, text="")
 
-            op = row.operator("bim.enable_editing_cost_item_quantities", text="", icon="PROPERTIES")
-            op.cost_item = item.ifc_definition_id
-            row.label(text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" ({cost_item['UnitSymbol']})")
+            if Data.cost_schedules[props.active_cost_schedule_id]["PredefinedType"] != "SCHEDULEOFRATES":
+                op = row.operator("bim.enable_editing_cost_item_quantities", text="", icon="PROPERTIES")
+                op.cost_item = item.ifc_definition_id
+                row.label(text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" ({cost_item['UnitSymbol']})")
 
             op = row.operator("bim.enable_editing_cost_item_values", text="", icon="DISC")
             op.cost_item = item.ifc_definition_id

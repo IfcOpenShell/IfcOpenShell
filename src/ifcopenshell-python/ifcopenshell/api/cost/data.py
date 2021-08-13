@@ -120,7 +120,11 @@ class Data:
     def load_cost_item_value(cls, cost_item_data, cost_item, cost_value):
         value_data = cost_value.get_info()
         del value_data["AppliedValue"]
-        del value_data["UnitBasis"]
+        if value_data["UnitBasis"]:
+            data = cost_value.UnitBasis.get_info()
+            data["ValueComponent"] = data["ValueComponent"].wrappedValue
+            data["UnitComponent"] = data["UnitComponent"].id()
+            value_data["UnitBasis"] = data
         if value_data["ApplicableDate"]:
             value_data["ApplicableDate"] = ifcopenshell.util.date.ifc2datetime(value_data["ApplicableDate"])
         if value_data["FixedUntilDate"]:

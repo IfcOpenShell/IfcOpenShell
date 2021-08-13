@@ -344,8 +344,14 @@ class EditResourceTime(bpy.types.Operator):
 
     def export_attributes(self, attributes, prop):
         if "Start" in prop.name or "Finish" in prop.name or prop.name == "StatusTime":
+            if prop.is_null:
+                attributes[prop.name] = None
+                return True
             attributes[prop.name] = helper.parse_datetime(prop.string_value)
             return True
         elif prop.name =="LevelingDelay" or "Work" in prop.name:
+            if prop.is_null:
+                attributes[prop.name] = None
+                return True
             attributes[prop.name] = helper.parse_duration(prop.string_value)
             return True

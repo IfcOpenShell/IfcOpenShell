@@ -8,6 +8,7 @@ from blenderbim.bim.module.cost.prop import purge
 from blenderbim.bim.ifc import IfcStore
 from bpy_extras.io_utils import ImportHelper
 from ifcopenshell.api.cost.data import Data
+from ifcopenshell.api.unit.data import Data as UnitData
 
 
 class AddCostSchedule(bpy.types.Operator):
@@ -100,21 +101,7 @@ class EnableEditingCostItems(bpy.types.Operator):
 
     def execute(self, context):
         if context.preferences.addons["blenderbim"].preferences.should_play_chaching_sound:
-            # lol
-            # TODO: make pitch higher as costs rise
-            try:
-                import aud
-
-                device = aud.Device()
-                # chaching.mp3 is by Lucish_ CC-BY-3.0 https://freesound.org/people/Lucish_/sounds/554841/
-                sound = aud.Sound(os.path.join(context.scene.BIMProperties.data_dir, "chaching.mp3"))
-                handle = device.play(sound)
-                sound_buffered = aud.Sound.buffer(sound)
-                handle_buffered = device.play(sound_buffered)
-                handle.stop()
-                handle_buffered.stop()
-            except:
-                pass  # ah well
+            self.play_chaching_sound()  # lol
         self.props = context.scene.BIMCostProperties
         self.props.active_cost_schedule_id = self.cost_schedule
         while len(self.props.cost_items) > 0:
@@ -125,6 +112,22 @@ class EnableEditingCostItems(bpy.types.Operator):
             self.create_new_cost_item_li(related_object_id, 0)
         self.props.is_editing = "COST_ITEMS"
         return {"FINISHED"}
+
+    def play_chaching_sound(self):
+        # TODO: make pitch higher as costs rise
+        try:
+            import aud
+
+            device = aud.Device()
+            # chaching.mp3 is by Lucish_ CC-BY-3.0 https://freesound.org/people/Lucish_/sounds/554841/
+            sound = aud.Sound(os.path.join(context.scene.BIMProperties.data_dir, "chaching.mp3"))
+            handle = device.play(sound)
+            sound_buffered = aud.Sound.buffer(sound)
+            handle_buffered = device.play(sound_buffered)
+            handle.stop()
+            handle_buffered.stop()
+        except:
+            pass  # ah well
 
     def create_new_cost_item_li(self, related_object_id, level_index):
         cost_item = Data.cost_items[related_object_id]
@@ -566,6 +569,35 @@ class EnableEditingCostItemValue(bpy.types.Operator):
             prop.data_type = "float"
             prop.float_value = 0.0 if prop.is_null else data[name]
             return True
+        if (
+            name == "UnitBasis"
+            and Data.cost_schedules[bpy.context.scene.BIMCostProperties.active_cost_schedule_id]["PredefinedType"]
+            == "SCHEDULEOFRATES"
+        ):
+            prop = self.props.cost_value_attributes.add()
+            prop.name = "UnitBasisValue"
+            prop.data_type = "float"
+            prop.is_null = data["UnitBasis"] is None
+            prop.is_optional = True
+            if data["UnitBasis"]:
+                prop.float_value = data["UnitBasis"]["ValueComponent"] or 0
+            else:
+                prop.float_value = 0
+            prop = self.props.cost_value_attributes.add()
+            prop.name = "UnitBasisUnit"
+            prop.data_type = "enum"
+            prop.is_null = prop.is_optional = False
+            units = {}
+            for unit_id, unit in UnitData.units.items():
+                if unit.get("UnitType", None) in ["AREAUNIT", "LENGTHUNIT", "TIMEUNIT", "VOLUMEUNIT", "MASSUNIT"]:
+                    name = unit["Name"]
+                    if unit.get("Prefix", None):
+                        name = f"(unit['Prefix']) {name}"
+                    units[unit_id] = f"{unit['UnitType']} / {name}"
+            prop.enum_items = json.dumps(units)
+            if data["UnitBasis"] and data["UnitBasis"]["UnitComponent"]:
+                prop.enum_value = str(data["UnitBasis"]["UnitComponent"])
+            return True
 
 
 class DisableEditingCostItemValue(bpy.types.Operator):
@@ -590,7 +622,7 @@ class EditCostValue(bpy.types.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMCostProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.cost_value_attributes)
+        attributes = blenderbim.bim.helper.export_attributes(props.cost_value_attributes, self.export_attributes)
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "cost.edit_cost_value",
@@ -600,6 +632,21 @@ class EditCostValue(bpy.types.Operator):
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_cost_item_value()
         return {"FINISHED"}
+
+    def export_attributes(self, attributes, prop):
+        if prop.name == "UnitBasisValue":
+            if prop.is_null:
+                attributes["UnitBasis"] = None
+                return True
+            attributes["UnitBasis"] = {
+                "ValueComponent": prop.float_value or 1,
+                "UnitComponent": IfcStore.get_file().by_id(
+                    int(bpy.context.scene.BIMCostProperties.cost_value_attributes.get("UnitBasisUnit").enum_value)
+                ),
+            }
+            return True
+        if prop.name == "UnitBasisUnit":
+            return True
 
 
 class CopyCostItemValues(bpy.types.Operator):

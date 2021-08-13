@@ -197,6 +197,10 @@ def get_property_unit(prop, ifc_file):
         return units[0]
 
 
+def get_unit_measure_type(unit_type):
+    return "Ifc" + unit_type[0:-4].lower().capitalize() + "Measure"
+
+
 def get_symbol_quantity_class(symbol):
     # Dumb, but everybody gets it, unlike regex golf
     if not symbol:
