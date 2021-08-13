@@ -1,5 +1,6 @@
 import bpy
 import ifcopenshell.api
+import ifcopenshell.util.unit
 import blenderbim.bim.helper
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.unit.data import Data
@@ -156,8 +157,29 @@ class AddMonetaryUnit(bpy.types.Operator):
     def _execute(self, context):
         props = context.scene.BIMUnitProperties
         self.file = IfcStore.get_file()
-        unit = ifcopenshell.api.run("unit.add_monetary_unit", self.file)
-        ifcopenshell.api.run("unit.assign_unit", self.file, units=[unit])
+        ifcopenshell.api.run("unit.add_monetary_unit", self.file)
+        Data.load(self.file)
+        bpy.ops.bim.load_units()
+        return {"FINISHED"}
+
+
+class AddSIUnit(bpy.types.Operator):
+    bl_idname = "bim.add_si_unit"
+    bl_label = "Add SI Unit"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        props = context.scene.BIMUnitProperties
+        self.file = IfcStore.get_file()
+        unit = ifcopenshell.api.run(
+            "unit.add_si_unit",
+            self.file,
+            unit_type=props.named_unit_types,
+            name=ifcopenshell.util.unit.si_type_names[props.named_unit_types],
+        )
         Data.load(self.file)
         bpy.ops.bim.load_units()
         return {"FINISHED"}
