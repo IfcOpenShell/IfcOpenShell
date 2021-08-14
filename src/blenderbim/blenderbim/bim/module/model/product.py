@@ -241,3 +241,31 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
             bpy.ops.bim.switch_representation(
                 obj=obj.name, ifc_definition_id=representation.id(), should_reload=True, should_switch_all_meshes=True
             )
+
+
+def ensure_material_assigned(usecase_path, ifc_file, settings):
+    elements = []
+    for rel in ifc_file.by_type("IfcRelAssociatesMaterial"):
+        if rel.RelatingMaterial == settings["material"] or [
+            e for e in ifc_file.traverse(rel.RelatingMaterial) if e == settings["material"]
+        ]:
+            elements.extend(rel.RelatedObjects)
+
+    for element in elements:
+        obj = IfcStore.get_element(element.GlobalId)
+        if not obj:
+            continue
+
+        element_material = ifcopenshell.util.element.get_material(element)
+        material = [m for m in ifc_file.traverse(element_material) if m.is_a("IfcMaterial")]
+
+        object_material_ids = [
+            om.BIMObjectProperties.ifc_definition_id
+            for om in obj.data.materials
+            if om is not None and om.BIMObjectProperties.ifc_definition_id
+        ]
+
+        if material[0].id() in object_material_ids:
+            continue
+
+        obj.data.materials.append(IfcStore.get_element(material[0].id()))
