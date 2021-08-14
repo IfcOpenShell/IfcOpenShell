@@ -64,6 +64,7 @@ class BIM_PT_type(Panel):
             else:
                 label = name
             row.label(text=label)
+            row.operator("bim.select_type", icon="TRACKER", text="")
             row.operator("bim.select_similar_type", icon="RESTRICT_SELECT_OFF", text="")
             row.operator("bim.enable_editing_type", icon="GREASEPENCIL", text="")
             if name != "None/None":
