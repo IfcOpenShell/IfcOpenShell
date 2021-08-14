@@ -244,12 +244,17 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
 
 
 def ensure_material_assigned(usecase_path, ifc_file, settings):
-    elements = []
-    for rel in ifc_file.by_type("IfcRelAssociatesMaterial"):
-        if rel.RelatingMaterial == settings["material"] or [
-            e for e in ifc_file.traverse(rel.RelatingMaterial) if e == settings["material"]
-        ]:
-            elements.extend(rel.RelatedObjects)
+    if usecase_path == "material.assign_material":
+        if not settings.get("Material", None):
+            return
+        elements = [self.settings["product"]]
+    else:
+        elements = []
+        for rel in ifc_file.by_type("IfcRelAssociatesMaterial"):
+            if rel.RelatingMaterial == settings["material"] or [
+                e for e in ifc_file.traverse(rel.RelatingMaterial) if e == settings["material"]
+            ]:
+                elements.extend(rel.RelatedObjects)
 
     for element in elements:
         obj = IfcStore.get_element(element.GlobalId)

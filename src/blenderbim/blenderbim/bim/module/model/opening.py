@@ -52,6 +52,46 @@ def mode_callback(obj, data):
         bm.free()
 
 
+class AddElementOpening(bpy.types.Operator):
+    bl_idname = "bim.add_element_opening"
+    bl_label = "Add Element Opening"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        selected_objs = context.selected_objects
+        if len(selected_objs) == 0 or not context.active_object:
+            return {"FINISHED"}
+        obj = context.active_object
+        if not obj.BIMObjectProperties.ifc_definition_id:
+            return {"FINISHED"}
+        element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+        local_location = obj.matrix_world.inverted() @ context.scene.cursor.location
+        raycast = obj.closest_point_on_mesh(local_location, distance=0.01)
+        if not raycast[0]:
+            return {"FINISHED"}
+
+        # The opening shall be based on the smallest bounding dimension of the element
+        dimension = min(obj.dimensions)
+        bpy.ops.mesh.primitive_cube_add(size=dimension * 2)
+        opening = context.selected_objects[0]
+
+        # Place the opening in the middle of the element
+        global_location = obj.matrix_world @ raycast[1]
+        normal = raycast[2]
+        normal.negate()
+        global_normal = obj.matrix_world.to_quaternion() @ normal
+        opening.location = global_location + (global_normal * (dimension / 2))
+
+        opening.rotation_euler = obj.rotation_euler
+        opening.name = "Opening"
+        bpy.ops.bim.add_opening(opening=opening.name, obj=obj.name)
+        return {"FINISHED"}
+
+
+
 def add_object(self, context):
     bm = bmesh.new()
     bmesh.ops.create_cube(bm, size=self.size)
