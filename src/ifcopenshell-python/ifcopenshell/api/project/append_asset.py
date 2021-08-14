@@ -42,6 +42,7 @@ class Usecase:
     def append_profile_def(self):
         if [e for e in self.file.by_type("IfcProfileDef") if e.ProfileName == self.settings["element"].ProfileName]:
             return
+        self.whitelisted_inverse_attributes = {"IfcProfileDef": ["HasProperties"]}
         return self.add_element(self.settings["element"])
 
     def append_type_product(self):
