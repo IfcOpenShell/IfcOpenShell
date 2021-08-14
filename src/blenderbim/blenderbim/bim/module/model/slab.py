@@ -249,7 +249,7 @@ class DumbSlabGenerator:
                 if material.is_a("IfcMaterialLayerSet"):
                     thicknesses = [l.LayerThickness for l in material.MaterialLayers]
                     break
-        if not thicknesses:
+        if not sum(thicknesses):
             return
 
         self.collection = bpy.context.view_layer.active_layer_collection.collection
