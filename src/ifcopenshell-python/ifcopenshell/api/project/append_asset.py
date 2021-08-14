@@ -11,12 +11,15 @@ class Usecase:
 
     def execute(self):
         self.added_elements = set()
+        self.whitelisted_inverse_attributes = {}
         if self.settings["element"].is_a("IfcTypeProduct"):
             return self.append_type_product()
         elif self.settings["element"].is_a("IfcMaterial"):
             return self.append_material()
         elif self.settings["element"].is_a("IfcCostSchedule"):
             return self.append_cost_schedule()
+        elif self.settings["element"].is_a("IfcProfileDef"):
+            return self.append_profile_def()
 
     def is_already_appended(self):
         try:
@@ -34,6 +37,11 @@ class Usecase:
         if self.is_already_appended():
             return
         self.whitelisted_inverse_attributes = {"IfcCostSchedule": ["Controls"], "IfcCostItem": ["IsNestedBy"]}
+        return self.add_element(self.settings["element"])
+
+    def append_profile_def(self):
+        if [e for e in self.file.by_type("IfcProfileDef") if e.ProfileName == self.settings["element"].ProfileName]:
+            return
         return self.add_element(self.settings["element"])
 
     def append_type_product(self):
