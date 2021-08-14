@@ -9,7 +9,7 @@ class Usecase:
         layers = list(self.settings["layer_set"].MaterialLayers or [])
         layer = self.file.create_entity("IfcMaterialLayer", **{
             "Material": self.settings["material"],
-            "LayerThickness": 0.
+            "LayerThickness": 1.
         })
         layers.append(layer)
         self.settings["layer_set"].MaterialLayers = layers
