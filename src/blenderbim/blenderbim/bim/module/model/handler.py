@@ -8,9 +8,7 @@ from bpy.app.handlers import persistent
 
 @persistent
 def load_post(*args):
-    ifcopenshell.api.add_pre_listener(
-        "attribute.edit_attributes", "BlenderBIM.Root.SyncName", root.sync_name
-    )
+    ifcopenshell.api.add_pre_listener("attribute.edit_attributes", "BlenderBIM.Root.SyncName", root.sync_name)
 
     ifcopenshell.api.add_post_listener(
         "geometry.add_representation", "BlenderBIM.Product.GenerateBox", product.generate_box
@@ -19,6 +17,19 @@ def load_post(*args):
     ifcopenshell.api.add_post_listener(
         "sequence.edit_task_time", "BlenderBIM.Task.CalculateQuantities", task.calculate_quantities
     )
+
+    for usecase in [
+        "material.assign_material",
+        "material.edit_constituent",
+        "material.edit_layer",
+        "material.edit_profile",
+        "material.add_constituent",
+        "material.add_layer",
+        "material.add_profile",
+    ]:
+        ifcopenshell.api.add_post_listener(
+            usecase, "BlenderBIM.Product.EnsureMaterialAssigned", product.ensure_material_assigned
+        )
 
     ifcopenshell.api.add_post_listener(
         "material.edit_profile_usage",
