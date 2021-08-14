@@ -8,6 +8,33 @@ from . import wall, slab, profile
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data as PsetData
 from mathutils import Vector, Matrix
+from bpy_extras.object_utils import AddObjectHelper
+
+
+class AddEmptyType(bpy.types.Operator, AddObjectHelper):
+    bl_idname = "bim.add_empty_type"
+    bl_label = "Add Empty Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        obj = bpy.data.objects.new("TYPEX", None)
+        for project in [c for c in context.view_layer.layer_collection.children if "IfcProject" in c.name]:
+            if not [c for c in project.children if "Types" in c.name]:
+                types = bpy.data.collections.new("Types")
+                project.collection.children.link(types)
+            for collection in [c for c in project.children if "Types" in c.name]:
+                collection.collection.objects.link(obj)
+                break
+            break
+        context.scene.BIMRootProperties.ifc_product = "IfcElementType"
+        bpy.ops.object.select_all(action="DESELECT")
+        context.view_layer.objects.active = obj
+        obj.select_set(True)
+        return {"FINISHED"}
+
+
+def add_empty_type_button(self, context):
+    self.layout.operator(AddEmptyType.bl_idname, icon="FILE_3D")
 
 
 class AddTypeInstance(bpy.types.Operator):

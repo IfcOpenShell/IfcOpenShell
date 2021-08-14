@@ -2,6 +2,7 @@ import bpy
 from . import handler, prop, ui, grid, product, wall, slab, stair, door, window, opening, pie, workspace
 
 classes = (
+    product.AddEmptyType,
     product.AddTypeInstance,
     product.AlignProduct,
     product.DynamicallyVoidProduct,
@@ -41,6 +42,7 @@ def register():
     bpy.types.VIEW3D_MT_mesh_add.append(door.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(window.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.append(opening.add_object_button)
+    bpy.types.VIEW3D_MT_add.append(product.add_empty_type_button)
     bpy.app.handlers.load_post.append(handler.load_post)
     wm = bpy.context.window_manager
     if wm.keyconfigs.addon:
@@ -60,6 +62,7 @@ def unregister():
     bpy.types.VIEW3D_MT_mesh_add.remove(door.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.remove(window.add_object_button)
     bpy.types.VIEW3D_MT_mesh_add.remove(opening.add_object_button)
+    bpy.types.VIEW3D_MT_add.remove(product.add_empty_type_button)
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
     if kc:
