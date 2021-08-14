@@ -22,6 +22,8 @@ def get_pset_props(context, obj, obj_type):
         return context.scene.TaskPsetProperties
     elif obj_type == "Resource":
         return context.scene.ResourcePsetProperties
+    elif obj_type == "Profile":
+        return context.scene.ProfilePsetProperties
 
 
 def get_pset_obj_ifc_definition_id(context, obj, obj_type):
@@ -39,6 +41,11 @@ def get_pset_obj_ifc_definition_id(context, obj, obj_type):
         return context.scene.BIMResourceTreeProperties.resources[
             context.scene.BIMResourceProperties.active_resource_index
         ].ifc_definition_id
+    elif obj_type == "Profile":
+        return context.scene.BIMProfileProperties.profiles[
+            context.scene.BIMProfileProperties.active_profile_index
+        ].ifc_definition_id
+
 
 
 class TogglePsetExpansion(bpy.types.Operator):

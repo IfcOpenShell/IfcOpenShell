@@ -287,3 +287,37 @@ class BIM_PT_resource_qtos(Panel):
         qtos = [(qto_id, Data.qtos[qto_id]) for qto_id in Data.products[ifc_definition_id]["qtos"]]
         for qto_id, qto in sorted(qtos, key=lambda v: v[1]["Name"]):
             draw_psetqto_ui(context, qto_id, qto, props, self.layout, "Resource")
+
+
+class BIM_PT_profile_psets(Panel):
+    bl_label = "IFC Profile Property Sets"
+    bl_idname = "BIM_PT_profile_psets"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_profiles"
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BIMProfileProperties
+        if not props.is_editing:
+            return False
+        total_profiles = len(context.scene.BIMProfileProperties.profiles)
+        if total_profiles > 0 and props.active_profile_index < total_profiles:
+            return True
+        return False
+
+    def draw(self, context):
+        props = context.scene.ProfilePsetProperties
+        pprops = context.scene.BIMProfileProperties
+        ifc_definition_id = pprops.profiles[pprops.active_profile_index].ifc_definition_id
+        if ifc_definition_id not in Data.products:
+            Data.load(IfcStore.get_file(), ifc_definition_id)
+        row = self.layout.row(align=True)
+        row.prop(props, "pset_name", text="")
+        op = row.operator("bim.add_pset", icon="ADD", text="")
+        op.obj_type = "Profile"
+
+        psets = [(pset_id, Data.psets[pset_id]) for pset_id in Data.products[ifc_definition_id]["psets"]]
+        for pset_id, pset in sorted(psets, key=lambda v: v[1]["Name"]):
+            draw_psetqto_ui(context, pset_id, pset, props, self.layout, "Profile")

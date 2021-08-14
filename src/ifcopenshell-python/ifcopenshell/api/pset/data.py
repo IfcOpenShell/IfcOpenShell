@@ -26,6 +26,8 @@ class Data:
             cls.add_type_product_psets(product, product_id)
         elif product.is_a("IfcMaterialDefinition"):
             cls.add_material_psets(product, product_id)
+        elif product.is_a("IfcProfileDef"):
+            cls.add_profile_psets(product, product_id)
         else:
             cls.add_product_psets(product, product_id)
 
@@ -39,6 +41,13 @@ class Data:
 
     @classmethod
     def add_material_psets(cls, product, product_id):
+        if not product.HasProperties:
+            return
+        for pset in product.HasProperties:
+            cls.add_pset(pset, product_id)
+
+    @classmethod
+    def add_profile_psets(cls, product, product_id):
         if not product.HasProperties:
             return
         for pset in product.HasProperties:
@@ -59,7 +68,7 @@ class Data:
     @classmethod
     def add_pset(cls, pset, product_id):
         data = pset.get_info()
-        if not pset.is_a("IfcMaterialProperties"):
+        if not pset.is_a("IfcMaterialProperties") and not pset.is_a("IfcProfileProperties"):
             del data["OwnerHistory"]
             del data["HasProperties"]
         if hasattr(pset, "HasProperties"):
