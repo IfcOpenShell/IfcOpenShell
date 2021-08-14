@@ -58,6 +58,7 @@ class LibraryGenerator:
 
         profile = self.file.create_entity(
             "IfcIShapeProfileDef",
+            ProfileName="DEMO-I",
             ProfileType="AREA",
             OverallWidth=0.1,
             OverallDepth=0.2,
@@ -69,6 +70,7 @@ class LibraryGenerator:
 
         profile = self.file.create_entity(
             "IfcCShapeProfileDef",
+            ProfileName="DEMO-C",
             ProfileType="AREA",
             Depth=0.2,
             Width=0.1,
