@@ -63,7 +63,8 @@ def _extract_docs(cls, method_name, boilerplate_args):
                 node_data["output"] = {"name": line.split(":")[2].strip(), "description": line.split(":")[3].strip()}
             elif line.startswith(":param"):
                 param_name = line.split(":")[1].strip().replace("param ", "")
-                inputs[param_name]["description"] = line.split(":")[2].strip()
+                if param_name in inputs:
+                    inputs[param_name]["description"] = line.split(":")[2].strip()
             elif i == 2:
                 description += line
             elif i > 2:

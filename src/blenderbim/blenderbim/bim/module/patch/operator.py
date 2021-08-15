@@ -77,15 +77,16 @@ class PopulatePatchArguments(bpy.types.Operator):
         patch_args.clear()
         docs = extract_docs(ifcpatch, self.recipe, "Patcher", "__init__",  ("src", "file", "logger", "args"))
         if docs and "inputs" in docs:
-            for arg_name in docs["inputs"]:
-                arg_info = docs["inputs"][arg_name]
+            inputs = docs["inputs"]
+            for arg_name in inputs:
+                arg_info = inputs[arg_name]
                 new_attr = patch_args.add()
                 new_attr.data_type = {
                     "str": "string",
                     "float": "float",
                     "int": "integer",
                     "bool": "boolean",
-                }[arg_info["type"]]
+                }[arg_info.get("type", "str")]
                 new_attr.name = arg_name
                 new_attr.set_value(arg_info.get("default", new_attr.get_value_default()))
                 new_attr.description = arg_info.get("description", "")
