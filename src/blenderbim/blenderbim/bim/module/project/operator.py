@@ -82,10 +82,6 @@ class CreateProjectLibrary(bpy.types.Operator):
     bl_label = "Create Project Library"
     bl_options = {"REGISTER", "UNDO"}
 
-    @classmethod
-    def poll(cls, context):
-        return IfcStore.get_file()
-
     def execute(self, context):
         IfcStore.begin_transaction(self)
         IfcStore.add_transaction_operation(self, rollback=self.rollback, commit=lambda data: True)
