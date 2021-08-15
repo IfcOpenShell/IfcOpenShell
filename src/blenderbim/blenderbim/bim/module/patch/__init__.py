@@ -5,7 +5,7 @@ classes = (
     operator.SelectIfcPatchInput,
     operator.SelectIfcPatchOutput,
     operator.ExecuteIfcPatch,
-    operator.PopulatePatchArguments,
+    operator.UpdateIfcPatchArguments,
     prop.BIMPatchProperties,
     ui.BIM_PT_patch,
 )

@@ -1,10 +1,5 @@
 import bpy
-import importlib
-import importlib.util
-import ifcpatch
 from blenderbim.bim.helper import draw_attributes
-from .helper import extract_docs
-from .operator import PopulatePatchArguments
 
 
 class BIM_PT_patch(bpy.types.Panel):
@@ -25,7 +20,6 @@ class BIM_PT_patch(bpy.types.Panel):
         row = layout.row()
         row.prop(props, "ifc_patch_recipes")      
         
-        recipe = props.ifc_patch_recipes
 
         row = layout.row(align=True)
         row.prop(props, "ifc_patch_input")
@@ -35,8 +29,6 @@ class BIM_PT_patch(bpy.types.Panel):
         row.prop(props, "ifc_patch_output")
         row.operator("bim.select_ifc_patch_output", icon="FILE_FOLDER", text="")
 
-        op = layout.operator(PopulatePatchArguments.bl_idname)
-        op.recipe = recipe
         if props.ifc_patch_args_attr:
             draw_attributes(props.ifc_patch_args_attr, layout)
         else:

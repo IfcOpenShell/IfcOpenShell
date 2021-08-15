@@ -67,12 +67,15 @@ class ExecuteIfcPatch(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class PopulatePatchArguments(bpy.types.Operator):
-    bl_idname = "bim.populate_patch_arguments"
+class UpdateIfcPatchArguments(bpy.types.Operator):
+    bl_idname = "bim.update_ifc_patch_arguments"
     bl_label = "Update IFC Patch arguments"
     recipe: bpy.props.StringProperty()
 
     def execute(self, context):
+        if self.recipe == "":
+            print("No Recipe Selected. Impossible to load arguments")
+            return {"FINISHED"}
         patch_args = context.scene.BIMPatchProperties.ifc_patch_args_attr
         patch_args.clear()
         docs = extract_docs(ifcpatch, self.recipe, "Patcher", "__init__",  ("src", "file", "logger", "args"))
