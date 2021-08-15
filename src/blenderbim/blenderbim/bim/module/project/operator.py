@@ -82,6 +82,10 @@ class CreateProjectLibrary(bpy.types.Operator):
     bl_label = "Create Project Library"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
     def execute(self, context):
         IfcStore.begin_transaction(self)
         IfcStore.add_transaction_operation(self, rollback=self.rollback, commit=lambda data: True)
@@ -321,6 +325,10 @@ class AppendLibraryElement(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     definition: bpy.props.IntProperty()
 
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 
@@ -403,6 +411,10 @@ class EnableEditingHeader(bpy.types.Operator):
     bl_label = "Enable Editing Header"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
+
     def execute(self, context):
         self.file = IfcStore.get_file()
         props = context.scene.BIMProjectProperties
@@ -434,6 +446,10 @@ class EditHeader(bpy.types.Operator):
     bl_idname = "bim.edit_header"
     bl_label = "Edit Header"
     bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return IfcStore.get_file()
 
     def execute(self, context):
         IfcStore.begin_transaction(self)
