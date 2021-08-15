@@ -22,8 +22,7 @@ def element_listener(element, obj):
 def mode_callback(obj, data):
     for obj in set(bpy.context.selected_objects + [bpy.context.active_object]):
         if (
-            obj.mode != "EDIT"
-            or not obj.data
+            not obj.data
             or not isinstance(obj.data, (bpy.types.Mesh, bpy.types.Curve, bpy.types.TextCurve))
             or not obj.BIMObjectProperties.ifc_definition_id
             or not bpy.context.scene.BIMProjectProperties.is_authoring
@@ -33,12 +32,21 @@ def mode_callback(obj, data):
         parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
         if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer2":
             return
-        bpy.ops.bim.dynamically_void_product(obj=obj.name)
-        IfcStore.edited_objs.add(obj)
-        bm = bmesh.from_edit_mesh(obj.data)
-        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
-        bmesh.update_edit_mesh(obj.data)
-        bm.free()
+        if obj.mode == "EDIT":
+            bpy.ops.bim.dynamically_void_product(obj=obj.name)
+            IfcStore.edited_objs.add(obj)
+            bm = bmesh.from_edit_mesh(obj.data)
+            bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
+            bmesh.update_edit_mesh(obj.data)
+            bm.free()
+        else:
+            new_origin = obj.matrix_world @ Vector(obj.bound_box[0])
+            obj.data.transform(
+                Matrix.Translation(
+                    (obj.matrix_world.inverted().to_quaternion() @ (obj.matrix_world.translation - new_origin))
+                )
+            )
+            obj.matrix_world.translation = new_origin
 
 
 class JoinWall(bpy.types.Operator):
