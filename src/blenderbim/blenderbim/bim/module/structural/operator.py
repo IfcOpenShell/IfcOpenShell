@@ -279,7 +279,7 @@ class EditStructuralAnalysisModel(bpy.types.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMStructuralProperties
-        attributes = {attribute.name: attribute.get_value() for attribute in props.structural_analysis_model_attributes}
+        attributes = blenderbim.bim.helper.export_attributes(props.structural_analysis_model_attributes)
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "structural.edit_structural_analysis_model",

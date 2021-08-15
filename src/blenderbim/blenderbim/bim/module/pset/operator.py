@@ -100,8 +100,9 @@ class EnablePsetEditing(bpy.types.Operator):
                         IfcStore.get_schema().declaration_by_name(prop_template.PrimaryMeasureType or "IfcLabel")
                     )
                 except:
-                    # TODO: Occurs if the data type is something that exists in IFC4 and not in IFC2X3. To fully fix
-                    # this we need to generate the IFC2X3 pset template definitions.
+                    # TODO: Occurs if the data type is something that exists in
+                    # IFC4 and not in IFC2X3. To fully fix this we need to
+                    # generate the IFC2X3 pset template definitions.
                     continue
             elif prop_template.TemplateType == "P_ENUMERATEDVALUE":
                 data_type = "enum"
@@ -116,6 +117,7 @@ class EnablePsetEditing(bpy.types.Operator):
             new = self.props.properties.add()
             new.name = prop_template.Name
             new.is_null = data.get(prop_template.Name, None) is None
+            new.is_optional = True
             new.data_type = data_type
 
             if data_type == "string":
@@ -140,6 +142,7 @@ class EnablePsetEditing(bpy.types.Operator):
             new.set_value(value)
             new.name = prop["Name"]
             new.is_null = value is None
+            new.is_optional = True
             new.set_value(new.get_value_default() if new.is_null else value)
 
 

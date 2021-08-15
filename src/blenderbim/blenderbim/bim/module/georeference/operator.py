@@ -4,6 +4,7 @@ import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.attribute
 import ifcopenshell.api
+import blenderbim.bim.helper
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.georeference.data import Data
 from math import radians, degrees, atan, tan, cos, sin
@@ -96,29 +97,13 @@ class EditGeoreferencing(bpy.types.Operator):
         self.file = IfcStore.get_file()
         props = context.scene.BIMGeoreferenceProperties
 
-        projected_crs = {}
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcProjectedCRS").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity":
-                continue
-            blender_attribute = props.projected_crs.get(attribute.name())
-            projected_crs[attribute.name()] = blender_attribute.get_value()
+        projected_crs = blenderbim.bim.helper.export_attributes(props.projected_crs)
 
         map_unit = ""
         if not props.is_map_unit_null:
             map_unit = props.map_unit_si if props.map_unit_type == "IfcSIUnit" else props.map_unit_imperial
 
-        map_conversion = {}
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcMapConversion").all_attributes():
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            if data_type == "entity" or data_type == "select":
-                continue
-            blender_attribute = props.map_conversion.get(attribute.name())
-            if blender_attribute.is_null:
-                map_conversion[attribute.name()] = None
-            elif blender_attribute.data_type == "string":
-                # We store our floats as string to prevent single precision data loss
-                map_conversion[attribute.name()] = float(blender_attribute.string_value)
+        map_conversion = blenderbim.bim.helper.export_attributes(props.map_conversion, self.export_attributes)
 
         true_north = None
         if props.has_true_north:
@@ -140,6 +125,11 @@ class EditGeoreferencing(bpy.types.Operator):
         Data.load(IfcStore.get_file())
         bpy.ops.bim.disable_editing_georeferencing()
         return {"FINISHED"}
+
+    def export_attributes(self, attributes, prop):
+        if not prop.is_null and prop.data_type == "string":
+            attributes[prop.name] = float(prop.string_value)
+            return True
 
 
 class SetBlenderGridNorth(bpy.types.Operator):

@@ -68,7 +68,7 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
 
 
 def draw_psetqto_editable_ui(box, props, prop):
-    row = box.row()
+    row = box.row(align=True)
     draw_attribute(prop, row)
     if (
         "length" in prop.name.lower()
