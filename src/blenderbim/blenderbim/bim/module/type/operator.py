@@ -109,6 +109,24 @@ class DisableEditingType(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SelectType(bpy.types.Operator):
+    bl_idname = "bim.select_type"
+    bl_label = "Select Type"
+    bl_options = {"REGISTER", "UNDO"}
+    related_object: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        related_object = bpy.data.objects.get(self.related_object) if self.related_object else context.active_object
+        oprops = related_object.BIMObjectProperties
+        obj = IfcStore.get_element(
+            ifcopenshell.util.element.get_type(self.file.by_id(oprops.ifc_definition_id)).GlobalId
+        )
+        context.view_layer.objects.active = obj
+        obj.select_set(True)
+        return {"FINISHED"}
+
+
 class SelectSimilarType(bpy.types.Operator):
     bl_idname = "bim.select_similar_type"
     bl_label = "Select Similar Type"

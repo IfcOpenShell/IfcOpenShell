@@ -32,8 +32,9 @@ class BIM_PT_debug(Panel):
         row = layout.row()
         row.operator("bim.profile_import_ifc")
 
-        row = layout.split(factor=0.7, align=True)
-        row.operator("bim.create_shape_from_step_id")
+        row = layout.split(factor=0.5, align=True)
+        row.operator("bim.create_shape_from_step_id").should_include_curves = False
+        row.operator("bim.create_shape_from_step_id", text="", icon="IPO_ELASTIC").should_include_curves = True
         row.prop(props, "step_id", text="")
 
         row = layout.split(factor=0.7, align=True)

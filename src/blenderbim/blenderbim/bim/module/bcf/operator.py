@@ -3,6 +3,9 @@ import bpy
 import bcf
 import bcf.bcfxml
 import bcf.v2.data
+import numpy as np
+import ifcopenshell
+import ifcopenshell.util.unit
 from . import bcfstore
 from blenderbim.bim.ifc import IfcStore
 from math import radians, degrees, atan, tan, cos, sin
@@ -700,20 +703,8 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].region_3d.view_perspective = "CAMERA"
 
-        if viewpoint.orthogonal_camera:
-            camera = viewpoint.orthogonal_camera
-            obj.data.type = "ORTHO"
-            obj.data.ortho_scale = viewpoint.orthogonal_camera.view_to_world_scale
-        elif viewpoint.perspective_camera:
-            camera = viewpoint.perspective_camera
-            obj.data.type = "PERSP"
-            if cam_aspect >= 1:
-                obj.data.angle = radians(camera.field_of_view)
-            else:
-                # https://blender.stackexchange.com/questions/23431/how-to-set-camera-horizontal-and-vertical-fov
-                obj.data.angle = 2 * atan((0.5 * cam_height) / (0.5 * cam_width / tan(radians(camera.field_of_view) / 2)))
-
-        self.set_viewpoint_components(viewpoint)
+        if self.file:
+            self.set_viewpoint_components(viewpoint)
 
         gp = bpy.data.grease_pencils.get("BCF")
         if gp:
@@ -729,52 +720,128 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         if viewpoint.bitmaps:
             self.create_bitmaps(bcfxml, viewpoint, topic)
 
+        self.setup_camera(viewpoint, obj, cam_aspect)
+        return {"FINISHED"}
+
+    def setup_camera(self, viewpoint, obj, cam_aspect):
+        if viewpoint.orthogonal_camera:
+            camera = viewpoint.orthogonal_camera
+            obj.data.type = "ORTHO"
+            obj.data.ortho_scale = viewpoint.orthogonal_camera.view_to_world_scale
+        elif viewpoint.perspective_camera:
+            camera = viewpoint.perspective_camera
+            obj.data.type = "PERSP"
+            if cam_aspect >= 1:
+                obj.data.angle = radians(camera.field_of_view)
+            else:
+                # https://blender.stackexchange.com/questions/23431/how-to-set-camera-horizontal-and-vertical-fov
+                obj.data.angle = 2 * atan((0.5 * cam_height) / (0.5 * cam_width / tan(radians(camera.field_of_view) / 2)))
+
         z_axis = Vector((-camera.camera_direction.x, -camera.camera_direction.y, -camera.camera_direction.z)).normalized()
         y_axis = Vector((camera.camera_up_vector.x, camera.camera_up_vector.y, camera.camera_up_vector.z)).normalized()
         x_axis = y_axis.cross(z_axis).normalized()
         rotation = Matrix((x_axis, y_axis, z_axis))
         rotation.invert()
-        location = Vector((camera.camera_view_point.x, camera.camera_view_point.y, camera.camera_view_point.z))
-        obj.matrix_world = rotation.to_4x4()
-        obj.location = location
-        return {"FINISHED"}
+        matrix = np.matrix((
+            [x_axis[0], y_axis[0], z_axis[0], camera.camera_view_point.x],
+            [x_axis[1], y_axis[1], z_axis[1], camera.camera_view_point.y],
+            [x_axis[2], y_axis[2], z_axis[2], camera.camera_view_point.z],
+            [0, 0, 0, 1],
+        ))
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        if props.has_blender_offset:
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
+            matrix = ifcopenshell.util.geolocation.global2local(
+                matrix,
+                float(props.blender_eastings) * unit_scale,
+                float(props.blender_northings) * unit_scale,
+                float(props.blender_orthogonal_height) * unit_scale,
+                float(props.blender_x_axis_abscissa),
+                float(props.blender_x_axis_ordinate),
+            )
+        obj.matrix_world = Matrix(matrix.tolist())
 
     def set_viewpoint_components(self, viewpoint):
         if not viewpoint.components:
             return
-        selected_global_ids = [s.ifc_guid for s in viewpoint.components.selection]
+
+        # Operators with context overrides are used because they are
+        # significantly faster than looping through all objects
+
         exception_global_ids = [v.ifc_guid for v in viewpoint.components.visibility.exceptions]
+
+        if viewpoint.components.visibility.default_visibility:
+            old = bpy.context.area.type
+            bpy.context.area.type = "VIEW_3D"
+            bpy.ops.object.hide_view_clear()
+            bpy.context.area.type = old
+            for global_id in exception_global_ids:
+                obj = IfcStore.get_element(global_id)
+                if obj:
+                    obj.hide_set(True)
+        else:
+            objs = []
+            for global_id in exception_global_ids:
+                obj = IfcStore.get_element(global_id)
+                if obj:
+                    objs.append(obj)
+            if objs:
+                old = bpy.context.area.type
+                bpy.context.area.type = "VIEW_3D"
+                context_override = {}
+                context_override["object"] = context_override["active_object"] = objs[0]
+                context_override["selected_objects"] = context_override["selected_editable_objects"] = objs
+                bpy.ops.object.hide_view_set(context_override, unselected=True)
+                bpy.context.area.type = old
+
+        if viewpoint.components.view_setup_hints:
+            if not viewpoint.components.view_setup_hints.spaces_visible:
+                self.hide_spaces()
+            if viewpoint.components.view_setup_hints.openings_visible is not None:
+                self.set_openings_visibility(viewpoint.components.view_setup_hints.openings_visible)
+        else:
+            self.hide_spaces()
+            self.set_openings_visibility(False)
+
+        self.set_selection(viewpoint)
+        self.set_colours(viewpoint)
+
+    def hide_spaces(self):
+        old = bpy.context.area.type
+        bpy.context.area.type = "VIEW_3D"
+        bpy.ops.object.select_pattern(pattern="IfcSpace/*")
+        bpy.ops.object.hide_view_set({})
+        bpy.context.area.type = old
+
+    def set_openings_visibility(self, is_visible):
+        for collection in self.get_opening_collections():
+            collection.hide_viewport = not is_visible
+
+    def set_selection(self, viewpoint):
+        selected_global_ids = [s.ifc_guid for s in viewpoint.components.selection]
+        bpy.ops.object.select_all(action="DESELECT")
+        for global_id in selected_global_ids:
+            obj = IfcStore.get_element(global_id)
+            if obj:
+                obj.select_set(True)
+
+    def set_colours(self, viewpoint):
         global_id_colours = {}
         for coloring in viewpoint.components.coloring:
             for component in coloring.components:
                 global_id_colours.setdefault(component.ifc_guid, coloring.color)
+        for global_id, color in global_id_colours.items():
+            obj = IfcStore.get_element(global_id)
+            if obj:
+                obj.color = self.hex_to_rgb(color)
 
-        for obj in bpy.data.objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                continue
-            global_id = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id).GlobalId
-            is_visible = viewpoint.components.visibility.default_visibility
-            if global_id in exception_global_ids:
-                is_visible = not is_visible
-            if not is_visible:
-                obj.hide_set(True)
-                continue
-            if "IfcSpace" in obj.name:
-                if viewpoint.components.view_setup_hints:
-                    is_visible = viewpoint.components.view_setup_hints.spaces_visible
-                else:
-                    is_visible = False
-            elif "IfcOpeningElement" in obj.name:
-                if viewpoint.components.view_setup_hints:
-                    is_visible = viewpoint.components.view_setup_hints.openings_visible
-                else:
-                    is_visible = False
-            obj.hide_set(not is_visible)
-            if not is_visible:
-                continue
-            obj.select_set(global_id in selected_global_ids)
-            if global_id in global_id_colours:
-                obj.color = self.hex_to_rgb(global_id_colours[global_id])
+    def get_opening_collections(self):
+        collections = []
+        for collection in bpy.context.view_layer.layer_collection.children:
+            opening_collection = collection.children.get("IfcOpeningElements")
+            if opening_collection:
+                collections.append(opening_collection)
+        return collections
 
     def draw_lines(self, viewpoint, context):
         gp = bpy.data.grease_pencils.new("BCF")

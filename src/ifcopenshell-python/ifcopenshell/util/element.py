@@ -73,7 +73,7 @@ def get_material(element, should_skip_usage=False):
                         return relationship.RelatingMaterial.ForProfileSet
                 return relationship.RelatingMaterial
     relating_type = get_type(element)
-    if hasattr(relating_type, "HasAssociations") and relating_type.HasAssociations:
+    if relating_type != element and hasattr(relating_type, "HasAssociations") and relating_type.HasAssociations:
         return get_material(relating_type, should_skip_usage)
 
 
@@ -104,7 +104,7 @@ def has_element_reference(value, element):
 def remove_deep(ifc_file, element):
     # @todo maybe some sort of try-finally mechanism.
     ifc_file.batch()
-    subgraph = list(ifc_file.traverse(element))
+    subgraph = list(ifc_file.traverse(element, breadth_first=True))
     subgraph_set = set(subgraph)
     for ref in subgraph[::-1]:
         if ref.id() and len(set(ifc_file.get_inverse(ref)) - subgraph_set) == 0:
@@ -117,7 +117,10 @@ def copy(ifc_file, element):
     for i, attribute in enumerate(element):
         if attribute is None:
             continue
-        new[i] = attribute
+        if new.attribute_name(i) == "GlobalId":
+            new[i] = ifcopenshell.guid.new()
+        else:
+            new[i] = attribute
     return new
 
 

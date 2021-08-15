@@ -8,6 +8,33 @@ from . import wall, slab, profile
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.pset.data import Data as PsetData
 from mathutils import Vector, Matrix
+from bpy_extras.object_utils import AddObjectHelper
+
+
+class AddEmptyType(bpy.types.Operator, AddObjectHelper):
+    bl_idname = "bim.add_empty_type"
+    bl_label = "Add Empty Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        obj = bpy.data.objects.new("TYPEX", None)
+        for project in [c for c in context.view_layer.layer_collection.children if "IfcProject" in c.name]:
+            if not [c for c in project.children if "Types" in c.name]:
+                types = bpy.data.collections.new("Types")
+                project.collection.children.link(types)
+            for collection in [c for c in project.children if "Types" in c.name]:
+                collection.collection.objects.link(obj)
+                break
+            break
+        context.scene.BIMRootProperties.ifc_product = "IfcElementType"
+        bpy.ops.object.select_all(action="DESELECT")
+        context.view_layer.objects.active = obj
+        obj.select_set(True)
+        return {"FINISHED"}
+
+
+def add_empty_type_button(self, context):
+    self.layout.operator(AddEmptyType.bl_idname, icon="FILE_3D")
 
 
 class AddTypeInstance(bpy.types.Operator):
@@ -23,21 +50,36 @@ class AddTypeInstance(bpy.types.Operator):
     def _execute(self, context):
         tprops = context.scene.BIMTypeProperties
         ifc_class = self.ifc_class or tprops.ifc_class
-        relating_type = self.relating_type or tprops.relating_type
-        if not ifc_class or not relating_type:
+        relating_type_id = self.relating_type or tprops.relating_type
+        if not ifc_class or not relating_type_id:
             return {"FINISHED"}
         self.file = IfcStore.get_file()
         instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema)[0]
-        if ifc_class == "IfcWallType":
-            obj = wall.DumbWallGenerator(self.file.by_id(int(relating_type))).generate()
+        relating_type = self.file.by_id(int(relating_type_id))
+        material = ifcopenshell.util.element.get_material(relating_type)
+        if material.is_a("IfcMaterialProfileSet"):
+            obj = profile.DumbProfileGenerator(relating_type).generate()
             if obj:
                 return {"FINISHED"}
-        elif ifc_class == "IfcSlabType":
-            obj = slab.DumbSlabGenerator(self.file.by_id(int(relating_type))).generate()
-            if obj:
-                return {"FINISHED"}
-        elif ifc_class in ["IfcColumnType", "IfcBeamType", "IfcMemberType"]:
-            obj = profile.DumbProfileGenerator(self.file.by_id(int(relating_type))).generate()
+        elif material.is_a("IfcMaterialLayerSet"):
+            layer_set_direction = None
+
+            parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
+            if parametric:
+                layer_set_direction = parametric.get("LayerSetDirection", layer_set_direction)
+            if layer_set_direction is None:
+                if ifc_class in ["IfcSlabType", "IfcRoofType", "IfcRampType", "IfcPlateType"]:
+                    layer_set_direction = "AXIS3"
+                else:
+                    layer_set_direction = "AXIS2"
+
+            if layer_set_direction == "AXIS3":
+                obj = slab.DumbSlabGenerator(relating_type).generate()
+            elif layer_set_direction == "AXIS2":
+                obj = wall.DumbWallGenerator(relating_type).generate()
+            else:
+                obj = None  # Dumb block generator? Eh? :)
+
             if obj:
                 return {"FINISHED"}
         # A cube
@@ -199,3 +241,36 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
             bpy.ops.bim.switch_representation(
                 obj=obj.name, ifc_definition_id=representation.id(), should_reload=True, should_switch_all_meshes=True
             )
+
+
+def ensure_material_assigned(usecase_path, ifc_file, settings):
+    if usecase_path == "material.assign_material":
+        if not settings.get("Material", None):
+            return
+        elements = [self.settings["product"]]
+    else:
+        elements = []
+        for rel in ifc_file.by_type("IfcRelAssociatesMaterial"):
+            if rel.RelatingMaterial == settings["material"] or [
+                e for e in ifc_file.traverse(rel.RelatingMaterial) if e == settings["material"]
+            ]:
+                elements.extend(rel.RelatedObjects)
+
+    for element in elements:
+        obj = IfcStore.get_element(element.GlobalId)
+        if not obj or not obj.data:
+            continue
+
+        element_material = ifcopenshell.util.element.get_material(element)
+        material = [m for m in ifc_file.traverse(element_material) if m.is_a("IfcMaterial")]
+
+        object_material_ids = [
+            om.BIMObjectProperties.ifc_definition_id
+            for om in obj.data.materials
+            if om is not None and om.BIMObjectProperties.ifc_definition_id
+        ]
+
+        if material[0].id() in object_material_ids:
+            continue
+
+        obj.data.materials.append(IfcStore.get_element(material[0].id()))

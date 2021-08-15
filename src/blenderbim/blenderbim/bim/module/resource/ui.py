@@ -1,8 +1,7 @@
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.helper import draw_attributes
 from ifcopenshell.api.resource.data import Data
-
+import blenderbim.bim.helper
 
 class BIM_PT_resources(Panel):
     bl_label = "IFC Resources"
@@ -66,11 +65,17 @@ class BIM_PT_resources(Panel):
             self.props,
             "active_resource_index",
         )
-        if self.props.active_resource_id:
-            self.draw_editable_resource_ui()
+        if self.props.active_resource_id and self.props.editing_resource_type == "ATTRIBUTES":
+            self.draw_editable_resource_attributes_ui()
 
-    def draw_editable_resource_ui(self):
-        draw_attributes(self.props.resource_attributes, self.layout)
+        elif self.props.active_resource_id and self.props.editing_resource_type == "USAGE":
+            self.draw_editable_resource_time_attributes_ui()
+
+    def draw_editable_resource_attributes_ui(self):
+        blenderbim.bim.helper.draw_attributes(self.props.resource_attributes, self.layout)
+
+    def draw_editable_resource_time_attributes_ui(self):
+        blenderbim.bim.helper.draw_attributes(self.props.resource_time_attributes, self.layout)
 
 
 class BIM_UL_resources(UIList):
@@ -112,9 +117,12 @@ class BIM_UL_resources(UIList):
                     op = row.operator("bim.assign_resource", text="", icon="KEYFRAME", emboss=False)
                     op.resource = item.ifc_definition_id
 
-            if props.active_resource_id == item.ifc_definition_id:
+            if props.active_resource_id == item.ifc_definition_id and props.editing_resource_type == "ATTRIBUTES":
                 row.operator("bim.edit_resource", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_resource", text="", icon="CANCEL")
+            elif props.active_resource_id == item.ifc_definition_id and props.editing_resource_type == "USAGE":
+                row.operator("bim.edit_resource_time", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_resource_time", text="", icon="CANCEL")
             elif props.active_resource_id:
                 row.operator("bim.add_resource", text="", icon="ADD").resource = item.ifc_definition_id
                 row.operator("bim.remove_resource", text="", icon="X").resource = item.ifc_definition_id
@@ -122,5 +130,5 @@ class BIM_UL_resources(UIList):
                 row.operator(
                     "bim.enable_editing_resource", text="", icon="GREASEPENCIL"
                 ).resource = item.ifc_definition_id
-
+                row.operator("bim.enable_editing_resource_time", text="", icon="TIME").resource = item.ifc_definition_id
                 row.operator("bim.remove_resource", text="", icon="X").resource = item.ifc_definition_id

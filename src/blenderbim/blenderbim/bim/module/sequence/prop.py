@@ -3,6 +3,7 @@ import ifcopenshell.api
 import ifcopenshell.util.attribute
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.sequence.data import Data
+from ifcopenshell.api.resource.data import Data as ResourceData
 from blenderbim.bim.prop import StrProperty, Attribute
 from dateutil import parser
 from bpy.types import PropertyGroup
@@ -116,7 +117,6 @@ def updateTaskTimeDateTime(self, context, startfinish):
             return "-"
         return time.strftime("%d/%m/%y")
 
-    startfinish_key = "Schedule" + startfinish.capitalize()
     startfinish_value = getattr(self, startfinish)
 
     if startfinish_value == "-":
@@ -140,6 +140,7 @@ def updateTaskTimeDateTime(self, context, startfinish):
         task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=task)
         Data.load(IfcStore.get_file())
 
+    startfinish_key = "Schedule" + startfinish.capitalize()
     if Data.task_times[task_time.id()][startfinish_key] == startfinish_datetime:
         canonical_startfinish_value = canonicalise_time(startfinish_datetime)
         if startfinish_value != canonical_startfinish_value:
@@ -153,10 +154,9 @@ def updateTaskTimeDateTime(self, context, startfinish):
     )
     Data.load(IfcStore.get_file())
     bpy.ops.bim.load_task_properties()
-    setattr(self, startfinish, canonicalise_time(startfinish_datetime))
 
 
-def updateTaskduration(self, context):
+def updateTaskDuration(self, context):
     props = context.scene.BIMWorkScheduleProperties
     if not props.is_task_update_enabled:
         return
@@ -208,6 +208,13 @@ def updateVisualisationStartFinish(self, context, startfinish):
         setattr(self, startfinish, canonical_value)
 
 
+def getResources(self, context):
+    self.file = IfcStore.get_file()
+    return [(str(k), v["Name"], "") for k, v in ResourceData.resources.items()
+    if self.file.by_id(k).Nests and self.file.by_id(k).Nests[0].RelatingObject.HasContext
+    ]
+
+
 class Task(PropertyGroup):
     name: StringProperty(name="Name", update=updateTaskName)
     identification: StringProperty(name="Identification", update=updateTaskIdentification)
@@ -216,7 +223,7 @@ class Task(PropertyGroup):
     is_selected: BoolProperty(name="Is Selected")
     is_expanded: BoolProperty(name="Is Expanded")
     level_index: IntProperty(name="Level Index")
-    duration: StringProperty(name="Duration", update=updateTaskduration)
+    duration: StringProperty(name="Duration", update=updateTaskDuration)
     start: StringProperty(name="Start", update=updateTaskTimeStart)
     finish: StringProperty(name="Finish", update=updateTaskTimeFinish)
     calendar: StringProperty(name="Calendar")
@@ -274,7 +281,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
         ],
         name="Special Columns",
     )
-    active_task_time_id: IntProperty(name="Active Task Id")
+    active_task_time_id: IntProperty(name="Active Task Time Id")
     task_time_attributes: CollectionProperty(name="Task Time Attributes", type=Attribute)
     contracted_tasks: StringProperty(name="Contracted Task Items", default="[]")
     is_task_update_enabled: BoolProperty(name="Is Task Update Enabled", default=True)
@@ -297,6 +304,7 @@ class BIMWorkScheduleProperties(PropertyGroup):
         name="Speed Type",
         default="FRAME_SPEED",
     )
+    resources: EnumProperty(items=getResources, name="Resources")
 
 
 class BIMTaskTreeProperties(PropertyGroup):

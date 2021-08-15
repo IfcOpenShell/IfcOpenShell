@@ -3,9 +3,11 @@ PYVERSION:=py37
 
 ifeq ($(PYVERSION), py37)
 PYLIBDIR:=python3.7
+PYNUMBER:=37
 endif
 ifeq ($(PYVERSION), py39)
 PYLIBDIR:=python3.9
+PYNUMBER:=39
 endif
 
 ifeq ($(PLATFORM), linux)
@@ -67,12 +69,7 @@ endif
 	cp -r blenderbim/* dist/blenderbim/
 
 	# Provides IfcOpenShell Python functionality
-ifeq ($(PYVERSION), py37)
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-37-v0.6.0-f14d349-$(PLATFORM)64.zip
-endif
-ifeq ($(PYVERSION), py39)
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-39-v0.6.0-f14d349-$(PLATFORM)64.zip
-endif
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-$(PYNUMBER)-v0.6.0-2f3c79a-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcblender*
 	cp -r dist/working/io_import_scene_ifc/ifcopenshell dist/blenderbim/libs/site/packages/
 
@@ -119,8 +116,10 @@ endif
 	cp -r dist/working/IfcOpenShell-0.6.0/src/ifccsv/* dist/blenderbim/libs/site/packages/
 	# Provides IFCPatch functionality
 	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcpatch/ifcpatch dist/blenderbim/libs/site/packages/
-	# Provides IFCP6 functionality
-	cp -r dist/working/IfcOpenShell-0.6.0/src/ifcp6/ifcp6 dist/blenderbim/libs/site/packages/
+	# Provides IFC4D functionality
+	cp -r dist/working/IfcOpenShell-0.6.0/src/ifc4d/ifc4d dist/blenderbim/libs/site/packages/
+	# Provides IFC5D functionality
+	cp -r dist/working/IfcOpenShell-0.6.0/src/ifc5d/ifc5d dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Provides Mustache templating in construction documentation
@@ -404,7 +403,7 @@ endif
 	rm -rf dist/working
 
 	cd dist/blenderbim && sed -i "s/999999/$(VERSION)/" __init__.py
-	cd dist && zip -r blender28-bim-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ./*
+	cd dist && zip -r blenderbim-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ./*
 	rm -rf dist/blenderbim
 
 .PHONY: clean

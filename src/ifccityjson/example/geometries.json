@@ -1,0 +1,485 @@
+{
+  "CityObjects": {
+    "multipoint": {
+      "geometry": [
+        {
+          "type": "MultiPoint",
+          "lod": 1,
+          "boundaries": [
+            2,
+            3,
+            5,
+            7
+          ]
+        }
+      ],
+      "attributes": {
+        "function": "Being a MultiPoint geometry"
+      },
+      "type": "GenericCityObject"
+    },
+    "multiline": {
+      "geometry": [
+        {
+          "type": "MultiLineString",
+          "lod": 1,
+          "boundaries": [
+            [
+              2,
+              3,
+              9
+            ],
+            [
+              10,
+              8,
+              10
+            ]
+          ]
+        }
+      ],
+      "attributes": {
+        "function": "Being a MultiLineString"
+      },
+      "type": "GenericCityObject"
+    },
+    "multisurface": {
+      "geometry": [
+        {
+          "type": "MultiSurface",
+          "lod": 1,
+          "boundaries": [
+            [
+              [
+                0,
+                3,
+                2,
+                1
+              ]
+            ],
+            [
+              [
+                4,
+                5,
+                6,
+                7
+              ]
+            ],
+            [
+              [
+                0,
+                1,
+                5,
+                4
+              ]
+            ]
+          ]
+        }
+      ],
+      "attributes": {
+        "function": "Being a MultiSurface without holes"
+      },
+      "type": "GenericCityObject"
+    },
+    "CompositeSurface": {
+      "geometry": [
+        {
+          "type": "CompositeSurface",
+          "lod": 1,
+          "boundaries": [
+            [
+              [
+                0,
+                3,
+                2,
+                1
+              ]
+            ],
+            [
+              [
+                4,
+                5,
+                6,
+                7
+              ]
+            ],
+            [
+              [
+                0,
+                1,
+                5,
+                4
+              ]
+            ]
+          ]
+        }
+      ],
+      "attributes": {
+        "function": "Being a CompositeSurface without holes"
+      },
+      "type": "GenericCityObject"
+    },
+    "cube": {
+      "geometry": [
+        {
+          "boundaries": [
+            [
+              [
+                [
+                  0,
+                  1,
+                  2,
+                  3
+                ]
+              ],
+              [
+                [
+                  7,
+                  4,
+                  0,
+                  3
+                ]
+              ],
+              [
+                [
+                  4,
+                  5,
+                  1,
+                  0
+                ]
+              ],
+              [
+                [
+                  5,
+                  6,
+                  2,
+                  1
+                ]
+              ],
+              [
+                [
+                  3,
+                  2,
+                  6,
+                  7
+                ]
+              ],
+              [
+                [
+                  6,
+                  5,
+                  4,
+                  7
+                ]
+              ]
+            ]
+          ],
+          "lod": 1,
+          "type": "Solid"
+        }
+      ],
+      "attributes": {
+        "function": "being a Solid geometry cube"
+      },
+      "type": "GenericCityObject"
+    },
+    "multicube": {
+      "geometry": [
+        {
+          "boundaries": [[
+            [
+              [
+                [
+                  0,
+                  1,
+                  2,
+                  3
+                ]
+              ],
+              [
+                [
+                  7,
+                  4,
+                  0,
+                  3
+                ]
+              ],
+              [
+                [
+                  4,
+                  5,
+                  1,
+                  0
+                ]
+              ],
+              [
+                [
+                  5,
+                  6,
+                  2,
+                  1
+                ]
+              ],
+              [
+                [
+                  3,
+                  2,
+                  6,
+                  7
+                ]
+              ],
+              [
+                [
+                  6,
+                  5,
+                  4,
+                  7
+                ]
+              ]
+            ]
+          ],[
+            [
+              [
+                [
+                  0,
+                  1,
+                  2,
+                  3
+                ]
+              ],
+              [
+                [
+                  7,
+                  4,
+                  0,
+                  3
+                ]
+              ],
+              [
+                [
+                  4,
+                  5,
+                  1,
+                  0
+                ]
+              ],
+              [
+                [
+                  5,
+                  6,
+                  2,
+                  1
+                ]
+              ],
+              [
+                [
+                  3,
+                  2,
+                  6,
+                  7
+                ]
+              ],
+              [
+                [
+                  6,
+                  5,
+                  4,
+                  7
+                ]
+              ]
+            ]
+          ]],
+          "lod": 1,
+          "type": "MultiSolid"
+        }
+      ],
+      "attributes": {
+        "function": "being a MultiSolid geometry cube that is twice the same geometry"
+      },
+      "type": "GenericCityObject"
+    },
+    "compositecube": {
+      "geometry": [
+        {
+          "boundaries": [[
+            [
+              [
+                [
+                  0,
+                  1,
+                  2,
+                  3
+                ]
+              ],
+              [
+                [
+                  7,
+                  4,
+                  0,
+                  3
+                ]
+              ],
+              [
+                [
+                  4,
+                  5,
+                  1,
+                  0
+                ]
+              ],
+              [
+                [
+                  5,
+                  6,
+                  2,
+                  1
+                ]
+              ],
+              [
+                [
+                  3,
+                  2,
+                  6,
+                  7
+                ]
+              ],
+              [
+                [
+                  6,
+                  5,
+                  4,
+                  7
+                ]
+              ]
+            ]
+          ],[
+            [
+              [
+                [
+                  0,
+                  1,
+                  2,
+                  3
+                ]
+              ],
+              [
+                [
+                  7,
+                  4,
+                  0,
+                  3
+                ]
+              ],
+              [
+                [
+                  4,
+                  5,
+                  1,
+                  0
+                ]
+              ],
+              [
+                [
+                  5,
+                  6,
+                  2,
+                  1
+                ]
+              ],
+              [
+                [
+                  3,
+                  2,
+                  6,
+                  7
+                ]
+              ],
+              [
+                [
+                  6,
+                  5,
+                  4,
+                  7
+                ]
+              ]
+            ]
+          ]],
+          "lod": 1,
+          "type": "CompositeSolid"
+        }
+      ],
+      "attributes": {
+        "function": "being a CompositeSolid geometry cube that is twice the same geometry"
+      },
+      "type": "GenericCityObject"
+    }
+  },
+  "type": "CityJSON",
+  "version": "1.0",
+  "vertices": [
+    [
+      1.0,
+      0.0,
+      1.0
+    ],
+    [
+      0.0,
+      1.0,
+      1.0
+    ],
+    [
+      -1.0,
+      0.0,
+      1.0
+    ],
+    [
+      0.0,
+      -1.0,
+      1.0
+    ],
+    [
+      1.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      1.0,
+      0.0
+    ],
+    [
+      -1.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      -1.0,
+      0.0
+    ],
+    [
+      5.0,
+      30,
+      2.0
+    ],
+    [
+      6.0,
+      -1.0,
+      2.0
+    ],
+    [
+      8.0,
+      7.0,
+      -1.0
+    ]
+  ],
+  "metadata": {
+    "geographicalExtent": [
+      -1.0,
+      -1.0,
+      0.0,
+      1.0,
+      1.0,
+      1.0
+    ]
+  }
+}

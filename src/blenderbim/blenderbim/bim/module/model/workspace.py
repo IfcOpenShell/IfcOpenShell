@@ -28,6 +28,7 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "V", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_V")]}),
         ("bim.hotkey", {"type": "O", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_O")]}),
         ("bim.hotkey", {"type": "O", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_O")]}),
+        ("bim.hotkey", {"type": "D", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_D")]}),
     )
 
     def draw_settings(context, layout, tool):
@@ -43,7 +44,7 @@ class BimTool(WorkSpaceTool):
         row.label(text="Add Type Instance", icon="EVENT_A")
 
         if props.ifc_class == "IfcWallType":
-            row = layout.row(align=True)
+            row = layout.row()
             row.label(text="Join")
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
@@ -55,7 +56,7 @@ class BimTool(WorkSpaceTool):
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="Mitre", icon="EVENT_Y")
 
-            row = layout.row(align=True)
+            row = layout.row()
             row.label(text="Wall Tools")
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
@@ -63,14 +64,17 @@ class BimTool(WorkSpaceTool):
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="Split", icon="EVENT_S")
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="Opening", icon="EVENT_O")
 
-        if props.ifc_class == "IfcSlabType":
+        if props.ifc_class in ["IfcColumnType", "IfcBeamType", "IfcMemberType"]:
+            row = layout.row()
+            row.label(text="Join")
             row = layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="Opening", icon="EVENT_O")
+            row.label(text="Extend", icon="EVENT_E")
+
+        row = layout.row(align=True)
+        row.label(text="", icon="EVENT_SHIFT")
+        row.label(text="Opening", icon="EVENT_O")
 
         row = layout.row(align=True)
         row.label(text="Align")
@@ -86,8 +90,13 @@ class BimTool(WorkSpaceTool):
         row = layout.row(align=True)
 
         row = layout.row(align=True)
+        row.label(text="Mode")
+        row = layout.row(align=True)
         row.label(text="", icon="EVENT_ALT")
         row.label(text="Opening", icon="EVENT_O")
+        row = layout.row(align=True)
+        row.label(text="", icon="EVENT_ALT")
+        row.label(text="Decomposition", icon="EVENT_D")
 
 
 class Hotkey(bpy.types.Operator):
@@ -113,6 +122,8 @@ class Hotkey(bpy.types.Operator):
     def hotkey_S_E(self):
         if self.props.ifc_class == "IfcWallType":
             bpy.ops.bim.join_wall(join_type="T")
+        elif self.props.ifc_class in ["IfcColumnType", "IfcBeamType", "IfcMemberType"]:
+            bpy.ops.bim.extend_profile()
 
     def hotkey_S_V(self):
         if self.props.ifc_class == "IfcWallType":
@@ -127,10 +138,10 @@ class Hotkey(bpy.types.Operator):
             bpy.ops.bim.align_product(align_type="NEGATIVE")
 
     def hotkey_S_O(self):
-        if self.props.ifc_class == "IfcWallType":
-            bpy.ops.bim.add_wall_opening()
-        elif self.props.ifc_class == "IfcSlabType":
-            bpy.ops.bim.add_slab_opening()
+        bpy.ops.bim.add_element_opening()
+
+    def hotkey_A_D(self):
+        bpy.ops.bim.toggle_decomposition_parenting()
 
     def hotkey_A_O(self):
         bpy.ops.bim.toggle_opening_visibility()

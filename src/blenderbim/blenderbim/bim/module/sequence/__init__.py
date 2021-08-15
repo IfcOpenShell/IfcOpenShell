@@ -76,6 +76,7 @@ classes = (
     operator.AddTaskColumn,
     operator.RemoveTaskColumn,
     operator.SetTaskSortColumn,
+    operator.EnableAssigningProcessToResource,
     prop.WorkPlan,
     prop.BIMWorkPlanProperties,
     prop.Task,

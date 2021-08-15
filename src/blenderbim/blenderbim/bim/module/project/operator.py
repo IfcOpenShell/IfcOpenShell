@@ -172,9 +172,10 @@ class RefreshLibrary(bpy.types.Operator):
         self.props.active_library_element = ""
 
         types = IfcStore.library_file.wrapped_data.types_with_super()
-        if "IfcTypeProduct" in types:
-            new = self.props.library_elements.add()
-            new.name = "IfcTypeProduct"
+        for importable_type in ["IfcTypeProduct", "IfcMaterial", "IfcCostSchedule", "IfcProfileDef"]:
+            if importable_type in types:
+                new = self.props.library_elements.add()
+                new.name = importable_type
         return {"FINISHED"}
 
 
@@ -197,11 +198,16 @@ class ChangeLibraryElement(bpy.types.Operator):
         if len(ifc_classes) == 1 and list(ifc_classes)[0] == self.element_name:
             for element in elements:
                 new = self.props.library_elements.add()
-                new.name = element.Name or "Unnamed"
+                if element.is_a("IfcProfileDef"):
+                    new.name = element.ProfileName or "Unnamed"
+                else:
+                    new.name = element.Name or "Unnamed"
                 new.ifc_definition_id = element.id()
                 if IfcStore.library_file.schema == "IFC2X3" or not IfcStore.library_file.by_type("IfcProjectLibrary"):
                     new.is_declared = False
-                elif element.HasContext and element.HasContext[0].RelatingContext.is_a("IfcProjectLibrary"):
+                elif getattr(element, "HasContext", None) and element.HasContext[0].RelatingContext.is_a(
+                    "IfcProjectLibrary"
+                ):
                     new.is_declared = True
         else:
             for ifc_class in ifc_classes:
@@ -326,9 +332,23 @@ class AppendLibraryElement(bpy.types.Operator):
             library=IfcStore.library_file,
             element=IfcStore.library_file.by_id(self.definition),
         )
-        self.import_type_from_ifc(element, context)
+        if not element:
+            return {"FINISHED"}
+        if element.is_a("IfcTypeProduct"):
+            self.import_type_from_ifc(element, context)
+        elif element.is_a("IfcMaterial"):
+            self.import_material_from_ifc(element, context)
         blenderbim.bim.handler.purge_module_data()
         return {"FINISHED"}
+
+    def import_material_from_ifc(self, element, context):
+        self.file = IfcStore.get_file()
+        logger = logging.getLogger("ImportIFC")
+        ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
+        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = self.file
+        blender_material = ifc_importer.create_material(element)
+        self.import_material_styles(blender_material, element, ifc_importer)
 
     def import_type_from_ifc(self, element, context):
         self.file = IfcStore.get_file()

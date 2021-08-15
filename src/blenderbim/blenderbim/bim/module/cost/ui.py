@@ -1,3 +1,4 @@
+import blenderbim.bim.module.cost.prop as CostProp
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes
@@ -36,6 +37,7 @@ class BIM_PT_cost_schedules(Panel):
         if self.props.active_cost_schedule_id and self.props.active_cost_schedule_id == cost_schedule_id:
             op = row.operator("bim.select_cost_schedule_products", icon="RESTRICT_SELECT_OFF", text="")
             op.cost_schedule = cost_schedule_id
+            row.prop(self.props, "should_show_column_ui", text="", icon="SHORTDISPLAY")
             if self.props.is_editing == "COST_SCHEDULE":
                 row.operator("bim.edit_cost_schedule", text="", icon="CHECKMARK")
             elif self.props.is_editing == "COST_ITEMS":
@@ -54,12 +56,46 @@ class BIM_PT_cost_schedules(Panel):
             if self.props.is_editing == "COST_SCHEDULE":
                 self.draw_editable_cost_schedule_ui()
             elif self.props.is_editing == "COST_ITEMS":
+                if self.props.should_show_column_ui:
+                    self.draw_column_ui()
                 self.draw_editable_cost_item_ui(cost_schedule_id)
+
+    def draw_column_ui(self):
+        row = self.layout.row(align=True)
+        row.prop(self.props, "cost_column", text="")
+        row.operator("bim.add_cost_column", text="", icon="ADD").name = self.props.cost_column
+        self.layout.template_list("BIM_UL_cost_columns", "", self.props, "columns", self.props, "active_column_index")
 
     def draw_editable_cost_schedule_ui(self):
         draw_attributes(self.props.cost_schedule_attributes, self.layout)
 
     def draw_editable_cost_item_ui(self, cost_schedule_id):
+        row = self.layout.row(align=True)
+        row.alignment = "RIGHT"
+        ifc_definition_id = None
+        if self.props.cost_items and self.props.active_cost_item_index < len(self.props.cost_items):
+            ifc_definition_id = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
+        if ifc_definition_id:
+
+            if Data.cost_schedules[self.props.active_cost_schedule_id]["PredefinedType"] != "SCHEDULEOFRATES":
+                op = row.operator("bim.enable_editing_cost_item_quantities", text="", icon="PROPERTIES")
+                op.cost_item = ifc_definition_id
+
+            op = row.operator("bim.enable_editing_cost_item_values", text="", icon="DISC")
+            op.cost_item = ifc_definition_id
+
+            row.operator("bim.add_cost_item", text="", icon="ADD").cost_item = ifc_definition_id
+
+            if self.props.active_cost_item_id == ifc_definition_id:
+                if self.props.cost_item_editing_type == "ATTRIBUTES":
+                    row.operator("bim.edit_cost_item", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_cost_item", text="", icon="CANCEL")
+            else:
+                op = row.operator("bim.enable_editing_cost_item", text="", icon="GREASEPENCIL")
+                op.cost_item = ifc_definition_id
+
+            row.operator("bim.remove_cost_item", text="", icon="X").cost_item = ifc_definition_id
+
         self.layout.template_list(
             "BIM_UL_cost_items",
             "",
@@ -82,8 +118,6 @@ class BIM_PT_cost_schedules(Panel):
     def draw_editable_cost_item_quantities_ui(self):
         row = self.layout.row(align=True)
         row.prop(self.props, "quantity_types", text="")
-        if self.props.quantity_types == "QTO":
-            row.prop(self.props, "quantity_names", text="")
         op = row.operator("bim.add_cost_item_quantity", text="", icon="ADD")
         op.cost_item = self.props.active_cost_item_id
         op.ifc_class = self.props.quantity_types
@@ -134,7 +168,6 @@ class BIM_PT_cost_schedules(Panel):
         if self.props.active_cost_item_value_id:
             box = self.layout.box()
             self.draw_editable_cost_value_ui(box, Data.cost_values[self.props.active_cost_item_value_id])
-
 
     def draw_readonly_cost_value_ui(self, layout, cost_value_id):
         cost_value = Data.cost_values[cost_value_id]
@@ -192,11 +225,112 @@ class BIM_PT_cost_schedules(Panel):
     def draw_editable_cost_value_ui(self, layout, cost_value):
         draw_attributes(self.props.cost_value_attributes, self.layout)
 
+class BIM_PT_cost_item_quantities(Panel):
+    bl_label = "IFC Cost Item Quantities"
+    bl_idname = "BIM_PT_cost_item_quantities"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_cost_schedules"
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BIMCostProperties
+        total_cost_items = len(props.cost_items)
+        if total_cost_items > 0 and props.active_cost_item_index < total_cost_items:
+            return True
+        return False
+
+    def draw(self, context):
+        self.props = context.scene.BIMCostProperties
+
+        cost_item = self.props.cost_items[self.props.active_cost_item_index]
+
+        grid = self.layout.grid_flow(columns=3, even_columns=True)
+
+        # Column1
+        col = grid.column()
+
+        row2 = col.row(align=True)
+        row2.label(text="Elements")
+        op = row2.operator("bim.select_cost_item_products", icon="RESTRICT_SELECT_OFF", text="")
+        op.cost_item = cost_item.ifc_definition_id
+
+        row2 = col.row()
+        row2.template_list(
+            "BIM_UL_cost_item_quantities",
+            "",
+            self.props,
+            "cost_item_products",
+            self.props,
+            "active_cost_item_product_index",
+        )
+
+        row2 = col.row(align=True)
+        row2.prop(self.props, "product_quantity_names", text="")
+        op = row2.operator("bim.unassign_cost_item_quantity", text="", icon="REMOVE")
+        op.cost_item = cost_item.ifc_definition_id
+        op.related_object = 0
+        if CostProp.productquantitynames_enum:
+            op = row2.operator("bim.assign_cost_item_quantity", text="", icon="ADD")
+            op.related_object_type = "PRODUCT"
+            op.cost_item = cost_item.ifc_definition_id
+            op.prop_name = self.props.product_quantity_names
+
+        # Column2
+        col = grid.column()
+
+        row2 = col.row(align=True)
+        row2.label(text="Tasks")
+
+        row2 = col.row()
+        row2.template_list(
+            "BIM_UL_cost_item_quantities",
+            "",
+            self.props,
+            "cost_item_processes",
+            self.props,
+            "active_cost_item_process_index",
+        )
+
+        row2 = col.row(align=True)
+        row2.prop(self.props, "process_quantity_names", text="")
+        if CostProp.processquantitynames_enum:
+            op = row2.operator("bim.assign_cost_item_quantity", text="", icon="ADD")
+            op.related_object_type = "PROCESS"
+            op.cost_item = cost_item.ifc_definition_id
+            op.prop_name = self.props.process_quantity_names
+
+        # Column3
+        col = grid.column()
+
+        row2 = col.row(align=True)
+        row2.label(text="Resources")
+
+        row2 = col.row()
+        row2.template_list(
+            "BIM_UL_cost_item_quantities",
+            "",
+            self.props,
+            "cost_item_resources",
+            self.props,
+            "active_cost_item_resource_index",
+        )
+
+        row2 = col.row(align=True)
+        row2.prop(self.props, "resource_quantity_names", text="")
+        if CostProp.resourcequantitynames_enum:
+            op = row2.operator("bim.assign_cost_item_quantity", text="", icon="ADD")
+            op.related_object_type = "RESOURCE"
+            op.cost_item = cost_item.ifc_definition_id
+            op.prop_name = self.props.resource_quantity_names
+
 
 class BIM_UL_cost_items(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
-            props = context.scene.BIMCostProperties
+            self.props = context.scene.BIMCostProperties
             cost_item = Data.cost_items[item.ifc_definition_id]
             row = layout.row(align=True)
 
@@ -214,44 +348,51 @@ class BIM_UL_cost_items(UIList):
             else:
                 row.label(text="", icon="DOT")
 
-            split1 = row.split(factor=0.7)
-            split1.prop(item, "name", emboss=False, text="")
+            split1 = row.split(factor=0.1)
+            split1.prop(item, "identification", emboss=False, text="")
+            split2 = split1.split(factor=0.5)
+            split2.alignment = "RIGHT"
+            split2.prop(item, "name", emboss=False, text="")
 
-            op = row.operator("bim.enable_editing_cost_item_quantities", text="", icon="PROPERTIES")
-            op.cost_item = item.ifc_definition_id
-            row.label(text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + " (M3)")
+            if Data.cost_schedules[self.props.active_cost_schedule_id]["PredefinedType"] != "SCHEDULEOFRATES":
+                split2.label(text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" ({cost_item['UnitSymbol'] or '?'})")
 
-            op = row.operator("bim.enable_editing_cost_item_values", text="", icon="DISC")
-            op.cost_item = item.ifc_definition_id
-            row.label(text="{0:.2f}".format(cost_item["TotalAppliedValue"]))
-            row.label(text="{0:.2f}".format(cost_item["TotalCostValue"]), icon="CON_TRANSLIKE")
+            split2.label(text="{0:.2f}".format(cost_item["TotalAppliedValue"]))
 
-            if context.active_object:
-                oprops = context.active_object.BIMObjectProperties
-                row = layout.row(align=True)
-                if oprops.ifc_definition_id in cost_item["Controls"]:
-                    op = row.operator("bim.unassign_cost_item_product", text="", icon="KEYFRAME_HLT", emboss=False)
-                    op.cost_item = item.ifc_definition_id
-                else:
-                    op = row.operator("bim.assign_cost_item_product", text="", icon="KEYFRAME", emboss=False)
-                    op.cost_item = item.ifc_definition_id
+            for column in self.props.columns:
+                split2.label(text=str(cost_item["CategoryValues"].get(column.name, "-")))
 
-            if props.active_cost_item_id == item.ifc_definition_id:
-                if props.cost_item_editing_type == "ATTRIBUTES":
-                    row.operator("bim.edit_cost_item", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_cost_item", text="", icon="CANCEL")
-            elif props.active_cost_item_id:
-                if props.cost_item_editing_type == "VALUES":
-                    op = row.operator("bim.copy_cost_item_values", text="", icon="COPYDOWN")
-                    op.source = props.active_cost_item_id
-                    op.destination = item.ifc_definition_id
-                row.operator("bim.add_cost_item", text="", icon="ADD").cost_item = item.ifc_definition_id
-                row.operator("bim.remove_cost_item", text="", icon="X").cost_item = item.ifc_definition_id
-            else:
-                op = row.operator("bim.select_cost_item_products", icon="RESTRICT_SELECT_OFF", text="")
-                op.cost_item = item.ifc_definition_id
-                row.operator(
-                    "bim.enable_editing_cost_item", text="", icon="GREASEPENCIL"
-                ).cost_item = item.ifc_definition_id
-                row.operator("bim.add_cost_item", text="", icon="ADD").cost_item = item.ifc_definition_id
-                row.operator("bim.remove_cost_item", text="", icon="X").cost_item = item.ifc_definition_id
+            split2.label(text="{0:.2f}".format(cost_item["TotalCostValue"]))
+            self.draw_buttons(split2, item, cost_item)
+
+    def draw_buttons(self, row, item, cost_item):
+        pass  # TODO: reimplement somewhere with better UX
+        # elif self.props.active_cost_item_id:
+        #    if self.props.cost_item_editing_type == "VALUES":
+        #        op = row.operator("bim.copy_cost_item_values", text="", icon="COPYDOWN")
+        #        op.source = self.props.active_cost_item_id
+        #        op.destination = item.ifc_definition_id
+
+
+class BIM_UL_cost_columns(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        props = context.scene.BIMCostProperties
+        if item:
+            row = layout.row(align=True)
+            row.prop(item, "name", emboss=False, text="")
+            row.operator("bim.remove_cost_column", text="", icon="X").name = item.name
+
+
+class BIM_UL_cost_item_quantities(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        props = context.scene.BIMCostProperties
+        cost_item = props.cost_items[props.active_cost_item_index]
+
+        if item:
+            row = layout.row(align=True)
+            row.split(factor=0.8)
+            row.label(text=item.name)
+            row.label(text="{0:.2f}".format(item.total_quantity))
+            op = row.operator("bim.unassign_cost_item_quantity", text="", icon="X")
+            op.cost_item = cost_item.ifc_definition_id
+            op.related_object = item.ifc_definition_id

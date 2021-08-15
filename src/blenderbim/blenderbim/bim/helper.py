@@ -35,6 +35,7 @@ def import_attributes(ifc_class, props, data, callback=None):
     for attribute in IfcStore.get_schema().declaration_by_name(ifc_class).all_attributes():
         data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
         if data_type == "entity" or (isinstance(data_type, tuple) and "entity" in ".".join(data_type)):
+            callback(attribute.name(), None, data) if callback else None
             continue
         new = props.add()
         new.name = attribute.name()
@@ -62,12 +63,9 @@ def import_attributes(ifc_class, props, data, callback=None):
 
 def export_attributes(props, callback=None):
     attributes = {}
-    for attribute in props:
-        is_handled_by_callback = callback(attributes, attribute) if callback else False
-        if attribute.is_null:
-            attributes[attribute.name] = None
-        elif is_handled_by_callback:
-            pass  # Our job is done
-        else:
-            attributes[attribute.name] = attribute.get_value()
+    for prop in props:
+        is_handled_by_callback = callback(attributes, prop) if callback else False
+        if is_handled_by_callback:
+            continue # Our job is done
+        attributes[prop.name] = prop.get_value()
     return attributes

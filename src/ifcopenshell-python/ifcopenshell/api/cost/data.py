@@ -1,4 +1,5 @@
 import ifcopenshell.util.date
+import ifcopenshell.util.unit
 
 
 class Data:
@@ -7,6 +8,7 @@ class Data:
     cost_items = {}
     physical_quantities = {}
     cost_values = {}
+    categories = []
 
     @classmethod
     def purge(cls):
@@ -15,6 +17,11 @@ class Data:
         cls.cost_items = {}
         cls.physical_quantities = {}
         cls.cost_values = {}
+        cls.categories = []
+
+    @classmethod
+    def set_categories(cls, categories):
+        cls.categories = categories
 
     @classmethod
     def load(cls, file):
@@ -44,51 +51,94 @@ class Data:
             del data["OwnerHistory"]
             del data["CostValues"]
             data["IsNestedBy"] = []
-            data["Controls"] = []
+            data["Controls"] = {}
             for rel in cost_item.IsNestedBy:
                 [data["IsNestedBy"].append(o.id()) for o in rel.RelatedObjects if o.is_a("IfcCostItem")]
+            parametric_quantities = []
             for rel in cost_item.Controls:
-                [data["Controls"].append(o.id()) for o in rel.RelatedObjects or []]
+                for related_object in rel.RelatedObjects or []:
+                    quantities = cls.get_object_quantities(cost_item, related_object)
+                    data["Controls"][related_object.id()] = quantities
+                    parametric_quantities.extend(quantities)
             cls.cost_items[cost_item.id()] = data
-            cls.load_cost_item_quantities(cost_item, data)
+            cls.load_cost_item_quantities(cost_item, data, parametric_quantities)
             cls.load_cost_item_values(cost_item, data)
         cls.is_loaded = True
 
     @classmethod
-    def load_cost_item_quantities(cls, cost_item, data):
+    def get_object_quantities(cls, cost_item, element):
+        if not element.is_a("IfcObject"):
+            return []
+        results = []
+        for relationship in element.IsDefinedBy:
+            if not relationship.is_a("IfcRelDefinesByProperties"):
+                continue
+            qto = relationship.RelatingPropertyDefinition
+            if not qto.is_a("IfcElementQuantity"):
+                continue
+            for prop in qto.Quantities:
+                if prop in cost_item.CostQuantities or []:
+                    results.append(prop.id())
+        return results
+
+    @classmethod
+    def load_cost_item_quantities(cls, cost_item, data, parametric_quantities):
         data["CostQuantities"] = []
         data["TotalCostQuantity"] = cls.get_total_quantity(cost_item)
         for quantity in cost_item.CostQuantities or []:
+            if quantity.id() in parametric_quantities:
+                continue
             quantity_data = quantity.get_info()
             del quantity_data["Unit"]
             cls.physical_quantities[quantity.id()] = quantity_data
             data["CostQuantities"].append(quantity.id())
+        data["Unit"] = None
+        data["UnitSymbol"] = "?"
+        if cost_item.CostQuantities:
+            quantity = cost_item.CostQuantities[0]
+            unit = ifcopenshell.util.unit.get_property_unit(quantity, cls.file)
+            if unit:
+                data["Unit"] = unit.id()
+                data["UnitSymbol"] = ifcopenshell.util.unit.get_unit_symbol(unit)
+            else:
+                data["Unit"] = None
+                data["UnitSymbol"] = None
 
     @classmethod
     def load_cost_item_values(cls, cost_item, data):
         data["CostValues"] = []
         data["TotalCostValue"] = 0.0
         data["TotalAppliedValue"] = 0.0
+        data["CategoryValues"] = {}
         for cost_value in cost_item.CostValues or []:
-            cls.load_cost_item_value(cost_item, cost_value)
+            cls.load_cost_item_value(data, cost_item, cost_value)
             data["CostValues"].append(cost_value.id())
             data["TotalAppliedValue"] += cls.cost_values[cost_value.id()]["AppliedValue"]
         data["TotalCostValue"] = data["TotalCostQuantity"] * data["TotalAppliedValue"]
 
     @classmethod
-    def load_cost_item_value(cls, cost_item, cost_value):
+    def load_cost_item_value(cls, cost_item_data, cost_item, cost_value):
         value_data = cost_value.get_info()
         del value_data["AppliedValue"]
-        del value_data["UnitBasis"]
+        if value_data["UnitBasis"]:
+            data = cost_value.UnitBasis.get_info()
+            data["ValueComponent"] = data["ValueComponent"].wrappedValue
+            data["UnitComponent"] = data["UnitComponent"].id()
+            value_data["UnitBasis"] = data
         if value_data["ApplicableDate"]:
             value_data["ApplicableDate"] = ifcopenshell.util.date.ifc2datetime(value_data["ApplicableDate"])
         if value_data["FixedUntilDate"]:
             value_data["FixedUntilDate"] = ifcopenshell.util.date.ifc2datetime(value_data["FixedUntilDate"])
         value_data["Components"] = [c.id() for c in value_data["Components"] or []]
         value_data["AppliedValue"] = cls.calculate_applied_value(cost_item, cost_value)
+
+        if cost_value.Category not in [None, "*"]:
+            cost_item_data["CategoryValues"].setdefault(cost_value.Category, 0)
+            cost_item_data["CategoryValues"][cost_value.Category] += value_data["AppliedValue"]
+
         cls.cost_values[cost_value.id()] = value_data
         for component in cost_value.Components or []:
-            cls.load_cost_item_value(cost_item, component)
+            cls.load_cost_item_value(cost_item_data, cost_item, component)
 
     @classmethod
     def calculate_applied_value(cls, cost_item, cost_value, category_filter=None):

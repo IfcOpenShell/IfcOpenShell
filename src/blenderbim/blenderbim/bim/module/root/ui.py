@@ -29,13 +29,16 @@ class BIM_PT_class(Panel):
             if props.is_reassigning_class:
                 row = self.layout.row(align=True)
                 row.operator("bim.reassign_class", icon="CHECKMARK")
-                row.operator("bim.disable_reassign_class", icon="X", text="")
+                row.operator("bim.disable_reassign_class", icon="CANCEL", text="")
                 self.draw_class_dropdowns(context)
             else:
                 data = Data.products[props.ifc_definition_id]
                 name = data["type"]
                 if data["PredefinedType"] and data["PredefinedType"] == "USERDEFINED":
-                    name += "[{}]".format(data["ObjectType"])
+                    if data["ObjectType"]:
+                        name += "[{}]".format(data["ObjectType"])
+                    elif data["ElementType"]:
+                        name += "[{}]".format(data["ElementType"])
                 elif data["PredefinedType"]:
                     name += "[{}]".format(data["PredefinedType"])
                 row = self.layout.row(align=True)

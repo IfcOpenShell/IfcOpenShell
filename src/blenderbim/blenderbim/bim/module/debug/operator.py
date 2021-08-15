@@ -113,6 +113,7 @@ class CreateShapeFromStepId(bpy.types.Operator):
     bl_idname = "bim.create_shape_from_step_id"
     bl_label = "Create Shape From STEP ID"
     bl_options = {"REGISTER", "UNDO"}
+    should_include_curves: bpy.props.BoolProperty()
 
     @classmethod
     def poll(cls, context):
@@ -127,7 +128,8 @@ class CreateShapeFromStepId(bpy.types.Operator):
         self.file = IfcStore.get_file()
         element = self.file.by_id(int(context.scene.BIMDebugProperties.step_id))
         settings = ifcopenshell.geom.settings()
-        # settings.set(settings.INCLUDE_CURVES, True)
+        if self.should_include_curves:
+            settings.set(settings.INCLUDE_CURVES, True)
         shape = ifcopenshell.geom.create_shape(settings, element)
         ifc_importer = import_ifc.IfcImporter(self.ifc_import_settings)
         ifc_importer.file = self.file

@@ -446,7 +446,11 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 			}
 		} else {
 			if (!representation) {
-				if (instance->declaration().is(Schema::IfcRepresentationItem::Class()) || instance->declaration().is(Schema::IfcRepresentation::Class())) {
+				if (instance->declaration().is(Schema::IfcRepresentationItem::Class()) || 
+					instance->declaration().is(Schema::IfcRepresentation::Class()) ||
+					// https://github.com/IfcOpenShell/IfcOpenShell/issues/1649
+					instance->declaration().is(Schema::IfcProfileDef::Class())
+				) {
 					IfcGeom::IfcRepresentationShapeItems shapes = kernel.convert(instance);
 
 					IfcGeom::ElementSettings element_settings(settings, kernel.getValue(IfcGeom::Kernel::GV_LENGTH_UNIT), instance->declaration().name());

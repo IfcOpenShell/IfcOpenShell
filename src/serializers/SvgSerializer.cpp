@@ -543,7 +543,12 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 	const gp_Trsf& trsf = brep_obj->transformation().data();
 
 	const bool is_section = (section_ref_ && object_type && *section_ref_ == *object_type);
-	const bool is_elevation = (elevation_ref_ && object_type && *elevation_ref_ == *object_type);
+	bool is_elevation = false;
+	if (elevation_ref_ && object_type) {
+		is_elevation = *elevation_ref_ == *object_type;
+	} else if (elevation_ref_guid_) {
+		is_elevation = *elevation_ref_guid_ == brep_obj->guid();
+	}
 
 	if (is_section || is_elevation) {
 		BRepBuilderAPI_Transform make_transform_global(compound_local, trsf, true);
@@ -663,7 +668,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* brep_obj) {
 	// @todo is it correct to call nameElement() here with a single storey (what if this element spans multiple?)
 	geometry_data data{ compound_local, dash_arrays, trsf, brep_obj->product(), storey, elev, brep_obj->name(), nameElement(storey, brep_obj) };
 
-	if (auto_section_ || auto_elevation_ || section_ref_ || elevation_ref_) {
+	if (auto_section_ || auto_elevation_ || section_ref_ || elevation_ref_ || elevation_ref_guid_) {
 		element_buffer_.push_back(data);
 	}
 
@@ -1196,11 +1201,17 @@ void SvgSerializer::write(const geometry_data& data) {
 
 			emitted = true;
 
+			auto svg_name = data.svg_name;
+			if (object_type.size()) {
+				// prefix class to indicate this is a cut element
+				boost::replace_all(svg_name, "class=\"", "class=\"cut ");
+			}
+
 			if (po == nullptr) {
 				if (storey) {
-					po = &start_path(pln, storey, data.svg_name);
+					po = &start_path(pln, storey, svg_name);
 				} else {
-					po = &start_path(pln, drawing_name, data.svg_name);
+					po = &start_path(pln, drawing_name, svg_name);
 				}
 			}
 
@@ -1960,13 +1971,19 @@ void SvgSerializer::finalize() {
 				svg_file << "    <g " << namespace_prefix_  << "name=\"" << n << "\" class=\"section\" " << writeMetadata(drawing_metadata[it->first]) << ">\n";
 			}
 		}
+
+		previous = it->first;
+
+		if (it->second.second.empty()) {
+			continue;
+		}
+
 		svg_file << "        <g " << it->second.first << ">\n";
 		std::vector<util::string_buffer>::const_iterator jt;
 		for (jt = it->second.second.begin(); jt != it->second.second.end(); ++jt) {
 			svg_file << jt->str();
 		}
 		svg_file << "        </g>\n";
-		previous = it->first;
 	}
 	
 	if (previous) {
@@ -2000,45 +2017,49 @@ void SvgSerializer::doWriteHeader() {
 		"        <marker id=\"arrowstart\" markerWidth=\"10\" markerHeight=\"7\" refX=\"0\" refY=\"3.5\" orient=\"auto\">\n"
 		"          <polygon points=\"10 0, 0 3.5, 10 7\" />\n"
 		"        </marker>\n"
-		"    </defs>\n"
-		"    <style type=\"text/css\" >\n"
-		"    <![CDATA[\n"
-		"        path {\n"
-		"            stroke: #222222;\n"
-		"            fill: #444444;\n"
-		"        }\n"
-		"        .IfcDoor path,\n"
-		"        .Symbol path {\n"
-		"            fill: none;\n"
-		"        }\n"
-		"        .Symbol path {\n"
-		"            stroke-width: 0.5px;\n"
-		"        }\n"
-		"        .IfcSpace path {\n"
-		"            fill-opacity: .2;\n"
-		"        }\n"
-		"        .Dimension path {\n"
-		"            marker-end: url(#arrowend);\n"
-		"            marker-start: url(#arrowstart);\n"
-		"        }\n";
-	
-	if (scale_) {
-		// previously:
-		//       (pt)  (px)  (in)  (mm)
-		// approx 12 / 0.75 / 96 * 25.4
+		"    </defs>\n";
+
+	if (!no_css_) {
+		svg_file <<
+			"    <style type=\"text/css\" >\n"
+			"    <![CDATA[\n"
+			"        path {\n"
+			"            stroke: #222222;\n"
+			"            fill: #444444;\n"
+			"        }\n"
+			"        .IfcDoor path,\n"
+			"        .Symbol path {\n"
+			"            fill: none;\n"
+			"        }\n"
+			"        .Symbol path {\n"
+			"            stroke-width: 0.5px;\n"
+			"        }\n"
+			"        .IfcSpace path {\n"
+			"            fill-opacity: .2;\n"
+			"        }\n"
+			"        .Dimension path {\n"
+			"            marker-end: url(#arrowend);\n"
+			"            marker-start: url(#arrowstart);\n"
+			"        }\n";
+
+		if (scale_) {
+			// previously:
+			//       (pt)  (px)  (in)  (mm)
+			// approx 12 / 0.75 / 96 * 25.4
+
+			svg_file <<
+				"        text {\n"
+				"            font-size: 2;\n" //  (reduced to two).
+				"        }\n"
+				"        path {\n"
+				"            stroke-width: 0.3;\n"
+				"        }\n";
+		}
 
 		svg_file <<
-		"        text {\n"
-		"            font-size: 2;\n" //  (reduced to two).
-		"        }\n"
-		"        path {\n"
-		"            stroke-width: 0.3;\n"
-		"        }\n";
+			"    ]]>\n"
+			"    </style>\n";
 	}
-
-	svg_file << 
-		"    ]]>\n"
-		"    </style>\n";
 }
 
 namespace {

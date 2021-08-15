@@ -4,6 +4,7 @@ from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes
 from ifcopenshell.api.sequence.data import Data
+from ifcopenshell.api.resource.data import Data as ResourceData
 import blenderbim.bim.module.sequence.helper as helper
 from datetime import datetime
 
@@ -19,7 +20,7 @@ class BIM_PT_work_plans(Panel):
     @classmethod
     def poll(cls, context):
         file = IfcStore.get_file()
-        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
+        return file and file.schema != "IFC2X3"
 
     def draw(self, context):
         if not Data.is_loaded:
@@ -201,6 +202,8 @@ class BIM_PT_work_schedules(Panel):
             self.draw_editable_task_sequence_ui()
         elif self.props.active_task_time_id and self.props.editing_task_type == "TASKTIME":
             self.draw_editable_task_time_attributes_ui()
+        elif self.props.active_task_id and self.props.editing_task_type == "RESOURCES":
+            self.draw_editable_task_resource_ui()
 
     def draw_editable_task_sequence_ui(self):
         task = Data.tasks[self.props.active_task_id]
@@ -274,6 +277,22 @@ class BIM_PT_work_schedules(Panel):
     def draw_editable_task_time_attributes_ui(self):
         blenderbim.bim.helper.draw_attributes(self.props.task_time_attributes, self.layout)
 
+    def draw_editable_task_resource_ui(self):
+        row = self.layout.row(align=True)
+        row.prop(self.props, "resources", text="")
+        op = row.operator("bim.assign_process", text="", icon="ADD")
+        if self.props.resources:
+            op.parent_resource = int(self.props.resources)
+            op.task = self.props.active_task_id
+            task = Data.tasks[self.props.active_task_id]
+            ResourceData.load(IfcStore.get_file())
+            for related_obect_id in task["OperatesOn"]:
+                resource = ResourceData.resources[related_obect_id]
+                row = self.layout.row(align=True)
+                row.label(text=resource["Name"], icon="COMMUNITY")
+                op = row.operator("bim.unassign_process", text="", icon="X")
+                op.task = self.props.active_task_id
+                op.resource = related_obect_id
 
 class BIM_UL_task_columns(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
@@ -283,7 +302,7 @@ class BIM_UL_task_columns(UIList):
             row.prop(item, "name", emboss=False, text="")
             if props.sort_column == item.name:
                 row.label(text="", icon="SORTALPHA")
-            row.operator("bim.remove_task_column", text="", icon="X")
+            row.operator("bim.remove_task_column", text="", icon="X").name = item.name
 
 
 class BIM_UL_tasks(UIList):
@@ -403,6 +422,7 @@ class BIM_UL_tasks(UIList):
                 row.operator(
                     "bim.enable_editing_task_calendar", text="", icon="VIEW_ORTHO"
                 ).task = item.ifc_definition_id
+                row.operator("bim.enable_assigning_process_to_resources", text="", icon="COMMUNITY").task = item.ifc_definition_id
                 row.operator("bim.enable_editing_task", text="", icon="GREASEPENCIL").task = item.ifc_definition_id
                 row.operator("bim.add_task", text="", icon="ADD").task = item.ifc_definition_id
                 row.operator("bim.remove_task", text="", icon="X").task = item.ifc_definition_id

@@ -8,7 +8,7 @@ import ifcopenshell.util.element
 import mathutils.geometry
 import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
-from math import pi, degrees
+from math import pi, degrees, inf
 from mathutils import Vector, Matrix
 from ifcopenshell.api.pset.data import Data as PsetData
 from ifcopenshell.api.material.data import Data as MaterialData
@@ -137,25 +137,17 @@ class DumbProfileGenerator:
         if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
             obj.location[2] = self.collection_obj.location[2]
         self.collection.objects.link(obj)
-        if self.relating_type.is_a("IfcColumnType"):
-            obj.name = "Column"
-            bpy.ops.bim.assign_class(
-                obj=obj.name, ifc_class="IfcColumn", predefined_type="COLUMN", should_add_representation=False
-            )
-        elif self.relating_type.is_a("IfcBeamType"):
-            obj.name = "Beam"
+
+        ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
+        # Standard cases are deprecated, so let's cull them
+        ifc_class = [c for c in ifc_classes if "StandardCase" not in c][0]
+        obj.name = ifc_class[3:]
+        bpy.ops.bim.assign_class(obj=obj.name, ifc_class=ifc_class, should_add_representation=False)
+
+        if self.relating_type.is_a() in ["IfcBeamType", "IfcMemberType"]:
             obj.rotation_euler[0] = math.pi / 2
             obj.rotation_euler[2] = math.pi / 2
-            bpy.ops.bim.assign_class(
-                obj=obj.name, ifc_class="IfcBeam", predefined_type="BEAM", should_add_representation=False
-            )
-        elif self.relating_type.is_a("IfcMemberType"):
-            obj.name = "Member"
-            obj.rotation_euler[0] = math.pi / 2
-            obj.rotation_euler[2] = math.pi / 2
-            bpy.ops.bim.assign_class(
-                obj=obj.name, ifc_class="IfcMember", predefined_type="MEMBER", should_add_representation=False
-            )
+
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         bpy.ops.bim.assign_type(relating_type=self.relating_type.id(), related_object=obj.name)
         profile_set_usage = ifcopenshell.util.element.get_material(element)
@@ -232,3 +224,136 @@ class DumbProfileRegenerator:
         if not obj or obj not in IfcStore.edited_objs:
             return
         bpy.ops.bim.update_representation(obj=obj.name)
+
+
+class ExtendProfile(bpy.types.Operator):
+    bl_idname = "bim.extend_profile"
+    bl_label = "Extend Profile"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        selected_objs = context.selected_objects
+        for obj in selected_objs:
+            bpy.ops.bim.dynamically_void_product(obj=obj.name)
+        if len(selected_objs) == 0:
+            return {"FINISHED"}
+        if not context.active_object:
+            return {"FINISHED"}
+        if len(selected_objs) == 1:
+            DumbProfileExtender(context.active_object, target_coordinate=context.scene.cursor.location).extend()
+            IfcStore.edited_objs.add(context.active_object)
+            return {"FINISHED"}
+        if len(selected_objs) < 2:
+            return {"FINISHED"}
+        for obj in selected_objs:
+            if obj == context.active_object:
+                continue
+            DumbProfileExtender(obj, context.active_object).extend()
+            IfcStore.edited_objs.add(obj)
+        return {"FINISHED"}
+
+
+class DumbProfileExtender:
+    # A profile is a prismatic extrusion along its local Z axis.
+    def __init__(self, profile, target=None, target_coordinate=None):
+        self.profile = profile
+        self.target = target
+        self.target_coordinate = target_coordinate
+
+    # An extension of a profile is determined by casting a ray from the cardinal
+    # point of either extreme along the profiles local Z axis to a target
+    # object. The nearest result from this raycast will be the target extension
+    # point.
+    def extend(self):
+        extension_data = self.get_closest_extension_point()
+        if not extension_data:
+            return
+        if extension_data["end"] == "bottom":
+            self.profile.matrix_world.translation = extension_data["contact"]
+            if extension_data["direction"] == "up":
+                self.shift_top_faces(-extension_data["distance"])
+            elif extension_data["direction"] == "down":
+                self.shift_top_faces(extension_data["distance"])
+        if extension_data["end"] == "top":
+            if extension_data["direction"] == "up":
+                self.shift_top_faces(extension_data["distance"])
+            elif extension_data["direction"] == "down":
+                self.shift_top_faces(-extension_data["distance"])
+
+    def shift_top_faces(self, z):
+        vertices = []
+        for f in self.get_profile_top_faces():
+            vertices.extend(f.vertices)
+        for v in set(vertices):
+            self.profile.data.vertices[v].co.z += z
+
+    # An top face is defined as having at least one vertex on the max
+    # Z-axis, and a non-insignificant Z component of its face normal
+    def get_profile_top_faces(self):
+        faces = []
+        max_z = max([v[2] for v in self.profile.bound_box])
+        for f in self.profile.data.polygons:
+            if abs(f.normal.z) < 0.1:
+                continue
+            for v in f.vertices:
+                if self.profile.data.vertices[v].co.z == max_z:
+                    faces.append(f)
+                    break
+        return faces
+
+    def get_closest_extension_point(self):
+        top = self.profile.matrix_world @ Vector((0, 0, self.profile.dimensions[2]))
+        bottom = self.profile.matrix_world.translation
+        up = self.profile.matrix_world.to_quaternion() @ Vector((0, 0, 1))
+        down = self.profile.matrix_world.to_quaternion() @ Vector((0, 0, -1))
+
+        if self.target:
+            return self.get_closest_extension_point_from_target_obj(top, bottom, up, down)
+        elif self.target_coordinate:
+            return self.get_closest_extension_point_from_target_coordinate(top, bottom, up, down)
+
+    def get_closest_extension_point_from_target_coordinate(self, top, bottom, up, down):
+        point = mathutils.geometry.intersect_line_plane(
+            bottom, top, self.target_coordinate, self.profile.matrix_world.to_quaternion() @ Vector((0, 0, 1))
+        )
+        if not point:
+            return
+        top_distance = (point - top).length
+        bottom_distance = (point - bottom).length
+        if top_distance < bottom_distance:
+            intersection_point, signed_distance = mathutils.geometry.intersect_point_line(point, top, bottom)
+            if signed_distance > 0:
+                return {"contact": point, "distance": top_distance, "end": "top", "direction": "down"}
+            else:
+                return {"contact": point, "distance": top_distance, "end": "top", "direction": "up"}
+        else:
+            intersection_point, signed_distance = mathutils.geometry.intersect_point_line(point, bottom, top)
+            if signed_distance > 0:
+                return {"contact": point, "distance": bottom_distance, "end": "bottom", "direction": "up"}
+            else:
+                return {"contact": point, "distance": bottom_distance, "end": "bottom", "direction": "down"}
+
+    def get_closest_extension_point_from_target_obj(self, top, bottom, up, down):
+        t_top = self.target.matrix_world.inverted() @ top
+        t_bottom = self.target.matrix_world.inverted() @ bottom
+        t_up = self.target.matrix_world.inverted().to_quaternion() @ up
+        t_down = self.target.matrix_world.inverted().to_quaternion() @ down
+
+        results = []
+        results.append((self.target.ray_cast(t_top, t_up, distance=50), top, "top", "up"))
+        results.append((self.target.ray_cast(t_top, t_down, distance=50), top, "top", "down"))
+        results.append((self.target.ray_cast(t_bottom, t_up, distance=50), bottom, "bottom", "up"))
+        results.append((self.target.ray_cast(t_bottom, t_down, distance=50), bottom, "bottom", "down"))
+
+        min_distance = float(inf)
+        final = None
+
+        for result in results:
+            if result[0][0]:
+                contact = self.target.matrix_world @ result[0][1]
+                distance = (contact - result[1]).length
+                if distance < min_distance:
+                    min_distance = distance
+                    final = {"contact": contact, "distance": distance, "end": result[2], "direction": result[3]}
+
+        return final
