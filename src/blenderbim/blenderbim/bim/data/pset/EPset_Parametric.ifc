@@ -1,0 +1,12 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION((),'2;1');
+FILE_NAME('EPset_Parametric.ifc','2020-01-01T00:00:00',(),(),'EPset_Parametric','EPset_Parametric',$);
+FILE_SCHEMA(('IFC4'));
+ENDSEC;
+DATA;
+#1=IFCPROPERTYSETTEMPLATE('1Ja6GlovjFoeonRLXJwyyl',$,'EPset_Parametric','',.PSET_TYPEDRIVENOVERRIDE.,'IfcTypeObject',(#2,#3));
+#2=IFCSIMPLEPROPERTYTEMPLATE('2ZxSvp00j5hxrWv$Q8ajzx',$,'Engine','',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
+#3=IFCSIMPLEPROPERTYTEMPLATE('2AN6WomqXCjRkP0g2iwEjp',$,'LayerSetDirection','',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
+ENDSEC;
+END-ISO-10303-21;

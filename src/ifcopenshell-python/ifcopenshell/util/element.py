@@ -104,7 +104,7 @@ def has_element_reference(value, element):
 def remove_deep(ifc_file, element):
     # @todo maybe some sort of try-finally mechanism.
     ifc_file.batch()
-    subgraph = list(ifc_file.traverse(element))
+    subgraph = list(ifc_file.traverse(element, breadth_first=True))
     subgraph_set = set(subgraph)
     for ref in subgraph[::-1]:
         if ref.id() and len(set(ifc_file.get_inverse(ref)) - subgraph_set) == 0:

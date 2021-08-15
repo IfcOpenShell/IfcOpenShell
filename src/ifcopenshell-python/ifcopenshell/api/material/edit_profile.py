@@ -11,6 +11,7 @@ class Usecase():
             self.settings[key] = value
 
     def execute(self):
+        # TODO: don't also edit the profile def in this usecase
         for name, value in self.settings["attributes"].items():
             setattr(self.settings["profile"], name, value)
         self.settings["profile"].Material = self.settings["material"]

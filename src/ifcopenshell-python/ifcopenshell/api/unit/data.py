@@ -24,6 +24,9 @@ class Data:
             return
         for unit in unit_assignment[0].Units:
             cls.unit_assignment.append(unit.id())
+        for unit in (
+            cls.file.by_type("IfcDerivedUnit") + cls.file.by_type("IfcNamedUnit") + cls.file.by_type("IfcMonetaryUnit")
+        ):
             cls.load_unit(unit)
         cls.is_loaded = True
 

@@ -22,8 +22,7 @@ def element_listener(element, obj):
 def mode_callback(obj, data):
     for obj in set(bpy.context.selected_objects + [bpy.context.active_object]):
         if (
-            obj.mode != "EDIT"
-            or not obj.data
+            not obj.data
             or not isinstance(obj.data, (bpy.types.Mesh, bpy.types.Curve, bpy.types.TextCurve))
             or not obj.BIMObjectProperties.ifc_definition_id
             or not bpy.context.scene.BIMProjectProperties.is_authoring
@@ -33,48 +32,21 @@ def mode_callback(obj, data):
         parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
         if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer2":
             return
-        bpy.ops.bim.dynamically_void_product(obj=obj.name)
-        IfcStore.edited_objs.add(obj)
-        bm = bmesh.from_edit_mesh(obj.data)
-        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
-        bmesh.update_edit_mesh(obj.data)
-        bm.free()
-
-
-class AddWallOpening(bpy.types.Operator):
-    bl_idname = "bim.add_wall_opening"
-    bl_label = "Add Wall Opening"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
-    def _execute(self, context):
-        selected_objs = context.selected_objects
-        if len(selected_objs) == 0 or not context.active_object:
-            return {"FINISHED"}
-        wall_obj = context.active_object
-        if not wall_obj.BIMObjectProperties.ifc_definition_id:
-            return {"FINISHED"}
-        wall = IfcStore.get_file().by_id(wall_obj.BIMObjectProperties.ifc_definition_id)
-        local_location = wall_obj.matrix_world.inverted() @ context.scene.cursor.location
-        raycast = wall_obj.closest_point_on_mesh(local_location, distance=0.01)
-        if not raycast[0]:
-            return {"FINISHED"}
-        bpy.ops.mesh.primitive_cube_add(size=wall_obj.dimensions[1] * 2)
-        opening = bpy.context.selected_objects[0]
-
-        # Place the opening in the middle of the wall
-        global_location = wall_obj.matrix_world @ raycast[1]
-        normal = raycast[2]
-        normal.negate()
-        global_normal = wall_obj.matrix_world.to_quaternion() @ normal
-        opening.location = global_location + (global_normal * (wall_obj.dimensions[1] / 2))
-
-        opening.rotation_euler = wall_obj.rotation_euler
-        opening.name = "Opening"
-        bpy.ops.bim.add_opening(opening=opening.name, obj=wall_obj.name)
-        return {"FINISHED"}
+        if obj.mode == "EDIT":
+            bpy.ops.bim.dynamically_void_product(obj=obj.name)
+            IfcStore.edited_objs.add(obj)
+            bm = bmesh.from_edit_mesh(obj.data)
+            bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
+            bmesh.update_edit_mesh(obj.data)
+            bm.free()
+        else:
+            new_origin = obj.matrix_world @ Vector(obj.bound_box[0])
+            obj.data.transform(
+                Matrix.Translation(
+                    (obj.matrix_world.inverted().to_quaternion() @ (obj.matrix_world.translation - new_origin))
+                )
+            )
+            obj.matrix_world.translation = new_origin
 
 
 class JoinWall(bpy.types.Operator):
@@ -643,7 +615,7 @@ class DumbWallGenerator:
                 if material.is_a("IfcMaterialLayerSet"):
                     thicknesses = [l.LayerThickness for l in material.MaterialLayers]
                     break
-        if not thicknesses:
+        if not sum(thicknesses):
             return
 
         self.collection = bpy.context.view_layer.active_layer_collection.collection
@@ -960,15 +932,19 @@ class DumbWallPlaner:
         IfcStore.edited_objs.add(obj)
 
     def thicken_face(self, face, delta_thickness):
-        slide_magnitude = abs(delta_thickness) / 2
+        slide_magnitude = abs(delta_thickness)
         for vert in face.verts:
             slide_vector = None
             for edge in vert.link_edges:
                 other_vert = edge.verts[1] if edge.verts[0] == vert else edge.verts[0]
                 if delta_thickness > 0:
                     potential_slide_vector = vert.co - other_vert.co
+                    if potential_slide_vector.y < 0:
+                        continue
                 else:
                     potential_slide_vector = other_vert.co - vert.co
+                    if potential_slide_vector.y > 0:
+                        continue
                 if abs(potential_slide_vector.x) > 0.9 or abs(potential_slide_vector.z) > 0.9:
                     continue
                 slide_vector = potential_slide_vector

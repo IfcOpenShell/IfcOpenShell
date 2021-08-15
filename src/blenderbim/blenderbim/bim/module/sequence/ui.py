@@ -293,20 +293,19 @@ class BIM_PT_work_schedules(Panel):
     def draw_editable_task_resource_ui(self):
         row = self.layout.row(align=True)
         row.prop(self.props, "resources", text="")
-        op = row.operator("bim.assign_resource", text="", icon="ADD")
-        op.parent_resource = int(self.props.resources)
-        op.task = self.props.active_task_id
-        task = Data.tasks[self.props.active_task_id]
-        ResourceData.load(IfcStore.get_file())
-
-        for related_obect_id in task["OperatesOn"]:
-            resource = ResourceData.resources[related_obect_id]
-            row = self.layout.row(align=True)
-            row.label(text=resource["Name"], icon="COMMUNITY")
-            op = row.operator("bim.unassign_resource", text="", icon="X")
+        op = row.operator("bim.assign_process", text="", icon="ADD")
+        if self.props.resources:
+            op.parent_resource = int(self.props.resources)
             op.task = self.props.active_task_id
-            op.resource = related_obect_id
-
+            task = Data.tasks[self.props.active_task_id]
+            ResourceData.load(IfcStore.get_file())
+            for related_obect_id in task["OperatesOn"]:
+                resource = ResourceData.resources[related_obect_id]
+                row = self.layout.row(align=True)
+                row.label(text=resource["Name"], icon="COMMUNITY")
+                op = row.operator("bim.unassign_process", text="", icon="X")
+                op.task = self.props.active_task_id
+                op.resource = related_obect_id
 
 class BIM_UL_task_columns(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
@@ -436,7 +435,7 @@ class BIM_UL_tasks(UIList):
                 row.operator(
                     "bim.enable_editing_task_calendar", text="", icon="VIEW_ORTHO"
                 ).task = item.ifc_definition_id
-                row.operator("bim.enable_assigning_resources", text="", icon="COMMUNITY").task = item.ifc_definition_id
+                row.operator("bim.enable_assigning_process_to_resources", text="", icon="COMMUNITY").task = item.ifc_definition_id
                 row.operator("bim.enable_editing_task", text="", icon="GREASEPENCIL").task = item.ifc_definition_id
                 row.operator("bim.add_task", text="", icon="ADD").task = item.ifc_definition_id
                 row.operator("bim.remove_task", text="", icon="X").task = item.ifc_definition_id
