@@ -1,6 +1,7 @@
 import blenderbim.bim.module.cost.prop as CostProp
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.helper import draw_attributes
 from ifcopenshell.api.cost.data import Data
 
 
@@ -66,14 +67,7 @@ class BIM_PT_cost_schedules(Panel):
         self.layout.template_list("BIM_UL_cost_columns", "", self.props, "columns", self.props, "active_column_index")
 
     def draw_editable_cost_schedule_ui(self):
-        for attribute in self.props.cost_schedule_attributes:
-            row = self.layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "enum":
-                row.prop(attribute, "enum_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+        draw_attributes(self.props.cost_schedule_attributes, self.layout)
 
     def draw_editable_cost_item_ui(self, cost_schedule_id):
         row = self.layout.row(align=True)
@@ -119,18 +113,7 @@ class BIM_PT_cost_schedules(Panel):
                 self.draw_editable_cost_item_values_ui()
 
     def draw_editable_cost_item_attributes_ui(self):
-        for attribute in self.props.cost_item_attributes:
-            row = self.layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "boolean":
-                row.prop(attribute, "bool_value", text=attribute.name)
-            elif attribute.data_type == "integer":
-                row.prop(attribute, "int_value", text=attribute.name)
-            elif attribute.data_type == "enum":
-                row.prop(attribute, "enum_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+        draw_attributes(self.props.cost_item_attributes, self.layout)
 
     def draw_editable_cost_item_quantities_ui(self):
         row = self.layout.row(align=True)
@@ -165,20 +148,7 @@ class BIM_PT_cost_schedules(Panel):
                 self.draw_editable_cost_item_quantity_ui(box)
 
     def draw_editable_cost_item_quantity_ui(self, layout):
-        for attribute in self.props.quantity_attributes:
-            row = layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "boolean":
-                row.prop(attribute, "bool_value", text=attribute.name)
-            elif attribute.data_type == "integer":
-                row.prop(attribute, "int_value", text=attribute.name)
-            elif attribute.data_type == "float":
-                row.prop(attribute, "float_value", text=attribute.name)
-            elif attribute.data_type == "enum":
-                row.prop(attribute, "enum_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+        draw_attributes(self.props.quantity_attributes, self.layout)
 
     def draw_editable_cost_item_values_ui(self):
         row = self.layout.row(align=True)
@@ -253,21 +223,7 @@ class BIM_PT_cost_schedules(Panel):
             op.cost_value = cost_value_id
 
     def draw_editable_cost_value_ui(self, layout, cost_value):
-        for attribute in self.props.cost_value_attributes:
-            row = layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "boolean":
-                row.prop(attribute, "bool_value", text=attribute.name)
-            elif attribute.data_type == "integer":
-                row.prop(attribute, "int_value", text=attribute.name)
-            elif attribute.data_type == "float":
-                row.prop(attribute, "float_value", text=attribute.name)
-            elif attribute.data_type == "enum":
-                row.prop(attribute, "enum_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
-
+        draw_attributes(self.props.cost_value_attributes, self.layout)
 
 class BIM_PT_cost_item_quantities(Panel):
     bl_label = "IFC Cost Item Quantities"

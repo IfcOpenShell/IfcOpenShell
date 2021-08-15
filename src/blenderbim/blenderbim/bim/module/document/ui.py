@@ -1,5 +1,6 @@
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.helper import draw_attributes
 from ifcopenshell.api.document.data import Data
 
 
@@ -48,14 +49,7 @@ class BIM_PT_documents(Panel):
             self.draw_editable_ui(context)
 
     def draw_editable_ui(self, context):
-        for attribute in self.props.document_attributes:
-            row = self.layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "enum":
-                row.prop(attribute, "enum_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+        draw_attributes(self.props.document_attributes, self.layout)
 
 
 class BIM_PT_object_documents(Panel):

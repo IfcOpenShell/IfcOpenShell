@@ -2,6 +2,7 @@ import isodate
 import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.helper import draw_attributes
 from ifcopenshell.api.sequence.data import Data
 from ifcopenshell.api.resource.data import Data as ResourceData
 import blenderbim.bim.module.sequence.helper as helper
@@ -55,14 +56,7 @@ class BIM_PT_work_plans(Panel):
                 self.draw_work_schedule_ui()
 
     def draw_editable_ui(self):
-        for attribute in self.props.work_plan_attributes:
-            row = self.layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "enum":
-                row.prop(attribute, "enum_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+        draw_attributes(self.props.work_plan_attributes, self.layout)
 
     def draw_work_schedule_ui(self):
         row = self.layout.row(align=True)
@@ -189,14 +183,7 @@ class BIM_PT_work_schedules(Panel):
             row.prop(self.props, "speed_multiplier", text="")
 
     def draw_editable_work_schedule_ui(self):
-        for attribute in self.props.work_schedule_attributes:
-            row = self.layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "enum":
-                row.prop(attribute, "enum_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+        draw_attributes(self.props.work_schedule_attributes, self.layout)
 
     def draw_editable_task_ui(self, work_schedule_id):
         self.layout.template_list(
@@ -523,15 +510,7 @@ class BIM_PT_work_calendars(Panel):
             self.draw_editable_work_time_ui(work_time)
 
     def draw_editable_work_time_ui(self, work_time):
-        for attribute in self.props.work_time_attributes:
-            row = self.layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "enum":
-                row.prop(attribute, "enum_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
-
+        draw_attributes(self.props.work_time_attributes, self.layout)
         if work_time["RecurrencePattern"]:
             self.draw_editable_recurrence_pattern_ui(Data.recurrence_patterns[work_time["RecurrencePattern"]])
         else:
@@ -599,11 +578,4 @@ class BIM_PT_work_calendars(Panel):
         row.prop(self.props, "occurrences")
 
     def draw_editable_ui(self):
-        for attribute in self.props.work_calendar_attributes:
-            row = self.layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "enum":
-                row.prop(attribute, "enum_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+        draw_attributes(self.props.work_calendar_attributes, self.layout)
