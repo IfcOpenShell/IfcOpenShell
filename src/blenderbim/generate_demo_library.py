@@ -1,14 +1,26 @@
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 
 
 class LibraryGenerator:
     def generate(self):
+        ifcopenshell.api.pre_listeners = {}
+        ifcopenshell.api.post_listeners = {}
+
         self.file = ifcopenshell.api.run("project.create_file")
         self.project = ifcopenshell.api.run(
             "root.create_entity", self.file, ifc_class="IfcProjectLibrary", name="BlenderBIM Demo Library"
         )
         ifcopenshell.api.run("unit.assign_unit", self.file, length={"is_metric": True, "raw": "METERS"})
+        ifcopenshell.api.run("context.add_context", self.file, context="Model")
+        self.body = ifcopenshell.api.run(
+            "context.add_context", self.file, context="Model", subcontext="Body", target_view="MODEL_VIEW"
+        )
+        ifcopenshell.api.run("context.add_context", self.file, context="Plan")
+        self.annotation = ifcopenshell.api.run(
+            "context.add_context", self.file, context="Model", subcontext="Annotation", target_view="PLAN_VIEW"
+        )
 
         self.material = ifcopenshell.api.run("material.add_material", self.file, name="Unknown")
 
@@ -29,9 +41,7 @@ class LibraryGenerator:
 
         self.create_layer_type("IfcRampType", "DEMO200", 0.2)
 
-        profile = self.file.create_entity(
-            "IfcCircleProfileDef", ProfileType="AREA", Radius=0.3
-        )
+        profile = self.file.create_entity("IfcCircleProfileDef", ProfileType="AREA", Radius=0.3)
         self.create_profile_type("IfcPileType", "DEMO1", profile)
 
         self.create_layer_type("IfcSlabType", "DEMO150", 0.2)
@@ -80,6 +90,8 @@ class LibraryGenerator:
         )
         self.create_profile_type("IfcBeamType", "DEMO2", profile)
 
+        self.create_window_type("IfcWindowType", "DEMO1")
+
         self.file.write("blenderbim-demo-library.ifc")
 
     def create_layer_type(self, ifc_class, name, thickness):
@@ -100,6 +112,54 @@ class LibraryGenerator:
         )
         ifcopenshell.api.run("material.assign_profile", self.file, material_profile=material_profile, profile=profile)
         ifcopenshell.api.run("project.assign_declaration", self.file, definition=element, relating_context=self.project)
+
+    def create_window_type(self, ifc_class, name):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
+        obj = bpy.data.objects.get("Window")
+        representation = ifcopenshell.api.run(
+            "geometry.add_representation",
+            self.file,
+            context=self.body,
+            blender_object=obj,
+            geometry=obj.data,
+            total_items=max(1, len(obj.material_slots)),
+        )
+
+        ifcopenshell.api.run(
+            "style.assign_representation_styles",
+            self.file,
+            **{
+                "shape_representation": representation,
+                "styles": [
+                    ifcopenshell.api.run("style.add_style", self.file, **self.get_style_settings(s.material))
+                    for s in obj.material_slots
+                ],
+            },
+        )
+        ifcopenshell.api.run(
+            "geometry.assign_representation", self.file, product=element, representation=representation
+        )
+        ifcopenshell.api.run("project.assign_declaration", self.file, definition=element, relating_context=self.project)
+
+    def get_style_settings(self, material):
+        transparency = material.diffuse_color[3]
+        diffuse_colour = material.diffuse_color
+        if (
+            material.use_nodes
+            and hasattr(material.node_tree, "nodes")
+            and "Principled BSDF" in material.node_tree.nodes
+        ):
+            bsdf = material.node_tree.nodes["Principled BSDF"]
+            transparency = bsdf.inputs["Alpha"].default_value
+            diffuse_colour = bsdf.inputs["Base Color"].default_value
+        transparency = 1 - transparency
+        return {
+            "name": material.name,
+            "external_definition": None,
+            "surface_colour": tuple(material.diffuse_color),
+            "transparency": transparency,
+            "diffuse_colour": tuple(diffuse_colour),
+        }
 
 
 LibraryGenerator().generate()
