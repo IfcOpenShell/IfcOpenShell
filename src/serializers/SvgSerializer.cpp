@@ -1820,7 +1820,7 @@ void SvgSerializer::finalize() {
 				gp_Pnt((xmin + xmax) / 2., (ymin + ymax) / 2., 0.),
 				gp_Dir(-1, 0, 0),
 				gp_Dir(0, -1, 0)));
-			deferred_section_data_->push_back(vertical_section{ pln , "Section North South", false });
+			deferred_section_data_->push_back(vertical_section{ pln , "Section North South", true });
 		}
 		{
 			gp_Pln pln(gp_Ax3(
@@ -1836,7 +1836,7 @@ void SvgSerializer::finalize() {
 			gp_Pln pln(gp_Ax3(
 				gp_Pnt(0., -(ymin - 10.), 0.),
 				gp_Dir(0, 1, 0),
-				gp_Dir(1, 0, 0)));
+				gp_Dir(-1, 0, 0)));
 			deferred_section_data_->push_back(vertical_section{ pln , "Elevation South", true });
 		}
 		{
@@ -1850,7 +1850,7 @@ void SvgSerializer::finalize() {
 			gp_Pln pln(gp_Ax3(
 				gp_Pnt(0., -(ymax + 10.), 0.),
 				gp_Dir(0, -1, 0),
-				gp_Dir(-1, 0, 0)));
+				gp_Dir(1, 0, 0)));
 			deferred_section_data_->push_back(vertical_section{ pln , "Elevation North", true });
 		}
 		{
