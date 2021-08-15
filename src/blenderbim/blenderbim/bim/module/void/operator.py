@@ -55,6 +55,8 @@ class AddOpening(bpy.types.Operator):
             modifier = obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
             modifier.operation = "DIFFERENCE"
             modifier.object = opening
+            modifier.solver = "EXACT"
+            modifier.use_self = True
         return {"FINISHED"}
 
 
