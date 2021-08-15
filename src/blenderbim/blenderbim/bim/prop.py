@@ -133,7 +133,6 @@ def updateAttributeValue(self, context):
 
 class Attribute(PropertyGroup):
     name: StringProperty(name="Name")
-    description: StringProperty(name="Description")
     data_type: StringProperty(name="Data Type")
     string_value: StringProperty(name="Value", update=updateAttributeValue)
     bool_value: BoolProperty(name="Value", update=updateAttributeValue)

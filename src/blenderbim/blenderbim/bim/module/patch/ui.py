@@ -38,7 +38,7 @@ class BIM_PT_patch(bpy.types.Panel):
         op = layout.operator(PopulatePatchArguments.bl_idname)
         op.recipe = recipe
         if props.ifc_patch_args_attr:
-            draw_attributes(props.ifc_patch_args_attr, layout, show_description=True)
+            draw_attributes(props.ifc_patch_args_attr, layout)
         else:
             layout.row().prop(props, "ifc_patch_args")
         op = layout.operator("bim.execute_ifc_patch")

@@ -8,10 +8,10 @@ from mathutils import Vector
 from blenderbim.bim.ifc import IfcStore
 
 
-def draw_attributes(props, layout, copy_operator=None, show_description=False):
+def draw_attributes(props, layout, copy_operator=None):
     for attribute in props:
         row = layout.row(align=True)
-        draw_attribute(attribute, row, show_description)
+        draw_attribute(attribute, row)
         value = attribute.get_value()
         if attribute.is_optional:
             row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
@@ -20,14 +20,15 @@ def draw_attributes(props, layout, copy_operator=None, show_description=False):
             op.data = json.dumps({"name": attribute.name, "value": value, "is_null": attribute.is_null})
 
 
-def draw_attribute(attribute, layout, show_description=False):
+def draw_attribute(attribute, layout):
     if not attribute.get_value_attr():
         layout.label(text=attribute.name)
     else:
         layout.prop(
             attribute, 
             attribute.get_value_attr(), 
-            text=attribute.description if show_description and attribute.description else attribute.name)
+            text=attribute.name,
+        )
 
 
 def import_attributes(ifc_class, props, data, callback=None):

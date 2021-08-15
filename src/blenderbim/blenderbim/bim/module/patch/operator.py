@@ -89,5 +89,4 @@ class PopulatePatchArguments(bpy.types.Operator):
                 }[arg_info.get("type", "str")]
                 new_attr.name = arg_name
                 new_attr.set_value(arg_info.get("default", new_attr.get_value_default()))
-                new_attr.description = arg_info.get("description", "")
         return {"FINISHED"}
