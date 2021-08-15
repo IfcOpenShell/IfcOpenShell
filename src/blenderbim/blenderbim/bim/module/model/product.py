@@ -258,7 +258,7 @@ def ensure_material_assigned(usecase_path, ifc_file, settings):
 
     for element in elements:
         obj = IfcStore.get_element(element.GlobalId)
-        if not obj:
+        if not obj or not obj.data:
             continue
 
         element_material = ifcopenshell.util.element.get_material(element)
