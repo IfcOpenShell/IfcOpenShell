@@ -228,6 +228,8 @@ class SwitchRepresentation(bpy.types.Operator):
                 modifier = self.element_obj.modifiers.new("IfcOpeningElement", "BOOLEAN")
                 modifier.operation = "DIFFERENCE"
                 modifier.object = opening
+                modifier.solver = "EXACT"
+                modifier.use_self = True
         else:
             for modifier in self.element_obj.modifiers:
                 if modifier.type == "BOOLEAN" and "IfcOpeningElement" in modifier.name:
