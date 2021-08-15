@@ -1,10 +1,9 @@
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
-        self.settings = {"profile": None}
+        self.settings = {"unit_type": "LENGTHUNIT", "name": "METRE"}
         for key, value in settings.items():
             self.settings[key] = value
 
     def execute(self):
-        self.file.remove(self.settings["profile"])
-        # TODO: deep purge
+        return self.file.create_entity("IfcSIUnit", UnitType=self.settings["unit_type"], Name=self.settings["name"])

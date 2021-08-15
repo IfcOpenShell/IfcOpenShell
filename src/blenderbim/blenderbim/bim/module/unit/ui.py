@@ -40,8 +40,11 @@ class BIM_PT_units(Panel):
             row.operator("bim.add_monetary_unit", text="", icon="ADD")
         elif self.props.unit_classes == "IfcDerivedUnit":
             pass  # TODO
+        elif self.props.unit_classes == "IfcSIUnit":
+            row.prop(self.props, "named_unit_types", text="")
+            row.operator("bim.add_si_unit", text="", icon="ADD")
         else:
-            pass  # TODO
+            row.prop(self.props, "named_unit_types", text="")
 
         self.layout.template_list(
             "BIM_UL_units",
@@ -66,6 +69,13 @@ class BIM_UL_units(UIList):
             row = layout.row(align=True)
             row.label(text=item.unit_type or "No Type", icon=item.icon)
             row.label(text=item.name or "Unnamed")
+
+            if item.is_assigned:
+                op = row.operator("bim.unassign_unit", text="", icon="KEYFRAME_HLT", emboss=False)
+                op.unit = item.ifc_definition_id
+            else:
+                op = row.operator("bim.assign_unit", text="", icon="KEYFRAME", emboss=False)
+                op.unit = item.ifc_definition_id
 
             if props.active_unit_id == item.ifc_definition_id:
                 row.operator("bim.edit_unit", text="", icon="CHECKMARK")

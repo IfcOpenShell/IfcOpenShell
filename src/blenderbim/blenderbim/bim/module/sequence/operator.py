@@ -58,9 +58,15 @@ class EditWorkPlan(bpy.types.Operator):
 
     def export_attributes(self, attributes, prop):
         if "Date" in prop.name or "Time" in prop.name:
+            if prop.is_null:
+                attributes[prop.name] = None
+                return True
             attributes[prop.name] = helper.parse_datetime(prop.string_value)
             return True
         elif prop.name == "Duration" or prop.name == "TotalFloat":
+            if prop.is_null:
+                attributes[prop.name] = None
+                return True
             attributes[prop.name] = helper.parse_duration(prop.string_value)
             return True
 
@@ -214,9 +220,15 @@ class EditWorkSchedule(bpy.types.Operator):
 
     def export_attributes(self, attributes, prop):
         if "Date" in prop.name or "Time" in prop.name:
+            if prop.is_null:
+                attributes[prop.name] = None
+                return True
             attributes[prop.name] = helper.parse_datetime(prop.string_value)
             return True
         elif prop.name == "Duration" or prop.name == "TotalFloat":
+            if prop.is_null:
+                attributes[prop.name] = None
+                return True
             attributes[prop.name] = helper.parse_duration(prop.string_value)
             return True
 
@@ -564,9 +576,15 @@ class EditTaskTime(bpy.types.Operator):
 
     def export_attributes(self, attributes, prop):
         if "Start" in prop.name or "Finish" in prop.name or prop.name == "StatusTime":
+            if prop.is_null:
+                attributes[prop.name] = None
+                return True
             attributes[prop.name] = helper.parse_datetime(prop.string_value)
             return True
         elif prop.name == "ScheduleDuration":
+            if prop.is_null:
+                attributes[prop.name] = None
+                return True
             attributes[prop.name] = helper.parse_duration(prop.string_value)
             return True
 
@@ -800,22 +818,44 @@ class AssignProcess(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
     related_object: bpy.props.StringProperty()
+    parent_resource: bpy.props.IntProperty()
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        related_objects = (
-            [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
-        )
-        for related_object in related_objects:
-            self.file = IfcStore.get_file()
+        self.file = IfcStore.get_file()
+        if self.parent_resource:
+            resource = ifcopenshell.api.run(
+                "resource.add_resource",
+                self.file,
+                **{
+                    "parent_resource": self.file.by_id(self.parent_resource),
+                    "ifc_class": self.file.by_id(self.parent_resource).is_a(),
+                    "name": self.file.by_id(self.parent_resource).Name + ": " + self.file.by_id(self.task).Name,
+                },
+            )
             ifcopenshell.api.run(
                 "sequence.assign_process",
                 self.file,
-                related_object=self.file.by_id(related_object.BIMObjectProperties.ifc_definition_id),
-                relating_process=self.file.by_id(self.task),
+                **{
+                    "related_object": resource,
+                    "relating_process": self.file.by_id(self.task),
+                },
             )
+            ResourceData.load(self.file)
+            bpy.ops.bim.load_resources()
+        else:
+            related_objects = (
+                [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
+            )
+            for related_object in related_objects:
+                ifcopenshell.api.run(
+                    "sequence.assign_process",
+                    self.file,
+                    related_object=self.file.by_id(related_object.BIMObjectProperties.ifc_definition_id),
+                    relating_process=self.file.by_id(self.task),
+                )
         Data.load(self.file)
         return {"FINISHED"}
 
@@ -826,22 +866,38 @@ class UnassignProcess(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
     related_object: bpy.props.StringProperty()
+    resource: bpy.props.IntProperty()
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        related_objects = (
-            [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
-        )
-        for related_object in related_objects:
-            self.file = IfcStore.get_file()
+        self.file = IfcStore.get_file()
+        if self.resource:
             ifcopenshell.api.run(
                 "sequence.unassign_process",
                 self.file,
-                related_object=self.file.by_id(related_object.BIMObjectProperties.ifc_definition_id),
+                related_object=self.file.by_id(self.resource),
                 relating_process=self.file.by_id(self.task),
             )
+            ifcopenshell.api.run(
+                "resource.remove_resource",
+                self.file,
+                resource=self.file.by_id(self.resource),
+            )
+            ResourceData.load(self.file)
+            bpy.ops.bim.load_resources()
+        else:
+            related_objects = (
+                [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
+            )
+            for related_object in related_objects:
+                ifcopenshell.api.run(
+                    "sequence.unassign_process",
+                    self.file,
+                    related_object=self.file.by_id(related_object.BIMObjectProperties.ifc_definition_id),
+                    relating_process=self.file.by_id(self.task),
+                )
         Data.load(self.file)
         return {"FINISHED"}
 
@@ -1962,8 +2018,8 @@ class SetTaskSortColumn(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EnableAssigningResources(bpy.types.Operator):
-    bl_idname = "bim.enable_assigning_resources"
+class EnableAssigningProcessToResource(bpy.types.Operator):
+    bl_idname = "bim.enable_assigning_process_to_resources"
     bl_label = "Enable Assigning Resources To Tasks"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
@@ -1972,67 +2028,4 @@ class EnableAssigningResources(bpy.types.Operator):
         self.props = context.scene.BIMWorkScheduleProperties
         self.props.active_task_id = self.task
         self.props.editing_task_type = "RESOURCES"
-        return {"FINISHED"}
-
-
-class AssignResource(bpy.types.Operator):
-    bl_idname = "bim.assign_resource"
-    bl_label = "Assign Resource"
-    bl_options = {"REGISTER", "UNDO"}
-    task: bpy.props.IntProperty()
-    parent_resource: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
-    def _execute(self, context):
-        self.file = IfcStore.get_file()
-        resource = ifcopenshell.api.run(
-            "resource.add_resource",
-            self.file,
-            **{
-                "parent_resource": self.file.by_id(self.parent_resource),
-                "ifc_class": self.file.by_id(self.parent_resource).is_a(),
-                "name": self.file.by_id(self.parent_resource).Name + ": " + self.file.by_id(self.task).Name,
-            },
-        )
-        ifcopenshell.api.run(
-            "sequence.assign_process",
-            self.file,
-            **{
-                "related_object": resource,
-                "relating_process": self.file.by_id(self.task),
-            },
-        )
-        Data.load(self.file)
-        ResourceData.load(self.file)
-        bpy.ops.bim.load_resources()
-        return {"FINISHED"}
-
-class UnassignResource(bpy.types.Operator):
-    bl_idname = "bim.unassign_resource"
-    bl_label = "Unassign Resource"
-    bl_options = {"REGISTER", "UNDO"}
-    task: bpy.props.IntProperty()
-    resource: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
-    def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "sequence.unassign_process",
-            self.file,
-            related_object=self.file.by_id(self.resource),
-            relating_process=self.file.by_id(self.task),
-        )
-        ifcopenshell.api.run(
-            "resource.remove_resource",
-            self.file,
-            resource=self.file.by_id(self.resource),
-        )
-        Data.load(self.file)
-        ResourceData.load(self.file)
-        bpy.ops.bim.load_resources()
         return {"FINISHED"}

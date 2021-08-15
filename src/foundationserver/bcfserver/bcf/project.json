@@ -1,0 +1,71 @@
+{
+    "Projects":[{
+    "project_id": "F445F4F2-4D02-4B2A-B612-5E456BEF9137",
+    "name": "Example project 1",
+    "authorization": {
+        "project_actions": [
+            "createTopic",
+            "createDocument"
+        ]
+    }
+  }, 
+  {
+    "project_id": "A233FBB2-3A3B-EFF4-C123-DE22ABC8414",
+    "name": "Example project 2",
+    "authorization": {
+        "project_actions": []
+    }
+  }],
+"Extensions":[{
+    "topic_type": [
+        "Information",
+        "Error"
+    ],
+    "topic_status": [
+        "Open",
+        "Closed",
+        "ReOpened"
+    ],
+    "topic_label": [
+        "Architecture",
+        "Structural",
+        "MEP"
+    ],
+    "snippet_type": [
+        ".ifc",
+        ".csv"
+    ],
+    "priority": [
+        "Low",
+        "Medium",
+        "High"
+    ],
+    "users": [
+        "Architect@example.com",
+        "BIM-Manager@example.com",
+        "bob_heater@example.com"
+    ],
+    "stage": [
+        "Preliminary Planning End",
+        "Construction Start",
+        "Construction End"
+    ],
+    "project_actions": [
+        "update",
+        "createTopic",
+        "createDocument"
+    ],
+    "topic_actions": [
+        "update",
+        "updateBimSnippet",
+        "updateRelatedTopics",
+        "updateDocumentReferences",
+        "updateFiles",
+        "createComment",
+        "createViewpoint"
+    ],
+    "comment_actions": [
+        "update"
+    ]
+}]
+}

@@ -359,19 +359,27 @@ class file(object):
             return [entity_instance(e, self) for e in self.wrapped_data.by_type(type)]
         return [entity_instance(e, self) for e in self.wrapped_data.by_type_excl_subtypes(type)]
 
-    def traverse(self, inst, max_levels=None):
+    def traverse(self, inst, max_levels=None, breadth_first=False):
         """Get a list of all referenced instances for a particular instance including itself
 
         :param inst: The entity instance to get all sub instances
         :type inst: ifcopenshell.entity_instance.entity_instance
         :param max_levels: How far deep to recursively fetch sub instances. None or -1 means infinite.
         :type max_levels: None|int
+        :param breadth_first: Whether to use breadth-first search, the default is depth-first.
+        :type max_levels: bool
         :returns: A list of ifcopenshell.entity_instance.entity_instance objects
         :rtype: list
         """
         if max_levels is None:
             max_levels = -1
-        return [entity_instance(e, self) for e in self.wrapped_data.traverse(inst.wrapped_data, max_levels)]
+        
+        if breadth_first:
+            fn = self.wrapped_data.traverse_breadth_first
+        else:
+            fn = self.wrapped_data.traverse
+        
+        return [entity_instance(e, self) for e in fn(inst.wrapped_data, max_levels)]
 
     def get_inverse(self, inst):
         """Return a list of entities that reference this entity

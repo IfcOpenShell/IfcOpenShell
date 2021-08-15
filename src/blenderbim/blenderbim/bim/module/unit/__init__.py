@@ -3,10 +3,12 @@ from . import ui, prop, operator
 
 classes = (
     operator.AssignUnit,
+    operator.UnassignUnit,
     operator.LoadUnits,
     operator.DisableUnitEditingUI,
     operator.RemoveUnit,
     operator.AddMonetaryUnit,
+    operator.AddSIUnit,
     operator.EnableEditingUnit,
     operator.DisableEditingUnit,
     operator.EditUnit,

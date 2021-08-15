@@ -51,21 +51,43 @@ class Data:
             del data["OwnerHistory"]
             del data["CostValues"]
             data["IsNestedBy"] = []
-            data["Controls"] = []
+            data["Controls"] = {}
             for rel in cost_item.IsNestedBy:
                 [data["IsNestedBy"].append(o.id()) for o in rel.RelatedObjects if o.is_a("IfcCostItem")]
+            parametric_quantities = []
             for rel in cost_item.Controls:
-                [data["Controls"].append(o.id()) for o in rel.RelatedObjects or []]
+                for related_object in rel.RelatedObjects or []:
+                    quantities = cls.get_object_quantities(cost_item, related_object)
+                    data["Controls"][related_object.id()] = quantities
+                    parametric_quantities.extend(quantities)
             cls.cost_items[cost_item.id()] = data
-            cls.load_cost_item_quantities(cost_item, data)
+            cls.load_cost_item_quantities(cost_item, data, parametric_quantities)
             cls.load_cost_item_values(cost_item, data)
         cls.is_loaded = True
 
     @classmethod
-    def load_cost_item_quantities(cls, cost_item, data):
+    def get_object_quantities(cls, cost_item, element):
+        if not element.is_a("IfcObject"):
+            return []
+        results = []
+        for relationship in element.IsDefinedBy:
+            if not relationship.is_a("IfcRelDefinesByProperties"):
+                continue
+            qto = relationship.RelatingPropertyDefinition
+            if not qto.is_a("IfcElementQuantity"):
+                continue
+            for prop in qto.Quantities:
+                if prop in cost_item.CostQuantities or []:
+                    results.append(prop.id())
+        return results
+
+    @classmethod
+    def load_cost_item_quantities(cls, cost_item, data, parametric_quantities):
         data["CostQuantities"] = []
         data["TotalCostQuantity"] = cls.get_total_quantity(cost_item)
         for quantity in cost_item.CostQuantities or []:
+            if quantity.id() in parametric_quantities:
+                continue
             quantity_data = quantity.get_info()
             del quantity_data["Unit"]
             cls.physical_quantities[quantity.id()] = quantity_data
@@ -98,7 +120,11 @@ class Data:
     def load_cost_item_value(cls, cost_item_data, cost_item, cost_value):
         value_data = cost_value.get_info()
         del value_data["AppliedValue"]
-        del value_data["UnitBasis"]
+        if value_data["UnitBasis"]:
+            data = cost_value.UnitBasis.get_info()
+            data["ValueComponent"] = data["ValueComponent"].wrappedValue
+            data["UnitComponent"] = data["UnitComponent"].id()
+            value_data["UnitBasis"] = data
         if value_data["ApplicableDate"]:
             value_data["ApplicableDate"] = ifcopenshell.util.date.ifc2datetime(value_data["ApplicableDate"])
         if value_data["FixedUntilDate"]:

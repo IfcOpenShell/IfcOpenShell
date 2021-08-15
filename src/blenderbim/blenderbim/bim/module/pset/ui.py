@@ -3,6 +3,14 @@ from ifcopenshell.api.pset.data import Data
 from blenderbim.bim.ifc import IfcStore
 
 
+def get_active_pset_obj_name(context, obj_type):
+    if obj_type == "Object":
+        return context.active_object.name
+    elif obj_type == "Material":
+        return context.active_object.active_material.name
+    return ""
+
+
 def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
     box = layout.box()
     row = box.row(align=True)
@@ -10,29 +18,30 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
         pset["is_expanded"] = True
     icon = "TRIA_DOWN" if pset["is_expanded"] else "TRIA_RIGHT"
     row.operator("bim.toggle_pset_expansion", icon=icon, text="", emboss=False).pset_id = pset_id
+    obj_name = get_active_pset_obj_name(context, obj_type)
     if not props.active_pset_id:
         row.label(text=pset["Name"], icon="COPY_ID")
         op = row.operator("bim.enable_pset_editing", icon="GREASEPENCIL", text="")
         op.pset_id = pset_id
-        op.obj = context.active_object.name if obj_type == "Object" else context.active_object.active_material.name
+        op.obj = obj_name
         op.obj_type = obj_type
         op = row.operator("bim.remove_pset", icon="X", text="")
         op.pset_id = pset_id
-        op.obj = context.active_object.name if obj_type == "Object" else context.active_object.active_material.name
+        op.obj = obj_name
         op.obj_type = obj_type
     elif props.active_pset_id != pset_id:
         row.label(text=pset["Name"], icon="COPY_ID")
         op = row.operator("bim.remove_pset", icon="X", text="")
         op.pset_id = pset_id
-        op.obj = context.active_object.name if obj_type == "Object" else context.active_object.active_material.name
+        op.obj = obj_name
         op.obj_type = obj_type
     elif props.active_pset_id == pset_id:
         row.prop(props, "active_pset_name", icon="COPY_ID", text="")
         op = row.operator("bim.edit_pset", icon="CHECKMARK", text="")
-        op.obj = context.active_object.name if obj_type == "Object" else context.active_object.active_material.name
+        op.obj = obj_name
         op.obj_type = obj_type
         op = row.operator("bim.disable_pset_editing", icon="CANCEL", text="")
-        op.obj = context.active_object.name if obj_type == "Object" else context.active_object.active_material.name
+        op.obj = obj_name
         op.obj_type = obj_type
     if pset["is_expanded"]:
         if props.active_pset_id == pset_id:
@@ -123,7 +132,7 @@ class BIM_PT_object_psets(Panel):
         op.obj_type = "Object"
 
         psets = [(pset_id, Data.psets[pset_id]) for pset_id in Data.products[oprops.ifc_definition_id]["psets"]]
-        for pset_id, pset in sorted(psets, key = lambda v: v[1]["Name"]):
+        for pset_id, pset in sorted(psets, key=lambda v: v[1]["Name"]):
             draw_psetqto_ui(context, pset_id, pset, props, self.layout, "Object")
 
         # TODO reimplement. See #1222.
@@ -163,10 +172,12 @@ class BIM_PT_object_qtos(Panel):
             Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         row = self.layout.row(align=True)
         row.prop(props, "qto_name", text="")
-        row.operator("bim.add_qto", icon="ADD", text="")
+        op = row.operator("bim.add_qto", icon="ADD", text="")
+        op.obj = context.active_object.name
+        op.obj_type = "Object"
 
         qtos = [(qto_id, Data.qtos[qto_id]) for qto_id in Data.products[oprops.ifc_definition_id]["qtos"]]
-        for qto_id, qto in sorted(qtos, key = lambda v: v[1]["Name"]):
+        for qto_id, qto in sorted(qtos, key=lambda v: v[1]["Name"]):
             draw_psetqto_ui(context, qto_id, qto, props, self.layout, "Object")
 
 
@@ -202,11 +213,111 @@ class BIM_PT_material_psets(Panel):
         if oprops.ifc_definition_id not in Data.products:
             Data.load(IfcStore.get_file(), oprops.ifc_definition_id)
         row = self.layout.row(align=True)
-        row.prop(props, "material_pset_name", text="")
+        row.prop(props, "pset_name", text="")
         op = row.operator("bim.add_pset", icon="ADD", text="")
         op.obj = context.active_object.active_material.name
         op.obj_type = "Material"
 
         psets = [(pset_id, Data.psets[pset_id]) for pset_id in Data.products[oprops.ifc_definition_id]["psets"]]
-        for pset_id, pset in sorted(psets, key = lambda v: v[1]["Name"]):
+        for pset_id, pset in sorted(psets, key=lambda v: v[1]["Name"]):
             draw_psetqto_ui(context, pset_id, pset, props, self.layout, "Material")
+
+
+class BIM_PT_task_qtos(Panel):
+    bl_label = "IFC Task Quantity Sets"
+    bl_idname = "BIM_PT_task_qtos"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_work_schedules"
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BIMWorkScheduleProperties
+        total_tasks = len(context.scene.BIMTaskTreeProperties.tasks)
+        if total_tasks > 0 and props.active_task_index < total_tasks:
+            return True
+        return False
+
+    def draw(self, context):
+        props = context.scene.TaskPsetProperties
+        wprops = context.scene.BIMWorkScheduleProperties
+        tprops = context.scene.BIMTaskTreeProperties
+        ifc_definition_id = tprops.tasks[wprops.active_task_index].ifc_definition_id
+        if ifc_definition_id not in Data.products:
+            Data.load(IfcStore.get_file(), ifc_definition_id)
+        row = self.layout.row(align=True)
+        row.prop(props, "qto_name", text="")
+        op = row.operator("bim.add_qto", icon="ADD", text="")
+        op.obj_type = "Task"
+
+        qtos = [(qto_id, Data.qtos[qto_id]) for qto_id in Data.products[ifc_definition_id]["qtos"]]
+        for qto_id, qto in sorted(qtos, key=lambda v: v[1]["Name"]):
+            draw_psetqto_ui(context, qto_id, qto, props, self.layout, "Task")
+
+
+class BIM_PT_resource_qtos(Panel):
+    bl_label = "IFC Resource Quantity Sets"
+    bl_idname = "BIM_PT_resource_qtos"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_resources"
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BIMResourceProperties
+        total_resources = len(context.scene.BIMResourceTreeProperties.resources)
+        if total_resources > 0 and props.active_resource_index < total_resources:
+            return True
+        return False
+
+    def draw(self, context):
+        props = context.scene.ResourcePsetProperties
+        rprops = context.scene.BIMResourceProperties
+        rtprops = context.scene.BIMResourceTreeProperties
+        ifc_definition_id = rtprops.resources[rprops.active_resource_index].ifc_definition_id
+        if ifc_definition_id not in Data.products:
+            Data.load(IfcStore.get_file(), ifc_definition_id)
+        row = self.layout.row(align=True)
+        row.prop(props, "qto_name", text="")
+        op = row.operator("bim.add_qto", icon="ADD", text="")
+        op.obj_type = "Resource"
+
+        qtos = [(qto_id, Data.qtos[qto_id]) for qto_id in Data.products[ifc_definition_id]["qtos"]]
+        for qto_id, qto in sorted(qtos, key=lambda v: v[1]["Name"]):
+            draw_psetqto_ui(context, qto_id, qto, props, self.layout, "Resource")
+
+
+class BIM_PT_profile_psets(Panel):
+    bl_label = "IFC Profile Property Sets"
+    bl_idname = "BIM_PT_profile_psets"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_profiles"
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BIMProfileProperties
+        if not props.is_editing:
+            return False
+        total_profiles = len(context.scene.BIMProfileProperties.profiles)
+        if total_profiles > 0 and props.active_profile_index < total_profiles:
+            return True
+        return False
+
+    def draw(self, context):
+        props = context.scene.ProfilePsetProperties
+        pprops = context.scene.BIMProfileProperties
+        ifc_definition_id = pprops.profiles[pprops.active_profile_index].ifc_definition_id
+        if ifc_definition_id not in Data.products:
+            Data.load(IfcStore.get_file(), ifc_definition_id)
+        row = self.layout.row(align=True)
+        row.prop(props, "pset_name", text="")
+        op = row.operator("bim.add_pset", icon="ADD", text="")
+        op.obj_type = "Profile"
+
+        psets = [(pset_id, Data.psets[pset_id]) for pset_id in Data.products[ifc_definition_id]["psets"]]
+        for pset_id, pset in sorted(psets, key=lambda v: v[1]["Name"]):
+            draw_psetqto_ui(context, pset_id, pset, props, self.layout, "Profile")

@@ -52,6 +52,36 @@ def getMaterialPsetNames(self, context):
     return psetnames[ifc_class]
 
 
+def getTaskQtoNames(self, context):
+    global qtonames
+    ifc_class = "IfcTask"
+    if ifc_class not in qtonames:
+        psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(ifc_class, qto_only=True)
+        qtonames[ifc_class] = [(p.Name, p.Name, "") for p in psets]
+    return qtonames[ifc_class]
+
+
+def getResourceQtoNames(self, context):
+    global qtonames
+    rprops = context.scene.BIMResourceProperties
+    rtprops = context.scene.BIMResourceTreeProperties
+    ifc_class = IfcStore.get_file().by_id(rtprops.resources[rprops.active_resource_index].ifc_definition_id).is_a()
+    if ifc_class not in qtonames:
+        psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(ifc_class, qto_only=True)
+        qtonames[ifc_class] = [(p.Name, p.Name, "") for p in psets]
+    return qtonames[ifc_class]
+
+
+def getProfilePsetNames(self, context):
+    global psetnames
+    pprops = context.scene.BIMProfileProperties
+    ifc_class = IfcStore.get_file().by_id(pprops.profiles[pprops.active_profile_index].ifc_definition_id).is_a()
+    if ifc_class not in psetnames:
+        psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
+        psetnames[ifc_class] = [(p.Name, p.Name, "") for p in psets]
+    return psetnames[ifc_class]
+
+
 def getQtoNames(self, context):
     global qtonames
     if "/" in context.active_object.name:
@@ -69,4 +99,31 @@ class PsetProperties(PropertyGroup):
     properties: CollectionProperty(name="Properties", type=Attribute)
     pset_name: EnumProperty(items=getPsetNames, name="Pset Name")
     qto_name: EnumProperty(items=getQtoNames, name="Qto Name")
-    material_pset_name: EnumProperty(items=getMaterialPsetNames, name="Pset Name")
+
+
+class MaterialPsetProperties(PropertyGroup):
+    active_pset_id: IntProperty(name="Active Pset ID")
+    active_pset_name: StringProperty(name="Pset Name")
+    properties: CollectionProperty(name="Properties", type=Attribute)
+    pset_name: EnumProperty(items=getMaterialPsetNames, name="Pset Name")
+
+
+class TaskPsetProperties(PropertyGroup):
+    active_pset_id: IntProperty(name="Active Pset ID")
+    active_pset_name: StringProperty(name="Pset Name")
+    properties: CollectionProperty(name="Properties", type=Attribute)
+    qto_name: EnumProperty(items=getTaskQtoNames, name="Qto Name")
+
+
+class ResourcePsetProperties(PropertyGroup):
+    active_pset_id: IntProperty(name="Active Pset ID")
+    active_pset_name: StringProperty(name="Pset Name")
+    properties: CollectionProperty(name="Properties", type=Attribute)
+    qto_name: EnumProperty(items=getResourceQtoNames, name="Qto Name")
+
+
+class ProfilePsetProperties(PropertyGroup):
+    active_pset_id: IntProperty(name="Active Pset ID")
+    active_pset_name: StringProperty(name="Pset Name")
+    properties: CollectionProperty(name="Properties", type=Attribute)
+    pset_name: EnumProperty(items=getProfilePsetNames, name="Pset Name")

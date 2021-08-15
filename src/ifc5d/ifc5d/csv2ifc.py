@@ -60,18 +60,20 @@ class Csv2Ifc:
 
     def get_row_cost_data(self, row):
         name = row[self.headers["Name"]]
+        identification = row[self.headers["Identification"]] if "Identification" in self.headers else None
         cost_quantities = row[self.headers["Quantity"]]
         cost_quantities_unit = row[self.headers["Unit"]]
         if self.has_categories:
             cost_values = {
                 k: float(row[v])
                 for k, v in self.headers.items()
-                if k not in ["Hierarchy", "Name", "Quantity", "Unit", "Subtotal"] and row[v]
+                if k not in ["Hierarchy", "Identification", "Name", "Quantity", "Unit", "Subtotal"] and row[v]
             }
         else:
             cost_values = row[self.headers["Value"]]
             cost_values = float(cost_values) if cost_values else None
         return {
+            "Identification": str(identification) if identification else None,
             "Name": str(name) if name else None,
             "CostQuantities": float(cost_quantities) if cost_quantities else None,
             "CostQuantitiesUnit": str(cost_quantities_unit) if cost_quantities_unit else None,
@@ -99,6 +101,7 @@ class Csv2Ifc:
             cost_item["ifc"] = ifcopenshell.api.run("cost.add_cost_item", self.file, cost_item=parent)
 
         cost_item["ifc"].Name = cost_item["Name"]
+        cost_item["ifc"].Identification = cost_item["Identification"]
 
         if not cost_item["CostValues"]:
             cost_value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=cost_item["ifc"])
