@@ -69,6 +69,8 @@
 %include "../serializers/SvgSerializer.h"
 %include "../serializers/WavefrontObjSerializer.h"
 
+%template(ray_intersection_results) std::vector<IfcGeom::ray_intersection_result>;
+
 // A Template instantantation should be defined before it is used as a base class. 
 // But frankly I don't care as most methods are subtlely different anyway.
 %include "../ifcgeom/IfcGeomTree.h"

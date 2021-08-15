@@ -23,6 +23,7 @@
 #include "../ifcparse/IfcFile.h"
 #include "../ifcgeom/IfcGeomElement.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomMaterial.h"
 #include "../ifcgeom_schema_agnostic/Kernel.h"
 
 #include <NCollection_UBTree.hxx>
@@ -33,8 +34,19 @@
 #include <BRepAlgoAPI_Cut.hxx>
 #include <BRepExtrema_DistShapeShape.hxx>
 #include <BRepClass3d_SolidClassifier.hxx>
+#include <TopTools_DataMapOfShapeInteger.hxx>
+#include <BRepBuilderAPI_MakeEdge.hxx>
 
 namespace IfcGeom {
+
+	struct ray_intersection_result {
+		double distance;
+		int style_index;
+		IfcUtil::IfcBaseEntity* instance;
+		std::array<double, 3> position;
+		std::array<double, 3> normal;
+		double dot_product;
+	};
 
 	namespace impl {
 		template <typename T>
@@ -239,11 +251,13 @@ namespace IfcGeom {
 			}
 
 		protected:
-
 			typedef NCollection_UBTree<T, Bnd_Box> tree_t;
 			typedef std::map<T, TopoDS_Shape> map_t;
+
 			tree_t tree_;
 			map_t shapes_;
+			
+			bool enable_face_styles_ = false;
 
 			class selector : public tree_t::Selector
 			{
@@ -317,7 +331,101 @@ namespace IfcGeom {
 			auto compound = elem->geometry().as_compound();
 			compound.Move(elem->transformation().data());
 			add(elem->product(), compound);
+			auto git = elem->geometry().begin();
+
+			if (enable_face_styles_) {
+				TopoDS_Iterator it(compound);
+				for (; it.More(); it.Next(), ++git) {
+					std::unique_ptr<IfcGeom::Material> adaptor;					
+					if (git->hasStyle()) {
+						adaptor.reset(new Material(&git->Style()));
+					} else {
+						adaptor.reset(new Material(IfcGeom::get_default_style(elem->type())));
+					}
+					
+					// Assumption is that the number of styles is small, so the linear lookup time is not significant.
+					auto sit = std::find(styles_.begin(), styles_.end(), *adaptor);
+					int index;
+					if (sit == styles_.end()) {
+						index = styles_.size();
+						styles_.push_back(*adaptor);
+					} else {
+						index = std::distance(styles_.begin(), sit);
+					}
+
+					TopExp_Explorer exp(it.Value(), TopAbs_FACE);
+					for (; exp.More(); exp.Next()) {
+						face_styles_.Bind(exp.Current(), index);
+					}
+				}
+			}
 		}
+
+		std::vector<IfcGeom::ray_intersection_result> select_ray(const gp_Pnt& p0, const gp_Dir& d, double length = 1000.) const {
+			gp_Pnt p1 = p0.XYZ() + d.XYZ() * length;
+			auto E = BRepBuilderAPI_MakeEdge(p0, p1).Edge();
+			Bnd_Box bb;
+			bb.Add(p0);
+			bb.Add(p1);
+			auto candidates = select_box(bb);
+
+			std::multimap<double, ray_intersection_result> ordered;
+
+			for (auto& c : candidates) {
+				BRepExtrema_DistShapeShape dss(E, shapes_.find(c)->second);
+				for (int i = 1; i <= dss.NbSolution(); ++i) {
+					if (dss.SupportTypeShape1(i) != BRepExtrema_IsOnEdge) {
+						// @todo set to 0, is it on the first verteX?
+						continue;
+					}
+					if (dss.SupportTypeShape2(i) != BRepExtrema_IsInFace) {
+						continue;
+					}
+					double u, v, w;
+					dss.ParOnEdgeS1(i, u);
+					auto face = TopoDS::Face(dss.SupportOnShape2(i));
+					int sidx = -1;
+					if (enable_face_styles_) {
+						sidx = face_styles_.Find(face);
+					}
+					dss.ParOnFaceS2(i, v, w);
+					BRepGProp_Face prop(face);
+					gp_Pnt P;
+					gp_Vec V;
+					prop.Normal(v, w, P, V);
+					ordered.insert({ u,	{ u, sidx, c,
+						{P.X(), P.Y(), P.Z()},
+						{V.X(), V.Y(), V.Z()},
+						V.Dot(d)
+					} });
+				}
+			}
+
+			std::vector<ray_intersection_result> result;
+			for (auto& p : ordered) {
+				result.push_back(p.second);
+			}
+
+			return result;
+		}
+
+		bool enable_face_styles() const {
+			return enable_face_styles_;
+		}
+
+		void enable_face_styles(bool b) {
+			enable_face_styles_ = b;
+		}
+
+		const std::vector<IfcGeom::Material>& styles() const {
+			return styles_;
+		}
+
+	protected:
+		typedef TopTools_DataMapOfShapeInteger face_style_map_t;
+
+		face_style_map_t face_styles_;
+		std::vector<IfcGeom::Material> styles_;
 	};
 
 }
