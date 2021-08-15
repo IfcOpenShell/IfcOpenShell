@@ -127,7 +127,7 @@ class StrProperty(PropertyGroup):
 
 
 def updateAttributeValue(self, context):
-    if getattr(self, str(self.get_value_attr()), None):  # Do not use get_value since it returns None if is_null is True
+    if getattr(self, str(self.get_value_name()), None):  # Do not use get_value since it returns None if is_null is True
         self.is_null = False
 
 
@@ -146,8 +146,8 @@ class Attribute(PropertyGroup):
     def get_value(self):
         if self.is_null:
             return None
-        return getattr(self, str(self.get_value_attr()), None)
-    
+        return getattr(self, str(self.get_value_name()), None)
+
     def get_value_default(self):
         if self.data_type == "string":
             return ""
@@ -159,8 +159,8 @@ class Attribute(PropertyGroup):
             return False
         elif self.data_type == "enum":
             return "0"
-    
-    def get_value_attr(self):        
+
+    def get_value_name(self):
         if self.data_type == "string":
             return "string_value"
         elif self.data_type == "boolean":
@@ -171,21 +171,21 @@ class Attribute(PropertyGroup):
             return "float_value"
         elif self.data_type == "enum":
             return "enum_value"
-    
+
     def set_value(self, value):
         if isinstance(value, str):
             self.data_type = "string"
         elif isinstance(value, float):
             self.data_type = "float"
-        elif isinstance(value, bool): # Make sure this is evaluated BEFORE integer
+        elif isinstance(value, bool):  # Make sure this is evaluated BEFORE integer
             self.data_type = "boolean"
         elif isinstance(value, int):
             self.data_type = "integer"
         else:
             self.data_type = "string"
             value = str(value)
-        setattr(self, self.get_value_attr(), value)
-    
+        setattr(self, self.get_value_name(), value)
+
 
 class BIMProperties(PropertyGroup):
     schema_dir: StringProperty(

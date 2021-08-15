@@ -1,7 +1,12 @@
 import os
 import bpy
 import json
-import ifcpatch
+
+try:
+    import ifcpatch
+except:
+    print("IfcPatch not available")
+
 from .helper import extract_docs
 
 

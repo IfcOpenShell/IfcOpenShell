@@ -11,24 +11,24 @@ from blenderbim.bim.ifc import IfcStore
 def draw_attributes(props, layout, copy_operator=None):
     for attribute in props:
         row = layout.row(align=True)
-        draw_attribute(attribute, row)
-        value = attribute.get_value()
-        if attribute.is_optional:
-            row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
-        if copy_operator:
-            op = row.operator(f"{copy_operator}", text="", icon="COPYDOWN")
-            op.data = json.dumps({"name": attribute.name, "value": value, "is_null": attribute.is_null})
+        draw_attribute(attribute, row, copy_operator)
 
 
-def draw_attribute(attribute, layout):
-    if not attribute.get_value_attr():
+def draw_attribute(attribute, layout, copy_operator=None):
+    value_name = attribute.get_value_name()
+    if not value_name:
         layout.label(text=attribute.name)
-    else:
-        layout.prop(
-            attribute, 
-            attribute.get_value_attr(), 
-            text=attribute.name,
-        )
+        return
+    layout.prop(
+        attribute,
+        value_name,
+        text=attribute.name,
+    )
+    if attribute.is_optional:
+        layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+    if copy_operator:
+        op = layout.operator(f"{copy_operator}", text="", icon="COPYDOWN")
+        op.data = json.dumps({"name": attribute.name, "value": attribute.get_value(), "is_null": attribute.is_null})
 
 
 def import_attributes(ifc_class, props, data, callback=None):
@@ -66,6 +66,6 @@ def export_attributes(props, callback=None):
     for prop in props:
         is_handled_by_callback = callback(attributes, prop) if callback else False
         if is_handled_by_callback:
-            continue # Our job is done
+            continue  # Our job is done
         attributes[prop.name] = prop.get_value()
     return attributes

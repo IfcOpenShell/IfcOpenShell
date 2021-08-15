@@ -655,7 +655,7 @@ class EditMaterialSetItem(bpy.types.Operator):
         props = obj.BIMObjectMaterialProperties
         product_data = Data.products[obj.BIMObjectProperties.ifc_definition_id]
 
-        attributes = {attribute.name: attribute.get_value() for attribute in props.material_set_item_attributes}
+        attributes = blenderbim.bim.helper.export_attributes(props.material_set_item_attributes)
 
         if product_data["type"] == "IfcMaterialConstituentSet":
             ifcopenshell.api.run(
@@ -680,7 +680,7 @@ class EditMaterialSetItem(bpy.types.Operator):
             )
             Data.load_layers()
         elif product_data["type"] == "IfcMaterialProfileSet" or product_data["type"] == "IfcMaterialProfileSetUsage":
-            profile_attributes = {attr.name: attr.get_value() for attr in props.material_set_item_profile_attributes}
+            profile_attributes = blenderbim.bim.helper.export_attributes(props.material_set_item_profile_attributes)
             ifcopenshell.api.run(
                 "material.edit_profile",
                 self.file,
