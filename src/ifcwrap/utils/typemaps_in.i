@@ -217,6 +217,17 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 	$1 = new gp_Pnt(ds[0], ds[1], ds[2]);
 }
 
+%typemap(in) const gp_Dir& {
+	if (!check_aggregate_of_type($input, get_python_type<double>())) {
+		SWIG_exception(SWIG_TypeError, "<Direction> type needs a python sequence of 3 floats");
+	}
+	std::vector<double> ds = python_sequence_as_vector<double>($input);
+	if (ds.size() != 3) {
+		SWIG_exception(SWIG_TypeError, "<Direction> type needs a python sequence of 3 floats");
+	}
+	$1 = new gp_Dir(ds[0], ds[1], ds[2]);
+}
+
 %typemap(in) const Bnd_Box& {
 	if (!check_aggregate_of_aggregate_of_type($input, get_python_type<double>())) {
 		SWIG_exception(SWIG_TypeError, "<AABB> type needs a python sequence of 2 x 3 floats");
@@ -234,6 +245,10 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 }
 
 %typemap(typecheck, precedence=SWIG_TYPECHECK_INTEGER) const gp_Pnt& {
+   $1 = check_aggregate_of_type($input, get_python_type<double>());
+}
+
+%typemap(typecheck, precedence=SWIG_TYPECHECK_INTEGER) const gp_Dir& {
    $1 = check_aggregate_of_type($input, get_python_type<double>());
 }
 
