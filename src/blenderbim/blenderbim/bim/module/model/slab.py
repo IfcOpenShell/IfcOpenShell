@@ -20,10 +20,9 @@ def element_listener(element, obj):
 
 
 def mode_callback(obj, data):
-    for obj in bpy.context.selected_objects + [bpy.context.active_object]:
+    for obj in set(bpy.context.selected_objects + [bpy.context.active_object]):
         if (
-            obj.mode != "EDIT"
-            or not obj.data
+            not obj.data
             or not isinstance(obj.data, (bpy.types.Mesh, bpy.types.Curve, bpy.types.TextCurve))
             or not obj.BIMObjectProperties.ifc_definition_id
             or not bpy.context.scene.BIMProjectProperties.is_authoring
@@ -33,27 +32,36 @@ def mode_callback(obj, data):
         parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
         if not parametric or parametric["Engine"] != "BlenderBIM.DumbLayer3":
             return
-        IfcStore.edited_objs.add(obj)
-        modifier = [m for m in obj.modifiers if m.type == "SOLIDIFY"]
-        if modifier:
-            return
-        depth = obj.dimensions.z
-        bm = bmesh.from_edit_mesh(obj.data)
-        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
-        bm.faces.ensure_lookup_table()
-        non_bottom_faces = []
-        for face in bm.faces:
-            if face.normal.z > -0.9:
-                non_bottom_faces.append(face)
-            else:
-                face.normal_flip()
-        bmesh.ops.delete(bm, geom=non_bottom_faces, context="FACES")
-        bmesh.update_edit_mesh(obj.data)
-        bm.free()
-        modifier = obj.modifiers.new("Slab Depth", "SOLIDIFY")
-        modifier.use_even_offset = True
-        modifier.offset = 1
-        modifier.thickness = depth
+        if obj.mode == "EDIT":
+            IfcStore.edited_objs.add(obj)
+            modifier = [m for m in obj.modifiers if m.type == "SOLIDIFY"]
+            if modifier:
+                return
+            depth = obj.dimensions.z
+            bm = bmesh.from_edit_mesh(obj.data)
+            bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
+            bm.faces.ensure_lookup_table()
+            non_bottom_faces = []
+            for face in bm.faces:
+                if face.normal.z > -0.9:
+                    non_bottom_faces.append(face)
+                else:
+                    face.normal_flip()
+            bmesh.ops.delete(bm, geom=non_bottom_faces, context="FACES")
+            bmesh.update_edit_mesh(obj.data)
+            bm.free()
+            modifier = obj.modifiers.new("Slab Depth", "SOLIDIFY")
+            modifier.use_even_offset = True
+            modifier.offset = 1
+            modifier.thickness = depth
+        else:
+            new_origin = obj.matrix_world @ Vector(obj.bound_box[0])
+            obj.data.transform(
+                Matrix.Translation(
+                    (obj.matrix_world.inverted().to_quaternion() @ (obj.matrix_world.translation - new_origin))
+                )
+            )
+            obj.matrix_world.translation = new_origin
 
 
 def ensure_solid(usecase_path, ifc_file, settings):
