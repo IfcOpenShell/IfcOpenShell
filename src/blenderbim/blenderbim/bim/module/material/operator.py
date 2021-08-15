@@ -655,17 +655,7 @@ class EditMaterialSetItem(bpy.types.Operator):
         props = obj.BIMObjectMaterialProperties
         product_data = Data.products[obj.BIMObjectProperties.ifc_definition_id]
 
-        attributes = {}
-        for attribute in props.material_set_item_attributes:
-            if attribute.data_type == "string":
-                value = attribute.string_value
-            elif attribute.data_type == "float":
-                value = attribute.float_value
-            elif attribute.data_type == "integer":
-                value = attribute.int_value
-            elif attribute.data_type == "boolean":
-                value = attribute.bool_value
-            attributes[attribute.name] = None if attribute.is_null else value
+        attributes = {attribute.name: attribute.get_value() for attribute in props.material_set_item_attributes}
 
         if product_data["type"] == "IfcMaterialConstituentSet":
             ifcopenshell.api.run(
@@ -690,19 +680,7 @@ class EditMaterialSetItem(bpy.types.Operator):
             )
             Data.load_layers()
         elif product_data["type"] == "IfcMaterialProfileSet" or product_data["type"] == "IfcMaterialProfileSetUsage":
-            profile_attributes = {}
-            for attribute in props.material_set_item_profile_attributes:
-                if attribute.data_type == "string":
-                    value = attribute.string_value
-                elif attribute.data_type == "float":
-                    value = attribute.float_value
-                elif attribute.data_type == "integer":
-                    value = attribute.int_value
-                elif attribute.data_type == "boolean":
-                    value = attribute.bool_value
-                elif attribute.data_type == "enum":
-                    value = attribute.enum_value
-                profile_attributes[attribute.name] = None if attribute.is_null else value
+            profile_attributes = {attr.name: attr.get_value() for attr in props.material_set_item_profile_attributes}
             ifcopenshell.api.run(
                 "material.edit_profile",
                 self.file,

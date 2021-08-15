@@ -1,6 +1,7 @@
 from bpy.types import Panel
 from ifcopenshell.api.pset.data import Data
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.helper import draw_attribute
 
 
 def get_active_pset_obj_name(context, obj_type):
@@ -67,18 +68,8 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
 
 
 def draw_psetqto_editable_ui(box, props, prop):
-    row = box.row(align=True)
-    if prop.data_type == "string":
-        row.prop(prop, "string_value", text=prop.name)
-    elif prop.data_type == "integer":
-        row.prop(prop, "int_value", text=prop.name)
-    elif prop.data_type == "float":
-        row.prop(prop, "float_value", text=prop.name)
-    elif prop.data_type == "boolean":
-        row.prop(prop, "bool_value", text=prop.name)
-    elif prop.data_type == "enum":
-        row.prop(prop, "enum_value", text=prop.name)
-    row.prop(prop, "is_null", icon="RADIOBUT_OFF" if prop.is_null else "RADIOBUT_ON", text="")
+    row = box.row()
+    draw_attribute(prop, row)
     if (
         "length" in prop.name.lower()
         or "width" in prop.name.lower()

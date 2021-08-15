@@ -102,16 +102,7 @@ class EditGeoreferencing(bpy.types.Operator):
             if data_type == "entity":
                 continue
             blender_attribute = props.projected_crs.get(attribute.name())
-            if blender_attribute.is_null:
-                projected_crs[attribute.name()] = None
-            elif blender_attribute.data_type == "string":
-                projected_crs[attribute.name()] = blender_attribute.string_value
-            elif blender_attribute.data_type == "float":
-                projected_crs[attribute.name()] = blender_attribute.float_value
-            elif blender_attribute.data_type == "integer":
-                projected_crs[attribute.name()] = blender_attribute.int_value
-            elif blender_attribute.data_type == "boolean":
-                projected_crs[attribute.name()] = blender_attribute.bool_value
+            projected_crs[attribute.name()] = blender_attribute.get_value()
 
         map_unit = ""
         if not props.is_map_unit_null:

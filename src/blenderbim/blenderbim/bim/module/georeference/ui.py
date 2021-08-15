@@ -2,6 +2,7 @@ import ifcopenshell.util.geolocation
 from bpy.types import Panel
 from ifcopenshell.api.georeference.data import Data
 from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.helper import draw_attributes, draw_attribute
 
 
 class BIM_PT_gis(Panel):
@@ -34,17 +35,7 @@ class BIM_PT_gis(Panel):
         row.operator("bim.edit_georeferencing", icon="CHECKMARK", text="")
         row.operator("bim.disable_editing_georeferencing", icon="X", text="")
 
-        for attribute in props.projected_crs:
-            row = self.layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "integer":
-                row.prop(attribute, "int_value", text=attribute.name)
-            elif attribute.data_type == "float":
-                row.prop(attribute, "float_value", text=attribute.name)
-            elif attribute.data_type == "boolean":
-                row.prop(attribute, "bool_value", text=attribute.name)
-            row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+        draw_attributes(props.projected_crs, self.layout)
 
         row = self.layout.row(align=True)
         row.prop(props, "map_unit_type", text="MapUnit")
@@ -62,17 +53,7 @@ class BIM_PT_gis(Panel):
                 row = self.layout.row(align=True)
                 row.operator("bim.set_ifc_grid_north", text="Set IFC North")
                 row.operator("bim.set_blender_grid_north", text="Set Blender North")
-            row = self.layout.row(align=True)
-            if attribute.data_type == "string":
-                row.prop(attribute, "string_value", text=attribute.name)
-            elif attribute.data_type == "integer":
-                row.prop(attribute, "int_value", text=attribute.name)
-            elif attribute.data_type == "float":
-                row.prop(attribute, "float_value", text=attribute.name)
-            elif attribute.data_type == "boolean":
-                row.prop(attribute, "bool_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+            draw_attribute(attribute, self.layout.row())
 
         row = self.layout.row()
         row.label(text="True North", icon="LIGHT_SUN")
