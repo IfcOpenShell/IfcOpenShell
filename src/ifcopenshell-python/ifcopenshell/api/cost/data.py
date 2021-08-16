@@ -111,19 +111,20 @@ class Data:
         data["TotalAppliedValue"] = 0.0
         data["CategoryValues"] = {}
         for cost_value in cost_item.CostValues or []:
-            cls.load_cost_item_value(data, cost_item, cost_value)
+            cls.load_cost_item_value(cost_item, data, cost_value)
             data["CostValues"].append(cost_value.id())
             data["TotalAppliedValue"] += cls.cost_values[cost_value.id()]["AppliedValue"]
         data["TotalCostValue"] = data["TotalCostQuantity"] * data["TotalAppliedValue"]
 
     @classmethod
-    def load_cost_item_value(cls, cost_item_data, cost_item, cost_value):
+    def load_cost_item_value(cls, cost_item, cost_item_data, cost_value):
         value_data = cost_value.get_info()
         del value_data["AppliedValue"]
         if value_data["UnitBasis"]:
             data = cost_value.UnitBasis.get_info()
             data["ValueComponent"] = data["ValueComponent"].wrappedValue
             data["UnitComponent"] = data["UnitComponent"].id()
+            data["UnitSymbol"] = ifcopenshell.util.unit.get_unit_symbol(cost_value.UnitBasis.UnitComponent)
             value_data["UnitBasis"] = data
         if value_data["ApplicableDate"]:
             value_data["ApplicableDate"] = ifcopenshell.util.date.ifc2datetime(value_data["ApplicableDate"])
@@ -138,7 +139,7 @@ class Data:
 
         cls.cost_values[cost_value.id()] = value_data
         for component in cost_value.Components or []:
-            cls.load_cost_item_value(cost_item_data, cost_item, component)
+            cls.load_cost_item_value(cost_item, cost_item_data, component)
 
     @classmethod
     def calculate_applied_value(cls, cost_item, cost_value, category_filter=None):

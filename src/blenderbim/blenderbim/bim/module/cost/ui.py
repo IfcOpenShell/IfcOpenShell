@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -46,8 +45,13 @@ class BIM_PT_cost_schedules(Panel):
         row = self.layout.row()
         row.operator("bim.add_cost_schedule", icon="ADD")
 
-        for cost_schedule_id, cost_schedule in Data.cost_schedules.items():
-            self.draw_cost_schedule_ui(cost_schedule_id, cost_schedule)
+        if self.props.active_cost_schedule_id:
+            self.draw_cost_schedule_ui(
+                self.props.active_cost_schedule_id, Data.cost_schedules[self.props.active_cost_schedule_id]
+            )
+        else:
+            for cost_schedule_id, cost_schedule in Data.cost_schedules.items():
+                self.draw_cost_schedule_ui(cost_schedule_id, cost_schedule)
 
     def draw_cost_schedule_ui(self, cost_schedule_id, cost_schedule):
         row = self.layout.row(align=True)
@@ -464,10 +468,10 @@ class BIM_UL_cost_items(UIList):
             split2.alignment = "RIGHT"
             split2.prop(item, "name", emboss=False, text="")
 
-            if Data.cost_schedules[self.props.active_cost_schedule_id]["PredefinedType"] != "SCHEDULEOFRATES":
-                split2.label(
-                    text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" ({cost_item['UnitSymbol'] or '?'})"
-                )
+            if Data.cost_schedules[self.props.active_cost_schedule_id]["PredefinedType"] == "SCHEDULEOFRATES":
+                self.draw_uom_column(split2, cost_item)
+            else:
+                self.draw_quantity_column(split2, cost_item)
 
             split2.label(text="{0:.2f}".format(cost_item["TotalAppliedValue"]))
 
@@ -476,6 +480,17 @@ class BIM_UL_cost_items(UIList):
 
             split2.label(text="{0:.2f}".format(cost_item["TotalCostValue"]))
             self.draw_buttons(split2, item, cost_item)
+
+    def draw_uom_column(self, layout, cost_item):
+        text = "-"
+        if cost_item["CostValues"]:
+            unit_basis = Data.cost_values[cost_item["CostValues"][0]]["UnitBasis"]
+            if unit_basis:
+                text = "{0:.2f}".format(unit_basis["ValueComponent"]) + f" ({unit_basis['UnitSymbol'] or '?'})"
+        layout.label(text=text)
+
+    def draw_quantity_column(self, layout, cost_item):
+        layout.label(text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" ({cost_item['UnitSymbol'] or '?'})")
 
     def draw_buttons(self, row, item, cost_item):
         pass  # TODO: reimplement somewhere with better UX
