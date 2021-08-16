@@ -56,13 +56,10 @@ class LoadBcfTopics(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         bcfxml.get_topics()
-        while len(context.scene.BCFProperties.topics) > 0:
-            context.scene.BCFProperties.topics.remove(0)
-        index = 0
-        for topic_guid in bcfxml.topics.keys():
+        context.scene.BCFProperties.topics.clear()
+        for index, topic_guid in enumerate(bcfxml.topics.keys()):
             new = context.scene.BCFProperties.topics.add()
             bpy.ops.bim.load_bcf_topic(topic_guid = topic_guid, topic_index = index)
-            index += 1
         return {"FINISHED"}
 
 
@@ -95,16 +92,17 @@ class LoadBcfTopic(bpy.types.Operator):
         for key, value in data_map.items():
             if value is not None:
                 setattr(new, key, str(value))
-        while len(new.reference_links) > 0:
-            new.reference_links.remove(0)
+
+        new.reference_links.clear()
         for reference_link in topic.reference_links:
-            new2 = new.reference_links.add()
-            new2.name = reference_link
-        while len(new.labels) > 0:
-            new.labels.remove(0)
+            new_reference_link = new.reference_links.add()
+            new_reference_link.name = reference_link
+
+        new.labels.clear()
         for label in topic.labels:
-            new2 = new.labels.add()
-            new2.name = label
+            new_label = new.labels.add()
+            new_label.name = label
+
         if topic.bim_snippet:
             data_map = {
                 "type": topic.bim_snippet.snippet_type,
@@ -115,10 +113,10 @@ class LoadBcfTopic(bpy.types.Operator):
             for key, value in data_map.items():
                 if value is not None:
                     setattr(new.bim_snippet, key, value)
-        while len(new.document_references) > 0:
-            new.document_references.remove(0)
+
+        new.document_references.clear()
         for doc in topic.document_references:
-            new2 = new.document_references.add()
+            new_document_references = new.document_references.add()
             data_map = {
                 "reference": doc.referenced_document,
                 "description": doc.description,
@@ -127,12 +125,13 @@ class LoadBcfTopic(bpy.types.Operator):
             }
             for key, value in data_map.items():
                 if value is not None:
-                    setattr(new2, key, value)
-        while len(new.related_topics) > 0:
-            new.related_topics.remove(0)
+                    setattr(new_document_references, key, value)
+
+        new.related_topics.clear()
         for related_topic in topic.related_topics:
-            new2 = new.related_topics.add()
-            new2.name = related_topic.guid
+            new_related_topic = new.related_topics.add()
+            new_related_topic.name = related_topic.guid
+
         bpy.ops.bim.load_bcf_comments(topic_guid = topic.guid)
         return {"FINISHED"}
 
@@ -333,7 +332,7 @@ class ViewBcfTopic(bpy.types.Operator):
 
     def execute(self, context):
         for index, topic in enumerate(context.scene.BCFProperties.topics):
-            if topic.guid.lower() == self.topic_guid.lower():
+            if topic.name.lower() == self.topic_guid.lower():
                 context.scene.BCFProperties.active_topic_index = index
         return {"FINISHED"}
 
@@ -344,44 +343,44 @@ class AddBcfViewpoint(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        if not context.scene.camera:
-            return {"FINISHED"}
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        blender_camera = context.scene.camera
         props = context.scene.BCFProperties
         blender_topic = props.topics[props.active_topic_index]
         topic = bcfxml.topics[blender_topic.name]
         viewpoint = bcf.v2.data.Viewpoint()
 
-        if context.scene.camera.data.type == "ORTHO":
+        if blender_camera.data.type == "ORTHO":
             camera = bcf.v2.data.OrthogonalCamera()
-            camera.view_to_world_scale = context.scene.camera.data.ortho_scale
+            camera.view_to_world_scale = blender_camera.data.ortho_scale
             viewpoint.orthogonal_camera = camera
-        elif context.scene.camera.data.type == "PERSP":
+        elif blender_camera.data.type == "PERSP":
             camera = bcf.v2.data.PerspectiveCamera()
-            camera.field_of_view = degrees(context.scene.camera.data.angle)
+            camera.field_of_view = degrees(blender_camera.data.angle)
             viewpoint.perspective_camera = camera
-        camera.camera_view_point.x = context.scene.camera.location.x
-        camera.camera_view_point.y = context.scene.camera.location.y
-        camera.camera_view_point.z = context.scene.camera.location.z
-        direction = context.scene.camera.matrix_world.to_quaternion() @ Vector((0.0, 0.0, -1.0))
+        camera.camera_view_point.x = blender_camera.location.x
+        camera.camera_view_point.y = blender_camera.location.y
+        camera.camera_view_point.z = blender_camera.location.z
+        direction = blender_camera.matrix_world.to_quaternion() @ Vector((0.0, 0.0, -1.0))
         camera.camera_direction.x = direction.x
         camera.camera_direction.y = direction.y
         camera.camera_direction.z = direction.z
-        up = context.scene.camera.matrix_world.to_quaternion() @ Vector((0.0, 1.0, 0.0))
+        up = blender_camera.matrix_world.to_quaternion() @ Vector((0.0, 1.0, 0.0))
         camera.camera_up_vector.x = up.x
         camera.camera_up_vector.y = up.y
         camera.camera_up_vector.z = up.z
 
-        old_file_format = context.scene.render.image_settings.file_format
-        context.scene.render.image_settings.file_format = "PNG"
-        old_filepath = context.scene.render.filepath
-        context.scene.render.filepath = os.path.join(context.scene.BIMProperties.data_dir, "snapshot.png")
+        blender_render = context.scene.render
+        old_file_format = blender_render.image_settings.file_format
+        blender_render.image_settings.file_format = "PNG"
+        old_filepath = blender_render.filepath
+        blender_render.filepath = os.path.join(context.scene.BIMProperties.data_dir, "snapshot.png")
         bpy.ops.render.opengl(write_still=True)
-        viewpoint.snapshot = context.scene.render.filepath
+        viewpoint.snapshot = blender_render.filepath
 
         bcfxml.add_viewpoint(topic, viewpoint)
-        context.scene.render.filepath = old_filepath
-        context.scene.render.image_settings.file_format = old_file_format
+        blender_render.filepath = old_filepath
+        blender_render.image_settings.file_format = old_file_format
         props.active_topic_index = props.active_topic_index # refreshes the BCF Topic
         return {"FINISHED"}
 
@@ -508,6 +507,8 @@ class EditBcfLabels(bpy.types.Operator):
         blender_topic = props.topics[props.active_topic_index]
         topic = bcfxml.topics[blender_topic.name]
         for index, label in enumerate(blender_topic.labels):
+            if index >= len(topic.labels):
+                break
             if label.name == topic.labels[index]:
                 continue
             topic.labels[index] = blender_topic.labels[index].name
