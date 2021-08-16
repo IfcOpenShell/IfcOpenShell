@@ -34,26 +34,7 @@ def mode_callback(obj, data):
             return
         if obj.mode == "EDIT":
             IfcStore.edited_objs.add(obj)
-            modifier = [m for m in obj.modifiers if m.type == "SOLIDIFY"]
-            if modifier:
-                return
-            depth = obj.dimensions.z
-            bm = bmesh.from_edit_mesh(obj.data)
-            bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
-            bm.faces.ensure_lookup_table()
-            non_bottom_faces = []
-            for face in bm.faces:
-                if face.normal.z > -0.9:
-                    non_bottom_faces.append(face)
-                else:
-                    face.normal_flip()
-            bmesh.ops.delete(bm, geom=non_bottom_faces, context="FACES")
-            bmesh.update_edit_mesh(obj.data)
-            bm.free()
-            modifier = obj.modifiers.new("Slab Depth", "SOLIDIFY")
-            modifier.use_even_offset = True
-            modifier.offset = 1
-            modifier.thickness = depth
+            ensure_solidify_modifier(obj)
         else:
             new_origin = obj.matrix_world @ Vector(obj.bound_box[0])
             obj.data.transform(
@@ -62,6 +43,41 @@ def mode_callback(obj, data):
                 )
             )
             obj.matrix_world.translation = new_origin
+
+
+def ensure_solidify_modifier(obj):
+    modifier = [m for m in obj.modifiers if m.type == "SOLIDIFY"]
+    if modifier:
+        return modifier[0]
+    depth = obj.dimensions.z
+
+    if obj.mode == "EDIT":
+        bm = bmesh.from_edit_mesh(obj.data)
+    else:
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+
+    bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
+    bm.faces.ensure_lookup_table()
+    non_bottom_faces = []
+    for face in bm.faces:
+        if face.normal.z > -0.9:
+            non_bottom_faces.append(face)
+        else:
+            face.normal_flip()
+    bmesh.ops.delete(bm, geom=non_bottom_faces, context="FACES")
+
+    if obj.mode == "EDIT":
+        bmesh.update_edit_mesh(obj.data)
+    else:
+        bm.to_mesh(obj.data)
+
+    bm.free()
+    modifier = obj.modifiers.new("Slab Depth", "SOLIDIFY")
+    modifier.use_even_offset = True
+    modifier.offset = 1
+    modifier.thickness = depth
+    return modifier
 
 
 def ensure_solid(usecase_path, ifc_file, settings):
@@ -326,10 +342,6 @@ class DumbSlabPlaner:
         if round(delta_thickness, 2) == 0:
             return
 
-        modifier = [m for m in obj.modifiers if m.type == "SOLIDIFY"]
-        if modifier:
-            modifier = modifier[0]
-        else:
-            pass
+        modifier = ensure_solidify_modifier(obj)
         modifier.thickness += delta_thickness
         obj.location[2] -= delta_thickness
