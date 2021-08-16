@@ -592,11 +592,21 @@ class EnableEditingCostItemValue(bpy.types.Operator):
             prop.is_null = prop.is_optional = False
             units = {}
             for unit_id, unit in UnitData.units.items():
-                if unit.get("UnitType", None) in ["AREAUNIT", "LENGTHUNIT", "TIMEUNIT", "VOLUMEUNIT", "MASSUNIT"]:
-                    name = unit["Name"]
-                    if unit.get("Prefix", None):
-                        name = f"(unit['Prefix']) {name}"
-                    units[unit_id] = f"{unit['UnitType']} / {name}"
+                if unit.get("UnitType", None) in [
+                    "AREAUNIT",
+                    "LENGTHUNIT",
+                    "TIMEUNIT",
+                    "VOLUMEUNIT",
+                    "MASSUNIT",
+                    "USERDEFINED",
+                ]:
+                    if unit["type"] == "IfcContextDependentUnit":
+                        units[unit_id] = f"{unit['UnitType']} / {unit['Name']}"
+                    else:
+                        name = unit["Name"]
+                        if unit.get("Prefix", None):
+                            name = f"(unit['Prefix']) {name}"
+                        units[unit_id] = f"{unit['UnitType']} / {name}"
             prop.enum_items = json.dumps(units)
             if data["UnitBasis"] and data["UnitBasis"]["UnitComponent"]:
                 prop.enum_value = str(data["UnitBasis"]["UnitComponent"])
@@ -719,6 +729,7 @@ class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper):
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".csv"
     filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
+    is_schedule_of_rates: bpy.props.BoolProperty(name="Is Schedule Of Rates", default=False)
 
     def execute(self, context):
         from ifc5d.csv2ifc import Csv2Ifc
@@ -728,8 +739,10 @@ class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper):
         csv2ifc = Csv2Ifc()
         csv2ifc.csv = self.filepath
         csv2ifc.file = self.file
+        csv2ifc.is_schedule_of_rates = self.is_schedule_of_rates
         csv2ifc.execute()
         Data.load(IfcStore.get_file())
+        UnitData.load(IfcStore.get_file())
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
 

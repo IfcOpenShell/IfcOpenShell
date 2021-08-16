@@ -223,7 +223,7 @@ class BIM_PT_cost_schedules(Panel):
             op.cost_value = cost_value_id
 
     def draw_editable_cost_value_ui(self, layout, cost_value):
-        draw_attributes(self.props.cost_value_attributes, self.layout)
+        draw_attributes(self.props.cost_value_attributes, layout)
 
 class BIM_PT_cost_item_quantities(Panel):
     bl_label = "IFC Cost Item Quantities"
