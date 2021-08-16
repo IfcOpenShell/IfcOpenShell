@@ -141,33 +141,43 @@ class BcfClient:
     def get(self, endpoint, params=None, is_auth_required=False):
         # TODO: handle error http status codes and raise exception. Follow error.json standard.
         headers = {"Authorization": "Bearer " + self.foundation_client.get_access_token()}
-        return requests.get(f"{self.baseurl}{endpoint}", headers=headers, params=params or None).json()
+        response = requests.get(f"{self.baseurl}{endpoint}", headers=headers, params=params or None)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise Exception(f"{response.status_code},   {response.text}")
 
     def post(self, endpoint, data=None, params=None):
         headers = {
             "Authorization": "Bearer " + self.foundation_client.get_access_token(),
             "Content-type": "application/json",
         }
-        resp = requests.post(
+        response = requests.post(
             f"{self.baseurl}{endpoint}",
             headers=headers,
             params=params or None,
             data=data or None,
         )
-        return resp.status_code, resp.text
+        if response.status_code == 201:
+            return response.status_code, response.text
+        else:
+            raise Exception(f"{response.status_code},   {response.text}")
 
     def put(self, endpoint, data=None, params=None):
         headers = {
             "Authorization": "Bearer " + self.foundation_client.get_access_token(),
             "Content-type": "application/json",
         }
-        resp = requests.put(
+        response = requests.put(
             f"{self.baseurl}{endpoint}",
             headers=headers,
             params=params or None,
             data=data or None,
         )
-        return resp.status_code, resp.text
+        if response.status_code == 200:
+            return response.status_code, response.text
+        else:
+            raise Exception(f"{response.status_code},   {response.text}")
 
     def delete(self, endpoint, params=None):
         headers = {"Authorization": "Bearer " + self.foundation_client.get_access_token()}
