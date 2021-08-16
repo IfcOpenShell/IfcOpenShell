@@ -16,6 +16,7 @@ class Usecase:
         related_objects = set(rel.RelatedObjects) if rel.RelatedObjects else set()
         related_objects.add(self.settings["product"])
         rel.RelatedObjects = list(related_objects)
+        return rel
 
     def get_constraint_rel(self):
         for rel in self.file.by_type("IfcRelAssociatesConstraint"):
