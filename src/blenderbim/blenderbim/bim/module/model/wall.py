@@ -938,11 +938,11 @@ class DumbWallPlaner:
             for edge in vert.link_edges:
                 other_vert = edge.verts[1] if edge.verts[0] == vert else edge.verts[0]
                 if delta_thickness > 0:
-                    potential_slide_vector = vert.co - other_vert.co
+                    potential_slide_vector = (vert.co - other_vert.co).normalized()
                     if potential_slide_vector.y < 0:
                         continue
                 else:
-                    potential_slide_vector = other_vert.co - vert.co
+                    potential_slide_vector = (other_vert.co - vert.co).normalized()
                     if potential_slide_vector.y > 0:
                         continue
                 if abs(potential_slide_vector.x) > 0.9 or abs(potential_slide_vector.z) > 0.9:
