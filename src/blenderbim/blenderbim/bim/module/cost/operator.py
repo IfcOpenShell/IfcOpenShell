@@ -303,6 +303,63 @@ class EditCostItem(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AssignCostItemType(bpy.types.Operator):
+    bl_idname = "bim.assign_cost_item_type"
+    bl_label = "Assign Cost Item Type Product"
+    bl_options = {"REGISTER", "UNDO"}
+    cost_item: bpy.props.IntProperty()
+    prop_name: bpy.props.StringProperty()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        self.file = IfcStore.get_file()
+        cost_item = self.file.by_id(self.cost_item)
+        for obj in context.selected_objects:
+            if not obj.BIMObjectProperties.ifc_definition_id:
+                continue
+            product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+            if product.is_a("IfcTypeProduct"):
+                ifcopenshell.api.run(
+                    "control.assign_control", self.file, relating_control=cost_item, related_object=product
+                )
+        Data.load(self.file)
+        bpy.ops.bim.load_cost_item_types()
+        return {"FINISHED"}
+
+
+class UnassignCostItemType(bpy.types.Operator):
+    bl_idname = "bim.unassign_cost_item_type"
+    bl_label = "Unassign Cost Item Type"
+    bl_options = {"REGISTER", "UNDO"}
+    cost_item: bpy.props.IntProperty()
+    related_object: bpy.props.IntProperty()
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        self.file = IfcStore.get_file()
+        cost_item = self.file.by_id(self.cost_item)
+        if self.related_object:
+            products = [self.file.by_id(self.related_object)]
+        else:
+            for obj in context.selected_objects:
+                if not obj.BIMObjectProperties.ifc_definition_id:
+                    continue
+                product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+                if product.is_a("IfcTypeProduct"):
+                    products.append(product)
+        for product in products:
+            ifcopenshell.api.run(
+                "control.unassign_control", self.file, relating_control=cost_item, related_object=product
+            )
+        Data.load(self.file)
+        bpy.ops.bim.load_cost_item_types()
+        return {"FINISHED"}
+
+
 class AssignCostItemQuantity(bpy.types.Operator):
     bl_idname = "bim.assign_cost_item_quantity"
     bl_label = "Assign Cost Item Quantity"
@@ -805,4 +862,34 @@ class LoadCostItemQuantities(bpy.types.Operator):
             for quantity_id in quantity_ids:
                 total_quantity += self.file.by_id(quantity_id)[3]
             new.total_quantity = total_quantity
+        return {"FINISHED"}
+
+
+class LoadCostItemTypes(bpy.types.Operator):
+    bl_idname = "bim.load_cost_item_types"
+    bl_label = "Load Cost Item Types"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        self.props = context.scene.BIMCostProperties
+        self.file = IfcStore.get_file()
+        while len(self.props.cost_item_type_products) > 0:
+            self.props.cost_item_type_products.remove(0)
+        # TODO implement process and resource types
+        #while len(self.props.cost_item_processes) > 0:
+        #    self.props.cost_item_processes.remove(0)
+        #while len(self.props.cost_item_resources) > 0:
+        #    self.props.cost_item_resources.remove(0)
+        ifc_definition_id = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
+        for control_id, quantity_ids in Data.cost_items[ifc_definition_id]["Controls"].items():
+            related_object = self.file.by_id(control_id)
+            if related_object.is_a("IfcTypeProduct"):
+                new = self.props.cost_item_type_products.add()
+            # TODO implement process and resource types
+            #elif related_object.is_a("IfcProcess"):
+            #    new = self.props.cost_item_processes.add()
+            #elif related_object.is_a("IfcResource"):
+            #    new = self.props.cost_item_resources.add()
+            new.ifc_definition_id = control_id
+            new.name = related_object.Name or "Unnamed"
         return {"FINISHED"}

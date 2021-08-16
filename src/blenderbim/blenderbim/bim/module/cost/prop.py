@@ -175,6 +175,11 @@ class CostItemQuantity(PropertyGroup):
     total_quantity: FloatProperty(name="Total Quantity")
 
 
+class CostItemType(PropertyGroup):
+    name: StringProperty(name="Name")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+
 class BIMCostProperties(PropertyGroup):
     is_cost_update_enabled: BoolProperty(name="Is Cost Update Enabled", default=True)
     cost_schedule_attributes: CollectionProperty(name="Cost Schedule Attributes", type=Attribute)
@@ -213,3 +218,5 @@ class BIMCostProperties(PropertyGroup):
     active_cost_item_process_index: IntProperty(name="Active Cost Item Process Index")
     cost_item_resources: CollectionProperty(name="Cost Item Resources", type=CostItemQuantity)
     active_cost_item_resource_index: IntProperty(name="Active Cost Item Resource Index")
+    cost_item_type_products: CollectionProperty(name="Cost Item Type Products", type=CostItemType)
+    active_cost_item_type_product_index: IntProperty(name="Active Cost Item TYpe Product Index")

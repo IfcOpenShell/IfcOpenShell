@@ -26,6 +26,8 @@ classes = (
     operator.ExpandCostItem,
     operator.ContractCostItem,
     operator.RemoveCostItem,
+    operator.AssignCostItemType,
+    operator.UnassignCostItemType,
     operator.AssignCostItemQuantity,
     operator.UnassignCostItemQuantity,
     operator.AddCostItemQuantity,
@@ -37,14 +39,18 @@ classes = (
     operator.SelectCostScheduleProducts,
     operator.ImportCostScheduleCsv,
     operator.LoadCostItemQuantities,
+    operator.LoadCostItemTypes,
     prop.CostItem,
     prop.CostItemQuantity,
+    prop.CostItemType,
     prop.BIMCostProperties,
     ui.BIM_PT_cost_schedules,
     ui.BIM_PT_cost_item_quantities,
+    ui.BIM_PT_cost_item_types,
     ui.BIM_UL_cost_items,
     ui.BIM_UL_cost_columns,
     ui.BIM_UL_cost_item_quantities,
+    ui.BIM_UL_cost_item_types,
 )
 
 
