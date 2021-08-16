@@ -825,17 +825,55 @@ class BcfHandler(logging.StreamHandler):
         self.bcf.new_project()
         self.bcf.project.name = project_name
         self.filepath = filepath
-
-    def emit(self, mymsg):
-        newtopic = Topic()
-        newtopic.title = mymsg.msg["sentence"].split(".\n")[1]
-        newtopic.description = mymsg.msg["sentence"].split(".\n")[0]
-
-        # TODO
-        # newviewpoint = Viewpoint()
-        # TODO add references in Topic
-        self.bcf.add_topic(newtopic)
         self.bcf.edit_project()
+
+    def emit(self, log_content):
+        topic = bcf.Topic()
+        topic.title = log_content.msg["sentence"].split(".\n")[1]
+        topic.description = log_content.msg["sentence"].split(".\n")[0]
+        self.bcf.add_topic(topic)
+        try:    # Add viewpoint and link to ifc object
+            viewpoint = bcf.Viewpoint()
+            viewpoint.perspective_camera = bcf.PerspectiveCamera()
+            ifc_elem = log_content.msg['ifc_element']
+            # ifc_elem = ifc_file.by_guid(log_content.msg["guid"])
+            target_position = np.array(ifcopenshell.util.placement.get_local_placement(ifc_elem.ObjectPlacement)) 
+            target_position = target_position[:,3][0:3]
+            camera_position = target_position + np.array((5, 5, 5))
+            viewpoint.perspective_camera.camera_view_point.x = camera_position[0]
+            viewpoint.perspective_camera.camera_view_point.y = camera_position[1]
+            viewpoint.perspective_camera.camera_view_point.z = camera_position[2]
+            camera_direction = camera_position - target_position
+            camera_direction = camera_direction / np.linalg.norm(camera_direction)
+            camera_right = np.cross(np.array([0.0, 0.0, 1.0]), camera_direction)
+            camera_right = camera_right / np.linalg.norm(camera_right)
+            camera_up = np.cross(camera_direction, camera_right)
+            camera_up = camera_up / np.linalg.norm(camera_up)
+            rotation_transform = np.zeros((4, 4))
+            rotation_transform[0, :3] = camera_right
+            rotation_transform[1, :3] = camera_up
+            rotation_transform[2, :3] = camera_direction
+            rotation_transform[-1, -1] = 1
+            translation_transform = np.eye(4)
+            translation_transform[:3, -1] = -camera_position
+            look_at_transform = np.matmul(rotation_transform, translation_transform)
+            mat = np.linalg.inv(look_at_transform)
+            viewpoint.perspective_camera.camera_direction.x = mat[0][2] * -1
+            viewpoint.perspective_camera.camera_direction.y = mat[1][2] * -1
+            viewpoint.perspective_camera.camera_direction.z = mat[2][2] * -1
+            viewpoint.perspective_camera.camera_up_vector.x = mat[0][1]
+            viewpoint.perspective_camera.camera_up_vector.y = mat[1][1]
+            viewpoint.perspective_camera.camera_up_vector.z = mat[2][1]
+            viewpoint.components = bcf.Components()
+            c = bcf.Component()
+            c.ifc_guid = log_content.msg["guid"]
+            viewpoint.components.selection.append(c)
+            viewpoint.components.visibility = bcf.ComponentVisibility()
+            viewpoint.components.visibility.default_visibility = True
+            viewpoint.snapshot = None
+            self.bcf.add_viewpoint(topic, viewpoint)
+        except:
+            pass
 
     def flush(self):
         if not self.filepath:
