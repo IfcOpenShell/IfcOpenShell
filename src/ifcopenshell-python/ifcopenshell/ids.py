@@ -681,6 +681,12 @@ class ids:
     """
 
     def __init__(self, ifcversion=None, description=None, author=None, copyright=None, version=None, creation_date=None, purpose=None, milestone=None):
+        """
+        Create an IDS file.
+        ifcversion - '2.3.0.1', '4.0.2.1', or '4.3.0.0'
+        author - email address
+        """
+        
         self.specifications = []
         self.info = {}
         if ifcversion:
@@ -779,7 +785,21 @@ class ids:
             logging.basicConfig(level=logging.INFO, format="%(message)s")
             logger.setLevel(logging.INFO)
 
-        # TODO should we do other way around: for elem, for spec so we can see if an element pass all IDSes?
+        if 'ifcversion' in self.info.keys():
+            if self.info['ifcversion'] in ['2.3.0.1', '4.0.2.1', '4.3.0.0']:
+                if self.info['ifcversion'][0:3] == '2.3':
+                    if not ifc_file.schema.startswith('IFC2x3'):
+                        logger.error('IFC file is of %s not of %s schema.' % (ifc_file.schema, self.info['ifcversion']))
+                elif self.info['ifcversion'][0:3] == '4.0':
+                    if not ifc_file.schema == 'IFC4':
+                        logger.error('IFC file is of %s not of %s schema.' % (ifc_file.schema, self.info['ifcversion']))
+                elif self.info['ifcversion'][0:3] == '4.3':
+                    if not ifc_file.schema.startswith('IFC4x3'):
+                        logger.error('IFC file is of %s not of %s schema.' % (ifc_file.schema, self.info['ifcversion']))
+                else:
+                    logger.error('IFC version not recognized')
+
+        # TODO consider other way around: for elem, for spec so we can see if an element pass all IDSes?
         for spec in self.specifications:
             self.ifc_applicable = 0
             self.ifc_passed = 0
