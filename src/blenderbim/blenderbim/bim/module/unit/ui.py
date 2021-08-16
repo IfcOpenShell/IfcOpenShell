@@ -43,8 +43,9 @@ class BIM_PT_units(Panel):
         elif self.props.unit_classes == "IfcSIUnit":
             row.prop(self.props, "named_unit_types", text="")
             row.operator("bim.add_si_unit", text="", icon="ADD")
-        else:
+        elif self.props.unit_classes == "IfcContextDependentUnit":
             row.prop(self.props, "named_unit_types", text="")
+            row.operator("bim.add_context_dependent_unit", text="", icon="ADD")
 
         self.layout.template_list(
             "BIM_UL_units",
