@@ -24,7 +24,7 @@ class BIM_PT_units(Panel):
         self.props = context.scene.BIMUnitProperties
 
         row = self.layout.row(align=True)
-        row.label(text="{} Units Found".format(len(Data.unit_assignment)), icon="SNAP_GRID")
+        row.label(text="{} Units Found".format(len(Data.units)), icon="SNAP_GRID")
         if self.props.is_editing:
             row.operator("bim.disable_unit_editing_ui", text="", icon="CANCEL")
         else:
