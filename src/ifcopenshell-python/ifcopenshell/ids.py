@@ -644,6 +644,7 @@ class specification:
                         + ") has "
                         + str(valid)
                         + " so is compliant",
+                        "ifc_element": inst,
                     }
                 )
                 return True, True
@@ -663,6 +664,7 @@ class specification:
                         + ") has "
                         + str(valid)
                         + " so is not compliant",
+                        "ifc_element": inst,
                     }
                 )
                 return True, False
