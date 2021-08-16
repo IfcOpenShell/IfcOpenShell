@@ -5,6 +5,7 @@ import ifcopenshell
 import ifcopenshell.util.representation
 from blenderbim.bim.ifc import IfcStore
 from math import pi
+from mathutils import Vector
 from bpy.types import Operator
 from bpy.props import FloatProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
@@ -56,40 +57,96 @@ class AddElementOpening(bpy.types.Operator):
     bl_idname = "bim.add_element_opening"
     bl_label = "Add Element Opening"
     bl_options = {"REGISTER", "UNDO"}
+    voided_building_element: bpy.props.StringProperty()
+    filling_building_element: bpy.props.StringProperty()
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        selected_objs = context.selected_objects
-        if len(selected_objs) == 0 or not context.active_object:
+        voided_obj = self.get_voided_building_element(context)
+        filling_obj = self.get_filling_building_element(context)
+
+        if not voided_obj:
             return {"FINISHED"}
-        obj = context.active_object
-        if not obj.BIMObjectProperties.ifc_definition_id:
-            return {"FINISHED"}
-        element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
-        local_location = obj.matrix_world.inverted() @ context.scene.cursor.location
-        raycast = obj.closest_point_on_mesh(local_location, distance=0.01)
+
+        element = IfcStore.get_file().by_id(voided_obj.BIMObjectProperties.ifc_definition_id)
+        local_location = voided_obj.matrix_world.inverted() @ context.scene.cursor.location
+        raycast = voided_obj.closest_point_on_mesh(local_location, distance=0.01)
         if not raycast[0]:
             return {"FINISHED"}
 
-        # The opening shall be based on the smallest bounding dimension of the element
-        dimension = min(obj.dimensions)
-        bpy.ops.mesh.primitive_cube_add(size=dimension * 2)
-        opening = context.selected_objects[0]
+        if filling_obj:
+            opening = self.generate_opening_from_filling(filling_obj)
+        else:
+            # The opening shall be based on the smallest bounding dimension of the element
+            dimension = min(voided_obj.dimensions)
+            bpy.ops.mesh.primitive_cube_add(size=dimension * 2)
+            opening = context.selected_objects[0]
 
-        # Place the opening in the middle of the element
-        global_location = obj.matrix_world @ raycast[1]
-        normal = raycast[2]
-        normal.negate()
-        global_normal = obj.matrix_world.to_quaternion() @ normal
-        opening.location = global_location + (global_normal * (dimension / 2))
+            # Place the opening in the middle of the element
+            global_location = voided_obj.matrix_world @ raycast[1]
+            normal = raycast[2]
+            normal.negate()
+            global_normal = voided_obj.matrix_world.to_quaternion() @ normal
+            opening.location = global_location + (global_normal * (dimension / 2))
+            opening.rotation_euler = voided_obj.rotation_euler
+            opening.name = "Opening"
 
-        opening.rotation_euler = obj.rotation_euler
-        opening.name = "Opening"
-        bpy.ops.bim.add_opening(opening=opening.name, obj=obj.name)
+        bpy.ops.bim.add_opening(opening=opening.name, obj=voided_obj.name)
         return {"FINISHED"}
 
+    def get_voided_building_element(self, context):
+        obj = None
+        if self.voided_building_element:
+            obj = bpy.data.objects.get(self.voided_building_element)
+        else:
+            total_selected = len(context.selected_objects)
+            if total_selected == 1 or total_selected == 2:
+                obj = context.active_object
+        if obj and obj.BIMObjectProperties.ifc_definition_id:
+            return obj
+
+    def get_filling_building_element(self, context):
+        obj = None
+        if self.filling_building_element:
+            obj = bpy.data.objects.get(self.filling_building_element)
+        else:
+            total_selected = len(context.selected_objects)
+            if total_selected == 2:
+                if context.selected_objects[0] == context.active_object:
+                    obj = context.selected_objects[1]
+                else:
+                    obj = context.selected_objects[0]
+        if obj and obj.BIMObjectProperties.ifc_definition_id:
+            return obj
+
+    def generate_opening_from_filling(self, filling_obj):
+        x, y, z = filling_obj.dimensions
+        verts = [
+            Vector((0, 0, 0)),
+            Vector((0, 0, z)),
+            Vector((0, y, 0)),
+            Vector((0, y, z)),
+            Vector((x, 0, 0)),
+            Vector((x, 0, z)),
+            Vector((x, y, 0)),
+            Vector((x, y, z)),
+        ]
+        edges = []
+        faces = [
+            [0, 1, 3, 2],
+            [2, 3, 7, 6],
+            [6, 7, 5, 4],
+            [4, 5, 1, 0],
+            [2, 6, 4, 0],
+            [7, 3, 1, 5],
+        ]
+        mesh = bpy.data.meshes.new(name="Opening")
+        mesh.from_pydata(verts, edges, faces)
+        obj = bpy.data.objects.new("Opening", mesh)
+        obj.matrix_world = filling_obj.matrix_world
+        return obj
 
 
 def add_object(self, context):
