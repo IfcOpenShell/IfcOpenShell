@@ -28,6 +28,8 @@ def extract_docs(
             print(e)
     except ModuleNotFoundError as e:
         print(f"Error : IFCPatch {str(submodule)} could not complete because : {str(e)}")
+    except:
+        print(f"Error : IFCPatch {str(submodule)} could not load")
 
 def _extract_docs(cls, method_name, boilerplate_args):
     inputs = collections.OrderedDict()

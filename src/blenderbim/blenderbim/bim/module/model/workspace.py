@@ -17,7 +17,7 @@ class BimTool(WorkSpaceTool):
     bl_keymap = (
         # ("bim.wall_tool_op", {"type": 'MOUSEMOVE', "value": 'ANY'}, {"properties": []}),
         # ("mesh.add_wall", {"type": 'LEFTMOUSE', "value": 'PRESS'}, {"properties": []}),
-        ("bim.add_type_instance", {"type": "A", "value": "PRESS", "shift": True}, {"properties": []}),
+        ("bim.hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
         ("bim.hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
         ("bim.join_wall", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("join_type", "L")]}),
         ("bim.join_wall", {"type": "Y", "value": "PRESS", "shift": True}, {"properties": [("join_type", "V")]}),
@@ -113,6 +113,9 @@ class Hotkey(bpy.types.Operator):
         getattr(self, f"hotkey_{self.hotkey}")()
         return {"FINISHED"}
 
+    def hotkey_S_A(self):
+        bpy.ops.bim.add_type_instance()
+
     def hotkey_S_C(self):
         if self.props.ifc_class == "IfcWallType":
             bpy.ops.bim.align_wall(align_type="CENTERLINE")
@@ -138,7 +141,7 @@ class Hotkey(bpy.types.Operator):
             bpy.ops.bim.align_product(align_type="NEGATIVE")
 
     def hotkey_S_O(self):
-        bpy.ops.bim.add_element_opening()
+        bpy.ops.bim.add_element_opening(voided_building_element="", filling_building_element="")
 
     def hotkey_A_D(self):
         bpy.ops.bim.toggle_decomposition_parenting()

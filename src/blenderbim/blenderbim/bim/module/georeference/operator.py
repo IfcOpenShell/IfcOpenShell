@@ -128,6 +128,7 @@ class EditGeoreferencing(bpy.types.Operator):
 
     def export_attributes(self, attributes, prop):
         if not prop.is_null and prop.data_type == "string":
+            # We store our floats as string to prevent single precision data loss
             attributes[prop.name] = float(prop.string_value)
             return True
 

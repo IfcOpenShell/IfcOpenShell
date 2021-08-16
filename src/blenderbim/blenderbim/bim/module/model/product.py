@@ -51,37 +51,26 @@ class AddTypeInstance(bpy.types.Operator):
         tprops = context.scene.BIMTypeProperties
         ifc_class = self.ifc_class or tprops.ifc_class
         relating_type_id = self.relating_type or tprops.relating_type
+
         if not ifc_class or not relating_type_id:
             return {"FINISHED"}
+
         self.file = IfcStore.get_file()
         instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema)[0]
         relating_type = self.file.by_id(int(relating_type_id))
         material = ifcopenshell.util.element.get_material(relating_type)
-        if material.is_a("IfcMaterialProfileSet"):
-            obj = profile.DumbProfileGenerator(relating_type).generate()
-            if obj:
+
+        if material and material.is_a("IfcMaterialProfileSet"):
+            if profile.DumbProfileGenerator(relating_type).generate():
                 return {"FINISHED"}
-        elif material.is_a("IfcMaterialLayerSet"):
-            layer_set_direction = None
-
-            parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
-            if parametric:
-                layer_set_direction = parametric.get("LayerSetDirection", layer_set_direction)
-            if layer_set_direction is None:
-                if ifc_class in ["IfcSlabType", "IfcRoofType", "IfcRampType", "IfcPlateType"]:
-                    layer_set_direction = "AXIS3"
-                else:
-                    layer_set_direction = "AXIS2"
-
-            if layer_set_direction == "AXIS3":
-                obj = slab.DumbSlabGenerator(relating_type).generate()
-            elif layer_set_direction == "AXIS2":
-                obj = wall.DumbWallGenerator(relating_type).generate()
-            else:
-                obj = None  # Dumb block generator? Eh? :)
-
-            if obj:
+        elif material and material.is_a("IfcMaterialLayerSet"):
+            if self.generate_layered_element(ifc_class, relating_type):
                 return {"FINISHED"}
+
+        building_obj = None
+        if len(context.selected_objects) == 1 and context.active_object:
+            building_obj = context.active_object
+
         # A cube
         verts = [
             Vector((-1, -1, -1)),
@@ -95,12 +84,12 @@ class AddTypeInstance(bpy.types.Operator):
         ]
         edges = []
         faces = [
-            [0, 2, 3, 1],
+            [0, 1, 3, 2],
             [2, 3, 7, 6],
-            [4, 5, 7, 6],
-            [0, 1, 5, 4],
-            [1, 3, 7, 5],
-            [0, 2, 6, 4],
+            [6, 7, 5, 4],
+            [4, 5, 1, 0],
+            [2, 6, 4, 0],
+            [7, 3, 1, 5],
         ]
         mesh = bpy.data.meshes.new(name="Instance")
         mesh.from_pydata(verts, edges, faces)
@@ -111,9 +100,38 @@ class AddTypeInstance(bpy.types.Operator):
         collection_obj = bpy.data.objects.get(collection.name)
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
         bpy.ops.bim.assign_type(relating_type=int(tprops.relating_type), related_object=obj.name)
-        if collection_obj and collection_obj.BIMObjectProperties.ifc_definition_id:
-            obj.location[2] = collection_obj.location[2] - min([v[2] for v in obj.bound_box])
+
+        if building_obj:
+            if instance_class == "IfcWindow":
+                # TODO For now we are hardcoding windows as a prototype
+                bpy.ops.bim.add_element_opening(
+                    voided_building_element=building_obj.name, filling_building_element=obj.name
+                )
+        else:
+            if collection_obj and collection_obj.BIMObjectProperties.ifc_definition_id:
+                obj.location[2] = collection_obj.location[2] - min([v[2] for v in obj.bound_box])
         return {"FINISHED"}
+
+    def generate_layered_element(self, ifc_class, relating_type):
+        layer_set_direction = None
+
+        parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
+        if parametric:
+            layer_set_direction = parametric.get("LayerSetDirection", layer_set_direction)
+        if layer_set_direction is None:
+            if ifc_class in ["IfcSlabType", "IfcRoofType", "IfcRampType", "IfcPlateType"]:
+                layer_set_direction = "AXIS3"
+            else:
+                layer_set_direction = "AXIS2"
+
+        if layer_set_direction == "AXIS3":
+            if slab.DumbSlabGenerator(relating_type).generate():
+                return True
+        elif layer_set_direction == "AXIS2":
+            if wall.DumbWallGenerator(relating_type).generate():
+                return True
+        else:
+            pass  # Dumb block generator? Eh? :)
 
 
 class AlignProduct(bpy.types.Operator):
