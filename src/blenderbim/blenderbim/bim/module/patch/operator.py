@@ -26,8 +26,6 @@ try:
 except:
     print("IfcPatch not available")
 
-from .helper import extract_docs
-
 
 class SelectIfcPatchInput(bpy.types.Operator):
     bl_idname = "bim.select_ifc_patch_input"
@@ -102,7 +100,7 @@ class UpdateIfcPatchArguments(bpy.types.Operator):
             return {"FINISHED"}
         patch_args = context.scene.BIMPatchProperties.ifc_patch_args_attr
         patch_args.clear()
-        docs = extract_docs(ifcpatch, self.recipe, "Patcher", "__init__",  ("src", "file", "logger", "args"))
+        docs = ifcpatch.extract_docs(self.recipe, "Patcher", "__init__",  ("src", "file", "logger", "args"))
         if docs and "inputs" in docs:
             inputs = docs["inputs"]
             for arg_name in inputs:

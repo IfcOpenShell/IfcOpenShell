@@ -33,8 +33,6 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from .helper import extract_docs
-from .operator import UpdateIfcPatchArguments
 
 
 ifcpatchrecipes_enum = []
@@ -54,7 +52,7 @@ def getIfcPatchRecipes(self, context):
             f = str(filename.stem)
             if f == "__init__":
                 continue
-            docs = extract_docs(ifcpatch, f, "Patcher", "__init__", ("src", "file", "logger", "args"))
+            docs = ifcpatch.extract_docs(f, "Patcher", "__init__", ("src", "file", "logger", "args"))
             ifcpatchrecipes_enum.append((f, f, docs.get("description","") if docs else ""))
     return ifcpatchrecipes_enum
 
