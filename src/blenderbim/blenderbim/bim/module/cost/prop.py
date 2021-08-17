@@ -1,4 +1,3 @@
-
 # BlenderBIM Add-on - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -43,6 +42,7 @@ processquantitynames_enum = []
 processquantitynames_id = 0
 resourcequantitynames_enum = []
 resourcequantitynames_id = 0
+scheduleofrates_enum = []
 
 
 def purge():
@@ -53,6 +53,7 @@ def purge():
     global processquantitynames_id
     global resourcequantitynames_enum
     global resourcequantitynames_id
+    global scheduleofrates_enum
     quantitytypes_enum = []
     productquantitynames_enum = []
     productquantitynames_count = []
@@ -60,12 +61,27 @@ def purge():
     processquantitynames_id = 0
     resourcequantitynames_enum = []
     resourcequantitynames_id = 0
+    scheduleofrates_enum = []
+
+
+def get_schedule_of_rates(self, context):
+    global scheduleofrates_enum
+    if len(scheduleofrates_enum) == 0:
+        scheduleofrates_enum.extend(
+            (str(ifc_definition_id), schedule["Name"] or "Unnamed", "")
+            for ifc_definition_id, schedule in Data.cost_schedules.items()
+            if schedule["PredefinedType"] == "SCHEDULEOFRATES"
+        )
+    return scheduleofrates_enum
+
+
+def update_schedule_of_rates(self, context):
+    bpy.ops.bim.load_schedule_of_rates(cost_schedule=int(self.schedule_of_rates))
 
 
 def getQuantityTypes(self, context):
     global quantitytypes_enum
     if len(quantitytypes_enum) == 0 and IfcStore.get_schema():
-        quantitytypes_enum = []
         quantitytypes_enum.extend(
             [
                 (t.name(), t.name(), "")
@@ -238,4 +254,10 @@ class BIMCostProperties(PropertyGroup):
     cost_item_resources: CollectionProperty(name="Cost Item Resources", type=CostItemQuantity)
     active_cost_item_resource_index: IntProperty(name="Active Cost Item Resource Index")
     cost_item_type_products: CollectionProperty(name="Cost Item Type Products", type=CostItemType)
-    active_cost_item_type_product_index: IntProperty(name="Active Cost Item TYpe Product Index")
+    active_cost_item_type_product_index: IntProperty(name="Active Cost Item Type Product Index")
+    schedule_of_rates: EnumProperty(
+        items=get_schedule_of_rates, name="Schedule Of Rates", update=update_schedule_of_rates
+    )
+    cost_item_rates: CollectionProperty(name="Cost Item Rates", type=CostItem)
+    active_cost_item_rate_index: IntProperty(name="Active Cost Rate Index")
+    contracted_cost_item_rates: StringProperty(name="Contracted Cost Item Rates", default="[]")

@@ -441,26 +441,51 @@ class BIM_PT_cost_item_quantities(Panel):
             op.prop_name = self.props.resource_quantity_names
 
 
-class BIM_UL_cost_items(UIList):
+class BIM_PT_cost_item_rates(Panel):
+    bl_label = "IFC Cost Item Rates"
+    bl_idname = "BIM_PT_cost_item_rates"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_cost_schedules"
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BIMCostProperties
+        total_cost_items = len(props.cost_items)
+        if not props.active_cost_schedule_id:
+            return False
+        if Data.cost_schedules[props.active_cost_schedule_id]["PredefinedType"] == "SCHEDULEOFRATES":
+            return False
+        if total_cost_items > 0 and props.active_cost_item_index < total_cost_items:
+            return True
+        return False
+
+    def draw(self, context):
+        self.props = context.scene.BIMCostProperties
+        cost_item = self.props.cost_items[self.props.active_cost_item_index]
+        row = self.layout.row(align=True)
+        row.prop(self.props, "schedule_of_rates", text="")
+        row.operator("bim.assign_cost_value", text="", icon="COPYDOWN")
+        self.layout.template_list(
+            "BIM_UL_cost_item_rates",
+            "",
+            self.props,
+            "cost_item_rates",
+            self.props,
+            "active_cost_item_rate_index",
+        )
+
+
+class BIM_UL_cost_items_trait():
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             self.props = context.scene.BIMCostProperties
             cost_item = Data.cost_items[item.ifc_definition_id]
             row = layout.row(align=True)
 
-            for i in range(0, item.level_index):
-                row.label(text="", icon="BLANK1")
-            if item.has_children:
-                if item.is_expanded:
-                    row.operator(
-                        "bim.contract_cost_item", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN"
-                    ).cost_item = item.ifc_definition_id
-                else:
-                    row.operator(
-                        "bim.expand_cost_item", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
-                    ).cost_item = item.ifc_definition_id
-            else:
-                row.label(text="", icon="DOT")
+            self.draw_hierarchy(row, item)
 
             split1 = row.split(factor=0.1)
             split1.prop(item, "identification", emboss=False, text="")
@@ -479,7 +504,19 @@ class BIM_UL_cost_items(UIList):
                 split2.label(text=str(cost_item["CategoryValues"].get(column.name, "-")))
 
             split2.label(text="{0:.2f}".format(cost_item["TotalCostValue"]))
-            self.draw_buttons(split2, item, cost_item)
+            # TODO: reimplement "bim.copy_cost_item_values" somewhere with better UX
+
+    def draw_hierarchy(self, row, item):
+        for i in range(0, item.level_index):
+            row.label(text="", icon="BLANK1")
+        if item.has_children:
+            if item.is_expanded:
+                op = row.operator(self.contract_operator, text="", emboss=False, icon="DISCLOSURE_TRI_DOWN")
+            else:
+                op = row.operator(self.expand_operator, text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT")
+            op.cost_item = item.ifc_definition_id
+        else:
+            row.label(text="", icon="DOT")
 
     def draw_uom_column(self, layout, cost_item):
         text = "-"
@@ -492,13 +529,20 @@ class BIM_UL_cost_items(UIList):
     def draw_quantity_column(self, layout, cost_item):
         layout.label(text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" ({cost_item['UnitSymbol'] or '?'})")
 
-    def draw_buttons(self, row, item, cost_item):
-        pass  # TODO: reimplement somewhere with better UX
-        # elif self.props.active_cost_item_id:
-        #    if self.props.cost_item_editing_type == "VALUES":
-        #        op = row.operator("bim.copy_cost_item_values", text="", icon="COPYDOWN")
-        #        op.source = self.props.active_cost_item_id
-        #        op.destination = item.ifc_definition_id
+
+class BIM_UL_cost_items(BIM_UL_cost_items_trait, UIList):
+    def __init__(self):
+        self.contract_operator = "bim.contract_cost_item"
+        self.expand_operator = "bim.expand_cost_item"
+
+
+class BIM_UL_cost_item_rates(BIM_UL_cost_items_trait, UIList):
+    # A schedule of rates UIList is identical to a regular cost items UIList but
+    # we want a separate UIList instance so that you can browse both lists
+    # independently in Blender. So we use a trait.
+    def __init__(self):
+        self.contract_operator = "bim.contract_cost_item_rate"
+        self.expand_operator = "bim.expand_cost_item_rate"
 
 
 class BIM_UL_cost_columns(UIList):

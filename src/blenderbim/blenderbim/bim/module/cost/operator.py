@@ -62,6 +62,7 @@ class EditCostSchedule(bpy.types.Operator):
             **{"cost_schedule": self.file.by_id(props.active_cost_schedule_id), "attributes": attributes},
         )
         Data.load(IfcStore.get_file())
+        purge()
         bpy.ops.bim.disable_editing_cost_schedule()
         return {"FINISHED"}
 
@@ -124,8 +125,7 @@ class EnableEditingCostItems(bpy.types.Operator):
         self.props = context.scene.BIMCostProperties
         self.props.is_cost_update_enabled = False
         self.props.active_cost_schedule_id = self.cost_schedule
-        while len(self.props.cost_items) > 0:
-            self.props.cost_items.remove(0)
+        self.props.cost_items.clear()
 
         self.contracted_cost_items = json.loads(self.props.contracted_cost_items)
         for related_object_id in Data.cost_schedules[self.cost_schedule]["Controls"]:
@@ -163,8 +163,6 @@ class EnableEditingCostItems(bpy.types.Operator):
             if new.is_expanded:
                 for related_object_id in cost_item["IsNestedBy"]:
                     self.create_new_cost_item_li(related_object_id, level_index + 1)
-
-        return {"FINISHED"}
 
 
 class DisableEditingCostSchedule(bpy.types.Operator):
@@ -808,6 +806,9 @@ class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper):
     is_schedule_of_rates: bpy.props.BoolProperty(name="Is Schedule Of Rates", default=False)
 
     def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
         from ifc5d.csv2ifc import Csv2Ifc
 
         self.file = IfcStore.get_file()
@@ -819,6 +820,7 @@ class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper):
         csv2ifc.execute()
         Data.load(IfcStore.get_file())
         UnitData.load(IfcStore.get_file())
+        purge()
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
 
@@ -911,4 +913,79 @@ class LoadCostItemTypes(bpy.types.Operator):
             #    new = self.props.cost_item_resources.add()
             new.ifc_definition_id = control_id
             new.name = related_object.Name or "Unnamed"
+        return {"FINISHED"}
+
+
+class AssignCostValue(bpy.types.Operator):
+    bl_idname = "bim.assign_cost_value"
+    bl_label = "Assign Cost Value"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        return {"FINISHED"}
+
+
+class LoadScheduleOfRates(bpy.types.Operator):
+    bl_idname = "bim.load_schedule_of_rates"
+    bl_label = "Load Schedule of Rates"
+    bl_options = {"REGISTER", "UNDO"}
+    cost_schedule: bpy.props.IntProperty()
+
+    def execute(self, context):
+        self.props = context.scene.BIMCostProperties
+        self.props.is_cost_update_enabled = False
+        self.props.cost_item_rates.clear()
+        self.contracted_cost_item_rates = json.loads(self.props.contracted_cost_item_rates)
+        for related_object_id in Data.cost_schedules[self.cost_schedule]["Controls"]:
+            self.create_new_cost_item_li(related_object_id, 0)
+        self.props.is_cost_update_enabled = True
+        return {"FINISHED"}
+
+    def create_new_cost_item_li(self, related_object_id, level_index):
+        cost_item = Data.cost_items[related_object_id]
+        new = self.props.cost_item_rates.add()
+        new.ifc_definition_id = related_object_id
+        new.name = cost_item["Name"] or "Unnamed"
+        new.identification = cost_item["Identification"] or "XXX"
+        new.is_expanded = related_object_id not in self.contracted_cost_item_rates
+        new.level_index = level_index
+        if cost_item["IsNestedBy"]:
+            new.has_children = True
+            if new.is_expanded:
+                for related_object_id in cost_item["IsNestedBy"]:
+                    self.create_new_cost_item_li(related_object_id, level_index + 1)
+
+
+class ExpandCostItemRate(bpy.types.Operator):
+    bl_idname = "bim.expand_cost_item_rate"
+    bl_label = "Expand Cost Item Rate"
+    bl_options = {"REGISTER", "UNDO"}
+    cost_item: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMCostProperties
+        self.file = IfcStore.get_file()
+        contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
+        contracted_cost_item_rates.remove(self.cost_item)
+        props.contracted_cost_item_rates = json.dumps(contracted_cost_item_rates)
+        bpy.ops.bim.load_schedule_of_rates(cost_schedule=int(props.schedule_of_rates))
+        return {"FINISHED"}
+
+
+class ContractCostItemRate(bpy.types.Operator):
+    bl_idname = "bim.contract_cost_item_rate"
+    bl_label = "Contract Cost Item Rate"
+    bl_options = {"REGISTER", "UNDO"}
+    cost_item: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.BIMCostProperties
+        self.file = IfcStore.get_file()
+        contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
+        contracted_cost_item_rates.append(self.cost_item)
+        props.contracted_cost_item_rates = json.dumps(contracted_cost_item_rates)
+        bpy.ops.bim.load_schedule_of_rates(cost_schedule=int(props.schedule_of_rates))
         return {"FINISHED"}
