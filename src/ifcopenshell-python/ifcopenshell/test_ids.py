@@ -175,9 +175,7 @@ class TestIdsAuthoring(unittest.TestCase):
         i = ids.ids()
         i.specifications.append(ids.specification(name="Test_Specification"))
         i.specifications[0].add_applicability(ids.entity.create(name="Test_Name"))
-        r = ids.restriction.create(
-            options={"minInclusive": 0, "maxExclusive": 10}, type="bounds", base="integer"
-        )
+        r = ids.restriction.create(options={"minInclusive": 0, "maxExclusive": 10}, type="bounds", base="integer")
         p = ids.property.create(location="any", propertyset="Test", name="Test", value=r)
         i.specifications[0].add_requirement(p)
         self.assertEqual(i.specifications[0].requirements.terms[0].value, 0)
@@ -202,9 +200,7 @@ class TestIdsAuthoring(unittest.TestCase):
         i.specifications.append(ids.specification(name="Test_Specification"))
         i.specifications[0].add_applicability(ids.entity.create(name="Test_Name"))
         # r = ids.restriction.create(options="^(Wanddurchbruch.*|Deckendurchbruch.*)", type="pattern", base="string")
-        r = ids.restriction.create(
-            options="(Wanddurchbruch|Deckendurchbruch).*", type="pattern", base="string"
-        )
+        r = ids.restriction.create(options="(Wanddurchbruch|Deckendurchbruch).*", type="pattern", base="string")
         p = ids.property.create(location="any", propertyset="Test", name="Test", value=r)
         i.specifications[0].add_requirement(p)
         self.assertEqual(i.specifications[0].requirements.terms[0].value, "Wanddurchbruch")
@@ -225,7 +221,9 @@ class TestIdsAuthoring(unittest.TestCase):
         p1 = ids.property.create(location="any", propertyset="Test_PropertySet", name="Test_Parameter", value=re)
         p2 = ids.property.create(location="any", propertyset="Test_PropertySet", name="Test_Parameter", value=rb)
         p3 = ids.property.create(location="any", propertyset="Test_PropertySet", name="Test_Parameter", value=rp)
-        p4 = ids.property.create(location="any", propertyset="Test_PropertySet", name="Test_Parameter", value=[re,rb,rp])
+        p4 = ids.property.create(
+            location="any", propertyset="Test_PropertySet", name="Test_Parameter", value=[re, rb, rp]
+        )
         i.specifications[0].add_applicability(e)
         i.specifications[0].add_applicability(m)
         i.specifications[0].add_requirement(c)
@@ -242,15 +240,17 @@ class TestIdsAuthoring(unittest.TestCase):
 
     def test_create_full_information(self):
         i = ids.ids(
-            ifcversion='2.3.0.1', 
-            description='test', author='test@test.com', 
-            copyright='test', 
-            version=1.23, 
-            creation_date='2021-01-01', 
-            purpose='test', 
-            milestone='test')
-        self.assertEqual(i.info['version'], 1.23)
-       
+            ifcversion="2.3.0.1",
+            description="test",
+            author="test@test.com",
+            copyright="test",
+            version=1.23,
+            creation_date="2021-01-01",
+            purpose="test",
+            milestone="test",
+        )
+        self.assertEqual(i.info["version"], 1.23)
+
 
 class TestIfcValidation(unittest.TestCase):
     def test_validate_simple(self):
@@ -318,17 +318,16 @@ class TestIdsReporting(unittest.TestCase):
 
     def test_bcf_report(self):
         ids_file = ids.ids.open(read_web_file(self.IDS_URL))
-
-        bcf_handler = ids.BcfHandler(
-            project_name="Default IDS Project", author="your@email.com", filepath=self.TEST_PATH + r"\bcf_test.bcfzip"
-        )
+        fn = self.TEST_PATH + r"\bcf_test.bcfzip"
+        bcf_handler = ids.BcfHandler(project_name="Default IDS Project", author="your@email.com", filepath=fn)
         self.logger.addHandler(bcf_handler)
 
         ids_file.validate(self.ifc_file, self.logger)
 
-        my_bcfxml = bcfxml.load(self.TEST_PATH + r"\bcf_test.bcfzip")
+        my_bcfxml = bcfxml.load(fn)
         topics = my_bcfxml.get_topics()
         self.assertEqual(len(topics), 5)
+        os.remove(fn)  # BUG not removing
 
 
 if __name__ == "__main__":
