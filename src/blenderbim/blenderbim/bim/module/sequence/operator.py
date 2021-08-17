@@ -114,8 +114,7 @@ class EnableEditingWorkPlan(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMWorkPlanProperties
-        while len(props.work_plan_attributes) > 0:
-            props.work_plan_attributes.remove(0)
+        props.work_plan_attributes.clear()
 
         data = Data.work_plans[self.work_plan]
 
@@ -279,8 +278,7 @@ class EnableEditingWorkSchedule(bpy.types.Operator):
     def execute(self, context):
         self.props = context.scene.BIMWorkScheduleProperties
         self.props.active_work_schedule_id = self.work_schedule
-        while len(self.props.work_schedule_attributes) > 0:
-            self.props.work_schedule_attributes.remove(0)
+        self.props.work_schedule_attributes.clear()
         self.enable_editing_work_schedule()
         self.props.editing_type = "WORK_SCHEDULE"
         return {"FINISHED"}
@@ -308,8 +306,7 @@ class EnableEditingTasks(bpy.types.Operator):
         self.props = context.scene.BIMWorkScheduleProperties
         self.tprops = context.scene.BIMTaskTreeProperties
         self.props.active_work_schedule_id = self.work_schedule
-        while len(self.tprops.tasks) > 0:
-            self.tprops.tasks.remove(0)
+        self.tprops.tasks.clear()
 
         self.contracted_tasks = json.loads(self.props.contracted_tasks)
         self.sort_keys = {
@@ -542,8 +539,7 @@ class EnableEditingTaskTime(bpy.types.Operator):
 
         task_time_id = Data.tasks[self.task]["TaskTime"] or self.add_task_time().id()
 
-        while len(props.task_time_attributes) > 0:
-            props.task_time_attributes.remove(0)
+        props.task_time_attributes.clear()
 
         data = Data.task_times[task_time_id]
 
@@ -616,9 +612,7 @@ class EnableEditingTask(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMWorkScheduleProperties
-        while len(props.task_attributes) > 0:
-            props.task_attributes.remove(0)
-
+        props.task_attributes.clear()
         data = Data.tasks[self.task]
 
         blenderbim.bim.helper.import_attributes("IfcTask", props.task_attributes, data)
@@ -1043,8 +1037,7 @@ class EnableEditingWorkCalendar(bpy.types.Operator):
 
     def execute(self, context):
         self.props = context.scene.BIMWorkCalendarProperties
-        while len(self.props.work_calendar_attributes) > 0:
-            self.props.work_calendar_attributes.remove(0)
+        self.props.work_calendar_attributes.clear()
 
         data = Data.work_calendars[self.work_calendar]
 
@@ -1150,8 +1143,7 @@ class EnableEditingWorkTime(bpy.types.Operator):
 
     def execute(self, context):
         self.props = context.scene.BIMWorkCalendarProperties
-        while len(self.props.work_time_attributes) > 0:
-            self.props.work_time_attributes.remove(0)
+        self.props.work_time_attributes.clear()
 
         data = Data.work_times[self.work_time]
 
@@ -1488,8 +1480,7 @@ class EnableEditingSequenceAttributes(bpy.types.Operator):
         self.props = context.scene.BIMWorkScheduleProperties
         self.props.active_sequence_id = self.sequence
         self.props.editing_sequence_type = "ATTRIBUTES"
-        while len(self.props.sequence_attributes) > 0:
-            self.props.sequence_attributes.remove(0)
+        self.props.sequence_attributes.clear()
         self.enable_editing_sequence_attributes()
         return {"FINISHED"}
 
@@ -1509,8 +1500,7 @@ class EnableEditingSequenceTimeLag(bpy.types.Operator):
         self.props = context.scene.BIMWorkScheduleProperties
         self.props.active_sequence_id = self.sequence
         self.props.editing_sequence_type = "TIME_LAG"
-        while len(self.props.time_lag_attributes) > 0:
-            self.props.time_lag_attributes.remove(0)
+        self.props.time_lag_attributes.clear()
         self.enable_editing_attributes()
         return {"FINISHED"}
 

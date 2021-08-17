@@ -182,11 +182,8 @@ class RefreshLibrary(bpy.types.Operator):
     def execute(self, context):
         self.props = context.scene.BIMProjectProperties
 
-        while len(self.props.library_elements) > 0:
-            self.props.library_elements.remove(0)
-
-        while len(self.props.library_breadcrumb) > 0:
-            self.props.library_breadcrumb.remove(0)
+        self.props.library_elements.clear()
+        self.props.library_breadcrumb.clear()
 
         self.props.active_library_element = ""
 
@@ -212,8 +209,7 @@ class ChangeLibraryElement(bpy.types.Operator):
         crumb.name = self.element_name
         elements = IfcStore.library_file.by_type(self.element_name)
         [ifc_classes.add(e.is_a()) for e in elements]
-        while len(self.props.library_elements) > 0:
-            self.props.library_elements.remove(0)
+        self.props.library_elements.clear()
         if len(ifc_classes) == 1 and list(ifc_classes)[0] == self.element_name:
             for element in elements:
                 new = self.props.library_elements.add()

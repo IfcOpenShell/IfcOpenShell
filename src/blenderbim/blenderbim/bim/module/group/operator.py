@@ -31,8 +31,7 @@ class LoadGroups(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMGroupProperties
-        while len(props.groups) > 0:
-            props.groups.remove(0)
+        props.groups.clear()
         for ifc_definition_id, group in Data.groups.items():
             new = props.groups.add()
             new.ifc_definition_id = ifc_definition_id
@@ -119,8 +118,7 @@ class EnableEditingGroup(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMGroupProperties
-        while len(props.group_attributes) > 0:
-            props.group_attributes.remove(0)
+        props.group_attributes.clear()
 
         data = Data.groups[self.group]
 

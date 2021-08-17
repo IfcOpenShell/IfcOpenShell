@@ -129,8 +129,7 @@ class EnableEditingStyle(bpy.types.Operator):
     def execute(self, context):
         material = bpy.data.materials.get(self.material) if self.material else context.active_object.active_material
         props = material.BIMStyleProperties
-        while len(props.attributes) > 0:
-            props.attributes.remove(0)
+        props.attributes.clear()
 
         data = Data.styles[material.BIMMaterialProperties.ifc_style_id]
         blenderbim.bim.helper.import_attributes("IfcSurfaceStyle", props.attributes, data)

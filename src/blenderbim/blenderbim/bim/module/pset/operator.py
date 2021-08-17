@@ -90,8 +90,7 @@ class EnablePsetEditing(bpy.types.Operator):
     def execute(self, context):
         self.props = get_pset_props(context, self.obj, self.obj_type)
 
-        while len(self.props.properties) > 0:
-            self.props.properties.remove(0)
+        self.props.properties.clear()
 
         data = Data.psets if self.pset_id in Data.psets else Data.qtos
         pset_data = data[self.pset_id]

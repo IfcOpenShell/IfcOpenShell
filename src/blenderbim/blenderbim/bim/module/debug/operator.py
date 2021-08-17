@@ -197,18 +197,16 @@ class InspectFromStepId(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        context.scene.BIMDebugProperties.active_step_id = self.step_id
+        debug_props = context.scene.BIMDebugProperties
+        debug_props.active_step_id = self.step_id
         crumb = context.scene.BIMDebugProperties.step_id_breadcrumb.add()
         crumb.name = str(self.step_id)
         element = self.file.by_id(self.step_id)
-        while len(context.scene.BIMDebugProperties.attributes) > 0:
-            context.scene.BIMDebugProperties.attributes.remove(0)
-        while len(context.scene.BIMDebugProperties.inverse_attributes) > 0:
-            context.scene.BIMDebugProperties.inverse_attributes.remove(0)
-        while len(context.scene.BIMDebugProperties.inverse_references) > 0:
-            context.scene.BIMDebugProperties.inverse_references.remove(0)
+        debug_props.attributes.clear()
+        debug_props.inverse_attributes.clear()
+        debug_props.inverse_references.clear()
         for key, value in element.get_info().items():
-            self.add_attribute(context.scene.BIMDebugProperties.attributes, key, value)
+            self.add_attribute(debug_props.attributes, key, value)
         for key in dir(element):
             if (
                 not key[0].isalpha()
@@ -217,9 +215,9 @@ class InspectFromStepId(bpy.types.Operator):
                 or not getattr(element, key)
             ):
                 continue
-            self.add_attribute(context.scene.BIMDebugProperties.inverse_attributes, key, getattr(element, key))
+            self.add_attribute(debug_props.inverse_attributes, key, getattr(element, key))
         for inverse in self.file.get_inverse(element):
-            new = context.scene.BIMDebugProperties.inverse_references.add()
+            new = debug_props.inverse_references.add()
             new.string_value = str(inverse)
             new.int_value = inverse.id()
         return {"FINISHED"}

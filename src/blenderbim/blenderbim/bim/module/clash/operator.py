@@ -459,8 +459,7 @@ class SetBlenderClashSetA(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        while len(context.scene.BIMClashProperties.blender_clash_set_a) > 0:
-            context.scene.BIMClashProperties.blender_clash_set_a.remove(0)
+        context.scene.BIMClashProperties.blender_clash_set_a.clear()
         for obj in context.selected_objects:
             new = context.scene.BIMClashProperties.blender_clash_set_a.add()
             new.name = obj.name
@@ -473,8 +472,7 @@ class SetBlenderClashSetB(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        while len(context.scene.BIMClashProperties.blender_clash_set_b) > 0:
-            context.scene.BIMClashProperties.blender_clash_set_b.remove(0)
+        context.scene.BIMClashProperties.blender_clash_set_b.clear()
         for obj in context.selected_objects:
             new = context.scene.BIMClashProperties.blender_clash_set_b.add()
             new.name = obj.name

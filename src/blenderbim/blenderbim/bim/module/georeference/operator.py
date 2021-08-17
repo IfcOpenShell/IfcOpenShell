@@ -38,8 +38,7 @@ class EnableEditingGeoreferencing(bpy.types.Operator):
         self.file = IfcStore.get_file()
         props = context.scene.BIMGeoreferenceProperties
 
-        while len(props.projected_crs) > 0:
-            props.projected_crs.remove(0)
+        props.projected_crs.clear()
 
         for attribute in IfcStore.get_schema().declaration_by_name("IfcProjectedCRS").all_attributes():
             data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
@@ -69,8 +68,7 @@ class EnableEditingGeoreferencing(bpy.types.Operator):
             elif props.map_unit_type == "IfcConversionBasedUnit":
                 props.map_unit_imperial = Data.projected_crs["MapUnit"]["Name"]
 
-        while len(props.map_conversion) > 0:
-            props.map_conversion.remove(0)
+        props.map_conversion.clear()
 
         for attribute in IfcStore.get_schema().declaration_by_name("IfcMapConversion").all_attributes():
             data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)

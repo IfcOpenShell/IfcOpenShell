@@ -40,8 +40,7 @@ class EnableEditingAttributes(bpy.types.Operator):
             obj = bpy.data.materials.get(self.obj)
         oprops = obj.BIMObjectProperties
         props = obj.BIMAttributeProperties
-        while len(props.attributes) > 0:
-            props.attributes.remove(0)
+        props.attributes.clear()
         for attribute in Data.products[oprops.ifc_definition_id]:
             new = props.attributes.add()
             if attribute["type"] == "entity" or (attribute["type"] == "list" and attribute["list_type"] == "entity"):

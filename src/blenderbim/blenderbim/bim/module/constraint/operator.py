@@ -33,8 +33,7 @@ class LoadObjectives(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMConstraintProperties
-        while len(props.constraints) > 0:
-            props.constraints.remove(0)
+        props.constraints.clear()
         for constraint_id, constraint in Data.objectives.items():
             new = props.constraints.add()
             new.name = constraint["Name"] or "Unnamed"
@@ -63,8 +62,7 @@ class EnableEditingConstraint(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMConstraintProperties
-        while len(props.constraint_attributes) > 0:
-            props.constraint_attributes.remove(0)
+        props.constraint_attributes.clear()
 
         if props.is_editing == "IfcObjective":
             data = Data.objectives[self.constraint]

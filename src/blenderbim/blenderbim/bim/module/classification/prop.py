@@ -56,8 +56,7 @@ def updateClassification(self, context):
 
 def getReferences(self, context, parent_id=None):
     props = context.scene.BIMClassificationProperties
-    while len(props.available_library_references) > 0:
-        props.available_library_references.remove(0)
+    props.available_library_references.clear()
     for reference in Data.library_file.by_id(parent_id).HasReferences:
         new = props.available_library_references.add()
         new.identification = reference.Identification or ""

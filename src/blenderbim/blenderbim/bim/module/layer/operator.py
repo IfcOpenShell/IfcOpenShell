@@ -33,8 +33,7 @@ class LoadLayers(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         props = context.scene.BIMLayerProperties
-        while len(props.layers) > 0:
-            props.layers.remove(0)
+        props.layers.clear()
         for layer_id, layer in Data.layers.items():
             new = props.layers.add()
             new.name = layer["Name"] or "Unnamed"
@@ -62,8 +61,7 @@ class EnableEditingLayer(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMLayerProperties
-        while len(props.layer_attributes) > 0:
-            props.layer_attributes.remove(0)
+        props.layer_attributes.clear()
 
         data = Data.layers[self.layer]
 
