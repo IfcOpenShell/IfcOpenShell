@@ -516,8 +516,11 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 	for (auto& x : brep_obj->geometry()) {
 		dash_arrays.emplace_back();
 
-		auto item = (IfcUtil::IfcBaseEntity*) this->file->instance_by_id(x.ItemId());
-		auto curve_style_name = get_curve_style_name(item);
+		boost::optional<std::string> curve_style_name;
+		if (file) {
+			auto item = (IfcUtil::IfcBaseEntity*) this->file->instance_by_id(x.ItemId());
+			curve_style_name = get_curve_style_name(item);
+		}		
 		
 		if (curve_style_name && 
 			(boost::starts_with(*curve_style_name, "LINE_") ||
@@ -1266,7 +1269,7 @@ void SvgSerializer::write(const geometry_data& data) {
 
 				}
 				
-				if (data.product->declaration().is("IfcBuildingStorey") && storey_height_display_ != SH_NONE && wires->Length() == 1 && IfcGeom::Kernel::count(wire, TopAbs_EDGE) == 1) {
+				if (file && data.product->declaration().is("IfcBuildingStorey") && storey_height_display_ != SH_NONE && wires->Length() == 1 && IfcGeom::Kernel::count(wire, TopAbs_EDGE) == 1) {
 					
 					std::string elev_str;
 
@@ -1676,7 +1679,10 @@ void SvgSerializer::addTextAnnotations(const drawing_key& k) {
 		}
 	}
 
-	auto annotations = file->instances_by_type("IfcAnnotation");
+	aggregate_of_instance::ptr annotations;
+	if (file) {
+		annotations = file->instances_by_type("IfcAnnotation");
+	}
 	if (annotations) {
 		for (auto& ann_ : *annotations) {
 			auto ann = (IfcUtil::IfcBaseEntity*) ann_;
@@ -1902,8 +1908,8 @@ void SvgSerializer::finalize() {
 
 			addTextAnnotations({ nullptr, drawing_name });
 
-			if (storey_height_display_ != SH_NONE && pln && std::abs(pln->Position().Direction().Z()) < 1.e-5) {
-				auto storeys = this->file->instances_by_type("IfcBuildingStorey");
+			if (file && storey_height_display_ != SH_NONE && pln && std::abs(pln->Position().Direction().Z()) < 1.e-5) {
+				auto storeys = file->instances_by_type("IfcBuildingStorey");
 				if (storeys) {
 					const double lu = file->getUnit("LENGTHUNIT").second;
 					for (auto& s : *storeys) {
@@ -2154,6 +2160,10 @@ void SvgSerializer::setSectionHeight(double h, IfcUtil::IfcBaseEntity* storey) {
 }
 
 void SvgSerializer::setSectionHeightsFromStoreys(double offset) {
+	if (!file) {
+		Logger::Error("No file specified");
+		return;
+	}
 	with_section_heights_from_storey_ = true;
 	section_data_.emplace();
 	auto storeys = file->instances_by_type("IfcBuildingStorey");
