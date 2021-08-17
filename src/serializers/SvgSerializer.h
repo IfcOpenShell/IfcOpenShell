@@ -304,6 +304,11 @@ public:
 		}
 	}
 
+	void addDrawing(const gp_Pnt& pos, const gp_Dir& dir, const gp_Dir& ref, const std::string& name, bool include_projection) {
+		deferred_section_data_.emplace();
+		deferred_section_data_->push_back(vertical_section{ gp_Pln(gp_Ax3(pos, dir, ref)), name, true });
+	}
+
 protected:
 	std::string writeMetadata(const drawing_meta& m);
 };
