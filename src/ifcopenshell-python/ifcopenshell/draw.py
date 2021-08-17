@@ -310,4 +310,4 @@ if __name__ == "__main__":
 
     files = list(map(ifcopenshell.open, files))
     open(output, "wb").write(main(settings, files, progress_function=lambda *args: print("\r", *args, " "*10, end="", flush=True)))
-    print("\r Done!")
+    print("\r Done!", " " * 10)
