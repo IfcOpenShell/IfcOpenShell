@@ -21,6 +21,7 @@ from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes
 from ifcopenshell.api.cost.data import Data
+from ifcopenshell.api.unit.data import Data as UnitData
 
 
 class BIM_PT_cost_schedules(Panel):
@@ -41,6 +42,9 @@ class BIM_PT_cost_schedules(Panel):
 
         if not Data.is_loaded:
             Data.load(IfcStore.get_file())
+
+        if not UnitData.is_loaded:
+            UnitData.load(IfcStore.get_file())
 
         row = self.layout.row()
         row.operator("bim.add_cost_schedule", icon="ADD")
@@ -193,19 +197,20 @@ class BIM_PT_cost_schedules(Panel):
             self.draw_editable_cost_value_ui(box, Data.cost_values[self.props.active_cost_item_value_id])
 
     def draw_readonly_cost_value_ui(self, layout, cost_value_id):
+        # This UI is really poor. Delete and start again.
         cost_value = Data.cost_values[cost_value_id]
         cost_value_label = "{0:.2f}".format(cost_value["AppliedValue"])
         if cost_value["Category"]:
             cost_value_label += " ({})".format(cost_value["Category"])
         layout.label(text="", icon="DISC")
-        self.draw_cost_value_operator_ui(layout, cost_value_id)
+        self.draw_cost_value_operator_ui(layout, cost_value_id, self.props.active_cost_item_id)
         layout.label(text=cost_value_label)
 
         for component_id in cost_value["Components"] or []:
-            self.draw_readonly_component_cost_value_ui(layout, component_id)
+            self.draw_readonly_component_cost_value_ui(layout, component_id, cost_value["id"])
 
-    def draw_readonly_component_cost_value_ui(self, layout, cost_value_id, level=1):
-        self.draw_cost_value_operator_ui(layout, cost_value_id)
+    def draw_readonly_component_cost_value_ui(self, layout, cost_value_id, parent_id, level=1):
+        self.draw_cost_value_operator_ui(layout, cost_value_id, parent_id)
         cost_value = Data.cost_values[cost_value_id]
         cost_value_label = ">" * level
         cost_value_label += "{0:.2f}".format(cost_value["AppliedValue"])
@@ -214,9 +219,9 @@ class BIM_PT_cost_schedules(Panel):
         layout.label(text=cost_value_label)
 
         for component_id in cost_value["Components"] or []:
-            self.draw_readonly_component_cost_value_ui(layout, component_id, level + 1)
+            self.draw_readonly_component_cost_value_ui(layout, component_id, cost_value["id"], level + 1)
 
-    def draw_cost_value_operator_ui(self, layout, cost_value_id):
+    def draw_cost_value_operator_ui(self, layout, cost_value_id, parent_id):
         if self.props.active_cost_item_value_id and self.props.active_cost_item_value_id == cost_value_id:
             op = layout.operator("bim.edit_cost_value", text="", icon="CHECKMARK")
             op.cost_value = cost_value_id
@@ -233,6 +238,7 @@ class BIM_PT_cost_schedules(Panel):
             if self.props.cost_types == "CATEGORY":
                 op.cost_category = self.props.cost_category
             op = layout.operator("bim.remove_cost_item_value", text="", icon="X")
+            op.parent = parent_id
             op.cost_value = cost_value_id
         else:
             op = layout.operator("bim.enable_editing_cost_item_value", text="", icon="GREASEPENCIL")
@@ -243,6 +249,7 @@ class BIM_PT_cost_schedules(Panel):
             if self.props.cost_types == "CATEGORY":
                 op.cost_category = self.props.cost_category
             op = layout.operator("bim.remove_cost_item_value", text="", icon="X")
+            op.parent = parent_id
             op.cost_value = cost_value_id
 
     def draw_editable_cost_value_ui(self, layout, cost_value):
@@ -467,7 +474,9 @@ class BIM_PT_cost_item_rates(Panel):
         cost_item = self.props.cost_items[self.props.active_cost_item_index]
         row = self.layout.row(align=True)
         row.prop(self.props, "schedule_of_rates", text="")
-        row.operator("bim.assign_cost_value", text="", icon="COPYDOWN")
+        op = row.operator("bim.assign_cost_value", text="", icon="COPYDOWN")
+        op.cost_item = self.props.cost_items[self.props.active_cost_item_index].ifc_definition_id
+        op.cost_rate = self.props.cost_item_rates[self.props.active_cost_item_rate_index].ifc_definition_id
         self.layout.template_list(
             "BIM_UL_cost_item_rates",
             "",
@@ -493,10 +502,7 @@ class BIM_UL_cost_items_trait():
             split2.alignment = "RIGHT"
             split2.prop(item, "name", emboss=False, text="")
 
-            if Data.cost_schedules[self.props.active_cost_schedule_id]["PredefinedType"] == "SCHEDULEOFRATES":
-                self.draw_uom_column(split2, cost_item)
-            else:
-                self.draw_quantity_column(split2, cost_item)
+            self.draw_quantity_column(split2, cost_item)
 
             split2.label(text="{0:.2f}".format(cost_item["TotalAppliedValue"]))
 
@@ -518,6 +524,12 @@ class BIM_UL_cost_items_trait():
         else:
             row.label(text="", icon="DOT")
 
+    def draw_quantity_column(self, layout, cost_item):
+        if Data.cost_schedules[self.props.active_cost_schedule_id]["PredefinedType"] == "SCHEDULEOFRATES":
+            self.draw_uom_column(layout, cost_item)
+        else:
+            self.draw_total_quantity_column(layout, cost_item)
+
     def draw_uom_column(self, layout, cost_item):
         text = "-"
         if cost_item["CostValues"]:
@@ -526,7 +538,7 @@ class BIM_UL_cost_items_trait():
                 text = "{0:.2f}".format(unit_basis["ValueComponent"]) + f" ({unit_basis['UnitSymbol'] or '?'})"
         layout.label(text=text)
 
-    def draw_quantity_column(self, layout, cost_item):
+    def draw_total_quantity_column(self, layout, cost_item):
         layout.label(text="{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" ({cost_item['UnitSymbol'] or '?'})")
 
 
@@ -543,6 +555,9 @@ class BIM_UL_cost_item_rates(BIM_UL_cost_items_trait, UIList):
     def __init__(self):
         self.contract_operator = "bim.contract_cost_item_rate"
         self.expand_operator = "bim.expand_cost_item_rate"
+
+    def draw_quantity_column(self, layout, cost_item):
+        self.draw_uom_column(layout, cost_item)
 
 
 class BIM_UL_cost_columns(UIList):
