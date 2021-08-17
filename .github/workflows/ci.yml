@@ -76,5 +76,5 @@ jobs:
       - name: Test
         run: |
           cd test
-          sudo /usr/bin/python test/tests.py
-          sudo /usr/bin/python src/ifcopenshell-python/ifcopenshell/test_ids.py
+          sudo /usr/bin/python tests.py
+          sudo /usr/bin/python ../src/ifcopenshell-python/ifcopenshell/test_ids.py
